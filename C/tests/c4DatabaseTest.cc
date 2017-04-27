@@ -219,6 +219,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
         i++;
     }
     c4enum_free(e);
+    REQUIRE(error.code == 0);
     REQUIRE(i == 91);
 
     // Some docs, by ID:
@@ -238,6 +239,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
         i++;
     }
     c4enum_free(e);
+    REQUIRE(error.code == 0);
     REQUIRE(i == 4);
 }
 

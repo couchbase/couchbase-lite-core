@@ -102,9 +102,9 @@ namespace litecore {
         auto stmt = new SQLite::Statement(db(), sql.str());    //TODO: Cache a statement
         int param = 1;
         if (minKey.buf)
-            stmt->bind(param++, minKey.buf, (int)minKey.size);
+            stmt->bind(param++, (const char*)minKey.buf, (int)minKey.size);
         if (maxKey.buf)
-            stmt->bind(param++, maxKey.buf, (int)maxKey.size);
+            stmt->bind(param++, (const char*)maxKey.buf, (int)maxKey.size);
         return new SQLiteEnumerator(stmt, options.descending, options.contentOptions);
     }
 
