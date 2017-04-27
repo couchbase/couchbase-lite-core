@@ -168,7 +168,7 @@ endif()
 
 set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 LiteCoreStatic
-								FleeceStatic 
+								                FleeceStatic 
                                 SQLite3_UnicodeSN 
                                 BLIPStatic 
                                 ${NO_WHOLE_LIBRARY_FLAG})
@@ -213,7 +213,7 @@ add_library(LiteCoreREST SHARED LiteCore/Support/Error.cc
                                 LiteCore/Support/FilePath.cc
                                 LiteCore/Support/Logging.cc
                                 LiteCore/Support/StringUtil.cc)
-target_link_libraries(LiteCoreREST PRIVATE LiteCoreREST_Static LiteCore FleeceStatic)
+target_link_libraries(LiteCoreREST PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreREST_Static ${NO_WHOLE_LIBRARY_FLAG} LiteCore FleeceStatic)
 
 if (APPLE)
     set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
@@ -227,7 +227,7 @@ endif()
 ### LITECORESERV:
 
 add_executable(LiteCoreServ REST/LiteCoreServ.cc)
-target_link_libraries(LiteCoreServ PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreREST_Static ${NO_WHOLE_LIBRARY_FLAG})
+target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static) 
 target_link_libraries(LiteCoreServ PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(LiteCoreServ PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
 if(NOT APPLE)
