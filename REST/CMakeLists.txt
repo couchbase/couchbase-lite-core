@@ -35,7 +35,7 @@ set(ALL_SRC_FILES ${REST_SRC})
 if(MSVC)
 	include_directories("../vendor/fleece/MSVC")
 	set(ALL_SRC_FILES ${ALL_SRC_FILES} ../MSVC/asprintf.c
-			     ../vendor/fleece/MSVC/memmem.cc ../MSVC/mkstemp.cc ../MSVC/mkdtemp.cc
+    ../vendor/fleece/MSVC/memmem.cc ../MSVC/mkstemp.cc ../MSVC/mkdtemp.cc ../MSVC/strlcat.c
 			     ../MSVC/vasprintf-msvc.c ../MSVC/arc4random.cc ../LiteCore/Support/PlatformIO.cc)
 endif()
 
