@@ -17,7 +17,7 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
     $<$<CONFIG:Debug>:DEBUG>
 )
 if(MSVC)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /wd4068 /wd4244 /wd4018 /wd4819 -D_CRT_SECURE_NO_WARNINGS=1")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /wd4068 /wd4244 /wd4018 /wd4819 /wd4800 -D_CRT_SECURE_NO_WARNINGS=1")
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -218,6 +218,10 @@ target_link_libraries(LiteCoreREST PRIVATE LiteCoreREST_Static LiteCore FleeceSt
 if (APPLE)
     set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/REST/c4REST.exp")
+elseif(MSVC)
+    set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
+              "/def:${PROJECT_SOURCE_DIR}/REST/c4REST.def")
+
 endif()
 
 ### LITECORESERV:
@@ -230,6 +234,10 @@ if(NOT APPLE)
   target_link_libraries(LiteCoreServ PRIVATE ${OPENSSL_CRYPTO_LIBRARY})
   if(ANDROID)
     target_link_libraries(LiteCoreServ PRIVATE log)
+  elseif(MSVC)
+    set_target_properties(LiteCoreServ PROPERTIES LINK_FLAGS
+              "/ignore:4099")    
+
   endif()
 endif()
 
