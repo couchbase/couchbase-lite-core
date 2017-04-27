@@ -227,7 +227,7 @@ endif()
 ### LITECORESERV:
 
 add_executable(LiteCoreServ REST/LiteCoreServ.cc)
-target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static)
+target_link_libraries(LiteCoreServ PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreREST_Static ${NO_WHOLE_LIBRARY_FLAG})
 target_link_libraries(LiteCoreServ PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(LiteCoreServ PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
 if(NOT APPLE)
