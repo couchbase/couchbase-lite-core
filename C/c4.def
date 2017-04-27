@@ -60,7 +60,6 @@ c4doc_selectFirstPossibleAncestorOf
 c4doc_selectNextPossibleAncestorOf
 c4doc_getForPut
 c4doc_generateRevID
-c4doc_generateOldStyleRevID
 c4doc_put
 c4doc_purgeRevision
 c4doc_save

@@ -275,39 +275,21 @@ namespace c4Internal {
     }
 
 
-    static bool sGenerateOldStyleRevIDs = false;
-
-
     static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
     #if SECURE_DIGEST_AVAILABLE
         uint8_t digestBuf[20];
         slice digest;
-        if (sGenerateOldStyleRevIDs) {
-            // Get MD5 digest of the (length-prefixed) parent rev ID, deletion flag, and revision body:
-            md5Context ctx;
-            md5_begin(&ctx);
-            uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-            if (revLen > 0)     // Intentionally repeat a bug in CBL's algorithm :)
-                md5_add(&ctx, &revLen, 1);
-            md5_add(&ctx, parentRevID.buf, revLen);
-            uint8_t delByte = deleted;
-            md5_add(&ctx, &delByte, 1);
-            md5_add(&ctx, body.buf, body.size);
-            md5_end(&ctx, digestBuf);
-            digest = slice(digestBuf, 16);
-        } else {
-            // SHA-1 digest:
-            sha1Context ctx;
-            sha1_begin(&ctx);
-            uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-            sha1_add(&ctx, &revLen, 1);
-            sha1_add(&ctx, parentRevID.buf, revLen);
-            uint8_t delByte = deleted;
-            sha1_add(&ctx, &delByte, 1);
-            sha1_add(&ctx, body.buf, body.size);
-            sha1_end(&ctx, digestBuf);
-            digest = slice(digestBuf, 20);
-        }
+        // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
+        sha1Context ctx;
+        sha1_begin(&ctx);
+        uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
+        sha1_add(&ctx, &revLen, 1);
+        sha1_add(&ctx, parentRevID.buf, revLen);
+        uint8_t delByte = deleted;
+        sha1_add(&ctx, &delByte, 1);
+        sha1_add(&ctx, body.buf, body.size);
+        sha1_end(&ctx, digestBuf);
+        digest = slice(digestBuf, 20);
 
         // Derive new rev's generation #:
         unsigned generation = 1;
@@ -383,8 +365,4 @@ unsigned c4rev_getGeneration(C4Slice revID) noexcept {
         return revidBuffer(revID).generation();
     }catchExceptions()
     return 0;
-}
-
-void c4doc_generateOldStyleRevID(bool generateOldStyle) noexcept {
-    sGenerateOldStyleRevIDs = generateOldStyle;
 }

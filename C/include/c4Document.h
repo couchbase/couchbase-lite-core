@@ -248,10 +248,6 @@ extern "C" {
         @result  The new revID. Caller is responsible for freeing its buf. */
     C4StringResult c4doc_generateRevID(C4String body, C4String parentRevID, bool deletion) C4API;
 
-    /** Set this to true to make c4doc_generateRevID and c4doc_put create revision IDs that
-        are identical to the ones Couchbase Lite 1.0--1.2 would create. These use MD5 digests. */
-    void c4doc_generateOldStyleRevID(bool generateOldStyle) C4API;
-
     /** @} */
     /** @} */
 #ifdef __cplusplus
