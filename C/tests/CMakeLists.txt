@@ -27,7 +27,7 @@ set(TEST_SRC ${TEST_SRC}
              ${TOP}/LiteCore/Support/Logging.cc
              ${TOP}/REST/Response.cc)
 if(MSVC)
-	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c ${TOP}/LiteCore/Support/PlatformIO.cc)
+	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c ${TOP}/LiteCore/Support/PlatformIO.cc ${TOP}/MSVC/strlcat.c ${TOP}/MSVC/mkdtemp.cc ${TOP}/MSVC/mkstemp.cc)
 endif()
 
 add_executable(C4Tests ${TEST_SRC} )
