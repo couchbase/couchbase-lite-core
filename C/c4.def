@@ -1,6 +1,7 @@
 EXPORTS
 kC4SQLiteStorageEngine
 
+DefaultLog
 kC4DefaultLog
 c4SliceEqual
 c4slice_free

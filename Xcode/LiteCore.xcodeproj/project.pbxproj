@@ -380,6 +380,8 @@
 		720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
 		720EA4131BA8D834002B8416 /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		720EA4141BA8D834002B8416 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
+		726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
+		726F2B911EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
 		7280F7F11E3AC9A600E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
@@ -1113,6 +1115,7 @@
 		720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "usr/lib/libstdc++.dylib"; sourceTree = SDKROOT; };
 		720EA46F1BA90A0C002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS8.4.sdk/usr/lib/libstdc++.dylib"; sourceTree = DEVELOPER_DIR; };
+		726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DefaultLogger.cc; sourceTree = "<group>"; };
 		7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libLiteCore.dylib; path = ../build_cmake/libLiteCore.dylib; sourceTree = "<group>"; };
 		72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocExpiration.cc; sourceTree = "<group>"; };
 		72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4ExpiryEnumerator.h; sourceTree = "<group>"; };
@@ -1541,6 +1544,7 @@
 				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
 				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
 				2759BD4C1DDFB15100C263B4 /* make_unique.h */,
+				726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -2755,6 +2759,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
+				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				2749B9491EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
@@ -2842,6 +2847,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				272850AC1E9AF53B009CA22F /* Upgrader.cc in Sources */,
+				726F2B911EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				720EA4101BA8D834002B8416 /* Record.cc in Sources */,
 				2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */,
 				2749B94A1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,

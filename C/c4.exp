@@ -6,6 +6,7 @@
 
 _kC4SQLiteStorageEngine
 
+_DefaultLog
 _kC4DefaultLog
 _c4SliceEqual
 _c4slice_free

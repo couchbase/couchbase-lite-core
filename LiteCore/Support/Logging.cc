@@ -45,8 +45,6 @@ namespace litecore {
     LogDomain* LogDomain::sFirstDomain = nullptr;
     void (*LogDomain::Callback)(const LogDomain&, LogLevel, const char *message) = defaultCallback;
 
-    LogDomain DefaultLog("", LogLevel::Info);
-
 
     static mutex sLogMutex;
 

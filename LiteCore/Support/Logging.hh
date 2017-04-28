@@ -91,8 +91,9 @@ private:
     static LogDomain* sFirstDomain;
 };
 
-
-extern LogDomain DefaultLog;
+extern "C" {
+    extern LogDomain DefaultLog;
+}
 
 
 #ifndef C4_TESTS
