@@ -137,7 +137,8 @@ enum {
     kC4ErrorDatabaseTooOld,         // Database file format is older than what I can open
     kC4ErrorDatabaseTooNew,         // Database file format is newer than what I can open
     kC4ErrorBadDocID,               // Invalid document ID
-    
+    kC4ErrorCantUpgradeDatabase,    // Database can't be upgraded (might be unsupported dev version)
+
     kC4NumErrorCodesPlus1
 };
 

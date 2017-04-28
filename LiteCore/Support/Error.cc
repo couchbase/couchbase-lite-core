@@ -136,6 +136,7 @@ namespace litecore {
             "database is in an old file format that can't be opened",
             "database is in a newer file format than this software supports",
             "invalid document ID",
+            "database cannot be upgraded to the current version",
         };
         static_assert(sizeof(kLiteCoreMessages)/sizeof(kLiteCoreMessages[0]) ==
                         error::NumLiteCoreErrorsPlus1, "Incomplete error message table");

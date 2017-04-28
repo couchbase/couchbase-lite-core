@@ -57,9 +57,6 @@ namespace litecore {
                                      {
                                          abort();
                                      });
-            _allRevs.reset(new SQLite::Statement(_oldDB,
-                         "SELECT sequence, revid, parent, current, deleted, json, no_attachments"
-                         " FROM revs WHERE doc_id=? ORDER BY sequence"));
         }
 
 
@@ -71,7 +68,11 @@ namespace litecore {
             if (userVersion < kMinOldUserVersion)
                 error::_throw(error::DatabaseTooOld);
             else if (userVersion > kMaxOldUserVersion)
-                error::_throw(error::DatabaseTooNew);
+                error::_throw(error::CantUpgradeDatabase);
+
+            _allRevs.reset(new SQLite::Statement(_oldDB,
+                         "SELECT sequence, revid, parent, current, deleted, json, no_attachments"
+                         " FROM revs WHERE doc_id=? ORDER BY sequence"));
 
             _newDB->beginTransaction();
             try {
