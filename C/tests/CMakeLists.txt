@@ -20,8 +20,11 @@ aux_source_directory(${TOP}/REST/tests  REST_TEST_SRC)
 set(TEST_SRC ${TEST_SRC} 
              ${REST_TEST_SRC}
              ${TOP}/LiteCore/tests/main.cpp
-             ${TOP}/LiteCore/Support/Logging.cc
              ${TOP}/LiteCore/Support/StringUtil.cc
+             ${TOP}/LiteCore/Support/FilePath.cc
+             ${TOP}/LiteCore/Support/Error.cc
+             ${TOP}/LiteCore/Support/Error_android.cc
+             ${TOP}/LiteCore/Support/Logging.cc
              ${TOP}/REST/Response.cc)
 if(MSVC)
 	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c ${TOP}/LiteCore/Support/PlatformIO.cc)
