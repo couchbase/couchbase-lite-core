@@ -144,6 +144,59 @@ static bool isValidScheme(C4Slice scheme) {
 }
 
 
+bool c4repl_isValidDatabaseName(C4String dbName) {
+    slice name = dbName;
+    // Same rules as Couchbase Lite 1.x and CouchDB
+    return name.size > 0 && name.size < 240
+        && islower(name[0])
+        && !slice(name).findByteNotIn("abcdefghijklmnopqrstuvwxyz0123456789_$()+-/"_sl);
+}
+
+
+bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName) {
+    slice str = url;
+
+    auto colon = str.findByteOrEnd(':');
+    if (!colon)
+        return false;
+    address->scheme = slice(str.buf, colon);
+    if (!isValidScheme(address->scheme))
+        return false;
+    address->port = (colon[-1] == 's') ? 443 : 80;
+    str.setStart(colon);
+    if (!str.hasPrefix("://"_sl))
+        return false;
+    str.moveStart(3);
+
+    colon = str.findByteOrEnd(':');
+    auto slash = str.findByteOrEnd('/');
+    if (colon < slash) {
+        int port;
+        try {
+            port = stoi(slice(colon+1, slash).asString());
+        } catch (...) {
+            return false;
+        }
+        if (port < 0 || port > 65535)
+            return false;
+        address->port = (uint16_t)port;
+    } else {
+        colon = slash;
+    }
+    address->hostname = slice(str.buf, colon);
+    str.setStart(slash);
+    if (str.size == 0)
+        return false;
+    address->path = "/"_sl;
+    if (str[0] == '/')
+        str.moveStart(1);
+    if (str.hasSuffix("/"_sl))
+        str.setSize(str.size - 1);
+    *dbName = str;
+    return c4repl_isValidDatabaseName(str);
+}
+
+
 C4Replicator* c4repl_new(C4Database* db,
                          C4Address serverAddress,
                          C4String remoteDatabaseName,

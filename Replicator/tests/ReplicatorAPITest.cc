@@ -116,6 +116,48 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kWikipedia1kDBName;
 
 
+TEST_CASE("URL Parsing") {
+    C4Address address;
+    C4String dbName;
+
+    REQUIRE(c4repl_parseURL("blip://localhost/dbname"_sl, &address, &dbName));
+    CHECK(address.scheme == "blip"_sl);
+    CHECK(address.hostname == "localhost"_sl);
+    CHECK(address.port == 80);
+    CHECK(address.path == "/"_sl);
+    CHECK(dbName == "dbname"_sl);
+
+    REQUIRE(c4repl_parseURL("blips://localhost/dbname"_sl, &address, &dbName));
+    CHECK(address.scheme == "blips"_sl);
+    CHECK(address.hostname == "localhost"_sl);
+    CHECK(address.port == 443);
+    CHECK(address.path == "/"_sl);
+    CHECK(dbName == "dbname"_sl);
+
+    REQUIRE(c4repl_parseURL("blips://localhost/dbname/"_sl, &address, &dbName));
+    CHECK(address.scheme == "blips"_sl);
+    CHECK(address.hostname == "localhost"_sl);
+    CHECK(address.port == 443);
+    CHECK(address.path == "/"_sl);
+    CHECK(dbName == "dbname"_sl);
+
+    REQUIRE(!c4repl_parseURL(""_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip:"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip:/"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("http://localhost/dbname"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("://localhost/dbname"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("/dev/null"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("/dev/nu:ll"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://localhost:-1/dbname"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://localhost:666666/dbname"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://localhost:x/dbname"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://localhost:/foo"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://localhost"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://localhost/"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://localhost/B@dn@m*"_sl, &address, &dbName));
+}
+
 
 // Try to connect to a nonexistent server (port 1 of localhost) and verify connection error.
 TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {

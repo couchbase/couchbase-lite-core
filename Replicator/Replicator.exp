@@ -4,6 +4,8 @@
 #  Created by Jens Alfke on 2/17/17.
 #  Copyright © 2017 Couchbase. All rights reserved.
 
+_c4repl_parseURL
+_c4repl_isValidDatabaseName
 _c4repl_new
 _c4repl_free
 _c4repl_stop

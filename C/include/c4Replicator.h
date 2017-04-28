@@ -61,6 +61,13 @@ extern "C" {
                                                       C4ReplicatorStatus,
                                                       void *context);
 
+    /** Checks whether a database name is valid, for purposes of appearing in a replication URL */
+    bool c4repl_isValidDatabaseName(C4String dbName);
+
+    /** A simple URL parser that populates a C4Address from a URL string.
+        The fields of the address will point inside the url string. */
+    bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName);
+
     /** Creates a new replicator. */
     C4Replicator* c4repl_new(C4Database* db,
                              C4Address remoteAddress,
