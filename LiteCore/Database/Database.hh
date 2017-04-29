@@ -90,7 +90,7 @@ namespace c4Internal {
         void useDocumentKeys()                              {_db->useDocumentKeys();}
         fleece::SharedKeys* documentKeys()                  {return _db->documentKeys();}
 
-        SequenceTracker& sequenceTracker()                  {return *_sequenceTracker;}
+        SequenceTracker& sequenceTracker();
 
         BlobStore* blobStore();
 

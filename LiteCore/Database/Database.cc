@@ -132,15 +132,16 @@ namespace c4Internal {
 
     Database::Database(const string &path,
                        C4DatabaseConfig inConfig)
-    :_db(newDataFile(findOrCreateBundle(path, inConfig), inConfig, true)),
-     config(inConfig),
-     _encoder(new fleece::Encoder()),
-     _sequenceTracker(new SequenceTracker())
+    :_db(newDataFile(findOrCreateBundle(path, inConfig), inConfig, true))
+    ,config(inConfig)
+    ,_encoder(new fleece::Encoder())
     {
         if (config.flags & kC4DB_SharedKeys) {
             _db->useDocumentKeys();
             _encoder->setSharedKeys(documentKeys());
         }
+        if (!(config.flags & kc4DB_NonObservable))
+            _sequenceTracker.reset(new SequenceTracker());
 
         // Validate that the versioning matches what's used in the database:
         auto &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
@@ -325,6 +326,14 @@ namespace c4Internal {
     }
 
 
+    SequenceTracker& Database::sequenceTracker() {
+        if (!_sequenceTracker)
+            error::_throw(error::UnsupportedOperation);
+        return *_sequenceTracker;
+    }
+
+
+
     Database::UUID Database::getUUID(slice key) {
         auto &store = getKeyStore((string)kC4InfoStore);
         Record r = store.get(key);
@@ -363,8 +372,10 @@ namespace c4Internal {
     void Database::beginTransaction() {
         if (++_transactionLevel == 1) {
             _transaction = new Transaction(_db.get());
-            lock_guard<mutex> lock(_sequenceTracker->mutex());
-            _sequenceTracker->beginTransaction();
+            if (_sequenceTracker) {
+                lock_guard<mutex> lock(_sequenceTracker->mutex());
+                _sequenceTracker->beginTransaction();
+            }
         }
     }
 
@@ -394,7 +405,7 @@ namespace c4Internal {
 
     // The cleanup part of endTransaction
     void Database::_cleanupTransaction(bool committed) {
-        {
+        if (_sequenceTracker) {
             lock_guard<mutex> lock(_sequenceTracker->mutex());
             if (committed) {
                 // Notify other Database instances on this file:
@@ -412,8 +423,10 @@ namespace c4Internal {
 
 
     void Database::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
-        lock_guard<mutex> lock(_sequenceTracker->mutex());
-        _sequenceTracker->addExternalTransaction(sourceTracker);
+        if (_sequenceTracker) {
+            lock_guard<mutex> lock(_sequenceTracker->mutex());
+            _sequenceTracker->addExternalTransaction(sourceTracker);
+        }
     }
 
 
@@ -465,12 +478,14 @@ namespace c4Internal {
 
 
     void Database::saved(Document* doc) {
-        lock_guard<mutex> lock(_sequenceTracker->mutex());
-        Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
-        _sequenceTracker->documentChanged(doc->_docIDBuf,
-                                          doc->_selectedRevIDBuf,
-                                          doc->selectedRev.sequence,
-                                          doc->selectedRev.body.size);
+        if (_sequenceTracker) {
+            lock_guard<mutex> lock(_sequenceTracker->mutex());
+            Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
+            _sequenceTracker->documentChanged(doc->_docIDBuf,
+                                              doc->_selectedRevIDBuf,
+                                              doc->selectedRev.sequence,
+                                              doc->selectedRev.body.size);
+        }
     }
 
 }
