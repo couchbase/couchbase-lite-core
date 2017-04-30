@@ -16,6 +16,8 @@
 using namespace std;
 using namespace litecore;
 
+extern "C" void C4RegisterSocketFactory();
+
 
 static C4RESTListener *gListener;
 
@@ -126,6 +128,8 @@ static void shareDatabaseDir(const char *dirPath) {
 int main(int argc, const char** argv) {
     gRESTConfig.port = 59840;
     gRESTConfig.allowCreateDBs = gRESTConfig.allowDeleteDBs = true;
+
+    C4RegisterSocketFactory();
 
     try {
         auto restLog = c4log_getDomain("REST", true);

@@ -95,14 +95,14 @@ namespace litecore { namespace REST {
                 extraHeaders = handlers->server->_extraHeaders;
             }
 
-            Request rq(conn);
+            RequestResponse rq(conn);
             rq.addHeaders(extraHeaders);
             if (!handler)
-                rq.respondWithError(405, "Method not allowed");
+                rq.respondWithError(HTTPStatus::MethodNotAllowed, "Method not allowed");
             else
                 (handler(rq));
             rq.finish();
-            return rq.status();
+            return int(rq.status());
         } catch (const std::exception &x) {
             Warn("HTTP handler caught C++ exception: %s", x.what());
             mg_send_http_error(conn, 500, "Internal exception");

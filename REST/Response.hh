@@ -19,6 +19,22 @@ struct mg_connection;
 
 namespace litecore { namespace REST {
 
+    enum class HTTPStatus : int {
+        undefined = -1,
+        OK = 200,
+        Created = 201,
+        BadRequest = 400,
+        Unauthorized = 401,
+        Forbidden = 403,
+        NotFound = 404,
+        MethodNotAllowed = 405,
+        Conflict = 409,
+        PreconditionFailed = 412,
+        ServerError = 500,
+        NotImplemented = 501,
+        GatewayError = 502,
+    };
+
     /** An incoming HTTP body. */
     class Body {
     public:
@@ -65,7 +81,7 @@ namespace litecore { namespace REST {
 
         explicit operator bool() const      {return _conn != nullptr;}
 
-        int status() const;
+        HTTPStatus status() const;
         std::string statusMessage() const;
 
     private:

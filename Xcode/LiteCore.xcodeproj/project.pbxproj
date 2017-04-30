@@ -40,6 +40,12 @@
 		2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE5D1CF6197D0022F721 /* RawRevTree.hh */; };
+		270C6B501EB5732B00E73415 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
+		270C6B551EB5733C00E73415 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270C6B541EB5733C00E73415 /* CFNetwork.framework */; };
+		270C6B561EB5734A00E73415 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		270C6B691EB7DDAD00E73415 /* Listener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* Listener+Replicate.cc */; };
+		270C6B6A1EB7DDAD00E73415 /* Listener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* Listener+Replicate.cc */; };
+		270C6B6B1EB8011B00E73415 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
 		271057D41D3D70780018247B /* VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* VectorDocument.cc */; };
 		271057D51D3D70780018247B /* VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* VectorDocument.cc */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
@@ -68,9 +74,6 @@
 		273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
 		273E9EC41C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
 		273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
-		273E9ECD1C506D76003115A6 /* FullTextResult.java in Sources */ = {isa = PBXBuildFile; fileRef = 273E9ECB1C506D76003115A6 /* FullTextResult.java */; };
-		273E9ECE1C506D76003115A6 /* Indexer.java in Sources */ = {isa = PBXBuildFile; fileRef = 273E9ECC1C506D76003115A6 /* Indexer.java */; };
-		273E9ED01C506D8C003115A6 /* native_indexer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9ECF1C506D8C003115A6 /* native_indexer.cc */; };
 		273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273E9ED31C506DB4003115A6 /* SecureDigest.hh */; };
 		273E9ED91C506DB4003115A6 /* SecureRandomize.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273E9ED41C506DB4003115A6 /* SecureRandomize.hh */; };
 		273E9F721C51612E003115A6 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
@@ -94,6 +97,9 @@
 		2749B95E1EB0110D0068DBF9 /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		2749B95F1EB011A00068DBF9 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		2749B9601EB011C30068DBF9 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
+		2749B9871EB298360068DBF9 /* Listener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* Listener+Handlers.cc */; };
+		2749B9881EB298360068DBF9 /* Listener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* Listener+Handlers.cc */; };
+		2749B98C1EB2CB230068DBF9 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
 		274D03E41BA7330A00FF7C35 /* libstdc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E31BA7330A00FF7C35 /* libstdc++.tbd */; };
@@ -108,7 +114,6 @@
 		274D03F91BA73B1600FF7C35 /* Database.java in Sources */ = {isa = PBXBuildFile; fileRef = 274D03F31BA734C100FF7C35 /* Database.java */; };
 		274D03FB1BA7418B00FF7C35 /* Document.java in Sources */ = {isa = PBXBuildFile; fileRef = 274D03F41BA734C100FF7C35 /* Document.java */; };
 		274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 274D03F51BA734C100FF7C35 /* DocumentIterator.java */; };
-		274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */ = {isa = PBXBuildFile; fileRef = 274D03F61BA734C100FF7C35 /* ForestException.java */; };
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
@@ -367,10 +372,6 @@
 		27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF13A1DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */; };
 		27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */; };
-		27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E551BAB64BE004EB8D4 /* native_view.cc */; };
-		27FF7E571BAB64D9004EB8D4 /* View.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E541BAB60E2004EB8D4 /* View.java */; };
-		27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */; };
-		27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */; };
 		720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE561B9FC3C9002EE261 /* c4Database.cc */; };
 		720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
 		720EA40E1BA8D834002B8416 /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
@@ -744,6 +745,8 @@
 		2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LiteCoreTest.cc; sourceTree = "<group>"; };
 		2708FE5C1CF6197D0022F721 /* RawRevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RawRevTree.cc; sourceTree = "<group>"; };
 		2708FE5D1CF6197D0022F721 /* RawRevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RawRevTree.hh; sourceTree = "<group>"; };
+		270C6B541EB5733C00E73415 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
+		270C6B681EB7DDAD00E73415 /* Listener+Replicate.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "Listener+Replicate.cc"; sourceTree = "<group>"; };
 		271057D31D3D70780018247B /* VectorDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorDocument.cc; sourceTree = "<group>"; };
 		271057D61D3D70B10018247B /* Document.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -789,9 +792,6 @@
 		273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocEnumerator.cc; sourceTree = "<group>"; };
 		273E9EC11C506C60003115A6 /* c4DocEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4DocEnumerator.h; sourceTree = "<group>"; };
 		273E9EC61C506C70003115A6 /* c4.def */ = {isa = PBXFileReference; lastKnownFileType = text; path = c4.def; sourceTree = "<group>"; };
-		273E9ECB1C506D76003115A6 /* FullTextResult.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = FullTextResult.java; path = src/com/couchbase/litecore/FullTextResult.java; sourceTree = "<group>"; };
-		273E9ECC1C506D76003115A6 /* Indexer.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = Indexer.java; path = src/com/couchbase/litecore/Indexer.java; sourceTree = "<group>"; };
-		273E9ECF1C506D8C003115A6 /* native_indexer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_indexer.cc; sourceTree = "<group>"; };
 		273E9ED31C506DB4003115A6 /* SecureDigest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SecureDigest.hh; sourceTree = "<group>"; };
 		273E9ED41C506DB4003115A6 /* SecureRandomize.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SecureRandomize.hh; sourceTree = "<group>"; };
 		273E9F7A1C516B76003115A6 /* c4Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Private.h; sourceTree = "<group>"; };
@@ -819,6 +819,7 @@
 		27491CA81E7B700A001DC54B /* CBLHTTPLogic.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBLHTTPLogic.m; sourceTree = "<group>"; };
 		2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ExceptionUtils.cc; sourceTree = "<group>"; };
 		2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ExceptionUtils.hh; sourceTree = "<group>"; };
+		2749B9861EB298360068DBF9 /* Listener+Handlers.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "Listener+Handlers.cc"; sourceTree = "<group>"; };
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
@@ -833,7 +834,6 @@
 		274D03F31BA734C100FF7C35 /* Database.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = Database.java; path = src/com/couchbase/litecore/Database.java; sourceTree = "<group>"; };
 		274D03F41BA734C100FF7C35 /* Document.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = Document.java; path = src/com/couchbase/litecore/Document.java; sourceTree = "<group>"; };
 		274D03F51BA734C100FF7C35 /* DocumentIterator.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = DocumentIterator.java; path = src/com/couchbase/litecore/DocumentIterator.java; sourceTree = "<group>"; };
-		274D03F61BA734C100FF7C35 /* ForestException.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = ForestException.java; path = src/com/couchbase/litecore/ForestException.java; sourceTree = "<group>"; };
 		274D03FA1BA7414100FF7C35 /* jni.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = jni.h; sourceTree = "<group>"; };
 		274D03FE1BA7443600FF7C35 /* LiteCoreJNI.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = LiteCoreJNI.exp; sourceTree = "<group>"; };
 		274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseTest.cc; sourceTree = "<group>"; };
@@ -1107,10 +1107,6 @@
 		27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteFleeceUtil.hh; sourceTree = "<group>"; };
 		27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFunctionsTest.cc; sourceTree = "<group>"; };
 		27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib_Release.xcconfig"; sourceTree = "<group>"; };
-		27FF7E541BAB60E2004EB8D4 /* View.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; name = View.java; path = src/com/couchbase/litecore/View.java; sourceTree = "<group>"; };
-		27FF7E551BAB64BE004EB8D4 /* native_view.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_view.cc; sourceTree = "<group>"; };
-		27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.java; name = QueryIterator.java; path = src/com/couchbase/litecore/QueryIterator.java; sourceTree = "<group>"; };
-		27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_queryIterator.cc; sourceTree = "<group>"; };
 		27FF7E5D1BABA0C5004EB8D4 /* libstdc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libstdc++.tbd"; path = "Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS9.0.sdk/usr/lib/libstdc++.tbd"; sourceTree = DEVELOPER_DIR; };
 		720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		720EA3F61BA7EAEF002B8416 /* libstdc++.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libstdc++.dylib"; path = "usr/lib/libstdc++.dylib"; sourceTree = SDKROOT; };
@@ -1205,6 +1201,10 @@
 				27FC82021EAAB89F0028E38E /* libLiteCore-static.a in Frameworks */,
 				277C147A1EA826790075348F /* libFleece.a in Frameworks */,
 				277C147D1EA8268C0075348F /* libsqlite3.tbd in Frameworks */,
+				2749B98C1EB2CB230068DBF9 /* libz.tbd in Frameworks */,
+				270C6B551EB5733C00E73415 /* CFNetwork.framework in Frameworks */,
+				270C6B501EB5732B00E73415 /* Foundation.framework in Frameworks */,
+				270C6B561EB5734A00E73415 /* Security.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1305,6 +1305,8 @@
 			isa = PBXGroup;
 			children = (
 				272851201EA4537A009CA22F /* Listener.cc */,
+				2749B9861EB298360068DBF9 /* Listener+Handlers.cc */,
+				270C6B681EB7DDAD00E73415 /* Listener+Replicate.cc */,
 				272851211EA4537A009CA22F /* Listener.hh */,
 				2728512C1EA46475009CA22F /* Server.cc */,
 				2728512D1EA46475009CA22F /* Server.hh */,
@@ -1423,9 +1425,6 @@
 				274D03E91BA734A300FF7C35 /* native_database.cc */,
 				274D03EA1BA734A300FF7C35 /* native_document.cc */,
 				274D03EB1BA734A300FF7C35 /* native_documentiterator.cc */,
-				273E9ECF1C506D8C003115A6 /* native_indexer.cc */,
-				27FF7E5B1BAB8B72004EB8D4 /* native_queryIterator.cc */,
-				27FF7E551BAB64BE004EB8D4 /* native_view.cc */,
 				274D03EC1BA734A300FF7C35 /* native_glue.cc */,
 				274D03ED1BA734A300FF7C35 /* native_glue.hh */,
 			);
@@ -1493,6 +1492,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				270C6B541EB5733C00E73415 /* CFNetwork.framework */,
 				2759DC251E70908900F3C4B2 /* libz.tbd */,
 				275CE0E81E57BE430084E014 /* libevent_core.a */,
 				275CE0E91E57BE430084E014 /* libevent_extra.a */,
@@ -1576,12 +1576,7 @@
 				274D03F31BA734C100FF7C35 /* Database.java */,
 				274D03F41BA734C100FF7C35 /* Document.java */,
 				274D03F51BA734C100FF7C35 /* DocumentIterator.java */,
-				274D03F61BA734C100FF7C35 /* ForestException.java */,
-				273E9ECB1C506D76003115A6 /* FullTextResult.java */,
-				273E9ECC1C506D76003115A6 /* Indexer.java */,
 				27A82D0D1BBB2727005CB742 /* Logger.java */,
-				27FF7E581BAB65A2004EB8D4 /* QueryIterator.java */,
-				27FF7E541BAB60E2004EB8D4 /* View.java */,
 				274D03E81BA734A300FF7C35 /* jni */,
 				274D03FA1BA7414100FF7C35 /* jni.h */,
 				274D03FE1BA7443600FF7C35 /* LiteCoreJNI.exp */,
@@ -2607,20 +2602,12 @@
 			files = (
 				274D03EE1BA734A300FF7C35 /* native_database.cc in Sources */,
 				274D03F11BA734A300FF7C35 /* native_glue.cc in Sources */,
-				27FF7E561BAB64BE004EB8D4 /* native_view.cc in Sources */,
-				273E9ED01C506D8C003115A6 /* native_indexer.cc in Sources */,
 				274D03F01BA734A300FF7C35 /* native_documentiterator.cc in Sources */,
-				27FF7E5C1BAB8B72004EB8D4 /* native_queryIterator.cc in Sources */,
 				274D03EF1BA734A300FF7C35 /* native_document.cc in Sources */,
 				274D03F91BA73B1600FF7C35 /* Database.java in Sources */,
-				273E9ECD1C506D76003115A6 /* FullTextResult.java in Sources */,
 				274D03FC1BA7418B00FF7C35 /* DocumentIterator.java in Sources */,
-				273E9ECE1C506D76003115A6 /* Indexer.java in Sources */,
 				274D03FB1BA7418B00FF7C35 /* Document.java in Sources */,
-				27FF7E591BAB65A2004EB8D4 /* QueryIterator.java in Sources */,
-				27FF7E571BAB64D9004EB8D4 /* View.java in Sources */,
 				27A82D0E1BBB2727005CB742 /* Logger.java in Sources */,
-				274D03FD1BA7418B00FF7C35 /* ForestException.java in Sources */,
 				27E11A601BD1EBAD00D8DB7D /* Constants.java in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2665,6 +2652,9 @@
 			files = (
 				2749B94C1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
 				279D411B1EA557A800D8DD9D /* Listener.cc in Sources */,
+				270C6B6A1EB7DDAD00E73415 /* Listener+Replicate.cc in Sources */,
+				2749B9881EB298360068DBF9 /* Listener+Handlers.cc in Sources */,
+				270C6B6B1EB8011B00E73415 /* RefCounted.cc in Sources */,
 				279D411C1EA557A800D8DD9D /* Server.cc in Sources */,
 				279D411D1EA557A800D8DD9D /* Request.cc in Sources */,
 				276E021C1EA9875E00FEFE8A /* Response.cc in Sources */,
@@ -2832,6 +2822,8 @@
 			files = (
 				2749B94B1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
 				27FC81F61EAAB7C60028E38E /* Listener.cc in Sources */,
+				270C6B691EB7DDAD00E73415 /* Listener+Replicate.cc in Sources */,
+				2749B9871EB298360068DBF9 /* Listener+Handlers.cc in Sources */,
 				27FC81F71EAAB7C60028E38E /* Server.cc in Sources */,
 				27FC81F91EAAB7C60028E38E /* Request.cc in Sources */,
 				27FC81F81EAAB7C60028E38E /* Response.cc in Sources */,

@@ -137,11 +137,11 @@ namespace litecore { namespace REST {
             mg_close_connection(_conn);
     }
 
-    int Response::status() const {
+    HTTPStatus Response::status() const {
         if (_conn)
-            return stoi(string(mg_get_request_info(_conn)->request_uri));
+            return (HTTPStatus) stoi(string(mg_get_request_info(_conn)->request_uri));
         else
-            return -1;
+            return HTTPStatus::undefined;
     }
 
     std::string Response::statusMessage() const {

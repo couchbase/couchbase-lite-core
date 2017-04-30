@@ -54,7 +54,7 @@ public:
     }
 
 
-    unique_ptr<Response> request(string method, string uri, map<string,string> headers, slice body, int expectedStatus) {
+    unique_ptr<Response> request(string method, string uri, map<string,string> headers, slice body, HTTPStatus expectedStatus) {
         start();
         C4Log("---- %s %s", method.c_str(), uri.c_str());
         unique_ptr<Response> r(new Response(method, "localhost", config.port, uri, headers, body));
@@ -68,7 +68,7 @@ public:
         return r;
     }
 
-    unique_ptr<Response> request(string method, string uri, int expectedStatus) {
+    unique_ptr<Response> request(string method, string uri, HTTPStatus expectedStatus) {
         return request(method, uri, {}, nullslice, expectedStatus);
     }
 
@@ -82,7 +82,7 @@ public:
 
 
 TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][C]") {
-    auto r = request("GET", "/", 200);
+    auto r = request("GET", "/", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
     REQUIRE(body);
     CHECK(to_str(body["couchdb"]) == "Welcome");
@@ -90,7 +90,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST root level", "[REST][C]") {
 
 
 TEST_CASE_METHOD(C4RESTTest, "REST _all_databases", "[REST][C]") {
-    auto r = request("GET", "/_all_dbs", 200);
+    auto r = request("GET", "/_all_dbs", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asArray();
     REQUIRE(body.count() == 1);
     CHECK(to_str(body[0]) == "db");
@@ -98,8 +98,8 @@ TEST_CASE_METHOD(C4RESTTest, "REST _all_databases", "[REST][C]") {
 
 
 TEST_CASE_METHOD(C4RESTTest, "REST unknown special top-level", "[REST][C]") {
-    request("GET", "/_foo", 404);
-    request("GET", "/_", 404);
+    request("GET", "/_foo", HTTPStatus::NotFound);
+    request("GET", "/_", HTTPStatus::NotFound);
 }
 
 
@@ -109,13 +109,13 @@ TEST_CASE_METHOD(C4RESTTest, "REST unknown special top-level", "[REST][C]") {
 TEST_CASE_METHOD(C4RESTTest, "REST GET database", "[REST][C]") {
     unique_ptr<Response> r;
     SECTION("No slash") {
-        r = request("GET", "/db", 200);
+        r = request("GET", "/db", HTTPStatus::OK);
     }
     SECTION("URL-encoded") {
-        r = request("GET", "/%64%62", 200);
+        r = request("GET", "/%64%62", HTTPStatus::OK);
     }
     SECTION("With slash") {
-        r = request("GET", "/db/", 200);
+        r = request("GET", "/db/", HTTPStatus::OK);
     }
     auto body = r->bodyAsJSON().asDict();
     REQUIRE(body);
@@ -132,12 +132,12 @@ TEST_CASE_METHOD(C4RESTTest, "REST GET database", "[REST][C]") {
 TEST_CASE_METHOD(C4RESTTest, "REST DELETE database", "[REST][C]") {
     unique_ptr<Response> r;
     SECTION("Disallowed") {
-        r = request("DELETE", "/db", 403);
+        r = request("DELETE", "/db", HTTPStatus::Forbidden);
     }
     SECTION("Allowed") {
         config.allowDeleteDBs = true;
-        r = request("DELETE", "/db", 200);
-        r = request("GET", "/db", 404);
+        r = request("DELETE", "/db", HTTPStatus::OK);
+        r = request("GET", "/db", HTTPStatus::NotFound);
         // This is the easiest cross-platform way to check that the db was deleted:
         REQUIRE(remove(databasePathString().c_str()) != 0);
         REQUIRE(errno == ENOENT);
@@ -148,26 +148,26 @@ TEST_CASE_METHOD(C4RESTTest, "REST DELETE database", "[REST][C]") {
 TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][C]") {
     unique_ptr<Response> r;
     SECTION("Disallowed") {
-        r = request("PUT", "/db", 403);
-        r = request("PUT", "/otherdb", 403);
-        r = request("PUT", "/and%2For", 403);       // that's a slash. This is a legal db name.
+        r = request("PUT", "/db", HTTPStatus::Forbidden);
+        r = request("PUT", "/otherdb", HTTPStatus::Forbidden);
+        r = request("PUT", "/and%2For", HTTPStatus::Forbidden);       // that's a slash. This is a legal db name.
     }
     SECTION("Allowed") {
         setUpDirectory();
         SECTION("Invalid name") {
-            r = request("PUT", "/xDB", 400);
-            r = request("PUT", "/uh*oh", 400);
-            r = request("PUT", "/23skidoo", 400);
+            r = request("PUT", "/xDB", HTTPStatus::BadRequest);
+            r = request("PUT", "/uh*oh", HTTPStatus::BadRequest);
+            r = request("PUT", "/23skidoo", HTTPStatus::BadRequest);
         }
         SECTION("Duplicate") {
-            r = request("PUT", "/db", 412);
+            r = request("PUT", "/db", HTTPStatus::PreconditionFailed);
         }
         SECTION("New DB") {
-            r = request("PUT", "/otherdb", 201);
-            r = request("GET", "/otherdb", 200);
+            r = request("PUT", "/otherdb", HTTPStatus::Created);
+            r = request("GET", "/otherdb", HTTPStatus::OK);
 
             SECTION("Test _all_dbs again") {
-                r = request("GET", "/_all_dbs", 200);
+                r = request("GET", "/_all_dbs", HTTPStatus::OK);
                 auto body = r->bodyAsJSON().asArray();
                 REQUIRE(body.count() == 2);
                 CHECK(to_str(body[0]) == "db");
@@ -189,7 +189,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
     SECTION("POST") {
         r = request("POST", "/db",
                     {{"Content-Type", "application/json"}},
-                    "{\"year\": 1964}"_sl, 201);
+                    "{\"year\": 1964}"_sl, HTTPStatus::Created);
         body = r->bodyAsJSON().asDict();
         docID = body["id"].asString();
         CHECK(docID.size >= 20);
@@ -198,7 +198,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
     SECTION("PUT") {
         r = request("PUT", "/db/mydocument",
                     {{"Content-Type", "application/json"}},
-                    "{\"year\": 1964}"_sl, 201);
+                    "{\"year\": 1964}"_sl, HTTPStatus::Created);
         body = r->bodyAsJSON().asDict();
         docID = body["id"].asString();
         CHECK(docID == "mydocument"_sl);
@@ -218,13 +218,13 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
         CHECK(body.count() == 1);       // i.e. no _id or _rev properties
     }
 
-    r = request("GET", "/db/" + docID.asString(), 200);
+    r = request("GET", "/db/" + docID.asString(), HTTPStatus::OK);
     body = r->bodyAsJSON().asDict();
     CHECK(body["_id"].asString() == docID);
     CHECK(body["_rev"].asString() == revID);
     CHECK(body["year"].asInt() == 1964);
 
-    r = request("DELETE", "/db/" + docID.asString() + "?rev=" + revID.asString(), 200);
+    r = request("DELETE", "/db/" + docID.asString() + "?rev=" + revID.asString(), HTTPStatus::OK);
     body = r->bodyAsJSON().asDict();
     CHECK(body["ok"].asBool() == true);
     revID = body["rev"].asString();
@@ -239,12 +239,12 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
         CHECK(body.count() == 0);
     }
 
-    r = request("GET", "/db/" + docID.asString(), 404);
+    r = request("GET", "/db/" + docID.asString(), HTTPStatus::NotFound);
 }
 
 
 TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][C]") {
-    auto r = request("GET", "/db/_all_docs", 200);
+    auto r = request("GET", "/db/_all_docs", HTTPStatus::OK);
     auto body = r->bodyAsJSON().asDict();
     auto rows = body["rows"].asArray();
     CHECK(rows);
@@ -252,12 +252,12 @@ TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][C]") {
 
     request("PUT", "/db/mydocument",
             {{"Content-Type", "application/json"}},
-            "{\"year\": 1964}"_sl, 201);
+            "{\"year\": 1964}"_sl, HTTPStatus::Created);
     request("PUT", "/db/foo",
             {{"Content-Type", "application/json"}},
-            "{\"age\": 17}"_sl, 201);
+            "{\"age\": 17}"_sl, HTTPStatus::Created);
 
-    r = request("GET", "/db/_all_docs", 200);
+    r = request("GET", "/db/_all_docs", HTTPStatus::OK);
     body = r->bodyAsJSON().asDict();
     rows = body["rows"].asArray();
     CHECK(rows);

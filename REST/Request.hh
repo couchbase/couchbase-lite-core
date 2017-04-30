@@ -12,7 +12,7 @@
 
 namespace litecore { namespace REST {
 
-    /** Incoming HTTP request, with methods for composing a response */
+    /** Incoming HTTP request; read-only */
     class Request : public Body {
     public:
         fleece::slice method() const;
@@ -24,14 +24,23 @@ namespace litecore { namespace REST {
         int64_t intQuery(const char *param, int64_t defaultValue =0) const;
         bool boolQuery(const char *param, bool defaultValue =false) const;
 
-        // RESPONSE:
+    protected:
+        friend class Server;
+        
+        Request(mg_connection *conn)
+        :Body(conn) { }
+    };
 
-        void respondWithError(int status, const char *message =nullptr);
+
+    /** Incoming HTTP request, with methods for composing a response */
+    class RequestResponse : public Request {
+    public:
+        void respondWithError(HTTPStatus, const char *message =nullptr);
         void respondWithError(C4Error);
 
-        void setStatus(unsigned status, const char *message);
+        void setStatus(HTTPStatus status, const char *message);
 
-        unsigned status() const                             {return _status;}
+        HTTPStatus status() const                             {return _status;}
 
         void setHeader(const char *header, const char *value);
 
@@ -54,14 +63,14 @@ namespace litecore { namespace REST {
     protected:
         friend class Server;
 
-        Request(mg_connection*);
+        RequestResponse(mg_connection*);
 
         void finish();
 
     private:
         void sendHeaders();
 
-        unsigned _status {200};
+        HTTPStatus _status {HTTPStatus::OK};
         std::stringstream _headers;
         bool _sentStatus {false};
         bool _sentHeaders {false};

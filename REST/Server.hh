@@ -15,6 +15,7 @@ struct mg_context;
 struct mg_connection;
 
 namespace litecore { namespace REST {
+    class RequestResponse;
     class Request;
 
     /** HTTP server, using CivetWeb. */
@@ -38,7 +39,7 @@ namespace litecore { namespace REST {
             kNumMethods
         };
 
-        using Handler = std::function<void(Request&)>;
+        using Handler = std::function<void(RequestResponse&)>;
 
         void addHandler(Method, const char *uri, const Handler &h);
 

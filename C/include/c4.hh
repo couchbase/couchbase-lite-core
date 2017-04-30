@@ -47,7 +47,7 @@ namespace c4 {
         T* operator -> () const     {return _obj;}
 
         ref& operator=(T *t)        {if (_obj) freeRef(_obj); _obj = t; return *this;}
-        ref& operator=(ref &&r)     {_obj = r._obj; r._obj = nullptr;}
+        ref& operator=(ref &&r)     {_obj = r._obj; r._obj = nullptr; return *this;}
 
     private:
         ref(const ref&) =delete;

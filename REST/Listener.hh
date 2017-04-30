@@ -11,12 +11,15 @@
 #include "c4REST.h"
 #include "Server.hh"
 #include "FilePath.hh"
+#include "RefCounted.hh"
 #include <map>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <vector>
 
 namespace litecore { namespace REST {
+    class RequestResponse;
     class Request;
     class Server;
 
@@ -51,30 +54,62 @@ namespace litecore { namespace REST {
 
         std::vector<std::string> databaseNames();
 
+
+        class Task : public RefCounted {
+        public:
+            Task(Listener* listener)    :_listener(listener) { }
+            unsigned taskID() const     {return _taskID;}
+            time_t timeUpdated() const  {return _timeUpdated;}
+            virtual bool finished() const =0;
+            virtual void writeDescription(fleeceapi::JSONEncoder&);
+
+            void registerTask();
+            void unregisterTask();
+
+        protected:
+            time_t _timeUpdated {0};
+        private:
+            Listener* const _listener;
+            unsigned _taskID {0};
+            time_t _timeStarted {0};
+        };
+
+        std::vector<Retained<Task>> tasks();
+
     private:
+        friend class Task;
+
         /** Returns the database for this request, or null on error. */
-        c4::ref<C4Database> databaseFor(Request&);
+        c4::ref<C4Database> databaseFor(RequestResponse&);
+        unsigned registerTask(Task*);
+        void unregisterTask(Task*);
 
-        using DBHandler = void(Listener::*)(Request&, C4Database*);
+        using HandlerMethod = void(Listener::*)(RequestResponse&);
+        using DBHandlerMethod = void(Listener::*)(RequestResponse&, C4Database*);
 
-        void addDBHandler(Server::Method, const char *uri, DBHandler);
-        
-        void handleGetRoot(Request&);
-        void handleGetAllDBs(Request&);
+        void addHandler(Server::Method, const char *uri, HandlerMethod);
+        void addDBHandler(Server::Method, const char *uri, DBHandlerMethod);
 
-        void handleGetDatabase(Request&, C4Database*);
-        void handleCreateDatabase(Request&);
-        void handleDeleteDatabase(Request&, C4Database*);
+        void handleGetRoot(RequestResponse&);
+        void handleGetAllDBs(RequestResponse&);
+        void handleReplicate(RequestResponse&);
+        void handleActiveTasks(RequestResponse&);
 
-        void handleGetAllDocs(Request&, C4Database*);
-        void handleGetDoc(Request&, C4Database*);
-        void handleModifyDoc(Request&, C4Database*);
+        void handleGetDatabase(RequestResponse&, C4Database*);
+        void handleCreateDatabase(RequestResponse&);
+        void handleDeleteDatabase(RequestResponse&, C4Database*);
+
+        void handleGetAllDocs(RequestResponse&, C4Database*);
+        void handleGetDoc(RequestResponse&, C4Database*);
+        void handleModifyDoc(RequestResponse&, C4Database*);
 
         std::unique_ptr<FilePath> _directory;
         const bool _allowCreateDB, _allowDeleteDB;
         std::unique_ptr<Server> _server;
         std::mutex _mutex;
         std::map<std::string, c4::ref<C4Database>> _databases;
+        std::set<Retained<Task>> _tasks;
+        unsigned _nextTaskID {1};
     };
 
 } }

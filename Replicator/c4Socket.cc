@@ -61,13 +61,13 @@ namespace litecore { namespace websocket {
 
         static void registerFactory(const C4SocketFactory &factory) {
             if (sInstance)
-                throw new std::logic_error("c4socket_registerFactory can only be called once");
+                throw std::logic_error("c4socket_registerFactory can only be called once");
             sInstance = new C4Provider(factory);
         }
 
         static C4Provider &instance() {
             if (!sInstance)
-                throw new std::logic_error("No C4SocketFactory has been registered yet!");
+                throw std::logic_error("No C4SocketFactory has been registered yet!");
             return *sInstance;
         }
 

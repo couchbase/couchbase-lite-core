@@ -23,16 +23,6 @@ namespace litecore { namespace REST {
 #pragma mark - REQUEST:
 
 
-    Request::Request(mg_connection *conn)
-    :Body(conn)
-    {
-        char date[50];
-        time_t curtime = time(NULL);
-        gmt_time_string(date, sizeof(date), &curtime);
-        setHeader("Date", date);
-    }
-
-    
     slice Request::method() const {
         return slice(mg_get_request_info(_conn)->request_method);
     }
@@ -88,10 +78,20 @@ namespace litecore { namespace REST {
     }
 
 
-#pragma mark - RESPONSE:
+#pragma mark - REQUESTRESPONSE:
 
 
-    void Request::setStatus(unsigned status, const char *message) {
+    RequestResponse::RequestResponse(mg_connection *conn)
+    :Request(conn)
+    {
+        char date[50];
+        time_t curtime = time(NULL);
+        gmt_time_string(date, sizeof(date), &curtime);
+        setHeader("Date", date);
+    }
+
+
+    void RequestResponse::setStatus(HTTPStatus status, const char *message) {
         Assert(!_sentStatus);
         mg_printf(_conn, "HTTP/1.1 %d %s\r\n", status, (message ? message : ""));
         _status = status;
@@ -99,41 +99,43 @@ namespace litecore { namespace REST {
     }
 
 
-    void Request::respondWithError(int status, const char *message) {
+    void RequestResponse::respondWithError(HTTPStatus status, const char *message) {
         Assert(!_sentStatus);
-        mg_send_http_error(_conn, status, "%s", message);
+        mg_send_http_error(_conn, (int)status, "%s", message);
         _status = status;
         _sentStatus = true;
         _sentHeaders = true;
+        _contentLength = 0;
+        _contentSent = 0;
     }
 
 
-    void Request::respondWithError(C4Error err) {
+    void RequestResponse::respondWithError(C4Error err) {
         Assert(err.code != 0);
         alloc_slice message = c4error_getMessage(err);
-        int status = 500;
+        HTTPStatus status = HTTPStatus::ServerError;
         // TODO: Add more mappings, and make these table-driven
         switch (err.domain) {
             case LiteCoreDomain:
                 switch (err.code) {
                     case kC4ErrorInvalidParameter:
                     case kC4ErrorBadRevisionID:
-                        status = 400; break;
+                        status = HTTPStatus::BadRequest; break;
                     case kC4ErrorNotADatabaseFile:
                     case kC4ErrorCrypto:
-                        status = 401; break;
+                        status = HTTPStatus::Unauthorized; break;
                     case kC4ErrorNotWriteable:
-                        status = 403; break;
+                        status = HTTPStatus::Forbidden; break;
                     case kC4ErrorNotFound:
                     case kC4ErrorDeleted:
-                        status = 404; break;
+                        status = HTTPStatus::NotFound; break;
                     case kC4ErrorConflict:
-                        status = 409; break;
+                        status = HTTPStatus::Conflict; break;
                     case kC4ErrorUnimplemented:
                     case kC4ErrorUnsupported:
-                        status = 501; break;
+                        status = HTTPStatus::NotImplemented; break;
                     case kC4ErrorRemoteError:
-                        status = 502; break;
+                        status = HTTPStatus::GatewayError; break;
                 }
                 break;
             default:
@@ -143,19 +145,19 @@ namespace litecore { namespace REST {
     }
 
 
-    void Request::setHeader(const char *header, const char *value) {
+    void RequestResponse::setHeader(const char *header, const char *value) {
         Assert(!_sentHeaders);
         _headers << header << ": " << value << "\r\n";
     }
 
 
-    void Request::addHeaders(map<string, string> headers) {
+    void RequestResponse::addHeaders(map<string, string> headers) {
         for (auto &entry : headers)
             setHeader(entry.first.c_str(), entry.second.c_str());
     }
 
 
-    void Request::setContentLength(uint64_t length) {
+    void RequestResponse::setContentLength(uint64_t length) {
         Assert(!_chunked);
         Assert(_contentLength < 0);
         setHeader("Content-Length", (int64_t)length);
@@ -163,7 +165,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Request::setChunked() {
+    void RequestResponse::setChunked() {
         if (!_chunked) {
             Assert(_contentLength < 0);
             setHeader("Transfer-Encoding", "chunked");
@@ -172,10 +174,10 @@ namespace litecore { namespace REST {
     }
 
 
-    void Request::sendHeaders() {
+    void RequestResponse::sendHeaders() {
         if (!_sentHeaders) {
             if (!_sentStatus)
-                setStatus(200, "OK");
+                setStatus(HTTPStatus::OK, "OK");
 
             _headers << "\r\n";
             auto str = _headers.str();
@@ -186,7 +188,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Request::write(slice content) {
+    void RequestResponse::write(slice content) {
         if (!_sentHeaders) {
             if (!_chunked)
                 setContentLength(content.size);
@@ -202,7 +204,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Request::printf(const char *format, ...) {
+    void RequestResponse::printf(const char *format, ...) {
         char *str;
         va_list args;
         va_start(args, format);
@@ -213,7 +215,7 @@ namespace litecore { namespace REST {
     }
 
 
-    fleeceapi::JSONEncoder& Request::jsonEncoder() {
+    fleeceapi::JSONEncoder& RequestResponse::jsonEncoder() {
         setHeader("Content-Type", "application/json");
         if (!_jsonEncoder)
             _jsonEncoder.reset(new fleeceapi::JSONEncoder);
@@ -221,16 +223,19 @@ namespace litecore { namespace REST {
     }
 
 
-    void Request::finish() {
+    void RequestResponse::finish() {
         if (_jsonEncoder) {
             alloc_slice json = _jsonEncoder->finish();
             write(json);
         }
+        if (_contentLength < 0 && !_chunked)
+            setContentLength(0);
         sendHeaders();
-        Assert(_contentLength < 0 || _contentLength == _contentSent);
         if (_chunked) {
             mg_send_chunk(_conn, nullptr, 0);
             mg_write(_conn, "\r\n", 2);
+        } else {
+            Assert(_contentLength == _contentSent);
         }
     }
 
