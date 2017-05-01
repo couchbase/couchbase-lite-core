@@ -13,7 +13,8 @@ set(CMAKE_C_STANDARD 11)
 
 ### SUBMODULE (CivetWeb):
 
-include_directories("../vendor/civetweb/include")
+include_directories("../Replicator"
+                    "../vendor/civetweb/include")
 
 set(CIVETWEB_SRC "../vendor/civetweb/src/civetweb.c"
                  "civetUtils.cc")

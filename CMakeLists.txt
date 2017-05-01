@@ -57,7 +57,8 @@ include_directories("vendor/fleece/Fleece"
                     "vendor/SQLiteCpp/include"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
-                    "vendor/BLIP-Cpp/src/util")
+                    "vendor/BLIP-Cpp/src/util"
+                    "vendor/civetweb/include")
 
 if(WIN32)
   include_directories("MSVC")
@@ -93,7 +94,8 @@ endif()
 ### MORE BUILD SETTINGS:
 
 add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
-                -DSQLITE_OMIT_LOAD_EXTENSION)       # This one's for SQLiteCpp
+                -DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
+                -DUSE_WEBSOCKET)                    # Enables CivetWeb WebSocket support
 
 # Mac/iOS stuff
 if (APPLE)
@@ -132,13 +134,10 @@ aux_source_directory(LiteCore/Support         SUPPORT_SRC)
 list(REMOVE_ITEM SUPPORT_SRC LiteCore/Support/Logging_Stub.cc)
 aux_source_directory(vendor/SQLiteCpp/src     SQLITECPP_SRC)
 aux_source_directory(Replicator               REPLICATOR_SRC)
-if (APPLE)
-    include_directories("Obj-C")
-    set(REPLICATOR_SRC ${REPLICATOR_SRC}
-      "Replicator/Obj-C/CBLWebSocket.mm"
-      "Replicator/Obj-C/CBLHTTPLogic.m"
-    )
-endif()
+
+set(CIVETWEB_SRC "vendor/civetweb/src/civetweb.c"
+                 "REST/civetUtils.cc")
+
 
 if(!MSVC)
     set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage) 
@@ -157,7 +156,8 @@ set(ALL_SRC_FILES
   ${VERSIONVECTORS_SRC}
   ${C_SRC}
   ${SQLITECPP_SRC}
-  ${REPLICATOR_SRC})
+  ${REPLICATOR_SRC}
+  ${CIVETWEB_SRC})
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
@@ -179,9 +179,10 @@ endif()
 
 set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 LiteCoreStatic
-								                FleeceStatic 
+								FleeceStatic 
                                 SQLite3_UnicodeSN 
                                 BLIPStatic 
+                                CivetWeb
                                 ${NO_WHOLE_LIBRARY_FLAG})
 set(LITECORE_LIBRARIES_PUBLIC   sqlite3)
 

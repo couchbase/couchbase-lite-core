@@ -240,6 +240,8 @@ C4StringResult c4error_getMessage(C4Error error) C4API;
     @return  A pointer to the string, i.e. to the first byte of the buffer. */
 char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) C4API;
 
+/** Creates a C4Error struct with the given domain and code, and associates the message with it. */
+C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
 
 /** Logging levels. */
 typedef C4_ENUM(int8_t, C4LogLevel) {

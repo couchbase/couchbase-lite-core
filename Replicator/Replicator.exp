@@ -17,10 +17,5 @@ _c4socket_closed
 _c4socket_completedWrite
 _c4socket_received
 
-.objc_class_name_CBLWebSocket
-.objc_class_name_CBLHTTPLogic
-
-_C4RegisterSocketFactory
-
 _kC4ReplicatorActivityLevelNames
 

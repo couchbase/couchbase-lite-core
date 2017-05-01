@@ -29,7 +29,6 @@
 		2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4Query.cc */; };
 		2705154E1D8CBE6C00D62D05 /* c4Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4Query.cc */; };
 		270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
-		2705155A1D907F7100D62D05 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
 		270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270515601D91C2AE00D62D05 /* c4PerfTest.cc */; };
 		2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE361CF3A0F10022F721 /* VersionVector.cc */; };
 		2708FE391CF3A0F10022F721 /* VersionVector.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE361CF3A0F10022F721 /* VersionVector.cc */; };
@@ -40,9 +39,6 @@
 		2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE5D1CF6197D0022F721 /* RawRevTree.hh */; };
-		270C6B501EB5732B00E73415 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
-		270C6B551EB5733C00E73415 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270C6B541EB5733C00E73415 /* CFNetwork.framework */; };
-		270C6B561EB5734A00E73415 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		270C6B691EB7DDAD00E73415 /* Listener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* Listener+Replicate.cc */; };
 		270C6B6A1EB7DDAD00E73415 /* Listener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* Listener+Replicate.cc */; };
 		270C6B6B1EB8011B00E73415 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
@@ -140,6 +136,11 @@
 		2753AF7E1EBD22DE00C12E98 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		2753AF861EBD456900C12E98 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		2753AFC91EC0F4E900C12E98 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
+		2753AFE61EC2363600C12E98 /* CivetWebSocket.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2753AFE31EC2363600C12E98 /* CivetWebSocket.hh */; };
+		2753AFEA1EC2738D00C12E98 /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
+		2753AFEE1EC2A2EF00C12E98 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
+		2753AFEF1EC2A2F000C12E98 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
+		2753B00D1EC39E5D00C12E98 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
 		2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
@@ -255,6 +256,7 @@
 		27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A9E1D4FF65000D806E0 /* c4Base.cc */; };
 		27DD1513193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Record.cc */; };
+		27DF4C271ECCD70B00EE6B8D /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */; };
 		27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
 		27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */; };
@@ -412,8 +414,6 @@
 		72DE480F1E9C550A00B60952 /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
 		72DE48101E9C550A00B60952 /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
 		72DE48111E9C550A00B60952 /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
-		72DE48121E9C550A00B60952 /* CBLWebSocket.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA51E7B6E88001DC54B /* CBLWebSocket.mm */; };
-		72DE48131E9C550A00B60952 /* CBLHTTPLogic.m in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA81E7B700A001DC54B /* CBLHTTPLogic.m */; };
 		72DE48181E9C559000B60952 /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
 		72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1131E5BAC180084E014 /* Worker.cc */; };
@@ -424,8 +424,6 @@
 		93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCF41E6783A000108780 /* Checkpoint.cc */; };
 		93CD01111E933BE100AFB3FA /* c4Socket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C9E1E7B2532001DC54B /* c4Socket.cc */; };
 		93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE0E11E57B7E70084E014 /* c4Replicator.cc */; };
-		93CD01131E933BE100AFB3FA /* CBLWebSocket.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA51E7B6E88001DC54B /* CBLWebSocket.mm */; };
-		93CD01141E933BE100AFB3FA /* CBLHTTPLogic.m in Sources */ = {isa = PBXBuildFile; fileRef = 27491CA81E7B700A001DC54B /* CBLHTTPLogic.m */; };
 		93CD011A1E933C0B00AFB3FA /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
 /* End PBXBuildFile section */
 
@@ -610,6 +608,20 @@
 			proxyType = 2;
 			remoteGlobalIDString = 27EF6A9E1E2B0CE9004748DF;
 			remoteInfo = bliptest;
+		};
+		27DF4C281ECCD76200EE6B8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
+			remoteInfo = Fleece;
+		};
+		27DF4C2A1ECCD79A00EE6B8D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
+			remoteInfo = "LiteCore static";
 		};
 		27EF81151917EF4000A327B9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -851,10 +863,6 @@
 		27491C9A1E7B1001001DC54B /* c4Socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Socket.h; sourceTree = "<group>"; };
 		27491C9E1E7B2532001DC54B /* c4Socket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Socket.cc; sourceTree = "<group>"; };
 		27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4Socket+Internal.hh"; sourceTree = "<group>"; };
-		27491CA41E7B6E88001DC54B /* CBLWebSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBLWebSocket.h; sourceTree = "<group>"; };
-		27491CA51E7B6E88001DC54B /* CBLWebSocket.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = CBLWebSocket.mm; sourceTree = "<group>"; };
-		27491CA71E7B700A001DC54B /* CBLHTTPLogic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CBLHTTPLogic.h; sourceTree = "<group>"; };
-		27491CA81E7B700A001DC54B /* CBLHTTPLogic.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CBLHTTPLogic.m; sourceTree = "<group>"; };
 		2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ExceptionUtils.cc; sourceTree = "<group>"; };
 		2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ExceptionUtils.hh; sourceTree = "<group>"; };
 		2749B9861EB298360068DBF9 /* Listener+Handlers.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "Listener+Handlers.cc"; sourceTree = "<group>"; };
@@ -896,6 +904,8 @@
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
 		2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging_Stub.cc; sourceTree = "<group>"; };
+		2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CivetWebSocket.cc; sourceTree = "<group>"; };
+		2753AFE31EC2363600C12E98 /* CivetWebSocket.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CivetWebSocket.hh; sourceTree = "<group>"; };
 		2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtil.cc; sourceTree = "<group>"; };
 		2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = StringUtil.hh; sourceTree = "<group>"; };
 		2757DE561B9FC3C9002EE261 /* c4Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Database.cc; sourceTree = "<group>"; };
@@ -1251,9 +1261,7 @@
 				277C147A1EA826790075348F /* libFleece.a in Frameworks */,
 				277C147D1EA8268C0075348F /* libsqlite3.tbd in Frameworks */,
 				2749B98C1EB2CB230068DBF9 /* libz.tbd in Frameworks */,
-				270C6B551EB5733C00E73415 /* CFNetwork.framework in Frameworks */,
-				270C6B501EB5732B00E73415 /* Foundation.framework in Frameworks */,
-				270C6B561EB5734A00E73415 /* Security.framework in Frameworks */,
+				27DF4C271ECCD70B00EE6B8D /* CoreFoundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1304,13 +1312,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */,
+				2753AFEA1EC2738D00C12E98 /* libcivetweb.a in Frameworks */,
 				72DE48181E9C559000B60952 /* libblip_cpp.a in Frameworks */,
 				27FA09C31D70AE90005888AA /* libFleece.a in Frameworks */,
 				720EA40C1BA8D816002B8416 /* libTokenizer.a in Frameworks */,
+				72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */,
 				27FA09C11D70AE24005888AA /* libsqlite3.tbd in Frameworks */,
 				270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */,
-				2705155A1D907F7100D62D05 /* Foundation.framework in Frameworks */,
+				2753B00D1EC39E5D00C12E98 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1458,17 +1467,6 @@
 			);
 			name = Tools;
 			path = ../tools;
-			sourceTree = "<group>";
-		};
-		27491CA31E7B6E43001DC54B /* Obj-C */ = {
-			isa = PBXGroup;
-			children = (
-				27491CA41E7B6E88001DC54B /* CBLWebSocket.h */,
-				27491CA51E7B6E88001DC54B /* CBLWebSocket.mm */,
-				27491CA71E7B700A001DC54B /* CBLHTTPLogic.h */,
-				27491CA81E7B700A001DC54B /* CBLHTTPLogic.m */,
-			);
-			path = "Obj-C";
 			sourceTree = "<group>";
 		};
 		274D03E81BA734A300FF7C35 /* jni */ = {
@@ -1812,13 +1810,14 @@
 				27CCC7E31E52965200CE1989 /* Pusher.hh */,
 				2773FCF41E6783A000108780 /* Checkpoint.cc */,
 				2773FCF51E6783A000108780 /* Checkpoint.hh */,
+				2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */,
+				2753AFE31EC2363600C12E98 /* CivetWebSocket.hh */,
 				27491C9E1E7B2532001DC54B /* c4Socket.cc */,
 				27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
 				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
 				275CE0EE1E57BE7E0084E014 /* Replicator.exp */,
-				27491CA31E7B6E43001DC54B /* Obj-C */,
 				275CE0FC1E5B78570084E014 /* tests */,
 			);
 			name = Replicator;
@@ -2165,6 +2164,7 @@
 				27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */,
 				273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */,
 				27E3DD391DB450B300F2872D /* Logging.hh in Headers */,
+				2753AFE61EC2363600C12E98 /* CivetWebSocket.hh in Headers */,
 				27D74A971D4D3F3400D806E0 /* VariadicBind.h in Headers */,
 				2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */,
 				2728512B1EA46421009CA22F /* Request.hh in Headers */,
@@ -2243,6 +2243,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				27DF4C2B1ECCD79A00EE6B8D /* PBXTargetDependency */,
 			);
 			name = litecp;
 			productName = litecp;
@@ -2316,6 +2317,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				27DF4C291ECCD76200EE6B8D /* PBXTargetDependency */,
 				279D41221EA557DB00D8DD9D /* PBXTargetDependency */,
 				279D41201EA557D600D8DD9D /* PBXTargetDependency */,
 			);
@@ -2893,12 +2895,12 @@
 				72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				2797949F1D305EC2001D0F3A /* Revision.cc in Sources */,
+				2753AFEE1EC2A2EF00C12E98 /* CivetWebSocket.cc in Sources */,
 				27E3DD581DB8524300F2872D /* Database.cc in Sources */,
 				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
 				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
-				93CD01131E933BE100AFB3FA /* CBLWebSocket.mm in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */,
@@ -2908,7 +2910,6 @@
 				270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */,
 				279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
-				93CD01141E933BE100AFB3FA /* CBLHTTPLogic.m in Sources */,
 				271057D41D3D70780018247B /* VectorDocument.cc in Sources */,
 				2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */,
 				275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */,
@@ -2982,9 +2983,9 @@
 				270C6B961EBA3A1900E73415 /* LogEncoder.cc in Sources */,
 				72DE480D1E9C550A00B60952 /* IncomingBlob.cc in Sources */,
 				27E3DD591DB8524300F2872D /* Database.cc in Sources */,
-				72DE48121E9C550A00B60952 /* CBLWebSocket.mm in Sources */,
 				274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */,
 				279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
+				2753AFEF1EC2A2F000C12E98 /* CivetWebSocket.cc in Sources */,
 				72DE48101E9C550A00B60952 /* c4Socket.cc in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
@@ -2999,7 +3000,6 @@
 				27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */,
 				279794A71D307626001D0F3A /* RevisionStore.cc in Sources */,
 				2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */,
-				72DE48131E9C550A00B60952 /* CBLHTTPLogic.m in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 				2753AF761EBD190700C12E98 /* LogDecoder.cc in Sources */,
 				2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */,
@@ -3117,6 +3117,16 @@
 			isa = PBXTargetDependency;
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 279D41211EA557DB00D8DD9D /* PBXContainerItemProxy */;
+		};
+		27DF4C291ECCD76200EE6B8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Fleece;
+			targetProxy = 27DF4C281ECCD76200EE6B8D /* PBXContainerItemProxy */;
+		};
+		27DF4C2B1ECCD79A00EE6B8D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
+			targetProxy = 27DF4C2A1ECCD79A00EE6B8D /* PBXContainerItemProxy */;
 		};
 		27EF81161917EF4000A327B9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

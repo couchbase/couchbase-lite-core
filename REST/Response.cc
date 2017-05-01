@@ -97,7 +97,8 @@ namespace litecore { namespace REST {
                                       const std::string &uri,
                                       const std::map<std::string, std::string> &headers,
                                       fleece::slice body,
-                                      char *errorBuf, size_t errorBufSize)
+                                      string &errorMessage,
+                                      int &errorCode)
     {
         stringstream hdrs;
         if (!headers.empty()) {
@@ -105,11 +106,16 @@ namespace litecore { namespace REST {
                 hdrs << header.first << ": " << header.second << "\r\n";
             hdrs << "Content-Length: " << body.size << "\r\n";
         }
-        fprintf(stderr, "Headers: %s\n", hdrs.str().c_str());//TEMP
-        return mg_download(hostname.c_str(), port, false,
-                           errorBuf, errorBufSize,
-                           "%s %s HTTP/1.0\r\n%s\r\n%.*s",
-                           method.c_str(), uri.c_str(), hdrs.str().c_str(), SPLAT(body));
+        char errorBuf[256];
+        mg_error error {errorBuf, sizeof(errorBuf), 0};
+        auto conn = mg_download(hostname.c_str(), port, false, &error,
+                                "%s %s HTTP/1.0\r\n%s\r\n%.*s",
+                                method.c_str(), uri.c_str(), hdrs.str().c_str(), SPLAT(body));
+        if (!conn) {
+            errorMessage = string(errorBuf);
+            errorCode = error.code;
+        }
+        return conn;
     }
 
 
@@ -119,7 +125,7 @@ namespace litecore { namespace REST {
                        const std::string &uri,
                        const std::map<std::string, std::string> &headers,
                        fleece::slice body)
-    :Body(sendRequest(method, hostname, port, uri, headers, body, _errorBuf, sizeof(_errorBuf)))
+    :Body(sendRequest(method, hostname, port, uri, headers, body, _errorMessage, _errorCode))
     { }
 
 
@@ -148,7 +154,7 @@ namespace litecore { namespace REST {
         if (_conn)
             return string(mg_get_request_info(_conn)->http_version);
         else
-            return string(_errorBuf);
+            return _errorMessage;
     }
 
 

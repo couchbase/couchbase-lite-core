@@ -8,6 +8,7 @@
 
 #pragma once
 #include "c4Document.h"
+#include "c4Socket.h"
 
 #ifdef __cplusplus
 #include <atomic>
@@ -24,7 +25,6 @@ extern "C" {
     CBL_CORE_API extern atomic_int gC4InstanceCount;
 #endif
 
-C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
 void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) C4API;
 
 void c4log_warnOnErrors(bool) C4API;
@@ -38,7 +38,7 @@ C4Document* c4doc_getForPut(C4Database *database,
                             bool deleting,
                             bool allowConflict,
                             C4Error *outError) C4API;
-    
+
 #ifdef __cplusplus
 }
 

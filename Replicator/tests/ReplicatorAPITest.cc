@@ -17,8 +17,6 @@
 #include <future>
 #include <thread>
 
-extern "C" void C4RegisterSocketFactory();
-
 using namespace std;
 using namespace fleece;
 using namespace litecore;
@@ -40,7 +38,6 @@ public:
     :C4Test(0)
     {
         // Environment variables can also override the default address above:
-        C4RegisterSocketFactory();
         const char *hostname = getenv("REMOTE_HOST");
         if (hostname)
             address.hostname = c4str(hostname);
@@ -97,8 +94,8 @@ public:
 
         CHECK(numCallbacks > 0);
         if (expectSuccess) {
-            CHECK(numCallbacksWithLevel[kC4Busy] > 0);
             CHECK(status.error.code == 0);
+            CHECK(numCallbacksWithLevel[kC4Busy] > 0);
         }
         CHECK(numCallbacksWithLevel[kC4Stopped] > 0);
         CHECK(callbackStatus.level == status.level);
@@ -203,42 +200,42 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
 // Instead, they have to be invoked manually via Catch command-line options.
 // This is because they require an external replication server is running.
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[Push][.special]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[Push][.RealReplicator]") {
     remoteDBName = kProtectedDBName;
     replicate(kC4OneShot, kC4Disabled, false);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty DB", "[Push][.special]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty DB", "[Push][.RealReplicator]") {
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Non-Empty DB", "[Push][.special]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Non-Empty DB", "[Push][.RealReplicator]") {
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[Push][.special]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[Push][.RealReplicator]") {
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[Push][.special]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[Push][.RealReplicator]") {
     importJSONLines(sFixturesDir + "en-wikipedia-articles-1000-1.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Pull][.special]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Pull][.RealReplicator]") {
     remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[Pull][.special]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[Pull][.neverending]") {
     remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4Continuous);
 }

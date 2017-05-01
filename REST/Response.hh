@@ -87,7 +87,8 @@ namespace litecore { namespace REST {
         std::string statusMessage() const;
 
     private:
-        char _errorBuf[200];
+        std::string _errorMessage;
+        int _errorCode;
     };
 
 } }

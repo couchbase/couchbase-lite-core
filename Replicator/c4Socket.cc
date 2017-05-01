@@ -67,7 +67,7 @@ namespace litecore { namespace websocket {
 
         static C4Provider &instance() {
             if (!sInstance)
-                throw std::logic_error("No C4SocketFactory has been registered yet!");
+                registerFactory(C4DefaultSocketFactory);
             return *sInstance;
         }
 

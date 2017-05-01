@@ -15,4 +15,4 @@
     url=https://github.com/couchbaselabs/BLIP-Cpp.git
 [submodule "vendor/civetweb"]
 	path = vendor/civetweb
-	url = https://github.com/civetweb/civetweb.git
+	url = https://github.com/couchbasedeps/civetweb.git
