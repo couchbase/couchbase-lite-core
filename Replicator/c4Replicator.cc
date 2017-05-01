@@ -71,7 +71,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         auto provider = loopbackProvider();
         auto dbAddr = addressFrom(db);
         _otherReplicator = new Replicator(otherDB,
-                                          provider.createWebSocket(dbAddr), dbAddr,
+                                          provider.createWebSocket(dbAddr),
                                           *this, { kC4Passive, kC4Passive });
         _otherLevel = _otherReplicator->status().level;
         provider.connect(_replicator->webSocket(), _otherReplicator->webSocket());

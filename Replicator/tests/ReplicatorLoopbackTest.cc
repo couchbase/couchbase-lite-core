@@ -70,7 +70,7 @@ public:
 
         // Server (passive) replicator:
         Address addrB{"ws", "cli"};
-        replServer = new Replicator(dbClient, provider.createWebSocket(addrB), addrB, *this, opts2);
+        replServer = new Replicator(dbClient, provider.createWebSocket(addrB), *this, opts2);
 
         provider.connect(replClient->webSocket(), replServer->webSocket());
 

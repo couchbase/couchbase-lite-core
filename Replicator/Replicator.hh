@@ -41,7 +41,6 @@ namespace litecore { namespace repl {
         /** Constructor for an incoming (server) connection. */
         Replicator(C4Database*,
                    websocket::WebSocket*,
-                   const websocket::Address&,
                    Delegate&,
                    Options = Options::passive());
 

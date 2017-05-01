@@ -58,10 +58,9 @@ namespace litecore { namespace repl {
 
     Replicator::Replicator(C4Database *db,
                            websocket::WebSocket *webSocket,
-                           const websocket::Address& address,
                            Delegate &delegate,
                            Options options)
-    :Replicator(db, address, delegate, options, new Connection(webSocket, *this))
+    :Replicator(db, webSocket->address(), delegate, options, new Connection(webSocket, *this))
     { }
 
 
