@@ -277,13 +277,15 @@ void DbEndpoint::writeJSON(slice docID, slice json) {
     alloc_slice body = _encoder.finish();
 
     // Get the JSON's docIDProperty to use as the document ID:
+    alloc_slice docIDBuf;
     if (!docID && _docIDProperty) {
         Dict root = Value::fromTrustedData(body).asDict();
         Value docIDProp = root[*_docIDPath];
         if (docIDProp) {
-            docID = slice(docIDProp.asString());
-            if (!docID)
-                fail(format("Property \"%.*s\" is not a string in JSON: %.*s", SPLAT(_docIDProperty), SPLAT(json)));
+            docIDBuf = docIDProp.toString();
+            if (!docIDBuf)
+                fail(format("Property \"%.*s\" is not a scalar in JSON: %.*s", SPLAT(_docIDProperty), SPLAT(json)));
+            docID = docIDBuf;
         } else {
             errorOccurred(format("No property \"%.*s\" in JSON: %.*s", SPLAT(_docIDProperty), SPLAT(json)));
         }
@@ -338,6 +340,8 @@ void JSONEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty) {
     if (readOnly) {
         _in.reset(new ifstream(_spec, ios_base::in));
         err = _in->fail();
+        if (!err && _in->peek() != '{')
+            fail("Source file does not appear to contain JSON objects (does not start with '{').");
     } else {
         if (mustExist && remove(_spec.c_str()) != 0)
             fail(format("Destination JSON file %s doesn't exist or is not writeable [--existing]",
@@ -394,7 +398,7 @@ static void usage() {
     "           When <dst> is JSON, this is a property name that will be added to the JSON, whose\n"
     "           value is the docID. (If omitted, defaults to \"_id\".)\n"
     "    --limit <n>: Stop after <n> documents.\n"
-    "    --careful: Abort on any error."
+    "    --careful: Abort on any error.\n"
     "    --verbose or -v: Log every 1000 docs. If given twice, log every docID.\n"
     "    --help: You're looking at it.\n"
     ;
