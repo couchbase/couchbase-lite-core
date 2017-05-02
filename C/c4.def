@@ -137,6 +137,8 @@ c4dbobs_free
 c4docobs_create
 c4docobs_free
 
+c4repl_parseURL
+c4repl_isValidDatabaseName
 c4repl_new
 c4repl_free
 c4repl_stop
