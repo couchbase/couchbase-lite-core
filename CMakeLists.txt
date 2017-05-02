@@ -212,6 +212,7 @@ endif()
 add_library(LiteCoreREST SHARED LiteCore/Support/Error.cc
                                 LiteCore/Support/FilePath.cc
                                 LiteCore/Support/Logging.cc
+                                LiteCore/Support/RefCounted.cc
                                 LiteCore/Support/StringUtil.cc)
 target_link_libraries(LiteCoreREST PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreREST_Static ${NO_WHOLE_LIBRARY_FLAG} LiteCore FleeceStatic)
 
@@ -230,7 +231,12 @@ add_executable(LiteCoreServ REST/LiteCoreServ.cc)
 target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static) 
 target_link_libraries(LiteCoreServ PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(LiteCoreServ PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
-if(NOT APPLE)
+if(APPLE)
+  target_link_libraries(LiteCoreServ PRIVATE "-framework Foundation"
+                                             "-framework CFNetwork"
+                                             "-framework Security"
+                                             z)
+else()
   target_link_libraries(LiteCoreServ PRIVATE ${OPENSSL_CRYPTO_LIBRARY})
   if(ANDROID)
     target_link_libraries(LiteCoreServ PRIVATE log)
