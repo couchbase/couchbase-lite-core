@@ -212,8 +212,8 @@ endif()
 add_library(LiteCoreREST SHARED LiteCore/Support/Error.cc
                                 LiteCore/Support/FilePath.cc
                                 LiteCore/Support/Logging.cc
-                                LiteCore/Support/RefCounted.cc
-                                LiteCore/Support/StringUtil.cc)
+                                LiteCore/Support/StringUtil.cc
+                                LiteCore/Support/RefCounted.cc)
 target_link_libraries(LiteCoreREST PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreREST_Static ${NO_WHOLE_LIBRARY_FLAG} LiteCore FleeceStatic)
 
 if (APPLE)
@@ -239,10 +239,11 @@ if(APPLE)
 else()
   target_link_libraries(LiteCoreServ PRIVATE ${OPENSSL_CRYPTO_LIBRARY})
   if(ANDROID)
-    target_link_libraries(LiteCoreServ PRIVATE log)
+    target_link_libraries(LiteCoreServ PRIVATE log z)
   elseif(MSVC)
     set_target_properties(LiteCoreServ PROPERTIES LINK_FLAGS
-              "/ignore:4099")    
+              "/ignore:4099")
+    target_link_libraries(LiteCoreServ PRIVATE zlibstatic)
   elseif(UNIX)
     target_link_libraries(LiteCoreServ PRIVATE pthread z atomic crypto dl bsd c++abi)
   endif()
