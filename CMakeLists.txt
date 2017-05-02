@@ -227,27 +227,27 @@ endif()
 
 ### LITECORESERV:
 
-add_executable(LiteCoreServ REST/LiteCoreServ.cc)
-target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static) 
-target_link_libraries(LiteCoreServ PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
-target_link_libraries(LiteCoreServ PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
-if(APPLE)
-  target_link_libraries(LiteCoreServ PRIVATE "-framework Foundation"
-                                             "-framework CFNetwork"
-                                             "-framework Security"
-                                             z)
-else()
-  target_link_libraries(LiteCoreServ PRIVATE ${OPENSSL_CRYPTO_LIBRARY})
-  if(ANDROID)
-    target_link_libraries(LiteCoreServ PRIVATE log z)
-  elseif(MSVC)
-    set_target_properties(LiteCoreServ PROPERTIES LINK_FLAGS
-              "/ignore:4099")
-    target_link_libraries(LiteCoreServ PRIVATE zlibstatic)
-  elseif(UNIX)
-    target_link_libraries(LiteCoreServ PRIVATE pthread z atomic crypto dl bsd c++abi)
-  endif()
-endif()
+#add_executable(LiteCoreServ REST/LiteCoreServ.cc)
+#target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static) 
+#target_link_libraries(LiteCoreServ PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
+#target_link_libraries(LiteCoreServ PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
+#if(APPLE)
+#  target_link_libraries(LiteCoreServ PRIVATE "-framework Foundation"
+#                                             "-framework CFNetwork"
+#                                             "-framework Security"
+#                                             z)
+#else()
+#  target_link_libraries(LiteCoreServ PRIVATE ${OPENSSL_CRYPTO_LIBRARY})
+#  if(ANDROID)
+#    target_link_libraries(LiteCoreServ PRIVATE log z)
+#  elseif(MSVC)
+#    set_target_properties(LiteCoreServ PROPERTIES LINK_FLAGS
+#              "/ignore:4099")
+#    target_link_libraries(LiteCoreServ PRIVATE zlibstatic)
+#  elseif(UNIX)
+#    target_link_libraries(LiteCoreServ PRIVATE pthread z atomic crypto dl bsd c++abi)
+#  endif()
+#endif()
 
 
 ### TESTS:
