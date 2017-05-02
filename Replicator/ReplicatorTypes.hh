@@ -10,7 +10,6 @@
 #include "Fleece.h"
 #include "slice.hh"
 #include "c4.hh"
-#include "c4Replicator.h"
 #include <chrono>
 #include <functional>
 #include <vector>

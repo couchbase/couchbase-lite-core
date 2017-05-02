@@ -12,7 +12,6 @@
 #include "Message.hh"
 #include "Timer.hh"
 #include "c4.hh"
-#include "c4Replicator.h"
 #include "c4Private.h"
 #include <chrono>
 #include <functional>

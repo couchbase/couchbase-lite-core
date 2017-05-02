@@ -16,3 +16,4 @@
 #include "c4ExpiryEnumerator.h"
 #include "c4Query.h"
 #include "c4Observer.h"
+#include "c4Replicator.h"

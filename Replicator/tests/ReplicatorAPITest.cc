@@ -11,7 +11,6 @@
 #include "c4.hh"
 #include <iostream>
 #include "c4Test.hh"
-#include "c4Replicator.h"
 #include "StringUtil.hh"
 #include <algorithm>
 #include <chrono>
