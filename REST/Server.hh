@@ -7,6 +7,7 @@
 //
 
 #pragma once
+#include "c4Base.h"
 #include <array>
 #include <map>
 #include <mutex>
@@ -17,6 +18,10 @@ struct mg_connection;
 namespace litecore { namespace REST {
     class RequestResponse;
     class Request;
+
+
+    extern C4LogDomain RESTLog;
+
 
     /** HTTP server, using CivetWeb. */
     class Server {

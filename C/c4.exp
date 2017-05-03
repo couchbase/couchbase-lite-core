@@ -11,12 +11,14 @@ _kC4DefaultLog
 _c4SliceEqual
 _c4slice_free
 _c4log
+_c4vlog
 _c4log_register
 _c4log_getDomain
 _c4log_getDomainName
 _c4log_getLevel
 _c4log_setLevel
 _c4log_warnOnErrors
+_c4log_writeToBinaryFile
 _c4error_getMessage
 _c4error_getMessageC
 

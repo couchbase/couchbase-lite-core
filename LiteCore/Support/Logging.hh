@@ -62,6 +62,8 @@ public:
         sFirstDomain = this;
     }
 
+    static LogDomain* named(const char *name);
+
     const char* name() const                        {return _name;}
     LogLevel level()                                {return _level == LogLevel::Uninitialized
                                                                         ? initLevel() : _level;}
@@ -79,14 +81,21 @@ public:
 
     static void (*Callback)(const LogDomain&, LogLevel, const char *message);
 
-    static LogDomain* named(const char *name);
+    static void writeEncodedLogsTo(const std::string &filePath);
+
+private:
+    friend class Logging;
+    unsigned registerObject(const std::string &description, LogLevel);
+    void vlog(LogLevel level, unsigned obj, const char *fmt, va_list);
 
 private:
     LogLevel initLevel();
-    
+    void basicvlog(LogLevel level, const char *fmt, va_list args);
+
     LogLevel _level;
     const char* const _name;
     LogDomain* const _next;
+    unsigned _lastObjRef {0};
 
     static LogDomain* sFirstDomain;
 };
@@ -108,6 +117,7 @@ std::string _logSlice(fleece::slice);
 
 #define LogTo(DOMAIN, FMT, ...)         LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
 #define LogVerbose(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
+#define LogDebug(DOMAIN, FMT, ARGS...)  LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
 
 #define Debug(FMT, ...)                 LogToAt(DefaultLog, Debug,   FMT, ##__VA_ARGS__)
 #define Log(FMT, ...)                   LogToAt(DefaultLog, Info,    FMT, ##__VA_ARGS__)
@@ -120,6 +130,7 @@ std::string _logSlice(fleece::slice);
 
 #define LogTo(DOMAIN, FMT, ARGS...)         LogToAt(DOMAIN, Info, FMT, ##ARGS)
 #define LogVerbose(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Verbose, FMT, ##ARGS)
+#define LogDebug(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Debug, FMT, ##ARGS)
 
 #define Debug(FMT, ARGS...)                 LogToAt(DefaultLog, Debug,   FMT, ##ARGS)
 #define Log(FMT, ARGS...)                   LogToAt(DefaultLog, Info,    FMT, ##ARGS)
@@ -199,6 +210,7 @@ static inline bool WillLog(LogLevel lv)     {return DefaultLog.willLog(lv);}
         void _log(LogLevel level, const char *format, ...) const;// __printflike(3, 4);
         void _logv(LogLevel level, const char *format, va_list) const;
         LogDomain &_domain;
+        unsigned _objectRef {0};
     };
 
 }

@@ -13,7 +13,6 @@
 #include "c4Replicator.h"
 #include "Server.hh"
 #include "Request.hh"
-#include "Logging.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include <functional>

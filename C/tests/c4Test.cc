@@ -100,13 +100,13 @@ std::string json5(std::string str) {
 }
 
 
-static void log(C4LogDomain domain, C4LogLevel level, C4Slice message) {
-    static const char* kLevelNames[5] = {"debug", "verbose", "info", "WARNING", "ERROR"};
-    fprintf(stderr, "LiteCore-C %s %s: %.*s\n",
-            c4log_getDomainName(domain),
-            kLevelNames[level],
-            (int)message.size, (char*)message.buf);
-}
+//static void log(C4LogDomain domain, C4LogLevel level, C4Slice message) {
+//    static const char* kLevelNames[5] = {"debug", "verbose", "info", "WARNING", "ERROR"};
+//    fprintf(stderr, "LiteCore-C %s %s: %.*s\n",
+//            c4log_getDomainName(domain),
+//            kLevelNames[level],
+//            (int)message.size, (char*)message.buf);
+//}
 
 
 #pragma mark - C4TEST CLASS
@@ -122,11 +122,19 @@ C4Test::C4Test(int testOption)
  _versioning((testOption & 1) ? kC4VersionVectors : kC4RevisionTrees),
  _bundled(true)
 {
+    static once_flag once;
+    call_once(once, [] {
+        string path = TempDir() + "LiteCoreAPITests.c4log";
+        C4Log("Beginning logging to %s", path.c_str());
+        C4Error error;
+        REQUIRE(c4log_writeToBinaryFile(c4str(path.c_str()), &error));
+    });
+
     c4_shutdown(nullptr);
 
     objectCount = c4_getObjectCount();
-    c4log_register(kC4LogWarning, log);
-    c4log_setLevel(kC4DefaultLog, kC4LogInfo);
+//    c4log_register(kC4LogWarning, log);
+//    c4log_setLevel(kC4DefaultLog, kC4LogInfo);
 
     C4DatabaseConfig config = { };
     config.flags = kC4DB_Create | kC4DB_SharedKeys;
@@ -245,6 +253,7 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
 
 
 void C4Test::createNumberedDocs(unsigned numberOfDocs) {
+    TransactionHelper t(db);
     char docID[20];
     for (unsigned i = 1; i <= numberOfDocs; i++) {
         sprintf(docID, "doc-%03u", i);

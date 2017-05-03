@@ -107,7 +107,7 @@ namespace litecore {
                                   ciphertext,
                                   plaintext));
         _output->write(ciphertext);
-        LogTo(BlobLog, "WRITE #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
+        LogVerbose(BlobLog, "WRITE #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
             (unsigned long long)(_blockID-1), (unsigned long long)plaintext.size, finalBlock, (unsigned long long)ciphertext.size);
 #else
         error::_throw(error::Unimplemented);
@@ -196,7 +196,7 @@ namespace litecore {
                       slice(iv, sizeof(iv)),
                       finalBlock,
                       output, slice(blockBuf, bytesRead));
-        LogTo(BlobLog, "READ  #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
+        LogVerbose(BlobLog, "READ  #%2llu: %llu bytes, final=%d --> %llu bytes ciphertext",
             (unsigned long long)(_blockID-1), (unsigned long long)bytesRead, finalBlock, (unsigned long long)outputSize);
         return outputSize;
 #else
@@ -264,7 +264,7 @@ namespace litecore {
         uint64_t blockID = min(pos / kFileBlockSize, _finalBlockID);
         uint64_t blockPos = blockID * kFileBlockSize;
         if (blockID != _bufferBlockID) {
-            LogTo(BlobLog, "SEEK %llu (block %llu + %llu bytes)", (unsigned long long)pos, (unsigned long long)blockID, (unsigned long long)(pos - blockPos));
+            LogVerbose(BlobLog, "SEEK %llu (block %llu + %llu bytes)", (unsigned long long)pos, (unsigned long long)blockID, (unsigned long long)(pos - blockPos));
             _input->seek(blockPos);
             _blockID = blockID;
             fillBuffer();

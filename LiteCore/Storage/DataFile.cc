@@ -147,12 +147,14 @@ namespace litecore {
                 _dataFiles.push_back(dataFile);
         }
 
-        void removeDataFile(DataFile *dataFile) {
+        bool removeDataFile(DataFile *dataFile) {
             unique_lock<mutex> lock(_dataFilesMutex);
             LogToAt(DBLog, Debug, "File %p: Remove DataFile %p", this, dataFile);
             auto pos = find(_dataFiles.begin(), _dataFiles.end(), dataFile);
-            if (pos != _dataFiles.end())
-                _dataFiles.erase(pos);
+            if (pos == _dataFiles.end())
+                return false;
+            _dataFiles.erase(pos);
+            return true;
         }
 
 
@@ -242,11 +244,13 @@ namespace litecore {
         for (auto& i : _keyStores) {
             i.second->close();
         }
-        _shared->removeDataFile(this);
+        if (_shared->removeDataFile(this))
+            LogTo(DBLog, "Closing DataFile");
     }
 
 
     void DataFile::reopen() {
+        LogTo(DBLog, "Opening DataFile");
         _shared->addDataFile(this);
     }
 
@@ -406,7 +410,7 @@ namespace litecore {
     {
         _db.beginTransactionScope(this);
         if (active) {
-            LogTo(DBLog, "DataFile: beginTransaction");
+            LogTo(DBLog, "DataFile: begin transaction");
             _db._beginTransaction(this);
             _active = true;
             _db.transactionBegan(this);

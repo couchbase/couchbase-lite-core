@@ -224,14 +224,14 @@ namespace litecore {
         SQLite::Statement *stmt;
         if (replacingSequence == nullptr) {
             // Default:
-            LogTo(DBLog, "KeyStore(%s) set %s", name().c_str(), logSlice(key));
+            LogVerbose(DBLog, "KeyStore(%s) set %s", name().c_str(), logSlice(key));
             compile(_setStmt,
                     "INSERT OR REPLACE INTO kv_@ (version, body, flags, sequence, key)"
                     " VALUES (?, ?, ?, ?, ?)");
             stmt = _setStmt.get();
         } else if (*replacingSequence == 0) {
             // Insert only:
-            LogTo(DBLog, "KeyStore(%s) insert %s", name().c_str(), logSlice(key));
+            LogVerbose(DBLog, "KeyStore(%s) insert %s", name().c_str(), logSlice(key));
             compile(_insertStmt,
                     "INSERT OR IGNORE INTO kv_@ (version, body, flags, sequence, key)"
                     " VALUES (?, ?, ?, ?, ?)");
@@ -239,7 +239,7 @@ namespace litecore {
         } else {
             // Replace only:
             Assert(_capabilities.sequences);
-            LogTo(DBLog, "KeyStore(%s) update %s", name().c_str(), logSlice(key));
+            LogVerbose(DBLog, "KeyStore(%s) update %s", name().c_str(), logSlice(key));
             compile(_replaceStmt,
                     "UPDATE kv_@ SET version=?, body=?, flags=?, sequence=?"
                     " WHERE key=? AND sequence=?");

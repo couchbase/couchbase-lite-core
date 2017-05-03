@@ -157,7 +157,16 @@ void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
 }
 
 
+
+
 DataFileTestFixture::DataFileTestFixture(int testOption) {
+    static once_flag once;
+    call_once(once, [] {
+        auto path = FilePath::tempDirectory()["LiteCoreC++Tests.c4log"];
+        Log("Beginning logging to %s", path.path().c_str());
+        LogDomain::writeEncodedLogsTo(path);
+    });
+
     auto dbPath = databasePath("cbl_core_temp");
     deleteDatabase(dbPath);
     db = newDatabase(dbPath);

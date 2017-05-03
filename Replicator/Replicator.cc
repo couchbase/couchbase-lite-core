@@ -183,10 +183,8 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onClose(Connection::CloseStatus status, Connection::State state) {
-        static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error",
-                                             "Unknown error"};
-        log("Connection closed with %s %d: \"%.*s\"",
-            kReasonNames[status.reason], status.code, SPLAT(status.message));
+        log("Connection closed with %-s %d: \"%.*s\"",
+            status.reasonName(), status.code, SPLAT(status.message));
 
         _connectionState = state;
 

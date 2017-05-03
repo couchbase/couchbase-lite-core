@@ -167,7 +167,7 @@ namespace litecore { namespace repl {
             _status.level = newLevel;
             changed = true;
             if (_important)
-                log("now %s", kC4ReplicatorActivityLevelNames[newLevel]);
+                log("now %-s", kC4ReplicatorActivityLevelNames[newLevel]);
         }
         if (changed)
             changedStatus();

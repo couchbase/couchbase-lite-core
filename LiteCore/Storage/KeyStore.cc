@@ -66,9 +66,9 @@ namespace litecore {
 
     bool KeyStore::del(slice key, sequence_t seq, Transaction &t) {
         if (key) {
-            LogTo(DBLog, "KeyStore(%s) del key '%.*s'", _name.c_str(), SPLAT(key));
+            LogVerbose(DBLog, "KeyStore(%s) del key '%.*s'", _name.c_str(), SPLAT(key));
         } else {
-            LogTo(DBLog, "KeyStore(%s) del seq %llu", _name.c_str(), (unsigned long long)seq);
+            LogVerbose(DBLog, "KeyStore(%s) del seq %llu", _name.c_str(), (unsigned long long)seq);
         }
         
         if (!_del(key, seq, t))

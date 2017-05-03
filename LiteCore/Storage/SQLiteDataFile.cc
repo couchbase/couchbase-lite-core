@@ -79,7 +79,7 @@ namespace litecore {
     LogDomain SQL("SQL");
 
     void LogStatement(const SQLite::Statement &st) {
-        LogTo(SQL, "... %s", st.getQuery().c_str());
+        LogVerbose(SQL, "... %s", st.getQuery().c_str());
     }
 
     static void sqlite3_log_callback(void *pArg, int errCode, const char *msg) {
@@ -372,7 +372,7 @@ path.path().c_str());
     void SQLiteDataFile::_beginTransaction(Transaction*) {
         checkOpen();
         Assert(_transaction == nullptr);
-        LogTo(SQL, "BEGIN");
+        LogVerbose(SQL, "BEGIN");
         _transaction = make_unique<SQLite::Transaction>(*_sqlDb);
     }
 
@@ -385,17 +385,17 @@ path.path().c_str());
 
         // Now commit:
         if (commit) {
-            LogTo(SQL, "COMMIT");
+            LogVerbose(SQL, "COMMIT");
             _transaction->commit();
         } else {
-            LogTo(SQL, "ROLLBACK");
+            LogVerbose(SQL, "ROLLBACK");
         }
         _transaction.reset(); // destruct SQLite::Transaction, which will rollback if not committed
     }
 
 
     int SQLiteDataFile::exec(const string &sql) {
-        LogTo(SQL, "%s", sql.c_str());
+        LogVerbose(SQL, "%s", sql.c_str());
         return _sqlDb->exec(sql);
     }
 
@@ -486,8 +486,8 @@ path.path().c_str());
         try {
             int64_t pageCount = intQuery("PRAGMA page_count");
             int64_t freePages = intQuery("PRAGMA freelist_count");
-            LogTo(DBLog, "%lld of %lld pages free (%.0f%%)",
-                  (long long)freePages, (long long)pageCount, (float)freePages / pageCount);
+            LogVerbose(DBLog, "Pre-close housekeeping: %lld of %lld pages free (%.0f%%)",
+                       (long long)freePages, (long long)pageCount, (float)freePages / pageCount);
             if ((pageCount > 0 && (float)freePages / pageCount >= kVacuumFractionThreshold)
                     || (freePages * kPageSize >= kVacuumSizeThreshold)) {
                 Log("Vacuuming database '%s'...", filePath().dirName().c_str());

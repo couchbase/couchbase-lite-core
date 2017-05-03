@@ -183,6 +183,13 @@ void c4log_register(C4LogLevel level, C4LogCallback callback) noexcept {
 }
 
 
+bool c4log_writeToBinaryFile(C4String path, C4Error *outError) noexcept {
+    return tryCatch(outError, [=] {
+        LogDomain::writeEncodedLogsTo(slice(path).asString());
+    });
+}
+
+
 CBL_CORE_API const C4LogDomain kC4DefaultLog = (C4LogDomain)&DefaultLog;
 
 
@@ -220,13 +227,15 @@ void c4log_warnOnErrors(bool warn) noexcept {
 
 
 void c4log(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, ...) noexcept {
-    auto domain = (LogDomain*)c4Domain;
-    if (domain->willLog((LogLevel)level)) {
-        va_list args;
-        va_start(args, fmt);
-        try {
-            domain->vlog((LogLevel)level, fmt, args);
-        } catch (...) { }
-        va_end(args);
-    }
+    va_list args;
+    va_start(args, fmt);
+    c4vlog(c4Domain, level, fmt, args);
+    va_end(args);
+}
+
+
+void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, va_list args) noexcept {
+    try {
+        ((LogDomain*)c4Domain)->vlog((LogLevel)level, fmt, args);
+    } catch (...) { }
 }

@@ -15,10 +15,13 @@
 
 #include "Logging.hh"
 #include "StringUtil.hh"
+#include "LogEncoder.hh"
+#include "LogDecoder.hh"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <string>
+#include <fstream>
 #include <sstream>
 #include <mutex>
 #include "PlatformIO.hh"
@@ -41,12 +44,41 @@ namespace litecore {
 
     static void defaultCallback(const LogDomain &domain, LogLevel, const char *message);
 
-    LogLevel LogDomain::MinLevel = LogLevel::Warning;
+    LogLevel LogDomain::MinLevel = LogLevel::Info;
     LogDomain* LogDomain::sFirstDomain = nullptr;
     void (*LogDomain::Callback)(const LogDomain&, LogLevel, const char *message) = defaultCallback;
 
-
+    static ofstream *sEncodedOut = nullptr;
+    static LogEncoder* sLogEncoder = nullptr;
     static mutex sLogMutex;
+
+
+    void LogDomain::writeEncodedLogsTo(const string &filePath) {
+        unique_lock<mutex> lock(sLogMutex);
+        delete sLogEncoder;
+        sLogEncoder = nullptr;
+        delete sEncodedOut;
+        sEncodedOut = nullptr;
+        if (!filePath.empty()) {
+            sEncodedOut = new ofstream(filePath, ofstream::out | ofstream::trunc | ofstream::binary);
+            sLogEncoder = new LogEncoder(*sEncodedOut);
+
+            // Make sure to flush the log when the process exits:
+            static once_flag f;
+            call_once(f, []{
+                atexit([]{
+                    unique_lock<mutex> lock(sLogMutex);
+                    if (sLogEncoder)
+                        sLogEncoder->log((int)LogLevel::Info, "", LogEncoder::None,
+                                         "---- END ----");
+                    delete sLogEncoder;
+                    delete sEncodedOut;
+                    sLogEncoder = nullptr;
+                    sEncodedOut = nullptr;
+                });
+            });
+        }
+    }
 
 
     void LogDomain::log(LogLevel level, const char *fmt, ...) {
@@ -60,14 +92,16 @@ namespace litecore {
     LogLevel LogDomain::initLevel() {
         if (_level == LogLevel::Uninitialized) {
             char *val = getenv((string("LiteCoreLog") + _name).c_str());
-            if (!val)
-                _level = LogLevel::Warning;
-            else if (0 == strcasecmp(val, "verbose"))
-                _level = LogLevel::Verbose;
-            else if (0 == strcasecmp(val, "debug"))
-                _level = LogLevel::Debug;
-            else
-                _level = LogLevel::Info;
+            _level = LogLevel::Info;
+            if (val) {
+                static const char* const kLevelNames[] = {"debug", "verbose", "info",
+                                                          "warning", "error", "none", nullptr};
+                for (int i = 0; kLevelNames[i]; i++)
+                    if (0 == strcasecmp(val, kLevelNames[i])) {
+                        _level = LogLevel(i);
+                        break;
+                    }
+            }
             if (_level > MinLevel)
                 _level = MinLevel;
         }
@@ -75,22 +109,52 @@ namespace litecore {
     }
 
 
-    void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
+    static char sFormatBuffer[2048];
+
+
+    void LogDomain::vlog(LogLevel level, unsigned objRef, const char *fmt, va_list args) {
         if (_level == LogLevel::Uninitialized)
             initLevel();
         if (!willLog(level))
             return;
 
-        if (Callback == nullptr)
-            return;
         unique_lock<mutex> lock(sLogMutex);
-        char *message;
-        if (vasprintf(&message, fmt, args) < 0) {
-            Callback(*this, level, "(Failed to allocate memory for log message)");
-            return;
+        if (Callback) {
+            char *start = &sFormatBuffer[0];
+            if (objRef) {
+                start += sprintf(sFormatBuffer, "{%u} ", objRef);
+            }
+            va_list args2;
+            va_copy(args2, args);
+            vsnprintf(start, sizeof(sFormatBuffer) - (start-&sFormatBuffer[0]), fmt, args2);
+            Callback(*this, level, sFormatBuffer);
         }
-        Callback(*this, level, message);
-        free(message);
+
+        if (sLogEncoder) {
+            sLogEncoder->vlog((int8_t)level, _name, (LogEncoder::ObjectRef)objRef, fmt, args);
+        }
+    }
+
+
+    void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
+        vlog(level, LogEncoder::None, fmt, args);
+    }
+
+
+    unsigned LogDomain::registerObject(const std::string &description, LogLevel level) {
+        unique_lock<mutex> lock(sLogMutex);
+        unsigned objRef;
+        if (sLogEncoder)
+            objRef = sLogEncoder->registerObject(description);
+        else
+            objRef = ++_lastObjRef;
+
+        if (Callback) {
+            snprintf(sFormatBuffer, sizeof(sFormatBuffer),
+                     "{%u}--> %s", objRef, description.c_str());
+            Callback(*this, level, sFormatBuffer);
+        }
+        return objRef;
     }
 
 
@@ -106,25 +170,11 @@ namespace litecore {
             }
             __android_log_write(kLevels[(int)level], source, message);
         #else
-            #if __APPLE__
-                struct timeval tv;
-                gettimeofday(&tv, nullptr);
-                time_t now = tv.tv_sec;
-            #else
-                time_t now = time(nullptr);
-            #endif
-            struct tm tm;
-            localtime_r(&now, &tm);
-            char timestamp[100];
-            strftime(timestamp, sizeof(timestamp), "%T", &tm);
-            #if __APPLE__
-                sprintf(timestamp + strlen(timestamp), ".%03d", tv.tv_usec / 1000);
-            #endif
-
             auto name = domain.name();
-            static const char *kLevels[] = {"***", "", "", "WARNING: ", "ERROR: "};
-            fprintf(stderr, "%s| %s%s %s%s\n",
-                    timestamp, name, (name[0] ? ":" :""), kLevels[(int)level], message);
+            static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
+            LogDecoder::writeTimestamp(LogDecoder::now(), cerr);
+            LogDecoder::writeHeader(kLevels[(int)level], name, cerr);
+            cerr << message << '\n';
         #endif
     }
 
@@ -157,6 +207,9 @@ namespace litecore {
     }
 
 
+#pragma mark - LOGGING CLASS:
+
+
     std::string Logging::loggingIdentifier() const {
 		// Get the name of my class, unmangle it, and remove namespaces:
 		const char *name = typeid(*this).name();
@@ -186,10 +239,15 @@ namespace litecore {
     }
     
     void Logging::_logv(LogLevel level, const char *format, va_list args) const {
-        char *message;
-        vasprintf(&message, format, args);
-        _domain.log(level, "(%s) %s", loggingIdentifier().c_str(), message);
-        free(message);
+#if DEBUG
+        if (!_domain.willLog(level))
+            return;
+#endif
+        if (!_objectRef) {
+            string identifier = loggingIdentifier();
+            const_cast<Logging*>(this)->_objectRef = _domain.registerObject(identifier, level);
+        }
+        _domain.vlog(level, _objectRef, format, args);
     }
 
 

@@ -40,13 +40,21 @@ public:
     mutex _observerMutex;
     condition_variable _observerCond;
     bool _changesToObserve {false};
+    C4LogLevel _oldDbLogLevel;
 
 
     C4ThreadingTest(int testOption)
     :C4Test(testOption)
-    { }
+    {
+        // Suppress the zillions of "begin transaction", "commit transaction" logs from this test: 
+        auto dbDomain = c4log_getDomain("DB", false);
+        _oldDbLogLevel = c4log_getLevel(dbDomain);
+        c4log_setLevel(dbDomain, kC4LogWarning);
+    }
 
     ~C4ThreadingTest() {
+        auto dbDomain = c4log_getDomain("DB", false);
+        c4log_setLevel(dbDomain, _oldDbLogLevel);
     }
 
 

@@ -6,12 +6,14 @@ kC4DefaultLog
 c4SliceEqual
 c4slice_free
 c4log
+c4vlog
 c4log_register
 c4log_getDomain
 c4log_getDomainName
 c4log_getLevel
 c4log_setLevel
 c4log_warnOnErrors
+c4log_writeToBinaryFile
 c4error_getMessage
 c4error_getMessageC
 

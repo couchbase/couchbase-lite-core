@@ -256,6 +256,12 @@ CBL_CORE_API extern const C4LogDomain kC4DefaultLog;
     @param callback  The logging callback, or NULL to disable logging entirely. */
 void c4log_register(C4LogLevel level, C4LogCallback callback) C4API;
 
+/** Causes log messages to be written to a file, overwriting any previous contents.
+    The data is written in an efficient and compact binary form that can be read using the
+    "litecorelog" tool.
+    To stop logging, pass a null or empty path string. */
+bool c4log_writeToBinaryFile(C4String path, C4Error *error) C4API;
+
 /** Looks up a named log domain.
     If `create` is true, the domain will be created if it doesn't exist. */
 C4LogDomain c4log_getDomain(const char *name, bool create) C4API;
@@ -277,6 +283,8 @@ void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
                     nothing will be logged.
     @param fmt  printf-style format string, followed by arguments (if any). */
 void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt, ...) C4API;
+
+void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt, va_list args) C4API;
 
 // Convenient aliases for c4log:
 #define C4LogToAt(DOMAIN, LEVEL, FMT, ...)        \

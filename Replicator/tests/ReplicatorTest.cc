@@ -56,7 +56,7 @@ public:
     virtual void replicatorStatusChanged(Replicator* repl,
                                          const Replicator::Status &status) override
     {
-        Log(">> Replicator is %s, progress %llu/%llu",
+        Log(">> Replicator is %-s, progress %llu/%llu",
             kC4ReplicatorActivityLevelNames[status.level],
             status.progress.completed, status.progress.total);
     }

@@ -12,7 +12,6 @@
 #include "c4Document+Fleece.h"
 #include "Server.hh"
 #include "Request.hh"
-#include "Logging.hh"
 #include "RefCounted.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
@@ -139,7 +138,6 @@ namespace litecore { namespace REST {
                     _finalResult = status.error.code ? HTTPStatus::GatewayError
                                                      : HTTPStatus::OK;
                     _repl = nullptr;
-                    Log("Replicator finished");
                 }
                 time(&_timeUpdated);
             }
@@ -197,11 +195,13 @@ namespace litecore { namespace REST {
             return rq.respondWithError(HTTPStatus::BadRequest, "Invalid database URL");
         bool continuous = params["continuous"].asBool();
 
-        Log("Replicating: local=%.*s, mode=%s, scheme=%.*s, host=%.*s, port=%u, db=%.*s",
-            SPLAT(localName),
-            (pushMode > kC4Disabled ? "push" : "pull"),
-            SPLAT(remoteAddress.scheme), SPLAT(remoteAddress.hostname), remoteAddress.port,
-            SPLAT(remoteDbName));
+        c4log(RESTLog, kC4LogInfo,
+              "Replicating: local=%.*s, mode=%s, scheme=%.*s, host=%.*s, port=%u, db=%.*s, continuous=%d",
+              SPLAT(localName),
+              (pushMode > kC4Disabled ? "push" : "pull"),
+              SPLAT(remoteAddress.scheme), SPLAT(remoteAddress.hostname), remoteAddress.port,
+              SPLAT(remoteDbName),
+              continuous);
 
         // Start the replication!
         C4Error error;
@@ -212,7 +212,6 @@ namespace litecore { namespace REST {
 
         HTTPStatus statusCode = HTTPStatus::OK;
         if (!continuous) {
-            Log("Waiting for replicator to complete...");
             statusCode = task->wait();
             task->unregisterTask();
         }

@@ -46,6 +46,14 @@
 		270C6B691EB7DDAD00E73415 /* Listener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* Listener+Replicate.cc */; };
 		270C6B6A1EB7DDAD00E73415 /* Listener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* Listener+Replicate.cc */; };
 		270C6B6B1EB8011B00E73415 /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
+		270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B891EBA2CD600E73415 /* LogEncoder.cc */; };
+		270C6B961EBA3A1900E73415 /* LogEncoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B891EBA2CD600E73415 /* LogEncoder.cc */; };
+		270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */; };
+		270C6BA91EBA754300E73415 /* litecorelog.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6BA81EBA754300E73415 /* litecorelog.cc */; };
+		270C6BAA1EBA764B00E73415 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
+		270C6BAB1EBA765E00E73415 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
+		270C6BAC1EBA767300E73415 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
+		270C6BB61EBBF74100E73415 /* LogEncoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B891EBA2CD600E73415 /* LogEncoder.cc */; };
 		271057D41D3D70780018247B /* VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* VectorDocument.cc */; };
 		271057D51D3D70780018247B /* VectorDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271057D31D3D70780018247B /* VectorDocument.cc */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
@@ -94,7 +102,6 @@
 		2749B94F1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
 		2749B95C1EB0110D0068DBF9 /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		2749B95D1EB0110D0068DBF9 /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
-		2749B95E1EB0110D0068DBF9 /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		2749B95F1EB011A00068DBF9 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		2749B9601EB011C30068DBF9 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
 		2749B9871EB298360068DBF9 /* Listener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* Listener+Handlers.cc */; };
@@ -127,6 +134,10 @@
 		274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDF51DA30B43003AD158 /* QueryParser.hh */; };
 		274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
+		2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
+		2753AF761EBD190700C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
+		2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
+		2753AF7E1EBD22DE00C12E98 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
@@ -150,7 +161,6 @@
 		276E020A1EA958B000FEFE8A /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
 		276E020B1EA958C400FEFE8A /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		276E020C1EA958C400FEFE8A /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
-		276E020D1EA958C900FEFE8A /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		276E020E1EA9595B00FEFE8A /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27D74A981D4D404100D806E0 /* libsqlite3.tbd */; };
 		276E02111EA9717200FEFE8A /* ListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* ListenerTest.cc */; };
 		276E02121EA9802A00FEFE8A /* libLiteCoreREST.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D410E1EA5558100D8DD9D /* libLiteCoreREST.dylib */; };
@@ -364,7 +374,6 @@
 		27FC81F91EAAB7C60028E38E /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
 		27FC81FB1EAAB8000028E38E /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		27FC81FC1EAAB8000028E38E /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
-		27FC81FD1EAAB8000028E38E /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E3DD351DB450B300F2872D /* Logging.cc */; };
 		27FC81FE1EAAB8000028E38E /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		27FC81FF1EAAB8390028E38E /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
 		27FC82021EAAB89F0028E38E /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
@@ -462,6 +471,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "CBForest static";
+		};
+		270C6BAD1EBA768200E73415 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
+			remoteInfo = Fleece;
 		};
 		272850E41E9CABD2009CA22F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -692,6 +708,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
+		270C6B9F1EBA74D800E73415 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		27468F051EAD147D00B1B4F5 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -747,6 +772,13 @@
 		2708FE5D1CF6197D0022F721 /* RawRevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RawRevTree.hh; sourceTree = "<group>"; };
 		270C6B541EB5733C00E73415 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
 		270C6B681EB7DDAD00E73415 /* Listener+Replicate.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "Listener+Replicate.cc"; sourceTree = "<group>"; };
+		270C6B871EBA2CD600E73415 /* LogDecoder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogDecoder.cc; sourceTree = "<group>"; };
+		270C6B881EBA2CD600E73415 /* LogDecoder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LogDecoder.hh; sourceTree = "<group>"; };
+		270C6B891EBA2CD600E73415 /* LogEncoder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogEncoder.cc; sourceTree = "<group>"; };
+		270C6B8A1EBA2CD600E73415 /* LogEncoder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LogEncoder.hh; sourceTree = "<group>"; };
+		270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogEncoderTest.cc; sourceTree = "<group>"; };
+		270C6BA11EBA74D800E73415 /* litecorelog */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = litecorelog; sourceTree = BUILT_PRODUCTS_DIR; };
+		270C6BA81EBA754300E73415 /* litecorelog.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = litecorelog.cc; sourceTree = "<group>"; };
 		271057D31D3D70780018247B /* VectorDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorDocument.cc; sourceTree = "<group>"; };
 		271057D61D3D70B10018247B /* Document.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
 		27139B1C18F8E9750021A9A3 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -857,6 +889,7 @@
 		275072B518E4A68E00A80C5A /* LiteCore Tests-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiteCore Tests-Prefix.pch"; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
+		2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging_Stub.cc; sourceTree = "<group>"; };
 		2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtil.cc; sourceTree = "<group>"; };
 		2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = StringUtil.hh; sourceTree = "<group>"; };
 		2757DE561B9FC3C9002EE261 /* c4Database.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Database.cc; sourceTree = "<group>"; };
@@ -1129,6 +1162,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		270C6B9E1EBA74D800E73415 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				270C6BAC1EBA767300E73415 /* libFleece.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		27139B2D18F8E9750021A9A3 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1272,17 +1313,18 @@
 			isa = PBXGroup;
 			children = (
 				275FF6D11E4947E1005F90DD /* c4BaseTest.cc */,
-				277015081D523E2E008BADD7 /* DataFileTest.cc */,
-				2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */,
-				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
-				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
-				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
-				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
-				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
-				279794B31D34583A001D0F3A /* RevisionTest.cc */,
-				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
 				27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */,
+				277015081D523E2E008BADD7 /* DataFileTest.cc */,
+				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
+				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
+				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
+				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
+				279794B31D34583A001D0F3A /* RevisionTest.cc */,
+				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
+				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
 				272850B41E9BE361009CA22F /* UpgraderTest.cc */,
+				2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */,
+				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
 				2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */,
 				2708FE591CF4D0450022F721 /* LiteCoreTest.hh */,
 				274D040A1BA75E1C00FF7C35 /* main.cpp */,
@@ -1403,6 +1445,7 @@
 			isa = PBXGroup;
 			children = (
 				27468F091EAD147D00B1B4F5 /* litecp.cc */,
+				270C6BA81EBA754300E73415 /* litecorelog.cc */,
 			);
 			name = Tools;
 			path = ../tools;
@@ -1485,6 +1528,7 @@
 				279D41421EA5918200D8DD9D /* LiteCoreServ */,
 				27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */,
 				27468F071EAD147D00B1B4F5 /* litecp */,
+				270C6BA11EBA74D800E73415 /* litecorelog */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1528,18 +1572,23 @@
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
 				27EF69A41E26E347004748DF /* function_ref.hh */,
+				270C6B871EBA2CD600E73415 /* LogDecoder.cc */,
+				270C6B881EBA2CD600E73415 /* LogDecoder.hh */,
+				270C6B891EBA2CD600E73415 /* LogEncoder.cc */,
+				270C6B8A1EBA2CD600E73415 /* LogEncoder.hh */,
 				27E3DD351DB450B300F2872D /* Logging.cc */,
+				2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */,
 				27E3DD361DB450B300F2872D /* Logging.hh */,
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
 				273407221DEE116600EA5532 /* PlatformIO.hh */,
-				27F7A0C21D5E646000447BC6 /* RefCounted.hh */,
 				27F7A0C31D5E657C00447BC6 /* RefCounted.cc */,
+				27F7A0C21D5E646000447BC6 /* RefCounted.hh */,
+				2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */,
 				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
-				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */,
+				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
 				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
 				2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */,
-				2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */,
 				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
 				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
 				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
@@ -2136,6 +2185,24 @@
 			productReference = 2708FE521CF4CC880022F721 /* LiteCoreCppTests */;
 			productType = "com.apple.product-type.tool";
 		};
+		270C6BA01EBA74D800E73415 /* litecorelog */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 270C6BA51EBA74D800E73415 /* Build configuration list for PBXNativeTarget "litecorelog" */;
+			buildPhases = (
+				270C6B9D1EBA74D800E73415 /* Sources */,
+				270C6B9E1EBA74D800E73415 /* Frameworks */,
+				270C6B9F1EBA74D800E73415 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				270C6BAE1EBA768200E73415 /* PBXTargetDependency */,
+			);
+			name = litecorelog;
+			productName = litecorelog;
+			productReference = 270C6BA11EBA74D800E73415 /* litecorelog */;
+			productType = "com.apple.product-type.tool";
+		};
 		27139B2F18F8E9750021A9A3 /* LiteCore XCTests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 27139B4118F8E9750021A9A3 /* Build configuration list for PBXNativeTarget "LiteCore XCTests" */;
@@ -2393,6 +2460,11 @@
 				LastUpgradeCheck = 0830;
 				ORGANIZATIONNAME = Couchbase;
 				TargetAttributes = {
+					270C6BA01EBA74D800E73415 = {
+						CreatedOnToolsVersion = 8.3.2;
+						DevelopmentTeam = N2Q372V7W2;
+						ProvisioningStyle = Automatic;
+					};
 					27139B2F18F8E9750021A9A3 = {
 						TestTargetID = 27EF80F91917EEC600A327B9;
 					};
@@ -2467,6 +2539,7 @@
 				274D04071BA75E1C00FF7C35 /* C4Tests */,
 				279D41411EA5918200D8DD9D /* LiteCoreServ */,
 				27468F061EAD147D00B1B4F5 /* litecp */,
+				270C6BA01EBA74D800E73415 /* litecorelog */,
 				274D03D21BA732B000FF7C35 /* LiteCoreJNI */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
 				279D40FD1EA54A9D00D8DD9D /* civetweb */,
@@ -2562,8 +2635,20 @@
 				27FA09B31D6FB939005888AA /* RevisionStoreTest.cc in Sources */,
 				27FA09B51D6FBAAD005888AA /* CASRevisionStoreTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
+				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		270C6B9D1EBA74D800E73415 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				270C6BA91EBA754300E73415 /* litecorelog.cc in Sources */,
+				270C6BAB1EBA765E00E73415 /* StringUtil.cc in Sources */,
+				270C6BAA1EBA764B00E73415 /* LogDecoder.cc in Sources */,
+				270C6BB61EBBF74100E73415 /* LogEncoder.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2617,13 +2702,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
-				2749B95E1EB0110D0068DBF9 /* Logging.cc in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
 				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
 				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
 				27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */,
 				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
+				2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */,
 				272850E91E9D484A009CA22F /* ReplicatorAPITest.cc in Sources */,
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				2749B95F1EB011A00068DBF9 /* StringUtil.cc in Sources */,
@@ -2651,6 +2736,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2749B94C1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
+				2753AF7E1EBD22DE00C12E98 /* Logging_Stub.cc in Sources */,
 				279D411B1EA557A800D8DD9D /* Listener.cc in Sources */,
 				270C6B6A1EB7DDAD00E73415 /* Listener+Replicate.cc in Sources */,
 				2749B9881EB298360068DBF9 /* Listener+Handlers.cc in Sources */,
@@ -2660,7 +2746,6 @@
 				276E021C1EA9875E00FEFE8A /* Response.cc in Sources */,
 				276E020B1EA958C400FEFE8A /* Error.cc in Sources */,
 				276E020A1EA958B000FEFE8A /* FilePath.cc in Sources */,
-				276E020D1EA958C900FEFE8A /* Logging.cc in Sources */,
 				276E020C1EA958C400FEFE8A /* StringUtil.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2799,10 +2884,12 @@
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
+				270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */,
 				279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */,
 				27DD1513193CD005009A367D /* RevID.cc in Sources */,
 				93CD01141E933BE100AFB3FA /* CBLHTTPLogic.m in Sources */,
 				271057D41D3D70780018247B /* VectorDocument.cc in Sources */,
+				2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */,
 				275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */,
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */,
@@ -2829,7 +2916,6 @@
 				27FC81F81EAAB7C60028E38E /* Response.cc in Sources */,
 				27FC81FB1EAAB8000028E38E /* Error.cc in Sources */,
 				27FC81FC1EAAB8000028E38E /* FilePath.cc in Sources */,
-				27FC81FD1EAAB8000028E38E /* Logging.cc in Sources */,
 				27FC81FE1EAAB8000028E38E /* StringUtil.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2872,6 +2958,7 @@
 				72DE480A1E9C550A00B60952 /* Replicator.cc in Sources */,
 				276CD4291D77E92E001346A3 /* BlobStore.cc in Sources */,
 				27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */,
+				270C6B961EBA3A1900E73415 /* LogEncoder.cc in Sources */,
 				72DE480D1E9C550A00B60952 /* IncomingBlob.cc in Sources */,
 				27E3DD591DB8524300F2872D /* Database.cc in Sources */,
 				72DE48121E9C550A00B60952 /* CBLWebSocket.mm in Sources */,
@@ -2893,6 +2980,7 @@
 				2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				72DE48131E9C550A00B60952 /* CBLHTTPLogic.m in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
+				2753AF761EBD190700C12E98 /* LogDecoder.cc in Sources */,
 				2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				273407241DEE116600EA5532 /* PlatformIO.cc in Sources */,
 				72DE480F1E9C550A00B60952 /* Checkpoint.cc in Sources */,
@@ -2923,6 +3011,11 @@
 			isa = PBXTargetDependency;
 			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
 			targetProxy = 2708FE531CF4CCAB0022F721 /* PBXContainerItemProxy */;
+		};
+		270C6BAE1EBA768200E73415 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Fleece;
+			targetProxy = 270C6BAD1EBA768200E73415 /* PBXContainerItemProxy */;
 		};
 		272850E51E9CABD2009CA22F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -3097,6 +3190,101 @@
 			baseConfigurationReference = 272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */;
 			buildSettings = {
 				PRODUCT_NAME = LiteCoreCppTests;
+			};
+			name = Release;
+		};
+		270C6BA61EBA74D800E73415 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		270C6BA71EBA74D800E73415 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = N2Q372V7W2;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
@@ -3507,6 +3695,15 @@
 			buildConfigurations = (
 				2708FE501CF4CC880022F721 /* Debug */,
 				2708FE511CF4CC880022F721 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		270C6BA51EBA74D800E73415 /* Build configuration list for PBXNativeTarget "litecorelog" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				270C6BA61EBA74D800E73415 /* Debug */,
+				270C6BA71EBA74D800E73415 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

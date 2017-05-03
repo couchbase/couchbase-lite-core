@@ -8,7 +8,6 @@
 
 #include "Server.hh"
 #include "Request.hh"
-#include "Logging.hh"
 #include "Error.hh"
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
@@ -104,7 +103,7 @@ namespace litecore { namespace REST {
             rq.finish();
             return int(rq.status());
         } catch (const std::exception &x) {
-            Warn("HTTP handler caught C++ exception: %s", x.what());
+            C4Warn("HTTP handler caught C++ exception: %s", x.what());
             mg_send_http_error(conn, 500, "Internal exception");
             return 500;
         }
