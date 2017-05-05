@@ -308,7 +308,7 @@ namespace litecore { namespace websocket {
             if (expected && clean)
                 log("Socket disconnected cleanly");
             else
-                log("Unexpected or unclean socket disconnect! (reason=%d, code=%d)",
+                warn("Unexpected or unclean socket disconnect! (reason=%d, code=%d)",
                     status.reason, status.code);
 
             if (clean) {
@@ -328,7 +328,7 @@ namespace litecore { namespace websocket {
         } else {
             if (status.reason == kWebSocketClose) {
                 if (status.code != kCodeNormal && status.code != kCodeGoingAway)
-                    log("WebSocket closed abnormally with status %d", status.code);
+                    warn("WebSocket closed abnormally with status %d", status.code);
             } else if (status.code != 0) {
                 log("Socket disconnected! (reason=%d, code=%d)", status.reason, status.code);
             }

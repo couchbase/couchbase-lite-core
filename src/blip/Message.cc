@@ -60,7 +60,7 @@ namespace litecore { namespace blip {
                 // On first frame, update my flags and allocate the Writer:
                 assert(_number > 0);
                 _flags = (FrameFlags)(frameFlags & ~kMoreComing);
-                _connection->log("Receiving %s #%llu, flags=%02x",
+                _connection->logVerbose("Receiving %s #%llu, flags=%02x",
                                  kMessageTypeNames[type()], _number, flags());
                 _in.reset(new fleeceapi::JSONEncoder);
                 // Get the length of the properties, and move `frame` past the length field:
@@ -116,7 +116,7 @@ namespace litecore { namespace blip {
                 _decompressor.reset();
                 _complete = true;
 
-                _connection->log("Finished receiving %s #%llu, flags=%02x",
+                _connection->logVerbose("Finished receiving %s #%llu, flags=%02x",
                                  kMessageTypeNames[type()], _number, flags());
                 state = kEnd;
             }
@@ -181,7 +181,7 @@ namespace litecore { namespace blip {
 
     void MessageIn::respond(MessageBuilder &mb) {
         if (noReply()) {
-            _connection->log("Ignoring attempt to respond to a noReply message");
+            _connection->warn("Ignoring attempt to respond to a noReply message");
             return;
         }
         if (mb.type == kRequestType)

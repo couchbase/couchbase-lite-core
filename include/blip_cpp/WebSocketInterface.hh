@@ -87,6 +87,11 @@ namespace litecore { namespace websocket {
         bool isNormal() const {
             return reason == kWebSocketClose && (code == kCodeNormal || code == kCodeGoingAway);
         }
+
+        const char* reasonName() const  {
+            static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error"};
+            return kReasonNames[reason];
+        }
     };
 
 

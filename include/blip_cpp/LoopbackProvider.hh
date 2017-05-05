@@ -59,7 +59,7 @@ namespace litecore { namespace websocket {
 
         virtual void _send(fleece::alloc_slice msg, bool binary) override {
             if (_peer) {
-                LogTo(WSMock, "%s SEND: %s", name.c_str(), formatMsg(msg, binary).c_str());
+                LogDebug(WSMock, "%s SEND: %s", name.c_str(), formatMsg(msg, binary).c_str());
                 _peer->simulateReceived(msg, binary, _latency);
             } else {
                 LogTo(WSMock, "%s SEND: Failed, socket is closed", name.c_str());
@@ -76,7 +76,7 @@ namespace litecore { namespace websocket {
                 return;
             auto newValue = (_bufferedBytes -= msgSize);
             if (newValue <= kSendBufferSize && newValue + msgSize > kSendBufferSize) {
-                LogTo(WSMock, "%s WRITEABLE", name.c_str());
+                LogVerbose(WSMock, "%s WRITEABLE", name.c_str());
                 delegate().onWebSocketWriteable();
             }
         }

@@ -193,8 +193,8 @@ namespace litecore { namespace blip {
             if (msg->_number == 0)
                 msg->_number = ++_lastMessageNo;
             if (!msg->isAck() || BLIPLog.level() <= LogLevel::Verbose) {
-                log("Sending %s #%llu, flags=%02x",
-                    kMessageTypeNames[msg->type()], msg->_number, msg->flags());
+                logVerbose("Sending %s #%llu, flags=%02x",
+                           kMessageTypeNames[msg->type()], msg->_number, msg->flags());
             }
             _maxOutboxDepth = max(_maxOutboxDepth, _outbox.size()+1);
             _totalOutboxDepth += _outbox.size()+1;
@@ -305,8 +305,8 @@ namespace litecore { namespace blip {
                         requeue(msg);
                 } else {
                     if (!msg->isAck() || BLIPLog.level() <= LogLevel::Verbose) {
-                        log("Finished sending %s #%llu, flags=%02x",
-                            kMessageTypeNames[msg->type()], msg->_number, msg->flags());
+                        logVerbose("Finished sending %s #%llu, flags=%02x",
+                                   kMessageTypeNames[msg->type()], msg->_number, msg->flags());
                         // Add its response message to _pendingResponses:
                         MessageIn* response = msg->createResponse();
                         if (response)
@@ -326,7 +326,7 @@ namespace litecore { namespace blip {
         /** WebSocketDelegate method -- Received a frame: */
         void _onWebSocketMessage(alloc_slice frame, bool binary) {
             if (!binary) {
-                log("Ignoring non-binary WebSocket message");
+                warn("Ignoring non-binary WebSocket message");
                 return;
             }
             // Read the frame header:
@@ -357,7 +357,7 @@ namespace litecore { namespace blip {
                     receivedAck(msgNo, (type == kAckResponseType), payload);
                     break;
                 default:
-                    log("  Unknown frame type received");
+                    warn("  Unknown frame type received");
                     break;
                 }
             }
@@ -557,9 +557,8 @@ namespace litecore { namespace blip {
 
 
     void Connection::closed(CloseStatus status) {
-        static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error"};
-        log("Closed with %s %d: %.*s",
-              kReasonNames[status.reason], status.code,
+        log("Closed with %-s %d: %.*s",
+              status.reasonName(), status.code,
               (int)status.message.size, status.message.buf);
         _state = status.isNormal() ? kClosed : kDisconnected;
         _closeStatus = status;

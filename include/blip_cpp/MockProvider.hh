@@ -90,7 +90,7 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _send(fleece::alloc_slice msg, bool binary) {
-            LogTo(WSMock, "%s SEND: %s", name.c_str(), formatMsg(msg, binary).c_str());
+            LogDebug(WSMock, "%s SEND: %s", name.c_str(), formatMsg(msg, binary).c_str());
             delegate().onWebSocketWriteable();
         }
 
@@ -107,15 +107,14 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _simulateReceived(fleece::alloc_slice msg, bool binary) {
-            LogTo(WSMock, "%s RECEIVED: %s", name.c_str(), formatMsg(msg, binary).c_str());
+            LogDebug(WSMock, "%s RECEIVED: %s", name.c_str(), formatMsg(msg, binary).c_str());
             assert(_isOpen);
             delegate().onWebSocketMessage(msg, binary);
         }
 
         virtual void _simulateClosed(CloseStatus status) {
-            static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error"};
-            LogTo(WSMock, "%s Closing with %s %d: %.*s",
-                  name.c_str(), kReasonNames[status.reason], status.code,
+            LogTo(WSMock, "%s Closing with %-s %d: %.*s",
+                  name.c_str(), status.reasonName(), status.code,
                   (int)status.message.size, status.message.buf);
             _isOpen = false;
             delegate().onWebSocketClose(status);
