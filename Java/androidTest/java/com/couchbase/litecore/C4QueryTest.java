@@ -15,7 +15,6 @@ package com.couchbase.litecore;
 
 import org.junit.Test;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,8 +35,7 @@ public class C4QueryTest extends C4QueryBaseTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        Utils.copyAssets("names_100.json", context.getFilesDir());
-        importJSONLines(new File(context.getFilesDir(), "names_100.json"));
+        importJSONLines("names_100.json");
     }
 
     @Override

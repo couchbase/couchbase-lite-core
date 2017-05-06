@@ -131,7 +131,7 @@ public class C4ObserverTest extends BaseTest {
         checkChanges(Arrays.asList("A", "B"), Arrays.asList("1-aa", "1-bb"), false);
 
         // Open another database on the same file:
-        Database otherdb = new Database(dir.getPath(), Database.Create, encryptionAlgorithm(), encryptionKey());
+        Database otherdb = new Database(dir.getPath(), Database.Create | Database.Bundle | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());
         assertNotNull(otherdb);
         {
             boolean commit = false;

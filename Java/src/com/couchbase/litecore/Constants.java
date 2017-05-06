@@ -14,9 +14,6 @@
 
 package com.couchbase.litecore;
 
-/**
- * Created by hideki on 9/30/15.
- */
 public interface Constants {
 
     ////////////////////////////////////
@@ -89,6 +86,9 @@ public interface Constants {
         int POSIXDomain = 2;        // code is an errno (errno.h)
         int ForestDBDomain = 3;     // code is a fdb_status (fdb_error.h)
         int SQLiteDomain = 4;       // code is a SQLite error (sqlite3.h)
+        int FleeceDomain = 5;        // code is a Fleece error
+        int DNSDomain = 6;          // code is a DNS resolution error from <netdb.h> (EAI_*)
+        int WebSocketDomain = 7;    // code is a WebSocket close code (typically 1000...1015)
     }
 
     // LiteCoreDomain error codes:
