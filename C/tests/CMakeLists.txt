@@ -24,7 +24,7 @@ set(TEST_SRC ${TEST_SRC}
              ${TOP}/LiteCore/Support/FilePath.cc
              ${TOP}/LiteCore/Support/Error.cc
              ${TOP}/LiteCore/Support/Error_android.cc
-             ${TOP}/LiteCore/Support/Logging.cc
+             ${TOP}/LiteCore/Support/Logging_Stub.cc
              ${TOP}/REST/Response.cc)
 if(MSVC)
 	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c ${TOP}/LiteCore/Support/PlatformIO.cc ${TOP}/MSVC/strlcat.c ${TOP}/MSVC/mkdtemp.cc ${TOP}/MSVC/mkstemp.cc)

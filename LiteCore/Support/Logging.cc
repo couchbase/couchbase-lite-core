@@ -42,11 +42,11 @@ using namespace std;
 
 namespace litecore {
 
-    static void defaultCallback(const LogDomain &domain, LogLevel, const char *message);
+    static void defaultCallback(const LogDomain&, LogLevel, const char *message, va_list);
 
     LogLevel LogDomain::MinLevel = LogLevel::Info;
     LogDomain* LogDomain::sFirstDomain = nullptr;
-    void (*LogDomain::Callback)(const LogDomain&, LogLevel, const char *message) = defaultCallback;
+    LogDomain::Callback_t LogDomain::Callback = defaultCallback;
 
     static ofstream *sEncodedOut = nullptr;
     static LogEncoder* sLogEncoder = nullptr;
@@ -120,14 +120,15 @@ namespace litecore {
 
         unique_lock<mutex> lock(sLogMutex);
         if (Callback) {
-            char *start = &sFormatBuffer[0];
-            if (objRef) {
-                start += sprintf(sFormatBuffer, "{%u} ", objRef);
-            }
             va_list args2;
             va_copy(args2, args);
-            vsnprintf(start, sizeof(sFormatBuffer) - (start-&sFormatBuffer[0]), fmt, args2);
-            Callback(*this, level, sFormatBuffer);
+            if (objRef) {
+                snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%u} %s", objRef, fmt);
+                Callback(*this, level, sFormatBuffer, args2);
+            } else {
+                Callback(*this, level, fmt, args2);
+            }
+            va_end(args2);
         }
 
         if (sLogEncoder) {
@@ -141,6 +142,14 @@ namespace litecore {
     }
 
 
+    static void invokeCallback(LogDomain &domain, LogLevel level, const char *fmt, ...) {
+        va_list args;
+        va_start(args, fmt);
+        LogDomain::Callback(domain, level, fmt, args);
+        va_end(args);
+    }
+
+
     unsigned LogDomain::registerObject(const std::string &description, LogLevel level) {
         unique_lock<mutex> lock(sLogMutex);
         unsigned objRef;
@@ -149,16 +158,15 @@ namespace litecore {
         else
             objRef = ++_lastObjRef;
 
-        if (Callback) {
-            snprintf(sFormatBuffer, sizeof(sFormatBuffer),
-                     "{%u}--> %s", objRef, description.c_str());
-            Callback(*this, level, sFormatBuffer);
-        }
+        if (Callback)
+            invokeCallback(*this, level, "{%u}--> %s", objRef, description.c_str());
         return objRef;
     }
 
 
-    static void defaultCallback(const LogDomain &domain, LogLevel level, const char *message) {
+    static void defaultCallback(const LogDomain &domain, LogLevel level,
+                                const char *fmt, va_list args)
+    {
         #ifdef __ANDROID__
             static const int kLevels[5] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_INFO,
                                            ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
@@ -168,13 +176,15 @@ namespace litecore {
                 strcat(source, " ");
                 strcat(source, name);
             }
-            __android_log_write(kLevels[(int)level], source, message);
+            vsnprintf(sFormatBuffer, sizeof(sFormatBuffer), fmt, args);
+            __android_log_write(kLevels[(int)level], source, sFormatBuffer);
         #else
             auto name = domain.name();
             static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
             LogDecoder::writeTimestamp(LogDecoder::now(), cerr);
             LogDecoder::writeHeader(kLevels[(int)level], name, cerr);
-            cerr << message << '\n';
+            vfprintf(stderr, fmt, args);
+            fputc('\n', stderr);
         #endif
     }
 

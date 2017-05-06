@@ -9,7 +9,7 @@
 //
 
 #pragma once
-
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -243,7 +243,7 @@ typedef C4_ENUM(int8_t, C4LogLevel) {
 typedef struct c4LogDomain *C4LogDomain;
 
 /** A logging callback that the application can register. */
-typedef void (*C4LogCallback)(C4LogDomain, C4LogLevel, C4Slice message);
+typedef void (*C4LogCallback)(C4LogDomain, C4LogLevel, const char *fmt, va_list args);
 
 /** The default log domain. */
 CBL_CORE_API extern const C4LogDomain kC4DefaultLog;

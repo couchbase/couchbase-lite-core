@@ -204,6 +204,7 @@ namespace litecore {
                         out << param;
                         break;
                     }
+                    case '@':
                     case 's': {
                         if (minus && !dotStar) {
                             out << readStringToken();

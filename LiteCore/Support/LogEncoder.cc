@@ -13,6 +13,11 @@
 #include <exception>
 #include <time.h>
 
+#if __APPLE__
+#import <CoreFoundation/CFBase.h>
+#import <CoreFoundation/CFString.h>
+#endif
+
 using namespace std;
 using namespace fleece;
 
@@ -175,6 +180,28 @@ namespace litecore {
                         _writer.write(&param, sizeof(param));
                         break;
                     }
+#if __APPLE__
+                    case '@': {
+                        // "%@" substitutes an Objective-C or CoreFoundation object's description.
+                        CFTypeRef param = va_arg(args, CFTypeRef);
+                        if (param == nullptr) {
+                            writeUVarInt(6);
+                            _writer.write("(null)", 6);
+                        } else {
+                            CFStringRef description;
+                            if (CFGetTypeID(param) == CFStringGetTypeID())
+                                description = (CFStringRef)param;
+                            else
+                                description = CFCopyDescription(param);
+                            nsstring_slice descSlice(description);
+                            writeUVarInt(descSlice.size);
+                            _writer.write(descSlice);
+                            if (description != param)
+                                CFRelease(description);
+                        }
+                        break;
+                    }
+#endif
                     case '%':
                         break;
                     default:

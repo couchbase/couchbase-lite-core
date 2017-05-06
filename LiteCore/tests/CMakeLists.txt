@@ -33,8 +33,11 @@ target_link_libraries(CppTests  LiteCoreStatic
                                 SQLite3_UnicodeSN
                                 BLIPStatic)
 
-
-if(NOT APPLE)
+if(APPLE)
+    target_link_libraries(CppTests  "-framework Foundation"
+                                    "-framework CFNetwork"
+                                    "z")
+else()
     if(UNIX AND NOT ANDROID)
         target_link_libraries(CppTests  crypto  bsd c++abi z pthread atomic)
     elseif(ANDROID)

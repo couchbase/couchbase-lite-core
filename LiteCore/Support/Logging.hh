@@ -79,7 +79,9 @@ public:
         Changes only take effect if made before any logging occurs. */
     static LogLevel MinLevel;
 
-    static void (*Callback)(const LogDomain&, LogLevel, const char *message);
+    using Callback_t = void(*)(const LogDomain&, LogLevel, const char *format, va_list);
+
+    static Callback_t Callback;
 
     static void writeEncodedLogsTo(const std::string &filePath);
 

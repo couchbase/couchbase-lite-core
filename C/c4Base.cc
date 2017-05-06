@@ -161,25 +161,9 @@ namespace c4Internal {
 #pragma mark - LOGGING:
 
 
-static C4LogCallback clientLogCallback;
-
-
-static void logCallback(const LogDomain &domain, LogLevel level, const char *message) {
-    auto cb = clientLogCallback;
-    if (cb)
-        cb((C4LogDomain)&domain, (C4LogLevel)level, toc4slice(slice(message)));
-}
-
-
 void c4log_register(C4LogLevel level, C4LogCallback callback) noexcept {
-    if (callback) {
-        LogDomain::MinLevel = (LogLevel)level;
-        LogDomain::Callback = logCallback;
-    } else {
-        LogDomain::MinLevel = LogLevel::None;
-        LogDomain::Callback = nullptr;
-    }
-    clientLogCallback = callback;
+    LogDomain::MinLevel = (LogLevel)level;
+    LogDomain::Callback = (LogDomain::Callback_t)callback;
 }
 
 
