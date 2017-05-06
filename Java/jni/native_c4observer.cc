@@ -15,6 +15,7 @@
 #include "com_couchbase_litecore_C4DatabaseObserver.h"
 #include "com_couchbase_litecore_C4DocumentObserver.h"
 #include "native_glue.hh"
+#include "logging.h"
 
 using namespace litecore;
 using namespace litecore::jni;
@@ -118,9 +119,15 @@ bool litecore::jni::initC4Observer(JNIEnv *env) {
  * @param ctx
  */
 static void c4DBObsCallback(C4DatabaseObserver *obs, void *ctx) {
-    JNIEnv *env;
-    if (gJVM->GetEnv((void **) &env, JNI_VERSION_1_6) == JNI_OK) {
+    JNIEnv *env = NULL;
+    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4DBObs, m_C4DBObs_callback, (jlong) obs);
+    } else if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
+            env->CallStaticVoidMethod(cls_C4DBObs, m_C4DBObs_callback, (jlong) obs);
+            gJVM->DetachCurrentThread();
+        }
     }
 }
 
@@ -190,10 +197,17 @@ Java_com_couchbase_litecore_C4DatabaseObserver_free(JNIEnv *env, jclass clazz, j
  */
 static void
 c4DocObsCallback(C4DocumentObserver *obs, C4Slice docID, C4SequenceNumber seq, void *ctx) {
-    JNIEnv *env;
-    if (gJVM->GetEnv((void **) &env, JNI_VERSION_1_6) == JNI_OK) {
+    JNIEnv *env = NULL;
+    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4DocObs, m_C4DocObs_callback, (jlong) obs,
                                   toJString(env, docID), seq);
+    } else if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
+            env->CallStaticVoidMethod(cls_C4DocObs, m_C4DocObs_callback, (jlong) obs,
+                                      toJString(env, docID), seq);
+            gJVM->DetachCurrentThread();
+        }
     }
 }
 
