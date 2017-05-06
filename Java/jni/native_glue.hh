@@ -29,6 +29,8 @@ namespace litecore {
         bool initDatabase(JNIEnv *);     // Implemented in native_database.cc
         bool initDocument(JNIEnv *);     // Implemented in native_document.cc
         bool initC4Observer(JNIEnv *);   // Implemented in native_c4observer.cc
+        bool initC4Replicator(JNIEnv *); // Implemented in native_c4replicator.cc
+        bool initC4Socket(JNIEnv *);     // Implemented in native_c4socket.cc
 
 // Creates a temporary slice value from a Java String object
         class jstringSlice {

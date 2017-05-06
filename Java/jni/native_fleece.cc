@@ -22,7 +22,6 @@
 #include "com_couchbase_litecore_fleece_FLSliceResult.h"
 #include "native_glue.hh"
 
-
 using namespace litecore;
 using namespace litecore::jni;
 

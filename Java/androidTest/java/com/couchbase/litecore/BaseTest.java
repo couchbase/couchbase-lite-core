@@ -19,18 +19,23 @@ import android.util.Log;
 
 import com.couchbase.litecore.fleece.FLSliceResult;
 import com.couchbase.litecore.fleece.FLValue;
+import com.couchbase.litecore.utils.Config;
+import com.couchbase.litecore.utils.StopWatch;
 
 import org.junit.After;
 import org.junit.Before;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static android.R.attr.path;
+import static com.couchbase.lite.utils.Config.TEST_PROPERTIES_FILE;
 import static com.couchbase.litecore.Constants.C4DocumentVersioning.kC4RevisionTrees;
 import static com.couchbase.litecore.Constants.C4DocumentVersioning.kC4VersionVectors;
 import static org.junit.Assert.assertNotNull;
@@ -63,6 +68,7 @@ public class BaseTest implements Constants {
         return null;
     }
 
+    protected Config config;
     protected Context context;
     protected File dir;
     protected Database db = null;
@@ -90,11 +96,13 @@ public class BaseTest implements Constants {
     public void setUp() throws Exception {
         context = InstrumentationRegistry.getContext();
 
+        config = new Config(context.getAssets().open(TEST_PROPERTIES_FILE));
+
         String dbFilename = "cbl_core_test.sqlite3";
         deleteDatabaseFile(dbFilename);
         context = InstrumentationRegistry.getContext();
         dir = new File(context.getFilesDir(), dbFilename);
-        db = new Database(dir.getPath(), Database.Create | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());
+        db = new Database(dir.getPath(), Database.Create | Database.Bundle | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());
     }
 
     protected void deleteDatabaseFile(String dbFileName) {
@@ -105,7 +113,7 @@ public class BaseTest implements Constants {
         File file = new File(context.getFilesDir(), filename);
         if (file.exists()) {
             if (!file.delete()) {
-                //Log.e(LOG_TAG, "ERROR failed to delete: dbFile=" + file);
+                Log.e(LOG_TAG, "ERROR failed to delete: dbFile=" + file);
             }
         }
     }
@@ -114,6 +122,8 @@ public class BaseTest implements Constants {
     public void tearDown() throws Exception {
         if (db != null) {
             db.close();
+            db.delete();
+            db.free();
             db = null;
         }
     }
@@ -152,19 +162,25 @@ public class BaseTest implements Constants {
         }
     }
 
-    protected long importJSONLines(File path) throws LiteCoreException, IOException {
-        return importJSONLines(path, 15.0, true);
+    protected InputStream getAsset(String name) {
+        return this.getClass().getResourceAsStream("/assets/" + name);
+    }
+    protected long importJSONLines(String name) throws LiteCoreException, IOException {
+        return importJSONLines(getAsset(name));
+    }
+    protected long importJSONLines(InputStream is) throws LiteCoreException, IOException {
+        return importJSONLines(is, 15.0, true);
     }
 
     // Read a file that contains a JSON document per line. Every line becomes a document.
-    protected long importJSONLines(File path, double timeout, boolean verbose) throws LiteCoreException, IOException {
+    protected long importJSONLines(InputStream is, double timeout, boolean verbose) throws LiteCoreException, IOException {
         Log.i(LOG_TAG, String.format("Reading %s ...  ", path));
         StopWatch st = new StopWatch();
         long numDocs = 0;
         boolean commit = false;
         db.beginTransaction();
         try {
-            BufferedReader br = new BufferedReader(new FileReader(path));
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
             try {
                 String line = null;
                 while ((line = br.readLine()) != null) {

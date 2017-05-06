@@ -33,12 +33,14 @@ set(JNI_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/jni)
 set(JNI_CLASSES
     com.couchbase.litecore.C4BlobKey
     com.couchbase.litecore.C4BlobStore
-    com.couchbase.litecore.C4Query
-    com.couchbase.litecore.C4QueryEnumerator
     com.couchbase.litecore.C4BlobReadStream
     com.couchbase.litecore.C4BlobWriteStream
     com.couchbase.litecore.C4DatabaseObserver
     com.couchbase.litecore.C4DocumentObserver
+    com.couchbase.litecore.C4Query
+    com.couchbase.litecore.C4QueryEnumerator
+    com.couchbase.litecore.C4Replicator
+    com.couchbase.litecore.C4Socket
     com.couchbase.litecore.Database
     com.couchbase.litecore.Document
     com.couchbase.litecore.DocumentIterator
@@ -94,6 +96,7 @@ set_target_properties(crypto PROPERTIES IMPORTED_LOCATION
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     target_link_libraries(  LiteCoreJNI
                             LiteCoreStatic
+                            BLIPStatic
                             FleeceStatic
                             sqlite3
                             crypto
@@ -104,11 +107,14 @@ else()
 
 	target_link_libraries(	LiteCoreJNI
                         	LiteCoreStatic
+                            BLIPStatic
                         	FleeceStatic
                         	sqlite3
                             crypto
                         	SQLite3_UnicodeSN
-                        	"log")
+                            "atomic"
+                        	"log"
+                            z)
 
 
 endif()

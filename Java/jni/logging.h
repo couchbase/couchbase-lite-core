@@ -1,7 +1,3 @@
-//
-// Created by hideki on 4/17/17.
-//
-
 #ifndef ANDROID_LOGGING_H
 #define ANDROID_LOGGING_H
 

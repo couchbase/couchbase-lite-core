@@ -11,22 +11,8 @@
  * either express or implied. See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package com.couchbase.litecore.fleece;
+package com.couchbase.litecore;
 
-public class FLSharedKeys {
-    private long handle = 0; // hold pointer to FLSharedKeys
-
-    //-------------------------------------------------------------------------
-    // public methods
-    //-------------------------------------------------------------------------
-    public FLSharedKeys(long handle) {
-        this.handle = handle;
-    }
-
-    //-------------------------------------------------------------------------
-    // package level access
-    //-------------------------------------------------------------------------
-    long getHandle() {
-        return handle;
-    }
+public interface C4ReplicatorListener {
+    void callback(C4Replicator replicator, C4ReplicatorStatus status, Object context);
 }

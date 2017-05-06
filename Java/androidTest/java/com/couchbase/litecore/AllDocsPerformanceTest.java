@@ -15,6 +15,8 @@ package com.couchbase.litecore;
 
 import android.util.Log;
 
+import com.couchbase.litecore.utils.StopWatch;
+
 import org.junit.Before;
 import org.junit.Test;
 

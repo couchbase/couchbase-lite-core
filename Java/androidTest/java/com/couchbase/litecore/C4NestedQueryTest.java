@@ -15,7 +15,6 @@ package com.couchbase.litecore;
 
 import org.junit.Test;
 
-import java.io.File;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
@@ -32,8 +31,7 @@ public class C4NestedQueryTest extends C4QueryBaseTest {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        Utils.copyAssets("nested.json", context.getFilesDir());
-        importJSONLines(new File(context.getFilesDir(), "nested.json"));
+        importJSONLines("nested.json");
     }
 
     @Override
