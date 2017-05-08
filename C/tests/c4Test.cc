@@ -109,6 +109,16 @@ std::string json5(std::string str) {
 //}
 
 
+void AssertionFailed(const char *fn, const char *file, unsigned line, const char *expr,
+                     const char *message)
+{
+    if (!message)
+        message = expr;
+    fprintf(stderr, "FATAL: Assertion failed: %s (%s:%u, in %s)\n", message, file, line, fn);
+    abort();
+}
+
+
 #pragma mark - C4TEST CLASS
 
 #if defined(CMAKE) && defined(_MSC_VER)
@@ -430,7 +440,6 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
         readFileByLines(path, [&](FLSlice line)
         {
             C4Error c4err;
-            FLError error;
             FLSliceResult body = c4db_encodeJSON(db, {line.buf, line.size}, &c4err);
             REQUIRE(body.buf);
 

@@ -19,6 +19,7 @@ using namespace fleeceapi;
 #include <functional>
 
 
+#if 0 // disabled because CMake is building test binaries with optimization
 #ifdef NDEBUG
     // Catch's assertion macros are pretty slow, and affect benchmark times.
     // So replace them with quick-n-dirty alternatives in an optimized build.
@@ -29,6 +30,19 @@ using namespace fleeceapi;
     #undef INFO
     #define INFO(X)
 #endif
+#endif
+
+
+// REQUIRE, CHECK and other Catch macros can't be used on background threads because Check is not
+// thread-safe. Use this instead. Don't use regular assert() because if this is an optimized build
+// it'll be ignored.
+#define	Assert(e, ...) \
+    (_usuallyFalse(!(e)) ? AssertionFailed(__func__, __FILE__, __LINE__, #e, ##__VA_ARGS__) \
+                         : (void)0)
+
+[[noreturn]] void AssertionFailed(const char *func, const char *file, unsigned line,
+                                  const char *expr,
+                                  const char *message =nullptr);
 
 
 #ifdef _MSC_VER

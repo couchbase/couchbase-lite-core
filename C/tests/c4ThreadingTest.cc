@@ -9,7 +9,6 @@
 #include "c4Test.hh"
 #include "c4Observer.h"
 #include "c4DocEnumerator.h"
-#include <assert.h>
 #include <chrono>
 #include <condition_variable>
 #include <iostream>
@@ -21,9 +20,9 @@ using namespace std;
 
 // The Catch library is not thread-safe, so we can't use it in this test.
 #undef REQUIRE
-#define REQUIRE(X) do {if (!(X)) abort();} while (0)
+#define REQUIRE(X) Assert(X)
 #undef CHECK
-#define CHECK(X) do {if (!(X)) abort();} while (0)
+#define CHECK(X) Assert(X)
 #undef INFO
 #define INFO(X)
 

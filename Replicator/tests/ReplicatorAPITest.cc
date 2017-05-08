@@ -61,7 +61,7 @@ public:
     }
 
     void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
-        assert(r == repl);      // can't call REQUIRE on a background thread
+        Assert(r == repl);      // can't call REQUIRE on a background thread
         callbackStatus = s;
         ++numCallbacks;
         numCallbacksWithLevel[(int)s.level]++;

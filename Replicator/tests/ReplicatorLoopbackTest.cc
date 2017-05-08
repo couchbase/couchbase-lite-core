@@ -94,10 +94,10 @@ public:
             Log(">> Replicator is %-s, progress %llu/%llu",
                 kC4ReplicatorActivityLevelNames[status.level],
                 status.progress.completed, status.progress.total);
-            assert(status.progress.completed <= status.progress.total);
+            Assert(status.progress.completed <= status.progress.total);
             if (status.progress.total > 0) {
-                assert(status.progress.completed >= statusReceived.progress.completed);
-                assert(status.progress.total     >= statusReceived.progress.total);
+                Assert(status.progress.completed >= statusReceived.progress.completed);
+                Assert(status.progress.total     >= statusReceived.progress.total);
             }
             statusReceived = status;
         }
@@ -130,13 +130,13 @@ public:
                 Log("-------- Creating %d docs --------", 2*i);
                 c4::Transaction t(bgdb);
                 C4Error err;
-                assert(t.begin(&err));
+                Assert(t.begin(&err));
                 for (int j = 0; j < 2*i; j++) {
                     char docID[20];
                     sprintf(docID, "newdoc%d", docNo++);
                     createRev(bgdb, c4str(docID), "1-11"_sl, kFleeceBody);
                 }
-                assert(t.commit(&err));
+                Assert(t.commit(&err));
             }
         });
     }

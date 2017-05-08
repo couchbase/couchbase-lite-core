@@ -12,7 +12,6 @@
 #include "Base.hh"
 #include "Benchmark.hh"
 #include <fcntl.h>
-#include <assert.h>
 #include <sys/stat.h>
 #include <iostream>
 #include <chrono>
@@ -109,7 +108,6 @@ public:
         C4Query *query = c4query_new(db, c4str(whereStr), &error);
         REQUIRE(query);
         auto e = c4query_run(query, nullptr, kC4SliceNull, &error);
-        C4SliceResult artistSlice;
         while (c4queryenum_next(e, &error)) {
             std::string artist((const char*)e->docID.buf, e->docID.size);
             if (verbose) std::cerr << artist << "  ";
@@ -127,7 +125,7 @@ public:
         Benchmark b;
         for (size_t readNo = 0; readNo < numDocsToRead; ++readNo) {
             char docID[30];
-            sprintf(docID, "%07lu", ((unsigned)random() % numDocs) + 1);
+            sprintf(docID, "%07zu", ((unsigned)random() % numDocs) + 1);
             INFO("Reading doc " << docID);
             b.start();
             C4Error error;

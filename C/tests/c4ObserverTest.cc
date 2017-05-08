@@ -38,7 +38,6 @@ class C4ObserverTest : public C4Test {
                       std::vector<const char*> expectedRevIDs,
                       bool expectedExternal =false) {
         C4DatabaseChange changes[100];
-        C4SequenceNumber lastSeq;
         bool external;
         auto changeCount = c4dbobs_getChanges(dbObserver, changes, 100, &external);
         REQUIRE(changeCount == expectedDocIDs.size());

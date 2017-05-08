@@ -10,7 +10,6 @@
 #include "SQLiteDataFile.hh"
 #include "FilePath.hh"
 #include "PlatformIO.hh"
-#include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
 
