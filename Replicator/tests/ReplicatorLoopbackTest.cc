@@ -91,9 +91,9 @@ public:
         // Note: Can't use Catch on a background thread
         if (repl == replClient) {
             ++statusChangedCalls;
-            Log(">> Replicator is %-s, progress %llu/%llu",
+            Log(">> Replicator is %-s, progress %lu/%lu",
                 kC4ReplicatorActivityLevelNames[status.level],
-                status.progress.completed, status.progress.total);
+                (unsigned long)status.progress.completed, (unsigned long)status.progress.total);
             Assert(status.progress.completed <= status.progress.total);
             if (status.progress.total > 0) {
                 Assert(status.progress.completed >= statusReceived.progress.completed);
