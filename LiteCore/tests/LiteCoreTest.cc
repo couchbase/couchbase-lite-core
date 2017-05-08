@@ -12,6 +12,7 @@
 #include "PlatformIO.hh"
 #include <stdlib.h>
 #include <stdarg.h>
+#include <mutex>
 
 #if defined(__linux__) && !defined(__ANDROID__)
      #include <bsd/stdlib.h>
