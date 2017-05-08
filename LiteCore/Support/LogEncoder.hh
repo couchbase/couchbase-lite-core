@@ -9,6 +9,7 @@
 #pragma once
 #include "Writer.hh"
 #include "Benchmark.hh"
+#include "PlatformCompat.hh"
 #include <stdarg.h>
 #include <iostream>
 #include <unordered_map>

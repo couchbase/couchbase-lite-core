@@ -119,7 +119,7 @@ std::string _logSlice(fleece::slice);
 
 #define LogTo(DOMAIN, FMT, ...)         LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
 #define LogVerbose(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
-#define LogDebug(DOMAIN, FMT, ARGS...)  LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
+#define LogDebug(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
 
 #define Debug(FMT, ...)                 LogToAt(DefaultLog, Debug,   FMT, ##__VA_ARGS__)
 #define Log(FMT, ...)                   LogToAt(DefaultLog, Info,    FMT, ##__VA_ARGS__)

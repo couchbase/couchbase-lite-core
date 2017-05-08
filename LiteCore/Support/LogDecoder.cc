@@ -10,6 +10,7 @@
 #include "LogEncoder.hh"
 #include "Endian.hh"
 #include "varint.hh"
+#include "PlatformCompat.hh"
 #include <exception>
 #include <sstream>
 #include <time.h>
@@ -81,9 +82,10 @@ namespace litecore {
 
 
     /*static*/ LogDecoder::Timestamp LogDecoder::now() {
-        auto t = chrono::system_clock::now();
-        chrono::time_point<chrono::system_clock, chrono::microseconds> m(t);
-        auto count = m.time_since_epoch().count();
+        using namespace chrono;
+
+        auto now = time_point_cast<microseconds>(system_clock::now());
+        auto count = now.time_since_epoch().count();
         time_t secs = count / 1000000;
         unsigned microsecs = count % 1000000;
         return {secs, microsecs};
