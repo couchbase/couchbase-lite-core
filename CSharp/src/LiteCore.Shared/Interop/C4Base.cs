@@ -308,6 +308,15 @@ namespace LiteCore.Interop
 #endif
         }
 
+		public static unsafe C4LogDomain* c4log_getDomain(string name, bool create)
+		{
+			var bytes = Encoding.UTF8.GetBytes(name);
+			fixed (byte* bytes_ = bytes)
+			{
+				return Native.c4log_getDomain(bytes_, create);
+			}
+		}
+
         [DllImport("kernel32")]
         private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
     }
