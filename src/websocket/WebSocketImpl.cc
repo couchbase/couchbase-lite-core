@@ -301,15 +301,14 @@ namespace litecore { namespace websocket {
     // Called when the underlying socket closes.
     void WebSocketImpl::onClose(CloseStatus status) {
         if (_framing) {
-            assert(status.reason != kWebSocketClose);
             std::lock_guard<std::mutex> lock(_mutex);
             bool clean = (status.code == 0);
             bool expected = (_closeSent && _closeReceived);
             if (expected && clean)
                 log("Socket disconnected cleanly");
             else
-                warn("Unexpected or unclean socket disconnect! (reason=%d, code=%d)",
-                    status.reason, status.code);
+                warn("Unexpected or unclean socket disconnect! (reason=%-s, code=%d)",
+                    status.reasonName(), status.code);
 
             if (clean) {
                 status.reason = kWebSocketClose;
