@@ -89,7 +89,8 @@ namespace litecore { namespace websocket {
         }
 
         const char* reasonName() const  {
-            static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error"};
+            static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error", "Unknown error"};
+            assert(reason < CloseReason(4));
             return kReasonNames[reason];
         }
     };
