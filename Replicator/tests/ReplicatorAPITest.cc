@@ -54,7 +54,7 @@ public:
     void logState(C4ReplicatorStatus status) {
         char message[200];
         c4error_getMessageC(status.error, message, sizeof(message));
-        C4Log(">>> C4Replicator state: %-s, progress=%llu/%llu, error=%d/%d: %s",
+        C4Log("*** C4Replicator state: %-s, progress=%llu/%llu, error=%d/%d: %s",
               kC4ReplicatorActivityLevelNames[status.level],
               status.progress.completed, status.progress.total,
               status.error.domain, status.error.code, message);
@@ -193,8 +193,15 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[Push][.special]"
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Push][.special]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Pull][.special]") {
+    remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
+}
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[Pull][.special]") {
+    remoteDBName = kITunesDBName;
+    replicate(kC4Disabled, kC4Continuous);
 }
 
 

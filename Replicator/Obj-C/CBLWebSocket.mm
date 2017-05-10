@@ -194,11 +194,16 @@ static void doCompletedReceive(C4Socket* s, size_t byteCount) {
     [_task readDataOfMinLength: 1 maxLength: NSUIntegerMax timeout: kConnectTimeout
              completionHandler: ^(NSData* data, BOOL atEOF, NSError* error)
     {
-        LogVerbose("Received %zu bytes of HTTP response", data.length);
+        if (atEOF && !error) {
+            error = [NSError errorWithDomain: NSPOSIXErrorDomain
+                                        code: ECONNRESET
+                                    userInfo: nil];
+        }
         if (error) {
             [self didCloseWithError: error];
             return;
         }
+        LogVerbose("Received %zu bytes of HTTP response", data.length);
         if (!CFHTTPMessageAppendBytes(httpResponse, (const UInt8*)data.bytes, data.length)) {
             // Error reading response!
             [self didCloseWithCode: kWebSocketCloseProtocolError
