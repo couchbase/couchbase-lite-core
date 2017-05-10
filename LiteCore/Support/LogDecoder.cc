@@ -86,7 +86,7 @@ namespace litecore {
 
         auto now = time_point_cast<microseconds>(system_clock::now());
         auto count = now.time_since_epoch().count();
-        time_t secs = count / 1000000;
+        time_t secs = (time_t)count / 1000000;
         unsigned microsecs = count % 1000000;
         return {secs, microsecs};
     }
@@ -211,7 +211,7 @@ namespace litecore {
                         if (minus && !dotStar) {
                             out << readStringToken();
                         } else {
-                            size_t size = readUVarInt();
+                            size_t size = (size_t)readUVarInt();
                             char buf[200];
                             while (size > 0) {
                                 auto n = min(size, sizeof(buf));
@@ -256,7 +256,7 @@ namespace litecore {
 
 
     const string& LogDecoder::readStringToken() {
-        auto tokenID = readUVarInt();
+        auto tokenID = (size_t)readUVarInt();
         if (tokenID < _tokens.size()) {
             return _tokens[tokenID];
         } else if (tokenID == _tokens.size()) {
