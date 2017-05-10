@@ -236,6 +236,8 @@ static void doCompletedReceive(C4Socket* s, size_t byteCount) {
         if (httpStatus >= 300 && httpStatus < 1000)
             closeCode = (C4WebSocketCloseCode)httpStatus;
         NSString* reason = CFBridgingRelease(CFHTTPMessageCopyResponseStatusLine(httpResponse));
+        if ([reason hasPrefix: @"HTTP/1.1 "])
+            reason = [reason substringFromIndex: 9];
         [self didCloseWithCode: closeCode reason: reason];
 
     } else if (!checkHeader(httpResponse, @"Connection", @"Upgrade", NO)) {
@@ -401,11 +403,13 @@ static void doCompletedReceive(C4Socket* s, size_t byteCount) {
         Log("CBLWebSocket CLOSED WITH ERROR: %s %d \"%s\"", domain.UTF8String, error.code, message);
         C4ErrorDomain c4Domain;
         auto c4Code = (int)error.code;
-        if ([domain isEqualToString: NSPOSIXErrorDomain])
+        if ([domain isEqualToString: @"WebSocket"])
+            c4Domain = WebSocketDomain;
+        else if ([domain isEqualToString: NSPOSIXErrorDomain])
             c4Domain = POSIXDomain;
         else {
             c4Domain = LiteCoreDomain;
-            c4Code = -1;
+            c4Code = kC4ErrorRemoteError;
         }
         c4err = c4error_make(c4Domain, c4Code, c4str(message));
     } else {

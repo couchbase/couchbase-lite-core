@@ -92,7 +92,7 @@ typedef C4_ENUM(uint32_t, C4ErrorDomain) {
     SQLiteDomain = 4,   // code is a SQLite error
     FleeceDomain,       // code is a Fleece error
     DNSDomain,          // code is a DNS resolution error from <netdb.h> (EAI_*)
-    WebSocketDomain,    // code is a WebSocket close code (typically 1000...1015)
+    WebSocketDomain,    // code is a WebSocket close code (1000...1015) or HTTP error (400..599)
 };
 
 

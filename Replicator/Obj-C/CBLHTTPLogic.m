@@ -250,9 +250,14 @@
             Log(@"%@: HTTP auth failed; sent Authorization: %@  ;  got WWW-Authenticate: %@",
                 self, _authorizationHeader, authResponse);
             NSDictionary* challengeInfo = [[self class] parseAuthHeader: authResponse];
-            NSDictionary* errorInfo = @{@"HTTPAuthorization": _authorizationHeader,
-                                        @"HTTPAuthenticateHeader": authResponse,
-                                        @"AuthChallenge": challengeInfo};
+            
+            NSMutableDictionary* errorInfo = [NSMutableDictionary new];
+            if (_authorizationHeader)
+                errorInfo[@"HTTPAuthorization"] = _authorizationHeader;
+            if (authResponse)
+                errorInfo[@"HTTPAuthenticateHeader"] = authResponse;
+            if (challengeInfo)
+                errorInfo[@"AuthChallenge"] = challengeInfo;
             [self setErrorCode: NSURLErrorUserAuthenticationRequired userInfo: errorInfo];
             break;
         }

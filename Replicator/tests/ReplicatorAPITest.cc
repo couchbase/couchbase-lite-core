@@ -30,6 +30,7 @@ public:
     constexpr static const C4String kScratchDBName = C4STR("scratch");
     constexpr static const C4String kITunesDBName = C4STR("itunes");
     constexpr static const C4String kWikipedia1kDBName = C4STR("wikipedia1k");
+    constexpr static const C4String kProtectedDBName = C4STR("seekrit");
 
     ReplicatorAPITest()
     :C4Test(0)
@@ -112,7 +113,8 @@ public:
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
 constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
-                         ReplicatorAPITest::kWikipedia1kDBName;
+                         ReplicatorAPITest::kWikipedia1kDBName,
+                         ReplicatorAPITest::kProtectedDBName;
 
 
 TEST_CASE("URL Parsing") {
@@ -167,6 +169,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
     CHECK(callbackStatus.progress.total == 0);
     CHECK(callbackStatus.error.domain == POSIXDomain);
     CHECK(callbackStatus.error.code == ECONNREFUSED);
+}
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[Push][.special]") {
+    remoteDBName = kProtectedDBName;
+    replicate(kC4OneShot, kC4Disabled, false);
 }
 
 
