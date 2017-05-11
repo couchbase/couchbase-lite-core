@@ -203,7 +203,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][C]") {
     }
 
     static const unsigned kNumRevs = 10000;
-    Stopwatch st;
+    fleece::Stopwatch st;
     C4Error error;
     auto doc = c4doc_get(db, kDocID, false, &error);
     {

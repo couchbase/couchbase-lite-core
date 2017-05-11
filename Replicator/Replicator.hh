@@ -11,7 +11,7 @@
 #include "Checkpoint.hh"
 #include "BLIPConnection.hh"
 #include "FleeceCpp.hh"
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 
 using namespace litecore::blip;
 
@@ -106,7 +106,7 @@ namespace litecore { namespace repl {
         Retained<Puller> _puller;
         Connection::State _connectionState;
         Status _pushStatus {}, _pullStatus {}, _dbStatus {};
-        Stopwatch _sinceDelegateCall;
+        fleece::Stopwatch _sinceDelegateCall;
         ActivityLevel _lastDelegateCallLevel {};
         bool _waitingToCallDelegate {false};
 

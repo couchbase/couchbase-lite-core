@@ -8,7 +8,7 @@
 
 #pragma once
 #include "Writer.hh"
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 #include "PlatformCompat.hh"
 #include <stdarg.h>
 #include <iostream>
@@ -54,7 +54,7 @@ namespace litecore {
 
         fleece::Writer _writer;
         std::ostream &_out;
-        Stopwatch _st;
+        fleece::Stopwatch _st;
         int64_t _lastElapsed {0};
         int64_t _lastSaved {0};
         std::unordered_map<size_t, unsigned> _formats;

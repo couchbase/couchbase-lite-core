@@ -10,7 +10,7 @@
 #include "c4Document+Fleece.h"
 #include "FleeceCpp.hh"
 #include "StringUtil.hh"
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 #include <exception>
 #include <iostream>
 #include <fstream>

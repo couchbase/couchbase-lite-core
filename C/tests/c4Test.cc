@@ -382,7 +382,7 @@ bool C4Test::readFileByLines(string path, function<bool(FLSlice)> callback) {
 
 unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bool verbose) {
     C4Log("Reading %s ...  ", path.c_str());
-    Stopwatch st;
+    fleece::Stopwatch st;
     auto jsonData = readFile(path);
     FLError error;
     FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
@@ -433,7 +433,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
 // Read a file that contains a JSON document per line. Every line becomes a document.
 unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
     C4Log("Reading %s ...  ", path.c_str());
-    Stopwatch st;
+    fleece::Stopwatch st;
     unsigned numDocs = 0;
     {
         TransactionHelper t(db);

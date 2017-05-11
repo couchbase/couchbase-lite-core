@@ -11,7 +11,7 @@
 #include "FleeceCpp.hh"
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"

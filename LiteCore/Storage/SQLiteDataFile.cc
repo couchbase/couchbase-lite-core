@@ -20,7 +20,7 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "SharedKeys.hh"
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <mutex>
@@ -469,7 +469,7 @@ path.path().c_str());
     void SQLiteDataFile::deleteDataFile() {
         // Wait for other connections to close -- in multithreaded setups there may be races where
         // another thread takes a bit longer to close its connection.
-        Stopwatch st;
+        fleece::Stopwatch st;
         while (factory().openCount(filePath()) > 1) {
             if (st.elapsed() > kOtherDBCloseTimeoutSecs)
                 error::_throw(error::Busy);

@@ -61,7 +61,7 @@ public:
 
 
 N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.slow][C]") {
-    Stopwatch st;
+    fleece::Stopwatch st;
 
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;

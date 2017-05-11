@@ -15,7 +15,7 @@
 #include "Error.hh"
 #include "Fleece.hh"
 #include "Path.hh"
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
 #include <sstream>
