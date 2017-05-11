@@ -41,7 +41,7 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
         for (int sgn = -1; sgn <= 1; sgn += 2) {
             ptrdiff_t ptrdiff = 1234567890;
             logger.log(0, nullptr, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
-                       1234567890*sgn, 2345678901L*sgn, 123456789123456789LL*sgn, ptrdiff*sgn, '@');
+                       1234567890*sgn, 234567890L*sgn, 123456789123456789LL*sgn, ptrdiff*sgn, '@');
         }
         const char *str = "C string";
         slice buf("hello");
@@ -52,8 +52,8 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
 
     regex expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
                    TIMESTAMP "Unsigned 1234567890, Long 2345678901, LongLong 123456789123456789, Size abcdabcd, Pointer 0x7fff5fbc\\n"
-                   TIMESTAMP "Int -1234567890, Long -2345678901, LongLong -123456789123456789, Size -1234567890, Char @\\n"
-                   TIMESTAMP "Int 1234567890, Long 2345678901, LongLong 123456789123456789, Size 1234567890, Char @\\n"
+                   TIMESTAMP "Int -1234567890, Long -234567890, LongLong -123456789123456789, Size -1234567890, Char @\\n"
+                   TIMESTAMP "Int 1234567890, Long 234567890, LongLong 123456789123456789, Size 1234567890, Char @\\n"
                    TIMESTAMP "String is 'C string', slice is 'hello' \\(hex 68656c6c6f\\)\\n");
     CHECK(regex_match(result, expected));
 }
