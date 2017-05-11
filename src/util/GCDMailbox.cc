@@ -18,7 +18,7 @@ namespace litecore { namespace actor {
     extern LogDomain ActorLog;
 
 #if ACTORS_TRACK_STATS
-#define beginLatency()  Stopwatch st
+#define beginLatency()  fleece::Stopwatch st
 #define endLatency()    _maxLatency = max(_maxLatency, (double)st.elapsed())
 #define beginBusy()     _busy.start()
 #define endBusy()       _busy.stop()
@@ -144,8 +144,8 @@ namespace litecore { namespace actor {
 #if ACTORS_TRACK_STATS
         LogTo(ActorLog, "Max queue depth of %s was %d; max latency was %s; busy %s (%.1f%%)",
               _actor->actorName().c_str(), _maxEventCount,
-              Benchmark::formatTime(_maxLatency).c_str(),
-              Benchmark::formatTime(_busy.elapsed()).c_str(),
+              fleece::Stopwatch::formatTime(_maxLatency).c_str(),
+              fleece::Stopwatch::formatTime(_busy.elapsed()).c_str(),
               (_busy.elapsed() / _createdAt.elapsed())*100.0);
 #endif
     }

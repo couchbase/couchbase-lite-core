@@ -25,7 +25,7 @@
 #endif
 
 #ifdef ACTORS_TRACK_STATS
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 #endif
 
 

@@ -9,7 +9,7 @@
 #pragma once
 #include "WebSocketInterface.hh"
 #include "Logging.hh"
-#include "Benchmark.hh"
+#include "Stopwatch.hh"
 #include <cstdlib>
 #include <memory>
 #include <mutex>
@@ -75,7 +75,7 @@ namespace litecore { namespace websocket {
         fleece::alloc_slice _closeMessage;                  // The encoded close request message
 
         // Connection diagnostics, logged on close:
-        Stopwatch _timeConnected {false};           // Time since socket opened
+        fleece::Stopwatch _timeConnected {false};           // Time since socket opened
         uint64_t _bytesSent {0}, _bytesReceived {0};// Total byte count sent/received
 };
 
