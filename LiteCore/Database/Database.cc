@@ -140,7 +140,7 @@ namespace c4Internal {
             _db->useDocumentKeys();
             _encoder->setSharedKeys(documentKeys());
         }
-        if (!(config.flags & kc4DB_NonObservable))
+        if (!(config.flags & kC4DB_NonObservable))
             _sequenceTracker.reset(new SequenceTracker());
 
         // Validate that the versioning matches what's used in the database:
