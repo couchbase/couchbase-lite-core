@@ -54,7 +54,7 @@ enum class LogLevel : int8_t {
 
 class LogDomain {
 public:
-    LogDomain(const char *name, LogLevel level =LogLevel::Uninitialized)
+    LogDomain(const char *name, LogLevel level =LogLevel::Info)
     :_name(name),
      _level(level),
      _next(sFirstDomain)
@@ -65,25 +65,38 @@ public:
     static LogDomain* named(const char *name);
 
     const char* name() const                        {return _name;}
-    LogLevel level()                                {return _level == LogLevel::Uninitialized
-                                                                        ? initLevel() : _level;}
-    void setLevel(LogLevel lvl)                     {_level = lvl;}
 
-    bool willLog(LogLevel lv =LogLevel::Info) const {return _level <= lv;}
-    explicit operator bool() const                  {return willLog();}
+    void setLevel(LogLevel lvl) noexcept;
+    LogLevel level() const noexcept;
+
+    /** The level at which this domain will actually have an effect. This is based on the level(),
+        but raised to take into account the levels at which the callback and/or encoded file will
+        trigger. In other words, any log() calls below this level will produce no output. */
+    LogLevel effectiveLevel()                       {computeLevel(); return _effectiveLevel;}
+
+    bool willLog(LogLevel lv) const                 {return _effectiveLevel <= lv;}
 
     void log(LogLevel level, const char *fmt, ...) __printflike(3, 4);
     void vlog(LogLevel level, const char *fmt, va_list);
 
-    /** The minimum level of logging for all LogDomains; defaults to Warning.
-        Changes only take effect if made before any logging occurs. */
-    static LogLevel MinLevel;
-
     using Callback_t = void(*)(const LogDomain&, LogLevel, const char *format, va_list);
 
-    static Callback_t Callback;
+    /** Registers (or unregisters) a callback to be passed log messages.
+        @param callback  The callback function, or NULL to unregister.
+        @param preformatted  If true, callback will be passed already-formatted log messages to be
+            displayed verbatim (and the `va_list` parameter will be NULL.)
+        @param atLevel  Only log messages at this or a higher level will be sent. */
+    static void setCallback(Callback_t callback, bool preformatted, LogLevel atLevel);
 
-    static void writeEncodedLogsTo(const std::string &filePath);
+    /** Registers (or unregisters) a file to which log messages will be written in binary format.
+        @param filePath  The file to write to, or an empty string to stop writing.
+        @param atLevel  Only log messages at this or a higher level will be written. */
+    static void writeEncodedLogsTo(const std::string &filePath, LogLevel atLevel);
+
+    static LogLevel callbackLogLevel() noexcept         {return sCallbackMinLevel;}
+    static LogLevel fileLogLevel() noexcept             {return sFileMinLevel;}
+    static void setCallbackLogLevel(LogLevel) noexcept;
+    static void setFileLogLevel(LogLevel) noexcept;
 
 private:
     friend class Logging;
@@ -91,15 +104,18 @@ private:
     void vlog(LogLevel level, unsigned obj, const char *fmt, va_list);
 
 private:
-    LogLevel initLevel();
-    void basicvlog(LogLevel level, const char *fmt, va_list args);
+    LogLevel computeLevel() noexcept;
+    static void invalidateEffectiveLevels() noexcept;
 
+    LogLevel _effectiveLevel {LogLevel::Uninitialized};
     LogLevel _level;
     const char* const _name;
     LogDomain* const _next;
     unsigned _lastObjRef {0};
 
     static LogDomain* sFirstDomain;
+    static LogLevel sCallbackMinLevel;
+    static LogLevel sFileMinLevel;
 };
 
 extern "C" {
@@ -107,10 +123,11 @@ extern "C" {
 }
 
 
-#ifndef C4_TESTS
+// logSlice() returns an ephemeral C string with a description of the slice: in double quotes if
+// it's printable, in hex otherwise. For use in log calls.
 std::string _logSlice(fleece::slice);
 #define logSlice(S) (_logSlice((S)).c_str())
-#endif
+
 
 #ifdef _MSC_VER
 #define LogToAt(DOMAIN, LEVEL, FMT, ...) \

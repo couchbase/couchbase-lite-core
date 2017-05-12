@@ -161,17 +161,22 @@ namespace c4Internal {
 #pragma mark - LOGGING:
 
 
-void c4log_register(C4LogLevel level, C4LogCallback callback) noexcept {
-    LogDomain::MinLevel = (LogLevel)level;
-    LogDomain::Callback = (LogDomain::Callback_t)callback;
+void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) noexcept {
+    LogDomain::setCallback((LogDomain::Callback_t)callback, preformatted, (LogLevel)level);
 }
 
 
-bool c4log_writeToBinaryFile(C4String path, C4Error *outError) noexcept {
+bool c4log_writeToBinaryFile(C4LogLevel level, C4String path, C4Error *outError) noexcept {
     return tryCatch(outError, [=] {
-        LogDomain::writeEncodedLogsTo(slice(path).asString());
+        LogDomain::writeEncodedLogsTo(slice(path).asString(), (LogLevel)level);
     });
 }
+
+C4LogLevel c4log_callbackLevel() noexcept        {return (C4LogLevel)LogDomain::callbackLogLevel();}
+C4LogLevel c4log_binaryFileLevel() noexcept      {return (C4LogLevel)LogDomain::fileLogLevel();}
+
+void c4log_setCallbackLevel(C4LogLevel level) noexcept   {LogDomain::setCallbackLogLevel((LogLevel)level);}
+void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {LogDomain::setFileLogLevel((LogLevel)level);}
 
 
 CBL_CORE_API const C4LogDomain kC4DefaultLog = (C4LogDomain)&DefaultLog;

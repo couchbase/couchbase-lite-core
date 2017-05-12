@@ -236,7 +236,8 @@ typedef C4_ENUM(int8_t, C4LogLevel) {
     kC4LogVerbose,
     kC4LogInfo,
     kC4LogWarning,
-    kC4LogError
+    kC4LogError,
+    kC4LogNone
 };
 
 /** A log domain, a specific source of logs that can be enabled or disabled. */
@@ -250,17 +251,29 @@ CBL_CORE_API extern const C4LogDomain kC4DefaultLog;
 
 
 /** Registers (or unregisters) a log callback, and sets the minimum log level to report.
-    Before this is called, logs are by default written to stderr for warnings and errors.
+    Before this is called, a default callback is used that writes to stderr at the Info level.
     NOTE: this setting is global to the entire process.
     @param level  The minimum level of message to log.
-    @param callback  The logging callback, or NULL to disable logging entirely. */
-void c4log_register(C4LogLevel level, C4LogCallback callback) C4API;
+    @param callback  The logging callback, or NULL to disable logging entirely.
+    @param preformatted  If true, log messages will be formatted before invoking the callback,
+            so the `fmt` parameter will be the actual string to log, and the `args` parameter
+            will be NULL. */
+void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) C4API;
 
 /** Causes log messages to be written to a file, overwriting any previous contents.
     The data is written in an efficient and compact binary form that can be read using the
     "litecorelog" tool.
-    To stop logging, pass a null or empty path string. */
-bool c4log_writeToBinaryFile(C4String path, C4Error *error) C4API;
+    @param level  The minimum level of message to log.
+    @param path  The filesystem path of the file to write to, or a NULL slice for none.
+    @param error  On failure, the filesystem error that caused the call to fail.
+    @return  True on success, false on failure. */
+bool c4log_writeToBinaryFile(C4LogLevel level, C4String path, C4Error *error) C4API;
+
+C4LogLevel c4log_callbackLevel(void) C4API;
+void c4log_setCallbackLevel(C4LogLevel level) C4API;
+
+C4LogLevel c4log_binaryFileLevel(void) C4API;
+void c4log_setBinaryFileLevel(C4LogLevel level) C4API;
 
 /** Looks up a named log domain.
     If `create` is true, the domain will be created if it doesn't exist. */
@@ -273,17 +286,23 @@ const char* c4log_getDomainName(C4LogDomain) C4API;
 C4LogLevel c4log_getLevel(C4LogDomain) C4API;
 
 /** Changes the level of the given log domain.
-    NOTE: this setting is global to the entire process. */
+    This setting is global to the entire process.
+    Logging is further limited by the levels assigned to the current callback and/or binary file.
+    For example, if you set the Foo domain's level to Verbose, and the current log callback is
+    at level Warning while the binary file is at Verbose, then verbose Foo log messages will be
+    written to the file but not to the callback. */
 void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
 
 /** Logs a message/warning/error to a specific domain, if its current level is less than
-    or equal to the given level.
+    or equal to the given level. This message will then be written to the current callback and/or
+    binary file, if their levels are less than or equal to the given level.
     @param domain  The domain to log to.
     @param level  The level of the message. If the domain's level is greater than this,
                     nothing will be logged.
     @param fmt  printf-style format string, followed by arguments (if any). */
 void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt, ...) C4API;
 
+/** Same as c4log, for use in calling functions that already take variable args. */
 void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt, va_list args) C4API;
 
 // Convenient aliases for c4log:

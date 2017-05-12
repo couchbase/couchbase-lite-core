@@ -164,7 +164,7 @@ DataFileTestFixture::DataFileTestFixture(int testOption) {
     call_once(once, [] {
         auto path = FilePath::tempDirectory()["LiteCoreC++Tests.c4log"];
         Log("Beginning logging to %s", path.path().c_str());
-        LogDomain::writeEncodedLogsTo(path);
+        LogDomain::writeEncodedLogsTo(path, LogLevel::Verbose);
     });
 
     auto dbPath = databasePath("cbl_core_temp");

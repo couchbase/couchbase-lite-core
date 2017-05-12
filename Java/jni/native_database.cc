@@ -218,7 +218,7 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_Database_setLogger
     sLoggerRef = env->NewGlobalRef(logger);
     if (oldLoggerRef)
         env->DeleteGlobalRef(oldLoggerRef);
-    //c4log_register((C4LogLevel)level, &logCallback);
+    //c4log_writeToCallback((C4LogLevel)level, &logCallback, false);
 }
 
 #pragma mark - PURGING / EXPIRING:
