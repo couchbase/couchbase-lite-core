@@ -1,4 +1,4 @@
-excluded = ["c4log", "c4error_getMessageC", "c4str"]
+excluded = ["c4log", "c4vlog", "c4error_getMessageC", "c4str"]
 force_no_bridge = ["c4SliceEqual"]
 default_param_name = {"C4SliceResult":"slice","C4WriteStream*":"stream","C4ReadStream*":"stream","C4Error*":"outError",
 "C4BlobStore*":"store","C4BlobKey":"key","C4Slice":"slice","C4Key*":"key","bool":"b","double":"d","C4KeyReader*":"reader",

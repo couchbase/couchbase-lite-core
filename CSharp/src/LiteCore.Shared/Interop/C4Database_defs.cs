@@ -42,6 +42,7 @@ namespace LiteCore.Interop
         Bundled       = 8,
         SharedKeys    = 0x10,
         NoUpgrade     = 0x20,
+        NonObservable = 0x40,
     }
 
 #if LITECORE_PACKAGED

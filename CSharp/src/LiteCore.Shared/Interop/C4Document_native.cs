@@ -167,9 +167,6 @@ namespace LiteCore.Interop
             }
         }
 
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4doc_generateOldStyleRevID([MarshalAs(UnmanagedType.U1)]bool generateOldStyle);
-
 
     }
     

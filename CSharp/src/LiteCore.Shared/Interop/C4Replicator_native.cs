@@ -34,6 +34,20 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class Native
     {
+        public static bool c4repl_isValidDatabaseName(string dbName)
+        {
+            using(var dbName_ = new C4String(dbName)) {
+                return NativeRaw.c4repl_isValidDatabaseName(dbName_.AsC4Slice());
+            }
+        }
+
+        public static bool c4repl_parseURL(string url, C4Address* address, C4String* dbName)
+        {
+            using(var url_ = new C4String(url)) {
+                return NativeRaw.c4repl_parseURL(url_.AsC4Slice(), address, dbName);
+            }
+        }
+
         public static C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, string remoteDatabaseName, C4Database* otherLocalDB, C4ReplicatorMode push, C4ReplicatorMode pull, C4ReplicatorStatusChangedCallback onStateChanged, void* callbackContext, C4Error* err)
         {
             using(var remoteDatabaseName_ = new C4String(remoteDatabaseName)) {
@@ -60,6 +74,14 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class NativeRaw
     {
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4repl_isValidDatabaseName(C4Slice dbName);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4repl_parseURL(C4Slice url, C4Address* address, C4String* dbName);
+
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, C4Slice remoteDatabaseName, C4Database* otherLocalDB, C4ReplicatorMode push, C4ReplicatorMode pull, C4ReplicatorStatusChangedCallback onStateChanged, void* callbackContext, C4Error* err);
 

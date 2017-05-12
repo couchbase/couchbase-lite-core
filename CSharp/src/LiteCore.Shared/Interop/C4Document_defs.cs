@@ -79,7 +79,7 @@ namespace LiteCore.Interop
     {
         public C4Slice body;
         public C4Slice docID;
-        public C4Slice docType;
+        public C4Slice obsolete_docType;
         public C4RevisionFlags revFlags;
         private byte _existingRevision;
         private byte _allowConflict;

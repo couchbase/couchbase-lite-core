@@ -68,7 +68,13 @@ namespace LiteCore.Interop
         WrongFormat, /*30*/     // Database exists but not in the format/storage requested
         Crypto,                 // Encryption/decryption error
         InvalidQuery,           // Invalid query
-        MissingIndex            // No such index, or query requires a nonexistent index
+        MissingIndex,           // No such index, or query requires a nonexistent index
+        InvalidQueryParam,      // Unknown query param name, or param number out of range
+        RemoteError,            // Unknown error from remote server
+        DatabaseTooOld,         // Database file format is older than what I can open
+        DatabaseTooNew,         // Database file format is newer than what I can open
+        BadDocID,               // Invalid document ID
+        CantUpgradeDatabase     // Database can't be upgraded (might be unsupported dev version)
     };
 
 #if LITECORE_PACKAGED
@@ -321,13 +327,13 @@ namespace LiteCore.Interop
         private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
     }
 
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
 #if LITECORE_PACKAGED
     internal
 #else
     public
 #endif
-         unsafe delegate void C4LogCallback(C4LogDomain* domain, C4LogLevel level, C4Slice message);
+         unsafe delegate void C4LogCallback(C4LogDomain* domain, C4LogLevel level, string message, IntPtr args);
 }
 
 // EPIC HACK: This is required for iOS callbacks, but not available in .NET Standard

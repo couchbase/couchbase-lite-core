@@ -34,10 +34,10 @@ namespace LiteCore.Interop
 #endif 
     unsafe static partial class Native
     {
-        public static bool c4doc_isOldMetaProperty(byte[] prop)
+        public static bool c4doc_isOldMetaProperty(string prop)
         {
-            fixed(byte *prop_ = prop) {
-                return NativeRaw.c4doc_isOldMetaProperty(new C4Slice(prop_, (ulong)prop.Length));
+            using(var prop_ = new C4String(prop)) {
+                return NativeRaw.c4doc_isOldMetaProperty(prop_.AsC4Slice());
             }
         }
 
