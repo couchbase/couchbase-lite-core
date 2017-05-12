@@ -82,6 +82,11 @@ ostream& operator<< (ostream& o, C4Slice s) {
 }
 
 
+ostream& operator<< (ostream& o, C4SliceResult s) {
+    return o << C4Slice{s.buf, s.size};
+}
+
+
 ostream& operator<< (ostream &out, C4Error error) {
     C4SliceResult s = c4error_getMessage(error);
     out << "C4Error(" << error.domain << ", " << error.code << "): \"" << string((const char*)s.buf, s.size) << "\"";

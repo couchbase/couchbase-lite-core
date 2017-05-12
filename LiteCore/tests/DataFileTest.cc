@@ -297,6 +297,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile SELECT query", "[DataFile][Query
     addNumberedDocs(store);
     // Use a (SQL) query based on the Fleece "num" property:
     unique_ptr<Query> query{ store->compileQuery(json5("['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]")) };
+    CHECK(query->columnCount() == 0);
 
     for (int pass = 0; pass < 2; ++pass) {
         Stopwatch st;
@@ -305,7 +306,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile SELECT query", "[DataFile][Query
             string expectedDocID = stringWithFormat("rec-%03d", i);
             REQUIRE(e.recordID() == alloc_slice(expectedDocID));
             REQUIRE(e.sequence() == (sequence_t)i);
-            REQUIRE(!e.getCustomColumns());
+            REQUIRE(e.columns().count() == 0);
         }
         st.printReport("Query of $.num", i, "row");
         REQUIRE(i == 41);
@@ -324,19 +325,16 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile SELECT WHAT query", "[DataFile][
     addNumberedDocs(store);
     unique_ptr<Query> query{ store->compileQuery(json5(
         "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
+    CHECK(query->columnCount() == 2);
     int num = 11;
     for (QueryEnumerator e(query.get()); e.next(); ++num) {
         string expectedDocID = stringWithFormat("rec-%03d", num);
         REQUIRE(e.recordID() == alloc_slice(expectedDocID));
         REQUIRE(e.sequence() == (sequence_t)num);
-        auto encodedCols = e.getCustomColumns();
-        REQUIRE(encodedCols);
-        auto cols = Value::fromData(encodedCols);
-        REQUIRE(cols);
-        Array::iterator icol(cols->asArray());
-        REQUIRE(icol.count() == 2);
-        REQUIRE(icol[0]->asInt() == num);
-        REQUIRE(icol[1]->asInt() == num * num);
+        auto cols = e.columns();
+        REQUIRE(cols.count() == 2);
+        REQUIRE(cols[0]->asInt() == num);
+        REQUIRE(cols[1]->asInt() == num * num);
     }
 }
 

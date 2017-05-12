@@ -8,6 +8,7 @@
 
 #pragma once
 #include "KeyStore.hh"
+#include "Fleece.hh"
 
 namespace litecore {
     class Query;
@@ -32,23 +33,22 @@ namespace litecore {
         slice version()                 {return _impl->version();}
         DocumentFlags flags()           {return _impl->flags();}
 
+        fleece::Array::iterator columns() noexcept      {return _impl->columns();}
+
         /** Info about a match of a full-text query term */
         struct FullTextTerm {
             uint32_t termIndex;                 ///< Index of the search term in the tokenized query
             uint32_t start, length;             ///< *Byte* range of word in query string
         };
 
-        bool hasFullText()              {return _impl->hasFullText();}
+        bool hasFullText()                              {return _impl->hasFullText();}
 
         const std::vector<FullTextTerm>& fullTextTerms() {
-            _impl->getFullTextTerms(_fullTextTerms); return _fullTextTerms;
+            _impl->getFullTextTerms(_fullTextTerms);
+            return _fullTextTerms;
         }
 
-        alloc_slice getMatchedText() const {
-            return _impl->getMatchedText();
-        }
-
-        alloc_slice getCustomColumns()  {return _impl->getCustomColumns();}
+        alloc_slice getMatchedText() const              {return _impl->getMatchedText();}
 
         class Impl {
         public:
@@ -59,7 +59,7 @@ namespace litecore {
             virtual bool hasFullText()                                  {return false;}
             virtual void getFullTextTerms(std::vector<FullTextTerm>& t) {}
             virtual alloc_slice getMatchedText()                        {return alloc_slice();}
-            virtual alloc_slice getCustomColumns()                      {return alloc_slice();}
+            virtual fleece::Array::iterator columns() =0;
         };
 
     private:
@@ -77,6 +77,9 @@ namespace litecore {
         virtual ~Query() = default;
 
         KeyStore& keyStore() const      {return _keyStore;}
+
+        virtual unsigned columnCount() const noexcept                   {return 0;}
+        virtual std::string nameOfColumn(unsigned col) const            {return "";}
 
         virtual alloc_slice getMatchedText(slice recordID, sequence_t) {return alloc_slice();}
 

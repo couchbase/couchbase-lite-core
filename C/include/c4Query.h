@@ -9,6 +9,7 @@
 #pragma once
 #include "c4Database.h"
 #include "c4Document.h"
+#include "Fleece.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,6 +50,13 @@ extern "C" {
     C4StringResult c4query_explain(C4Query *query) C4API;
 
 
+    /** Returns the number of columns (the values specified in the WHAT clause) in each row. */
+    unsigned c4query_columnCount(C4Query *query) C4API;
+
+    /** Returns the name of a column. */
+    C4StringResult c4query_nameOfColumn(C4Query *query, unsigned col) C4API;
+
+
     //////// RUNNING QUERIES:
 
 
@@ -84,6 +92,7 @@ extern "C" {
         // Expression-based only:
         C4String revID;
         C4DocumentFlags docFlags;
+        FLArrayIterator columns;
 
         // Full-text only:
         uint32_t fullTextTermCount;          ///< The number of terms that were matched
@@ -105,10 +114,6 @@ extern "C" {
                                    const C4QueryOptions *options,
                                    C4String encodedParameters,
                                    C4Error *outError) C4API;
-
-    /** In an expression-based query enumerator, returns the values of the custom columns of the
-        query (the "WHAT" expressions), as a Fleece-encoded array. */
-    C4SliceResult c4queryenum_customColumns(C4QueryEnumerator *e) C4API;
 
     /** In a full-text query enumerator, returns the string that was emitted during indexing that
         contained the search term(s). */

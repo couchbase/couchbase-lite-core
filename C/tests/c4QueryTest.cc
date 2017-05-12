@@ -178,32 +178,25 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
 }
 
 
-static string getColumn(C4SliceResult customColumns, unsigned i) {
-    REQUIRE(customColumns.buf);
-    Array colsArray = Value::fromData((FLSlice)customColumns).asArray();
-    REQUIRE(colsArray.count() >= i+1);
-    auto s = colsArray[i].asString();
-    REQUIRE(s.buf);
-    return asstring(s);
-}
-
-
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
     vector<string> expectedFirst = {"Cleveland", "Georgetta", "Margaretta"};
     vector<string> expectedLast  = {"Bejcek",    "Kolding",   "Ogwynn"};
     compile(json5("{WHAT: ['.name.first', '.name.last'], \
                    WHERE: ['>=', ['length()', ['.name.first']], 9],\
                 ORDER_BY: [['.name.first']]}"));
+
+    REQUIRE(c4query_columnCount(query) == 2);
+    //CHECK(c4query_nameOfColumn(query, 0) == C4STR("name.first")); //TODO: Names currently wrong
+    //CHECK(c4query_nameOfColumn(query, 1) == C4STR("name.last"));
+
     C4Error error;
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);
     REQUIRE(e);
     int i = 0;
     while (c4queryenum_next(e, &error)) {
-        auto customColumns = c4queryenum_customColumns(e);
-        CHECK(getColumn(customColumns, 0) == expectedFirst[i]);
-        CHECK(getColumn(customColumns, 1)  == expectedLast[i]);
-        c4slice_free(customColumns);
+        CHECK(Array::iterator(e->columns)[0].asstring() == expectedFirst[i]);
+        CHECK(Array::iterator(e->columns)[1].asstring() == expectedLast[i]);
         ++i;
     }
     CHECK(error.code == 0);
@@ -220,10 +213,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Aggregate", "[Query][C]") {
     REQUIRE(e);
     int i = 0;
     while (c4queryenum_next(e, &error)) {
-        auto customColumns = c4queryenum_customColumns(e);
-        CHECK(getColumn(customColumns, 0) == "Aerni");
-        CHECK(getColumn(customColumns, 1) == "Zirk");
-        c4slice_free(customColumns);
+        CHECK(Array::iterator(e->columns)[0].asstring() == "Aerni");
+        CHECK(Array::iterator(e->columns)[1].asstring() == "Zirk");
         ++i;
     }
     CHECK(error.code == 0);
@@ -248,14 +239,15 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Grouped", "[Query][C]") {
     REQUIRE(e);
     int i = 0;
     while (c4queryenum_next(e, &error)) {
-        auto customColumns = c4queryenum_customColumns(e);
-        C4Log("state=%s, first=%s, last=%s", getColumn(customColumns, 0).c_str(), getColumn(customColumns, 1).c_str(), getColumn(customColumns, 2).c_str());
+        string state   = Array::iterator(e->columns)[0].asstring();
+        string minName = Array::iterator(e->columns)[1].asstring();
+        string maxName = Array::iterator(e->columns)[2].asstring();
+        C4Log("state=%s, first=%s, last=%s", state.c_str(), minName.c_str(), maxName.c_str());
         if (i < expectedState.size()) {
-            CHECK(getColumn(customColumns, 0) == expectedState[i]);
-            CHECK(getColumn(customColumns, 1) == expectedMin[i]);
-            CHECK(getColumn(customColumns, 2) == expectedMax[i]);
+            CHECK(state == expectedState[i]);
+            CHECK(minName == expectedMin[i]);
+            CHECK(maxName == expectedMax[i]);
         }
-        c4slice_free(customColumns);
         ++i;
     }
     CHECK(error.code == 0);
@@ -280,11 +272,11 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Join", "[Query][C]") {
     REQUIRE(e);
     int i = 0;
     while (c4queryenum_next(e, &error)) {
-        auto customColumns = c4queryenum_customColumns(e);
-        C4Log("first='%s', state='%s'", getColumn(customColumns, 0).c_str(), getColumn(customColumns, 1).c_str());
-        CHECK(getColumn(customColumns, 0) == expectedFirst[i]);
-        CHECK(getColumn(customColumns, 1)  == expectedState[i]);
-        c4slice_free(customColumns);
+        string first = Array::iterator(e->columns)[0].asstring();
+        string state = Array::iterator(e->columns)[1].asstring();
+        C4Log("first='%s', state='%s'", first.c_str(), state.c_str());
+        CHECK(first == expectedFirst[i]);
+        CHECK(state  == expectedState[i]);
         ++i;
     }
     CHECK(error.code == 0);

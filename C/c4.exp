@@ -103,13 +103,14 @@ _c4exp_purgeExpired
 _kC4DefaultEnumeratorOptions
 _kC4DefaultQueryOptions
 
-_c4queryenum_customColumns
 _c4queryenum_next
 _c4queryenum_close
 _c4queryenum_free
 
 _c4query_new
 _c4query_free
+_c4query_columnCount
+_c4query_nameOfColumn
 _c4query_run
 _c4query_explain
 _c4query_fullTextMatched

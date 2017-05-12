@@ -100,6 +100,16 @@ namespace litecore {
         }
 
 
+        virtual unsigned columnCount() const noexcept override {
+            return _statement->getColumnCount() - _1stCustomResultColumn;
+        }
+
+
+        virtual string nameOfColumn(unsigned col) const override {
+            return _statement->getColumnName(_1stCustomResultColumn + col);
+        }
+
+        
         string explain() override {
             stringstream result;
             // https://www.sqlite.org/eqp.html
@@ -175,26 +185,6 @@ namespace litecore {
             return _query.getMatchedText(recordID(), sequence());
         }
 
-        // Returns a Fleece-encoded array of custom column values.
-        alloc_slice getCustomColumns() override {
-            int nCols = columnCount();
-            if (_query._1stCustomResultColumn >= nCols)
-                return alloc_slice();
-            Encoder enc;
-            encodeColumns(enc, _query._1stCustomResultColumn, nCols);
-            return enc.extractOutput();
-        }
-
-        // Encodes a range of result columns [beginCol...endCol) as an array to a Fleece encoder.
-        void encodeColumns(Encoder &enc, int beginCol, int endCol) {
-            enc.beginArray(endCol - beginCol);
-            for (int i = beginCol; i < endCol; ++i)
-                encodeColumn(enc, i);
-            enc.endArray();
-        }
-        
-        virtual void encodeColumn(Encoder &enc, int col) =0;
-
     protected:
         SQLiteQuery &_query;
     };
@@ -239,8 +229,10 @@ namespace litecore {
             return _query._isAggregate ? 0 : _iter->asArray()->get(kSeqCol)->asInt();
         }
 
-        void encodeColumn(Encoder &enc, int col) override {
-            enc.writeValue(_iter->asArray()->get(col));
+        Array::iterator columns() noexcept override {
+            Array::iterator i(_iter->asArray());
+            i += _query._1stCustomResultColumn;
+            return i;
         }
 
     private:
@@ -344,7 +336,7 @@ namespace litecore {
             return _query._isAggregate ? 0 : (int64_t)_statement->getColumn(kSeqCol);
         }
 
-        void encodeColumn(Encoder &enc, int i) override {
+        void encodeColumn(Encoder &enc, int i) {
             SQLite::Column col = _statement->getColumn(i);
             switch (col.getType()) {
                 case SQLITE_NULL:
@@ -371,6 +363,18 @@ namespace litecore {
                     break;
                 }
             }
+        }
+
+        // Encodes a range of result columns [beginCol...endCol) as an array to a Fleece encoder.
+        void encodeColumns(Encoder &enc, int beginCol, int endCol) {
+            enc.beginArray(endCol - beginCol);
+            for (int i = beginCol; i < endCol; ++i)
+                encodeColumn(enc, i);
+            enc.endArray();
+        }
+
+        Array::iterator columns() noexcept override {
+            throw logic_error("unimplemented");
         }
 
         // Collects all the (remaining) rows into a Fleece array of arrays,

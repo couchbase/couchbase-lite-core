@@ -58,11 +58,12 @@ const std::string& TempDir();
 
 
 std::ostream& operator<< (std::ostream& o, C4Slice s);
+std::ostream& operator<< (std::ostream& o, C4SliceResult s);
 std::ostream& operator<< (std::ostream &out, C4Error error);
 
 
 
-// Dumps a C4Key to a C++ string
+// Converts a slice to a C++ string
 static inline std::string toString(C4Slice s)   {return std::string((char*)s.buf, s.size);}
 
 
