@@ -192,7 +192,7 @@ namespace litecore { namespace blip {
             }
             if (msg->_number == 0)
                 msg->_number = ++_lastMessageNo;
-            if (!msg->isAck() || BLIPLog.level() <= LogLevel::Verbose) {
+            if (!msg->isAck() || BLIPLog.willLog(LogLevel::Verbose)) {
                 logVerbose("Sending %s #%llu, flags=%02x",
                            kMessageTypeNames[msg->type()], msg->_number, msg->flags());
             }
@@ -304,7 +304,7 @@ namespace litecore { namespace blip {
                     else
                         requeue(msg);
                 } else {
-                    if (!msg->isAck() || BLIPLog.level() <= LogLevel::Verbose) {
+                    if (!msg->isAck() || BLIPLog.willLog(LogLevel::Verbose)) {
                         logVerbose("Finished sending %s #%llu, flags=%02x",
                                    kMessageTypeNames[msg->type()], msg->_number, msg->flags());
                         // Add its response message to _pendingResponses:
