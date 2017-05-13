@@ -127,12 +127,6 @@ namespace litecore {
         }
 
 
-        ~Shared() {
-            LogToAt(DBLog, Debug, "File %p: destructing", this);
-            sFileMap.erase(path.path());
-        }
-
-
         const FilePath path;                            // The filesystem path
         atomic<bool> isCompacting {false};              // Is the database compacting?
 
@@ -193,6 +187,12 @@ namespace litecore {
         Shared(const FilePath &p)
         :path(p)
         { }
+
+        ~Shared() {
+            LogToAt(DBLog, Debug, "File %p: destructing", this);
+            sFileMap.erase(path.path());
+        }
+
 
     private:
         mutex              _transactionMutex;       // Mutex for transactions

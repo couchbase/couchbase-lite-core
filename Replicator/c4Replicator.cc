@@ -100,6 +100,8 @@ private:
     ,_selfRetain(this) // keep myself alive till replicator closes
     { }
 
+    virtual ~C4Replicator() =default;
+
     static LoopbackProvider& loopbackProvider() {
         static LoopbackProvider sProvider;
         return sProvider;

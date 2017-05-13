@@ -67,6 +67,8 @@ namespace litecore { namespace REST {
             void unregisterTask();
 
         protected:
+            virtual ~Task() =default;
+
             time_t _timeUpdated {0};
         private:
             Listener* const _listener;
