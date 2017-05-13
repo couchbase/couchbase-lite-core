@@ -134,7 +134,7 @@ namespace litecore {
         shared_ptr<SQLite::Statement> statement() {return _statement;}
 
     protected:
-        QueryEnumerator::Impl* createEnumerator(const QueryEnumerator::Options *options) override;
+        QueryEnumerator* createEnumerator(const Options *options) override;
 
     private:
         shared_ptr<SQLite::Statement> _statement;
@@ -145,7 +145,7 @@ namespace litecore {
 
 
     // Base class of SQLite query enumerators.
-    class SQLiteBaseQueryEnumImpl : public QueryEnumerator::Impl {
+    class SQLiteBaseQueryEnumImpl : public QueryEnumerator {
     public:
         SQLiteBaseQueryEnumImpl(SQLiteQuery &query)
         :_query(query)
@@ -153,20 +153,25 @@ namespace litecore {
 
         virtual int columnCount() =0;
         virtual slice getStringColumn(int col) =0;
-        virtual int getIntColumn(int col) =0;
+        virtual int64_t getIntColumn(int col) =0;
 
-        slice recordID()        {return _query._isAggregate ? nullslice : getStringColumn(kDocIDCol);}
-        slice version() override   {return _query._isAggregate ? nullslice : getStringColumn(kVersionCol);}
-        DocumentFlags flags() override {return _query._isAggregate ? DocumentFlags::kNone : (DocumentFlags)getIntColumn(kFlagsCol);}
+        virtual bool next() override {
+            // subclass implementation needs to go first...
+            if (!_query._isAggregate) {
+                _recordID = getStringColumn(kDocIDCol);
+                _version = getStringColumn(kVersionCol);
+                _sequence = getIntColumn(kSeqCol);
+                _flags = (DocumentFlags)getIntColumn(kFlagsCol);
+            }
+            return true;
+        }
 
-        virtual sequence_t sequence() =0;
-
-        bool hasFullText() override {
+        bool hasFullText() const override {
             return !_query._ftsTables.empty();
         }
 
-        void getFullTextTerms(std::vector<QueryEnumerator::FullTextTerm>& terms) override {
-            terms.clear();
+        const std::vector<FullTextTerm>& fullTextTerms() override {
+            _fullTextTerms.clear();
             // The offsets() function returns a string of space-separated numbers in groups of 4.
             string offsets = getStringColumn(kFTSOffsetsCol).asString();
             const char *termStr = offsets.c_str();
@@ -177,12 +182,13 @@ namespace litecore {
                     n[i] = (uint32_t)strtol(termStr, &next, 10);
                     termStr = next;
                 }
-                terms.push_back({n[1], n[2], n[3]});    // {term #, byte offset, byte length}
+                _fullTextTerms.push_back({n[1], n[2], n[3]});    // {term #, byte offset, byte length}
             }
+            return _fullTextTerms;
         }
 
-        alloc_slice getMatchedText() override {
-            return _query.getMatchedText(recordID(), sequence());
+        alloc_slice getMatchedText() const override {
+            return _query.getMatchedText(_recordID, _sequence);
         }
 
     protected:
@@ -201,16 +207,17 @@ namespace litecore {
         ,_iter(Value::fromTrustedData(_recording)->asArray())
         { }
 
-        bool next(slice &outRecordID, sequence_t &outSequence) override {
+        virtual void close() override {
+        }
+        
+        bool next() override {
             if (_first)
                 _first = false;
             else
                 ++_iter;
             if (!_iter)
                 return false;
-            outRecordID = recordID();
-            outSequence = sequence();
-            return true;
+            return SQLiteBaseQueryEnumImpl::next();
         }
 
         int columnCount() override {
@@ -221,15 +228,11 @@ namespace litecore {
             return _iter->asArray()->get(col)->asString();
         }
 
-        int getIntColumn(int col) override {
+        int64_t getIntColumn(int col) override {
             return (int)_iter->asArray()->get(col)->asInt();
         }
 
-        sequence_t sequence() override {
-            return _query._isAggregate ? 0 : _iter->asArray()->get(kSeqCol)->asInt();
-        }
-
-        Array::iterator columns() noexcept override {
+        Array::iterator columns() const noexcept override {
             Array::iterator i(_iter->asArray());
             i += _query._1stCustomResultColumn;
             return i;
@@ -246,7 +249,7 @@ namespace litecore {
     // Query enumerator that reads from the 'live' SQLite statement.
     class SQLiteQueryEnumImpl : public SQLiteBaseQueryEnumImpl {
     public:
-        SQLiteQueryEnumImpl(SQLiteQuery &query, const QueryEnumerator::Options *options)
+        SQLiteQueryEnumImpl(SQLiteQuery &query, const Query::Options *options)
         :SQLiteBaseQueryEnumImpl(query)
         ,_statement(query.statement())
         {
@@ -268,6 +271,10 @@ namespace litecore {
             try {
                 _statement->reset();
             } catch (...) { }
+        }
+
+        virtual void close() override {
+            _statement.reset();
         }
 
         void bindParameters(slice json) {
@@ -311,11 +318,11 @@ namespace litecore {
             }
         }
 
-        bool next(slice &outRecordID, sequence_t &outSequence) override {
+        bool next() override {
             if (!_statement->executeStep())
                 return false;
-            outSequence = sequence();
-            outRecordID = recordID();
+            _sequence = sequence();
+            _recordID = recordID();
             return true;
         }
 
@@ -328,12 +335,8 @@ namespace litecore {
                 (size_t)_statement->getColumn(col).size()};
         }
 
-        int getIntColumn(int col) override {
+        int64_t getIntColumn(int col) override {
             return _statement->getColumn(col);
-        }
-
-        sequence_t sequence() override {
-            return _query._isAggregate ? 0 : (int64_t)_statement->getColumn(kSeqCol);
         }
 
         void encodeColumn(Encoder &enc, int i) {
@@ -373,7 +376,7 @@ namespace litecore {
             enc.endArray();
         }
 
-        Array::iterator columns() noexcept override {
+        Array::iterator columns() const noexcept override {
             throw logic_error("unimplemented");
         }
 
@@ -402,8 +405,8 @@ namespace litecore {
 
 
 
-    // The factory method that creates a SQLite QueryEnumerator::Impl.
-    QueryEnumerator::Impl* SQLiteQuery::createEnumerator(const QueryEnumerator::Options *options) {
+    // The factory method that creates a SQLite QueryEnumerator.
+    QueryEnumerator* SQLiteQuery::createEnumerator(const Options *options) {
         auto impl = new SQLiteQueryEnumImpl(*this, options);
         if (false) {
             return impl;

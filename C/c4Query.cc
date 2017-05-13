@@ -54,10 +54,10 @@ private:
 
 // Extension of C4QueryEnumerator
 struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
-    C4QueryEnumeratorImpl(C4Query *query, const QueryEnumerator::Options *options)
+    C4QueryEnumeratorImpl(C4Query *query, const Query::Options *options)
     :_database(query->database())
-    ,_enum(query->query(), options)
-    ,_hasFullText(_enum.hasFullText())
+    ,_enum(query->query()->createEnumerator(options))
+    ,_hasFullText(_enum->hasFullText())
     {
         clearPublicFields();
     }
@@ -67,32 +67,32 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
     }
 
     bool next() {
-        if (!_enum.next()) {
+        if (!_enum->next()) {
             clearPublicFields();
             return false;
         }
-        docID = _enum.recordID();
-        docSequence = _enum.sequence();
-        docFlags = (C4DocumentFlags)_enum.flags();
-        revID = _revIDBuf = _database->documentFactory().revIDFromVersion(_enum.version());
+        docID = _enum->recordID();
+        docSequence = _enum->sequence();
+        docFlags = (C4DocumentFlags)_enum->flags();
+        revID = _revIDBuf = _database->documentFactory().revIDFromVersion(_enum->version());
 
         if (_hasFullText) {
-            auto &ft = _enum.fullTextTerms();
+            auto &ft = _enum->fullTextTerms();
             fullTextTerms = (const C4FullTextTerm*)ft.data();
             fullTextTermCount = (uint32_t)ft.size();
         } else {
-            (fleece::Array::iterator&)columns = _enum.columns();
+            (fleece::Array::iterator&)columns = _enum->columns();
         }
         return true;
     }
 
-    alloc_slice getMatchedText()            {return _enum.getMatchedText();}
+    alloc_slice getMatchedText()            {return _enum->getMatchedText();}
 
-    void close() noexcept                   {_enum.close();}
+    void close() noexcept                   {_enum.reset();}
 
 private:
     Retained<Database> _database;
-    QueryEnumerator _enum;
+    unique_ptr<QueryEnumerator> _enum;
     alloc_slice _revIDBuf;
     bool _hasFullText;
 };
@@ -132,18 +132,18 @@ C4StringResult c4query_nameOfColumn(C4Query *query, unsigned col) noexcept {
 
 
 C4QueryEnumerator* c4query_run(C4Query *query,
-                               const C4QueryOptions *options,
+                               const C4QueryOptions *c4options,
                                C4Slice encodedParameters,
                                C4Error *outError) noexcept
 {
     return tryCatch<C4QueryEnumerator*>(outError, [&]{
-        QueryEnumerator::Options qeOpts;
-        if (options) {
-            qeOpts.skip = options->skip;
-            qeOpts.limit = options->limit;
+        Query::Options options;
+        if (c4options) {
+            options.skip = c4options->skip;
+            options.limit = c4options->limit;
         }
-        qeOpts.paramBindings = encodedParameters;
-        return new C4QueryEnumeratorImpl(query, &qeOpts);
+        options.paramBindings = encodedParameters;
+        return new C4QueryEnumeratorImpl(query, &options);
     });
 }
 

@@ -302,11 +302,13 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile SELECT query", "[DataFile][Query
     for (int pass = 0; pass < 2; ++pass) {
         Stopwatch st;
         int i = 30;
-        for (QueryEnumerator e(query.get()); e.next(); ++i) {
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        while (e->next()) {
             string expectedDocID = stringWithFormat("rec-%03d", i);
-            REQUIRE(e.recordID() == alloc_slice(expectedDocID));
-            REQUIRE(e.sequence() == (sequence_t)i);
-            REQUIRE(e.columns().count() == 0);
+            REQUIRE(e->recordID() == alloc_slice(expectedDocID));
+            REQUIRE(e->sequence() == (sequence_t)i);
+            REQUIRE(e->columns().count() == 0);
+            ++i;
         }
         st.printReport("Query of $.num", i, "row");
         REQUIRE(i == 41);
@@ -327,14 +329,16 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile SELECT WHAT query", "[DataFile][
         "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
     CHECK(query->columnCount() == 2);
     int num = 11;
-    for (QueryEnumerator e(query.get()); e.next(); ++num) {
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    while (e->next()) {
         string expectedDocID = stringWithFormat("rec-%03d", num);
-        REQUIRE(e.recordID() == alloc_slice(expectedDocID));
-        REQUIRE(e.sequence() == (sequence_t)num);
-        auto cols = e.columns();
+        REQUIRE(e->recordID() == alloc_slice(expectedDocID));
+        REQUIRE(e->sequence() == (sequence_t)num);
+        auto cols = e->columns();
         REQUIRE(cols.count() == 2);
         REQUIRE(cols[0]->asInt() == num);
         REQUIRE(cols[1]->asInt() == num * num);
+        ++num;
     }
 }
 
@@ -373,16 +377,17 @@ TEST_CASE_METHOD(DataFileTestFixture, "DataFile FullTextQuery", "[DataFile][Quer
     unsigned rows = 0;
     int expectedOrder[] = {1, 2, 0, 4};
     int expectedTerms[] = {3, 3, 1, 1};
-    for (QueryEnumerator e(query.get()); e.next(); ) {
-        Log("key = %s", e.recordID().cString());
-        CHECK(e.hasFullText());
-        CHECK(e.fullTextTerms().size() == expectedTerms[rows]);
-        for (auto term : e.fullTextTerms()) {
-            CHECK(e.recordID() == (slice)stringWithFormat("rec-%03d", expectedOrder[rows]));
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    while (e->next()) {
+        Log("key = %s", e->recordID().cString());
+        CHECK(e->hasFullText());
+        CHECK(e->fullTextTerms().size() == expectedTerms[rows]);
+        for (auto term : e->fullTextTerms()) {
+            CHECK(e->recordID() == (slice)stringWithFormat("rec-%03d", expectedOrder[rows]));
             auto word = string(strings[expectedOrder[rows]] + term.start, term.length);
             CHECK(word == (rows == 3 ? "searching" : "search"));
         }
-        CHECK((string)e.getMatchedText() == strings[expectedOrder[rows]]);
+        CHECK((string)e->getMatchedText() == strings[expectedOrder[rows]]);
         ++rows;
     }
     CHECK(rows == 4);

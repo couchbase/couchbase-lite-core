@@ -19,19 +19,4 @@
 
 namespace litecore {
 
-    QueryEnumerator::QueryEnumerator(Query *query,
-                                     const Options *options)
-    :_impl(query->createEnumerator(options))
-    { }
-
-
-    bool QueryEnumerator::next() {
-        if (_impl) {
-            if (_impl->next(_recordID, _sequence))
-                return true;
-            _impl.reset();
-        }
-        return false;
-    }
-
 }
