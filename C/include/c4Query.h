@@ -132,6 +132,24 @@ extern "C" {
     bool c4queryenum_next(C4QueryEnumerator *e,
                           C4Error *outError) C4API;
 
+    /** Returns the total number of rows in the query, if known.
+        Not all query enumerators may support this (but the current implementation does.)
+        @param e  The query enumerator
+        @param outError  On failure, an error will be stored here (probably kC4ErrorUnsupported.)
+        @return  The number of rows, or -1 on failure. */
+    int64_t c4queryenum_getRowCount(C4QueryEnumerator *e,
+                                     C4Error *outError) C4API;
+
+    /** Jumps to a specific row. Not all query enumerators may support this (but the current
+        implementation does.)
+        @param e  The query enumerator
+        @param rowIndex  The number of the row, starting at 0
+        @param outError  On failure, an error will be stored here (probably kC4ErrorUnsupported.)
+        @return  True on success, false on failure. */
+    bool c4queryenum_seek(C4QueryEnumerator *e,
+                          uint64_t rowIndex,
+                          C4Error *outError) C4API;
+
     /** Checks whether the query results have changed since this enumerator was created;
         if so, returns a new enumerator. Otherwise returns NULL. */
     C4QueryEnumerator* c4queryenum_refresh(C4QueryEnumerator *e,

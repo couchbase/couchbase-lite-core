@@ -66,21 +66,34 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
     :C4QueryEnumeratorImpl(query->database(), query->query()->createEnumerator(options))
     { }
 
+    QueryEnumerator& enumerator() const {
+        if (!_enum)
+            error::_throw(error::InvalidParameter, "Query enumerator has been closed");
+        return *_enum;
+    }
+
+    int64_t getRowCount() const     {return enumerator().getRowCount();}
+    alloc_slice getMatchedText()    {return enumerator().getMatchedText();}
+
+    bool next() {
+        if (!enumerator().next()) {
+            clearPublicFields();
+            return false;
+        }
+        populatePublicFields();
+        return true;
+    }
+
+    void seek(uint64_t rowIndex) {
+        enumerator().seek(rowIndex);
+        populatePublicFields();
+    }
+
     void clearPublicFields() {
         ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));
     }
 
-    void assertNotClosed() {
-        if (!_enum)
-            error::_throw(error::InvalidParameter, "Query enumerator has been closed");
-    }
-
-    bool next() {
-        assertNotClosed();
-        if (!_enum->next()) {
-            clearPublicFields();
-            return false;
-        }
+    void populatePublicFields() {
         docID = _enum->recordID();
         docSequence = _enum->sequence();
         docFlags = (C4DocumentFlags)_enum->flags();
@@ -93,21 +106,14 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
         } else {
             (fleece::Array::iterator&)columns = _enum->columns();
         }
-        return true;
-    }
-
-    alloc_slice getMatchedText() {
-        assertNotClosed();
-        return _enum->getMatchedText();
     }
 
     C4QueryEnumeratorImpl* refresh() {
-        assertNotClosed();
-        QueryEnumerator* newEnum = _enum->refresh();
-        if (newEnum == _enum.get())
-            return nullptr;
-        else
+        QueryEnumerator* newEnum = enumerator().refresh();
+        if (newEnum)
             return new C4QueryEnumeratorImpl(_database, newEnum);
+        else
+            return nullptr;
     }
 
     void close() noexcept {
@@ -207,6 +213,28 @@ bool c4queryenum_next(C4QueryEnumerator *e,
         return false;
     });
 }
+
+
+bool c4queryenum_seek(C4QueryEnumerator *e,
+                      uint64_t rowIndex,
+                      C4Error *outError) noexcept
+{
+    return tryCatch<bool>(outError, [&]{
+        internal(e)->seek(rowIndex);
+        return true;
+    });
+}
+
+
+int64_t c4queryenum_getRowCount(C4QueryEnumerator *e,
+                                 C4Error *outError) noexcept
+{
+    try {
+        return internal(e)->getRowCount();
+    } catchError(outError)
+    return -1;
+}
+
 
 
 C4QueryEnumerator* c4queryenum_refresh(C4QueryEnumerator *e,

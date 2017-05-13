@@ -173,15 +173,14 @@ namespace litecore {
         virtual slice getStringColumn(int col) =0;
         virtual int64_t getIntColumn(int col) =0;
 
-        virtual bool next() override {
-            // subclass implementation needs to go first...
+        // call after next() or seek()
+        void populateFields() {
             if (!_query->_isAggregate) {
                 _recordID = getStringColumn(kDocIDCol);
                 _version = getStringColumn(kVersionCol);
                 _sequence = getIntColumn(kSeqCol);
                 _flags = (DocumentFlags)getIntColumn(kFlagsCol);
             }
-            return true;
         }
 
         bool hasFullText() const override {
@@ -227,11 +226,25 @@ namespace litecore {
                                    alloc_slice recording)
         :SQLiteBaseQueryEnum(query, options, lastSequence)
         ,_recording(recording)
-        ,_iter(Value::fromTrustedData(_recording)->asArray())
+        ,_rows(Value::fromTrustedData(_recording)->asArray())
+        ,_iter(_rows)
         { }
 
         bool hasEqualContents(const SQLitePrerecordedQueryEnum* other) const {
             return _recording == other->_recording;
+        }
+
+        virtual int64_t getRowCount() const override {
+            return _rows->count();
+        }
+
+        virtual void seek(uint64_t rowIndex) override {
+            if (rowIndex >= _rows->count())
+                error::_throw(error::InvalidParameter);
+            _iter = Array::iterator(_rows);
+            _iter += (uint32_t)rowIndex;
+            _first = false;
+            populateFields();
         }
 
         bool next() override {
@@ -241,7 +254,8 @@ namespace litecore {
                 ++_iter;
             if (!_iter)
                 return false;
-            return SQLiteBaseQueryEnum::next();
+            populateFields();
+            return true;
         }
 
         int columnCount() override {
@@ -280,6 +294,7 @@ namespace litecore {
     private:
         Query::Options _options;
         alloc_slice _recording;
+        const Array* _rows;
         Array::iterator _iter;
         bool _first {true};
     };
@@ -357,8 +372,7 @@ namespace litecore {
         bool next() override {
             if (!_statement->executeStep())
                 return false;
-            _sequence = sequence();
-            _recordID = recordID();
+            populateFields();
             return true;
         }
 

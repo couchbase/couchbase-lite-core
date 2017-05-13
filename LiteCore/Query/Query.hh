@@ -10,6 +10,7 @@
 #include "RefCounted.hh"
 #include "KeyStore.hh"
 #include "Fleece.hh"
+#include "Error.hh"
 
 namespace litecore {
     class QueryEnumerator;
@@ -61,6 +62,11 @@ namespace litecore {
         DocumentFlags flags() const                             {return _flags;}
 
         virtual fleece::Array::iterator columns() const noexcept =0;
+
+        /** Random access to rows. May not be supported by all implementations, but does work with
+            the current SQLite query implementation. */
+        virtual int64_t getRowCount() const         {return -1;}
+        virtual void seek(uint64_t rowIndex)        {error::_throw(error::UnsupportedOperation);}
 
         /** Info about a match of a full-text query term */
         struct FullTextTerm {
