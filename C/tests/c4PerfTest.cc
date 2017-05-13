@@ -141,20 +141,9 @@ public:
 
 
 N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
-    auto jsonData = readFile(sFixturesDir + "iTunesMusicLibrary.json");
-    FLError error;
-    FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
-    free((void*)jsonData.buf);
-    Array root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
-    unsigned numDocs;
-
-    {
-        Stopwatch st;
-        numDocs = insertDocs(root);
-        CHECK(numDocs == 12189);
-        st.printReport("Writing docs", numDocs, "doc");
-    }
-    FLSliceResult_Free(fleeceData);
+    Stopwatch st;
+    auto numDocs = importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
+    CHECK(numDocs == 12189);
 }
 
 

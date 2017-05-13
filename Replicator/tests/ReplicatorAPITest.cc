@@ -190,7 +190,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Non-Empty DB", "[Push][.special]")
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[Push][.special]") {
-    importJSONFile(sFixturesDir + "iTunesMusicLibrary.json");
+    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 
