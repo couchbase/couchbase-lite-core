@@ -103,6 +103,7 @@ kC4DefaultEnumeratorOptions
 kC4DefaultQueryOptions
 
 c4queryenum_next
+c4queryenum_refresh
 c4queryenum_close
 c4queryenum_free
 

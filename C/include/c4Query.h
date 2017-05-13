@@ -132,6 +132,11 @@ extern "C" {
     bool c4queryenum_next(C4QueryEnumerator *e,
                           C4Error *outError) C4API;
 
+    /** Checks whether the query results have changed since this enumerator was created;
+        if so, returns a new enumerator. Otherwise returns NULL. */
+    C4QueryEnumerator* c4queryenum_refresh(C4QueryEnumerator *e,
+                                           C4Error *outError) C4API;
+
     /** Closes an enumerator without freeing it. This is optional, but can be used to free up
         resources if the enumeration has not reached its end, but will not be freed for a while. */
     void c4queryenum_close(C4QueryEnumerator *e) C4API;

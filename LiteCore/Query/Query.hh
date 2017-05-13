@@ -7,6 +7,7 @@
 //
 
 #pragma once
+#include "RefCounted.hh"
 #include "KeyStore.hh"
 #include "Fleece.hh"
 
@@ -16,10 +17,8 @@ namespace litecore {
 
     /** Abstract base class of compiled database queries.
         These are created by the factory method KeyStore::compileQuery(). */
-    class Query {
+    class Query : public RefCounted {
     public:
-        virtual ~Query() = default;
-
         KeyStore& keyStore() const                                      {return _keyStore;}
 
         virtual unsigned columnCount() const noexcept                   {return 0;}
@@ -32,7 +31,7 @@ namespace litecore {
         struct Options {
             uint64_t skip  {0};
             uint64_t limit {UINT64_MAX};
-            slice paramBindings;
+            alloc_slice paramBindings;
         };
 
         virtual QueryEnumerator* createEnumerator(const Options* =nullptr) =0;
@@ -41,6 +40,8 @@ namespace litecore {
         Query(KeyStore &keyStore) noexcept
         :_keyStore(keyStore)
         { }
+        
+        virtual ~Query() =default;
 
     private:
         KeyStore &_keyStore;
@@ -53,7 +54,6 @@ namespace litecore {
         virtual ~QueryEnumerator() =default;
 
         virtual bool next() =0;
-        virtual void close() =0;
 
         slice recordID() const                                  {return _recordID;}
         sequence_t sequence() const                             {return _sequence;}
@@ -71,6 +71,10 @@ namespace litecore {
         virtual bool hasFullText() const                        {return false;}
         virtual const std::vector<FullTextTerm>& fullTextTerms(){return _fullTextTerms;}
         virtual alloc_slice getMatchedText() const              {return alloc_slice();}
+
+        /** If the query results have changed since `currentEnumerator`, returns a new enumerator
+            that will return the new results. Otherwise returns null. */
+        virtual QueryEnumerator* refresh() =0;
 
     protected:
         // The implementation of next() should set these:

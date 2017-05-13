@@ -8,6 +8,7 @@
 
 #pragma once
 #include "Base.hh"
+#include "RefCounted.hh"
 #include "RecordEnumerator.hh"
 #include "function_ref.hh"
 
@@ -65,7 +66,7 @@ namespace litecore {
         virtual void readBody(Record &rec) const;
 
         /** Creates a database query object. */
-        virtual Query* compileQuery(slice expr);
+        virtual Retained<Query> compileQuery(slice expr);
 
         //////// Writing:
 

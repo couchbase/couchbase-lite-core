@@ -51,7 +51,7 @@ namespace litecore {
 
         RecordEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, RecordEnumerator::Options&) override;
         RecordEnumerator::Impl* newEnumeratorImpl(sequence_t min, sequence_t max, RecordEnumerator::Options&) override;
-        Query* compileQuery(slice expression) override;
+        Retained<Query> compileQuery(slice expression) override;
 
         SQLite::Statement* compile(const std::string &sql) const;
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,

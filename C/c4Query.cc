@@ -48,25 +48,35 @@ struct c4Query : C4InstanceCounted {
 
 private:
     Retained<Database> _database;
-    unique_ptr<Query> _query;
+    Retained<Query> _query;
 };
 
 
 // Extension of C4QueryEnumerator
 struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
-    C4QueryEnumeratorImpl(C4Query *query, const Query::Options *options)
-    :_database(query->database())
-    ,_enum(query->query()->createEnumerator(options))
+    C4QueryEnumeratorImpl(Database *database, QueryEnumerator *e)
+    :_database(database)
+    ,_enum(e)
     ,_hasFullText(_enum->hasFullText())
     {
         clearPublicFields();
     }
 
+    C4QueryEnumeratorImpl(C4Query *query, const Query::Options *options)
+    :C4QueryEnumeratorImpl(query->database(), query->query()->createEnumerator(options))
+    { }
+
     void clearPublicFields() {
         ::memset((C4QueryEnumerator*)this, 0, sizeof(C4QueryEnumerator));
     }
 
+    void assertNotClosed() {
+        if (!_enum)
+            error::_throw(error::InvalidParameter, "Query enumerator has been closed");
+    }
+
     bool next() {
+        assertNotClosed();
         if (!_enum->next()) {
             clearPublicFields();
             return false;
@@ -86,9 +96,23 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
         return true;
     }
 
-    alloc_slice getMatchedText()            {return _enum->getMatchedText();}
+    alloc_slice getMatchedText() {
+        assertNotClosed();
+        return _enum->getMatchedText();
+    }
 
-    void close() noexcept                   {_enum.reset();}
+    C4QueryEnumeratorImpl* refresh() {
+        assertNotClosed();
+        QueryEnumerator* newEnum = _enum->refresh();
+        if (newEnum == _enum.get())
+            return nullptr;
+        else
+            return new C4QueryEnumeratorImpl(_database, newEnum);
+    }
+
+    void close() noexcept {
+        _enum.reset();
+    }
 
 private:
     Retained<Database> _database;
@@ -98,7 +122,7 @@ private:
 };
 
 
-static C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumeratorImpl*)e;}
+static C4QueryEnumeratorImpl* internal(C4QueryEnumerator *e) {return (C4QueryEnumeratorImpl*)e;}
 
 
 #pragma mark - QUERY:
@@ -148,6 +172,7 @@ C4QueryEnumerator* c4query_run(C4Query *query,
 }
 
 
+
 C4StringResult c4query_explain(C4Query *query) noexcept {
     return tryCatch<C4StringResult>(nullptr, [&]{
         string result = query->query()->explain();
@@ -176,7 +201,7 @@ bool c4queryenum_next(C4QueryEnumerator *e,
                       C4Error *outError) noexcept
 {
     return tryCatch<bool>(outError, [&]{
-        if (asInternal(e)->next())
+        if (internal(e)->next())
             return true;
         clearError(outError);      // end of iteration is not an error
         return false;
@@ -184,15 +209,23 @@ bool c4queryenum_next(C4QueryEnumerator *e,
 }
 
 
+C4QueryEnumerator* c4queryenum_refresh(C4QueryEnumerator *e,
+                                       C4Error *outError) noexcept
+{
+    return tryCatch<C4QueryEnumerator*>(outError, [&]{
+        return internal(e)->refresh();
+    });
+}
+
+
 void c4queryenum_close(C4QueryEnumerator *e) noexcept {
     if (e) {
-        asInternal(e)->close();
+        internal(e)->close();
     }
 }
 
 void c4queryenum_free(C4QueryEnumerator *e) noexcept {
-    c4queryenum_close(e);
-    delete asInternal(e);
+    delete internal(e);
 }
 
 

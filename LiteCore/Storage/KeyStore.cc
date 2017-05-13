@@ -89,7 +89,7 @@ namespace litecore {
         error::_throw(error::Unimplemented);
     }
 
-    Query* KeyStore::compileQuery(slice expressionJSON) {
+    Retained<Query> KeyStore::compileQuery(slice expressionJSON) {
         error::_throw(error::Unimplemented);
     }
 
