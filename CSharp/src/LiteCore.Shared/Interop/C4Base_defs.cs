@@ -54,7 +54,8 @@ namespace LiteCore.Interop
         Verbose,
         Info,
         Warning,
-        Error
+        Error,
+        None
     }
 
 #if LITECORE_PACKAGED

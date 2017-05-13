@@ -114,6 +114,7 @@ namespace LiteCore.Interop
         public ulong docSequence;
         public C4Slice revID;
         public C4DocumentFlags docFlags;
+        public FLArrayIterator columns;
         public uint fullTextTermCount;
         public C4FullTextTerm* fullTextTerms;
     }

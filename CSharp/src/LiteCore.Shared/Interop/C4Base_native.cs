@@ -49,14 +49,26 @@ namespace LiteCore.Interop
         }
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void c4log_register(C4LogLevel level, C4LogCallback callback);
+        public static extern void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, [MarshalAs(UnmanagedType.U1)]bool preformatted);
 
-        public static bool c4log_writeToBinaryFile(string path, C4Error* error)
+        public static bool c4log_writeToBinaryFile(C4LogLevel level, string path, C4Error* error)
         {
             using(var path_ = new C4String(path)) {
-                return NativeRaw.c4log_writeToBinaryFile(path_.AsC4Slice(), error);
+                return NativeRaw.c4log_writeToBinaryFile(level, path_.AsC4Slice(), error);
             }
         }
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4LogLevel c4log_callbackLevel();
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4log_setCallbackLevel(C4LogLevel level);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4LogLevel c4log_binaryFileLevel();
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4log_setBinaryFileLevel(C4LogLevel level);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4LogDomain* c4log_getDomain(byte* name, [MarshalAs(UnmanagedType.U1)]bool create);
@@ -91,7 +103,7 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4log_writeToBinaryFile(C4Slice path, C4Error* error);
+        public static extern bool c4log_writeToBinaryFile(C4LogLevel level, C4Slice path, C4Error* error);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern byte* c4log_getDomainName(C4LogDomain* x);

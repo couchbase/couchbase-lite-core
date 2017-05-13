@@ -157,61 +157,73 @@ namespace LiteCore.Tests
             });
         }
 
-        [Fact]
-        public void TestDBQueryWhat()
-        {
-            RunTestVariants(() => {
-                var expectedFirst = new[] { "Cleveland", "Georgetta", "Margaretta" };
-                var expectedLast = new[] { "Bejcek", "Kolding", "Ogwynn" };
-                var query = Compile(Json5("{WHAT: ['.name.first', '.name.last'], " +
-                            "WHERE: ['>=', ['length()', ['.name.first']], 9]," +
-                            "ORDER_BY: [['.name.first']]}"));
-                
-                var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => 
-                {
-                    var localOpts = C4QueryOptions.Default;
-                    return Native.c4query_run(query, &localOpts, null, err);
-                });
+        // TODO: Missing C API
+        //[Fact]
+        //public void TestDBQueryWhat()
+        //{
+        //    RunTestVariants(() => {
+        //        var expectedFirst = new[] { "Cleveland", "Georgetta", "Margaretta" };
+        //        var expectedLast = new[] { "Bejcek", "Kolding", "Ogwynn" };
+        //        var query = Compile(Json5("{WHAT: ['.name.first', '.name.last'], " +
+        //                    "WHERE: ['>=', ['length()', ['.name.first']], 9]," +
+        //                    "ORDER_BY: [['.name.first']]}"));
 
-                int i = 0;
-                C4Error error;
-                while(Native.c4queryenum_next(e, &error)) {
-                    var customColumns = Native.c4queryenum_customColumns(e);
-                    GetColumn(customColumns, 0).Should().Be(expectedFirst[i], "because otherwise the query returned incorrect results");
-                    GetColumn(customColumns, 1).Should().Be(expectedLast[i], "because otherwise the query returned incorrect results");
-                    ++i;
-                }
+        //        Native.c4query_columnCount(query).Should().Be(2, "because there are two requested items in WHAT");
 
-                error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
-                i.Should().Be(3, "because that is the number of expected rows");
-                Native.c4queryenum_free(e);
-            });
-        }
+        //        //TODO
+        //        //Native.c4query_nameOfColumn(query, 0U)
+        //        //    .Should()
+        //        //    .Be("name.first", "because that is the first requested item");
+        //        //Native.c4query_nameOfColumn(query, 1U)
+        //        //    .Should()
+        //        //    .Be("name.list", "because that is the second requested item");
 
-        [Fact]
-        public void TestDBQueryAggregate()
-        {
-            RunTestVariants(() => {
-                Compile(Json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
-                var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => {
-                    var opts = C4QueryOptions.Default;
-                    return Native.c4query_run(_query, &opts, null, err);
-                });
+        //        var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => 
+        //        {
+        //            var localOpts = C4QueryOptions.Default;
+        //            return Native.c4query_run(query, &localOpts, null, err);
+        //        });
 
-                var i = 0;
-                C4Error error;
-                while(Native.c4queryenum_next(e, &error)) {
-                    var customColumns = Native.c4queryenum_customColumns(e);
-                    GetColumn(customColumns, 0).Should().Be("Aerni", "because otherwise the query returned incorrect results");
-                    GetColumn(customColumns, 1).Should().Be("Zirk", "because otherwise the query returned incorrect results");
-                    ++i;
-                }
+        //        int i = 0;
+        //        C4Error error;
+        //        while(Native.c4queryenum_next(e, &error)) {
+        //            var customColumns = Native.c4queryenum_customColumns(e);
+        //            GetColumn(customColumns, 0).Should().Be(expectedFirst[i], "because otherwise the query returned incorrect results");
+        //            GetColumn(customColumns, 1).Should().Be(expectedLast[i], "because otherwise the query returned incorrect results");
+        //            ++i;
+        //        }
 
-                error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
-                i.Should().Be(1, "because there is only one result for the query");
-                Native.c4queryenum_free(e);
-            });
-        }
+        //        error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
+        //        i.Should().Be(3, "because that is the number of expected rows");
+        //        Native.c4queryenum_free(e);
+        //    });
+        //}
+
+            //TODO: Need C API
+        //[Fact]
+        //public void TestDBQueryAggregate()
+        //{
+        //    RunTestVariants(() => {
+        //        Compile(Json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
+        //        var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => {
+        //            var opts = C4QueryOptions.Default;
+        //            return Native.c4query_run(_query, &opts, null, err);
+        //        });
+
+        //        var i = 0;
+        //        C4Error error;
+        //        while(Native.c4queryenum_next(e, &error)) {
+        //            var customColumns = Native.c4queryenum_customColumns(e);
+        //            GetColumn(customColumns, 0).Should().Be("Aerni", "because otherwise the query returned incorrect results");
+        //            GetColumn(customColumns, 1).Should().Be("Zirk", "because otherwise the query returned incorrect results");
+        //            ++i;
+        //        }
+
+        //        error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
+        //        i.Should().Be(1, "because there is only one result for the query");
+        //        Native.c4queryenum_free(e);
+        //    });
+        //}
 
         private static string GetColumn(byte[] customColumns, uint index)
         {

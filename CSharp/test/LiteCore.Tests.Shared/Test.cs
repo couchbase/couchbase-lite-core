@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 
 using FluentAssertions;
 using LiteCore.Interop;
-using LiteCore.Tests.Util;
 using LiteCore.Util;
 #if !WINDOWS_UWP
 using LiteCore.Tests.Util;

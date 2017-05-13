@@ -51,17 +51,20 @@ namespace LiteCore.Interop
             }
         }
 
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint c4query_columnCount(C4Query* query);
+
+        public static string c4query_nameOfColumn(C4Query* query, uint col)
+        {
+            using(var retVal = NativeRaw.c4query_nameOfColumn(query, col)) {
+                return ((C4Slice)retVal).CreateString();
+            }
+        }
+
         public static C4QueryEnumerator* c4query_run(C4Query* query, C4QueryOptions* options, string encodedParameters, C4Error* outError)
         {
             using(var encodedParameters_ = new C4String(encodedParameters)) {
                 return NativeRaw.c4query_run(query, options, encodedParameters_.AsC4Slice(), outError);
-            }
-        }
-
-        public static byte[] c4queryenum_customColumns(C4QueryEnumerator* e)
-        {
-            using(var retVal = NativeRaw.c4queryenum_customColumns(e)) {
-                return ((C4Slice)retVal).ToArrayFast();
             }
         }
 
@@ -122,10 +125,10 @@ namespace LiteCore.Interop
         public static extern C4SliceResult c4query_explain(C4Query* query);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4QueryEnumerator* c4query_run(C4Query* query, C4QueryOptions* options, C4Slice encodedParameters, C4Error* outError);
+        public static extern C4SliceResult c4query_nameOfColumn(C4Query* query, uint col);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4queryenum_customColumns(C4QueryEnumerator* e);
+        public static extern C4QueryEnumerator* c4query_run(C4Query* query, C4QueryOptions* options, C4Slice encodedParameters, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator* e, C4Error* outError);
