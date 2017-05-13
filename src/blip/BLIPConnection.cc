@@ -109,10 +109,6 @@ namespace litecore { namespace blip {
             webSocket->connect(this);
         }
 
-        ~BLIPIO() {
-            Log("~BLIPIO: Max outbox depth was %zu, avg %.2f", _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
-        }
-
         void queueMessage(MessageOut *msg) {
             enqueue(&BLIPIO::_queueMessage, Retained<MessageOut>(msg));
         }
@@ -136,6 +132,10 @@ namespace litecore { namespace blip {
 
 
     protected:
+
+        ~BLIPIO() {
+            Log("~BLIPIO: Max outbox depth was %zu, avg %.2f", _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
+        }
 
         // websocket::Delegate interface:
         virtual void onWebSocketConnect() override {

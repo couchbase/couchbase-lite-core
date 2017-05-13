@@ -88,7 +88,13 @@ namespace litecore { namespace blip {
     protected:
         Message(FrameFlags f, MessageNo n)
         :_flags(f), _number(n)
-        {/*Log("NEW Message<%p, %s #%llu>", this, typeName(), _number);*/}
+        {
+            /*Log("NEW Message<%p, %s #%llu>", this, typeName(), _number);*/
+        }
+
+        virtual ~Message() {
+            //Log("DELETE Message<%p, %s #%llu>", this, typeName(), _number);
+        }
 
         FrameFlags flags() const            {return _flags;}
         bool hasFlag(FrameFlags f) const    {return (_flags & f) != 0;}
@@ -101,8 +107,6 @@ namespace litecore { namespace blip {
                           MessageSize bytesSent, MessageSize bytesReceived,
                           MessageIn *reply);
 
-//        ~Message()    {Log("DELETE Message<%p, %s #%llu>",
-//                           this, typeName(), _number);}
 
         FrameFlags _flags;
         MessageNo _number;

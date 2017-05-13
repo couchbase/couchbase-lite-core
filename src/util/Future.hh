@@ -57,6 +57,7 @@ namespace litecore {
     private:
         Future(const Future&) =delete;
         Future& operator= (const Future&) =delete;
+        virtual ~Future() =default;
 
         void notify() {
             _callback(_value);

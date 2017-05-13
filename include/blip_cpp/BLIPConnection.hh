@@ -43,8 +43,6 @@ namespace litecore { namespace blip {
         Connection(websocket::WebSocket*,
                    ConnectionDelegate&);
 
-        virtual ~Connection();
-
         const std::string& name() const                         {return _name;}
 
         bool isServer() const                                   {return _isServer;}
@@ -70,6 +68,8 @@ namespace litecore { namespace blip {
         websocket::WebSocket* webSocket() const;
 
     protected:
+        virtual ~Connection();
+
         friend class MessageIn;
         friend class BLIPIO;
 

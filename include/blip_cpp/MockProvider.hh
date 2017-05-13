@@ -23,10 +23,6 @@ namespace litecore { namespace websocket {
     class MockWebSocket : public WebSocket, public actor::Actor {
     public:
 
-        ~MockWebSocket() {
-            assert(!_isOpen);
-        }
-
         virtual void connect() override {
             enqueue(&MockWebSocket::_connect);
         }
@@ -73,6 +69,10 @@ namespace litecore { namespace websocket {
         :WebSocket(provider, address)
         {
             retain(this);   // balanced by release in _closed
+        }
+
+        ~MockWebSocket() {
+            assert(!_isOpen);
         }
 
         // These can be overridden to change the mock's behavior:

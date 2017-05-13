@@ -119,6 +119,7 @@ namespace litecore { namespace actor {
         }
 
     private:
+        virtual ~MailboxProxy() =default;
         atomic<ThreadedMailbox*> _mailbox;
     };
 
