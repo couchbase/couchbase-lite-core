@@ -61,7 +61,7 @@ namespace LiteCore.Interop
 
 		static ReplicatorStateChangedCallback()
 		{
-			NativeCallback = new C4ReplicatorStatusChangedCallback(StateChanged);
+			NativeCallback = StateChanged;
 		}
 
         public ReplicatorStateChangedCallback(Action<C4ReplicatorStatus, object> callback, object context)
