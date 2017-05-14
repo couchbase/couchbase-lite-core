@@ -181,12 +181,16 @@ namespace litecore {
             va_list args2;
             va_copy(args2, args);
             if (sCallbackPreformatted) {
+                // Preformatted: Do the formatting myself and pass the resulting string:
                 size_t n = 0;
                 if (objRef)
                     n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%u} ", objRef);
                 vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args);
-                sCallback(*this, level, sFormatBuffer, nullptr);
+                va_list noArgs { };
+                sCallback(*this, level, sFormatBuffer, noArgs);
             } else {
+                // Not preformatted: pass the format string and va_list to the callback
+                // (prefixing the object ref # if any):
                 if (objRef) {
                     snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%u} %s", objRef, fmt);
                     sCallback(*this, level, sFormatBuffer, args2);
