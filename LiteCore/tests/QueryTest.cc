@@ -94,7 +94,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT WHAT", "[Query]") {
         REQUIRE(cols[1]->asInt() == num * num);
         ++num;
     }
-    REQUIRE(num == 100);
+    REQUIRE(num == 101);
 }
 
 
@@ -192,7 +192,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query refresh", "[Query]") {
     REQUIRE(e2 != nullptr);
 
     num = 11;
-    while (e->next())
+    while (e2->next())
         ++num;
     CHECK(num == 100);
 }
