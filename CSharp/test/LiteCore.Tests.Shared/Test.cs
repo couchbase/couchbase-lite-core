@@ -12,6 +12,7 @@ using Xunit;
 using Xunit.Abstractions;
 #else
 using Fact = Microsoft.VisualStudio.TestTools.UnitTesting.TestMethodAttribute;
+using LiteCore.Tests.Util;
 #endif
 
 namespace LiteCore.Tests
