@@ -205,6 +205,7 @@ _FLArray_Count
 _FLArray_Get
 _FLArrayIterator_Begin
 _FLArrayIterator_GetValue
+_FLArrayIterator_GetValueAt
 _FLArrayIterator_Next
 _FLDict_Count
 _FLDict_Get

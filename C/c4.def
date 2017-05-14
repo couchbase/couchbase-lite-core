@@ -195,6 +195,7 @@ FLArray_Count
 FLArray_Get
 FLArrayIterator_Begin
 FLArrayIterator_GetValue
+FLArrayIterator_GetValueAt
 FLArrayIterator_Next
 FLDict_Count
 FLDict_Get
