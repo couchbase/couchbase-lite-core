@@ -169,6 +169,12 @@ namespace litecore {
         /** Is this DataFile object currently in a transaction? */
         bool inTransaction() const                      {return _inTransaction;}
 
+        /** Override to begin a read-only transaction. */
+        virtual void beginReadOnlyTransaction() =0;
+
+        /** Override to end a read-only transaction. */
+        virtual void endReadOnlyTransaction() =0;
+
         /** Runs the function/lambda while holding the file lock. This doesn't create a real
             transaction (at the ForestDB/SQLite/etc level), but it does ensure that no other thread
             is in a transaction, nor starts a transaction while the function is running. */
@@ -185,6 +191,7 @@ namespace litecore {
         class Shared;
         friend class KeyStore;
         friend class Transaction;
+        friend class ReadOnlyTransaction;
         friend class DocumentKeys;
 
         KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
@@ -218,7 +225,7 @@ namespace litecore {
     class Transaction {
     public:
         explicit Transaction(DataFile*);
-        Transaction(DataFile &db)               :Transaction(&db) { }
+        explicit Transaction(DataFile &db)  :Transaction(&db) { }
         ~Transaction();
 
         DataFile& dataFile() const          {return _db;}
@@ -237,6 +244,23 @@ namespace litecore {
 
         DataFile&   _db;        // The DataFile
         bool _active;           // Is there an open transaction at the db level?
+    };
+
+
+    /** A read-only transaction. Does not grant access to writes, but ensures that all database
+        reads are consistent with each other.
+        Multiple DataFile instances on the same file may have simultaneous ReadOnlyTransactions,
+        and they can coexist with a simultaneous Transaction (but will be isolated from its
+        changes.) */
+    class ReadOnlyTransaction {
+    public:
+        explicit ReadOnlyTransaction(DataFile *db);
+        explicit ReadOnlyTransaction(DataFile &db)  :ReadOnlyTransaction(&db) { }
+        ~ReadOnlyTransaction();
+    private:
+        ReadOnlyTransaction(const ReadOnlyTransaction&) = delete;
+
+        DataFile *_db {nullptr};
     };
 
 }

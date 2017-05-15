@@ -212,7 +212,7 @@ namespace litecore {
     protected:
         Retained<SQLiteQuery> _query;
         Query::Options _options;
-        sequence_t _lastSequence;
+        sequence_t _lastSequence;       // DB's lastSequence at the time the query ran
     };
 
 
@@ -264,17 +264,15 @@ namespace litecore {
 
 
         QueryEnumerator* refresh() override {
-            auto lastSequenceNow = _query->lastSequence();
-            if (lastSequenceNow > _lastSequence) {
-                // Database has changed; re-run the query and compare results:
-                unique_ptr<SQLitePrerecordedQueryEnum> newEnum(
-                                            _query->createEnumerator(options(), lastSequenceNow) );
+            unique_ptr<SQLitePrerecordedQueryEnum> newEnum(
+                                            _query->createEnumerator(options(), _lastSequence) );
+            if (newEnum) {
                 if (!hasEqualContents(newEnum.get())) {
                     // Results have changed, so return new enumerator:
                     return newEnum.release();
                 }
                 // Results have not changed, but update my lastSequence before returning null:
-                _lastSequence = lastSequenceNow;
+                _lastSequence = newEnum->_lastSequence;
             }
             return nullptr;
         }
@@ -454,18 +452,24 @@ namespace litecore {
     }
 
 
-    // The factory method that creates a SQLite QueryEnumerator.
+    // The factory method that creates a SQLite QueryEnumerator, but only if the database has
+    // changed since lastSeq.
     SQLitePrerecordedQueryEnum* SQLiteQuery::createEnumerator(const Options *options,
                                                               sequence_t lastSeq)
     {
-        auto impl = new SQLiteQueryEnum(this, options, lastSeq);
-        auto recording = impl->fastForward();
-        delete impl;
-        return recording;
+        // Start a read-only transaction, to ensure that the result of lastSequence() will be
+        // consistent with the query results.
+        ReadOnlyTransaction t(keyStore().dataFile());
+
+        sequence_t curSeq = lastSequence();
+        if (lastSeq > 0 && lastSeq == curSeq)
+            return nullptr;
+        unique_ptr<SQLiteQueryEnum> newEnum(new SQLiteQueryEnum(this, options, curSeq));
+        return newEnum->fastForward();
     }
 
     QueryEnumerator* SQLiteQuery::createEnumerator(const Options *options) {
-        return createEnumerator(options, lastSequence());
+        return createEnumerator(options, 0);
     }
 
 }

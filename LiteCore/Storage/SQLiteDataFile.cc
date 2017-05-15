@@ -365,15 +365,13 @@ path.path().c_str());
 
     void SQLiteDataFile::deleteKeyStore(const string &name) {
         execWithLock(string("DROP TABLE IF EXISTS kv_") + name);
-        execWithLock(string("DROP TABLE IF EXISTS kvold_") + name);
     }
 
 
     void SQLiteDataFile::_beginTransaction(Transaction*) {
         checkOpen();
-        Assert(_transaction == nullptr);
         LogVerbose(SQL, "BEGIN");
-        _transaction = make_unique<SQLite::Transaction>(*_sqlDb);
+        exec("BEGIN");
     }
 
 
@@ -383,14 +381,17 @@ path.path().c_str());
             ((SQLiteKeyStore&)ks).transactionWillEnd(commit);
         });
 
-        // Now commit:
-        if (commit) {
-            LogVerbose(SQL, "COMMIT");
-            _transaction->commit();
-        } else {
-            LogVerbose(SQL, "ROLLBACK");
-        }
-        _transaction.reset(); // destruct SQLite::Transaction, which will rollback if not committed
+        exec(commit ? "COMMIT" : "ROLLBACK");
+    }
+
+
+    void SQLiteDataFile::beginReadOnlyTransaction() {
+        checkOpen();
+        exec("SAVEPOINT roTransaction");
+    }
+
+    void SQLiteDataFile::endReadOnlyTransaction() {
+        exec("RELEASE SAVEPOINT roTransaction");
     }
 
 

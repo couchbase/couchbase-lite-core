@@ -53,12 +53,14 @@ namespace litecore {
         };
 
         static Factory& factory();
-        
+
     protected:
         void reopen() override;
         void rekey(EncryptionAlgorithm, slice newKey) override;
         void _beginTransaction(Transaction*) override;
         void _endTransaction(Transaction*, bool commit) override;
+        void beginReadOnlyTransaction() override;
+        void endReadOnlyTransaction() override;
         KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) override;
         void deleteKeyStore(const std::string &name) override;
 
@@ -79,7 +81,6 @@ namespace litecore {
         bool decrypt();
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
-        std::unique_ptr<SQLite::Transaction> _transaction;   // Current SQLite transaction
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
         bool _registeredFleeceFunctions {false};
     };

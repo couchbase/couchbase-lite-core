@@ -443,7 +443,18 @@ namespace litecore {
         }
         _db.endTransactionScope(this);
     }
-    
+
+
+    ReadOnlyTransaction::ReadOnlyTransaction(DataFile *db) {
+        db->beginReadOnlyTransaction();
+        _db = db;
+    }
+
+    ReadOnlyTransaction::~ReadOnlyTransaction() {
+        if (_db)
+            _db->endReadOnlyTransaction();
+    }
+
 
 #pragma mark - COMPACTION:
 
