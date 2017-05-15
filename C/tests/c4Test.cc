@@ -8,6 +8,7 @@
 
 #include "c4Test.hh"
 #include "c4Document+Fleece.h"
+#include "c4Private.h"
 #include "slice.hh"
 #include "Benchmark.hh"
 #include <iostream>
@@ -146,6 +147,7 @@ C4Test::C4Test(int testOption)
             REQUIRE(c4log_writeToBinaryFile(kC4LogVerbose, c4str(path.c_str()), &error));
         }
     });
+    c4log_warnOnErrors(true);
 
     c4_shutdown(nullptr);
 

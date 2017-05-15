@@ -166,6 +166,7 @@ DataFileTestFixture::DataFileTestFixture(int testOption) {
         Log("Beginning logging to %s", path.path().c_str());
         LogDomain::writeEncodedLogsTo(path, LogLevel::Verbose);
     });
+    error::sWarnOnError = true;
 
     auto dbPath = databasePath("cbl_core_temp");
     deleteDatabase(dbPath);

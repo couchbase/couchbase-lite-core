@@ -221,7 +221,7 @@ namespace litecore {
 #pragma mark - ERROR CLASS:
 
 
-    bool error::sWarnOnError = true;
+    bool error::sWarnOnError = false;
 
     
     error::error(error::Domain d, int c)
@@ -380,9 +380,9 @@ namespace litecore {
                 unmangled = abi::__cxa_demangle(function, unmangled, &unmangledLen, &status);
                 if (unmangled && status == 0)
                     function = unmangled;
-                fprintf(stderr, "%2d  %-25s %s + %d\n", i, library, function, offset);
+                WarnError("%2d  %-25s %s + %d", i, library, function, offset);
             } else {
-                fprintf(stderr, "%s\n", lines[i]);
+                WarnError("%s", lines[i]);
             }
         }
         free(unmangled);
