@@ -305,5 +305,5 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][C]") {
     CHECK(!doc["id"]);
     CHECK(!doc["rev"]);
     CHECK(doc["status"].asInt() == 404);
-    CHECK(doc["error"].asString() == "not found"_sl);
+    CHECK(doc["error"].asString() == "Not Found"_sl);
 }

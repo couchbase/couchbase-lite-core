@@ -93,27 +93,59 @@ namespace litecore { namespace REST {
 
     void RequestResponse::setStatus(HTTPStatus status, const char *message) {
         Assert(!_sentStatus);
-        mg_printf(_conn, "HTTP/1.1 %d %s\r\n", status, (message ? message : ""));
+        if (!message)
+            message = mg_get_response_code_text(_conn, int(status));
+        mg_printf(_conn, "HTTP/1.1 %d %s\r\n", status, message);
         _status = status;
         _sentStatus = true;
     }
 
 
-    void RequestResponse::respondWithError(HTTPStatus status, const char *message) {
-        Assert(!_sentStatus);
-        mg_send_http_error(_conn, (int)status, "%s", message);
-        _status = status;
-        _sentStatus = true;
-        _sentHeaders = true;
-        _contentLength = 0;
-        _contentSent = 0;
+    void RequestResponse::writeStatusJSON(HTTPStatus status, const char *message) {
+        auto &json = jsonEncoder();
+        if (int(status) < 300) {
+            json.writeKey("ok"_sl);
+            json.writeBool(true);
+        } else {
+            const char *defaultMessage = mg_get_response_code_text(_conn, int(status));
+            json.writeKey("status"_sl);
+            json.writeInt(int(status));
+            json.writeKey("error"_sl);
+            json.writeString(defaultMessage);
+            if (message && 0 != strcasecmp(message, defaultMessage)) {
+                json.writeKey("reason"_sl);
+                json.writeString(message);
+            }
+        }
+    }
+
+
+    void RequestResponse::writeErrorJSON(C4Error err) {
+        alloc_slice message = c4error_getMessage(err);
+        writeStatusJSON(errorToStatus(err),
+                        (message ? message.asString().c_str() : nullptr));
+    }
+
+
+    void RequestResponse::respondWithStatus(HTTPStatus status, const char *message) {
+        setStatus(status, message);
+        uncacheable();
+
+        if (status >= HTTPStatus::OK && status != HTTPStatus::NoContent
+                                     && status != HTTPStatus::NotModified) {
+            auto &json = jsonEncoder();
+            json.beginDict();
+            writeStatusJSON(status, message);
+            json.endDict();
+        }
     }
 
 
     void RequestResponse::respondWithError(C4Error err) {
         Assert(err.code != 0);
         alloc_slice message = c4error_getMessage(err);
-        respondWithError(errorToStatus(err), message.asString().c_str());
+        respondWithStatus(errorToStatus(err),
+                          (message ? message.asString().c_str() : nullptr));
     }
 
 
@@ -181,6 +213,13 @@ namespace litecore { namespace REST {
             setHeader("Transfer-Encoding", "chunked");
             _chunked = true;
         }
+    }
+
+
+    void RequestResponse::uncacheable() {
+        setHeader("Cache-Control", "no-cache, no-store, must-revalidate, private, max-age=0");
+        setHeader("Pragma", "no-cache");
+        setHeader("Expires", "0");
     }
 
 

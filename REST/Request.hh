@@ -36,7 +36,7 @@ namespace litecore { namespace REST {
     class RequestResponse : public Request {
     public:
         static HTTPStatus errorToStatus(C4Error);
-        void respondWithError(HTTPStatus, const char *message =nullptr);
+        void respondWithStatus(HTTPStatus, const char *message =nullptr);
         void respondWithError(C4Error);
 
         void setStatus(HTTPStatus status, const char *message);
@@ -54,12 +54,16 @@ namespace litecore { namespace REST {
         // If you call write() more than once, you must first call setContentLength or setChunked.
         void setContentLength(uint64_t length);
         void setChunked();
+        void uncacheable();
 
         void write(fleece::slice);
         void write(const char *content)                     {write(fleece::slice(content));}
         void printf(const char *format, ...) __printflike(2, 3);
 
         fleeceapi::JSONEncoder& jsonEncoder();
+
+        void writeStatusJSON(HTTPStatus status, const char *message =nullptr);
+        void writeErrorJSON(C4Error);
 
     protected:
         friend class Server;

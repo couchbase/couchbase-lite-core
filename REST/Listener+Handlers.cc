@@ -94,32 +94,32 @@ namespace litecore { namespace REST {
 
     void Listener::handleCreateDatabase(RequestResponse &rq) {
         if (!_allowCreateDB)
-            return rq.respondWithError(HTTPStatus::Forbidden, "Cannot create databases");
+            return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create databases");
         string dbName = rq.path(0);
         if (databaseNamed(dbName))
-            return rq.respondWithError(HTTPStatus::PreconditionFailed, "Database exists");
+            return rq.respondWithStatus(HTTPStatus::PreconditionFailed, "Database exists");
         FilePath path;
         if (!pathFromDatabaseName(dbName, path))
-            return rq.respondWithError(HTTPStatus::BadRequest, "Invalid database name");
+            return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database name");
 
         C4DatabaseConfig config = { kC4DB_Bundled | kC4DB_SharedKeys | kC4DB_Create };
         C4Error err;
         if (!openDatabase(dbName, path, &config, &err)) {
             if (err.domain == LiteCoreDomain && err.code == kC4ErrorConflict)
-                return rq.respondWithError(HTTPStatus::PreconditionFailed);
+                return rq.respondWithStatus(HTTPStatus::PreconditionFailed);
             else
                 return rq.respondWithError(err);
         }
-        rq.setStatus(HTTPStatus::Created, "Created");
+        rq.respondWithStatus(HTTPStatus::Created, "Created");
     }
 
 
     void Listener::handleDeleteDatabase(RequestResponse &rq, C4Database *db) {
         if (!_allowDeleteDB)
-            return rq.respondWithError(HTTPStatus::Forbidden, "Cannot delete databases");
+            return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot delete databases");
         string name = rq.path(0);
         if (!unregisterDatabase(name))
-            return rq.respondWithError(HTTPStatus::NotFound);
+            return rq.respondWithStatus(HTTPStatus::NotFound);
         C4Error err;
         if (!c4db_delete(db, &err)) {
             registerDatabase(name, db);
@@ -195,7 +195,7 @@ namespace litecore { namespace REST {
         string revID = rq.query("rev");
         if (revID.empty()) {
             if (doc->flags & kDeleted)
-                return rq.respondWithError(HTTPStatus::NotFound);
+                return rq.respondWithStatus(HTTPStatus::NotFound);
             revID = slice(doc->revID).asString();
         } else {
             if (!c4doc_selectRevision(doc, slice(revID), true, &err))
@@ -204,7 +204,7 @@ namespace litecore { namespace REST {
 
         // Get the revision
         if (!doc->selectedRev.body.buf)
-            return rq.respondWithError(HTTPStatus::NotFound);
+            return rq.respondWithStatus(HTTPStatus::NotFound);
         alloc_slice json = c4doc_bodyAsJSON(doc, &err);
         if (!json)
             return rq.respondWithError(err);
@@ -313,16 +313,6 @@ namespace litecore { namespace REST {
     }
 
 
-    static void writeErrorJSON(JSONEncoder &json, C4Error error) {
-        HTTPStatus status = RequestResponse::errorToStatus(error);
-        alloc_slice message = c4error_getMessage(error);
-        json.writeKey("status"_sl);
-        json.writeInt((int)status);
-        json.writeKey("error"_sl);
-        json.writeString(message);
-    }
-
-
     // This handles PUT and DELETE of a document, as well as POST to a database.
     void Listener::handleModifyDoc(RequestResponse &rq, C4Database *db) {
         string docID = rq.path(1);                       // will be empty for POST
@@ -332,7 +322,7 @@ namespace litecore { namespace REST {
         Dict body = rq.bodyAsJSON().asDict();
         if (!body) {
             if (!deleting || rq.body())
-                return rq.respondWithError(HTTPStatus::BadRequest);
+                return rq.respondWithStatus(HTTPStatus::BadRequest);
         }
 
         auto &json = rq.jsonEncoder();
@@ -345,10 +335,7 @@ namespace litecore { namespace REST {
             else
                 rq.setStatus(HTTPStatus::Created, "Created");
         } else {
-            writeErrorJSON(json, error);
-            HTTPStatus status = RequestResponse::errorToStatus(error);
-            alloc_slice message = c4error_getMessage(error);
-            rq.setStatus(status, message.asString().c_str());
+            rq.respondWithError(error);
         }
         json.endDict();
     }
@@ -358,7 +345,7 @@ namespace litecore { namespace REST {
         Dict body = rq.bodyAsJSON().asDict();
         Array docs = body["docs"].asArray();
         if (!docs) {
-            return rq.respondWithError(HTTPStatus::BadRequest);
+            return rq.respondWithStatus(HTTPStatus::BadRequest);
         }
 
         Value v = body["new_edits"];
@@ -367,22 +354,21 @@ namespace litecore { namespace REST {
         C4Error error;
         c4::Transaction t(db);
         if (!t.begin(&error))
-            return rq.respondWithError(HTTPStatus::BadRequest);
+            return rq.respondWithStatus(HTTPStatus::BadRequest);
 
         auto &json = rq.jsonEncoder();
         json.beginArray();
         for (Array::iterator i(docs); i; ++i) {
             json.beginDict();
             Dict doc = i.value().asDict();
-            if (!modifyDoc(doc, "", "", false, newEdits, db, json, &error)) {
-                writeErrorJSON(json, error);
-            }
+            if (!modifyDoc(doc, "", "", false, newEdits, db, json, &error))
+                rq.writeErrorJSON(error);
             json.endDict();
         }
         json.endArray();
 
         if (!t.commit(&error))
-            return rq.respondWithError(HTTPStatus::BadRequest);
+            return rq.respondWithStatus(HTTPStatus::BadRequest);
     }
 
 } }

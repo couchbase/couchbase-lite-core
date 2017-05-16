@@ -52,7 +52,7 @@ namespace litecore { namespace REST {
         _server->setExtraHeaders({{"Server", "LiteCoreServ/0.0"}});
 
         auto notFound =  [](RequestResponse &rq) {
-            rq.respondWithError(HTTPStatus::NotFound, "Not Found");
+            rq.respondWithStatus(HTTPStatus::NotFound, "Not Found");
         };
 
         // Root:
@@ -289,12 +289,12 @@ namespace litecore { namespace REST {
     c4::ref<C4Database> Listener::databaseFor(RequestResponse &rq) {
         string dbName = rq.path(0);
         if (dbName.empty()) {
-            rq.respondWithError(HTTPStatus::BadRequest);
+            rq.respondWithStatus(HTTPStatus::BadRequest);
             return nullptr;
         }
         auto db = databaseNamed(dbName);
         if (!db)
-            rq.respondWithError(HTTPStatus::NotFound);
+            rq.respondWithStatus(HTTPStatus::NotFound);
         return db;
     }
 

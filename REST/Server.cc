@@ -97,7 +97,7 @@ namespace litecore { namespace REST {
             RequestResponse rq(conn);
             rq.addHeaders(extraHeaders);
             if (!handler)
-                rq.respondWithError(HTTPStatus::MethodNotAllowed, "Method not allowed");
+                rq.respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
             else
                 (handler(rq));
             rq.finish();
