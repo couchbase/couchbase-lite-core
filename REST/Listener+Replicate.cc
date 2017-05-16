@@ -15,7 +15,9 @@
 #include "RefCounted.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
+#include <condition_variable>
 #include <functional>
+#include <mutex>
 #include <time.h>
 
 using namespace std;
@@ -27,6 +29,9 @@ namespace litecore { namespace REST {
 
     class ReplicationTask : public Listener::Task {
     public:
+        using Mutex = recursive_mutex;
+        using Lock = unique_lock<Mutex>;
+
         ReplicationTask(Listener* listener, slice source, slice target, bool continuous)
         :Task(listener)
         ,_source(source)
@@ -34,9 +39,21 @@ namespace litecore { namespace REST {
         ,_continuous(continuous)
         { }
 
-        bool start(C4Database *localDB, const C4Address &remoteAddress, C4String remoteDbName,
+        bool start(C4Database *localDB, C4String localDbName,
+                   const C4Address &remoteAddress, C4String remoteDbName,
                    C4ReplicatorMode pushMode, C4ReplicatorMode pullMode, C4Error *outError)
         {
+            Lock lock(_mutex);
+            _push = (pushMode >= kC4OneShot);
+            registerTask();
+            c4log(RESTLog, kC4LogInfo,
+                  "Replicator task #%d starting: local=%.*s, mode=%s, scheme=%.*s, host=%.*s,"
+                  " port=%u, db=%.*s, continuous=%d",
+                  taskID(), SPLAT(localDbName), (pushMode > kC4Disabled ? "push" : "pull"),
+                  SPLAT(remoteAddress.scheme), SPLAT(remoteAddress.hostname), remoteAddress.port,
+                  SPLAT(remoteDbName),
+                  _continuous);
+            
             auto callback = [](C4Replicator*, C4ReplicatorStatus status, void *context) {
                 ((ReplicationTask*)context)->onReplStateChanged(status);
             };
@@ -44,25 +61,28 @@ namespace litecore { namespace REST {
                                pushMode, pullMode,
                                callback, this,
                                outError);
-            if (!_repl)
+            if (!_repl) {
+                c4log(RESTLog, kC4LogInfo,
+                      "Replicator task #%d failed to start!", taskID());
+                unregisterTask();
                 return false;
-            _push = (pushMode >= kC4OneShot);
+            }
             onReplStateChanged(c4repl_getStatus(_repl));
-            registerTask();
             return true;
         }
 
         virtual bool finished() const override {
+            Lock lock(const_cast<ReplicationTask*>(this)->_mutex);
             return _finalResult != HTTPStatus::undefined;
         }
 
         C4ReplicatorStatus status() {
-            lock_guard<mutex> lock(_mutex);
+            Lock lock(_mutex);
             return _status;
         }
 
         alloc_slice message() {
-            lock_guard<mutex> lock(_mutex);
+            Lock lock(_mutex);
             return _message;
         }
 
@@ -82,7 +102,7 @@ namespace litecore { namespace REST {
                 json.writeBool(true);
             }
 
-            unique_lock<mutex> lock(_mutex);
+            Lock lock(_mutex);
 
             json.writeKey("updated_on"_sl);
             json.writeUInt(_timeUpdated);
@@ -111,6 +131,7 @@ namespace litecore { namespace REST {
 
 
         void writeErrorInfo(JSONEncoder &json) {
+            Lock lock(_mutex);
             json.beginDict();
             json.writeKey("error"_sl);
             json.writeString(_message);
@@ -123,7 +144,7 @@ namespace litecore { namespace REST {
 
 
         HTTPStatus wait() {
-            unique_lock<mutex> lock(_mutex);
+            Lock lock(_mutex);
             _cv.wait(lock, [this]{return finished();});
             return _finalResult;
         }
@@ -131,7 +152,7 @@ namespace litecore { namespace REST {
     private:
         void onReplStateChanged(const C4ReplicatorStatus &status) {
             {
-                lock_guard<mutex> lock(_mutex);
+                Lock lock(_mutex);
                 _status = status;
                 _message = c4error_getMessage(status.error);
                 if (status.level == kC4Stopped) {
@@ -141,16 +162,18 @@ namespace litecore { namespace REST {
                 }
                 time(&_timeUpdated);
             }
-            if (finished())
+            if (finished()) {
+                c4log(RESTLog, kC4LogInfo, "Replicator task #%u finished", taskID());
                 _cv.notify_all();
+            }
             //unregisterTask();  --no, leave it so a later call to _active_tasks can get its state
         }
 
         Listener* _listener;
         alloc_slice _source, _target;
         bool _continuous, _push;
-        mutex _mutex;
-        condition_variable _cv;
+        Mutex _mutex;
+        condition_variable_any _cv;
         c4::ref<C4Replicator> _repl;
         C4ReplicatorStatus _status;
         alloc_slice _message;
@@ -197,18 +220,12 @@ namespace litecore { namespace REST {
         if (!c4repl_parseURL(remoteURL, &remoteAddress, &remoteDbName))
             return rq.respondWithError(HTTPStatus::BadRequest, "Invalid database URL");
 
-        c4log(RESTLog, kC4LogInfo,
-              "Replicating: local=%.*s, mode=%s, scheme=%.*s, host=%.*s, port=%u, db=%.*s, continuous=%d",
-              SPLAT(localName),
-              (pushMode > kC4Disabled ? "push" : "pull"),
-              SPLAT(remoteAddress.scheme), SPLAT(remoteAddress.hostname), remoteAddress.port,
-              SPLAT(remoteDbName),
-              continuous);
-
         // Start the replication!
         C4Error error;
         Retained<ReplicationTask> task = new ReplicationTask(this, source, target, continuous);
-        if (!task->start(localDB, remoteAddress, remoteDbName, pushMode, pullMode, &error))
+        if (!task->start(localDB, localName,
+                         remoteAddress, remoteDbName,
+                         pushMode, pullMode, &error))
             return rq.respondWithError(error);
 
 

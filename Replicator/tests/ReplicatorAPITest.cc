@@ -26,7 +26,11 @@ using namespace litecore;
 
 class ReplicatorAPITest : public C4Test {
 public:
-    constexpr static const C4Address kDefaultAddress {kC4Replicator2Scheme, C4STR("localhost"), 4984};
+    // Default address to replicate with (individual tests can override this):
+    constexpr static const C4Address kDefaultAddress {kC4Replicator2Scheme,
+                                                      C4STR("localhost"),
+                                                      4984};
+    // Common database names:
     constexpr static const C4String kScratchDBName = C4STR("scratch");
     constexpr static const C4String kITunesDBName = C4STR("itunes");
     constexpr static const C4String kWikipedia1kDBName = C4STR("wikipedia1k");
@@ -35,6 +39,7 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
+        // Environment variables can also override the default address above:
         C4RegisterSocketFactory();
         const char *hostname = getenv("REMOTE_HOST");
         if (hostname)
@@ -172,6 +177,32 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+
+    auto db2Path = TempDir() + "cbl_core_test2";
+    auto db2PathSlice = c4str(db2Path.c_str());
+
+    auto config = c4db_getConfig(db);
+    C4Error error;
+    if (!c4db_deleteAtPath(db2PathSlice, config, &error))
+        REQUIRE(error.code == 0);
+    db2 = c4db_open(db2PathSlice, config, &error);
+    REQUIRE(db2 != nullptr);
+
+    address = { };
+    remoteDBName = nullslice;
+
+    replicate(kC4OneShot, kC4Disabled);
+
+    REQUIRE(c4db_getDocumentCount(db2) == 100);
+}
+
+
+// The tests below are tagged [.special] to keep them from running during normal unit testing.
+// Instead, they have to be invoked manually via Catch command-line options.
+// This is because they require an external replication server is running.
+
 TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[Push][.special]") {
     remoteDBName = kProtectedDBName;
     replicate(kC4OneShot, kC4Disabled, false);
@@ -210,26 +241,4 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Pull][.special]") {
 TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[Pull][.special]") {
     remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4Continuous);
-}
-
-
-TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
-    importJSONLines(sFixturesDir + "names_100.json");
-
-    auto db2Path = TempDir() + "cbl_core_test2";
-    auto db2PathSlice = c4str(db2Path.c_str());
-
-    auto config = c4db_getConfig(db);
-    C4Error error;
-    if (!c4db_deleteAtPath(db2PathSlice, config, &error))
-        REQUIRE(error.code == 0);
-    db2 = c4db_open(db2PathSlice, config, &error);
-    REQUIRE(db2 != nullptr);
-
-    address = { };
-    remoteDBName = nullslice;
-
-    replicate(kC4OneShot, kC4Disabled);
-
-    REQUIRE(c4db_getDocumentCount(db2) == 100);
 }
