@@ -169,16 +169,19 @@ namespace litecore { namespace REST {
         if (!source || !target)
             return rq.respondWithError(HTTPStatus::BadRequest, "Missing source or target parameters");
 
+        bool continuous = params["continuous"].asBool();
+        C4ReplicatorMode activeMode = continuous ? kC4Continuous : kC4OneShot;
+
         slice localName;
         slice remoteURL;
         C4ReplicatorMode pushMode = kC4Disabled, pullMode = kC4Disabled;
         if (c4repl_isValidDatabaseName(source)) {
             localName = source;
-            pushMode = kC4OneShot;
+            pushMode = activeMode;
             remoteURL = target;
         } else if (c4repl_isValidDatabaseName(target)) {
             localName = target;
-            pullMode = kC4OneShot;
+            pullMode = activeMode;
             remoteURL = source;
         } else {
             return rq.respondWithError(HTTPStatus::BadRequest,
@@ -193,7 +196,6 @@ namespace litecore { namespace REST {
         C4String remoteDbName;
         if (!c4repl_parseURL(remoteURL, &remoteAddress, &remoteDbName))
             return rq.respondWithError(HTTPStatus::BadRequest, "Invalid database URL");
-        bool continuous = params["continuous"].asBool();
 
         c4log(RESTLog, kC4LogInfo,
               "Replicating: local=%.*s, mode=%s, scheme=%.*s, host=%.*s, port=%u, db=%.*s, continuous=%d",
