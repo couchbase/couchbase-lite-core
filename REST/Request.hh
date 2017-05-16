@@ -35,6 +35,7 @@ namespace litecore { namespace REST {
     /** Incoming HTTP request, with methods for composing a response */
     class RequestResponse : public Request {
     public:
+        static HTTPStatus errorToStatus(C4Error);
         void respondWithError(HTTPStatus, const char *message =nullptr);
         void respondWithError(C4Error);
 

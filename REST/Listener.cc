@@ -72,6 +72,7 @@ namespace litecore { namespace REST {
 
         // Database-level special handlers:
         addDBHandler(Server::GET, "/*/_all_docs$", &Listener::handleGetAllDocs);
+        addDBHandler(Server::POST, "/*/_bulk_docs$", &Listener::handleBulkDocs);
         _server->addHandler  (Server::DEFAULT, "/*/_", notFound);
 
         // Document:

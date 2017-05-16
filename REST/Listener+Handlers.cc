@@ -229,34 +229,48 @@ namespace litecore { namespace REST {
     }
 
 
-    // This handles PUT and DELETE of a document, as well as POST to a database.
-    void Listener::handleModifyDoc(RequestResponse &rq, C4Database *db) {
-        string docID = rq.path(1);                       // will be empty for POST
-
-        // Parse the body:
-        bool deleting = (rq.method() == "DELETE"_sl);
-        Dict body = rq.bodyAsJSON().asDict();
-        if (!body) {
-            if (!deleting || rq.body())
-                return rq.respondWithError(HTTPStatus::BadRequest);
+    // Core code for create/update/delete operation on a single doc.
+    bool Listener::modifyDoc(Dict body,
+                             string docID,
+                             string revIDQuery,
+                             bool deleting,
+                             bool newEdits,
+                             C4Database *db,
+                             fleeceapi::JSONEncoder& json,
+                             C4Error *outError)
+    {
+        if (!deleting && !body) {
+            c4error_return(WebSocketDomain, (int)HTTPStatus::BadRequest,
+                           C4STR("body must be a JSON object"), outError);
+            return false;
         }
 
         // Get the revID from either the JSON body or the "rev" query param:
         slice revID = body["_rev"_sl].asString();
-        string revIDQuery = rq.query("rev");
         if (!revIDQuery.empty()) {
-            if (revID) {
-                if (revID != slice(revIDQuery))
-                    return rq.respondWithError(HTTPStatus::BadRequest);
-            } else {
+            if (!revID) {
                 revID = slice(revIDQuery);
+            } else if (revID != slice(revIDQuery)) {
+                c4error_return(WebSocketDomain, (int)HTTPStatus::BadRequest,
+                               C4STR("\"_rev\" conflicts with ?rev"), outError);
+                return false;
             }
         }
 
         if (docID.empty()) {
-            if (revID)
-                return rq.respondWithError(HTTPStatus::BadRequest);            // Can't specify revID on a POST
             docID = slice(body["_id"].asString()).asString();
+            if (docID.empty() && revID) {
+                // Can't specify revID on a POST
+                c4error_return(WebSocketDomain, (int)HTTPStatus::BadRequest,
+                               C4STR("Missing \"_id\""), outError);
+                return false;
+            }
+        }
+
+        if (!newEdits && (!revID || docID.empty())) {
+            c4error_return(WebSocketDomain, (int)HTTPStatus::BadRequest,
+                           C4STR("Both \"_id\" and \"_rev\" must be given when \"new_edits\" is false"), outError);
+            return false;
         }
 
         if (body["_deleted"_sl].asBool())
@@ -272,7 +286,7 @@ namespace litecore { namespace REST {
         if (!docID.empty())
             put.docID = slice(docID);
         put.revFlags = (deleting ? kRevDeleted : 0);
-        put.existingRevision = false;
+        put.existingRevision = !newEdits;
         put.allowConflict = false;
         put.history = history;
         put.historyCount = revID ? 1 : 0;
@@ -283,27 +297,92 @@ namespace litecore { namespace REST {
             C4Error err;
             c4::Transaction t(db);
             if (t.begin(&err))
-                doc = c4doc_put(db, &put, nullptr, &err);
-            if (!doc || !t.commit(&err))
-                return rq.respondWithError(err);
+                doc = c4doc_put(db, &put, nullptr, outError);
+            if (!doc || !t.commit(outError))
+                return false;
         }
         revID = slice(doc->selectedRev.revID);
 
-        // Return a JSON object:
-        auto &json = rq.jsonEncoder();
-        json.beginDict();
         json.writeKey("ok"_sl);
         json.writeBool(true);
         json.writeKey("id"_sl);
         json.writeString(doc->docID);
         json.writeKey("rev"_sl);
         json.writeString(doc->selectedRev.revID);
-        json.endDict();
+        return true;
+    }
 
-        if (deleting)
-            rq.setStatus(HTTPStatus::OK, "Deleted");
-        else
-            rq.setStatus(HTTPStatus::Created, "Created");
+
+    static void writeErrorJSON(JSONEncoder &json, C4Error error) {
+        HTTPStatus status = RequestResponse::errorToStatus(error);
+        alloc_slice message = c4error_getMessage(error);
+        json.writeKey("status"_sl);
+        json.writeInt((int)status);
+        json.writeKey("error"_sl);
+        json.writeString(message);
+    }
+
+
+    // This handles PUT and DELETE of a document, as well as POST to a database.
+    void Listener::handleModifyDoc(RequestResponse &rq, C4Database *db) {
+        string docID = rq.path(1);                       // will be empty for POST
+
+        // Parse the body:
+        bool deleting = (rq.method() == "DELETE"_sl);
+        Dict body = rq.bodyAsJSON().asDict();
+        if (!body) {
+            if (!deleting || rq.body())
+                return rq.respondWithError(HTTPStatus::BadRequest);
+        }
+
+        auto &json = rq.jsonEncoder();
+        json.beginDict();
+
+        C4Error error;
+        if (modifyDoc(body, docID, rq.query("rev"), deleting, true, db, json, &error)) {
+            if (deleting)
+                rq.setStatus(HTTPStatus::OK, "Deleted");
+            else
+                rq.setStatus(HTTPStatus::Created, "Created");
+        } else {
+            writeErrorJSON(json, error);
+            HTTPStatus status = RequestResponse::errorToStatus(error);
+            alloc_slice message = c4error_getMessage(error);
+            rq.setStatus(status, message.asString().c_str());
+        }
+        json.endDict();
+    }
+
+
+    void Listener::handleBulkDocs(RequestResponse &rq, C4Database *db) {
+        Dict body = rq.bodyAsJSON().asDict();
+        Array docs = body["docs"].asArray();
+        if (!docs) {
+            return rq.respondWithError(HTTPStatus::BadRequest);
+        }
+
+        Value v = body["new_edits"];
+        bool newEdits = v ? v.asBool() : true;
+
+        C4Error error;
+        c4::Transaction t(db);
+        if (!t.begin(&error))
+            return rq.respondWithError(HTTPStatus::BadRequest);
+
+        auto &json = rq.jsonEncoder();
+        json.beginArray();
+        for (Array::iterator i(docs); i; ++i) {
+            json.beginDict();
+            Dict doc = i.value().asDict();
+            if (!modifyDoc(doc, "", "", false, newEdits, db, json, &error)) {
+                writeErrorJSON(json, error);
+            }
+            json.endDict();
+        }
+        json.endArray();
+
+        if (!t.commit(&error))
+            return rq.respondWithError(HTTPStatus::BadRequest);
     }
 
 } }

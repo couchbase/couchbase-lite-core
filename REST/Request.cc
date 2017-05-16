@@ -113,6 +113,13 @@ namespace litecore { namespace REST {
     void RequestResponse::respondWithError(C4Error err) {
         Assert(err.code != 0);
         alloc_slice message = c4error_getMessage(err);
+        respondWithError(errorToStatus(err), message.asString().c_str());
+    }
+
+
+    HTTPStatus RequestResponse::errorToStatus(C4Error err) {
+        if (err.code == 0)
+            return HTTPStatus::OK;
         HTTPStatus status = HTTPStatus::ServerError;
         // TODO: Add more mappings, and make these table-driven
         switch (err.domain) {
@@ -144,7 +151,7 @@ namespace litecore { namespace REST {
             default:
                 break;
         }
-        respondWithError(status, message.asString().c_str());
+        return status;
     }
 
 

@@ -202,6 +202,13 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
         body = r->bodyAsJSON().asDict();
         docID = body["id"].asString();
         CHECK(docID == "mydocument"_sl);
+
+        request("PUT", "/db/mydocument",
+                {{"Content-Type", "application/json"}},
+                "{\"year\": 1977}"_sl, HTTPStatus::Conflict);
+        request("PUT", "/db/mydocument",
+                {{"Content-Type", "application/json"}},
+                "{\"year\": 1977, \"_rev\":\"1-ffff\"}"_sl, HTTPStatus::Conflict);
     }
 
     CHECK(body["ok"].asBool() == true);
@@ -269,3 +276,34 @@ TEST_CASE_METHOD(C4RESTTest, "REST _all_docs", "[REST][C]") {
 }
 
 
+TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][C]") {
+    unique_ptr<Response> r;
+    r = request("POST", "/db/_bulk_docs",
+                {{"Content-Type", "application/json"}},
+                json5("{docs:[{year:1962}, "
+                             "{_id:'jens', year:1964}, "
+                             "{_id:'bob', _rev:'1-eeee', year:1900}]}"),
+                HTTPStatus::OK);
+    Array body = r->bodyAsJSON().asArray();
+    CHECK(body.count() == 3);
+    
+    Dict doc = body[0].asDict();
+    CHECK(doc);
+    CHECK(doc["ok"].asBool());
+    CHECK(doc["id"].asString().size > 0);
+    CHECK(doc["rev"].asString().size > 0);
+
+    doc = body[1].asDict();
+    CHECK(doc);
+    CHECK(doc["ok"].asBool());
+    CHECK(doc["id"].asString() == "jens"_sl);
+    CHECK(doc["rev"].asString().size > 0);
+
+    doc = body[2].asDict();
+    CHECK(doc);
+    CHECK(!doc["ok"]);
+    CHECK(!doc["id"]);
+    CHECK(!doc["rev"]);
+    CHECK(doc["status"].asInt() == 404);
+    CHECK(doc["error"].asString() == "not found"_sl);
+}

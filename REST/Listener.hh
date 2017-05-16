@@ -108,6 +108,16 @@ namespace litecore { namespace REST {
         void handleGetAllDocs(RequestResponse&, C4Database*);
         void handleGetDoc(RequestResponse&, C4Database*);
         void handleModifyDoc(RequestResponse&, C4Database*);
+        void handleBulkDocs(RequestResponse&, C4Database*);
+
+        bool modifyDoc(fleeceapi::Dict body,
+                       std::string docID,
+                       std::string revIDQuery,
+                       bool deleting,
+                       bool newEdits,
+                       C4Database *db,
+                       fleeceapi::JSONEncoder& json,
+                       C4Error *outError);
 
         std::unique_ptr<FilePath> _directory;
         const bool _allowCreateDB, _allowDeleteDB;
