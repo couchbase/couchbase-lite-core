@@ -66,6 +66,7 @@
 extern "C" {
 #endif
 
+// Export/import stuff:
 #ifdef _MSC_VER
 #ifdef LITECORE_EXPORTS
 #define CBL_CORE_API __declspec(dllexport)
@@ -75,6 +76,16 @@ extern "C" {
 #else // _MSC_VER
 #define CBL_CORE_API
 #endif
+
+// Type-checking for printf-style vararg functions:
+#ifdef _MSC_VER
+#define __printflike(A, B)
+#else
+#ifndef __printflike
+#define __printflike(fmtarg, firstvararg) __attribute__((__format__ (__printf__, fmtarg, firstvararg)))
+#endif
+#endif
+
 
 
 /** A database sequence number, representing the order in which a revision was created. */
@@ -300,7 +311,7 @@ void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
     @param level  The level of the message. If the domain's level is greater than this,
                     nothing will be logged.
     @param fmt  printf-style format string, followed by arguments (if any). */
-void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt, ...) C4API;
+void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt, ...) C4API __printflike(3,4);
 
 /** Same as c4log, for use in calling functions that already take variable args. */
 void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt, va_list args) C4API;

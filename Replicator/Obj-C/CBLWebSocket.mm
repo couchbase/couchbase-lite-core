@@ -203,7 +203,7 @@ static void doCompletedReceive(C4Socket* s, size_t byteCount) {
             [self didCloseWithError: error];
             return;
         }
-        LogVerbose("Received %zu bytes of HTTP response", data.length);
+        LogVerbose("Received %zu bytes of HTTP response", (size_t)data.length);
         if (!CFHTTPMessageAppendBytes(httpResponse, (const UInt8*)data.bytes, data.length)) {
             // Error reading response!
             [self didCloseWithCode: kWebSocketCloseProtocolError
@@ -310,7 +310,9 @@ static void doCompletedReceive(C4Socket* s, size_t byteCount) {
             [self didCloseWithError: error];
         else {
             self->_receivedBytesPending += data.length;
-            LogVerbose("<<< received %zu bytes%s [now %zu pending]", data.length, (atEOF ? " (EOF)" : ""), self->_receivedBytesPending);
+            LogVerbose("<<< received %zu bytes%s [now %zu pending]",
+                       (size_t)data.length, (atEOF ? " (EOF)" : ""),
+                       (size_t)self->_receivedBytesPending);
             if (data) {
                 auto socket = self->_c4socket;
                 dispatch_async(self->_c4Queue, ^{
@@ -400,7 +402,8 @@ static void doCompletedReceive(C4Socket* s, size_t byteCount) {
         //FIX: Better error mapping
         NSString* domain = error.domain;
         const char *message = error.localizedFailureReason.UTF8String;
-        Log("CBLWebSocket CLOSED WITH ERROR: %s %d \"%s\"", domain.UTF8String, error.code, message);
+        Log("CBLWebSocket CLOSED WITH ERROR: %s %ld \"%s\"",
+            domain.UTF8String, (long)error.code, message);
         C4ErrorDomain c4Domain;
         auto c4Code = (int)error.code;
         if ([domain isEqualToString: @"WebSocket"])
