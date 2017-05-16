@@ -43,6 +43,12 @@ namespace litecore { namespace REST {
                    const C4Address &remoteAddress, C4String remoteDbName,
                    C4ReplicatorMode pushMode, C4ReplicatorMode pullMode, C4Error *outError)
         {
+            if (findMatchingTask()) {
+                c4error_return(WebSocketDomain, 409, C4STR("Replication already running"),
+                               outError);
+                return false;
+            }
+
             Lock lock(_mutex);
             _push = (pushMode >= kC4OneShot);
             registerTask();
@@ -69,6 +75,28 @@ namespace litecore { namespace REST {
             }
             onReplStateChanged(c4repl_getStatus(_repl));
             return true;
+        }
+
+        ReplicationTask* findMatchingTask() {
+            for (auto task : listener()->tasks()) {
+                ReplicationTask *repl = dynamic_cast<ReplicationTask*>(task.get());
+                if (repl && repl->_source == _source
+                         && repl->_target == _target
+                         && repl->_continuous == _continuous) {
+                    return repl;
+                }
+            }
+            return nullptr;
+        }
+
+        // Cancel any existing task with the same parameters as me:
+        bool cancelExisting() {
+            auto task = findMatchingTask();
+            if (task) {
+                task->stop();
+                return true;
+            }
+            return false;
         }
 
         virtual bool finished() const override {
@@ -149,6 +177,15 @@ namespace litecore { namespace REST {
             return _finalResult;
         }
 
+
+        void stop() override {
+            Lock lock(_mutex);
+            if (_repl) {
+                c4log(RESTLog, kC4LogInfo, "Replicator task #%u stopping...", taskID());
+                c4repl_stop(_repl);
+            }
+        }
+
     private:
         void onReplStateChanged(const C4ReplicatorStatus &status) {
             {
@@ -169,7 +206,6 @@ namespace litecore { namespace REST {
             //unregisterTask();  --no, leave it so a later call to _active_tasks can get its state
         }
 
-        Listener* _listener;
         alloc_slice _source, _target;
         bool _continuous, _push;
         Mutex _mutex;
@@ -223,6 +259,15 @@ namespace litecore { namespace REST {
         // Start the replication!
         C4Error error;
         Retained<ReplicationTask> task = new ReplicationTask(this, source, target, continuous);
+
+        if (params["cancel"].asBool()) {
+            // Hang on, stop the presses -- we're canceling, not starting
+            bool canceled = task->cancelExisting();
+            rq.setStatus(canceled ? HTTPStatus::OK : HTTPStatus::NotFound,
+                         canceled ? "Stopped" : "No matching task");
+            return;
+        }
+
         if (!task->start(localDB, localName,
                          remoteAddress, remoteDbName,
                          pushMode, pullMode, &error))

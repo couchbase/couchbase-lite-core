@@ -57,11 +57,15 @@ namespace litecore { namespace REST {
 
         class Task : public RefCounted {
         public:
-            Task(Listener* listener)    :_listener(listener) { }
+            explicit Task(Listener* listener)    :_listener(listener) { }
+
+            Listener* listener() const  {return _listener;}
             unsigned taskID() const     {return _taskID;}
             time_t timeUpdated() const  {return _timeUpdated;}
             virtual bool finished() const =0;
             virtual void writeDescription(fleeceapi::JSONEncoder&);
+
+            virtual void stop() =0;
 
             void registerTask();
             void unregisterTask();

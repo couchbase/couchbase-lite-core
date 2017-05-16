@@ -138,6 +138,9 @@ namespace litecore { namespace REST {
                         status = HTTPStatus::GatewayError; break;
                 }
                 break;
+            case WebSocketDomain:
+                if (err.code < 1000)
+                    status = HTTPStatus(err.code);
             default:
                 break;
         }
