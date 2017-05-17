@@ -120,6 +120,7 @@ namespace litecore {
     LogLevel LogDomain::computeLevel() noexcept {
         if (_effectiveLevel == LogLevel::Uninitialized) {
             auto level = _level;
+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
             // Use the level specified in the environment, if any:
             char *val = getenv((string("LiteCoreLog") + _name).c_str());
             if (val) {
@@ -132,6 +133,7 @@ namespace litecore {
                         break;
                     }
             }
+#endif
             setLevel(level);
         }
         return _level;

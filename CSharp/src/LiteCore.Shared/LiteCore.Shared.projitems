@@ -8,10 +8,6 @@
   <PropertyGroup Label="Configuration">
     <Import_RootNamespace>LiteCore.Shared</Import_RootNamespace>
   </PropertyGroup>
-  <PropertyGroup>
-    <IsMac>false</IsMac>
-    <IsMac Condition=" '$(OS)' == 'Unix' AND Exists('/Library/Frameworks') ">true</IsMac>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)API\InteropObject.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)API\LiteCoreDocEnumerator.cs" />
@@ -59,51 +55,5 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util\PerfTimer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\RecyclableMemoryStream.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\RecyclableMemoryStreamManager.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' OR '$(Configuration)' == 'Packaging' ">
-    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x86\RelWithDebInfo\LiteCore.dll">
-      <Link>x86\LiteCore.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x86\RelWithDebInfo\LiteCore.pdb">
-      <Link>x86\LiteCore.pdb</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x86\RelWithDebInfo\sqlite3.dll">
-      <Link>x86\sqlite3.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x86\RelWithDebInfo\sqlite3.pdb">
-      <Link>x86\sqlite3.pdb</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x64\RelWithDebInfo\LiteCore.dll">
-      <Link>x64\LiteCore.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x64\RelWithDebInfo\LiteCore.pdb">
-      <Link>x64\LiteCore.pdb</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x64\RelWithDebInfo\sqlite3.dll">
-      <Link>x64\sqlite3.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\x64\RelWithDebInfo\sqlite3.pdb">
-      <Link>x64\sqlite3.pdb</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup Condition=" $(IsMac) OR '$(Configuration)' == 'Packaging' ">
-    <None Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\libLiteCore.dylib">
-      <Link>libLiteCore.dylib</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-  <ItemGroup Condition=" (!$(IsMac) AND '$(OS)' == 'Unix') OR '$(Configuration)' == 'Packaging' ">
-    <None Include="$(MSBuildThisFileDirectory)..\..\..\build_cmake\libLiteCore.so">
-      <Link>libLiteCore.so</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 </Project>

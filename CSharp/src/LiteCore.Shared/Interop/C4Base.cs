@@ -263,57 +263,7 @@ namespace LiteCore.Interop
     public
 #endif
     static partial class Native
-    {
-        static Native()
-        {
-#if !NET_46
-            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-#endif
-                var codeBase = AppContext.BaseDirectory;
-                if(!codeBase.EndsWith("\\"))
-                {
-                    codeBase = codeBase + "\\";
-                }
-
-                UriBuilder uri = new UriBuilder(codeBase);
-                var directory = Path.GetDirectoryName(Uri.UnescapeDataString(uri.Path));
-
-                Debug.Assert(Path.IsPathRooted(directory), "directory is not rooted.");
-                var architecture = IntPtr.Size == 4
-                    ? "x86"
-                    : "x64";
-
-                var dllPath = Path.Combine(directory, architecture, "LiteCore.dll");
-#if LITECORE_PACKAGED
-                var dllPathUwp = Path.Combine(directory, "Couchbase.Lite", architecture, "LiteCore.dll");
-#else
-                var dllPathUwp = Path.Combine(directory, "LiteCore-Interop", architecture, "LiteCore.dll");
-#endif
-                var dllPathAsp = Path.Combine(directory, "bin", architecture, "LiteCore.dll");
-                var foundPath = default(string);
-                foreach(var path in new[] {  dllPath, dllPathUwp, dllPathAsp }) {
-                    foundPath = File.Exists(path) ? path : null; 
-                    if(foundPath != null) {
-                        break;
-                    }
-                }
-
-                if(foundPath == null) {
-                    Debug.WriteLine("Could not find LiteCore.dll!  Nothing is going to work!");
-                    throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
-                }
-
-                const uint loadWithAlteredSearchPath = 8;
-                var ptr = LoadLibraryEx(foundPath, IntPtr.Zero, loadWithAlteredSearchPath);
-                if (ptr == IntPtr.Zero) {
-                    Debug.WriteLine("Could not load LiteCore.dll!  Nothing is going to work!");
-                    throw new LiteCoreException(new C4Error(LiteCoreError.UnexpectedError));
-                }
-#if !NET_46
-            }
-#endif
-        }
-
+    { 
 		public static unsafe C4LogDomain* c4log_getDomain(string name, bool create)
 		{
 			var bytes = Encoding.UTF8.GetBytes(name);
@@ -322,9 +272,6 @@ namespace LiteCore.Interop
 				return Native.c4log_getDomain(bytes_, create);
 			}
 		}
-
-        [DllImport("kernel32")]
-        private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
     }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
