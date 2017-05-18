@@ -241,6 +241,7 @@ C4QueryEnumerator* c4queryenum_refresh(C4QueryEnumerator *e,
                                        C4Error *outError) noexcept
 {
     return tryCatch<C4QueryEnumerator*>(outError, [&]{
+        clearError(outError);
         return internal(e)->refresh();
     });
 }
