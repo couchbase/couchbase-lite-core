@@ -39,6 +39,12 @@ namespace litecore { namespace websocket {
 
         // Mock API -- call this to simulate incoming events:
 
+        void simulateHTTPResponse(int status, const fleeceapi::AllocedDict &headers,
+                                  actor::delay_t latency = actor::delay_t::zero())
+        {
+            enqueueAfter(latency, &MockWebSocket::_simulateHTTPResponse, status, headers);
+        }
+
         void simulateConnected(actor::delay_t latency = actor::delay_t::zero()) {
             enqueueAfter(latency, &MockWebSocket::_simulateConnected);
         }
@@ -99,6 +105,12 @@ namespace litecore { namespace websocket {
             release(this);
         }
 
+        virtual void _simulateHTTPResponse(int status, fleeceapi::AllocedDict headers) {
+            LogTo(WSMock, "%s GOT RESPONSE (%d)", name.c_str(), status);
+            assert(!_isOpen);
+            delegate().onWebSocketGotHTTPResponse(status, headers);
+        }
+
         virtual void _simulateConnected() {
             LogTo(WSMock, "%s CONNECTED", name.c_str());
             assert(!_isOpen);
@@ -157,7 +169,8 @@ namespace litecore { namespace websocket {
             _protocols.insert(protocol);
         }
 
-        virtual WebSocket* createWebSocket(const Address &address) override {
+        virtual WebSocket* createWebSocket(const Address &address,
+                                           const fleeceapi::AllocedDict &options ={}) override {
             return new MockWebSocket(*this, address);
         }
 

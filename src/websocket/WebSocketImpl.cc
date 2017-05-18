@@ -76,9 +76,11 @@ namespace litecore { namespace websocket {
     static LogDomain WSLogDomain("WS");
 
 
-    WebSocketImpl::WebSocketImpl(ProviderImpl &provider, const Address &address, bool framing)
+    WebSocketImpl::WebSocketImpl(ProviderImpl &provider, const Address &address,
+                                 const fleeceapi::AllocedDict &options, bool framing)
     :WebSocket(provider, address)
     ,Logging(WSLogDomain)
+    ,_options(options)
     ,_framing(framing)
     {
         if (_framing)
@@ -100,6 +102,11 @@ namespace litecore { namespace websocket {
 
     void WebSocketImpl::disconnect() {
         provider().closeSocket(this);
+    }
+
+
+    void WebSocketImpl::gotHTTPResponse(int status, const fleeceapi::AllocedDict &headersFleece) {
+        delegate().onWebSocketGotHTTPResponse(status, headersFleece);
     }
 
     void WebSocketImpl::onConnect() {

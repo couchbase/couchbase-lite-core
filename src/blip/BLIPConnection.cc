@@ -137,6 +137,12 @@ namespace litecore { namespace blip {
             Log("~BLIPIO: Max outbox depth was %zu, avg %.2f", _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
         }
 
+        virtual void onWebSocketGotHTTPResponse(int status,
+                                                const fleeceapi::AllocedDict &headers) override
+        {
+            _connection->gotHTTPResponse(status, headers);
+        }
+
         // websocket::Delegate interface:
         virtual void onWebSocketConnect() override {
             _connection->connected();
@@ -486,6 +492,7 @@ namespace litecore { namespace blip {
 
     Connection::Connection(const Address &address,
                            Provider &provider,
+                           const fleeceapi::AllocedDict &options,
                            ConnectionDelegate &delegate)
     :Logging(BLIPLog)
     ,_name(string("->") + (string)address)
@@ -494,7 +501,7 @@ namespace litecore { namespace blip {
     {
         log("Opening connection...");
         provider.addProtocol("BLIP");
-        start(provider.createWebSocket(address));
+        start(provider.createWebSocket(address, options));
     }
 
 
@@ -539,6 +546,11 @@ namespace litecore { namespace blip {
 
     void Connection::setRequestHandler(string profile, bool atBeginning, RequestHandler handler) {
         _io->setRequestHandler(profile, atBeginning, handler);
+    }
+
+
+    void Connection::gotHTTPResponse(int status, const fleeceapi::AllocedDict &headers) {
+        delegate().onHTTPResponse(status, headers);
     }
 
 

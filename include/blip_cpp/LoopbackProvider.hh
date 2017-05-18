@@ -21,9 +21,12 @@ namespace litecore { namespace websocket {
     /** A WebSocket connection that relays messages to another instance of LoopbackWebSocket. */
     class LoopbackWebSocket : public MockWebSocket {
     public:
-        void connectToPeer(LoopbackWebSocket *peer) {
+        void connectToPeer(LoopbackWebSocket *peer,
+                           const fleeceapi::AllocedDict &responseHeaders)
+        {
             assert(peer);
-            enqueue(&LoopbackWebSocket::_connectToPeer, Retained<LoopbackWebSocket>(peer));
+            enqueue(&LoopbackWebSocket::_connectToPeer,
+                    Retained<LoopbackWebSocket>(peer), responseHeaders);
         }
 
         virtual bool send(fleece::slice msg, bool binary) override {
@@ -49,10 +52,13 @@ namespace litecore { namespace websocket {
                 MockWebSocket::_connect();
         }
 
-        virtual void _connectToPeer(Retained<LoopbackWebSocket> peer) {
+        virtual void _connectToPeer(Retained<LoopbackWebSocket> peer,
+                                    fleeceapi::AllocedDict responseHeaders)
+            {
             if (peer != _peer) {
                 assert(!_peer);
                 _peer = peer;
+                _simulateHTTPResponse(200, responseHeaders);
                 _simulateConnected();
             }
         }
@@ -111,17 +117,20 @@ namespace litecore { namespace websocket {
         :_latency(latency)
         { }
 
-        LoopbackWebSocket* createWebSocket(const Address &address) override {
+        LoopbackWebSocket* createWebSocket(const Address &address,
+                                           const fleeceapi::AllocedDict &options ={}) override {
             return new LoopbackWebSocket(*this, address, _latency);
         }
 
         /** Connects two LoopbackWebSocket objects to each other, so each receives messages sent
             by the other. When one closes, the other will receive a close event. */
-        void connect(WebSocket *c1, WebSocket *c2) {
+        void connect(WebSocket *c1, WebSocket *c2,
+                     const fleeceapi::AllocedDict &responseHeaders ={})
+        {
             auto lc1 = dynamic_cast<LoopbackWebSocket*>(c1);
             auto lc2 = dynamic_cast<LoopbackWebSocket*>(c2);
-            lc1->connectToPeer(lc2);
-            lc2->connectToPeer(lc1);
+            lc1->connectToPeer(lc2, responseHeaders);
+            lc2->connectToPeer(lc1, responseHeaders);
         }
 
     private:

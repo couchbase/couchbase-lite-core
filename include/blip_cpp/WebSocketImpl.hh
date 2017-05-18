@@ -29,24 +29,29 @@ namespace litecore { namespace websocket {
         messages. */
     class WebSocketImpl : public WebSocket, Logging {
     public:
-        WebSocketImpl(ProviderImpl&, const Address&, bool framing);
+        WebSocketImpl(ProviderImpl&, const Address&,
+                      const fleeceapi::AllocedDict &options, bool framing);
         virtual ~WebSocketImpl();
 
         virtual bool send(fleece::slice message, bool binary =true) override;
         virtual void close(int status =1000, fleece::slice message =fleece::nullslice) override;
 
         // Concrete socket implementation needs to call these:
+        void gotHTTPResponse(int status, const fleeceapi::AllocedDict &headers);
         void onConnect();
         void onCloseRequested(int status, fleece::slice message);
         void onClose(int posixErrno);
         void onClose(CloseStatus);
         void onReceive(fleece::slice);
         void onWriteComplete(size_t);
-        
+
+        const fleeceapi::AllocedDict& options() const   {return _options;}
+
     protected:
         virtual std::string loggingIdentifier() const override;
-        ProviderImpl& provider()                    {return (ProviderImpl&)WebSocket::provider();}
         virtual void connect() override;
+
+        ProviderImpl& provider()                    {return (ProviderImpl&)WebSocket::provider();}
         void disconnect();
 
     private:
@@ -64,6 +69,7 @@ namespace litecore { namespace websocket {
         bool receivedMessage(int opCode, fleece::alloc_slice message);
         bool receivedClose(fleece::slice);
 
+        fleeceapi::AllocedDict _options;
         bool _framing;                              // true if I should implement WebSocket framing
         std::unique_ptr<ClientProtocol> _protocol;  // 3rd party class that does the framing
         std::mutex _mutex;                          //

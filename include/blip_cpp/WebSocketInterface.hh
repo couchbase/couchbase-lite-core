@@ -7,8 +7,9 @@
 //
 
 #pragma once
-#include "slice.hh"
+#include "FleeceCpp.hh"
 #include <assert.h>
+#include <map>
 #include <sstream>
 #include <string>
 
@@ -101,7 +102,8 @@ namespace litecore { namespace websocket {
     public:
         virtual ~Provider() { }
         virtual void addProtocol(const std::string &protocol) =0;
-        virtual WebSocket* createWebSocket(const Address&) =0;
+        virtual WebSocket* createWebSocket(const Address&,
+                                           const fleeceapi::AllocedDict &options ={}) =0;
         virtual void close() { }
     };
 
@@ -154,6 +156,8 @@ namespace litecore { namespace websocket {
         virtual ~Delegate() { }
 
         virtual void onWebSocketStart() { }
+        virtual void onWebSocketGotHTTPResponse(int status,
+                                                const fleeceapi::AllocedDict &headers) { }
         virtual void onWebSocketConnect() =0;
         virtual void onWebSocketClose(CloseStatus) =0;
 
