@@ -49,8 +49,13 @@ namespace litecore { namespace repl {
         public:
             virtual ~Delegate() =default;
 
-            virtual void replicatorStatusChanged(Replicator*, const Status&) =0;
-            virtual void replicatorConnectionClosed(Replicator*, const CloseStatus&)  { }
+            virtual void replicatorGotHTTPResponse(Replicator*,
+                                                   int status,
+                                                   const fleeceapi::AllocedDict &headers) { }
+            virtual void replicatorStatusChanged(Replicator*,
+                                                 const Status&) =0;
+            virtual void replicatorConnectionClosed(Replicator*,
+                                                    const CloseStatus&)  { }
         };
 
         Status status() const                   {return Worker::status();}   //FIX: Needs to be thread-safe
@@ -68,6 +73,8 @@ namespace litecore { namespace repl {
         
     protected:
         // BLIP ConnectionDelegate API:
+        virtual void onHTTPResponse(int status, const fleeceapi::AllocedDict &headers) override
+                                        {enqueue(&Replicator::_onHTTPResponse, status, headers);}
         virtual void onConnect() override
                                                 {enqueue(&Replicator::_onConnect);}
         virtual void onClose(Connection::CloseStatus status, Connection::State state) override
@@ -81,6 +88,7 @@ namespace litecore { namespace repl {
         static constexpr double kMinDelegateCallInterval = 0.2;
 
         Replicator(C4Database*, const websocket::Address&, Delegate&, Options, Connection*);
+        void _onHTTPResponse(int status, fleeceapi::AllocedDict headers);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
         void _onClose(Connection::CloseStatus, Connection::State);

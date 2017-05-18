@@ -8,6 +8,7 @@
 
 #pragma once
 #include "c4Base.h"
+#include "Fleece.h"
 
 
 #ifdef __cplusplus
@@ -65,7 +66,7 @@ extern "C" {
     typedef struct {
         bool providesWebSockets;
 
-        void (*open)(C4Socket*, const C4Address*);              ///< open the socket
+        void (*open)(C4Socket*, const C4Address*, FLSlice optionsFleece); ///< open the socket
         void (*write)(C4Socket*, C4SliceResult allocatedData);  ///< Write bytes; free when done
         void (*completedReceive)(C4Socket*, size_t byteCount);  ///< Completion of c4socket_received
 
@@ -80,6 +81,13 @@ extern "C" {
     /** One-time registration of socket callbacks. Must be called before using any socket-based
         API including the replicator. Do not call multiple times. */
     void c4socket_registerFactory(C4SocketFactory factory) C4API;
+
+    /** Notification that a socket has received an HTTP response, with the given headers (encoded
+        as a Fleece dictionary.) This should be called just before c4socket_opened or
+        c4socket_closed. */
+    void c4socket_gotHTTPResponse(C4Socket *socket,
+                                  int httpStatus,
+                                  C4Slice responseHeadersFleece) C4API;
 
     /** Notification that a socket has opened, i.e. a C4SocketFactory.open request has completed
         successfully. */

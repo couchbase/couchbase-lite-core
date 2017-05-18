@@ -46,12 +46,14 @@ namespace litecore { namespace websocket {
 
     class CivetWebSocket : public actor::Actor, public WebSocket {
     public:
-        // Client-side constructor: opens a connection
+        // Client-side constructor
         CivetWebSocket(Provider &provider,
-                       const Address &to)
+                       const Address &to,
+                       const AllocedDict &options)
         :WebSocket(provider, to)
         ,_connection(nullptr)
         ,_isServer(false)
+        ,_options(options)
         { }
 
 
@@ -79,23 +81,37 @@ namespace litecore { namespace websocket {
 
         void _connect() {
             Assert(!_connection);
+
+            stringstream extraHeaders;
+            for (Dict::iterator header(_options["headers"].asDict()); header; ++header) {
+                extraHeaders << slice(header.keyString()).asString() << ": "
+                             << header.value().asstring() << "\r\n";
+            }
+
             auto &to = address();
             char errorStr[256];
             mg_error error {errorStr, sizeof(errorStr), 0};
-            _connection = mg_connect_websocket_client(to.hostname.c_str(), to.port,
+            _connection = mg_connect_websocket_client2(to.hostname.c_str(), to.port,
                                                       hasSuffix(to.scheme, "s"),
                                                       &error,
                                                       to.path.c_str(),
-                                                      nullptr, // origin
-                                                      &dataHandler, &closeHandler, this);
+                                                      extraHeaders.str().c_str(),
+                                                      &connectHandler, &dataHandler, &closeHandler,
+                                                      this);
             if (_connection) {
                 Debug("CivetWebSocket Connected!");
                 retain(this);
                 mg_set_user_connection_data(_connection, this);
                 delegate().onWebSocketConnect();
             } else {
-                _closeStatus.reason = kPOSIXError;  //FIX: Some are custom codes
-                _closeStatus.code = error.code;
+                if (error.code >= MG_ERR_HTTP_STATUS_BASE) {
+                    _closeStatus = {kWebSocketClose, error.code - MG_ERR_HTTP_STATUS_BASE};
+                } else if (error.code >= MG_ERR_CIVETWEB_BASE) {
+                    _closeStatus = {kUnknownError, error.code};
+                    //FIX: Some of the MG_ERR codes are worth mapping to CloseReasons
+                } else {
+                    _closeStatus = {kPOSIXError, error.code};
+                }
                 _closeStatus.message = errorStr;
                 delegate().onWebSocketClose(_closeStatus);
             }
@@ -126,6 +142,11 @@ namespace litecore { namespace websocket {
     protected:
         friend class CivetProvider;
 
+
+        static int connectHandler(const struct mg_connection *connection, void *userData) {
+            auto self = (CivetWebSocket*)userData;
+            return self->onConnected(connection) ? 0 : 1;
+        }
 
         // civetweb callback: handshake completed (server-side only)
         static void readyHandler(struct mg_connection *connection, void *) {
@@ -166,6 +187,26 @@ namespace litecore { namespace websocket {
             }
             if (opcode == WEBSOCKET_OPCODE_TEXT || opcode == WEBSOCKET_OPCODE_BINARY)
                 delegate().onWebSocketWriteable();
+        }
+
+
+        bool onConnected(const mg_connection *connection) {
+            // Collect the response status & headers:
+            auto ri = mg_get_request_info(connection);
+            int status = stoi(string(ri->request_uri));
+            Debug("CivetWebSocket got HTTP response %d, with %d headers", status, ri->num_headers);
+
+            Encoder enc;
+            enc.beginDict();
+            for (int i = 0; i < ri->num_headers; i++) {
+                enc.writeKey(slice(ri->http_headers[i].name));
+                enc.writeString(ri->http_headers[i].value);
+            }
+            enc.endDict();
+            AllocedDict headers(enc.finish());
+
+            delegate().onWebSocketGotHTTPResponse(status, headers);
+            return true;
         }
 
 
@@ -231,7 +272,9 @@ namespace litecore { namespace websocket {
             _onClosed();
         }
 
+        AllocedDict _options;
         struct mg_connection *_connection;
+        alloc_slice _responseHeaders;
         CloseStatus _closeStatus;
         bool _isServer;
         bool _accepted {false};
@@ -254,8 +297,9 @@ namespace litecore { namespace websocket {
     }
 
 
-    WebSocket* CivetProvider::createWebSocket(const Address &to) {
-        return new CivetWebSocket(*this, to);
+    WebSocket* CivetProvider::createWebSocket(const Address &to,
+                                              const AllocedDict &options) {
+        return new CivetWebSocket(*this, to, options);
     }
 
 
@@ -288,11 +332,15 @@ namespace litecore { namespace websocket {
 
     class civetC4Adapter : Delegate {
     public:
-        civetC4Adapter(C4Socket *sock, const C4Address *c4To)
+        civetC4Adapter(C4Socket *sock, const C4Address *c4To, const AllocedDict &options)
         :c4socket(sock)
-        ,socket(CivetProvider::instance().createWebSocket(c4AddressOf(*c4To)))
+        ,socket(CivetProvider::instance().createWebSocket(c4AddressOf(*c4To), options))
         {
             socket->connect(this);
+        }
+
+        virtual void onWebSocketGotHTTPResponse(int status, const AllocedDict &headers) override {
+            c4socket_gotHTTPResponse(c4socket, status, headers.data());
         }
 
         virtual void onWebSocketConnect() override {
@@ -337,8 +385,8 @@ namespace litecore { namespace websocket {
     }
 
 
-    static void sock_open(C4Socket *sock, const C4Address *c4To) {
-        sock->nativeHandle = new civetC4Adapter(sock, c4To);
+    static void sock_open(C4Socket *sock, const C4Address *c4To, FLSlice optionsFleece) {
+        sock->nativeHandle = new civetC4Adapter(sock, c4To, AllocedDict((slice)optionsFleece));
     }
 
 

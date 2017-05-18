@@ -52,10 +52,11 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                  C4String remoteDatabaseName,
                  C4ReplicatorMode push,
                  C4ReplicatorMode pull,
+                 C4Slice properties,
                  C4ReplicatorStatusChangedCallback onStateChanged,
                  void *callbackContext)
     :C4Replicator(db, DefaultProvider(), addressFrom(remoteAddress, remoteDatabaseName),
-                  push, pull, onStateChanged, callbackContext)
+                  push, pull, properties, onStateChanged, callbackContext)
     { }
 
     // Constructor for replication with local database
@@ -63,10 +64,11 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                  C4Database* otherDB,
                  C4ReplicatorMode push,
                  C4ReplicatorMode pull,
+                 C4Slice properties,
                  C4ReplicatorStatusChangedCallback onStateChanged,
                  void *callbackContext)
     :C4Replicator(db, loopbackProvider(), addressFrom(otherDB),
-                  push, pull, onStateChanged, callbackContext)
+                  push, pull, properties, onStateChanged, callbackContext)
     {
         auto provider = loopbackProvider();
         auto dbAddr = addressFrom(db);
@@ -77,6 +79,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         provider.connect(_replicator->webSocket(), _otherReplicator->webSocket());
     }
 
+    const AllocedDict& responseHeaders() const {return _responseHeaders;}
 
     C4ReplicatorStatus status() const   {return _status;}
 
@@ -91,11 +94,13 @@ private:
                  websocket::Address address,
                  C4ReplicatorMode push,
                  C4ReplicatorMode pull,
+                 C4Slice properties,
                  C4ReplicatorStatusChangedCallback onStateChanged,
                  void *callbackContext)
     :_onStateChanged(onStateChanged)
     ,_callbackContext(callbackContext)
-    ,_replicator(new Replicator(db, provider, address, *this, { push, pull }))
+    ,_replicator(new Replicator(db, provider, address, *this,
+                                { push, pull, properties }))
     ,_status(_replicator->status())
     ,_selfRetain(this) // keep myself alive till replicator closes
     { }
@@ -105,6 +110,16 @@ private:
     static LoopbackProvider& loopbackProvider() {
         static LoopbackProvider sProvider;
         return sProvider;
+    }
+
+    virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
+                                           const AllocedDict &headers) override
+    {
+        //FIX: Make this thread-safe
+        if (repl == _replicator) {
+            Assert(!_responseHeaders);
+            _responseHeaders = headers;
+        }
     }
 
     virtual void replicatorStatusChanged(Replicator *repl,
@@ -131,6 +146,7 @@ private:
     void *_callbackContext;
     Retained<Replicator> _replicator;
     Retained<Replicator> _otherReplicator;
+    AllocedDict _responseHeaders;
     atomic<C4ReplicatorStatus> _status;
     C4ReplicatorActivityLevel _otherLevel {kC4Stopped};
     Retained<C4Replicator> _selfRetain;
@@ -205,6 +221,7 @@ C4Replicator* c4repl_new(C4Database* db,
                          C4Database* otherLocalDB,
                          C4ReplicatorMode push,
                          C4ReplicatorMode pull,
+                         C4Slice optionsDictFleece,
                          C4ReplicatorStatusChangedCallback onStatusChanged,
                          void *callbackContext,
                          C4Error *outError) C4API
@@ -227,14 +244,16 @@ C4Replicator* c4repl_new(C4Database* db,
             if (!otherDBCopy)
                 return nullptr;
             replicator = new C4Replicator(dbCopy, otherDBCopy,
-                                          push, pull, onStatusChanged, callbackContext);
+                                          push, pull, optionsDictFleece,
+                                          onStatusChanged, callbackContext);
         } else {
             // Remote:
             if (!checkParam(isValidScheme(serverAddress.scheme),
                             "Unsupported replication URL scheme", outError))
                 return nullptr;
             replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName,
-                                          push, pull, onStatusChanged, callbackContext);
+                                          push, pull, optionsDictFleece,
+                                          onStatusChanged, callbackContext);
         }
         return retain(replicator);
     } catchError(outError);
@@ -258,4 +277,9 @@ void c4repl_free(C4Replicator* repl) C4API {
 
 C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
     return repl->status();
+}
+
+
+C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
+    return repl->responseHeaders().data();
 }

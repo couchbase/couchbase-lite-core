@@ -13,6 +13,7 @@
 #include "Timer.hh"
 #include "c4.hh"
 #include "c4Private.h"
+#include "FleeceCpp.hh"
 #include <chrono>
 #include <functional>
 
@@ -32,20 +33,33 @@ namespace litecore { namespace repl {
         struct Options {
             using Mode = C4ReplicatorMode;
 
-            Mode     push                   {kC4Disabled};
-            Mode     pull                   {kC4Disabled};
-            duration checkpointSaveDelay    {std::chrono::seconds(5)};
+            Mode                    push        {kC4Disabled};
+            Mode                    pull        {kC4Disabled};
+            fleeceapi::AllocedDict  properties;
 
             Options()
             { }
             
-            Options(Mode push_, Mode pull_)
-            :push(push_), pull(pull_)
+            Options(Mode push_, Mode pull_, fleece::slice propertiesFleece =fleece::nullslice)
+            :push(push_), pull(pull_), properties(propertiesFleece)
             { }
 
             static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
             static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
             static Options passive()                       {return Options(kC4Passive,kC4Passive);}
+
+            static constexpr unsigned kDefaultCheckpointSaveDelaySecs = 5;
+
+            duration checkpointSaveDelay() const {
+                auto secs = properties["checkpointSaveDelay"].asInt();
+                if (secs <= 0)
+                    secs = kDefaultCheckpointSaveDelaySecs;
+                return std::chrono::seconds(secs);
+            }
+
+            fleeceapi::Array customHeaders() const {
+                return properties["headers"].asArray();
+            }
         };
 
         

@@ -65,6 +65,7 @@ namespace litecore { namespace REST {
             };
             _repl = c4repl_new(localDB, remoteAddress, remoteDbName, nullptr,
                                pushMode, pullMode,
+                               nullslice,
                                callback, this,
                                outError);
             if (!_repl) {

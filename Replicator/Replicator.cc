@@ -43,7 +43,7 @@ namespace litecore { namespace repl {
             _pusher = new Pusher(connection, this, _dbActor, _options);
         if (options.pull != kC4Disabled)
             _puller = new Puller(connection, this, _dbActor, _options);
-        _checkpoint.enableAutosave(options.checkpointSaveDelay,
+        _checkpoint.enableAutosave(options.checkpointSaveDelay(),
                                    bind(&Replicator::saveCheckpoint, this, _1));
         // Now wait for _onConnect or _onClose...
     }
@@ -53,7 +53,8 @@ namespace litecore { namespace repl {
                            const websocket::Address &address,
                            Delegate &delegate,
                            Options options)
-    :Replicator(db, address, delegate, options, new Connection(address, provider, *this))
+    :Replicator(db, address, delegate, options,
+                new Connection(address, provider, options.properties, *this))
     { }
 
     Replicator::Replicator(C4Database *db,
@@ -172,6 +173,11 @@ namespace litecore { namespace repl {
 
 
 #pragma mark - BLIP DELEGATE:
+
+
+    void Replicator::_onHTTPResponse(int status, fleeceapi::AllocedDict headers) {
+        _delegate->replicatorGotHTTPResponse(this, status, headers);
+    }
 
 
     void Replicator::_onConnect() {

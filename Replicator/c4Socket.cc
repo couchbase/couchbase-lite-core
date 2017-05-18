@@ -28,8 +28,9 @@ namespace litecore { namespace websocket {
 
     class C4SocketImpl : public WebSocketImpl, public C4Socket {
     public:
-        C4SocketImpl(ProviderImpl &provider, const Address &address, bool framing)
-        :WebSocketImpl(provider, address, framing)
+        C4SocketImpl(ProviderImpl &provider, const Address &address,
+                     const AllocedDict &options, bool framing)
+        :WebSocketImpl(provider, address, options, framing)
         {
             nativeHandle = nullptr;
         }
@@ -55,8 +56,9 @@ namespace litecore { namespace websocket {
 #endif
         }
 
-        virtual WebSocketImpl* createWebSocket(const Address &address) override {
-            return new C4SocketImpl(*this, address, !_factory.providesWebSockets);
+        virtual WebSocketImpl* createWebSocket(const Address &address,
+                                               const AllocedDict &options ={}) override {
+            return new C4SocketImpl(*this, address, options, !_factory.providesWebSockets);
         }
 
         static void registerFactory(const C4SocketFactory &factory) {
@@ -72,14 +74,15 @@ namespace litecore { namespace websocket {
         }
 
         virtual void openSocket(WebSocketImpl *s) override {
-            auto &address = s->address();
+            auto socket = (C4SocketImpl*)s;
+            auto &address = socket->address();
             C4Address c4addr = {
                 slice(address.scheme),
                 slice(address.hostname),
                 address.port,
                 slice(address.path)
             };
-            _factory.open((C4SocketImpl*)s, &c4addr);
+            _factory.open(socket, &c4addr, socket->options().data());
         }
 
         virtual void requestClose(WebSocketImpl *s, int status, fleece::slice message) override {
@@ -123,6 +126,11 @@ static C4SocketImpl* internal(C4Socket *s)  {return (C4SocketImpl*)s;}
 
 void c4socket_registerFactory(C4SocketFactory factory) C4API {
     C4Provider::registerFactory(factory);
+}
+
+void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) C4API {
+    AllocedDict headers((slice)responseHeadersFleece);
+    internal(socket)->gotHTTPResponse(status, headers);
 }
 
 void c4socket_opened(C4Socket *socket) C4API {

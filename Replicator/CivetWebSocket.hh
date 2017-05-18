@@ -27,7 +27,8 @@ namespace litecore { namespace websocket {
         virtual void addProtocol(const std::string &protocol) override;
 
         /** Creates a client WebSocket to a given address. */
-        virtual WebSocket* createWebSocket(const Address&) override;
+        virtual WebSocket* createWebSocket(const Address&,
+                                           const fleeceapi::AllocedDict &options ={}) override;
 
         /** Callback when an HTTP server receives a WebSocket connection. */
         using ServerWebSocketHandler = std::function<bool(const mg_connection*, WebSocket*)>;

@@ -69,6 +69,20 @@ public:
         ++numCallbacks;
         numCallbacksWithLevel[(int)s.level]++;
         logState(callbackStatus);
+
+        if (!_headers) {
+            _headers = AllocedDict(alloc_slice(c4repl_getResponseHeaders(repl)));
+            if (_headers) {
+                for (Dict::iterator header(_headers); header; ++header)
+                    C4Log("    %.*s: %.*s", SPLAT(header.keyString()), SPLAT(header.value().asString()));
+            }
+        }
+
+        if (!db2) {  // i.e. this is a real WebSocket connection
+            if (s.level > kC4Connecting
+                    || (s.level == kC4Stopped && s.error.domain == WebSocketDomain))
+                Assert(_headers);
+        }
     }
 
     static void onStateChanged(C4Replicator *replicator,
@@ -82,7 +96,8 @@ public:
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
         C4Error err;
         repl = c4repl_new(db, address, remoteDBName, db2,
-                          push, pull, onStateChanged, this, &err);
+                          push, pull, options.data(),
+                          onStateChanged, this, &err);
         REQUIRE(repl);
         C4ReplicatorStatus status = c4repl_getStatus(repl);
         logState(status);
@@ -96,6 +111,7 @@ public:
         if (expectSuccess) {
             CHECK(status.error.code == 0);
             CHECK(numCallbacksWithLevel[kC4Busy] > 0);
+            //CHECK(_gotHeaders);   //FIX: Enable this when civetweb can return HTTP headers
         }
         CHECK(numCallbacksWithLevel[kC4Stopped] > 0);
         CHECK(callbackStatus.level == status.level);
@@ -106,10 +122,12 @@ public:
     C4Database *db2 {nullptr};
     C4Address address {kDefaultAddress};
     C4String remoteDBName {kScratchDBName};
+    AllocedDict options;
     C4Replicator *repl {nullptr};
     C4ReplicatorStatus callbackStatus {};
     int numCallbacks {0};
     int numCallbacksWithLevel[5] {0};
+    AllocedDict _headers;
 };
 
 
@@ -167,10 +185,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
     address.hostname = C4STR("localhost");
     address.port = 1;
     replicate(kC4OneShot, kC4Disabled, false);
-    CHECK(callbackStatus.progress.completed == 0);
-    CHECK(callbackStatus.progress.total == 0);
     CHECK(callbackStatus.error.domain == POSIXDomain);
     CHECK(callbackStatus.error.code == ECONNREFUSED);
+    CHECK(callbackStatus.progress.completed == 0);
+    CHECK(callbackStatus.progress.total == 0);
 }
 
 
@@ -196,13 +214,34 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
 }
 
 
-// The tests below are tagged [.special] to keep them from running during normal unit testing.
+// The tests below are tagged [.RealReplicator] to keep them from running during normal testing.
 // Instead, they have to be invoked manually via Catch command-line options.
-// This is because they require an external replication server is running.
+// This is because they require that an external replication server is running.
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[Push][.RealReplicator]") {
     remoteDBName = kProtectedDBName;
     replicate(kC4OneShot, kC4Disabled, false);
+    CHECK(callbackStatus.error.domain == WebSocketDomain);
+    CHECK(callbackStatus.error.code == 401);
+    CHECK(_headers["Www-Authenticate"].asString() == "Basic realm=\"Couchbase Sync Gateway\""_sl);
+}
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API ExtraHeaders", "[Push][.RealReplicator]") {
+    remoteDBName = kProtectedDBName;
+
+    // Use the extra-headers option to add HTTP Basic auth:
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey(kC4ReplicatorOptionExtraHeaders);
+    enc.beginDict();
+    enc.writeKey("Authorization"_sl);
+    enc.writeString("Basic cHVwc2hhdzpmcmFuaw=="_sl);  // that's user 'pupshaw', password 'frank'
+    enc.endDict();
+    enc.endDict();
+    options = AllocedDict(enc.finish());
+
+    replicate(kC4OneShot, kC4Disabled, true);
 }
 
 

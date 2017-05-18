@@ -57,7 +57,10 @@ public:
     }
 
     void runReplicators(Replicator::Options opts1, Replicator::Options opts2) {
-        opts1.checkpointSaveDelay = opts2.checkpointSaveDelay = kCheckpointSaveDelay;
+        _gotResponse = false;
+        statusChangedCalls = 0;
+        statusReceived = {};
+
         C4Database *dbServer = db, *dbClient = db2;
         if (opts2.push > kC4Passive || opts2.pull > kC4Passive) {
             // always make opts1 the active (client) side
@@ -72,23 +75,43 @@ public:
         Address addrB{"ws", "cli"};
         replServer = new Replicator(dbClient, provider.createWebSocket(addrB), *this, opts2);
 
-        provider.connect(replClient->webSocket(), replServer->webSocket());
+        // Response headers:
+        Encoder enc;
+        enc.beginDict();
+        enc.writeKey("Set-Cookie"_sl);
+        enc.writeString("chocolate-chip");
+        enc.endDict();
+        AllocedDict headers(enc.finish());
+
+        provider.connect(replClient->webSocket(), replServer->webSocket(), headers);
 
         Log("Waiting for replication to complete...");
         while (replClient->status().level > kC4Stopped || replServer->status().level > kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
         Log(">>> Replication complete <<<");
         checkpointID = replClient->checkpointID();
+        CHECK(_gotResponse);
         CHECK(statusChangedCalls > 0);
         CHECK(statusReceived.level == kC4Stopped);
         CHECK(statusReceived.progress.completed == statusReceived.progress.total);
         CHECK(statusReceived.error.code == 0);
     }
 
+    virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
+                                           const AllocedDict &headers) override {
+        if (repl == replClient) {
+            CHECK(!_gotResponse);
+            _gotResponse = true;
+            CHECK(status == 200);
+            CHECK(headers["Set-Cookie"].asString() == "chocolate-chip"_sl);
+        }
+    }
+
     virtual void replicatorStatusChanged(Replicator* repl,
                                          const Replicator::Status &status) override
     {
         // Note: Can't use Catch on a background thread
+        Assert(_gotResponse);
         if (repl == replClient) {
             ++statusChangedCalls;
             Log(">> Replicator is %-s, progress %lu/%lu",
@@ -188,6 +211,7 @@ public:
     Retained<Replicator> replClient, replServer;
     alloc_slice checkpointID;
     unique_ptr<thread> parallelThread;
+    bool _gotResponse {false};
     Replicator::Status statusReceived { };
     unsigned statusChangedCalls {0};
 };

@@ -159,6 +159,7 @@ _c4repl_new
 _c4repl_free
 _c4repl_stop
 _c4repl_getStatus
+_c4repl_getResponseHeaders
 
 _c4socket_registerFactory
 _c4socket_opened
