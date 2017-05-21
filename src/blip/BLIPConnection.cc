@@ -105,8 +105,8 @@ namespace litecore { namespace blip {
         {
             _pendingRequests.reserve(10);
             _pendingResponses.reserve(10);
-            retain(this); // keep myself from being freed while I'm the webSocket's delegate
             webSocket->connect(this);
+            retain(this); // keep myself from being freed while I'm the webSocket's delegate
         }
 
         void queueMessage(MessageOut *msg) {
