@@ -55,6 +55,7 @@ namespace litecore { namespace REST {
         std::vector<std::string> databaseNames();
 
 
+        /** An asynchronous task (like a replication). */
         class Task : public RefCounted {
         public:
             explicit Task(Listener* listener)    :_listener(listener) { }
@@ -82,8 +83,10 @@ namespace litecore { namespace REST {
 
         std::vector<Retained<Task>> tasks();
 
-    private:
+    protected:
         friend class Task;
+
+        Server* server() const              {return _server.get();}
 
         /** Returns the database for this request, or null on error. */
         c4::ref<C4Database> databaseFor(RequestResponse&);
@@ -96,6 +99,7 @@ namespace litecore { namespace REST {
         void addHandler(Server::Method, const char *uri, HandlerMethod);
         void addDBHandler(Server::Method, const char *uri, DBHandlerMethod);
 
+    private:
         void handleGetRoot(RequestResponse&);
         void handleGetAllDBs(RequestResponse&);
         void handleReplicate(RequestResponse&);
