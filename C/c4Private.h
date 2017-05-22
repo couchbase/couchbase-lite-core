@@ -8,7 +8,7 @@
 
 #pragma once
 #include "c4Document.h"
-#include "c4Socket.h"
+#include "c4Replicator.h"
 
 #ifdef __cplusplus
 #include <atomic>
@@ -38,6 +38,17 @@ C4Document* c4doc_getForPut(C4Database *database,
                             bool deleting,
                             bool allowConflict,
                             C4Error *outError) C4API;
+
+C4Socket* c4socket_fromNative(C4SocketFactory factory,
+                              void *nativeHandle,
+                              const C4Address *address) C4API;
+
+C4Replicator* c4repl_newWithSocket(C4Database* db,
+                                   C4Socket *openSocket,
+                                   C4Slice optionsDictFleece,
+                                   C4ReplicatorStatusChangedCallback onStatusChanged,
+                                   void *callbackContext,
+                                   C4Error *outError) C4API;
 
 #ifdef __cplusplus
 }

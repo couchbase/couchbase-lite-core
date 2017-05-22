@@ -6,23 +6,10 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#include "FleeceCpp.hh"
-#include "c4.hh"
-#include "c4Private.h"
-#include "c4Replicator.h"
-#include "c4Socket+Internal.hh"
+#include "c4Replicator.hh"
 #include "c4ExceptionUtils.hh"
-#include "Replicator.hh"
-#include "LoopbackProvider.hh"
 #include "StringUtil.hh"
 #include <atomic>
-
-using namespace std;
-using namespace fleece;
-using namespace fleeceapi;
-using namespace litecore;
-using namespace litecore::repl;
-using namespace litecore::websocket;
 
 
 const char* const kC4ReplicatorActivityLevelNames[5] = {
@@ -30,127 +17,6 @@ const char* const kC4ReplicatorActivityLevelNames[5] = {
 };
 
 
-static websocket::Address addressFrom(const C4Address &addr, C4String remoteDatabaseName) {
-    return websocket::Address(asstring(addr.scheme),
-                              asstring(addr.hostname),
-                              addr.port,
-                              format("/%.*s/_blipsync", SPLAT(remoteDatabaseName)));
-}
-
-
-static websocket::Address addressFrom(C4Database* otherDB) {
-    alloc_slice path(c4db_getPath(otherDB));
-    return websocket::Address("file", "", 0, path.asString());
-}
-
-
-struct C4Replicator : public RefCounted, Replicator::Delegate {
-
-    // Constructor for replication with remote database
-    C4Replicator(C4Database* db,
-                 C4Address remoteAddress,
-                 C4String remoteDatabaseName,
-                 C4ReplicatorMode push,
-                 C4ReplicatorMode pull,
-                 C4Slice properties,
-                 C4ReplicatorStatusChangedCallback onStateChanged,
-                 void *callbackContext)
-    :C4Replicator(db, DefaultProvider(), addressFrom(remoteAddress, remoteDatabaseName),
-                  push, pull, properties, onStateChanged, callbackContext)
-    { }
-
-    // Constructor for replication with local database
-    C4Replicator(C4Database* db,
-                 C4Database* otherDB,
-                 C4ReplicatorMode push,
-                 C4ReplicatorMode pull,
-                 C4Slice properties,
-                 C4ReplicatorStatusChangedCallback onStateChanged,
-                 void *callbackContext)
-    :C4Replicator(db, loopbackProvider(), addressFrom(otherDB),
-                  push, pull, properties, onStateChanged, callbackContext)
-    {
-        auto provider = loopbackProvider();
-        auto dbAddr = addressFrom(db);
-        _otherReplicator = new Replicator(otherDB,
-                                          provider.createWebSocket(dbAddr),
-                                          *this, { kC4Passive, kC4Passive });
-        _otherLevel = _otherReplicator->status().level;
-        provider.connect(_replicator->webSocket(), _otherReplicator->webSocket());
-    }
-
-    const AllocedDict& responseHeaders() const {return _responseHeaders;}
-
-    C4ReplicatorStatus status() const   {return _status;}
-
-    void stop()                         {_replicator->stop();}
-
-    void detach()                       {_onStateChanged = nullptr;}
-
-private:
-
-    C4Replicator(C4Database* db,
-                 websocket::Provider &provider,
-                 websocket::Address address,
-                 C4ReplicatorMode push,
-                 C4ReplicatorMode pull,
-                 C4Slice properties,
-                 C4ReplicatorStatusChangedCallback onStateChanged,
-                 void *callbackContext)
-    :_onStateChanged(onStateChanged)
-    ,_callbackContext(callbackContext)
-    ,_replicator(new Replicator(db, provider, address, *this,
-                                { push, pull, properties }))
-    ,_status(_replicator->status())
-    ,_selfRetain(this) // keep myself alive till replicator closes
-    { }
-
-    virtual ~C4Replicator() =default;
-
-    static LoopbackProvider& loopbackProvider() {
-        static LoopbackProvider sProvider;
-        return sProvider;
-    }
-
-    virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
-                                           const AllocedDict &headers) override
-    {
-        //FIX: Make this thread-safe
-        if (repl == _replicator) {
-            Assert(!_responseHeaders);
-            _responseHeaders = headers;
-        }
-    }
-
-    virtual void replicatorStatusChanged(Replicator *repl,
-                                         const Replicator::Status &newStatus) override
-    {
-        if (repl == _replicator) {
-            _status = newStatus;
-            notify();
-        } else if (repl == _otherReplicator) {
-            _otherLevel = newStatus.level;
-        }
-
-        if (status().level == kC4Stopped && _otherLevel == kC4Stopped)
-            _selfRetain = nullptr; // balances retain in constructor
-    }
-
-    void notify() {
-        C4ReplicatorStatusChangedCallback on = _onStateChanged;
-        if (on)
-            on(this, _status, _callbackContext);
-    }
-
-    atomic<C4ReplicatorStatusChangedCallback> _onStateChanged;
-    void *_callbackContext;
-    Retained<Replicator> _replicator;
-    Retained<Replicator> _otherReplicator;
-    AllocedDict _responseHeaders;
-    atomic<C4ReplicatorStatus> _status;
-    C4ReplicatorActivityLevel _otherLevel {kC4Stopped};
-    Retained<C4Replicator> _selfRetain;
-};
 
 
 static bool isValidScheme(C4Slice scheme) {
@@ -255,6 +121,27 @@ C4Replicator* c4repl_new(C4Database* db,
                                           push, pull, optionsDictFleece,
                                           onStatusChanged, callbackContext);
         }
+        return retain(replicator);
+    } catchError(outError);
+    return nullptr;
+}
+
+
+C4Replicator* c4repl_newWithSocket(C4Database* db,
+                                   C4Socket *openSocket,
+                                   C4Slice optionsDictFleece,
+                                   C4ReplicatorStatusChangedCallback onStatusChanged,
+                                   void *callbackContext,
+                                   C4Error *outError) C4API
+{
+    try {
+        c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
+        if (!dbCopy)
+            return nullptr;
+        C4Replicator *replicator = new C4Replicator(dbCopy, openSocket,
+                                                    kC4Passive, kC4Passive,
+                                                    optionsDictFleece,
+                                                    onStatusChanged, callbackContext);
         return retain(replicator);
     } catchError(outError);
     return nullptr;

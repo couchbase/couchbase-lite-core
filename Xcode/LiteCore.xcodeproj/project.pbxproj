@@ -914,6 +914,7 @@
 		2757DE5A1B9FC5C7002EE261 /* c4.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = c4.c; path = ../c4.c; sourceTree = "<group>"; };
 		2759BD4C1DDFB15100C263B4 /* make_unique.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = make_unique.h; sourceTree = "<group>"; };
 		2759DC251E70908900F3C4B2 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
+		275A73BD1ED255AF008CB57B /* c4Replicator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Replicator.hh; sourceTree = "<group>"; };
 		275CE0E11E57B7E70084E014 /* c4Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Replicator.cc; sourceTree = "<group>"; };
 		275CE0E21E57B7E70084E014 /* c4Replicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Replicator.h; sourceTree = "<group>"; };
 		275CE0E81E57BE430084E014 /* libevent_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_core.a; path = ../../../../../usr/local/Cellar/libevent/2.0.22/lib/libevent_core.a; sourceTree = "<group>"; };
@@ -1815,6 +1816,7 @@
 				27491C9E1E7B2532001DC54B /* c4Socket.cc */,
 				27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
+				275A73BD1ED255AF008CB57B /* c4Replicator.hh */,
 				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
 				275CE0EE1E57BE7E0084E014 /* Replicator.exp */,

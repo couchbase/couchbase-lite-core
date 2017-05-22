@@ -63,9 +63,10 @@ namespace litecore { namespace repl {
             // Empty array indicates we've caught up.
             log("Caught up with remote changes");
             _caughtUp = true;
-
-            MessageBuilder reply(req);
-            req->respond(reply);
+            if (!req->noReply()) {
+                MessageBuilder reply(req);
+                req->respond(reply);
+            }
         } else if (req->noReply()) {
             warn("Got pointless noreply 'changes' message");
         } else {

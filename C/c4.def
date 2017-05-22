@@ -150,12 +150,14 @@ c4docobs_free
 c4repl_parseURL
 c4repl_isValidDatabaseName
 c4repl_new
+c4repl_newWithSocket
 c4repl_free
 c4repl_stop
 c4repl_getStatus
 c4repl_getResponseHeaders
 
 c4socket_registerFactory
+c4socket_fromNative
 c4socket_opened
 c4socket_closed
 c4socket_completedWrite
