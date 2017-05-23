@@ -242,12 +242,11 @@ namespace litecore {
         static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
         #if ANDROID
             stringstream buf;
-            LogDecoder::writeHeader(kLevels[(int)level], name, buf);
-            buf << fmt << '\n';
+            LogDecoder::writeHeader(kLevels[(int) level], name, buf);
             static const int androidLevels[5] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO,
                                                  ANDROID_LOG_INFO, ANDROID_LOG_WARN,
                                                  ANDROID_LOG_ERROR};
-            __android_log_write(androidLevels[(int)level], "LiteCore", buf.str().c_str());
+            __android_log_vprint(androidLevels[(int) level], buf.str().c_str(), fmt, args);
         #else
             LogDecoder::writeTimestamp(LogDecoder::now(), cerr);
             LogDecoder::writeHeader(kLevels[(int)level], name, cerr);
