@@ -22,7 +22,7 @@ MESSAGE( STATUS "Java_JAVAH_EXECUTABLE: " ${Java_JAVAH_EXECUTABLE} )
 
 
 # configure import libs
-set(OPENSSL_LIB_DIR ${TOP}/vendor/openssl/libs/android/clang)
+set(OPENSSL_LIB_DIR ${TOP}/vendor/openssl/libs/android)
 
 
 #

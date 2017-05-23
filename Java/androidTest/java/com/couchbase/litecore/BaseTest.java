@@ -17,6 +17,7 @@ import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
+import com.couchbase.lite.utils.FileUtils;
 import com.couchbase.litecore.fleece.FLSliceResult;
 import com.couchbase.litecore.fleece.FLValue;
 import com.couchbase.litecore.utils.Config;
@@ -102,6 +103,7 @@ public class BaseTest implements Constants {
         deleteDatabaseFile(dbFilename);
         context = InstrumentationRegistry.getContext();
         dir = new File(context.getFilesDir(), dbFilename);
+        FileUtils.cleanDirectory(dir);
         db = new Database(dir.getPath(), Database.Create | Database.Bundle | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());
     }
 
@@ -126,6 +128,7 @@ public class BaseTest implements Constants {
             db.free();
             db = null;
         }
+        FileUtils.cleanDirectory(dir);
     }
 
     protected void createRev(String docID, String revID, byte[] body) throws LiteCoreException {

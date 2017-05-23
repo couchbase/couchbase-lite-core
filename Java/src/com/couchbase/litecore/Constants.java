@@ -127,6 +127,11 @@ public interface Constants {
         int kC4ErrorInvalidQuery = 32;          // Invalid query
         int kC4ErrorMissingIndex = 33;          // No such index, or query requires a nonexistent index
         int kC4ErrorInvalidQueryParam = 34;     // Unknown query param name, or param number out of range
+        int kC4ErrorRemoteError = 35;           // Unknown error from remote server
+        int kC4ErrorDatabaseTooOld = 36;        // Database file format is older than what I can open
+        int kC4ErrorDatabaseTooNew = 37;        // Database file format is newer than what I can open
+        int kC4ErrorBadDocID = 38;              // Invalid document ID
+        int kC4ErrorCantUpgradeDatabase = 39;   // Database can't be upgraded (might be unsupported dev version)
 
     }
 }

@@ -78,7 +78,7 @@ Java_com_couchbase_litecore_C4Query_run(JNIEnv *env, jclass clazz,
             (bool) jrankFullText
     };
     jstringSlice encodedParameters(env, jencodedParameters);
-    C4Error error;
+    C4Error error = {};
     C4QueryEnumerator *e = c4query_run((C4Query *) jquery, &options, encodedParameters, &error);
     if (!e)
         throwError(env, error);
@@ -107,20 +107,6 @@ Java_com_couchbase_litecore_C4Query_getFullTextMatched(JNIEnv *env, jclass clazz
 
 /*
  * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getCustomColumns
- * Signature: (J)[B
- */
-JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4QueryEnumerator_getCustomColumns
-        (JNIEnv *env, jclass clazz,
-         jlong handle) {
-    C4SliceResult s = c4queryenum_customColumns((C4QueryEnumerator *) handle);
-    jbyteArray res = toJByteArray(env, s);
-    c4slice_free(s);
-    return res;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
  * Method:    getFullTextMatched
  * Signature: (J)[B
  */
@@ -142,7 +128,7 @@ JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_next(JNIEnv *env, jclass clazz, jlong handle) {
     if (!handle)
         return false;
-    C4Error error;
+    C4Error error = {};
     jboolean result = c4queryenum_next((C4QueryEnumerator *) handle, &error);
     if (!result) {
         // At end of iteration, proactively free the enumerator:
@@ -151,6 +137,51 @@ Java_com_couchbase_litecore_C4QueryEnumerator_next(JNIEnv *env, jclass clazz, jl
             throwError(env, error);
     }
     return result;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4QueryEnumerator
+ * Method:    getRowCount
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4QueryEnumerator_getRowCount(JNIEnv *env, jclass clazz, jlong handle) {
+    C4Error error = {};
+    int64_t res = c4queryenum_getRowCount((C4QueryEnumerator *) handle, &error);
+    if (res == -1)
+        throwError(env, error);
+    return (jlong) res;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4QueryEnumerator
+ * Method:    seek
+ * Signature: (JJ)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4QueryEnumerator_seek(JNIEnv *env, jclass clazz, jlong handle,
+                                                   jlong rowIndex) {
+    if (!handle)
+        return false;
+    C4Error error = {};
+    jboolean result = c4queryenum_seek((C4QueryEnumerator *) handle, (uint64_t) rowIndex, &error);
+    if (!result)
+        throwError(env, error);
+    return result;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4QueryEnumerator
+ * Method:    refresh
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4QueryEnumerator_refresh(JNIEnv *env, jclass clazz, jlong handle) {
+    C4Error error = {};
+    C4QueryEnumerator *result = c4queryenum_refresh((C4QueryEnumerator *) handle, &error);
+    if (!result)
+        throwError(env, error);
+    return (jlong) result;
 }
 
 /*
@@ -224,6 +255,18 @@ Java_com_couchbase_litecore_C4QueryEnumerator_getDocFlags(JNIEnv *env, jclass cl
     if (!handle)
         return 0;
     return ((C4QueryEnumerator *) handle)->docFlags;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4QueryEnumerator
+ * Method:    getColumns
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4QueryEnumerator_getColumns(JNIEnv *env, jclass clazz, jlong handle) {
+    if (!handle)
+        return 0;
+    return (jlong) &((C4QueryEnumerator *) handle)->columns;
 }
 
 /*

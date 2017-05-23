@@ -20,7 +20,11 @@ public class FLArrayIterator {
     // public methods
     //-------------------------------------------------------------------------
     public FLArrayIterator() {
-        handle = init();
+        this.handle = init();
+    }
+
+    public FLArrayIterator(long handle) {
+        this.handle = handle;
     }
 
     public void begin(FLArray array) {
