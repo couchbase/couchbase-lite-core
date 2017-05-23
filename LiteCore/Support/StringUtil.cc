@@ -43,6 +43,13 @@ namespace litecore {
     }
 
 
+    void replace(std::string &str, char oldChar, char newChar) {
+        for (char &c : str)
+            if (c == oldChar)
+                c = newChar;
+    }
+
+
     bool hasPrefix(const std::string &str, const std::string &prefix) noexcept {
         return str.size() >= prefix.size() && memcmp(str.data(), prefix.data(), prefix.size()) == 0;
     }

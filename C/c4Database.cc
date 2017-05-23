@@ -30,6 +30,8 @@
 using namespace fleece;
 
 
+CBL_CORE_API const char* const kC4DatabaseFilenameExtension = ".cblite2";
+
 CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 

@@ -6,7 +6,7 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#include "c4REST.h"
+#include "c4Listener.h"
 #include "FilePath.hh"
 #include "StringUtil.hh"
 #include <chrono>
@@ -17,9 +17,9 @@ using namespace std;
 using namespace litecore;
 
 
-static C4RESTListener *gListener;
+static C4Listener *gListener;
 
-static C4RESTConfig gRESTConfig;
+static C4ListenerConfig gListenerConfig;
 
 static C4DatabaseConfig gDatabaseConfig = {
     kC4DB_Bundled | kC4DB_SharedKeys
@@ -44,6 +44,9 @@ static void usage() {
             "       --port <n>         Listen on TCP port <n> (default is 59840)\n"
             "       --create           Create database(s) that don't exist\n"
             "       --readonly         Open database(s) read-only\n";
+    if (c4listener_availableAPIs() & kC4SyncAPI)
+        cerr <<
+            "       --sync             Allow incoming sync/replication requests\n";
 }
 
 
@@ -71,7 +74,7 @@ static void failMisuse(const char *message ="Invalid parameters") {
 
 
 static string databaseNameFromPath(const char *path) {
-    C4StringResult nameSlice = c4rest_databaseNameFromPath(c4str(path));
+    C4StringResult nameSlice = c4db_URINameFromPath(c4str(path));
     if (!nameSlice.buf)
         return string();
     string name((char*)nameSlice.buf, nameSlice.size);
@@ -83,7 +86,7 @@ static string databaseNameFromPath(const char *path) {
 static void startListener() {
     if (!gListener) {
         C4Error err;
-        gListener = c4rest_start(&gRESTConfig, &err);
+        gListener = c4listener_start(&gListenerConfig, &err);
         if (!gListener)
             fail("starting REST listener", err);
     }
@@ -96,14 +99,14 @@ static void shareDatabase(const char *path, string name) {
     auto db = c4db_open(c4str(path), &gDatabaseConfig, &err);
     if (!db)
         fail("opening database", err);
-    c4rest_shareDB(gListener, c4str(name), db);
+    c4listener_shareDB(gListener, c4str(name), db);
     c4db_free(db);
 }
 
 
 static void shareDatabaseDir(const char *dirPath) {
     gDirectory = dirPath;
-    gRESTConfig.directory = c4str(gDirectory);
+    gListenerConfig.directory = c4str(gDirectory);
     startListener();
     cerr << "Sharing all databases in " << dirPath << ": ";
     int n = 0;
@@ -124,8 +127,11 @@ static void shareDatabaseDir(const char *dirPath) {
 
 
 int main(int argc, const char** argv) {
-    gRESTConfig.port = 59840;
-    gRESTConfig.allowCreateDBs = gRESTConfig.allowDeleteDBs = true;
+    // Default configuration (everything else is false/zero):
+    gListenerConfig.port = 59840;
+    gListenerConfig.apis = kC4RESTAPI;
+    gListenerConfig.allowCreateDBs = gListenerConfig.allowDeleteDBs = true;
+    gListenerConfig.allowPush = gListenerConfig.allowPull = true;
 
     try {
         auto restLog = c4log_getDomain("REST", true);
@@ -151,12 +157,14 @@ int main(int argc, const char** argv) {
                 } else if (flag == "port") {
                     if (++i >= argc)
                         failMisuse();
-                    gRESTConfig.port = (uint16_t) stoi(string(argv[i]));
+                    gListenerConfig.port = (uint16_t) stoi(string(argv[i]));
                 } else if (flag == "readonly") {
                     gDatabaseConfig.flags |= kC4DB_ReadOnly;
-                    gRESTConfig.allowCreateDBs = gRESTConfig.allowDeleteDBs = false;
+                    gListenerConfig.allowCreateDBs = gListenerConfig.allowDeleteDBs = false;
                 } else if (flag == "create") {
                     gDatabaseConfig.flags |= kC4DB_Create;
+                } else if (flag == "sync") {
+                    gListenerConfig.apis |= kC4SyncAPI;
                 } else {
                     failMisuse("Unknown flag");
                 }
@@ -179,7 +187,7 @@ int main(int argc, const char** argv) {
         fail(x.what());
     }
 
-    cerr << "LiteCoreServ is now listening at http://localhost:" << gRESTConfig.port << "/ ...\n";
+    cerr << "LiteCoreServ is now listening at http://localhost:" << gListenerConfig.port << "/ ...\n";
 
     // Sleep to keep the process from exiting, while the server threads run:
     while(true)

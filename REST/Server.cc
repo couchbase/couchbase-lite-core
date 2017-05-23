@@ -11,20 +11,16 @@
 #include "Error.hh"
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
+#include "c4ListenerInternal.hh"
 #include "civetweb.h"
 
 using namespace std;
 
 namespace litecore { namespace REST {
 
-    C4LogDomain RESTLog;
-
-
     Server::Server(const char **options, void *owner)
     :_owner(owner)
     {
-        if (!RESTLog)
-            RESTLog = c4log_getDomain("REST", true);
         mg_callbacks cb { };
         cb.log_message = [](const struct mg_connection *, const char *message) {
             c4log(RESTLog, kC4LogInfo, "%s", message);

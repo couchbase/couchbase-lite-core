@@ -2,134 +2,59 @@
 //  Listener.hh
 //  LiteCore
 //
-//  Created by Jens Alfke on 4/16/17.
+//  Created by Jens Alfke on 5/22/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
 #pragma once
 #include "c4.hh"
-#include "c4REST.h"
-#include "Server.hh"
+#include "c4Listener.h"
 #include "FilePath.hh"
-#include "RefCounted.hh"
 #include <map>
-#include <memory>
 #include <mutex>
-#include <set>
-#include <vector>
 
 namespace litecore { namespace REST {
-    class RequestResponse;
-    class Request;
-    class Server;
 
+    /** Abstract superclass of network listeners that can serve access to databases.
+        Subclassed by RESTListener and SyncListener. */
     class Listener {
     public:
-        using Config = C4RESTConfig;
+        using Config = C4ListenerConfig;
 
-        Listener(const Config&);
-        ~Listener();
+        virtual ~Listener() =default;
 
+        /** Determines whether a database name is valid for use as a URI path component.
+            It must be nonempty, no more than 240 bytes long, not start with an underscore,
+            and contain no control characters. */
         static bool isValidDatabaseName(const std::string&);
-        static std::string databaseNameFromPath(const FilePath&);
-        bool pathFromDatabaseName(const std::string &name, FilePath &outPath);
 
-        /** Makes a database visible via the REST API. */
+        /** Given a filesystem path to a database, returns the database name.
+            (This takes the last path component and removes the ".cblite2" extension.)
+            Returns an empty string if the path is not a database, or if the name would not
+            be valid according to isValidDatabaseName(). */
+        static std::string databaseNameFromPath(const FilePath&);
+
+        /** Makes a database visible via the REST API.
+            Retains the C4Database; the caller does not need to keep a reference to it. */
         bool registerDatabase(std::string name, C4Database*);
 
-        /** Unregisters a database by name. 
+        /** Unregisters a database by name.
             The C4Database will be closed if there are no other references to it. */
         bool unregisterDatabase(std::string name);
-
-        /** Opens a database and makes it visible via the REST API.
-            If the name is an empty string, a default name will be used based on the
-            filename. */
-        bool openDatabase(std::string name,
-                          const FilePath&,
-                          const C4DatabaseConfig*,
-                          C4Error*);
 
         /** Returns the database registered under the given name. */
         c4::ref<C4Database> databaseNamed(const std::string &name);
 
+        /** Returns all registered database names. */
         std::vector<std::string> databaseNames();
 
-
-        /** An asynchronous task (like a replication). */
-        class Task : public RefCounted {
-        public:
-            explicit Task(Listener* listener)    :_listener(listener) { }
-
-            Listener* listener() const  {return _listener;}
-            unsigned taskID() const     {return _taskID;}
-            time_t timeUpdated() const  {return _timeUpdated;}
-            virtual bool finished() const =0;
-            virtual void writeDescription(fleeceapi::JSONEncoder&);
-
-            virtual void stop() =0;
-
-            void registerTask();
-            void unregisterTask();
-
-        protected:
-            virtual ~Task() =default;
-
-            time_t _timeUpdated {0};
-        private:
-            Listener* const _listener;
-            unsigned _taskID {0};
-            time_t _timeStarted {0};
-        };
-
-        std::vector<Retained<Task>> tasks();
-
     protected:
-        friend class Task;
+        static constexpr uint16_t kDefaultPort = 4984;
 
-        Server* server() const              {return _server.get();}
+        Listener();
 
-        /** Returns the database for this request, or null on error. */
-        c4::ref<C4Database> databaseFor(RequestResponse&);
-        unsigned registerTask(Task*);
-        void unregisterTask(Task*);
-
-        using HandlerMethod = void(Listener::*)(RequestResponse&);
-        using DBHandlerMethod = void(Listener::*)(RequestResponse&, C4Database*);
-
-        void addHandler(Server::Method, const char *uri, HandlerMethod);
-        void addDBHandler(Server::Method, const char *uri, DBHandlerMethod);
-
-    private:
-        void handleGetRoot(RequestResponse&);
-        void handleGetAllDBs(RequestResponse&);
-        void handleReplicate(RequestResponse&);
-        void handleActiveTasks(RequestResponse&);
-
-        void handleGetDatabase(RequestResponse&, C4Database*);
-        void handleCreateDatabase(RequestResponse&);
-        void handleDeleteDatabase(RequestResponse&, C4Database*);
-
-        void handleGetAllDocs(RequestResponse&, C4Database*);
-        void handleGetDoc(RequestResponse&, C4Database*);
-        void handleModifyDoc(RequestResponse&, C4Database*);
-        void handleBulkDocs(RequestResponse&, C4Database*);
-
-        bool modifyDoc(fleeceapi::Dict body,
-                       std::string docID,
-                       std::string revIDQuery,
-                       bool deleting,
-                       bool newEdits,
-                       C4Database *db,
-                       fleeceapi::JSONEncoder& json,
-                       C4Error *outError);
-
-        std::unique_ptr<FilePath> _directory;
-        const bool _allowCreateDB, _allowDeleteDB;
-        std::unique_ptr<Server> _server;
         std::mutex _mutex;
         std::map<std::string, c4::ref<C4Database>> _databases;
-        std::set<Retained<Task>> _tasks;
-        unsigned _nextTaskID {1};
     };
 
 } }

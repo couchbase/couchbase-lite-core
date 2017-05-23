@@ -1,15 +1,16 @@
 //
-//  Listener+Replicate.cc
+//  RESTListener+Replicate.cc
 //  LiteCore
 //
 //  Created by Jens Alfke on 5/1/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#include "Listener.hh"
+#include "RESTListener.hh"
 #include "c4.hh"
 #include "c4Private.h"
 #include "c4Document+Fleece.h"
+#include "c4ListenerInternal.hh"
 #include "Server.hh"
 #include "Request.hh"
 #include "RefCounted.hh"
@@ -27,12 +28,12 @@ using namespace fleeceapi;
 
 namespace litecore { namespace REST {
 
-    class ReplicationTask : public Listener::Task {
+    class ReplicationTask : public RESTListener::Task {
     public:
         using Mutex = recursive_mutex;
         using Lock = unique_lock<Mutex>;
 
-        ReplicationTask(Listener* listener, slice source, slice target, bool continuous)
+        ReplicationTask(RESTListener* listener, slice source, slice target, bool continuous)
         :Task(listener)
         ,_source(source)
         ,_target(target)
@@ -221,7 +222,7 @@ namespace litecore { namespace REST {
 #pragma mark - HTTP HANDLER:
 
 
-    void Listener::handleReplicate(litecore::REST::RequestResponse &rq) {
+    void RESTListener::handleReplicate(litecore::REST::RequestResponse &rq) {
         // Parse the JSON body:
         auto params = rq.bodyAsJSON().asDict();
         slice source = params["source"].asString();

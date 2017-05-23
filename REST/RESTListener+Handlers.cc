@@ -1,12 +1,12 @@
 
-//  Listener+Handlers.cc
+//  RESTListener+Handlers.cc
 //  LiteCore
 //
 //  Created by Jens Alfke on 4/27/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#include "Listener.hh"
+#include "RESTListener.hh"
 #include "c4.hh"
 #include "c4Private.h"
 #include "c4Document+Fleece.h"
@@ -27,7 +27,7 @@ namespace litecore { namespace REST {
 #pragma mark - ROOT HANDLERS:
 
 
-    void Listener::handleGetRoot(RequestResponse &rq) {
+    void RESTListener::handleGetRoot(RequestResponse &rq) {
         auto &json = rq.jsonEncoder();
         json.beginDict();
         json.writeKey("couchdb"_sl);
@@ -45,7 +45,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::handleGetAllDBs(RequestResponse &rq) {
+    void RESTListener::handleGetAllDBs(RequestResponse &rq) {
         auto &json = rq.jsonEncoder();
         json.beginArray();
         for (string &name : databaseNames())
@@ -54,7 +54,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::handleActiveTasks(RequestResponse &rq) {
+    void RESTListener::handleActiveTasks(RequestResponse &rq) {
         auto &json = rq.jsonEncoder();
         json.beginArray();
         for (auto &task : tasks()) {
@@ -69,7 +69,7 @@ namespace litecore { namespace REST {
 #pragma mark - DATABASE HANDLERS:
 
     
-    void Listener::handleGetDatabase(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleGetDatabase(RequestResponse &rq, C4Database *db) {
         auto docCount = c4db_getDocumentCount(db);
         auto lastSequence = c4db_getLastSequence(db);
         C4UUID uuid;
@@ -92,7 +92,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::handleCreateDatabase(RequestResponse &rq) {
+    void RESTListener::handleCreateDatabase(RequestResponse &rq) {
         if (!_allowCreateDB)
             return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot create databases");
         string dbName = rq.path(0);
@@ -114,7 +114,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::handleDeleteDatabase(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleDeleteDatabase(RequestResponse &rq, C4Database *db) {
         if (!_allowDeleteDB)
             return rq.respondWithStatus(HTTPStatus::Forbidden, "Cannot delete databases");
         string name = rq.path(0);
@@ -131,7 +131,7 @@ namespace litecore { namespace REST {
 #pragma mark - DOCUMENT HANDLERS:
 
 
-    void Listener::handleGetAllDocs(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleGetAllDocs(RequestResponse &rq, C4Database *db) {
         // Apply options:
         C4EnumeratorOptions options;
         options.flags = kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted;
@@ -185,7 +185,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::handleGetDoc(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleGetDoc(RequestResponse &rq, C4Database *db) {
         string docID = rq.path(1);
         C4Error err;
         c4::ref<C4Document> doc = c4doc_get(db, slice(docID), true, &err);
@@ -230,7 +230,7 @@ namespace litecore { namespace REST {
 
 
     // Core code for create/update/delete operation on a single doc.
-    bool Listener::modifyDoc(Dict body,
+    bool RESTListener::modifyDoc(Dict body,
                              string docID,
                              string revIDQuery,
                              bool deleting,
@@ -314,7 +314,7 @@ namespace litecore { namespace REST {
 
 
     // This handles PUT and DELETE of a document, as well as POST to a database.
-    void Listener::handleModifyDoc(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleModifyDoc(RequestResponse &rq, C4Database *db) {
         string docID = rq.path(1);                       // will be empty for POST
 
         // Parse the body:
@@ -341,7 +341,7 @@ namespace litecore { namespace REST {
     }
 
 
-    void Listener::handleBulkDocs(RequestResponse &rq, C4Database *db) {
+    void RESTListener::handleBulkDocs(RequestResponse &rq, C4Database *db) {
         Dict body = rq.bodyAsJSON().asDict();
         Array docs = body["docs"].asArray();
         if (!docs) {

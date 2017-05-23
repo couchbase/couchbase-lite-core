@@ -8,7 +8,6 @@
 
 #pragma once
 #include "c4Base.h"
-#include "Fleece.h"
 
 
 #ifdef __cplusplus
@@ -66,7 +65,7 @@ extern "C" {
     typedef struct {
         bool providesWebSockets;
 
-        void (*open)(C4Socket*, const C4Address*, FLSlice optionsFleece); ///< open the socket
+        void (*open)(C4Socket*, const C4Address*, C4Slice optionsFleece); ///< open the socket
         void (*write)(C4Socket*, C4SliceResult allocatedData);  ///< Write bytes; free when done
         void (*completedReceive)(C4Socket*, size_t byteCount);  ///< Completion of c4socket_received
 

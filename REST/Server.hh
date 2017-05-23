@@ -20,9 +20,6 @@ namespace litecore { namespace REST {
     class Request;
 
 
-    extern C4LogDomain RESTLog;
-
-
     /** HTTP server, using CivetWeb. */
     class Server {
     public:
@@ -47,6 +44,8 @@ namespace litecore { namespace REST {
         using Handler = std::function<void(RequestResponse&)>;
 
         void addHandler(Method, const char *uri, const Handler &h);
+
+        mg_context* mgContext() const               {return _context;}
 
     private:
         static int handleRequest(mg_connection *conn, void *cbdata);

@@ -15,7 +15,7 @@
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.h"
-#include "c4REST.h"
+#include "c4Listener.h"
 #include <assert.h>
 
 
@@ -31,7 +31,7 @@ namespace c4 {
     static inline void freeRef(C4QueryEnumerator* c)   {c4queryenum_free(c);}
     static inline void freeRef(C4Query* c)             {c4query_free(c);}
     static inline void freeRef(C4Replicator* c)        {c4repl_free(c);}
-    static inline void freeRef(C4RESTListener* c)      {c4rest_free(c);}
+    static inline void freeRef(C4Listener* c)          {c4listener_free(c);}
 
 
     /** A simple little smart pointer that frees the C4 object when it leaves scope. */

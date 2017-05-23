@@ -35,6 +35,8 @@ namespace litecore { namespace REST {
     /** Incoming HTTP request, with methods for composing a response */
     class RequestResponse : public Request {
     public:
+        RequestResponse(mg_connection*);
+
         static HTTPStatus errorToStatus(C4Error);
         void respondWithStatus(HTTPStatus, const char *message =nullptr);
         void respondWithError(C4Error);
@@ -65,12 +67,11 @@ namespace litecore { namespace REST {
         void writeStatusJSON(HTTPStatus status, const char *message =nullptr);
         void writeErrorJSON(C4Error);
 
+        void finish();
+
     protected:
         friend class Server;
-
-        RequestResponse(mg_connection*);
-
-        void finish();
+        friend class CivetC4Socket;
 
     private:
         void sendHeaders();

@@ -7,7 +7,7 @@
 //
 
 #include "c4Test.hh"
-#include "c4REST.h"
+#include "c4Listener.h"
 #include "c4.hh"
 #include "FilePath.hh"
 #include "Response.hh"
@@ -47,10 +47,10 @@ public:
         if (listener)
             return;
         C4Error err;
-        listener = c4rest_start(&config, &err);
+        listener = c4listener_start(&config, &err);
         REQUIRE(listener);
 
-        c4rest_shareDB(listener, C4STR("db"), db);
+        c4listener_shareDB(listener, C4STR("db"), db);
     }
 
 
@@ -72,9 +72,9 @@ public:
         return request(method, uri, {}, nullslice, expectedStatus);
     }
 
-    C4RESTConfig config = {59849 };
+    C4ListenerConfig config = {59849, kC4RESTAPI};
     alloc_slice directory;
-    c4::ref<C4RESTListener> listener;
+    c4::ref<C4Listener> listener;
 };
 
 
@@ -154,11 +154,6 @@ TEST_CASE_METHOD(C4RESTTest, "REST PUT database", "[REST][C]") {
     }
     SECTION("Allowed") {
         setUpDirectory();
-        SECTION("Invalid name") {
-            r = request("PUT", "/xDB", HTTPStatus::BadRequest);
-            r = request("PUT", "/uh*oh", HTTPStatus::BadRequest);
-            r = request("PUT", "/23skidoo", HTTPStatus::BadRequest);
-        }
         SECTION("Duplicate") {
             r = request("PUT", "/db", HTTPStatus::PreconditionFailed);
         }

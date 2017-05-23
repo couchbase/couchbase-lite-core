@@ -5,6 +5,7 @@
 #  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 
 _kC4SQLiteStorageEngine
+_kC4DatabaseFilenameExtension
 
 _DefaultLog
 _kC4DefaultLog

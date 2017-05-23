@@ -181,7 +181,7 @@ public:
 
 
 Endpoint* Endpoint::create(const string &str) {
-    if (hasSuffix(str, ".cblite2")) {
+    if (hasSuffix(str, kC4DatabaseFilenameExtension)) {
         return new DbEndpoint(str);
     } else if (hasSuffix(str, ".json")) {
         return new JSONEndpoint(str);

@@ -27,6 +27,10 @@ namespace litecore {
     /** Removes last character from string (in place), but only if it equals `ending` */
     void chomp(std::string&, char ending) noexcept;
 
+    /** Replaces all occurrences of `oldChar` with `newChar`. */
+    void replace(std::string &str, char oldChar, char newChar);
+
+
     bool hasPrefix(const std::string &str, const std::string &prefix) noexcept;
 
     bool hasSuffix(const std::string &str, const std::string &suffix) noexcept;

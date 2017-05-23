@@ -129,6 +129,8 @@ C4Replicator* c4repl_new(C4Database* db,
 
 C4Replicator* c4repl_newWithSocket(C4Database* db,
                                    C4Socket *openSocket,
+                                   C4ReplicatorMode push,
+                                   C4ReplicatorMode pull,
                                    C4Slice optionsDictFleece,
                                    C4ReplicatorStatusChangedCallback onStatusChanged,
                                    void *callbackContext,
@@ -139,7 +141,7 @@ C4Replicator* c4repl_newWithSocket(C4Database* db,
         if (!dbCopy)
             return nullptr;
         C4Replicator *replicator = new C4Replicator(dbCopy, openSocket,
-                                                    kC4Passive, kC4Passive,
+                                                    push, pull,
                                                     optionsDictFleece,
                                                     onStatusChanged, callbackContext);
         return retain(replicator);

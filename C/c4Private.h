@@ -45,6 +45,8 @@ C4Socket* c4socket_fromNative(C4SocketFactory factory,
 
 C4Replicator* c4repl_newWithSocket(C4Database* db,
                                    C4Socket *openSocket,
+                                   C4ReplicatorMode push,
+                                   C4ReplicatorMode pull,
                                    C4Slice optionsDictFleece,
                                    C4ReplicatorStatusChangedCallback onStatusChanged,
                                    void *callbackContext,

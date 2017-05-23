@@ -1,5 +1,6 @@
 EXPORTS
 kC4SQLiteStorageEngine
+kC4DatabaseFilenameExtension
 
 DefaultLog
 kC4DefaultLog

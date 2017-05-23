@@ -4,8 +4,7 @@
 #  Created by Jens Alfke on 4/17/17.
 #  Copyright © 2017 Couchbase. All rights reserved.
 
-_kC4DatabaseFilenameExtension
-_c4rest_start
-_c4rest_free
-_c4rest_shareDB
-_c4rest_databaseNameFromPath
+_c4listener_start
+_c4listener_free
+_c4listener_shareDB
+_c4db_URINameFromPath
