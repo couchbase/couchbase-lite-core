@@ -31,7 +31,6 @@
 #endif
 #if __ANDROID__
 #include <android/log.h>
-#include <sstream>
 #endif
 
 #if defined(__clang__) && !defined(__ANDROID__)
@@ -49,11 +48,7 @@ namespace litecore {
 
     LogLevel LogDomain::sCallbackMinLevel = LogLevel::Info;
     static LogDomain::Callback_t sCallback = defaultCallback;
-#if __ANDROID__
-    static bool sCallbackPreformatted = true;
-#else
     static bool sCallbackPreformatted = false;
-#endif
     LogLevel LogDomain::sFileMinLevel = LogLevel::None;
     static ofstream *sFileOut = nullptr;
     static LogEncoder* sLogEncoder = nullptr;
@@ -237,17 +232,18 @@ namespace litecore {
     // The default logging callback writes to stderr, or on Android to __android_log_write.
     static void defaultCallback(const LogDomain &domain, LogLevel level,
                                     const char *fmt, va_list args){
-
-        auto name = domain.name();
-        static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
         #if ANDROID
-            stringstream buf;
-            LogDecoder::writeHeader(kLevels[(int) level], name, buf);
+            string tag("LiteCore");
+            string domainName(domain.name());
+            if (!domainName.empty())
+                tag += " [" + domainName + "]";
             static const int androidLevels[5] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO,
                                                  ANDROID_LOG_INFO, ANDROID_LOG_WARN,
                                                  ANDROID_LOG_ERROR};
-            __android_log_vprint(androidLevels[(int) level], buf.str().c_str(), fmt, args);
+            __android_log_vprint(androidLevels[(int) level], tag.c_str(), fmt, args);
         #else
+            auto name = domain.name();
+            static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
             LogDecoder::writeTimestamp(LogDecoder::now(), cerr);
             LogDecoder::writeHeader(kLevels[(int)level], name, cerr);
             vfprintf(stderr, fmt, args);
