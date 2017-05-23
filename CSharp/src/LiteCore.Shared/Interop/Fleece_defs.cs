@@ -72,7 +72,8 @@ namespace LiteCore.Interop
         JSONError,
         UnknownValue,
         InternalError,
-        NotFound
+        NotFound,
+        SharedKeysStateError,
     }
 
 #if LITECORE_PACKAGED

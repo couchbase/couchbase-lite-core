@@ -165,6 +165,9 @@ namespace LiteCore.Interop
         public static extern FLValue* FLArrayIterator_GetValue(FLArrayIterator* i);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLValue* FLArrayIterator_GetValueAt(FLArrayIterator* i, uint offset);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool FLArrayIterator_Next(FLArrayIterator* i);
 
@@ -201,7 +204,15 @@ namespace LiteCore.Interop
         public static extern void FLDictIterator_Begin(FLDict* dict, FLDictIterator* i);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void FLDictIterator_BeginShared(FLDict* dict, FLDictIterator* i, FLSharedKeys* shared);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLValue* FLDictIterator_GetKey(FLDictIterator* i);
+
+        public static string FLDictIterator_GetKeyString(FLDictIterator* i)
+        {
+            return NativeRaw.FLDictIterator_GetKeyString(i).CreateString();
+        }
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLValue* FLDictIterator_GetValue(FLDictIterator* i);
@@ -423,6 +434,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLValue* FLDict_GetUnsorted(FLDict* dict, FLSlice keyString);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLSlice FLDictIterator_GetKeyString(FLDictIterator* i);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLDictKey FLDictKey_Init(FLSlice @string, [MarshalAs(UnmanagedType.U1)]bool cachePointers);
