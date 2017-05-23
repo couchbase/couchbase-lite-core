@@ -49,7 +49,6 @@ namespace litecore {
     LogLevel LogDomain::sCallbackMinLevel = LogLevel::Info;
     static LogDomain::Callback_t sCallback = defaultCallback;
     static bool sCallbackPreformatted = false;
-
     LogLevel LogDomain::sFileMinLevel = LogLevel::None;
     static ofstream *sFileOut = nullptr;
     static LogEncoder* sLogEncoder = nullptr;
@@ -230,22 +229,18 @@ namespace litecore {
         va_end(args);
     }
 
-
     // The default logging callback writes to stderr, or on Android to __android_log_write.
     static void defaultCallback(const LogDomain &domain, LogLevel level,
-                                const char *fmt, va_list args)
-    {
-        #ifdef __ANDROID__
-            static const int kLevels[5] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO, ANDROID_LOG_INFO,
-                                           ANDROID_LOG_WARN, ANDROID_LOG_ERROR};
-            static char source[100] = "LiteCore";
-            auto name = domain.name();
-            if (name[0]) {
-                strcat(source, " ");
-                strcat(source, name);
-            }
-            vsnprintf(sFormatBuffer, sizeof(sFormatBuffer), fmt, args);
-            __android_log_write(kLevels[(int)level], source, sFormatBuffer);
+                                    const char *fmt, va_list args){
+        #if ANDROID
+            string tag("LiteCore");
+            string domainName(domain.name());
+            if (!domainName.empty())
+                tag += " [" + domainName + "]";
+            static const int androidLevels[5] = {ANDROID_LOG_DEBUG, ANDROID_LOG_INFO,
+                                                 ANDROID_LOG_INFO, ANDROID_LOG_WARN,
+                                                 ANDROID_LOG_ERROR};
+            __android_log_vprint(androidLevels[(int) level], tag.c_str(), fmt, args);
         #else
             auto name = domain.name();
             static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
