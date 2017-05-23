@@ -14,13 +14,11 @@
 package com.couchbase.litecore;
 
 import com.couchbase.lite.Log;
-import com.couchbase.litecore.fleece.FLValue;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class C4QueryBaseTest extends BaseTest {
     //-------------------------------------------------------------------------
@@ -31,13 +29,6 @@ public class C4QueryBaseTest extends BaseTest {
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
-
-    protected String getColumn(byte[] customColumns, int i) {
-        assertNotNull(customColumns);
-        List<Object> colsArray = FLValue.fromData(customColumns).asArray();
-        assertTrue(colsArray.size() >= i + 1);
-        return (String) colsArray.get(i);
-    }
 
     protected C4Query compile(String whereExpr) throws LiteCoreException {
         return compile(whereExpr, null);

@@ -13,6 +13,8 @@
  */
 package com.couchbase.litecore;
 
+import com.couchbase.litecore.fleece.FLArrayIterator;
+
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -23,6 +25,7 @@ import static com.couchbase.litecore.Constants.C4IndexType.kC4ValueIndex;
 import static com.couchbase.litecore.Constants.C4RevisionFlags.kRevDeleted;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class C4QueryTest extends C4QueryBaseTest {
@@ -181,9 +184,10 @@ public class C4QueryTest extends C4QueryBaseTest {
         assertNotNull(e);
         int i = 0;
         while (e.next()) {
-            byte[] columns = e.getCustomColumns();
-            assertEquals(getColumn(columns, 0), expectedFirst.get(i));
-            assertEquals(getColumn(columns, 1), expectedLast.get(i));
+            FLArrayIterator itr = e.getColumns();
+            assertEquals(itr.getValue().asString(), expectedFirst.get(i));
+            assertTrue(itr.next());
+            assertEquals(itr.getValue().asString(), expectedLast.get(i));
             i++;
         }
         e.free();
@@ -199,9 +203,10 @@ public class C4QueryTest extends C4QueryBaseTest {
         assertNotNull(e);
         int i = 0;
         while (e.next()) {
-            byte[] columns = e.getCustomColumns();
-            assertEquals(getColumn(columns, 0), "Aerni");
-            assertEquals(getColumn(columns, 1), "Zirk");
+            FLArrayIterator itr = e.getColumns();
+            assertEquals(itr.getValue().asString(), "Aerni");
+            assertTrue(itr.next());
+            assertEquals(itr.getValue().asString(), "Zirk");
             i++;
         }
         e.free();
@@ -223,17 +228,17 @@ public class C4QueryTest extends C4QueryBaseTest {
         assertNotNull(e);
         int i = 0;
         while (e.next()) {
-            byte[] columns = e.getCustomColumns();
+            FLArrayIterator itr = e.getColumns();
             if (i < expectedState.size()) {
-                assertEquals(getColumn(columns, 0), expectedState.get(i));
-                assertEquals(getColumn(columns, 1), expectedMin.get(i));
-                assertEquals(getColumn(columns, 2), expectedMax.get(i));
+                assertEquals(itr.getValue().asString(), expectedState.get(i));
+                assertTrue(itr.next());
+                assertEquals(itr.getValue().asString(), expectedMin.get(i));
+                assertTrue(itr.next());
+                assertEquals(itr.getValue().asString(),  expectedMax.get(i));
             }
             i++;
         }
         e.free();
         assertEquals(expectedRowCount, i);
     }
-
-
 }

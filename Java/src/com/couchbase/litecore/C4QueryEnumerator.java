@@ -13,6 +13,8 @@
  */
 package com.couchbase.litecore;
 
+import com.couchbase.litecore.fleece.FLArrayIterator;
+
 public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
     // Member Variables
@@ -30,12 +32,6 @@ public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
-    public byte[] getCustomColumns() {
-        if (handle != 0)
-            return getCustomColumns(handle);
-        else
-            return null;
-    }
 
     public byte[] getFullTextMatched() throws LiteCoreException {
         if (handle != 0)
@@ -49,6 +45,18 @@ public class C4QueryEnumerator {
         if (!ok)
             handle = 0;
         return ok;
+    }
+
+    public long getRowCount() throws LiteCoreException {
+        return getRowCount(handle);
+    }
+
+    public boolean seek(long rowIndex) throws LiteCoreException {
+        return seek(handle, rowIndex);
+    }
+
+    public C4QueryEnumerator refresh() throws LiteCoreException {
+        return new C4QueryEnumerator(refresh(handle));
     }
 
     public void close() {
@@ -79,6 +87,11 @@ public class C4QueryEnumerator {
 
     public long getDocFlags() {
         return getDocFlags(handle);
+    }
+
+    // NOTE: FLArrayIterator is member variable of C4QueryEnumerator. Not necessary to release.
+    public FLArrayIterator getColumns(){
+        return new FLArrayIterator(getColumns(handle));
     }
 
     public long getFullTextTermCount() {
@@ -112,18 +125,18 @@ public class C4QueryEnumerator {
 
     /**
      * @param c4queryenumerator C4QueryEnumerator*
-     * @return C4SliceResult(FLSliceResult)
-     */
-    private static native byte[] getCustomColumns(long c4queryenumerator);
-
-    /**
-     * @param c4queryenumerator C4QueryEnumerator*
      * @return String (C4StringResult)
      * @throws LiteCoreException
      */
     private static native byte[] getFullTextMatched(long c4queryenumerator) throws LiteCoreException;
 
     private static native boolean next(long c4queryenumerator) throws LiteCoreException;
+
+    private static native long getRowCount(long c4queryenumerator) throws LiteCoreException;
+
+    private static native boolean seek(long c4queryenumerator, long rowIndex) throws LiteCoreException;
+
+    private static native long refresh(long c4queryenumerator) throws LiteCoreException;
 
     private static native void close(long c4queryenumerator);
 
@@ -138,6 +151,8 @@ public class C4QueryEnumerator {
     private static native String getRevID(long c4queryenumerator);
 
     private static native long getDocFlags(long c4queryenumerator);
+
+    private static native long getColumns(long c4queryenumerator);
 
     private static native long getFullTextTermCount(long c4queryenumerator);
 

@@ -39,20 +39,19 @@ public class FLArray {
         itr.free();
         return results;
     }
+    public long count() {
+        return count(handle);
+    }
+
+    public FLValue get(long index) {
+        return new FLValue(get(handle, index));
+    }
 
     //-------------------------------------------------------------------------
     // package level access
     //-------------------------------------------------------------------------
     long getHandle() {
         return handle;
-    }
-
-    long count() {
-        return count(handle);
-    }
-
-    FLValue get(long index) {
-        return new FLValue(get(handle, index));
     }
 
     //-------------------------------------------------------------------------
