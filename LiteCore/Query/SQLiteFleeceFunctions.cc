@@ -20,6 +20,7 @@
 #include "Logging.hh"
 #include <sqlite3.h>
 #include <regex>
+#include <unordered_set>
 
 using namespace fleece;
 using namespace std;
@@ -84,7 +85,71 @@ namespace litecore {
         sqlite3_result_error_code(ctx, rc);
         return nullptr;
     }
+    
+    static void aggregateNumericArrayOperation(sqlite3_context* ctx, int argc, sqlite3_value **argv,
+                                        function<void(double, bool&)> op) {
+        bool stop = false;
+        for (int i = 0; i < argc; ++i) {
+            sqlite3_value *arg = argv[i];
+            switch (sqlite3_value_type(arg)) {
+                case SQLITE_BLOB: {
+                    const Value *root = fleeceParam(ctx, arg);
+                    if (!root)
+                        return;
+                    for (Array::iterator item(root->asArray()); item; ++item)
+                        op(item->asDouble(), stop);
+                    
+                    break;
+                }
+                case SQLITE_NULL:
+                    sqlite3_result_null(ctx);
+                    return;
+                default:
+                    sqlite3_result_zeroblob(ctx, 0);
+                    return;
+            }
+        }
+        
+        if(stop) {
+            return;
+        }
+    }
 
+    static void aggregateArrayOperation(sqlite3_context* ctx, int argc, sqlite3_value **argv,
+                                               function<void(const Value *, bool&)> op) {
+        bool stop = false;
+        for (int i = 0; i < argc; ++i) {
+            sqlite3_value *arg = argv[i];
+            switch (sqlite3_value_type(arg)) {
+                case SQLITE_BLOB: {
+                    const Value *root = fleeceParam(ctx, arg);
+                    if (!root)
+                        return;
+                    
+                    if(root->type() != valueType::kArray) {
+                        sqlite3_result_zeroblob(ctx, 0);
+                        return;
+                    }
+                    
+                    for (Array::iterator item(root->asArray()); item; ++item)
+                        op(item.value(), stop);
+                    
+                    break;
+                }
+                    
+                case SQLITE_NULL:
+                    sqlite3_result_null(ctx);
+                    return;
+                default:
+                    sqlite3_result_zeroblob(ctx, 0);
+                    return;
+            }
+            
+            if(stop) {
+                return;
+            }
+        }
+    }
 
     void setResultFromValue(sqlite3_context *ctx, const Value *val) noexcept {
         if (val == nullptr) {
@@ -298,25 +363,60 @@ namespace litecore {
     // Any argument that's a Fleece array will have all numeric values in it added.
     static void fl_array_sum(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         double sum = 0.0;
-        for (int i = 0; i < argc; ++i) {
-            sqlite3_value *arg = argv[i];
-            switch (sqlite3_value_type(arg)) {
-                case SQLITE_BLOB: {
-                    const Value *root = fleeceParam(ctx, arg);
-                    if (!root)
-                        return;
-                    for (Array::iterator item(root->asArray()); item; ++item)
-                        sum += item->asDouble();
-                }
-                case SQLITE_INTEGER:
-                case SQLITE_FLOAT:
-                    sum += sqlite3_value_double(arg);
-            }
-        }
+        aggregateNumericArrayOperation(ctx, argc, argv, [&sum](double num, bool& stop) {
+            sum += num;
+        });
+        
         sqlite3_result_double(ctx, sum);
     }
-
-
+    
+    static void fl_array_avg(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        double sum = 0.0;
+        double count = 0.0;
+        aggregateNumericArrayOperation(ctx, argc, argv, [&sum, &count](double num, bool& stop) {
+            sum += num;
+            count++;
+        });
+        
+        if(count == 0.0) {
+            sqlite3_result_double(ctx, 0.0);
+        } else {
+            sqlite3_result_double(ctx, sum / count);
+        }
+    }
+    
+    static void fl_array_contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        slice comparand = valueAsStringSlice(argv[1]);
+        bool found = false;
+        aggregateArrayOperation(ctx, argc, argv, [&comparand, &found](const Value* val, bool& stop) {
+            if(val->toString().compare(comparand) == 0) {
+                found = stop = true;
+            }
+        });
+        
+        sqlite3_result_int(ctx, found ? 1 : 0);
+    }
+    
+    static void fl_array_count(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        sqlite3_int64 count = 0;
+        aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, bool& stop) {
+            if(val->type() != valueType::kNull) {
+                count++;
+            }
+        });
+        
+        sqlite3_result_int64(ctx, count);
+    }
+    
+    static void fl_array_length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        sqlite3_int64 count = 0;
+        aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, bool& stop) {
+            count++;
+        });
+        
+        sqlite3_result_int64(ctx, count);
+    }
+    
 #pragma mark - NON-FLEECE FUNCTIONS:
 
 
@@ -333,13 +433,75 @@ namespace litecore {
         int result = regex_search((char *)arg0.buf, r) ? 1 : 0;
         sqlite3_result_int(ctx, result);
     }
-
     
-    static void unimplemented(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        Warn("Calling unimplemented N1QL function; query will fail");
-        sqlite3_result_error(ctx, "unimplemented N1QL function", -1);
+    static void execute_if_numeric(sqlite3_context* ctx, int argc, sqlite3_value **argv,
+                                   function<void(const vector<double>&)> op) {
+        vector<double> args;
+        for(int i = 0; i < argc; i++) {
+            auto arg = argv[i];
+            switch(sqlite3_value_numeric_type(arg)) {
+                case SQLITE_BLOB: {
+                    const Value *root = fleeceParam(ctx, arg);
+                    if (!root || root->type() != valueType::kNumber)
+                        return;
+                    
+                    args.push_back(root->asDouble());
+                    break;
+                }
+                case SQLITE_INTEGER:
+                case SQLITE_FLOAT:
+                    args.push_back(sqlite3_value_double(arg));
+                    break;
+                default:
+                    sqlite3_result_error(ctx, "Invalid numeric value", SQLITE_MISMATCH);
+                    return;
+            }
+        }
+        
+        op(args);
     }
 
+    static void fl_sqrt(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, sqrt(nums[0]));
+        });
+    }
+    
+    static void fl_log(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, log10(nums[0]));
+        });
+    }
+    
+    static void fl_ln(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, log(nums[0]));
+        });
+    }
+    
+    static void fl_exp(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, exp(nums[0]));
+        });
+    }
+    
+    static void fl_floor(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, floor(nums[0]));
+        });
+    }
+    
+    static void fl_ceiling(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, ceil(nums[0]));
+        });
+    }
+    
+    static void fl_power(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, pow(nums[0], nums[1]));
+        });
+    }
     
 #pragma mark - REGISTRATION:
 
@@ -362,18 +524,22 @@ namespace litecore {
             { "fl_count",          2, fl_count },
             { "fl_contains",      -1, fl_contains },
 
+            { "array_avg",        -1, fl_array_avg },
+            { "array_contains",   -1, fl_array_contains },
+            { "array_count",      -1, fl_array_count },
+            { "array_length",     -1, fl_array_length },
             { "array_sum",        -1, fl_array_sum },
 
             { "contains",          2, contains },
             { "regexp_like",       2, regexp_like },
 
-            { "sqrt",              1, unimplemented },
-            { "log",               1, unimplemented },
-            { "ln",                1, unimplemented },
-            { "exp",               1, unimplemented },
-            { "power",             2, unimplemented },
-            { "floor",             1, unimplemented },
-            { "ceil",              1, unimplemented },
+            { "sqrt",              1, fl_sqrt },
+            { "log",               1, fl_log },
+            { "ln",                1, fl_ln },
+            { "exp",               1, fl_exp },
+            { "power",             2, fl_power },
+            { "floor",             1, fl_floor },
+            { "ceil",              1, fl_ceiling },
         };
 
         for(i=0; i<sizeof(aFunc)/sizeof(aFunc[0]) && rc==SQLITE_OK; i++){

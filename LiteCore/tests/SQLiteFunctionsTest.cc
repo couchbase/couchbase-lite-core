@@ -95,6 +95,28 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_sum of fl_value", "[qu
             == (vector<string>{"10.0", "20.0", "0.0", "4.0", "0.0"}));
 }
 
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_avg of fl_value", "[query]") {
+    insert("a",   "{\"hey\": [1, 2, 3, 4]}");
+    insert("b",   "{\"hey\": [2, 4, 6, 8]}");
+    insert("c",   "{\"hey\": []}");
+    insert("d",   "{\"hey\": [1, 2, true, \"foo\"]}");
+    insert("e",   "{\"xxx\": [1, 2, 3, 4]}");
+    
+    REQUIRE(query("SELECT ARRAY_AVG(fl_value(body, 'hey')) FROM kv")
+            == (vector<string>{"2.5", "5.0", "0.0", "1.0", "0.0"}));
+}
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_contains of fl_value", "[query]") {
+    insert("a",   "{\"hey\": [1, 1, 2, true, true, 4, \"bar\"]}");
+    insert("b",   "{\"hey\": [1, 1, 2, true, true, 4]}");
+    insert("c",   "{\"hey\": [1, 1, 2, \"bar\"]}");
+    insert("d",   "{\"xxx\": [1, 1, 2, \"bar\"]}");
+    insert("e",   "{\"hey\": \"bar\"}");
+    
+    REQUIRE(query("SELECT ARRAY_CONTAINS(fl_value(body, 'hey'), 'bar') FROM kv")
+            == (vector<string>{"1", "0", "1", "0", "0" }));
+}
+
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[query][fl_each]") {
     insert("one",   "[1, 2, 3, 4]");
@@ -139,4 +161,25 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each with path", "[query]
             == (vector<string>{}));
     REQUIRE(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body, 'hey') WHERE fl_each.value = 3")
             == (vector<string>{"one"}));
+}
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite numeric ops", "[query]") {
+    insert("one",   "{\"hey\": 4.0}");
+    insert("one",   "{\"hey\": 2.5}");
+    
+    
+    REQUIRE(query("SELECT sqrt(fl_value(kv.body, 'hey')) FROM kv")
+            == (vector<string>{"2.0", "1.58113883008419"}));
+    REQUIRE(query("SELECT log(fl_value(kv.body, 'hey')) FROM kv")
+            == (vector<string>{"0.602059991327962", "0.397940008672038"}));
+    REQUIRE(query("SELECT ln(fl_value(kv.body, 'hey')) FROM kv")
+            == (vector<string>{"1.38629436111989", "0.916290731874155"}));
+    REQUIRE(query("SELECT exp(fl_value(kv.body, 'hey')) FROM kv")
+            == (vector<string>{"54.5981500331442", "12.1824939607035"}));
+    REQUIRE(query("SELECT power(fl_value(kv.body, 'hey'), 3) FROM kv")
+            == (vector<string>{"64.0", "15.625"}));
+    REQUIRE(query("SELECT floor(fl_value(kv.body, 'hey')) FROM kv")
+            == (vector<string>{"4.0", "2.0"}));
+    REQUIRE(query("SELECT ceil(fl_value(kv.body, 'hey')) FROM kv")
+            == (vector<string>{"4.0", "3.0"}));
 }
