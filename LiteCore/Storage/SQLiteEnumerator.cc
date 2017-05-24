@@ -92,8 +92,12 @@ namespace litecore {
                 sql << (options.inclusiveMax() ? "key <= ?" : "key < ?");
             }
             if (!options.includeDeleted) {
-                if (writeAnd) sql << " AND "; //else writeAnd = true;
+                if (writeAnd) sql << " AND "; else writeAnd = true;
                 sql << "(flags & 1) != 1";
+            }
+            if (options.contentOptions & kHasAttachmentsOnly) {
+                if(writeAnd) sql << " AND "; // else writeAnd = true;
+                sql << "(flags & 4) != 0";
             }
         }
         sql << " ORDER BY key";

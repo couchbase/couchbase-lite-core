@@ -9,7 +9,6 @@
 #pragma once
 
 #include "DataFile.hh"
-#include <unordered_set>
 
 namespace SQLite {
     class Database;
@@ -74,8 +73,6 @@ namespace litecore {
         int execWithLock(const std::string &sql);
         int64_t intQuery(const char *query);
         void maybeVacuum();
-        void collectBlobs(std::string storeName, std::unordered_set<std::string> &digests);
-        void removeUnusedBlobs(const std::unordered_set<std::string> &used);
         void registerFleeceFunctions();
 
     private:

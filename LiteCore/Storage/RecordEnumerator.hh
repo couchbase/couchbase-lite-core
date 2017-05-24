@@ -25,7 +25,8 @@ namespace litecore {
 
     enum ContentOptions {
         kDefaultContent = 0,
-        kMetaOnly = 0x01
+        kMetaOnly = 0x01,
+        kHasAttachmentsOnly = 0x02
     };
 
     /** KeyStore enumerator/iterator that returns a range of Records.

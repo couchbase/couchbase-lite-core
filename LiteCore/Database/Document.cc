@@ -46,25 +46,26 @@ namespace c4Internal {
 
 
     // Finds blob references in a Fleece value, recursively.
-    void Document::findBlobReferences(const Value *val, const FindBlobCallback &callback) {
+    void Document::findBlobReferences(const Value *val, SharedKeys* sk, const FindBlobCallback &callback) {
         auto d = val->asDict();
         if (d) {
-            findBlobReferences(d, callback);
+            findBlobReferences(d, sk, callback);
             return;
         }
         auto a = val->asArray();
         if (a) {
             for (Array::iterator i(a); i; ++i)
-                findBlobReferences(i.value(), callback);
+                findBlobReferences(i.value(), sk, callback);
         }
     }
 
 
-    bool Document::dictIsBlob(const Dict *dict, blobKey &outKey) {
-        auto cbltype = dict->get("_cbltype"_sl);
+    bool Document::dictIsBlob(const Dict *dict, blobKey &outKey, SharedKeys* sk) {
+        const Value* cbltype= dict->get("_cbltype"_sl, sk);
         if (!cbltype || cbltype->asString() != "blob"_sl)
             return false;
-        auto digest = ((const Dict*)dict)->get("digest"_sl);
+        
+        const Value* digest = ((const Dict*)dict)->get("digest"_sl, sk);
         if (!digest)
             return false;
         return outKey.readFromBase64(digest->asString());
@@ -72,18 +73,18 @@ namespace c4Internal {
 
 
     // Finds blob references in a Fleece Dict, recursively.
-    void Document::findBlobReferences(const Dict *dict, const FindBlobCallback &callback)
+    void Document::findBlobReferences(const Dict *dict, SharedKeys* sk, const FindBlobCallback &callback)
     {
-        if (dict->get("_cbltype"_sl)) {
+        if (dict->get("_cbltype"_sl, sk)) {
             blobKey key;
-            if (dictIsBlob(dict, key)) {
-                auto lengthVal = dict->get("length"_sl);
+            if (dictIsBlob(dict, key, sk)) {
+                auto lengthVal = dict->get("length"_sl, sk);
                 uint64_t length = lengthVal ? lengthVal->asUnsigned() : 0;
                 callback(key, length);
             }
         } else {
             for (Dict::iterator i(dict); i; ++i)
-                findBlobReferences(i.value(), callback);
+                findBlobReferences(i.value(), sk, callback);
         }
     }
 

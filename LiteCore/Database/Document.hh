@@ -141,10 +141,10 @@ namespace c4Internal {
         static alloc_slice encodeStrippingOldMetaProperties(const fleece::Dict*);
 
         /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key. */
-        static bool dictIsBlob(const fleece::Dict *dict, blobKey &outKey);
+        static bool dictIsBlob(const fleece::Dict *dict, blobKey &outKey, fleece::SharedKeys* sk = nullptr);
 
         using FindBlobCallback = function<void(const blobKey &key, uint64_t size)>;
-        static void findBlobReferences(const fleece::Dict*, const FindBlobCallback&);
+        static void findBlobReferences(const fleece::Dict*, fleece::SharedKeys* sk, const FindBlobCallback&);
 
     protected:
         void clearSelectedRevision() noexcept {
@@ -156,7 +156,7 @@ namespace c4Internal {
             _loadedBody = nullslice;
         }
 
-        static void findBlobReferences(const fleece::Value *val, const FindBlobCallback &callback);
+        static void findBlobReferences(const fleece::Value *val, fleece::SharedKeys* sk, const FindBlobCallback &callback);
 
         Retained<Database> _db;
     };
