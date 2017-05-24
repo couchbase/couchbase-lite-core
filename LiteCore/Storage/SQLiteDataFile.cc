@@ -28,6 +28,9 @@
 #include <sstream>
 #include <mutex>
 #include <thread>
+#include "Value.hh"
+#include "Array.hh"
+#include "RawRevTree.hh"
 
 extern "C" {
 #include "sqlite3_unicodesn_tokenizer.h"
@@ -40,8 +43,11 @@ extern "C" {
 #endif
 
 using namespace std;
+using namespace fleece;
 
 namespace litecore {
+    
+    static void findBlobs(const Value* val, unordered_set<string> &digests, SharedKeys* sharedKeys);
 
     static const int64_t MB = 1024 * 1024;
 
@@ -92,6 +98,42 @@ namespace litecore {
             Log("SQLite message: %s", msg);
         } else {
             Warn("SQLite error (code %d): %s", errCode, msg);
+        }
+    }
+    
+    static void findBlobs(const Array* array, unordered_set<string> &digests, SharedKeys* sharedKeys) {
+        for (Array::iterator iter(array); iter; ++iter) {
+            findBlobs(iter.value(), digests, sharedKeys);
+        }
+    }
+    
+    static void findBlobs(const Dict* dict, unordered_set<string> &digests, SharedKeys* sharedKeys) {
+        for(Dict::iterator iter(dict, sharedKeys); iter; ++iter) {
+            findBlobs(iter.value(), digests, sharedKeys);
+        }
+    }
+    
+    static void findBlobs(const Value* val, unordered_set<string> &digests, SharedKeys* sharedKeys) {
+        if(val->type() ==  valueType::kDict) {
+            const Dict* subdict = val->asDict();
+            const Value* typeVal = subdict->get(slice("_cbltype"), sharedKeys);
+            if(typeVal != nullptr) {
+                slice typeStr = typeVal->asString();
+                if(typeStr == slice("blob")) {
+                    const Value* digestVal = subdict->get(slice("digest"), sharedKeys);
+                    if(digestVal == nullptr) {
+                        error::_throw(error::LiteCoreError::CorruptData, "Missing digest in blob object!");
+                    }
+                    
+                    digests.emplace(digestVal->asString().asString());
+                } else {
+                    findBlobs(subdict, digests, sharedKeys);
+                }
+            } else {
+                findBlobs(subdict, digests, sharedKeys);
+            }
+        } else if(val->type() == valueType::kArray) {
+            findBlobs(val->asArray(), digests, sharedKeys);
         }
     }
 
@@ -499,11 +541,45 @@ path.path().c_str());
         }
     }
 
+    void SQLiteDataFile::collectBlobs(string storeName, unordered_set<string> &digests) {
+        stringstream s;
+        s << "SELECT body FROM kv_" << storeName << " WHERE (flags & " <<
+            (int)DocumentFlags::kHasAttachments << ") != 0 AND (flags & " <<
+            (int)DocumentFlags::kDeleted << ") == 0";
+        
+        string sql = s.str();
+        compile(_collectBlobStmt, sql.c_str());
+        UsingStatement u(_collectBlobStmt);
+        while(_collectBlobStmt->executeStep()) {
+            slice sl = SQLiteKeyStore::columnAsSlice(_collectBlobStmt->getColumn(0));
+            slice body = RawRevision::getCurrentRevBody(sl);
+            const Dict* root = Value::fromTrustedData(body)->asDict();
+            findBlobs(root, digests, documentKeys());
+        }
+    }
+    
+    void SQLiteDataFile::removeUnusedBlobs(const unordered_set<string> &used) {
+        FilePath attsPath(filePath().dirName() + "Attachments", "");
+        attsPath.forEachFile([&used](const FilePath &path) {
+            string digest = string("sha1-") + path.fileName().substr(0, path.fileName().length() - 5);
+            replace(digest.begin(), digest.end(), '_', '/');
+            if(find(used.cbegin(), used.cend(), digest) == used.cend()) {
+                path.del();
+            }
+        });
+    }
 
     void SQLiteDataFile::compact() {
         checkOpen();
         beganCompacting();
         maybeVacuum();
+        auto storeNames = allKeyStoreNames();
+        unordered_set<string> digestsInUse;
+        for_each(storeNames.cbegin(), storeNames.cend(), [&](const string &storeName) {
+            collectBlobs(storeName, digestsInUse);
+        });
+        
+        removeUnusedBlobs(digestsInUse);
         finishedCompacting();
     }
 
