@@ -63,7 +63,7 @@ public class FLValue {
         return asUnsigned(handle);
     }
 
-    public int asInt() {
+    public long asInt() {
         return asInt(handle);
     }
 
@@ -109,7 +109,7 @@ public class FLValue {
                 if (isInteger()) {
                     if (isUnsigned())
                         return Long.valueOf(asUnsigned());
-                    return Integer.valueOf(asInt());
+                    return Long.valueOf(asInt());
                 } else if (isDouble()) {
                     return Double.valueOf(asDouble());
                 } else {
@@ -149,7 +149,7 @@ public class FLValue {
                 if (isInteger()) {
                     if (isUnsigned())
                         return Long.valueOf(asUnsigned());
-                    return Integer.valueOf(asInt());
+                    return Long.valueOf(asInt());
                 } else if (isDouble()) {
                     return Double.valueOf(asDouble());
                 } else {
@@ -181,7 +181,7 @@ public class FLValue {
                     FLValue rawKey = itr.getKey();
                     String key;
                     if (rawKey.isInteger()) {
-                        key = sharedKeys.getKey(rawKey.asInt());
+                        key = sharedKeys.getKey((int)rawKey.asInt());
                     } else {
                         key = rawKey.asString();
                     }
@@ -294,12 +294,13 @@ public class FLValue {
     private static native long asUnsigned(long value);
 
     /**
-     * Returns a value coerced to boolean.
+     * Returns a value coerced to an integer.
+     * NOTE: litecore treats integer with 2^64. So this JNI method returns long value
      *
      * @param value FLValue
-     * @return int
+     * @return long
      */
-    private static native int asInt(long value);
+    private static native long asInt(long value);
 
     /**
      * Returns a value coerced to a 32-bit floating point number.

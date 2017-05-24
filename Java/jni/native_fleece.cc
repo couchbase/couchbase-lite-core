@@ -282,14 +282,15 @@ JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asUnsigned(JNIEnv *env, jclass clazz, jlong jvalue) {
     return (jlong) FLValue_AsUnsigned((FLValue) jvalue);
 }
+
 /*
  * Class:     com_couchbase_litecore_fleece_FLValue
  * Method:    asInt
- * Signature: (J)I
+ * Signature: (J)J
  */
-JNIEXPORT jint JNICALL
+JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asInt(JNIEnv *env, jclass clazz, jlong jvalue) {
-    return (jint) FLValue_AsInt((FLValue) jvalue);
+    return (jlong) FLValue_AsInt((FLValue) jvalue);
 }
 
 /*
