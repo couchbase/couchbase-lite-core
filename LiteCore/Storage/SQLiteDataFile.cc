@@ -28,9 +28,6 @@
 #include <sstream>
 #include <mutex>
 #include <thread>
-#include "Value.hh"
-#include "Array.hh"
-#include "RawRevTree.hh"
 
 extern "C" {
 #include "sqlite3_unicodesn_tokenizer.h"

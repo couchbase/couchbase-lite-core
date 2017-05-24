@@ -82,7 +82,6 @@ namespace litecore {
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
-        std::unique_ptr<SQLite::Statement>   _collectBlobStmt;
         bool _registeredFleeceFunctions {false};
     };
 
