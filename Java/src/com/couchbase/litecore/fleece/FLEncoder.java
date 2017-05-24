@@ -108,8 +108,10 @@ public class FLEncoder {
         else if (value instanceof Boolean)
             return writeBool(handle, (Boolean) value);
         else if (value instanceof Number) {
-            if (value instanceof Integer || value instanceof Long)
-                return writeInt(handle, ((Number) value).longValue());
+            if (value instanceof Integer)
+                return writeInt(handle, ((Integer) value).longValue());
+            else if (value instanceof Long)
+                return writeInt(handle, ((Long) value).longValue());
             else if (value instanceof Double)
                 return writeDouble(handle, ((Double) value).doubleValue());
             else
