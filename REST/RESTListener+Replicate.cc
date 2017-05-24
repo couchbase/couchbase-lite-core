@@ -33,10 +33,11 @@ namespace litecore { namespace REST {
         using Mutex = recursive_mutex;
         using Lock = unique_lock<Mutex>;
 
-        ReplicationTask(RESTListener* listener, slice source, slice target, bool continuous)
+        ReplicationTask(RESTListener* listener, slice source, slice target, bool bidi, bool continuous)
         :Task(listener)
         ,_source(source)
         ,_target(target)
+        ,_bidi(bidi)
         ,_continuous(continuous)
         { }
 
@@ -45,7 +46,7 @@ namespace litecore { namespace REST {
                    C4ReplicatorMode pushMode, C4ReplicatorMode pullMode, C4Error *outError)
         {
             if (findMatchingTask()) {
-                c4error_return(WebSocketDomain, 409, C4STR("Replication already running"),
+                c4error_return(WebSocketDomain, 409, C4STR("Equivalent replication already running"),
                                outError);
                 return false;
             }
@@ -55,11 +56,11 @@ namespace litecore { namespace REST {
             registerTask();
             c4log(RESTLog, kC4LogInfo,
                   "Replicator task #%d starting: local=%.*s, mode=%s, scheme=%.*s, host=%.*s,"
-                  " port=%u, db=%.*s, continuous=%d",
+                  " port=%u, db=%.*s, bidi=%d, continuous=%d",
                   taskID(), SPLAT(localDbName), (pushMode > kC4Disabled ? "push" : "pull"),
                   SPLAT(remoteAddress.scheme), SPLAT(remoteAddress.hostname), remoteAddress.port,
                   SPLAT(remoteDbName),
-                  _continuous);
+                  _bidi, _continuous);
             
             auto callback = [](C4Replicator*, C4ReplicatorStatus status, void *context) {
                 ((ReplicationTask*)context)->onReplStateChanged(status);
@@ -81,10 +82,10 @@ namespace litecore { namespace REST {
 
         ReplicationTask* findMatchingTask() {
             for (auto task : listener()->tasks()) {
+                // Note that either direction is considered a match
                 ReplicationTask *repl = dynamic_cast<ReplicationTask*>(task.get());
-                if (repl && repl->_source == _source
-                         && repl->_target == _target
-                         && repl->_continuous == _continuous) {
+                if (repl && ((repl->_source == _source && repl->_target == _target) ||
+                             (repl->_source == _target && repl->_target == _source))) {
                     return repl;
                 }
             }
@@ -131,6 +132,10 @@ namespace litecore { namespace REST {
                 json.writeKey("continuous"_sl);
                 json.writeBool(true);
             }
+            if (_bidi) {
+                json.writeKey("bidi"_sl);
+                json.writeBool(true);
+            }
 
             Lock lock(_mutex);
 
@@ -154,7 +159,12 @@ namespace litecore { namespace REST {
             }
 
             if (_status.progress.completed > 0) {
-                json.writeKey(_push ? "docs_written"_sl : "docs_read"_sl);
+                slice key;
+                if (_bidi)
+                    key = "docs_transferred"_sl;
+                else
+                    key = _push ? "docs_written"_sl : "docs_read"_sl;
+                json.writeKey(key);
                 json.writeUInt(_status.progress.completed);
             }
         }
@@ -209,7 +219,7 @@ namespace litecore { namespace REST {
         }
 
         alloc_slice _source, _target;
-        bool _continuous, _push;
+        bool _bidi, _continuous, _push;
         Mutex _mutex;
         condition_variable_any _cv;
         c4::ref<C4Replicator> _repl;
@@ -230,12 +240,14 @@ namespace litecore { namespace REST {
         if (!source || !target)
             return rq.respondWithStatus(HTTPStatus::BadRequest, "Missing source or target parameters");
 
+        bool bidi = params["bidi"].asBool();
         bool continuous = params["continuous"].asBool();
         C4ReplicatorMode activeMode = continuous ? kC4Continuous : kC4OneShot;
 
         slice localName;
         slice remoteURL;
-        C4ReplicatorMode pushMode = kC4Disabled, pullMode = kC4Disabled;
+        C4ReplicatorMode pushMode, pullMode;
+        pushMode = pullMode = (bidi ? activeMode : kC4Disabled);
         if (c4repl_isValidDatabaseName(source)) {
             localName = source;
             pushMode = activeMode;
@@ -260,7 +272,7 @@ namespace litecore { namespace REST {
 
         // Start the replication!
         C4Error error;
-        Retained<ReplicationTask> task = new ReplicationTask(this, source, target, continuous);
+        Retained<ReplicationTask> task = new ReplicationTask(this, source, target, bidi, continuous);
 
         if (params["cancel"].asBool()) {
             // Hang on, stop the presses -- we're canceling, not starting
