@@ -18,9 +18,12 @@
 #include "Path.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "SecureRandomize.hh"
+#include "Database.hh"
 #include <sqlite3.h>
 #include <regex>
 #include <unordered_set>
+#include <cmath>
 
 using namespace fleece;
 using namespace std;
@@ -96,8 +99,12 @@ namespace litecore {
                     const Value *root = fleeceParam(ctx, arg);
                     if (!root)
                         return;
-                    for (Array::iterator item(root->asArray()); item; ++item)
+                    for (Array::iterator item(root->asArray()); item; ++item) {
                         op(item->asDouble(), stop);
+                        if(stop) {
+                            return;
+                        }
+                    }
                     
                     break;
                 }
@@ -108,10 +115,6 @@ namespace litecore {
                     sqlite3_result_zeroblob(ctx, 0);
                     return;
             }
-        }
-        
-        if(stop) {
-            return;
         }
     }
 
@@ -131,8 +134,12 @@ namespace litecore {
                         return;
                     }
                     
-                    for (Array::iterator item(root->asArray()); item; ++item)
+                    for (Array::iterator item(root->asArray()); item; ++item) {
                         op(item.value(), stop);
+                        if(stop) {
+                            return;
+                        }
+                    }
                     
                     break;
                 }
@@ -143,10 +150,6 @@ namespace litecore {
                 default:
                     sqlite3_result_zeroblob(ctx, 0);
                     return;
-            }
-            
-            if(stop) {
-                return;
             }
         }
     }
@@ -408,6 +411,22 @@ namespace litecore {
         sqlite3_result_int64(ctx, count);
     }
     
+    static void fl_array_ifnull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        const Value* foundVal = nullptr;
+        aggregateArrayOperation(ctx, argc, argv, [&foundVal](const Value* val, bool& stop) {
+            if(val != nullptr && val->type() != valueType::kNull) {
+                foundVal = val;
+                stop = true;
+            }
+        });
+        
+        if(!foundVal) {
+            sqlite3_result_zeroblob(ctx, 0);
+        } else {
+            setResultFromValue(ctx, foundVal);
+        }
+    }
+    
     static void fl_array_length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         sqlite3_int64 count = 0;
         aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, bool& stop) {
@@ -415,6 +434,201 @@ namespace litecore {
         });
         
         sqlite3_result_int64(ctx, count);
+    }
+    
+    static void fl_array_max(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        double max = numeric_limits<double>::min();
+        bool nonEmpty = false;
+        aggregateNumericArrayOperation(ctx, argc, argv, [&max, &nonEmpty](double num, bool &stop) {
+            max = std::max(num, max);
+            nonEmpty = true;
+        });
+        
+        if(nonEmpty) {
+            sqlite3_result_double(ctx, max);
+        } else {
+            sqlite3_result_zeroblob(ctx, 0);
+        }
+    }
+    
+    static void fl_array_min(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        double max = numeric_limits<double>::max();
+        bool nonEmpty = false;
+        aggregateNumericArrayOperation(ctx, argc, argv, [&max, &nonEmpty](double num, bool &stop) {
+            max = std::min(num, max);
+            nonEmpty = true;
+        });
+        
+        if(nonEmpty) {
+            sqlite3_result_double(ctx, max);
+        } else {
+            sqlite3_result_zeroblob(ctx, 0);
+        }
+    }
+    
+    static void missingif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto slice0 = valueAsSlice(argv[0]);
+        auto slice1 = valueAsSlice(argv[1]);
+        if(slice0.buf == nullptr || slice1.buf == nullptr || slice0.size == 0 || slice1.size == 0) {
+            sqlite3_result_null(ctx);
+        }
+        
+        if(slice0.compare(slice1) == 0) {
+            sqlite3_result_null(ctx);
+        } else {
+            setResultBlobFromSlice(ctx, slice0);
+        }
+    }
+    
+    static void nullif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto slice0 = valueAsSlice(argv[0]);
+        auto slice1 = valueAsSlice(argv[1]);
+        if(slice0.buf == nullptr || slice1.buf == nullptr || slice0.size == 0 || slice1.size == 0) {
+            sqlite3_result_null(ctx);
+        }
+        
+        if(slice0.compare(slice1) == 0) {
+            sqlite3_result_zeroblob(ctx, 0);
+        } else {
+            setResultBlobFromSlice(ctx, slice0);
+        }
+    }
+    
+    static void ifinf(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        double num = 0.0;
+        bool success = false;
+        aggregateArrayOperation(ctx, argc, argv, [&num, &success](const Value* val, bool &stop) {
+            if(val->type() != valueType::kNumber) {
+                stop = true;
+                return;
+            }
+            
+            double nextNum = val->asDouble();
+            if(!isinf(nextNum)) {
+                num = nextNum;
+                success = true;
+                stop = true;
+            }
+        });
+        
+        if(!success) {
+            sqlite3_result_null(ctx);
+        } else {
+            sqlite3_result_double(ctx, num);
+        }
+    }
+    
+    static void ifnan(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        double num = 0.0;
+        bool success = false;
+        aggregateArrayOperation(ctx, argc, argv, [&num, &success](const Value* val, bool &stop) {
+            if(val->type() != valueType::kNumber) {
+                stop = true;
+                return;
+            }
+            
+            double nextNum = val->asDouble();
+            if(!isnan(nextNum)) {
+                num = nextNum;
+                success = true;
+                stop = true;
+            }
+        });
+        
+        if(!success) {
+            sqlite3_result_null(ctx);
+        } else {
+            sqlite3_result_double(ctx, num);
+        }
+    }
+    
+    static void ifnanorinf(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        double num = 0.0;
+        bool success = false;
+        aggregateArrayOperation(ctx, argc, argv, [&num, &success](const Value* val, bool &stop) {
+            if(val->type() != valueType::kNumber) {
+                stop = true;
+                return;
+            }
+            
+            double nextNum = val->asDouble();
+            if(!isinf(nextNum) && !isnan(nextNum)) {
+                num = nextNum;
+                success = true;
+                stop = true;
+            }
+        });
+        
+        if(!success) {
+            sqlite3_result_null(ctx);
+        } else {
+            sqlite3_result_double(ctx, num);
+        }
+    }
+    
+    static void thisif(sqlite3_context* ctx, int argc, sqlite3_value **argv, double val) noexcept {
+        auto slice0 = valueAsSlice(argv[0]);
+        auto slice1 = valueAsSlice(argv[1]);
+        if(slice0.buf == nullptr || slice1.buf == nullptr || slice0.size == 0 || slice1.size == 0) {
+            sqlite3_result_null(ctx);
+        }
+        
+        if(slice0.compare(slice1) == 0) {
+            sqlite3_result_zeroblob(ctx, 0);
+        } else {
+            sqlite3_result_double(ctx, val);
+        }
+    }
+    
+    static void nanif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        thisif(ctx, argc, argv, numeric_limits<double>::quiet_NaN());
+    }
+    
+    static void neginfif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        thisif(ctx, argc, argv, -numeric_limits<double>::infinity());
+    }
+    
+    static void posinfif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        thisif(ctx, argc, argv, numeric_limits<double>::infinity());
+    }
+    
+    static void fl_base64(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto arg0 = valueAsSlice(argv[0]);
+        string base64 = arg0.base64String();
+        sqlite3_result_text(ctx, (char *)base64.c_str(), (int)base64.size(), SQLITE_TRANSIENT);
+    }
+    
+    static void fl_base64_decode(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto arg0 = valueAsStringSlice(argv[0]);
+        size_t expectedLen = (arg0.size + 3) / 4 * 3;
+        alloc_slice decoded(expectedLen);
+        arg0.readBase64Into(decoded);
+        if(sqlite3_value_type(argv[0]) == SQLITE_TEXT) {
+            setResultTextFromSlice(ctx, decoded);
+        } else {
+            setResultBlobFromSlice(ctx, decoded);
+        }
+    }
+    
+    static void fl_uuid(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        Database::UUID uuid;
+        slice uuidSlice{&uuid, sizeof(uuid)};
+        GenerateUUID(uuidSlice);
+        char str[37] = {};
+        char* strPtr = str;
+        uint8_t* bytePtr = uuid.bytes;
+        for(int i = 0; i < 20; i++) {
+            if(i == 4 || i == 7 || i == 10 || i == 13) {
+                *strPtr = '-';
+                strPtr++;
+            } else {
+                sprintf(strPtr, "%.2x", *bytePtr);
+                bytePtr++;
+                strPtr += 2;
+            }
+        }
+        
+        sqlite3_result_text(ctx, str, 37, SQLITE_TRANSIENT);
     }
     
 #pragma mark - NON-FLEECE FUNCTIONS:
@@ -460,34 +674,34 @@ namespace litecore {
         
         op(args);
     }
-
-    static void fl_sqrt(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+    
+    static void fl_abs(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, sqrt(nums[0]));
+            sqlite3_result_double(ctx, abs(nums[0]));
         });
     }
     
-    static void fl_log(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+    static void fl_acos(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, log10(nums[0]));
+            sqlite3_result_double(ctx, acos(nums[0]));
         });
     }
     
-    static void fl_ln(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+    static void fl_asin(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, log(nums[0]));
+            sqlite3_result_double(ctx, asin(nums[0]));
         });
     }
     
-    static void fl_exp(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+    static void fl_atan(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, exp(nums[0]));
+            sqlite3_result_double(ctx, atan(nums[0]));
         });
     }
     
-    static void fl_floor(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+    static void fl_atan2(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, floor(nums[0]));
+            sqlite3_result_double(ctx, atan2(nums[0], nums[1]));
         });
     }
     
@@ -497,9 +711,126 @@ namespace litecore {
         });
     }
     
+    static void fl_cos(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, cos(nums[0]));
+        });
+    }
+    
+    static void fl_degrees(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, nums[0] * 180 / M_PI);
+        });
+    }
+
+    static void fl_e(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        sqlite3_result_double(ctx, M_E);
+    }
+    
+    static void fl_exp(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, exp(nums[0]));
+        });
+    }
+    
+    static void fl_ln(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, log(nums[0]));
+        });
+    }
+    
+    static void fl_log(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, log10(nums[0]));
+        });
+    }
+    
+    static void fl_floor(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, floor(nums[0]));
+        });
+    }
+    
+    static void fl_pi(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        sqlite3_result_double(ctx, M_PI);
+    }
+    
     static void fl_power(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
             sqlite3_result_double(ctx, pow(nums[0], nums[1]));
+        });
+    }
+    
+    static void fl_radians(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, nums[0] * M_PI / 180.0);
+        });
+    }
+    
+    static void fl_random(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        sqlite3_result_int(ctx, arc4random());
+    }
+    
+    static void fl_round(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx, argc, argv](const vector<double>& nums) {
+            double result = nums[0];
+            if(argc == 2) {
+                result *= pow(10, sqlite3_value_double(argv[1]));
+            }
+            
+            result = round(result);
+            
+            if(argc == 2) {
+                result /= pow(10, sqlite3_value_double(argv[1]));
+            }
+            
+            sqlite3_result_double(ctx, result);
+        });
+    }
+    
+    static void fl_sign(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            auto num = nums[0];
+            if(num == 0) {
+                sqlite3_result_int(ctx, 0);
+            } else {
+                sqlite3_result_int(ctx, num < 0 ? -1 : 1);
+            }
+        });
+    }
+    
+    static void fl_sin(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, sin(nums[0]));
+        });
+    }
+    
+    static void fl_sqrt(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, sqrt(nums[0]));
+        });
+    }
+    
+    static void fl_tan(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
+            sqlite3_result_double(ctx, tan(nums[0]));
+        });
+    }
+    
+    static void fl_trunc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        execute_if_numeric(ctx, argc, argv, [ctx, argc, argv](const vector<double>& nums) {
+            double result = nums[0];
+            if(argc == 2) {
+                result *= pow(10, sqlite3_value_double(argv[1]));
+            }
+            
+            result = floor(result);
+            
+            if(argc == 2) {
+                result /= pow(10, sqlite3_value_double(argv[1]));
+            }
+            
+            sqlite3_result_double(ctx, result);
         });
     }
     
@@ -527,19 +858,55 @@ namespace litecore {
             { "array_avg",        -1, fl_array_avg },
             { "array_contains",   -1, fl_array_contains },
             { "array_count",      -1, fl_array_count },
+            { "array_ifnull",     -1, fl_array_ifnull },
             { "array_length",     -1, fl_array_length },
+            { "array_max",        -1, fl_array_max },
+            { "array_min",        -1, fl_array_min },
             { "array_sum",        -1, fl_array_sum },
+            
+            { "missingif",         2, missingif },
+            { "nullif",            2, nullif },
+            
+            { "ifinf",            -1, ifinf },
+            { "isnan",            -1, ifnan },
+            { "isnanorinf",       -1, ifnanorinf },
+            { "nanif",             2, nanif },
+            { "neginfif",          2, neginfif },
+            { "posinfif",          2, posinfif },
+            
+            { "base64",            1, fl_base64 },
+            { "base64_encode",     1, fl_base64 },
+            { "base64_decode",     1, fl_base64_decode },
+            { "uuid",              0, fl_uuid },
 
             { "contains",          2, contains },
             { "regexp_like",       2, regexp_like },
 
-            { "sqrt",              1, fl_sqrt },
-            { "log",               1, fl_log },
-            { "ln",                1, fl_ln },
-            { "exp",               1, fl_exp },
-            { "power",             2, fl_power },
-            { "floor",             1, fl_floor },
+            { "abs",               1, fl_abs },
+            { "acos",              1, fl_acos },
+            { "asin",              1, fl_asin },
+            { "atan",              1, fl_atan },
+            { "atan2",             2, fl_atan2 },
             { "ceil",              1, fl_ceiling },
+            { "cos",               1, fl_cos },
+            { "degrees",           1, fl_degrees },
+            { "e",                 0, fl_e },
+            { "exp",               1, fl_exp },
+            { "ln",                1, fl_ln },
+            { "log",               1, fl_log },
+            { "floor",             1, fl_floor },
+            { "pi",                0, fl_pi },
+            { "power",             2, fl_power },
+            { "radians",           1, fl_radians },
+            { "random",            0, fl_random },
+            { "round",             1, fl_round },
+            { "round",             2, fl_round },
+            { "sign",              1, fl_sign },
+            { "sin",               1, fl_sin },
+            { "sqrt",              1, fl_sqrt },
+            { "tan",               1, fl_tan },
+            { "trunc",             1, fl_trunc },
+            { "trunc",             2, fl_trunc },
         };
 
         for(i=0; i<sizeof(aFunc)/sizeof(aFunc[0]) && rc==SQLITE_OK; i++){

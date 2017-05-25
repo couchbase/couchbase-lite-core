@@ -10,6 +10,7 @@
 #include "SQLite_Internal.hh"
 #include "Fleece.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include <sqlite3.h>
 
 using namespace litecore;
 using namespace fleece;
@@ -57,7 +58,10 @@ public:
         SQLite::Statement each(db, query);
         vector<string> results;
         while (each.executeStep()) {
-            results.push_back( each.getColumn(0) );
+            auto column = each.getColumn(0);
+            if(column.getType() != SQLITE_NULL) {
+                results.push_back( each.getColumn(0).getText() );
+            }
         }
         return results;
     }
@@ -117,6 +121,50 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_contains of fl_value",
             == (vector<string>{"1", "0", "1", "0", "0" }));
 }
 
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_ifnull of fl_value", "[query]") {
+    insert("a",   "{\"hey\": [null, null, 2, true, true, 4, \"bar\"]}");
+    
+    REQUIRE(query("SELECT ARRAY_IFNULL(fl_value(body, 'hey')) FROM kv")
+            == (vector<string>{"2"}));
+}
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_min_max of fl_value", "[query]") {
+    insert("a",   "{\"hey\": [1, 4, 3, -50, 10, 4, \"bar\"]}");
+    
+    REQUIRE(query("SELECT ARRAY_MAX(fl_value(body, 'hey')) FROM kv")
+            == (vector<string>{"10.0"}));
+    REQUIRE(query("SELECT ARRAY_MIN(fl_value(body, 'hey')) FROM kv")
+            == (vector<string>{"-50.0"}));
+}
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite missingif", "[query]") {
+    insert("a",   "{\"hey\": [null, null, 2, true, true, 4, \"bar\"]}");
+    
+    REQUIRE(query("SELECT MISSINGIF('5', '5') FROM kv")
+            == (vector<string>{ }));
+    REQUIRE(query("SELECT MISSINGIF('5', '4') FROM kv")
+            == (vector<string>{ "5" }));
+    REQUIRE(query("SELECT NULLIF('5', '5') FROM kv")
+            == (vector<string>{ "" }));
+    REQUIRE(query("SELECT NULLIF('5', '4') FROM kv")
+            == (vector<string>{ "5" }));
+}
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite base64", "[query]") {
+    insert("a",   "{\"hey\": \"there\"}");
+    
+    REQUIRE(query("SELECT base64_decode(base64(fl_value(body, 'hey'))) FROM kv")
+            == (vector<string>{"there"}));
+}
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite uuid", "[query]") {
+    auto result = query("SELECT uuid()");
+    auto uuid = result[0];
+    for(int i = 0; i < uuid.size(); i++) {
+        char next = uuid[i];
+        REQUIRE((next == '-' || ishexnumber((int)next)));
+    }
+}
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[query][fl_each]") {
     insert("one",   "[1, 2, 3, 4]");
@@ -182,4 +230,12 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite numeric ops", "[query]") {
             == (vector<string>{"4.0", "2.0"}));
     REQUIRE(query("SELECT ceil(fl_value(kv.body, 'hey')) FROM kv")
             == (vector<string>{"4.0", "3.0"}));
+    REQUIRE(query("SELECT round(fl_value(kv.body, 'hey')) FROM kv")
+           == (vector<string>{"4.0", "3.0"}));
+    REQUIRE(query("SELECT round(fl_value(kv.body, 'hey'), 1) FROM kv")
+            == (vector<string>{"4.0", "2.5"}));
+    REQUIRE(query("SELECT trunc(fl_value(kv.body, 'hey')) FROM kv")
+            == (vector<string>{"4.0", "2.0"}));
+    REQUIRE(query("SELECT trunc(fl_value(kv.body, 'hey'), 1) FROM kv")
+            == (vector<string>{"4.0", "2.5"}));
 }
