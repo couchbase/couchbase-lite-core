@@ -12,6 +12,7 @@
 #include "FilePath.hh"
 #include <map>
 #include <mutex>
+#include <vector>
 
 namespace litecore { namespace REST {
 

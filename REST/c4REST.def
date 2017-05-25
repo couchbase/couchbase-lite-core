@@ -1,6 +1,5 @@
 EXPORTS
-kC4DatabaseFilenameExtension
-c4rest_start
-c4rest_free
-c4rest_shareDB
-c4rest_databaseNameFromPath
+c4listener_start
+c4listener_free
+c4listener_shareDB
+c4db_URINameFromPath

@@ -16,6 +16,9 @@
 #include <exception>
 #include <map>
 #include <mutex>
+#ifdef _MSC_VER
+#include <WinSock2.h>
+#endif
 
 using namespace std;
 using namespace fleece;
