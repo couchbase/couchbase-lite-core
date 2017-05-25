@@ -12,7 +12,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 OPTION(LITECORE_BUILD_SQLITE "If ON, builds libsqlite as part of the build process")
 
-add_definitions(-DCMAKE)
+add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
+                -DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
+                -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
+                -DCMAKE)                            # Let the source know this is a CMAKE build
+
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
     $<$<CONFIG:Debug>:DEBUG>
 )
@@ -93,10 +97,6 @@ endif()
 
 ### MORE BUILD SETTINGS:
 
-add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
-                -DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
-                -DUSE_WEBSOCKET)                    # Enables CivetWeb WebSocket support
-
 # Mac/iOS stuff
 if (APPLE)
     # Specify that we want to use CommonCrypto:
@@ -156,8 +156,7 @@ set(ALL_SRC_FILES
   ${VERSIONVECTORS_SRC}
   ${C_SRC}
   ${SQLITECPP_SRC}
-  ${REPLICATOR_SRC}
-  ${CIVETWEB_SRC})
+  ${REPLICATOR_SRC}) 
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")

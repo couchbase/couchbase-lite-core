@@ -31,7 +31,8 @@ target_link_libraries(CppTests  LiteCoreStatic
                                 FleeceStatic
                                 sqlite3
                                 SQLite3_UnicodeSN
-                                BLIPStatic)
+                                BLIPStatic
+                                CivetWeb)
 
 if(APPLE)
     target_link_libraries(CppTests  "-framework Foundation"
