@@ -38,6 +38,7 @@ if(MSVC)
 	set(ALL_SRC_FILES ${ALL_SRC_FILES} ../MSVC/asprintf.c
     ../vendor/fleece/MSVC/memmem.cc ../MSVC/mkstemp.cc ../MSVC/mkdtemp.cc ../MSVC/strlcat.c
 			     ../MSVC/vasprintf-msvc.c ../MSVC/arc4random.cc ../LiteCore/Support/PlatformIO.cc)
+    target_compile_definitions(CivetWeb PUBLIC -D_WIN32_WINNT=0x0602)
 endif()
 
 ### STATIC LIBRARY:

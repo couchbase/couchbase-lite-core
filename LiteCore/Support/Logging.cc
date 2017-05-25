@@ -37,6 +37,10 @@
 #include <cxxabi.h>
 #endif
 
+#ifdef _MSC_VER
+#include <winapifamily.h>
+#endif
+
 using namespace std;
 
 
