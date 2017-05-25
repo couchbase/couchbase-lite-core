@@ -16,6 +16,7 @@
 #include <exception>
 #include <map>
 #include <mutex>
+#include <arpa/inet.h>
 #ifdef _MSC_VER
 #include <WinSock2.h>
 #endif
