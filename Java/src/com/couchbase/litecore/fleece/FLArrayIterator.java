@@ -15,15 +15,18 @@ package com.couchbase.litecore.fleece;
 
 public class FLArrayIterator {
     private long handle = 0L; // hold pointer to FLArrayIterator
+    private boolean managed = false;
 
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
     public FLArrayIterator() {
+        this.managed = false;
         this.handle = init();
     }
 
     public FLArrayIterator(long handle) {
+        this.managed = true;
         this.handle = handle;
     }
 
@@ -39,8 +42,8 @@ public class FLArrayIterator {
         return next(handle);
     }
 
-    public void free() {
-        if (handle != 0L) {
+    public synchronized void free() {
+        if (handle != 0L && !managed) {
             free(handle);
             handle = 0L;
         }
