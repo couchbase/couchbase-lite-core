@@ -81,7 +81,9 @@ namespace LiteCore.Tests
 
         static Test()
         {
+            #if NETCOREAPP1_0
             LoadDLL();
+            #endif
             var enc = Native.FLEncoder_New();
             Native.FLEncoder_BeginDict(enc, 1);
             Native.FLEncoder_WriteKey(enc, "answer");
