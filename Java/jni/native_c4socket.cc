@@ -80,8 +80,8 @@ bool litecore::jni::initC4Socket(JNIEnv *env) {
 // ----------------------------------------------------------------------------
 // C4SocketFactory implementation
 // ----------------------------------------------------------------------------
-static void doOpen(C4Socket *s, const C4Address *addr) {
-    LOGI("doOpen() s -> 0x%x", s);
+static void doOpen(C4Socket *s, const C4Address *addr, C4Slice optionsFleece) {
+    //LOGI("doOpen() s -> 0x%x", s);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -101,18 +101,19 @@ static void doOpen(C4Socket *s, const C4Address *addr) {
                                       toJString(env, addr->hostname),
                                       addr->port,
                                       toJString(env, addr->path));
-            if (gJVM->DetachCurrentThread() != 0)
-                LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            if (gJVM->DetachCurrentThread() != 0) {
+                //LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            }
         } else {
-            LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
+            //LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
         }
     } else {
-        LOGE("doWrite(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+        //LOGE("doWrite(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
     }
 }
 
 static void doWrite(C4Socket *s, C4SliceResult allocatedData) {
-    LOGI("doWrite() s -> 0x%x data.size -> %d", s, allocatedData.size);
+    //LOGI("doWrite() s -> 0x%x data.size -> %d", s, allocatedData.size);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -126,18 +127,19 @@ static void doWrite(C4Socket *s, C4SliceResult allocatedData) {
                                       m_C4Socket_write,
                                       (jlong) s,
                                       toJByteArray(env, allocatedData));
-            if (gJVM->DetachCurrentThread() != 0)
-                LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            if (gJVM->DetachCurrentThread() != 0) {
+                //LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            }
         } else {
-            LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
+            //LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
         }
     } else {
-        LOGE("doWrite(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+        //LOGE("doWrite(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
     }
 }
 
 static void doCompletedReceive(C4Socket *s, size_t byteCount) {
-    LOGI("doCompletedReceive() s -> 0x%x byteCount -> %ld", s, byteCount);
+    //LOGI("doCompletedReceive() s -> 0x%x byteCount -> %ld", s, byteCount);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -151,18 +153,19 @@ static void doCompletedReceive(C4Socket *s, size_t byteCount) {
                                       m_C4Socket_completedReceive,
                                       (jlong) s,
                                       (jlong) byteCount);
-            if (gJVM->DetachCurrentThread() != 0)
-                LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            if (gJVM->DetachCurrentThread() != 0) {
+                //LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            }
         } else {
-            LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
+            //LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
         }
     } else {
-        LOGE("doCompletedReceive(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+        //LOGE("doCompletedReceive(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
     }
 }
 
 static void doClose(C4Socket *s) {
-    LOGI("doClose() s -> 0x%x", s);
+    ////LOGI("doClose() s -> 0x%x", s);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -170,18 +173,19 @@ static void doClose(C4Socket *s) {
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
             env->CallStaticVoidMethod(cls_C4Socket, m_C4Socket_close, (jlong) s);
-            if (gJVM->DetachCurrentThread() != 0)
-                LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            if (gJVM->DetachCurrentThread() != 0) {
+                //LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            }
         } else {
-            LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
+            //LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
         }
     } else {
-        LOGE("doClose(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+        //LOGE("doClose(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
     }
 }
 
 static void doRequestClose(C4Socket *s, int status, C4String message) {
-    LOGI("doRequestClose() s -> 0x%x status -> %d", s, status);
+    //LOGI("doRequestClose() s -> 0x%x status -> %d", s, status);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -197,13 +201,14 @@ static void doRequestClose(C4Socket *s, int status, C4String message) {
                                       (jlong) s,
                                       (jint) status,
                                       toJString(env, message));
-            if (gJVM->DetachCurrentThread() != 0)
-                LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            if (gJVM->DetachCurrentThread() != 0) {
+                //LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+            }
         } else {
-            LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
+            //LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
         }
     } else {
-        LOGE("doRequestClose(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+        //LOGE("doRequestClose(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
     }
 }
 
@@ -218,16 +223,16 @@ static void doRequestClose(C4Socket *s, int status, C4String message) {
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Socket_registerFactory(JNIEnv *env, jclass clazz) {
-    LOGI("[NATIVE] registerFactory()");
-    c4socket_registerFactory(
-            {
-                    .providesWebSockets = true,
-                    .open = &doOpen,
-                    .write = &doWrite,
-                    .completedReceive = &doCompletedReceive,
-                    .requestClose = &doRequestClose
-                    //.close = &doClose
-            });
+    //LOGI("[NATIVE] registerFactory()");
+    C4SocketFactory factory = {
+            .providesWebSockets = true,
+            .open = &doOpen,
+            .write = &doWrite,
+            .completedReceive = &doCompletedReceive,
+            .requestClose = &doRequestClose
+            //.close = &doClose
+    };
+    c4socket_registerFactory(factory);
 }
 
 /*
@@ -237,7 +242,7 @@ Java_com_couchbase_litecore_C4Socket_registerFactory(JNIEnv *env, jclass clazz) 
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Socket_opened(JNIEnv *env, jclass clazz, jlong socket) {
-    LOGI("[NATIVE] opened() socket -> 0x%x", socket);
+    //LOGI("[NATIVE] opened() socket -> 0x%x", socket);
     c4socket_opened((C4Socket *) socket);
 }
 
@@ -251,7 +256,7 @@ Java_com_couchbase_litecore_C4Socket_closed(JNIEnv *env, jclass clazz,
                                             jlong socket,
                                             jint domain,
                                             jint code) {
-    LOGI("[NATIVE] closed() socket -> 0x%x", socket);
+    //LOGI("[NATIVE] closed() socket -> 0x%x", socket);
     c4socket_closed((C4Socket *) socket, {(C4ErrorDomain) domain, code, 0});
 }
 
@@ -265,7 +270,7 @@ Java_com_couchbase_litecore_C4Socket_closeRequested(JNIEnv *env, jclass clazz,
                                                     jlong socket,
                                                     jint status,
                                                     jstring jmessage) {
-    LOGI("[NATIVE] closeRequested() socket -> 0x%x", socket);
+    //LOGI("[NATIVE] closeRequested() socket -> 0x%x", socket);
     jstringSlice message(env, jmessage);
     c4socket_closeRequested((C4Socket *) socket, (int) status, message);
 }
@@ -279,7 +284,7 @@ JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Socket_completedWrite(JNIEnv *env, jclass clazz,
                                                     jlong socket,
                                                     jlong byteCount) {
-    LOGI("[NATIVE] completedWrite() socket -> 0x%x", socket);
+    //LOGI("[NATIVE] completedWrite() socket -> 0x%x", socket);
     c4socket_completedWrite((C4Socket *) socket, (size_t) byteCount);
 }
 
@@ -292,7 +297,7 @@ JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Socket_received(JNIEnv *env, jclass clazz,
                                               jlong socket,
                                               jbyteArray jdata) {
-    LOGI("[NATIVE] received() socket -> 0x%x", socket);
+    //LOGI("[NATIVE] received() socket -> 0x%x", socket);
     jbyteArraySlice data(env, jdata, false);
     c4socket_received((C4Socket *) socket, data);
 }

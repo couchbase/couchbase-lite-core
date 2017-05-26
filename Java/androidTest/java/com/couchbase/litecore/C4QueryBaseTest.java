@@ -21,6 +21,8 @@ import java.util.List;
 import static org.junit.Assert.assertNotNull;
 
 public class C4QueryBaseTest extends BaseTest {
+    public static final String LOG_TAG = C4QueryBaseTest.class.getSimpleName();
+
     //-------------------------------------------------------------------------
     // protected variables
     //-------------------------------------------------------------------------
