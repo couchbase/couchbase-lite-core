@@ -25,6 +25,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using ObjCRuntime;
+using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
@@ -97,11 +98,22 @@ namespace LiteCore.Interop
         unsafe static partial class Native
     {
         public static C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, string remoteDatabaseName,
-            C4Database *otherDb, C4ReplicatorMode push, C4ReplicatorMode pull, ReplicatorStateChangedCallback onStateChanged, 
-            C4Error* err)
+            C4Database *otherDb, C4ReplicatorMode push, C4ReplicatorMode pull, IDictionary<string, object> options,
+            ReplicatorStateChangedCallback onStateChanged, C4Error* err)
         {
-			return Native.c4repl_new(db, remoteAddress, remoteDatabaseName, otherDb, push, pull, ReplicatorStateChangedCallback.NativeCallback,
-                onStateChanged.NativeContext, err);
+            using(var options_ = options.FLEncode())
+            using (var remoteDatabaseName_ = new C4String(remoteDatabaseName)) {
+                return Native.c4repl_new(db, remoteAddress, remoteDatabaseName_.AsC4Slice(), otherDb, push, pull,
+                    options_, ReplicatorStateChangedCallback.NativeCallback,
+                    onStateChanged.NativeContext, err);
+            }
+        }
+
+        public static IDictionary<string, object> bridge_c4repl_getResponseHeaders(C4Replicator* repl)
+        {
+            var result = c4repl_getResponseHeaders(repl);
+            return FLSliceExtensions.ToObject(NativeRaw.FLValue_FromTrustedData((FLSlice) result)) as
+                IDictionary<string, object>;
         }
     }
 }

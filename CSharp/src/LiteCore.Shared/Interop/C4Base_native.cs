@@ -48,6 +48,13 @@ namespace LiteCore.Interop
             }
         }
 
+        public static C4Error c4error_make(C4ErrorDomain domain, int code, string message)
+        {
+            using(var message_ = new C4String(message)) {
+                return NativeRaw.c4error_make(domain, code, message_.AsC4Slice());
+            }
+        }
+
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, [MarshalAs(UnmanagedType.U1)]bool preformatted);
 
@@ -100,6 +107,9 @@ namespace LiteCore.Interop
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4error_getMessage(C4Error error);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4Error c4error_make(C4ErrorDomain domain, int code, C4Slice message);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]

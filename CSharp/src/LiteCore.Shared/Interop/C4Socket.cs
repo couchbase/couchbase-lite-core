@@ -162,4 +162,20 @@ namespace LiteCore.Interop
             }
         }
     }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+        static unsafe partial class Native
+    {
+        public static void c4socket_gotHTTPResponse(C4Socket* socket, int httpStatus,
+            IDictionary<string, object> headers)
+        {
+            using (var headers_ = headers.FLEncode()) {
+                c4socket_gotHTTPResponse(socket, httpStatus, headers_);
+            }
+        }
+    }
 }

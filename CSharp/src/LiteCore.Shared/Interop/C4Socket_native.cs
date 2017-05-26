@@ -38,6 +38,9 @@ namespace LiteCore.Interop
         public static extern void c4socket_registerFactory(C4SocketFactory factory);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4socket_gotHTTPResponse(C4Socket* socket, int httpStatus, C4Slice responseHeadersFleece);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4socket_opened(C4Socket* socket);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
