@@ -42,7 +42,7 @@ public class FLArrayIterator {
         return next(handle);
     }
 
-    public synchronized void free() {
+    public void free() {
         if (handle != 0L && !managed) {
             free(handle);
             handle = 0L;
