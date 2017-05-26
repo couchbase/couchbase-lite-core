@@ -100,7 +100,8 @@ if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
                             FleeceStatic
                             sqlite3
                             crypto
-                            SQLite3_UnicodeSN)
+                            SQLite3_UnicodeSN
+                            CivetWeb)
 else()
     
     #find_library(log-lib log)
@@ -112,6 +113,7 @@ else()
                         	sqlite3
                             crypto
                         	SQLite3_UnicodeSN
+                            CivetWeb
                             "atomic"
                         	"log"
                             z)

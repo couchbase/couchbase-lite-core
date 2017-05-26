@@ -167,6 +167,8 @@ Java_com_couchbase_litecore_C4Replicator_create(JNIEnv *env, jclass clazz,
     c4Address.port = jport;
     c4Address.path = path;
 
+    alloc_slice optionsFleece;
+
     C4Error error;
     C4Replicator *repl = c4repl_new((C4Database *) jdb,
                                     c4Address,
@@ -174,6 +176,7 @@ Java_com_couchbase_litecore_C4Replicator_create(JNIEnv *env, jclass clazz,
                                     (C4Database *) jotherLocalDB,
                                     (C4ReplicatorMode) jpush,
                                     (C4ReplicatorMode) jpull,
+                                    {optionsFleece.buf, optionsFleece.size},
                                     &statusChangedCallback,
                                     (void *) NULL,
                                     &error);
