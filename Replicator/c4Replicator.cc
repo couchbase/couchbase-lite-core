@@ -10,6 +10,8 @@
 #include "c4ExceptionUtils.hh"
 #include "StringUtil.hh"
 #include <atomic>
+#include <errno.h>
+#include <netdb.h>
 
 
 const char* const kC4ReplicatorActivityLevelNames[5] = {
@@ -171,4 +173,73 @@ C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
 
 C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
     return repl->responseHeaders().data();
+}
+
+
+#pragma mark - ERROR UTILITIES:
+
+
+using CodeList = const int[];
+using ErrorSet = const int* [kC4MaxErrorDomainPlus1];
+
+
+static bool errorIsInSet(C4Error err, ErrorSet set) {
+    if (err.code != 0 && (unsigned)err.domain < kC4MaxErrorDomainPlus1) {
+        const int *pCode = set[err.domain];
+        if (pCode) {
+            for (; *pCode != 0; ++pCode)
+                if (*pCode == err.code)
+                    return true;
+        }
+    }
+    return false;
+}
+
+
+bool c4error_mayBeTransient(C4Error err) C4API {
+    static CodeList kTransientPOSIX = {
+        ENETRESET, ECONNABORTED, ECONNRESET, ETIMEDOUT, ECONNREFUSED, 0};
+    static CodeList kTransientDNS = {
+        HOST_NOT_FOUND,   // Result may change if user logs into VPN or moves to intranet
+        TRY_AGAIN,
+        0};
+    static CodeList kTransientWebSocket = {
+        408, /* Request Timeout */
+        429, /* Too Many Requests (RFC 6585) */
+        500, /* Internal Server Error */
+        502, /* Bad Gateway */
+        503, /* Service Unavailable */
+        504, /* Gateway Timeout */
+        kCodeGoingAway,
+        0};
+    static ErrorSet kTransient = { // indexed by C4ErrorDomain
+        nullptr,
+        nullptr,
+        kTransientPOSIX,
+        nullptr,
+        nullptr,
+        nullptr,
+        kTransientDNS,
+        kTransientWebSocket};
+    return errorIsInSet(err, kTransient);
+}
+
+bool c4error_mayBeNetworkDependent(C4Error err) C4API {
+    static CodeList kUnreachablePOSIX = {
+        ENETDOWN, ENETUNREACH, ETIMEDOUT, EHOSTDOWN, EHOSTUNREACH, 0};
+    static CodeList kUnreachableDNS = {
+        HOST_NOT_FOUND,   // Result may change if user logs into VPN or moves to intranet
+        TRY_AGAIN,
+        EAI_NONAME,
+        0};
+    static ErrorSet kUnreachable = { // indexed by C4ErrorDomain
+        nullptr,
+        nullptr,
+        kUnreachablePOSIX,
+        nullptr,
+        nullptr,
+        nullptr,
+        kUnreachableDNS,
+        nullptr};
+    return errorIsInSet(err, kUnreachable);
 }

@@ -38,6 +38,8 @@ extern "C" {
 
 namespace c4Internal {
 
+    static_assert((int)kC4MaxErrorDomainPlus1 == (int)error::NumDomainsPlus1,
+                  "C4 error domains are not in sync with C++ ones");
     static_assert(kC4NumErrorCodesPlus1 == error::NumLiteCoreErrorsPlus1,
                   "C4 error codes are not in sync with C++ ones");
 

@@ -24,8 +24,10 @@ _c4log_getDomainName
 _c4log_getLevel
 _c4log_setLevel
 _c4log_warnOnErrors
+_c4error_make
 _c4error_getMessage
 _c4error_getMessageC
+_c4error_mayBeTransient
 
 _c4db_open
 _c4db_openAgain
@@ -173,7 +175,6 @@ _c4socket_received
 _kC4ReplicatorActivityLevelNames
 
 # Private API:
-_c4error_make
 _c4error_return
 _c4doc_getForPut
 _c4_getObjectCount

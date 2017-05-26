@@ -52,10 +52,6 @@ extern "C" {
     } C4ReplicatorStatus;
 
 
-    // Replicator option dictionary keys:
-    #define kC4ReplicatorOptionExtraHeaders C4STR("headers")    // Extra HTTP headers, string[]
-
-
     /** Opaque reference to a replicator. */
     typedef struct C4Replicator C4Replicator;
 
@@ -106,6 +102,32 @@ extern "C" {
     /** Returns the HTTP response headers as a Fleece-encoded dictionary. */
     C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API;
 
+
+    /** Returns true if this is a network error that may be transient,
+        i.e. the client should retry after a delay. */
+    bool c4error_mayBeTransient(C4Error err) C4API;
+
+    /** Returns true if this error might go away when the network environment changes,
+        i.e. the client should retry after notification of a network status change. */
+    bool c4error_mayBeNetworkDependent(C4Error err) C4API;
+
+
+    // Replicator option dictionary keys:
+    #define kC4ReplicatorOptionExtraHeaders   "headers"  // Extra HTTP headers; string[]
+    #define kC4ReplicatorOptionCookies        "cookies"  // HTTP cookies; string[]
+    #define kC4ReplicatorOptionAuthentication "auth"     // Auth settings; Dict
+
+    // Auth dictionary keys:
+    #define kC4ReplicatorAuthType       "type"           // Auth property; string
+    #define kC4ReplicatorAuthUserName   "username"       // Auth property; string
+    #define kC4ReplicatorAuthPassword   "password"       // Auth property; string
+
+    // auth.type values:
+    #define kC4AuthTypeBasic            "Basic"          // HTTP Basic (the default)
+    #define kC4AuthTypeSession          "Session"        // SG session cookie
+    #define kC4AuthTypeOpenIDConnect    "OpenID Connect"
+    #define kC4AuthTypeFacebook         "Facebook"
+    #define kC4AuthTypeClientCert       "Client Cert"
 
     /** @} */
 

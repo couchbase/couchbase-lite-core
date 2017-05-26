@@ -19,8 +19,10 @@ c4log_getDomainName
 c4log_getLevel
 c4log_setLevel
 c4log_warnOnErrors
+c4error_make
 c4error_getMessage
 c4error_getMessageC
+c4error_mayBeTransient
 
 c4db_open
 c4db_openAgain
@@ -166,7 +168,6 @@ c4socket_received
 
 kC4ReplicatorActivityLevelNames
 
-c4error_make
 c4error_return
 c4doc_getForPut
 c4_getObjectCount

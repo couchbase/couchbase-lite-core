@@ -93,6 +93,8 @@ namespace litecore {
     static const char* kDomainNames[] = {"0",
                                          "LiteCore", "POSIX", "ForestDB", "SQLite", "Fleece",
                                          "DNS", "WebSocket"};
+    static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
+                  "Incomplete domain name table");
 
     static const char* litecore_errstr(error::LiteCoreError code) {
         static const char* kLiteCoreMessages[] = {
@@ -107,7 +109,7 @@ namespace litecore {
             "bad version vector",
             "corrupt revision data",
             "corrupt index",
-            "text tokenizer error",
+            "text tokenizer error", // 10
             "database not open",
             "not found",
             "deleted",
@@ -117,7 +119,7 @@ namespace litecore {
             "unexpected exception",
             "can't open file",
             "file I/O error",
-            "commit failed",
+            "commit failed", // 20
             "memory allocation failed",
             "not writeable",
             "file data is corrupted",
@@ -127,7 +129,7 @@ namespace litecore {
             "index busy; can't close view",
             "unsupported operation for this database type",
             "file is not a database (or encryption key is invalid/missing)",
-            "file/data is not in the requested format",
+            "file/data is not in the requested format", // 30
             "encryption/decryption error",
             "query syntax error",
             "missing database index",
@@ -136,7 +138,7 @@ namespace litecore {
             "database is in an old file format that can't be opened",
             "database is in a newer file format than this software supports",
             "invalid document ID",
-            "database cannot be upgraded to the current version",
+            "database cannot be upgraded to the current version", // 39
         };
         static_assert(sizeof(kLiteCoreMessages)/sizeof(kLiteCoreMessages[0]) ==
                         error::NumLiteCoreErrorsPlus1, "Incomplete error message table");

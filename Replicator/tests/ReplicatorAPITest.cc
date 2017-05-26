@@ -233,7 +233,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API ExtraHeaders", "[Push][.RealReplicator]
     // Use the extra-headers option to add HTTP Basic auth:
     Encoder enc;
     enc.beginDict();
-    enc.writeKey(kC4ReplicatorOptionExtraHeaders);
+    enc.writeKey(C4STR(kC4ReplicatorOptionExtraHeaders));
     enc.beginDict();
     enc.writeKey("Authorization"_sl);
     enc.writeString("Basic cHVwc2hhdzpmcmFuaw=="_sl);  // that's user 'pupshaw', password 'frank'
