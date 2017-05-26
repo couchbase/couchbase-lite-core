@@ -111,8 +111,8 @@ public:
                                          const Replicator::Status &status) override
     {
         // Note: Can't use Catch on a background thread
-        Assert(_gotResponse);
         if (repl == replClient) {
+            Assert(_gotResponse);
             ++statusChangedCalls;
             Log(">> Replicator is %-s, progress %lu/%lu",
                 kC4ReplicatorActivityLevelNames[status.level],
