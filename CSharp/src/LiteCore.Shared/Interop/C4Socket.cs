@@ -35,7 +35,7 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-        unsafe delegate void SocketOpenDelegate(C4Socket* socket, C4Address* address);
+        unsafe delegate void SocketOpenDelegate(C4Socket* socket, C4Address* address, C4Slice options);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 #if LITECORE_PACKAGED
@@ -121,10 +121,10 @@ namespace LiteCore.Interop
         }
 
         [MonoPInvokeCallback(typeof(SocketOpenDelegate))]
-        private static void SocketOpened(C4Socket* socket, C4Address* address)
+        private static void SocketOpened(C4Socket* socket, C4Address* address, C4Slice options)
         {
             try {
-                _externalOpen?.Invoke(socket, address);
+                _externalOpen?.Invoke(socket, address, options);
             } catch (Exception) {
                 Native.c4socket_closed(socket, new C4Error(LiteCoreError.UnexpectedError));
             }

@@ -205,7 +205,7 @@ namespace LiteCore.Interop
 
         public static FLSliceResult FLEncode(this object obj)
         {
-            FLEncoder* enc = null;
+            var enc = Native.FLEncoder_New();
             try {
                 obj.FLEncode(enc);
                 FLError err;

@@ -104,7 +104,7 @@ namespace LiteCore.Interop
             using(var options_ = options.FLEncode())
             using (var remoteDatabaseName_ = new C4String(remoteDatabaseName)) {
                 return Native.c4repl_new(db, remoteAddress, remoteDatabaseName_.AsC4Slice(), otherDb, push, pull,
-                    options_, ReplicatorStateChangedCallback.NativeCallback,
+                    options == null ? C4Slice.Null : options_, ReplicatorStateChangedCallback.NativeCallback,
                     onStateChanged.NativeContext, err);
             }
         }

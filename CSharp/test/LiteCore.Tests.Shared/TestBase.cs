@@ -78,5 +78,54 @@ namespace LiteCore.Tests
                 }
             }
         }
+
+#if NETCOREAPP1_0
+        [System.Runtime.InteropServices.DllImport("kernel32", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
+
+        internal static void LoadDLL()
+        {
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            {
+                var codeBase = AppContext.BaseDirectory;
+                if (!codeBase.EndsWith("\\"))
+                {
+                    codeBase = codeBase + "\\";
+                }
+
+                UriBuilder uri = new UriBuilder(codeBase);
+                var directory = System.IO.Path.GetDirectoryName(Uri.UnescapeDataString(uri.Path));
+
+                System.Diagnostics.Debug.Assert(System.IO.Path.IsPathRooted(directory), "directory is not rooted.");
+                var architecture = IntPtr.Size == 4
+                    ? "x86"
+                    : "x64";
+
+                var dllPath = System.IO.Path.Combine(directory, architecture, "LiteCore.dll");
+                var dllPathAsp = System.IO.Path.Combine(directory, "bin", architecture, "LiteCore.dll");
+                var foundPath = default(string);
+                foreach (var path in new[] { dllPath, dllPathAsp })
+                {
+                    foundPath = System.IO.File.Exists(path) ? path : null;
+                    if (foundPath != null)
+                    {
+                        break;
+                    }
+                }
+
+                if (foundPath == null)
+                {
+                    throw new DllNotFoundException("Could not find LiteCore.dll!  Nothing is going to work!");
+                }
+
+                const uint loadWithAlteredSearchPath = 8;
+                var ptr = LoadLibraryEx(foundPath, IntPtr.Zero, loadWithAlteredSearchPath);
+                if (ptr == IntPtr.Zero)
+                {
+                    throw new BadImageFormatException("Could not load LiteCore.dll!  Nothing is going to work!");
+                }
+            }
+        }
+#endif
     }
 }
