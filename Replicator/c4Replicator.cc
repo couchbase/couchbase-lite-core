@@ -11,8 +11,10 @@
 #include "StringUtil.hh"
 #include <atomic>
 #include <errno.h>
-#include <netdb.h>
 
+#ifndef _MSC_VER
+#include <netdb.h>
+#endif
 
 const char* const kC4ReplicatorActivityLevelNames[5] = {
     "stopped", "offline", "connecting", "idle", "busy"
@@ -200,8 +202,10 @@ bool c4error_mayBeTransient(C4Error err) C4API {
     static CodeList kTransientPOSIX = {
         ENETRESET, ECONNABORTED, ECONNRESET, ETIMEDOUT, ECONNREFUSED, 0};
     static CodeList kTransientDNS = {
+#ifndef _MSC_VER
         HOST_NOT_FOUND,   // Result may change if user logs into VPN or moves to intranet
         TRY_AGAIN,
+#endif
         0};
     static CodeList kTransientWebSocket = {
         408, /* Request Timeout */
@@ -228,9 +232,11 @@ bool c4error_mayBeNetworkDependent(C4Error err) C4API {
     static CodeList kUnreachablePOSIX = {
         ENETDOWN, ENETUNREACH, ETIMEDOUT, EHOSTDOWN, EHOSTUNREACH, 0};
     static CodeList kUnreachableDNS = {
+#ifndef _MSC_VER
         HOST_NOT_FOUND,   // Result may change if user logs into VPN or moves to intranet
         TRY_AGAIN,
         EAI_NONAME,
+#endif
         0};
     static ErrorSet kUnreachable = { // indexed by C4ErrorDomain
         nullptr,
