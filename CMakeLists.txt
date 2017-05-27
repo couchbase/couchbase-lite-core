@@ -209,9 +209,11 @@ else()
     target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32)
     if(WINDOWS_STORE)
         set_target_properties(LiteCore PROPERTIES COMPILE_FLAGS /ZW)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /nodefaultlib:kernel32.lib /nodefaultlib:ole32.lib")
     endif()
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
-			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def /ignore:4099")	
+			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")	
     target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} zlibstatic Ws2_32)
 endif()
 
