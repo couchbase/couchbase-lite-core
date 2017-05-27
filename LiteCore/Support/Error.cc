@@ -26,14 +26,6 @@
 #include <android/log.h>
 #endif
 
-#ifdef _MSC_VER
-#include <WS2tcpip.h>
-#define dns_error   gai_strerrorA
-#else
-#include <netdb.h>
-#define dns_error   gai_strerror
-#endif
-
 #if defined(__clang__) && !defined(__ANDROID__) // For logBacktrace:
 #include <execinfo.h>   // Not available in Windows?
 #include <cxxabi.h>
@@ -89,10 +81,10 @@ namespace litecore {
     }
 
 
-    // Indexed by C4ErrorDomain
+    // Indexed by Domain
     static const char* kDomainNames[] = {"0",
-                                         "LiteCore", "POSIX", "ForestDB", "SQLite", "Fleece",
-                                         "DNS", "WebSocket"};
+                                         "LiteCore", "POSIX", "3", "SQLite", "Fleece",
+                                         "Network", "WebSocket"};
     static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
                   "Incomplete domain name table");
 
@@ -173,6 +165,29 @@ namespace litecore {
         return str;
     }
 
+    static const char* network_errstr(int code) {
+        static const char* kNetworkMessages[] = {
+            // These must match up with the codes in the NetworkError enum in WebSocketInterface.hh
+            "no error", // 0
+            "DNS error",
+            "unknown hostname",
+            "connection timed out",
+            "invalid URL",
+            "too many redirects",
+            "TLS connection failed",
+            "server TLS certificate expired",
+            "server TLS certificate untrusted",
+            "server requires a TLS client certificate",
+            "server rejected the TLS client certificate",
+        };
+        const char *str = nullptr;
+        if (code < sizeof(kNetworkMessages)/sizeof(char*))
+            str = kNetworkMessages[code];
+        if (!str)
+            str = "(unknown network error)";
+        return str;
+    }
+
     static const char* websocket_errstr(int code) {
         static const char* kWebSocketMessages[] = {
             "normal close",                     // 1000
@@ -210,8 +225,8 @@ namespace litecore {
                 return sqlite3_errstr(code);
             case Fleece:
                 return fleece_errstr((fleece::ErrorCode)code);
-            case DNS:
-                return dns_error(code);
+            case Network:
+                return network_errstr(code);
             case WebSocket:
                 return websocket_errstr(code);
             default:

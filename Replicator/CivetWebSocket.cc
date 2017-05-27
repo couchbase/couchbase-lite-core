@@ -354,7 +354,7 @@ namespace litecore { namespace websocket {
 
         virtual void onWebSocketClose(CloseStatus status) override {
             static const C4ErrorDomain kDomainForReason[] = {
-                WebSocketDomain, POSIXDomain, DNSDomain, LiteCoreDomain
+                WebSocketDomain, POSIXDomain, NetworkDomain, LiteCoreDomain
             };
             C4ErrorDomain domain = kDomainForReason[status.reason];
             if (status.reason == kUnknownError)

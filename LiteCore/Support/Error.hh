@@ -26,13 +26,13 @@ namespace litecore {
     struct error : public std::runtime_error {
 
         enum Domain {
-            LiteCore = 1,
-            POSIX,
-            ForestDB, // unused
-            SQLite,
-            Fleece,
-            DNS,
-            WebSocket,
+            LiteCore = 1,       // See LiteCoreError enum, below
+            POSIX,              // See <errno.h>
+            ForestDB,           // unused
+            SQLite,             // See <sqlite3.h>
+            Fleece,             // See FleeceException.h
+            Network,            // See NetworkError enum, below
+            WebSocket,          // See WebSocketInterface.h
 
             // Add new domain here.
             // You MUST add a name string to kDomainNames in Error.cc!
@@ -86,6 +86,20 @@ namespace litecore {
             // You MUST add corresponding kC4Err codes to the enum in C4Base.h!
             
             NumLiteCoreErrorsPlus1
+        };
+
+        /** Made-up network error codes (higher level than POSIX, lower level than HTTP.) */
+        enum NetworkError {
+            DNSFailure = 1,        // DNS lookup failed
+            UnknownHost,           // DNS server doesn't know the hostname
+            ConnectionTimeout,
+            InvalidURL,
+            TooManyRedirects,
+            TLSHandshakeFailed,
+            TLSCertExpired,
+            TLSCertUntrusted,
+            TLSClientCertRequired,
+            TLSClientCertRejected, // 10
         };
 
         Domain const domain;

@@ -102,7 +102,7 @@ typedef C4_ENUM(uint32_t, C4ErrorDomain) {
                         // domain 3 is unused
     SQLiteDomain = 4,   // code is a SQLite error
     FleeceDomain,       // code is a Fleece error
-    DNSDomain,          // code is a DNS resolution error from <netdb.h> (EAI_*)
+    NetworkDomain,      // code is a network error code from the enum below
     WebSocketDomain,    // code is a WebSocket close code (1000...1015) or HTTP error (400..599)
 
     kC4MaxErrorDomainPlus1
@@ -153,6 +153,22 @@ enum {
     kC4ErrorCantUpgradeDatabase,    // Database can't be upgraded (might be unsupported dev version)
 
     kC4NumErrorCodesPlus1
+};
+
+
+/** Network error codes (higher level than POSIX, lower level than HTTP.) */
+// (These are identical to the internal C++ error::NetworkError enum values.)
+enum {
+    kC4NetErrDNSFailure = 1,        // DNS lookup failed
+    kC4NetErrUnknownHost,           // DNS server doesn't know the hostname
+    kC4NetErrTimeout,
+    kC4NetErrInvalidURL,
+    kC4NetErrTooManyRedirects,
+    kC4NetErrTLSHandshakeFailed,
+    kC4NetErrTLSCertExpired,
+    kC4NetErrTLSCertUntrusted,
+    kC4NetErrTLSClientCertRequired,
+    kC4NetErrTLSClientCertRejected, // 10
 };
 
 

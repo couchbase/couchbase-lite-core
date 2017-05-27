@@ -221,8 +221,8 @@ void c4socket_closed(C4Socket *socket, C4Error error) C4API {
         status.reason = kWebSocketClose;
     else if (error.domain == POSIXDomain)
         status.reason = kPOSIXError;
-    else if (error.domain == DNSDomain)
-        status.reason = kDNSError;
+    else if (error.domain == NetworkDomain)
+        status.reason = kNetworkError;
 
     socket->nativeHandle = nullptr;
     internal(socket)->onClose(status);

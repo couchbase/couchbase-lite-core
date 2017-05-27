@@ -12,15 +12,10 @@
 #include <atomic>
 #include <errno.h>
 
-#ifndef _MSC_VER
-#include <netdb.h>
-#endif
 
 const char* const kC4ReplicatorActivityLevelNames[5] = {
     "stopped", "offline", "connecting", "idle", "busy"
 };
-
-
 
 
 static bool isValidScheme(C4Slice scheme) {
@@ -201,11 +196,8 @@ static bool errorIsInSet(C4Error err, ErrorSet set) {
 bool c4error_mayBeTransient(C4Error err) C4API {
     static CodeList kTransientPOSIX = {
         ENETRESET, ECONNABORTED, ECONNRESET, ETIMEDOUT, ECONNREFUSED, 0};
-    static CodeList kTransientDNS = {
-#ifndef _MSC_VER
-        HOST_NOT_FOUND,   // Result may change if user logs into VPN or moves to intranet
-        TRY_AGAIN,
-#endif
+    static CodeList kTransientNetwork = {
+        kC4NetErrDNSFailure,
         0};
     static CodeList kTransientWebSocket = {
         408, /* Request Timeout */
@@ -223,7 +215,7 @@ bool c4error_mayBeTransient(C4Error err) C4API {
         nullptr,
         nullptr,
         nullptr,
-        kTransientDNS,
+        kTransientNetwork,
         kTransientWebSocket};
     return errorIsInSet(err, kTransient);
 }
@@ -231,12 +223,9 @@ bool c4error_mayBeTransient(C4Error err) C4API {
 bool c4error_mayBeNetworkDependent(C4Error err) C4API {
     static CodeList kUnreachablePOSIX = {
         ENETDOWN, ENETUNREACH, ETIMEDOUT, EHOSTDOWN, EHOSTUNREACH, 0};
-    static CodeList kUnreachableDNS = {
-#ifndef _MSC_VER
-        HOST_NOT_FOUND,   // Result may change if user logs into VPN or moves to intranet
-        TRY_AGAIN,
-        EAI_NONAME,
-#endif
+    static CodeList kUnreachableNetwork = {
+        kC4NetErrDNSFailure,
+        kC4NetErrUnknownHost,   // Result may change if user logs into VPN or moves to intranet
         0};
     static ErrorSet kUnreachable = { // indexed by C4ErrorDomain
         nullptr,
@@ -245,7 +234,7 @@ bool c4error_mayBeNetworkDependent(C4Error err) C4API {
         nullptr,
         nullptr,
         nullptr,
-        kUnreachableDNS,
+        kUnreachableNetwork,
         nullptr};
     return errorIsInSet(err, kUnreachable);
 }

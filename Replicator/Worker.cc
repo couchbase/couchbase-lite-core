@@ -76,7 +76,7 @@ namespace litecore { namespace repl {
 
 
     static const char* const kErrorDomainNames[] = {
-        nullptr, "LiteCore", "POSIX", nullptr, "SQLite", "Fleece", "DNS", "WebSocket"};
+        nullptr, "LiteCore", "POSIX", nullptr, "SQLite", "Fleece", "Network", "WebSocket"};
 
 
     blip::ErrorBuf Worker::c4ToBLIPError(C4Error err) {
