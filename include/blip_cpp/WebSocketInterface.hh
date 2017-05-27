@@ -59,8 +59,8 @@ namespace litecore { namespace websocket {
     /** Reasons for a WebSocket closing. */
     enum CloseReason {
         kWebSocketClose,        // Closed by WebSocket protocol
-        kPOSIXError,            // Closed due to network error (see <errno.h>)
-        kDNSError,              // Closed due to DNS error (see <netdb.h>)
+        kPOSIXError,            // Closed due to IP socket error (see <errno.h>)
+        kNetworkError,          // Closed due to other network error (codes undefined at this level)
         kUnknownError
     };
 
@@ -90,7 +90,8 @@ namespace litecore { namespace websocket {
         }
 
         const char* reasonName() const  {
-            static const char* kReasonNames[] = {"WebSocket status", "errno", "DNS error", "Unknown error"};
+            static const char* kReasonNames[] = {"WebSocket status", "errno",
+                                                 "Network error", "Unknown error"};
             assert(reason < CloseReason(4));
             return kReasonNames[reason];
         }
