@@ -173,6 +173,10 @@ namespace LiteCore.Interop
                     {
                         var rawKey = Native.FLDictIterator_GetKey(&i);
                         string key = Native.FLValue_AsString(rawKey);
+                        if (key == null) {
+                            break;
+                        }
+
                         retVal[key] = ToObject(Native.FLDictIterator_GetValue(&i));
                     } while (Native.FLDictIterator_Next(&i));
 
