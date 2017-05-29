@@ -40,7 +40,6 @@ extern "C" {
 #endif
 
 using namespace std;
-using namespace fleece;
 
 namespace litecore {
 
@@ -95,7 +94,8 @@ namespace litecore {
             Warn("SQLite error (code %d): %s", errCode, msg);
         }
     }
-    
+
+
     UsingStatement::UsingStatement(SQLite::Statement &stmt) noexcept
     :_stmt(stmt)
     {
@@ -480,6 +480,7 @@ path.path().c_str());
         close();
         factory().deleteFile(filePath());
     }
+
 
     void SQLiteDataFile::maybeVacuum() {
         // For info, see https://blogs.gnome.org/jnelson/2015/01/06/sqlite-vacuum-and-auto_vacuum/

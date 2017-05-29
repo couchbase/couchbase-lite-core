@@ -236,7 +236,7 @@ namespace c4Internal {
 
     unordered_set<string> Database::collectBlobs() {
         RecordEnumerator::Options options;
-        options.contentOptions = kHasAttachmentsOnly;
+        options.onlyBlobs = true;
         RecordEnumerator e(defaultKeyStore(), 0, INT64_MAX, options);
         unordered_set<string> usedDigests;
         for(const Record& rec : e) {
@@ -250,7 +250,7 @@ namespace c4Internal {
                 const Dict* body = Value::fromTrustedData(doc->selectedRev.body)->asDict();
                 auto keys = _db->documentKeys();
                 Document::findBlobReferences(body, keys, [&usedDigests](const blobKey& key, uint64_t size) {
-                    usedDigests.insert(key.base64String());
+                    usedDigests.insert(key.filename());
                 });
             } while(doc->selectNextRevision());
             

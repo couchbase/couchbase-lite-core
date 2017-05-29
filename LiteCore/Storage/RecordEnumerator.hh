@@ -25,8 +25,7 @@ namespace litecore {
 
     enum ContentOptions {
         kDefaultContent = 0,
-        kMetaOnly = 0x01,
-        kHasAttachmentsOnly = 0x02
+        kMetaOnly = 0x01
     };
 
     /** KeyStore enumerator/iterator that returns a range of Records.
@@ -47,6 +46,7 @@ namespace litecore {
             bool           inclusiveStart :1;   ///< Include the start key/seq?
             bool           inclusiveEnd   :1;   ///< Include the end key/seq?
             bool           includeDeleted :1;   ///< Include deleted records?
+            bool           onlyBlobs      :1;   ///< Only include records which contain linked binary data
             ContentOptions contentOptions :4;   ///< Load record bodies?
 
             /** Default options have inclusiveStart, inclusiveEnd, and include bodies. */

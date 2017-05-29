@@ -95,7 +95,7 @@ namespace litecore {
                 if (writeAnd) sql << " AND "; else writeAnd = true;
                 sql << "(flags & 1) != 1";
             }
-            if (options.contentOptions & kHasAttachmentsOnly) {
+            if (options.onlyBlobs) {
                 if(writeAnd) sql << " AND "; // else writeAnd = true;
                 sql << "(flags & 4) != 0";
             }

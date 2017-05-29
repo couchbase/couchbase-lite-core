@@ -188,9 +188,7 @@ namespace litecore {
     
     void BlobStore::deleteAllExcept(const unordered_set<string> &inUse) {
         _dir.forEachFile([&inUse](const FilePath &path) {
-            string digest = string("sha1-") + path.fileName().substr(0, path.fileName().length() - 5);
-            replace(digest.begin(), digest.end(), '_', '/');
-            if(find(inUse.cbegin(), inUse.cend(), digest) == inUse.cend()) {
+            if(find(inUse.cbegin(), inUse.cend(), (string)path) == inUse.cend()) {
                 path.del();
             }
         });
