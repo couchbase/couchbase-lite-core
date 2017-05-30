@@ -24,6 +24,8 @@
 #include <regex>
 #include <unordered_set>
 #include <cmath>
+#include <string>
+#include <sstream>
 
 using namespace fleece;
 using namespace std;
@@ -466,6 +468,33 @@ namespace litecore {
         }
     }
     
+    static void ifmissing(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        for(int i = 0; i < argc; i++) {
+            if(sqlite3_value_type(argv[i]) != SQLITE_NULL) {
+                sqlite3_result_value(ctx, argv[i]);
+                return;
+            }
+        }
+    }
+    
+    static void ifmissingornull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        for(int i = 0; i < argc; i++) {
+            if(sqlite3_value_type(argv[i]) != SQLITE_NULL && sqlite3_value_bytes(argv[i]) > 0) {
+                sqlite3_result_value(ctx, argv[i]);
+                return;
+            }
+        }
+    }
+    
+    static void ifnull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        for(int i = 0; i < argc; i++) {
+            if(sqlite3_value_bytes(argv[i]) > 0) {
+                sqlite3_result_value(ctx, argv[i]);
+                return;
+            }
+        }
+    }
+    
     static void missingif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto slice0 = valueAsSlice(argv[0]);
         auto slice1 = valueAsSlice(argv[1]);
@@ -633,11 +662,162 @@ namespace litecore {
     
 #pragma mark - NON-FLEECE FUNCTIONS:
 
+    static string lowercase(string input) {
+        string result(input.size(), '\0');
+        transform(input.begin(), input.end(), result.begin(), ptr_fun<int, int>(tolower));
+        return result;
+    }
 
     static void contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto arg0 = valueAsStringSlice(argv[0]);
         auto arg1 = valueAsStringSlice(argv[1]);
         sqlite3_result_int(ctx, arg0.find(arg1).buf != nullptr);
+    }
+    
+    static void init_cap(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto arg = valueAsStringSlice(argv[0]).asString();
+        string result = lowercase(arg);
+        auto iter = result.begin();
+        while(iter != result.end()) {
+            *iter = (char)toupper(*iter);
+            iter = find_if(iter, result.end(), not1(ptr_fun<int, int>(isalpha)));
+            iter = find_if(iter, result.end(),      ptr_fun<int, int>(isalpha));
+        }
+        
+        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
+    }
+    
+    static void length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto arg = valueAsStringSlice(argv[0]).asString();
+        sqlite3_result_int64(ctx, arg.size());
+    }
+    
+    static void lower(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto arg = valueAsStringSlice(argv[0]).asString();
+        string result = lowercase(arg);
+        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
+    }
+    
+    static void ltrim(string &s, const char* chars = nullptr) {
+        if(chars != nullptr) {
+            auto startPos = s.find_first_not_of(chars);
+            if(string::npos != startPos) {
+                s = s.substr(startPos);
+            }
+        } else {
+            s.erase(s.begin(), find_if(s.begin(), s.end(), not1(ptr_fun<int, int>(isspace))));
+        }
+    }
+    
+    static void rtrim(string& s, const char* chars = nullptr) {
+        if(chars != nullptr) {
+            auto endPos = s.find_last_not_of(chars);
+            if(string::npos != endPos) {
+                s = s.substr(0, endPos + 1);
+            }
+        } else {
+            s.erase(find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(), s.end());
+        }
+    }
+
+    static void ltrim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto val = valueAsStringSlice(argv[0]).asString();
+        if(argc == 2) {
+            ltrim(val, (const char*)sqlite3_value_text(argv[1]));
+        } else {
+            ltrim(val);
+        }
+        
+        sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
+    }
+    
+    static void position(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto val = valueAsStringSlice(argv[0]).asString();
+        unsigned long result = val.find((char *)sqlite3_value_text(argv[1]));
+        if(result == string::npos) {
+            sqlite3_result_int64(ctx, -1);
+        } else {
+            sqlite3_result_int64(ctx, result);
+        }
+    }
+    
+    static void repeat(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto base = valueAsStringSlice(argv[0]).asString();
+        auto num = sqlite3_value_int(argv[1]);
+        stringstream result;
+        for(int i = 0; i < num; i++) {
+            result << base;
+        }
+        
+        auto resultStr = result.str();
+        sqlite3_result_text(ctx, resultStr.c_str(), (int)resultStr.size(), SQLITE_TRANSIENT);
+    }
+            
+    static void replace(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto val = valueAsStringSlice(argv[0]).asString();
+        auto search = valueAsStringSlice(argv[1]).asString();
+        auto replacement = valueAsStringSlice(argv[2]).asString();
+        int n = -1;
+        if(argc == 4) {
+            n = sqlite3_value_int(argv[3]);
+        }
+        
+        size_t start_pos = 0;
+        while(n-- && (start_pos = val.find(search, start_pos)) != std::string::npos) {
+            val.replace(start_pos, search.length(), replacement);
+            start_pos += replacement.length(); // In case 'replacement' contains 'search', like replacing 'x' with 'yx'
+        }
+        
+        sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
+    }
+            
+    static void reverse(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto val = valueAsStringSlice(argv[0]).asString();
+        reverse(val.begin(), val.end());
+        sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
+    }
+            
+    static void rtrim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto val = valueAsStringSlice(argv[0]).asString();
+        if(argc == 2) {
+            rtrim(val, (const char *)sqlite3_value_text(argv[1]));
+        } else {
+            rtrim(val);
+        }
+        
+        sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
+    }
+            
+    static void substr(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto val = valueAsStringSlice(argv[0]).asString();
+        if(argc == 3) {
+            val = val.substr(sqlite3_value_int(argv[1]), sqlite3_value_int(argv[2]));
+        } else {
+            val = val.substr(sqlite3_value_int(argv[1]));
+        }
+                             
+        sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
+    }
+            
+    static void trim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto val = valueAsStringSlice(argv[0]).asString();
+        if(argc == 2) {
+            auto chars = (const char *)sqlite3_value_text(argv[1]);
+            ltrim(val, chars);
+            rtrim(val, chars);
+        } else {
+            ltrim(val);
+            rtrim(val);
+        }
+        
+        sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
+    }
+            
+    static void upper(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto arg = valueAsStringSlice(argv[0]).asString();
+        string result(arg.size(), '\0');
+        transform(arg.begin(), arg.end(), result.begin(), ptr_fun<int, int>(toupper));
+        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
     }
     
     static void regexp_like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
@@ -646,6 +826,44 @@ namespace litecore {
         regex r((char *)arg1.buf);
         int result = regex_search((char *)arg0.buf, r) ? 1 : 0;
         sqlite3_result_int(ctx, result);
+    }
+    
+    static void regexp_position(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto arg0 = valueAsStringSlice(argv[0]);
+        auto arg1 = valueAsStringSlice(argv[1]);
+        regex r((char *)arg1.buf);
+        cmatch pattern_match;
+        if(!regex_search((char *)arg0.buf, pattern_match, r)) {
+            sqlite3_result_int64(ctx, -1);
+            return;
+        }
+        
+        sqlite3_result_int64(ctx, pattern_match.prefix().length());
+    }
+    
+    static void regexp_replace(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto expression = valueAsStringSlice(argv[0]).asString();
+        auto pattern = valueAsStringSlice(argv[1]);
+        auto repl = valueAsStringSlice(argv[2]).asString();
+        string result;
+        auto out = back_inserter(result);
+        int n = -1;
+        if(argc == 4) {
+            n = sqlite3_value_int(argv[3]);
+        }
+        
+        regex r((char *)pattern.buf);
+        auto iter = sregex_iterator(expression.begin(), expression.end(), r);
+        auto last_iter = iter;
+        auto stop = sregex_iterator();
+        for(; n-- && iter != stop; ++iter) {
+            out = copy(iter->prefix().first, iter->prefix().second, out);
+            out = iter->format(out, repl);
+            last_iter = iter;
+        }
+        
+        out = copy(last_iter->suffix().first, last_iter->suffix().second, out);
+        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
     }
     
     static void execute_if_numeric(sqlite3_context* ctx, int argc, sqlite3_value **argv,
@@ -833,6 +1051,417 @@ namespace litecore {
             sqlite3_result_double(ctx, result);
         });
     }
+            
+    static const string value_type(sqlite3_context* ctx, sqlite3_value *arg) {
+        switch(sqlite3_value_type(arg)) {
+            case SQLITE_FLOAT:
+            case SQLITE_INTEGER:
+                return "number";
+            case SQLITE_TEXT:
+                return "string";
+            case SQLITE_NULL:
+                return "missing";
+            case SQLITE_BLOB:
+            {
+                if(sqlite3_value_bytes(arg) == 0) {
+                    return "null";
+                }
+                
+                auto fleece = fleeceParam(ctx, arg);
+                if(fleece == nullptr) {
+                    return "null";
+                }
+                
+                switch(fleece->type()) {
+                    case valueType::kArray:
+                        return "array";
+                    case valueType::kBoolean:
+                        return "boolean";
+                    case valueType::kData:
+                        return "binary";
+                    case valueType::kDict:
+                        return "object";
+                    case valueType::kNull:
+                        return "null";
+                    case valueType::kNumber:
+                        return "number";
+                    case valueType::kString:
+                        return "string";
+                }
+            }
+            default:
+                return "missing";
+        }
+    }
+            
+    static void isarray(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        int result =  value_type(ctx, argv[0]) == "array" ? 1 : 0;
+        sqlite3_result_int(ctx, result);
+    }
+            
+    static void isatom(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto type = value_type(ctx, argv[0]);
+        int result = (type == "boolean" || type == "number" || type == "string") ? 1 : 0;
+        sqlite3_result_int(ctx, result);
+    }
+            
+    static void isboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        int result =  value_type(ctx, argv[0]) == "boolean" ? 1 : 0;
+        sqlite3_result_int(ctx, result);
+    }
+            
+    static void isnumber(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        int result =  value_type(ctx, argv[0]) == "number" ? 1 : 0;
+        sqlite3_result_int(ctx, result);
+    }
+            
+    static void isobject(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        int result =  value_type(ctx, argv[0]) == "object" ? 1 : 0;
+        sqlite3_result_int(ctx, result);
+    }
+            
+    static void isstring(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        int result =  value_type(ctx, argv[0]) == "string" ? 1 : 0;
+        sqlite3_result_int(ctx, result);
+    }
+            
+    static void type(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        auto result =  value_type(ctx, argv[0]);
+        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
+    }
+            
+    static void toatom(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        // MISSING is MISSING.
+        // NULL is NULL.
+        // Arrays of length 1 are the result of TOATOM() on their single element.
+        // Objects of length 1 are the result of TOATOM() on their single value.
+        // Booleans, numbers, and strings are themselves.
+        // All other values are NULL.
+        switch(sqlite3_value_type(argv[0])) {
+            case SQLITE_NULL:
+                sqlite3_result_null(ctx);
+                return;
+            case SQLITE_FLOAT:
+            case SQLITE_INTEGER:
+            case SQLITE_TEXT:
+                sqlite3_result_value(ctx, argv[0]);
+                break;
+            case SQLITE_BLOB:
+                if(sqlite3_value_bytes(argv[0]) == 0) {
+                    sqlite3_result_zeroblob(ctx, 0);
+                    break;
+                }
+                
+                auto fleece = fleeceParam(ctx, argv[0]);
+                if(fleece == nullptr) {
+                    sqlite3_result_zeroblob(ctx, 0);
+                    break;
+                }
+                
+                switch(fleece->type()) {
+                    case valueType::kArray:
+                    {
+                        auto arr = fleece->asArray();
+                        if(arr->count() != 1) {
+                            sqlite3_result_zeroblob(ctx, 0);
+                            break;
+                        }
+                        
+                        setResultFromValue(ctx, arr->get(0));
+                        break;
+                    }
+                    case valueType::kBoolean:
+                        sqlite3_result_int64(ctx, fleece->asInt());
+                        break;
+                    case valueType::kData:
+                    case valueType::kNull:
+                        sqlite3_result_zeroblob(ctx, 0);
+                        break;
+                    case valueType::kDict:
+                    {
+                        auto dict = fleece->asDict();
+                        if(dict->count() != 1) {
+                            sqlite3_result_zeroblob(ctx, 0);
+                            break;
+                        }
+                        
+                        
+                        auto iter = dict->begin();
+                        setResultFromValue(ctx, iter.value());
+                        break;
+                    }
+                    case valueType::kNumber:
+                        if(fleece->isInteger()) {
+                            sqlite3_result_int64(ctx, fleece->asInt());
+                        } else {
+                            sqlite3_result_double(ctx, fleece->asDouble());
+                        }
+                        break;
+                    case valueType::kString:
+                        setResultTextFromSlice(ctx, fleece->asString());
+                        break;
+                }
+        }
+    }
+            
+    static void toboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        // MISSING is MISSING.
+        // NULL is NULL.
+        // False is false.
+        // Numbers +0, -0, and NaN are false.
+        // Empty strings, arrays, and objects are false.
+        // All other values are true.
+        switch(sqlite3_value_type(argv[0])) {
+            case SQLITE_NULL:
+                sqlite3_result_null(ctx);
+                return;
+            case SQLITE_FLOAT:
+            case SQLITE_INTEGER:
+            {
+                auto val = sqlite3_value_double(argv[0]);
+                if(val == 0.0 || isnan(val)) {
+                    sqlite3_result_int(ctx, 0);
+                } else {
+                    sqlite3_result_int(ctx, 1);
+                }
+                break;
+            }
+            case SQLITE_TEXT:
+            {
+                // Need to call sqlite3_value_text here?
+                auto result = sqlite3_value_bytes(argv[0]) > 0 ? 1 : 0;
+                sqlite3_result_int(ctx, result);
+                break;
+            }
+            case SQLITE_BLOB:
+            {
+                if(sqlite3_value_bytes(argv[0]) == 0) {
+                    sqlite3_result_int(ctx, 0);
+                    break;
+                }
+                
+                auto fleece = fleeceParam(ctx, argv[0]);
+                if(fleece == nullptr) {
+                    sqlite3_result_int(ctx, 0);
+                    break;
+                }
+                
+                switch(fleece->type()) {
+                    case valueType::kArray:
+                    {
+                        auto arr = fleece->asArray();
+                        auto result = arr->count() > 0 ? 1 : 0;
+                        sqlite3_result_int(ctx, result);
+                        break;
+                    }
+                    case valueType::kBoolean:
+                        sqlite3_result_int64(ctx, fleece->asInt());
+                        break;
+                    case valueType::kData:
+                        sqlite3_result_int(ctx, 1);
+                        break;
+                    case valueType::kNull:
+                        sqlite3_result_int(ctx, 0);
+                        break;
+                    case valueType::kDict:
+                    {
+                        auto dict = fleece->asDict();
+                        auto result = dict->count() > 0 ? 1 : 0;
+                        sqlite3_result_int(ctx, result);
+                        break;
+                    }
+                    case valueType::kNumber:
+                    {
+                        auto val = fleece->asDouble();
+                        if(val == 0.0 || isnan(val)) {
+                            sqlite3_result_int(ctx, 0);
+                        } else {
+                            sqlite3_result_int(ctx, 1);
+                        }
+                        break;
+                    }
+                    case valueType::kString:
+                    {
+                        auto str = fleece->asString();
+                        auto result = str.size > 0 ? 1 : 0;
+                        sqlite3_result_int(ctx, result);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+            
+    static double tonumber(const string &s) {
+        try {
+            return stod(s);
+        } catch (const invalid_argument&) {
+            return NAN;
+        } catch (const out_of_range&) {
+            return NAN;
+        }
+    }
+            
+    static void tonumber(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        // MISSING is MISSING.
+        // NULL is NULL.
+        // False is 0.
+        // True is 1.
+        // Numbers are themselves.
+        // Strings that parse as numbers are those numbers.
+        // All other values are NULL.
+        switch(sqlite3_value_type(argv[0])) {
+            case SQLITE_NULL:
+                sqlite3_result_null(ctx);
+                return;
+            case SQLITE_FLOAT:
+            case SQLITE_INTEGER:
+            {
+                sqlite3_result_value(ctx, argv[0]);
+                break;
+            }
+            case SQLITE_TEXT:
+            {
+                auto txt = (const char *)sqlite3_value_text(argv[0]);
+                string str(txt, sqlite3_value_bytes(argv[0]));
+                double result = tonumber(str);
+                if(result == NAN) {
+                    sqlite3_result_zeroblob(ctx, 0);
+                } else {
+                    sqlite3_result_double(ctx, result);
+                }
+                break;
+            }
+            case SQLITE_BLOB:
+            {
+                if(sqlite3_value_bytes(argv[0]) == 0) {
+                    sqlite3_result_zeroblob(ctx, 0);
+                    break;
+                }
+                
+                auto fleece = fleeceParam(ctx, argv[0]);
+                if(fleece == nullptr) {
+                    sqlite3_result_zeroblob(ctx, 0);
+                    break;
+                }
+                
+                switch(fleece->type()) {
+                    case valueType::kArray:
+                    case valueType::kDict:
+                    case valueType::kNull:
+                    case valueType::kData:
+                        sqlite3_result_zeroblob(ctx, 0);
+                        break;
+                    case valueType::kBoolean:
+                        sqlite3_result_int(ctx, fleece->asBool() ? 1 : 0);
+                        break;
+                    case valueType::kNumber:
+                        if(fleece->isInteger()) {
+                            sqlite3_result_int64(ctx, fleece->asInt());
+                        } else {
+                            sqlite3_result_double(ctx, fleece->asDouble());
+                        }
+                        break;
+                    case valueType::kString:
+                    {
+                        auto str = fleece->asString().asString();
+                        double result = tonumber(str);
+                        if(result == NAN) {
+                            sqlite3_result_zeroblob(ctx, 0);
+                        } else {
+                            sqlite3_result_double(ctx, result);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+            
+    static void tostring(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        // MISSING is MISSING.
+        // NULL is NULL.
+        // False is "false".
+        // True is "true".
+        // Numbers are their string representation.
+        // Strings are themselves.
+        // All other values are NULL.
+        switch(sqlite3_value_type(argv[0])) {
+            case SQLITE_NULL:
+                sqlite3_result_null(ctx);
+                return;
+            case SQLITE_FLOAT:
+            {
+                auto num = sqlite3_value_double(argv[0]);
+                auto str = to_string(num);
+                sqlite3_result_text(ctx, str.c_str(), (int)str.size(), SQLITE_TRANSIENT);
+                break;
+            }
+            case SQLITE_INTEGER:
+            {
+                auto num = sqlite3_value_int64(argv[0]);
+                auto str = to_string(num);
+                sqlite3_result_text(ctx, str.c_str(), (int)str.size(), SQLITE_TRANSIENT);
+                break;
+            }
+            case SQLITE_TEXT:
+            {
+                sqlite3_result_value(ctx, argv[0]);
+                break;
+            }
+            case SQLITE_BLOB:
+            {
+                if(sqlite3_value_bytes(argv[0]) == 0) {
+                    sqlite3_result_zeroblob(ctx, 0);
+                    break;
+                }
+                
+                auto fleece = fleeceParam(ctx, argv[0]);
+                if(fleece == nullptr) {
+                    sqlite3_result_zeroblob(ctx, 0);
+                    break;
+                }
+                
+                switch(fleece->type()) {
+                    case valueType::kArray:
+                    case valueType::kDict:
+                    case valueType::kNull:
+                    case valueType::kData:
+                        sqlite3_result_zeroblob(ctx, 0);
+                        break;
+                    case valueType::kBoolean:
+                        if(fleece->asBool()) {
+                            sqlite3_result_text(ctx, "true", 4, SQLITE_STATIC);
+                        } else {
+                            sqlite3_result_text(ctx, "false", 5, SQLITE_STATIC);
+                        }
+                        break;
+                    case valueType::kNumber:
+                    {
+                        string result;
+                        if(fleece->isInteger()) {
+                            result = to_string(fleece->asInt());
+                        } else {
+                            result = to_string(fleece->asDouble());
+                        }
+                        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
+                        break;
+                    }
+                    case valueType::kString:
+                    {
+                        auto str = fleece->asString();
+                        setResultTextFromSlice(ctx, str);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    static void unimplemented(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        Warn("Calling unimplemented N1QL function; query will fail");
+        sqlite3_result_error(ctx, "unimplemented N1QL function", -1);
+    }
     
 #pragma mark - REGISTRATION:
 
@@ -855,15 +1484,40 @@ namespace litecore {
             { "fl_count",          2, fl_count },
             { "fl_contains",      -1, fl_contains },
 
+            { "array_append",     -1, unimplemented },
             { "array_avg",        -1, fl_array_avg },
+            { "array_concat",     -1, unimplemented },
             { "array_contains",   -1, fl_array_contains },
             { "array_count",      -1, fl_array_count },
+            { "array_distinct",    1, unimplemented },
+            { "array_flatten",     2, unimplemented },
+            { "array_agg",         1, unimplemented },
             { "array_ifnull",     -1, fl_array_ifnull },
+            { "array_insert",     -1, unimplemented },
+            { "array_intersect",  -1, unimplemented },
             { "array_length",     -1, fl_array_length },
             { "array_max",        -1, fl_array_max },
             { "array_min",        -1, fl_array_min },
+            { "array_position",    2, unimplemented },
+            { "array_prepend",    -1, unimplemented },
+            { "array_put",        -1, unimplemented },
+            { "array_range",       2, unimplemented },
+            { "array_range",       3, unimplemented },
+            { "array_remove",     -1, unimplemented },
+            { "array_repeat",      2, unimplemented },
+            { "array_replace",     3, unimplemented },
+            { "array_replace",     4, unimplemented },
+            { "array_reverse",     1, unimplemented },
+            { "array_sort",        1, unimplemented },
+            { "array_star",        1, unimplemented },
             { "array_sum",        -1, fl_array_sum },
+            { "array_symdiff",    -1, unimplemented },
+            { "array_symdiffn",   -1, unimplemented },
+            { "array_union",      -1, unimplemented },
             
+            { "ifmissing",        -1, ifmissing },
+            { "ifmissingornull",  -1, ifmissingornull },
+            { "ifnull",           -1, ifnull },
             { "missingif",         2, missingif },
             { "nullif",            2, nullif },
             
@@ -880,7 +1534,48 @@ namespace litecore {
             { "uuid",              0, fl_uuid },
 
             { "contains",          2, contains },
+            { "initcap",           1, init_cap },
+            { "length",            1, length },
+            { "lower",             1, lower },
+            { "ltrim",             1, ltrim },
+            { "ltrim",             2, ltrim },
+            { "position",          2, position },
+            { "repeat",            2, repeat },
+            { "replace",           3, replace },
+            { "replace",           4, replace },
+            { "reverse",           1, reverse },
+            { "rtrim",             1, rtrim },
+            { "rtrim",             2, rtrim },
+            { "split",             1, unimplemented },
+            { "split",             2, unimplemented },
+            { "substr",            2, substr },
+            { "substr",            3, substr },
+            { "suffixes",          1, unimplemented },
+            { "title",             1, init_cap },
+            { "tokens",            2, unimplemented },
+            { "trim",              1, trim },
+            { "trim",              2, trim },
+            { "upper",             1, upper },
+            
+            { "regexp_contains",   2, regexp_like, },
             { "regexp_like",       2, regexp_like },
+            { "regexp_position",   2, regexp_position },
+            { "regexp_replace",    3, regexp_replace },
+            { "regexp_replace",    4, regexp_replace },
+            
+            { "isarray",           1, isarray },
+            { "isatom",            1, isatom },
+            { "isboolean",         1, isboolean },
+            { "isnumber",          1, isnumber },
+            { "isobject",          1, isobject },
+            { "isstring",          1, isstring },
+            { "type",              1, type },
+            { "toarray",           1, unimplemented },
+            { "toatom",            1, toatom },
+            { "toboolean",         1, toboolean },
+            { "tonumber",          1, tonumber },
+            { "toobject",          1, unimplemented },
+            { "tostring",          1, tostring },
 
             { "abs",               1, fl_abs },
             { "acos",              1, fl_acos },
