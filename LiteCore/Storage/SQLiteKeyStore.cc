@@ -358,6 +358,8 @@ namespace litecore {
             case kFullTextIndex: {
                 // Create the FTS4 virtual table: ( https://www.sqlite.org/fts3.html )
                 auto tableName = SQLIndexName(params, type);
+                if (db().tableExists(tableName))
+                    return;
                 stringstream sql;
                 sql << "CREATE VIRTUAL TABLE \"" << tableName << "\" USING fts4(text, tokenize=unicodesn";
                 if (options) {

@@ -74,6 +74,9 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT", "[Query]") {
             st2.printReport("Index on .num", 1, "index");
         }
     }
+
+    // Redundant createIndex should not fail:
+    store->createIndex("[\".num\"]"_sl);
 }
 
 
@@ -146,6 +149,9 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
         ++rows;
     }
     CHECK(rows == 4);
+
+    // Redundant createIndex should not fail:
+    store->createIndex("[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
 }
 
 
