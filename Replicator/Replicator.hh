@@ -60,6 +60,7 @@ namespace litecore { namespace repl {
 
         Status status() const                   {return Worker::status();}   //FIX: Needs to be thread-safe
 
+        void start()                            {enqueue(&Replicator::_start);}
         void stop()                             {enqueue(&Replicator::_stop);}
 
 
@@ -94,6 +95,7 @@ namespace litecore { namespace repl {
         void _onClose(Connection::CloseStatus, Connection::State);
         void _onRequestReceived(Retained<blip::MessageIn> msg);
 
+        void _start();
         void _stop();
         void getCheckpoints();
         void startReplicating();

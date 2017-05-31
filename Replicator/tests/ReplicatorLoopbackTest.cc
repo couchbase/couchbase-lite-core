@@ -70,10 +70,12 @@ public:
 
         // Client replicator:
         replClient = new Replicator(dbServer, provider, {"ws", "srv"}, *this, opts1);
+        replClient->start();
 
         // Server (passive) replicator:
         Address addrB{"ws", "cli"};
         replServer = new Replicator(dbClient, provider.createWebSocket(addrB), *this, opts2);
+        replServer->start();
 
         // Response headers:
         Encoder enc;

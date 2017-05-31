@@ -11,6 +11,7 @@
 #include "DBWorker.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "Logging.hh"
 #include "SecureDigest.hh"
@@ -45,7 +46,6 @@ namespace litecore { namespace repl {
             _puller = new Puller(connection, this, _dbActor, _options);
         _checkpoint.enableAutosave(options.checkpointSaveDelay(),
                                    bind(&Replicator::saveCheckpoint, this, _1));
-        // Now wait for _onConnect or _onClose...
     }
 
     Replicator::Replicator(C4Database *db,
@@ -61,8 +61,17 @@ namespace litecore { namespace repl {
                            websocket::WebSocket *webSocket,
                            Delegate &delegate,
                            Options options)
-    :Replicator(db, webSocket->address(), delegate, options, new Connection(webSocket, *this))
+    :Replicator(db, webSocket->address(), delegate, options,
+                new Connection(webSocket, *this))
     { }
+
+
+    void Replicator::_start() {
+        Assert(_connectionState == Connection::kClosed);
+        _connectionState = Connection::kConnecting;
+        connection()->start();
+        // Now wait for _onConnect or _onClose...
+    }
 
 
     void Replicator::_stop() {

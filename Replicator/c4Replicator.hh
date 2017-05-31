@@ -41,7 +41,9 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                                  *this, { push, pull, properties }),
                   nullptr,
                   onStateChanged, callbackContext)
-    { }
+    {
+        _replicator->start();
+    }
 
     // Constructor for replication with local database
     C4Replicator(C4Database* db,
@@ -60,6 +62,8 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                   onStateChanged, callbackContext)
     {
         _otherLevel = _otherReplicator->status().level;
+        _otherReplicator->start();
+        _replicator->start();
         loopbackProvider().connect(_replicator->webSocket(), _otherReplicator->webSocket());
     }
 
@@ -74,7 +78,9 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     :C4Replicator(new Replicator(db, WebSocketFrom(openSocket), *this, {push, pull, properties}),
                   nullptr,
                   onStateChanged, callbackContext)
-    { }
+    {
+        _replicator->start();
+    }
 
     const AllocedDict& responseHeaders() {
         lock_guard<mutex> lock(_mutex);
