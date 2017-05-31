@@ -136,6 +136,9 @@ namespace litecore {
                         break;
                     }
             }
+            // Setting "LiteCoreLog" also sets the callback level to this level:
+            if (this == &DefaultLog)
+                sCallbackMinLevel = min(sCallbackMinLevel, level);
 #endif
             setLevel(level);
         }
@@ -174,7 +177,7 @@ namespace litecore {
 
 
     void LogDomain::vlog(LogLevel level, unsigned objRef, const char *fmt, va_list args) {
-        if (_level == LogLevel::Uninitialized)
+        if (_effectiveLevel == LogLevel::Uninitialized)
             computeLevel();
         if (!willLog(level))
             return;
