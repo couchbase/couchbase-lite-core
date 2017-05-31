@@ -61,7 +61,8 @@ namespace litecore { namespace repl {
                                    "Filtering not supported"_sl});
             return;
         }
-        
+
+        req->respond();
         startSending(since);
     }
 
