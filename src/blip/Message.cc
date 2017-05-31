@@ -200,6 +200,14 @@ namespace litecore { namespace blip {
     }
 
 
+    void MessageIn::respond() {
+        if (!noReply()) {
+            MessageBuilder reply(this);
+            respond(reply);
+        }
+    }
+
+
     void MessageIn::notHandled() {
         respondWithError({"BLIP"_sl, 404, "no handler for message"_sl});
     }

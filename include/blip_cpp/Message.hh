@@ -143,6 +143,10 @@ namespace litecore { namespace blip {
         /** Sends a response. (The message must be complete.) */
         void respond(MessageBuilder&);
 
+        /** Sends an empty default response, unless the request was sent noreply.
+            (The message must be complete.) */
+        void respond();
+
         /** Sends an error as a response. (The message must be complete.) */
         void respondWithError(Error);
 
