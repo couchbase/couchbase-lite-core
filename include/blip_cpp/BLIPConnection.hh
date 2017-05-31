@@ -50,6 +50,8 @@ namespace litecore { namespace blip {
 
         ConnectionDelegate& delegate() const                    {return _delegate;}
 
+        void start();
+
         /** Sends a built message as a new request. */
         void sendRequest(MessageBuilder&);
 
@@ -80,7 +82,7 @@ namespace litecore { namespace blip {
         void closed(CloseStatus);
 
     private:
-        void start(websocket::WebSocket*);
+        void setWebSocket(websocket::WebSocket*);
 
         std::string _name;
         bool const _isServer;

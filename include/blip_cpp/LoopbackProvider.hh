@@ -48,7 +48,7 @@ namespace litecore { namespace websocket {
         { }
 
         virtual void _connect() override {
-            if (_peer)
+            if (_peer && !_isOpen)
                 MockWebSocket::_connect();
         }
 

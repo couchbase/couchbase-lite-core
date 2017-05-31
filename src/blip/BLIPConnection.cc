@@ -11,6 +11,7 @@
 #include "BLIPInternal.hh"
 #include "WebSocketInterface.hh"
 #include "Actor.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "varint.hh"
 #include "PlatformCompat.hh"
@@ -105,7 +106,10 @@ namespace litecore { namespace blip {
         {
             _pendingRequests.reserve(10);
             _pendingResponses.reserve(10);
-            webSocket->connect(this);
+        }
+
+        void start() {
+            _webSocket->connect(this);
             retain(this); // keep myself from being freed while I'm the webSocket's delegate
         }
 
@@ -501,7 +505,7 @@ namespace litecore { namespace blip {
     {
         log("Opening connection...");
         provider.addProtocol("BLIP");
-        start(provider.createWebSocket(address, options));
+        setWebSocket(provider.createWebSocket(address, options));
     }
 
 
@@ -513,7 +517,7 @@ namespace litecore { namespace blip {
     ,_delegate(delegate)
     {
         log("Accepted connection");
-        start(webSocket);
+        setWebSocket(webSocket);
     }
 
 
@@ -523,10 +527,16 @@ namespace litecore { namespace blip {
     }
 
 
-    void Connection::start(WebSocket *webSocket) {
-        _state = kConnecting;
+    void Connection::setWebSocket(WebSocket *webSocket) {
         webSocket->name = _name;
         _io = new BLIPIO(this, webSocket);  // will connect the websocket
+    }
+
+
+    void Connection::start() {
+        Assert(_state == kClosed);
+        _state = kConnecting;
+        _io->start();
     }
 
 
