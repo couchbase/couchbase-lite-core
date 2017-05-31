@@ -73,7 +73,6 @@ namespace litecore {
         int execWithLock(const std::string &sql);
         int64_t intQuery(const char *query);
         void maybeVacuum();
-        void registerFleeceFunctions();
 
     private:
         friend class SQLiteKeyStore;
@@ -82,7 +81,6 @@ namespace litecore {
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
-        bool _registeredFleeceFunctions {false};
     };
 
 }

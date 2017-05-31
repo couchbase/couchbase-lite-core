@@ -229,20 +229,15 @@ path.path().c_str());
         maxThreads = 2;
         // TODO: Configure for other platforms
 #endif
+        auto sqlite = _sqlDb->getHandle();
         if (maxThreads > 0)
-            sqlite3_limit(_sqlDb->getHandle(), SQLITE_LIMIT_WORKER_THREADS, maxThreads);
-    }
+            sqlite3_limit(sqlite, SQLITE_LIMIT_WORKER_THREADS, maxThreads);
 
-
-    void SQLiteDataFile::registerFleeceFunctions() {
-        if (!_registeredFleeceFunctions) {
-            auto sqlite = _sqlDb->getHandle();
-            RegisterFleeceFunctions    (sqlite, fleeceAccessor(), documentKeys());
-            RegisterFleeceEachFunctions(sqlite, fleeceAccessor(), documentKeys());
-            RegisterFTSRankFunction(sqlite);
-            register_unicodesn_tokenizer(sqlite);
-            _registeredFleeceFunctions = true;
-        }
+        // Register custom functions and the tokenizer:
+        RegisterFleeceFunctions    (sqlite, fleeceAccessor(), documentKeys());
+        RegisterFleeceEachFunctions(sqlite, fleeceAccessor(), documentKeys());
+        RegisterFTSRankFunction(sqlite);
+        register_unicodesn_tokenizer(sqlite);
     }
 
 

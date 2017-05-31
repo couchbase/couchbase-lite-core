@@ -341,8 +341,6 @@ namespace litecore {
     void SQLiteKeyStore::createIndex(slice expression,
                                      IndexType type,
                                      const IndexOptions *options) {
-        db().registerFleeceFunctions();
-
         alloc_slice expressionFleece;
         const Array *params;
         tie(expressionFleece, params) = parseIndexExpr(expression, type);

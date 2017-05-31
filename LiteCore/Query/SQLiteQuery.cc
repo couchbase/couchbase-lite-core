@@ -461,7 +461,6 @@ namespace litecore {
 
     // The factory method that creates a SQLite Query.
     Retained<Query> SQLiteKeyStore::compileQuery(slice selectorExpression) {
-        ((SQLiteDataFile&)dataFile()).registerFleeceFunctions();
         return new SQLiteQuery(*this, selectorExpression);
     }
 
