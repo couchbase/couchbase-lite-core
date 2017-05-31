@@ -53,6 +53,15 @@ namespace litecore { namespace repl {
         _continuous = req->boolProperty("continuous"_sl);
         log("Peer is pulling %schanges from seq %llu",
             (_continuous ? "continuous " : ""), _lastSequence);
+
+        auto filter = req->property("filter"_sl);
+        if (filter) {
+            log("Peer requested filter '%.*s'", SPLAT(filter));
+            req->respondWithError({"LiteCore"_sl, kC4ErrorUnsupported,
+                                   "Filtering not supported"_sl});
+            return;
+        }
+        
         startSending(since);
     }
 

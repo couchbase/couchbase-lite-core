@@ -44,6 +44,7 @@ namespace litecore { namespace repl {
         DBWorker* const _dbActor;
         alloc_slice _lastSequence;
         bool _caughtUp {false};
+        bool _fatalError {false};
         RemoteSequenceSet _requestedSequences;
         std::vector<Retained<IncomingRev>> _spareIncomingRevs;
         unsigned _pendingCallbacks {0};

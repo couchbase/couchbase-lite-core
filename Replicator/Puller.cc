@@ -37,13 +37,42 @@ namespace litecore { namespace repl {
         log("Starting pull from remote seq %.*s", SPLAT(_lastSequence));
 
         MessageBuilder msg("subChanges"_sl);
-        msg.noreply = true;
         if (_lastSequence)
             msg["since"_sl] = _lastSequence;
         if (_options.pull == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
         msg["batch"_sl] = kChangesBatchSize;
-        sendRequest(msg);
+
+        auto channels = _options.channels();
+        if (channels) {
+            stringstream value;
+            unsigned n = 0;
+            for (Array::iterator i(channels); i; ++i) {
+                slice name = i.value().asString();
+                if (name) {
+                    if (++n)
+                         value << ",";
+                    value << name.asString();
+                }
+            }
+            msg["filter"_sl] = "sync_gateway/bychannel"_sl;
+            msg["channels"_sl] = value.str();
+        } else {
+            slice filter = _options.filter();
+            if (filter) {
+                msg["filter"_sl] = filter;
+                for (Dict::iterator i(_options.filterParams()); i; ++i)
+                    msg[i.keyString()] = i.value().asString();
+            }
+        }
+        
+        sendRequest(msg, asynchronize([=](blip::MessageProgress progress) {
+            //... After request is sent:
+            if (progress.reply && progress.reply->isError()) {
+                gotError(progress.reply);
+                _fatalError = true;
+            }
+        }));
     }
 
 
@@ -146,7 +175,9 @@ namespace litecore { namespace repl {
 
     
     Worker::ActivityLevel Puller::computeActivityLevel() const {
-        if (Worker::computeActivityLevel() == kC4Busy
+        if (_fatalError) {
+            return kC4Stopped;
+        } else if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
                 || !_requestedSequences.empty()
                 || _pendingCallbacks > 0) {

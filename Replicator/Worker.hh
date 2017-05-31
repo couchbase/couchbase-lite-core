@@ -57,8 +57,13 @@ namespace litecore { namespace repl {
                 return std::chrono::seconds(secs);
             }
 
-            fleeceapi::Array customHeaders() const {
-                return properties["headers"].asArray();
+            fleeceapi::Array customHeaders() const  {return arrayProperty("headers");}
+            fleeceapi::Array channels() const       {return arrayProperty("channels");}
+            fleece::slice filter() const            {return properties["filter"].asString();}
+            fleeceapi::Dict filterParams() const    {return properties["filterParams"].asDict();}
+
+            fleeceapi::Array arrayProperty(const char *name) const {
+                return properties[name].asArray();
             }
         };
 

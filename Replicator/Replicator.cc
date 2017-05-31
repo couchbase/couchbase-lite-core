@@ -100,6 +100,11 @@ namespace litecore { namespace repl {
                  _pushStatus.level, _pullStatus.level, _dbStatus.level,
                  status().progress.completed, status().progress.total);
 
+        if (_pullStatus.error.code)
+            onError(_pullStatus.error);
+        else if (_pushStatus.error.code)
+            onError(_pushStatus.error);
+
         // Save a checkpoint immediately when push or pull finishes:
         if (taskStatus.level == kC4Stopped)
             _checkpoint.save();

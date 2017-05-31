@@ -94,7 +94,9 @@ public:
         CHECK(statusChangedCalls > 0);
         CHECK(statusReceived.level == kC4Stopped);
         CHECK(statusReceived.progress.completed == statusReceived.progress.total);
-        CHECK(statusReceived.error.code == 0);
+        CHECK(statusReceived.error.code == expectedError.code);
+        if (expectedError.code)
+            CHECK(statusReceived.error.domain == expectedError.domain);
     }
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
@@ -214,6 +216,7 @@ public:
     bool _gotResponse {false};
     Replicator::Status statusReceived { };
     unsigned statusChangedCalls {0};
+    C4Error expectedError {};
 };
 
 
@@ -353,3 +356,19 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]
 
     checkAttachments(db2, blobKeys, attachments);
 }
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey("filter"_sl);
+    enc.writeString("Melitta"_sl);
+    enc.endDict();
+    alloc_slice data = enc.finish();
+    auto opts = Replicator::Options::pulling();
+    opts.properties = AllocedDict(data);
+
+    // LiteCore's replicator doesn't support filters, so we expect an Unsupported error back:
+    expectedError = {LiteCoreDomain, kC4ErrorUnsupported};
+    runReplicators(opts, Replicator::Options::passive());
+}
+

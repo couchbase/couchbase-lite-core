@@ -116,6 +116,9 @@ extern "C" {
     #define kC4ReplicatorOptionExtraHeaders   "headers"  // Extra HTTP headers; string[]
     #define kC4ReplicatorOptionCookies        "cookies"  // HTTP cookies; string[]
     #define kC4ReplicatorOptionAuthentication "auth"     // Auth settings; Dict
+    #define kC4ReplicatorOptionChannels       "channels" // SG channel names; string[]
+    #define kC4ReplicatorOptionFilter         "filter"   // Filter name; string
+    #define kC4ReplicatorOptionFilterParams   "filterParams"  // Filter params; Dict[string]
 
     // Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           // Auth property; string
