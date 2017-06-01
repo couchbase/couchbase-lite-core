@@ -87,7 +87,6 @@ namespace c4Internal {
 
         fleece::Encoder& sharedEncoder();
 
-        void useDocumentKeys()                              {_db->useDocumentKeys();}
         fleece::SharedKeys* documentKeys()                  {return _db->documentKeys();}
 
         SequenceTracker& sequenceTracker();
@@ -143,7 +142,6 @@ namespace c4Internal {
         virtual Document* newDocumentInstance(const Record&) =0;
         virtual alloc_slice revIDFromVersion(slice version) =0;
         virtual bool isFirstGenRevID(slice revID)               {return false;}
-        virtual DataFile::FleeceAccessor fleeceAccessor() const {return nullptr;}
 
     private:
         Database* const _db;
@@ -158,7 +156,7 @@ namespace c4Internal {
         Document* newDocumentInstance(const Record&) override;
         alloc_slice revIDFromVersion(slice version) override;
         bool isFirstGenRevID(slice revID) override;
-        DataFile::FleeceAccessor fleeceAccessor() const override;
+        static DataFile::FleeceAccessor fleeceAccessor();
     };
 
 
@@ -169,6 +167,7 @@ namespace c4Internal {
         Document* newDocumentInstance(C4Slice docID) override;
         Document* newDocumentInstance(const Record&) override;
         alloc_slice revIDFromVersion(slice version) override;
+        static DataFile::FleeceAccessor fleeceAccessor()        {return nullptr;}
 
         CASRevisionStore& revisionStore();
 

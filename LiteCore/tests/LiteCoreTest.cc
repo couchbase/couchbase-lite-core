@@ -138,13 +138,13 @@ FilePath DataFileTestFixture::databasePath(const string baseName) {
     factory->deleteFile(dbPath);
 }
 
-DataFile* DataFileTestFixture::newDatabase(const FilePath &path, DataFile::Options *options) {
+DataFile* DataFileTestFixture::newDatabase(const FilePath &path, const DataFile::Options *options) {
     //TODO: Set up options
     return factory().openFile(path, options);
 }
 
 
-void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
+void DataFileTestFixture::reopenDatabase(const DataFile::Options *newOptions) {
     auto dbPath = db->filePath();
     auto options = db->options();
     Debug("//// Closing db");
@@ -159,7 +159,7 @@ void DataFileTestFixture::reopenDatabase(DataFile::Options *newOptions) {
 
 
 
-DataFileTestFixture::DataFileTestFixture(int testOption) {
+DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options *options) {
     static once_flag once;
     call_once(once, [] {
         auto path = FilePath::tempDirectory()["LiteCoreC++Tests.c4log"];
@@ -170,7 +170,7 @@ DataFileTestFixture::DataFileTestFixture(int testOption) {
 
     auto dbPath = databasePath("cbl_core_temp");
     deleteDatabase(dbPath);
-    db = newDatabase(dbPath);
+    db = newDatabase(dbPath, options);
     store = &db->defaultKeyStore();
 }
 

@@ -43,12 +43,17 @@ namespace litecore {
     class DataFile {
     public:
 
+        // Callback that takes a record body and returns the portion of it containing Fleece data
+        typedef slice (*FleeceAccessor)(slice recordBody);
+
         struct Options {
             KeyStore::Capabilities keyStores;
-            bool create         :1;     ///< Should the db be created if it doesn't exist?
-            bool writeable      :1;     ///< If false, db is opened read-only
-            EncryptionAlgorithm encryptionAlgorithm;
-            alloc_slice encryptionKey;
+            bool                create         :1;      ///< Should the db be created if it doesn't exist?
+            bool                writeable      :1;      ///< If false, db is opened read-only
+            bool                useDocumentKeys:1;      ///< Use SharedKeys for Fleece docs
+            EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
+            alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
+            FleeceAccessor      fleeceAccessor;         ///< Fn to get Fleece from Record body
 
             static const Options defaults;
         };
@@ -58,12 +63,6 @@ namespace litecore {
 
         const FilePath& filePath() const noexcept;
         const Options& options() const noexcept              {return _options;}
-
-        // Callback that takes a record body and returns the portion of it containing Fleece data
-        typedef slice (*FleeceAccessor)(slice recordBody);
-
-        void setRecordFleeceAccessor(FleeceAccessor a)      {_fleeceAccessor = a;}
-        FleeceAccessor fleeceAccessor() const               {return _fleeceAccessor;}
 
         virtual bool isOpen() const noexcept =0;
 
@@ -92,8 +91,8 @@ namespace litecore {
         /** The number of record deletions since the DataFile was created (Used by the indexer) */
         uint64_t purgeCount() const;
 
-        void useDocumentKeys();
-        fleece::SharedKeys* documentKeys() const          {return (fleece::SharedKeys*)_documentKeys.get();}
+        FleeceAccessor fleeceAccessor() const               {return _options.fleeceAccessor;}
+        fleece::SharedKeys* documentKeys() const;
 
         void* owner()                                       {return _owner;}
         void setOwner(void* owner)                          {_owner = owner;}
@@ -214,7 +213,6 @@ namespace litecore {
         std::unique_ptr<fleece::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic<void*>      _owner {nullptr};               // App-defined object that owns me
-        FleeceAccessor          _fleeceAccessor {nullptr};      // Callback to get Fleece data from a record
     };
 
 

@@ -327,9 +327,14 @@ namespace litecore {
     }
 
 
-    void DataFile::useDocumentKeys() {
-        if (!_documentKeys.get())
-            _documentKeys = make_unique<DocumentKeys>(*this);
+    SharedKeys* DataFile::documentKeys() const {
+        auto keys = _documentKeys.get();
+        if (!keys && _options.useDocumentKeys) {
+            auto mutableThis = const_cast<DataFile*>(this);
+            keys = new DocumentKeys(*mutableThis);
+            mutableThis->_documentKeys.reset(keys);
+        }
+        return keys;
     }
 
 

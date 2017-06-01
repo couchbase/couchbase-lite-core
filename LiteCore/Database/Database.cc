@@ -100,11 +100,23 @@ namespace c4Internal {
         }
         options.create = (config.flags & kC4DB_Create) != 0;
         options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
+        options.useDocumentKeys = (config.flags & kC4DB_SharedKeys) != 0;
 
         options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
         if (options.encryptionAlgorithm != kNoEncryption) {
             options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
                                                 sizeof(config.encryptionKey.bytes));
+        }
+
+        switch (config.versioning) {
+            case kC4VersionVectors:
+                options.fleeceAccessor = VectorDocumentFactory::fleeceAccessor();
+                break;
+            case kC4RevisionTrees:
+                options.fleeceAccessor = TreeDocumentFactory::fleeceAccessor();
+                break;
+            default:
+                error::_throw(error::InvalidParameter);
         }
 
         const char *storageEngine = config.storageEngine;
@@ -136,10 +148,8 @@ namespace c4Internal {
     ,config(inConfig)
     ,_encoder(new fleece::Encoder())
     {
-        if (config.flags & kC4DB_SharedKeys) {
-            _db->useDocumentKeys();
+        if (config.flags & kC4DB_SharedKeys)
             _encoder->setSharedKeys(documentKeys());
-        }
         if (!(config.flags & kC4DB_NonObservable))
             _sequenceTracker.reset(new SequenceTracker());
 
@@ -166,7 +176,6 @@ namespace c4Internal {
             default:                error::_throw(error::InvalidParameter);
         }
         _documentFactory.reset(factory);
-        _db->setRecordFleeceAccessor(factory->fleeceAccessor());
 }
 
 

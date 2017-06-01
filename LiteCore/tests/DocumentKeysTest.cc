@@ -14,11 +14,11 @@ using namespace fleece;
 
 class DocumentKeysTestFixture : public DataFileTestFixture {
 public:
+    static const DataFile::Options kOptions;
+
     DocumentKeysTestFixture()
-    :DataFileTestFixture()
-    {
-        db->useDocumentKeys();
-    }
+    :DataFileTestFixture(0, &kOptions)
+    { }
 
     alloc_slice convertJSON(const char *json) {
         Encoder enc;
@@ -35,6 +35,14 @@ public:
         store->set(slice(docID), convertJSON(json), t);
     }
 
+};
+
+
+const DataFile::Options DocumentKeysTestFixture::kOptions = {
+    {true},
+    true,
+    true,
+    true,       // useDocumentKeys
 };
 
 

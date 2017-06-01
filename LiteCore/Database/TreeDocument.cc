@@ -238,7 +238,7 @@ namespace c4Internal {
         return new TreeDocument(database(), doc);
     }
 
-    DataFile::FleeceAccessor TreeDocumentFactory::fleeceAccessor() const {
+    DataFile::FleeceAccessor TreeDocumentFactory::fleeceAccessor() {
         return RawRevision::getCurrentRevBody;
     }
 

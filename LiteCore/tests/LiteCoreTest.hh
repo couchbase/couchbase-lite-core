@@ -63,7 +63,7 @@ public:
     static std::string sFixturesDir;
 
     DataFileTestFixture()   :DataFileTestFixture(0) { }     // defaults to SQLite, rev-trees
-    DataFileTestFixture(int testOption);
+    DataFileTestFixture(int testOption, const DataFile::Options *options =nullptr);
     ~DataFileTestFixture();
 
     DataFile::Factory& factory();
@@ -73,8 +73,8 @@ public:
 
     FilePath databasePath(const string baseName);
     void deleteDatabase(const FilePath &dbPath);
-    DataFile* newDatabase(const FilePath &path, DataFile::Options* =nullptr);
-    void reopenDatabase(DataFile::Options *newOptions =nullptr);
+    DataFile* newDatabase(const FilePath &path, const DataFile::Options* =nullptr);
+    void reopenDatabase(const DataFile::Options *newOptions =nullptr);
 
 
 };
