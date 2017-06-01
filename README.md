@@ -63,7 +63,7 @@ Once you've cloned or downloaded the source tree...
 
 If you want to use the Objective-C or Swift APIs, you should instead check out and build the `feature/2.0` branch of the [couchbase-lite-ios][CBL_iOS_2] repo, which itself includes LiteCore as a submodule. The following instructions are to build just LiteCore on its own:
 
-* Make sure you have Xcode 8 or later. 
+* Make sure you have Xcode **8.3** or later. 
 * Open **Xcode/LiteCore.xcodeproj**. 
 * Select the scheme **LiteCore dylib**. 
 * Build.
