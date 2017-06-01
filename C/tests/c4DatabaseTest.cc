@@ -358,51 +358,59 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
 
     C4Slice docID3 = C4STR("dont_expire_me");
     createRev(docID3, kRevID, kBody);
+
+    // Wait for the expiration time to pass:
+    C4Log("---- Wait till expiration time...");
     sleep(2u);
-    
+
+    C4Log("---- Scan expired docs (#1)");
     C4ExpiryEnumerator *e = c4db_enumerateExpired(db, &err);
     REQUIRE(e != nullptr);
-    
     int expiredCount = 0;
-    while(c4exp_next(e, nullptr)) {
+    while(c4exp_next(e, &err)) {
         C4SliceResult existingDocID = c4exp_getDocID(e);
         REQUIRE(existingDocID != docID3);
         c4slice_free(existingDocID);
         expiredCount++;
     }
-    
+    REQUIRE(err.code == 0);
     c4exp_free(e);
     REQUIRE(expiredCount == 2);
+
     REQUIRE(c4doc_getExpiration(db, docID) == (uint64_t)expire);
     REQUIRE(c4doc_getExpiration(db, docID2) == (uint64_t)expire);
     REQUIRE(c4db_nextDocExpiration(db) == (uint64_t)expire);
     
+    C4Log("---- Scan expired docs (#2)");
     e = c4db_enumerateExpired(db, &err);
     REQUIRE(e != nullptr);
-    
     expiredCount = 0;
-    while(c4exp_next(e, nullptr)) {
+    while(c4exp_next(e, &err)) {
         C4SliceResult existingDocID = c4exp_getDocID(e);
         REQUIRE(existingDocID != docID3);
         c4slice_free(existingDocID);
         expiredCount++;
     }
-    
+    REQUIRE(err.code == 0);
+    REQUIRE(expiredCount == 2);
+
+    C4Log("---- Purge expired docs");
     REQUIRE(c4exp_purgeExpired(e, &err));
     c4exp_free(e);
-    REQUIRE(expiredCount == 2);
-    
+
+    C4Log("---- Scan expired docs (#3)");
     e = c4db_enumerateExpired(db, &err);
     REQUIRE(e != nullptr);
-    
     expiredCount = 0;
-    while(c4exp_next(e, nullptr)) {
+    while(c4exp_next(e, &err)) {
         expiredCount++;
     }
-    
+    REQUIRE(err.code == 0);
+    REQUIRE(expiredCount == 0);
+
+    C4Log("---- Purge expired docs (again)");
     REQUIRE(c4exp_purgeExpired(e, &err));
     c4exp_free(e);
-    REQUIRE(expiredCount == 0);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")

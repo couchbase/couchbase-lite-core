@@ -37,6 +37,7 @@ namespace litecore {
      inclusiveStart(true),
      inclusiveEnd(true),
      includeDeleted(false),
+     onlyBlobs(false),
      contentOptions(kDefaultContent)
     { }
 
