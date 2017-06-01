@@ -16,7 +16,7 @@
 #include "c4Private.h"
 #include <memory>
 #include <mutex>
-
+#include <unordered_set>
 
 namespace fleece {
     class Encoder;
@@ -115,6 +115,9 @@ namespace c4Internal {
     private:
         static FilePath findOrCreateBundle(const string &path, C4DatabaseConfig &config);
         void _cleanupTransaction(bool committed);
+        
+        std::unordered_set<std::string> collectBlobs();
+        void removeUnusedBlobs(const std::unordered_set<std::string> &used);
 
         unique_ptr<DataFile>        _db;                    // Underlying DataFile
         Transaction*                _transaction {nullptr}; // Current Transaction, or null

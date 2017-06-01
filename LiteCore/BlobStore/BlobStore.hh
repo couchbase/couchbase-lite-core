@@ -11,6 +11,7 @@
 #include "FilePath.hh"
 #include "Stream.hh"
 #include "SecureDigest.hh"
+#include <unordered_set>
 
 #if !SECURE_DIGEST_AVAILABLE
 #error No SHA digest API configured (See SecureDigest.hh)
@@ -127,6 +128,7 @@ namespace litecore {
         uint64_t totalSize() const;
 
         void deleteStore()                          {_dir.delRecursive();}
+        void deleteAllExcept(const std::unordered_set<std::string>& inUse);
 
         bool has(const blobKey &key) const          {return get(key).exists();}
 

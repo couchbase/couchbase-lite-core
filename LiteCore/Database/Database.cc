@@ -243,10 +243,37 @@ namespace c4Internal {
         }
     }
 
+    unordered_set<string> Database::collectBlobs() {
+        RecordEnumerator::Options options;
+        options.onlyBlobs = true;
+        RecordEnumerator e(defaultKeyStore(), 0, INT64_MAX, options);
+        unordered_set<string> usedDigests;
+        for(const Record& rec : e) {
+            auto doc = documentFactory().newDocumentInstance(rec);
+            doc->selectCurrentRevision();
+            do {
+                if(!doc->loadSelectedRevBodyIfAvailable()) {
+                    continue;
+                }
+                
+                const Dict* body = Value::fromTrustedData(doc->selectedRev.body)->asDict();
+                auto keys = _db->documentKeys();
+                Document::findBlobReferences(body, keys, [&usedDigests](const blobKey& key, uint64_t size) {
+                    usedDigests.insert(key.filename());
+                });
+            } while(doc->selectNextRevision());
+            
+            delete doc;
+        }
+        
+        return usedDigests;
+    }
 
     void Database::compact() {
         mustNotBeInTransaction();
         dataFile()->compact();
+        unordered_set<string> digestsInUse = collectBlobs();
+        blobStore()->deleteAllExcept(digestsInUse);
     }
 
 

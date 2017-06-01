@@ -183,6 +183,16 @@ namespace litecore {
         _installed = true;
         return blob;
     }
+    
+#pragma mark - DELETING:
+    
+    void BlobStore::deleteAllExcept(const unordered_set<string> &inUse) {
+        _dir.forEachFile([&inUse](const FilePath &path) {
+            if(find(inUse.cbegin(), inUse.cend(), path.fileName()) == inUse.cend()) {
+                path.del();
+            }
+        });
+    }
 
 
 #pragma mark - BLOBSTORE:
