@@ -25,6 +25,7 @@
 #include "unistd.h"
 #endif
 
+using namespace std;
 
 class C4DatabaseTest : public C4Test {
     public:
@@ -432,4 +433,51 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C]")
     C4Error err;
     C4BlobStore *blobs = c4db_getBlobStore(db, &err);
     REQUIRE(blobs != nullptr);
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
+{
+    C4Error err;
+    C4Slice doc1ID = C4STR("doc001");
+    C4Slice doc2ID = C4STR("doc002");
+    C4Slice doc3ID = C4STR("doc003");
+    string content1 = "This is the first attachment";
+    string content2 = "This is the second attachment";
+    
+    vector<string> atts;
+    C4BlobKey key1, key2;
+    atts.emplace_back(content1);
+    {
+        TransactionHelper t(db);
+        key1 = addDocWithAttachments(doc1ID, atts, "text/plain")[0];
+        atts.clear();
+        atts.emplace_back(content2);
+        key2 = addDocWithAttachments(doc2ID, atts, "text/plain")[0];
+        addDocWithAttachments(doc3ID, atts, "text/plain");
+    }
+    
+    C4BlobStore* store = c4db_getBlobStore(db, &err);
+    REQUIRE(store);
+    REQUIRE(c4db_compact(db, &err));
+    REQUIRE(c4blob_getSize(store, key1) > 0);
+    REQUIRE(c4blob_getSize(store, key2) > 0);
+    
+    // Only reference to first blob is gone
+    createRev(doc1ID, kRev2ID, kC4SliceNull, kRevDeleted);
+    REQUIRE(c4db_compact(db, &err));
+    REQUIRE(c4blob_getSize(store, key1) == -1);
+    REQUIRE(c4blob_getSize(store, key2) > 0);
+    
+    // Two references exist to the second blob, so it should still
+    // exist after deleting doc002
+    createRev(doc2ID, kRev2ID, kC4SliceNull, kRevDeleted);
+    REQUIRE(c4db_compact(db, &err));
+    REQUIRE(c4blob_getSize(store, key1) == -1);
+    REQUIRE(c4blob_getSize(store, key2) > 0);
+    
+    // At this point all blobs should be gone
+    createRev(doc3ID, kRev2ID, kC4SliceNull, kRevDeleted);
+    REQUIRE(c4db_compact(db, &err));
+    REQUIRE(c4blob_getSize(store, key1) == -1);
+    REQUIRE(c4blob_getSize(store, key2) == -1);
 }
