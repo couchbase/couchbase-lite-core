@@ -70,12 +70,10 @@ public:
 
         // Client replicator:
         replClient = new Replicator(dbServer, provider, {"ws", "srv"}, *this, opts1);
-        replClient->start();
 
         // Server (passive) replicator:
         Address addrB{"ws", "cli"};
         replServer = new Replicator(dbClient, provider.createWebSocket(addrB), *this, opts2);
-        replServer->start();
 
         // Response headers:
         Encoder enc;
@@ -85,7 +83,10 @@ public:
         enc.endDict();
         AllocedDict headers(enc.finish());
 
-        provider.connect(replClient->webSocket(), replServer->webSocket(), headers);
+        // Bind the replicators' WebSockets and start them:
+        provider.bind(replClient->webSocket(), replServer->webSocket(), headers);
+        replClient->start();
+        replServer->start();
 
         Log("Waiting for replication to complete...");
         while (replClient->status().level > kC4Stopped || replServer->status().level > kC4Stopped)

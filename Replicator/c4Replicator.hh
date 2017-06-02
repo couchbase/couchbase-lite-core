@@ -61,10 +61,10 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                                  *this, { kC4Passive, kC4Passive }),
                   onStateChanged, callbackContext)
     {
+        loopbackProvider().bind(_replicator->webSocket(), _otherReplicator->webSocket());
         _otherLevel = _otherReplicator->status().level;
         _otherReplicator->start();
         _replicator->start();
-        loopbackProvider().connect(_replicator->webSocket(), _otherReplicator->webSocket());
     }
 
     // Constructor for already-open socket
