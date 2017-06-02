@@ -1,6 +1,6 @@
 //
 //  LCSServerConfig.m
-//  LiteCoreServe-iOS
+//  LiteCoreServ-iOS
 //
 //  Created by Pasin Suriyentrakorn on 6/1/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
