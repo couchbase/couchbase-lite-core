@@ -97,7 +97,7 @@ namespace litecore { namespace websocket {
             char errorStr[256];
             mg_error error {errorStr, sizeof(errorStr), 0};
             _connection = mg_connect_websocket_client2(to.hostname.c_str(), to.port,
-                                                      hasSuffix(to.scheme, "s"),
+                                                      to.scheme != "ws" && hasSuffix(to.scheme, "s"),
                                                       &error,
                                                       to.path.c_str(),
                                                       extraHeaders.str().c_str(),

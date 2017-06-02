@@ -39,8 +39,9 @@ namespace LiteCore.Interop
         POSIXDomain,
         SQLiteDomain = 4,
         FleeceDomain,
-        DNSDomain,
+        NetworkDomain,
         WebSocketDomain,
+        MaxErrorDomainPlus1
     }
 
 #if LITECORE_PACKAGED
