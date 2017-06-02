@@ -21,12 +21,9 @@ namespace litecore { namespace websocket {
     /** A WebSocket connection that relays messages to another instance of LoopbackWebSocket. */
     class LoopbackWebSocket : public MockWebSocket {
     public:
-        void connectToPeer(LoopbackWebSocket *peer,
-                           const fleeceapi::AllocedDict &responseHeaders)
-        {
-            assert(peer);
-            enqueue(&LoopbackWebSocket::_connectToPeer,
-                    Retained<LoopbackWebSocket>(peer), responseHeaders);
+        virtual void connect() override {
+            assert(_peer);
+            MockWebSocket::connect();
         }
 
         virtual bool send(fleece::slice msg, bool binary) override {
@@ -47,20 +44,16 @@ namespace litecore { namespace websocket {
         ,_latency(latency)
         { }
 
-        virtual void _connect() override {
-            if (_peer && !_isOpen)
-                MockWebSocket::_connect();
+        void bind(LoopbackWebSocket *peer, const fleeceapi::AllocedDict &responseHeaders) {
+            // Called by LoopbackProvider::bind, which is called before my connect() method,
+            // so it's safe to set the member variables directly instead of on the actor queue.
+            _peer = peer;
+            _responseHeaders = responseHeaders;
         }
 
-        virtual void _connectToPeer(Retained<LoopbackWebSocket> peer,
-                                    fleeceapi::AllocedDict responseHeaders)
-            {
-            if (peer != _peer) {
-                assert(!_peer);
-                _peer = peer;
-                _simulateHTTPResponse(200, responseHeaders);
-                _simulateConnected();
-            }
+        virtual void _connect() override {
+            _simulateHTTPResponse(200, _responseHeaders);
+            MockWebSocket::_connect();
         }
 
         virtual void _send(fleece::alloc_slice msg, bool binary) override {
@@ -103,6 +96,7 @@ namespace litecore { namespace websocket {
     private:
         actor::delay_t _latency {0.0};
         Retained<LoopbackWebSocket> _peer;
+        fleeceapi::AllocedDict _responseHeaders;
         std::atomic<size_t> _bufferedBytes {0};
     };
 
@@ -122,15 +116,17 @@ namespace litecore { namespace websocket {
             return new LoopbackWebSocket(*this, address, _latency);
         }
 
-        /** Connects two LoopbackWebSocket objects to each other, so each receives messages sent
-            by the other. When one closes, the other will receive a close event. */
-        void connect(WebSocket *c1, WebSocket *c2,
-                     const fleeceapi::AllocedDict &responseHeaders ={})
+        /** Binds two LoopbackWebSocket objects to each other, so after they open, each will 
+            receive messages sent by the other. When one closes, the other will receive a close
+            event.
+            MUST be called before the socket objects' connect() methods are called! */
+        void bind(WebSocket *c1, WebSocket *c2,
+                  const fleeceapi::AllocedDict &responseHeaders ={})
         {
             auto lc1 = dynamic_cast<LoopbackWebSocket*>(c1);
             auto lc2 = dynamic_cast<LoopbackWebSocket*>(c2);
-            lc1->connectToPeer(lc2, responseHeaders);
-            lc2->connectToPeer(lc1, responseHeaders);
+            lc1->bind(lc2, responseHeaders);
+            lc2->bind(lc1, responseHeaders);
         }
 
     private:
