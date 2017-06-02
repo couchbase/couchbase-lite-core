@@ -17,6 +17,7 @@
 #include <thread>
 
 #if __APPLE__
+// Use GCD if available, as it's more efficient and has better integration with OS & debugger.
 #define ACTORS_USE_GCD
 #endif
 
@@ -44,11 +45,15 @@ namespace litecore { namespace actor {
     std::function<RetVal(Args...)> get_fun_type(RetVal (*)(Args...));
     ////
 
-    // Use GCD if available, as it's more efficient and has better integration with OS & debugger.
+
 #ifdef ACTORS_USE_GCD
-    typedef GCDMailbox Mailbox;
+    using Mailbox = GCDMailbox;
+    #define ACTOR_BIND_METHOD(RCVR, METHOD, ARGS)   ^{ ((RCVR)->*METHOD)(ARGS...); }
+    #define ACTOR_BIND_FN(FN, ARGS)                 ^{ FN(ARGS...); }
 #else
-    typedef ThreadedMailbox Mailbox;
+    using Mailbox = ThreadedMailbox;
+    #define ACTOR_BIND_METHOD(RCVR, METHOD, ARGS)   std::bind(METHOD, RCVR, ARGS...)
+    #define ACTOR_BIND_FN(FN, ARGS)                 std::bind(FN, ARGS...)
 #endif
 
 
@@ -78,26 +83,14 @@ namespace litecore { namespace actor {
         /** Schedules a call to a method. */
         template <class Rcvr, class... Args>
         void enqueue(void (Rcvr::*fn)(Args...), Args... args) {
-#ifdef ACTORS_USE_GCD
-            // not strictly necessary, but more efficient
-            retain(this);
-            _mailbox.enqueue( ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
-#else
-            _mailbox.enqueue(std::bind(fn, (Rcvr*)this, args...));
-#endif
+            _mailbox.enqueue(ACTOR_BIND_METHOD((Rcvr*)this, fn, args));
         }
 
         /** Schedules a call to a method, after a delay.
             Other calls scheduled after this one may end up running before it! */
         template <class Rcvr, class... Args>
         void enqueueAfter(delay_t delay, void (Rcvr::*fn)(Args...), Args... args) {
-#ifdef ACTORS_USE_GCD
-            // not strictly necessary, but more efficient
-            retain(this);
-            _mailbox.enqueueAfter(delay, ^{ (((Rcvr*)this)->*fn)(args...); release(this); } );
-#else
-            _mailbox.enqueueAfter(delay, std::bind(fn, (Rcvr*)this, args...));
-#endif
+            _mailbox.enqueueAfter(delay, ACTOR_BIND_METHOD((Rcvr*)this, fn, args));
         }
 
         /** Converts a lambda into a form that runs asynchronously,
@@ -107,7 +100,7 @@ namespace litecore { namespace actor {
         std::function<void(Args...)> _asynchronize(std::function<void(Args...)> fn) {
             Retained<Actor> ret(this);
             return [=](Args ...arg) mutable {
-                ret->_mailbox.enqueue( std::bind(fn, arg...) );
+                ret->_mailbox.enqueue(ACTOR_BIND_FN(fn, arg));
             };
         }
 
@@ -136,5 +129,9 @@ namespace litecore { namespace actor {
 
         Mailbox _mailbox;
     };
+
+
+#undef ACTOR_BIND_METHOD
+#undef ACTOR_BIND_FN
 
 } }

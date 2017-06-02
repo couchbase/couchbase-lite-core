@@ -64,19 +64,6 @@ namespace litecore { namespace actor {
     }
 
     
-    void GCDMailbox::enqueue(std::function<void()> f) {
-        beginLatency();
-        ++_eventCount;
-        retain(_actor);
-        dispatch_async(_queue, ^{
-            endLatency();
-            beginBusy();
-            f();
-            afterEvent();
-        });
-    }
-
-
     void GCDMailbox::enqueue(void (^block)()) {
         beginLatency();
         ++_eventCount;
@@ -99,24 +86,6 @@ namespace litecore { namespace actor {
             endLatency();
             beginBusy();
             block();
-            afterEvent();
-        };
-        int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();
-        if (ns > 0)
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, ns), _queue, wrappedBlock);
-        else
-            dispatch_async(_queue, wrappedBlock);
-    }
-
-
-    void GCDMailbox::enqueueAfter(delay_t delay, std::function<void()> f) {
-        beginLatency();
-        ++_eventCount;
-        retain(_actor);
-        auto wrappedBlock = ^{
-            endLatency();
-            beginBusy();
-            f();
             afterEvent();
         };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();

@@ -30,9 +30,8 @@ namespace litecore { namespace actor {
 
         unsigned eventCount() const                         {return _eventCount;}
 
-        void enqueue(std::function<void()> f);
+        //void enqueue(std::function<void()> f);
         void enqueue(void (^block)());
-        void enqueueAfter(delay_t delay, std::function<void()>);
         void enqueueAfter(delay_t delay, void (^block)());
 
         static void startScheduler(Scheduler *)             { }
