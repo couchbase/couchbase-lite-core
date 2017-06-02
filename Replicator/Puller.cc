@@ -80,12 +80,10 @@ namespace litecore { namespace repl {
     void Puller::handleChanges(Retained<MessageIn> req) {
         logVerbose("Handling 'changes' message");
         auto changes = req->JSONBody().asArray();
-        if (!changes) {
+        if (!changes && req->body() != "null"_sl) {
             warn("Invalid body of 'changes' message");
-            if (req->body() != "null"_sl) {       // allow null since SG seems to send it(?)
-                req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
-                return;
-            }
+            req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
+            return;
         }
 
         if (changes.empty()) {
