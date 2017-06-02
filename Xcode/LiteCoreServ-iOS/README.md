@@ -1,24 +1,24 @@
-#LiteCoreServ-iOS
+# LiteCoreServ-iOS
 
 LiteCoreServ-iOS is a LiteCoreServe app that runs on iOS devices or simulators. The purpose of the app is for testing LiteCore via the REST APIs.
 
-##How to build and run?
+## How to build and run?
 
-###Requirement
+### Requirement
 - XCode 8.3
 
-###Get the code
+### Get the code
  ```
  $git clone https://github.com/couchbase/couchbase-lite-core.git
  $git submodule update --init
  ```
  
-###Build and run with XCode
+### Build and run with XCode
 1. $cd Xcode
 1. Open LiteCore.xcodeproj project with XCode.
 2. Select `LiteCoreServ-iOS` scheme to run on iOS devices.
 
-###Build and run with command lines (Simulator only)
+### Build and run with command lines (Simulator only)
 1. Build the app:
 
  ```
@@ -41,8 +41,8 @@ LiteCoreServ-iOS is a LiteCoreServe app that runs on iOS devices or simulators. 
  count=`xcrun simctl list | grep Booted | wc -l | sed -e 's/ //g'`
  while [ $count -lt 1 ]
  do
- 	sleep 1
-	 count=`xcrun simctl list | grep Booted | wc -l | sed -e 's/ //g'`
+    sleep 1
+    count=`xcrun simctl list | grep Booted | wc -l | sed -e 's/ //g'`
  done
  ```
 3. Install and run the app on the simulator:
@@ -54,7 +54,7 @@ LiteCoreServ-iOS is a LiteCoreServe app that runs on iOS devices or simulators. 
 
  Reference: [https://coderwall.com/p/fprm_g/chose-ios-simulator-via-command-line--2](https://coderwall.com/p/fprm_g/chose-ios-simulator-via-command-line--2)
 
-##How to change default settings?
+## How to change default settings?
 Before running the app, you can setup environment variables to set the app settings. The app settings consist of:
 
 Name       | Default value| Description|
@@ -69,7 +69,7 @@ If running the app with XCode, you can select `Edit Scheme...` of the scheme you
 export SIMCTL_CHILD_port="8888"
 ```
 
-##How to use Admin port?
+## How to use Admin port?
 1. `PUT /start` : Start or restart the listener with JSON configuration.
 
  ```
