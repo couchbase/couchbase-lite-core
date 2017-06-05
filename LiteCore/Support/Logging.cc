@@ -232,7 +232,13 @@ namespace litecore {
     static void invokeCallback(LogDomain &domain, LogLevel level, const char *fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        sCallback(domain, level, fmt, args);
+        if (sCallbackPreformatted) {
+            vsnprintf(sFormatBuffer, sizeof(sFormatBuffer), fmt, args);
+            va_list noArgs { };
+            sCallback(domain, level, sFormatBuffer, noArgs);
+        } else {
+            sCallback(domain, level, fmt, args);
+        }
         va_end(args);
     }
 
