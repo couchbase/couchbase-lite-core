@@ -256,6 +256,17 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Non-Empty DB", "[Push][.RealReplic
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty Doc", "[Push][.RealReplicator]") {
+    Encoder enc;
+    enc.beginDict();
+    enc.endDict();
+    alloc_slice body = enc.finish();
+    createRev("doc"_sl, kRevID, body);
+
+    replicate(kC4OneShot, kC4Disabled);
+}
+
+
 TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[Push][.RealReplicator]") {
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     replicate(kC4OneShot, kC4Disabled);

@@ -241,6 +241,19 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":100}");
 }
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
+    Encoder enc;
+    enc.beginDict();
+    enc.endDict();
+    alloc_slice body = enc.finish();
+    createRev("doc"_sl, kRevID, body);
+
+    runReplicators(Replicator::Options::pushing(),
+                   Replicator::Options::passive());
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":1}");
+}
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     runReplicators(Replicator::Options::pushing(),
