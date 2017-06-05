@@ -2653,7 +2653,7 @@
 			attributes = {
 				CLASSPREFIX = LC;
 				LastSwiftUpdateCheck = 0730;
-				LastUpgradeCheck = 0830;
+				LastUpgradeCheck = 0900;
 				ORGANIZATIONNAME = Couchbase;
 				TargetAttributes = {
 					270C6BA01EBA74D800E73415 = {
@@ -4272,6 +4272,7 @@
 				93FA3F5E1EE21A4D00D15CF5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
