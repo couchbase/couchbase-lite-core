@@ -60,7 +60,7 @@ namespace litecore { namespace websocket {
     enum CloseReason {
         kWebSocketClose,        // Closed by WebSocket protocol
         kPOSIXError,            // Closed due to IP socket error (see <errno.h>)
-        kNetworkError,          // Closed due to other network error (codes undefined at this level)
+        kNetworkError,          // Closed due to other network error (see NetworkError below)
         kUnknownError
     };
 
@@ -78,6 +78,19 @@ namespace litecore { namespace websocket {
         kCodeExtensionNotNegotiated,
         kCodeUnexpectedCondition,
         kCodeFailedTLSHandshake = 1015,
+    };
+
+    enum NetworkError {
+        kNetErrDNSFailure = 1,        // DNS lookup failed
+        kNetErrUnknownHost,           // DNS server doesn't know the hostname
+        kNetErrTimeout,
+        kNetErrInvalidURL,
+        kNetErrTooManyRedirects,
+        kNetErrTLSHandshakeFailed,
+        kNetErrTLSCertExpired,
+        kNetErrTLSCertUntrusted,
+        kNetErrTLSClientCertRequired,
+        kNetErrTLSClientCertRejected, // 10
     };
 
     struct CloseStatus {
