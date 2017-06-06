@@ -32,7 +32,7 @@ namespace c4Internal {
     // Encodes a Dict, skipping top-level properties whose names begin with an underscore.
     alloc_slice Document::encodeStrippingOldMetaProperties(const Dict* root) {
         Encoder e;
-        e.beginDictionary(root->count());
+        e.beginDictionary(root ? root->count() : 0);
         for (Dict::iterator i(root); i; ++i) {
             slice key = i.keyString();
             if (isOldMetaProperty(key))
