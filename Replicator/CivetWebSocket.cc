@@ -109,11 +109,25 @@ namespace litecore { namespace websocket {
                 mg_set_user_connection_data(_connection, this);
                 delegate().onWebSocketConnect();
             } else {
+                // Map civetweb error codes to CloseStatus:
                 if (error.code >= MG_ERR_HTTP_STATUS_BASE) {
                     _closeStatus = {kWebSocketClose, error.code - MG_ERR_HTTP_STATUS_BASE};
                 } else if (error.code >= MG_ERR_CIVETWEB_BASE) {
-                    _closeStatus = {kUnknownError, error.code};
-                    //FIX: Some of the MG_ERR codes are worth mapping to CloseReasons
+                    _closeStatus.reason = kNetworkError;
+                    switch (error.code) {
+                        case MG_ERR_INVALID_CERT:
+                            _closeStatus.code = kNetErrTLSClientCertRejected;
+                            break;
+                        case MG_ERR_HOST_NOT_FOUND:
+                            _closeStatus.code = kNetErrUnknownHost;
+                            break;
+                        case MG_ERR_DNS_FAILURE:
+                            _closeStatus.code = kNetErrDNSFailure;
+                            break;
+                        default:
+                            _closeStatus = {kUnknownError, error.code};
+                            break;
+                    }
                 } else {
                     _closeStatus = {kPOSIXError, error.code};
                 }

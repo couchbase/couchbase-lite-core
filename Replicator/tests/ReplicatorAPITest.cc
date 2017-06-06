@@ -180,13 +180,24 @@ TEST_CASE("URL Parsing") {
 }
 
 
-// Try to connect to a nonexistent server (port 1 of localhost) and verify connection error.
+// Test connection-refused error by connecting to a bogus port of localhost
 TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
     address.hostname = C4STR("localhost");
     address.port = 1;
     replicate(kC4OneShot, kC4Disabled, false);
     CHECK(callbackStatus.error.domain == POSIXDomain);
     CHECK(callbackStatus.error.code == ECONNREFUSED);
+    CHECK(callbackStatus.progress.completed == 0);
+    CHECK(callbackStatus.progress.total == 0);
+}
+
+
+// Test host-not-found error by connecting to a nonexistent hostname
+TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[Push]") {
+    address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
+    replicate(kC4OneShot, kC4Disabled, false);
+    CHECK(callbackStatus.error.domain == NetworkDomain);
+    CHECK(callbackStatus.error.code == kC4NetErrUnknownHost);
     CHECK(callbackStatus.progress.completed == 0);
     CHECK(callbackStatus.progress.total == 0);
 }

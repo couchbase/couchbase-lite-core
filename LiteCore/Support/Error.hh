@@ -31,7 +31,7 @@ namespace litecore {
             ForestDB,           // unused
             SQLite,             // See <sqlite3.h>
             Fleece,             // See FleeceException.h
-            Network,            // See NetworkError enum, below
+            Network,            // See NetworkError enum in WebSocketInterface.hh
             WebSocket,          // See WebSocketInterface.h
 
             // Add new domain here.
@@ -86,20 +86,6 @@ namespace litecore {
             // You MUST add corresponding kC4Err codes to the enum in C4Base.h!
             
             NumLiteCoreErrorsPlus1
-        };
-
-        /** Made-up network error codes (higher level than POSIX, lower level than HTTP.) */
-        enum NetworkError {
-            DNSFailure = 1,        // DNS lookup failed
-            UnknownHost,           // DNS server doesn't know the hostname
-            ConnectionTimeout,
-            InvalidURL,
-            TooManyRedirects,
-            TLSHandshakeFailed,
-            TLSCertExpired,
-            TLSCertUntrusted,
-            TLSClientCertRequired,
-            TLSClientCertRejected, // 10
         };
 
         Domain const domain;

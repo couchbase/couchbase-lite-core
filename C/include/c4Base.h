@@ -157,7 +157,7 @@ enum {
 
 
 /** Network error codes (higher level than POSIX, lower level than HTTP.) */
-// (These are identical to the internal C++ error::NetworkError enum values.)
+// (These are identical to the internal C++ NetworkError enum values in WebSocketInterface.hh.)
 enum {
     kC4NetErrDNSFailure = 1,        // DNS lookup failed
     kC4NetErrUnknownHost,           // DNS server doesn't know the hostname
