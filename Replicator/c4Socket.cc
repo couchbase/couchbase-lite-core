@@ -44,9 +44,12 @@ namespace litecore { namespace websocket {
 
     
     websocket::Address addressFrom(const C4Address &addr, C4String remoteDatabaseName) {
+        uint16_t port = addr.port;
+        if (port == 0)
+            port = (addr.scheme == "blips"_sl || addr.scheme == "wss"_sl) ? 443 : 80;
         return websocket::Address(asstring(addr.scheme),
                                   asstring(addr.hostname),
-                                  addr.port,
+                                  port,
                                   format("/%.*s/_blipsync", SPLAT(remoteDatabaseName)));
     }
 

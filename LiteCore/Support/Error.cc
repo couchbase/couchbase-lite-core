@@ -179,6 +179,7 @@ namespace litecore {
             "server TLS certificate untrusted",
             "server requires a TLS client certificate",
             "server rejected the TLS client certificate",
+            "server TLS certificate is self-signed or has unknown root cert",
         };
         const char *str = nullptr;
         if (code < sizeof(kNetworkMessages)/sizeof(char*))
