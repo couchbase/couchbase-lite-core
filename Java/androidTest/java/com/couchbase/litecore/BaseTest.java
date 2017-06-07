@@ -36,9 +36,9 @@ import java.util.List;
 import java.util.Locale;
 
 import static android.R.attr.path;
-import static com.couchbase.lite.utils.Config.TEST_PROPERTIES_FILE;
 import static com.couchbase.litecore.Constants.C4DocumentVersioning.kC4RevisionTrees;
 import static com.couchbase.litecore.Constants.C4DocumentVersioning.kC4VersionVectors;
+import static com.couchbase.litecore.utils.Config.TEST_PROPERTIES_FILE;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 

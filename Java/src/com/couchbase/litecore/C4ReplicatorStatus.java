@@ -16,7 +16,7 @@ package com.couchbase.litecore;
 
 
 public class C4ReplicatorStatus {
-    interface C4ReplicatorActivityLevel {
+    public interface C4ReplicatorActivityLevel {
         int kC4Stopped = 0;
         int kC4Offline = 1;
         int kC4Connecting = 2;
@@ -34,8 +34,21 @@ public class C4ReplicatorStatus {
     public C4ReplicatorStatus() {
     }
 
+    public C4ReplicatorStatus(int activityLevel, long progressCompleted, long progressTotal, int errorDomain, int errorCode, int errorInternalInfo) {
+        this.activityLevel = activityLevel;
+        this.progressCompleted = progressCompleted;
+        this.progressTotal = progressTotal;
+        this.errorDomain = errorDomain;
+        this.errorCode = errorCode;
+        this.errorInternalInfo = errorInternalInfo;
+    }
+
     public int getActivityLevel() {
         return activityLevel;
+    }
+
+    public void setActivityLevel(int activityLevel) {
+        this.activityLevel = activityLevel;
     }
 
     public long getProgressCompleted() {
@@ -58,6 +71,10 @@ public class C4ReplicatorStatus {
         return errorInternalInfo;
     }
 
+    public C4Error getC4Error() {
+        return new C4Error(errorDomain, errorCode, errorInternalInfo);
+    }
+
     @Override
     public String toString() {
         return "C4ReplicatorStatus{" +
@@ -68,5 +85,9 @@ public class C4ReplicatorStatus {
                 ", errorCode=" + errorCode +
                 ", errorInternalInfo=" + errorInternalInfo +
                 '}';
+    }
+
+    public C4ReplicatorStatus copy() {
+        return new C4ReplicatorStatus(activityLevel, progressCompleted, progressTotal, errorDomain, errorCode, errorInternalInfo);
     }
 }
