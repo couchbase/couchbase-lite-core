@@ -78,20 +78,13 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-         sealed class RetryHandler
+         sealed class NativeHandler
     {
 
-        #region Constants
-
-        private const int RetryTime = 200; // ms
-        private const uint RetryAttempts = 5;
-
-        #endregion
 
         #region Variables
 
         private Action<LiteCoreException> _exceptionHandler;
-        private uint _maxAttempts;
         private readonly List<C4Error> _allowedErrors = new List<C4Error>();
 
         #endregion
@@ -108,22 +101,12 @@ namespace LiteCore.Interop
         #region Public Methods
 
         /// <summary>
-        /// The main entry point into this class.  It will retry the operation a specified
-        /// number of times if the result of the operation is that the database is busy.
+        /// Creates a new object for chaining in a fluent fashion
         /// </summary>
-        /// <returns>A retry handler object for further fluent operations</returns>
-        /// <param name="maxAttempts">The number of times to retry before giving up</param>
-        public static RetryHandler RetryIfBusy(uint maxAttempts = RetryAttempts)
+        /// <returns>A constructed object</returns>
+        public static NativeHandler Create()
         {
-            if(maxAttempts == 0) {
-                throw new ArgumentException("Surely you want to try more than zero times", nameof(maxAttempts));
-            }
-
-            var retVal = new RetryHandler {
-                _maxAttempts = maxAttempts
-            };
-
-            return retVal;
+            return new NativeHandler();
         }
 
         /// <summary>
@@ -133,7 +116,7 @@ namespace LiteCore.Interop
         /// <returns>The current object for further fluent operations</returns>
         /// <param name="code">The code of the error to allow.</param>
         /// <param name="domain">The domain of the error to allow.</param>
-        public RetryHandler AllowError(int code, C4ErrorDomain domain)
+        public NativeHandler AllowError(int code, C4ErrorDomain domain)
         {
             return AllowError(new C4Error(domain, code));
         }
@@ -144,7 +127,7 @@ namespace LiteCore.Interop
         /// </summary>
         /// <returns>The current object for further fluent operations</returns>
         /// <param name="error">The error to allow.</param>
-        public RetryHandler AllowError(C4Error error)
+        public NativeHandler AllowError(C4Error error)
         {
             _allowedErrors.Add(error);
             return this;
@@ -156,7 +139,7 @@ namespace LiteCore.Interop
         /// </summary>
         /// <returns>The current object for further fluent operations</returns>
         /// <param name="errors">The errors to allow.</param>
-        public RetryHandler AllowErrors(params C4Error[] errors)
+        public NativeHandler AllowErrors(params C4Error[] errors)
         {
             return AllowErrors((IEnumerable<C4Error>)errors);
         }
@@ -167,7 +150,7 @@ namespace LiteCore.Interop
         /// </summary>
         /// <returns>The current object for further fluent operations</returns>
         /// <param name="errors">The errors to allow.</param>
-        public RetryHandler AllowErrors(IEnumerable<C4Error> errors)
+        public NativeHandler AllowErrors(IEnumerable<C4Error> errors)
         {
             foreach(var error in errors) {
                 AllowError(error);
@@ -183,63 +166,14 @@ namespace LiteCore.Interop
         /// </summary>
         /// <returns>The current object for further fluent operations</returns>
         /// <param name="exceptionHandler">The logic for handling exceptions</param>
-        public RetryHandler HandleExceptions(Action<LiteCoreException> exceptionHandler)
+        public NativeHandler HandleExceptions(Action<LiteCoreException> exceptionHandler)
         {
             _exceptionHandler = exceptionHandler;
             return this;
         }
 
-        /// <summary>
-        /// Executes the specified operation
-        /// </summary>
-        /// <returns>The result of the operation</returns>
-        /// <param name="block">The operation to run.</param>
         public unsafe bool Execute(C4TryLogicDelegate1 block)
         {
-            return Execute(block, 0);
-        }
-
-        /// <summary>
-        /// Executes the specified operation
-        /// </summary>
-        /// <returns>The result of the operation</returns>
-        /// <param name="block">The operation to run.</param>
-        public unsafe void* Execute(C4TryLogicDelegate2 block)
-        {
-            return Execute(block, 0);
-        }
-
-        /// <summary>
-        /// Executes the specified operation
-        /// </summary>
-        /// <returns>The result of the operation</returns>
-        /// <param name="block">The operation to run.</param>
-        public unsafe int Execute(C4TryLogicDelegate3 block)
-        {
-            return Execute(block, 0);
-        }
-
-        public unsafe C4Slice Execute(C4TryLogicDelegate4 block)
-        {
-            return Execute(block, 0);
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        private static bool IsBusy(C4Error err)
-        {
-            return (err.domain == C4ErrorDomain.LiteCoreDomain && err.code == (int)LiteCoreError.Busy) ||
-            (err.domain == C4ErrorDomain.SQLiteDomain && err.code == (int)SQLiteStatus.Busy);
-        }
-
-        private unsafe bool Execute(C4TryLogicDelegate1 block, int attemptCount)
-        {
-            if(attemptCount > _maxAttempts) {
-                ThrowOrHandle();
-            }
-
             var err = default(C4Error);
             if(block(&err) || err.code == 0) {
                 Exception = null;
@@ -247,21 +181,12 @@ namespace LiteCore.Interop
             }
 
             Exception = new LiteCoreException(err);
-            if(IsBusy(err)) {
-                Task.Delay(RetryTime).Wait();
-                return Execute(block, attemptCount + 1);
-            }
-
             ThrowOrHandle();
             return false;
         }
 
-        private unsafe void* Execute(C4TryLogicDelegate2 block, int attemptCount)
+        public unsafe void* Execute(C4TryLogicDelegate2 block)
         {
-            if(attemptCount > _maxAttempts) {
-                ThrowOrHandle();
-            }
-
             var err = default(C4Error);
             var retVal = block(&err);
             if(retVal != null || err.code == 0) {
@@ -270,21 +195,12 @@ namespace LiteCore.Interop
             }
 
             Exception = new LiteCoreException(err);
-            if(IsBusy(err)) {
-                Task.Delay(RetryTime).Wait();
-                return Execute(block, attemptCount + 1);
-            }
-
             ThrowOrHandle();
             return null;
         }
 
-        private unsafe int Execute(C4TryLogicDelegate3 block, int attemptCount)
+        public unsafe int Execute(C4TryLogicDelegate3 block)
         {
-            if(attemptCount > _maxAttempts) {
-                ThrowOrHandle();
-            }
-
             var err = default(C4Error);
             var retVal = block(&err);
             if(retVal >= 0 || err.code == 0) {
@@ -293,21 +209,12 @@ namespace LiteCore.Interop
             }
 
             Exception = new LiteCoreException(err);
-            if(IsBusy(err)) {
-                Task.Delay(RetryTime).Wait();
-                return Execute(block, attemptCount + 1);
-            }
-
             ThrowOrHandle();
             return retVal;
         }
 
-        private unsafe C4Slice Execute(C4TryLogicDelegate4 block, int attemptCount)
+        public unsafe C4Slice Execute(C4TryLogicDelegate4 block)
         {
-            if(attemptCount > _maxAttempts) {
-                ThrowOrHandle();
-            }
-
             var err = default(C4Error);
             var retVal = block(&err);
             if(retVal.buf != null || err.code == 0) {
@@ -316,14 +223,13 @@ namespace LiteCore.Interop
             }
 
             Exception = new LiteCoreException(err);
-            if(IsBusy(err)) {
-                Task.Delay(RetryTime).Wait();
-                return Execute(block, attemptCount + 1);
-            }
-
             ThrowOrHandle();
             return retVal;
         }
+
+        #endregion
+
+        #region Private Methods
 
         private void ThrowOrHandle()
         {

@@ -52,17 +52,17 @@ namespace LiteCore
     {
         public static void Check(C4TryLogicDelegate1 block)
         {
-            RetryHandler.RetryIfBusy().Execute(block);
+            NativeHandler.Create().Execute(block);
         }
 
         public static void* Check(C4TryLogicDelegate2 block)
         {
-            return RetryHandler.RetryIfBusy().Execute(block);
+            return NativeHandler.Create().Execute(block);
         }
 
         public static void Check(C4TryLogicDelegate3 block)
         {
-            RetryHandler.RetryIfBusy().Execute(block);
+            NativeHandler.Create().Execute(block);
         }
     }
 }
