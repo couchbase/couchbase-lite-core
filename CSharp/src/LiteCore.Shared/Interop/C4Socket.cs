@@ -42,6 +42,14 @@ namespace LiteCore.Interop
     internal
 #else
     public
+#endif
+        unsafe delegate void SocketCloseDelegate(C4Socket* socket);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
 #endif 
         unsafe delegate void SocketRequestCloseDelegate(C4Socket* socket, int status, C4Slice message);
 
@@ -90,12 +98,12 @@ namespace LiteCore.Interop
         unsafe static class SocketFactory
     {
         private static readonly SocketOpenDelegate _open;
-        private static readonly SocketRequestCloseDelegate _close;
+        private static readonly SocketCloseDelegate _close;
         private static readonly SocketWriteDelegate _write;
         private static readonly SocketCompletedReceiveDelegate _completedReceive;
 
         private static SocketOpenDelegate _externalOpen;
-        private static SocketRequestCloseDelegateManaged _externalClose;
+        private static SocketCloseDelegate _externalClose;
         private static SocketWriteDelegateManaged _externalWrite;
         private static SocketCompletedReceiveDelegateManaged _externalCompletedReceive;
 
@@ -103,15 +111,15 @@ namespace LiteCore.Interop
 
         static SocketFactory()
         {
-            _open = new SocketOpenDelegate(SocketOpened);
-            _close = new SocketRequestCloseDelegate(SocketRequestClosed);
-            _write = new SocketWriteDelegate(SocketWrittenTo);
-            _completedReceive = new SocketCompletedReceiveDelegate(SocketCompletedReceive);
+            _open = SocketOpened;
+            _close = SocketClose;
+            _write = SocketWrittenTo;
+            _completedReceive = SocketCompletedReceive;
             InternalFactory = new C4SocketFactory(_open, _close, _write, _completedReceive);
             Native.c4socket_registerFactory(InternalFactory);
         }
 
-        public static void RegisterFactory(SocketOpenDelegate doOpen, SocketRequestCloseDelegateManaged doClose, 
+        public static void RegisterFactory(SocketOpenDelegate doOpen, SocketCloseDelegate doClose, 
             SocketWriteDelegateManaged doWrite, SocketCompletedReceiveDelegateManaged doCompleteReceive)
         {
             _externalOpen = doOpen;
@@ -130,11 +138,11 @@ namespace LiteCore.Interop
             }
         }
 
-        [MonoPInvokeCallback(typeof(SocketRequestCloseDelegate))]
-        private static void SocketRequestClosed(C4Socket* socket, int status, C4Slice message)
+        [MonoPInvokeCallback(typeof(SocketCloseDelegate))]
+        private static void SocketClose(C4Socket* socket)
         {
             try {
-				_externalClose?.Invoke(socket, status, message.CreateString());
+				_externalClose?.Invoke(socket);
             } catch (Exception) {
                 // Log
             }

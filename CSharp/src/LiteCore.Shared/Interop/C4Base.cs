@@ -82,6 +82,25 @@ namespace LiteCore.Interop
 #else
     public
 #endif
+        enum NetworkError
+    {
+        DNSFailure = 1,
+        UnknownHost,
+        Timeout,
+        InvalidURL,
+        TooManyRedirects,
+        TLSHandshakeFailed,
+        TLSCertExpired,
+        TLSCertUntrusted,
+        TLSClientCertRequired,
+        TLSClientCertRejected // 10
+    };
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
         partial struct C4Error
     {
         public C4Error(C4ErrorDomain domain, int code)

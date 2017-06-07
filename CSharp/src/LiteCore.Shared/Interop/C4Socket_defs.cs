@@ -84,17 +84,17 @@ namespace LiteCore.Interop
         public IntPtr open;
         public IntPtr write;
         public IntPtr completedReceive;
-        private IntPtr close; // unused in .NET
-        public IntPtr requestClose;
+        public IntPtr close; 
+        private IntPtr requestClose; // unused in .NET
 
-        public C4SocketFactory(SocketOpenDelegate open, SocketRequestCloseDelegate requestClose, SocketWriteDelegate write, SocketCompletedReceiveDelegate completedReceive)
+        public C4SocketFactory(SocketOpenDelegate open, SocketCloseDelegate close, SocketWriteDelegate write, SocketCompletedReceiveDelegate completedReceive)
         {
             this.open = Marshal.GetFunctionPointerForDelegate(open);
             this.write = Marshal.GetFunctionPointerForDelegate(write);
             this.completedReceive = Marshal.GetFunctionPointerForDelegate(completedReceive);
-            this.close = IntPtr.Zero;
-            this.requestClose = Marshal.GetFunctionPointerForDelegate(requestClose);
-            this.providesWebSockets = 1;
+            this.close = Marshal.GetFunctionPointerForDelegate(close);
+            this.requestClose = IntPtr.Zero;
+            this.providesWebSockets = 0;
         }
     }
 

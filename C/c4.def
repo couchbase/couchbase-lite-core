@@ -165,6 +165,7 @@ c4socket_opened
 c4socket_closed
 c4socket_completedWrite
 c4socket_received
+c4socket_gotHTTPResponse
 
 kC4ReplicatorActivityLevelNames
 
