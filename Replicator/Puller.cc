@@ -50,7 +50,7 @@ namespace litecore { namespace repl {
             for (Array::iterator i(channels); i; ++i) {
                 slice name = i.value().asString();
                 if (name) {
-                    if (++n)
+                    if (n++)
                          value << ",";
                     value << name.asString();
                 }
