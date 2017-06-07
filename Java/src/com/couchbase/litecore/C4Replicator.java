@@ -53,12 +53,14 @@ public class C4Replicator {
                         String remoteDatabaseName,
                         Database otherLocalDB,
                         int push, int pull,
+                        byte[] options,
                         C4ReplicatorListener listener, Object context) throws LiteCoreException {
         this.listener = listener;
         this.context = context;
         handle = create(db._handle, schema, host, port, path, remoteDatabaseName,
                 otherLocalDB != null ? otherLocalDB._handle : 0,
-                push, pull);
+                push, pull,
+                options);
         reverseLookupTable.put(handle, this);
     }
 
@@ -84,9 +86,28 @@ public class C4Replicator {
             return null;
     }
 
+    public byte[] getResponseHeaders() {
+        if (handle != 0L)
+            return getResponseHeaders(handle);
+        else
+            return null;
+    }
+
+    //-------------------------------------------------------------------------
+    // public static methods
+    //-------------------------------------------------------------------------
+    public static boolean mayBeTransient(C4Error err) {
+        return mayBeTransient(err.getDomain(), err.getCode(), err.getInternalInfo());
+    }
+
+    public static boolean mayBeNetworkDependent(C4Error err) {
+        return mayBeNetworkDependent(err.getDomain(), err.getCode(), err.getInternalInfo());
+    }
+
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
+
     @Override
     protected void finalize() throws Throwable {
         free();
@@ -109,15 +130,45 @@ public class C4Replicator {
     // native methods
     //-------------------------------------------------------------------------
 
+    /**
+     * Creates a new replicator.
+     */
     private native static long create(long db,
                                       String schema, String host, int port, String path,
                                       String remoteDatabaseName,
                                       long otherLocalDB,
-                                      int push, int pull) throws LiteCoreException;
+                                      int push, int pull,
+                                      byte[] options) throws LiteCoreException;
 
+    /**
+     * Frees a replicator reference. If the replicator is running it will stop.
+     */
     private native static void free(long replicator);
 
+    /**
+     * Tells a replicator to stop.
+     */
     private native static void stop(long replicator);
 
+    /**
+     * Returns the current state of a replicator.
+     */
     private native static C4ReplicatorStatus getStatus(long replicator);
+
+    /**
+     * Returns the HTTP response headers as a Fleece-encoded dictionary.
+     */
+    private native static byte[] getResponseHeaders(long replicator);
+
+    /**
+     * Returns true if this is a network error that may be transient,
+     * i.e. the client should retry after a delay.
+     */
+    private native static boolean mayBeTransient(int domain, int code, int info);
+
+    /**
+     * Returns true if this error might go away when the network environment changes,
+     * i.e. the client should retry after notification of a network status change.
+     */
+    private native static boolean mayBeNetworkDependent(int domain, int code, int info);
 }

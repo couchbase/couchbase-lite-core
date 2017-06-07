@@ -116,7 +116,8 @@ static jobject toJavaObject(JNIEnv *env, C4ReplicatorStatus status) {
  * @param ctx
  */
 static void statusChangedCallback(C4Replicator *repl, C4ReplicatorStatus status, void *ctx) {
-    LOGI("[NATIVE] C4Replicator.statusChangedCallback() repl -> 0x%x status -> %d", repl, status);
+
+    LOGI("[NATIVE] C4Replicator.statusChangedCallback() repl -> 0x%p status -> %d", repl, status.level);
 
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
@@ -140,19 +141,21 @@ static void statusChangedCallback(C4Replicator *repl, C4ReplicatorStatus status,
 /*
  * Class:     com_couchbase_litecore_C4Replicator
  * Method:    create
- * Signature: (JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;JII)J
+ * Signature: (JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;JII[B)J
  */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4Replicator_create(JNIEnv *env, jclass clazz,
-                                                jlong jdb,
-                                                jstring jscheme,
-                                                jstring jhost,
-                                                jint jport,
-                                                jstring jpath,
-                                                jstring jremoteDBName,
-                                                jlong jotherLocalDB,
-                                                jint jpush,
-                                                jint jpull) {
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
+        JNIEnv *env,
+        jclass clazz,
+        jlong jdb,
+        jstring jscheme,
+        jstring jhost,
+        jint jport,
+        jstring jpath,
+        jstring jremoteDBName,
+        jlong jotherLocalDB,
+        jint jpush,
+        jint jpull,
+        jbyteArray joptions) {
 
     LOGI("[NATIVE] C4Replicator.create()");
 
@@ -160,14 +163,13 @@ Java_com_couchbase_litecore_C4Replicator_create(JNIEnv *env, jclass clazz,
     jstringSlice host(env, jhost);
     jstringSlice path(env, jpath);
     jstringSlice remoteDBName(env, jremoteDBName);
+    jbyteArraySlice options(env, joptions, false);
 
     C4Address c4Address;
     c4Address.scheme = scheme;
     c4Address.hostname = host;
     c4Address.port = jport;
     c4Address.path = path;
-
-    alloc_slice optionsFleece;
 
     C4Error error;
     C4Replicator *repl = c4repl_new((C4Database *) jdb,
@@ -176,7 +178,8 @@ Java_com_couchbase_litecore_C4Replicator_create(JNIEnv *env, jclass clazz,
                                     (C4Database *) jotherLocalDB,
                                     (C4ReplicatorMode) jpush,
                                     (C4ReplicatorMode) jpull,
-                                    {optionsFleece.buf, optionsFleece.size},
+                                   // {optionsFleece.buf, optionsFleece.size},
+                                    options,
                                     &statusChangedCallback,
                                     (void *) NULL,
                                     &error);
@@ -185,7 +188,7 @@ Java_com_couchbase_litecore_C4Replicator_create(JNIEnv *env, jclass clazz,
         return 0;
     }
 
-    LOGI("[NATIVE] C4Replicator.create() repl -> 0x%x", repl);
+    LOGI("[NATIVE] C4Replicator.create() repl -> 0x%p", repl);
 
     return (jlong) repl;
 }
@@ -197,7 +200,7 @@ Java_com_couchbase_litecore_C4Replicator_create(JNIEnv *env, jclass clazz,
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Replicator_free(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.free() repl -> 0x%x", repl);
+    LOGI("[NATIVE] C4Replicator.free() repl -> 0x%x",(unsigned int)repl);
     c4repl_free((C4Replicator *) repl);
 }
 
@@ -208,7 +211,7 @@ Java_com_couchbase_litecore_C4Replicator_free(JNIEnv *env, jclass clazz, jlong r
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Replicator_stop(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.stop() repl -> 0x%x", repl);
+    LOGI("[NATIVE] C4Replicator.stop() repl -> 0x%x", (unsigned int)repl);
     c4repl_stop((C4Replicator *) repl);
 }
 
@@ -219,7 +222,45 @@ Java_com_couchbase_litecore_C4Replicator_stop(JNIEnv *env, jclass clazz, jlong r
  */
 JNIEXPORT jobject JNICALL
 Java_com_couchbase_litecore_C4Replicator_getStatus(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.getStatus() repl -> 0x%x", repl);
+    LOGI("[NATIVE] C4Replicator.getStatus() repl -> 0x%x", (unsigned int)repl);
     C4ReplicatorStatus status = c4repl_getStatus((C4Replicator *) repl);
     return toJavaObject(env, status);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Replicator
+ * Method:    getResponseHeaders
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL
+Java_com_couchbase_litecore_C4Replicator_getResponseHeaders(JNIEnv *env, jclass clazz, jlong repl) {
+    LOGI("[NATIVE] C4Replicator.getResponseHeaders() repl -> 0x%x", (unsigned int)repl);
+    C4Slice s = c4repl_getResponseHeaders((C4Replicator *) repl);
+    jbyteArray res = toJByteArray(env, s);
+    c4slice_free(s);
+    return res;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Replicator
+ * Method:    mayBeTransient
+ * Signature: (III)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4Replicator_mayBeTransient(JNIEnv *env, jclass clazz,
+                                                        jint domain, jint code, jint ii) {
+    C4Error c4Error = {.domain = (C4ErrorDomain) domain, .code= code, .internal_info = ii};
+    return c4error_mayBeTransient(c4Error);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Replicator
+ * Method:    mayBeNetworkDependent
+ * Signature: (III)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4Replicator_mayBeNetworkDependent(JNIEnv *env, jclass clazz,
+                                                               jint domain, jint code, jint ii) {
+    C4Error c4Error = {.domain = (C4ErrorDomain) domain, .code= code, .internal_info = ii};
+    return c4error_mayBeNetworkDependent(c4Error);
 }

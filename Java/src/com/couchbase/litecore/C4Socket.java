@@ -17,6 +17,7 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 
+import static com.couchbase.litecore.Constants.C4ErrorDomain.POSIXDomain;
 import static com.couchbase.litecore.Constants.C4ErrorDomain.WebSocketDomain;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2Scheme;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2TLSScheme;
@@ -91,7 +92,22 @@ public class C4Socket extends WebSocketListener {
     public void onFailure(WebSocket webSocket, Throwable t, Response response) {
         Log.e(TAG, "WebSocketListener.onFailure() response -> " + response, t);
 
-        closed(handle, WebSocketDomain, response.code());
+        // Invoked when a web socket has been closed due to an error reading from or writing to the
+        // network. Both outgoing and incoming messages may have been lost. No further calls to this
+        // listener will be made.
+
+        if (response != null)
+            closed(handle, WebSocketDomain, response.code());
+        else if (t != null) {
+            // TODO: Following codes works with only Android.
+            if (t.getCause() != null && t.getCause().getCause() != null) {
+                android.system.ErrnoException e = (android.system.ErrnoException) t.getCause().getCause();
+                closed(handle, POSIXDomain, e != null ? e.errno : 0);
+            } else {
+                closed(handle, POSIXDomain, 0);
+            }
+        } else
+            closed(handle, WebSocketDomain, 0);
     }
 
 

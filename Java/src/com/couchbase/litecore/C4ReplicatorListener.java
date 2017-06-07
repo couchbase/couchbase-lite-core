@@ -14,5 +14,5 @@
 package com.couchbase.litecore;
 
 public interface C4ReplicatorListener {
-    void callback(C4Replicator replicator, C4ReplicatorStatus status, Object context);
+    void callback(final C4Replicator replicator, final C4ReplicatorStatus status, final Object context);
 }

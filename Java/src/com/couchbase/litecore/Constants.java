@@ -82,13 +82,14 @@ public interface Constants {
 
     // Error domains:
     interface C4ErrorDomain {
-        int LiteCoreDomain = 1;     // code is LiteCore-specific code (c4Base.h)
+        int LiteCoreDomain = 1;     // code is a Couchbase Lite Core error code (see below)
         int POSIXDomain = 2;        // code is an errno (errno.h)
-        int ForestDBDomain = 3;     // code is a fdb_status (fdb_error.h)
+        /*int ForestDBDomain = 3;*/ // domain 3 is unused
         int SQLiteDomain = 4;       // code is a SQLite error (sqlite3.h)
-        int FleeceDomain = 5;        // code is a Fleece error
-        int DNSDomain = 6;          // code is a DNS resolution error from <netdb.h> (EAI_*)
-        int WebSocketDomain = 7;    // code is a WebSocket close code (typically 1000...1015)
+        int FleeceDomain = 5;       // code is a Fleece error
+        int NetworkDomain = 6;      // code is a network error code from the enum below
+        int WebSocketDomain = 7;    // code is a WebSocket close code (1000...1015) or HTTP error (400..599)
+        int kC4MaxErrorDomainPlus1 = 8;
     }
 
     // LiteCoreDomain error codes:
@@ -133,5 +134,23 @@ public interface Constants {
         int kC4ErrorBadDocID = 38;              // Invalid document ID
         int kC4ErrorCantUpgradeDatabase = 39;   // Database can't be upgraded (might be unsupported dev version)
 
+        int kC4NumErrorCodesPlus1 = 40;         //
+    }
+
+    /**
+     * Network error codes (higher level than POSIX, lower level than HTTP.)
+     */
+    // (These are identical to the internal C++ NetworkError enum values in WebSocketInterface.hh.)
+    interface NetworkError {
+        int kC4NetErrDNSFailure = 1;        // DNS lookup failed
+        int kC4NetErrUnknownHost = 2;       // DNS server doesn't know the hostname
+        int kC4NetErrTimeout = 3;
+        int kC4NetErrInvalidURL = 4;
+        int kC4NetErrTooManyRedirects = 5;
+        int kC4NetErrTLSHandshakeFailed = 6;
+        int kC4NetErrTLSCertExpired = 7;
+        int kC4NetErrTLSCertUntrusted = 8;
+        int kC4NetErrTLSClientCertRequired = 9;
+        int kC4NetErrTLSClientCertRejected = 10; // 10
     }
 }
