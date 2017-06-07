@@ -15,6 +15,10 @@ OPTION(LITECORE_BUILD_SQLITE "If ON, builds libsqlite as part of the build proce
 add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
                 -DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
+                -DNO_FILES                          # No file system support in CivetWeb (unneeded)
+                -DNO_CGI                            # No CGI support in CivetWeb (unneeded)
+                -DNO_CACHING                        # No file caching support in CivetWeb (unneeded)
+                -DUSE_IPV6                          # Enable IPv6 support in CivetWeb
                 -DCMAKE)                            # Let the source know this is a CMAKE build
 
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
