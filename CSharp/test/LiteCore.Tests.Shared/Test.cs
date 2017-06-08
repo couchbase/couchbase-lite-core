@@ -378,16 +378,46 @@ namespace LiteCore.Tests
         {
             WriteLine($"Reading {path} ...");
             var st = Stopwatch.StartNew();
-            var jsonData = File.ReadAllBytes(path);
+#if WINDOWS_UWP
+            var url = $"ms-appx:///Assets/{path}";
+            var file = Windows.Storage.StorageFile.GetFileFromApplicationUriAsync(new Uri(url))
+                .AsTask()
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            var buffer = Windows.Storage.FileIO.ReadBufferAsync(file).AsTask().ConfigureAwait(false).GetAwaiter()
+                .GetResult();
+            var jsonData = System.Runtime.InteropServices.WindowsRuntime.WindowsRuntimeBufferExtensions.ToArray(buffer);
+#elif __ANDROID__
+            var ctx = global::Couchbase.Lite.Tests.Android.MainActivity.ActivityContext;
+            byte[] jsonData;
+            using (var stream = ctx.Assets.Open(path))
+            using (var ms = new MemoryStream()) {
+                stream.CopyTo(ms);
+                jsonData = ms.ToArray();
+            }
+#elif __IOS__
+			var bundlePath = Foundation.NSBundle.MainBundle.PathForResource(Path.GetFileNameWithoutExtension(path), Path.GetExtension(path));
+			byte[] jsonData;
+            using (var stream = File.Open(bundlePath, FileMode.Open, FileAccess.Read))
+            using (var ms = new MemoryStream()) {
+                stream.CopyTo(ms);
+                jsonData = ms.ToArray();
+            }
+#else
+			var jsonData = File.ReadAllBytes(path);
+#endif
+
             FLError error;
             FLSliceResult fleeceData;
             fixed (byte* jsonData_ = jsonData) {
                 fleeceData = NativeRaw.FLData_ConvertJSON(new FLSlice(jsonData_, (ulong)jsonData.Length), &error);
             }
 
-            ((long) fleeceData.buf).Should().NotBe(0, "because otherwise the conversion failed");
+            ((long)fleeceData.buf).Should().NotBe(0, "because otherwise the conversion failed");
             var root = Native.FLValue_AsArray(NativeRaw.FLValue_FromTrustedData(fleeceData));
-            ((long) root).Should().NotBe(0, "because otherwise the value is not of the expected type");
+            ((long)root).Should().NotBe(0, "because otherwise the value is not of the expected type");
 
             LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
             try {
@@ -406,7 +436,7 @@ namespace LiteCore.Tests
                     rq.docID = C4Slice.Allocate(docID);
                     rq.body = body;
                     rq.save = true;
-                    var doc = (C4Document*) LiteCoreBridge.Check(err =>
+                    var doc = (C4Document*)LiteCoreBridge.Check(err =>
                     {
                         var localPut = rq;
                         return Native.c4doc_put(Db, &localPut, null, err);
@@ -430,7 +460,8 @@ namespace LiteCore.Tests
                 }
 
                 return numDocs;
-            } finally {
+            }
+            finally {
                 LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
             }
         }
