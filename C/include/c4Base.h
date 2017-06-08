@@ -111,7 +111,7 @@ typedef C4_ENUM(uint32_t, C4ErrorDomain) {
 
 // LiteCoreDomain error codes:
 // (These are identical to the internal C++ error::LiteCoreError enum values.)
-enum {
+typedef C4_ENUM(int32_t, C4ErrorCode) {
     kC4ErrorAssertionFailed = 1,    // Internal assertion failure
     kC4ErrorUnimplemented,          // Oops, an unimplemented API call
     kC4ErrorNoSequences,            // This KeyStore does not support sequences
@@ -158,7 +158,7 @@ enum {
 
 /** Network error codes (higher level than POSIX, lower level than HTTP.) */
 // (These are identical to the internal C++ NetworkError enum values in WebSocketInterface.hh.)
-enum {
+typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
     kC4NetErrDNSFailure = 1,             // DNS lookup failed
     kC4NetErrUnknownHost,                // DNS server doesn't know the hostname
     kC4NetErrTimeout,
