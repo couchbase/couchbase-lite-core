@@ -36,5 +36,9 @@
       <Link>C\tests\data\nested.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="$(MSBuildThisFileDirectory)..\..\..\C\tests\data\states_titlecase.json">
+      <Link>C\tests\data\states_titlecase.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

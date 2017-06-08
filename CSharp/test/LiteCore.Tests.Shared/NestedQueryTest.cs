@@ -1,4 +1,5 @@
 using FluentAssertions;
+using LiteCore.Interop;
 #if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
@@ -33,6 +34,21 @@ namespace LiteCore.Tests
             RunTestVariants(() => {
                 Compile(Json5("['ANY', 'Shape', ['.', 'shapes'], ['=', ['?', 'Shape', 'color'], 'red']]"));
                 Run().Should().Equal(new[] { "0000001", "0000003" }, "because otherwise the query returned incorrect results");
+            });
+        }
+
+        [Fact]
+        public void TestQueryParserErrorMessages()
+        {
+            RunTestVariants(() =>
+            {
+                C4Error err;
+                _query = Native.c4query_new(Db, "[\"=\"]", &err);
+                ((long) _query).Should().Be(0, "because the query string was invalid");
+                err.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                err.code.Should().Be((int) LiteCoreError.InvalidQuery);
+                var msg = Native.c4error_getMessage(err);
+                msg.Should().Be("Wrong number of arguments to =");
             });
         }
     }

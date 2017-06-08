@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
 using LiteCore.Interop;
@@ -34,6 +36,7 @@ namespace LiteCore.Tests
             AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)LiteCoreError.InvalidParameter, "invalid parameter");
             AssertMessage(C4ErrorDomain.POSIXDomain, (int)PosixStatus.NOENT, "No such file or directory");
             AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)LiteCoreError.IndexBusy, "index busy; can't close view");
+            AssertMessage(C4ErrorDomain.SQLiteDomain, -1234, "unknown error");
             AssertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
         }
 
@@ -203,6 +206,8 @@ namespace LiteCore.Tests
                     Native.c4enum_getDocumentInfo(e, &info).Should().BeTrue("because otherwise the doc info load failed");
                     info.docID.CreateString().Should().Be(docID, "because the doc info should have the correct doc ID");
                     info.revID.Equals(RevID).Should().BeTrue("because the doc info should have the correct rev ID");
+                    info.bodySize.Should().BeGreaterOrEqualTo(11).And
+                        .BeLessOrEqualTo(40, "because the body should have some data");
 
                     Native.c4doc_free(doc);
                     i++;
@@ -225,6 +230,7 @@ namespace LiteCore.Tests
                 }
 
                 Native.c4enum_free(e);
+                error.code.Should().Be(0, "because otherwise an error occurred");
                 i.Should().Be(91, "because that is how many documents fall in the given range");
 
                 // Some docs, by ID:
@@ -250,6 +256,7 @@ namespace LiteCore.Tests
                 }
 
                 Native.c4enum_free(e);
+                error.code.Should().Be(0, "because otherwise an error occurred");
                 i.Should().Be(4, "because four document IDs were specified");
             });
         }
@@ -310,6 +317,8 @@ namespace LiteCore.Tests
                     doc.revID.Equals(RevID).Should().BeTrue("because the doc info should have the correct rev ID");
                     doc.sequence.Should().Be((ulong)i, "because the doc info should have the correct sequence");
                     doc.flags.Should().Be(C4DocumentFlags.Exists, "because the doc info should have the correct flags");
+                    doc.bodySize.Should().BeGreaterOrEqualTo(11).And
+                        .BeLessOrEqualTo(40, "because the body should have some data");
                     i++;
                 }
 
@@ -386,8 +395,11 @@ namespace LiteCore.Tests
 
                 const string docID3 = "dont_expire_me";
                 CreateRev(docID3, RevID, Body);
+
+                WriteLine("---- Wait till expiration time...");
                 Task.Delay(TimeSpan.FromSeconds(2)).Wait();
 
+                WriteLine("---- Scan expired docs (#1)");
                 var e = (C4ExpiryEnumerator *)LiteCoreBridge.Check(err => Native.c4db_enumerateExpired(Db, err));
                 int expiredCount = 0;
                 while(Native.c4exp_next(e, null)) {
@@ -402,6 +414,7 @@ namespace LiteCore.Tests
                 Native.c4doc_getExpiration(Db, docID2).Should().Be((ulong)expire, "because that was what was set as the expiration");
                 Native.c4db_nextDocExpiration(Db).Should().Be((ulong)expire, "because that is the closest expiration date");
 
+                WriteLine("---- Scan expired docs (#2)");
                 e = (C4ExpiryEnumerator *)LiteCoreBridge.Check(err => Native.c4db_enumerateExpired(Db, err));
                 expiredCount = 0;
                 while(Native.c4exp_next(e, null)) {
@@ -410,16 +423,19 @@ namespace LiteCore.Tests
                     expiredCount++;
                 }
 
+                WriteLine("---- Purge expired docs");
                 LiteCoreBridge.Check(err => Native.c4exp_purgeExpired(e, err));
                 Native.c4exp_free(e);
                 expiredCount.Should().Be(2, "because 2 documents were scheduled for expiration");
-                
+
+                WriteLine("---- Scan expired docs (#3)");
                 e = (C4ExpiryEnumerator *)LiteCoreBridge.Check(err => Native.c4db_enumerateExpired(Db, err));
                 expiredCount = 0;
                 while(Native.c4exp_next(e, null)) {
                     expiredCount++;
                 }
 
+                Write("---- Purge expired docs (again");
                 LiteCoreBridge.Check(err => Native.c4exp_purgeExpired(e, err));
                 Native.c4exp_free(e);
                 expiredCount.Should().Be(0, "because no more documents were scheduled for expiration");
@@ -455,6 +471,61 @@ namespace LiteCore.Tests
         {
             RunTestVariants(() => {
                 LiteCoreBridge.Check(err => Native.c4db_getBlobStore(Db, err));
+            });
+        }
+
+        [Fact]
+        public void TestDatabaseCompact()
+        {
+            RunTestVariants(() =>
+            {
+                var doc1ID = C4Slice.Constant("doc001");
+                var doc2ID = C4Slice.Constant("doc002");
+                var doc3ID = C4Slice.Constant("doc003");
+                var content1 = "This is the first attachment";
+                var content2 = "This is the second attachment";
+
+                var atts = new List<string>();
+                C4BlobKey key1, key2;
+                atts.Add(content1);
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    key1 = AddDocWithAttachments(doc1ID, atts, "text/plain")[0];
+                    atts.Clear();
+                    atts.Add(content2);
+                    key2 = AddDocWithAttachments(doc2ID, atts, "text/plain")[0];
+                    AddDocWithAttachments(doc3ID, atts, "text/plain");
+                } finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                var store = (C4BlobStore*) LiteCoreBridge.Check(err => Native.c4db_getBlobStore(Db, err));
+                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
+                Native.c4blob_getSize(store, key1).Should()
+                    .BeGreaterThan(0, "because the attachment should survive the first compact");
+                Native.c4blob_getSize(store, key2).Should()
+                    .BeGreaterThan(0, "because the attachment should survive the first compact");
+
+                CreateRev("doc001", Rev2ID, C4Slice.Null, C4RevisionFlags.Deleted);
+                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
+                Native.c4blob_getSize(store, key1).Should().Be(-1,
+                    "because the attachment should be collected in the second compact");
+                Native.c4blob_getSize(store, key2).Should()
+                    .BeGreaterThan(0, "because the attachment should survive the second compact");
+
+                CreateRev("doc002", Rev2ID, C4Slice.Null, C4RevisionFlags.Deleted);
+                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
+                Native.c4blob_getSize(store, key1).Should().Be(-1,
+                    "because the attachment should still be gone in the third compact");
+                Native.c4blob_getSize(store, key2).Should()
+                    .BeGreaterThan(0, "because the attachment should survive the third compact");
+
+                CreateRev("doc003", Rev2ID, C4Slice.Null, C4RevisionFlags.Deleted);
+                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
+                Native.c4blob_getSize(store, key1).Should().Be(-1,
+                    "because the attachment should still be gone in the fourth compact");
+                Native.c4blob_getSize(store, key2).Should().Be(-1,
+                    "because the attachment should be collected in the fourth compact");
             });
         }
 

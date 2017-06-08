@@ -1,5 +1,9 @@
+using System;
+using System.Diagnostics;
+using System.Linq;
 using FluentAssertions;
 using LiteCore.Interop;
+using LiteCore.Util;
 #if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
@@ -20,6 +24,42 @@ namespace LiteCore.Tests
 
         }
 #endif
+
+        [Fact]
+        public void TestInvalidDocID()
+        {
+            RunTestVariants(() =>
+            {
+                NativePrivate.c4log_warnOnErrors(false);
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    Action<C4Slice> checkPutBadDocID = (C4Slice docID) =>
+                    {
+                        C4Error e;
+                        var rq = new C4DocPutRequest();
+                        rq.body = Body;
+                        rq.save = true;
+                        rq.docID = docID;
+                        ((long) Native.c4doc_put(Db, &rq, null, &e)).Should()
+                            .Be(0, "because the invalid doc ID should cause the put to fail");
+                        e.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                        e.code.Should().Be((int) LiteCoreError.BadDocID);
+                    };
+
+                    checkPutBadDocID(C4Slice.Constant(""));
+                    string tooLong = new string(Enumerable.Repeat('x', 241).ToArray());
+                    using (var tooLong_ = new C4String(tooLong)) {
+                        checkPutBadDocID(tooLong_.AsC4Slice());
+                    }
+
+                    checkPutBadDocID(C4Slice.Constant("oops\x00oops")); // Bad UTF-8
+                    checkPutBadDocID(C4Slice.Constant("oops\noops")); // Control characters
+                } finally {
+                    NativePrivate.c4log_warnOnErrors(true);
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+            });
+        }
 
         [Fact]
         public void TestFleeceDocs()
@@ -180,6 +220,66 @@ namespace LiteCore.Tests
                         Native.c4doc_free(doc);
                         doc = null;
                     }
+                }
+
+                Native.c4doc_free(doc);
+            });
+        }
+
+        [Fact]
+        public void TestMaxRevTreeDepth()
+        {
+            RunTestVariants(() =>
+            {
+                if (IsRevTrees()) {
+                    Native.c4db_getMaxRevTreeDepth(Db).Should().Be(20, "because that is the default");
+                    Native.c4db_setMaxRevTreeDepth(Db, 30U);
+                    Native.c4db_getMaxRevTreeDepth(Db).Should().Be(30);
+                    ReopenDB();
+                    Native.c4db_getMaxRevTreeDepth(Db).Should().Be(30, "because the value should be persistent");
+                }
+
+                const uint NumRevs = 10000;
+                var st = Stopwatch.StartNew();
+                var doc = (C4Document*) LiteCoreBridge.Check(err => NativeRaw.c4doc_get(Db, DocID, false, err));
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    for (uint i = 0; i < NumRevs; i++) {
+                        var rq = new C4DocPutRequest();
+                        rq.docID = doc->docID;
+                        rq.history = &doc->revID;
+                        rq.historyCount = 1;
+                        rq.body = Body;
+                        rq.save = true;
+                        var savedDoc = (C4Document*) LiteCoreBridge.Check(err =>
+                        {
+                            var localPut = rq;
+                            return Native.c4doc_put(Db, &localPut, null, err);
+                        });
+                        Native.c4doc_free(doc);
+                        doc = savedDoc;
+                    }
+                } finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                st.Stop();
+                WriteLine($"Created {NumRevs} revisions in {st.ElapsedMilliseconds} ms");
+
+                uint nRevs = 0;
+                Native.c4doc_selectCurrentRevision(doc);
+                do {
+                    if (IsRevTrees()) {
+                        NativeRaw.c4rev_getGeneration(doc->selectedRev.revID).Should()
+                            .Be(NumRevs - nRevs, "because the tree should be pruned");
+                    }
+
+                    ++nRevs;
+                } while (Native.c4doc_selectParentRevision(doc));
+
+                WriteLine($"Document rev tree depth is {nRevs}");
+                if (IsRevTrees()) {
+                    nRevs.Should().Be(30, "because the tree should be pruned");
                 }
 
                 Native.c4doc_free(doc);

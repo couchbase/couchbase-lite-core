@@ -157,81 +157,146 @@ namespace LiteCore.Tests
             });
         }
 
-        // TODO: Missing C API
-        //[Fact]
-        //public void TestDBQueryWhat()
-        //{
-        //    RunTestVariants(() => {
-        //        var expectedFirst = new[] { "Cleveland", "Georgetta", "Margaretta" };
-        //        var expectedLast = new[] { "Bejcek", "Kolding", "Ogwynn" };
-        //        var query = Compile(Json5("{WHAT: ['.name.first', '.name.last'], " +
-        //                    "WHERE: ['>=', ['length()', ['.name.first']], 9]," +
-        //                    "ORDER_BY: [['.name.first']]}"));
-
-        //        Native.c4query_columnCount(query).Should().Be(2, "because there are two requested items in WHAT");
-
-        //        //TODO
-        //        //Native.c4query_nameOfColumn(query, 0U)
-        //        //    .Should()
-        //        //    .Be("name.first", "because that is the first requested item");
-        //        //Native.c4query_nameOfColumn(query, 1U)
-        //        //    .Should()
-        //        //    .Be("name.list", "because that is the second requested item");
-
-        //        var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => 
-        //        {
-        //            var localOpts = C4QueryOptions.Default;
-        //            return Native.c4query_run(query, &localOpts, null, err);
-        //        });
-
-        //        int i = 0;
-        //        C4Error error;
-        //        while(Native.c4queryenum_next(e, &error)) {
-        //            var customColumns = Native.c4queryenum_customColumns(e);
-        //            GetColumn(customColumns, 0).Should().Be(expectedFirst[i], "because otherwise the query returned incorrect results");
-        //            GetColumn(customColumns, 1).Should().Be(expectedLast[i], "because otherwise the query returned incorrect results");
-        //            ++i;
-        //        }
-
-        //        error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
-        //        i.Should().Be(3, "because that is the number of expected rows");
-        //        Native.c4queryenum_free(e);
-        //    });
-        //}
-
-            //TODO: Need C API
-        //[Fact]
-        //public void TestDBQueryAggregate()
-        //{
-        //    RunTestVariants(() => {
-        //        Compile(Json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
-        //        var e = (C4QueryEnumerator *)LiteCoreBridge.Check(err => {
-        //            var opts = C4QueryOptions.Default;
-        //            return Native.c4query_run(_query, &opts, null, err);
-        //        });
-
-        //        var i = 0;
-        //        C4Error error;
-        //        while(Native.c4queryenum_next(e, &error)) {
-        //            var customColumns = Native.c4queryenum_customColumns(e);
-        //            GetColumn(customColumns, 0).Should().Be("Aerni", "because otherwise the query returned incorrect results");
-        //            GetColumn(customColumns, 1).Should().Be("Zirk", "because otherwise the query returned incorrect results");
-        //            ++i;
-        //        }
-
-        //        error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
-        //        i.Should().Be(1, "because there is only one result for the query");
-        //        Native.c4queryenum_free(e);
-        //    });
-        //}
-
-        private static string GetColumn(byte[] customColumns, uint index)
+        [Fact]
+        public void TestDBQueryWhat()
         {
-            customColumns.Should().NotBeNull("because otherwise we got bogus data from the DB");
-            var cols = Native.FLValue_FromData(customColumns);
-            var colsArray = Native.FLValue_AsArray(cols);
-            Native.FLArray_Count(colsArray).Should().BeGreaterOrEqualTo(index + 1, "because otherwise there aren't enough columns");
-            return Native.FLValue_AsString(Native.FLArray_Get(colsArray, index));
+            RunTestVariants(() =>
+            {
+                var expectedFirst = new[] { "Cleveland", "Georgetta", "Margaretta" };
+                var expectedLast = new[] { "Bejcek", "Kolding", "Ogwynn" };
+                var query = Compile(Json5("{WHAT: ['.name.first', '.name.last'], " +
+                            "WHERE: ['>=', ['length()', ['.name.first']], 9]," +
+                            "ORDER_BY: [['.name.first']]}"));
+
+                Native.c4query_columnCount(query).Should().Be(2, "because there are two requested items in WHAT");
+                Native.c4query_nameOfColumn(query, 0U)
+                    .Should()
+                    .Be("name.first", "because that is the first requested item");
+                Native.c4query_nameOfColumn(query, 1U)
+                    .Should()
+                    .Be("name.list", "because that is the second requested item");
+
+                var e = (C4QueryEnumerator*)LiteCoreBridge.Check(err =>
+               {
+                   var localOpts = C4QueryOptions.Default;
+                   return Native.c4query_run(query, &localOpts, null, err);
+               });
+
+                int i = 0;
+                C4Error error;
+                while (Native.c4queryenum_next(e, &error)) {
+                    Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0)).Should()
+                        .Be(expectedFirst[i], "because otherwise the query returned incorrect results");
+                    Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 1)).Should().Be(expectedLast[i], "because otherwise the query returned incorrect results");
+                    ++i;
+                }
+
+                error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
+                i.Should().Be(3, "because that is the number of expected rows");
+                Native.c4queryenum_free(e);
+            });
+        }
+
+        [Fact]
+        public void TestDBQueryAggregate()
+        {
+            RunTestVariants(() =>
+            {
+                Compile(Json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
+                var e = (C4QueryEnumerator*)LiteCoreBridge.Check(err =>
+                {
+                    var opts = C4QueryOptions.Default;
+                    return Native.c4query_run(_query, &opts, null, err);
+                });
+
+                var i = 0;
+                C4Error error;
+                while (Native.c4queryenum_next(e, &error)) {
+                    Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0)).Should().Be("Aerni",
+                        "because otherwise the query returned incorrect results");
+                    Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 1)).Should().Be("Zirk",
+                        "because otherwise the query returned incorrect results");
+                    ++i;
+                }
+
+                error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
+                i.Should().Be(1, "because there is only one result for the query");
+                Native.c4queryenum_free(e);
+            });
+        }
+
+        [Fact]
+        public void TestDBQueryGrouped()
+        {
+            RunTestVariants(() =>
+            {
+                var expectedState = new[] {"AL", "AR", "AZ", "CA"};
+                var expectedMin = new[] {"Laidlaw", "Okorududu", "Kinatyan", "Bejcek"};
+                var expectedMax = new[] {"Mulneix", "Schmith", "Kinatyan", "Visnic"};
+                const int expectedRowCount = 42;
+                Compile(Json5(
+                    "{WHAT: [['.contact.address.state'],['min()', ['.name.last']],['max()', ['.name.last']]],GROUP_BY: [['.contact.address.state']]}"));
+                var e = (C4QueryEnumerator*) LiteCoreBridge.Check(err =>
+                {
+                    var opts = C4QueryOptions.Default;
+                    return Native.c4query_run(_query, &opts, null, err);
+                });
+
+                C4Error error;
+                int i = 0;
+                while (Native.c4queryenum_next(e, &error)) {
+                    var state = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0));
+                    var minName = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 1));
+                    var maxName = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 2));
+                    WriteLine($"state={state}, first={minName}, last={maxName}");
+                    if (i < expectedState.Length) {
+                        state.Should().Be(expectedState[i]);
+                        minName.Should().Be(expectedMin[i]);
+                        maxName.Should().Be(expectedMax[i]);
+                    }
+
+                    ++i;
+                }
+
+                error.code.Should().Be(0);
+                i.Should().Be(expectedRowCount);
+                Native.c4queryenum_free(e);
+            });
+        }
+
+        [Fact]
+        public void TestDBQueryJoin()
+        {
+            RunTestVariants(() =>
+            {
+                ImportJSONFile("C/tests/data/states_titlecase.json", "state-");
+                var expectedFirst = new[] {"Cleveland", "Georgetta", "Margaretta"};
+                var expectedState = new[] {"California", "Ohio", "South Dakota"};
+                Compile(Json5("{WHAT: ['.person.name.first', '.state.name']," +
+                              "FROM: [{as: 'person'}, {as: 'state', on: ['=', ['.state.abbreviation'],['.person.contact.address.state']]}]," +
+                              "WHERE: ['>=', ['length()', ['.person.name.first']], 9]," +
+                              "ORDER_BY: [['.person.name.first']]}"));
+                var e = (C4QueryEnumerator*) LiteCoreBridge.Check(err =>
+                {
+                    var opts = C4QueryOptions.Default;
+                    return Native.c4query_run(_query, &opts, null, err);
+                });
+
+                int i = 0;
+                C4Error error;
+                while (Native.c4queryenum_next(e, &error)) {
+                    var first = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0));
+                    var state = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 1));
+                    WriteLine($"first='{first}', state='{state}'");
+                    first.Should().Be(expectedFirst[i]);
+                    state.Should().Be(expectedState[i]);
+                    ++i;
+                }
+
+                error.code.Should().Be(0);
+                i.Should().Be(3, "because there should be three resulting rows");
+                Native.c4queryenum_free(e);
+            });
         }
     }
 }

@@ -6,6 +6,8 @@ using System.Runtime.InteropServices;
 using FluentAssertions;
 using LiteCore.Interop;
 using LiteCore.Util;
+using System.Collections.Generic;
+using System.Text;
 #if !WINDOWS_UWP
 using LiteCore.Tests.Util;
 using Xunit;
@@ -318,6 +320,119 @@ namespace LiteCore.Tests
                 var localConfig = config;
                 return Native.c4db_open(DatabasePath(), &localConfig, err);
             });
+        }
+
+        internal C4BlobKey[] AddDocWithAttachments(C4Slice docID, List<string> atts, string contentType)
+        {
+            var keys = new List<C4BlobKey>();
+            var json = new StringBuilder();
+            json.Append("{attached: [");
+            foreach (var att in atts) {
+                var key = new C4BlobKey();
+                LiteCoreBridge.Check(err =>
+                {
+                    var localKey = key;
+                    var retVal = Native.c4blob_create(Native.c4db_getBlobStore(Db, null), Encoding.UTF8.GetBytes(att),
+                        null, &localKey, err);
+                    key = localKey;
+                    return retVal;
+                });
+
+                keys.Add(key);
+                var keyStr = Native.c4blob_keyToString(key);
+                json.Append(
+                    $"{{'_cbltype': 'blob', 'digest': '{keyStr}', length: {att.Length}, 'content_type': '{contentType}'}},");
+            }
+
+            json.Append("]}");
+            var jsonStr = Native.FLJSON5_ToJSON(json.ToString(), null);
+            using (var jsonStr_ = new C4String(jsonStr)) {
+                C4Error error; 
+                var body = NativeRaw.c4db_encodeJSON(Db, jsonStr_.AsC4Slice(), &error);
+                ((long) body.buf).Should().NotBe(0, "because otherwise the encode failed");
+
+                var rq = new C4DocPutRequest();
+                rq.docID = docID;
+                rq.revFlags = C4RevisionFlags.HasAttachments;
+                rq.body = body;
+                rq.save = true;
+                var doc = Native.c4doc_put(Db, &rq, null, &error);
+                Native.c4slice_free(body);
+                ((long) doc).Should().NotBe(0, "because otherwise the put failed");
+                Native.c4doc_free(doc);
+                return keys.ToArray();
+            }
+        }
+
+        protected uint ImportJSONFile(string path)
+        {
+            return ImportJSONFile(path, "", TimeSpan.FromSeconds(15), false);
+        }
+
+        protected uint ImportJSONFile(string path, string prefix)
+        {
+            return ImportJSONFile(path, prefix, TimeSpan.FromSeconds(15), false);
+        }
+
+        protected uint ImportJSONFile(string path, string idPrefix, TimeSpan timeout, bool verbose)
+        {
+            WriteLine($"Reading {path} ...");
+            var st = Stopwatch.StartNew();
+            var jsonData = File.ReadAllBytes(path);
+            FLError error;
+            FLSliceResult fleeceData;
+            fixed (byte* jsonData_ = jsonData) {
+                fleeceData = NativeRaw.FLData_ConvertJSON(new FLSlice(jsonData_, (ulong)jsonData.Length), &error);
+            }
+
+            ((long) fleeceData.buf).Should().NotBe(0, "because otherwise the conversion failed");
+            var root = Native.FLValue_AsArray(NativeRaw.FLValue_FromTrustedData(fleeceData));
+            ((long) root).Should().NotBe(0, "because otherwise the value is not of the expected type");
+
+            LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+            try {
+                FLArrayIterator iter;
+                FLValue* item;
+                uint numDocs = 0;
+                for (Native.FLArrayIterator_Begin(root, &iter);
+                    null != (item = Native.FLArrayIterator_GetValue(&iter));
+                    Native.FLArrayIterator_Next(&iter)) {
+                    var docID = $"doc{numDocs + 1:D7}";
+                    var enc = Native.c4db_createFleeceEncoder(Db);
+                    Native.FLEncoder_WriteValue(enc, item);
+                    var body = NativeRaw.FLEncoder_Finish(enc, &error);
+
+                    var rq = new C4DocPutRequest();
+                    rq.docID = C4Slice.Allocate(docID);
+                    rq.body = body;
+                    rq.save = true;
+                    var doc = (C4Document*) LiteCoreBridge.Check(err =>
+                    {
+                        var localPut = rq;
+                        return Native.c4doc_put(Db, &localPut, null, err);
+                    });
+
+                    Native.c4doc_free(doc);
+                    Native.FLSliceResult_Free(body);
+                    C4Slice.Free(rq.docID);
+                    ++numDocs;
+                    if ((numDocs % 1000) == 0 && st.Elapsed > timeout) {
+                        WriteLine($"WARNING: Stopping JSON import after {st.Elapsed}");
+                        return numDocs;
+                    }
+                    if (verbose && (numDocs % 100000) == 0) {
+                        WriteLine($"{numDocs}  ");
+                    }
+                }
+
+                if (verbose) {
+                    st.PrintReport("Importing", numDocs, "doc", _output);
+                }
+
+                return numDocs;
+            } finally {
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+            }
         }
     }
 }
