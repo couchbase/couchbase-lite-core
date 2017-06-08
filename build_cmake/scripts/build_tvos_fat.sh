@@ -1,30 +1,14 @@
 #!/bin/bash
 
 SCRIPT_DIR=`dirname $0`
-ENABLE_BITCODE=""
-if [ $1 ]; then
-  if [[ "$1" == "--enable-bitcode" ]]; then
-    ENABLE_BITCODE="-DCMAKE_ENABLE_BITCODE=Yes"
-  fi
-fi
 
 pushd $SCRIPT_DIR/..
-mkdir tvos
-mkdir tvos-sim
 mkdir tvos-fat
 
-pushd tvos
-cmake -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=TVOS -DIOS_DEPLOYMENT_TARGET=9.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo $ENABLE_BITCODE ../..
-make -j8 LiteCore
+xcodebuild -project ../Xcode/LiteCore.xcodeproj -configuration Release -derivedDataPath tvos -scheme "LiteCore dylib" -sdk appletvos
+xcodebuild -project ../Xcode/LiteCore.xcodeproj -configuration Release -derivedDataPath tvos -scheme "LiteCore dylib" -sdk appletvsimulator
+lipo -create tvos/Build/Products/Release-appletvos/libLiteCore.dylib tvos/Build/Products/Release-appletvsimulator/libLiteCore.dylib -output tvos-fat/libLiteCore.dylib
 
-popd
-pushd tvos-sim
-cmake -DCMAKE_TOOLCHAIN_FILE=../scripts/AppleDevice.cmake -DCMAKE_PLATFORM=TVOS-SIMULATOR -DIOS_DEPLOYMENT_TARGET=9.0 -DCMAKE_BUILD_TYPE=RelWithDebInfo ../..
-make -j8 LiteCore
-
-popd
-lipo -create tvos/libLiteCore.dylib tvos-sim/libLiteCore.dylib -output tvos-fat/libLiteCore.dylib
 rm -rf tvos
-rm -rf tvos-sim
 
 popd

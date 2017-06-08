@@ -1,12 +1,6 @@
 #!/bin/bash
 
 SCRIPT_DIR=`dirname $0`
-ENABLE_BITCODE=""
-if [ $1 ]; then
-  if [[ "$1" == "--enable-bitcode" ]]; then
-    ENABLE_BITCODE="-DCMAKE_ENABLE_BITCODE=Yes"
-  fi
-fi
 
 pushd $SCRIPT_DIR/..
 mkdir ios-fat
