@@ -35,72 +35,6 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-    enum LiteCoreError {
-        AssertionFailed = 1,    // Internal assertion failure
-        Unimplemented,          // Oops, an unimplemented API call
-        NoSequences,            // This KeyStore does not support sequences
-        UnsupportedEncryption,  // Unsupported encryption algorithm
-        NoTransaction,          // Function must be called within a transaction
-        BadRevisionId,          // Invalid revision ID syntax
-        BadVersionVector,       // Invalid version vector syntax
-        CorruptRevisionData,    // Revision contains corrupted/unreadable data
-        CorruptIndexData,       // Index contains corrupted/unreadable data
-        TokenizerError, /*10*/  // can't create text tokenizer for FTS
-        NotOpen,                // Database/KeyStore/index is not open
-        NotFound,               // Document not found
-        Deleted,                // Document has been deleted
-        Conflict,               // Document update conflict
-        InvalidParameter,       // Invalid function parameter or struct value
-        DatabaseError,          // Lower-level database error (ForestDB or SQLite)
-        UnexpectedError,        // Internal unexpected C++ exception
-        CantOpenFile,           // Database file can't be opened; may not exist
-        IoError,                // File I/O error
-        CommitFailed, /*20*/    // Transaction commit failed
-        MemoryError,            // Memory allocation failed (out of memory?)
-        NotWriteable,           // File is not writeable
-        CorruptData,            // Data is corrupted
-        Busy,                   // Database is busy/locked
-        NotInTransaction,       // Function cannot be called while in a transaction
-        TransactionNotClosed,   // Database can't be closed while a transaction is open
-        IndexBusy,              // View can't be closed while index is enumerating
-        Unsupported,            // Operation not supported in this database
-        NotADatabaseFile,       // File is not a database, or encryption key is wrong
-        WrongFormat, /*30*/     // Database exists but not in the format/storage requested
-        Crypto,                 // Encryption/decryption error
-        InvalidQuery,           // Invalid query
-        MissingIndex,           // No such index, or query requires a nonexistent index
-        InvalidQueryParam,      // Unknown query param name, or param number out of range
-        RemoteError,            // Unknown error from remote server
-        DatabaseTooOld,         // Database file format is older than what I can open
-        DatabaseTooNew,         // Database file format is newer than what I can open
-        BadDocID,               // Invalid document ID
-        CantUpgradeDatabase     // Database can't be upgraded (might be unsupported dev version)
-    };
-
-#if LITECORE_PACKAGED
-    internal
-#else
-    public
-#endif
-        enum NetworkError
-    {
-        DNSFailure = 1,
-        UnknownHost,
-        Timeout,
-        InvalidURL,
-        TooManyRedirects,
-        TLSHandshakeFailed,
-        TLSCertExpired,
-        TLSCertUntrusted,
-        TLSClientCertRequired,
-        TLSClientCertRejected // 10
-    };
-
-#if LITECORE_PACKAGED
-    internal
-#else
-    public
-#endif
         partial struct C4Error
     {
         public C4Error(C4ErrorDomain domain, int code)
@@ -115,13 +49,18 @@ namespace LiteCore.Interop
             
         }
 
-        public C4Error(LiteCoreError code) : this(C4ErrorDomain.LiteCoreDomain, (int)code)
+        public C4Error(C4ErrorCode code) : this(C4ErrorDomain.LiteCoreDomain, (int)code)
         {
         }
 
         public C4Error(FLError code) : this(C4ErrorDomain.FleeceDomain, (int)code)
         {
 
+        }
+
+        public C4Error(C4NetworkErrorCode code) : this(C4ErrorDomain.NetworkDomain, (int) code)
+        {
+            
         }
     }
 

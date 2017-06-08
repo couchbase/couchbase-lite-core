@@ -34,7 +34,7 @@ def parse_enum(filename):
                     
                     continue
                     
-                if "/*" in line:
+                if "/*" in line and not "*/" in line:
                     in_comment += 1
                         
                 stripped = re.search(r'\s*([A-Za-z0-9=\- _]+,?)', line)
@@ -42,7 +42,7 @@ def parse_enum(filename):
                     continue
                     
                 entry = stripped.group(1)
-                stripped = re.search("(?:k)?(?:C4|Rev)?(?:FL|Log|DB_|Encryption)?(.*)", entry)
+                stripped = re.search("(?:k)?(?:C4|Rev)?(?:FL|Log|DB_|Encryption|Error|NetErr)?(.*)", entry)
                 entries.append(stripped.group(1).rstrip())
         else:
             definition = re.search("typedef C4_(ENUM|OPTIONS)\((.*?), (.*?)\) {", line)

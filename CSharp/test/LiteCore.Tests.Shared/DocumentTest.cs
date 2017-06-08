@@ -43,7 +43,7 @@ namespace LiteCore.Tests
                         ((long) Native.c4doc_put(Db, &rq, null, &e)).Should()
                             .Be(0, "because the invalid doc ID should cause the put to fail");
                         e.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
-                        e.code.Should().Be((int) LiteCoreError.BadDocID);
+                        e.code.Should().Be((int) C4ErrorCode.BadDocID);
                     };
 
                     checkPutBadDocID(C4Slice.Constant(""));
@@ -110,7 +110,7 @@ namespace LiteCore.Tests
                 C4Document* doc = NativeRaw.c4doc_get(Db, DocID, true, &error);
                 ((long)doc).Should().Be(0, "because the document does not exist");
                 error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
-                error.code.Should().Be((int)LiteCoreError.NotFound);
+                error.code.Should().Be((int)C4ErrorCode.NotFound);
                 Native.c4doc_free(doc);
 
                 // Now get the doc with mustExist=false, which returns an empty doc:
@@ -314,12 +314,12 @@ namespace LiteCore.Tests
                     C4Error error;
                     doc = NativeRawPrivate.c4doc_getForPut(Db, C4Slice.Null, C4Slice.Null, true, false, &error);
                     ((long)doc).Should().Be(0, "because the document does not exist");
-                    error.code.Should().Be((int)LiteCoreError.NotFound, "because the correct error should be returned");
+                    error.code.Should().Be((int)C4ErrorCode.NotFound, "because the correct error should be returned");
 
                     // Adding new rev of nonexistent doc:
                     doc = NativeRawPrivate.c4doc_getForPut(Db, DocID, RevID, false, false, &error);
                     ((long)doc).Should().Be(0, "because the document does not exist");
-                    error.code.Should().Be((int)LiteCoreError.NotFound, "because the correct error should be returned");
+                    error.code.Should().Be((int)C4ErrorCode.NotFound, "because the correct error should be returned");
 
                     // Adding new rev of existing doc:
                     CreateRev(DocID.CreateString(), RevID, Body);
@@ -334,14 +334,14 @@ namespace LiteCore.Tests
                     // Adding new rev, with nonexistent parent
                     doc = NativeRawPrivate.c4doc_getForPut(Db, DocID, Rev2ID, false, false, &error);
                     ((long)doc).Should().Be(0, "because the document does not exist");
-                    error.code.Should().Be((int)LiteCoreError.Conflict, "because the correct error should be returned");
+                    error.code.Should().Be((int)C4ErrorCode.Conflict, "because the correct error should be returned");
 
                     // Conflict -- try & fail to update non-current rev:
                     var body2 = C4Slice.Constant("{\"ok\":\"go\"}");
                     CreateRev(DocID.CreateString(), Rev2ID, body2);
                     doc = NativeRawPrivate.c4doc_getForPut(Db, DocID, RevID, false, false, &error);
                     ((long)doc).Should().Be(0, "because the document does not exist");
-                    error.code.Should().Be((int)LiteCoreError.Conflict, "because the correct error should be returned");
+                    error.code.Should().Be((int)C4ErrorCode.Conflict, "because the correct error should be returned");
 
                     if(Versioning == C4DocumentVersioning.RevisionTrees) {
                         // Conflict -- force an update of non-current rev:

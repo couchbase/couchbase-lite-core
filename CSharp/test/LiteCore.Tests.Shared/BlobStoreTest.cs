@@ -76,10 +76,10 @@ namespace LiteCore.Tests
                 C4Error error;
                 var data = Native.c4blob_getContents(_store, _bogusKey, &error);
                 data.Should().BeNull("because the attachment doesn't exist");
-                error.code.Should().Be((int)LiteCoreError.NotFound, "because that is the correct error code for a missing attachment");
+                error.code.Should().Be((int)C4ErrorCode.NotFound, "because that is the correct error code for a missing attachment");
                 var path = Native.c4blob_getFilePath(_store, _bogusKey, &error);
                 path.Should().BeNull("because the attachment doesn't exist");
-                error.code.Should().Be((int)LiteCoreError.NotFound, "because that is the correct error code for a missing attachment");
+                error.code.Should().Be((int)C4ErrorCode.NotFound, "because that is the correct error code for a missing attachment");
             });
         }
 
@@ -116,7 +116,7 @@ namespace LiteCore.Tests
                 var p = Native.c4blob_getFilePath(_store, key, &error);
                 if(_encrypted) {
                     p.Should().BeNull("because an encrypted store will not return a file path");
-                    error.code.Should().Be((int)LiteCoreError.WrongFormat, "because otherwise an unexpected error occurred");   
+                    error.code.Should().Be((int)C4ErrorCode.WrongFormat, "because otherwise an unexpected error occurred");   
                 } else {
                     p.Should().NotBeNull("because otherwise the DB failed to return its blob store");
                     var filename = "QneWo5IYIQ0ZrbCG0hXPGC6jy7E=.blob";

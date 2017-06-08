@@ -134,7 +134,7 @@ namespace LiteCore.Interop
             try {
                 _externalOpen?.Invoke(socket, address, options);
             } catch (Exception) {
-                Native.c4socket_closed(socket, new C4Error(LiteCoreError.UnexpectedError));
+                Native.c4socket_closed(socket, new C4Error(C4ErrorCode.UnexpectedError));
             }
         }
 

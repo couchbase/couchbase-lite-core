@@ -84,7 +84,7 @@ namespace LiteCore.Interop
         public IntPtr open;
         public IntPtr write;
         public IntPtr completedReceive;
-        public IntPtr close; 
+        public IntPtr close;
         private IntPtr requestClose; // unused in .NET
 
         public C4SocketFactory(SocketOpenDelegate open, SocketCloseDelegate close, SocketWriteDelegate write, SocketCompletedReceiveDelegate completedReceive)

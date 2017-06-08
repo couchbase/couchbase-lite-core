@@ -46,7 +46,7 @@ namespace LiteCore.Tests
                 _query = Native.c4query_new(Db, "[\"=\"]", &err);
                 ((long) _query).Should().Be(0, "because the query string was invalid");
                 err.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
-                err.code.Should().Be((int) LiteCoreError.InvalidQuery);
+                err.code.Should().Be((int) C4ErrorCode.InvalidQuery);
                 var msg = Native.c4error_getMessage(err);
                 msg.Should().Be("Wrong number of arguments to =");
             });

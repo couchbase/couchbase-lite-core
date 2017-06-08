@@ -33,9 +33,9 @@ namespace LiteCore.Tests
             msg.Should().BeNull("because there was no error");
 
             AssertMessage(C4ErrorDomain.SQLiteDomain, (int)SQLiteStatus.Corrupt, "database disk image is malformed");
-            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)LiteCoreError.InvalidParameter, "invalid parameter");
+            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)C4ErrorCode.InvalidParameter, "invalid parameter");
             AssertMessage(C4ErrorDomain.POSIXDomain, (int)PosixStatus.NOENT, "No such file or directory");
-            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)LiteCoreError.IndexBusy, "index busy; can't close view");
+            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)C4ErrorCode.IndexBusy, "index busy; can't close view");
             AssertMessage(C4ErrorDomain.SQLiteDomain, -1234, "unknown error");
             AssertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
         }
@@ -169,7 +169,7 @@ namespace LiteCore.Tests
                 ((long)Native.c4raw_get(Db, "test", "bogus", &error)).Should().Be(0, 
                     "because the document does not exist");
                 error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain, "because that is the correct domain");
-                error.code.Should().Be((int)LiteCoreError.NotFound, "because that is the correct error code");
+                error.code.Should().Be((int)C4ErrorCode.NotFound, "because that is the correct error code");
             });
         }
 

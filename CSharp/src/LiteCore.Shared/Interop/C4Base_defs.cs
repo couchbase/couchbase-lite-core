@@ -33,6 +33,75 @@ namespace LiteCore.Interop
 #else
     public
 #endif
+    enum C4NetworkErrorCode : int
+    {
+        DNSFailure = 1,
+        UnknownHost,
+        Timeout,
+        InvalidURL,
+        TooManyRedirects,
+        TLSHandshakeFailed,
+        TLSCertExpired,
+        TLSCertUntrusted,
+        TLSClientCertRequired,
+        TLSClientCertRejected,
+        TLSCertUnknownRoot,
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+    enum C4ErrorCode : int
+    {
+        AssertionFailed = 1,
+        Unimplemented,
+        NoSequences,
+        UnsupportedEncryption,
+        NoTransaction,
+        BadRevisionID,
+        BadVersionVector,
+        CorruptRevisionData,
+        CorruptIndexData,
+        TokenizerError,
+        NotOpen,
+        NotFound,
+        Deleted,
+        Conflict,
+        InvalidParameter,
+        DatabaseError,
+        UnexpectedError,
+        CantOpenFile,
+        IOError,
+        CommitFailed,
+        MemoryError,
+        NotWriteable,
+        CorruptData,
+        Busy,
+        NotInTransaction,
+        TransactionNotClosed,
+        IndexBusy,
+        Unsupported,
+        NotADatabaseFile,
+        WrongFormat,
+        Crypto,
+        InvalidQuery,
+        MissingIndex,
+        InvalidQueryParam,
+        RemoteError,
+        DatabaseTooOld,
+        DatabaseTooNew,
+        BadDocID,
+        CantUpgradeDatabase,
+        NumErrorCodesPlus1
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
     enum C4ErrorDomain : uint
     {
         LiteCoreDomain = 1,
