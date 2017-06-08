@@ -37,6 +37,7 @@ set(JNI_CLASSES
     com.couchbase.litecore.C4BlobWriteStream
     com.couchbase.litecore.C4DatabaseObserver
     com.couchbase.litecore.C4DocumentObserver
+    com.couchbase.litecore.C4Listener
     com.couchbase.litecore.C4Query
     com.couchbase.litecore.C4QueryEnumerator
     com.couchbase.litecore.C4Replicator
@@ -96,6 +97,7 @@ set_target_properties(crypto PROPERTIES IMPORTED_LOCATION
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     target_link_libraries(  LiteCoreJNI
                             LiteCoreStatic
+                            LiteCoreREST_Static
                             BLIPStatic
                             FleeceStatic
                             sqlite3
@@ -108,6 +110,7 @@ else()
 
 	target_link_libraries(	LiteCoreJNI
                         	LiteCoreStatic
+                            LiteCoreREST_Static
                             BLIPStatic
                         	FleeceStatic
                         	sqlite3
