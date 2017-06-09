@@ -7,54 +7,16 @@
 //
 
 #pragma once
+#include "Address.hh"
 #include "FleeceCpp.hh"
 #include <assert.h>
 #include <map>
-#include <sstream>
 #include <string>
 
 namespace litecore { namespace websocket {
 
     class WebSocket;
     class Delegate;
-
-
-    /** Basically a low-budget URL class. */
-    struct Address {
-        const std::string scheme;
-        const std::string hostname;
-        const uint16_t port;
-        const std::string path;
-
-        Address(const std::string &scheme_, const std::string &hostname_,
-                uint16_t port_ =0, const std::string &path_ ="/")
-        :scheme(scheme_)
-        ,hostname(hostname_)
-        ,port(port_ ? port_ : defaultPort())
-        ,path(path_)
-        { }
-
-        Address(const std::string &hostname_,
-                uint16_t port_ =0, const std::string &path_ ="/")
-        :Address("ws", hostname_, port_, path_)
-        { }
-
-        uint16_t defaultPort() const {
-            return (scheme == "wss" || scheme == "https") ? 443 : 80;
-        }
-
-        operator std::string() const {
-            std::stringstream result;
-            result << scheme << ':' << hostname;
-            if (port != defaultPort())
-                result << ':' << port;
-            if (path.empty() || path[0] != '/')
-                result << '/';
-            result << path;
-            return result.str();
-        }
-    };
-
 
     /** Reasons for a WebSocket closing. */
     enum CloseReason {
