@@ -4,10 +4,9 @@ import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
-import com.couchbase.lite.utils.FileUtils;
 import com.couchbase.litecore.fleece.FLEncoder;
 import com.couchbase.litecore.fleece.FLValue;
-import com.couchbase.litecore.utils.Config;
+import com.couchbase.litecore.utils.FileUtils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -18,7 +17,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Map;
 
-import static com.couchbase.lite.utils.Config.TEST_PROPERTIES_FILE;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2Scheme;
 import static com.couchbase.litecore.C4ReplicatorMode.kC4Continuous;
 import static com.couchbase.litecore.C4ReplicatorMode.kC4Disabled;
@@ -114,11 +112,12 @@ public class C4ReplicatorTest extends BaseTest {
 
     @Before
     public void setUp() throws Exception {
-        config = new Config(InstrumentationRegistry.getContext().getAssets().open(TEST_PROPERTIES_FILE));
+        super.setUp();
+        //config = new Config(InstrumentationRegistry.getContext().getAssets().open(TEST_PROPERTIES_FILE));
         if (!config.replicatorTestsEnabled())
             return;
 
-        super.setUp();
+        //super.setUp();
 
         this.host = config.remoteHost();
         this.port = config.remotePort();
@@ -205,7 +204,7 @@ public class C4ReplicatorTest extends BaseTest {
 
         String dbFilename2 = "cbl_core_test2.sqlite3";
         deleteDatabaseFile(dbFilename2);
-        Context context2 = InstrumentationRegistry.getContext();
+        Context context2 = InstrumentationRegistry.getTargetContext();
         File dir2 = new File(context2.getFilesDir(), dbFilename2);
         FileUtils.cleanDirectory(dir2);
         db2 = new Database(dir2.getPath(), Database.Create | Database.Bundle | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());

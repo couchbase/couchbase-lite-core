@@ -13,7 +13,7 @@
  */
 package com.couchbase.litecore.fleece;
 
-import com.couchbase.lite.SharedKeys;
+import com.couchbase.litecore.SharedKeys;
 
 import java.util.ArrayList;
 import java.util.HashMap;

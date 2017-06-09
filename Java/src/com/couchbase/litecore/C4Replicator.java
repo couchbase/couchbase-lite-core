@@ -13,7 +13,7 @@
  */
 package com.couchbase.litecore;
 
-import com.couchbase.lite.Log;
+import android.util.Log;
 
 import java.util.Collections;
 import java.util.HashMap;

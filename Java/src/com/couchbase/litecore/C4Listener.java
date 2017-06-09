@@ -42,8 +42,8 @@ public class C4Listener {
         }
     }
 
-    public boolean shareDB(String name, long db) {
-        return shareDB(handle, name, db);
+    public boolean shareDB(String name, Database db) {
+        return shareDB(handle, name, db._handle);
     }
 
     public boolean unshareDB(String name) {

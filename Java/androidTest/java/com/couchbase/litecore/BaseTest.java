@@ -17,10 +17,10 @@ import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
-import com.couchbase.lite.utils.FileUtils;
 import com.couchbase.litecore.fleece.FLSliceResult;
 import com.couchbase.litecore.fleece.FLValue;
 import com.couchbase.litecore.utils.Config;
+import com.couchbase.litecore.utils.FileUtils;
 import com.couchbase.litecore.utils.StopWatch;
 
 import org.junit.After;
@@ -28,6 +28,7 @@ import org.junit.Before;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -35,7 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static android.R.attr.path;
 import static com.couchbase.litecore.Constants.C4DocumentVersioning.kC4RevisionTrees;
 import static com.couchbase.litecore.Constants.C4DocumentVersioning.kC4VersionVectors;
 import static com.couchbase.litecore.utils.Config.TEST_PROPERTIES_FILE;
@@ -95,13 +95,14 @@ public class BaseTest implements Constants {
 
     @Before
     public void setUp() throws Exception {
-        context = InstrumentationRegistry.getContext();
-
-        config = new Config(context.getAssets().open(TEST_PROPERTIES_FILE));
-
+        context = InstrumentationRegistry.getTargetContext();
+        try {
+            config = new Config(context.getAssets().open(TEST_PROPERTIES_FILE));
+        } catch (FileNotFoundException e) {
+            config = new Config();
+        }
         String dbFilename = "cbl_core_test.sqlite3";
         deleteDatabaseFile(dbFilename);
-        context = InstrumentationRegistry.getContext();
         dir = new File(context.getFilesDir(), dbFilename);
         FileUtils.cleanDirectory(dir);
         db = new Database(dir.getPath(), Database.Create | Database.Bundle | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());
@@ -124,7 +125,6 @@ public class BaseTest implements Constants {
     public void tearDown() throws Exception {
         if (db != null) {
             db.close();
-            db.delete();
             db.free();
             db = null;
         }
@@ -168,16 +168,18 @@ public class BaseTest implements Constants {
     protected InputStream getAsset(String name) {
         return this.getClass().getResourceAsStream("/assets/" + name);
     }
+
     protected long importJSONLines(String name) throws LiteCoreException, IOException {
         return importJSONLines(getAsset(name));
     }
+
     protected long importJSONLines(InputStream is) throws LiteCoreException, IOException {
         return importJSONLines(is, 15.0, true);
     }
 
     // Read a file that contains a JSON document per line. Every line becomes a document.
     protected long importJSONLines(InputStream is, double timeout, boolean verbose) throws LiteCoreException, IOException {
-        Log.i(LOG_TAG, String.format("Reading %s ...  ", path));
+        Log.i(LOG_TAG, String.format("Reading data from input stream ..."));
         StopWatch st = new StopWatch();
         long numDocs = 0;
         boolean commit = false;

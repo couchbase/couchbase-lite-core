@@ -43,7 +43,7 @@ public class C4BlobStoreTest extends BaseTest {
             blobStore.delete();
         if (blobStore != null)
             blobStore.free();
-        if (blobDir.exists())
+        if (blobDir != null && blobDir.exists())
             deleteRecursive(blobDir);
         super.tearDown();
     }

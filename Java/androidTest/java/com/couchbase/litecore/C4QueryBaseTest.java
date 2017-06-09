@@ -13,7 +13,7 @@
  */
 package com.couchbase.litecore;
 
-import com.couchbase.lite.Log;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public class C4QueryBaseTest extends BaseTest {
         if (sortExpr != null && sortExpr.length() > 0)
             queryString = "[\"SELECT\", {\"WHERE\": " + whereExpr + ", \"ORDER_BY\": " + sortExpr + "}]";
 
-        Log.i(LOG_TAG, "Query = %s", queryString);
+        Log.i(LOG_TAG, "Query = " + queryString);
 
         if (query != null) {
             query.free();
