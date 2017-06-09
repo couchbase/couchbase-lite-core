@@ -80,6 +80,9 @@ include_directories(
     ${TOP}/vendor/fleece/Fleece/)
 
 aux_source_directory(./jni  JNI_SRC)
+if (NOT REST)
+    list(REMOVE_ITEM JNI_SRC "./jni/native_c4listener.cc")
+endif()
 add_library(LiteCoreJNI SHARED ${JNI_SRC})
 
 # set dependency
@@ -104,13 +107,16 @@ if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
                             crypto
                             SQLite3_UnicodeSN
                             CivetWeb)
+    if (REST)
+        target_link_libraries(LiteCoreJNI 
+                            LiteCoreREST_Static)
+    endif()
 else()
     
     #find_library(log-lib log)
 
 	target_link_libraries(	LiteCoreJNI
                         	LiteCoreStatic
-                            LiteCoreREST_Static
                             BLIPStatic
                         	FleeceStatic
                         	sqlite3
@@ -120,6 +126,8 @@ else()
                             "atomic"
                         	"log"
                             z)
-
-
+    if (REST)
+        target_link_libraries(LiteCoreJNI 
+                            LiteCoreREST_Static)
+    endif()
 endif()
