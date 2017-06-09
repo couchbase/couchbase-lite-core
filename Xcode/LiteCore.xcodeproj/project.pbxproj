@@ -146,6 +146,10 @@
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275CED461D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
+		2761F3F01EE9CC58006D4BB8 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
+		2761F3F11EE9CC58006D4BB8 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
+		2761F3F21EE9CC58006D4BB8 /* CookieStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */; };
+		2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
 		276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */; };
 		276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */ = {isa = PBXBuildFile; fileRef = 276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */; };
@@ -983,6 +987,9 @@
 		275CED441D3ECE9B001DE46C /* TreeDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TreeDocument.cc; sourceTree = "<group>"; };
 		275FF6661E42A90C005F90DD /* QueryParserTables.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryParserTables.hh; sourceTree = "<group>"; };
 		275FF6D11E4947E1005F90DD /* c4BaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BaseTest.cc; sourceTree = "<group>"; };
+		2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStore.cc; sourceTree = "<group>"; };
+		2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CookieStore.hh; sourceTree = "<group>"; };
+		2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStoreTest.cc; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceTracker.hh; sourceTree = "<group>"; };
 		2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceSet.hh; sourceTree = "<group>"; };
@@ -1779,6 +1786,7 @@
 			children = (
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
+				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -1923,6 +1931,8 @@
 				27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
 				275A73BD1ED255AF008CB57B /* c4Replicator.hh */,
+				2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */,
+				2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */,
 				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
 				275CE0EE1E57BE7E0084E014 /* Replicator.exp */,
@@ -2290,6 +2300,7 @@
 				276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */,
 				273407251DEE116600EA5532 /* PlatformIO.hh in Headers */,
 				27D74A901D4D3F3400D806E0 /* Backup.h in Headers */,
+				2761F3F21EE9CC58006D4BB8 /* CookieStore.hh in Headers */,
 				27E6DFF21DA5AFF3008EB681 /* Query.hh in Headers */,
 				27D74A8F1D4D3F3400D806E0 /* Assertion.h in Headers */,
 				27D74A931D4D3F3400D806E0 /* Exception.h in Headers */,
@@ -2651,7 +2662,7 @@
 		2750723318E3E52800A80C5A /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				CLASSPREFIX = LC;
+				CLASSPREFIX = "";
 				LastSwiftUpdateCheck = 0730;
 				LastUpgradeCheck = 0900;
 				ORGANIZATIONNAME = Couchbase;
@@ -2851,6 +2862,7 @@
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
+				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
@@ -3097,6 +3109,7 @@
 				93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */,
 				276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */,
 				27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */,
+				2761F3F01EE9CC58006D4BB8 /* CookieStore.cc in Sources */,
 				93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */,
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
@@ -3186,6 +3199,7 @@
 				72DE480E1E9C550A00B60952 /* Pusher.cc in Sources */,
 				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
 				27D74A7F1D4D3F2300D806E0 /* Database.cpp in Sources */,
+				2761F3F11EE9CC58006D4BB8 /* CookieStore.cc in Sources */,
 				27D74A7D1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				27FDF13A1DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */,
 				72DE480A1E9C550A00B60952 /* Replicator.cc in Sources */,

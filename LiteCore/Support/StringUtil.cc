@@ -59,6 +59,14 @@ namespace litecore {
             && memcmp(&str[str.size() - suffix.size()], suffix.data(), suffix.size()) == 0;
     }
 
+    bool hasSuffixIgnoringCase(const std::string &str, const std::string &suffix) noexcept {
+        return str.size() >= suffix.size()
+            && strcasecmp(&str.c_str()[str.size() - suffix.size()], suffix.data()) == 0;
+    }
+
+    int compareIgnoringCase(const std::string &a, const std::string &b) {
+        return strcasecmp(a.c_str(), b.c_str());
+    }
 
     // Based on utf8_check.c by Markus Kuhn, 2005
     // https://www.cl.cam.ac.uk/~mgk25/ucs/utf8_check.c

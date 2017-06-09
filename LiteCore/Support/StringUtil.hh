@@ -34,6 +34,9 @@ namespace litecore {
     bool hasPrefix(const std::string &str, const std::string &prefix) noexcept;
 
     bool hasSuffix(const std::string &str, const std::string &suffix) noexcept;
+    bool hasSuffixIgnoringCase(const std::string &str, const std::string &suffix) noexcept;
+
+    int compareIgnoringCase(const std::string &a, const std::string &b);
 
     bool isValidUTF8(fleece::slice) noexcept;
 
