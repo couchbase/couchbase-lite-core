@@ -94,6 +94,13 @@ namespace LiteCore.Interop
     internal
 #else
     public
+#endif 
+        unsafe delegate void SocketErrorDelegate(C4Socket* socket, Exception e);
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
 #endif
         unsafe static class SocketFactory
     {
@@ -106,6 +113,7 @@ namespace LiteCore.Interop
         private static SocketCloseDelegate _externalClose;
         private static SocketWriteDelegateManaged _externalWrite;
         private static SocketCompletedReceiveDelegateManaged _externalCompletedReceive;
+        private static SocketErrorDelegate _error;
 
         private static C4SocketFactory InternalFactory { get; }
 
@@ -128,12 +136,18 @@ namespace LiteCore.Interop
             _externalCompletedReceive = doCompleteReceive;
         }
 
+        public static void SetErrorHandler(SocketErrorDelegate doError)
+        {
+            _error = doError;
+        }
+
         [MonoPInvokeCallback(typeof(SocketOpenDelegate))]
         private static void SocketOpened(C4Socket* socket, C4Address* address, C4Slice options)
         {
             try {
                 _externalOpen?.Invoke(socket, address, options);
-            } catch (Exception) {
+            } catch (Exception e) {
+                _error?.Invoke(socket, new Exception("Error opening to socket", e));
                 Native.c4socket_closed(socket, new C4Error(C4ErrorCode.UnexpectedError));
             }
         }
@@ -143,8 +157,8 @@ namespace LiteCore.Interop
         {
             try {
 				_externalClose?.Invoke(socket);
-            } catch (Exception) {
-                // Log
+            } catch (Exception e) {
+                _error?.Invoke(socket, new Exception("Error closing socket", e));
             }
         }
 
@@ -153,8 +167,9 @@ namespace LiteCore.Interop
         {
             try {
                 _externalWrite?.Invoke(socket, ((C4Slice) allocatedData).ToArrayFast());
-            } catch (Exception) {
-                // Log
+            } catch (Exception e) {
+                _error?.Invoke(socket, new Exception("Error writing to socket", e));
+                Native.c4socket_closed(socket, new C4Error(C4ErrorCode.UnexpectedError));
             } finally {
                 allocatedData.Dispose();
             }
@@ -165,8 +180,9 @@ namespace LiteCore.Interop
         {
             try {
                 _externalCompletedReceive?.Invoke(socket, byteCount.ToUInt64());
-            } catch (Exception) {
-                // Log
+            } catch (Exception e) {
+                _error?.Invoke(socket, new Exception("Error completing receive for socket", e));
+                Native.c4socket_closed(socket, new C4Error(C4ErrorCode.UnexpectedError));
             }
         }
     }

@@ -23,6 +23,7 @@ c4error_make
 c4error_getMessage
 c4error_getMessageC
 c4error_mayBeTransient
+c4error_mayBeNetworkDependent
 
 c4db_open
 c4db_openAgain
