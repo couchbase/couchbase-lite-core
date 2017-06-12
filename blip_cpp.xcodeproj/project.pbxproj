@@ -219,6 +219,7 @@
 		27491C8E1E7AFCBE001DC54B /* websocket */ = {
 			isa = PBXGroup;
 			children = (
+				2761F3F81EEB2F4D006D4BB8 /* Address.cc */,
 				27491C8F1E7AFCED001DC54B /* WebSocketImpl.cc */,
 				27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */,
 			);
@@ -289,7 +290,6 @@
 				27EF69E71E282662004748DF /* Message.hh */,
 				2799762A1E944B2F00B27639 /* MessageBuilder.hh */,
 				27EF69E81E282662004748DF /* WebSocketInterface.hh */,
-				2761F3F81EEB2F4D006D4BB8 /* Address.cc */,
 				2761F3F91EEB2F4D006D4BB8 /* Address.hh */,
 				27491CA01E7B417C001DC54B /* WebSocketImpl.hh */,
 			);
