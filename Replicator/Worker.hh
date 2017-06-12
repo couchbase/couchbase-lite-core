@@ -57,14 +57,23 @@ namespace litecore { namespace repl {
                 return std::chrono::seconds(secs);
             }
 
-            fleeceapi::Array customHeaders() const  {return arrayProperty("headers");}
-            fleeceapi::Array channels() const       {return arrayProperty("channels");}
-            fleece::slice filter() const            {return properties["filter"].asString();}
-            fleeceapi::Dict filterParams() const    {return properties["filterParams"].asDict();}
+            fleeceapi::Array channels() const {return arrayProperty(kC4ReplicatorOptionChannels);}
+            fleeceapi::Dict headers() const  {return dictProperty(kC4ReplicatorOptionExtraHeaders);}
+            fleece::slice filter() const  {return properties[kC4ReplicatorOptionFilter].asString();}
+            fleeceapi::Dict filterParams() const
+                                      {return properties[kC4ReplicatorOptionFilterParams].asDict();}
 
             fleeceapi::Array arrayProperty(const char *name) const {
                 return properties[name].asArray();
             }
+            fleeceapi::Dict dictProperty(const char *name) const {
+                return properties[name].asDict();
+            }
+
+            /** Sets/clears the value of a property.
+                Warning: This rewrites the backing store of the properties, invalidating any
+                Fleece value pointers or slices previously accessed from it. */
+            void setProperty(fleece::slice name, fleece::slice value);
         };
 
         

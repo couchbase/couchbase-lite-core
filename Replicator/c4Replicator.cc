@@ -6,11 +6,14 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
+#include "Database.hh"
 #include "c4Replicator.hh"
 #include "c4ExceptionUtils.hh"
+#include "DatabaseCookies.hh"
 #include "StringUtil.hh"
 #include <atomic>
 #include <errno.h>
+
 #ifdef _MSC_VER
 #include <winerror.h>
 #define EHOSTDOWN WSAEHOSTDOWN
@@ -25,7 +28,7 @@ const char* const kC4ReplicatorActivityLevelNames[5] = {
 static bool isValidScheme(C4Slice scheme) {
     static const slice kValidSchemes[] = {"ws"_sl, "wss"_sl, "blip"_sl, "blips"_sl};
     for (int i=0; i < sizeof(kValidSchemes)/sizeof(slice); i++)
-        if (scheme == kValidSchemes[i])
+        if ((slice)scheme == kValidSchemes[i])
             return true;
     return false;
 }
@@ -80,7 +83,7 @@ bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName) {
     if (str.hasSuffix("/"_sl))
         str.setSize(str.size - 1);
     *dbName = str;
-    return c4repl_isValidDatabaseName(str);
+    return c4repl_isValidDatabaseName(toc4slice(str));
 }
 
 
@@ -173,7 +176,53 @@ C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
 
 
 C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
-    return repl->responseHeaders().data();
+    return toc4slice(repl->responseHeaders().data());
+}
+
+
+#pragma mark - COOKIES:
+
+
+C4StringResult c4db_getCookies(C4Database *db,
+                               C4Address request,
+                               C4Error *outError) C4API
+{
+    return tryCatch<C4StringResult>(outError, [=]() {
+        DatabaseCookies cookies(db);
+        string result = cookies.cookiesForRequest(addressFrom(request));
+        if (result.empty()) {
+            clearError(outError);
+            return C4StringResult();
+        }
+        return sliceResult(result);
+    });
+}
+
+
+bool c4db_setCookie(C4Database *db,
+                    C4String setCookieHeader,
+                    C4String fromHost,
+                    C4Error *outError) C4API
+{
+    return tryCatch<bool>(outError, [=]() {
+        DatabaseCookies cookies(db);
+        bool ok = cookies.setCookie(slice(setCookieHeader).asString(),
+                                    slice(fromHost).asString());
+        if (ok)
+            cookies.saveChanges();
+        else
+            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, C4STR("Invalid cookie"), outError);
+        return ok;
+    });
+}
+
+
+void c4db_clearCookies(C4Database *db) C4API {
+    tryCatch(nullptr, [db]() {
+        DatabaseCookies cookies(db);
+        cookies.clearCookies();
+        cookies.saveChanges();
+    });
 }
 
 

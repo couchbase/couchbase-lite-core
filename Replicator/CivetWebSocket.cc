@@ -8,14 +8,17 @@
 
 #include "CivetWebSocket.hh"
 #include "c4Socket+Internal.hh"
+#include "c4Replicator.h"
 #include "Actor.hh"
 #include "Logging.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "civetweb.h"
 #include <exception>
-#include <map>
 #include <mutex>
+#include <unordered_map>
+#include <vector>
+
 #ifdef _MSC_VER
 #include <WinSock2.h>
 #else
@@ -88,10 +91,14 @@ namespace litecore { namespace websocket {
             Assert(!_connection);
 
             stringstream extraHeaders;
-            for (Dict::iterator header(_options["headers"].asDict()); header; ++header) {
+            for (Dict::iterator header(_options[kC4ReplicatorOptionExtraHeaders].asDict());
+                     header; ++header) {
                 extraHeaders << slice(header.keyString()).asString() << ": "
                              << header.value().asstring() << "\r\n";
             }
+            slice cookies = _options[kC4ReplicatorOptionCookies].asString();
+            if (cookies)
+                extraHeaders << "Cookie: " << cookies.asString() << "\r\n";
 
             auto &to = address();
             char errorStr[256];
@@ -215,11 +222,24 @@ namespace litecore { namespace websocket {
             int status = stoi(string(ri->request_uri));
             Debug("CivetWebSocket got HTTP response %d, with %d headers", status, ri->num_headers);
 
+            // Headers can appear more than once, so collect them into an array-valued map:
+            unordered_map<string, vector<string>> headerMap;
+            for (int i = 0; i < ri->num_headers; i++)
+                headerMap[ri->http_headers[i].name].emplace_back(ri->http_headers[i].value);
+
+            // Now encode as a Fleece dict, where values are strings or arrays of strings:
             Encoder enc;
-            enc.beginDict();
-            for (int i = 0; i < ri->num_headers; i++) {
-                enc.writeKey(slice(ri->http_headers[i].name));
-                enc.writeString(ri->http_headers[i].value);
+            enc.beginDict(headerMap.size());
+            for (auto i = headerMap.begin(); i != headerMap.end(); ++i) {
+                enc.writeKey(slice(i->first));
+                if (i->second.size() == 1)
+                    enc.writeString(i->second[0]);
+                else {
+                    enc.beginArray();
+                    for (string &value : i->second)
+                        enc.writeString(value);
+                    enc.endArray();
+                }
             }
             enc.endDict();
             AllocedDict headers(enc.finish());

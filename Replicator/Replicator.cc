@@ -26,11 +26,35 @@ using namespace fleeceapi;
 namespace litecore { namespace repl {
 
 
+    // Subroutine of constructor that looks up HTTP cookies for the request, adds them to
+    // options.properties' cookies, and returns the properties dict.
+    static AllocedDict propertiesWithCookies(C4Database *db,
+                                             const websocket::Address &address,
+                                             Worker::Options &options)
+    {
+        if (!options.properties[kC4ReplicatorOptionCookies]) {
+            C4Address c4addr {
+                slice(address.scheme),
+                slice(address.hostname),
+                address.port,
+                slice(address.path)
+            };
+            C4Error err;
+            alloc_slice cookies = c4db_getCookies(db, c4addr, &err);
+            if (cookies)
+                options.setProperty(slice(kC4ReplicatorOptionCookies), cookies);
+            else if (err.code)
+                Warn("Error getting cookies from db: %d/%d", err.domain, err.code);
+        }
+        return options.properties;
+    }
+
+
     // The 'designated initializer', in Obj-C terms :)
     Replicator::Replicator(C4Database* db,
                            const websocket::Address &address,
                            Delegate &delegate,
-                           Options options,
+                           const Options &options,
                            Connection *connection)
     :Worker(connection, nullptr, options, "Repl")
     ,_remoteAddress(address)
@@ -54,7 +78,9 @@ namespace litecore { namespace repl {
                            Delegate &delegate,
                            Options options)
     :Replicator(db, address, delegate, options,
-                new Connection(address, provider, options.properties, *this))
+                new Connection(address, provider,
+                               propertiesWithCookies(db, address, options),
+                               *this))
     { }
 
     Replicator::Replicator(C4Database *db,
@@ -190,6 +216,16 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onHTTPResponse(int status, fleeceapi::AllocedDict headers) {
+        auto setCookie = headers["Set-Cookie"_sl];
+        if (setCookie.type() == kFLArray) {
+            // Yes, there can be multiple Set-Cookie headers.
+            for (Array::iterator i(setCookie.asArray()); i; ++i) {
+                _dbActor->setCookie(i.value().asString());
+            }
+        } else if (setCookie) {
+            _dbActor->setCookie(setCookie.asString());
+        }
+
         _delegate->replicatorGotHTTPResponse(this, status, headers);
     }
 

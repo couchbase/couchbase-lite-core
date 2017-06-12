@@ -18,7 +18,7 @@ namespace litecore { namespace websocket {
     // Address conversion utilities:
     C4Address c4AddressFrom(const Address &address);
     websocket::Address addressFrom(const C4Address &addr);
-    websocket::Address addressFrom(const C4Address &addr, C4String remoteDatabaseName);
+    websocket::Address addressFrom(const C4Address &addr, fleece::slice remoteDatabaseName);
     websocket::Address addressFrom(c4Database* otherDB);
 
     // Returns the WebSocket object associated with a C4Socket

@@ -6,9 +6,13 @@
 //Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#include "LiteCoreTest.hh"
+#include "C4Test.hh"
+#include "c4.hh"
 #include "CookieStore.hh"
+#include "DatabaseCookies.hh"
 
+using namespace fleece;
+using namespace litecore;
 using namespace litecore::repl;
 using namespace litecore::websocket;
 using namespace std;
@@ -133,48 +137,127 @@ static const Address kOtherHostRequest  {"blip", "couchbase.com", 4984, "/beer/_
 
 
 TEST_CASE("CookieStore", "[Cookies]") {
-    CookieStore store;
-    CHECK(store.cookies().empty());
-    CHECK(!store.changed());
-    CHECK(store.cookiesForRequest(kRequest).empty());
+    Retained<CookieStore> store = new CookieStore;
+    CHECK(store->cookies().empty());
+    CHECK(!store->changed());
+    CHECK(store->cookiesForRequest(kRequest).empty());
 
-    CHECK(store.setCookie("x=y; Domain=Example.Com", "example.com"));
-    CHECK(!store.cookies().empty());
-    CHECK(!store.changed());    // it's non-persistent
-    CHECK(store.setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", "www.example.com"));
-    CHECK(store.changed());
-    CHECK(store.setCookie("jens=awesome; Domain=snej.example.com", "example.com"));
-    CHECK(store.cookiesForRequest(kRequest) == "x=y; e=mc^2");
-    CHECK(store.cookiesForRequest(kOtherPathRequest) == "x=y; e=mc^2");
-    CHECK(store.cookiesForRequest(kSecureRequest) == "x=y; e=mc^2");
-    CHECK(store.cookiesForRequest(kOtherHostRequest) == "");
+    CHECK(store->setCookie("x=y; Domain=Example.Com", "example.com"));
+    CHECK(!store->cookies().empty());
+    CHECK(!store->changed());    // it's non-persistent
+    CHECK(store->setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", "www.example.com"));
+    CHECK(store->changed());
+    CHECK(store->setCookie("jens=awesome; Domain=snej.example.com", "example.com"));
+    CHECK(store->cookiesForRequest(kRequest) == "x=y; e=mc^2");
+    CHECK(store->cookiesForRequest(kOtherPathRequest) == "x=y; e=mc^2");
+    CHECK(store->cookiesForRequest(kSecureRequest) == "x=y; e=mc^2");
+    CHECK(store->cookiesForRequest(kOtherHostRequest) == "");
 
     SECTION("Replace Cookie") {
-        store.clearChanged();
-        CHECK(store.setCookie("e=something else; Domain=WWW.Example.Com", "www.example.com"));
-        CHECK(store.changed());     // a persistent cookie got removed
-        CHECK(store.cookiesForRequest(kRequest) == "x=y; e=something else");
+        store->clearChanged();
+        CHECK(store->setCookie("e=something else; Domain=WWW.Example.Com", "www.example.com"));
+        CHECK(store->changed());     // a persistent cookie got removed
+        CHECK(store->cookiesForRequest(kRequest) == "x=y; e=something else");
     }
     SECTION("Secure Cookie") {
-        CHECK(store.setCookie("password=123456; Domain=WWW.Example.Com; Secure=true", "www.example.com"));
-        CHECK(store.cookiesForRequest(kRequest) == "x=y; e=mc^2");
-        CHECK(store.cookiesForRequest(kSecureRequest) == "x=y; e=mc^2; password=123456");
+        CHECK(store->setCookie("password=123456; Domain=WWW.Example.Com; Secure=true", "www.example.com"));
+        CHECK(store->cookiesForRequest(kRequest) == "x=y; e=mc^2");
+        CHECK(store->cookiesForRequest(kSecureRequest) == "x=y; e=mc^2; password=123456");
     }
     SECTION("Paths") {
-        CHECK(store.setCookie("path=qat; Domain=example.com; Path=/qat", "example.com"));
-        CHECK(store.setCookie("path=Qat; Domain=example.com; Path=/Qat", "example.com"));
-        CHECK(store.setCookie("path=qaternion; Domain=example.com; Path=/qaternion", "example.com"));
-        CHECK(store.setCookie("x=z; Domain=Example.com; Path=/elsewhere", "example.com"));
-        CHECK(store.cookiesForRequest(kRequest) == "x=y; e=mc^2");
-        CHECK(store.cookiesForRequest(kOtherPathRequest) == "x=y; e=mc^2; path=qat");
+        CHECK(store->setCookie("path=qat; Domain=example.com; Path=/qat", "example.com"));
+        CHECK(store->setCookie("path=Qat; Domain=example.com; Path=/Qat", "example.com"));
+        CHECK(store->setCookie("path=qaternion; Domain=example.com; Path=/qaternion", "example.com"));
+        CHECK(store->setCookie("x=z; Domain=Example.com; Path=/elsewhere", "example.com"));
+        CHECK(store->cookiesForRequest(kRequest) == "x=y; e=mc^2");
+        CHECK(store->cookiesForRequest(kOtherPathRequest) == "x=y; e=mc^2; path=qat");
     }
     SECTION("Persistence") {
-        alloc_slice encoded = store.encode();
+        alloc_slice encoded = store->encode();
         CHECK(encoded);
-        CookieStore store2(encoded);
-        CHECK(store2.cookies().size() == 1);
-        CHECK(!store2.changed());
-        CHECK(store2.cookiesForRequest(kRequest) == "e=mc^2");
+        Retained<CookieStore> store2 = new CookieStore(encoded);
+        CHECK(store2->cookies().size() == 1);
+        CHECK(!store2->changed());
+        CHECK(store2->cookiesForRequest(kRequest) == "e=mc^2");
     }
 }
 
+
+N_WAY_TEST_CASE_METHOD(C4Test, "DatabaseCookies", "[Cookies]") {
+    {
+        // Set cookies:
+        DatabaseCookies cookies(db);
+        CHECK(cookies.cookiesForRequest(kRequest) == "");
+        CHECK(cookies.setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", kRequest.hostname));
+        CHECK(cookies.setCookie("name=value", kRequest.hostname));
+        cookies.saveChanges();
+    }
+    {
+        // Get the cookies, in the same C4Database instance:
+        DatabaseCookies cookies(db);
+        CHECK(cookies.cookiesForRequest(kRequest) == "e=mc^2; name=value");
+    }
+    {
+        // Get the cookies, in a different C4Database instance while the 1st one is open:
+        c4::ref<C4Database> db2 = c4db_openAgain(db, nullptr);
+        DatabaseCookies cookies(db2);
+        CHECK(cookies.cookiesForRequest(kRequest) == "e=mc^2; name=value");
+    }
+    // Closing db causes the shared context to go away because there are no remaining handles
+    reopenDB();
+    {
+        // Get the cookies, in a new C4Database instance -- only the persistent one survives:
+        DatabaseCookies cookies(db);
+        CHECK(cookies.cookiesForRequest(kRequest) == "e=mc^2");
+    }
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "c4 Cookie API", "[Cookies]") {
+    const C4Address request = {
+        slice(kRequest.scheme),
+        slice(kRequest.hostname),
+        kRequest.port,
+        slice(kRequest.path)
+    };
+    C4Error error;
+
+    {
+        // Set cookies:
+        alloc_slice cookies = c4db_getCookies(db, request, &error);
+        CHECK(!cookies);
+        CHECK(error.code == 0);
+        CHECK(c4db_setCookie(db, "e=mc^2; Domain=WWW.Example.Com; Max-Age=30"_sl, request.hostname, &error));
+        CHECK(c4db_setCookie(db, "name=value"_sl, request.hostname, &error));
+    }
+    {
+        // Get the cookies, in the same C4Database instance:
+        alloc_slice cookies = c4db_getCookies(db, request, &error);
+        CHECK(cookies == "e=mc^2; name=value"_sl);
+    }
+    {
+        // Get the cookies, in a different C4Database instance while the 1st one is open:
+        c4::ref<C4Database> db2 = c4db_openAgain(db, nullptr);
+        alloc_slice cookies = c4db_getCookies(db2, request, &error);
+        CHECK(cookies == "e=mc^2; name=value"_sl);
+    }
+
+    reopenDB();
+
+    {
+        // Make sure the cookies are reloaded from storage:
+        alloc_slice cookies = c4db_getCookies(db, request, &error);
+        CHECK(cookies == "e=mc^2"_sl);
+        
+        // Clear the cookies:
+        c4db_clearCookies(db);
+        CHECK(c4db_getCookies(db, request, &error) == nullslice);
+    }
+
+    reopenDB();
+
+    {
+        // Make sure the clear was saved:
+        CHECK(c4db_getCookies(db, request, &error) == nullslice);
+    }
+}

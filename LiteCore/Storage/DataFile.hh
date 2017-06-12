@@ -120,6 +120,14 @@ namespace litecore {
         virtual void deleteKeyStore(const std::string &name) =0;
 
 
+        //////// SHARED OBJECTS:
+
+        Retained<RefCounted> sharedObject(const std::string &key);
+        Retained<RefCounted> addSharedObject(const std::string &key, Retained<RefCounted>);
+
+
+        //////// FACTORY:
+
         /** Abstract factory for creating/managing DataFiles. */
         class Factory {
         public:

@@ -27,6 +27,7 @@ namespace litecore { namespace repl {
 
     Cookie::Cookie(const string &header, const string &fromHost)
     :domain(fromHost)
+    ,created(time(nullptr))
     {
         // <https://tools.ietf.org/html/rfc6265#section-4.1.1>
         static const regex sCookieRE("\\s*([^;=]+)=([^;=]*)");
@@ -68,7 +69,7 @@ namespace litecore { namespace repl {
                     Warn("Couldn't parse Max-Age in cookie");
                     return;
                 }
-                expires = time(NULL) + maxAge;
+                expires = created + maxAge;
             }
         }
 
@@ -85,10 +86,11 @@ namespace litecore { namespace repl {
     ,value(dict["value"].asstring())
     ,domain(dict["domain"].asstring())
     ,path(dict["path"].asstring())
-    ,expires(dict["expires"].asInt())
+    ,created((time_t)dict["created"].asInt())
+    ,expires((time_t)dict["expires"].asInt())
     ,secure(dict["secure"].asBool())
     {
-        if (domain.empty() || expires == 0)
+        if (domain.empty() || expires == 0 || created == 0)
             name.clear();  // invalidate
     }
 
@@ -123,6 +125,8 @@ namespace litecore { namespace repl {
         enc.writeString(cookie.value);
         enc.writeKey("domain"_sl);
         enc.writeString(cookie.domain);
+        enc.writeKey("created"_sl);
+        enc.writeInt(cookie.created);
         enc.writeKey("expires"_sl);
         enc.writeInt(cookie.expires);
         if (!cookie.path.empty()) {
@@ -150,7 +154,7 @@ namespace litecore { namespace repl {
             return;
         }
         for (Array::iterator i(cookies); i; ++i) {
-            auto cookie = make_unique<Cookie>(i.value().asDict());
+            auto cookie = make_unique<const Cookie>(i.value().asDict());
             if (cookie->valid()) {
                 if (!cookie->expired())
                     _cookies.emplace_back(move(cookie));
@@ -165,8 +169,7 @@ namespace litecore { namespace repl {
         lock_guard<mutex> lock(_mutex);
         Encoder enc;
         enc.beginArray(_cookies.size());
-        for (auto i = _cookies.begin(); i != _cookies.end(); ++i) {
-            const Cookie *cookie = i->get();
+        for (CookiePtr &cookie : _cookies) {
             if (cookie->persistent() && !cookie->expired())
                 enc << *cookie;
         }
@@ -179,8 +182,8 @@ namespace litecore { namespace repl {
         lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
         vector<const Cookie*> cookies;
         cookies.reserve(_cookies.size());
-        for (auto i = _cookies.begin(); i != _cookies.end(); ++i)
-            cookies.push_back(i->get());
+        for (const CookiePtr &cookie : _cookies)
+            cookies.push_back(cookie.get());
         return cookies;
     }
 
@@ -189,8 +192,7 @@ namespace litecore { namespace repl {
         lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
         stringstream s;
         int n = 0;
-        for (auto i = _cookies.begin(); i != _cookies.end(); ++i) {
-            const Cookie *cookie = i->get();
+        for (const CookiePtr &cookie : _cookies) {
             if (cookie->matches(addr) && !cookie->expired()) {
                 if (n++)
                     s << "; ";
@@ -202,14 +204,28 @@ namespace litecore { namespace repl {
 
 
     bool CookieStore::setCookie(const string &headerValue, const string &fromHost) {
-        auto newCookie = make_unique<Cookie>(headerValue, fromHost);
+        auto newCookie = make_unique<const Cookie>(headerValue, fromHost);
         if (!newCookie->valid())
             return false;
-
         lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        return _addCookie(move(newCookie));
+    }
+
+
+    void CookieStore::merge(slice data) {
+        CookieStore other(data);
+        lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        for (CookiePtr &cookie : other._cookies)
+            _addCookie(move(cookie));
+    }
+
+
+    bool CookieStore::_addCookie(CookiePtr newCookie) {
         for (auto i = _cookies.begin(); i != _cookies.end(); ++i) {
             const Cookie *oldCookie = i->get();
             if (newCookie->matches(*oldCookie)) {
+                if (newCookie->created < oldCookie->created)
+                    return false;   // obsolete
                 if (newCookie->sameValueAs(*oldCookie))
                     return false;   // No-op
                 // Remove the replaced cookie:
@@ -224,6 +240,16 @@ namespace litecore { namespace repl {
             _changed = true;
         _cookies.emplace_back(move(newCookie));
         return true;
+    }
+
+
+    void CookieStore::clearCookies() {
+        lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        for (auto i = _cookies.begin(); !_changed && i != _cookies.end(); ++i) {
+            if ((*i)->persistent())
+                _changed = true;
+        }
+        _cookies.clear();
     }
 
 

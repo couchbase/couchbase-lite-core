@@ -7,8 +7,9 @@
 //
 
 #pragma once
+#include "RefCounted.hh"
+#include "Address.hh"
 #include "FleeceCpp.hh"
-#include "WebSocketInterface.hh"
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -39,6 +40,7 @@ namespace litecore { namespace repl {
         std::string value;
         std::string domain;
         std::string path;
+        time_t created;
         time_t expires      {0};
         bool secure         {false};
     };
@@ -51,7 +53,7 @@ namespace litecore { namespace repl {
         Cookies are added from Set-Cookie headers, and the instance can generate Cookie: headers to
         send in requests.
         Instances are thread-safe. */
-    class CookieStore {
+    class CookieStore : public RefCounted {
     public:
         CookieStore() =default;
         CookieStore(fleece::slice data);
@@ -62,12 +64,21 @@ namespace litecore { namespace repl {
         std::string cookiesForRequest(const websocket::Address&) const;
 
         bool setCookie(const std::string &headerValue, const std::string &fromHost);
+        void clearCookies();
+
+        void merge(fleece::slice data);
 
         bool changed();
         void clearChanged();
 
     private:
-        std::vector<std::unique_ptr<const Cookie>> _cookies;
+        using CookiePtr = std::unique_ptr<const Cookie>;
+
+        bool _addCookie(CookiePtr newCookie);
+
+        CookieStore(const CookieStore&) =delete;
+
+        std::vector<CookiePtr> _cookies;
         bool _changed {false};
         std::mutex _mutex;
     };

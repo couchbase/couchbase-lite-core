@@ -184,6 +184,9 @@
 		278963641D7A376900493096 /* EncryptedStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278963611D7A376900493096 /* EncryptedStream.hh */; };
 		278963671D7B7E7D00493096 /* Stream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963661D7B7E7D00493096 /* Stream.cc */; };
 		278963681D7B7E7D00493096 /* Stream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963661D7B7E7D00493096 /* Stream.cc */; };
+		278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */; };
+		278BD68C1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */; };
+		278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */; };
 		2796916E1ED4B2D50086565D /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		2796916F1ED4B2D50086565D /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
 		279691701ED4B2D50086565D /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F7A0C31D5E657C00447BC6 /* RefCounted.cc */; };
@@ -1019,6 +1022,8 @@
 		278963611D7A376900493096 /* EncryptedStream.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EncryptedStream.hh; path = ../Support/EncryptedStream.hh; sourceTree = "<group>"; };
 		278963651D7B3E0E00493096 /* Stream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Stream.hh; path = ../Support/Stream.hh; sourceTree = "<group>"; };
 		278963661D7B7E7D00493096 /* Stream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stream.cc; sourceTree = "<group>"; };
+		278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseCookies.cc; sourceTree = "<group>"; };
+		278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseCookies.hh; sourceTree = "<group>"; };
 		279691631ED4B29E0086565D /* libSupport.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSupport.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "c4Listener+RESTFactory.cc"; sourceTree = "<group>"; };
 		2797949D1D305EC2001D0F3A /* Revision.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Revision.cc; sourceTree = "<group>"; };
@@ -1933,6 +1938,8 @@
 				275A73BD1ED255AF008CB57B /* c4Replicator.hh */,
 				2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */,
 				2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */,
+				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
+				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
 				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
 				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
 				275CE0EE1E57BE7E0084E014 /* Replicator.exp */,
@@ -2323,6 +2330,7 @@
 				2753AFE61EC2363600C12E98 /* CivetWebSocket.hh in Headers */,
 				27D74A971D4D3F3400D806E0 /* VariadicBind.h in Headers */,
 				2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */,
+				278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */,
 				2728512B1EA46421009CA22F /* Request.hh in Headers */,
 				27D74A941D4D3F3400D806E0 /* SQLiteCpp.h in Headers */,
 				279794B01D3405CD001D0F3A /* CASRevisionStore.hh in Headers */,
@@ -3083,6 +3091,7 @@
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
+				278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				2749B9491EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
 				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
@@ -3173,6 +3182,7 @@
 				272850AC1E9AF53B009CA22F /* Upgrader.cc in Sources */,
 				726F2B911EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				720EA4101BA8D834002B8416 /* Record.cc in Sources */,
+				278BD68C1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */,
 				2754B0C81E5F5C2A00A05FD0 /* StringUtil.cc in Sources */,
 				2749B94A1EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
 				27E3DD381DB450B300F2872D /* Logging.cc in Sources */,

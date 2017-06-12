@@ -14,6 +14,7 @@
 #include "Stopwatch.hh"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
+#include "c4Replicator.h"
 #include "c4Private.h"
 #include "BLIP.hh"
 #include <chrono>
@@ -56,6 +57,18 @@ namespace litecore { namespace repl {
 
     DBWorker::~DBWorker() {
         c4db_free(_db);
+    }
+
+
+    void DBWorker::_setCookie(alloc_slice setCookieHeader) {
+        C4Error err;
+        if (c4db_setCookie(_db, setCookieHeader, slice(_remoteAddress.hostname), &err)) {
+            logVerbose("Set cookie: `%.*s`", SPLAT(setCookieHeader));
+        } else {
+            alloc_slice message = c4error_getMessage(err);
+            warn("Unable to set cookie `%.*s`: %.*s (%d/%d)",
+                 SPLAT(setCookieHeader), SPLAT(message), err.domain, err.code);
+        }
     }
 
 

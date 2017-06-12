@@ -103,6 +103,31 @@ extern "C" {
     C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API;
 
 
+#pragma mark - COOKIES:
+
+
+    /** Takes the value of a "Set-Cookie:" header, received from the given host, and saves the
+        cookie into the database's cookie store. (Persistent cookies are saved as metadata in the
+        database file until they expire. Session cookies are kept in memory, until the last
+        C4Database handle to the given database is closed.) */
+    bool c4db_setCookie(C4Database *db,
+                        C4String setCookieHeader,
+                        C4String fromHost,
+                        C4Error *outError) C4API;
+
+    /** Locates any saved HTTP cookies relevant to the given request, and returns them as a string
+        that can be used as the value of a "Cookie:" header. */
+    C4StringResult c4db_getCookies(C4Database *db,
+                                   C4Address request,
+                                   C4Error *error) C4API;
+
+    /** Removes all cookies from the database's cookie store. */
+    void c4db_clearCookies(C4Database *db) C4API;
+
+
+#pragma mark - ERRORS:
+
+
     /** Returns true if this is a network error that may be transient,
         i.e. the client should retry after a delay. */
     bool c4error_mayBeTransient(C4Error err) C4API;
@@ -112,9 +137,12 @@ extern "C" {
     bool c4error_mayBeNetworkDependent(C4Error err) C4API;
 
 
+#pragma mark - CONSTANTS:
+
+
     // Replicator option dictionary keys:
     #define kC4ReplicatorOptionExtraHeaders   "headers"  // Extra HTTP headers; string[]
-    #define kC4ReplicatorOptionCookies        "cookies"  // HTTP cookies; string[]
+    #define kC4ReplicatorOptionCookies        "cookies"  // HTTP Cookie header value; string
     #define kC4ReplicatorOptionAuthentication "auth"     // Auth settings; Dict
     #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  // Cert or public key [data]
     #define kC4ReplicatorOptionChannels       "channels" // SG channel names; string[]

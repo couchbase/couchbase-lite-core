@@ -55,6 +55,10 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert *rev);
 
+        void setCookie(slice setCookieHeader) {
+            enqueue(&DBWorker::_setCookie, alloc_slice(setCookieHeader));
+        }
+
     private:
         virtual ~DBWorker();
         
@@ -73,6 +77,7 @@ namespace litecore { namespace repl {
         void _sendRevision(RevRequest request,
                            blip::MessageProgressCallback onProgress);
         void _insertRevision(RevToInsert *rev);
+        void _setCookie(alloc_slice setCookieHeader);
 
 
         void insertRevisionsNow()   {enqueue(&DBWorker::_insertRevisionsNow);}

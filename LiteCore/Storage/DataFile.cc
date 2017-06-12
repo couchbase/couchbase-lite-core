@@ -136,13 +136,13 @@ namespace litecore {
         }
 
         void addDataFile(DataFile *dataFile) {
-            unique_lock<mutex> lock(_dataFilesMutex);
+            unique_lock<mutex> lock(_mutex);
             if (find(_dataFiles.begin(), _dataFiles.end(), dataFile) == _dataFiles.end())
                 _dataFiles.push_back(dataFile);
         }
 
         bool removeDataFile(DataFile *dataFile) {
-            unique_lock<mutex> lock(_dataFilesMutex);
+            unique_lock<mutex> lock(_mutex);
             LogToAt(DBLog, Debug, "File %p: Remove DataFile %p", this, dataFile);
             auto pos = find(_dataFiles.begin(), _dataFiles.end(), dataFile);
             if (pos == _dataFiles.end())
@@ -153,7 +153,7 @@ namespace litecore {
 
 
         void forOpenDataFiles(DataFile *except, function_ref<void(DataFile*)> fn) {
-            unique_lock<mutex> lock(_dataFilesMutex);
+            unique_lock<mutex> lock(_mutex);
             for (auto df : _dataFiles)
                 if (df != except)
                     fn(df);
@@ -161,7 +161,7 @@ namespace litecore {
 
 
         size_t openCount() {
-            unique_lock<mutex> lock(_dataFilesMutex);
+            unique_lock<mutex> lock(_mutex);
             return _dataFiles.size();
         }
 
@@ -183,6 +183,22 @@ namespace litecore {
         }
 
 
+        Retained<RefCounted> sharedObject(const string &key) {
+            lock_guard<mutex> lock(_mutex);
+            auto i = _sharedObjects.find(key);
+            if (i == _sharedObjects.end())
+                return nullptr;
+            return i->second;
+        }
+
+
+        Retained<RefCounted>  addSharedObject(const string &key, Retained<RefCounted> object) {
+            lock_guard<mutex> lock(_mutex);
+            auto e = _sharedObjects.emplace(key, object);
+            return e.first->second;
+        }
+
+
     protected:
         Shared(const FilePath &p)
         :path(p)
@@ -199,7 +215,8 @@ namespace litecore {
         condition_variable _transactionCond;        // For waiting on the mutex
         Transaction*       _transaction {nullptr};  // Currently active Transaction object
         vector<DataFile*>  _dataFiles;              // Open DataFiles on this File
-        mutex              _dataFilesMutex;         // Mutex protecting _dataFiles
+        unordered_map<string, Retained<RefCounted>> _sharedObjects;
+        mutex              _mutex;                  // Mutex for _dataFiles and _sharedObjects
 
         static unordered_map<string, Shared*> sFileMap;
         static mutex sFileMapMutex;
@@ -269,6 +286,16 @@ namespace litecore {
 
     void DataFile::forOtherDataFiles(function_ref<void(DataFile*)> fn) {
         _shared->forOpenDataFiles(this, fn);
+    }
+
+
+    Retained<RefCounted> DataFile::sharedObject(const string &key) {
+        return _shared->sharedObject(key);
+    }
+
+
+    Retained<RefCounted>  DataFile::addSharedObject(const string &key, Retained<RefCounted> object) {
+        return _shared->addSharedObject(key, object);
     }
 
 
