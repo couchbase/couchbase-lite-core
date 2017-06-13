@@ -66,7 +66,7 @@ namespace litecore {
                 _rec.setFlag(DocumentFlags::kDeleted);
             if (hasConflict())
                 _rec.setFlag(DocumentFlags::kConflicted);
-            for (auto rev=allRevisions().begin(); rev != allRevisions().end(); ++rev) {
+            for (auto rev : allRevisions()) {
                 if (rev->hasAttachments()) {
                     _rec.setFlag(DocumentFlags::kHasAttachments);
                     break;

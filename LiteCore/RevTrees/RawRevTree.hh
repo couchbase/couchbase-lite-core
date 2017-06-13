@@ -11,6 +11,8 @@
 #include "RevTree.hh"
 #include "KeyStore.hh"
 #include "Endian.hh"
+#include <deque>
+#include <vector>
 
 
 namespace litecore {
@@ -20,11 +22,11 @@ namespace litecore {
     // Revs are stored in decending priority, with the current leaf rev(s) coming first.
     class RawRevision {
     public:
-        static std::vector<Rev> decodeTree(slice raw_tree,
+        static std::deque<Rev> decodeTree(slice raw_tree,
                                                 RevTree *owner,
                                                 sequence_t curSeq);
 
-        static alloc_slice encodeTree(const std::vector<Rev> &revs);
+        static alloc_slice encodeTree(const std::vector<Rev*> &revs);
 
         static slice getCurrentRevBody(slice raw_tree) noexcept;
 

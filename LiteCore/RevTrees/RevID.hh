@@ -42,6 +42,7 @@ namespace litecore {
         uint64_t getGenAndDigest(slice &digest) const;
 
         bool operator< (const revid&) const;
+        bool operator> (const revid &r) const       {return r < *this;}
 
         explicit operator std::string() const;
 

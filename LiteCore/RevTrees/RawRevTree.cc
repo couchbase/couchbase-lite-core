@@ -28,12 +28,12 @@ using namespace fleece;
 
 namespace litecore {
 
-    std::vector<Rev> RawRevision::decodeTree(slice raw_tree, RevTree* owner, sequence_t curSeq) {
+    std::deque<Rev> RawRevision::decodeTree(slice raw_tree, RevTree* owner, sequence_t curSeq) {
         const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)
             error::_throw(error::CorruptRevisionData);
-        std::vector<Rev> revs(count);
+        std::deque<Rev> revs(count);
         auto rev = revs.begin();
         for (; rawRev->isValid(); rawRev = rawRev->next()) {
             rawRev->copyTo(*rev);
@@ -55,17 +55,17 @@ namespace litecore {
     }
 
 
-    alloc_slice RawRevision::encodeTree(const std::vector<Rev> &revs) {
+    alloc_slice RawRevision::encodeTree(const std::vector<Rev*> &revs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
-        for (auto rev = revs.begin(); rev != revs.end(); ++rev)
+        for (Rev *rev : revs)
             totalSize += sizeToWrite(*rev);
 
         alloc_slice result(totalSize);
 
         // Write the raw revs:
         RawRevision *dst = (RawRevision*)result.buf;
-        for (auto src = revs.begin(); src != revs.end(); ++src) {
+        for (Rev *src : revs) {
             dst = dst->copyFrom(*src);
         }
         dst->size = _enc32(0);   // write trailing 0 size marker

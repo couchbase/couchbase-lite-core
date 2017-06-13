@@ -17,6 +17,7 @@
 #include "slice.hh"
 #include "RevID.hh"
 #include "DataFile.hh"
+#include <deque>
 #include <vector>
 
 
@@ -78,6 +79,7 @@ namespace litecore {
     public:
         RevTree() { }
         RevTree(slice raw_tree, sequence_t seq);
+        RevTree(const RevTree&);
         virtual ~RevTree() { }
 
         void decode(slice raw_tree, sequence_t seq);
@@ -91,7 +93,7 @@ namespace litecore {
         const Rev* operator[](revid revID) const    {return get(revID);}
         const Rev* getBySequence(sequence_t) const;
 
-        const std::vector<Rev>& allRevisions() const    {return _revs;}
+        const std::vector<Rev*>& allRevisions() const   {return _revs;}
         const Rev* currentRevision();
         std::vector<const Rev*> currentRevisions() const;
         bool hasConflict() const;
@@ -139,15 +141,16 @@ namespace litecore {
 
     private:
         friend class Rev;
+        void initRevs();
         const Rev* _insert(revid, slice body, const Rev *parentRev, Rev::Flags);
         bool confirmLeaf(Rev* testRev);
         void compact();
-        RevTree(const RevTree&) = delete;
 
-        bool        _sorted {true};         // Are the revs currently sorted?
-        std::vector<Rev> _revs;
+        bool                     _sorted {true};         // Are the revs currently sorted?
+        std::vector<Rev*>        _revs;
         std::vector<alloc_slice> _insertedData;
     protected:
+        std::deque<Rev> _revsStorage;               // Actual storage of the Rev objects
         bool _changed {false};
         bool _unknown {false};
     };
