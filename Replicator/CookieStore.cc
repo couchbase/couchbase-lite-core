@@ -10,9 +10,14 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
+#include "PlatformCompat.hh"
 #include <iterator>
 #include <regex>
 #include <string>
+
+#ifdef _MSC_VER
+#include "strptime.h"
+#endif
 
 using namespace std;
 using namespace fleece;
