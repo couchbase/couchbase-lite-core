@@ -22,14 +22,6 @@
 namespace litecore {
     using namespace fleece;
 
-    /* VersionedDocument metadata has the following structure:
-        1 byte  flags
-        1 byte  revid length
-        bytes   revid
-        varint  type length
-        bytes   type
-    */
-
     VersionedDocument::VersionedDocument(KeyStore& db, slice docID)
     :_db(db), _rec(docID)
     {
@@ -41,6 +33,13 @@ namespace litecore {
     {
         decode();
     }
+
+    VersionedDocument::VersionedDocument(const VersionedDocument &other)
+    :RevTree(other)
+    ,_db(other._db)
+    ,_rec(other._rec)
+    ,_docTypeBuf(other._docTypeBuf)
+    { }
 
     void VersionedDocument::read() {
         _db.read(_rec);

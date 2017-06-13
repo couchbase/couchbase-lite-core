@@ -44,7 +44,12 @@ namespace c4Internal {
         :_db(database)
         { }
 
+        Document(const Document&) =default;
+
         virtual ~Document() { }
+
+        // Returns a new Document object identical to this one (doesn't copy the doc in the db!)
+        virtual Document* copy() =0;
 
         bool mustUseVersioning(C4DocumentVersioning requiredVersioning, C4Error *outError) {
             return external(_db)->mustUseVersioning(requiredVersioning, outError);

@@ -189,18 +189,19 @@ static bool isNewDocPutRequest(C4Database *database, const C4DocPutRequest *rq) 
 }
 
 
-// Try to fulfil a PutRequest by creating a new Record. Return null if one already exists.
+// Tries to fulfil a PutRequest by creating a new Record. Returns null if one already exists.
 static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
 {
     Record record(rq->docID);
     if (!rq->docID.buf)
         record.setKey(createDocUUID());
     Document *idoc = internal(database->documentFactory().newDocumentInstance(record));
+    bool ok;
     if (rq->existingRevision)
-        idoc->putExistingRevision(*rq);
+        ok = (idoc->putExistingRevision(*rq) >= 0);
     else
-        idoc->putNewRevision(*rq);
-    if (!idoc->save()) {
+        ok = idoc->putNewRevision(*rq);
+    if (!ok) {
         delete idoc;
         return nullptr;
     }
@@ -312,10 +313,12 @@ C4Document* c4doc_put(C4Database *database,
                                       outError);
                 if (!doc)
                     return nullptr;
-                commonAncestorIndex = internal(doc)->putNewRevision(*rq) ? 1 : 0;
+                if (!internal(doc)->putNewRevision(*rq))
+                    commonAncestorIndex = -1;
             }
         }
 
+        Assert(commonAncestorIndex >= 0, "Unexpected conflict in c4doc_put");
         if (outCommonAncestorIndex)
             *outCommonAncestorIndex = commonAncestorIndex;
         return doc;
@@ -324,6 +327,48 @@ C4Document* c4doc_put(C4Database *database,
         c4doc_free(doc);
         return nullptr;
     }
+}
+
+
+C4Document* c4doc_create(C4Database *db,
+                         C4String docID,
+                         C4Slice revBody,
+                         C4RevisionFlags revFlags,
+                         C4Error *outError) noexcept
+{
+    C4DocPutRequest rq = {};
+    rq.docID = docID;
+    rq.body = revBody;
+    rq.revFlags = revFlags;
+    rq.save = true;
+    return c4doc_put(db, &rq, nullptr, outError);
+}
+
+
+C4Document* c4doc_update(C4Document *doc,
+                         C4Slice revBody,
+                         C4RevisionFlags revFlags,
+                         C4Error *outError) noexcept
+{
+    auto idoc = internal(doc);
+    if (!idoc->mustBeInTransaction(outError))
+        return nullptr;
+    try {
+        // Why copy the document? Because if we modified it in place it would be too awkward to
+        // back out the changes if the save failed. Likewise, the caller may need to be able to
+        // back out this entire call if the transaction fails to commit, so having the original
+        // doc around helps it.
+        unique_ptr<Document> newDoc(idoc->copy());
+        C4DocPutRequest rq = {};
+        rq.body = revBody;
+        rq.revFlags = revFlags;
+        rq.allowConflict = true;
+        rq.save = true;
+        if (newDoc->putNewRevision(rq))
+            return newDoc.release();
+        c4error_return(LiteCoreDomain, kC4ErrorConflict, C4STR("C4Document is out of date"), outError);
+    } catchExceptions()
+    return nullptr;
 }
 
 

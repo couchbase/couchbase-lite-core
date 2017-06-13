@@ -350,7 +350,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     size_t commonAncestorIndex;
     doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE((unsigned long)commonAncestorIndex == 1ul);
+    REQUIRE((unsigned long)commonAncestorIndex == 0ul);
     C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b")
                                            : C4STR("2@*");
     REQUIRE(doc->revID == kExpectedRev2ID);
@@ -378,4 +378,66 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     }
 
     c4doc_free(doc);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
+    C4Log("Begin test");
+    C4Error error;
+    C4Document *doc;
+
+    {
+        C4Log("Begin create");
+        TransactionHelper t(db);
+        doc = c4doc_create(db, kDocID, kBody, 0, &error);
+        REQUIRE(doc);
+    }
+    C4Log("After save");
+    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab")
+                                          : C4STR("1@*");
+    REQUIRE(doc->revID == kExpectedRevID);
+    REQUIRE(doc->flags == kExists);
+    REQUIRE(doc->selectedRev.revID == kExpectedRevID);
+    REQUIRE(doc->docID == kDocID);
+
+    // Read the doc into another C4Document:
+    auto doc2 = c4doc_get(db, kDocID, false, &error);
+    REQUIRE(doc2->revID == kExpectedRevID);
+
+    {
+        C4Log("Begin 2nd save");
+        TransactionHelper t(db);
+        auto updatedDoc =c4doc_update(doc, C4STR("{\"ok\":\"go\"}"), 0, &error);
+        REQUIRE(updatedDoc);
+        REQUIRE(doc->selectedRev.revID == kExpectedRevID);
+        REQUIRE(doc->revID == kExpectedRevID);
+        c4doc_free(doc);
+        doc = updatedDoc;
+    }
+    C4Log("After 2nd save");
+    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b")
+                                           : C4STR("2@*");
+    REQUIRE(doc->revID == kExpectedRev2ID);
+    REQUIRE(doc->selectedRev.revID == kExpectedRev2ID);
+
+    // Now try to update the other C4Document, which will fail:
+    {
+        C4Log("Begin conflicting save");
+        TransactionHelper t(db);
+        REQUIRE(c4doc_update(doc2, C4STR("{\"ok\":\"no way\"}"), 0, &error) == nullptr);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorConflict);
+    }
+
+    // Try to create a new doc with the same ID, which will fail:
+    {
+        C4Log("Begin conflicting create");
+        TransactionHelper t(db);
+        REQUIRE(c4doc_create(db, kDocID, C4STR("{\"ok\":\"no way\"}"), 0, &error) == nullptr);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorConflict);
+    }
+
+    c4doc_free(doc);
+    c4doc_free(doc2);
 }

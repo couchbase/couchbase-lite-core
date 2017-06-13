@@ -241,6 +241,35 @@ extern "C" {
                           size_t *outCommonAncestorIndex,
                           C4Error *outError) C4API;
 
+    /** Convenience function to create a new document. This just a wrapper around c4doc_put.
+        If the document already exists, it will fail with the error kC4ErrorConflict.
+        @param db  The database to create the document in
+        @param docID  Document ID to create; if null, a UUID will be generated
+        @param body  Body of the document
+        @param revisionFlags  The flags of the new revision
+        @param error Information about any error that occurred
+        @return  On success, a new C4Document with the new revision selected; else NULL. */
+    C4Document* c4doc_create(C4Database *db,
+                             C4String docID,
+                             C4Slice body,
+                             C4RevisionFlags revisionFlags,
+                             C4Error *error) C4API;
+
+    /** Adds a revision to a document already in memory as a C4Document. This is more efficient
+        than c4doc_put because it doesn't have to read from the database before writing; but if
+        the C4Document doesn't have the current state of the document, it will fail with the error
+        kC4ErrorConflict -- then you'll need to get the current document and try again.
+        The new revision is added as a child of the currently selected revision.
+        @param doc  The document to update
+        @param revisionBody  The body of the new revision
+        @param revisionFlags  The flags of the new revision
+        @param error Information about any error that occurred
+        @return  On success, a new C4Document with the new revision selected; else NULL. */
+    C4Document* c4doc_update(C4Document *doc,
+                             C4Slice revisionBody,
+                             C4RevisionFlags revisionFlags,
+                             C4Error *error) C4API;
+
     /** @} */
     /** @} */
 #ifdef __cplusplus

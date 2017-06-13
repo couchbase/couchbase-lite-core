@@ -26,6 +26,8 @@ namespace litecore {
         VersionedDocument(KeyStore&, slice docID);
         VersionedDocument(KeyStore&, const Record&);
 
+        VersionedDocument(const VersionedDocument&);
+
         /** Reads and parses the body of the record. Useful if doc was read as meta-only. */
         void read();
 
@@ -59,7 +61,6 @@ namespace litecore {
 
     private:
         void decode();
-        VersionedDocument(const VersionedDocument&) = delete;
 
         KeyStore&       _db;
         Record          _rec;

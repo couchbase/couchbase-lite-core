@@ -52,6 +52,21 @@ namespace c4Internal {
         }
 
 
+        TreeDocument(const TreeDocument &other)
+        :Document(other)
+        ,_versionedDoc(other._versionedDoc)
+        ,_selectedRev(nullptr)
+        {
+            if (other._selectedRev)
+                _selectedRev = _versionedDoc[other._selectedRev->revID];
+        }
+
+
+        Document* copy() override {
+            return new TreeDocument(*this);
+        }
+
+
         void init() {
             docID = _docIDBuf = _versionedDoc.docID();
             flags = (C4DocumentFlags)_versionedDoc.flags();
@@ -269,8 +284,10 @@ namespace c4Internal {
             error::_throw(error::InvalidParameter); // must be invalid revision IDs
         updateMeta();
         selectRevision(_versionedDoc[revidBuffer(rq.history[0])]);
-        if (commonAncestor > 0 && rq.save)
-            save(rq.maxRevTreeDepth);
+        if (rq.save && commonAncestor > 0) {
+            if (!save(rq.maxRevTreeDepth))
+                return -1;
+        }
         return commonAncestor;
     }
 
@@ -306,31 +323,31 @@ namespace c4Internal {
 
     bool TreeDocument::putNewRevision(const C4DocPutRequest &rq) {
         bool deletion = (rq.revFlags & kRevDeleted) != 0;
-        revidBuffer encodedRevID = generateDocRevID(rq.body, selectedRev.revID, deletion);
+        revidBuffer encodedNewRevID = generateDocRevID(rq.body, selectedRev.revID, deletion);
         int httpStatus;
-        auto newRev = _versionedDoc.insert(encodedRevID,
+        auto newRev = _versionedDoc.insert(encodedNewRevID,
                                            rq.body,
                                            (Rev::Flags)rq.revFlags,
                                            _selectedRev,
                                            rq.allowConflict,
                                            httpStatus);
-        if (newRev) {
-            // Success:
-            updateMeta();
-            newRev = _versionedDoc.get(encodedRevID);
-            selectRevision(newRev);
-            if (rq.save)
-                save(rq.maxRevTreeDepth);
-            return true;
-        } else if (httpStatus == 200) {
-            // Revision already exists, so nothing was added. Not an error.
-            selectRevision(toc4slice(encodedRevID.expanded()), true);
-        } else if (httpStatus == 400) {
-            error::_throw(error::InvalidParameter);
-        } else if (httpStatus == 409) {
-            error::_throw(error::Conflict);
+        if (!newRev) {
+            if (httpStatus == 200) {
+                // Revision already exists, so nothing was added. Not an error.
+                selectRevision(toc4slice(encodedNewRevID.expanded()), true);
+            } else if (httpStatus == 400) {
+                error::_throw(error::InvalidParameter);
+            } else if (httpStatus == 409) {
+                error::_throw(error::Conflict);
+            } else {
+                error::_throw(error::UnexpectedError);
+            }
         }
-        return false;
+
+        // New revision is legal; update and save:
+        updateMeta();
+        selectRevision(newRev);
+        return !rq.save || save(rq.maxRevTreeDepth);
     }
 
 } // end namespace c4Internal

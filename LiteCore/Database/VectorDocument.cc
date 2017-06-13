@@ -53,6 +53,11 @@ namespace c4Internal {
         { }
 
 
+        Document* copy() override {
+            return new VectorDocument(*this);
+        }
+
+
         void init() {
             _selected = _current;
             currentChanged();
@@ -209,7 +214,7 @@ namespace c4Internal {
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
             bool hasAttachments = (rq.revFlags & kRevHasAttachments) != 0;
             Revision::BodyParams bodyParams {rq.body, deletion, hasAttachments};
-            shared_ptr<Revision> newRev = _store.create(rq.docID, _selected->version(), bodyParams,
+            shared_ptr<Revision> newRev = _store.create(docID, _selected->version(), bodyParams,
                                                         _db->transaction());
             if (!newRev)
                 return false;
