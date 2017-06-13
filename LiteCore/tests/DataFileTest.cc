@@ -21,8 +21,6 @@ using namespace std;
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
     REQUIRE(db->isOpen());
-    REQUIRE_FALSE(db->isCompacting());
-    REQUIRE_FALSE(DataFile::isAnyCompacting());
     REQUIRE(db->purgeCount() == 0);
     REQUIRE(&store->dataFile() == db);
     REQUIRE(store->recordCount() == 0);
@@ -520,15 +518,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
         t.commit();
     }
 
-    unsigned numCompactCalls = 0;
-    db->setOnCompact([&](bool compacting) {
-        ++numCompactCalls;
-    });
-
     db->compact();
-
-    db->setOnCompact(nullptr);
-    REQUIRE(numCompactCalls == 2u);
 }
 
 

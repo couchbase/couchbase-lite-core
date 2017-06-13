@@ -75,7 +75,6 @@ _c4doc_selectNextLeafRevision
 _c4doc_selectFirstPossibleAncestorOf
 _c4doc_selectNextPossibleAncestorOf
 _c4doc_getForPut
-_c4doc_generateRevID
 _c4doc_put
 _c4doc_purgeRevision
 _c4doc_save

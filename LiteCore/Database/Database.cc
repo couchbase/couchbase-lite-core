@@ -277,11 +277,6 @@ namespace c4Internal {
     }
 
 
-    void Database::setOnCompact(DataFile::OnCompactCallback callback) noexcept {
-        dataFile()->setOnCompact(callback);
-    }
-
-
     void Database::rekey(const C4EncryptionKey *newKey) {
         mustNotBeInTransaction();
         rekeyDataFile(dataFile(), newKey);

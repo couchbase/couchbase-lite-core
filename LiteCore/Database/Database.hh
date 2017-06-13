@@ -62,7 +62,6 @@ namespace c4Internal {
         void rekey(const C4EncryptionKey *newKey);
 
         void compact();
-        void setOnCompact(DataFile::OnCompactCallback callback) noexcept;
 
         const C4DatabaseConfig config;
 

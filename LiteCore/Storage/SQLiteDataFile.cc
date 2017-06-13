@@ -497,9 +497,7 @@ path.path().c_str());
 
     void SQLiteDataFile::compact() {
         checkOpen();
-        beganCompacting();
         maybeVacuum();
-        finishedCompacting();
     }
 
 }

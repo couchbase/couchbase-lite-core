@@ -172,17 +172,6 @@ extern "C" {
     /** Manually compacts the database. */
     bool c4db_compact(C4Database* database, C4Error *outError) C4API;
 
-    /** Returns true if the database is compacting.
-        If NULL is passed, returns true if _any_ database is compacting. */
-    bool c4db_isCompacting(C4Database*) C4API;
-
-    typedef void (*C4OnCompactCallback)(void *context, bool compacting);
-
-    /** Registers a callback to be invoked when the database starts or finishes compacting.
-        The callback is likely to be called on a private background thread, so be
-        careful of thread safety. */
-    void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb, void *context) C4API;
-
 
     /** @} */
     /** \name Transactions
@@ -226,7 +215,8 @@ extern "C" {
     /** Frees the storage occupied by a raw document. */
     void c4raw_free(C4RawDocument* rawDoc) C4API;
 
-    /** Reads a raw document from the database. In Couchbase Lite the store named "info" is used for per-database key/value pairs, and the store "_local" is used for local documents. */
+    /** Reads a raw document from the database. In Couchbase Lite the store named "info" is used
+        for per-database key/value pairs, and the store "_local" is used for local documents. */
     C4RawDocument* c4raw_get(C4Database* database,
                              C4String storeName,
                              C4String docID,

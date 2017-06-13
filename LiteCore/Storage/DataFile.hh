@@ -77,14 +77,6 @@ namespace litecore {
         virtual void deleteDataFile() =0;
 
         virtual void compact() =0;
-        bool isCompacting() const noexcept;
-        static bool isAnyCompacting() noexcept;
-
-        typedef std::function<void(bool compacting)> OnCompactCallback;
-
-        void setOnCompact(OnCompactCallback callback) noexcept  {_onCompactCallback = callback;}
-
-        virtual bool setAutoCompact(bool autoCompact)   {return false;}
 
         virtual void rekey(EncryptionAlgorithm, slice newKey);
 
@@ -187,9 +179,6 @@ namespace litecore {
             is in a transaction, nor starts a transaction while the function is running. */
         void withFileLock(function_ref<void(void)> fn);
 
-        void beganCompacting();
-        void finishedCompacting();
-
         void setOptions(const Options &o)               {_options = o;}
 
         void forOpenKeyStores(function_ref<void(KeyStore&)> fn);
@@ -217,7 +206,6 @@ namespace litecore {
         Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
-        OnCompactCallback       _onCompactCallback {nullptr};   // Client callback for compacts
         std::unique_ptr<fleece::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic<void*>      _owner {nullptr};               // App-defined object that owns me

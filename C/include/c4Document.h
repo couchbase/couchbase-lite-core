@@ -241,13 +241,6 @@ extern "C" {
                           size_t *outCommonAncestorIndex,
                           C4Error *outError) C4API;
 
-    /** Generates the revision ID for a new document revision.
-        @param body  The (JSON) body of the revision, exactly as it'll be stored.
-        @param parentRevID  The revID of the parent revision, or null if there's none.
-        @param deletion  True if this revision is a deletion.
-        @result  The new revID. Caller is responsible for freeing its buf. */
-    C4StringResult c4doc_generateRevID(C4String body, C4String parentRevID, bool deletion) C4API;
-
     /** @} */
     /** @} */
 #ifdef __cplusplus

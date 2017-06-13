@@ -487,30 +487,4 @@ namespace litecore {
             _db->endReadOnlyTransaction();
     }
 
-
-#pragma mark - COMPACTION:
-
-
-    static atomic<uint32_t> sCompactCount;
-
-
-    void DataFile::beganCompacting() {
-        ++sCompactCount;
-        _shared->isCompacting = true;
-        if (_onCompactCallback) _onCompactCallback(true);
-    }
-    void DataFile::finishedCompacting() {
-        --sCompactCount;
-        _shared->isCompacting = false;
-        if (_onCompactCallback) _onCompactCallback(false);
-    }
-
-    bool DataFile::isCompacting() const noexcept {
-        return _shared->isCompacting;
-    }
-
-    bool DataFile::isAnyCompacting() noexcept {
-        return sCompactCount > 0;
-    }
-
 }

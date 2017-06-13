@@ -136,18 +136,6 @@ bool c4db_compact(C4Database* database, C4Error *outError) noexcept {
 }
 
 
-bool c4db_isCompacting(C4Database *database) noexcept {
-    return database ? database->dataFile()->isCompacting() : DataFile::isAnyCompacting();
-}
-
-
-void c4db_setOnCompactCallback(C4Database *database, C4OnCompactCallback cb, void *context) noexcept {
-    database->setOnCompact([cb,context](bool compacting) {
-        cb(context, compacting);
-    });
-}
-
-
 bool c4db_rekey(C4Database* database, const C4EncryptionKey *newKey, C4Error *outError) noexcept {
     return tryCatch(outError, bind(&Database::rekey, database, newKey));
 }
