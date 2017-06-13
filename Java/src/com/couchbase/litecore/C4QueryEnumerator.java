@@ -56,12 +56,22 @@ public class C4QueryEnumerator {
     }
 
     public C4QueryEnumerator refresh() throws LiteCoreException {
-        return new C4QueryEnumerator(refresh(handle));
+        // handle is closed or reached end.
+        if (handle == 0)
+            return null;
+        long newHandle = refresh(handle);
+        if (newHandle == 0)
+            return null;
+        return new C4QueryEnumerator(newHandle);
     }
 
     public void close() {
         if (handle != 0)
             close(handle);
+    }
+
+    public boolean isClosed() {
+        return handle == 0;
     }
 
     public void free() {
@@ -90,7 +100,7 @@ public class C4QueryEnumerator {
     }
 
     // NOTE: FLArrayIterator is member variable of C4QueryEnumerator. Not necessary to release.
-    public FLArrayIterator getColumns(){
+    public FLArrayIterator getColumns() {
         return new FLArrayIterator(getColumns(handle));
     }
 

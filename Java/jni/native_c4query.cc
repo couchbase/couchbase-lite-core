@@ -12,6 +12,7 @@
  * and limitations under the License.
  */
 #include <c4.h>
+#include <c4Base.h>
 #include "com_couchbase_litecore_C4Query.h"
 #include "com_couchbase_litecore_C4QueryEnumerator.h"
 #include "native_glue.hh"
@@ -177,9 +178,10 @@ Java_com_couchbase_litecore_C4QueryEnumerator_seek(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_refresh(JNIEnv *env, jclass clazz, jlong handle) {
-    C4Error error = {};
+    C4Error error = {.code=0};
     C4QueryEnumerator *result = c4queryenum_refresh((C4QueryEnumerator *) handle, &error);
-    if (!result)
+    // NOTE: if result is null, it indicates no update. it is not error.
+    if (error.code != 0)
         throwError(env, error);
     return (jlong) result;
 }
