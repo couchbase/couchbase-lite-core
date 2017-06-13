@@ -217,7 +217,6 @@ extern "C" {
     typedef struct {
         C4String body;              ///< Revision's body
         C4String docID;             ///< Document ID
-        C4String obsolete_docType;  // unused
         C4RevisionFlags revFlags;   ///< Revision flags (deletion, attachments, keepBody)
         bool existingRevision;      ///< Is this an already-existing rev coming from replication?
         bool allowConflict;         ///< OK to create a conflict, i.e. can parent be non-leaf?

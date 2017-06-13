@@ -38,7 +38,6 @@ namespace litecore {
     :RevTree(other)
     ,_db(other._db)
     ,_rec(other._rec)
-    ,_docTypeBuf(other._docTypeBuf)
     { }
 
     void VersionedDocument::read() {

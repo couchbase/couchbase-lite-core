@@ -64,6 +64,5 @@ namespace litecore {
 
         KeyStore&       _db;
         Record          _rec;
-        alloc_slice     _docTypeBuf;
     };
 }
