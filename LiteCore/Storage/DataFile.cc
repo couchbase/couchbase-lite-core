@@ -442,7 +442,7 @@ namespace litecore {
     {
         _db.beginTransactionScope(this);
         if (active) {
-            LogTo(DBLog, "DataFile: begin transaction");
+            LogToAt(DBLog, Verbose, "DataFile: begin transaction");
             _db._beginTransaction(this);
             _active = true;
             _db.transactionBegan(this);
@@ -454,7 +454,7 @@ namespace litecore {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, true);
         _active = false;
-        LogTo(DBLog, "DataFile: commit transaction");
+        LogToAt(DBLog, Verbose, "DataFile: commit transaction");
         _db._endTransaction(this, true);
     }
 
