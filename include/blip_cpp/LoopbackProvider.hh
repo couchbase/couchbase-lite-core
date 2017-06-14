@@ -66,6 +66,8 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _simulateReceived(fleece::alloc_slice msg, bool binary) override {
+            if (!connected())
+                return;
             MockWebSocket::_simulateReceived(msg, binary);
             _peer->ack(msg.size);
         }
