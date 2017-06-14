@@ -157,13 +157,18 @@ namespace LiteCore.Interop
         }
 
 
-        public static string c4doc_generateRevID(string body, string parentRevID, bool deletion)
+        public static C4Document* c4doc_create(C4Database* db, string docID, byte[] body, C4RevisionFlags revisionFlags, C4Error* error)
         {
-            using(var body_ = new C4String(body))
-            using(var parentRevID_ = new C4String(parentRevID)) {
-                using(var retVal = NativeRaw.c4doc_generateRevID(body_.AsC4Slice(), parentRevID_.AsC4Slice(), deletion)) {
-                    return ((C4Slice)retVal).CreateString();
-                }
+            using(var docID_ = new C4String(docID))
+            fixed(byte *body_ = body) {
+                return NativeRaw.c4doc_create(db, docID_.AsC4Slice(), new C4Slice(body_, (ulong)body.Length), revisionFlags, error);
+            }
+        }
+
+        public static C4Document* c4doc_update(C4Document* doc, byte[] revisionBody, C4RevisionFlags revisionFlags, C4Error* error)
+        {
+            fixed(byte *revisionBody_ = revisionBody) {
+                return NativeRaw.c4doc_update(doc, new C4Slice(revisionBody_, (ulong)revisionBody.Length), revisionFlags, error);
             }
         }
 
@@ -216,7 +221,10 @@ namespace LiteCore.Interop
         public static extern C4Document* c4doc_put(C4Database* database, C4DocPutRequest* request, UIntPtr* outCommonAncestorIndex, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4doc_generateRevID(C4Slice body, C4Slice parentRevID, [MarshalAs(UnmanagedType.U1)]bool deletion);
+        public static extern C4Document* c4doc_create(C4Database* db, C4Slice docID, C4Slice body, C4RevisionFlags revisionFlags, C4Error* error);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4Document* c4doc_update(C4Document* doc, C4Slice revisionBody, C4RevisionFlags revisionFlags, C4Error* error);
 
 
     }

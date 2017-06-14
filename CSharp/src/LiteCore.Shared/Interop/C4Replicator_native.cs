@@ -63,6 +63,24 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4Slice c4repl_getResponseHeaders(C4Replicator* repl);
 
+        public static bool c4db_setCookie(C4Database* db, string setCookieHeader, string fromHost, C4Error* outError)
+        {
+            using(var setCookieHeader_ = new C4String(setCookieHeader))
+            using(var fromHost_ = new C4String(fromHost)) {
+                return NativeRaw.c4db_setCookie(db, setCookieHeader_.AsC4Slice(), fromHost_.AsC4Slice(), outError);
+            }
+        }
+
+        public static string c4db_getCookies(C4Database* db, C4Address request, C4Error* error)
+        {
+            using(var retVal = NativeRaw.c4db_getCookies(db, request, error)) {
+                return ((C4Slice)retVal).CreateString();
+            }
+        }
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4db_clearCookies(C4Database* db);
+
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4error_mayBeTransient(C4Error err);
@@ -88,6 +106,13 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4repl_parseURL(C4Slice url, C4Address* address, C4String* dbName);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_setCookie(C4Database* db, C4Slice setCookieHeader, C4Slice fromHost, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4db_getCookies(C4Database* db, C4Address request, C4Error* error);
 
 
     }
