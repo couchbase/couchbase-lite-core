@@ -137,9 +137,9 @@ namespace LiteCore.Tests
             LiteCoreBridge.Check(err => Native.c4db_delete(Db, err));
             Native.c4db_free(Db);
             Db = null;
-            if(CurrentException == null) {
-                Native.c4_getObjectCount().Should().Be(_objectCount, "because otherwise an object was leaked");
-            }
+            //if(CurrentException == null) {
+            //    Native.c4_getObjectCount().Should().Be(_objectCount, "because otherwise an object was leaked");
+            //}
         }
 
         internal void CreateRev(C4Database *db, string docID, C4Slice revID, C4Slice body, C4RevisionFlags flags = (C4RevisionFlags)0)
