@@ -62,6 +62,22 @@ namespace LiteCore.Interop
         {
             
         }
+
+        public override int GetHashCode()
+        {
+            return Hasher.Start
+                .Hash(code)
+                .Hash(domain);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is C4Error other) {
+                return other.code == code && other.domain == domain;
+            }
+
+            return false;
+        }
     }
 
 #if LITECORE_PACKAGED

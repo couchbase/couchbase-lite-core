@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using FluentAssertions;
 using LiteCore.Interop;
 using LiteCore.Util;
@@ -421,7 +422,7 @@ namespace LiteCore.Tests
                         });
                     }
 
-                    commonAncestorIndex.Should().Be(1UL, "because the common ancestor is at sequence 1");
+                    commonAncestorIndex.Should().Be(0UL, "because there are no common ancestors");
                     var expectedRev2ID = IsRevTrees() ? C4Slice.Constant("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b") :
                         C4Slice.Constant("2@*");
                     doc->revID.Equals(expectedRev2ID).Should().BeTrue("because the doc should have the updated rev ID");
@@ -458,6 +459,87 @@ namespace LiteCore.Tests
                 } finally {
                     LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
                 }
+            });
+        }
+
+        [Fact]
+        public void TestUpdate()
+        {
+            RunTestVariants(() =>
+            {
+                WriteLine("Begin test");
+                C4Document* doc = null;
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    WriteLine("Begin create");
+                    doc = (C4Document*) LiteCoreBridge.Check(err => NativeRaw.c4doc_create(Db, DocID, Body, 0, err));
+                } finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                WriteLine("After save");
+                var expectedRevID = IsRevTrees()
+                    ? C4Slice.Constant("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab")
+                    : C4Slice.Constant("1@*");
+
+                doc->revID.Equals(expectedRevID).Should().BeTrue();
+                doc->flags.Should().Be(C4DocumentFlags.Exists, "because the document was saved");
+                doc->selectedRev.revID.Equals(expectedRevID).Should().BeTrue();
+                doc->docID.Equals(DocID).Should().BeTrue("because that is the document ID that it was saved with");
+
+                // Read the doc into another C4Document
+                var doc2 = (C4Document*) LiteCoreBridge.Check(err => NativeRaw.c4doc_get(Db, DocID, false, err));
+                doc->revID.Equals(expectedRevID).Should()
+                    .BeTrue("because the other reference should have the same rev ID");
+
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    WriteLine("Begin 2nd save");
+                    var updatedDoc =
+                        (C4Document*) LiteCoreBridge.Check(
+                            err => Native.c4doc_update(doc, Encoding.UTF8.GetBytes("{\"ok\":\"go\"}"), 0, err));
+                    doc->selectedRev.revID.Equals(expectedRevID).Should().BeTrue();
+                    doc->revID.Equals(expectedRevID).Should().BeTrue();
+                    Native.c4doc_free(doc);
+                    doc = updatedDoc;
+                }
+                finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                WriteLine("After 2nd save");
+                var expectedRev2ID = IsRevTrees()
+                    ? C4Slice.Constant("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b")
+                    : C4Slice.Constant("2@*");
+                doc->revID.Equals(expectedRev2ID).Should().BeTrue();
+                doc->selectedRev.revID.Equals(expectedRev2ID).Should().BeTrue();
+
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    WriteLine("Begin conflicting save");
+                    C4Error error;
+                    ((long)Native.c4doc_update(doc2, Encoding.UTF8.GetBytes("{\"ok\":\"no way\"}"), 0, &error)).Should().Be(0, "because this is a conflict");
+                    error.code.Should().Be((int) C4ErrorCode.Conflict);
+                    error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                }
+                finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    WriteLine("Begin conflicting create");
+                    C4Error error;
+                    ((long)NativeRaw.c4doc_create(Db, DocID, C4Slice.Constant("{\"ok\":\"no way\"}"), 0, &error)).Should().Be(0, "because this is a conflict");
+                    error.code.Should().Be((int)C4ErrorCode.Conflict);
+                    error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                }
+                finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                Native.c4doc_free(doc);
+                Native.c4doc_free(doc2);
             });
         }
     }
