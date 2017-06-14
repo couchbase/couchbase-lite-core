@@ -46,6 +46,7 @@ namespace c4Internal {
     // A buffer that stores recently generated error messages, referenced by C4Error.internal_info
     static uint32_t sFirstErrorMessageInternalInfo = 1000;  // internal_info of 1st item in deque
     static deque<string> sErrorMessages;                    // last 10 error message strings
+    static mutex sErrorMessagesMutex;
 
 
     void recordError(C4ErrorDomain domain, int code, string message, C4Error* outError) noexcept {
@@ -55,6 +56,7 @@ namespace c4Internal {
             outError->internal_info = 0;
             if (!message.empty()) {
                 try {
+                    lock_guard<mutex> lock(sErrorMessagesMutex);
                     sErrorMessages.emplace_back(message);
                     if (sErrorMessages.size() > kMaxErrorMessagesToSave) {
                         sErrorMessages.pop_front();
@@ -72,6 +74,7 @@ namespace c4Internal {
     }
 
     static string lookupErrorMessage(C4Error &error) {
+        lock_guard<mutex> lock(sErrorMessagesMutex);
         int32_t index = error.internal_info - sFirstErrorMessageInternalInfo;
         if (index >= 0 && index < sErrorMessages.size()) {
             return sErrorMessages[index];
