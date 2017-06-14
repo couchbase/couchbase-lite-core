@@ -293,7 +293,8 @@ namespace litecore { namespace repl {
                 else
                     logVerbose("Checkpoint now at %llu", lastSeq);
                 _lastSequence = lastSeq;
-                replicator()->updatePushCheckpoint(_lastSequence);
+                if (replicator())
+                    replicator()->updatePushCheckpoint(_lastSequence);
             }
         }
     }

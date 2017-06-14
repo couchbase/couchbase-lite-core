@@ -24,6 +24,7 @@ namespace litecore { namespace repl {
         void _start(C4BlobKey, uint64_t);
         void writeToBlob(fleece::alloc_slice);
         void finishBlob();
+        void closeWriter();
         virtual void onError(C4Error) override;
         virtual ActivityLevel computeActivityLevel() const override;
 

@@ -80,7 +80,7 @@ namespace litecore { namespace repl {
         if (callback) {
             ++_pendingResponseCount;
             builder.onProgress = asynchronize([=](MessageProgress progress) {
-                if (progress.state == MessageProgress::kComplete)
+                if (progress.state >= MessageProgress::kComplete)
                     --_pendingResponseCount;
                 callback(progress);
             });

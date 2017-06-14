@@ -38,13 +38,17 @@ namespace litecore { namespace repl {
         req["digest"_sl] = digest;
         sendRequest(req, asynchronize([=](blip::MessageProgress progress) {
             //... After request is sent:
-            if (_writer && progress.reply) {
-                if (progress.reply->isError()) {
-                    gotError(progress.reply);
-                } else {
-                    writeToBlob(progress.reply->extractBody());
-                    if (progress.state == MessageProgress::kComplete)
-                        finishBlob();
+            if (_writer) {
+                if (progress.state == MessageProgress::kDisconnected) {
+                    closeWriter();
+                } else if (progress.reply) {
+                    if (progress.reply->isError()) {
+                        gotError(progress.reply);
+                    } else {
+                        writeToBlob(progress.reply->extractBody());
+                        if (progress.state == MessageProgress::kComplete)
+                            finishBlob();
+                    }
                 }
             }
         }));
@@ -65,14 +69,18 @@ namespace litecore { namespace repl {
         C4Error err;
         if (!c4stream_install(_writer, &_key, &err))
             gotError(err);
+        closeWriter();
+    }
+
+
+    void IncomingBlob::closeWriter() {
         c4stream_closeWriter(_writer);
         _writer = nullptr;
     }
 
 
     void IncomingBlob::onError(C4Error err) {
-        c4stream_closeWriter(_writer);
-        _writer = nullptr;
+        closeWriter();
         Worker::onError(err);
         // Bump progress to 100% so as not to mess up overall progress tracking:
         setProgress({_size, _size});

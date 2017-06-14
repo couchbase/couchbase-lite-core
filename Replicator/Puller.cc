@@ -151,7 +151,8 @@ namespace litecore { namespace repl {
             if (wasEarliest) {
                 _lastSequence = _requestedSequences.since();
                 logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
-                replicator()->updatePullCheckpoint(_lastSequence);
+                if (replicator())
+                    replicator()->updatePullCheckpoint(_lastSequence);
             }
             addProgress({bodySize, 0});
         }
