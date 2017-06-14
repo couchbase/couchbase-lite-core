@@ -33,11 +33,12 @@ namespace litecore { namespace blip {
     /** Progress notification for an outgoing request. */
     struct MessageProgress {
         enum State {
-            kQueued,
-            kSending,
-            kAwaitingReply,
-            kReceivingReply,
-            kComplete
+            kQueued,                // Outgoing request has been queued for delivery
+            kSending,               // First bytes of message have been sent
+            kAwaitingReply,         // Message sent; waiting for a reply (unless noreply)
+            kReceivingReply,        // Reply is being received
+            kComplete,              // Delivery (and receipt, if not noreply) complete.
+            kDisconnected           // Socket disconnected before delivery or receipt completed
         } state;
         MessageSize bytesSent;
         MessageSize bytesReceived;
@@ -106,6 +107,7 @@ namespace litecore { namespace blip {
         void sendProgress(MessageProgress::State state,
                           MessageSize bytesSent, MessageSize bytesReceived,
                           MessageIn *reply);
+        void disconnected();
 
 
         FrameFlags _flags;

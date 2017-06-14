@@ -34,6 +34,11 @@ namespace litecore { namespace blip {
     }
 
 
+    void Message::disconnected() {
+        sendProgress(MessageProgress::kDisconnected, 0, 0, nullptr);
+    }
+
+
     MessageIn::~MessageIn()
     { }
 

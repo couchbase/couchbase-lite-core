@@ -81,4 +81,11 @@ namespace litecore { namespace blip {
                              _onProgress, _payload.size);
     }
 
+
+    void MessageOut::disconnected() {
+        if (type() != kRequestType || noReply())
+            return;
+        Message::disconnected();
+    }
+
 } }

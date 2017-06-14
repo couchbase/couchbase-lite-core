@@ -69,7 +69,6 @@ namespace litecore { namespace blip {
             erase(i);
             return true;
         }
-
     };
 
 
@@ -179,11 +178,10 @@ namespace litecore { namespace blip {
                 Retained<BLIPIO> holdOn (this);
                 _connection->closed(status);
                 _connection = nullptr;
-                // TODO: Call error handlers for any unfinished outgoing messages
-                _outbox.clear();
-                _icebox.clear();
-                _pendingRequests.clear();
-                _pendingResponses.clear();
+                cancelAll(_outbox);
+                cancelAll(_icebox);
+                cancelAll(_pendingRequests);
+                cancelAll(_pendingResponses);
                 _requestHandlers.clear();
                 release(this); // webSocket is done calling delegate now (balances retain in ctor)
             }
@@ -198,6 +196,7 @@ namespace litecore { namespace blip {
         void _queueMessage(Retained<MessageOut> msg) {
             if (!_webSocket) {
                 log("Can't send request; socket is closed");
+                msg->disconnected();
                 return;
             }
             if (msg->_number == 0)
@@ -446,6 +445,23 @@ namespace litecore { namespace blip {
                 warn("Unexpected response to my message %llu", msgNo);
             }
             return msg;
+        }
+
+
+        void cancelAll(MessageQueue &queue) {   // either _outbox or _icebox
+            if (!queue.empty())
+                log("Notifying %zd outgoing messages they're canceled", queue.size());
+            for (auto &msg : queue)
+                msg->disconnected();
+            queue.clear();
+        }
+
+        void cancelAll(MessageMap &pending) {   // either _pendingResponses or _pendingRequests
+            if (!pending.empty())
+                log("Notifying %zd incoming messages they're canceled", pending.size());
+            for (auto &item : pending)
+                item.second->disconnected();
+            pending.clear();
         }
 
 

@@ -37,6 +37,7 @@ namespace litecore { namespace blip {
         void receivedAck(uint32_t byteCount);
         bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}
         MessageIn* createResponse();
+        void disconnected();
 
     private:
         static const uint32_t kMaxUnackedBytes = 128000;
