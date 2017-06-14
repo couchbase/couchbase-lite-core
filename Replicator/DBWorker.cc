@@ -205,21 +205,26 @@ namespace litecore { namespace repl {
 #pragma mark - CHANGES:
 
 
-    void DBWorker::getChanges(C4SequenceNumber since, unsigned limit, bool cont, Pusher *pusher) {
-        enqueue(&DBWorker::_getChanges, since, limit, cont, Retained<Pusher>(pusher));
+    void DBWorker::getChanges(C4SequenceNumber since, unsigned limit,
+                              bool continuous, bool skipDeleted, Pusher *pusher)
+    {
+        enqueue(&DBWorker::_getChanges, since, limit, continuous, skipDeleted,
+                Retained<Pusher>(pusher));
     }
 
     
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
-    void DBWorker::_getChanges(C4SequenceNumber since, unsigned limit, bool continuous,
-                              Retained<Pusher> pusher)
+    void DBWorker::_getChanges(C4SequenceNumber since, unsigned limit,
+                               bool continuous, bool skipDeleted,
+                               Retained<Pusher> pusher)
     {
-        log("Reading %u local changes from %llu", limit, since);
+        log("Reading up to %u local changes from #%llu", limit, since);
         vector<Rev> changes;
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         options.flags &= ~kC4IncludeBodies;
-        options.flags |= kC4IncludeDeleted;
+        if (!skipDeleted)
+            options.flags |= kC4IncludeDeleted;
         c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, since, &options, &error);
         if (e) {
             changes.reserve(limit);
@@ -257,12 +262,15 @@ namespace litecore { namespace repl {
             nChanges = c4dbobs_getChanges(_changeObserver, c4changes, kMaxChanges, &external);
             if (nChanges == 0)
                 break;
-            log("Notified of %u db changes %llu ... %llu",
+            log("Notified of %u db changes #%llu ... #%llu",
                 nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
             C4DatabaseChange *c4change = c4changes;
             for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
                 changes.emplace_back(c4change->docID, c4change->revID,
                                      c4change->sequence, c4change->bodySize);
+                // Note: we send tombstones even if the original getChanges() call specified
+                // skipDeletions. This is intentional; skipDeletions applies only to the initial
+                // dump of existing docs, not to 'live' changes.
             }
             C4Error error = {};
             _pusher->gotChanges(changes, error);

@@ -25,6 +25,7 @@ namespace litecore { namespace repl {
     :Worker(connection, replicator, options, "Push")
     ,_dbWorker(dbActor)
     ,_continuous(options.push == kC4Continuous)
+    ,_skipDeleted(options.skipDeleted())
     {
         registerHandler("subChanges",       &Pusher::handleSubChanges);
         registerHandler("getAttachment",    &Pusher::handleGetAttachment);
@@ -51,6 +52,7 @@ namespace litecore { namespace repl {
         }
         auto since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
+        _skipDeleted = req->boolProperty("activeOnly"_sl);
         log("Peer is pulling %schanges from seq %llu",
             (_continuous ? "continuous " : ""), _lastSequence);
 
@@ -80,7 +82,8 @@ namespace litecore { namespace repl {
             _gettingChanges = true;
             ++_changeListsInFlight;
             log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
-            _dbWorker->getChanges(_lastSequenceRead, _changesBatchSize, _continuous, this);
+            _dbWorker->getChanges(_lastSequenceRead, _changesBatchSize, _continuous, _skipDeleted,
+                                  this);
             // response will be to call _gotChanges
         }
     }

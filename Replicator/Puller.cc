@@ -43,6 +43,9 @@ namespace litecore { namespace repl {
             msg["continuous"_sl] = "true"_sl;
         msg["batch"_sl] = kChangesBatchSize;
 
+        if (_options.skipDeleted())
+            msg["activeOnly"_sl] = "true"_sl;
+
         auto channels = _options.channels();
         if (channels) {
             stringstream value;

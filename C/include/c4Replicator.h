@@ -148,6 +148,7 @@ extern "C" {
     #define kC4ReplicatorOptionChannels       "channels" // SG channel names; string[]
     #define kC4ReplicatorOptionFilter         "filter"   // Filter name; string
     #define kC4ReplicatorOptionFilterParams   "filterParams"  // Filter params; Dict[string]
+    #define kC4ReplicatorOptionSkipDeleted    "skipDeleted" // Don't push/pull tombstones; bool
 
     // Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           // Auth property; string

@@ -79,7 +79,7 @@ public:
         Encoder enc;
         enc.beginDict();
         enc.writeKey("Set-Cookie"_sl);
-        enc.writeString("chocolate-chip");
+        enc.writeString("flavor=chocolate-chip");
         enc.endDict();
         AllocedDict headers(enc.finish());
 
@@ -108,7 +108,7 @@ public:
             CHECK(!_gotResponse);
             _gotResponse = true;
             CHECK(status == 200);
-            CHECK(headers["Set-Cookie"].asString() == "chocolate-chip"_sl);
+            CHECK(headers["Set-Cookie"].asString() == "flavor=chocolate-chip"_sl);
         }
     }
 
@@ -386,5 +386,40 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
     // LiteCore's replicator doesn't support filters, so we expect an Unsupported error back:
     expectedError = {LiteCoreDomain, kC4ErrorUnsupported};
     runReplicators(opts, Replicator::Options::passive());
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    for (unsigned i = 1; i <= 100; i += 2) {
+        char docID[20];
+        sprintf(docID, "%07u", i);
+        createRev(slice(docID), kRev2ID, nullslice, kRevDeleted); // delete it
+    }
+
+    auto pushOpt = Replicator::Options::passive();
+    auto pullOpt = Replicator::Options::passive();
+    bool push = false;
+
+    SECTION("Push") {
+        push = true;
+        pushOpt = Replicator::Options::pushing();
+        pushOpt.setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
+    }
+    SECTION("Pull") {
+        push = false;
+        pullOpt = Replicator::Options::pulling();
+        pullOpt.setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
+    }
+
+    runReplicators(pushOpt, pullOpt);
+    compareDatabases();
+    CHECK(c4db_getLastSequence(db2) == 50); // ensure only 50 revisions got created (no tombstones)
+
+    if (push)
+        validateCheckpoints(db, db2, "{\"local\":100}");
+    else
+        validateCheckpoints(db2, db, "{\"remote\":100}");
+
 }
 

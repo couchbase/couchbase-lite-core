@@ -53,6 +53,7 @@ namespace litecore { namespace repl {
         DBWorker* const _dbWorker;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
         bool _continuous;
+        bool _skipDeleted;
 
         C4SequenceNumber _lastSequence {0};             // Checkpointed last-sequence
         bool _gettingChanges {false};                   // Waiting for _gotChanges() call?
