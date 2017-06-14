@@ -281,7 +281,7 @@ namespace c4Internal {
                                                      rq.body,
                                                      (Rev::Flags)rq.revFlags);
         if (commonAncestor < 0)
-            error::_throw(error::InvalidParameter); // must be invalid revision IDs
+            error::_throw(error::BadRevisionID); // must be invalid revision IDs
         updateMeta();
         selectRevision(_versionedDoc[revidBuffer(rq.history[0])]);
         if (rq.save && commonAncestor > 0) {
