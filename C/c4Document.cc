@@ -367,7 +367,7 @@ C4Document* c4doc_update(C4Document *doc,
         if (newDoc->putNewRevision(rq))
             return newDoc.release();
         c4error_return(LiteCoreDomain, kC4ErrorConflict, C4STR("C4Document is out of date"), outError);
-    } catchExceptions()
+    } catchError(outError)
     return nullptr;
 }
 

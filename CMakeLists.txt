@@ -237,7 +237,7 @@ else()
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
 			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")	
-    target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} zlibstatic Ws2_32)
+    target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} zlibstatic Ws2_32 Dbghelp.lib)
 endif()
 
 ### JNI:

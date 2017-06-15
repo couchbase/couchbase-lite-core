@@ -373,7 +373,7 @@ namespace litecore {
         throw error(error::AssertionFailed);
     }
 
-#ifndef __ANDROID__
+#if !defined(__ANDROID__) && !defined(_MSC_VER)
     /*static*/ void error::logBacktrace(unsigned skip) {
 #ifdef __clang__
         ++skip;     // skip the logBacktrace frame itself
