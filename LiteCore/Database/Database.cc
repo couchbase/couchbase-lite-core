@@ -252,7 +252,7 @@ namespace c4Internal {
             auto doc = documentFactory().newDocumentInstance(rec);
             doc->selectCurrentRevision();
             do {
-                if(!doc->loadSelectedRevBodyIfAvailable()) {
+                if(!doc->loadSelectedRevBody()) {
                     continue;
                 }
                 

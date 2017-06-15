@@ -95,7 +95,7 @@ C4SliceResult c4doc_detachRevisionBody(C4Document* doc) noexcept {
 
 bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) noexcept {
     return tryCatch<bool>(outError, [&]{
-        if (internal(doc)->loadSelectedRevBodyIfAvailable())
+        if (internal(doc)->loadSelectedRevBody())
             return true;
         recordError(LiteCoreDomain, kC4ErrorDeleted, outError);
         return false;
@@ -287,13 +287,13 @@ C4Document* c4doc_put(C4Database *database,
     C4Document *doc = nullptr;
     try {
         if (isNewDocPutRequest(database, rq)) {
+            // As an optimization, write the doc assuming there is no prior record in the db:
             doc = putNewDoc(database, rq);
             if (!doc && !rq->existingRevision && !rq->allowConflict) {
                 recordError(LiteCoreDomain, kC4ErrorConflict, "Document already exists",  outError);
                 return nullptr;
             }
-            if (!doc)
-                Log("putNewDoc failed, but proceeding...");
+            // If there's already a record, doc will be null, so we'll continue down regular path.
         }
         if (!doc) {
             if (rq->existingRevision) {

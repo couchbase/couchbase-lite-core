@@ -90,12 +90,7 @@ namespace c4Internal {
         virtual bool selectNextLeafRevision(bool includeDeleted) =0;
 
         virtual bool hasRevisionBody() noexcept =0;
-        virtual bool loadSelectedRevBodyIfAvailable() =0; // can throw; returns false if compacted away
-
-        void loadSelectedRevBody() {
-            if (!loadSelectedRevBodyIfAvailable())
-                error::_throw(error::Deleted);      // body has been compacted away
-        }
+        virtual bool loadSelectedRevBody() =0; // can throw; returns false if compacted away
 
         virtual alloc_slice detachSelectedRevBody() {
             auto result = _loadedBody;

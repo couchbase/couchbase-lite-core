@@ -176,7 +176,7 @@ namespace c4Internal {
         }
 
 
-        virtual bool loadSelectedRevBodyIfAvailable() override {
+        virtual bool loadSelectedRevBody() override {
             if (!_selected)
                 return false;
             _store.readBody(*_selected);

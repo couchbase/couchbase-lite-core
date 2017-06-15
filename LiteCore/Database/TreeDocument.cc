@@ -112,7 +112,7 @@ namespace c4Internal {
             return _selectedRev && _selectedRev->isBodyAvailable();
         }
 
-        bool loadSelectedRevBodyIfAvailable() override {
+        bool loadSelectedRevBody() override {
             loadRevisions();
             return selectedRev.body.buf != nullptr;
         }
