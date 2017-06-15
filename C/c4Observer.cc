@@ -117,6 +117,7 @@ C4DocumentObserver* c4docobs_create(C4Database *db,
 
 void c4docobs_free(C4DocumentObserver* obs) noexcept {
     if (obs) {
+        Retained<Database> db(obs->_db);        // keep db alive until obs is safely deleted
         lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
         delete obs;
     }
