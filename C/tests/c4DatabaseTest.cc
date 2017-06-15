@@ -1,4 +1,4 @@
-﻿//
+//
 //  c4DatabaseTest.cc
 //  Couchbase Lite Core
 //
@@ -117,15 +117,16 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!th
     c4db_free(bundle);
 
     // Reopen with wrong storage type:
-    c4log_warnOnErrors(false);
-    auto engine = config.storageEngine;
-    config.storageEngine = "b0gus";
-    REQUIRE(!c4db_open(bundlePath, &config, &error));
-    config.storageEngine = engine;
+    {
+        ExpectingExceptions x;
+        auto engine = config.storageEngine;
+        config.storageEngine = "b0gus";
+        REQUIRE(!c4db_open(bundlePath, &config, &error));
+        config.storageEngine = engine;
 
-    // Open nonexistent bundle:
-    REQUIRE(!c4db_open(TEMPDIR("no_such_bundle"), &config, &error));
-    c4log_warnOnErrors(true);
+        // Open nonexistent bundle:
+        REQUIRE(!c4db_open(TEMPDIR("no_such_bundle"), &config, &error));
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][C]") {

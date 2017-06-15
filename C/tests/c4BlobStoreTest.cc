@@ -65,18 +65,19 @@ TEST_CASE("parse blob keys", "[blob][C]") {
 
 
 TEST_CASE("parse invalid blob keys", "[blob][C][!throws]") {
-    c4log_warnOnErrors(false);
+    ExpectingExceptions x;
     C4BlobKey key2;
     CHECK_FALSE(c4blob_keyFromString(C4STR(""), &key2));
     CHECK_FALSE(c4blob_keyFromString(C4STR("rot13-xxxx"), &key2));
     CHECK_FALSE(c4blob_keyFromString(C4STR("sha1-"), &key2));
     CHECK_FALSE(c4blob_keyFromString(C4STR("sha1-VVVVVVVVVVVVVVVVVVVVVV"), &key2));
     CHECK_FALSE(c4blob_keyFromString(C4STR("sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU"), &key2));
-    c4log_warnOnErrors(true);
 }
 
 
 N_WAY_TEST_CASE_METHOD(BlobStoreTest, "missing blobs", "[blob][C]") {
+    ExpectingExceptions x;
+    
     CHECK(c4blob_getSize(store, bogusKey) == -1);
 
     C4Error error;
@@ -141,12 +142,12 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blob, key mismatch", "[blob][C][!t
     C4BlobKey key, expectedKey;
     memset(&expectedKey, 0x55, sizeof(expectedKey));
     C4Error error;
-    c4log_warnOnErrors(false);
-    bool success = c4blob_create(store, blobToStore, &expectedKey, &key, &error);
-    c4log_warnOnErrors(true);
-    CHECK(!success);
-    CHECK(error.domain == LiteCoreDomain);
-    CHECK(error.code == kC4ErrorCorruptData);
+    {
+        ExpectingExceptions x;
+        CHECK(!c4blob_create(store, blobToStore, &expectedKey, &key, &error));
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorCorruptData);
+    }
 
     // Try again but give the correct expectedKey:
     c4blob_keyFromString(C4STR("sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E="), &expectedKey);
@@ -162,7 +163,10 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
     C4Error error;
     REQUIRE(c4blob_create(store, {blob.data(), blob.size()}, nullptr,  &key, &error));
 
-    CHECK( c4blob_openReadStream(store, bogusKey, &error) == nullptr);
+    {
+        ExpectingExceptions x;
+        CHECK( c4blob_openReadStream(store, bogusKey, &error) == nullptr);
+    }
 
     auto stream = c4blob_openReadStream(store, key, &error);
     REQUIRE(stream);

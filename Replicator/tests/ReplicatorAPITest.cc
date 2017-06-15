@@ -162,6 +162,7 @@ TEST_CASE("URL Parsing") {
     CHECK(address.path == "/"_sl);
     CHECK(dbName == "dbname"_sl);
 
+    ExpectingExceptions x;
     REQUIRE(!c4repl_parseURL(""_sl, &address, &dbName));
     REQUIRE(!c4repl_parseURL("blip:"_sl, &address, &dbName));
     REQUIRE(!c4repl_parseURL("blip:/"_sl, &address, &dbName));

@@ -20,9 +20,11 @@
 extern "C" {
 
     CBL_CORE_API extern std::atomic_int gC4InstanceCount;
+    CBL_CORE_API extern std::atomic_int gC4ExpectExceptions;
 
 #else
     CBL_CORE_API extern atomic_int gC4InstanceCount;
+    CBL_CORE_API extern atomic_int gC4ExpectExceptions;
 #endif
 
 void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) C4API;

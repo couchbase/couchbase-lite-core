@@ -31,6 +31,13 @@
 #include <cxxabi.h>
 #endif
 
+
+std::atomic_int gC4ExpectExceptions;
+
+extern "C" bool C4ExpectingExceptions();
+bool C4ExpectingExceptions() {return gC4ExpectExceptions > 0;}
+
+
 namespace litecore {
 
     using namespace std;

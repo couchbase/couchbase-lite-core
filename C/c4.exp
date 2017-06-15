@@ -187,6 +187,7 @@ _c4doc_getForPut
 _c4_getObjectCount
 _c4_shutdown
 _gC4InstanceCount
+_gC4ExpectExceptions
 
 # Fleece:
 _FLSlice_Equal

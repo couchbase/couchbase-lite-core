@@ -13,6 +13,7 @@
 using namespace fleeceapi;
 
 #include "c4.h"
+#include "c4Private.h"
 
 #include "CatchHelper.hh"
 #include "PlatformCompat.hh"
@@ -90,6 +91,12 @@ class TransactionHelper {
 
     private:
     C4Database* _db {nullptr};
+};
+
+
+struct ExpectingExceptions {
+    ExpectingExceptions()    {++gC4ExpectExceptions; c4log_warnOnErrors(false);}
+    ~ExpectingExceptions()   {--gC4ExpectExceptions; c4log_warnOnErrors(true);}
 };
 
 

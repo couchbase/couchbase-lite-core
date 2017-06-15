@@ -17,6 +17,7 @@
 
 #include "Base.hh"
 #include <stdexcept>
+#include <atomic>
 
 #undef check
 
@@ -141,3 +142,7 @@ namespace litecore {
 #endif
 
 }
+
+
+extern "C" std::atomic_int gC4ExpectExceptions;
+

@@ -300,6 +300,8 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "DB Query ANY nested", "[Query][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!throws]") {
+    ExpectingExceptions x;
+
     C4Error error;
     query = c4query_new(db, c4str("[\"=\"]"), &error);
     REQUIRE(query == nullptr);

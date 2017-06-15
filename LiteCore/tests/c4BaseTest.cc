@@ -44,6 +44,7 @@ TEST_CASE("C4Error messages") {
 }
 
 TEST_CASE("C4Error exceptions") {
+    ++gC4ExpectExceptions;
     C4Error error;
     try {
         throw litecore::error(litecore::error::LiteCore,
@@ -51,6 +52,7 @@ TEST_CASE("C4Error exceptions") {
                               "Oops");
         FAIL("Exception wasn't thrown");
     } catchError(&error);
+    --gC4ExpectExceptions;
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == kC4ErrorInvalidParameter);
     C4StringResult message = c4error_getMessage(error);

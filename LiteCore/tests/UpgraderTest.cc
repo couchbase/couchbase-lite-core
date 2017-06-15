@@ -53,8 +53,10 @@ protected:
         });
 
         // Now allow the upgrade:
+        ++gC4ExpectExceptions;
         config.flags &= ~kC4DB_NoUpgrade;
         db = new Database(dbPath, config);
+        --gC4ExpectExceptions;
     }
 
     void verifyDoc(slice docID, slice bodyJSON, vector<slice> revIDs) {
