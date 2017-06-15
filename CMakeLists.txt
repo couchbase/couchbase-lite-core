@@ -84,6 +84,7 @@ include_directories("vendor/fleece/Fleece"
                     "vendor/civetweb/include")
 
 if(WIN32)
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
   include_directories("MSVC")
 elseif(ANDROID)
   include_directories("LiteCore/Android")
@@ -234,7 +235,6 @@ else()
         set_target_properties(LiteCore PROPERTIES COMPILE_FLAGS /ZW)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /nodefaultlib:kernel32.lib /nodefaultlib:ole32.lib")
     endif()
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
 			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")	
     target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} zlibstatic Ws2_32 Dbghelp.lib)
@@ -249,6 +249,8 @@ endif()
 ### REST LISTENER LIBRARY:
 
 add_library(LiteCoreREST SHARED LiteCore/Support/Error.cc
+                                LiteCore/Support/Error_android.cc
+                                LiteCore/Support/Error_windows.cc
                                 LiteCore/Support/FilePath.cc
                                 LiteCore/Support/Logging_Stub.cc
                                 LiteCore/Support/StringUtil.cc
@@ -260,6 +262,7 @@ if (APPLE)
     set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/REST/c4REST.exp")
 elseif(MSVC)
+    target_link_libraries(LiteCoreREST PUBLIC Dbghelp.lib)
     set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
               "/def:${PROJECT_SOURCE_DIR}/REST/c4REST.def")
 

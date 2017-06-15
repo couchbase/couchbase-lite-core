@@ -24,6 +24,7 @@ set(TEST_SRC ${TEST_SRC}
              ${TOP}/LiteCore/Support/FilePath.cc
              ${TOP}/LiteCore/Support/Error.cc
              ${TOP}/LiteCore/Support/Error_android.cc
+             ${TOP}/LiteCore/Support/Error_windows.cc
              ${TOP}/LiteCore/Support/Logging_Stub.cc
              ${TOP}/REST/Response.cc)
 if(MSVC)

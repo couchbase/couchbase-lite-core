@@ -45,7 +45,7 @@ else()
         target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log" "z")
     else()
         set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
-        target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 zlibstatic)
+        target_link_libraries(CppTests ${OPENSSL_CRYPTO_LIBRARY} ws2_32 zlibstatic Dbghelp.lib)
         set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/sqlite3)
         add_custom_command(TARGET CppTests POST_BUILD
             COMMAND ${CMAKE_COMMAND}
