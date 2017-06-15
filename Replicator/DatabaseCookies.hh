@@ -12,7 +12,7 @@
 #include <mutex>
 #include <unordered_map>
 
-class c4Database;
+struct c4Database;
 
 namespace litecore { namespace repl {
     class CookieStore;
