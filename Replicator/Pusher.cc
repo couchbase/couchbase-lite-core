@@ -217,6 +217,12 @@ namespace litecore { namespace repl {
             logDebug("Uploading rev %.*s #%.*s (seq %llu)",
                 SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
             onProgress = asynchronize([=](MessageProgress progress) {
+                if (progress.state == MessageProgress::kDisconnected) {
+                    --_revisionsInFlight;
+                    markComplete(rev);
+                    maybeSendMoreRevs();
+                    return;
+                }
                 if (progress.state == MessageProgress::kAwaitingReply) {
                     logDebug("Uploaded rev %.*s #%.*s (seq %llu)",
                              SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);

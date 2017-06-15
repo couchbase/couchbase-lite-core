@@ -47,6 +47,17 @@ namespace litecore { namespace repl {
     void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
         assert(!_revMessage);
         _revMessage = msg;
+        _rev.docID = _revMessage->property("id"_sl);
+        _rev.revID = _revMessage->property("rev"_sl);
+
+        _peerError = (int)_revMessage->intProperty("error"_sl);
+        if (_peerError) {
+            // The sender had a last-minute failure getting the promised revision. Give up.
+            warn("Peer was unable to send '%.*s'/%.*s: error %d",
+                 SPLAT(_rev.docID), SPLAT(_rev.revID), _peerError);
+            finish();
+            return;
+        }
 
         // Convert JSON to Fleece:
         FLError err;
@@ -59,9 +70,7 @@ namespace litecore { namespace repl {
 
         // Populate the RevToInsert's metadata:
         bool stripUnderscores;
-        _rev.docID = _revMessage->property("id"_sl);
         if (_rev.docID) {
-            _rev.revID = _revMessage->property("rev"_sl);
             if (_revMessage->property("deleted"_sl))
                 _rev.flags |= kRevDeleted;
             stripUnderscores = c4doc_hasOldMetaProperties(root);
@@ -152,7 +161,7 @@ namespace litecore { namespace repl {
                 response.makeError(c4ToBLIPError(_error));
             _revMessage->respond(response);
         }
-        _puller->revWasHandled(this, remoteSequence(), (_error.code == 0));
+        _puller->revWasHandled(this, remoteSequence(), (_error.code == 0 && _peerError == 0));
         clear();
     }
 

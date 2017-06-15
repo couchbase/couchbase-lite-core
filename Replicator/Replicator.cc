@@ -131,8 +131,10 @@ namespace litecore { namespace repl {
 
         setProgress(_pushStatus.progress + _pullStatus.progress);
 
-        logDebug("pushStatus=%d, pullStatus=%d, dbStatus=%d, progress=%llu/%llu",
-                 _pushStatus.level, _pullStatus.level, _dbStatus.level,
+        logDebug("pushStatus=%-s, pullStatus=%-s, dbStatus=%-s, progress=%llu/%llu",
+                 kC4ReplicatorActivityLevelNames[_pushStatus.level],
+                 kC4ReplicatorActivityLevelNames[_pullStatus.level],
+                 kC4ReplicatorActivityLevelNames[_dbStatus.level],
                  status().progress.completed, status().progress.total);
 
         if (_pullStatus.error.code)

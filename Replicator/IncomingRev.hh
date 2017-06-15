@@ -46,6 +46,7 @@ namespace litecore { namespace repl {
         unsigned _pendingCallbacks {0};
         unsigned _pendingBlobs {0};
         C4Error _error {};
+        int _peerError {0};
     };
 
 } }

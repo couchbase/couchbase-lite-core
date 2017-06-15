@@ -366,27 +366,52 @@ namespace litecore { namespace repl {
         logVerbose("Sending revision '%.*s' #%.*s",
                    SPLAT(request.docID), SPLAT(request.revID));
         C4Error c4err;
+        slice revisionBody;
+        C4RevisionFlags revisionFlags = 0;
+        string history;
+        Dict root;
+        int blipError = 0;
         c4::ref<C4Document> doc = c4doc_get(_db, request.docID, true, &c4err);
-        if (!doc)
-            return gotError(c4err);
-        if (!c4doc_selectRevision(doc, request.revID, true, &c4err))
-            return gotError(c4err);
-        slice revisionBody = doc->selectedRev.body;
+        if (doc && c4doc_selectRevision(doc, request.revID, true, &c4err)) {
+            revisionBody = slice(doc->selectedRev.body);
+            if (revisionBody) {
+                root = Value::fromTrustedData(revisionBody).asDict();
+                if (!root) {
+                    blipError = 500;
+                    c4err = c4error_make(LiteCoreDomain, kC4ErrorCorruptData,
+                                         "Unparseable revision body"_sl);
+                }
+            }
+            revisionFlags = doc->selectedRev.flags;
 
-        // Generate the revision history string:
-        set<pure_slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
-        stringstream historyStream;
-        for (int n = 0; n < request.maxHistory; ++n) {
-            if (!c4doc_selectParentRevision(doc))
-                break;
-            slice revID = doc->selectedRev.revID;
-            if (n > 0)
-                historyStream << ',';
-            historyStream << fleeceapi::asstring(revID);
-            if (ancestors.find(revID) != ancestors.end())
-                break;
+            // Generate the revision history string:
+            set<pure_slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
+            stringstream historyStream;
+            for (int n = 0; n < request.maxHistory; ++n) {
+                if (!c4doc_selectParentRevision(doc))
+                    break;
+                slice revID = doc->selectedRev.revID;
+                if (n > 0)
+                    historyStream << ',';
+                historyStream << fleeceapi::asstring(revID);
+                if (ancestors.find(revID) != ancestors.end())
+                    break;
+            }
+            history = historyStream.str();
+        } else {
+            // Well, this is a pickle. I'm supposed to send a revision that I can't read.
+            // I need to send a "rev" message, and I can't use a BLIP error response (because this
+            // is a request not a response) so I'll add an "error" property to it instead of body.
+            warn("sendRevision: Couldn't get '%.*s'/%.*s from db: %d/%d",
+                 SPLAT(request.docID), SPLAT(request.revID), c4err.domain, c4err.code);
+            doc = nullptr;
+            if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
+                blipError = 404;
+            else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorDeleted)
+                blipError = 410;
+            else
+                blipError = 500;
         }
-        string history = historyStream.str();
 
         // Now send the BLIP message:
         MessageBuilder msg("rev"_sl);
@@ -395,13 +420,13 @@ namespace litecore { namespace repl {
         msg["id"_sl] = request.docID;
         msg["rev"_sl] = request.revID;
         msg["sequence"_sl] = request.sequence;
-        if (doc->selectedRev.flags & kRevDeleted)
+        if (revisionFlags & kRevDeleted)
             msg["deleted"_sl] = "1"_sl;
         if (!history.empty())
             msg["history"_sl] = history;
+        if (blipError)
+            msg["error"_sl] = blipError;
 
-        auto root = Value::fromTrustedData(revisionBody).asDict();
-        assert(root);
         if (_insertDocumentMetadata) {
             // SG currently requires the metatada properties in the document:
             auto sk = c4db_getFLSharedKeys(_db);
@@ -412,8 +437,8 @@ namespace litecore { namespace repl {
             enc.writeString(request.docID);
             enc.writeKey("_rev"_sl);
             enc.writeString(request.revID);
-            if (doc->selectedRev.flags & kRevDeleted) {
-                enc.writeKey("deleted"_sl);
+            if (revisionFlags & kRevDeleted) {
+                enc.writeKey("_deleted"_sl);
                 enc.writeBool(true);
             }
             for (Dict::iterator i(root, sk); i; ++i) {
@@ -423,7 +448,7 @@ namespace litecore { namespace repl {
             enc.endDict();
             alloc_slice json = enc.finish();
             msg.write(json);
-        } else {
+        } else if (root) {
             msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
             msg.jsonBody().writeValue(root);        // encode as JSON
         }
