@@ -27,6 +27,7 @@ namespace litecore { namespace repl {
         registerHandler("changes",&Puller::handleChanges);
         registerHandler("rev",    &Puller::handleRev);
         _spareIncomingRevs.reserve(kMaxSpareIncomingRevs);
+        _skipDeleted = _options.skipDeleted();
     }
 
 
@@ -43,7 +44,7 @@ namespace litecore { namespace repl {
             msg["continuous"_sl] = "true"_sl;
         msg["batch"_sl] = kChangesBatchSize;
 
-        if (_options.skipDeleted())
+        if (_skipDeleted)
             msg["activeOnly"_sl] = "true"_sl;
 
         auto channels = _options.channels();
@@ -93,6 +94,7 @@ namespace litecore { namespace repl {
             // Empty array indicates we've caught up.
             log("Caught up with remote changes");
             _caughtUp = true;
+            _skipDeleted = false;
             req->respond();
         } else if (req->noReply()) {
             warn("Got pointless noreply 'changes' message");
@@ -144,7 +146,7 @@ namespace litecore { namespace repl {
     }
 
 
-    // Records that a sequence has been successfully pushed.
+    // Records that a sequence has been successfully pulled.
     void Puller::_revWasHandled(Retained<IncomingRev> inc, alloc_slice sequence, bool complete) {
         --_pendingCallbacks;
         if (complete && nonPassive()) {

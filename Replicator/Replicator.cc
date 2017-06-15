@@ -297,6 +297,7 @@ namespace litecore { namespace repl {
         // Get the local checkpoint:
         _dbActor->getCheckpoint(asynchronize([this](alloc_slice checkpointID,
                                                     alloc_slice data,
+                                                    bool dbIsEmpty,
                                                     C4Error err) {
             _checkpointDocID = checkpointID;
 
@@ -306,6 +307,10 @@ namespace litecore { namespace repl {
                 } else {
                     // Skip getting remote checkpoint since there's no local one.
                     log("No local checkpoint '%.*s'", SPLAT(checkpointID));
+                    // If pulling into an empty db with no checkpoint, it's safe to skip deleted
+                    // revisions as an optimization.
+                    if (dbIsEmpty && _options.pull > kC4Passive)
+                        _puller->setSkipDeleted();
                     startReplicating();
                 }
                 return;

@@ -88,7 +88,8 @@ namespace litecore { namespace repl {
             body = alloc_slice(doc->body);
         else if (isNotFoundError(err))
             err = {};
-        callback(checkpointID, body, err);
+        bool dbIsEmpty = c4db_getLastSequence(_db) == 0;
+        callback(checkpointID, body, dbIsEmpty, err);
     }
 
 

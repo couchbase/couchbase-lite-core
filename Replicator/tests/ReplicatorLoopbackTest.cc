@@ -390,6 +390,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
+    // Add 100 docs, then delete 50 of them:
     importJSONLines(sFixturesDir + "names_100.json");
     for (unsigned i = 1; i <= 100; i += 2) {
         char docID[20];
@@ -399,27 +400,33 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
 
     auto pushOpt = Replicator::Options::passive();
     auto pullOpt = Replicator::Options::passive();
-    bool push = false;
+    bool pull = false, skipDeleted = false;
 
-    SECTION("Push") {
-        push = true;
-        pushOpt = Replicator::Options::pushing();
-        pushOpt.setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
-    }
     SECTION("Pull") {
-        push = false;
+        // Pull replication. skipDeleted is automatic because destination is empty.
+        pull = true;
         pullOpt = Replicator::Options::pulling();
-        pullOpt.setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
+        skipDeleted = true;
+        //pullOpt.setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
+    }
+    SECTION("Push") {
+        // Push replication. skipDeleted is not automatic, so test both ways:
+        pushOpt = Replicator::Options::pushing();
+        SECTION("Push + SkipDeleted") {
+            skipDeleted = true;
+            pushOpt.setProperty(slice(kC4ReplicatorOptionSkipDeleted), "true"_sl);
+        }
     }
 
     runReplicators(pushOpt, pullOpt);
     compareDatabases();
-    CHECK(c4db_getLastSequence(db2) == 50); // ensure only 50 revisions got created (no tombstones)
 
-    if (push)
-        validateCheckpoints(db, db2, "{\"local\":100}");
-    else
+    if (pull)
         validateCheckpoints(db2, db, "{\"remote\":100}");
+    else
+        validateCheckpoints(db, db2, "{\"local\":100}");
 
+    // If skipDeleted was used, ensure only 50 revisions got created (no tombstones):
+    CHECK(c4db_getLastSequence(db2) == (skipDeleted ?50 : 100));
 }
 

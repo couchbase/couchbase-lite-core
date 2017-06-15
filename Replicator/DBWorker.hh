@@ -31,6 +31,7 @@ namespace litecore { namespace repl {
 
         using CheckpointCallback = std::function<void(alloc_slice checkpointID,
                                                       alloc_slice data,
+                                                      bool dbIsEmpty,
                                                       C4Error err)>;
 
         void getCheckpoint(CheckpointCallback cb) {

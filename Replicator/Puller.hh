@@ -19,6 +19,8 @@ namespace litecore { namespace repl {
     public:
         Puller(blip::Connection*, Replicator*, DBWorker*, Options options);
 
+        void setSkipDeleted()                   {enqueue(&Puller::_setSkipDeleted);}
+
         // Starts an active pull
         void start(alloc_slice sinceSequence)   {enqueue(&Puller::_start, sinceSequence);}
 
@@ -38,11 +40,14 @@ namespace litecore { namespace repl {
         void handleRev(Retained<MessageIn>);
         void _revWasHandled(Retained<IncomingRev>, alloc_slice sequence, bool complete);
 
+        void _setSkipDeleted()                  {_skipDeleted = true;}
+
         static const unsigned kChangesBatchSize = 500;      // Number of changes in one response
         static const unsigned kMaxSpareIncomingRevs = 500;
 
         DBWorker* const _dbActor;
         alloc_slice _lastSequence;
+        bool _skipDeleted {false};
         bool _caughtUp {false};
         bool _fatalError {false};
         RemoteSequenceSet _requestedSequences;
