@@ -485,7 +485,10 @@ namespace litecore { namespace repl {
         C4Error transactionErr;
         c4::Transaction transaction(_db);
         if (transaction.begin(&transactionErr)) {
+            Encoder enc(c4db_createFleeceEncoder(_db));
+            
             for (auto &rev : *revs) {
+                // Add a revision:
                 logVerbose("    {'%.*s' #%.*s}", SPLAT(rev->docID), SPLAT(rev->revID));
                 vector<C4String> history;
                 history.reserve(10);
@@ -495,8 +498,18 @@ namespace litecore { namespace repl {
                     history.push_back(slice(pos, comma));
                     pos = comma + 1;
                 }
+
+                // rev->body is Fleece, but sadly we can't insert it directly because it doesn't
+                // use the db's SharedKeys, so all of its Dict keys are strings. Putting this into
+                // the db would cause failures looking up those keys (see #156). So re-encode:
+                Value root = Value::fromTrustedData(rev->body);
+                enc.writeValue(root);
+                alloc_slice bodyForDB = enc.finish();
+                enc.reset();
+                rev->body = nullslice;
+
                 C4DocPutRequest put = {};
-                put.body = rev->body;
+                put.body = bodyForDB;
                 put.docID = rev->docID;
                 put.revFlags = rev->flags;
                 put.existingRevision = true;

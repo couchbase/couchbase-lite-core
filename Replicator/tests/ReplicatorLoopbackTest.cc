@@ -430,3 +430,32 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     CHECK(c4db_getLastSequence(db2) == (skipDeleted ?50 : 100));
 }
 
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
+    // Add a doc to db2; this adds the keys "name" and "gender" to the SharedKeys:
+    {
+        TransactionHelper t(db2);
+        C4Error c4err;
+        alloc_slice body = c4db_encodeJSON(db2, "{\"name\":\"obo\", \"gender\":-7}"_sl, &c4err);
+        REQUIRE(body.buf);
+        createRev(db2, "another"_sl, kRevID, body);
+    }
+
+    // Import names_100.json into db:
+    importJSONLines(sFixturesDir + "names_100.json");
+
+    // Push db into db2:
+    runReplicators(Replicator::Options::pushing(),
+                   Replicator::Options::passive());
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
+
+    // Get one of the pushed docs from db2 and look up "gender":
+    c4::ref<C4Document> doc = c4doc_get(db2, "0000001"_sl, true, nullptr);
+    REQUIRE(doc);
+    Dict root = Value::fromData(doc->selectedRev.body).asDict();
+    Value gender = root.get("gender"_sl, c4db_getFLSharedKeys(db2));
+    REQUIRE(gender != nullptr);
+    REQUIRE(gender.asstring() == "female");
+}
+
