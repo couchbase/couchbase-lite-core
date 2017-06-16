@@ -48,7 +48,9 @@ namespace litecore { namespace repl {
         assert(!_revMessage);
         _revMessage = msg;
 
-        // Convert JSON to Fleece:
+        // Parse the JSON to Fleece. This Fleece data is _not_ suitable for inserting into the
+        // database because it doesn't use the SharedKeys, but it lets us look at the doc
+        // metadata and blobs.
         FLError err;
         alloc_slice fleeceBody = Encoder::convertJSON(_revMessage->body(), &err);
         if (!fleeceBody) {
