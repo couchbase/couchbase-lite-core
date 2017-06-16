@@ -1,9 +1,6 @@
 [submodule "vendor/sqlite3-unicodesn"]
 	path = vendor/sqlite3-unicodesn
 	url = https://github.com/snej/sqlite3-unicodesn.git
-[submodule "vendor/openssl"]
-	path = vendor/openssl
-	url = https://github.com/couchbaselabs/couchbase-lite-libcrypto
 [submodule "vendor/fleece"]
 	path = vendor/fleece
 	url = https://github.com/couchbaselabs/fleece.git
@@ -16,3 +13,6 @@
 [submodule "vendor/civetweb"]
 	path = vendor/civetweb
 	url = https://github.com/couchbasedeps/civetweb.git
+[submodule "vendor/mbedtls"]
+	path = vendor/mbedtls
+	url = https://github.com/ARMmbed/mbedtls

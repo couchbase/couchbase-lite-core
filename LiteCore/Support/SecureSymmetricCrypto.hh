@@ -127,6 +127,57 @@ namespace litecore {
     }
 
     #define AES256_AVAILABLE 1
+    
+#elif defined(_CRYPTO_MBEDTLS)
+
+    static const unsigned int KEY_SIZE = 32;
+    static const unsigned int BLOCK_SIZE = 16;
+    
+    #include <mbedtls/cipher.h>
+
+    static size_t AES256(bool encrypt,      // true=encrypt, false=decrypt
+        slice key,           // pointer to 32-byte key
+        slice iv,            // pointer to 32-byte iv
+        bool padding,        // true=PKCS7 padding, false=no padding
+        slice dst,           // output buffer & capacity
+        slice src)           // input data
+    {
+        DebugAssert(key.size == KEY_SIZE);
+        DebugAssert(iv.buf == nullptr || iv.size == BLOCK_SIZE, "IV is wrong size");
+        mbedtls_cipher_context_t cipher_ctx;
+        const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type( MBEDTLS_CIPHER_AES_256_CBC );
+        if(cipher_info == NULL) {
+            fprintf(stderr, "mbedtls_cipher_info_from_type failed\n");
+            litecore::error::_throw(litecore::error::CryptoError);
+        }
+        
+        mbedtls_cipher_init(&cipher_ctx);
+        mbedtls_cipher_setup(&cipher_ctx, cipher_info);
+        if (padding) {
+            mbedtls_cipher_set_padding_mode(&cipher_ctx, MBEDTLS_PADDING_PKCS7);
+        }
+        else {
+            mbedtls_cipher_set_padding_mode(&cipher_ctx, MBEDTLS_PADDING_NONE);
+        }
+        
+        size_t out_len = dst.size;
+        if(encrypt) {
+            mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char*)key.buf, 256, MBEDTLS_ENCRYPT);
+            mbedtls_cipher_crypt(&cipher_ctx, (const unsigned char*)iv.buf, iv.size, (const unsigned char*)src.buf, src.size,
+                (unsigned char*)dst.buf, &out_len);
+        }
+        else {
+            mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char*)key.buf, 256, MBEDTLS_DECRYPT);
+            mbedtls_cipher_crypt(&cipher_ctx, (const unsigned char*)iv.buf, iv.size, (const unsigned char*)src.buf, src.size,
+                (unsigned char*)dst.buf, &out_len);
+        }
+
+        mbedtls_cipher_free(&cipher_ctx);
+        return out_len;
+    }
+    
+    #define AES256_AVAILABLE 1
+
 
 #else
 

@@ -19,7 +19,7 @@
 #include "SecureRandomize.hh"
 #include "SecureSymmetricCrypto.hh"
 #include "Endian.hh"
-
+#include <minmax.h>
 
 /*
     Implementing a random-access encrypted stream is actually kind of tricky.

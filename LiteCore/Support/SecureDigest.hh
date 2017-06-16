@@ -105,6 +105,58 @@
     }
 
     #define SECURE_DIGEST_AVAILABLE 1
+    
+#elif defined(_CRYPTO_MBEDTLS)
+    #include <mbedtls\md5.h>
+    #include <mbedtls\sha1.h>
+    #include <mbedtls\sha256.h>
+
+    typedef mbedtls_md5_context md5Context;
+
+    static inline void md5_begin(md5Context *ctx) {
+        mbedtls_md5_init(ctx);
+        mbedtls_md5_starts(ctx);
+    }
+    static inline void md5_add(md5Context *ctx, const void *bytes, size_t length) {
+        mbedtls_md5_update(ctx, (const unsigned char*)bytes, length);
+    }
+    static inline void md5_end(md5Context *ctx, void *outDigest) {
+        mbedtls_md5_finish(ctx, (unsigned char*)outDigest);
+        mbedtls_md5_free(ctx);
+    }
+
+
+    typedef mbedtls_sha1_context sha1Context;
+
+    static inline void sha1_begin(sha1Context *ctx) {
+        mbedtls_sha1_init(ctx);
+        mbedtls_sha1_starts(ctx);
+    }
+    static inline void sha1_add(sha1Context *ctx, const void *bytes, size_t length) {
+        mbedtls_sha1_update(ctx, (unsigned char*)bytes, length);
+    }
+    static inline void sha1_end(sha1Context *ctx, void *outDigest) {
+        mbedtls_sha1_finish(ctx, (unsigned char *)outDigest);
+        mbedtls_sha1_free(ctx);
+    }
+
+
+    typedef mbedtls_sha256_context sha256Context;
+
+    static inline void sha256_begin(sha256Context *ctx) {
+        mbedtls_sha256_init(ctx);
+        mbedtls_sha256_starts(ctx, 0);
+    }
+    static inline void sha256_add(sha256Context *ctx, const void *bytes, size_t length) {
+        mbedtls_sha256_update(ctx, (unsigned char *)bytes, length);
+    }
+    static inline void sha256_end(sha256Context *ctx, void *outDigest) {
+        mbedtls_sha256_finish(ctx, (unsigned char *)outDigest);
+        mbedtls_sha256_free(ctx);
+    }
+    
+    #define SECURE_DIGEST_AVAILABLE 1
+
 
 #else
 
