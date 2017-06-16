@@ -10,6 +10,7 @@
 #include "SQLiteDataFile.hh"
 #include "FilePath.hh"
 #include "PlatformIO.hh"
+#include "c4Private.h"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <mutex>

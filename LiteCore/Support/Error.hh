@@ -142,7 +142,3 @@ namespace litecore {
 #endif
 
 }
-
-
-extern "C" std::atomic_int gC4ExpectExceptions;
-

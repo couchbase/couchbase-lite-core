@@ -7,6 +7,7 @@
 //
 
 #include "c4Internal.hh"
+#include "c4Private.h"
 #include "catch.hpp"
 
 

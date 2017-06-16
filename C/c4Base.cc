@@ -30,6 +30,10 @@ using namespace litecore;
 
 extern "C" {
     CBL_CORE_API std::atomic_int gC4InstanceCount;
+    CBL_CORE_API std::atomic_int gC4ExpectExceptions;
+    bool C4ExpectingExceptions();
+    bool C4ExpectingExceptions() { return gC4ExpectExceptions > 0; }
+
 }
 
 
