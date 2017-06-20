@@ -58,8 +58,12 @@ using namespace fleeceapi;
 const std::string& TempDir();
 
 
+std::ostream& operator<< (std::ostream& o, fleece::slice s);
+std::ostream& operator<< (std::ostream& o, fleece::alloc_slice s);
+
 std::ostream& operator<< (std::ostream& o, C4Slice s);
 std::ostream& operator<< (std::ostream& o, C4SliceResult s);
+
 std::ostream& operator<< (std::ostream &out, C4Error error);
 
 

@@ -508,6 +508,51 @@ namespace c4Internal {
     }
 
 
+#if DEBUG
+    // Validate that all dictionary keys in this value behave correctly, i.e. the keys found
+    // through iteration also work for element lookup. (This tests the fix for issue #156.)
+    static void validateKeys(const Value *val, SharedKeys *sk) {
+        switch (val->type()) {
+            case kArray:
+                for (Array::iterator j(val->asArray()); j; ++j)
+                    validateKeys(j.value(), sk);
+                break;
+            case kDict: {
+                const Dict *d = val->asDict();
+                for (Dict::iterator i(d, sk); i; ++i) {
+                    auto key = i.keyString();
+                    if (!key.buf || d->get(key, sk) != i.value())
+                        error::_throw(error::CorruptRevisionData,
+                                      "Document key is not properly encoded");
+                    validateKeys(i.value(), sk);
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+
+    void Database::validateRevisionBody(slice body) {
+        if (body.size > 0 && body[0] != '{') {        // There are a few unit tests that store JSON
+            const Value *v = Value::fromData(body);
+            if (!v)
+                error::_throw(error::CorruptRevisionData, "Revision body is not parseable as Fleece");
+            const Dict *root = v->asDict();
+            if (!root)
+                error::_throw(error::CorruptRevisionData, "Revision body is not a Dict");
+            validateKeys(v, documentKeys());
+            for (Dict::iterator i(root, documentKeys()); i; ++i) {
+                slice key = i.keyString();
+                if (key == "_id"_sl || key == "_rev"_sl || key == "_deleted"_sl)
+                    error::_throw(error::CorruptRevisionData, "Illegal key in document");
+            }
+        }
+    }
+#endif
+
+
     void Database::saved(Document* doc) {
         if (_sequenceTracker) {
             lock_guard<mutex> lock(_sequenceTracker->mutex());

@@ -169,7 +169,20 @@ public:
         });
     }
 
-    void compareDatabases() {
+    void compareDocs(C4Document *doc1, C4Document *doc2) {
+        REQUIRE(doc1->docID == doc2->docID);
+        REQUIRE(doc1->revID == doc2->revID);
+        REQUIRE(doc1->flags == doc2->flags);
+
+        // Compare canonical JSON forms of both docs:
+        Value root1 = Value::fromData(doc1->selectedRev.body);
+        Value root2 = Value::fromData(doc2->selectedRev.body);
+        alloc_slice json1 = root1.toJSON(c4db_getFLSharedKeys(db), true, true);
+        alloc_slice json2 = root2.toJSON(c4db_getFLSharedKeys(db2), true, true);
+        CHECK(json1 == json2);
+    }
+
+    void compareDatabases(bool db2MayHaveMoreDocs =false) {
         C4Error error;
         c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, nullslice, nullslice, nullptr,  &error);
         REQUIRE(e1);
@@ -178,17 +191,20 @@ public:
 
         unsigned i = 0;
         while (c4enum_next(e1, &error)) {
-            C4DocumentInfo doc1, doc2;
-            c4enum_getDocumentInfo(e1, &doc1);
-            INFO("db document #" << i << ": '" << asstring(doc1.docID) << "'");
+            c4::ref<C4Document> doc1 = c4enum_getDocument(e1, &error);
+            REQUIRE(doc1);
+            INFO("db document #" << i << ": '" << asstring(doc1->docID) << "'");
             REQUIRE(c4enum_next(e2, &error));
-            c4enum_getDocumentInfo(e2, &doc2);
-            REQUIRE(doc1.docID == doc2.docID);
-            REQUIRE(doc1.revID == doc2.revID);
-            REQUIRE(doc1.flags == doc2.flags);
+            c4::ref<C4Document> doc2 = c4enum_getDocument(e2, &error);
+            REQUIRE(doc2);
+            compareDocs(doc1, doc2);
             ++i;
         }
         REQUIRE(error.code == 0);
+        if (!db2MayHaveMoreDocs) {
+            REQUIRE(!c4enum_next(e2, &error));
+            REQUIRE(error.code == 0);
+        }
     }
 
     void validateCheckpoint(C4Database *database, bool local,
@@ -447,7 +463,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     // Push db into db2:
     runReplicators(Replicator::Options::pushing(),
                    Replicator::Options::passive());
-    compareDatabases();
+    compareDatabases(true);
     validateCheckpoints(db, db2, "{\"local\":100}");
 
     // Get one of the pushed docs from db2 and look up "gender":

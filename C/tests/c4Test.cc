@@ -70,8 +70,8 @@ static string c4sliceToHex(C4Slice result) {
 }
 
 
-ostream& operator<< (ostream& o, C4Slice s) {
-    o << "C4Slice[";
+ostream& operator<< (ostream& o, fleece::slice s) {
+    o << "slice[";
     if (s.buf == nullptr)
         return o << "null]";
     auto buf = (const uint8_t*)s.buf;
@@ -83,9 +83,10 @@ ostream& operator<< (ostream& o, C4Slice s) {
 }
 
 
-ostream& operator<< (ostream& o, C4SliceResult s) {
-    return o << C4Slice{s.buf, s.size};
-}
+ostream& operator<< (ostream& o, fleece::alloc_slice s)         {return o << fleece::slice(s.buf, s.size);}
+std::ostream& operator<< (std::ostream& o, C4Slice s)           {return o << fleece::slice(s);}
+std::ostream& operator<< (std::ostream& o, C4SliceResult s)     {return o << fleece::slice(s.buf,s.size);}
+
 
 
 ostream& operator<< (ostream &out, C4Error error) {

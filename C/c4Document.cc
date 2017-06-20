@@ -286,6 +286,8 @@ C4Document* c4doc_put(C4Database *database,
     int commonAncestorIndex = 0;
     C4Document *doc = nullptr;
     try {
+        database->validateRevisionBody(rq->body);
+
         if (isNewDocPutRequest(database, rq)) {
             // As an optimization, write the doc assuming there is no prior record in the db:
             doc = putNewDoc(database, rq);
@@ -354,6 +356,8 @@ C4Document* c4doc_update(C4Document *doc,
     if (!idoc->mustBeInTransaction(outError))
         return nullptr;
     try {
+        idoc->database()->validateRevisionBody(revBody);
+
         // Why copy the document? Because if we modified it in place it would be too awkward to
         // back out the changes if the save failed. Likewise, the caller may need to be able to
         // back out this entire call if the transaction fails to commit, so having the original
