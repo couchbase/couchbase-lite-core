@@ -59,6 +59,9 @@ namespace litecore {
                 if (!keyStore.db().tableExists(ftsTable))
                     error::_throw(error::LiteCore, error::NoSuchIndex);
             }
+            if (!_ftsTables.empty())
+                keyStore.createSequenceIndex();     // 'match' operator uses a join on the sequence
+
             _1stCustomResultColumn = qp.firstCustomResultColumn();
             _isAggregate = qp.isAggregateQuery();
         }

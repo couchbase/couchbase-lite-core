@@ -45,6 +45,8 @@ namespace litecore {
         void deleteIndex(slice expressionJSON, IndexType =kValueIndex) override;
         bool hasIndex(slice expressionJSON, IndexType =kValueIndex);
 
+        void createSequenceIndex();
+
     protected:
         std::string tableName() const                       {return std::string("kv_") + name();}
         bool _del(slice key, sequence_t s, Transaction&) override;

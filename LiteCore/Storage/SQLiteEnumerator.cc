@@ -116,14 +116,7 @@ namespace litecore {
     RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(sequence_t min, sequence_t max,
                                                               RecordEnumerator::Options &options)
     {
-        if (!_capabilities.sequences)
-            error::_throw(error::NoSequences);
-
-        if (!_createdSeqIndex) {
-            db().execWithLock(string("CREATE UNIQUE INDEX IF NOT EXISTS kv_"+name()+"_seqs"
-                                          " ON kv_"+name()+" (sequence)"));
-            _createdSeqIndex = true;
-        }
+        createSequenceIndex();
 
         stringstream sql;
         selectFrom(sql, options);
