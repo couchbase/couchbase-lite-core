@@ -1,0 +1,39 @@
+{
+	"log": ["HTTP+"],
+    
+    "interface": ":4994",
+    "adminInterface": ":4995",
+    "SSLCert": "cert.pem",
+    "SSLKey":  "privkey.pem",
+
+	"databases": {
+		"itunes": {
+			"server": "walrus:walrus_data",
+			"users": {
+				"GUEST": {"disabled": false, "admin_channels": ["*"] }
+			},
+            "unsupported": {"replicator_2": true}
+		},
+		"beer": {
+			"server": "walrus:walrus_data",
+			"users": {
+				"GUEST": {"disabled": false, "admin_channels": ["*"] }
+			},
+            "unsupported": {"replicator_2": true}
+		},
+		"scratch": {
+			"server": "walrus:",
+			"users": {
+				"GUEST": {"disabled": false, "admin_channels": ["*"] }
+			},
+            "unsupported": {"replicator_2": true}
+		},
+		"seekrit": {
+			"server": "walrus:",
+			"users": {
+				"pupshaw": {"password": "frank", "admin_channels": ["*"] }
+			},
+            "unsupported": {"replicator_2": true}
+		}
+	}
+}
