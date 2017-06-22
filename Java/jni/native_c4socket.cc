@@ -45,7 +45,7 @@ bool litecore::jni::initC4Socket(JNIEnv *env) {
         m_C4Socket_open = env->GetStaticMethodID(
                 cls_C4Socket,
                 "open",
-                "(JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;)V");
+                "(JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;[B)V");
         if (!m_C4Socket_open)
             return false;
 
@@ -91,7 +91,8 @@ static void doOpen(C4Socket *s, const C4Address *addr, C4Slice optionsFleece) {
                                   toJString(env, addr->scheme),
                                   toJString(env, addr->hostname),
                                   addr->port,
-                                  toJString(env, addr->path));
+                                  toJString(env, addr->path),
+                                  toJByteArray(env, optionsFleece));
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
             env->CallStaticVoidMethod(cls_C4Socket,
@@ -100,7 +101,8 @@ static void doOpen(C4Socket *s, const C4Address *addr, C4Slice optionsFleece) {
                                       toJString(env, addr->scheme),
                                       toJString(env, addr->hostname),
                                       addr->port,
-                                      toJString(env, addr->path));
+                                      toJString(env, addr->path),
+                                      toJByteArray(env, optionsFleece));
             if (gJVM->DetachCurrentThread() != 0) {
                 //LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
             }
