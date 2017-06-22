@@ -113,17 +113,15 @@ public class C4ReplicatorTest extends BaseTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        //config = new Config(InstrumentationRegistry.getContext().getAssets().open(TEST_PROPERTIES_FILE));
         if (!config.replicatorTestsEnabled())
             return;
-
-        //super.setUp();
 
         this.host = config.remoteHost();
         this.port = config.remotePort();
         this.remoteDB = config.remoteDB();
 
-        //C4Socket.registerFactory();
+        // Note: use CivetWeb instead of OkHttp for LiteCore level unit test
+        // C4Socket.registerFactory();
 
         this.options = null;
 

@@ -1,26 +1,39 @@
 package com.couchbase.litecore;
 
 
+import android.os.Build;
 import android.util.Log;
 
+import com.couchbase.litecore.fleece.FLValue;
+
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Authenticator;
+import okhttp3.Challenge;
+import okhttp3.Credentials;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.Route;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 
-import static com.couchbase.litecore.Constants.C4ErrorDomain.POSIXDomain;
-import static com.couchbase.litecore.Constants.C4ErrorDomain.WebSocketDomain;
+import static com.couchbase.lite.ReplicatorConfiguration.kCBLReplicatorAuthOption;
+import static com.couchbase.lite.ReplicatorConfiguration.kCBLReplicatorAuthPassword;
+import static com.couchbase.lite.ReplicatorConfiguration.kCBLReplicatorAuthUserName;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2Scheme;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2TLSScheme;
+import static com.couchbase.litecore.Constants.C4ErrorDomain.POSIXDomain;
+import static com.couchbase.litecore.Constants.C4ErrorDomain.WebSocketDomain;
 
 public class C4Socket extends WebSocketListener {
 
@@ -43,14 +56,20 @@ public class C4Socket extends WebSocketListener {
     // Member Variables
     //-------------------------------------------------------------------------
     private long handle = 0L; // hold pointer to C4Socket
+    private URI uri = null;
+    private Map<String, Object> options;
     private WebSocket webSocket = null;
     private static C4Socket c4sock = null;
+    OkHttpClient httpClient = null;
 
     //-------------------------------------------------------------------------
     // constructor
     //-------------------------------------------------------------------------
-    public C4Socket(long handle) {
+    public C4Socket(long handle, URI uri, Map<String, Object> options) {
         this.handle = handle;
+        this.uri = uri;
+        this.options = options;
+        this.httpClient = setupOkHttpClient();
     }
 
     //-------------------------------------------------------------------------
@@ -115,18 +134,15 @@ public class C4Socket extends WebSocketListener {
     // callback methods from JNI
     //-------------------------------------------------------------------------
 
-    private static void open(long socket, String scheme, String hostname, int port, String path) {
+    private static void open(long socket, String scheme, String hostname, int port, String path, byte[] optionsFleece) {
         Log.e(TAG, "C4Socket.callback.open() socket -> 0x" + Long.toHexString(socket) + ", scheme -> " + scheme + ", hostname -> " + hostname + ", port -> " + port + ", path -> " + path);
+        Log.e(TAG, "optionsFleece: " + (optionsFleece != null ? "not null" : "null"));
 
-        c4sock = new C4Socket(socket);
-
-        reverseLookupTable.put(socket, c4sock);
-
-        OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
+        Map<String, Object> options = null;
+        if (optionsFleece != null) {
+            options = FLValue.fromData(optionsFleece).asDict();
+            Log.e(TAG, "options = " + options);
+        }
 
         // NOTE: OkHttp can not understand blip/blips
         if (scheme.equalsIgnoreCase(kC4Replicator2Scheme))
@@ -142,11 +158,9 @@ public class C4Socket extends WebSocketListener {
             return;
         }
 
-        Request request = new Request.Builder()
-                .url(uri.toString())
-                .build();
-
-        client.newWebSocket(request, c4sock);
+        c4sock = new C4Socket(socket, uri, options);
+        reverseLookupTable.put(socket, c4sock);
+        c4sock.start();
     }
 
     private static void write(long handle, byte[] allocatedData) {
@@ -199,4 +213,127 @@ public class C4Socket extends WebSocketListener {
     private native static void completedWrite(long socket, long byteCount);
 
     private native static void received(long socket, byte[] data);
+
+    //-------------------------------------------------------------------------
+    // private methods
+    //-------------------------------------------------------------------------
+
+    private OkHttpClient setupOkHttpClient() {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+
+        // timeouts
+        builder.connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS);
+
+        // redirection
+        builder.followRedirects(true).followSslRedirects(true);
+
+        // authenticator
+        Authenticator authenticator = setupAuthenticator();
+        if (authenticator != null)
+            builder.authenticator(authenticator);
+
+        return builder.build();
+    }
+
+    private Authenticator setupAuthenticator() {
+        if (options != null && options.containsKey(kCBLReplicatorAuthOption)) {
+            Map<String, Object> auth = (Map<String, Object>) options.get(kCBLReplicatorAuthOption);
+            if (auth != null) {
+                final String username = (String) auth.get(kCBLReplicatorAuthUserName);
+                final String password = (String) auth.get(kCBLReplicatorAuthPassword);
+                if (username != null && password != null) {
+                    return new Authenticator() {
+                        @Override
+                        public Request authenticate(Route route, Response response) throws IOException {
+
+                            // http://www.ietf.org/rfc/rfc2617.txt
+
+                            Log.i(TAG, "Authenticating for response: " + response);
+
+                            // If failed 3 times, give up.
+                            if (responseCount(response) >= 3)
+                                return null;
+
+                            List<Challenge> challenges = response.challenges();
+                            Log.i(TAG, "Challenges: " + challenges);
+                            if (challenges != null) {
+                                for (Challenge challenge : challenges) {
+                                    if (challenge.scheme().equals("Basic")) {
+                                        String credential = Credentials.basic(username, password);
+                                        return response.request().newBuilder().header("Authorization", credential).build();
+                                    }
+
+                                    // NOTE: Not implemented Digest authentication
+                                    //       https://github.com/rburgst/okhttp-digest
+                                    //else if(challenge.scheme().equals("Digest")){
+                                    //}
+                                }
+
+                            }
+
+                            return null;
+                        }
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    private int responseCount(Response response) {
+        int result = 1;
+        while ((response = response.priorResponse()) != null) {
+            result++;
+        }
+        return result;
+    }
+
+    private void start() {
+        Log.i(TAG, String.format(Locale.ENGLISH, "C4Socket connecting to %s...", uri));
+        httpClient.newWebSocket(newRequest(), c4sock);
+    }
+
+    private Request newRequest() {
+        Request.Builder builder = new Request.Builder();
+
+        // Sets the URL target of this request.
+        builder.url(uri.toString());
+
+        // Set/update the "Host" header:
+        String host = uri.getHost();
+        if (uri.getPort() != -1)
+            host = String.format(Locale.ENGLISH, "%s:%d", host, uri.getPort());
+        builder.addHeader("Host", host);
+
+        // Add headers from requests
+        // Note: As the request is created from plain URI, so no headers.
+
+        // Add cookie headers from the cookie storage:
+        // TODO: Implement when Cookie store is supported!
+
+        // Add User-Agent if necessary:
+        builder.addHeader("User-Agent", getUserAgent());
+
+        return builder.build();
+    }
+
+    /**
+     * Return User-Agent value
+     * Format: ex: CouchbaseLite/1.2 (Java Linux/MIPS Android/)
+     */
+    public static String USER_AGENT = null;
+
+    // TODO:
+    public static String getUserAgent() {
+        if (USER_AGENT == null) {
+            USER_AGENT = String.format(Locale.ENGLISH, "%s/%s (%s/%s)",
+                    "CouchbaseLite",
+                    "2.0.0",
+                    "Android",
+                    Build.VERSION.RELEASE);
+        }
+        return USER_AGENT;
+    }
 }
