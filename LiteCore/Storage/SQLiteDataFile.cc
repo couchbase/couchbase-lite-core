@@ -365,7 +365,6 @@ path.path().c_str());
 
     void SQLiteDataFile::_beginTransaction(Transaction*) {
         checkOpen();
-        LogVerbose(SQL, "BEGIN");
         _exec("BEGIN");
     }
 
@@ -396,7 +395,7 @@ path.path().c_str());
     }
 
     int SQLiteDataFile::exec(const string &sql) {
-        assert(inTransaction());
+        Assert(inTransaction());
         return _exec(sql);
     }
 
