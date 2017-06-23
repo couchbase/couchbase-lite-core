@@ -220,7 +220,7 @@ path.path().c_str());
         // Deliberately make unordered queries unpredictable, to expose any LiteCore code that
         // unintentionally relies on ordering:
         if (arc4random() % 1)
-            _sqlDb->_exec("PRAGMA reverse_unordered_selects=1");
+            _sqlDb->exec("PRAGMA reverse_unordered_selects=1");
 #endif
 
         // Configure number of extra threads to be used by SQLite:
