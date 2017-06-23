@@ -27,9 +27,6 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 
-import static com.couchbase.lite.ReplicatorConfiguration.kCBLReplicatorAuthOption;
-import static com.couchbase.lite.ReplicatorConfiguration.kCBLReplicatorAuthPassword;
-import static com.couchbase.lite.ReplicatorConfiguration.kCBLReplicatorAuthUserName;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2Scheme;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2TLSScheme;
 import static com.couchbase.litecore.Constants.C4ErrorDomain.POSIXDomain;
@@ -41,8 +38,13 @@ public class C4Socket extends WebSocketListener {
     // Constants
     //-------------------------------------------------------------------------
     private static final String TAG = C4Socket.class.getSimpleName();
+
     public static final String WEBSOCKET_SCHEME = "ws";
     public static final String WEBSOCKET_SECURE_CONNECTION_SCHEME = "wss";
+
+    public static final String kCBLReplicatorAuthOption = "auth";
+    public static final String kCBLReplicatorAuthUserName = "username";
+    public static final String kCBLReplicatorAuthPassword = "password";
 
     //-------------------------------------------------------------------------
     // Static Variables
