@@ -78,6 +78,7 @@ namespace litecore {
         friend class SQLiteKeyStore;
 
         bool decrypt();
+        int _exec(const std::string &sql);
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;

@@ -52,7 +52,7 @@ namespace litecore {
             // more efficient in SQLite to keep large columns at the end of a row.
             // Create the sequence and flags columns regardless of options, otherwise it's too
             // complicated to customize all the SQL queries to conditionally use them...
-            db.exec(subst("CREATE TABLE IF NOT EXISTS kv_@ ("
+            db.execWithLock(subst("CREATE TABLE IF NOT EXISTS kv_@ ("
                           "  key TEXT PRIMARY KEY,"
                           "  sequence INTEGER,"
                           "  flags INTEGER DEFAULT 0,"

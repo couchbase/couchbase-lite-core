@@ -187,7 +187,7 @@ path.path().c_str());
             // Prior to 3.12, the default page size was 1024, which is less than optimal.
             // Note that setting the page size has to be done before any other command that touches
             // the database file.
-            exec(format("PRAGMA page_size=%lld; ", (long long)kPageSize));
+            _exec(format("PRAGMA page_size=%lld; ", (long long)kPageSize));
         }
 
         withFileLock([this]{
@@ -195,14 +195,14 @@ path.path().c_str());
             int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
             if (userVersion == 0) {
                 // Configure persistent db settings, and create the schema:
-                exec("PRAGMA journal_mode=WAL; "        // faster writes, better concurrency
+                _exec("PRAGMA journal_mode=WAL; "        // faster writes, better concurrency
                      "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
                      "BEGIN; "
                      "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
                      "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID; ");
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
-                exec("PRAGMA user_version=201; "
+                _exec("PRAGMA user_version=201; "
                      "END;");
             } else if (userVersion < kMinUserVersion) {
                 error::_throw(error::DatabaseTooOld);
@@ -211,7 +211,7 @@ path.path().c_str());
             }
         });
 
-        exec(format("PRAGMA mmap_size=%d; "             // Memory-mapped reads
+        _exec(format("PRAGMA mmap_size=%d; "             // Memory-mapped reads
                     "PRAGMA synchronous=normal; "       // Speeds up commits
                     "PRAGMA journal_size_limit=%lld",   // Limit WAL disk usage
                     kMMapSize, (long long)kJournalSize));
@@ -267,11 +267,11 @@ path.path().c_str());
             slice key = options().encryptionKey;
             if(key.buf == nullptr || key.size != 32)
                 error::_throw(error::InvalidParameter);
-            exec(string("PRAGMA key = \"x'") + key.hexString() + "'\"");
+            _exec(string("PRAGMA key = \"x'") + key.hexString() + "'\"");
         }
 
         // Verify that encryption key is correct (or db is unencrypted, if no key given):
-        exec("SELECT count(*) FROM sqlite_master");
+        _exec("SELECT count(*) FROM sqlite_master");
         return true;
     }
 
@@ -317,11 +317,11 @@ path.path().c_str());
             // Export the current database's contents to the new one:
             // <https://www.zetetic.net/sqlcipher/sqlcipher-api/#sqlcipher_export>
             {
-                exec("SELECT sqlcipher_export('rekeyed_db')");
+                _exec("SELECT sqlcipher_export('rekeyed_db')");
 
                 stringstream sql;
                 sql << "PRAGMA rekeyed_db.user_version = " << userVersion;
-                exec(sql.str());
+                _exec(sql.str());
             }
 
             // Close the old database:
@@ -365,8 +365,7 @@ path.path().c_str());
 
     void SQLiteDataFile::_beginTransaction(Transaction*) {
         checkOpen();
-        LogVerbose(SQL, "BEGIN");
-        exec("BEGIN");
+        _exec("BEGIN");
     }
 
 
@@ -382,17 +381,22 @@ path.path().c_str());
 
     void SQLiteDataFile::beginReadOnlyTransaction() {
         checkOpen();
-        exec("SAVEPOINT roTransaction");
+        _exec("SAVEPOINT roTransaction");
     }
 
     void SQLiteDataFile::endReadOnlyTransaction() {
-        exec("RELEASE SAVEPOINT roTransaction");
+        _exec("RELEASE SAVEPOINT roTransaction");
     }
 
 
-    int SQLiteDataFile::exec(const string &sql) {
+    int SQLiteDataFile::_exec(const string &sql) {
         LogVerbose(SQL, "%s", sql.c_str());
         return _sqlDb->exec(sql);
+    }
+
+    int SQLiteDataFile::exec(const string &sql) {
+        Assert(inTransaction());
+        return _exec(sql);
     }
 
 
@@ -400,7 +404,7 @@ path.path().c_str());
         checkOpen();
         int result;
         withFileLock([&]{
-            result = exec(sql);
+            result = _exec(sql);
         });
         return result;
     }
@@ -487,7 +491,7 @@ path.path().c_str());
             if ((pageCount > 0 && (float)freePages / pageCount >= kVacuumFractionThreshold)
                     || (freePages * kPageSize >= kVacuumSizeThreshold)) {
                 Log("Vacuuming database '%s'...", filePath().dirName().c_str());
-                exec("PRAGMA incremental_vacuum");
+                _exec("PRAGMA incremental_vacuum");
             }
         } catch (const SQLite::Exception &x) {
             Warn("Caught SQLite exception while vacuuming: %s", x.what());
