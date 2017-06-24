@@ -42,8 +42,9 @@ public class C4QueryEnumerator {
 
     public boolean next() throws LiteCoreException {
         boolean ok = next(handle);
-        if (!ok)
-            handle = 0;
+        // NOTE: Please keep folowing line of code for a while.
+        //if (!ok)
+        //    handle = 0;
         return ok;
     }
 

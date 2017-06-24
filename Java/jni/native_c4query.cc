@@ -132,8 +132,9 @@ Java_com_couchbase_litecore_C4QueryEnumerator_next(JNIEnv *env, jclass clazz, jl
     C4Error error = {};
     jboolean result = c4queryenum_next((C4QueryEnumerator *) handle, &error);
     if (!result) {
+        // NOTE: Please keep folowing line of code for a while.
         // At end of iteration, proactively free the enumerator:
-        c4queryenum_free((C4QueryEnumerator *) handle);
+        // c4queryenum_free((C4QueryEnumerator *) handle);
         if (error.code != 0)
             throwError(env, error);
     }
