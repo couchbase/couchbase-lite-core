@@ -189,6 +189,24 @@ namespace c4Internal {
             return true;
         }
 
+        bool selectCommonAncestorRevision(slice revID1, slice revID2) override {
+            const Rev *rev1 = _versionedDoc[revidBuffer(revID1)];
+            const Rev *rev2 = _versionedDoc[revidBuffer(revID2)];
+            if (!rev1 || !rev2)
+                error::_throw(error::NotFound);
+            while (rev1 != rev2) {
+                int d = (int)rev1->revID.generation() - (int)rev2->revID.generation();
+                if (d >= 0)
+                    rev1 = rev1->parent();
+                if (d <= 0)
+                    rev2 = rev2->parent();
+                if (!rev1 || !rev2)
+                    return false;
+            }
+            selectRevision(rev1);
+            return true;
+        }
+
         void updateMeta() {
             _versionedDoc.updateMeta();
             flags = (C4DocumentFlags)_versionedDoc.flags() | kExists;
@@ -232,6 +250,37 @@ namespace c4Internal {
             }
             return total;
         }
+
+        void resolveConflict(C4String winningRevID, C4String losingRevID, C4Slice mergedBody) override {
+            // Validate the revIDs:
+            auto winningRev = _versionedDoc[revidBuffer(winningRevID)];
+            auto losingRev = _versionedDoc[revidBuffer(losingRevID)];
+            if (!winningRev || !losingRev)
+                error::_throw(error::NotFound);
+            if (!winningRev->isLeaf() || !losingRev->isLeaf())
+                error::_throw(error::Conflict);
+            if (winningRev == losingRev)
+                error::_throw(error::InvalidParameter);
+
+            // Add a tombstone as a child of losingRev:
+            selectRevision(losingRev);
+            C4DocPutRequest rq = { };
+            rq.revFlags = kRevDeleted;
+            rq.history = &losingRevID;
+            rq.historyCount = 1;
+            rq.allowConflict = true;
+            putNewRevision(rq);
+
+            if (mergedBody.buf) {
+                // Then add the new merged rev as a child of winningRev:
+                selectRevision(winningRev);
+                rq.revFlags = 0;
+                rq.body = mergedBody;
+                rq.history = &winningRevID;
+                putNewRevision(rq);
+            }
+        }
+
 
         virtual int32_t putExistingRevision(const C4DocPutRequest&) override;
         virtual bool putNewRevision(const C4DocPutRequest&) override;
@@ -353,7 +402,7 @@ namespace c4Internal {
 } // end namespace c4Internal
 
 
-#pragma mark - DEPRECATED API:
+#pragma mark - REV-TREES-ONLY API:
 
 
 bool c4doc_save(C4Document *doc,

@@ -146,6 +146,11 @@ extern "C" {
     bool c4doc_selectNextPossibleAncestorOf(C4Document* doc,
                                             C4String revID) C4API;
 
+    /** Selects the common ancestor of two revisions. Returns false if none is found. */
+    bool c4doc_selectCommonAncestorRevision(C4Document* doc,
+                                            C4String rev1ID,
+                                            C4String rev2ID) C4API;
+
     /** Given a revision ID, returns its generation number (the decimal number before
         the hyphen), or zero if it's unparseable. */
     unsigned c4rev_getGeneration(C4String revID) C4API;
@@ -171,6 +176,21 @@ extern "C" {
         int32_t c4doc_purgeRevision(C4Document *doc,
                                     C4String revID,
                                     C4Error *outError) C4API;
+
+    /** Resolves a conflict between two leaf revisions, by deleting one of them and optionally
+        adding a new merged revision as a child of the other.
+        Must be called within a transaction. Remember to save the document afterwards.
+        @param doc  The document.
+        @param winningRevID  The conflicting revision to be kept (and optionally updated.)
+        @param losingRevID  The conflicting revision to be deleted.
+        @param mergedBody  The body of the merged revision, or NULL if none.
+        @param error  Error information is stored here.
+        @return  True on success, false on failure. */
+    bool c4doc_resolveConflict(C4Document *doc,
+                               C4String winningRevID,
+                               C4String losingRevID,
+                               C4Slice mergedBody,
+                               C4Error *error) C4API;
 
     /** @} */
 

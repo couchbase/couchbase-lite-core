@@ -161,6 +161,11 @@ bool c4doc_selectNextPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept
 }
 
 
+bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1, C4String rev2) noexcept {
+    return internal(doc)->selectCommonAncestorRevision(rev1, rev2);
+}
+
+
 #pragma mark - SAVING:
 
 
@@ -394,6 +399,21 @@ int32_t c4doc_purgeRevision(C4Document *doc,
         return idoc->purgeRevision(revID);
     } catchError(outError)
     return -1;
+}
+
+
+bool c4doc_resolveConflict(C4Document *doc,
+                           C4String winningRevID,
+                           C4String losingRevID,
+                           C4Slice mergedBody,
+                           C4Error *outError) noexcept
+{
+    if (!internal(doc)->mustBeInTransaction(outError))
+        return false;
+    return tryCatch<bool>(outError, [=]{
+        internal(doc)->resolveConflict(winningRevID, losingRevID, mergedBody);
+        return true;
+    });
 }
 
 

@@ -441,3 +441,72 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     c4doc_free(doc);
     c4doc_free(doc2);
 }
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
+    if (isVersionVectors())
+        return;
+
+    const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
+    const C4Slice kBody3 = C4STR("{\"ubu\":\"roi\"}");
+    createRev(kDocID, kRevID, kBody);
+    createRev(kDocID, kRev2ID, kBody2, kRevKeepBody);
+    createRev(kDocID, C4STR("3-aaaaaa"), kBody3);
+
+    TransactionHelper t(db);
+
+    // "Pull" a conflicting revision:
+    C4Slice history[3] = {C4STR("4-dddd"), C4STR("3-ababab"), kRev2ID};
+    C4DocPutRequest rq = {};
+    rq.existingRevision = true;
+    rq.docID = kDocID;
+    rq.history = history;
+    rq.historyCount = 3;
+    rq.body = kBody3;
+    rq.save = true;
+    C4Error err;
+    auto doc = c4doc_put(db, &rq, nullptr, &err);
+    REQUIRE(doc);
+
+    // Now check the common ancestor algorithm:
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-aaaaaa"), C4STR("4-dddd")));
+    CHECK(doc->selectedRev.revID == kRev2ID);
+
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("4-dddd"), C4STR("3-aaaaaa")));
+    CHECK(doc->selectedRev.revID == kRev2ID);
+
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-ababab"), C4STR("3-aaaaaa")));
+    CHECK(doc->selectedRev.revID == kRev2ID);
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-aaaaaa"), C4STR("3-ababab")));
+    CHECK(doc->selectedRev.revID == kRev2ID);
+
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, C4STR("3-aaaaaa")));
+    CHECK(doc->selectedRev.revID == kRev2ID);
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-aaaaaa"), kRev2ID));
+    CHECK(doc->selectedRev.revID == kRev2ID);
+
+    REQUIRE(c4doc_selectCommonAncestorRevision(doc, kRev2ID, kRev2ID));
+    CHECK(doc->selectedRev.revID == kRev2ID);
+
+    SECTION("Merge, 4 wins") {
+        REQUIRE(c4doc_resolveConflict(doc, C4STR("4-dddd"), C4STR("3-aaaaaa"),
+                                      C4STR("{\"merged\":true}"), &err));
+        c4doc_selectCurrentRevision(doc);
+        CHECK(doc->selectedRev.revID == C4STR("5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99"));
+        CHECK(doc->selectedRev.body == C4STR("{\"merged\":true}"));
+        c4doc_selectParentRevision(doc);
+        CHECK(doc->selectedRev.revID == C4STR("4-dddd"));
+    }
+
+    SECTION("Merge, 3 wins") {
+        REQUIRE(c4doc_resolveConflict(doc, C4STR("3-aaaaaa"), C4STR("4-dddd"),
+                                      C4STR("{\"merged\":true}"), &err));
+        c4doc_selectCurrentRevision(doc);
+        CHECK(doc->selectedRev.revID == C4STR("4-333ee0677b5f1e1e5064b050d417a31d2455dc30"));
+        CHECK(doc->selectedRev.body == C4STR("{\"merged\":true}"));
+        c4doc_selectParentRevision(doc);
+        CHECK(doc->selectedRev.revID == C4STR("3-aaaaaa"));
+    }
+
+    c4doc_free(doc);
+}

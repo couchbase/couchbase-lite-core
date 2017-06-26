@@ -88,6 +88,9 @@ namespace c4Internal {
         virtual bool selectParentRevision() noexcept =0;
         virtual bool selectNextRevision() =0;
         virtual bool selectNextLeafRevision(bool includeDeleted) =0;
+        virtual bool selectCommonAncestorRevision(slice revID1, slice revID2) {
+            error::_throw(error::UnsupportedOperation);
+        }
 
         virtual bool hasRevisionBody() noexcept =0;
         virtual bool loadSelectedRevBody() =0; // can throw; returns false if compacted away
@@ -113,6 +116,12 @@ namespace c4Internal {
 
         virtual int32_t putExistingRevision(const C4DocPutRequest&) =0;
         virtual bool putNewRevision(const C4DocPutRequest&) =0;
+
+        virtual void resolveConflict(C4String winningRevID,
+                                     C4String losingRevID,
+                                     C4Slice mergedBody) {
+            error::_throw(error::UnsupportedOperation);
+        }
 
         virtual int32_t purgeRevision(C4Slice revID) {
             error::_throw(error::Unimplemented);

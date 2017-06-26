@@ -67,12 +67,14 @@ c4doc_removeRevisionBody
 c4doc_selectParentRevision
 c4doc_selectNextRevision
 c4doc_selectNextLeafRevision
+c4doc_selectCommonAncestorRevision
 c4doc_selectFirstPossibleAncestorOf
 c4doc_selectNextPossibleAncestorOf
 c4doc_getForPut
 c4doc_put
 c4doc_create
 c4doc_update
+c4doc_resolveConflict
 c4doc_purgeRevision
 c4doc_save
 c4doc_setExpiration
