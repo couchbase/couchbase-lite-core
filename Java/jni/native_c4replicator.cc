@@ -13,6 +13,7 @@
  */
 #include <c4.h>
 #include <c4Replicator.h>
+#include <c4Base.h>
 #include "com_couchbase_litecore_C4Replicator.h"
 #include "native_glue.hh"
 #include "logging.h"
@@ -26,7 +27,8 @@ using namespace litecore::jni;
 
 // C4Replicator
 static jclass cls_C4Replicator;           // global reference
-static jmethodID m_C4Replicator_callback; // callback method
+static jmethodID m_C4Replicator_statusChangedCallback; // statusChangedCallback method
+static jmethodID m_C4Replicator_documentErrorCallback; // documentErrorCallback method
 
 // C4ReplicatorStatus
 static jclass cls_C4ReplStatus; // global reference
@@ -49,9 +51,16 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
         if (!cls_C4Replicator)
             return false;
 
-        m_C4Replicator_callback = env->GetStaticMethodID(cls_C4Replicator, "statusChangedCallback",
-                                                         "(JLcom/couchbase/litecore/C4ReplicatorStatus;)V");
-        if (!m_C4Replicator_callback)
+        m_C4Replicator_statusChangedCallback = env->GetStaticMethodID(cls_C4Replicator,
+                                                                      "statusChangedCallback",
+                                                                      "(JLcom/couchbase/litecore/C4ReplicatorStatus;)V");
+        if (!m_C4Replicator_statusChangedCallback)
+            return false;
+
+        m_C4Replicator_documentErrorCallback = env->GetStaticMethodID(cls_C4Replicator,
+                                                                      "documentErrorCallback",
+                                                                      "(JZLjava/lang/String;IIIZ)V");
+        if (!m_C4Replicator_documentErrorCallback)
             return false;
     }
 
@@ -110,24 +119,73 @@ static jobject toJavaObject(JNIEnv *env, C4ReplicatorStatus status) {
 }
 
 /**
- * Callback method from LiteCore C4Replicator
+ * Callback a client can register, to get progress information.
+ * This will be called on arbitrary background threads, and should not block.
+ *
  * @param repl
  * @param status
  * @param ctx
  */
 static void statusChangedCallback(C4Replicator *repl, C4ReplicatorStatus status, void *ctx) {
 
-    LOGI("[NATIVE] C4Replicator.statusChangedCallback() repl -> 0x%p status -> %d", repl, status.level);
+    LOGI("[NATIVE] C4Replicator.statusChangedCallback() repl -> 0x%p status -> %d", repl,
+         status.level);
 
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
-        env->CallStaticVoidMethod(cls_C4Replicator, m_C4Replicator_callback, (jlong) repl,
+        env->CallStaticVoidMethod(cls_C4Replicator, m_C4Replicator_statusChangedCallback,
+                                  (jlong) repl,
                                   toJavaObject(env, status));
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
-            env->CallStaticVoidMethod(cls_C4Replicator, m_C4Replicator_callback, (jlong) repl,
+            env->CallStaticVoidMethod(cls_C4Replicator, m_C4Replicator_statusChangedCallback,
+                                      (jlong) repl,
                                       toJavaObject(env, status));
+            if (gJVM->DetachCurrentThread() != 0)
+                LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+        } else {
+            LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
+        }
+    } else {
+        LOGE("doClose(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+    }
+}
+
+/**
+ * Callback a client can register, to hear about errors replicating individual documents.
+ *
+ * @param repl
+ * @param pushing
+ * @param docID
+ * @param error
+ * @param transient
+ * @param ctx
+ */
+static void documentErrorCallback(C4Replicator *repl, bool pushing, C4String docID, C4Error error,
+                                  bool transient, void *ctx) {
+    char message[256];
+    c4error_getMessageC(error, message, sizeof(message));
+    LOGI("[NATIVE] C4Replicator.documentErrorCallback() repl -> 0x%p, %s, %s", repl,
+         (pushing ? "pushing" : "pulling"), message);
+
+    JNIEnv *env = NULL;
+    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    if (getEnvStat == JNI_OK) {
+        env->CallStaticVoidMethod(cls_C4Replicator,
+                                  m_C4Replicator_documentErrorCallback,
+                                  (jlong) repl,
+                                  pushing,
+                                  toJString(env, docID),
+                                  error.domain, error.code, error.internal_info, transient);
+    } else if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
+            env->CallStaticVoidMethod(cls_C4Replicator,
+                                      m_C4Replicator_documentErrorCallback,
+                                      (jlong) repl,
+                                      pushing,
+                                      toJString(env, docID),
+                                      error.domain, error.code, error.internal_info, transient);
             if (gJVM->DetachCurrentThread() != 0)
                 LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
         } else {
@@ -165,23 +223,26 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
     jstringSlice remoteDBName(env, jremoteDBName);
     jbyteArraySlice options(env, joptions, false);
 
-    C4Address c4Address;
+    C4Address c4Address = {};
     c4Address.scheme = scheme;
     c4Address.hostname = host;
     c4Address.port = jport;
     c4Address.path = path;
+
+    C4ReplicatorParameters params = {};
+    params.push = (C4ReplicatorMode) jpush;
+    params.pull = (C4ReplicatorMode) jpull;
+    params.optionsDictFleece = options;
+    params.onStatusChanged = &statusChangedCallback;
+    params.onDocumentError = &documentErrorCallback;
+    params.callbackContext = NULL;
 
     C4Error error;
     C4Replicator *repl = c4repl_new((C4Database *) jdb,
                                     c4Address,
                                     remoteDBName,
                                     (C4Database *) jotherLocalDB,
-                                    (C4ReplicatorMode) jpush,
-                                    (C4ReplicatorMode) jpull,
-                                   // {optionsFleece.buf, optionsFleece.size},
-                                    options,
-                                    &statusChangedCallback,
-                                    (void *) NULL,
+                                    params,
                                     &error);
     if (!repl) {
         throwError(env, error);
@@ -200,7 +261,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Replicator_free(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.free() repl -> 0x%x",(unsigned int)repl);
+    LOGI("[NATIVE] C4Replicator.free() repl -> 0x%x", (unsigned int) repl);
     c4repl_free((C4Replicator *) repl);
 }
 
@@ -211,7 +272,7 @@ Java_com_couchbase_litecore_C4Replicator_free(JNIEnv *env, jclass clazz, jlong r
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Replicator_stop(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.stop() repl -> 0x%x", (unsigned int)repl);
+    LOGI("[NATIVE] C4Replicator.stop() repl -> 0x%x", (unsigned int) repl);
     c4repl_stop((C4Replicator *) repl);
 }
 
@@ -222,7 +283,7 @@ Java_com_couchbase_litecore_C4Replicator_stop(JNIEnv *env, jclass clazz, jlong r
  */
 JNIEXPORT jobject JNICALL
 Java_com_couchbase_litecore_C4Replicator_getStatus(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.getStatus() repl -> 0x%x", (unsigned int)repl);
+    LOGI("[NATIVE] C4Replicator.getStatus() repl -> 0x%x", (unsigned int) repl);
     C4ReplicatorStatus status = c4repl_getStatus((C4Replicator *) repl);
     return toJavaObject(env, status);
 }
@@ -234,7 +295,7 @@ Java_com_couchbase_litecore_C4Replicator_getStatus(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT jbyteArray JNICALL
 Java_com_couchbase_litecore_C4Replicator_getResponseHeaders(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.getResponseHeaders() repl -> 0x%x", (unsigned int)repl);
+    LOGI("[NATIVE] C4Replicator.getResponseHeaders() repl -> 0x%x", (unsigned int) repl);
     C4Slice s = c4repl_getResponseHeaders((C4Replicator *) repl);
     jbyteArray res = toJByteArray(env, s);
     c4slice_free(s);

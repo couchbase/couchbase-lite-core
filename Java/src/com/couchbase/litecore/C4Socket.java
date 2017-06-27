@@ -4,6 +4,7 @@ package com.couchbase.litecore;
 import android.os.Build;
 import android.util.Log;
 
+import com.couchbase.litecore.fleece.FLEncoder;
 import com.couchbase.litecore.fleece.FLValue;
 
 import java.io.IOException;
@@ -14,11 +15,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Authenticator;
 import okhttp3.Challenge;
 import okhttp3.Credentials;
+import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -27,10 +30,13 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okio.ByteString;
 
+import static android.util.Base64.NO_WRAP;
+import static android.util.Base64.encodeToString;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2Scheme;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2TLSScheme;
 import static com.couchbase.litecore.Constants.C4ErrorDomain.POSIXDomain;
 import static com.couchbase.litecore.Constants.C4ErrorDomain.WebSocketDomain;
+
 
 public class C4Socket extends WebSocketListener {
 
@@ -42,9 +48,20 @@ public class C4Socket extends WebSocketListener {
     public static final String WEBSOCKET_SCHEME = "ws";
     public static final String WEBSOCKET_SECURE_CONNECTION_SCHEME = "wss";
 
-    public static final String kCBLReplicatorAuthOption = "auth";
-    public static final String kCBLReplicatorAuthUserName = "username";
-    public static final String kCBLReplicatorAuthPassword = "password";
+    // Replicator option dictionary keys:
+    public static final String kC4ReplicatorOptionExtraHeaders = "headers";  // Extra HTTP headers; string[]
+    public static final String kC4ReplicatorOptionCookies = "cookies";  // HTTP Cookie header value; string
+    public static final String kC4ReplicatorOptionAuthentication = "auth";     // Auth settings; Dict
+    public static final String kC4ReplicatorOptionPinnedServerCert = "pinnedCert";  // Cert or public key [data]
+    public static final String kC4ReplicatorOptionChannels = "channels"; // SG channel names; string[]
+    public static final String kC4ReplicatorOptionFilter = "filter";   // Filter name; string
+    public static final String kC4ReplicatorOptionFilterParams = "filterParams";  // Filter params; Dict[string]
+    public static final String kC4ReplicatorOptionSkipDeleted = "skipDeleted"; // Don't push/pull tombstones; bool
+
+    // Auth dictionary keys:
+    public static final String kC4ReplicatorAuthType = "type";// Auth property; string
+    public static final String kC4ReplicatorAuthUserName = "username";// Auth property; string
+    public static final String kC4ReplicatorAuthPassword = "password";// Auth property; string
 
     //-------------------------------------------------------------------------
     // Static Variables
@@ -75,6 +92,14 @@ public class C4Socket extends WebSocketListener {
     }
 
     //-------------------------------------------------------------------------
+    //
+    //-------------------------------------------------------------------------
+
+    public void gotHTTPResponse(int httpStatus, byte[] responseHeadersFleece) {
+        gotHTTPResponse(handle, httpStatus, responseHeadersFleece);
+    }
+
+    //-------------------------------------------------------------------------
     // WebSocketListener interface
     //-------------------------------------------------------------------------
 
@@ -82,6 +107,7 @@ public class C4Socket extends WebSocketListener {
     public void onOpen(WebSocket webSocket, Response response) {
         Log.e(TAG, "WebSocketListener.onOpen() response -> " + response);
         this.webSocket = webSocket;
+        receivedHTTPResponse(response);
         opened(handle);
     }
 
@@ -206,6 +232,8 @@ public class C4Socket extends WebSocketListener {
     //-------------------------------------------------------------------------
     public native static void registerFactory();
 
+    private native static void gotHTTPResponse(long socket, int httpStatus, byte[] responseHeadersFleece);
+
     private native static void opened(long socket);
 
     private native static void closed(long socket, int errorDomain, int errorCode);
@@ -240,11 +268,11 @@ public class C4Socket extends WebSocketListener {
     }
 
     private Authenticator setupAuthenticator() {
-        if (options != null && options.containsKey(kCBLReplicatorAuthOption)) {
-            Map<String, Object> auth = (Map<String, Object>) options.get(kCBLReplicatorAuthOption);
+        if (options != null && options.containsKey(kC4ReplicatorOptionAuthentication)) {
+            Map<String, Object> auth = (Map<String, Object>) options.get(kC4ReplicatorOptionAuthentication);
             if (auth != null) {
-                final String username = (String) auth.get(kCBLReplicatorAuthUserName);
-                final String password = (String) auth.get(kCBLReplicatorAuthPassword);
+                final String username = (String) auth.get(kC4ReplicatorAuthUserName);
+                final String password = (String) auth.get(kC4ReplicatorAuthPassword);
                 if (username != null && password != null) {
                     return new Authenticator() {
                         @Override
@@ -307,16 +335,34 @@ public class C4Socket extends WebSocketListener {
         String host = uri.getHost();
         if (uri.getPort() != -1)
             host = String.format(Locale.ENGLISH, "%s:%d", host, uri.getPort());
-        builder.addHeader("Host", host);
+        builder.header("Host", host);
 
-        // Add headers from requests
-        // Note: As the request is created from plain URI, so no headers.
+        // Configure the nonce/key for the request:
+        byte[] nonceBytes = new byte[16];
+        new Random().nextBytes(nonceBytes);
+        String nonceKey = encodeToString(nonceBytes, NO_WRAP);
 
-        // Add cookie headers from the cookie storage:
-        // TODO: Implement when Cookie store is supported!
+        // Construct the HTTP request:
+        if (options != null) {
+            FLValue value = (FLValue) options.get(kC4ReplicatorOptionExtraHeaders);
+            if (value != null && value.asDict() != null) {
+                for (Map.Entry<String, Object> entry : value.asDict().entrySet())
+                    builder.header(entry.getKey(), entry.getValue().toString());
+            }
+            // Cookies
+            value = (FLValue) options.get(kC4ReplicatorOptionCookies);
+            if (value != null && value.asString() != null)
+                builder.addHeader("Cookie", value.asString());
+        }
 
+        // other header values
+        builder.header("Connection", "Upgrade");
+        builder.header("Upgrade", "websocket");
+        builder.header("Sec-WebSocket-Version", "13");
+        builder.header("Sec-WebSocket-Key", nonceKey);
+        
         // Add User-Agent if necessary:
-        builder.addHeader("User-Agent", getUserAgent());
+        builder.header("User-Agent", getUserAgent());
 
         return builder.build();
     }
@@ -325,10 +371,10 @@ public class C4Socket extends WebSocketListener {
      * Return User-Agent value
      * Format: ex: CouchbaseLite/1.2 (Java Linux/MIPS Android/)
      */
-    public static String USER_AGENT = null;
+    private static String USER_AGENT = null;
 
     // TODO:
-    public static String getUserAgent() {
+    private static String getUserAgent() {
         if (USER_AGENT == null) {
             USER_AGENT = String.format(Locale.ENGLISH, "%s/%s (%s/%s)",
                     "CouchbaseLite",
@@ -337,5 +383,30 @@ public class C4Socket extends WebSocketListener {
                     Build.VERSION.RELEASE);
         }
         return USER_AGENT;
+    }
+
+    private void receivedHTTPResponse(Response response) {
+        int httpStatus = response.code();
+        Log.e(TAG, "receivedHTTPResponse() httpStatus -> " + httpStatus);
+
+        // Post the response headers to LiteCore:
+        Headers hs = response.headers();
+        if (hs != null && hs.size() > 0) {
+            byte[] headersFleece = null;
+            Map<String, Object> headers = new HashMap<>();
+            for (int i = 0; i < hs.size(); i++) {
+                headers.put(hs.name(i), hs.value(i));
+                //Log.e(TAG, hs.name(i) + " -> " + hs.value(i));
+            }
+            FLEncoder enc = new FLEncoder();
+            enc.write(headers);
+            try {
+                headersFleece = enc.finish();
+            } catch (LiteCoreException e) {
+                Log.e(TAG, "Failed to encode", e);
+            }
+            enc.free();
+            gotHTTPResponse(httpStatus, headersFleece);
+        }
     }
 }
