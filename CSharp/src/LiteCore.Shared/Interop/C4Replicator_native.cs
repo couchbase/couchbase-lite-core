@@ -49,7 +49,7 @@ namespace LiteCore.Interop
         }
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, C4Slice remoteDatabaseName, C4Database* otherLocalDB, C4ReplicatorMode push, C4ReplicatorMode pull, C4Slice optionsDictFleece, C4ReplicatorStatusChangedCallback onStatusChanged, void* callbackContext, C4Error* err);
+        public static extern C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, C4Slice remoteDatabaseName, C4Database* otherLocalDB, C4ReplicatorParameters @params, C4Error* err);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4repl_free(C4Replicator* repl);

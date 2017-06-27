@@ -38,40 +38,108 @@ namespace LiteCore.Interop
         unsafe delegate void C4ReplicatorStatusChangedCallback(C4Replicator* replicator,
             C4ReplicatorStatus replicatorState, void* context);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+        unsafe delegate void C4ReplicatorValidationFunction(C4Slice docID,
+            FLDict* body, void* context);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+        unsafe delegate void C4ReplicatorDocumentErrorCallback(C4Replicator* replicator,
+            [MarshalAs(UnmanagedType.U1)]bool pushing, C4Slice docID, C4Error error, 
+            [MarshalAs(UnmanagedType.U1)]bool transient, void* context);
+
 
 #if LITECORE_PACKAGED
     internal
 #else
-
     public
 #endif
-        unsafe sealed class ReplicatorStateChangedCallback : IDisposable
+        unsafe partial struct C4ReplicatorParameters
+    {
+        public C4ReplicatorParameters(C4ReplicatorMode push, C4ReplicatorMode pull, C4Slice optionsFleece, void* context)
+        {
+            this.push = push;
+            this.pull = pull;
+            optionsDictFleece = optionsFleece;
+            validationFunc = Marshal.GetFunctionPointerForDelegate(ReplicatorParameters.NativeValidateFunction);
+            onStatusChanged = Marshal.GetFunctionPointerForDelegate(ReplicatorParameters.NativeChangedCallback);
+            onDocumentError = Marshal.GetFunctionPointerForDelegate(ReplicatorParameters.NativeErrorCallback);
+            callbackContext = context;
+        }
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+        unsafe sealed class ReplicatorParameters : IDisposable
     {
         private readonly object _context;
-        private readonly Action<C4ReplicatorStatus, object> _callback;
+        private void* _nativeContext;
+        private readonly Action<C4ReplicatorStatus, object> _stateChangedCallback;
+        private readonly Action<bool, string, C4Error, bool, object> _errorCallback;
+        private readonly Action<string, IntPtr, object> _validateFunction;
         private readonly long _id;
         private static long _NextID;
 
-        private static readonly Dictionary<long, ReplicatorStateChangedCallback> _StaticMap =
-            new Dictionary<long, ReplicatorStateChangedCallback>();
+        private static readonly Dictionary<long, ReplicatorParameters> _StaticMap =
+            new Dictionary<long, ReplicatorParameters>();
 
-        internal static C4ReplicatorStatusChangedCallback NativeCallback { get; }
+        internal static C4ReplicatorDocumentErrorCallback NativeErrorCallback { get; }
 
-        internal void* NativeContext { get; }
+        internal static C4ReplicatorValidationFunction NativeValidateFunction { get; }
 
-		static ReplicatorStateChangedCallback()
-		{
-			NativeCallback = StateChanged;
-		}
+        internal static C4ReplicatorStatusChangedCallback NativeChangedCallback { get; }
 
-        public ReplicatorStateChangedCallback(Action<C4ReplicatorStatus, object> callback, object context)
+        internal C4ReplicatorParameters C4Params { get; }
+
+        static ReplicatorParameters()
+        {
+            NativeErrorCallback = OnError;
+            NativeValidateFunction = PerformValidate;
+            NativeChangedCallback = StateChanged;
+        }
+
+        public ReplicatorParameters(C4ReplicatorMode push, C4ReplicatorMode pull, IDictionary<string, object> options,
+            Action<string, IntPtr, object> validateFunction, Action<bool, string, C4Error, bool, object> errorCallback,
+            Action<C4ReplicatorStatus, object> stateChangedCallback, object context)
         {
             var nextId = Interlocked.Increment(ref _NextID);
             _id = nextId;
-            _callback = callback;
+            _validateFunction = validateFunction;
+            _errorCallback = errorCallback;
+            _stateChangedCallback = stateChangedCallback;
             _context = context;
+            _nativeContext = (void*)nextId;
+            C4Params = new C4ReplicatorParameters(push, pull, options.FLEncode(), _nativeContext);
             _StaticMap[_id] = this;
-            NativeContext = (void *)nextId;
+        }
+
+        [MonoPInvokeCallback(typeof(C4ReplicatorDocumentErrorCallback))]
+        private static void OnError(C4Replicator* replicator, bool pushing, C4Slice docID, C4Error error,
+            bool transient, void* context)
+        {
+            var id = (long)context;
+            var obj = _StaticMap[id];
+            obj._errorCallback?.Invoke(pushing, docID.CreateString(), error, transient, obj._context);
+        }
+
+        [MonoPInvokeCallback(typeof(C4ReplicatorValidationFunction))]
+        private static void PerformValidate(C4Slice docID, FLDict* body, void* context)
+        {
+            var id = (long)context;
+            var obj = _StaticMap[id];
+            obj._validateFunction?.Invoke(docID.CreateString(), (IntPtr)body, obj._context);
         }
 
         [MonoPInvokeCallback(typeof(C4ReplicatorStatusChangedCallback))]
@@ -79,15 +147,20 @@ namespace LiteCore.Interop
         {
             var id = (long)context;
             var obj = _StaticMap[id];
-            obj._callback?.Invoke(state, obj._context);
+            obj._stateChangedCallback?.Invoke(state, obj._context);
         }
 
         public void Dispose()
         {
             _StaticMap.Remove(_id);
+            var flSliceResult = new FLSliceResult
+            {
+                buf = C4Params.optionsDictFleece.buf,
+                size = C4Params.optionsDictFleece.size
+            };
+            flSliceResult.Dispose();
         }
     }
-
 
 #if LITECORE_PACKAGED
     internal
@@ -97,14 +170,11 @@ namespace LiteCore.Interop
         unsafe static partial class Native
     {
         public static C4Replicator* c4repl_new(C4Database* db, C4Address remoteAddress, string remoteDatabaseName,
-            C4Database *otherDb, C4ReplicatorMode push, C4ReplicatorMode pull, IDictionary<string, object> options,
-            ReplicatorStateChangedCallback onStateChanged, C4Error* err)
+            C4Database *otherDb, C4ReplicatorParameters @params, C4Error* err)
         {
-            using(var options_ = options.FLEncode())
             using (var remoteDatabaseName_ = new C4String(remoteDatabaseName)) {
-                return c4repl_new(db, remoteAddress, remoteDatabaseName_.AsC4Slice(), otherDb, push, pull,
-                    options == null ? C4Slice.Null : options_, ReplicatorStateChangedCallback.NativeCallback,
-                    onStateChanged.NativeContext, err);
+                
+                return c4repl_new(db, remoteAddress, remoteDatabaseName_.AsC4Slice(), otherDb, @params, err);
             }
         }
 

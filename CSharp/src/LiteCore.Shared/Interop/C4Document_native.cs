@@ -103,6 +103,14 @@ namespace LiteCore.Interop
             }
         }
 
+        public static bool c4doc_selectCommonAncestorRevision(C4Document* doc, string rev1ID, string rev2ID)
+        {
+            using(var rev1ID_ = new C4String(rev1ID))
+            using(var rev2ID_ = new C4String(rev2ID)) {
+                return NativeRaw.c4doc_selectCommonAncestorRevision(doc, rev1ID_.AsC4Slice(), rev2ID_.AsC4Slice());
+            }
+        }
+
         public static uint c4rev_getGeneration(string revID)
         {
             using(var revID_ = new C4String(revID)) {
@@ -118,6 +126,15 @@ namespace LiteCore.Interop
         {
             using(var revID_ = new C4String(revID)) {
                 return NativeRaw.c4doc_purgeRevision(doc, revID_.AsC4Slice(), outError);
+            }
+        }
+
+        public static bool c4doc_resolveConflict(C4Document* doc, string winningRevID, string losingRevID, byte[] mergedBody, C4Error* error)
+        {
+            using(var winningRevID_ = new C4String(winningRevID))
+            using(var losingRevID_ = new C4String(losingRevID))
+            fixed(byte *mergedBody_ = mergedBody) {
+                return NativeRaw.c4doc_resolveConflict(doc, winningRevID_.AsC4Slice(), losingRevID_.AsC4Slice(), new C4Slice(mergedBody_, (ulong)mergedBody.Length), error);
             }
         }
 
@@ -201,10 +218,18 @@ namespace LiteCore.Interop
         public static extern bool c4doc_selectNextPossibleAncestorOf(C4Document* doc, C4Slice revID);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4Slice rev1ID, C4Slice rev2ID);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint c4rev_getGeneration(C4Slice revID);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int c4doc_purgeRevision(C4Document* doc, C4Slice revID, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_resolveConflict(C4Document* doc, C4Slice winningRevID, C4Slice losingRevID, C4Slice mergedBody, C4Error* error);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
