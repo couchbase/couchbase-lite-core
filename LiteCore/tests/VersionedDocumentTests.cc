@@ -127,19 +127,73 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument AddRevision", "[VersionedDocument]") {
-    string revID = "1-fadebead", body = "{\"hello\":true}";
-    revidBuffer revIDBuf(revID);
+    string body = "{\"hello\":true}";
+    revidBuffer revID("1-fadebead"_sl);
     VersionedDocument v(*store, "foo"_sl);
     int httpStatus;
-    v.insert(revIDBuf, body, (Rev::Flags)0, nullptr, false, httpStatus);
+    v.insert(revID, body, (Rev::Flags)0, nullptr, false, httpStatus);
     REQUIRE(httpStatus == 201);
 
-    const Rev* node = v.get(stringToRev(revID));
+    const Rev* node = v.get(revID);
     REQUIRE(node);
     REQUIRE_FALSE(node->isDeleted());
     REQUIRE(node->isLeaf());
     REQUIRE(node->isActive());
     REQUIRE(v.size() == 1);
-    REQUIRE(v.currentRevisions().size() == 1);
-    REQUIRE(v.currentRevisions()[0] == v.currentRevision());
+    REQUIRE(!v.isConflicted());
+    REQUIRE(v.currentRevision() == node);
+}
+
+
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument Conflict", "[VersionedDocument]") {
+    string body = "{\"hello\":true}";
+    revidBuffer revID1("1-fadebead"_sl), revID2("2-2222"_sl), revID3("3-3333"_sl);
+    revidBuffer revID2B("2-2b2b"_sl), revID3B("3-3b3b"_sl);
+    revidBuffer revIDDel("4-deadbeef"_sl);
+    VersionedDocument v(*store, "foo"_sl);
+
+    int httpStatus;
+    auto rev1 = v.insert(revID1, body, (Rev::Flags)0, nullptr, false, httpStatus);
+    REQUIRE(httpStatus == 201);
+    auto rev2 = v.insert(revID2, body, (Rev::Flags)0, rev1, false, httpStatus);
+    REQUIRE(httpStatus == 201);
+    auto rev3 = v.insert(revID3, body, (Rev::Flags)0, rev2, false, httpStatus);
+    REQUIRE(httpStatus == 201);
+
+    REQUIRE(!v.isConflicted());
+    REQUIRE(v.currentRevision() == rev3);
+    REQUIRE(v.currentRevision()->flags == (Rev::kLeaf | Rev::kNew));
+
+    auto rev2b = v.insert(revID2B, body, (Rev::Flags)0, rev1, true, httpStatus);
+    REQUIRE(httpStatus == 201);
+    CHECK(rev2b->flags == (Rev::kLeaf | Rev::kIsConflict | Rev::kNew));
+    auto rev3b = v.insert(revID3B, body, (Rev::Flags)0, rev2b, false, httpStatus);
+    REQUIRE(httpStatus == 201);
+    CHECK(rev3b->flags == (Rev::kLeaf | Rev::kIsConflict | Rev::kNew));
+    CHECK(rev2b->flags == (Rev::kIsConflict | Rev::kNew));
+
+    // Check that rev3b is a leaf but is not the default current revision (even though its
+    // revID is larger than rev3!)
+    REQUIRE(v.hasConflict());
+    REQUIRE(v.currentRevision() == rev3);
+    REQUIRE(rev3->flags == (Rev::kLeaf | Rev::kNew));
+    REQUIRE(rev3->next() == rev3b);
+    REQUIRE(rev3b->flags == (Rev::kLeaf | Rev::kIsConflict | Rev::kNew));
+
+    v.updateMeta();
+    REQUIRE(v.isConflicted());
+
+    // Now delete rev3, and verify that rev3b is now the current revision and no longer a conflict:
+    auto revDel = v.insert(revIDDel, ""_sl, Rev::kDeleted, rev3, false, httpStatus);
+    REQUIRE(httpStatus == 200);
+
+    REQUIRE(!v.hasConflict());
+    REQUIRE(v.currentRevision() == rev3b);
+    REQUIRE(rev3b->flags == (Rev::kLeaf | Rev::kNew));
+    REQUIRE(rev2b->flags == (Rev::kNew));
+    REQUIRE(rev3b->next() == revDel);
+    REQUIRE(revDel->flags == (Rev::kLeaf | Rev::kDeleted | Rev::kNew));
+
+    v.updateMeta();
+    REQUIRE(!v.isConflicted());
 }

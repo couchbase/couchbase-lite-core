@@ -39,6 +39,7 @@ namespace litecore {
         bool isDeleted() const      {return (flags & kDeleted) != 0;}
         bool hasAttachments() const {return (flags & kHasAttachments) != 0;}
         bool isNew() const          {return (flags & kNew) != 0;}
+        bool isConflict() const     {return (flags & kIsConflict) != 0;}
         bool isActive() const       {return isLeaf() && !isDeleted();}
 
         unsigned index() const;
@@ -54,6 +55,8 @@ namespace litecore {
             kNew            = 0x04, /**< Has this rev been inserted since decoding? */
             kHasAttachments = 0x08, /**< Does this rev's body contain attachments? */
             kKeepBody       = 0x10, /**< Body will not be discarded after I'm a non-leaf */
+            kIsConflict     = 0x20, /**< Unresolved conflicting revision; should never be current */
+            // Keep these flags consistent with C4RevisionFlags, in c4Document.h!
         };
         Flags flags;
 
@@ -95,21 +98,26 @@ namespace litecore {
 
         const std::vector<Rev*>& allRevisions() const   {return _revs;}
         const Rev* currentRevision();
-        std::vector<const Rev*> currentRevisions() const;
         bool hasConflict() const;
 
+        // Adds a new leaf revision, given the parent's revID
         const Rev* insert(revid,
                           slice body,
                           Rev::Flags,
                           revid parentRevID,
                           bool allowConflict,
                           int &hshipttpStatus);
+
+        // Adds a new leaf revision, given a pointer to the parent Rev
         const Rev* insert(revid,
                           slice body,
                           Rev::Flags,
                           const Rev* parent,
                           bool allowConflict,
                           int &httpStatus);
+
+        // Adds a new leaf revision along with any new ancestor revs in its history.
+        // (history[0] is the new rev's ID, history[1] is its parent's, etc.)
         int insertHistory(const std::vector<revidBuffer> history,
                           slice body,
                           Rev::Flags);
@@ -145,6 +153,7 @@ namespace litecore {
         const Rev* _insert(revid, slice body, const Rev *parentRev, Rev::Flags);
         bool confirmLeaf(Rev* testRev);
         void compact();
+        void checkForResolvedConflict();
 
         bool                     _sorted {true};         // Are the revs currently sorted?
         std::vector<Rev*>        _revs;

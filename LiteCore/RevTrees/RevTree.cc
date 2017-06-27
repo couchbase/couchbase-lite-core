@@ -31,6 +31,8 @@
 namespace litecore {
     using namespace fleece;
 
+    static bool compareRevs(const Rev *rev1, const Rev *rev2);
+
     RevTree::RevTree(slice raw_tree, sequence_t seq) {
         decode(raw_tree, seq);
     }
@@ -136,16 +138,6 @@ namespace litecore {
         }
     }
 
-    std::vector<const Rev*> RevTree::currentRevisions() const {
-        Assert(!_unknown);
-        std::vector<const Rev*> cur;
-        for (Rev *rev : _revs) {
-            if (rev->isLeaf())
-                cur.push_back(rev);
-        }
-        return cur;
-    }
-
     unsigned Rev::index() const {
         auto &revs = owner->_revs;
         auto i = find(revs.begin(), revs.end(), this);
@@ -219,30 +211,24 @@ namespace litecore {
         if (parentRev) {
             ptrdiff_t parentIndex = parentRev->index();
             newRev->_parentIndex = (uint16_t)parentIndex;
+            if (!parentRev->isLeaf() || parentRev->isConflict())
+                newRev->addFlag(Rev::kIsConflict);      // newRev creates or extends a branch
             ((Rev*)parentRev)->clearFlag(Rev::kLeaf);
+        } else {
+            if (!_revs.empty())
+                newRev->addFlag(Rev::kIsConflict);      // newRev creates a 2nd root
         }
 
         _changed = true;
-        bool firstRev = _revs.empty();
-        if (!firstRev && newRev->revID > _revs[0]->revID) {
-            // If new rev is biggest, insert at start, so revs stay sorted
-            _revs.insert(_revs.begin(), newRev);
-            for (Rev *rev : _revs)
-                if (rev->_parentIndex != Rev::kNoParent)
-                    ++(rev->_parentIndex);
-            return _revs[0];
-        } else {
-            // Else insert at end, which is locally cheapest:
-            if (!firstRev)
-                _sorted = false;
-            _revs.push_back(newRev);
-            return newRev;
-        }
+        if (!_revs.empty())
+            _sorted = false;
+        _revs.push_back(newRev);
+        return newRev;
     }
 
     const Rev* RevTree::insert(revid revID, slice data, Rev::Flags revFlags,
-                                   const Rev* parent, bool allowConflict,
-                                   int &httpStatus)
+                               const Rev* parent, bool allowConflict,
+                               int &httpStatus)
     {
         // Make sure the given revID is valid:
         uint32_t newGen = revID.generation();
@@ -327,6 +313,8 @@ namespace litecore {
         return commonAncestorIndex;
     }
 
+#pragma mark - REMOVAL (prune / purge / compact):
+
     void RevTree::removeBody(const Rev* rev) {
         if (rev->flags & Rev::kKeepBody) {
             const_cast<Rev*>(rev)->removeBody();
@@ -383,6 +371,7 @@ namespace litecore {
             rev = (Rev*)parent;
         } while (rev && confirmLeaf(rev));
         compact();
+        checkForResolvedConflict();
         return nPurged;
     }
 
@@ -390,6 +379,7 @@ namespace litecore {
         int result = (int)_revs.size();
         _revs.resize(0);
         _changed = true;
+        _sorted = true;
         return result;
     }
 
@@ -420,14 +410,22 @@ namespace litecore {
         _changed = true;
     }
 
-    // Sort comparison function for an array of Revisions. Higher priority comes _first_.
+
+#pragma mark - SORT / SAVE:
+
+    // Sort comparison function for an array of Revisions. Higher priority comes _first_, so this
+    // is a descending sort. The function returns true if rev1 is higher priority than rev2.
     static bool compareRevs(const Rev *rev1, const Rev *rev2) {
-        // Leaf revs go first.
+        // Leaf revs go before non-leaves.
         int delta = rev2->isLeaf() - rev1->isLeaf();
         if (delta)
             return delta < 0;
-        // Else non-deleted revs go first.
+        // Live revs go before deletions.
         delta = rev1->isDeleted() - rev2->isDeleted();
+        if (delta)
+            return delta < 0;
+        // Conflicting revs never go first.
+        delta = rev1->isConflict() - rev2->isConflict();
         if (delta)
             return delta < 0;
         // Otherwise compare rev IDs, with higher rev ID going first:
@@ -465,6 +463,15 @@ namespace litecore {
                 _revs[i]->_parentIndex = parent;
                 }
         _sorted = true;
+        checkForResolvedConflict();
+    }
+
+    // If there are no non-conflict leaves, remove the conflict marker from the 1st:
+    void RevTree::checkForResolvedConflict() {
+        if (_sorted && !_revs.empty() && _revs[0]->isConflict()) {
+            for (auto rev = _revs[0]; rev; rev = (Rev*)rev->parent())
+                rev->clearFlag(Rev::kIsConflict);
+        }
     }
 
     void RevTree::saved(sequence_t newSequence) {
