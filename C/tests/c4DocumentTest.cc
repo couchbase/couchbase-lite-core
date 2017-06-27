@@ -371,11 +371,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     REQUIRE((unsigned long)commonAncestorIndex == 1ul);
     REQUIRE(doc->selectedRev.revID == kConflictRevID);
     REQUIRE(doc->flags == (kExists | kConflicted));
-    if (isRevTrees()) {
-        REQUIRE(doc->revID == kConflictRevID);
-    } else {
-        REQUIRE(doc->revID == kExpectedRev2ID);
-    }
+    // The conflicting rev will now never be the default, even with rev-trees.
+    REQUIRE(doc->revID == kExpectedRev2ID);
 
     c4doc_free(doc);
 }
