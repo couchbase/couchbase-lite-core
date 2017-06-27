@@ -236,7 +236,18 @@ Java_com_couchbase_litecore_C4Socket_registerFactory(JNIEnv *env, jclass clazz) 
     };
     c4socket_registerFactory(factory);
 }
-
+/*
+ * Class:     com_couchbase_litecore_C4Socket
+ * Method:    gotHTTPResponse
+ * Signature: (JI[B)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_C4Socket_gotHTTPResponse(JNIEnv *env, jclass clazz, jlong socket,
+                                                     jint httpStatus,
+                                                     jbyteArray jresponseHeadersFleece) {
+    jbyteArraySlice responseHeadersFleece(env, jresponseHeadersFleece, false);
+    c4socket_gotHTTPResponse((C4Socket *) socket, httpStatus, responseHeadersFleece);
+}
 /*
  * Class:     com_couchbase_litecore_C4Socket
  * Method:    opened

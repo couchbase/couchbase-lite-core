@@ -63,11 +63,11 @@ public class C4ReplicatorTest extends BaseTest {
         repl = new C4Replicator(db, schema, host, port, path, remoteDB, db2, push, pull, options,
                 new C4ReplicatorListener() {
                     @Override
-                    public void callback(C4Replicator replicator, C4ReplicatorStatus status, Object context) {
+                    public void statusChanged(C4Replicator replicator, C4ReplicatorStatus status, Object context) {
                         C4ReplicatorTest.this.callbackStatus = status;
                         C4ReplicatorTest.this.numCallbacks++;
                         numCallbacksWithLevel[status.getActivityLevel()] += 1;
-                        Log.e(TAG, "C4ReplicatorListener.callback() repl -> " + repl + ", status -> " + status + ", context -> " + context);
+                        Log.e(TAG, "C4ReplicatorListener.statusChanged() repl -> " + repl + ", status -> " + status + ", context -> " + context);
 
                         if (headers == null) {
                             byte[] h = replicator.getResponseHeaders();
@@ -78,6 +78,11 @@ public class C4ReplicatorTest extends BaseTest {
                                 }
                             }
                         }
+                    }
+
+                    @Override
+                    public void documentError(C4Replicator replicator, boolean pushing, String docID, C4Error error, boolean tran, Object context) {
+                        // TODO:
                     }
                 }, this);
 
