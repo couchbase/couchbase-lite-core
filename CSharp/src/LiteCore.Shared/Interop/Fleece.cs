@@ -299,11 +299,11 @@ namespace LiteCore.Interop
                 case IDictionary<string, object> dict:
                     dict.FLEncode(enc);
                     break;
-                case IList list:
-                    list.FLEncode(enc);
-                    break;
                 case IEnumerable<byte> data:
                     data.FLEncode(enc);
+                    break;
+                case IList list:
+                    list.FLEncode(enc);
                     break;
                 case string s:
                     s.FLEncode(enc);
