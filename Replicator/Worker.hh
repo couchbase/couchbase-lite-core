@@ -32,10 +32,13 @@ namespace litecore { namespace repl {
         /** Replication configuration options */
         struct Options {
             using Mode = C4ReplicatorMode;
+            using Validator = bool(*)(C4String docID, FLDict body, void *context);
 
-            Mode                    push        {kC4Disabled};
-            Mode                    pull        {kC4Disabled};
+            Mode                    push                    {kC4Disabled};
+            Mode                    pull                    {kC4Disabled};
             fleeceapi::AllocedDict  properties;
+            Validator               pullValidator           {nullptr};
+            void*                   pullValidatorContext    {nullptr};
 
             Options()
             { }
@@ -136,6 +139,9 @@ namespace litecore { namespace repl {
         void gotError(const blip::MessageIn*);
         void gotError(C4Error) ;
         virtual void onError(C4Error);         // don't call this, but you can override
+
+        /** Report less-serious errors that affect a document but don't stop replication. */
+        virtual void gotDocumentError(slice docID, C4Error, bool pushing, bool transient);
 
         static blip::ErrorBuf c4ToBLIPError(C4Error);
         static C4Error blipToC4Error(const blip::Error&);

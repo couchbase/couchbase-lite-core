@@ -9,6 +9,7 @@
 #pragma once
 #include "c4Socket.h"
 #include "c4Database.h"
+#include "Fleece.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,6 +62,19 @@ extern "C" {
                                                       C4ReplicatorStatus,
                                                       void *context);
 
+    /** Callback a client can register, to hear about errors replicating individual documents. */
+    typedef void (*C4ReplicatorDocumentErrorCallback)(C4Replicator*,
+                                                      bool pushing,
+                                                      C4String docID,
+                                                      C4Error error,
+                                                      bool transient,
+                                                      void *context);
+
+    /** Callback that can choose to reject an incoming pulled revision by returning false. */
+    typedef bool (*C4ReplicatorValidationFunction)(C4String docID,
+                                                   FLDict body,
+                                                   void* context);
+
     /** Checks whether a database name is valid, for purposes of appearing in a replication URL */
     bool c4repl_isValidDatabaseName(C4String dbName);
 
@@ -68,26 +82,30 @@ extern "C" {
         The fields of the address will point inside the url string. */
     bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName);
 
+
+    typedef struct {
+        C4ReplicatorMode                  push;              ///< Push mode (from db to remote/other db)
+        C4ReplicatorMode                  pull;              ///< Pull mode (from db to remote/other db).
+        C4Slice                           optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
+        C4ReplicatorValidationFunction    validationFunc;    ///< Callback that can reject incoming revisions
+        C4ReplicatorStatusChangedCallback onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
+        C4ReplicatorDocumentErrorCallback onDocumentError;   ///< Callback notifying of errors with individual documents
+        void*                             callbackContext;   ///< Value to be passed to the callbacks.
+    } C4ReplicatorParameters;
+
+
     /** Creates a new replicator.
         @param db  The local database.
         @param remoteAddress  The address of the remote database (null if other db is local.)
         @param otherLocalDB  The other local database (null if other db is remote.)
-        @param push  Push mode (from db to remote/other db).
-        @param pull  Pull mode (from db to remote/other db).
-        @param optionsDictFleece  Optional Fleece-encoded dictionary of optional parameters.
-        @param onStatusChanged  Callback to be invoked when replicator's status changes.
-        @param callbackContext  Value to be passed to the onStatusChanged callback.
+        @param params Replication parameters (see above.)
         @param err  Error, if replication can't be created.
         @return  The newly created replication, or NULL on error. */
     C4Replicator* c4repl_new(C4Database* db,
                              C4Address remoteAddress,
                              C4String remoteDatabaseName,
                              C4Database* otherLocalDB,
-                             C4ReplicatorMode push,
-                             C4ReplicatorMode pull,
-                             C4Slice optionsDictFleece,
-                             C4ReplicatorStatusChangedCallback onStatusChanged,
-                             void *callbackContext,
+                             C4ReplicatorParameters params,
                              C4Error *err) C4API;
 
     /** Frees a replicator reference. If the replicator is running it will stop. */

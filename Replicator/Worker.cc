@@ -147,6 +147,11 @@ namespace litecore { namespace repl {
     }
 
 
+    void Worker::gotDocumentError(slice docID, C4Error error, bool pushing, bool transient) {
+        _parent->gotDocumentError(docID, error, pushing, transient);
+    }
+
+
 #pragma mark - ACTIVITY / PROGRESS:
 
 

@@ -56,6 +56,11 @@ namespace litecore { namespace repl {
                                                  const Status&) =0;
             virtual void replicatorConnectionClosed(Replicator*,
                                                     const CloseStatus&)  { }
+            virtual void replicatorDocumentError(Replicator*,
+                                                 bool pushing,
+                                                 slice docID,
+                                                 C4Error error,
+                                                 bool transient) =0;
         };
 
         Status status() const                   {return Worker::status();}   //FIX: Needs to be thread-safe
@@ -83,6 +88,8 @@ namespace litecore { namespace repl {
         virtual void onRequestReceived(blip::MessageIn *msg) override
                                         {enqueue(&Replicator::_onRequestReceived, retained(msg));}
         virtual void changedStatus() override;
+
+        void gotDocumentError(slice docID, C4Error, bool pushing, bool transient) override;
 
     private:
         // How long to wait between delegate calls when only the progress % has changed

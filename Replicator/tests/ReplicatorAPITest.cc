@@ -54,6 +54,15 @@ public:
         c4db_free(db2);
     }
 
+    bool validate(slice docID, Dict body) {
+        //TODO: Do something here
+        return true;
+    }
+
+    static bool onValidate(FLString docID, FLDict body, void *context) {
+        return ((ReplicatorAPITest*)context)->validate(docID, body);
+    }
+
     void logState(C4ReplicatorStatus status) {
         char message[200];
         c4error_getMessageC(status.error, message, sizeof(message));
@@ -91,13 +100,36 @@ public:
     {
         ((ReplicatorAPITest*)context)->stateChanged(replicator, status);
     }
-    
+
+    static void onDocError(C4Replicator *repl,
+                           bool pushing,
+                           C4String docID,
+                           C4Error error,
+                           bool transient,
+                           void *context)
+    {
+        char message[256];
+        c4error_getMessageC(error, message, sizeof(message));
+        C4Log(">> Replicator %serror %s '%.*s': %s",
+              (transient ? "transient " : ""),
+              (pushing ? "pushing" : "pulling"),
+              SPLAT(docID), message);
+        // TODO: Record errors
+    }
+
     
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
+        C4ReplicatorParameters params = {};
+        params.push = push;
+        params.pull = pull;
+        params.optionsDictFleece = options.data();
+        params.validationFunc = onValidate;
+        params.onStatusChanged = onStateChanged;
+        params.onDocumentError = onDocError;
+        params.callbackContext = this;
+
         C4Error err;
-        repl = c4repl_new(db, address, remoteDBName, db2,
-                          push, pull, options.data(),
-                          onStateChanged, this, &err);
+        repl = c4repl_new(db, address, remoteDBName, db2, params, &err);
         REQUIRE(repl);
         C4ReplicatorStatus status = c4repl_getStatus(repl);
         logState(status);

@@ -49,6 +49,7 @@ namespace litecore { namespace repl {
         _revMessage = msg;
         _rev.docID = _revMessage->property("id"_sl);
         _rev.revID = _revMessage->property("rev"_sl);
+        _parent = _puller;  // Necessary because Worker clears _parent when first completed
 
         _peerError = (int)_revMessage->intProperty("error"_sl);
         if (_peerError) {
@@ -65,7 +66,8 @@ namespace litecore { namespace repl {
         FLError err;
         alloc_slice fleeceBody = Encoder::convertJSON(_revMessage->body(), &err);
         if (!fleeceBody) {
-            gotError(C4Error{FleeceDomain, err});
+            _error = {FleeceDomain, err};
+            finish();
             return;
         }
         Dict root = Value::fromTrustedData(fleeceBody).asDict();
@@ -87,17 +89,20 @@ namespace litecore { namespace repl {
         _rev.historyBuf = _revMessage->property("history"_sl);
         slice sequence(_revMessage->property("sequence"_sl));
 
-        // Validate:
+        // Validate the revID and sequence:
         logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')",
                    SPLAT(_rev.docID), SPLAT(_rev.revID), SPLAT(sequence));
         if (_rev.docID.size == 0 || _rev.revID.size == 0) {
             warn("Got invalid revision");
-            _revMessage->respondWithError({"BLIP"_sl, 400, "invalid revision"_sl});
+            _error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
+            finish();
             return;
         }
         if (nonPassive() && !sequence) {
             warn("Missing sequence in 'rev' message for active puller");
-            _revMessage->respondWithError({"BLIP"_sl, 400, "missing sequence"_sl});
+            _error = c4error_make(WebSocketDomain, 400,
+                                  "received revision with missing 'sequence'"_sl);
+            finish();
             return;
         }
 
@@ -107,6 +112,16 @@ namespace litecore { namespace repl {
             root = Value::fromTrustedData(fleeceBody).asDict();
         }
         _rev.body = fleeceBody;
+
+        // Call the custom validation function if any:
+        if (_options.pullValidator) {
+            if (!_options.pullValidator(_rev.docID, root, _options.pullValidatorContext)) {
+                log("Rejected by pull validator function");
+                _error = c4error_make(WebSocketDomain, 403, "rejected by validation function"_sl);
+                finish();
+                return;
+            }
+        }
 
         // Check for blobs:
         auto blobStore = _dbWorker->blobStore();
@@ -149,6 +164,7 @@ namespace litecore { namespace repl {
         _rev.onInserted = asynchronize([this](C4Error err) {
             // Callback that will run _after_ insertRevision() completes:
             --_pendingCallbacks;
+            _error = err;
             finish();
         });
 
@@ -163,7 +179,11 @@ namespace litecore { namespace repl {
                 response.makeError(c4ToBLIPError(_error));
             _revMessage->respond(response);
         }
-        _puller->revWasHandled(this, remoteSequence(), (_error.code == 0 && _peerError == 0));
+        if (_error.code == 0 && _peerError)
+            _error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
+        if (_error.code)
+            gotDocumentError(_rev.docID, _error, false, false);
+        _puller->revWasHandled(this, remoteSequence(), (_error.code == 0));
         clear();
     }
 

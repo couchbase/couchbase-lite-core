@@ -131,6 +131,24 @@ public:
         }
     }
 
+    virtual void replicatorDocumentError(Replicator *repl,
+                                         bool pushing,
+                                         slice docID,
+                                         C4Error error,
+                                         bool transient) override
+    {
+        char message[256];
+        c4error_getMessageC(error, message, sizeof(message));
+        Log(">> Replicator %serror %s '%.*s': %s",
+            (transient ? "transient " : ""),
+            (pushing ? "pushing" : "pulling"),
+            SPLAT(docID), message);
+        if (pushing)
+            _docPushErrors.emplace(docID);
+        else
+            _docPullErrors.emplace(docID);
+    }
+
     virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {
         if (repl == replClient) {
             Log(">> Replicator closed with code=%d/%d, message=%.*s",
@@ -236,6 +254,7 @@ public:
     Replicator::Status statusReceived { };
     unsigned statusChangedCalls {0};
     C4Error expectedError {};
+    set<string> _docPushErrors, _docPullErrors;
 };
 
 
@@ -473,5 +492,37 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     Value gender = root.get("gender"_sl, c4db_getFLSharedKeys(db2));
     REQUIRE(gender != nullptr);
     REQUIRE(gender.asstring() == "female");
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    auto pullOptions = Replicator::Options::passive();
+    atomic<int> validationCount {0};
+    pullOptions.pullValidatorContext = &validationCount;
+    pullOptions.pullValidator = [](FLString docID, FLDict body, void *context)->bool {
+        ++(*(atomic<int>*)context);
+        return (Dict(body)["birthday"].asstring() < "1993");
+    };
+    runReplicators(Replicator::Options::pushing(),
+                   pullOptions);
+    validateCheckpoints(db, db2, "{\"local\":100}");
+    CHECK(validationCount == 100);
+    CHECK(c4db_getDocumentCount(db2) == 96);
+    CHECK(_docPushErrors == (set<string>{"0000052", "0000065", "0000071", "0000072"}));
+    CHECK(_docPullErrors == (set<string>{"0000052", "0000065", "0000071", "0000072"}));
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+
+    createRev(db2, C4STR("0000023"), C4STR("1-cafebabe"), C4STR("{}"));
+
+    runReplicators(Replicator::Options::passive(),
+                   Replicator::Options::pulling());
+
+    CHECK(_docPullErrors == (set<string>{"0000023"}));
+    validateCheckpoints(db2, db, "{\"remote\":100}");
 }
 

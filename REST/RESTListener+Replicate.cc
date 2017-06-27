@@ -62,14 +62,14 @@ namespace litecore { namespace REST {
                   SPLAT(remoteDbName),
                   _bidi, _continuous);
             
-            auto callback = [](C4Replicator*, C4ReplicatorStatus status, void *context) {
+            C4ReplicatorParameters params = {};
+            params.push = pushMode;
+            params.pull = pullMode;
+            params.onStatusChanged = [](C4Replicator*, C4ReplicatorStatus status, void *context) {
                 ((ReplicationTask*)context)->onReplStateChanged(status);
             };
-            _repl = c4repl_new(localDB, remoteAddress, remoteDbName, nullptr,
-                               pushMode, pullMode,
-                               nullslice,
-                               callback, this,
-                               outError);
+            params.callbackContext = this;
+            _repl = c4repl_new(localDB, remoteAddress, remoteDbName, nullptr, params, outError);
             if (!_repl) {
                 c4log(RESTLog, kC4LogInfo,
                       "Replicator task #%d failed to start!", taskID());

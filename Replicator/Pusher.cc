@@ -141,7 +141,7 @@ namespace litecore { namespace repl {
                         logVerbose("Queueing rev %.*s #%.*s (seq %llu)",
                                    SPLAT(request->docID), SPLAT(request->revID), request->sequence);
                     } else {
-                        markComplete(change);  // unwanted, so we're done with it
+                        markComplete(change, true);  // unwanted, so we're done with it
                     }
                     ++index;
                 }
@@ -219,7 +219,7 @@ namespace litecore { namespace repl {
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
                     --_revisionsInFlight;
-                    markComplete(rev);
+                    markComplete(rev, false);
                     maybeSendMoreRevs();
                     return;
                 }
@@ -232,13 +232,17 @@ namespace litecore { namespace repl {
                 }
                 if (progress.reply) {
                     _revisionBytesAwaitingReply -= progress.bytesSent;
-                    if (progress.reply->isError())
-                        gotError(progress.reply);
-                    else {
+                    bool successful = !progress.reply->isError();
+                    if (successful) {
                         logVerbose("Completed rev %.*s #%.*s (seq %llu)",
                                    SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
-                        markComplete(rev);
+                    } else {
+                        auto err = progress.reply->getError();
+                        logError("Got error response to rev: %.*s %d '%.*s'",
+                                 SPLAT(err.domain), err.code, SPLAT(err.message));
+                        gotDocumentError(rev.docID, blipToC4Error(err), true, true);
                     }
+                    markComplete(rev, successful);
                     maybeSendMoreRevs();
                 }
             });
@@ -290,20 +294,23 @@ namespace litecore { namespace repl {
 
 
     // Records that a sequence has been successfully pushed.
-    void Pusher::markComplete(const Rev &rev) {
+    void Pusher::markComplete(const Rev &rev, bool successful) {
         if (nonPassive()) {
             _pendingSequences.remove(rev.sequence);
             addProgress({rev.bodySize, 0});
-            auto firstPending = _pendingSequences.first();
-            auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
-            if (lastSeq > _lastSequence) {
-                if (lastSeq / 100 > _lastSequence / 100)
-                    log("Checkpoint now at %llu", lastSeq);
-                else
-                    logVerbose("Checkpoint now at %llu", lastSeq);
-                _lastSequence = lastSeq;
-                if (replicator())
-                    replicator()->updatePushCheckpoint(_lastSequence);
+
+            if (successful) {
+                auto firstPending = _pendingSequences.first();
+                auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
+                if (lastSeq > _lastSequence) {
+                    if (lastSeq / 100 > _lastSequence / 100)
+                        log("Checkpoint now at %llu", lastSeq);
+                    else
+                        logVerbose("Checkpoint now at %llu", lastSeq);
+                    _lastSequence = lastSeq;
+                    if (replicator())
+                        replicator()->updatePushCheckpoint(_lastSequence);
+                }
             }
         }
     }

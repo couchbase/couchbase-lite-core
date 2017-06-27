@@ -91,15 +91,11 @@ C4Replicator* c4repl_new(C4Database* db,
                          C4Address serverAddress,
                          C4String remoteDatabaseName,
                          C4Database* otherLocalDB,
-                         C4ReplicatorMode push,
-                         C4ReplicatorMode pull,
-                         C4Slice optionsDictFleece,
-                         C4ReplicatorStatusChangedCallback onStatusChanged,
-                         void *callbackContext,
+                         C4ReplicatorParameters params,
                          C4Error *outError) C4API
 {
     try {
-        if (!checkParam(push != kC4Disabled || pull != kC4Disabled,
+        if (!checkParam(params.push != kC4Disabled || params.pull != kC4Disabled,
                         "Either push or pull must be enabled", outError))
             return nullptr;
 
@@ -115,17 +111,13 @@ C4Replicator* c4repl_new(C4Database* db,
             c4::ref<C4Database> otherDBCopy(c4db_openAgain(otherLocalDB, outError));
             if (!otherDBCopy)
                 return nullptr;
-            replicator = new C4Replicator(dbCopy, otherDBCopy,
-                                          push, pull, optionsDictFleece,
-                                          onStatusChanged, callbackContext);
+            replicator = new C4Replicator(dbCopy, otherDBCopy, params);
         } else {
             // Remote:
             if (!checkParam(isValidScheme(serverAddress.scheme),
                             "Unsupported replication URL scheme", outError))
                 return nullptr;
-            replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName,
-                                          push, pull, optionsDictFleece,
-                                          onStatusChanged, callbackContext);
+            replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
         }
         return retain(replicator);
     } catchError(outError);
@@ -135,21 +127,14 @@ C4Replicator* c4repl_new(C4Database* db,
 
 C4Replicator* c4repl_newWithSocket(C4Database* db,
                                    C4Socket *openSocket,
-                                   C4ReplicatorMode push,
-                                   C4ReplicatorMode pull,
-                                   C4Slice optionsDictFleece,
-                                   C4ReplicatorStatusChangedCallback onStatusChanged,
-                                   void *callbackContext,
+                                   C4ReplicatorParameters params,
                                    C4Error *outError) C4API
 {
     try {
         c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
         if (!dbCopy)
             return nullptr;
-        C4Replicator *replicator = new C4Replicator(dbCopy, openSocket,
-                                                    push, pull,
-                                                    optionsDictFleece,
-                                                    onStatusChanged, callbackContext);
+        C4Replicator *replicator = new C4Replicator(dbCopy, openSocket, params);
         return retain(replicator);
     } catchError(outError);
     return nullptr;

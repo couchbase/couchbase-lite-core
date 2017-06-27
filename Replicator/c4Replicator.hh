@@ -27,20 +27,23 @@ using namespace litecore::websocket;
 
 struct C4Replicator : public RefCounted, Replicator::Delegate {
 
+    static Replicator::Options mkopts(const C4ReplicatorParameters &params) {
+        Replicator::Options opts(params.push, params.pull, params.optionsDictFleece);
+        opts.pullValidator = params.validationFunc;
+        opts.pullValidatorContext = params.callbackContext;
+        return opts;
+    }
+
     // Constructor for replication with remote database
     C4Replicator(C4Database* db,
                  const C4Address &remoteAddress,
                  C4String remoteDatabaseName,
-                 C4ReplicatorMode push,
-                 C4ReplicatorMode pull,
-                 C4Slice properties,
-                 C4ReplicatorStatusChangedCallback onStateChanged,
-                 void *callbackContext)
+                 const C4ReplicatorParameters &params)
     :C4Replicator(new Replicator(db, C4Provider::instance(),
-                                 addressFrom(remoteAddress, remoteDatabaseName),
-                                 *this, { push, pull, properties }),
+                                 addressFrom(remoteAddress, remoteDatabaseName), *this,
+                                 mkopts(params)),
                   nullptr,
-                  onStateChanged, callbackContext)
+                  params)
     {
         _replicator->start();
     }
@@ -48,18 +51,13 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     // Constructor for replication with local database
     C4Replicator(C4Database* db,
                  C4Database* otherDB,
-                 C4ReplicatorMode push,
-                 C4ReplicatorMode pull,
-                 C4Slice properties,
-                 C4ReplicatorStatusChangedCallback onStateChanged,
-                 void *callbackContext)
+                 const C4ReplicatorParameters &params)
     :C4Replicator(new Replicator(db, loopbackProvider(),
-                                 addressFrom(otherDB),
-                                 *this, { push, pull, properties }),
+                                 addressFrom(otherDB), *this, mkopts(params)),
                   new Replicator(otherDB,
                                  loopbackProvider().createWebSocket(addressFrom(db)),
                                  *this, { kC4Passive, kC4Passive }),
-                  onStateChanged, callbackContext)
+                  params)
     {
         loopbackProvider().bind(_replicator->webSocket(), _otherReplicator->webSocket());
         _otherLevel = _otherReplicator->status().level;
@@ -70,14 +68,10 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     // Constructor for already-open socket
     C4Replicator(C4Database* db,
                  C4Socket *openSocket,
-                 C4ReplicatorMode push,
-                 C4ReplicatorMode pull,
-                 C4Slice properties,
-                 C4ReplicatorStatusChangedCallback onStateChanged,
-                 void *callbackContext)
-    :C4Replicator(new Replicator(db, WebSocketFrom(openSocket), *this, {push, pull, properties}),
+                 const C4ReplicatorParameters &params)
+    :C4Replicator(new Replicator(db, WebSocketFrom(openSocket), *this, mkopts(params)),
                   nullptr,
-                  onStateChanged, callbackContext)
+                  params)
     {
         _replicator->start();
     }
@@ -98,19 +92,18 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
 
     void detach() {
         lock_guard<mutex> lock(_mutex);
-        _onStateChanged = nullptr;
+        _params.onStatusChanged = nullptr;
+        _params.onDocumentError = nullptr;
     }
 
 private:
     // base constructor
     C4Replicator(Replicator *replicator,
                  Replicator *otherReplicator,
-                 C4ReplicatorStatusChangedCallback onStateChanged,
-                 void *callbackContext)
+                 const C4ReplicatorParameters &params)
     :_replicator(replicator)
     ,_otherReplicator(otherReplicator)
-    ,_onStateChanged(onStateChanged)
-    ,_callbackContext(callbackContext)
+    ,_params(params)
     ,_status(_replicator->status())
     ,_selfRetain(this) // keep myself alive till replicator closes
     { }
@@ -146,26 +139,43 @@ private:
         }
 
         if (repl == _replicator)
-            notify();
+            notifyStateChanged();
         if (done)
             _selfRetain = nullptr; // balances retain in constructor
     }
 
-    void notify() {
-        C4ReplicatorStatusChangedCallback onStateChanged;
+    virtual void replicatorDocumentError(Replicator *repl,
+                                         bool pushing,
+                                         slice docID,
+                                         C4Error error,
+                                         bool transient) override
+    {
+        if (repl != _replicator)
+            return;
+        C4ReplicatorDocumentErrorCallback onDocError;
         {
             lock_guard<mutex> lock(_mutex);
-            onStateChanged = _onStateChanged;
+            onDocError = _params.onDocumentError;
         }
-        if (onStateChanged)
-            onStateChanged(this, _status, _callbackContext);
+        if (onDocError)
+            onDocError(this, pushing, {docID.buf, docID.size}, error, transient,
+                       _params.callbackContext);
+    }
+
+    void notifyStateChanged() {
+        C4ReplicatorStatusChangedCallback onStatusChanged;
+        {
+            lock_guard<mutex> lock(_mutex);
+            onStatusChanged = _params.onStatusChanged;
+        }
+        if (onStatusChanged)
+            onStatusChanged(this, _status, _params.callbackContext);
     }
 
     mutex _mutex;
     Retained<Replicator> const _replicator;
     Retained<Replicator> const _otherReplicator;
-    C4ReplicatorStatusChangedCallback _onStateChanged;
-    void* const _callbackContext;
+    C4ReplicatorParameters _params;
     AllocedDict _responseHeaders;
     C4ReplicatorStatus _status;
     C4ReplicatorActivityLevel _otherLevel {kC4Stopped};

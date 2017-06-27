@@ -118,6 +118,9 @@ namespace litecore { namespace repl {
     }
 
 
+#pragma mark - STATUS:
+
+
     // The status of one of the actors has changed; update mine
     void Replicator::_childChangedStatus(Worker *task, Status taskStatus)
     {
@@ -211,6 +214,11 @@ namespace litecore { namespace repl {
             _delegate->replicatorStatusChanged(this, status());
         if (status().level == kC4Stopped)
             _delegate = nullptr;        // Never call delegate after telling it I've stopped
+    }
+
+
+    void Replicator::gotDocumentError(slice docID, C4Error error, bool pushing, bool transient) {
+        _delegate->replicatorDocumentError(this, pushing, docID, error, transient);
     }
 
 
