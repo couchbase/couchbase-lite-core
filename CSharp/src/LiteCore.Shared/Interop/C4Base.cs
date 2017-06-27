@@ -20,9 +20,7 @@
 //  
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -41,7 +39,7 @@ namespace LiteCore.Interop
         {
             this.code = code;
             this.domain = domain;
-            this.internal_info = 0;
+            internal_info = 0;
         }
 
         public C4Error(SQLiteStatus code) : this(C4ErrorDomain.SQLiteDomain, (int)code)
@@ -66,8 +64,9 @@ namespace LiteCore.Interop
         public override int GetHashCode()
         {
             return Hasher.Start
-                .Hash(code)
-                .Hash(domain);
+                .Add(code)
+                .Add(domain)
+                .GetHashCode();
         }
 
         public override bool Equals(object obj)
@@ -212,12 +211,8 @@ namespace LiteCore.Interop
 
         public ulong size
         {
-            get {
-                return _size.ToUInt64();
-            }
-            set {
-                _size = (UIntPtr)value;
-            }
+            get => _size.ToUInt64();
+            set => _size = (UIntPtr)value;
         }
 
         public static implicit operator C4Slice(C4SliceResult input)
@@ -243,7 +238,7 @@ namespace LiteCore.Interop
 			var bytes = Encoding.UTF8.GetBytes(name);
 			fixed (byte* bytes_ = bytes)
 			{
-				return Native.c4log_getDomain(bytes_, create);
+				return c4log_getDomain(bytes_, create);
 			}
 		}
     }

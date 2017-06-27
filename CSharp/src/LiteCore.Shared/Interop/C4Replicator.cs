@@ -22,10 +22,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using ObjCRuntime;
 using LiteCore.Util;
+using ObjCRuntime;
 
 namespace LiteCore.Interop
 {
@@ -50,8 +49,8 @@ namespace LiteCore.Interop
     {
         private readonly object _context;
         private readonly Action<C4ReplicatorStatus, object> _callback;
-        private long _id;
-        private static long _NextID = 0L;
+        private readonly long _id;
+        private static long _NextID;
 
         private static readonly Dictionary<long, ReplicatorStateChangedCallback> _StaticMap =
             new Dictionary<long, ReplicatorStateChangedCallback>();
@@ -103,7 +102,7 @@ namespace LiteCore.Interop
         {
             using(var options_ = options.FLEncode())
             using (var remoteDatabaseName_ = new C4String(remoteDatabaseName)) {
-                return Native.c4repl_new(db, remoteAddress, remoteDatabaseName_.AsC4Slice(), otherDb, push, pull,
+                return c4repl_new(db, remoteAddress, remoteDatabaseName_.AsC4Slice(), otherDb, push, pull,
                     options == null ? C4Slice.Null : options_, ReplicatorStateChangedCallback.NativeCallback,
                     onStateChanged.NativeContext, err);
             }

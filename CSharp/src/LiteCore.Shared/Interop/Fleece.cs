@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
@@ -83,17 +84,13 @@ namespace LiteCore.Interop
 
         public override int GetHashCode()
         {
-            unchecked {
-                int hash = 17;
-
-                hash = hash * 23 + (int)size;
-                var ptr = (byte*)buf;
-                if(ptr != null) {
-                    hash = hash * 23 + ptr[size - 1];
-                }
-
-                return hash;
+            var hasher = Hasher.Start.Add(size);
+            var ptr = (byte*)buf;
+            if (ptr != null) {
+                hasher.Add(ptr[size - 1]);
             }
+
+            return hasher.GetHashCode();
         }
 
         public override bool Equals(object obj)

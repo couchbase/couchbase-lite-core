@@ -25,7 +25,7 @@ namespace LiteCore.Util
     // https://stackoverflow.com/a/18613926/1155387
     internal struct Hasher
     {
-        private readonly int _hashCode;
+        private int _hashCode;
 
         public static readonly Hasher Start = new Hasher(17);
 
@@ -34,10 +34,11 @@ namespace LiteCore.Util
             _hashCode = hashCode;
         }
 
-        public Hasher Hash<T>(T obj)
+        public Hasher Add<T>(T obj)
         {
             var h = EqualityComparer<T>.Default.GetHashCode(obj);
-            return unchecked(new Hasher(_hashCode * 31 + h));
+            _hashCode = _hashCode * 31 + h;
+            return this;
         }
 
         public static implicit operator int(Hasher hasher) => hasher.GetHashCode();

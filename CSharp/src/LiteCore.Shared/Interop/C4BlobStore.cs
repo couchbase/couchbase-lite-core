@@ -18,6 +18,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //  
+using LiteCore.Util;
+
 namespace LiteCore.Interop
 {
 #if LITECORE_PACKAGED
@@ -34,16 +36,14 @@ namespace LiteCore.Interop
         
         public override int GetHashCode()
         {
-            int hash = 17;
-            unchecked {
-                fixed(byte* b = bytes) {
-                    for(int i = 0; i < _Size; i++) {
-                        hash = hash * 23 + b[i];
-                    }
+            var hasher = Hasher.Start;
+            fixed (byte* b = bytes) {
+                for (int i = 0; i < _Size; i++) {
+                    hasher.Add(b[i]);
                 }
             }
 
-            return hash;
+            return hasher.GetHashCode();
         }
 
         public override bool Equals(object obj)

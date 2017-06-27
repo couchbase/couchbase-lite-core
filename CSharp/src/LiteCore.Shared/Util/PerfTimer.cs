@@ -108,12 +108,7 @@ namespace LiteCore.Util
 
         #region Properties
 
-        internal TimeSpan Elapsed
-        {
-            get {
-                return _sw.Elapsed;
-            }
-        }
+        internal TimeSpan Elapsed => _sw.Elapsed;
 
         internal string Name { get; }
 

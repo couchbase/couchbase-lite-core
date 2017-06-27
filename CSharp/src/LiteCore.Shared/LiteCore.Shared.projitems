@@ -51,7 +51,5 @@
     <Compile Include="$(MSBuildThisFileDirectory)Util\C4String.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\Hasher.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Util\PerfTimer.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Util\RecyclableMemoryStream.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Util\RecyclableMemoryStreamManager.cs" />
   </ItemGroup>
 </Project>

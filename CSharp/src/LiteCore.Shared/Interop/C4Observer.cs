@@ -73,12 +73,7 @@ namespace LiteCore.Interop
         private GCHandle _id;
         private static readonly Dictionary<Guid, DatabaseObserver> _ObserverMap = new Dictionary<Guid, DatabaseObserver>();
 
-        public C4DatabaseObserver* Observer
-        {
-            get {
-                return (C4DatabaseObserver*)_observer;
-            }
-        }
+        public C4DatabaseObserver* Observer => (C4DatabaseObserver*)_observer;
         private long _observer;
 
         public DatabaseObserver(C4Database* database, DatabaseObserverCallback callback, object context)

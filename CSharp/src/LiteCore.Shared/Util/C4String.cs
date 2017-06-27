@@ -107,23 +107,13 @@ namespace LiteCore.Util
             _current = _start;
         }
 
-        object System.Collections.IEnumerator.Current
-        {
-            get {
-                return Current;
-            }
-        }
+        object System.Collections.IEnumerator.Current => Current;
 
         public void Dispose()
         {
             // No-op
         }
 
-        public byte Current
-        {
-            get {
-                return *_current;
-            }
-        }
+        public byte Current => *_current;
     }
 }

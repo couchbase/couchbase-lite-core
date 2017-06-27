@@ -20,6 +20,7 @@
 //
 using System;
 using System.Runtime.InteropServices;
+using LiteCore.Util;
 
 namespace LiteCore
 {
@@ -65,21 +66,19 @@ namespace LiteCore.Interop
 
         public override int GetHashCode()
         {
-                        int hash = 17;
-            unchecked {
-                fixed(byte* b = bytes) {
-                    for(int i = 0; i < _Size; i++) {
-                        hash = hash * 23 + b[i];
-                    }
+            var hasher = Hasher.Start;
+            fixed (byte* b = bytes) {
+                for (int i = 0; i < _Size; i++) {
+                    hasher.Add(b[i]);
                 }
             }
 
-            return hash;
+            return hasher.GetHashCode();
         }
 
         public override bool Equals(object obj)
         {
-                        if(!(obj is C4UUID)) {
+            if(!(obj is C4UUID)) {
                 return false;
             }
 
