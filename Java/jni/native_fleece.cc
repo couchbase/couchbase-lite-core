@@ -331,7 +331,8 @@ Java_com_couchbase_litecore_fleece_FLValue_asString(JNIEnv *env, jclass clazz, j
  */
 JNIEXPORT jbyteArray JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asData(JNIEnv *env, jclass clazz, jlong jvalue) {
-    return 0;
+    FLSlice bytes = FLValue_AsData((FLValue) jvalue);
+    return toJByteArray(env, {bytes.buf, bytes.size});
 }
 
 /*

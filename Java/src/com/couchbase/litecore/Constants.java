@@ -149,8 +149,9 @@ public interface Constants {
         int kC4NetErrTooManyRedirects = 5;
         int kC4NetErrTLSHandshakeFailed = 6;
         int kC4NetErrTLSCertExpired = 7;
-        int kC4NetErrTLSCertUntrusted = 8;
+        int kC4NetErrTLSCertUntrusted = 8;       // Cert isn't trusted for other reason
         int kC4NetErrTLSClientCertRequired = 9;
         int kC4NetErrTLSClientCertRejected = 10; // 10
+        int kC4NetErrTLSCertUnknownRoot = 11;    // Self-signed cert, or unknown anchor cert
     }
 }
