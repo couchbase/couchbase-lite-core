@@ -23,6 +23,7 @@
 #include <arpa/inet.h>
 #endif
 
+using namespace std;
 using namespace fleece;
 
 
@@ -33,10 +34,10 @@ namespace litecore {
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)
             error::_throw(error::CorruptRevisionData);
-        std::deque<Rev> revs(count);
+        deque<Rev> revs(count);
         auto rev = revs.begin();
         for (; rawRev->isValid(); rawRev = rawRev->next()) {
-            rawRev->copyTo(*rev);
+            rawRev->copyTo(*rev, revs);
             if (rev->sequence == 0)
                 rev->sequence = curSeq;
             rev->owner = owner;
@@ -55,7 +56,7 @@ namespace litecore {
     }
 
 
-    alloc_slice RawRevision::encodeTree(const std::vector<Rev*> &revs) {
+    alloc_slice RawRevision::encodeTree(const vector<Rev*> &revs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
         for (Rev *rev : revs)
@@ -86,7 +87,7 @@ namespace litecore {
         this->size = _enc32((uint32_t)revSize);
         this->revIDLen = (uint8_t)rev.revID.size;
         memcpy(this->revID, rev.revID.buf, rev.revID.size);
-        this->parentIndex = htons(rev._parentIndex);
+        this->parentIndex = htons(rev.parent ? rev.parent->index() : kNoParent);
 
         uint8_t dstFlags = rev.flags & RawRevision::kPublicPersistentFlags;
         if (rev._body.size > 0)
@@ -100,11 +101,15 @@ namespace litecore {
         return (RawRevision*)offsetby(this, revSize);
     }
 
-    void RawRevision::copyTo(Rev &dst) const {
+    void RawRevision::copyTo(Rev &dst, const deque<Rev> &revs) const {
         const void* end = this->next();
         dst.revID = {this->revID, this->revIDLen};
         dst.flags = (Rev::Flags)(this->flags & RawRevision::kPublicPersistentFlags);
-        dst._parentIndex = ntohs(this->parentIndex);
+        auto parent = ntohs(this->parentIndex);
+        if (parent == kNoParent)
+            dst.parent = nullptr;
+        else
+            dst.parent = &revs[parent];
         const void *data = offsetby(&this->revID, this->revIDLen);
         ptrdiff_t len = (uint8_t*)end-(uint8_t*)data;
         data = offsetby(data, GetUVarInt(slice(data, len), &dst.sequence));

@@ -1,5 +1,5 @@
 //
-//  VersionedDocument_Tests.mm
+//  VersionedDocument_Tests.cc
 //  Couchbase Lite Core
 //
 //  Created by Jens Alfke on 5/15/14.
@@ -91,7 +91,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
     REQUIRE(httpStatus == 201);
     REQUIRE(rev->revID == rev1ID);
     REQUIRE(rev->body() == rev1Data);
-    REQUIRE(rev->parent() == (const Rev*)nullptr);
+    REQUIRE(rev->parent == (const Rev*)nullptr);
     REQUIRE_FALSE(rev->isDeleted());
 
     revidBuffer rev2ID("2-bbbb"_sl);
@@ -108,8 +108,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "VersionedDocument RevTreeInsert", 
     rev2 = tree.get(rev2ID);
     REQUIRE(rev);
     REQUIRE(rev2);
-    REQUIRE(rev2->parent() == rev);
-    REQUIRE(rev->parent() == nullptr);
+    REQUIRE(rev2->parent == rev);
+    REQUIRE(rev->parent == nullptr);
 
     REQUIRE(tree.currentRevision() == rev2);
     REQUIRE_FALSE(tree.hasConflict());

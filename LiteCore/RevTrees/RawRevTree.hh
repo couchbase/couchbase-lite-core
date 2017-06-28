@@ -31,6 +31,8 @@ namespace litecore {
         static slice getCurrentRevBody(slice raw_tree) noexcept;
 
     private:
+        static const uint16_t kNoParent = UINT16_MAX;
+
         // Private RevisionFlags bits used in encoded form:
         enum : uint8_t {
             kPublicPersistentFlags = (Rev::kLeaf | Rev::kDeleted | Rev::kHasAttachments
@@ -66,7 +68,7 @@ namespace litecore {
         }
 
         static size_t sizeToWrite(const Rev&);
-        void copyTo(Rev &dst) const;
+        void copyTo(Rev &dst, const std::deque<Rev>&) const;
         RawRevision* copyFrom(const Rev &rev);
     };
     

@@ -29,6 +29,7 @@ namespace litecore {
     class Rev {
     public:
         const RevTree*  owner;
+        const Rev*      parent;
         revid           revID;      /**< Revision ID (compressed) */
         sequence_t      sequence;   /**< DB sequence number that this revision has/had */
 
@@ -43,7 +44,6 @@ namespace litecore {
         bool isActive() const       {return isLeaf() && !isDeleted();}
 
         unsigned index() const;
-        const Rev* parent() const;
         const Rev* next() const;       // next by order in array, i.e. descending priority
         std::vector<const Rev*> history() const;
 
@@ -61,14 +61,13 @@ namespace litecore {
         Flags flags;
 
     private:
-        static const uint16_t kNoParent = UINT16_MAX;
-        
         slice       _body;          /**< Revision body (JSON), or empty if not stored in this tree*/
-        uint16_t    _parentIndex;   /**< Index in tree's rev[] array of parent revision, if any */
 
-        void addFlag(Flags f)       {flags = (Flags)(flags | f);}
-        void clearFlag(Flags f)     {flags = (Flags)(flags & ~f);}
-        void removeBody()           {clearFlag(kKeepBody); _body = nullslice;}
+        void addFlag(Flags f)           {flags = (Flags)(flags | f);}
+        void clearFlag(Flags f)         {flags = (Flags)(flags & ~f);}
+        void removeBody()               {clearFlag(kKeepBody); _body = nullslice;}
+        void markForPurge()             {revID.setSize(0);}
+        bool isMarkedForPurge() const   {return revID.size == 0;}
 #if DEBUG
         void dump(std::ostream&);
 #endif
@@ -150,7 +149,7 @@ namespace litecore {
     private:
         friend class Rev;
         void initRevs();
-        const Rev* _insert(revid, slice body, const Rev *parentRev, Rev::Flags);
+        Rev* _insert(revid, slice body, Rev *parentRev, Rev::Flags);
         bool confirmLeaf(Rev* testRev);
         void compact();
         void checkForResolvedConflict();

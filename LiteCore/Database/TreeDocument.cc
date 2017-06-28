@@ -162,7 +162,7 @@ namespace c4Internal {
             if (!revisionsLoaded())
                 Warn("Trying to access revision tree of doc loaded without kC4IncludeBodies");
             if (_selectedRev)
-                selectRevision(_selectedRev->parent());
+                selectRevision(_selectedRev->parent);
             return _selectedRev != nullptr;
         }
 
@@ -197,9 +197,9 @@ namespace c4Internal {
             while (rev1 != rev2) {
                 int d = (int)rev1->revID.generation() - (int)rev2->revID.generation();
                 if (d >= 0)
-                    rev1 = rev1->parent();
+                    rev1 = rev1->parent;
                 if (d <= 0)
-                    rev2 = rev2->parent();
+                    rev2 = rev2->parent;
                 if (!rev1 || !rev2)
                     return false;
             }
