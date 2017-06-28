@@ -43,7 +43,9 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
         message(FATAL_ERROR "libc++abi not found")
     endif()
     message("Found libc++abi at ${LIBCXXABI_LIB}")
-    find_path(LIBCXX_INCLUDE c++/v1/string PATH_SUFFIXES include)
+    find_path(LIBCXX_INCLUDE c++/v1/string
+        HINTS "${CMAKE_BINARY_DIR}/tlm/deps/libcxx.exploded"
+        PATH_SUFFIXES include)
     if (NOT LIBCXX_INCLUDE)
         message(FATAL_ERROR "libc++ header files not found")
     endif()
@@ -67,16 +69,16 @@ if(WIN32 OR ANDROID)
     if(ANDROID)
         set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/libcrypto.a)
     elseif(WINDOWS_STORE)
-        set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/libeay32_store.lib) 
+        set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/libeay32_store.lib)
     else()
-        set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/libeay32.lib) 
+        set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/libeay32.lib)
     endif()
 endif()
 
 ### SUBMODULES:
 
-include_directories("vendor/fleece/Fleece" 
-                    "vendor/fleece/vendor" 
+include_directories("vendor/fleece/Fleece"
+                    "vendor/fleece/vendor"
                     "vendor/SQLiteCpp/include"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
@@ -131,7 +133,7 @@ else()
 endif()
 
 ### SOURCE FILES:
-              
+
 include_directories(LiteCore/BlobStore
                     LiteCore/Database
                     LiteCore/Indexes
@@ -161,23 +163,23 @@ set(CIVETWEB_SRC "vendor/civetweb/src/civetweb.c"
 
 
 if(!MSVC)
-    set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage) 
+    set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
 endif()
 
 ### BUILDING THE LIBRARY:
 
-set(ALL_SRC_FILES 
-  ${BLOBSTORE_SRC} 
-  ${DATABASE_SRC} 
-  ${INDEXES_SRC} 
-  ${QUERY_SRC} 
-  ${REVTREES_SRC} 
-  ${STORAGE_SRC} 
-  ${SUPPORT_SRC} 
+set(ALL_SRC_FILES
+  ${BLOBSTORE_SRC}
+  ${DATABASE_SRC}
+  ${INDEXES_SRC}
+  ${QUERY_SRC}
+  ${REVTREES_SRC}
+  ${STORAGE_SRC}
+  ${SUPPORT_SRC}
   ${VERSIONVECTORS_SRC}
   ${C_SRC}
   ${SQLITECPP_SRC}
-  ${REPLICATOR_SRC}) 
+  ${REPLICATOR_SRC})
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
@@ -199,16 +201,16 @@ endif()
 
 set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 LiteCoreStatic
-								FleeceStatic 
-                                SQLite3_UnicodeSN 
-                                BLIPStatic 
+								FleeceStatic
+                                SQLite3_UnicodeSN
+                                BLIPStatic
                                 CivetWeb
                                 ${NO_WHOLE_LIBRARY_FLAG})
 set(LITECORE_LIBRARIES_PUBLIC   sqlite3)
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(LiteCore PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
-		   
+
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     target_link_libraries(LiteCore PUBLIC ${LIBCXX_LIB})
 endif()
@@ -217,7 +219,7 @@ endif()
 if (APPLE)
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/C/c4.exp")
-    target_link_libraries(LiteCore PUBLIC  "-framework CoreFoundation" 
+    target_link_libraries(LiteCore PUBLIC  "-framework CoreFoundation"
                                     "-framework Foundation"
                                     "-framework CFNetwork"
                                     "-framework Security"
@@ -236,7 +238,7 @@ else()
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /nodefaultlib:kernel32.lib /nodefaultlib:ole32.lib")
     endif()
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
-			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")	
+			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")
     target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} zlibstatic Ws2_32 Dbghelp.lib)
 endif()
 
@@ -271,7 +273,7 @@ endif()
 ### LITECORESERV:
 
 #add_executable(LiteCoreServ REST/LiteCoreServ.cc)
-#target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static) 
+#target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static)
 #target_link_libraries(LiteCoreServ PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 #target_link_libraries(LiteCoreServ PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
 #if(APPLE)
