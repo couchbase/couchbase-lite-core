@@ -450,11 +450,7 @@ namespace LiteCore.Tests
                     commonAncestorIndex.Should().Be(1UL, "because the common ancestor is at sequence 1");
                     doc->flags.Should().Be(C4DocumentFlags.Exists|C4DocumentFlags.Conflicted, "because the document exists");
                     doc->selectedRev.revID.Equals(conflictRevID).Should().BeTrue("because the selected rev should have the correct rev ID");
-                    if(IsRevTrees()) {
-                        doc->revID.Equals(conflictRevID).Should().BeTrue("because the doc should have the conflicted rev ID");
-                    } else {
-                        doc->revID.Equals(expectedRev2ID).Should().BeTrue("because the doc should have the winning rev ID");
-                    }
+                    doc->revID.Equals(expectedRev2ID).Should().BeTrue("because the conflicting rev should never be the default");
                     Native.c4doc_free(doc);
                 } finally {
                     LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
