@@ -98,6 +98,9 @@ if(WIN32 OR ANDROID OR LITECORE_BUILD_SQLITE)
      vendor/SQLiteCpp/sqlite3/sqlite3.c
      vendor/SQLiteCpp/sqlite3/sqlite3.h
     )
+    install (TARGETS sqlite3
+             RUNTIME DESTINATION bin
+             LIBRARY DESTINATION lib)
     include_directories("vendor/SQLiteCpp/sqlite3/")
 
     if(WINDOWS_STORE)
@@ -193,6 +196,9 @@ endif()
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 file(WRITE empty.cpp)
 add_library(LiteCore SHARED empty.cpp)
+install (TARGETS LiteCore
+         RUNTIME DESTINATION bin
+         LIBRARY DESTINATION lib)
 
 if(UNIX AND NOT APPLE)
     set(WHOLE_LIBRARY_FLAG "-Wl,--whole-archive")
