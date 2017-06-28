@@ -8,8 +8,15 @@ import com.couchbase.litecore.fleece.FLEncoder;
 import com.couchbase.litecore.fleece.FLValue;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +24,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import okhttp3.Authenticator;
 import okhttp3.Challenge;
@@ -28,14 +42,18 @@ import okhttp3.Response;
 import okhttp3.Route;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
+import okhttp3.internal.tls.CustomHostnameVerifier;
+import okio.Buffer;
 import okio.ByteString;
 
 import static android.util.Base64.NO_WRAP;
 import static android.util.Base64.encodeToString;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2Scheme;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2TLSScheme;
+import static com.couchbase.litecore.Constants.C4ErrorDomain.NetworkDomain;
 import static com.couchbase.litecore.Constants.C4ErrorDomain.POSIXDomain;
 import static com.couchbase.litecore.Constants.C4ErrorDomain.WebSocketDomain;
+import static com.couchbase.litecore.Constants.NetworkError.kC4NetErrTLSCertUntrusted;
 
 
 public class C4Socket extends WebSocketListener {
@@ -84,7 +102,7 @@ public class C4Socket extends WebSocketListener {
     //-------------------------------------------------------------------------
     // constructor
     //-------------------------------------------------------------------------
-    public C4Socket(long handle, URI uri, Map<String, Object> options) {
+    /*package*/ C4Socket(long handle, URI uri, Map<String, Object> options) throws GeneralSecurityException {
         this.handle = handle;
         this.uri = uri;
         this.options = options;
@@ -147,14 +165,28 @@ public class C4Socket extends WebSocketListener {
             closed(handle, WebSocketDomain, response.code());
         else if (t != null) {
             // TODO: Following codes works with only Android.
-            if (t.getCause() != null && t.getCause().getCause() != null) {
+            // In case errno is set
+            if (t.getCause() != null &&
+                    t.getCause().getCause() != null &&
+                    t.getCause().getCause() instanceof android.system.ErrnoException) {
                 android.system.ErrnoException e = (android.system.ErrnoException) t.getCause().getCause();
                 closed(handle, POSIXDomain, e != null ? e.errno : 0);
-            } else {
-                closed(handle, POSIXDomain, 0);
             }
-        } else
+            // TLS Certificate error
+            else if (t.getCause() != null &&
+                    t.getCause() instanceof java.security.cert.CertificateException) {
+                closed(handle, NetworkDomain, kC4NetErrTLSCertUntrusted);
+            }
+            // SSLPeerUnverifiedException
+            else if (t instanceof javax.net.ssl.SSLPeerUnverifiedException) {
+                closed(handle, NetworkDomain, kC4NetErrTLSCertUntrusted);
+            }
+            else {
+                closed(handle, WebSocketDomain, 0);
+            }
+        } else {
             closed(handle, WebSocketDomain, 0);
+        }
     }
 
 
@@ -186,7 +218,15 @@ public class C4Socket extends WebSocketListener {
             return;
         }
 
-        c4sock = new C4Socket(socket, uri, options);
+        try {
+            c4sock = new C4Socket(socket, uri, options);
+        } catch (GeneralSecurityException e) {
+            //TODO:
+            Log.e(TAG, "Failed to instantiate C4Socket: " + e);
+            e.printStackTrace();
+            return;
+        }
+
         reverseLookupTable.put(socket, c4sock);
         c4sock.start();
     }
@@ -248,7 +288,7 @@ public class C4Socket extends WebSocketListener {
     // private methods
     //-------------------------------------------------------------------------
 
-    private OkHttpClient setupOkHttpClient() {
+    private OkHttpClient setupOkHttpClient() throws GeneralSecurityException {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
 
         // timeouts
@@ -264,7 +304,39 @@ public class C4Socket extends WebSocketListener {
         if (authenticator != null)
             builder.authenticator(authenticator);
 
-        return builder.build();
+        // certificate
+        setupSelfSignedCertificate(builder);
+
+        // HostnameVerifier
+        setupHostnameVerifier(builder);
+
+        return  builder.build();
+    }
+
+    protected InputStream getAsset(String name) {
+        return this.getClass().getResourceAsStream("/assets/" + name);
+    }
+    
+    private void setupHostnameVerifier(OkHttpClient.Builder builder){
+        builder.hostnameVerifier(CustomHostnameVerifier.getInstance());
+    }
+
+    private void setupSelfSignedCertificate(OkHttpClient.Builder builder) throws GeneralSecurityException {
+        if (options != null && options.containsKey(kC4ReplicatorOptionPinnedServerCert)) {
+            byte[] pin = (byte[]) options.get(kC4ReplicatorOptionPinnedServerCert);
+            if (pin != null) {
+                X509TrustManager trustManager = trustManagerForCertificates(toStream(pin));
+                SSLContext sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(null, new TrustManager[]{trustManager}, null);
+                SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+                if (trustManager != null && sslSocketFactory != null)
+                    builder.sslSocketFactory(sslSocketFactory, trustManager);
+            }
+        }
+    }
+
+    private InputStream toStream(byte[] pin){
+        return new Buffer().write(pin).inputStream();
     }
 
     private Authenticator setupAuthenticator() {
@@ -407,6 +479,49 @@ public class C4Socket extends WebSocketListener {
             }
             enc.free();
             gotHTTPResponse(httpStatus, headersFleece);
+        }
+    }
+
+    // https://github.com/square/okhttp/blob/master/samples/guide/src/main/java/okhttp3/recipes/CustomTrust.java
+    private X509TrustManager trustManagerForCertificates(InputStream in) throws GeneralSecurityException {
+        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+        Collection<? extends Certificate> certificates = certificateFactory.generateCertificates(in);
+        if (certificates.isEmpty()) {
+            throw new IllegalArgumentException("expected non-empty set of trusted certificates");
+        }
+
+        // Put the certificates a key store.
+        char[] password = "umwxnikwxx".toCharArray(); // Any password will work.
+        KeyStore keyStore = newEmptyKeyStore(password);
+        int index = 0;
+        for (Certificate certificate : certificates) {
+            String certificateAlias = Integer.toString(index++);
+            keyStore.setCertificateEntry(certificateAlias, certificate);
+        }
+
+        // Use it to build an X509 trust manager.
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+                KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, password);
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(keyStore);
+        TrustManager[] trustManagers = trustManagerFactory.getTrustManagers();
+        if (trustManagers.length != 1 || !(trustManagers[0] instanceof X509TrustManager)) {
+            throw new IllegalStateException("Unexpected default trust managers:"
+                    + Arrays.toString(trustManagers));
+        }
+        return (X509TrustManager) trustManagers[0];
+    }
+
+    private KeyStore newEmptyKeyStore(char[] password) throws GeneralSecurityException {
+        try {
+            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            InputStream in = null; // By convention, 'null' creates an empty key store.
+            keyStore.load(in, password);
+            return keyStore;
+        } catch (IOException e) {
+            throw new AssertionError(e);
         }
     }
 }
