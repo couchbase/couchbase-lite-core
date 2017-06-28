@@ -129,25 +129,34 @@ namespace LiteCore.Interop
         private static void OnError(C4Replicator* replicator, bool pushing, C4Slice docID, C4Error error,
             bool transient, void* context)
         {
-            var id = (long)context;
-            var obj = _StaticMap[id];
-            obj._errorCallback?.Invoke(pushing, docID.CreateString(), error, transient, obj._context);
+            // Don't throw exceptions here, it will bubble up to native code
+            try {
+                var id = (long)context;
+                var obj = _StaticMap[id];
+                obj._errorCallback?.Invoke(pushing, docID.CreateString(), error, transient, obj._context);
+            } catch (Exception) { }
         }
 
         [MonoPInvokeCallback(typeof(C4ReplicatorValidationFunction))]
         private static void PerformValidate(C4Slice docID, FLDict* body, void* context)
         {
-            var id = (long)context;
-            var obj = _StaticMap[id];
-            obj._validateFunction?.Invoke(docID.CreateString(), (IntPtr)body, obj._context);
+            // Don't throw exceptions here, it will bubble up to native code
+            try {
+                var id = (long) context;
+                var obj = _StaticMap[id];
+                obj._validateFunction?.Invoke(docID.CreateString(), (IntPtr) body, obj._context);
+            } catch (Exception) { }
         }
 
         [MonoPInvokeCallback(typeof(C4ReplicatorStatusChangedCallback))]
         private static void StateChanged(C4Replicator* replicator, C4ReplicatorStatus state, void* context)
         {
-            var id = (long)context;
-            var obj = _StaticMap[id];
-            obj._stateChangedCallback?.Invoke(state, obj._context);
+            // Don't throw exceptions here, it will bubble up to native code
+            try {
+                var id = (long) context;
+                var obj = _StaticMap[id];
+                obj._stateChangedCallback?.Invoke(state, obj._context);
+            } catch(Exception) { }
         }
 
         public void Dispose()
@@ -173,7 +182,6 @@ namespace LiteCore.Interop
             C4Database *otherDb, C4ReplicatorParameters @params, C4Error* err)
         {
             using (var remoteDatabaseName_ = new C4String(remoteDatabaseName)) {
-                
                 return c4repl_new(db, remoteAddress, remoteDatabaseName_.AsC4Slice(), otherDb, @params, err);
             }
         }

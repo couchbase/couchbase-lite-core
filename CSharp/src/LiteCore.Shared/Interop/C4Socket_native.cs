@@ -61,7 +61,7 @@ namespace LiteCore.Interop
         public static void c4socket_received(C4Socket* socket, byte[] data)
         {
             fixed(byte *data_ = data) {
-                NativeRaw.c4socket_received(socket, new C4Slice(data_, (ulong)data.Length));
+                NativeRaw.c4socket_received(socket, new C4Slice(data_, (ulong)data?.Length));
             }
         }
 

@@ -54,7 +54,8 @@ namespace LiteCore.Interop
         Leaf           = 0x02,
         New            = 0x04,
         HasAttachments = 0x08,
-        KeepBody       = 0x10
+        KeepBody       = 0x10,
+        IsConflict     = 0x20
     }
 
 #if LITECORE_PACKAGED

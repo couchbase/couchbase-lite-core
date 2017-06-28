@@ -134,7 +134,7 @@ namespace LiteCore.Interop
             using(var winningRevID_ = new C4String(winningRevID))
             using(var losingRevID_ = new C4String(losingRevID))
             fixed(byte *mergedBody_ = mergedBody) {
-                return NativeRaw.c4doc_resolveConflict(doc, winningRevID_.AsC4Slice(), losingRevID_.AsC4Slice(), new C4Slice(mergedBody_, (ulong)mergedBody.Length), error);
+                return NativeRaw.c4doc_resolveConflict(doc, winningRevID_.AsC4Slice(), losingRevID_.AsC4Slice(), new C4Slice(mergedBody_, (ulong)mergedBody?.Length), error);
             }
         }
 
@@ -178,14 +178,14 @@ namespace LiteCore.Interop
         {
             using(var docID_ = new C4String(docID))
             fixed(byte *body_ = body) {
-                return NativeRaw.c4doc_create(db, docID_.AsC4Slice(), new C4Slice(body_, (ulong)body.Length), revisionFlags, error);
+                return NativeRaw.c4doc_create(db, docID_.AsC4Slice(), new C4Slice(body_, (ulong)body?.Length), revisionFlags, error);
             }
         }
 
         public static C4Document* c4doc_update(C4Document* doc, byte[] revisionBody, C4RevisionFlags revisionFlags, C4Error* error)
         {
             fixed(byte *revisionBody_ = revisionBody) {
-                return NativeRaw.c4doc_update(doc, new C4Slice(revisionBody_, (ulong)revisionBody.Length), revisionFlags, error);
+                return NativeRaw.c4doc_update(doc, new C4Slice(revisionBody_, (ulong)revisionBody?.Length), revisionFlags, error);
             }
         }
 
