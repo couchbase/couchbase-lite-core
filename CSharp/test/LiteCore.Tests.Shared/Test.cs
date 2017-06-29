@@ -427,7 +427,7 @@ namespace LiteCore.Tests
                 for (Native.FLArrayIterator_Begin(root, &iter);
                     null != (item = Native.FLArrayIterator_GetValue(&iter));
                     Native.FLArrayIterator_Next(&iter)) {
-                    var docID = $"doc{numDocs + 1:D7}";
+                    var docID = idPrefix != null ? $"{idPrefix}doc{numDocs + 1:D7}" : $"doc{numDocs + 1:D7}";
                     var enc = Native.c4db_createFleeceEncoder(Db);
                     Native.FLEncoder_WriteValue(enc, item);
                     var body = NativeRaw.FLEncoder_Finish(enc, &error);
