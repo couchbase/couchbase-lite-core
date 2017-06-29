@@ -72,6 +72,8 @@ If you want to use the Objective-C or Swift APIs, you should instead check out a
 
 ### Dependencies
 
+**Note** Android requires CMake 3.7 or higher!
+
 **Important!** LiteCore uses a couple of external libraries, which may or may not be installed in your system already. If not, please install the appropriate development packages via your package manager. This is especially necessary on Ubuntu, which comes without the development packages for common libraries like SQLite and OpenSSL. You must have the following libraries present:
     
 | LIB_NAME   | APT-GET        | YUM           | SOURCE |
