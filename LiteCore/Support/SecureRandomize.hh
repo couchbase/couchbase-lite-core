@@ -9,7 +9,7 @@
 #pragma once
 #include "slice.hh"
 #include "Error.hh"
-
+#include "PlatformCompat.hh"
 
 #if defined(_CRYPTO_CC)
 
@@ -43,10 +43,12 @@
 
     #include <mbedtls/entropy.h>
     #include <mbedtls/ctr_drbg.h>
+    #include <mutex>
 
-#ifdef MBEDTLS_NO_PLATFORM_ENTROPY
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
     #include <Windows.h>
     #include <bcrypt.h>
+
     static int uwp_entropy_poll(void *data, unsigned char *output, size_t len,
         size_t *olen)
     {
@@ -63,9 +65,10 @@
     static mbedtls_entropy_context entropy;
     static mbedtls_ctr_drbg_context ctr_drbg;
     static inline void SecureRandomize(fleece::slice s) {
-        if (!initialized) {
+        once_flag f;
+        call_once(f, [=] {
             mbedtls_entropy_init(&entropy);
-#ifdef MBEDTLS_NO_PLATFORM_ENTROPY
+#ifdef WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
             mbedtls_entropy_add_source(&entropy, uwp_entropy_poll, NULL, 32, MBEDTLS_ENTROPY_SOURCE_STRONG);
 #endif
             mbedtls_ctr_drbg_init(&ctr_drbg);
@@ -74,9 +77,7 @@
             if (ret != 0) {
                 litecore::error::_throw(litecore::error::CryptoError);
             }
-
-            initialized = 1;
-        }
+        });
 
         mbedtls_ctr_drbg_random(&ctr_drbg, (unsigned char*)s.buf, s.size);
     }

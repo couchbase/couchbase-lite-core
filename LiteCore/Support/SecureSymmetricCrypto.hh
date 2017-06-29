@@ -147,7 +147,7 @@ namespace litecore {
         mbedtls_cipher_context_t cipher_ctx;
         const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type( MBEDTLS_CIPHER_AES_256_CBC );
         if(cipher_info == NULL) {
-            fprintf(stderr, "mbedtls_cipher_info_from_type failed\n");
+            Warn("mbedtls_cipher_info_from_type failed");
             litecore::error::_throw(litecore::error::CryptoError);
         }
         
@@ -161,16 +161,9 @@ namespace litecore {
         }
         
         size_t out_len = dst.size;
-        if(encrypt) {
-            mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char*)key.buf, 256, MBEDTLS_ENCRYPT);
-            mbedtls_cipher_crypt(&cipher_ctx, (const unsigned char*)iv.buf, iv.size, (const unsigned char*)src.buf, src.size,
-                (unsigned char*)dst.buf, &out_len);
-        }
-        else {
-            mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char*)key.buf, 256, MBEDTLS_DECRYPT);
-            mbedtls_cipher_crypt(&cipher_ctx, (const unsigned char*)iv.buf, iv.size, (const unsigned char*)src.buf, src.size,
-                (unsigned char*)dst.buf, &out_len);
-        }
+        mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char*)key.buf, 256, encrypt ? MBEDTLS_ENCRYPT : MBEDTLS_DECRYPT);
+        mbedtls_cipher_crypt(&cipher_ctx, (const unsigned char*)iv.buf, iv.size, (const unsigned char*)src.buf, src.size,
+                             (unsigned char*)dst.buf, &out_len);
 
         mbedtls_cipher_free(&cipher_ctx);
         return out_len;
