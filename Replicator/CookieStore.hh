@@ -63,7 +63,9 @@ namespace litecore { namespace repl {
         std::vector<const Cookie*> cookies() const;
         std::string cookiesForRequest(const websocket::Address&) const;
 
+        // Adds a cookie from a Set-Cookie: header value. Returns false if cookie is invalid.
         bool setCookie(const std::string &headerValue, const std::string &fromHost);
+        
         void clearCookies();
 
         void merge(fleece::slice data);
@@ -74,7 +76,7 @@ namespace litecore { namespace repl {
     private:
         using CookiePtr = std::unique_ptr<const Cookie>;
 
-        bool _addCookie(CookiePtr newCookie);
+        void _addCookie(CookiePtr newCookie);
 
         CookieStore(const CookieStore&) =delete;
 

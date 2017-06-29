@@ -146,6 +146,7 @@ TEST_CASE("CookieStore", "[Cookies]") {
     CHECK(!store->cookies().empty());
     CHECK(!store->changed());    // it's non-persistent
     CHECK(store->setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", "www.example.com"));
+    CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk"));
     CHECK(store->changed());
     CHECK(store->setCookie("jens=awesome; Domain=snej.example.com", "example.com"));
     CHECK(store->cookiesForRequest(kRequest) == "x=y; e=mc^2");
@@ -158,6 +159,12 @@ TEST_CASE("CookieStore", "[Cookies]") {
         CHECK(store->setCookie("e=something else; Domain=WWW.Example.Com", "www.example.com"));
         CHECK(store->changed());     // a persistent cookie got removed
         CHECK(store->cookiesForRequest(kRequest) == "x=y; e=something else");
+    }
+    SECTION("No-Op Replace Cookie") {
+        store->clearChanged();
+        CHECK(store->setCookie("x=y; Domain=Example.Com", "example.com"));
+        CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk"));
+        CHECK(!store->changed());
     }
     SECTION("Secure Cookie") {
         CHECK(store->setCookie("password=123456; Domain=WWW.Example.Com; Secure=true", "www.example.com"));
@@ -176,7 +183,7 @@ TEST_CASE("CookieStore", "[Cookies]") {
         alloc_slice encoded = store->encode();
         CHECK(encoded);
         Retained<CookieStore> store2 = new CookieStore(encoded);
-        CHECK(store2->cookies().size() == 1);
+        CHECK(store2->cookies().size() == 2);
         CHECK(!store2->changed());
         CHECK(store2->cookiesForRequest(kRequest) == "e=mc^2");
     }

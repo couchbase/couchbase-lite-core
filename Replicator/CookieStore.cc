@@ -213,7 +213,8 @@ namespace litecore { namespace repl {
         if (!newCookie->valid())
             return false;
         lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
-        return _addCookie(move(newCookie));
+        _addCookie(move(newCookie));
+        return true;
     }
 
 
@@ -225,14 +226,14 @@ namespace litecore { namespace repl {
     }
 
 
-    bool CookieStore::_addCookie(CookiePtr newCookie) {
+    void CookieStore::_addCookie(CookiePtr newCookie) {
         for (auto i = _cookies.begin(); i != _cookies.end(); ++i) {
             const Cookie *oldCookie = i->get();
             if (newCookie->matches(*oldCookie)) {
                 if (newCookie->created < oldCookie->created)
-                    return false;   // obsolete
+                    return;   // obsolete
                 if (newCookie->sameValueAs(*oldCookie))
-                    return false;   // No-op
+                    return;   // No-op
                 // Remove the replaced cookie:
                 if (oldCookie->persistent())
                     _changed = true;
@@ -244,7 +245,6 @@ namespace litecore { namespace repl {
         if (newCookie->persistent())
             _changed = true;
         _cookies.emplace_back(move(newCookie));
-        return true;
     }
 
 

@@ -27,6 +27,7 @@ namespace litecore { namespace repl {
             return _store->cookiesForRequest(addr);
         }
 
+        // Adds a cookie from a Set-Cookie: header value. Returns false if cookie is invalid.
         bool setCookie(const std::string &headerValue, const std::string &fromHost) {
             return _store->setCookie(headerValue, fromHost);
         }
