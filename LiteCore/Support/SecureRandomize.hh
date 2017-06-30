@@ -9,7 +9,7 @@
 #pragma once
 #include "slice.hh"
 #include "Error.hh"
-
+#include "PlatformCompat.hh"
 
 #if defined(_CRYPTO_CC)
 
@@ -38,6 +38,52 @@
     }
 
     #define SECURE_RANDOMIZE_AVAILABLE 1
+    
+#elif defined(_CRYPTO_MBEDTLS)
+
+    #include <mbedtls/entropy.h>
+    #include <mbedtls/ctr_drbg.h>
+    #include <mutex>
+
+#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+    #include <Windows.h>
+    #include <bcrypt.h>
+
+    static int uwp_entropy_poll(void *data, unsigned char *output, size_t len,
+        size_t *olen)
+    {
+        NTSTATUS status = BCryptGenRandom(NULL, output, (ULONG)len, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+        if (status < 0) {
+            return(MBEDTLS_ERR_ENTROPY_SOURCE_FAILED);
+        }
+
+        return 0;
+    }
+#endif
+
+    inline void SecureRandomize(fleece::slice s) {
+        static std::once_flag f;
+        static mbedtls_entropy_context entropy;
+        static mbedtls_ctr_drbg_context ctr_drbg;
+
+        std::call_once(f, [] {
+            mbedtls_entropy_init(&entropy);
+#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+            mbedtls_entropy_add_source(&entropy, uwp_entropy_poll, NULL, 32, MBEDTLS_ENTROPY_SOURCE_STRONG);
+#endif
+            mbedtls_ctr_drbg_init(&ctr_drbg);
+            const unsigned char* val = (const unsigned char *)"Salty McNeal";
+            int ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, val, strlen((const char*)val));
+            if (ret != 0) {
+                litecore::error::_throw(litecore::error::CryptoError);
+            }
+        });
+
+        mbedtls_ctr_drbg_random(&ctr_drbg, (unsigned char*)s.buf, s.size);
+    }
+    
+    #define SECURE_RANDOMIZE_AVAILABLE 1
+
 
 #else
 

@@ -55,25 +55,10 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 endif()
 
 if(WIN32 OR ANDROID)
-    if(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015")
-        set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/windows/x86/)
-    elseif(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015 Win64")
-        set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/windows/amd64/)
-    elseif(${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015 ARM")
-        set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/windows/arm/)
-    elseif(ANDROID)
-        set(OPENSSL_ROOT_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/android/${CMAKE_ANDROID_ARCH_ABI}/)
+    if(ANDROID)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,libgcc.a")
     endif()
-    set(OPENSSL_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendor/openssl/libs/include)
     set(SQLITE3_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendor/SQLiteCpp/sqlite3)
-    if(ANDROID)
-        set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/libcrypto.a)
-    elseif(WINDOWS_STORE)
-        set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/libeay32_store.lib)
-    else()
-        set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_ROOT_DIR}/libeay32.lib)
-    endif()
 endif()
 
 ### SUBMODULES:
@@ -84,7 +69,8 @@ include_directories("vendor/fleece/Fleece"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
                     "vendor/BLIP-Cpp/src/util"
-                    "vendor/civetweb/include")
+                    "vendor/civetweb/include"
+                    "vendor/mbedtls/include")
 
 if(WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
@@ -130,10 +116,9 @@ if (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_CC")
 
   elseif(UNIX AND NOT ANDROID)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_OPENSSL")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_MBEDTLS")
 else()
-    include_directories(${OPENSSL_INCLUDE_DIR}
-      ${SQLITE3_INCLUDE_DIR})
+    include_directories(${SQLITE3_INCLUDE_DIR})
 endif()
 
 ### SOURCE FILES:
@@ -164,8 +149,21 @@ aux_source_directory(Replicator               REPLICATOR_SRC)
 
 set(CIVETWEB_SRC "vendor/civetweb/src/civetweb.c"
                  "REST/civetUtils.cc")
+set(MBEDTLS_SRC "vendor/mbedtls/library/md5.c"
+                "vendor/mbedtls/library/sha1.c"
+                "vendor/mbedtls/library/sha256.c"
+                "vendor/mbedtls/library/sha512.c"
+                "vendor/mbedtls/library/ctr_drbg.c"
+                "vendor/mbedtls/library/cipher.c"
+                "vendor/mbedtls/library/cipher_wrap.c"
+                "vendor/mbedtls/library/entropy.c"
+                "vendor/mbedtls/library/entropy_poll.c"
+                "vendor/mbedtls/library/timing.c"
+                "vendor/mbedtls/library/aes.c"
+                "vendor/mbedtls/library/aesni.c"
+                "vendor/mbedtls/library/padlock.c")
 
-
+configure_file(CMake/mbedtls_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/vendor/mbedtls/include/mbedtls/config.h COPYONLY)
 if(!MSVC)
     set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
 endif()
@@ -183,7 +181,8 @@ set(ALL_SRC_FILES
   ${VERSIONVECTORS_SRC}
   ${C_SRC}
   ${SQLITECPP_SRC}
-  ${REPLICATOR_SRC})
+  ${REPLICATOR_SRC}
+  ${MBEDTLS_SRC}) 
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
@@ -235,18 +234,19 @@ elseif(UNIX AND NOT ANDROID)
     target_link_libraries(LiteCore PRIVATE crypto bsd atomic)
     target_link_libraries(LiteCore PUBLIC z)
 elseif(ANDROID)
-   target_compile_definitions(LiteCoreStatic PUBLIC -D_CRYPTO_OPENSSL)
-    target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} "atomic" "log")
+   target_compile_definitions(LiteCoreStatic PUBLIC -D_CRYPTO_MBEDTLS)
+    target_link_libraries(LiteCore PRIVATE "atomic" "log")
     target_link_libraries(LiteCore PUBLIC z)
 else()
-    target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_OPENSSL -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32)
+    target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_MBEDTLS -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32)
     if(WINDOWS_STORE)
+        target_compile_definitions(LiteCoreStatic PUBLIC -DMBEDTLS_NO_PLATFORM_ENTROPY)
         set_target_properties(LiteCore PROPERTIES COMPILE_FLAGS /ZW)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /nodefaultlib:kernel32.lib /nodefaultlib:ole32.lib")
     endif()
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
 			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")
-    target_link_libraries(LiteCore PRIVATE ${OPENSSL_CRYPTO_LIBRARY} zlibstatic Ws2_32 Dbghelp.lib)
+    target_link_libraries(LiteCore PRIVATE zlibstatic Ws2_32 Dbghelp.lib)
 endif()
 
 ### JNI:
@@ -289,7 +289,6 @@ endif()
 #                                             "-framework Security"
 #                                             z)
 #else()
-#  target_link_libraries(LiteCoreServ PRIVATE ${OPENSSL_CRYPTO_LIBRARY})
 #  if(ANDROID)
 #    target_link_libraries(LiteCoreServ PRIVATE log z)
 #  elseif(MSVC)
