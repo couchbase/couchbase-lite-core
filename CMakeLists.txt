@@ -19,7 +19,8 @@ add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API threa
                 -DNO_CGI                            # No CGI support in CivetWeb (unneeded)
                 -DNO_CACHING                        # No file caching support in CivetWeb (unneeded)
                 -DUSE_IPV6                          # Enable IPv6 support in CivetWeb
-                -DCMAKE)                            # Let the source know this is a CMAKE build
+                -DCMAKE                             # Let the source know this is a CMAKE build
+                -D__STDC_LIMIT_MACROS)              # Ensure the presence of UINT64_MAX, etc
 
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
     $<$<CONFIG:Debug>:DEBUG>

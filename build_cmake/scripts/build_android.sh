@@ -13,7 +13,7 @@ for arch in x86 armeabi-v7a arm64-v8a; do
     version=21
   fi
   cmake -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_SYSTEM_NAME=Android -DCMAKE_SYSTEM_VERSION=$version -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_ARCH_ABI=$arch -DCMAKE_ANDROID_STL_TYPE=c++_static ../../../..
-  make -j `expr $core_count + 1`
+  make -j `expr $core_count + 1` LiteCore
   if [ "$arch" = "arm64-v8a" ]; then
     STRIP=`dirname $(find $ANDROID_NDK_ROOT/toolchains -name strip | grep aarch64)`
   elif [ "$arch" = "armeabi-v7a" ]; then
