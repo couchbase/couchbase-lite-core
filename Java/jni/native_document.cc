@@ -132,6 +132,26 @@ JNIEXPORT jint JNICALL Java_com_couchbase_litecore_Document_purgeRevision
     return num;
 }
 
+/*
+ * Class:     com_couchbase_litecore_Document
+ * Method:    resolveConflict
+ * Signature: (JLjava/lang/String;Ljava/lang/String;[B)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_Document_resolveConflict(JNIEnv *env, jclass clazz, jlong docHandle,
+                                                     jstring jWinningRevID, jstring jLosingRevID,
+                                                     jbyteArray jMergedBody) {
+    C4Document *doc = (C4Document *) docHandle;
+    jstringSlice winningRevID(env, jWinningRevID);
+    jstringSlice losingRevID(env, jLosingRevID);
+    jbyteArraySlice mergedBody(env, jMergedBody, false);
+    C4Error error = {};
+    bool ok = c4doc_resolveConflict(doc, winningRevID, losingRevID, mergedBody, &error);
+    if (!ok)
+        throwError(env, error);
+    return ok;
+}
+
 JNIEXPORT void JNICALL Java_com_couchbase_litecore_Document_free
         (JNIEnv *env, jclass clazz, jlong docHandle) {
     c4doc_free((C4Document *) docHandle);
@@ -219,6 +239,20 @@ Java_com_couchbase_litecore_Document_selectNextPossibleAncestorOf(JNIEnv *env, j
     jstringSlice revID(env, jRevID);
     auto doc = (C4Document *) docHandle;
     bool ok = c4doc_selectNextPossibleAncestorOf(doc, revID);
+    updateSelection(env, self, doc);
+    return ok;
+}
+/*
+ * Class:     com_couchbase_litecore_Document
+ * Method:    selectCommonAncestorRevision
+ * Signature: (JLjava/lang/String;Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_Document_selectCommonAncestorRevision
+        (JNIEnv *env, jobject self, jlong docHandle, jstring jRev1, jstring jRev2){
+    jstringSlice rev1(env, jRev1);
+    jstringSlice rev2(env, jRev2);
+    auto doc = (C4Document *) docHandle;
+    bool ok = c4doc_selectCommonAncestorRevision((C4Document *) docHandle, rev1, rev2);
     updateSelection(env, self, doc);
     return ok;
 }
