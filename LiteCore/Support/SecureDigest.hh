@@ -107,9 +107,9 @@
     #define SECURE_DIGEST_AVAILABLE 1
     
 #elif defined(_CRYPTO_MBEDTLS)
-    #include <mbedtls\md5.h>
-    #include <mbedtls\sha1.h>
-    #include <mbedtls\sha256.h>
+    #include <mbedtls/md5.h>
+    #include <mbedtls/sha1.h>
+    #include <mbedtls/sha256.h>
 
     typedef mbedtls_md5_context md5Context;
 

@@ -45,7 +45,7 @@
     #include <mbedtls/ctr_drbg.h>
     #include <mutex>
 
-#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
     #include <Windows.h>
     #include <bcrypt.h>
 
@@ -68,7 +68,7 @@
 
         std::call_once(f, [] {
             mbedtls_entropy_init(&entropy);
-#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
             mbedtls_entropy_add_source(&entropy, uwp_entropy_poll, NULL, 32, MBEDTLS_ENTROPY_SOURCE_STRONG);
 #endif
             mbedtls_ctr_drbg_init(&ctr_drbg);

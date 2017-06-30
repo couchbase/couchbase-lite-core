@@ -153,7 +153,8 @@ set(MBEDTLS_SRC "vendor/mbedtls/library/md5.c"
                 "vendor/mbedtls/library/entropy.c"
                 "vendor/mbedtls/library/entropy_poll.c"
                 "vendor/mbedtls/library/timing.c"
-                "vendor/mbedtls/library/aes.c")
+                "vendor/mbedtls/library/aes.c"
+                "vendor/mbedtls/library/aesni.c")
               configure_file(CMake/mbedtls_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/vendor/mbedtls/include/mbedtls/config.h COPYONLY)
  
 if(!MSVC)
