@@ -54,10 +54,7 @@
     #endif
     #include <endian.h>
     #include <arpa/inet.h>
-#ifdef __ANDROID__
-    #include <arc4random.h>
-#else
-    #include <bsd/stdlib.h>
+    #include "arc4random.h"
 #endif
 #endif
 //jpa: End of code adapted from Networking.h
