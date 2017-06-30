@@ -56,7 +56,6 @@
     #include <arpa/inet.h>
     #include "arc4random.h"
 #endif
-#endif
 //jpa: End of code adapted from Networking.h
 
 #include <cstring>
