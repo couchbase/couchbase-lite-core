@@ -30,11 +30,7 @@
 #if __APPLE__
 #include <copyfile.h>
 #elif defined(__linux__)
-#ifdef __ANDROID__
 #include "strlcat.h"
-#else
-#include <bsd/string.h>
-#endif
 #include <sys/sendfile.h>
 #endif
 #else
