@@ -81,10 +81,10 @@ If you want to use the Objective-C or Swift APIs, you should instead check out a
 
 Once you've got the dependencies and compiler installed, do this from the root directory of the source tree:
 
-    cd build_cmake
-    ./build.sh
+    cd build_cmake/scripts
+    ./build_unix.sh
 
-## Windows
+## Windows Desktop
 
 Open the Visual Studio 2015 Developer Command Prompt and navigate to the repo root.  Then execute:
     
@@ -94,7 +94,28 @@ Open the Visual Studio 2015 Developer Command Prompt and navigate to the repo ro
     
     * 32-bit build *
     cd build_make
-    "C:\Program Files (x86)\CMake\bin\cmake.exe" ..
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 14 2015" ..
+    
+This will create `LiteCore.sln` in the directory that you can open with Visual Studio.
+
+## Windows Store
+
+Open the Visual Studio 2015 Developer Command Prompt and navigate to the repo root.  Then execute:
+    
+    * x64 build *
+    cd build_make
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 14 2015 Win64" -DCMAKE_SYSTEM_NAME=WindowsStore
+    -D CMAKE_SYSTEM_VERSION="10.0.14393.0" ..
+    
+    * x86 build *
+    cd build_make
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 14 2015" -DCMAKE_SYSTEM_NAME=WindowsStore
+    -D CMAKE_SYSTEM_VERSION="10.0.14393.0" ..
+    
+    * ARM build *
+    cd build_make
+    "C:\Program Files (x86)\CMake\bin\cmake.exe" -G "Visual Studio 14 2015 ARM" -DCMAKE_SYSTEM_NAME=WindowsStore
+    -D CMAKE_SYSTEM_VERSION="10.0.14393.0" ..
     
 This will create `LiteCore.sln` in the directory that you can open with Visual Studio.
 
