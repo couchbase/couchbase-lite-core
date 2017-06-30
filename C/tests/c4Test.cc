@@ -24,7 +24,7 @@ using namespace std;
 const std::string& TempDir() {
     static string kTempDir;
 
-    once_flag f;
+    static once_flag f;
     call_once(f, [=] {
         const char* tmpDir = getenv("TMPDIR");
         if (tmpDir == nullptr) {
