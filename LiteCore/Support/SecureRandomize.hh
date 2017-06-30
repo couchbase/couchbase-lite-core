@@ -57,6 +57,7 @@
             return(MBEDTLS_ERR_ENTROPY_SOURCE_FAILED);
         }
 
+        *olen = len;
         return 0;
     }
 #endif
