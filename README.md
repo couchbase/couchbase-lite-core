@@ -70,30 +70,12 @@ If you want to use the Objective-C or Swift APIs, you should instead check out a
 
 ## Linux, Android
 
-### Dependencies
-
 **Note** Android requires CMake 3.7 or higher!
 
-**Important!** LiteCore uses a couple of external libraries, which may or may not be installed in your system already. If not, please install the appropriate development packages via your package manager. This is especially necessary on Ubuntu, which comes without the development packages for common libraries like SQLite and OpenSSL. You must have the following libraries present:
+**Important!** LiteCore uses a couple of external libraries, which may or may not be installed in your system already. If not, please install the appropriate development packages via your package manager. You must have the following libraries present:
     
-| LIB_NAME   | APT-GET        | YUM           | SOURCE |
-| ---------- | -------------- | ------------- | ------ |
-| libsqlite3 | libsqlite3-dev | n/a           | https://sqlite.org/download.html          |
-| libcrypto  | libssl-dev     | openssl-devel | https://github.com/openssl/openssl        |
-| libbsd     | libbsd-dev     | libbsd        | https://libbsd.freedesktop.org/releases/  |
-
-### CentOS Users
-
-The compiler currently in the CentOS repos (GCC 4.8.5) is too old to build this library.  You will need to get a later version by doing the following:
-
-```
-#One time
-sudo yum install centos-release-scl
-sudo yum install devtoolset-3-gcc* #devtoolset-3 == 4.9.2, devtoolset-4 == 5.2.1 (don't forget the trailing '*')
-
-#After each login
-scl enable devtoolset-3 bash #or devtoolset-4 
-```
+- libz
+- libatomic (usually comes with libgcc)
 
 ### Actually Building
 
