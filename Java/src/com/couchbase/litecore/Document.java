@@ -71,6 +71,10 @@ public class Document implements Constants {
         return selectNextPossibleAncestorOf(_handle, revID);
     }
 
+    public boolean selectCommonAncestorRevision(String rev1, String rev2) {
+        return selectCommonAncestorRevision(_handle, rev1, rev2);
+    }
+
     public boolean hasRevisionBody() {
         return hasRevisionBody(_handle);
     }
@@ -106,6 +110,12 @@ public class Document implements Constants {
 
     public int purgeRevision(String revID) throws LiteCoreException {
         return purgeRevision(_handle, revID);
+    }
+
+    public boolean resolveConflict(String winningRevID,
+                                   String losingRevID,
+                                   byte[] mergeBody) throws LiteCoreException {
+        return resolveConflict(_handle, winningRevID, losingRevID, mergeBody);
     }
 
     // INTERNALS:
@@ -147,9 +157,16 @@ public class Document implements Constants {
 
     private native boolean selectNextPossibleAncestorOf(long handle, String revID);
 
+    private native boolean selectCommonAncestorRevision(long handle, String rev1, String rev2);
+
     private native static boolean hasRevisionBody(long handle);
 
     private native static int purgeRevision(long handle, String revID) throws LiteCoreException;
+
+    private native static boolean resolveConflict(long handle,
+                                                  String winningRevID,
+                                                  String losingRevID,
+                                                  byte[] mergeBody) throws LiteCoreException;
 
     private native static void free(long handle);
 
