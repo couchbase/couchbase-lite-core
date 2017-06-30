@@ -41,6 +41,7 @@ namespace litecore {
         bool hasAttachments() const {return (flags & kHasAttachments) != 0;}
         bool isNew() const          {return (flags & kNew) != 0;}
         bool isConflict() const     {return (flags & kIsConflict) != 0;}
+        bool isForeign() const      {return (flags & kForeign) != 0;}
         bool isActive() const       {return isLeaf() && !isDeleted();}
 
         unsigned index() const;
@@ -56,6 +57,7 @@ namespace litecore {
             kHasAttachments = 0x08, /**< Does this rev's body contain attachments? */
             kKeepBody       = 0x10, /**< Body will not be discarded after I'm a non-leaf */
             kIsConflict     = 0x20, /**< Unresolved conflicting revision; should never be current */
+            kForeign        = 0x40, /**< Rev originated on a remote peer */
             // Keep these flags consistent with C4RevisionFlags, in c4Document.h!
         };
         Flags flags;
@@ -136,7 +138,7 @@ namespace litecore {
         void saved(sequence_t newSequence);
 
 #if DEBUG
-        std::string dump();
+        void dump();
 #endif
 
     protected:

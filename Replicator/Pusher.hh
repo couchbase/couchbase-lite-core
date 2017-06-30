@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
         void _gotChanges(RevList changes, C4Error err);
-        void sendChanges(const RevList&, MessageProgressCallback);
+        void sendChanges(RevList);
         void maybeGetMoreChanges();
         void sendChangeList(RevList);
         void maybeSendMoreRevs();
@@ -52,21 +52,23 @@ namespace litecore { namespace repl {
 
         DBWorker* const _dbWorker;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
+        DocIDSet _docIDs;
         bool _continuous;
         bool _skipDeleted;
-        DocIDSet _docIDs;
+        bool _proposeChanges {false};
+        bool _proposeChangesKnown {false};
 
-        C4SequenceNumber _lastSequence {0};             // Checkpointed last-sequence
-        bool _gettingChanges {false};                   // Waiting for _gotChanges() call?
-        SequenceSet _pendingSequences;                  // Sequences rcvd from db but not pushed yet
-        C4SequenceNumber _lastSequenceRead {0};         // Last sequence read from db
+        C4SequenceNumber _lastSequence {0};       // Checkpointed last-sequence
+        bool _gettingChanges {false};             // Waiting for _gotChanges() call?
+        SequenceSet _pendingSequences;            // Sequences rcvd from db but not pushed yet
+        C4SequenceNumber _lastSequenceRead {0};   // Last sequence read from db
         bool _started {false};
-        bool _caughtUp {false};                         // Received backlog of existing changes?
-        unsigned _changeListsInFlight {0};              // # 'changes' msgs pending replies
-        unsigned _revisionsInFlight {0};                // # 'rev' messages being sent
-        unsigned _revisionBytesAwaitingReply {0};       // # 'rev' message bytes sent but not replied
-        unsigned _blobsInFlight {0};                    // # of blobs being sent
-        std::deque<RevRequest> _revsToSend;             // Revs to send to peer but not sent yet
+        bool _caughtUp {false};                   // Received backlog of existing changes?
+        unsigned _changeListsInFlight {0};        // # change lists being requested from db or sent to peer
+        unsigned _revisionsInFlight {0};          // # 'rev' messages being sent
+        unsigned _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
+        unsigned _blobsInFlight {0};              // # of blobs being sent
+        std::deque<RevRequest> _revsToSend;       // Revs to send to peer but not sent yet
     };
     
     

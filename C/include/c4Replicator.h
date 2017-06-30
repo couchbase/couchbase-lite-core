@@ -156,7 +156,8 @@ extern "C" {
     #define kC4ReplicatorOptionFilter         "filter"   // Filter name; string
     #define kC4ReplicatorOptionFilterParams   "filterParams"  // Filter params; Dict[string]
     #define kC4ReplicatorOptionSkipDeleted    "skipDeleted" // Don't push/pull tombstones; bool
-
+    #define kC4ReplicatorOptionNoConflicts    "noConflicts" // Puller rejects conflicts; bool
+    
     // Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           // Auth property; string
     #define kC4ReplicatorAuthUserName   "username"       // Auth property; string

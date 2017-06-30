@@ -100,6 +100,8 @@ public:
         CHECK(statusReceived.error.code == expectedError.code);
         if (expectedError.code)
             CHECK(statusReceived.error.domain == expectedError.domain);
+        CHECK(_docPullErrors == _expectedDocPullErrors);
+        CHECK(_docPushErrors == _expectedDocPushErrors);
     }
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
@@ -255,6 +257,7 @@ public:
     unsigned statusChangedCalls {0};
     C4Error expectedError {};
     set<string> _docPushErrors, _docPullErrors;
+    set<string> _expectedDocPushErrors, _expectedDocPullErrors;
 };
 
 
@@ -504,13 +507,13 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
         ++(*(atomic<int>*)context);
         return (Dict(body)["birthday"].asstring() < "1993");
     };
+    _expectedDocPushErrors = set<string>{"0000052", "0000065", "0000071", "0000072"};
+    _expectedDocPullErrors = set<string>{"0000052", "0000065", "0000071", "0000072"};
     runReplicators(Replicator::Options::pushing(),
                    pullOptions);
     validateCheckpoints(db, db2, "{\"local\":100}");
     CHECK(validationCount == 100);
     CHECK(c4db_getDocumentCount(db2) == 96);
-    CHECK(_docPushErrors == (set<string>{"0000052", "0000065", "0000071", "0000072"}));
-    CHECK(_docPullErrors == (set<string>{"0000052", "0000065", "0000071", "0000072"}));
 }
 
 
@@ -519,10 +522,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push]") {
 
     createRev(db2, C4STR("0000023"), C4STR("1-cafebabe"), C4STR("{}"));
 
+    _expectedDocPullErrors = set<string>{"0000023"};
     runReplicators(Replicator::Options::passive(),
                    Replicator::Options::pulling());
-
-    CHECK(_docPullErrors == (set<string>{"0000023"}));
     validateCheckpoints(db2, db, "{\"remote\":100}");
 }
 
@@ -561,5 +563,46 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
     CHECK(doc != nullptr);
     doc = c4doc_get(db2, "0000100"_sl, true, nullptr);
     CHECK(doc != nullptr);
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull]") {
+    auto serverOpts = Replicator::Options::passive();
+    serverOpts.setProperty(C4STR(kC4ReplicatorOptionNoConflicts), "true"_sl);
+
+    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev2ID, kFleeceBody);
+
+    Log("-------- First Replication db->db2 --------");
+    runReplicators(serverOpts,
+                   Replicator::Options::pulling());
+
+    Log("-------- Update Doc --------");
+    alloc_slice body;
+    {
+        Encoder enc(c4db_createFleeceEncoder(db2));
+        enc.beginDict();
+        enc.writeKey("answer"_sl);
+        enc.writeInt(666);
+        enc.endDict();
+        body = enc.finish();
+    }
+
+    createRev(db2, kDocID, kRev3ID, body);
+    createRev(db2, kDocID, "4-4444"_sl, body);
+
+    Log("-------- Second Replication db2->db --------");
+    runReplicators(serverOpts,
+                   Replicator::Options::pushing());
+    compareDatabases();
+
+    Log("-------- Update Doc Again --------");
+    createRev(db2, kDocID, "5-5555"_sl, body);
+    createRev(db2, kDocID, "6-6666"_sl, body);
+
+    Log("-------- Third Replication db2->db --------");
+    runReplicators(serverOpts,
+                   Replicator::Options::pushing());
+    compareDatabases();
 }
 

@@ -43,6 +43,7 @@ namespace litecore { namespace repl {
 
         alloc_slice docID;
         alloc_slice revID;
+        alloc_slice remoteAncestorRevID;
         C4SequenceNumber sequence;
         uint64_t bodySize;
         C4RevisionFlags flags {0};
@@ -53,9 +54,10 @@ namespace litecore { namespace repl {
         :docID(d), revID(r), sequence(s), bodySize(size)
         { }
 
-        Rev(const C4DocumentInfo &info)
+        Rev(const C4DocumentInfo &info, const alloc_slice &remoteAncestor)
         :Rev(info.docID, info.revID, info.sequence, info.bodySize)
         {
+            remoteAncestorRevID = remoteAncestor;
             // For stupid historical reasons C4DocumentFlags and C4RevisionFlags aren't compatible
             flags = info.flags & kRevDeleted;
             if (info.flags & kHasAttachments)

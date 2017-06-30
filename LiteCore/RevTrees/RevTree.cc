@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #if DEBUG
-#include <ostream>
+#include <iostream>
 #include <sstream>
 #endif
 
@@ -184,6 +184,9 @@ namespace litecore {
                           Rev *parentRev,
                           Rev::Flags revFlags)
     {
+        static const auto kNewRevFlagsMask = (Rev::kDeleted | Rev::kHasAttachments
+                                              | Rev::kKeepBody | Rev::kForeign);
+
         Assert(!_unknown);
         // Allocate copies of the revID and data so they'll stay around:
         _insertedData.emplace_back(unownedRevID);
@@ -199,8 +202,7 @@ namespace litecore {
         newRev->revID = revID;
         newRev->_body = body;
         newRev->sequence = 0; // Sequence is unknown till record is saved
-        newRev->flags = (Rev::Flags)(Rev::kLeaf | Rev::kNew |
-                            (revFlags & (Rev::kDeleted | Rev::kHasAttachments | Rev::kKeepBody)));
+        newRev->flags = (Rev::Flags)(Rev::kLeaf | Rev::kNew | (revFlags & kNewRevFlagsMask));
 
         newRev->parent = parentRev;
         if (parentRev) {
@@ -302,8 +304,9 @@ namespace litecore {
 
         if (i > 0) {
             // Insert all the new revisions in chronological order:
+            auto ancestorFlags = (Rev::Flags)(revFlags & Rev::kForeign);
             while (--i > 0)
-                parent = _insert(history[i], slice(), parent, (Rev::Flags)0);
+                parent = _insert(history[i], slice(), parent, ancestorFlags);
             _insert(history[0], data, parent, revFlags);
         }
         return commonAncestorIndex;
@@ -446,10 +449,8 @@ namespace litecore {
     }
 
 #if DEBUG
-    std::string RevTree::dump() {
-        std::stringstream out;
-        dump(out);
-        return out.str();
+    void RevTree::dump() {
+        dump(std::cerr);
     }
 
     void RevTree::dump(std::ostream& out) {

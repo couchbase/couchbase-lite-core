@@ -67,6 +67,8 @@ namespace litecore { namespace repl {
             fleeceapi::Dict filterParams() const
                                       {return properties[kC4ReplicatorOptionFilterParams].asDict();}
             bool skipDeleted() const  {return properties[kC4ReplicatorOptionSkipDeleted].asBool();}
+            bool noConflicts() const  {return properties[kC4ReplicatorOptionNoConflicts].asBool();}
+            
             fleeceapi::Array arrayProperty(const char *name) const {
                 return properties[name].asArray();
             }

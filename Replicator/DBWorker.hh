@@ -45,7 +45,8 @@ namespace litecore { namespace repl {
         }
 
         void getChanges(C4SequenceNumber since, DocIDSet, unsigned limit,
-                        bool continuous, bool skipDeleted, Pusher*);
+                        bool continuous, bool skipDeleted, bool getForeignAncestor,
+                        Pusher*);
 
         void findOrRequestRevs(Retained<blip::MessageIn> req,
                                std::function<void(std::vector<bool>)> callback) {
@@ -75,8 +76,9 @@ namespace litecore { namespace repl {
         void _getCheckpoint(CheckpointCallback);
         void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
         void _getChanges(C4SequenceNumber since, DocIDSet, unsigned limit,
-                         bool continuous, bool skipDeleted,
+                         bool continuous, bool skipDeleted, bool getForeignAncestor,
                          Retained<Pusher> pusher);
+        bool getForeignAncestor(C4DocEnumerator *e, alloc_slice &foreignAncestor, C4Error*);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
         void _sendRevision(RevRequest request,
@@ -92,6 +94,7 @@ namespace litecore { namespace repl {
 
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
+        int findProposedChange(slice docID, slice revID);
 
         static const size_t kMaxPossibleAncestors = 10;
 
@@ -106,6 +109,7 @@ namespace litecore { namespace repl {
         std::mutex _revsToInsertMutex;
         actor::Timer _insertTimer;
         bool _insertDocumentMetadata {true}; //FIX: Currently set to true to accomodate SG
+        C4SequenceNumber _firstChangeSequence {0};
     };
 
 } }

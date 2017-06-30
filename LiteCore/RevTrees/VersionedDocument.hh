@@ -52,7 +52,7 @@ namespace litecore {
         void updateMeta();
 
 #if DEBUG
-        std::string dump()          {return RevTree::dump();}
+        void dump()          {RevTree::dump();}
 #endif
     protected:
 #if DEBUG

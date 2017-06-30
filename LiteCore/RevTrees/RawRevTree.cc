@@ -89,8 +89,8 @@ namespace litecore {
         memcpy(this->revID, rev.revID.buf, rev.revID.size);
         this->parentIndex = htons(rev.parent ? rev.parent->index() : kNoParent);
 
-        uint8_t dstFlags = rev.flags & RawRevision::kPublicPersistentFlags;
-        if (rev._body.size > 0)
+        uint8_t dstFlags = rev.flags & ~kNonPersistentFlags;
+        if (rev._body)
             dstFlags |= RawRevision::kHasData;
         this->flags = (Rev::Flags)dstFlags;
 
@@ -104,7 +104,7 @@ namespace litecore {
     void RawRevision::copyTo(Rev &dst, const deque<Rev> &revs) const {
         const void* end = this->next();
         dst.revID = {this->revID, this->revIDLen};
-        dst.flags = (Rev::Flags)(this->flags & RawRevision::kPublicPersistentFlags);
+        dst.flags = (Rev::Flags)(this->flags & ~kPersistentOnlyFlags);
         auto parent = ntohs(this->parentIndex);
         if (parent == kNoParent)
             dst.parent = nullptr;

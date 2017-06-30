@@ -217,23 +217,28 @@ namespace litecore { namespace repl {
 
 
     void DBWorker::getChanges(C4SequenceNumber since, DocIDSet docIDs, unsigned limit,
-                              bool continuous, bool skipDeleted, Pusher *pusher)
+                              bool continuous, bool skipDeleted, bool getForeignAncestor,
+                              Pusher *pusher)
     {
-        enqueue(&DBWorker::_getChanges, since, docIDs, limit, continuous, skipDeleted,
+        enqueue(&DBWorker::_getChanges, since, docIDs, limit,
+                continuous, skipDeleted, getForeignAncestor,
                 Retained<Pusher>(pusher));
     }
 
     
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
     void DBWorker::_getChanges(C4SequenceNumber since, DocIDSet docIDs, unsigned limit,
-                               bool continuous, bool skipDeleted,
+                               bool continuous, bool skipDeleted, bool getForeignAncestors,
                                Retained<Pusher> pusher)
     {
-        log("Reading up to %u local changes from #%llu", limit, since);
+        log("Reading up to %u local changes since #%llu", limit, since);
+        if (_firstChangeSequence == 0)
+            _firstChangeSequence = since + 1;
         vector<Rev> changes;
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        options.flags &= ~kC4IncludeBodies;
+        if (!getForeignAncestors)
+            options.flags &= ~kC4IncludeBodies;
         if (!skipDeleted)
             options.flags |= kC4IncludeDeleted;
         c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, since, &options, &error);
@@ -243,7 +248,16 @@ namespace litecore { namespace repl {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
                 if (passesDocIDFilter(docIDs, info.docID)) {
-                    changes.emplace_back(info);
+                    alloc_slice foreignAncestor;
+                    if (getForeignAncestors) {
+                        // For proposeChanges, find the nearest foreign ancestor of the current rev:
+                        if (!getForeignAncestor(e, foreignAncestor, &error)) {
+                            if (error.code)
+                                gotDocumentError(info.docID, error, true, false);
+                            continue; // skip to next sequence
+                        }
+                    }
+                    changes.emplace_back(info, foreignAncestor);
                     --limit;
                 }
             }
@@ -262,6 +276,29 @@ namespace litecore { namespace repl {
         }
 
         pusher->gotChanges(changes, error);
+    }
+
+
+    // For proposeChanges, find the latest ancestor of the current rev that is known to the server.
+    // This is a rev that's either marked as foreign (came from the server), or whose sequence is
+    // prior to the checkpoint (has already been pushed to the server.)
+    bool DBWorker::getForeignAncestor(C4DocEnumerator *e, alloc_slice &foreignAncestor, C4Error *outError) {
+        c4::ref<C4Document> doc = c4enum_getDocument(e, outError);
+        if (!doc)
+            return false;
+        if (doc->selectedRev.flags & kRevIsForeign) {
+            outError->code = 0;
+            return false;       // skip this, it's not a locally created rev
+        }
+        while (c4doc_selectParentRevision(doc)) {
+            if ((doc->selectedRev.flags & kRevIsForeign)
+                        || doc->selectedRev.sequence < _firstChangeSequence) {
+                foreignAncestor = slice(doc->selectedRev.revID);
+                return true;
+            }
+        }
+        foreignAncestor = nullslice;
+        return true;
     }
 
 
@@ -297,17 +334,24 @@ namespace litecore { namespace repl {
     }
 
 
-    // Called by the Pusher; it passes on the "changes" message
+    // Called by the Puller; handles a "changes" or "proposeChanges" message by checking which of
+    // the changes don't exist locally, and returning a bit-vector indicating them.
     void DBWorker::_findOrRequestRevs(Retained<MessageIn> req,
                                      function<void(vector<bool>)> callback) {
         // Iterate over the array in the message, seeing whether I have each revision:
+        bool proposed = (req->property("Profile"_sl) == "proposeChanges"_sl);
         auto changes = req->JSONBody().asArray();
         if (willLog() && !changes.empty()) {
-            alloc_slice firstSeq(changes[0].asArray()[0].toString());
-            alloc_slice lastSeq (changes[changes.count()-1].asArray()[0].toString());
-            log("Looking up %u revisions in the db (seq '%.*s'..'%.*s')",
-                changes.count(), SPLAT(firstSeq), SPLAT(lastSeq));
+            if (proposed) {
+                log("Looking up %u proposed revisions in the db", changes.count());
+            } else {
+                alloc_slice firstSeq(changes[0].asArray()[0].toString());
+                alloc_slice lastSeq (changes[changes.count()-1].asArray()[0].toString());
+                log("Looking up %u revisions in the db (seq '%.*s'..'%.*s')",
+                    changes.count(), SPLAT(firstSeq), SPLAT(lastSeq));
+            }
         }
+
         MessageBuilder response(req);
         response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
         vector<bool> whichRequested(changes.count());
@@ -318,24 +362,44 @@ namespace litecore { namespace repl {
         for (auto item : changes) {
             // Look up each revision in the `req` list:
             auto change = item.asArray();
-            slice docID = change[1].asString();
-            slice revID = change[2].asString();
-            if (!docID || !revID) {
-                warn("Invalid entry in 'changes' message");
-                return;     // ???  Should this abort the replication?
-            }
+            if (proposed) {
+                // "proposeChanges" entry: [docID, serverRevID?, bodySize?]
+                slice docID = change[0].asString();
+                slice revID = change[1].asString();
+                if (!docID) {
+                    warn("Invalid docID in 'proposeChanges' message");
+                    return;     // ???  Should this abort the replication?
+                }
+                int status = findProposedChange(docID, revID);
+                if (status != 0) {
+                    log("Rejecting proposed change '%.*s' #%.*s (status %d)",
+                        SPLAT(docID), SPLAT(revID), status);
+                    while (++itemsWritten < i)
+                        encoder.writeInt(0);
+                    encoder.writeInt(status);
+                }
 
-            if (!findAncestors(docID, revID, ancestors)) {
-                // I don't have this revision, so request it:
-                ++requested;
-                whichRequested[i] = true;
+            } else {
+                // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
+                slice docID = change[1].asString();
+                slice revID = change[2].asString();
+                if (!docID || !revID) {
+                    warn("Invalid entry in 'changes' message");
+                    return;     // ???  Should this abort the replication?
+                }
 
-                while (++itemsWritten < i)
-                    encoder.writeInt(0);
-                encoder.beginArray();
-                for (slice ancestor : ancestors)
-                    encoder.writeString(ancestor);
-                encoder.endArray();
+                if (!findAncestors(docID, revID, ancestors)) {
+                    // I don't have this revision, so request it:
+                    ++requested;
+                    whichRequested[i] = true;
+
+                    while (++itemsWritten < i)
+                        encoder.writeInt(0);
+                    encoder.beginArray();
+                    for (slice ancestor : ancestors)
+                        encoder.writeString(ancestor);
+                    encoder.endArray();
+                }
             }
             ++i;
         }
@@ -354,22 +418,54 @@ namespace litecore { namespace repl {
     bool DBWorker::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
         C4Error err;
         c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
-        bool revExists = doc && c4doc_selectRevision(doc, revID, false, &err);
-        if (!revExists) {
-            ancestors.resize(0);
-            if (!isNotFoundError(err)) {
-                gotError(err);
-            } else if (doc) {
-                // Revision isn't found, but look for ancestors:
-                if (c4doc_selectFirstPossibleAncestorOf(doc, revID)) {
-                    do {
-                        ancestors.emplace_back(doc->selectedRev.revID);
-                    } while (c4doc_selectNextPossibleAncestorOf(doc, revID)
-                             && ancestors.size() < kMaxPossibleAncestors);
-                }
+        if (doc && c4doc_selectRevision(doc, revID, false, &err)) {
+            // I already have this revision. Make sure it's marked as foreign:
+            if (!(doc->selectedRev.flags & kRevIsForeign)) {
+                //TODO: Mark rev as foreign in DB
             }
+            return true;
         }
-        return revExists;
+
+        ancestors.resize(0);
+        if (doc) {
+            // Revision isn't found, but look for ancestors:
+            if (c4doc_selectFirstPossibleAncestorOf(doc, revID)) {
+                do {
+                    ancestors.emplace_back(doc->selectedRev.revID);
+                } while (c4doc_selectNextPossibleAncestorOf(doc, revID)
+                         && ancestors.size() < kMaxPossibleAncestors);
+            }
+        } else if (!isNotFoundError(err)) {
+            gotError(err);
+        }
+        return false;
+    }
+
+
+    // Checks whether the revID (if any) is really current for the given doc.
+    // Returns an HTTP-ish status code: 0=OK, 409=conflict, 500=internal error
+    int DBWorker::findProposedChange(slice docID, slice revID) {
+        C4Error err;
+        //OPT: We don't need the document body, just its metadata, but there's no way to say that
+        c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
+        if (!doc) {
+            if (isNotFoundError(err)) {
+                // Doc doesn't exist; it's a conflict if the peer thinks it does:
+                return revID ? 409 : 0;
+            } else {
+                gotError(err);
+                return 500;
+            }
+        } else if (!revID) {
+            // Peer is creating new doc; that's OK if doc is currently deleted:
+            return (doc->flags & kDeleted) ? 0 : 409;
+        } else if (slice(doc->revID) != revID) {
+            // Peer's revID isn't current, so this is a conflict:
+            return 409;
+        } else {
+            // Success!
+            return 0;
+        }
     }
 
 
@@ -529,7 +625,7 @@ namespace litecore { namespace repl {
                 C4DocPutRequest put = {};
                 put.body = bodyForDB;
                 put.docID = rev->docID;
-                put.revFlags = rev->flags;
+                put.revFlags = rev->flags | kRevIsForeign;
                 put.existingRevision = true;
                 put.allowConflict = true;
                 put.history = history.data();

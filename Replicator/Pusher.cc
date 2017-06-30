@@ -104,13 +104,14 @@ namespace litecore { namespace repl {
             log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
             _dbWorker->getChanges(_lastSequenceRead, _docIDs,
                                   _changesBatchSize, _continuous, _skipDeleted,
+                                  _proposeChanges || !_proposeChangesKnown,
                                   this);
             // response will be to call _gotChanges
         }
     }
 
 
-    // Received a list of changes from the database [initiated in getMoreChanges]
+    // Received a list of changes from the database [initiated in maybeGetMoreChanges]
     void Pusher::_gotChanges(RevList changes, C4Error err) {
         _gettingChanges = false;
         if (err.code)
@@ -121,35 +122,122 @@ namespace litecore { namespace repl {
                   changes.size(), changes[0].sequence, _lastSequenceRead);
         }
 
+        uint64_t bodySize = 0;
+        for (auto &change : changes)
+            bodySize += change.bodySize;
+        addProgress({0, bodySize});
+
         // Send the "changes" request, and asynchronously handle the response:
-        bool caughtUpWhenSent = _caughtUp;
+        sendChanges(changes);
+
+        if (changes.size() < _changesBatchSize) {
+            if (!_caughtUp) {
+                log("Caught up, at lastSequence %llu", _lastSequenceRead);
+                _caughtUp = true;
+                if (!changes.empty() && !nonPassive()) {
+                    // The protocol says catching up is signaled by an empty changes list, so send
+                    // one if we didn't already:
+                    ++_changeListsInFlight;
+                    sendChanges(RevList());
+                }
+            }
+        } else {
+            maybeGetMoreChanges();
+        }
+    }
+
+
+    // Subroutine of _gotChanges that actually sends a "changes" or "proposeChanges" message:
+    void Pusher::sendChanges(RevList changes) {
+        MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
+        req.urgent = kChangeMessagesAreUrgent;
+        req.compressed = !changes.empty();
+
+        // Generate the JSON array of changes:
+        auto &enc = req.jsonBody();
+        enc.beginArray();
+        for (auto &change : changes) {
+            if (nonPassive())
+                _pendingSequences.add(change.sequence);
+            // Write the info array for this change:
+            enc.beginArray();
+            if (_proposeChanges) {
+                enc << change.docID;
+                if (change.remoteAncestorRevID || change.bodySize > 0)
+                    enc << change.remoteAncestorRevID;
+            } else {
+                enc << change.sequence << change.docID << change.revID;
+                if (change.deleted() || change.bodySize > 0)
+                    enc << change.deleted();
+            }
+            if (change.bodySize > 0)
+                enc << change.bodySize;
+            enc.endArray();
+        }
+        enc.endArray();
 
         if (changes.empty()) {
-            sendChanges(changes, nullptr);
+            // Empty == just announcing 'caught up', so no need to get a reply
+            req.noreply = true;
+            sendRequest(req);
             --_changeListsInFlight;
-        } else {
-            sendChanges(changes, [=](MessageProgress progress) {
-                MessageIn *reply = progress.reply;
-                if (!reply)
+            return;
+        }
+
+        bool proposedChanges = _proposeChanges;
+
+        sendRequest(req, [=](MessageProgress progress) {
+            // Progress callback follows:
+            MessageIn *reply = progress.reply;
+            if (!reply)
+                return;
+
+            // Got reply to the "changes" or "proposeChanges":
+            _proposeChangesKnown = true;
+            if (!proposedChanges && reply->isError()) {
+                auto err = progress.reply->getError();
+                if (err.domain == "BLIP"_sl && err.code == 409) {
+                    // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
+                    log("Server requires 'proposeChanges'; retrying...");
+                    _proposeChanges = true;
+                    sendChanges(changes);
                     return;
-
-                // Got response to the 'changes' message:
-                if (!caughtUpWhenSent) {
-                    assert(_changeListsInFlight >= 0);
-                    --_changeListsInFlight;
-                    maybeGetMoreChanges();
                 }
+            }
 
-                if (progress.reply->isError())
-                    return gotError(reply);
+            // Request another batch of changes from the db:
+            assert(_changeListsInFlight >= 0);
+            --_changeListsInFlight;
+            maybeGetMoreChanges();
 
-                // The response contains an array that, for each change in the outgoing message,
-                // contains either a list of known ancestors, or null/false/0 if not interested.
-                int maxHistory = (int)max(0l, reply->intProperty("maxHistory"_sl));
-                auto requests = reply->JSONBody().asArray();
+            if (reply->isError())
+                return gotError(reply);
 
-                unsigned index = 0;
-                for (auto &change : changes) {
+            // The response contains an array that, for each change in the outgoing message,
+            // contains either a list of known ancestors, or null/false/0 if not interested.
+            int maxHistory = (int)max(0l, reply->intProperty("maxHistory"_sl));
+            auto requests = reply->JSONBody().asArray();
+
+            unsigned index = 0;
+            for (auto &change : changes) {
+                bool queued = false;
+                bool successful = true;
+                if (proposedChanges) {
+                    // Entry in "proposeChanges" response is a status code, with 0 for OK:
+                    int status = (int)requests[index].asInt();
+                    if (status == 0) {
+                        auto request = _revsToSend.emplace(_revsToSend.end(), change, maxHistory);
+                        request->ancestorRevIDs.emplace_back(change.remoteAncestorRevID);
+                        queued = true;
+                    } else {
+                        logError("Proposed rev '%.*s' #%.*s rejected with status %d",
+                                 SPLAT(change.docID), SPLAT(change.revID), status);
+                        auto err = c4error_make(WebSocketDomain, status, "rejected by proposeChanges"_sl);
+                        gotDocumentError(change.docID, err, true, false);
+                        successful = false;
+                    }
+                } else {
+                    // Entry in "changes" response is an array of ancestors, or null to skip:
                     Array ancestorArray = requests[index].asArray();
                     if (ancestorArray) {
                         auto request = _revsToSend.emplace(_revsToSend.end(), change, maxHistory);
@@ -159,56 +247,20 @@ namespace litecore { namespace repl {
                             if (revid)
                                 request->ancestorRevIDs.emplace_back(revid);
                         }
-                        logVerbose("Queueing rev %.*s #%.*s (seq %llu)",
-                                   SPLAT(request->docID), SPLAT(request->revID), request->sequence);
-                    } else {
-                        markComplete(change, true);  // unwanted, so we're done with it
+                        queued = true;
                     }
-                    ++index;
                 }
-                maybeSendMoreRevs();
-            });
-        }
 
-        if (changes.size() < _changesBatchSize) {
-            if (!_caughtUp) {
-                log("Caught up, at lastSequence %llu", _lastSequenceRead);
-                _caughtUp = true;
-                if (changes.size() > 0 && !nonPassive()) {
-                    // The protocol says catching up is signaled by an empty changes list:
-                    sendChanges(RevList(), nullptr);
+                if (queued) {
+                    logVerbose("Queueing rev '%.*s' #%.*s (seq %llu)",
+                               SPLAT(change.docID), SPLAT(change.revID), change.sequence);
+                } else {
+                    markComplete(change, successful);  // unqueued, so we're done with it
                 }
+                ++index;
             }
-        } else {
-            maybeGetMoreChanges();
-        }
-    }
-
-
-    // Subroutine of _gotChanges that actually sends a "changes" message:
-    void Pusher::sendChanges(const RevList &changes, MessageProgressCallback onProgress) {
-        MessageBuilder req("changes"_sl);
-        req.urgent = kChangeMessagesAreUrgent;
-        req.noreply = !onProgress;
-        req.compressed = !changes.empty();
-        auto &enc = req.jsonBody();
-        enc.beginArray();
-        for (auto &change : changes) {
-            if (nonPassive())
-                _pendingSequences.add(change.sequence);
-            // Write the info array for this change: [sequence, docID, revID, deleted, size]
-            enc.beginArray();
-            enc << change.sequence << change.docID << change.revID;
-            if (change.deleted() || change.bodySize > 0) {
-                enc << change.deleted();
-                if (change.bodySize > 0)
-                    enc << change.bodySize;
-            }
-            addProgress({0, change.bodySize});
-            enc.endArray();
-        }
-        enc.endArray();
-        sendRequest(req, onProgress);
+            maybeSendMoreRevs();
+        });
     }
 
 

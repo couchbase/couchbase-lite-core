@@ -35,9 +35,9 @@ namespace litecore {
 
         // Private RevisionFlags bits used in encoded form:
         enum : uint8_t {
-            kPublicPersistentFlags = (Rev::kLeaf | Rev::kDeleted | Rev::kHasAttachments
-                                                 | Rev::kKeepBody),
             kHasData = 0x80,  /**< Does this raw rev contain JSON/Fleece data? */
+            kNonPersistentFlags  = (Rev::kNew),         // Not saved to disk
+            kPersistentOnlyFlags = (kHasData),          // Only used on disk, not in memory
         };
 
         uint32_t        size;           // Total size of this tree rev

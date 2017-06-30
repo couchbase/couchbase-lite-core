@@ -35,7 +35,8 @@ extern "C" {
         kRevNew            = 0x04, ///< Has this rev been inserted since the doc was read?
         kRevHasAttachments = 0x08, ///< Does this rev's body contain attachments?
         kRevKeepBody       = 0x10, ///< Revision's body should not be discarded when non-leaf
-        kRevIsConflict     = 0x20  ///< Unresolved conflicting revision; will never be current
+        kRevIsConflict     = 0x20, ///< Unresolved conflicting revision; will never be current
+        kRevIsForeign      = 0x40  ///< Rev comes from replicator, not created locally
     }; // Note: Same as Revision::Flags
 
 

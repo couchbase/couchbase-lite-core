@@ -25,6 +25,8 @@ namespace litecore { namespace repl {
     ,_dbActor(dbActor)
     {
         registerHandler("changes",&Puller::handleChanges);
+        registerHandler("proposeChanges",&Puller::handleChanges);
+        registerHandler("changes",&Puller::handleChanges);
         registerHandler("rev",    &Puller::handleRev);
         _spareIncomingRevs.reserve(kMaxSpareIncomingRevs);
         _skipDeleted = _options.skipDeleted();
@@ -91,7 +93,9 @@ namespace litecore { namespace repl {
 
     // Handles an incoming "changes" message
     void Puller::handleChanges(Retained<MessageIn> req) {
-        logVerbose("Handling 'changes' message");
+        slice reqType = req->property("Profile"_sl);
+        logVerbose("Handling '%.*s' message", SPLAT(reqType));
+
         auto changes = req->JSONBody().asArray();
         if (!changes && req->body() != "null"_sl) {
             warn("Invalid body of 'changes' message");
@@ -107,6 +111,9 @@ namespace litecore { namespace repl {
             req->respond();
         } else if (req->noReply()) {
             warn("Got pointless noreply 'changes' message");
+        } else if (_options.noConflicts() && reqType != "proposeChanges"_sl) {
+            // In conflict-free mode the protocol requires the pusher send "proposeChanges" instead
+            req->respondWithError({"BLIP"_sl, 409});
         } else {
             // Pass the buck to the DBWorker so it can find the missing revs & request them:
             ++_pendingCallbacks;
