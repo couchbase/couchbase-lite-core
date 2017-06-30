@@ -15,10 +15,8 @@
 #include <stdarg.h>
 #include <mutex>
 
-#if defined(__linux__) && !defined(__ANDROID__)
-     #include <bsd/stdlib.h>
-#elif defined(__ANDROID__)
-    #include <arc4random.h>
+#if defined(__linux__)
+    #include "arc4random.h"
 #endif
 
 #ifdef _MSC_VER

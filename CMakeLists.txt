@@ -75,7 +75,7 @@ include_directories("vendor/fleece/Fleece"
 if(WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
   include_directories("MSVC")
-elseif(ANDROID)
+elseif(UNIX AND NOT APPLE)
   include_directories("LiteCore/Android")
 endif()
 
@@ -186,11 +186,19 @@ set(ALL_SRC_FILES
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
-	set(ALL_SRC_FILES ${ALL_SRC_FILES} MSVC/asprintf.c
-			     vendor/fleece/MSVC/memmem.cc MSVC/mkstemp.cc MSVC/mkdtemp.cc MSVC/strlcat.c
-			     MSVC/vasprintf-msvc.c MSVC/arc4random.cc MSVC/strptime.cc)
-elseif(ANDROID)
-  set(ALL_SRC_FILES ${ALL_SRC_FILES} LiteCore/Android/strlcat.c)
+	set(ALL_SRC_FILES ${ALL_SRC_FILES} 
+    MSVC/asprintf.c
+    vendor/fleece/MSVC/memmem.cc 
+    MSVC/mkstemp.cc 
+    MSVC/mkdtemp.cc 
+    MSVC/strlcat.c
+    MSVC/vasprintf-msvc.c 
+    MSVC/arc4random.cc 
+    MSVC/strptime.cc)
+elseif(UNIX AND NOT APPLE)
+  set(ALL_SRC_FILES ${ALL_SRC_FILES} 
+    LiteCore/Android/strlcat.c
+    LiteCore/Android/arc4random.cc)
 endif()
 
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
@@ -231,7 +239,7 @@ if (APPLE)
                                     "-framework Security"
                                     z)
 elseif(UNIX AND NOT ANDROID)
-    target_link_libraries(LiteCore PRIVATE crypto bsd atomic)
+    target_link_libraries(LiteCore PRIVATE atomic)
     target_link_libraries(LiteCore PUBLIC z)
 elseif(ANDROID)
    target_compile_definitions(LiteCoreStatic PUBLIC -D_CRYPTO_MBEDTLS)
@@ -296,7 +304,7 @@ endif()
 #              "/ignore:4099")
 #    target_link_libraries(LiteCoreServ PRIVATE zlibstatic)
 #  elseif(UNIX)
-#    target_link_libraries(LiteCoreServ PRIVATE pthread z atomic crypto dl bsd c++abi)
+#    target_link_libraries(LiteCoreServ PRIVATE pthread z atomic dl c++abi)
 #  endif()
 #endif()
 
