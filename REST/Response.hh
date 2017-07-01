@@ -32,6 +32,7 @@ namespace litecore { namespace REST {
         MethodNotAllowed = 405,
         Conflict = 409,
         PreconditionFailed = 412,
+        Locked = 423,
         ServerError = 500,
         NotImplemented = 501,
         GatewayError = 502,

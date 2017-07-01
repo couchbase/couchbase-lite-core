@@ -175,6 +175,8 @@ namespace litecore { namespace REST {
                         status = HTTPStatus::NotImplemented; break;
                     case kC4ErrorRemoteError:
                         status = HTTPStatus::GatewayError; break;
+                    case kC4ErrorBusy:
+                        status = HTTPStatus::Locked; break;
                 }
                 break;
             case WebSocketDomain:
