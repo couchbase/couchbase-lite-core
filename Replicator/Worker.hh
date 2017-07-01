@@ -61,6 +61,7 @@ namespace litecore { namespace repl {
             }
 
             fleeceapi::Array channels() const {return arrayProperty(kC4ReplicatorOptionChannels);}
+            fleeceapi::Array docIDs() const   {return arrayProperty(kC4ReplicatorOptionDocIDs);}
             fleeceapi::Dict headers() const  {return dictProperty(kC4ReplicatorOptionExtraHeaders);}
             fleece::slice filter() const  {return properties[kC4ReplicatorOptionFilter].asString();}
             fleeceapi::Dict filterParams() const

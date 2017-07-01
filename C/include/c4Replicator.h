@@ -162,7 +162,8 @@ extern "C" {
     #define kC4ReplicatorOptionExtraHeaders   "headers"  // Extra HTTP headers; string[]
     #define kC4ReplicatorOptionCookies        "cookies"  // HTTP Cookie header value; string
     #define kC4ReplicatorOptionAuthentication "auth"     // Auth settings; Dict
-    #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  // Cert or public key [data]
+    #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  // Cert or public key; data
+    #define kC4ReplicatorOptionDocIDs         "docIDs"   // Docs to replicate; string[]
     #define kC4ReplicatorOptionChannels       "channels" // SG channel names; string[]
     #define kC4ReplicatorOptionFilter         "filter"   // Filter name; string
     #define kC4ReplicatorOptionFilterParams   "filterParams"  // Filter params; Dict[string]

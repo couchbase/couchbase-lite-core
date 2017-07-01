@@ -211,16 +211,21 @@ namespace litecore { namespace repl {
 #pragma mark - CHANGES:
 
 
-    void DBWorker::getChanges(C4SequenceNumber since, unsigned limit,
+    static bool passesDocIDFilter(const DocIDSet &docIDs, slice docID) {
+        return !docIDs || (docIDs->find(docID.asString()) != docIDs->end());
+    }
+
+
+    void DBWorker::getChanges(C4SequenceNumber since, DocIDSet docIDs, unsigned limit,
                               bool continuous, bool skipDeleted, Pusher *pusher)
     {
-        enqueue(&DBWorker::_getChanges, since, limit, continuous, skipDeleted,
+        enqueue(&DBWorker::_getChanges, since, docIDs, limit, continuous, skipDeleted,
                 Retained<Pusher>(pusher));
     }
 
     
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
-    void DBWorker::_getChanges(C4SequenceNumber since, unsigned limit,
+    void DBWorker::_getChanges(C4SequenceNumber since, DocIDSet docIDs, unsigned limit,
                                bool continuous, bool skipDeleted,
                                Retained<Pusher> pusher)
     {
@@ -237,14 +242,17 @@ namespace litecore { namespace repl {
             while (c4enum_next(e, &error) && limit > 0) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                changes.emplace_back(info);
-                --limit;
+                if (passesDocIDFilter(docIDs, info.docID)) {
+                    changes.emplace_back(info);
+                    --limit;
+                }
             }
         }
 
         if (continuous && limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
             _pusher = pusher;
+            _pushDocIDs = docIDs;
             _changeObserver = c4dbobs_create(_db,
                                              [](C4DatabaseObserver* observer, void *context) {
                                                  auto self = (DBWorker*)context;
@@ -270,16 +278,21 @@ namespace litecore { namespace repl {
                 break;
             log("Notified of %u db changes #%llu ... #%llu",
                 nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
+            changes.clear();
             C4DatabaseChange *c4change = c4changes;
             for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
-                changes.emplace_back(c4change->docID, c4change->revID,
-                                     c4change->sequence, c4change->bodySize);
+                if (passesDocIDFilter(_pushDocIDs, c4change->docID)) {
+                    changes.emplace_back(c4change->docID, c4change->revID,
+                                         c4change->sequence, c4change->bodySize);
+                }
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
             }
-            C4Error error = {};
-            _pusher->gotChanges(changes, error);
+
+            if (!changes.empty())
+                _pusher->gotChanges(changes, {});
+
         }
     }
 

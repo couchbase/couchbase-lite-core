@@ -15,7 +15,6 @@
 
 namespace litecore { namespace repl {
 
-
     class Pusher : public Worker {
     public:
         Pusher(blip::Connection *connection, Replicator *replicator, DBWorker *dbActor, Options options);
@@ -42,6 +41,7 @@ namespace litecore { namespace repl {
         void sendRevision(const RevRequest&);
         void markComplete(const Rev&, bool successful);
         void handleGetAttachment(Retained<MessageIn>);
+        void filterByDocIDs(fleeceapi::Array docIDs);
 
         static const unsigned kMaxPossibleAncestorsToSend = 20;
         static const unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
@@ -54,6 +54,7 @@ namespace litecore { namespace repl {
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
         bool _continuous;
         bool _skipDeleted;
+        DocIDSet _docIDs;
 
         C4SequenceNumber _lastSequence {0};             // Checkpointed last-sequence
         bool _gettingChanges {false};                   // Waiting for _gotChanges() call?

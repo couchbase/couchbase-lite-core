@@ -20,15 +20,31 @@ using namespace fleeceapi;
 
 namespace litecore { namespace repl {
 
-
     Pusher::Pusher(Connection *connection, Replicator *replicator, DBWorker *dbActor, Options options)
     :Worker(connection, replicator, options, "Push")
     ,_dbWorker(dbActor)
     ,_continuous(options.push == kC4Continuous)
     ,_skipDeleted(options.skipDeleted())
     {
+        filterByDocIDs(options.docIDs());
         registerHandler("subChanges",       &Pusher::handleSubChanges);
         registerHandler("getAttachment",    &Pusher::handleGetAttachment);
+    }
+
+
+    // Filters the push to the docIDs in the given Fleece array.
+    // If a filter already exists, the two will be intersected.
+    void Pusher::filterByDocIDs(Array docIDs) {
+        if (!docIDs)
+            return;
+        DocIDSet combined(new unordered_set<string>);
+        combined->reserve(docIDs.count());
+        for (Array::iterator i(docIDs); i; ++i) {
+            string docID = i.value().asstring();
+            if (!docID.empty() && (!_docIDs || _docIDs->find(docID) != _docIDs->end()))
+                combined->insert(move(docID));
+        }
+        _docIDs = move(combined);
     }
 
 
@@ -64,6 +80,10 @@ namespace litecore { namespace repl {
             return;
         }
 
+        filterByDocIDs(req->JSONBody().asDict()["docIDs"].asArray());
+        if (_docIDs)
+            log("Peer requested filtering to %zu docIDs", _docIDs->size());
+
         req->respond();
         startSending(since);
     }
@@ -82,7 +102,8 @@ namespace litecore { namespace repl {
             _gettingChanges = true;
             ++_changeListsInFlight;
             log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
-            _dbWorker->getChanges(_lastSequenceRead, _changesBatchSize, _continuous, _skipDeleted,
+            _dbWorker->getChanges(_lastSequenceRead, _docIDs,
+                                  _changesBatchSize, _continuous, _skipDeleted,
                                   this);
             // response will be to call _gotChanges
         }

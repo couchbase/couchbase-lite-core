@@ -526,3 +526,40 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push]") {
     validateCheckpoints(db2, db, "{\"remote\":100}");
 }
 
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][Pull]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionDocIDs));
+    enc.beginArray();
+    enc.writeString("0000001"_sl);
+    enc.writeString("0000010"_sl);
+    enc.writeString("0000100"_sl);
+    enc.endArray();
+    enc.endDict();
+    AllocedDict properties(enc.finish());
+
+    SECTION("Push") {
+        auto pushOptions = Replicator::Options::pushing();
+        pushOptions.properties = properties;
+        runReplicators(pushOptions,
+                       Replicator::Options::passive());
+    }
+    SECTION("Pull") {
+        auto pullOptions = Replicator::Options::pulling();
+        pullOptions.properties = properties;
+        runReplicators(Replicator::Options::passive(),
+                       pullOptions);
+    }
+
+    CHECK(c4db_getDocumentCount(db2) == 3);
+    c4::ref<C4Document> doc = c4doc_get(db2, "0000001"_sl, true, nullptr);
+    CHECK(doc != nullptr);
+    doc = c4doc_get(db2, "0000010"_sl, true, nullptr);
+    CHECK(doc != nullptr);
+    doc = c4doc_get(db2, "0000100"_sl, true, nullptr);
+    CHECK(doc != nullptr);
+}
+

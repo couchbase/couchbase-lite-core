@@ -69,6 +69,15 @@ namespace litecore { namespace repl {
                     msg[i.keyString()] = i.value().asString();
             }
         }
+
+        auto docIDs = _options.docIDs();
+        if (docIDs) {
+            auto &enc = msg.jsonBody();
+            enc.beginDict();
+            enc.writeKey("docIDs"_sl);
+            enc.writeValue(docIDs);
+            enc.endDict();
+        }
         
         sendRequest(msg, asynchronize([=](blip::MessageProgress progress) {
             //... After request is sent:

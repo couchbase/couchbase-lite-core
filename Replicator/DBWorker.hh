@@ -11,10 +11,12 @@
 #include "Worker.hh"
 #include "c4BlobStore.h"
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace litecore { namespace repl {
     class Pusher;
+    using DocIDSet = std::shared_ptr<std::unordered_set<std::string>>;
 
     
     /** Actor that manages database access for the replicator. */
@@ -42,7 +44,7 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_setCheckpoint, data, onComplete);
         }
 
-        void getChanges(C4SequenceNumber since, unsigned limit,
+        void getChanges(C4SequenceNumber since, DocIDSet, unsigned limit,
                         bool continuous, bool skipDeleted, Pusher*);
 
         void findOrRequestRevs(Retained<blip::MessageIn> req,
@@ -72,7 +74,7 @@ namespace litecore { namespace repl {
         slice effectiveRemoteCheckpointDocID();
         void _getCheckpoint(CheckpointCallback);
         void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
-        void _getChanges(C4SequenceNumber since, unsigned limit,
+        void _getChanges(C4SequenceNumber since, DocIDSet, unsigned limit,
                          bool continuous, bool skipDeleted,
                          Retained<Pusher> pusher);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
@@ -86,7 +88,7 @@ namespace litecore { namespace repl {
         void insertRevisionsNow()   {enqueue(&DBWorker::_insertRevisionsNow);}
         void _insertRevisionsNow();
 
-            void dbChanged();
+        void dbChanged();
 
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
@@ -99,6 +101,7 @@ namespace litecore { namespace repl {
         std::string _remoteCheckpointDocID;
         c4::ref<C4DatabaseObserver> _changeObserver;
         Retained<Pusher> _pusher;
+        DocIDSet _pushDocIDs;
         std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert;
         std::mutex _revsToInsertMutex;
         actor::Timer _insertTimer;
