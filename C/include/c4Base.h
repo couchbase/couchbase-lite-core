@@ -248,6 +248,9 @@ bool c4SliceEqual(C4Slice a, C4Slice b) C4API;
 void c4slice_free(C4SliceResult) C4API;
 
 
+//////// ERRORS:
+
+
 /** Returns an error message describing a C4Error. Remember to free the result. */
 C4StringResult c4error_getMessage(C4Error error) C4API;
 
@@ -261,6 +264,19 @@ char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) C4API
 
 /** Creates a C4Error struct with the given domain and code, and associates the message with it. */
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;
+
+
+/** Returns true if this is a network error that may be transient,
+    i.e. the client should retry after a delay. */
+bool c4error_mayBeTransient(C4Error err) C4API;
+
+/** Returns true if this error might go away when the network environment changes,
+    i.e. the client should retry after notification of a network status change. */
+bool c4error_mayBeNetworkDependent(C4Error err) C4API;
+
+
+//////// LOGGING:
+
 
 /** Logging levels. */
 typedef C4_ENUM(int8_t, C4LogLevel) {

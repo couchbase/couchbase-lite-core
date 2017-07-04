@@ -143,18 +143,6 @@ extern "C" {
     void c4db_clearCookies(C4Database *db) C4API;
 
 
-#pragma mark - ERRORS:
-
-
-    /** Returns true if this is a network error that may be transient,
-        i.e. the client should retry after a delay. */
-    bool c4error_mayBeTransient(C4Error err) C4API;
-
-    /** Returns true if this error might go away when the network environment changes,
-        i.e. the client should retry after notification of a network status change. */
-    bool c4error_mayBeNetworkDependent(C4Error err) C4API;
-
-
 #pragma mark - CONSTANTS:
 
 
