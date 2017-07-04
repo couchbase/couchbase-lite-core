@@ -39,7 +39,7 @@ namespace litecore { namespace repl {
         void sendChangeList(RevList);
         void maybeSendMoreRevs();
         void sendRevision(const RevRequest&);
-        void markComplete(const Rev&, bool successful);
+        void doneWithRev(const Rev&, bool successful);
         void handleGetAttachment(Retained<MessageIn>);
         void filterByDocIDs(fleeceapi::Array docIDs);
 

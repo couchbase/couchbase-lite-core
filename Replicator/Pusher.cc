@@ -221,7 +221,6 @@ namespace litecore { namespace repl {
             unsigned index = 0;
             for (auto &change : changes) {
                 bool queued = false;
-                bool successful = true;
                 if (proposedChanges) {
                     // Entry in "proposeChanges" response is a status code, with 0 for OK:
                     int status = (int)requests[index].asInt();
@@ -234,7 +233,6 @@ namespace litecore { namespace repl {
                                  SPLAT(change.docID), SPLAT(change.revID), status);
                         auto err = c4error_make(WebSocketDomain, status, "rejected by proposeChanges"_sl);
                         gotDocumentError(change.docID, err, true, false);
-                        successful = false;
                     }
                 } else {
                     // Entry in "changes" response is an array of ancestors, or null to skip:
@@ -255,7 +253,7 @@ namespace litecore { namespace repl {
                     logVerbose("Queueing rev '%.*s' #%.*s (seq %llu)",
                                SPLAT(change.docID), SPLAT(change.revID), change.sequence);
                 } else {
-                    markComplete(change, successful);  // unqueued, so we're done with it
+                    doneWithRev(change, true);  // unqueued, so we're done with it
                 }
                 ++index;
             }
@@ -292,7 +290,7 @@ namespace litecore { namespace repl {
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
                     --_revisionsInFlight;
-                    markComplete(rev, false);
+                    doneWithRev(rev, false);
                     maybeSendMoreRevs();
                     return;
                 }
@@ -305,17 +303,23 @@ namespace litecore { namespace repl {
                 }
                 if (progress.reply) {
                     _revisionBytesAwaitingReply -= progress.bytesSent;
-                    bool successful = !progress.reply->isError();
-                    if (successful) {
+                    bool completed = !progress.reply->isError();
+                    if (completed) {
                         logVerbose("Completed rev %.*s #%.*s (seq %llu)",
                                    SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
                     } else {
                         auto err = progress.reply->getError();
-                        logError("Got error response to rev: %.*s %d '%.*s'",
+                        auto c4err = blipToC4Error(err);
+                        bool transient = c4error_mayBeTransient(c4err);
+                        logError("Got error response to rev %.*s #%.*s (seq %llu): %.*s %d '%.*s'",
+                                 SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence,
                                  SPLAT(err.domain), err.code, SPLAT(err.message));
-                        gotDocumentError(rev.docID, blipToC4Error(err), true, true);
+                        gotDocumentError(rev.docID, c4err, true, transient);
+                        // If this is a permanent failure, like a validation error or conflict,
+                        // then I've completed my duty to push it.
+                        completed = !transient;
                     }
-                    markComplete(rev, successful);
+                    doneWithRev(rev, completed);
                     maybeSendMoreRevs();
                 }
             });
@@ -366,13 +370,12 @@ namespace litecore { namespace repl {
 #pragma mark - PROGRESS:
 
 
-    // Records that a sequence has been successfully pushed.
-    void Pusher::markComplete(const Rev &rev, bool successful) {
+    void Pusher::doneWithRev(const Rev &rev, bool completed) {
         if (nonPassive()) {
-            _pendingSequences.remove(rev.sequence);
             addProgress({rev.bodySize, 0});
 
-            if (successful) {
+            if (completed) {
+                _pendingSequences.remove(rev.sequence);
                 auto firstPending = _pendingSequences.first();
                 auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
                 if (lastSeq > _lastSequence) {
@@ -390,14 +393,16 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
-        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%u, revsToSend=%zu, pendingSequences=%zu", _caughtUp, _changeListsInFlight, _revisionsInFlight, _revisionBytesAwaitingReply, _revsToSend.size(), _pendingSequences.size());
+        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%u, revsToSend=%zu, pendingSequences=%zu",
+                 _caughtUp, _changeListsInFlight, _revisionsInFlight, _revisionBytesAwaitingReply,
+                 _revsToSend.size(), _pendingSequences.size());
         if (Worker::computeActivityLevel() == kC4Busy
                 || (_started && !_caughtUp)
                 || _changeListsInFlight > 0
                 || _revisionsInFlight > 0
                 || _blobsInFlight > 0
                 || !_revsToSend.empty()
-                || !_pendingSequences.empty()) {
+                || _revisionBytesAwaitingReply > 0) {
             return kC4Busy;
         } else if (_options.push == kC4Continuous || isOpenServer()) {
             return kC4Idle;
