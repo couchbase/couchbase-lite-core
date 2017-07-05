@@ -308,31 +308,29 @@ namespace litecore { namespace repl {
                                                     bool dbIsEmpty,
                                                     C4Error err) {
             _checkpointDocID = checkpointID;
+            bool haveLocalCheckpoint = false;
 
-            if (!data) {
-                if (err.code) {
-                    gotError(err);
-                } else {
-                    // Skip getting remote checkpoint since there's no local one.
-                    log("No local checkpoint '%.*s'", SPLAT(checkpointID));
-                    // If pulling into an empty db with no checkpoint, it's safe to skip deleted
-                    // revisions as an optimization.
-                    if (dbIsEmpty && _options.pull > kC4Passive)
-                        _puller->setSkipDeleted();
-                    startReplicating();
-                }
+            if (data) {
+                _checkpoint.decodeFrom(data);
+                auto cp = _checkpoint.sequences();
+                log("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
+                    SPLAT(checkpointID), cp.local, SPLAT(cp.remote));
+                haveLocalCheckpoint = true;
+            } else if (err.code == 0) {
+                log("No local checkpoint '%.*s'", SPLAT(checkpointID));
+                // If pulling into an empty db with no checkpoint, it's safe to skip deleted
+                // revisions as an optimization.
+                if (dbIsEmpty && _options.pull > kC4Passive)
+                    _puller->setSkipDeleted();
+            } else {
+                gotError(err);
                 return;
             }
-
-            _checkpoint.decodeFrom(data);
-            auto cp = _checkpoint.sequences();
-            log("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
-                  SPLAT(checkpointID), cp.local, SPLAT(cp.remote));
 
             // Get the remote checkpoint, using the same checkpointID:
             MessageBuilder msg("getCheckpoint"_sl);
             msg["client"_sl] = checkpointID;
-            sendRequest(msg, [this](MessageProgress progress) {
+            sendRequest(msg, [this,haveLocalCheckpoint](MessageProgress progress) {
                 MessageIn *response = progress.reply;
                 if (!response)
                     return;
@@ -354,12 +352,17 @@ namespace litecore { namespace repl {
                 log("...got remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
                     gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
 
-                // Reset mismatched checkpoints:
-                _checkpoint.validateWith(remoteCheckpoint);
+                if (haveLocalCheckpoint) {
+                    // Compare checkpoints, reset if mismatched:
+                    _checkpoint.validateWith(remoteCheckpoint);
 
-                // Now we have the checkpoints! Time to start replicating:
-                startReplicating();
+                    // Now we have the checkpoints! Time to start replicating:
+                    startReplicating();
+                }
             });
+
+            if (!haveLocalCheckpoint)
+                startReplicating();
         }));
     }
 
