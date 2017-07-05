@@ -161,21 +161,7 @@ aux_source_directory(Replicator               REPLICATOR_SRC)
 
 set(CIVETWEB_SRC "vendor/civetweb/src/civetweb.c"
                  "REST/civetUtils.cc")
-set(MBEDTLS_SRC "vendor/mbedtls/library/md5.c"
-                "vendor/mbedtls/library/sha1.c"
-                "vendor/mbedtls/library/sha256.c"
-                "vendor/mbedtls/library/sha512.c"
-                "vendor/mbedtls/library/ctr_drbg.c"
-                "vendor/mbedtls/library/cipher.c"
-                "vendor/mbedtls/library/cipher_wrap.c"
-                "vendor/mbedtls/library/entropy.c"
-                "vendor/mbedtls/library/entropy_poll.c"
-                "vendor/mbedtls/library/timing.c"
-                "vendor/mbedtls/library/aes.c"
-                "vendor/mbedtls/library/aesni.c"
-                "vendor/mbedtls/library/padlock.c")
 
-configure_file(CMake/mbedtls_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/vendor/mbedtls/include/mbedtls/config.h COPYONLY)
 if(!MSVC)
     set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
 endif()
@@ -193,8 +179,7 @@ set(ALL_SRC_FILES
   ${VERSIONVECTORS_SRC}
   ${C_SRC}
   ${SQLITECPP_SRC}
-  ${REPLICATOR_SRC}
-  ${MBEDTLS_SRC}) 
+  ${REPLICATOR_SRC}) 
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
