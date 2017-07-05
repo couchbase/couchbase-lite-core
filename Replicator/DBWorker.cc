@@ -355,23 +355,32 @@ namespace litecore { namespace repl {
         MessageBuilder response(req);
         response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
         vector<bool> whichRequested(changes.count());
-        unsigned i = 0, itemsWritten = 0, requested = 0;
+        unsigned itemsWritten = 0, requested = 0;
         vector<alloc_slice> ancestors;
         auto &encoder = response.jsonBody();
         encoder.beginArray();
+        int i = -1;
         for (auto item : changes) {
+            ++i;
             // Look up each revision in the `req` list:
             auto change = item.asArray();
+            slice docID = change[proposed ? 0 : 1].asString();
+            slice revID = change[proposed ? 1 : 2].asString();
+            if (docID.size == 0 || revID.size == 0) {
+                warn("Invalid entry in 'changes' message");
+                continue;     // ???  Should this abort the replication?
+            }
+
             if (proposed) {
-                // "proposeChanges" entry: [docID, serverRevID?, bodySize?]
-                slice docID = change[0].asString();
-                slice revID = change[1].asString();
-                if (!docID) {
-                    warn("Invalid docID in 'proposeChanges' message");
-                    return;     // ???  Should this abort the replication?
-                }
-                int status = findProposedChange(docID, revID);
-                if (status != 0) {
+                // "proposeChanges" entry: [docID, revID, parentRevID?, bodySize?]
+                slice parentRevID = change[2].asString();
+                if (parentRevID.size == 0)
+                    parentRevID = nullslice;
+                int status = findProposedChange(docID, revID, parentRevID);
+                if (status == 0) {
+                    ++requested;
+                    whichRequested[i] = true;
+                } else {
                     log("Rejecting proposed change '%.*s' #%.*s (status %d)",
                         SPLAT(docID), SPLAT(revID), status);
                     while (++itemsWritten < i)
@@ -381,13 +390,6 @@ namespace litecore { namespace repl {
 
             } else {
                 // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
-                slice docID = change[1].asString();
-                slice revID = change[2].asString();
-                if (!docID || !revID) {
-                    warn("Invalid entry in 'changes' message");
-                    return;     // ???  Should this abort the replication?
-                }
-
                 if (!findAncestors(docID, revID, ancestors)) {
                     // I don't have this revision, so request it:
                     ++requested;
@@ -401,7 +403,6 @@ namespace litecore { namespace repl {
                     encoder.endArray();
                 }
             }
-            ++i;
         }
         encoder.endArray();
 
@@ -444,26 +445,29 @@ namespace litecore { namespace repl {
 
     // Checks whether the revID (if any) is really current for the given doc.
     // Returns an HTTP-ish status code: 0=OK, 409=conflict, 500=internal error
-    int DBWorker::findProposedChange(slice docID, slice revID) {
+    int DBWorker::findProposedChange(slice docID, slice revID, slice parentRevID) {
         C4Error err;
         //OPT: We don't need the document body, just its metadata, but there's no way to say that
         c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
         if (!doc) {
             if (isNotFoundError(err)) {
                 // Doc doesn't exist; it's a conflict if the peer thinks it does:
-                return revID ? 409 : 0;
+                return parentRevID ? 409 : 0;
             } else {
                 gotError(err);
                 return 500;
             }
-        } else if (!revID) {
+        } else if (slice(doc->revID) == revID) {
+            // I already have this revision:
+            return 304;
+        } else if (!parentRevID) {
             // Peer is creating new doc; that's OK if doc is currently deleted:
             return (doc->flags & kDeleted) ? 0 : 409;
-        } else if (slice(doc->revID) != revID) {
+        } else if (slice(doc->revID) != parentRevID) {
             // Peer's revID isn't current, so this is a conflict:
             return 409;
         } else {
-            // Success!
+            // I don't have this revision and it's not a conflict, so I want it!
             return 0;
         }
     }

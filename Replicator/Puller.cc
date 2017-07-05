@@ -30,6 +30,8 @@ namespace litecore { namespace repl {
         registerHandler("rev",    &Puller::handleRev);
         _spareIncomingRevs.reserve(kMaxSpareIncomingRevs);
         _skipDeleted = _options.skipDeleted();
+        if (nonPassive() && options.noConflicts())
+            warn("noConflicts mode is not compatible with active pull replications!");
     }
 
 
@@ -91,9 +93,10 @@ namespace litecore { namespace repl {
     }
 
 
-    // Handles an incoming "changes" message
+    // Handles an incoming "changes" or "proposeChanges" message
     void Puller::handleChanges(Retained<MessageIn> req) {
         slice reqType = req->property("Profile"_sl);
+        bool proposed = (reqType == "proposeChanges"_sl);
         logVerbose("Handling '%.*s' message", SPLAT(reqType));
 
         auto changes = req->JSONBody().asArray();
@@ -111,7 +114,7 @@ namespace litecore { namespace repl {
             req->respond();
         } else if (req->noReply()) {
             warn("Got pointless noreply 'changes' message");
-        } else if (_options.noConflicts() && reqType != "proposeChanges"_sl) {
+        } else if (_options.noConflicts() && !proposed) {
             // In conflict-free mode the protocol requires the pusher send "proposeChanges" instead
             req->respondWithError({"BLIP"_sl, 409});
         } else {
@@ -119,7 +122,7 @@ namespace litecore { namespace repl {
             ++_pendingCallbacks;
             _dbActor->findOrRequestRevs(req, asynchronize([this,req,changes](vector<bool> which) {
                 --_pendingCallbacks;
-                if (nonPassive()) {
+                if (nonPassive() && !_options.noConflicts()) {
                     // Keep track of which remote sequences I just requested:
                     for (size_t i = 0; i < which.size(); ++i) {
                         if (which[i]) {

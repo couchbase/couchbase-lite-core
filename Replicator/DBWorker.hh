@@ -94,7 +94,7 @@ namespace litecore { namespace repl {
 
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
-        int findProposedChange(slice docID, slice revID);
+        int findProposedChange(slice docID, slice revID, slice parentRevID);
 
         static const size_t kMaxPossibleAncestors = 10;
 

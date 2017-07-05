@@ -162,7 +162,7 @@ namespace litecore { namespace repl {
             // Write the info array for this change:
             enc.beginArray();
             if (_proposeChanges) {
-                enc << change.docID;
+                enc << change.docID << change.revID;
                 if (change.remoteAncestorRevID || change.bodySize > 0)
                     enc << change.remoteAncestorRevID;
             } else {
@@ -213,8 +213,7 @@ namespace litecore { namespace repl {
             if (reply->isError())
                 return gotError(reply);
 
-            // The response contains an array that, for each change in the outgoing message,
-            // contains either a list of known ancestors, or null/false/0 if not interested.
+            // The response contains an array that parallels the array I sent, with each item
             int maxHistory = (int)max(0l, reply->intProperty("maxHistory"_sl));
             auto requests = reply->JSONBody().asArray();
 
@@ -228,14 +227,14 @@ namespace litecore { namespace repl {
                         auto request = _revsToSend.emplace(_revsToSend.end(), change, maxHistory);
                         request->ancestorRevIDs.emplace_back(change.remoteAncestorRevID);
                         queued = true;
-                    } else {
+                    } else if (status != 304) {     // 304 means server has my rev already
                         logError("Proposed rev '%.*s' #%.*s rejected with status %d",
                                  SPLAT(change.docID), SPLAT(change.revID), status);
                         auto err = c4error_make(WebSocketDomain, status, "rejected by proposeChanges"_sl);
                         gotDocumentError(change.docID, err, true, false);
                     }
                 } else {
-                    // Entry in "changes" response is an array of ancestors, or null to skip:
+                    // Entry in "changes" response is an array of known ancestors, or null to skip:
                     Array ancestorArray = requests[index].asArray();
                     if (ancestorArray) {
                         auto request = _revsToSend.emplace(_revsToSend.end(), change, maxHistory);

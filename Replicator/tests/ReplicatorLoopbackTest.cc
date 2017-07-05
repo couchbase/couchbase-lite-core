@@ -232,7 +232,7 @@ public:
         C4Error err;
         c4::ref<C4RawDocument> doc( c4raw_get(database,
                                               (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
-                                              alloc_slice(checkpointID),
+                                              checkpointID,
                                               &err) );
         INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << asstring(checkpointID) << "'; err = " << err.domain << "," << err.code);
         REQUIRE(doc);
@@ -245,6 +245,14 @@ public:
                              const char *body, const char *meta = "1-cc") {
         validateCheckpoint(localDB,  true,  body, meta);
         validateCheckpoint(remoteDB, false, body, meta);
+    }
+
+    void clearCheckpoint(C4Database *database, bool local) {
+        C4Error err;
+        REQUIRE( c4raw_put(database,
+                           (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
+                           checkpointID,
+                           kC4SliceNull, kC4SliceNull, &err) );
     }
 
     LoopbackProvider provider;
@@ -566,7 +574,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][Push][NoConflicts]") {
     auto serverOpts = Replicator::Options::passive();
     serverOpts.setProperty(C4STR(kC4ReplicatorOptionNoConflicts), "true"_sl);
 
@@ -576,6 +584,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull]"
     Log("-------- First Replication db->db2 --------");
     runReplicators(serverOpts,
                    Replicator::Options::pulling());
+    validateCheckpoints(db2, db, "{\"remote\":2}");
 
     Log("-------- Update Doc --------");
     alloc_slice body;
@@ -594,6 +603,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull]"
     Log("-------- Second Replication db2->db --------");
     runReplicators(serverOpts,
                    Replicator::Options::pushing());
+    validateCheckpoints(db2, db, "{\"local\":3,\"remote\":2}");
     compareDatabases();
 
     Log("-------- Update Doc Again --------");
@@ -603,6 +613,25 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull]"
     Log("-------- Third Replication db2->db --------");
     runReplicators(serverOpts,
                    Replicator::Options::pushing());
+    validateCheckpoints(db2, db, "{\"local\":5,\"remote\":2}");
     compareDatabases();
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Pull][NoConflicts]") {
+    auto serverOpts = Replicator::Options::passive();
+    serverOpts.setProperty(C4STR(kC4ReplicatorOptionNoConflicts), "true"_sl);
+
+    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev2ID, kFleeceBody);
+
+    Log("-------- First Replication: push db->db2 --------");
+    runReplicators(Replicator::Options::pushing(), serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":2}");
+
+    clearCheckpoint(db, true);
+    Log("-------- Second Replication: push db->db2 --------");
+    runReplicators(Replicator::Options::pushing(), serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":2}");
 }
 
