@@ -38,6 +38,7 @@ target_link_libraries(CppTests  LiteCoreStatic
 if(APPLE)
     target_link_libraries(CppTests  "-framework Foundation"
                                     "-framework CFNetwork"
+                                    "-framework Security"
                                     "z")
 else()
     if(UNIX AND NOT ANDROID)
