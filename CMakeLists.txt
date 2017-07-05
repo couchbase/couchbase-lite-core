@@ -120,6 +120,7 @@ add_subdirectory(REST)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/BLIP-Cpp            EXCLUDE_FROM_ALL)
+add_subdirectory(vendor/sqlcipher           EXCLUDE_FROM_ALL)
 
 ### MORE BUILD SETTINGS:
 
@@ -247,7 +248,7 @@ set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 SQLite3_UnicodeSN
                                 BLIPStatic
                                 CivetWeb
-                                sqlite3)
+                                sqlcipher)
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 

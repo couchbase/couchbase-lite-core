@@ -19,3 +19,7 @@
 [submodule "wiki"]
 	path = wiki
 	url = https://github.com/couchbase/couchbase-lite-core.wiki.git
+[submodule "vendor/sqlcipher"]
+	path = vendor/sqlcipher
+	url = https://github.com/couchbaselabs/couchbase-lite-libsqlcipher
+	branch = feature/mbedtls
