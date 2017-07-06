@@ -109,7 +109,6 @@ namespace litecore { namespace repl {
         std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert;
         std::mutex _revsToInsertMutex;
         actor::Timer _insertTimer;
-        bool _insertDocumentMetadata {true}; //FIX: Currently set to true to accomodate SG
         C4SequenceNumber _firstChangeSequence {0};
     };
 

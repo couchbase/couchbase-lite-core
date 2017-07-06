@@ -46,16 +46,38 @@ namespace litecore { namespace repl {
     // Read the 'rev' message, on my actor thread:
     void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
         assert(!_revMessage);
+        _parent = _puller;  // Necessary because Worker clears _parent when first completed
+
         _revMessage = msg;
         _rev.docID = _revMessage->property("id"_sl);
         _rev.revID = _revMessage->property("rev"_sl);
-        _parent = _puller;  // Necessary because Worker clears _parent when first completed
+        if (_revMessage->property("deleted"_sl))
+            _rev.flags |= kRevDeleted;
+        _rev.historyBuf = _revMessage->property("history"_sl);
+        slice sequence(_revMessage->property("sequence"_sl));
 
         _peerError = (int)_revMessage->intProperty("error"_sl);
         if (_peerError) {
             // The sender had a last-minute failure getting the promised revision. Give up.
             warn("Peer was unable to send '%.*s'/%.*s: error %d",
                  SPLAT(_rev.docID), SPLAT(_rev.revID), _peerError);
+            finish();
+            return;
+        }
+
+        // Validate the revID and sequence:
+        logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')",
+                   SPLAT(_rev.docID), SPLAT(_rev.revID), SPLAT(sequence));
+        if (_rev.docID.size == 0 || _rev.revID.size == 0) {
+            warn("Got invalid revision");
+            _error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
+            finish();
+            return;
+        }
+        if (!sequence && nonPassive()) {
+            warn("Missing sequence in 'rev' message for active puller");
+            _error = c4error_make(WebSocketDomain, 400,
+                                  "received revision with missing 'sequence'"_sl);
             finish();
             return;
         }
@@ -72,45 +94,13 @@ namespace litecore { namespace repl {
         }
         Dict root = Value::fromTrustedData(fleeceBody).asDict();
 
-        // Populate the RevToInsert's metadata:
-        bool stripUnderscores;
-        if (_rev.docID) {
-            if (_revMessage->property("deleted"_sl))
-                _rev.flags |= kRevDeleted;
-            stripUnderscores = c4doc_hasOldMetaProperties(root);
-        } else {
-            // No metadata properties; look inside the JSON:
-            _rev.docID = (slice)root["_id"_sl].asString();
-            _rev.revID = (slice)root["_rev"_sl].asString();
-            if (root["_deleted"].asBool())
-                _rev.flags = kRevDeleted;
-            stripUnderscores = true;
-        }
-        _rev.historyBuf = _revMessage->property("history"_sl);
-        slice sequence(_revMessage->property("sequence"_sl));
-
-        // Validate the revID and sequence:
-        logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')",
-                   SPLAT(_rev.docID), SPLAT(_rev.revID), SPLAT(sequence));
-        if (_rev.docID.size == 0 || _rev.revID.size == 0) {
-            warn("Got invalid revision");
-            _error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
-            finish();
-            return;
-        }
-        if (nonPassive() && !sequence) {
-            warn("Missing sequence in 'rev' message for active puller");
-            _error = c4error_make(WebSocketDomain, 400,
-                                  "received revision with missing 'sequence'"_sl);
-            finish();
-            return;
-        }
-
-        // Populate the RevToInsert's body:
-        if (stripUnderscores) {
+        // Strip out any "_"-prefixed properties like _id, just in case:
+        if (c4doc_hasOldMetaProperties(root)) {
             fleeceBody = c4doc_encodeStrippingOldMetaProperties(root);
             root = Value::fromTrustedData(fleeceBody).asDict();
         }
+
+        // Populate the RevToInsert's body:
         _rev.body = fleeceBody;
 
         // Call the custom validation function if any:

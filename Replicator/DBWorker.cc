@@ -569,28 +569,7 @@ namespace litecore { namespace repl {
         if (blipError)
             msg["error"_sl] = blipError;
 
-        if (_insertDocumentMetadata) {
-            // SG currently requires the metatada properties in the document:
-            auto sk = c4db_getFLSharedKeys(_db);
-            JSONEncoder enc;
-            enc.setSharedKeys(sk);
-            enc.beginDict();
-            enc.writeKey("_id"_sl);
-            enc.writeString(request.docID);
-            enc.writeKey("_rev"_sl);
-            enc.writeString(request.revID);
-            if (revisionFlags & kRevDeleted) {
-                enc.writeKey("_deleted"_sl);
-                enc.writeBool(true);
-            }
-            for (Dict::iterator i(root, sk); i; ++i) {
-                enc.writeKey(i.keyString());
-                enc.writeValue(i.value());
-            }
-            enc.endDict();
-            alloc_slice json = enc.finish();
-            msg.write(json);
-        } else if (root) {
+        if (root) {
             msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
             msg.jsonBody().writeValue(root);        // encode as JSON
         }
