@@ -14,11 +14,6 @@
 #include <atomic>
 #include <errno.h>
 
-#ifdef _MSC_VER
-#include <winerror.h>
-#define EHOSTDOWN WSAEHOSTDOWN
-#endif
-
 
 const char* const kC4ReplicatorActivityLevelNames[5] = {
     "stopped", "offline", "connecting", "idle", "busy"

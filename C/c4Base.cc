@@ -27,6 +27,11 @@
 #include <deque>
 #include <mutex>
 
+#ifdef _MSC_VER
+#include <winerror.h>
+#define EHOSTDOWN WSAEHOSTDOWN
+#endif
+
 using namespace litecore;
 
 extern "C" {

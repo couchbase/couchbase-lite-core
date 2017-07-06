@@ -56,6 +56,14 @@ namespace LiteCore.Interop
         }
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4error_mayBeTransient(C4Error err);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4error_mayBeNetworkDependent(C4Error err);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, [MarshalAs(UnmanagedType.U1)]bool preformatted);
 
         public static bool c4log_writeToBinaryFile(C4LogLevel level, string path, C4Error* error)
