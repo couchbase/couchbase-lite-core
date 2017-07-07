@@ -38,6 +38,10 @@ public class FLArrayIterator {
         return new FLValue(getValue(handle));
     }
 
+    public FLValue getValueAt(int index) {
+        return new FLValue(getValueAt(handle, index));
+    }
+
     public boolean next() {
         return next(handle);
     }
@@ -86,6 +90,13 @@ public class FLArrayIterator {
      * @return long (FLValue)
      */
     private static native long getValue(final long itr);
+
+    /**
+     * @param itr    (FLArrayIterator *)
+     * @param offset
+     * @return long (FLValue)
+     */
+    private static native long getValueAt(final long itr, int offset);
 
     /**
      * Advances the iterator to the next value, or returns false if at the end.

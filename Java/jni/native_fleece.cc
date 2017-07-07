@@ -86,6 +86,17 @@ Java_com_couchbase_litecore_fleece_FLArrayIterator_getValue(JNIEnv *env, jclass 
 
 /*
  * Class:     com_couchbase_litecore_fleece_FLArrayIterator
+ * Method:    getValueAt
+ * Signature: (JI)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLArrayIterator_getValueAt(JNIEnv *env, jclass clazz, jlong jitr,
+                                                              jint offset) {
+    return (jlong) FLArrayIterator_GetValueAt((FLArrayIterator *) jitr, (uint32_t) offset);
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLArrayIterator
  * Method:    next
  * Signature: (J)Z
  */
