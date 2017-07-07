@@ -196,7 +196,7 @@ namespace litecore { namespace repl {
             _proposeChangesKnown = true;
             if (!proposedChanges && reply->isError()) {
                 auto err = progress.reply->getError();
-                if (err.domain == "BLIP"_sl && err.code == 409) {
+                if (err.code == 409 && (err.domain == "BLIP"_sl || err.domain == "HTTP"_sl)) {
                     // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
                     log("Server requires 'proposeChanges'; retrying...");
                     _proposeChanges = true;
