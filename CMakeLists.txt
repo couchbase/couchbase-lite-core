@@ -39,6 +39,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     endif()
     message("Found libc++ at ${LIBCXX_LIB}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+
     find_library(LIBCXXABI_LIB c++abi)
     if (NOT LIBCXXABI_LIB)
         message(FATAL_ERROR "libc++abi not found")
@@ -201,6 +202,15 @@ elseif(UNIX AND NOT APPLE)
     LiteCore/Android/arc4random.cc)
 endif()
 
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    # libc++ is special - clang will introduce an implicit -lc++ when it is used.
+    # That means we need to tell the linker the path to the directory containing
+    # libc++.so rather than just linking the .so directly. This must be done
+    # *before* the target declaration as it affects all subsequent targets.
+    get_filename_component (LIBCXX_LIBDIR "${LIBCXX_LIB}" DIRECTORY)
+    link_directories (${LIBCXX_LIBDIR})
+endif()
+
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 file(WRITE empty.cpp)
 add_library(LiteCore SHARED empty.cpp)
@@ -225,10 +235,6 @@ set(LITECORE_LIBRARIES_PUBLIC   sqlite3)
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 target_link_libraries(LiteCore PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
 
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    target_link_libraries(LiteCore PUBLIC ${LIBCXX_LIB})
-endif()
-
 # Mac/iOS stuff
 if (APPLE)
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
@@ -239,7 +245,6 @@ if (APPLE)
                                     "-framework Security"
                                     z)
 elseif(UNIX AND NOT ANDROID)
-    target_link_libraries(LiteCore PRIVATE atomic)
     target_link_libraries(LiteCore PUBLIC z)
 elseif(ANDROID)
    target_compile_definitions(LiteCoreStatic PUBLIC -D_CRYPTO_MBEDTLS)
