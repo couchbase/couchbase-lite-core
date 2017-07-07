@@ -30,6 +30,9 @@ if(MSVC)
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    # Enable relative RPATHs for installed bits
+    set (CMAKE_INSTALL_RPATH "\$ORIGIN")
+
     if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         message(FATAL_ERROR "${CMAKE_CXX_COMPILER_ID} is not supported for building!")
     endif()
