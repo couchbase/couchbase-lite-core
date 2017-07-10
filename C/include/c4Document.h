@@ -21,11 +21,10 @@ extern "C" {
 
     /** Flags describing a document. */
     typedef C4_OPTIONS(uint32_t, C4DocumentFlags) {
-        kDeleted        = 0x01,     ///< The document's current revision is deleted.
-        kConflicted     = 0x02,     ///< The document is in conflict.
-        kHasAttachments = 0x04,     ///< The document's current revision has attachments.
-
-        kExists         = 0x1000    ///< The document exists (i.e. has revisions.)
+        kDocDeleted         = 0x01,     ///< The document's current revision is deleted.
+        kDocConflicted      = 0x02,     ///< The document is in conflict.
+        kDocHasAttachments  = 0x04,     ///< The document's current revision has attachments.
+        kDocExists          = 0x1000    ///< The document exists (i.e. has revisions.)
     }; // Note: Superset of DocumentFlags
 
     /** Flags that apply to a revision. */

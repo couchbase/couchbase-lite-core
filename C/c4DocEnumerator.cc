@@ -108,15 +108,15 @@ private:
         auto &rec = _e.record();
         if (!rec.exists()) {
             // Client must be enumerating a list of docIDs, and this doc doesn't exist.
-            // Return it anyway, without the kExists flag.
+            // Return it anyway, without the kDocExists flag.
             _docFlags = 0;
             _docRevID = nullslice;
             return (!_filter || _filter(rec, 0));
         }
         _docRevID = _database->documentFactory().revIDFromVersion(rec.version());
-        _docFlags = (C4DocumentFlags)rec.flags() | kExists;
+        _docFlags = (C4DocumentFlags)rec.flags() | kDocExists;
         auto optFlags = _options.flags;
-        return (optFlags & kC4IncludeNonConflicted ||  (_docFlags & ::kConflicted))
+        return (optFlags & kC4IncludeNonConflicted ||  (_docFlags & ::kDocConflicted))
             && (!_filter || _filter(rec, _docFlags));
     }
 

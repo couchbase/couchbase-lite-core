@@ -70,12 +70,12 @@ namespace c4Internal {
 
         static C4RevisionFlags currentRevFlagsFromDocFlags(C4DocumentFlags docFlags) {
             C4RevisionFlags revFlags = 0;
-            if (docFlags & kExists) {
+            if (docFlags & kDocExists) {
                 revFlags |= kRevLeaf;
-                if (docFlags & kDeleted)
                 // For stupid historical reasons C4DocumentFlags and C4RevisionFlags aren't compatible
+                if (docFlags & kDocDeleted)
                     revFlags |= kRevDeleted;
-                if (docFlags & kHasAttachments)
+                if (docFlags & kDocHasAttachments)
                     revFlags |= kRevHasAttachments;
                 if (docFlags & (C4DocumentFlags)DocumentFlags::kSynced)
                     revFlags |= kRevKeepBody;

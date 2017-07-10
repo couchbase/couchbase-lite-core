@@ -253,8 +253,8 @@ C4Document* c4doc_getForPut(C4Database *database,
             // No parent revision given:
             if (deleting) {
                 // Didn't specify a revision to delete: NotFound or a Conflict, depending
-                code = ((idoc->flags & kExists) ?kC4ErrorConflict :kC4ErrorNotFound);
-            } else if ((idoc->flags & kExists) && !(idoc->selectedRev.flags & kDeleted)) {
+                code = ((idoc->flags & kDocExists) ?kC4ErrorConflict :kC4ErrorNotFound);
+            } else if ((idoc->flags & kDocExists) && !(idoc->selectedRev.flags & kDocDeleted)) {
                 // If doc exists, current rev must be a deletion or there will be a conflict:
                 code = kC4ErrorConflict;
             }

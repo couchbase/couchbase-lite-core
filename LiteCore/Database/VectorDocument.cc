@@ -72,7 +72,7 @@ namespace c4Internal {
             sequence = _current->sequence();
             flags = (C4DocumentFlags)_current->flags();
             if (_current->exists())
-                flags = (C4DocumentFlags)(flags | kExists);
+                flags = (C4DocumentFlags)(flags | kDocExists);
         }
 
 

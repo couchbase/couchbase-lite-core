@@ -71,7 +71,7 @@ namespace c4Internal {
             docID = _docIDBuf = _versionedDoc.docID();
             flags = (C4DocumentFlags)_versionedDoc.flags();
             if (_versionedDoc.exists())
-                flags = (C4DocumentFlags)(flags | kExists);
+                flags = (C4DocumentFlags)(flags | kDocExists);
 
             initRevID();
             selectCurrentRevision();
@@ -209,7 +209,7 @@ namespace c4Internal {
 
         void updateMeta() {
             _versionedDoc.updateMeta();
-            flags = (C4DocumentFlags)_versionedDoc.flags() | kExists;
+            flags = (C4DocumentFlags)_versionedDoc.flags() | kDocExists;
             initRevID();
         }
 

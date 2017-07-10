@@ -485,7 +485,7 @@ namespace litecore { namespace repl {
             return 304;
         } else if (!parentRevID) {
             // Peer is creating new doc; that's OK if doc is currently deleted:
-            return (doc->flags & kDeleted) ? 0 : 409;
+            return (doc->flags & kDocDeleted) ? 0 : 409;
         } else if (slice(doc->revID) != parentRevID) {
             // Peer's revID isn't current, so this is a conflict:
             return 409;

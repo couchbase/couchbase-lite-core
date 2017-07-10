@@ -194,7 +194,7 @@ namespace litecore { namespace REST {
 
         string revID = rq.query("rev");
         if (revID.empty()) {
-            if (doc->flags & kDeleted)
+            if (doc->flags & kDocDeleted)
                 return rq.respondWithStatus(HTTPStatus::NotFound);
             revID = slice(doc->revID).asString();
         } else {

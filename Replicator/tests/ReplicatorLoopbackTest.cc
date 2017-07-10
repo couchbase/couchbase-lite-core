@@ -190,9 +190,11 @@ public:
     }
 
     void compareDocs(C4Document *doc1, C4Document *doc2) {
+        const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
+        
         REQUIRE(doc1->docID == doc2->docID);
         REQUIRE(doc1->revID == doc2->revID);
-        REQUIRE(doc1->flags == doc2->flags);
+        REQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:
         Value root1 = Value::fromData(doc1->selectedRev.body);
@@ -555,7 +557,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push]") {
 
     doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
     REQUIRE(doc);
-    CHECK((doc->flags & kConflicted) != 0);
+    CHECK((doc->flags & kDocConflicted) != 0);
     CHECK(doc->selectedRev.revID == C4STR("2-2a2a2a2a"));
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));

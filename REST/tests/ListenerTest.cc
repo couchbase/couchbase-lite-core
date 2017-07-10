@@ -235,7 +235,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
         C4Error err;
         c4::ref<C4Document> doc = c4doc_get(db, docID, true, &err);
         REQUIRE(doc);
-        CHECK((doc->flags & kDeleted) != 0);
+        CHECK((doc->flags & kDocDeleted) != 0);
         CHECK(doc->revID == revID);
         body = Value::fromData(doc->selectedRev.body).asDict();
         CHECK(body.count() == 0);
