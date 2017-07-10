@@ -35,7 +35,7 @@ extern "C" {
 
 #if __APPLE__
 #include <TargetConditionals.h>
-#elif defined(_MSC_VER)
+#else
 #include <arc4random.h>
 #endif
 
