@@ -62,8 +62,6 @@ extern "C" {
 
     /** Options for running queries. */
     typedef struct {
-        uint64_t skip;          ///< Number of initial rows to skip
-        uint64_t limit;         ///< Max number of rows to return (set to UINT_MAX for unlimited)
         bool rankFullText;      ///< Should full-text results be ranked by relevance?
     } C4QueryOptions;
 

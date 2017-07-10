@@ -29,14 +29,7 @@ public:
         c4query_free(query);
     }
 
-    C4Query* compile(const std::string &whereExpr, const std::string &sortExpr ="") {
-        string queryStr;
-        if (sortExpr.empty()) {
-            queryStr = whereExpr;
-        } else {
-            queryStr = string("[\"SELECT\", {\"WHERE\": ") + whereExpr
-                                        + ", \"ORDER_BY\": " + sortExpr + "}]";
-        }
+    void compileSelect(const std::string &queryStr) {
         INFO("Query = " << queryStr);
         C4Error error;
         c4query_free(query);
@@ -44,17 +37,27 @@ public:
         char errbuf[256];
         INFO("error " << error.domain << "/" << error.code << ": " << c4error_getMessageC(error, errbuf, sizeof(errbuf)));
         REQUIRE(query);
-        return query;
     }
 
-    std::vector<std::string> run(uint64_t skip =0, uint64_t limit =UINT64_MAX,
-                                 const char *bindings =nullptr)
+    void compile(const std::string &whereExpr,
+                     const std::string &sortExpr ="",
+                     bool addOffsetLimit =false)
+    {
+        stringstream json;
+        json << "[\"SELECT\", {\"WHERE\": " << whereExpr;
+        if (!sortExpr.empty())
+            json << ", \"ORDER_BY\": " << sortExpr;
+        if (addOffsetLimit)
+            json << ", \"OFFSET\": [\"$offset\"], \"LIMIT\":  [\"$limit\"]";
+        json << "}]";
+        compileSelect(json.str());
+    }
+
+    std::vector<std::string> run(const char *bindings =nullptr)
     {
         REQUIRE(query);
         std::vector<std::string> docIDs;
         C4QueryOptions options = kC4DefaultQueryOptions;
-        options.skip = skip;
-        options.limit = limit;
         C4Error error;
         auto e = c4query_run(query, &options, c4str(bindings), &error);
         INFO("c4query_run got error " << error.domain << "/" << error.code);
@@ -76,8 +79,10 @@ protected:
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
-    CHECK(run(1, 8) == (vector<string>{"0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
-    CHECK(run(1, 4) == (vector<string>{"0000015", "0000036", "0000043", "0000053"}));
+
+    compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"), "", true);
+    CHECK(run("{\"offset\":1,\"limit\":8}") == (vector<string>{"0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
+    CHECK(run("{\"offset\":1,\"limit\":4}") == (vector<string>{"0000015", "0000036", "0000043", "0000053"}));
 
     compile(json5("['AND', ['=', ['array_count()', ['.', 'contact', 'phone']], 2],\
                            ['=', ['.', 'gender'], 'male']]"));
@@ -85,12 +90,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
         "0000049", "0000056", "0000063", "0000065", "0000075", "0000082", "0000089", "0000094", "0000097"}));
 
     // MISSING means no value is present (at that array index or dict key)
-    compile(json5("['IS', ['.', 'contact', 'phone', [0]], ['MISSING']]"));
-    CHECK(run(0, 4) == (vector<string>{"0000004", "0000006", "0000008", "0000015"}));
+    compile(json5("['IS', ['.', 'contact', 'phone', [0]], ['MISSING']]"), "", true);
+    CHECK(run("{\"offset\":0,\"limit\":4}") == (vector<string>{"0000004", "0000006", "0000008", "0000015"}));
 
     // ...wherease null is a JSON null value
-    compile(json5("['IS', ['.', 'contact', 'phone', [0]], null]"));
-    CHECK(run(0, 4) == (vector<string>{}));
+    compile(json5("['IS', ['.', 'contact', 'phone', [0]], null]"), "", true);
+    CHECK(run("{\"offset\":0,\"limit\":4}") == (vector<string>{}));
 }
 
 
@@ -103,9 +108,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query sorted", "[Query][C]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 1]]"));
-    CHECK(run(0, UINT64_MAX, "{\"1\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
+    CHECK(run("{\"1\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
     compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 'state']]"));
-    CHECK(run(0, UINT64_MAX, "{\"state\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
+    CHECK(run("{\"state\": \"CA\"}") == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
 }
 
 
@@ -133,7 +138,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query expression index", "[Query][C]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
     compile(json5("['=', ['length()', ['.name.first']], 9]"));
-    CHECK(run(0, UINT64_MAX) == (vector<string>{ "0000015", "0000099" }));
+    CHECK(run() == (vector<string>{ "0000015", "0000099" }));
 
 }
 
@@ -165,7 +170,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
 
     // Now run a query that would have returned the deleted doc, if it weren't deleted:
     compile(json5("['=', ['length()', ['.name.first']], 9]"));
-    CHECK(run(0, UINT64_MAX) == (vector<string>{ "0000099" }));
+    CHECK(run() == (vector<string>{ "0000099" }));
 }
 
 
@@ -173,7 +178,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
-    CHECK(run(0, UINT64_MAX) == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
+    CHECK(run() == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
 
 }
 
@@ -181,9 +186,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
     vector<string> expectedFirst = {"Cleveland", "Georgetta", "Margaretta"};
     vector<string> expectedLast  = {"Bejcek",    "Kolding",   "Ogwynn"};
-    compile(json5("{WHAT: ['.name.first', '.name.last'], \
-                   WHERE: ['>=', ['length()', ['.name.first']], 9],\
-                ORDER_BY: [['.name.first']]}"));
+    compileSelect(json5("{WHAT: ['.name.first', '.name.last'], \
+                         WHERE: ['>=', ['length()', ['.name.first']], 9],\
+                      ORDER_BY: [['.name.first']]}"));
 
     REQUIRE(c4query_columnCount(query) == 2);
     //CHECK(c4query_nameOfColumn(query, 0) == C4STR("name.first")); //TODO: Names currently wrong
@@ -206,7 +211,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Aggregate", "[Query][C]") {
-    compile(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
+    compileSelect(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
     C4Error error;
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);
@@ -229,10 +234,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Grouped", "[Query][C]") {
     const vector<string> expectedMax   = {"Mulneix", "Schmith",   "Kinatyan", "Visnic"};
     const int expectedRowCount = 42;
 
-    compile(json5("{WHAT: [['.contact.address.state'],\
-                           ['min()', ['.name.last']],\
-                           ['max()', ['.name.last']]],\
-                GROUP_BY: [['.contact.address.state']]}"));
+    compileSelect(json5("{WHAT: [['.contact.address.state'],\
+                                ['min()', ['.name.last']],\
+                                ['max()', ['.name.last']]],\
+                     GROUP_BY: [['.contact.address.state']]}"));
     C4Error error {};
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);
@@ -260,12 +265,12 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Join", "[Query][C]") {
     importJSONFile(sFixturesDir + "states_titlecase.json", "state-");
     vector<string> expectedFirst = {"Cleveland",   "Georgetta", "Margaretta"};
     vector<string> expectedState  = {"California", "Ohio",      "South Dakota"};
-    compile(json5("{WHAT: ['.person.name.first', '.state.name'],\
-                    FROM: [{as: 'person'}, \
-                           {as: 'state', on: ['=', ['.state.abbreviation'],\
-                                                   ['.person.contact.address.state']]}],\
-                   WHERE: ['>=', ['length()', ['.person.name.first']], 9],\
-                ORDER_BY: [['.person.name.first']]}"));
+    compileSelect(json5("{WHAT: ['.person.name.first', '.state.name'],\
+                          FROM: [{as: 'person'}, \
+                                 {as: 'state', on: ['=', ['.state.abbreviation'],\
+                                                         ['.person.contact.address.state']]}],\
+                         WHERE: ['>=', ['length()', ['.person.name.first']], 9],\
+                      ORDER_BY: [['.person.name.first']]}"));
     C4Error error;
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);

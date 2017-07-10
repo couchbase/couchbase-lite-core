@@ -46,8 +46,6 @@ namespace litecore {
         {
             QueryParser qp(keyStore.tableName());
             qp.setBaseResultColumns({"sequence", "key", "version", "flags"});
-            qp.setDefaultOffset("$offset");
-            qp.setDefaultLimit("$limit");
             qp.parseJSON(selectorExpression);
 
             string sql = qp.SQL();
@@ -312,16 +310,8 @@ namespace litecore {
         ,_statement(query->statement())
         {
             _statement->clearBindings();
-            long long offset = 0, limit = -1;
-            if (options) {
-                offset = options->skip;
-                if (options->limit <= INT64_MAX)
-                    limit = options->limit;
-                if (options->paramBindings.buf)
-                    bindParameters(options->paramBindings);
-            }
-            _statement->bind("$offset", offset);
-            _statement->bind("$limit", limit );
+            if (options && options->paramBindings.buf)
+                bindParameters(options->paramBindings);
             LogStatement(*_statement);
         }
 

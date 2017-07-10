@@ -30,8 +30,6 @@ using namespace litecore;
 
 
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
-    0,
-    UINT_MAX,
     true
 };
 
@@ -168,10 +166,6 @@ C4QueryEnumerator* c4query_run(C4Query *query,
 {
     return tryCatch<C4QueryEnumerator*>(outError, [&]{
         Query::Options options;
-        if (c4options) {
-            options.skip = c4options->skip;
-            options.limit = c4options->limit;
-        }
         options.paramBindings = encodedParameters;
         return new C4QueryEnumeratorImpl(query, &options);
     });

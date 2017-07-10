@@ -238,11 +238,8 @@ namespace litecore {
         writeSelectListClause(operands, "ORDER_BY"_sl, " ORDER BY ", true);
 
         // LIMIT, OFFSET clauses:
-        // TODO: Use the ones from operands
-        if (!_defaultLimit.empty())
-            _sql << " LIMIT " << _defaultLimit;
-        if (!_defaultOffset.empty())
-            _sql << " OFFSET " << _defaultOffset;
+        writeOrderOrLimitClause(operands, "LIMIT"_sl,  "LIMIT");
+        writeOrderOrLimitClause(operands, "OFFSET"_sl, "OFFSET");
     }
 
 
@@ -299,6 +296,17 @@ namespace litecore {
                 break;
         }
         fail("Invalid item type in WHAT clause; must be array or '*' or '.property'");
+    }
+
+
+    void QueryParser::writeOrderOrLimitClause(const Dict *operands,
+                                              slice jsonKey,
+                                              const char *sqlKeyword) {
+        auto value = getCaseInsensitive(operands, jsonKey);
+        if (value) {
+            _sql << " " << sqlKeyword << " ";
+            parseNode(value);
+        }
     }
 
 

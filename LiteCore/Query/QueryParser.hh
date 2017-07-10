@@ -32,8 +32,6 @@ namespace litecore {
         { }
 
         void setBaseResultColumns(const std::vector<std::string>& c){_baseResultColumns = c;}
-        void setDefaultOffset(const std::string &o)                 {_defaultOffset = o;}
-        void setDefaultLimit(const std::string &l)                  {_defaultLimit = l;}
 
         void parse(const fleece::Value*);
         void parseJSON(slice);
@@ -79,6 +77,9 @@ namespace litecore {
         void parseFromClause(const fleece::Value *from);
         void writeFromClause(const fleece::Value *from);
         bool isValidJoinType(const std::string&);
+        void writeOrderOrLimitClause(const fleece::Dict *operands,
+                                     fleece::slice jsonKey,
+                                     const char *keyword);
 
         void prefixOp(slice, fleece::Array::iterator&);
         void postfixOp(slice, fleece::Array::iterator&);
@@ -115,7 +116,6 @@ namespace litecore {
         std::string _bodyColumnName;
         std::vector<std::string> _aliases;      // Aliased table/join names
         std::vector<std::string> _baseResultColumns;
-        std::string _defaultOffset, _defaultLimit;
         std::stringstream _sql;
         std::vector<const Operation*> _context;
         std::set<std::string> _parameters;

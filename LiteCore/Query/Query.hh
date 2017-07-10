@@ -30,8 +30,6 @@ namespace litecore {
         virtual std::string explain()                                   {return "";}
 
         struct Options {
-            uint64_t skip  {0};
-            uint64_t limit {UINT64_MAX};
             alloc_slice paramBindings;
         };
 

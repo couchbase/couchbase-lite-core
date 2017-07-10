@@ -117,10 +117,10 @@ namespace litecore {
         {"least"_sl,            1, 9, "min"_sl},
 
         // Conditional (unknowns):
-        {"ifmissing"_sl,        2, 2},
+        {"ifmissing"_sl,        2, 2, "ifnull"_sl},
         {"ifnull"_sl,           2, 2},
         {"ifmissingornull"_sl,  2, 2},
-        {"missingif"_sl,        2, 2},
+        {"missingif"_sl,        2, 2, "nullif"_sl},
         {"nullif"_sl,           2, 2},
 
         // Conditional (numbers):
