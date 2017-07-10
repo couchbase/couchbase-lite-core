@@ -526,14 +526,49 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push]") {
-    importJSONLines(sFixturesDir + "names_100.json");
+    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
 
-    createRev(db2, C4STR("0000023"), C4STR("1-cafebabe"), C4STR("{}"));
+    // Push db to db2, so both will have the doc:
+    runReplicators(Replicator::Options::pushing(),
+                   Replicator::Options::passive());
+    validateCheckpoints(db, db2, "{\"local\":1}");
 
-    _expectedDocPullErrors = set<string>{"0000023"};
-    runReplicators(Replicator::Options::passive(),
-                   Replicator::Options::pulling());
-    validateCheckpoints(db2, db, "{\"remote\":100}");
+    // Update the doc differently in each db:
+    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+
+    // Verify that rev 1 body is still available, for later use in conflict resolution:
+    c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->selectedRev.revID == C4STR("2-2a2a2a2a"));
+    CHECK(doc->selectedRev.body.size > 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
+    CHECK(doc->selectedRev.body.size > 0);
+    CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+
+    // Now pull to db from db2, creating a conflict:
+    C4Log("-------- Pull db <- db2 --------");
+    _expectedDocPullErrors = set<string>{"conflict"};
+    runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
+    validateCheckpoints(db, db2, "{\"local\":1,\"remote\":2}");
+
+    doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
+    REQUIRE(doc);
+    CHECK((doc->flags & kConflicted) != 0);
+    CHECK(doc->selectedRev.revID == C4STR("2-2a2a2a2a"));
+    CHECK(doc->selectedRev.body.size > 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
+    CHECK(doc->selectedRev.body.size > 0);
+    CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+    REQUIRE(c4doc_selectCurrentRevision(doc));
+    REQUIRE(c4doc_selectNextRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("2-2b2b2b2b"));
+    CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
+    CHECK(doc->selectedRev.body.size > 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
 }
 
 

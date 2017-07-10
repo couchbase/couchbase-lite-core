@@ -16,7 +16,6 @@
 #pragma once
 #include "slice.hh"
 #include "RevID.hh"
-#include "DataFile.hh"
 #include <deque>
 #include <vector>
 
@@ -67,7 +66,8 @@ namespace litecore {
 
         void addFlag(Flags f)           {flags = (Flags)(flags | f);}
         void clearFlag(Flags f)         {flags = (Flags)(flags & ~f);}
-        void removeBody()               {clearFlag(kKeepBody); _body = nullslice;}
+        void removeBody()               {clearFlag((Flags)(kKeepBody | kHasAttachments));
+                                         _body = nullslice;}
         void markForPurge()             {revID.setSize(0);}
         bool isMarkedForPurge() const   {return revID.size == 0;}
 #if DEBUG
@@ -132,6 +132,8 @@ namespace litecore {
         /** Removes a leaf revision and any of its ancestors that aren't shared with other leaves. */
         int purge(revid);
         int purgeAll();
+
+        void markCurrentRevision(Rev::Flags f)    {const_cast<Rev*>(currentRevision())->addFlag(f);}
 
         void sort();
 

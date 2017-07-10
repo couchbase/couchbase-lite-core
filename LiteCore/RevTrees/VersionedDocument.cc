@@ -15,6 +15,7 @@
 
 #include "VersionedDocument.hh"
 #include "Record.hh"
+#include "KeyStore.hh"
 #include "Error.hh"
 #include "varint.hh"
 #include <ostream>
@@ -47,10 +48,18 @@ namespace litecore {
 
     void VersionedDocument::decode() {
         _unknown = false;
-        if (_rec.body().buf)
+        if (_rec.body().buf) {
             RevTree::decode(_rec.body(), _rec.sequence());
-        else if (_rec.bodySize() > 0)
+            // The kSynced flag is set when the document's current revision is pushed to a server.
+            // This is done instead of updating the doc body, for reasons of speed. So when loading
+            // the document, detect that flag and belatedly update the current revision's flags.
+            // Since the revision is now likely stored on the server, it may be the base of a merge
+            // in the future, so preserve its body:
+            if (_rec.flags() & DocumentFlags::kSynced)
+                markCurrentRevision(Rev::kKeepBody);
+        } else if (_rec.bodySize() > 0) {
             _unknown = true;        // i.e. rec was read as meta-only
+        }
     }
 
     void VersionedDocument::updateMeta() {

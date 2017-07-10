@@ -91,6 +91,7 @@ namespace litecore { namespace repl {
         void _insertRevisionsNow();
 
         void dbChanged();
+        bool markRevsSynced(const std::vector<Rev> changes, C4Error *outError);
 
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);

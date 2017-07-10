@@ -203,14 +203,21 @@ namespace litecore {
         newRev->_body = body;
         newRev->sequence = 0; // Sequence is unknown till record is saved
         newRev->flags = (Rev::Flags)(Rev::kLeaf | Rev::kNew | (revFlags & kNewRevFlagsMask));
-
         newRev->parent = parentRev;
+
         if (parentRev) {
-            if (!parentRev->isLeaf() || parentRev->isConflict())
+            bool conflict = (!parentRev->isLeaf() || parentRev->isConflict());
+            if (conflict)
                 newRev->addFlag(Rev::kIsConflict);      // Creating or extending a branch
-            if (!parentRev->isLeaf())
-                parentRev->addFlag(Rev::kKeepBody);
             parentRev->clearFlag(Rev::kLeaf);
+            if (revFlags & Rev::kKeepBody) {
+                // Only one rev in the main branch can have the keepBody flag
+                for (auto ancestor = (Rev*)parentRev; ancestor; ancestor = (Rev*)ancestor->parent) {
+                    if (conflict && !ancestor->isConflict())
+                        break;
+                    ancestor->clearFlag(Rev::kKeepBody);
+                }
+            }
         } else {
             // Root revision:
             if (!_revs.empty())
@@ -268,8 +275,8 @@ namespace litecore {
     }
 
     const Rev* RevTree::insert(revid revID, slice body, Rev::Flags revFlags,
-                                   revid parentRevID, bool allowConflict,
-                                   int &httpStatus)
+                               revid parentRevID, bool allowConflict,
+                               int &httpStatus)
     {
         const Rev* parent = nullptr;
         if (parentRevID.buf) {
@@ -324,8 +331,10 @@ namespace litecore {
     // Remove bodies of already-saved revs that are no longer leaves:
     void RevTree::removeNonLeafBodies() {
         for (Rev *rev : _revs) {
-            if (rev->_body.size > 0 && !(rev->flags & (Rev::kLeaf | Rev::kNew | Rev::kKeepBody)))
-                rev->_body = nullslice;
+            if (rev->_body.size > 0 && !(rev->flags & (Rev::kLeaf | Rev::kNew | Rev::kKeepBody))) {
+                rev->removeBody();
+                _changed = true;
+            }
         }
     }
 

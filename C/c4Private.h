@@ -41,6 +41,8 @@ C4Document* c4doc_getForPut(C4Database *database,
                             bool allowConflict,
                             C4Error *outError) C4API;
 
+bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequence);
+
 C4Socket* c4socket_fromNative(C4SocketFactory factory,
                               void *nativeHandle,
                               const C4Address *address) C4API;

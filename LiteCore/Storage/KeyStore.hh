@@ -91,6 +91,9 @@ namespace litecore {
         bool del(sequence_t s, Transaction& t)  {return del(nullslice, s, t);}
         bool del(const Record&, Transaction&);
 
+        /** Sets a flag of a record, without having to read/write the Record. */
+        virtual bool setDocumentFlag(slice key, sequence_t sequence, DocumentFlags);
+
         //////// INDEXING:
 
         enum IndexType {

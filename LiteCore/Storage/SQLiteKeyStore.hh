@@ -36,6 +36,8 @@ namespace litecore {
         sequence_t set(slice key, slice meta, slice value, DocumentFlags,
                        Transaction&, const sequence_t *replacingSequence =nullptr) override;
 
+        bool setDocumentFlag(slice key, sequence_t sequence, DocumentFlags) override;
+
         void erase() override;
 
         bool supportsIndexes(IndexType t) const override               {return t == kValueIndex;}
@@ -86,6 +88,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
         std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt;
         std::unique_ptr<SQLite::Statement> _backupStmt, _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
+        std::unique_ptr<SQLite::Statement> _setFlagStmt;
         bool _createdSeqIndex {false};     // Created by-seq index yet?
         bool _lastSequenceChanged {false};
         int64_t _lastSequence {-1};

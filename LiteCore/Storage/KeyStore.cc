@@ -81,6 +81,10 @@ namespace litecore {
         return del(rec.key(), 0, t);
     }
 
+    bool KeyStore::setDocumentFlag(slice key, sequence_t sequence, DocumentFlags) {
+        error::_throw(error::Unimplemented);
+    }
+
     void KeyStore::createIndex(slice expressionJSON, IndexType, const IndexOptions*) {
         error::_throw(error::Unimplemented);
     }

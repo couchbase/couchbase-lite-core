@@ -270,6 +270,17 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
 }
 
 
+void C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice json,
+                             C4RevisionFlags flags)
+{
+    Encoder enc;
+    enc.convertJSON(json);
+    fleece::alloc_slice fleeceBody = enc.finish();
+    REQUIRE(fleeceBody);
+    createRev(db, docID, revID, fleeceBody, flags);
+}
+
+
 void C4Test::createNumberedDocs(unsigned numberOfDocs) {
     TransactionHelper t(db);
     char docID[20];

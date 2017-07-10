@@ -233,6 +233,14 @@ bool c4_shutdown(C4Error *outError) noexcept {
     });
 }
 
+
+bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequence) {
+    try {
+        return database->defaultKeyStore().setDocumentFlag(docID, sequence, DocumentFlags::kSynced);
+    } catchError(nullptr)
+    return false;
+}
+
 #pragma mark - RAW DOCUMENTS:
 
 

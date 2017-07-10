@@ -13,6 +13,7 @@
 #include "SecureDigest.hh"
 #include "Stopwatch.hh"
 #include "c4.hh"
+#include "c4Private.h"
 #include "c4Document+Fleece.h"
 #include "c4Replicator.h"
 #include "c4Private.h"
@@ -234,6 +235,8 @@ namespace litecore { namespace repl {
         log("Reading up to %u local changes since #%llu", limit, since);
         if (_firstChangeSequence == 0)
             _firstChangeSequence = since + 1;
+
+        // Run a by-sequence enumerator to find the changed docs:
         vector<Rev> changes;
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -263,6 +266,8 @@ namespace litecore { namespace repl {
             }
         }
 
+        markRevsSynced(changes, nullptr);
+
         if (continuous && limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
             _pusher = pusher;
@@ -276,29 +281,6 @@ namespace litecore { namespace repl {
         }
 
         pusher->gotChanges(changes, error);
-    }
-
-
-    // For proposeChanges, find the latest ancestor of the current rev that is known to the server.
-    // This is a rev that's either marked as foreign (came from the server), or whose sequence is
-    // prior to the checkpoint (has already been pushed to the server.)
-    bool DBWorker::getForeignAncestor(C4DocEnumerator *e, alloc_slice &foreignAncestor, C4Error *outError) {
-        c4::ref<C4Document> doc = c4enum_getDocument(e, outError);
-        if (!doc)
-            return false;
-        if (doc->selectedRev.flags & kRevIsForeign) {
-            outError->code = 0;
-            return false;       // skip this, it's not a locally created rev
-        }
-        while (c4doc_selectParentRevision(doc)) {
-            if ((doc->selectedRev.flags & kRevIsForeign)
-                        || doc->selectedRev.sequence < _firstChangeSequence) {
-                foreignAncestor = slice(doc->selectedRev.revID);
-                return true;
-            }
-        }
-        foreignAncestor = nullslice;
-        return true;
     }
 
 
@@ -327,10 +309,51 @@ namespace litecore { namespace repl {
                 // dump of existing docs, not to 'live' changes.
             }
 
-            if (!changes.empty())
+            if (!changes.empty()) {
+                markRevsSynced(changes, nullptr);
                 _pusher->gotChanges(changes, {});
-
+            }
         }
+    }
+
+
+    // For proposeChanges, find the latest ancestor of the current rev that is known to the server.
+    // This is a rev that's either marked as foreign (came from the server), or whose sequence is
+    // prior to the checkpoint (has already been pushed to the server.)
+    bool DBWorker::getForeignAncestor(C4DocEnumerator *e, alloc_slice &foreignAncestor, C4Error *outError) {
+        c4::ref<C4Document> doc = c4enum_getDocument(e, outError);
+        if (!doc)
+            return false;
+        if (doc->selectedRev.flags & kRevIsForeign) {
+            outError->code = 0;
+            return false;       // skip this, it's not a locally created rev
+        }
+        while (c4doc_selectParentRevision(doc)) {
+            if ((doc->selectedRev.flags & kRevIsForeign)
+                        || doc->selectedRev.sequence < _firstChangeSequence) {
+                foreignAncestor = slice(doc->selectedRev.revID);
+                return true;
+            }
+        }
+        foreignAncestor = nullslice;
+        return true;
+    }
+
+
+    // Mark all of these revs as synced, which flags them as kRevKeepBody if they're still current.
+    // This is actually premature because those revs haven't been pushed yet; but if we
+    // wait until after the push, the doc may have been updated again and the body of the
+    // pushed revision lost. By doing it early we err on the side of correctness and may
+    // save some revision bodies unnecessarily, which isn't that bad.
+    bool DBWorker::markRevsSynced(const vector<Rev> changes, C4Error *outError) {
+        if (changes.empty())
+            return true;
+        c4::Transaction t(_db);
+        if (!t.begin(outError))
+            return false;
+        for (auto i = changes.begin(); i != changes.end(); ++i)
+            c4db_markSynced(_db, i->docID, i->sequence);
+        return t.commit(outError);
     }
 
 
@@ -629,7 +652,7 @@ namespace litecore { namespace repl {
                 C4DocPutRequest put = {};
                 put.body = bodyForDB;
                 put.docID = rev->docID;
-                put.revFlags = rev->flags | kRevIsForeign;
+                put.revFlags = rev->flags | kRevIsForeign | kRevKeepBody;
                 put.existingRevision = true;
                 put.allowConflict = true;
                 put.history = history.data();

@@ -18,6 +18,8 @@
 #include "Record.hh"
 
 namespace litecore {
+    class KeyStore;
+    class Transaction;
 
     /** Manages storage of a serialized RevTree in a Record. */
     class VersionedDocument : public RevTree {

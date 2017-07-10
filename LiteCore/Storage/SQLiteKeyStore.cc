@@ -77,6 +77,7 @@ namespace litecore {
         _delBySeqStmt.reset();
         _delByBothStmt.reset();
         _backupStmt.reset();
+        _setFlagStmt.reset();
         KeyStore::close();
     }
 
@@ -283,6 +284,16 @@ namespace litecore {
         }
         UsingStatement u(*stmt);
         return stmt->exec() > 0;
+    }
+
+
+    bool SQLiteKeyStore::setDocumentFlag(slice key, sequence_t sequence, DocumentFlags flags) {
+        compile(_setFlagStmt, "UPDATE kv_@ SET flags=(flags | ?) WHERE key=? AND sequence=?");
+        UsingStatement u(*_setFlagStmt);
+        _setFlagStmt->bind      (1, (unsigned)flags);
+        _setFlagStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
+        _setFlagStmt->bind      (3, (long long)sequence);
+        return _setFlagStmt->exec() > 0;
     }
 
 
