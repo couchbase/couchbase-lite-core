@@ -62,6 +62,7 @@ namespace litecore {
 
             _1stCustomResultColumn = qp.firstCustomResultColumn();
             _isAggregate = qp.isAggregateQuery();
+            _isDistinct = qp.isDistinct();
         }
 
 
@@ -141,6 +142,7 @@ namespace litecore {
         vector<string> _ftsTables;
         unsigned _1stCustomResultColumn;
         bool _isAggregate;
+        bool _isDistinct;
 
         shared_ptr<SQLite::Statement> statement() {return _statement;}
 
@@ -176,7 +178,7 @@ namespace litecore {
 
         // call after next() or seek()
         void populateFields() {
-            if (!_query->_isAggregate) {
+            if (!_query->_isAggregate && !_query->_isDistinct) {
                 _recordID = getStringColumn(kDocIDCol);
                 _version = getStringColumn(kVersionCol);
                 _sequence = getIntColumn(kSeqCol);

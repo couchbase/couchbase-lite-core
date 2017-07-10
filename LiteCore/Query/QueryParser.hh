@@ -48,6 +48,7 @@ namespace litecore {
         unsigned firstCustomResultColumn() const                    {return _1stCustomResultCol;}
 
         bool isAggregateQuery() const                               {return _isAggregateQuery;}
+        bool isDistinct() const                                     {return _isDistinct;}
 
         static std::string expressionSQL(const fleece::Value*, const char *bodyColumnName = "body");
         std::string indexName(const fleece::Array *keys) const;
@@ -124,6 +125,7 @@ namespace litecore {
         unsigned _1stCustomResultCol {0};
         bool _aggregatesOK {false};
         bool _isAggregateQuery {false};
+        bool _isDistinct {false};
     };
 
 }
