@@ -166,6 +166,11 @@ bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1, C4String
 }
 
 
+C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) {
+    return Document::currentRevFlagsFromDocFlags(docFlags);
+}
+
+
 #pragma mark - SAVING:
 
 

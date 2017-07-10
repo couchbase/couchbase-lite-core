@@ -41,6 +41,9 @@ C4Document* c4doc_getForPut(C4Database *database,
                             bool allowConflict,
                             C4Error *outError) C4API;
 
+C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags);
+
+
 bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequence);
 
 C4Socket* c4socket_fromNative(C4SocketFactory factory,

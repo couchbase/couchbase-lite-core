@@ -87,6 +87,7 @@ c4doc_dictIsBlob
 c4doc_encodeStrippingOldMetaProperties
 
 c4rev_getGeneration
+c4rev_flagsFromDocFlags
 
 c4db_enumerateChanges
 c4db_enumerateAllDocs

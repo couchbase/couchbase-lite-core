@@ -68,19 +68,26 @@ namespace c4Internal {
         virtual bool revisionsLoaded() const noexcept =0;
         virtual bool selectRevision(C4Slice revID, bool withBody) =0;   // returns false if not found
 
+        static C4RevisionFlags currentRevFlagsFromDocFlags(C4DocumentFlags docFlags) {
+            C4RevisionFlags revFlags = 0;
+            if (docFlags & kExists) {
+                revFlags |= kRevLeaf;
+                if (docFlags & kDeleted)
+                // For stupid historical reasons C4DocumentFlags and C4RevisionFlags aren't compatible
+                    revFlags |= kRevDeleted;
+                if (docFlags & kHasAttachments)
+                    revFlags |= kRevHasAttachments;
+                if (docFlags & (C4DocumentFlags)DocumentFlags::kSynced)
+                    revFlags |= kRevKeepBody;
+            }
+            return revFlags;
+        }
+
         virtual bool selectCurrentRevision() noexcept {
             // By default just fill in what we know about the current revision:
             selectedRev.revID = revID;
             selectedRev.sequence = sequence;
-            int revFlags = 0;
-            if (flags & kExists) {
-                revFlags |= kRevLeaf;
-                if (flags & kDeleted)
-                    revFlags |= kRevDeleted;
-                if (flags & kHasAttachments)
-                    revFlags |= kRevHasAttachments;
-            }
-            selectedRev.flags = (C4RevisionFlags)revFlags;
+            selectedRev.flags = currentRevFlagsFromDocFlags(flags);
             selectedRev.body = kC4SliceNull;
             return false;
         }

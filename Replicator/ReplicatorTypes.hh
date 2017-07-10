@@ -10,6 +10,7 @@
 #include "Fleece.h"
 #include "slice.hh"
 #include "c4.hh"
+#include "c4Private.h"
 #include <chrono>
 #include <functional>
 #include <vector>
@@ -58,10 +59,7 @@ namespace litecore { namespace repl {
         :Rev(info.docID, info.revID, info.sequence, info.bodySize)
         {
             remoteAncestorRevID = remoteAncestor;
-            // For stupid historical reasons C4DocumentFlags and C4RevisionFlags aren't compatible
-            flags = info.flags & kRevDeleted;
-            if (info.flags & kHasAttachments)
-                flags |= kRevHasAttachments;
+            flags = c4rev_flagsFromDocFlags(info.flags);
         }
 
         bool deleted() const        {return (flags & kRevDeleted) != 0;}
