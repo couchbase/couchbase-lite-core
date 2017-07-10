@@ -56,8 +56,6 @@ namespace LiteCore.Interop
 #endif
     unsafe partial struct C4QueryOptions
     {
-        public ulong skip;
-        public ulong limit;
         private byte _rankFullText;
 
         public bool rankFullText

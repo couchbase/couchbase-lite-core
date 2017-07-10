@@ -36,10 +36,10 @@ namespace LiteCore.Interop
 #endif
     enum C4DocumentFlags : uint
     {
-        Deleted        = 0x01,
-        Conflicted     = 0x02,
-        HasAttachments = 0x04,
-        Exists         = 0x1000
+        DocDeleted         = 0x01,
+        DocConflicted      = 0x02,
+        DocHasAttachments  = 0x04,
+        DocExists          = 0x1000
     }
 
     [Flags]
@@ -55,7 +55,8 @@ namespace LiteCore.Interop
         New            = 0x04,
         HasAttachments = 0x08,
         KeepBody       = 0x10,
-        IsConflict     = 0x20
+        IsConflict     = 0x20,
+        IsForeign      = 0x40
     }
 
 #if LITECORE_PACKAGED
