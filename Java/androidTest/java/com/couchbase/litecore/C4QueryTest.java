@@ -71,20 +71,22 @@ public class C4QueryTest extends C4QueryBaseTest {
     public void testDBQuery() throws LiteCoreException {
         compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
         assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run());
-        assertEquals(Arrays.asList("0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run(1, 8));
-        assertEquals(Arrays.asList("0000015", "0000036", "0000043", "0000053"), run(1, 4));
+
+        compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"), "", true);
+        assertEquals(Arrays.asList("0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run("{\"offset\":1,\"limit\":8}"));
+        assertEquals(Arrays.asList("0000015", "0000036", "0000043", "0000053"), run("{\"offset\":1,\"limit\":4}"));
 
         compile(json5("['AND', ['=', ['array_count()', ['.', 'contact', 'phone']], 2],['=', ['.', 'gender'], 'male']]"));
         assertEquals(Arrays.asList("0000002", "0000014", "0000017", "0000027", "0000031", "0000033", "0000038", "0000039", "0000045", "0000047",
                 "0000049", "0000056", "0000063", "0000065", "0000075", "0000082", "0000089", "0000094", "0000097"), run());
 
         // MISSING means no value is present (at that array index or dict key)
-        compile(json5("['IS', ['.', 'contact', 'phone', [0]], ['MISSING']]"));
-        assertEquals(Arrays.asList("0000004", "0000006", "0000008", "0000015"), run(0, 4));
+        compile(json5("['IS', ['.', 'contact', 'phone', [0]], ['MISSING']]"), "", true);
+        assertEquals(Arrays.asList("0000004", "0000006", "0000008", "0000015"), run("{\"offset\":0,\"limit\":4}"));
 
         // ...wherease null is a JSON null value
-        compile(json5("['IS', ['.', 'contact', 'phone', [0]], null]"));
-        assertEquals(Arrays.asList(), run(0, 4));
+        compile(json5("['IS', ['.', 'contact', 'phone', [0]], null]"), "", true);
+        assertEquals(Arrays.asList(), run("{\"offset\":0,\"limit\":4}"));
     }
 
     // - DB Query sorted
@@ -99,10 +101,10 @@ public class C4QueryTest extends C4QueryBaseTest {
     @Test
     public void testDBQueryBindings() throws LiteCoreException {
         compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 1]]"));
-        assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run(0, Long.MAX_VALUE, "{\"1\": \"CA\"}"));
+        assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run("{\"1\": \"CA\"}"));
 
         compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 'state']]"));
-        assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run(0, Long.MAX_VALUE, "{\"state\": \"CA\"}"));
+        assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run("{\"state\": \"CA\"}"));
     }
 
     // - DB Query ANY
@@ -131,7 +133,7 @@ public class C4QueryTest extends C4QueryBaseTest {
     public void testDBQueryExpressionIndex() throws LiteCoreException {
         db.createIndex(json5("[['length()', ['.name.first']]]"), kC4ValueIndex, null, true);
         compile(json5("['=', ['length()', ['.name.first']], 9]"));
-        assertEquals(Arrays.asList("0000015", "0000099"), run(0, Long.MAX_VALUE));
+        assertEquals(Arrays.asList("0000015", "0000099"), run());
     }
 
     // - Delete indexed doc
@@ -161,16 +163,15 @@ public class C4QueryTest extends C4QueryBaseTest {
 
         // Now run a query that would have returned the deleted doc, if it weren't deleted:
         compile(json5("['=', ['length()', ['.name.first']], 9]"));
-        assertEquals(Arrays.asList("0000099"), run(0, Long.MAX_VALUE));
+        assertEquals(Arrays.asList("0000099"), run());
     }
-
 
     // - Full-text query
     @Test
     public void testFullTextQuery() throws LiteCoreException {
         db.createIndex("[[\".contact.address.street\"]]", kC4FullTextIndex, null, true);
         compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
-        assertEquals(Arrays.asList("0000013", "0000015", "0000043", "0000044", "0000052"), run(0, Long.MAX_VALUE));
+        assertEquals(Arrays.asList("0000013", "0000015", "0000043", "0000044", "0000052"), run());
     }
 
     // - DB Query WHAT
@@ -178,7 +179,7 @@ public class C4QueryTest extends C4QueryBaseTest {
     public void testDBQueryWHAT() throws LiteCoreException {
         List<String> expectedFirst = Arrays.asList("Cleveland", "Georgetta", "Margaretta");
         List<String> expectedLast = Arrays.asList("Bejcek", "Kolding", "Ogwynn");
-        compile(json5("{WHAT: ['.name.first', '.name.last'], WHERE: ['>=', ['length()', ['.name.first']], 9],ORDER_BY: [['.name.first']]}"));
+        compileSelect(json5("{WHAT: ['.name.first', '.name.last'], WHERE: ['>=', ['length()', ['.name.first']], 9],ORDER_BY: [['.name.first']]}"));
 
         C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
         assertNotNull(e);
@@ -197,7 +198,7 @@ public class C4QueryTest extends C4QueryBaseTest {
     // - DB Query Aggregate
     @Test
     public void testDBQueryAggregate() throws LiteCoreException {
-        compile(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
+        compileSelect(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
 
         C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
         assertNotNull(e);
@@ -222,7 +223,7 @@ public class C4QueryTest extends C4QueryBaseTest {
         final List<String> expectedMax = Arrays.asList("Mulneix", "Schmith", "Kinatyan", "Visnic");
         final int expectedRowCount = 42;
 
-        compile(json5("{WHAT: [['.contact.address.state'], ['min()', ['.name.last']], ['max()', ['.name.last']]],GROUP_BY: [['.contact.address.state']]}"));
+        compileSelect(json5("{WHAT: [['.contact.address.state'], ['min()', ['.name.last']], ['max()', ['.name.last']]],GROUP_BY: [['.contact.address.state']]}"));
 
         C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
         assertNotNull(e);
@@ -234,7 +235,7 @@ public class C4QueryTest extends C4QueryBaseTest {
                 assertTrue(itr.next());
                 assertEquals(itr.getValue().asString(), expectedMin.get(i));
                 assertTrue(itr.next());
-                assertEquals(itr.getValue().asString(),  expectedMax.get(i));
+                assertEquals(itr.getValue().asString(), expectedMax.get(i));
             }
             i++;
         }

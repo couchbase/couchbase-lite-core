@@ -71,11 +71,9 @@ Java_com_couchbase_litecore_C4Query_explain(JNIEnv *env, jclass clazz, jlong jqu
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4Query_run(JNIEnv *env, jclass clazz,
                                         jlong jquery,
-                                        jlong jskip, jlong jlimit, jboolean jrankFullText,
+                                        jboolean jrankFullText,
                                         jstring jencodedParameters) {
     C4QueryOptions options = {
-            (uint64_t) std::max((long long) jskip, 0ll),
-            (uint64_t) std::max((long long) jlimit, 0ll),
             (bool) jrankFullText
     };
     jstringSlice encodedParameters(env, jencodedParameters);

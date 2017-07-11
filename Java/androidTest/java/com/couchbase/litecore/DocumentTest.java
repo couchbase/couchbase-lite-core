@@ -22,8 +22,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Locale;
 
-import static com.couchbase.litecore.Constants.C4DocumentFlags.kConflicted;
-import static com.couchbase.litecore.Constants.C4DocumentFlags.kExists;
+import static com.couchbase.litecore.Constants.C4DocumentFlags.kDocConflicted;
+import static com.couchbase.litecore.Constants.C4DocumentFlags.kDocExists;
 import static com.couchbase.litecore.Constants.C4RevisionFlags.kRevKeepBody;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -118,7 +118,7 @@ public class DocumentTest extends BaseTest {
         // Reload the doc:
         doc = db.getDocument(kDocID, true);
         assertNotNull(doc);
-        assertEquals(kExists, doc.getFlags());
+        assertEquals(kDocExists, doc.getFlags());
         assertEquals(kDocID, doc.getDocID());
         assertEquals(kRevID, doc.getRevID());
         assertEquals(kRevID, doc.getSelectedRevID());
@@ -129,7 +129,7 @@ public class DocumentTest extends BaseTest {
         // Get the doc by its sequence:
         doc = db.getDocumentBySequence(1);
         assertNotNull(doc);
-        assertEquals(kExists, doc.getFlags());
+        assertEquals(kDocExists, doc.getFlags());
         assertEquals(kDocID, doc.getDocID());
         assertEquals(kRevID, doc.getRevID());
         assertEquals(kRevID, doc.getSelectedRevID());
@@ -150,7 +150,7 @@ public class DocumentTest extends BaseTest {
         // Reload the doc:
         Document doc = db.getDocument(kDocID, true);
         assertNotNull(doc);
-        assertEquals(kExists, doc.getFlags());
+        assertEquals(kDocExists, doc.getFlags());
         assertEquals(kDocID, doc.getDocID());
         assertEquals(kRev2ID, doc.getRevID());
         assertEquals(kRev2ID, doc.getSelectedRevID());
@@ -263,7 +263,7 @@ public class DocumentTest extends BaseTest {
                     "1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab" :
                     "1@*";
             assertEquals(kExpectedRevID, doc.getRevID());
-            assertEquals(kExists, doc.getFlags());
+            assertEquals(kDocExists, doc.getFlags());
             assertEquals(kExpectedRevID, doc.getSelectedRevID());
             doc.free();
 
@@ -276,7 +276,7 @@ public class DocumentTest extends BaseTest {
                     "2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b" :
                     "2@*";
             assertEquals(kExpectedRevID2, doc.getRevID());
-            assertEquals(kExists, doc.getFlags());
+            assertEquals(kDocExists, doc.getFlags());
             assertEquals(kExpectedRevID2, doc.getSelectedRevID());
             doc.free();
 
@@ -289,7 +289,7 @@ public class DocumentTest extends BaseTest {
             assertNotNull(doc);
             // NOTE: With current JNI binding, unable to check commonAncestorIndex value
             assertEquals(kConflictRevID, doc.getRevID());
-            assertEquals(kExists | kConflicted, doc.getFlags());
+            assertEquals(kDocExists | kDocConflicted, doc.getFlags());
             if (isRevTrees())
                 assertEquals(kConflictRevID, doc.getSelectedRevID());
             else

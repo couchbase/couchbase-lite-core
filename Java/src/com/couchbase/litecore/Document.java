@@ -186,19 +186,19 @@ public class Document implements Constants {
 
     // helper methods for Document
     public boolean deleted() {
-        return isFlags(C4DocumentFlags.kDeleted);
+        return isFlags(C4DocumentFlags.kDocDeleted);
     }
 
     public boolean conflicted() {
-        return isFlags(C4DocumentFlags.kConflicted);
+        return isFlags(C4DocumentFlags.kDocConflicted);
     }
 
     public boolean hasAttachments() {
-        return isFlags(C4DocumentFlags.kHasAttachments);
+        return isFlags(C4DocumentFlags.kDocHasAttachments);
     }
 
     public boolean exists() {
-        return isFlags(C4DocumentFlags.kExists);
+        return isFlags(C4DocumentFlags.kDocExists);
     }
 
     private boolean isFlags(int flag) {

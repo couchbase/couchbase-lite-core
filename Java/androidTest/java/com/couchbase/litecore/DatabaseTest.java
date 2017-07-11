@@ -261,7 +261,7 @@ public class DatabaseTest extends BaseTest {
                 assertEquals(kRevID, doc.getSelectedRevID());
                 assertEquals(i, doc.getSequence());
                 assertEquals(i, doc.getSelectedSequence());
-                assertEquals(C4DocumentFlags.kExists, doc.getFlags());
+                assertEquals(C4DocumentFlags.kDocExists, doc.getFlags());
                 i++;
             } finally {
                 doc.free();
