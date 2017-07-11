@@ -35,9 +35,11 @@ namespace LiteCore.Tests
                 Compile(Json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
                 Run().Should().Equal(new[] { "0000001", "0000015", "0000036", "0000043", "0000053", "0000064", 
                 "0000072", "0000073" }, "because otherwise the query returned incorrect results");
-                Run(1, 8).Should().Equal(new[] { "0000015", "0000036", "0000043", "0000053", "0000064", 
+
+                Compile(Json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"), addOffsetLimit: true);
+                Run("{\"offset\":1,\"limit\":8}").Should().Equal(new[] { "0000015", "0000036", "0000043", "0000053", "0000064", 
                 "0000072", "0000073" }, "because otherwise the query returned incorrect results");
-                Run(1, 4).Should().Equal(new[] { "0000015", "0000036", "0000043", "0000053" }, 
+                Run("{\"offset\":1,\"limit\":4}").Should().Equal(new[] { "0000015", "0000036", "0000043", "0000053" }, 
                 "because otherwise the query returned incorrect results");
 
                 Compile(Json5("['AND', ['=', ['array_count()', ['.', 'contact', 'phone']], 2]," +
@@ -63,12 +65,12 @@ namespace LiteCore.Tests
         {
             RunTestVariants(() => {
                 Compile(Json5("['=', ['.', 'contact', 'address', 'state'], ['$', 1]]"));
-                Run(bindings: "{\"1\": \"CA\"}").Should().Equal(new[] { "0000001", "0000015", "0000036", "0000043", 
+                Run("{\"1\": \"CA\"}").Should().Equal(new[] { "0000001", "0000015", "0000036", "0000043", 
                 "0000053", "0000064", "0000072", "0000073" }, 
                 "because otherwise the query returned incorrect results");
 
                 Compile(Json5("['=', ['.', 'contact', 'address', 'state'], ['$', 'state']]"));
-                Run(bindings: "{\"state\": \"CA\"}").Should().Equal(new[] { "0000001", "0000015", "0000036", "0000043", 
+                Run("{\"state\": \"CA\"}").Should().Equal(new[] { "0000001", "0000015", "0000036", "0000043", 
                 "0000053", "0000064", "0000072", "0000073" }, 
                 "because otherwise the query returned incorrect results");
             });
@@ -164,7 +166,7 @@ namespace LiteCore.Tests
             {
                 var expectedFirst = new[] { "Cleveland", "Georgetta", "Margaretta" };
                 var expectedLast = new[] { "Bejcek", "Kolding", "Ogwynn" };
-                var query = Compile(Json5("{WHAT: ['.name.first', '.name.last'], " +
+                var query = CompileSelect(Json5("{WHAT: ['.name.first', '.name.last'], " +
                             "WHERE: ['>=', ['length()', ['.name.first']], 9]," +
                             "ORDER_BY: [['.name.first']]}"));
 
@@ -204,7 +206,7 @@ namespace LiteCore.Tests
         {
             RunTestVariants(() =>
             {
-                Compile(Json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
+                CompileSelect(Json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
                 var e = (C4QueryEnumerator*)LiteCoreBridge.Check(err =>
                 {
                     var opts = C4QueryOptions.Default;
@@ -236,7 +238,7 @@ namespace LiteCore.Tests
                 var expectedMin = new[] {"Laidlaw", "Okorududu", "Kinatyan", "Bejcek"};
                 var expectedMax = new[] {"Mulneix", "Schmith", "Kinatyan", "Visnic"};
                 const int expectedRowCount = 42;
-                Compile(Json5(
+                CompileSelect(Json5(
                     "{WHAT: [['.contact.address.state'],['min()', ['.name.last']],['max()', ['.name.last']]],GROUP_BY: [['.contact.address.state']]}"));
                 var e = (C4QueryEnumerator*) LiteCoreBridge.Check(err =>
                 {
@@ -274,7 +276,7 @@ namespace LiteCore.Tests
                 ImportJSONFile("C/tests/data/states_titlecase.json", "state-");
                 var expectedFirst = new[] {"Cleveland", "Georgetta", "Margaretta"};
                 var expectedState = new[] {"California", "Ohio", "South Dakota"};
-                Compile(Json5("{WHAT: ['.person.name.first', '.state.name']," +
+                CompileSelect(Json5("{WHAT: ['.person.name.first', '.state.name']," +
                               "FROM: [{as: 'person'}, {as: 'state', on: ['=', ['.state.abbreviation'],['.person.contact.address.state']]}]," +
                               "WHERE: ['>=', ['length()', ['.person.name.first']], 9]," +
                               "ORDER_BY: [['.person.name.first']]}"));

@@ -2,6 +2,7 @@ using LiteCore.Interop;
 using FluentAssertions;
 
 using System.Collections.Generic;
+using System.Text;
 #if !WINDOWS_UWP
 using Xunit;
 using Xunit.Abstractions;
@@ -30,16 +31,14 @@ namespace LiteCore.Tests
         }
 #endif
 
-        protected IList<string> Run(ulong skip = 0, ulong limit = ulong.MaxValue, string bindings = null)
+        protected IList<string> Run(string bindings = null)
         {
             ((long)_query).Should().NotBe(0, "because otherwise what are we testing?");
             var docIDs = new List<string>();
-            var options = C4QueryOptions.Default;
-            options.skip = skip;
-            options.limit = limit;
+            
             var e = (C4QueryEnumerator*)LiteCoreBridge.Check(err => {
-                var localOptions = options;
-                return Native.c4query_run(_query, &localOptions, bindings, err);
+                var options = C4QueryOptions.Default;
+                return Native.c4query_run(_query, &options, bindings, err);
             });
 
             C4Error error;
@@ -60,15 +59,26 @@ namespace LiteCore.Tests
             return json;
         }
 
-        internal C4Query* Compile(string whereExpr, string sortExpr = null)
+        internal C4Query* Compile(string whereExpr, string sortExpr = null, bool addOffsetLimit = false)
         {
-            string queryString = whereExpr;
-            if(sortExpr != null) {
-                queryString = $"[\"SELECT\", {{\"WHERE\": {whereExpr}, \"ORDER_BY\": {sortExpr}}}]";
-            } 
+            var json = new StringBuilder($"[\"SELECT\", {{\"WHERE\": {whereExpr}");
+            if (sortExpr != null) {
+                json.Append($", \"ORDER_BY\": {sortExpr}");
+            }
 
+            if (addOffsetLimit) {
+                json.Append($", \"OFFSET\": [\"$offset\"], \"LIMIT\": [\"$limit\"]");
+            }
+
+            json.Append("}]");
+            return CompileSelect(json.ToString());
+        }
+
+        internal C4Query* CompileSelect(string queryString)
+        {
+            WriteLine($"Query = {queryString}");
             Native.c4query_free(_query);
-            _query = (C4Query *)LiteCoreBridge.Check(err => Native.c4query_new(Db, queryString, err));
+            _query = (C4Query*)LiteCoreBridge.Check(err => Native.c4query_new(Db, queryString, err));
             return _query;
         }
 

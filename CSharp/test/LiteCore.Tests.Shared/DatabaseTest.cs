@@ -316,7 +316,7 @@ namespace LiteCore.Tests
                     doc.docID.CreateString().Should().Be(docID, "because the doc info should have the correct doc ID");
                     doc.revID.Equals(RevID).Should().BeTrue("because the doc info should have the correct rev ID");
                     doc.sequence.Should().Be((ulong)i, "because the doc info should have the correct sequence");
-                    doc.flags.Should().Be(C4DocumentFlags.Exists, "because the doc info should have the correct flags");
+                    doc.flags.Should().Be(C4DocumentFlags.DocExists, "because the doc info should have the correct flags");
                     doc.bodySize.Should().BeGreaterOrEqualTo(11).And
                         .BeLessOrEqualTo(40, "because the body should have some data");
                     i++;

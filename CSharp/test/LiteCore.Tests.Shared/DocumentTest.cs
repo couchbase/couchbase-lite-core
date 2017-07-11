@@ -149,7 +149,7 @@ namespace LiteCore.Tests
 
                 // Reload the doc:
                 doc = (C4Document *)LiteCoreBridge.Check(err => NativeRaw.c4doc_get(Db, DocID, true, err));
-                doc->flags.Should().Be(C4DocumentFlags.Exists, "because this is an existing document");
+                doc->flags.Should().Be(C4DocumentFlags.DocExists, "because this is an existing document");
                 doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the stored doc ID");
                 doc->revID.Equals(RevID).Should().BeTrue("because the doc should have the stored rev ID");
                 doc->selectedRev.revID.Equals(RevID).Should().BeTrue("because the doc should have the stored rev ID");
@@ -159,7 +159,7 @@ namespace LiteCore.Tests
 
                 // Get the doc by its sequence
                 doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_getBySequence(Db, 1, err));
-                doc->flags.Should().Be(C4DocumentFlags.Exists, "because this is an existing document");
+                doc->flags.Should().Be(C4DocumentFlags.DocExists, "because this is an existing document");
                 doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the stored doc ID");
                 doc->revID.Equals(RevID).Should().BeTrue("because the doc should have the stored rev ID");
                 doc->selectedRev.revID.Equals(RevID).Should().BeTrue("because the doc should have the stored rev ID");
@@ -182,7 +182,7 @@ namespace LiteCore.Tests
 
                 // Reload the doc:
                 var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, docID, true, err));
-                doc->flags.Should().HaveFlag(C4DocumentFlags.Exists, "because the document was saved");
+                doc->flags.Should().HaveFlag(C4DocumentFlags.DocExists, "because the document was saved");
                 doc->docID.Should().Equal(DocID, "because the doc ID should save correctly");
                 doc->revID.Should().Equal(Rev2ID, "because the doc's rev ID should load correctly");
                 doc->selectedRev.revID.Should().Equal(Rev2ID, "because the rev's rev ID should load correctly");
@@ -328,7 +328,7 @@ namespace LiteCore.Tests
                         false, err));
                     doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the correct doc ID");
                     doc->revID.Equals(RevID).Should().BeTrue("because the doc should have the correct rev ID");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists, "because the document has no flags yet");
+                    doc->flags.Should().Be(C4DocumentFlags.DocExists, "because the document has no flags yet");
                     doc->selectedRev.revID.Equals(RevID).Should().BeTrue("because the selected rev should have the correct rev ID");
                     Native.c4doc_free(doc);
 
@@ -371,7 +371,7 @@ namespace LiteCore.Tests
                         C4Slice.Null, false, false, err));
                     doc->docID.Equals(DocID).Should().BeTrue("because the doc should have the correct doc ID");
                     doc->selectedRev.revID.Equals(Rev3ID).Should().BeTrue("because the doc should have the correct rev ID");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists|C4DocumentFlags.Deleted, "because the document was deleted");
+                    doc->flags.Should().Be(C4DocumentFlags.DocExists|C4DocumentFlags.DocDeleted, "because the document was deleted");
                     doc->selectedRev.revID.Equals(Rev3ID).Should().BeTrue("because the doc should have the correct rev ID");
                     Native.c4doc_free(doc);
                 } finally {
@@ -402,7 +402,7 @@ namespace LiteCore.Tests
                     var expectedRevID = IsRevTrees() ? C4Slice.Constant("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab") :
                         C4Slice.Constant("1@*");
                     doc->revID.Equals(expectedRevID).Should().BeTrue("because the doc should have the correct rev ID");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists, "because the document exists");
+                    doc->flags.Should().Be(C4DocumentFlags.DocExists, "because the document exists");
                     doc->selectedRev.revID.Equals(expectedRevID).Should().BeTrue("because the selected rev should have the correct rev ID");
                     Native.c4doc_free(doc);
 
@@ -426,7 +426,7 @@ namespace LiteCore.Tests
                     var expectedRev2ID = IsRevTrees() ? C4Slice.Constant("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b") :
                         C4Slice.Constant("2@*");
                     doc->revID.Equals(expectedRev2ID).Should().BeTrue("because the doc should have the updated rev ID");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists, "because the document exists");
+                    doc->flags.Should().Be(C4DocumentFlags.DocExists, "because the document exists");
                     doc->selectedRev.revID.Equals(expectedRev2ID).Should().BeTrue("because the selected rev should have the correct rev ID");
                     Native.c4doc_free(doc);
 
@@ -448,7 +448,7 @@ namespace LiteCore.Tests
                     }
 
                     commonAncestorIndex.Should().Be(1UL, "because the common ancestor is at sequence 1");
-                    doc->flags.Should().Be(C4DocumentFlags.Exists|C4DocumentFlags.Conflicted, "because the document exists");
+                    doc->flags.Should().Be(C4DocumentFlags.DocExists|C4DocumentFlags.DocConflicted, "because the document exists");
                     doc->selectedRev.revID.Equals(conflictRevID).Should().BeTrue("because the selected rev should have the correct rev ID");
                     doc->revID.Equals(expectedRev2ID).Should().BeTrue("because the conflicting rev should never be the default");
                     Native.c4doc_free(doc);
@@ -479,7 +479,7 @@ namespace LiteCore.Tests
                     : C4Slice.Constant("1@*");
 
                 doc->revID.Equals(expectedRevID).Should().BeTrue();
-                doc->flags.Should().Be(C4DocumentFlags.Exists, "because the document was saved");
+                doc->flags.Should().Be(C4DocumentFlags.DocExists, "because the document was saved");
                 doc->selectedRev.revID.Equals(expectedRevID).Should().BeTrue();
                 doc->docID.Equals(DocID).Should().BeTrue("because that is the document ID that it was saved with");
 

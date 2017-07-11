@@ -48,8 +48,6 @@ namespace LiteCore.Interop
 #endif
         partial struct C4QueryOptions
     {
-        public static readonly C4QueryOptions Default = new C4QueryOptions {
-            limit = UInt32.MaxValue
-        };
+        public static readonly C4QueryOptions Default = new C4QueryOptions();
     }
 }
