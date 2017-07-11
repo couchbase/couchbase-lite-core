@@ -267,7 +267,7 @@ namespace litecore {
 
 
     void DataFile::reopen() {
-        LogTo(DBLog, "Opening DataFile");
+        LogTo(DBLog, "Opening DataFile %s", filePath().path().c_str());
         _shared->addDataFile(this);
     }
 

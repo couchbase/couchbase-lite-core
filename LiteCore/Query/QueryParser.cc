@@ -178,8 +178,11 @@ namespace litecore {
 
     void QueryParser::writeSelect(const Value *where, const Dict *operands) {
         // Have to find all properties involved in MATCH before emitting the FROM clause:
-        if (where)
-            findFTSProperties(where);
+        if (where) {
+            unsigned numMatches = findFTSProperties(where);
+            require(numMatches <= _ftsTables.size(),
+                    "Sorry, multiple MATCHes of the same property are not allowed");
+        }
 
         // Find all the joins in the FROM clause first, to populate _aliases. This has to be done
         // before writing the WHAT clause, because that will depend on _aliases.
@@ -340,8 +343,9 @@ namespace litecore {
 
     void QueryParser::writeFromClause(const Value *from) {
         _sql << " FROM " << _tableName;
+        unsigned i = 0;
         if (from) {
-            for (unsigned i = 0; i < _aliases.size(); ++i) {
+            for (i = 0; i < _aliases.size(); ++i) {
                 auto entry = from->asArray()->get(i)->asDict();
                 auto on = getCaseInsensitive(entry, "ON"_sl);
                 if (i == 0) {
@@ -364,7 +368,11 @@ namespace litecore {
         }
         unsigned ftsTableNo = 0;
         for (auto ftsTable : _ftsTables) {
-            _sql << ", \"" << ftsTable << "\" AS FTS" << ++ftsTableNo;
+            ++ftsTableNo;
+            if (i > 1)
+                _sql << ",";
+            _sql << " JOIN \"" << ftsTable << "\" AS FTS" << ftsTableNo
+                 << " ON FTS" << ftsTableNo << ".rowid = kv_default.sequence";
         }
     }
 
@@ -520,12 +528,19 @@ namespace litecore {
 
     // Handles "property MATCH pattern" expressions (FTS)
     void QueryParser::matchOp(slice op, Array::iterator& operands) {
-        // Write the match expression (using an implicit join):
+        // Is a MATCH legal here? Look at the parent operation(s):
+        auto parentCtx = _context.rbegin() + 1;
+        auto parentOp = (*parentCtx)->op;
+        if (parentOp == "AND"_sl)
+            parentOp = (*++parentCtx)->op;
+        require(parentOp == "SELECT"_sl || parentOp == nullslice,
+                "MATCH can only appear at top-level, or in a top-level AND");
+
+        // Write the expression:
         auto ftsTableNo = FTSPropertyIndex(operands[0]);
         Assert(ftsTableNo > 0);
-        _sql << "(FTS" << ftsTableNo << ".text MATCH ";
+        _sql << "FTS" << ftsTableNo << ".text MATCH ";
         parseNode(operands[1]);
-        _sql << " AND FTS" << ftsTableNo << ".rowid = " << _tableName << ".sequence)";
     }
 
 
@@ -851,20 +866,25 @@ namespace litecore {
 #pragma mark - FULL-TEXT-SEARCH MATCH:
 
 
-    void QueryParser::findFTSProperties(const Value *node) {
+    // Recursively looks for MATCH expressions and adds the properties being matched to _ftsTables.
+    // Returns the number of expressions found.
+    unsigned QueryParser::findFTSProperties(const Value *node) {
+        unsigned found = 0;
         Array::iterator i(node->asArray());
         if (i.count() == 0)
-            return;
+            return 0;
         slice op = i.value()->asString();
         ++i;
         if (op.caseEquivalent("MATCH"_sl) && i) {
+            found = 1;
             FTSPropertyIndex(i.value(), true); // add LHS
             ++i;
         }
 
         // Recurse into operands:
         for (; i; ++i)
-            findFTSProperties(i.value());
+            found += findFTSProperties(i.value());
+        return found;
     }
 
 

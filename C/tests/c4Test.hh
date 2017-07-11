@@ -74,6 +74,12 @@ static inline std::string toString(C4Slice s)   {return std::string((char*)s.buf
 
 // Converts JSON5 to JSON; helps make JSON test input more readable!
 std::string json5(std::string);
+fleece::alloc_slice json5slice(std::string str);
+
+
+void CheckError(C4Error err,
+                C4ErrorDomain expectedDomain, int expectedCode,
+                const char *expectedMessage =nullptr);
 
 
 // This helper is necessary because it ends an open transaction if an assertion fails.

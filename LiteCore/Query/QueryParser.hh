@@ -109,7 +109,7 @@ namespace litecore {
 
         void parseJoin(const fleece::Dict*);
 
-        void findFTSProperties(const fleece::Value *node);
+        unsigned findFTSProperties(const fleece::Value *node);
         size_t FTSPropertyIndex(const fleece::Value *matchLHS, bool canAdd =false);
 
         std::string _tableName;

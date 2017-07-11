@@ -107,6 +107,14 @@ std::string json5(std::string str) {
 }
 
 
+fleece::alloc_slice json5slice(std::string str) {
+    FLError err;
+    FLSliceResult json = FLJSON5_ToJSON({str.data(), str.size()}, &err);
+    REQUIRE(json.buf);
+    return {json.buf, json.size};
+}
+
+
 //static void log(C4LogDomain domain, C4LogLevel level, C4Slice message) {
 //    static const char* kLevelNames[5] = {"debug", "verbose", "info", "WARNING", "ERROR"};
 //    fprintf(stderr, "LiteCore-C %s %s: %.*s\n",
@@ -123,6 +131,19 @@ void AssertionFailed(const char *fn, const char *file, unsigned line, const char
         message = expr;
     fprintf(stderr, "FATAL: Assertion failed: %s (%s:%u, in %s)\n", message, file, line, fn);
     abort();
+}
+
+
+void CheckError(C4Error error,
+                C4ErrorDomain expectedDomain, int expectedCode, const char *expectedMessage)
+{
+    CHECK(error.domain == expectedDomain);
+    CHECK(error.code == expectedCode);
+    if (expectedMessage) {
+        C4StringResult msg = c4error_getMessage(error);
+        CHECK(string((char*)msg.buf, msg.size) == string(expectedMessage));
+        c4slice_free(msg);
+    }
 }
 
 

@@ -174,12 +174,51 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C]") {
+N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
     CHECK(run() == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
+}
 
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text indexes", "[Query][C][FTS]") {
+    C4Error err;
+    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
+    compile(json5("['AND', ['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy'],\
+                           ['MATCH', ['.', 'contact', 'address', 'city'], 'Santa']]"));
+    CHECK(run() == (vector<string>{"0000015"}));
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text queries", "[Query][C][FTS][!throws]") {
+    // You can't query the same FTS index multiple times in a query (says SQLite)
+    ExpectingExceptions x;
+    C4Error err;
+    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    query = c4query_new(db,
+                        json5slice("['AND', ['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy'],\
+                                            ['MATCH', ['.', 'contact', 'address', 'street'], 'Blvd']]"),
+                        &err);
+    REQUIRE(query == nullptr);
+    CheckError(err, LiteCoreDomain, kC4ErrorInvalidQuery,
+               "Sorry, multiple MATCHes of the same property are not allowed");
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Buried Full-text queries", "[Query][C][FTS][!throws]") {
+    // You can't put an FTS match inside an expression other than a top-level AND (says SQLite)
+    ExpectingExceptions x;
+    C4Error err;
+    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    query = c4query_new(db,
+                        json5slice("['OR', ['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy'],\
+                                           ['=', ['.', 'contact', 'address', 'state'], 'CA']]"),
+                        &err);
+    REQUIRE(query == nullptr);
+    CheckError(err, LiteCoreDomain, kC4ErrorInvalidQuery,
+               "MATCH can only appear at top-level, or in a top-level AND");
 }
 
 
@@ -310,9 +349,5 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!th
     C4Error error;
     query = c4query_new(db, c4str("[\"=\"]"), &error);
     REQUIRE(query == nullptr);
-    CHECK(error.domain == LiteCoreDomain);
-    CHECK(error.code == kC4ErrorInvalidQuery);
-    C4StringResult msg = c4error_getMessage(error);
-    CHECK(string((char*)msg.buf, msg.size) == "Wrong number of arguments to =");
-    c4slice_free(msg);
+    CheckError(error, LiteCoreDomain, kC4ErrorInvalidQuery, "Wrong number of arguments to =");
 }
