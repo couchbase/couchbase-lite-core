@@ -77,7 +77,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
-        CHECK(c.expires == 4084654694);
+        CHECK(c.expires == 4084683494);
         CHECK(c.domain == "example.com");
         CHECK(c.path == "");
         CHECK(c.persistent());
@@ -88,7 +88,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
-        CHECK(c.expires == 928898294);
+        CHECK(c.expires == 928923494); 
         CHECK(c.domain == "example.com");
         CHECK(c.path == "");
         CHECK(c.persistent());

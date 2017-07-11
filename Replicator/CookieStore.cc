@@ -14,6 +14,7 @@
 #include <iterator>
 #include <regex>
 #include <string>
+#include <time.h>
 
 #ifdef _MSC_VER
 #include "strptime.h"
@@ -65,7 +66,7 @@ namespace litecore { namespace repl {
                         Warn("Couldn't parse Expires in cookie");
                         return;
                     }
-                    expires = timegm(&datetime);
+                    expires = mktime(&datetime);
                 }
             } else if (key == "Max-Age") {
                 char *valEnd = &val[val.size()];
