@@ -191,8 +191,9 @@ namespace litecore {
 
         // DISTINCT:
         auto distinct = getCaseInsensitive(operands, "DISTINCT"_sl);
-        _isDistinct = distinct && distinct->asBool();
-        if (_isDistinct)
+        auto distinctVal = distinct && distinct->asBool();
+        _isAggregateQuery = _isAggregateQuery || distinctVal;
+        if (distinctVal)
             _sql << "DISTINCT ";
 
         // WHAT clause:
@@ -202,7 +203,7 @@ namespace litecore {
             defaultTablePrefix = _aliases[0] + ".";
         int nCol = 0;
         
-        if(!_isDistinct) {
+        if(!distinctVal) {
             for (auto &col : _baseResultColumns)
             _sql << (nCol++ ? ", " : "") << defaultTablePrefix << col;
         }
