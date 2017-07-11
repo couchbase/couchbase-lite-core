@@ -32,26 +32,51 @@ public class C4QueryBaseTest extends BaseTest {
     // protected methods
     //-------------------------------------------------------------------------
 
-    protected C4Query compile(String whereExpr) throws LiteCoreException {
-        return compile(whereExpr, null);
-    }
-
-    protected C4Query compile(String whereExpr, String sortExpr) throws LiteCoreException {
-
-        Log.i(LOG_TAG, "whereExpr -> " + whereExpr);
-        Log.i(LOG_TAG, "sortExpr -> " + sortExpr);
-
-        String queryString = whereExpr;
-        if (sortExpr != null && sortExpr.length() > 0)
-            queryString = "[\"SELECT\", {\"WHERE\": " + whereExpr + ", \"ORDER_BY\": " + sortExpr + "}]";
-
-        Log.i(LOG_TAG, "Query = " + queryString);
+    protected C4Query compileSelect(String queryStr) throws LiteCoreException {
+        Log.i(LOG_TAG, "Query -> " + queryStr);
 
         if (query != null) {
             query.free();
             query = null;
         }
-        query = new C4Query(db, queryString);
+        query = new C4Query(db, queryStr);
+        assertNotNull(query);
+
+        Log.i(LOG_TAG, "query.explain() -> " + query.explain());
+
+        return query;
+    }
+
+    protected C4Query compile(String whereExpr) throws LiteCoreException {
+        return compile(whereExpr, null);
+    }
+
+    protected C4Query compile(String whereExpr, String sortExpr) throws LiteCoreException {
+        return compile(whereExpr, sortExpr, false);
+    }
+
+    protected C4Query compile(String whereExpr, String sortExpr, boolean addOffsetLimit) throws LiteCoreException {
+        Log.i(LOG_TAG, "whereExpr -> " + whereExpr + ", sortExpr -> " + sortExpr + ", addOffsetLimit -> " + addOffsetLimit);
+
+        StringBuffer json = new StringBuffer();
+        json.append("[\"SELECT\", {\"WHERE\": ");
+        json.append(whereExpr);
+        if (sortExpr != null && sortExpr.length() > 0) {
+            json.append(", \"ORDER_BY\": ");
+            json.append(sortExpr);
+        }
+        if (addOffsetLimit) {
+            json.append(", \"OFFSET\": [\"$offset\"], \"LIMIT\":  [\"$limit\"]");
+        }
+        json.append("}]");
+
+        Log.i(LOG_TAG, "Query = " + json.toString());
+
+        if (query != null) {
+            query.free();
+            query = null;
+        }
+        query = new C4Query(db, json.toString());
         assertNotNull(query);
 
         Log.i(LOG_TAG, "query.explain() -> " + query.explain());
@@ -60,22 +85,12 @@ public class C4QueryBaseTest extends BaseTest {
     }
 
     protected List<String> run() throws LiteCoreException {
-        return run(0);
+        return run(null);
     }
 
-    protected List<String> run(long skip) throws LiteCoreException {
-        return run(skip, Long.MAX_VALUE);
-    }
-
-    protected List<String> run(long skip, long limit) throws LiteCoreException {
-        return run(skip, limit, null);
-    }
-
-    protected List<String> run(long skip, long limit, String bindings) throws LiteCoreException {
+    protected List<String> run(String bindings) throws LiteCoreException {
         List<String> docIDs = new ArrayList<>();
         C4QueryOptions opts = new C4QueryOptions();
-        opts.setSkip(skip);
-        opts.setLimit(limit);
         C4QueryEnumerator e = query.run(opts, bindings);
         assertNotNull(e);
         while (e.next()) {

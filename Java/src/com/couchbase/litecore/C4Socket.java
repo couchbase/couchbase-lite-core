@@ -75,6 +75,7 @@ public class C4Socket extends WebSocketListener {
     public static final String kC4ReplicatorOptionFilter = "filter";   // Filter name; string
     public static final String kC4ReplicatorOptionFilterParams = "filterParams";  // Filter params; Dict[string]
     public static final String kC4ReplicatorOptionSkipDeleted = "skipDeleted"; // Don't push/pull tombstones; bool
+    public static final String kC4ReplicatorOptionNoConflicts = "noConflicts"; // Puller rejects conflicts; bool
 
     // Auth dictionary keys:
     public static final String kC4ReplicatorAuthType = "type";// Auth property; string
@@ -180,8 +181,7 @@ public class C4Socket extends WebSocketListener {
             // SSLPeerUnverifiedException
             else if (t instanceof javax.net.ssl.SSLPeerUnverifiedException) {
                 closed(handle, NetworkDomain, kC4NetErrTLSCertUntrusted);
-            }
-            else {
+            } else {
                 closed(handle, WebSocketDomain, 0);
             }
         } else {
@@ -310,14 +310,14 @@ public class C4Socket extends WebSocketListener {
         // HostnameVerifier
         setupHostnameVerifier(builder);
 
-        return  builder.build();
+        return builder.build();
     }
 
     protected InputStream getAsset(String name) {
         return this.getClass().getResourceAsStream("/assets/" + name);
     }
-    
-    private void setupHostnameVerifier(OkHttpClient.Builder builder){
+
+    private void setupHostnameVerifier(OkHttpClient.Builder builder) {
         builder.hostnameVerifier(CustomHostnameVerifier.getInstance());
     }
 
@@ -335,7 +335,7 @@ public class C4Socket extends WebSocketListener {
         }
     }
 
-    private InputStream toStream(byte[] pin){
+    private InputStream toStream(byte[] pin) {
         return new Buffer().write(pin).inputStream();
     }
 
@@ -432,7 +432,7 @@ public class C4Socket extends WebSocketListener {
         builder.header("Upgrade", "websocket");
         builder.header("Sec-WebSocket-Version", "13");
         builder.header("Sec-WebSocket-Key", nonceKey);
-        
+
         // Add User-Agent if necessary:
         builder.header("User-Agent", getUserAgent());
 

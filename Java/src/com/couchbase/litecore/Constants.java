@@ -40,11 +40,10 @@ public interface Constants {
     // Flags describing a document.
     // Note: Superset of DocumentFlags
     interface C4DocumentFlags {
-        int kDeleted = 0x01;        // The document's current revision is deleted.
-        int kConflicted = 0x02;     // The document is in conflict.
-        int kHasAttachments = 0x04; // One or more revisions have attachments.
-
-        int kExists = 0x1000;       // The document exists (i.e. has revisions.)
+        int kDocDeleted = 0x01;        // The document's current revision is deleted.
+        int kDocConflicted = 0x02;     // The document is in conflict.
+        int kDocHasAttachments = 0x04; // One or more revisions have attachments.
+        int kDocExists = 0x1000;       // The document exists (i.e. has revisions.)
     }
 
     // Flags that apply to a revision.
@@ -55,6 +54,8 @@ public interface Constants {
         int kRevNew = 0x04;            // Has this rev been inserted since decoding?
         int kRevHasAttachments = 0x08; // Does this rev's body contain attachments?
         int kRevKeepBody = 0x10;       // Revision's body should not be discarded when non-leaf
+        int kRevIsConflict = 0x20; ///< Unresolved conflicting revision; will never be current
+        int kRevIsForeign = 0x40; ///< Rev comes from replicator, not created locally
     }
 
     // Flags for document iteration

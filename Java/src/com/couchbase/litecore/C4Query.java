@@ -40,7 +40,7 @@ public class C4Query {
     public C4QueryEnumerator run(C4QueryOptions options, String encodedParameters)
             throws LiteCoreException {
         return new C4QueryEnumerator(
-                run(handle, options.skip, options.limit, options.rankFullText, encodedParameters));
+                run(handle, options.rankFullText, encodedParameters));
     }
 
     public byte[] getFullTextMatched(String docID, long seq) throws LiteCoreException {
@@ -83,16 +83,12 @@ public class C4Query {
 
     /**
      * @param c4query
-     * @param skip
-     * @param limit
      * @param rankFullText
      * @param encodedParameters
      * @return C4QueryEnumerator*
      * @throws LiteCoreException
      */
     private static native long run(long c4query,
-                                   long skip,
-                                   long limit,
                                    boolean rankFullText,
                                    String encodedParameters)
             throws LiteCoreException;
