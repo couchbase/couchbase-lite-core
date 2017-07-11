@@ -103,13 +103,13 @@ namespace c4Internal {
 
     public:
         // should be private, but called from Document
-        void saved(Document*);
+        void saved(Document* NONNULL);
 
         // these should be private, but are also used by c4View
         static DataFile* newDataFile(const FilePath &path,
                                      const C4DatabaseConfig &config,
                                      bool isMainDB);
-        static void rekeyDataFile(DataFile* database, const C4EncryptionKey *newKey);
+        static void rekeyDataFile(DataFile* database NONNULL, const C4EncryptionKey *newKey);
 
     protected:
         virtual ~Database();

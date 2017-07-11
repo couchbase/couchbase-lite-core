@@ -41,31 +41,31 @@
     #define fdclose ::close
 
     namespace litecore {
-        inline int mkdir_u8(const char* const path, int mode) {
+        inline int mkdir_u8(const char* const path NONNULL , int mode) {
             return ::mkdir(path, (mode_t)mode);
         }
 
-        inline int stat_u8(const char* const filename, struct ::stat* const s) {
+        inline int stat_u8(const char* const filename NONNULL, struct ::stat* const s) {
             return ::stat(filename, s);
         }
 
-        inline int rmdir_u8(const char* const path) {
+        inline int rmdir_u8(const char* const path NONNULL) {
             return ::rmdir(path);
         }
 
-        inline int rename_u8(const char* const oldPath, const char* const newPath) {
+        inline int rename_u8(const char* const oldPath NONNULL, const char* const newPath NONNULL) {
             return ::rename(oldPath, newPath);
         }
 
-        inline int unlink_u8(const char* const filename) {
+        inline int unlink_u8(const char* const filename NONNULL) {
             return ::unlink(filename);
         }
 
-        inline int chmod_u8(const char* const filename, int mode) {
+        inline int chmod_u8(const char* const filename NONNULL, int mode) {
             return ::chmod(filename, (mode_t)mode);
         }
 
-        inline FILE* fopen_u8(const char* const path, const char* const mode) {
+        inline FILE* fopen_u8(const char* const path NONNULL, const char* const mode NONNULL) {
             return ::fopen(path, mode);
         }
     }

@@ -58,7 +58,7 @@ namespace litecore {
                             EncryptionAlgorithm alg,
                             slice encryptionKey);
         uint64_t getLength() const override;
-        size_t read(void *dst, size_t count) override;
+        size_t read(void *dst NONNULL, size_t count) override;
         void seek(uint64_t pos) override;
         void close() override;
         uint64_t tell() const;

@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "PlatformCompat.hh"
 #include <string>
 #include <tuple> // for std::tie
 #include "function_ref.hh"
@@ -21,7 +22,7 @@ namespace litecore {
     public:
         /** Constructs a FilePath from a filesystem path. */
         FilePath(const std::string &path)   {tie(_dir, _file) = splitPath(path);}
-        FilePath(const char *path)          {tie(_dir, _file) = splitPath(std::string(path));}
+        FilePath(const char *path NONNULL)  {tie(_dir, _file) = splitPath(std::string(path));}
 
         FilePath();
 

@@ -48,16 +48,19 @@ extern "C" {
     C4ListenerAPIs c4listener_availableAPIs(void) C4API;
 
     /** Starts a new listener. */
-    C4Listener* c4listener_start(const C4ListenerConfig *config, C4Error *error) C4API;
+    C4Listener* c4listener_start(const C4ListenerConfig *config C4NONNULL, C4Error *error) C4API;
 
     /** Closes and disposes a listener. */
     void c4listener_free(C4Listener *listener) C4API;
 
     /** Makes a database available from the network, under the given name. */
-    bool c4listener_shareDB(C4Listener *listener, C4String name, C4Database *db) C4API;
+    bool c4listener_shareDB(C4Listener *listener C4NONNULL,
+                            C4String name,
+                            C4Database *db C4NONNULL) C4API;
 
     /** Makes a previously-shared database unavailable. */
-    bool c4listener_unshareDB(C4Listener *listener, C4String name) C4API;
+    bool c4listener_unshareDB(C4Listener *listener C4NONNULL,
+                              C4String name) C4API;
 
 
     /** A convenience that, given a filesystem path to a database, returns the database name

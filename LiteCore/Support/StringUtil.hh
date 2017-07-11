@@ -16,10 +16,10 @@
 namespace litecore {
 
     /** Like sprintf(), but returns a std::string */
-    std::string format(const char *fmt, ...) __printflike(1, 2);
+    std::string format(const char *fmt NONNULL, ...) __printflike(1, 2);
 
     /** Like vsprintf(), but returns a std::string */
-    std::string vformat(const char *fmt, va_list);
+    std::string vformat(const char *fmt NONNULL, va_list);
 
     /** Removes last character from string (in place.) Does nothing if string is empty. */
     void chop(std::string&) noexcept;

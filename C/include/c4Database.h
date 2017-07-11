@@ -91,7 +91,7 @@ extern "C" {
 
     /** Opens a new handle to the same database file as `db`.
         The new connection is completely independent and can be used on another thread. */
-    C4Database* c4db_openAgain(C4Database* db,
+    C4Database* c4db_openAgain(C4Database* db C4NONNULL,
                                C4Error *outError) C4API;
 
     /** Increments the reference count of the database handle. The next call to
@@ -106,11 +106,11 @@ extern "C" {
 
     /** Closes the database. Does not free the handle, although any operation other than
         c4db_free() will fail with an error. */
-    bool c4db_close(C4Database* database, C4Error *outError) C4API;
+    bool c4db_close(C4Database* database C4NONNULL, C4Error *outError) C4API;
 
     /** Closes the database and deletes the file/bundle. Does not free the handle, although any
         operation other than c4db_free() will fail with an error. */
-    bool c4db_delete(C4Database* database, C4Error *outError) C4API;
+    bool c4db_delete(C4Database* database C4NONNULL, C4Error *outError) C4API;
 
     /** Deletes the file(s) for the database at the given path.
         All C4Databases at that path must be closed first or an error will result.
@@ -119,7 +119,7 @@ extern "C" {
 
 
     /** Changes a database's encryption key (removing encryption if it's NULL.) */
-    bool c4db_rekey(C4Database* database,
+    bool c4db_rekey(C4Database* database C4NONNULL,
                     const C4EncryptionKey *newKey,
                     C4Error *outError) C4API;
 
@@ -134,32 +134,32 @@ extern "C" {
 
 
     /** Returns the path of the database. */
-    C4StringResult c4db_getPath(C4Database*) C4API;
+    C4StringResult c4db_getPath(C4Database* C4NONNULL) C4API;
 
     /** Returns the configuration the database was opened with. */
-    const C4DatabaseConfig* c4db_getConfig(C4Database*) C4API;
+    const C4DatabaseConfig* c4db_getConfig(C4Database* C4NONNULL) C4API;
 
     /** Returns the number of (undeleted) documents in the database. */
-    uint64_t c4db_getDocumentCount(C4Database* database) C4API;
+    uint64_t c4db_getDocumentCount(C4Database* database C4NONNULL) C4API;
 
     /** Returns the latest sequence number allocated to a revision. */
-    C4SequenceNumber c4db_getLastSequence(C4Database* database) C4API;
+    C4SequenceNumber c4db_getLastSequence(C4Database* database C4NONNULL) C4API;
 
     /** Returns the timestamp at which the next document expiration should take place. */
-    uint64_t c4db_nextDocExpiration(C4Database *database) C4API;
+    uint64_t c4db_nextDocExpiration(C4Database *database C4NONNULL) C4API;
 
     /** Returns the number of revisions of a document that are tracked. (Defaults to 20.) */
-    uint32_t c4db_getMaxRevTreeDepth(C4Database *database) C4API;
+    uint32_t c4db_getMaxRevTreeDepth(C4Database *database C4NONNULL) C4API;
 
     /** Configures the number of revisions of a document that are tracked. */
-    void c4db_setMaxRevTreeDepth(C4Database *database, uint32_t maxRevTreeDepth) C4API;
+    void c4db_setMaxRevTreeDepth(C4Database *database C4NONNULL, uint32_t maxRevTreeDepth) C4API;
 
     typedef struct {
         uint8_t bytes[32];
     } C4UUID;
 
     /** Returns the database's public and/or private UUIDs. (Pass NULL for ones you don't want.) */
-    bool c4db_getUUIDs(C4Database* database,
+    bool c4db_getUUIDs(C4Database* database C4NONNULL,
                        C4UUID *publicUUID, C4UUID *privateUUID,
                        C4Error *outError) C4API;
 
@@ -170,7 +170,7 @@ extern "C" {
 
 
     /** Manually compacts the database. */
-    bool c4db_compact(C4Database* database, C4Error *outError) C4API;
+    bool c4db_compact(C4Database* database C4NONNULL, C4Error *outError) C4API;
 
 
     /** @} */
@@ -180,18 +180,18 @@ extern "C" {
 
     /** Begins a transaction.
         Transactions can nest; only the first call actually creates a database transaction. */
-    bool c4db_beginTransaction(C4Database* database,
+    bool c4db_beginTransaction(C4Database* database C4NONNULL,
                                C4Error *outError) C4API;
 
     /** Commits or aborts a transaction. If there have been multiple calls to beginTransaction, it
         takes the same number of calls to endTransaction to actually end the transaction; only the
         last one commits or aborts the database transaction. */
-    bool c4db_endTransaction(C4Database* database,
+    bool c4db_endTransaction(C4Database* database C4NONNULL,
                              bool commit,
                              C4Error *outError) C4API;
 
     /** Is a transaction active? */
-    bool c4db_isInTransaction(C4Database* database) C4API;
+    bool c4db_isInTransaction(C4Database* database C4NONNULL) C4API;
 
     
     /** @} */
@@ -217,13 +217,13 @@ extern "C" {
 
     /** Reads a raw document from the database. In Couchbase Lite the store named "info" is used
         for per-database key/value pairs, and the store "_local" is used for local documents. */
-    C4RawDocument* c4raw_get(C4Database* database,
+    C4RawDocument* c4raw_get(C4Database* database C4NONNULL,
                              C4String storeName,
                              C4String docID,
                              C4Error *outError) C4API;
 
     /** Writes a raw document to the database, or deletes it if both meta and body are NULL. */
-    bool c4raw_put(C4Database* database,
+    bool c4raw_put(C4Database* database C4NONNULL,
                    C4String storeName,
                    C4String key,
                    C4String meta,

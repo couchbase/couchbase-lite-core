@@ -58,12 +58,12 @@ extern "C" {
 
     /** Callback a client can register, to get progress information.
         This will be called on arbitrary background threads, and should not block. */
-    typedef void (*C4ReplicatorStatusChangedCallback)(C4Replicator*,
+    typedef void (*C4ReplicatorStatusChangedCallback)(C4Replicator* C4NONNULL,
                                                       C4ReplicatorStatus,
                                                       void *context);
 
     /** Callback a client can register, to hear about errors replicating individual documents. */
-    typedef void (*C4ReplicatorDocumentErrorCallback)(C4Replicator*,
+    typedef void (*C4ReplicatorDocumentErrorCallback)(C4Replicator* C4NONNULL,
                                                       bool pushing,
                                                       C4String docID,
                                                       C4Error error,
@@ -80,7 +80,9 @@ extern "C" {
 
     /** A simple URL parser that populates a C4Address from a URL string.
         The fields of the address will point inside the url string. */
-    bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName);
+    bool c4repl_parseURL(C4String url,
+                         C4Address *address C4NONNULL,
+                         C4String *dbName C4NONNULL);
 
 
     typedef struct {
@@ -101,7 +103,7 @@ extern "C" {
         @param params Replication parameters (see above.)
         @param err  Error, if replication can't be created.
         @return  The newly created replication, or NULL on error. */
-    C4Replicator* c4repl_new(C4Database* db,
+    C4Replicator* c4repl_new(C4Database* db C4NONNULL,
                              C4Address remoteAddress,
                              C4String remoteDatabaseName,
                              C4Database* otherLocalDB,
@@ -112,13 +114,13 @@ extern "C" {
     void c4repl_free(C4Replicator* repl) C4API;
 
     /** Tells a replicator to stop. */
-    void c4repl_stop(C4Replicator* repl) C4API;
+    void c4repl_stop(C4Replicator* repl C4NONNULL) C4API;
 
     /** Returns the current state of a replicator. */
-    C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API;
+    C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl C4NONNULL) C4API;
 
     /** Returns the HTTP response headers as a Fleece-encoded dictionary. */
-    C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API;
+    C4Slice c4repl_getResponseHeaders(C4Replicator *repl C4NONNULL) C4API;
 
 
 #pragma mark - COOKIES:
@@ -128,19 +130,19 @@ extern "C" {
         cookie into the database's cookie store. (Persistent cookies are saved as metadata in the
         database file until they expire. Session cookies are kept in memory, until the last
         C4Database handle to the given database is closed.) */
-    bool c4db_setCookie(C4Database *db,
+    bool c4db_setCookie(C4Database *db C4NONNULL,
                         C4String setCookieHeader,
                         C4String fromHost,
                         C4Error *outError) C4API;
 
     /** Locates any saved HTTP cookies relevant to the given request, and returns them as a string
         that can be used as the value of a "Cookie:" header. */
-    C4StringResult c4db_getCookies(C4Database *db,
+    C4StringResult c4db_getCookies(C4Database *db C4NONNULL,
                                    C4Address request,
                                    C4Error *error) C4API;
 
     /** Removes all cookies from the database's cookie store. */
-    void c4db_clearCookies(C4Database *db) C4API;
+    void c4db_clearCookies(C4Database *db C4NONNULL) C4API;
 
 
 #pragma mark - CONSTANTS:

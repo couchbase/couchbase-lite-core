@@ -14,6 +14,7 @@
 //  and limitations under the License.
 
 #pragma once
+#include "PlatformCompat.hh"
 #include "slice.hh"
 #include "RevID.hh"
 #include <deque>
@@ -107,7 +108,7 @@ namespace litecore {
                           Rev::Flags,
                           revid parentRevID,
                           bool allowConflict,
-                          int &hshipttpStatus);
+                          int &httpStatus);
 
         // Adds a new leaf revision, given a pointer to the parent Rev
         const Rev* insert(revid,
@@ -125,7 +126,7 @@ namespace litecore {
 
         unsigned prune(unsigned maxDepth);
 
-        void removeBody(const Rev*);
+        void removeBody(const Rev* NONNULL);
 
         void removeNonLeafBodies();
 
@@ -144,8 +145,8 @@ namespace litecore {
 #endif
 
     protected:
-        virtual bool isBodyOfRevisionAvailable(const Rev*) const;
-        virtual alloc_slice readBodyOfRevision(const Rev*) const;
+        virtual bool isBodyOfRevisionAvailable(const Rev* r NONNULL) const;
+        virtual alloc_slice readBodyOfRevision(const Rev* r NONNULL) const;
 #if DEBUG
         virtual void dump(std::ostream&);
 #endif
@@ -154,7 +155,7 @@ namespace litecore {
         friend class Rev;
         void initRevs();
         Rev* _insert(revid, slice body, Rev *parentRev, Rev::Flags);
-        bool confirmLeaf(Rev* testRev);
+        bool confirmLeaf(Rev* testRev NONNULL);
         void compact();
         void checkForResolvedConflict();
 

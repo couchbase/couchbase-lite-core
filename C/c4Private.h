@@ -34,7 +34,7 @@ void c4log_warnOnErrors(bool) C4API;
 void c4db_lock(C4Database *db) C4API;
 void c4db_unlock(C4Database *db) C4API;
 
-C4Document* c4doc_getForPut(C4Database *database,
+C4Document* c4doc_getForPut(C4Database *database C4NONNULL,
                             C4Slice docID,
                             C4Slice parentRevID,
                             bool deleting,
@@ -47,11 +47,11 @@ C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags);
 bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequence);
 
 C4Socket* c4socket_fromNative(C4SocketFactory factory,
-                              void *nativeHandle,
-                              const C4Address *address) C4API;
+                              void *nativeHandle C4NONNULL,
+                              const C4Address *address C4NONNULL) C4API;
 
-C4Replicator* c4repl_newWithSocket(C4Database* db,
-                                   C4Socket *openSocket,
+C4Replicator* c4repl_newWithSocket(C4Database* db C4NONNULL,
+                                   C4Socket *openSocket C4NONNULL,
                                    C4ReplicatorParameters params,
                                    C4Error *outError) C4API;
 

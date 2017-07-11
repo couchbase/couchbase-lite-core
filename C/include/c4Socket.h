@@ -65,15 +65,15 @@ extern "C" {
     typedef struct {
         bool providesWebSockets;
 
-        void (*open)(C4Socket*, const C4Address*, C4Slice optionsFleece); ///< open the socket
-        void (*write)(C4Socket*, C4SliceResult allocatedData);  ///< Write bytes; free when done
-        void (*completedReceive)(C4Socket*, size_t byteCount);  ///< Completion of c4socket_received
+        void (*open)(C4Socket* C4NONNULL, const C4Address* C4NONNULL, C4Slice optionsFleece); ///< open the socket
+        void (*write)(C4Socket* C4NONNULL, C4SliceResult allocatedData);  ///< Write bytes; free when done
+        void (*completedReceive)(C4Socket* C4NONNULL, size_t byteCount);  ///< Completion of c4socket_received
 
         // Only called if providesWebSockets is false:
-        void (*close)(C4Socket*);                               ///< close the socket
+        void (*close)(C4Socket* C4NONNULL);                               ///< close the socket
 
         // Only called if providesWebSockets is true:
-        void (*requestClose)(C4Socket*, int status, C4String message);
+        void (*requestClose)(C4Socket* C4NONNULL, int status, C4String message);
     } C4SocketFactory;
 
 
@@ -84,13 +84,13 @@ extern "C" {
     /** Notification that a socket has received an HTTP response, with the given headers (encoded
         as a Fleece dictionary.) This should be called just before c4socket_opened or
         c4socket_closed. */
-    void c4socket_gotHTTPResponse(C4Socket *socket,
+    void c4socket_gotHTTPResponse(C4Socket *socket C4NONNULL,
                                   int httpStatus,
                                   C4Slice responseHeadersFleece) C4API;
 
     /** Notification that a socket has opened, i.e. a C4SocketFactory.open request has completed
         successfully. */
-    void c4socket_opened(C4Socket *socket) C4API;
+    void c4socket_opened(C4Socket *socket C4NONNULL) C4API;
 
     /** Notification that a socket has finished closing, or that it disconnected, or failed to open.
         If this is a normal close in response to a C4SocketFactory.close request, the error
@@ -98,21 +98,21 @@ extern "C" {
         If it's a socket-level error, set the C4Error appropriately.
         If it's a WebSocket-level close (when the factory's providesWebSockets is true),
         set the error domain to WebSocketDomain and the code to the WebSocket status code. */
-    void c4socket_closed(C4Socket *socket, C4Error errorIfAny) C4API;
+    void c4socket_closed(C4Socket *socket C4NONNULL, C4Error errorIfAny) C4API;
 
     /** Notification that the peer has requested to close the socket using the WebSocket protocol.
         LiteCore will call the factory's requestClose callback in response when it's ready. */
-    void c4socket_closeRequested(C4Socket *socket, int status, C4String message);
+    void c4socket_closeRequested(C4Socket *socket C4NONNULL, int status, C4String message);
 
     /** Notification that bytes have been written to the socket, in response to a
         C4SocketFactory.write request. */
-    void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API;
+    void c4socket_completedWrite(C4Socket *socket C4NONNULL, size_t byteCount) C4API;
 
     /** Notification that bytes have been read from the socket. LiteCore will acknowledge receiving
         and processing the data by calling C4SocketFactory.completedReceive.
         For flow-control purposes, the client should keep track of the number of unacknowledged 
         bytes, and stop reading from the underlying stream if it grows too large. */
-    void c4socket_received(C4Socket *socket, C4Slice data) C4API;
+    void c4socket_received(C4Socket *socket C4NONNULL, C4Slice data) C4API;
 
     /** @} */
 

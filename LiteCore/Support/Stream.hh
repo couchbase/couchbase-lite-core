@@ -19,7 +19,7 @@ namespace litecore {
     public:
         virtual ~ReadStream() = default;
         virtual uint64_t getLength() const =0;
-        virtual size_t read(void *dst, size_t count) =0;
+        virtual size_t read(void *dst NONNULL, size_t count) =0;
         virtual void close() =0;
 
         alloc_slice readAll();
@@ -54,16 +54,16 @@ namespace litecore {
     class FileReadStream : public virtual SeekableReadStream {
     public:
         FileReadStream(const FilePath& path)        :FileReadStream(path, "rb") {}
-        FileReadStream(FILE *file)                  :_file(file) { }
+        FileReadStream(FILE *file NONNULL)          :_file(file) { }
         virtual ~FileReadStream();
 
         virtual uint64_t getLength() const override;
         virtual void seek(uint64_t pos) override;
-        virtual size_t read(void *dst, size_t count) override;
+        virtual size_t read(void *dst NONNULL, size_t count) override;
         virtual void close() override;
 
     protected:
-        FileReadStream(const FilePath &path, const char *mode);
+        FileReadStream(const FilePath &path, const char *mode NONNULL);
 
         FILE* _file {nullptr};
     };
@@ -75,8 +75,8 @@ namespace litecore {
     /** Concrete WriteStream that writes to a file. (It can also read.) */
     class FileWriteStream : public virtual FileReadStream, public virtual ReadWriteStream {
     public:
-        FileWriteStream(const FilePath& path, const char *mode) :FileReadStream(path, mode) {}
-        FileWriteStream(FILE *file)                             :FileReadStream(file) {}
+        FileWriteStream(const FilePath& path, const char *mode NONNULL) :FileReadStream(path, mode) {}
+        FileWriteStream(FILE *file NONNULL)                             :FileReadStream(file) {}
 
         virtual void write(slice) override;
         virtual void close() override                           {FileReadStream::close();}

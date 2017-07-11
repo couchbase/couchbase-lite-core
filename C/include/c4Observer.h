@@ -31,7 +31,7 @@ extern "C" {
     /** Callback invoked by a database observer.
         @param observer  The observer that initiated the callback.
         @param context  user-defined parameter given when registering the callback. */
-    typedef void (*C4DatabaseObserverCallback)(C4DatabaseObserver* observer,
+    typedef void (*C4DatabaseObserverCallback)(C4DatabaseObserver* observer C4NONNULL,
                                                void *context);
 
     /** Creates a new database observer, with a callback that will be invoked after the database
@@ -41,8 +41,8 @@ extern "C" {
         @param callback  The function to call after the database changes.
         @param context  An arbitrary value that will be passed to the callback.
         @return  The new observer reference. */
-    C4DatabaseObserver* c4dbobs_create(C4Database* database,
-                                       C4DatabaseObserverCallback callback,
+    C4DatabaseObserver* c4dbobs_create(C4Database* database C4NONNULL,
+                                       C4DatabaseObserverCallback callback C4NONNULL,
                                        void *context) C4API;
 
     /** Identifies which documents have changed since the last time this function was called, or
@@ -57,10 +57,10 @@ extern "C" {
         @param outExternal  Will be set to true if the changes were made by a different C4Database.
         @return  The number of changes written to `outDocIDs`. If this is less than `maxChanges`,
                             the end has been reached and the observer is reset. */
-    uint32_t c4dbobs_getChanges(C4DatabaseObserver *observer,
-                                C4DatabaseChange outChanges[],
+    uint32_t c4dbobs_getChanges(C4DatabaseObserver *observer C4NONNULL,
+                                C4DatabaseChange outChanges[] C4NONNULL,
                                 uint32_t maxChanges,
-                                bool *outExternal) C4API;
+                                bool *outExternal C4NONNULL) C4API;
 
     /** Stops an observer and frees the resources it's using.
         It is safe to pass NULL to this call. */
@@ -75,7 +75,7 @@ extern "C" {
         @param docID  The ID of the document that changed.
         @param sequence  The sequence number of the change.
         @param context  user-defined parameter given when registering the callback. */
-    typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer,
+    typedef void (*C4DocumentObserverCallback)(C4DocumentObserver* observer C4NONNULL,
                                                C4String docID,
                                                C4SequenceNumber sequence,
                                                void *context);
@@ -87,7 +87,7 @@ extern "C" {
         @param callback  The function to call after the database changes.
         @param context  An arbitrary value that will be passed to the callback.
         @return  The new observer reference. */
-    C4DocumentObserver* c4docobs_create(C4Database* database,
+    C4DocumentObserver* c4docobs_create(C4Database* database C4NONNULL,
                                         C4String docID,
                                         C4DocumentObserverCallback callback,
                                         void *context) C4API;

@@ -108,26 +108,26 @@ extern "C" {
                 bind. Any unbound parameters will be `null`.
         @param outError  On failure, will be set to the error status.
         @return  An enumerator for reading the rows, or NULL on error. */
-    C4QueryEnumerator* c4query_run(C4Query *query,
+    C4QueryEnumerator* c4query_run(C4Query *query C4NONNULL,
                                    const C4QueryOptions *options,
                                    C4String encodedParameters,
                                    C4Error *outError) C4API;
 
     /** In a full-text query enumerator, returns the string that was emitted during indexing that
         contained the search term(s). */
-    C4StringResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
-                                              C4Error *outError) C4API;
+    C4StringResult c4queryenum_fullTextMatched(C4QueryEnumerator *e C4NONNULL,
+                                               C4Error *outError) C4API;
 
     /** Given a docID and sequence number from the enumerator, returns the text that was emitted
         during indexing. */
-    C4StringResult c4query_fullTextMatched(C4Query *query,
+    C4StringResult c4query_fullTextMatched(C4Query *query C4NONNULL,
                                           C4String docID,
                                           C4SequenceNumber seq,
                                           C4Error *outError) C4API;
 
     /** Advances a query enumerator to the next row, populating its fields.
         Returns true on success, false at the end of enumeration or on error. */
-    bool c4queryenum_next(C4QueryEnumerator *e,
+    bool c4queryenum_next(C4QueryEnumerator *e C4NONNULL,
                           C4Error *outError) C4API;
 
     /** Returns the total number of rows in the query, if known.
@@ -135,7 +135,7 @@ extern "C" {
         @param e  The query enumerator
         @param outError  On failure, an error will be stored here (probably kC4ErrorUnsupported.)
         @return  The number of rows, or -1 on failure. */
-    int64_t c4queryenum_getRowCount(C4QueryEnumerator *e,
+    int64_t c4queryenum_getRowCount(C4QueryEnumerator *e C4NONNULL,
                                      C4Error *outError) C4API;
 
     /** Jumps to a specific row. Not all query enumerators may support this (but the current
@@ -144,18 +144,18 @@ extern "C" {
         @param rowIndex  The number of the row, starting at 0
         @param outError  On failure, an error will be stored here (probably kC4ErrorUnsupported.)
         @return  True on success, false on failure. */
-    bool c4queryenum_seek(C4QueryEnumerator *e,
+    bool c4queryenum_seek(C4QueryEnumerator *e C4NONNULL,
                           uint64_t rowIndex,
                           C4Error *outError) C4API;
 
     /** Checks whether the query results have changed since this enumerator was created;
         if so, returns a new enumerator. Otherwise returns NULL. */
-    C4QueryEnumerator* c4queryenum_refresh(C4QueryEnumerator *e,
+    C4QueryEnumerator* c4queryenum_refresh(C4QueryEnumerator *e C4NONNULL,
                                            C4Error *outError) C4API;
 
     /** Closes an enumerator without freeing it. This is optional, but can be used to free up
         resources if the enumeration has not reached its end, but will not be freed for a while. */
-    void c4queryenum_close(C4QueryEnumerator *e) C4API;
+    void c4queryenum_close(C4QueryEnumerator *e C4NONNULL) C4API;
 
     /** Frees a query enumerator. */
     void c4queryenum_free(C4QueryEnumerator *e) C4API;
@@ -214,7 +214,7 @@ extern "C" {
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-    bool c4db_createIndex(C4Database *database,
+    bool c4db_createIndex(C4Database *database C4NONNULL,
                           C4String expressionsJSON,
                           C4IndexType indexType,
                           const C4IndexOptions *indexOptions,
@@ -226,7 +226,7 @@ extern "C" {
         @param indexType  The type of the index.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
-    bool c4db_deleteIndex(C4Database *database,
+    bool c4db_deleteIndex(C4Database *database C4NONNULL,
                           C4String expressionsJSON,
                           C4IndexType indexType,
                           C4Error *outError) C4API;

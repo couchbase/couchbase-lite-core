@@ -160,10 +160,10 @@ namespace litecore {
         virtual KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) =0;
 
         /** Override to begin a database transaction. */
-        virtual void _beginTransaction(Transaction*) =0;
+        virtual void _beginTransaction(Transaction* t NONNULL) =0;
 
         /** Override to commit or abort a database transaction. */
-        virtual void _endTransaction(Transaction*, bool commit) =0;
+        virtual void _endTransaction(Transaction* t NONNULL, bool commit) =0;
 
         /** Is this DataFile object currently in a transaction? */
         bool inTransaction() const                      {return _inTransaction;}

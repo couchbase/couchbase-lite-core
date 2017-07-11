@@ -23,7 +23,7 @@ namespace litecore {
     class RawRevision {
     public:
         static std::deque<Rev> decodeTree(slice raw_tree,
-                                                RevTree *owner,
+                                                RevTree *owner NONNULL,
                                                 sequence_t curSeq);
 
         static alloc_slice encodeTree(const std::vector<Rev*> &revs);
