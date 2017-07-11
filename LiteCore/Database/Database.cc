@@ -171,7 +171,9 @@ namespace c4Internal {
 
         DocumentFactory* factory;
         switch (config.versioning) {
+#if ENABLE_VERSION_VECTORS
             case kC4VersionVectors: factory = new VectorDocumentFactory(this); break;
+#endif
             case kC4RevisionTrees:  factory = new TreeDocumentFactory(this); break;
             default:                error::_throw(error::InvalidParameter);
         }

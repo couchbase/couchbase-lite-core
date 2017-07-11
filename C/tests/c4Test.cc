@@ -136,7 +136,11 @@ string C4Test::sFixturesDir = "C/tests/data/";
 
 C4Test::C4Test(int testOption)
 :_storage(kC4SQLiteStorageEngine),
+#if ENABLE_VERSION_VECTORS
  _versioning((testOption & 1) ? kC4VersionVectors : kC4RevisionTrees),
+#else
+_versioning(kC4RevisionTrees),
+#endif
  _bundled(true)
 {
     static once_flag once;

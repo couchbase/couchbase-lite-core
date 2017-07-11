@@ -108,7 +108,11 @@ struct ExpectingExceptions {
 // and closes & deletes it in tearDown.
 class C4Test {
 public:
+#if ENABLE_VERSION_VECTORS
     static const int numberOfOptions = 2;       // rev-trees or version vectors
+#else
+    static const int numberOfOptions = 1;       // rev-trees
+#endif
 
     static std::string sFixturesDir;            // directory where test files live
     
