@@ -39,12 +39,13 @@ namespace LiteCore.Interop
             C4ReplicatorStatus replicatorState, void* context);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.U1)]
 #if LITECORE_PACKAGED
     internal
 #else
     public
 #endif
-        unsafe delegate void C4ReplicatorValidationFunction(C4Slice docID,
+        unsafe delegate bool C4ReplicatorValidationFunction(C4Slice docID,
             FLDict* body, void* context);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -88,7 +89,7 @@ namespace LiteCore.Interop
         private void* _nativeContext;
         private readonly Action<C4ReplicatorStatus, object> _stateChangedCallback;
         private readonly Action<bool, string, C4Error, bool, object> _errorCallback;
-        private readonly Action<string, IntPtr, object> _validateFunction;
+        private readonly Func<string, IntPtr, object, bool> _validateFunction;
         private readonly long _id;
         private static long _NextID;
 
@@ -111,7 +112,7 @@ namespace LiteCore.Interop
         }
 
         public ReplicatorParameters(C4ReplicatorMode push, C4ReplicatorMode pull, IDictionary<string, object> options,
-            Action<string, IntPtr, object> validateFunction, Action<bool, string, C4Error, bool, object> errorCallback,
+            Func<string, IntPtr, object, bool> validateFunction, Action<bool, string, C4Error, bool, object> errorCallback,
             Action<C4ReplicatorStatus, object> stateChangedCallback, object context)
         {
             var nextId = Interlocked.Increment(ref _NextID);
@@ -138,14 +139,17 @@ namespace LiteCore.Interop
         }
 
         [MonoPInvokeCallback(typeof(C4ReplicatorValidationFunction))]
-        private static void PerformValidate(C4Slice docID, FLDict* body, void* context)
+        private static bool PerformValidate(C4Slice docID, FLDict* body, void* context)
         {
             // Don't throw exceptions here, it will bubble up to native code
             try {
                 var id = (long) context;
                 var obj = _StaticMap[id];
-                obj._validateFunction?.Invoke(docID.CreateString(), (IntPtr) body, obj._context);
-            } catch (Exception) { }
+                var result = obj._validateFunction?.Invoke(docID.CreateString(), (IntPtr) body, obj._context);
+                return result.HasValue && result.Value;
+            } catch (Exception) {
+                return false;
+            }
         }
 
         [MonoPInvokeCallback(typeof(C4ReplicatorStatusChangedCallback))]
