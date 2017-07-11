@@ -7,8 +7,6 @@
 //
 
 #pragma once
-#include <ciso646> // define _LIBCPP_VERSION to check if we need Android log2
-#include "PlatformCompat.hh"
 #include "slice.hh"
 #include <stdarg.h>
 #include <string>
