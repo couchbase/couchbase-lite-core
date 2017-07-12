@@ -22,7 +22,7 @@ for arch in x86 armeabi-v7a arm64-v8a; do
     STRIP=`dirname $(find $ANDROID_NDK_ROOT/toolchains -name strip | grep x86-)`
   fi
 
-  ./strip.sh $STRIP/
+  ./strip.sh `pwd` $STRIP/
   popd
 done
 

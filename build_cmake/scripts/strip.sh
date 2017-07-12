@@ -1,35 +1,21 @@
 #!/bin/bash
 
-SCRIPT_DIR=`dirname $0`
 PREFIX=""
-TOP=$SCRIPT_DIR/../..
-if [[ $# > 0 ]]; then
-  TOP=$SCRIPT_DIR/../../../..
-  PREFIX="${1}"
+WORKING_DIR="${1}"
+
+if [[ $# > 1 ]]; then
+  PREFIX="${2}"
 fi
 
-echo "-s" > stripopts
-while read line; do
-  if [[ "$line" != "" && "${line:0:1}" != "#" ]]; then
-    echo "-K ${line:1}" >> stripopts
-  fi
-done < $TOP/C/c4.exp
-
-echo "libLiteCore.so" >> stripopts
-
-COMMAND="${PREFIX}strip @stripopts"
+pushd $WORKING_DIR
+COMMAND="find . -name \"*.a\" | xargs ${PREFIX}strip --strip-unneeded"
 eval ${COMMAND}
-rm stripopts
-
-echo "-s" > stripopts
-while read line; do
-  if [[ "$line" != "" && "${line:0:1}" != "#" ]]; then
-    echo "-K ${line:1}" >> stripopts
-  fi
-done < $TOP/REST/c4REST.exp
-
-echo "libLiteCoreREST.so" >> stripopts
-
-COMMAND="${PREFIX}strip @stripopts"
+rm libLiteCore.so
+make -j8 LiteCore
+COMMAND="${PREFIX}objcopy --only-keep-debug libLiteCore.so libLiteCore.so.sym"
 eval ${COMMAND}
-rm stripopts
+COMMAND="${PREFIX}strip --strip-unneeded libLiteCore.so"
+eval ${COMMAND}
+COMMAND="${PREFIX}objcopy --add-gnu-debuglink=libLiteCore.so.sym libLiteCore.so"
+eval ${COMMAND}
+popd

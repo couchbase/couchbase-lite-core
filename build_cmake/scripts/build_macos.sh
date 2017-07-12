@@ -8,5 +8,7 @@ pushd macos
 core_count=`getconf _NPROCESSORS_ONLN`
 cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../..
 make -j `expr $core_count + 1`
+dsymutil libLiteCore.dylib -o libLiteCore.dylib.dSYM
+strip -x libLiteCore.dylib
 popd
 popd
