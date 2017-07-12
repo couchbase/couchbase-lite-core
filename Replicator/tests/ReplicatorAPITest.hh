@@ -10,6 +10,8 @@
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.hh"
+#include "Response.hh"
+#include "make_unique.h"
 #include <iostream>
 #include "c4Test.hh"
 #include "StringUtil.hh"
@@ -93,6 +95,11 @@ public:
                     || (s.level == kC4Stopped && s.error.domain == WebSocketDomain))
                 Assert(_headers);
         }
+
+        if (s.level == kC4Idle && _stopWhenIdle) {
+            C4Log("*** Replicator idle; stopping...");
+            c4repl_stop(r);
+        }
     }
 
     static void onStateChanged(C4Replicator *replicator,
@@ -120,6 +127,9 @@ public:
 
 
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
+        if (push > kC4Passive && _remoteDBName == kScratchDBName && !db2)
+            flushScratchDatabase();
+
         C4ReplicatorParameters params = {};
         params.push = push;
         params.pull = pull;
@@ -152,6 +162,18 @@ public:
         CHECK(_callbackStatus.error.code == status.error.code);
     }
 
+
+    void flushScratchDatabase() {
+        C4Log("*** Erasing scratch database");
+        auto r = make_unique<REST::Response>("POST",
+                                             (string)(slice)_address.hostname,
+                                             (uint16_t)(_address.port + 1),     // assume this is the admin port
+                                             string("/") + (string)(slice)kScratchDBName + "/_flush");
+        REQUIRE(r);
+        INFO("Status: " << (int)r->status() << " " << r->statusMessage());
+        REQUIRE(r->status() == REST::HTTPStatus::OK);
+    }
+
     C4Database *db2 {nullptr};
     C4Address _address {kDefaultAddress};
     C4String _remoteDBName {kScratchDBName};
@@ -161,5 +183,6 @@ public:
     int _numCallbacks {0};
     int _numCallbacksWithLevel[5] {0};
     AllocedDict _headers;
+    bool _stopWhenIdle {false};
 };
 

@@ -62,8 +62,8 @@ TEST_CASE("URL Parsing") {
 // Test connection-refused error by connecting to a bogus port of localhost
 TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
     _address.hostname = C4STR("localhost");
-    _address.port = 1;
-    replicate(kC4OneShot, kC4Disabled, false);
+    _address.port = 1;  // wrong port!
+    replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == POSIXDomain);
     CHECK(_callbackStatus.error.code == ECONNREFUSED);
     CHECK(_callbackStatus.progress.completed == 0);
@@ -74,7 +74,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
 // Test host-not-found error by connecting to a nonexistent hostname
 TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[Push]") {
     _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
-    replicate(kC4OneShot, kC4Disabled, false);
+    replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == NetworkDomain);
     CHECK(_callbackStatus.error.code == kC4NetErrUnknownHost);
     CHECK(_callbackStatus.progress.completed == 0);
@@ -163,10 +163,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[Push][.RealReplicator]"
 }
 
 
+#if 0
 TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[Push][.RealReplicator]") {
     importJSONLines(sFixturesDir + "en-wikipedia-articles-1000-1.json");
     replicate(kC4OneShot, kC4Disabled);
 }
+#endif
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Pull][.RealReplicator]") {
@@ -175,7 +177,15 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Pull][.RealReplicator]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[Pull][.neverending]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Push", "[Push][.RealReplicator]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    _stopWhenIdle = true;
+    replicate(kC4Continuous, kC4Disabled);
+}
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[Pull][.RealReplicator]") {
     _remoteDBName = kITunesDBName;
+    _stopWhenIdle = true;
     replicate(kC4Disabled, kC4Continuous);
 }
