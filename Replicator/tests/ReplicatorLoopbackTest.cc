@@ -166,7 +166,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][C
 
     _stopOnIdle = true;
     auto pushOpt = Replicator::Options::pushing(kC4Continuous);
-    pushOpt.setProperty("checkpointSaveDelay"_sl, 1);
+    pushOpt.setProperty(kC4ReplicatorCheckpointInterval, 1);
     runReplicators(pushOpt, Replicator::Options::passive());
 }
 
@@ -177,7 +177,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
 
     _stopOnIdle = true;
     auto pullOpt = Replicator::Options::pulling(kC4Continuous);
-    pullOpt.setProperty("checkpointSaveDelay"_sl, 1);
+    pullOpt.setProperty(kC4ReplicatorCheckpointInterval, 1);
     runReplicators(Replicator::Options::passive(), pullOpt);
 }
 

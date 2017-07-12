@@ -54,7 +54,7 @@ namespace litecore { namespace repl {
             static constexpr unsigned kDefaultCheckpointSaveDelaySecs = 5;
 
             duration checkpointSaveDelay() const {
-                auto secs = properties["checkpointSaveDelay"].asInt();
+                auto secs = properties[kC4ReplicatorCheckpointInterval].asInt();
                 if (secs <= 0)
                     secs = kDefaultCheckpointSaveDelaySecs;
                 return std::chrono::seconds(secs);
