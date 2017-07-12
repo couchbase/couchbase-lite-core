@@ -884,6 +884,8 @@
 		27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CASRevisionStoreTest.cc; sourceTree = "<group>"; };
 		273407211DEE116600EA5532 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
 		273407221DEE116600EA5532 /* PlatformIO.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PlatformIO.hh; sourceTree = "<group>"; };
+		273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorLoopbackTest.hh; sourceTree = "<group>"; };
+		273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorAPITest.hh; sourceTree = "<group>"; };
 		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
 		273AD3CF18F4B23A007D8C23 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		273AD3D118F5E8D8007D8C23 /* snappy-c.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "snappy-c.cc"; sourceTree = "<group>"; };
@@ -1790,7 +1792,9 @@
 			isa = PBXGroup;
 			children = (
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
+				273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
+				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
 				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
 			);
 			path = tests;
