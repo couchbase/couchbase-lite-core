@@ -79,7 +79,25 @@ namespace litecore { namespace repl {
             /** Sets/clears the value of a property.
                 Warning: This rewrites the backing store of the properties, invalidating any
                 Fleece value pointers or slices previously accessed from it. */
-            void setProperty(fleece::slice name, fleece::slice value);
+            template <class T>
+            void setProperty(fleece::slice name, T value) {
+                fleeceapi::Encoder enc;
+                enc.beginDict();
+                if (value) {
+                    enc.writeKey(name);
+                    enc << value;
+                }
+                for (fleeceapi::Dict::iterator i(properties); i; ++i) {
+                    slice key = i.keyString();
+                    if (key != name) {
+                        enc.writeKey(key);
+                        enc.writeValue(i.value());
+                    }
+                }
+                enc.endDict();
+                properties = fleeceapi::AllocedDict(enc.finish());
+            }
+
         };
 
         

@@ -277,7 +277,7 @@ public:
     Retained<Replicator> _replClient, _replServer;
     alloc_slice _checkpointID;
     unique_ptr<thread> _parallelThread;
-    bool _stopOnIdle {true};
+    bool _stopOnIdle {false};
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };
     unsigned _statusChangedCalls {0};

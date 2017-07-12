@@ -160,7 +160,29 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
 #pragma mark - CONTINUOUS:
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][.neverending]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][Continuous]") {
+    createRev(db, "doc1"_sl, "1-11"_sl, kFleeceBody);
+    createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
+
+    _stopOnIdle = true;
+    auto pushOpt = Replicator::Options::pushing(kC4Continuous);
+    pushOpt.setProperty("checkpointSaveDelay"_sl, 1);
+    runReplicators(pushOpt, Replicator::Options::passive());
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][Continuous]") {
+    createRev(db, "doc1"_sl, "1-11"_sl, kFleeceBody);
+    createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
+
+    _stopOnIdle = true;
+    auto pullOpt = Replicator::Options::pulling(kC4Continuous);
+    pullOpt.setProperty("checkpointSaveDelay"_sl, 1);
+    runReplicators(Replicator::Options::passive(), pullOpt);
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][Continuous][.neverending]") {
     addDocsInParallel(chrono::milliseconds(1500), 6);
     runPushReplication(kC4Continuous);
     //FIX: Stop this when bg thread stops adding docs

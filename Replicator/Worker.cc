@@ -29,25 +29,6 @@ namespace litecore { namespace repl {
     static LogDomain SyncLog("Sync");
 
 
-    void Worker::Options::setProperty(slice name, slice value) {
-        Encoder enc;
-        enc.beginDict();
-        if (value) {
-            enc.writeKey(name);
-            enc.writeString(value);
-        }
-        for (Dict::iterator i(properties); i; ++i) {
-            slice key = i.keyString();
-            if (key != name) {
-                enc.writeKey(key);
-                enc.writeValue(i.value());
-            }
-        }
-        enc.endDict();
-        properties = AllocedDict(enc.finish());
-    }
-
-
     Worker::Worker(blip::Connection *connection,
                          Worker *parent,
                          Options options,
