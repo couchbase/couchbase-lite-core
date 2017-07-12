@@ -42,7 +42,7 @@ namespace LiteCore.Tests
         protected override int NumberOfOptions
         {
             get {
-                return 2;
+                return 1;
             }
         }
         

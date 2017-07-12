@@ -38,7 +38,7 @@ if __name__ == "__main__":
     for file in glob.iglob("./*.h"):
         #HACK: Typedefs choke CppHeaderParser if the struct and typename have the same name (i.e. typedef struct foo foo)
         fin = open(file, "r")
-        file_contents = fin.read()
+        file_contents = fin.read().replace("C4NONNULL", "")
         file_contents = re.sub("typedef.*", "", file_contents)
         fin.close()
         
