@@ -8,6 +8,7 @@
 
 #pragma once
 #include "slice.hh"
+#include "PlatformCompat.hh"
 #include <stdarg.h>
 #include <string>
 
