@@ -25,8 +25,9 @@ extern "C" {
     /** \name Fleece-related
         @{ */
 
-    /** The sub-document property that identifies it as a special type of object (like a blob.) */
-    #define kC4ObjectTypeProperty "_cbltype"
+    /** The sub-document property that identifies it as a special type of object.
+        For example, a blob is represented as `{"@type":"blob", "digest":"xxxx", ...}` */
+    #define kC4ObjectTypeProperty "@type"
 
     /** Value of kC4ObjectTypeProperty that denotes a blob. */
     #define kC4ObjectType_Blob "blob"

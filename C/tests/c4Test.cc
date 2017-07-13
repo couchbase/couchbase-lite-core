@@ -349,7 +349,8 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
                               nullptr, &key,  &c4err));
         keys.push_back(key);
         C4SliceResult keyStr = c4blob_keyToString(key);
-        json << "{'_cbltype': 'blob', 'digest': '" << string((char*)keyStr.buf, keyStr.size)
+        json << "{'" << kC4ObjectTypeProperty << "': '" << kC4ObjectType_Blob
+             << "', 'digest': '" << string((char*)keyStr.buf, keyStr.size)
              << "', length: " << attachment.size()
              << ", content_type: '" << contentType << "'},";
         c4slice_free(keyStr);
