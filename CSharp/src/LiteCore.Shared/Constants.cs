@@ -29,16 +29,16 @@ namespace LiteCore
 #if LITECORE_PACKAGED
         internal
 #else
-    public
+        public
 #endif
-         static readonly string C4InfoStore = "info";
+            static readonly string ObjectTypeProperty = "@type";
 
 #if LITECORE_PACKAGED
         internal
 #else
-    public
+        public
 #endif
-         static readonly string C4LocalDocStore = "_local";
+            static readonly string ObjectTypeBlob = "blob";
 
 #if LITECORE_PACKAGED
         internal
