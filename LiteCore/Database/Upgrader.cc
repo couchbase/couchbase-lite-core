@@ -7,6 +7,7 @@
 //
 
 #include "c4Internal.hh"
+#include "c4Document+Fleece.h"
 #include "Upgrader.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "Database.hh"
@@ -22,10 +23,6 @@ using namespace std;
 using namespace fleece;
 using namespace c4Internal;
 
-// If 1, `_attachment` dicts in revisions will be modified to add "_cbltype":"blob" and remove
-// obsolete keys "stub", "follows", "revpos". But this is probably a bad idea because a revision
-// is supposed to be globally immutable. --jpa 4/10/17
-#define MODIFY_REVS 0
 
 namespace litecore {
 
@@ -155,13 +152,8 @@ namespace litecore {
                 if (current) {
                     // Convert the JSON body to Fleece:
                     body = convertBody(asSlice(_allRevs->getColumn(5)));
-                    if (hasAttachments) {
-#if MODIFY_REVS
-                        body = convertAttachments(body);
-#else
+                    if (hasAttachments)
                         copyAttachments(body);
-#endif
-                    }
                     put.body = body;
                 } else {
                     put.body = nullslice;
@@ -188,7 +180,7 @@ namespace litecore {
         void copyAttachments(slice fleeceBody) {
             auto root = Value::fromTrustedData(fleeceBody)->asDict();
             if (!root) return;
-            auto atts = root->get("_attachments"_sl, _sharedKeys);
+            auto atts = root->get(C4STR(kC4LegacyAttachmentsProperty), _sharedKeys);
             if (!atts) return;
             auto attsDict = atts->asDict();
             if (!attsDict) return;
@@ -200,60 +192,6 @@ namespace litecore {
                         copyAttachment((string)digest->asString());
                 }
             }
-        }
-
-
-        // Further converts a Fleece document body by removing "stub", "follows", "revpos" keys
-        // from attachment metadata. Also copies all referenced blobs to the new db.
-        // (Only called when MODIFY_REVS is set.)
-        alloc_slice convertAttachments(slice fleeceBody) {
-            Encoder &enc = _newDB->sharedEncoder();
-            const Dict *root = Value::fromTrustedData(fleeceBody)->asDict();
-            // Write the document top-level keys:
-            enc.beginDictionary();
-            for (Dict::iterator i(root, _sharedKeys); i; ++i) {
-                slice key = i.keyString();
-                enc.writeKey(key);
-                if (key == "_attachments"_sl && i.value()->asDict()) {
-                    // Write the _attachments dictionary:
-                    enc.beginDictionary();
-                    for (Dict::iterator att(i.value()->asDict(), _sharedKeys); att; ++att) {
-                        enc.writeKey(att.keyString());
-                        auto meta = att.value()->asDict();
-                        if (meta) {
-                            // Write an attachment:
-                            writeAttachment(enc, meta);
-                        } else {
-                            enc.writeValue(att.value());
-                        }
-                    }
-                    enc.endDictionary();
-                } else {
-                    enc.writeValue(i.value());
-                }
-            }
-            enc.endDictionary();
-            return enc.extractOutput();
-        }
-
-
-        // Copies attachment metadata to the encoder, omitting obsolete keys.
-        // Also copies the referenced blob to the new db if it exists in the old one.
-        // (Only called when MODIFY_REVS is set.)
-        void writeAttachment(Encoder &enc, const Dict *attachment) {
-            enc.beginDictionary();
-            enc.writeKey("_cbltype"_sl);
-            enc.writeString("blob"_sl);
-            for (Dict::iterator meta(attachment, _sharedKeys); meta; ++meta) {
-                slice key = meta.keyString();
-                if (key != "stub"_sl && key != "follows"_sl && key != "revpos"_sl) {
-                    if (key == "digest"_sl)
-                        copyAttachment((string)meta.value()->asString());
-                    enc.writeKey(key);
-                    enc.writeValue(meta.value());
-                }
-            }
-            enc.endDictionary();
         }
 
 

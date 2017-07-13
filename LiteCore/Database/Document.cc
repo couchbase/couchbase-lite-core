@@ -7,6 +7,7 @@
 //
 
 #include "Document.hh"
+#include "c4Document+Fleece.h"
 #include "StringUtil.hh"
 #include "Fleece.hh"
 
@@ -15,7 +16,7 @@ using namespace fleece;
 namespace c4Internal {
 
     bool Document::isOldMetaProperty(slice key) {
-        return (key.size > 0 && key[0] == '_' && key != "_attachments"_sl);
+        return (key.size > 0 && key[0] == '_' && key != C4STR(kC4LegacyAttachmentsProperty));
     }
 
 
@@ -61,8 +62,8 @@ namespace c4Internal {
 
 
     bool Document::dictIsBlob(const Dict *dict, blobKey &outKey, SharedKeys* sk) {
-        const Value* cbltype= dict->get("_cbltype"_sl, sk);
-        if (!cbltype || cbltype->asString() != "blob"_sl)
+        const Value* cbltype= dict->get(C4STR(kC4ObjectTypeProperty), sk);
+        if (!cbltype || cbltype->asString() != slice(kC4ObjectType_Blob))
             return false;
         
         const Value* digest = ((const Dict*)dict)->get("digest"_sl, sk);
@@ -75,7 +76,7 @@ namespace c4Internal {
     // Finds blob references in a Fleece Dict, recursively.
     void Document::findBlobReferences(const Dict *dict, SharedKeys* sk, const FindBlobCallback &callback)
     {
-        if (dict->get("_cbltype"_sl, sk)) {
+        if (dict->get(C4STR(kC4ObjectTypeProperty), sk)) {
             blobKey key;
             if (dictIsBlob(dict, key, sk)) {
                 auto lengthVal = dict->get("length"_sl, sk);

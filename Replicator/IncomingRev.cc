@@ -219,7 +219,7 @@ namespace litecore { namespace repl {
     // Finds blob references in a Fleece Dict, recursively.
     static void findBlobReferences(Dict dict, const FindBlobCallback &callback)
     {
-        if (dict["_cbltype"_sl]) {
+        if (dict[C4STR(kC4ObjectTypeProperty)]) {
             C4BlobKey key;
             if (c4doc_dictIsBlob(dict, &key)) {
                 uint64_t length = dict["length"_sl].asUnsigned();
