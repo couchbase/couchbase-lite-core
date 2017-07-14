@@ -341,7 +341,7 @@ namespace LiteCore.Tests
                 keys.Add(key);
                 var keyStr = Native.c4blob_keyToString(key);
                 json.Append(
-                    $"{{'_cbltype': 'blob', 'digest': '{keyStr}', length: {att.Length}, 'content_type': '{contentType}'}},");
+                    $"{{'{Constants.ObjectTypeProperty}': '{Constants.ObjectTypeBlob}', 'digest': '{keyStr}', length: {att.Length}, 'content_type': '{contentType}'}},");
             }
 
             json.Append("]}");
