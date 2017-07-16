@@ -8,6 +8,7 @@
 
 #include "DBWorker.hh"
 #include "Pusher.hh"
+#include "IncomingRev.hh"
 #include "FleeceCpp.hh"
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
@@ -377,6 +378,7 @@ namespace litecore { namespace repl {
 
         MessageBuilder response(req);
         response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
+        response["blobs"_sl] = "true"_sl;
         vector<bool> whichRequested(changes.count());
         unsigned itemsWritten = 0, requested = 0;
         vector<alloc_slice> ancestors;
@@ -570,10 +572,70 @@ namespace litecore { namespace repl {
             msg["error"_sl] = blipError;
 
         if (root) {
-            msg.jsonBody().setSharedKeys(c4db_getFLSharedKeys(_db));
-            msg.jsonBody().writeValue(root);        // encode as JSON
+            // Write doc body as JSON:
+            auto &bodyEncoder = msg.jsonBody();
+            auto sk = c4db_getFLSharedKeys(_db);
+            bodyEncoder.setSharedKeys(sk);
+            if (request.legacyAttachments && (doc->selectedRev.flags & kRevHasAttachments))
+                writeRevWithLegacyAttachments(bodyEncoder, root, sk);
+            else
+                bodyEncoder.writeValue(root);
         }
         sendRequest(msg, onProgress);
+    }
+
+
+    void DBWorker::writeRevWithLegacyAttachments(Encoder& enc, Dict root, FLSharedKeys sk) {
+        enc.beginDict();
+
+        // Write existing properties except for _attachments:
+        Dict oldAttachments;
+        for (Dict::iterator i(root, sk); i; ++i) {
+            slice key = i.keyString();
+            if (key == slice(kC4LegacyAttachmentsProperty)) {
+                oldAttachments = i.value().asDict();    // remember _attachments dict for later
+            } else {
+                enc.writeKey(key);
+                enc.writeValue(i.value());
+            }
+        }
+
+        // Now write _attachments:
+        enc.writeKey("_attachments"_sl);
+        enc.beginDict();
+        // First pre-existing legacy attachments, if any:
+        for (Dict::iterator i(oldAttachments, sk); i; ++i) {
+            slice key = i.keyString();
+            if (!key.hasPrefix("blob_"_sl)) {
+                // TODO: Should skip this entry if a blob with the same digest exists
+                enc.writeKey(key);
+                enc.writeValue(i.value());
+            }
+        }
+
+        // Then entries for blobs found in the document:
+        unsigned n = 0;
+        IncomingRev::findBlobReferences(root, sk, [&](Dict dict, C4BlobKey blobKey) {
+            char attName[32];
+            sprintf(attName, "blob_%u", ++n);   // TODO: Mnemonic name based on JSON key path
+            enc.writeKey(slice(attName));
+            enc.beginDict();
+            for (Dict::iterator i(dict, sk); i; ++i) {
+                slice key = i.keyString();
+                if (key != slice(kC4ObjectTypeProperty) && key != "stub"_sl) {
+                    enc.writeKey(key);
+                    enc.writeValue(i.value());
+                }
+            }
+            enc.writeKey("stub"_sl);
+            enc.writeBool(true);
+            enc.writeKey("revpos"_sl);
+            enc.writeInt(1);
+            enc.endDict();
+        });
+        enc.endDict();
+
+        enc.endDict();
     }
 
 

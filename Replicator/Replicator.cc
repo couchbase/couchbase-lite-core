@@ -60,8 +60,8 @@ namespace litecore { namespace repl {
     ,_remoteAddress(address)
     ,_delegate(&delegate)
     ,_connectionState(connection->state())
-    ,_pushStatus{options.push == kC4Disabled ? kC4Stopped : kC4Busy}
-    ,_pullStatus{options.pull == kC4Disabled ? kC4Stopped : kC4Busy}
+    ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
+    ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_dbActor(new DBWorker(connection, this, db, address, options))
     {
         if (options.push != kC4Disabled)
@@ -235,7 +235,6 @@ namespace litecore { namespace repl {
         } else if (setCookie) {
             _dbActor->setCookie(setCookie.asString());
         }
-
         _delegate->replicatorGotHTTPResponse(this, status, headers);
     }
 

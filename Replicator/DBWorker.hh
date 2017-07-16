@@ -93,6 +93,9 @@ namespace litecore { namespace repl {
         void dbChanged();
         bool markRevsSynced(const std::vector<Rev> changes, C4Error *outError);
 
+        void writeRevWithLegacyAttachments(fleeceapi::Encoder&,
+                                           fleeceapi::Dict rev,
+                                           FLSharedKeys sk);
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
         int findProposedChange(slice docID, slice revID, slice parentRevID);

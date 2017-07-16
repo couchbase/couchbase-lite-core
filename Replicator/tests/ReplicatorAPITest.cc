@@ -7,6 +7,8 @@
 //
 
 #include "ReplicatorAPITest.hh"
+#include "c4Document+Fleece.h"
+#include "StringUtil.hh"
 
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
@@ -189,3 +191,43 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[Pull][.RealReplicat
     _stopWhenIdle = true;
     replicate(kC4Disabled, kC4Continuous);
 }
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[Push][Pull][blob][.RealReplicator]") {
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+    }
+
+    C4Error error;
+    c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, &error);
+    REQUIRE(doc);
+    alloc_slice before = c4doc_bodyAsJSON(doc, true, &error);
+    doc = nullptr;
+    C4Log("Original doc: %.*s", SPLAT(before));
+
+    replicate(kC4OneShot, kC4Disabled);
+
+    C4Log("-------- Deleting and re-creating database --------");
+    deleteAndRecreateDB();
+
+    replicate(kC4Disabled, kC4OneShot);
+
+    doc = c4doc_get(db, "att1"_sl, true, &error);
+    REQUIRE(doc);
+    alloc_slice after = c4doc_bodyAsJSON(doc, true, &error);
+    C4Log("Pulled doc: %.*s", SPLAT(after));
+
+    // Is the pulled identical to the original?
+    CHECK(after == before);
+
+    // Did we get all of its attachments?
+    auto blobStore = c4db_getBlobStore(db, &error);
+    for( auto key : blobKeys) {
+        alloc_slice blob = c4blob_getContents(blobStore, key, &error);
+        CHECK(blob);
+    }
+}
+

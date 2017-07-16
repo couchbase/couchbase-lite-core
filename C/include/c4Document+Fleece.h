@@ -50,10 +50,14 @@ extern "C" {
     /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key.
         (This function cannot recognize child dictionaries of "_attachments", because it's not
         possible to look at the parent of a Fleece value.) */
-    bool c4doc_dictIsBlob(FLDict dict C4NONNULL, C4BlobKey *outKey C4NONNULL) C4API;
+    bool c4doc_dictIsBlob(FLDict dict C4NONNULL,
+                          FLSharedKeys sk,
+                          C4BlobKey *outKey C4NONNULL) C4API;
 
     /** Translates the body of the selected revision from Fleece to JSON. */
-    C4StringResult c4doc_bodyAsJSON(C4Document *doc C4NONNULL, C4Error *outError) C4API;
+    C4StringResult c4doc_bodyAsJSON(C4Document *doc C4NONNULL,
+                                    bool canonical,
+                                    C4Error *outError) C4API;
 
     /** Creates a Fleece encoder for creating documents for a given database. */
     FLEncoder c4db_createFleeceEncoder(C4Database* db C4NONNULL) C4API;

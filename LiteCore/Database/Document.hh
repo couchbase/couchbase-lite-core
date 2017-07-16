@@ -112,13 +112,13 @@ namespace c4Internal {
             return result;
         }
 
-        alloc_slice bodyAsJSON() {
+        alloc_slice bodyAsJSON(bool canonical =false) {
             if (!selectedRev.body.buf)
                 error::_throw(error::NotFound);
             auto root = fleece::Value::fromTrustedData(selectedRev.body);
             if (!root)
                 error::_throw(error::CorruptData);
-            return root->toJSON(database()->documentKeys());
+            return root->toJSON(database()->documentKeys(), canonical);
         }
 
         virtual int32_t putExistingRevision(const C4DocPutRequest&) =0;
@@ -153,11 +153,13 @@ namespace c4Internal {
         /** Returns true if the document contains 1.x metadata properties (at top level). */
         static bool hasOldMetaProperties(const fleece::Dict*);
 
-        /** Re-encodes to Fleece, without any 1.x metadata properties. */
+        /** Re-encodes to Fleece, without any 1.x metadata properties.
+            The _attachments property is treated specially, in that any entries in it that don't
+            appear elsewhere in the dictionary as blobs are preserved. */
         static alloc_slice encodeStrippingOldMetaProperties(const fleece::Dict*);
 
         /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key. */
-        static bool dictIsBlob(const fleece::Dict *dict, blobKey &outKey, fleece::SharedKeys* sk = nullptr);
+        static bool dictIsBlob(const fleece::Dict *dict, blobKey &outKey, fleece::SharedKeys* sk);
 
         using FindBlobCallback = function<void(const blobKey &key, uint64_t size)>;
         static void findBlobReferences(const fleece::Dict*, fleece::SharedKeys* sk, const FindBlobCallback&);

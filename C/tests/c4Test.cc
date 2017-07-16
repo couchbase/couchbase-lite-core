@@ -264,6 +264,17 @@ void C4Test::reopenDB() {
 }
 
 
+void C4Test::deleteAndRecreateDB() {
+    auto config = *c4db_getConfig(db);
+    C4Error error;
+    REQUIRE(c4db_delete(db, &error));
+    c4db_free(db);
+    db = nullptr;
+    db = c4db_open(databasePath(), &config, &error);
+    REQUIRE(db);
+}
+
+
 void C4Test::createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags) {
     C4Test::createRev(db, docID, revID, body, flags);
 }

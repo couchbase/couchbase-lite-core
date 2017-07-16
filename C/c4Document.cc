@@ -448,9 +448,9 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
 }
 
 
-C4SliceResult c4doc_bodyAsJSON(C4Document *doc, C4Error *outError) noexcept {
+C4SliceResult c4doc_bodyAsJSON(C4Document *doc, bool canonical, C4Error *outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
-        return sliceResult(c4Internal::internal(doc)->bodyAsJSON());
+        return sliceResult(c4Internal::internal(doc)->bodyAsJSON(canonical));
     });
 }
 
@@ -476,9 +476,9 @@ bool c4doc_hasOldMetaProperties(FLDict doc) noexcept {
 }
 
 
-bool c4doc_dictIsBlob(FLDict dict, C4BlobKey *outKey) C4API {
+bool c4doc_dictIsBlob(FLDict dict, FLSharedKeys sk, C4BlobKey *outKey) C4API {
     assert(outKey);
-    return Document::dictIsBlob((const Dict*)dict, *(blobKey*)outKey);
+    return Document::dictIsBlob((const Dict*)dict, *(blobKey*)outKey, (SharedKeys*)sk);
 }
 
 

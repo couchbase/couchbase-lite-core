@@ -9,6 +9,7 @@
 #pragma once
 #include "Worker.hh"
 #include "ReplicatorTypes.hh"
+#include "function_ref.hh"
 
 namespace litecore { namespace repl {
     class DBWorker;
@@ -25,6 +26,12 @@ namespace litecore { namespace repl {
         }
 
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
+
+        using FindBlobCallback = function_ref<void(fleeceapi::Dict,
+                                                   const C4BlobKey &key)>;
+        static void findBlobReferences(fleeceapi::Dict root,
+                                       FLSharedKeys sk,
+                                       const FindBlobCallback&);
 
     protected:
         ActivityLevel computeActivityLevel() const override;

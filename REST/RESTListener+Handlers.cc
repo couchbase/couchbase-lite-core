@@ -172,7 +172,7 @@ namespace litecore { namespace REST {
                 c4::ref<C4Document> doc = c4enum_getDocument(e, &err);
                 if (!doc)
                     return rq.respondWithError(err);
-                alloc_slice docBody = c4doc_bodyAsJSON(doc, &err);
+                alloc_slice docBody = c4doc_bodyAsJSON(doc, false, &err);
                 if (!docBody)
                     return rq.respondWithError(err);
                 json.writeKey("doc"_sl);
@@ -205,7 +205,7 @@ namespace litecore { namespace REST {
         // Get the revision
         if (!doc->selectedRev.body.buf)
             return rq.respondWithStatus(HTTPStatus::NotFound);
-        alloc_slice json = c4doc_bodyAsJSON(doc, &err);
+        alloc_slice json = c4doc_bodyAsJSON(doc, false, &err);
         if (!json)
             return rq.respondWithError(err);
 

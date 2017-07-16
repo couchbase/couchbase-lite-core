@@ -13,6 +13,7 @@
 #include "StringUtil.hh"
 #include "c4Document+Fleece.h"
 #include "BLIP.hh"
+#include <deque>
 
 using namespace std;
 using namespace fleece;
@@ -20,9 +21,6 @@ using namespace fleeceapi;
 using namespace litecore::blip;
 
 namespace litecore { namespace repl {
-
-    using FindBlobCallback = function<void(const C4BlobKey &key, uint64_t size)>;
-    static void findBlobReferences(Dict, const FindBlobCallback&);
 
 
     IncomingRev::IncomingRev(Puller *puller, DBWorker *dbWorker)
@@ -94,7 +92,8 @@ namespace litecore { namespace repl {
         }
         Dict root = Value::fromTrustedData(fleeceBody).asDict();
 
-        // Strip out any "_"-prefixed properties like _id, just in case:
+        // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
+        // in _attachments that are redundant with blobs elsewhere in the doc:
         if (c4doc_hasOldMetaProperties(root)) {
             fleeceBody = c4doc_encodeStrippingOldMetaProperties(root);
             root = Value::fromTrustedData(fleeceBody).asDict();
@@ -113,12 +112,13 @@ namespace litecore { namespace repl {
             }
         }
 
-        // Check for blobs:
+        // Check for blobs, and request any I don't have yet:
         auto blobStore = _dbWorker->blobStore();
-        findBlobReferences(root, [=](const C4BlobKey &key, uint64_t size) {
+        findBlobReferences(root, nullptr, [=](Dict dict, const C4BlobKey &key) {
             if (c4blob_getSize(blobStore, key) < 0) {
+                uint64_t length = dict["length"_sl].asUnsigned();
                 Retained<IncomingBlob> b(new IncomingBlob(this, blobStore));
-                b->start(key, size);
+                b->start(key, length);
                 ++_pendingBlobs;
             }
         });
@@ -191,33 +191,37 @@ namespace litecore { namespace repl {
 #pragma mark - UTILITIES:
 
 
-    // Finds blob references in a Fleece value, recursively.
-    static void findBlobReferences(Value val, const FindBlobCallback &callback) {
-        auto d = val.asDict();
-        if (d) {
-            findBlobReferences(d, callback);
-            return;
-        }
-        auto a = val.asArray();
-        if (a) {
-            for (Array::iterator i(a); i; ++i)
-                findBlobReferences(i.value(), callback);
-        }
+    static inline void pushIfDictOrArray(Value v, deque<Value> &stack) {
+        auto type = v.type();
+        if (type == kFLDict || type == kFLArray)
+            stack.push_front(v);
     }
 
 
-    // Finds blob references in a Fleece Dict, recursively.
-    static void findBlobReferences(Dict dict, const FindBlobCallback &callback)
-    {
-        if (dict[C4STR(kC4ObjectTypeProperty)]) {
-            C4BlobKey key;
-            if (c4doc_dictIsBlob(dict, &key)) {
-                uint64_t length = dict["length"_sl].asUnsigned();
-                callback(key, length);
+    // Finds blob references anywhere in a Fleece value
+    void IncomingRev::findBlobReferences(Dict root, FLSharedKeys sk, const FindBlobCallback &callback) {
+        Value val = root;
+        deque<Value> stack;
+        while(true) {
+            auto dict = val.asDict();
+            if (dict) {
+                C4BlobKey blobKey;
+                if (c4doc_dictIsBlob(dict, sk, &blobKey)) {
+                    callback(dict, blobKey);
+                } else {
+                    for (Dict::iterator i(dict); i; ++i)
+                        pushIfDictOrArray(i.value(), stack);
+                }
+            } else {
+                for (Array::iterator i(val.asArray()); i; ++i)
+                    pushIfDictOrArray(i.value(), stack);
             }
-        } else {
-            for (Dict::iterator i(dict); i; ++i)
-                findBlobReferences(i.value(), callback);
+
+            // Get next value from queue, or stop when we run out:
+            if (stack.empty())
+                break;
+            val = stack.front();
+            stack.pop_front();
         }
     }
 

@@ -72,10 +72,12 @@ namespace litecore { namespace repl {
     struct RevRequest : public Rev {
         std::vector<alloc_slice> ancestorRevIDs;    // Known ancestor revIDs the peer already has
         unsigned maxHistory;                        // Max depth of rev history to send
+        bool legacyAttachments;                     // Add _attachments property when sending
 
-        RevRequest(const Rev &rev, unsigned maxHistory_)
+        RevRequest(const Rev &rev, unsigned maxHistory_, bool legacyAttachments_)
         :Rev(rev)
         ,maxHistory(maxHistory_)
+        ,legacyAttachments(legacyAttachments_)
         { }
     };
 

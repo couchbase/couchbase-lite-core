@@ -215,6 +215,7 @@ namespace litecore { namespace repl {
 
             // The response contains an array that parallels the array I sent, with each item
             int maxHistory = (int)max(0l, reply->intProperty("maxHistory"_sl));
+            bool legacyAttachments = !reply->boolProperty("blobs"_sl);
             auto requests = reply->JSONBody().asArray();
 
             unsigned index = 0;
@@ -224,7 +225,8 @@ namespace litecore { namespace repl {
                     // Entry in "proposeChanges" response is a status code, with 0 for OK:
                     int status = (int)requests[index].asInt();
                     if (status == 0) {
-                        auto request = _revsToSend.emplace(_revsToSend.end(), change, maxHistory);
+                        auto request = _revsToSend.emplace(_revsToSend.end(), change,
+                                                           maxHistory, legacyAttachments);
                         request->ancestorRevIDs.emplace_back(change.remoteAncestorRevID);
                         queued = true;
                     } else if (status != 304) {     // 304 means server has my rev already
@@ -237,7 +239,8 @@ namespace litecore { namespace repl {
                     // Entry in "changes" response is an array of known ancestors, or null to skip:
                     Array ancestorArray = requests[index].asArray();
                     if (ancestorArray) {
-                        auto request = _revsToSend.emplace(_revsToSend.end(), change, maxHistory);
+                        auto request = _revsToSend.emplace(_revsToSend.end(), change,
+                                                           maxHistory, legacyAttachments);
                         request->ancestorRevIDs.reserve(ancestorArray.count());
                         for (Value a : ancestorArray) {
                             slice revid = a.asString();

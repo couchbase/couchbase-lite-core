@@ -52,11 +52,6 @@ public:
             _remoteDBName = c4str(remoteDB);
     }
 
-    ~ReplicatorAPITest() {
-        c4repl_free(_repl);
-        c4db_free(db2);
-    }
-
     bool validate(slice docID, Dict body) {
         //TODO: Do something here
         return true;
@@ -122,7 +117,12 @@ public:
               (transient ? "transient " : ""),
               (pushing ? "pushing" : "pulling"),
               SPLAT(docID), message);
-        // TODO: Record errors
+
+        auto test = (ReplicatorAPITest*)context;
+        if (pushing)
+            test->_docPushErrors.emplace(slice(docID));
+        else
+            test->_docPullErrors.emplace(slice(docID));
     }
 
 
@@ -160,6 +160,8 @@ public:
         CHECK(_callbackStatus.level == status.level);
         CHECK(_callbackStatus.error.domain == status.error.domain);
         CHECK(_callbackStatus.error.code == status.error.code);
+        CHECK(_docPullErrors.empty());
+        CHECK(_docPushErrors.empty());
     }
 
 
@@ -174,15 +176,16 @@ public:
         REQUIRE(r->status() == REST::HTTPStatus::OK);
     }
 
-    C4Database *db2 {nullptr};
+    c4::ref<C4Database> db2;
     C4Address _address {kDefaultAddress};
     C4String _remoteDBName {kScratchDBName};
     AllocedDict _options;
-    C4Replicator *_repl {nullptr};
+    c4::ref<C4Replicator> _repl;
     C4ReplicatorStatus _callbackStatus {};
     int _numCallbacks {0};
     int _numCallbacksWithLevel[5] {0};
     AllocedDict _headers;
     bool _stopWhenIdle {false};
+    set<string> _docPushErrors, _docPullErrors;
 };
 
