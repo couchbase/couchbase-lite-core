@@ -41,6 +41,8 @@ namespace litecore { namespace repl {
         void sendRevision(const RevRequest&);
         void doneWithRev(const Rev&, bool successful);
         void handleGetAttachment(Retained<MessageIn>);
+        void handleProveAttachment(Retained<MessageIn>);
+        C4ReadStream* readBlobFromRequest(MessageIn *req, slice &digest, C4Error *outError);
         void filterByDocIDs(fleeceapi::Array docIDs);
 
         static const unsigned kMaxPossibleAncestorsToSend = 20;

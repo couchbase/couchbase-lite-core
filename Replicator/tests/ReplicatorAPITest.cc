@@ -231,3 +231,22 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[Push][Pull][blo
     }
 }
 
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Prove Attachments", "[Push][blob][.RealReplicator]") {
+    vector<string> attachments = {"Hey, this is an attachment!"};
+    {
+        TransactionHelper t(db);
+        addDocWithAttachments("doc one"_sl, attachments, "text/plain");
+    }
+    replicate(kC4OneShot, kC4Disabled);
+
+    C4Log("-------- Creating 2nd doc with same attachments --------");
+
+    {
+        TransactionHelper t(db);
+        addDocWithAttachments("doc two"_sl, attachments, "text/plain");
+    }
+    // Pushing the second doc will cause Sync Gateway to ask for proof (send "proveAttachment")
+    // instead of requesting the attachment itself, since it already has the attachment.
+    replicate(kC4OneShot, kC4Disabled);
+}

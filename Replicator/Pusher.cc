@@ -11,7 +11,9 @@
 #include "DBWorker.hh"
 #include "c4BlobStore.h"
 #include "StringUtil.hh"
+#include "SecureDigest.hh"
 #include "BLIP.hh"
+#include "make_unique.h"
 #include <algorithm>
 
 using namespace std;
@@ -29,6 +31,7 @@ namespace litecore { namespace repl {
         filterByDocIDs(options.docIDs());
         registerHandler("subChanges",       &Pusher::handleSubChanges);
         registerHandler("getAttachment",    &Pusher::handleGetAttachment);
+        registerHandler("proveAttachment",  &Pusher::handleProveAttachment);
     }
 
 
@@ -334,16 +337,22 @@ namespace litecore { namespace repl {
 #pragma mark - SENDING ATTACHMENTS:
 
 
-    // Incoming request to send an attachment/blob
-    void Pusher::handleGetAttachment(Retained<MessageIn> req) {
-        slice digest = req->property("digest"_sl);
+    C4ReadStream* Pusher::readBlobFromRequest(MessageIn *req, slice &digest, C4Error *outError) {
+        digest = req->property("digest"_sl);
         C4BlobKey key;
         if (!c4blob_keyFromString(digest, &key)) {
             req->respondWithError({"BLIP"_sl, 400, "Missing or invalid 'digest'"_sl});
-            return;
+            return nullptr;
         }
+        return  c4blob_openReadStream(_dbWorker->blobStore(), key, outError);
+    }
+
+
+    // Incoming request to send an attachment/blob
+    void Pusher::handleGetAttachment(Retained<MessageIn> req) {
+        slice digest;
         C4Error err;
-        auto blob = c4blob_openReadStream(_dbWorker->blobStore(), key, &err);
+        auto blob = readBlobFromRequest(req, digest, &err);
         if (blob) {
             log("Sending attachment %.*s", SPLAT(digest));
             ++_blobsInFlight;
@@ -366,6 +375,55 @@ namespace litecore { namespace repl {
             return;
         }
         req->respondWithError(c4ToBLIPError(err));
+    }
+
+
+    // Incoming request to prove I have an attachment that I'm pushing, without sending it:
+    void Pusher::handleProveAttachment(Retained<MessageIn> request) {
+        slice digest;
+        C4Error err;
+        c4::ref<C4ReadStream> blob = readBlobFromRequest(request, digest, &err);
+        if (blob) {
+            logVerbose("Sending proof of attachment %.*s", SPLAT(digest));
+            sha1Context sha;
+            sha1_begin(&sha);
+
+            // First digest the length-prefixed nonce:
+            slice nonce = request->body();
+            if (nonce.size == 0 || nonce.size > 255) {
+                request->respondWithError({"BLIP"_sl, 400, "Missing nonce"_sl});
+                return;
+            }
+            uint8_t nonceLen = (nonce.size & 0xFF);
+            sha1_add(&sha, &nonceLen, 1);
+            sha1_add(&sha, nonce.buf, (CC_LONG)nonce.size);
+
+            // Now digest the attachment itself:
+            static constexpr size_t kBufSize = 8192;
+            auto buf = make_unique<uint8_t[]>(kBufSize);
+            size_t bytesRead;
+            while ((bytesRead = c4stream_read(blob, buf.get(), kBufSize, &err)) > 0) {
+                sha1_add(&sha, buf.get(), bytesRead);
+            }
+            buf.reset();
+            blob = nullptr;
+            
+            if (err.code == 0) {
+                // Respond with the base64-encoded digest:
+                C4BlobKey proofDigest;
+                static_assert(sizeof(proofDigest) == 20, "proofDigest is wrong size for SHA-1");
+                sha1_end(&sha, &proofDigest);
+                alloc_slice proofStr = c4blob_keyToString(proofDigest);
+
+                MessageBuilder reply(request);
+                reply.write(proofStr);
+                request->respond(reply);
+                return;
+            }
+        }
+
+        // If we got here, we failed:
+        request->respondWithError(c4ToBLIPError(err));
     }
 
 

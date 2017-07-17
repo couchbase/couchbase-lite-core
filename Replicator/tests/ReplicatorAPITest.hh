@@ -127,8 +127,10 @@ public:
 
 
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
-        if (push > kC4Passive && _remoteDBName == kScratchDBName && !db2)
+        if (push > kC4Passive && _remoteDBName == kScratchDBName && !db2 && !_flushedScratch) {
             flushScratchDatabase();
+            _flushedScratch = true;
+        }
 
         C4ReplicatorParameters params = {};
         params.push = push;
@@ -180,6 +182,7 @@ public:
     C4Address _address {kDefaultAddress};
     C4String _remoteDBName {kScratchDBName};
     AllocedDict _options;
+    bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;
     C4ReplicatorStatus _callbackStatus {};
     int _numCallbacks {0};
