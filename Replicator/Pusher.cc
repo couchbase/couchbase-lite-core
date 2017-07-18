@@ -396,7 +396,7 @@ namespace litecore { namespace repl {
             }
             uint8_t nonceLen = (nonce.size & 0xFF);
             sha1_add(&sha, &nonceLen, 1);
-            sha1_add(&sha, nonce.buf, (CC_LONG)nonce.size);
+            sha1_add(&sha, nonce.buf, nonce.size);
 
             // Now digest the attachment itself:
             static constexpr size_t kBufSize = 8192;
