@@ -20,7 +20,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertNotNull;
 
-public class C4QueryBaseTest extends BaseTest {
+public class C4QueryBaseTest extends C4BaseTest {
     public static final String LOG_TAG = C4QueryBaseTest.class.getSimpleName();
 
     //-------------------------------------------------------------------------
@@ -39,7 +39,7 @@ public class C4QueryBaseTest extends BaseTest {
             query.free();
             query = null;
         }
-        query = new C4Query(db, queryStr);
+        query = db.createQuery(queryStr);
         assertNotNull(query);
 
         Log.i(LOG_TAG, "query.explain() -> " + query.explain());
@@ -76,7 +76,7 @@ public class C4QueryBaseTest extends BaseTest {
             query.free();
             query = null;
         }
-        query = new C4Query(db, json.toString());
+        query = db.createQuery(json.toString());
         assertNotNull(query);
 
         Log.i(LOG_TAG, "query.explain() -> " + query.explain());

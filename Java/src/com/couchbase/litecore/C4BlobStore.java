@@ -24,7 +24,18 @@ public class C4BlobStore {
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
-    private long handle = 0L; // hold pointer to C4BlobKey
+    private long handle = 0L; // hold pointer to C4BlobStore
+    private boolean managedByDatabase = false;
+    //-------------------------------------------------------------------------
+    // Constructor
+    //-------------------------------------------------------------------------
+
+    C4BlobStore(long handle, boolean managedByDatabase) {
+        if (handle == 0)
+            throw new IllegalArgumentException("handle is 0");
+        this.handle = handle;
+        this.managedByDatabase = managedByDatabase;
+    }
 
     //-------------------------------------------------------------------------
     // public methods
@@ -44,7 +55,7 @@ public class C4BlobStore {
     public static C4BlobStore open(String dirPath, long flags) throws LiteCoreException {
         if (!dirPath.endsWith(File.separator))
             dirPath = dirPath + File.separator;
-        return new C4BlobStore(openStore(dirPath, flags));
+        return new C4BlobStore(openStore(dirPath, flags), false);
     }
 
     /**
@@ -60,7 +71,7 @@ public class C4BlobStore {
      * Closes/frees a BlobStore.
      */
     public void free() {
-        if (handle != 0L) {
+        if (handle != 0L && !managedByDatabase) {
             freeStore(handle);
             handle = 0L;
         }
@@ -135,35 +146,27 @@ public class C4BlobStore {
     }
 
     //-------------------------------------------------------------------------
-    // package methods
-    //-------------------------------------------------------------------------
-    C4BlobStore(long handle) {
-        if (handle == 0)
-            throw new IllegalArgumentException("handle is 0");
-        this.handle = handle;
-    }
-
-    //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
+    static native long getBlobStore(long db) throws LiteCoreException;
 
-    private native static long openStore(String dirPath, long flags) throws LiteCoreException;
+    static native long openStore(String dirPath, long flags) throws LiteCoreException;
 
-    private native static void deleteStore(long blobStore) throws LiteCoreException;
+    static native void deleteStore(long blobStore) throws LiteCoreException;
 
-    private native static void freeStore(long blobStore);
+    static native void freeStore(long blobStore);
 
-    private native static long getSize(long blobStore, long blobKey);
+    static native long getSize(long blobStore, long blobKey);
 
-    private native static long getContents(long blobStore, long blobKey) throws LiteCoreException;
+    static native long getContents(long blobStore, long blobKey) throws LiteCoreException;
 
-    private native static String getFilePath(long blobStore, long blobKey) throws LiteCoreException;
+    static native String getFilePath(long blobStore, long blobKey) throws LiteCoreException;
 
-    private native static long create(long blobStore, byte[] contents) throws LiteCoreException;
+    static native long create(long blobStore, byte[] contents) throws LiteCoreException;
 
-    private native static void delete(long blobStore, long blobKey) throws LiteCoreException;
+    static native void delete(long blobStore, long blobKey) throws LiteCoreException;
 
-    private native static long openReadStream(long blobStore, long blobKey) throws LiteCoreException;
+    static native long openReadStream(long blobStore, long blobKey) throws LiteCoreException;
 
-    private native static long openWriteStream(long blobStore) throws LiteCoreException;
+    static native long openWriteStream(long blobStore) throws LiteCoreException;
 }

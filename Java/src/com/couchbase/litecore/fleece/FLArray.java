@@ -39,6 +39,7 @@ public class FLArray {
         itr.free();
         return results;
     }
+
     public long count() {
         return count(handle);
     }
@@ -64,7 +65,7 @@ public class FLArray {
      * @param array FLArray
      * @return long (uint32_t)
      */
-    private static native long count(long array);
+    static native long count(long array);
 
     /**
      * Returns an value at an array index, or nullptr if the index is out of range.
@@ -73,7 +74,7 @@ public class FLArray {
      * @param index uint32_t
      * @return long (FLValue)
      */
-    private static native long get(long array, long index);
+    static native long get(long array, long index);
 
     // TODO: Need free()?
 }

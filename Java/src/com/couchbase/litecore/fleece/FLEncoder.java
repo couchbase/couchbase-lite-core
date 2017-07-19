@@ -167,37 +167,37 @@ public class FLEncoder {
     // native methods
     //-------------------------------------------------------------------------
 
-    private native static long init(); // FLEncoder FLEncoder_New(void);
+    static native long init(); // FLEncoder FLEncoder_New(void);
 
-    private native static void free(long encoder);
+    static native void free(long encoder);
 
-    private native static void setSharedKeys(long encoder, long sharedKeys);
+    static native void setSharedKeys(long encoder, long sharedKeys);
 
-    private native static boolean writeNull(long encoder);
+    static native boolean writeNull(long encoder);
 
-    private native static boolean writeBool(long encoder, boolean value);
+    static native boolean writeBool(long encoder, boolean value);
 
-    private native static boolean writeInt(long encoder, long value); // 64bit
+    static native boolean writeInt(long encoder, long value); // 64bit
 
-    private native static boolean writeFloat(long encoder, float value);
+    static native boolean writeFloat(long encoder, float value);
 
-    private native static boolean writeDouble(long encoder, double value);
+    static native boolean writeDouble(long encoder, double value);
 
-    private native static boolean writeString(long encoder, String value);
+    static native boolean writeString(long encoder, String value);
 
-    private native static boolean writeData(long encoder, byte[] value);
+    static native boolean writeData(long encoder, byte[] value);
 
-    private native static boolean beginArray(long encoder, long reserve);
+    static native boolean beginArray(long encoder, long reserve);
 
-    private native static boolean endArray(long encoder);
+    static native boolean endArray(long encoder);
 
-    private native static boolean beginDict(long encoder, long reserve);
+    static native boolean beginDict(long encoder, long reserve);
 
-    private native static boolean endDict(long encoder);
+    static native boolean endDict(long encoder);
 
-    private native static boolean writeKey(long encoder, String slice);
+    static native boolean writeKey(long encoder, String slice);
 
-    private native static boolean writeValue(long encoder, long value);
+    static native boolean writeValue(long encoder, long value);
 
-    private native static byte[] finish(long encoder) throws LiteCoreException;
+    static native byte[] finish(long encoder) throws LiteCoreException;
 }

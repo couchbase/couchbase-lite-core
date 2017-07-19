@@ -13,8 +13,9 @@
  */
 package com.couchbase.litecore;
 
-public interface Logger {
-    int Debug = 0, Info = 1, Warning = 2, Error = 3, None = 4;
-
-    void log(int level, String message);
+/**
+ * Ported from c4ThreadingTest.cc
+ */
+public class C4ThreadingTest extends C4BaseTest {
+    // TODO: DB00x
 }

@@ -20,7 +20,16 @@ public class C4BlobWriteStream {
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
-    private long handle = 0L; // hold pointer to C4BlobReadStream
+    private long handle = 0L; // hold pointer to C4BlobWriteStream
+
+    //-------------------------------------------------------------------------
+    // Constructor
+    //-------------------------------------------------------------------------
+    C4BlobWriteStream(long handle) {
+        if (handle == 0)
+            throw new IllegalArgumentException("handle is 0");
+        this.handle = handle;
+    }
 
     //-------------------------------------------------------------------------
     // public methods
@@ -72,22 +81,13 @@ public class C4BlobWriteStream {
     }
 
     //-------------------------------------------------------------------------
-    // package methods
-    //-------------------------------------------------------------------------
-    C4BlobWriteStream(long handle) {
-        if (handle == 0)
-            throw new IllegalArgumentException("handle is 0");
-        this.handle = handle;
-    }
-
-    //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
-    private native static void write(long writeStream, byte[] bytes) throws LiteCoreException;
+    static native void write(long writeStream, byte[] bytes) throws LiteCoreException;
 
-    private native static long computeBlobKey(long writeStream) throws LiteCoreException;
+    static native long computeBlobKey(long writeStream) throws LiteCoreException;
 
-    private native static void install(long writeStream) throws LiteCoreException;
+    static native void install(long writeStream) throws LiteCoreException;
 
-    private native static void close(long writeStream);
+    static native void close(long writeStream);
 }

@@ -15,7 +15,7 @@ package com.couchbase.litecore;
 
 /**
  * Blob Key
- *
+ * <p>
  * A raw SHA-1 digest used as the unique identifier of a blob.
  */
 public class C4BlobKey {
@@ -25,7 +25,7 @@ public class C4BlobKey {
     private long handle = 0L; // hold pointer to C4BlobKey
 
     //-------------------------------------------------------------------------
-    // public methods
+    // Constructor
     //-------------------------------------------------------------------------
 
     /**
@@ -34,6 +34,16 @@ public class C4BlobKey {
     public C4BlobKey(String str) throws LiteCoreException {
         handle = fromString(str);
     }
+
+    C4BlobKey(long handle) {
+        if (handle == 0)
+            throw new IllegalArgumentException("handle is 0");
+        this.handle = handle;
+    }
+
+    //-------------------------------------------------------------------------
+    // public methods
+    //-------------------------------------------------------------------------
 
     /**
      * Encodes a blob key to a string of the form "sha1-"+base64.
@@ -52,6 +62,7 @@ public class C4BlobKey {
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
+
     @Override
     protected void finalize() throws Throwable {
         free();
@@ -61,11 +72,6 @@ public class C4BlobKey {
     //-------------------------------------------------------------------------
     // package access
     //-------------------------------------------------------------------------
-    C4BlobKey(long handle) {
-        if (handle == 0)
-            throw new IllegalArgumentException("handle is 0");
-        this.handle = handle;
-    }
 
     long getHandle() {
         return handle;
@@ -78,15 +84,15 @@ public class C4BlobKey {
     /**
      * Decode a string of the form "shar1-"+base64 into a raw key
      */
-    private native static long fromString(String str) throws LiteCoreException;
+    static native long fromString(String str) throws LiteCoreException;
 
     /**
      * Encodes a blob key to a string of the form "sha1-"+base64.
      */
-    private native static String toString(long blobKey);
+    static native String toString(long blobKey);
 
     /**
      * Release C4BlobKey
      */
-    private native static void free(long blobKey);
+    static native void free(long blobKey);
 }

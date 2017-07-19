@@ -99,7 +99,7 @@ public class FLValue {
         return asFLArray().asArray();
     }
 
-    /*package*/ Object asObject() {
+    Object asObject() {
         switch (getType(handle)) {
             case kFLNull:
                 return null;
@@ -181,7 +181,7 @@ public class FLValue {
                     FLValue rawKey = itr.getKey();
                     String key;
                     if (rawKey.isInteger()) {
-                        key = sharedKeys.getKey((int)rawKey.asInt());
+                        key = sharedKeys.getKey((int) rawKey.asInt());
                     } else {
                         key = rawKey.asString();
                     }
@@ -242,7 +242,7 @@ public class FLValue {
      * @param data FLSlice (same with slice)
      * @return long (FLValue - const struct _FLValue*)
      */
-    private static native long fromTrustedData(byte[] data);
+    static native long fromTrustedData(byte[] data);
 
     /**
      * Returns the data type of an arbitrary Value.
@@ -250,7 +250,7 @@ public class FLValue {
      * @param value FLValue
      * @return int (FLValueType)
      */
-    private static native int getType(long value);
+    static native int getType(long value);
 
     /**
      * Is this value an integer?
@@ -258,7 +258,7 @@ public class FLValue {
      * @param value FLValue
      * @return boolean
      */
-    private static native boolean isInteger(long value);
+    static native boolean isInteger(long value);
 
     /**
      * Is this a 64-bit floating-point value?
@@ -266,7 +266,7 @@ public class FLValue {
      * @param value FLValue
      * @return boolean
      */
-    private static native boolean isDouble(long value);
+    static native boolean isDouble(long value);
 
     /**
      * Returns true if the value is non-nullptr and represents an _unsigned_ integer that can only
@@ -275,7 +275,7 @@ public class FLValue {
      * @param value FLValue
      * @return boolean
      */
-    private static native boolean isUnsigned(long value);
+    static native boolean isUnsigned(long value);
 
     /**
      * Returns a value coerced to boolean.
@@ -283,7 +283,7 @@ public class FLValue {
      * @param value FLValue
      * @return boolean
      */
-    private static native boolean asBool(long value);
+    static native boolean asBool(long value);
 
     /**
      * Returns a value coerced to an unsigned integer.
@@ -291,7 +291,7 @@ public class FLValue {
      * @param value FLValue
      * @return long
      */
-    private static native long asUnsigned(long value);
+    static native long asUnsigned(long value);
 
     /**
      * Returns a value coerced to an integer.
@@ -300,7 +300,7 @@ public class FLValue {
      * @param value FLValue
      * @return long
      */
-    private static native long asInt(long value);
+    static native long asInt(long value);
 
     /**
      * Returns a value coerced to a 32-bit floating point number.
@@ -308,7 +308,7 @@ public class FLValue {
      * @param value FLValue
      * @return float
      */
-    private static native float asFloat(long value);
+    static native float asFloat(long value);
 
     /**
      * Returns a value coerced to a 64-bit floating point number.
@@ -316,7 +316,7 @@ public class FLValue {
      * @param value FLValue
      * @return double
      */
-    private static native double asDouble(long value);
+    static native double asDouble(long value);
 
     /**
      * Returns the exact contents of a string value, or null for all other types.
@@ -324,7 +324,7 @@ public class FLValue {
      * @param value FLValue
      * @return String
      */
-    private static native String asString(long value);
+    static native String asString(long value);
 
     /**
      * Returns the exact contents of a data value, or null for all other types.
@@ -332,7 +332,7 @@ public class FLValue {
      * @param value FLValue
      * @return byte[]
      */
-    private static native byte[] asData(long value);
+    static native byte[] asData(long value);
 
     /**
      * If a FLValue represents an array, returns it cast to FLArray, else nullptr.
@@ -340,7 +340,7 @@ public class FLValue {
      * @param value FLValue
      * @return long (FLArray)
      */
-    private static native long asArray(long value);
+    static native long asArray(long value);
 
     /**
      * If a FLValue represents an array, returns it cast to FLDict, else nullptr.
@@ -348,7 +348,7 @@ public class FLValue {
      * @param value FLValue
      * @return long (FLDict)
      */
-    private static native long asDict(long value);
+    static native long asDict(long value);
 
     /**
      * Converts valid JSON5 to JSON.
@@ -357,7 +357,7 @@ public class FLValue {
      * @return JSON String
      * @throws LiteCoreException
      */
-    private static native String JSON5ToJSON(String json5) throws LiteCoreException;
+    static native String JSON5ToJSON(String json5) throws LiteCoreException;
 
     // TODO: Need free()?
 }

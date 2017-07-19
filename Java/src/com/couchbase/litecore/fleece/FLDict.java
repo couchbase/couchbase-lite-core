@@ -107,7 +107,7 @@ public class FLDict {
      * @param dict FLDict
      * @return uint32_t
      */
-    private static native long count(long dict);
+    static native long count(long dict);
 
     /**
      * Looks up a key in a _sorted_ dictionary, returning its value.
@@ -116,7 +116,7 @@ public class FLDict {
      * @param keyString FLSlice
      * @return FLValue
      */
-    private static native long get(long dict, byte[] keyString);
+    static native long get(long dict, byte[] keyString);
 
     /**
      * Looks up a key in a _sorted_ dictionary, using a shared-keys mapping.
@@ -126,11 +126,11 @@ public class FLDict {
      * @param sharedKeys FLSharedKeys
      * @return FLValue
      */
-    private static native long getSharedKey(long dict, byte[] keyString, long sharedKeys);
+    static native long getSharedKey(long dict, byte[] keyString, long sharedKeys);
 
-    private static native String getKeyString(long sharedKeys, int keyCode);
+    static native String getKeyString(long sharedKeys, int keyCode);
 
-    private static native long getUnsorted(long dict, byte[] keyString);
+    static native long getUnsorted(long dict, byte[] keyString);
 
     // TODO: Need free()?
 }

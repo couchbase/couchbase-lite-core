@@ -11,8 +11,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-import static com.couchbase.litecore.Constants.C4DatabaseFlags.kC4DB_Create;
-import static com.couchbase.litecore.Constants.LiteCoreError.kC4ErrorNotFound;
+import static com.couchbase.litecore.C4Constants.C4DatabaseFlags.kC4DB_Create;
+import static com.couchbase.litecore.C4Constants.LiteCoreError.kC4ErrorNotFound;
 import static com.couchbase.litecore.utils.Utils.deleteRecursive;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -20,7 +20,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class C4BlobStoreTest extends BaseTest {
+public class C4BlobStoreTest extends C4BaseTest {
     public static final String TAG = C4BlobStoreTest.class.getSimpleName();
 
     File blobDir;

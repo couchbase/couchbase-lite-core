@@ -20,9 +20,6 @@ public class C4DatabaseChange {
     private long bodySize = 0L;
     private boolean external = false;
 
-    public C4DatabaseChange() {
-    }
-
     public String getDocID() {
         return docID;
     }

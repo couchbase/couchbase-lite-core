@@ -48,12 +48,12 @@ import okio.ByteString;
 
 import static android.util.Base64.NO_WRAP;
 import static android.util.Base64.encodeToString;
+import static com.couchbase.litecore.C4Constants.C4ErrorDomain.NetworkDomain;
+import static com.couchbase.litecore.C4Constants.C4ErrorDomain.POSIXDomain;
+import static com.couchbase.litecore.C4Constants.C4ErrorDomain.WebSocketDomain;
+import static com.couchbase.litecore.C4Constants.NetworkError.kC4NetErrTLSCertUntrusted;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2Scheme;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2TLSScheme;
-import static com.couchbase.litecore.Constants.C4ErrorDomain.NetworkDomain;
-import static com.couchbase.litecore.Constants.C4ErrorDomain.POSIXDomain;
-import static com.couchbase.litecore.Constants.C4ErrorDomain.WebSocketDomain;
-import static com.couchbase.litecore.Constants.NetworkError.kC4NetErrTLSCertUntrusted;
 
 
 public class C4Socket extends WebSocketListener {
@@ -103,7 +103,7 @@ public class C4Socket extends WebSocketListener {
     //-------------------------------------------------------------------------
     // constructor
     //-------------------------------------------------------------------------
-    /*package*/ C4Socket(long handle, URI uri, Map<String, Object> options) throws GeneralSecurityException {
+    C4Socket(long handle, URI uri, Map<String, Object> options) throws GeneralSecurityException {
         this.handle = handle;
         this.uri = uri;
         this.options = options;
@@ -270,19 +270,19 @@ public class C4Socket extends WebSocketListener {
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
-    public native static void registerFactory();
+    public static native void registerFactory();
 
-    private native static void gotHTTPResponse(long socket, int httpStatus, byte[] responseHeadersFleece);
+    static native void gotHTTPResponse(long socket, int httpStatus, byte[] responseHeadersFleece);
 
-    private native static void opened(long socket);
+    static native void opened(long socket);
 
-    private native static void closed(long socket, int errorDomain, int errorCode);
+    static native void closed(long socket, int errorDomain, int errorCode);
 
-    private native static void closeRequested(long socket, int status, String message);
+    static native void closeRequested(long socket, int status, String message);
 
-    private native static void completedWrite(long socket, long byteCount);
+    static native void completedWrite(long socket, long byteCount);
 
-    private native static void received(long socket, byte[] data);
+    static native void received(long socket, byte[] data);
 
     //-------------------------------------------------------------------------
     // private methods

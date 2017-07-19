@@ -20,11 +20,16 @@ public class C4Query {
     private long handle = 0L; // hold pointer to C4Query
 
     //-------------------------------------------------------------------------
+    // Constructors
+    //-------------------------------------------------------------------------
+
+    C4Query(long db, String expression) throws LiteCoreException {
+        handle = init(db, expression);
+    }
+
+    //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
-    public C4Query(Database db, String expression) throws LiteCoreException {
-        handle = init(db._handle, expression);
-    }
 
     public void free() {
         if (handle != 0L) {
@@ -66,20 +71,20 @@ public class C4Query {
      * @return C4Query*
      * @throws LiteCoreException
      */
-    private native static long init(long db, String expression) throws LiteCoreException;
+    static native long init(long db, String expression) throws LiteCoreException;
 
     /**
      * Free C4Query* instance
      *
      * @param c4query (C4Query*)
      */
-    private static native void free(long c4query);
+    static native void free(long c4query);
 
     /**
      * @param c4query (C4Query*)
      * @return C4StringResult
      */
-    private static native String explain(long c4query);
+    static native String explain(long c4query);
 
     /**
      * @param c4query
@@ -88,11 +93,25 @@ public class C4Query {
      * @return C4QueryEnumerator*
      * @throws LiteCoreException
      */
-    private static native long run(long c4query,
-                                   boolean rankFullText,
-                                   String encodedParameters)
+    static native long run(long c4query,
+                           boolean rankFullText,
+                           String encodedParameters)
             throws LiteCoreException;
 
-    private static native byte[] getFullTextMatched(long c4query, String docID, long seq)
+    static native byte[] getFullTextMatched(long c4query, String docID, long seq)
+            throws LiteCoreException;
+
+    // - Creates a database index, to speed up subsequent queries.
+
+    static native boolean createIndex(long db,
+                                      String expressionsJSON,
+                                      int indexType,
+                                      String language,
+                                      boolean ignoreDiacritics)
+            throws LiteCoreException;
+
+    static native boolean deleteIndex(long db,
+                                      String expressionsJSON,
+                                      int indexType)
             throws LiteCoreException;
 }

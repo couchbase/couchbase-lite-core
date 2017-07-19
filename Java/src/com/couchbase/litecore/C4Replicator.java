@@ -48,17 +48,18 @@ public class C4Replicator {
     //-------------------------------------------------------------------------
     // Constructor
     //-------------------------------------------------------------------------
-    public C4Replicator(Database db,
-                        String schema, String host, int port, String path,
-                        String remoteDatabaseName,
-                        Database otherLocalDB,
-                        int push, int pull,
-                        byte[] options,
-                        C4ReplicatorListener listener, Object context) throws LiteCoreException {
+
+    C4Replicator(long db,
+                 String schema, String host, int port, String path,
+                 String remoteDatabaseName,
+                 long otherLocalDB,
+                 int push, int pull,
+                 byte[] options,
+                 C4ReplicatorListener listener, Object context) throws LiteCoreException {
         this.listener = listener;
         this.context = context;
-        handle = create(db._handle, schema, host, port, path, remoteDatabaseName,
-                otherLocalDB != null ? otherLocalDB._handle : 0,
+        handle = create(db, schema, host, port, path, remoteDatabaseName,
+                otherLocalDB,
                 push, pull,
                 options);
         reverseLookupTable.put(handle, this);
@@ -126,12 +127,21 @@ public class C4Replicator {
             repl.listener.statusChanged(repl, status, repl.context);
     }
 
-    private static void documentErrorCallback(long handle, boolean pushing, String docID, int domain, int code, int internalInfo, boolean trans) {
-        Log.e(TAG, "documentErrorCallback() handle -> " + handle + ", pushing -> " + pushing + ", docID -> " + docID + ", domain -> " + domain + ", code -> " + code + ", internalInfo -> " + internalInfo + ", trans -> " + trans);
+    private static void documentErrorCallback(long handle, boolean pushing,
+                                              String docID, int domain, int code, int internalInfo,
+                                              boolean trans) {
+        Log.e(TAG, "documentErrorCallback() handle -> " + handle +
+                ", pushing -> " + pushing +
+                ", docID -> " + docID +
+                ", domain -> " + domain +
+                ", code -> " + code +
+                ", internalInfo -> " + internalInfo +
+                ", trans -> " + trans);
 
         C4Replicator repl = reverseLookupTable.get(handle);
         if (repl != null && repl.listener != null) {
-            repl.listener.documentError(repl, pushing, docID, new C4Error(domain, code, internalInfo), trans, repl.context);
+            repl.listener.documentError(repl, pushing, docID,
+                    new C4Error(domain, code, internalInfo), trans, repl.context);
         }
     }
 
@@ -142,42 +152,42 @@ public class C4Replicator {
     /**
      * Creates a new replicator.
      */
-    private native static long create(long db,
-                                      String schema, String host, int port, String path,
-                                      String remoteDatabaseName,
-                                      long otherLocalDB,
-                                      int push, int pull,
-                                      byte[] options) throws LiteCoreException;
+    static native long create(long db,
+                              String schema, String host, int port, String path,
+                              String remoteDatabaseName,
+                              long otherLocalDB,
+                              int push, int pull,
+                              byte[] options) throws LiteCoreException;
 
     /**
      * Frees a replicator reference. If the replicator is running it will stop.
      */
-    private native static void free(long replicator);
+    static native void free(long replicator);
 
     /**
      * Tells a replicator to stop.
      */
-    private native static void stop(long replicator);
+    static native void stop(long replicator);
 
     /**
      * Returns the current state of a replicator.
      */
-    private native static C4ReplicatorStatus getStatus(long replicator);
+    static native C4ReplicatorStatus getStatus(long replicator);
 
     /**
      * Returns the HTTP response headers as a Fleece-encoded dictionary.
      */
-    private native static byte[] getResponseHeaders(long replicator);
+    static native byte[] getResponseHeaders(long replicator);
 
     /**
      * Returns true if this is a network error that may be transient,
      * i.e. the client should retry after a delay.
      */
-    private native static boolean mayBeTransient(int domain, int code, int info);
+    static native boolean mayBeTransient(int domain, int code, int info);
 
     /**
      * Returns true if this error might go away when the network environment changes,
      * i.e. the client should retry after notification of a network status change.
      */
-    private native static boolean mayBeNetworkDependent(int domain, int code, int info);
+    static native boolean mayBeNetworkDependent(int domain, int code, int info);
 }

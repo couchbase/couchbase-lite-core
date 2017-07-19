@@ -73,7 +73,7 @@ public class FLArrayIterator {
      *
      * @return long (FLArrayIterator *)
      */
-    private static native long init();
+    static native long init();
 
     /**
      * Initializes a FLArrayIterator struct to iterate over an array.
@@ -81,7 +81,7 @@ public class FLArrayIterator {
      * @param array (FLArray)
      * @param itr   (FLArrayIterator *)
      */
-    private static native void begin(long array, long itr);
+    static native void begin(long array, long itr);
 
     /**
      * Returns the current value being iterated over.
@@ -89,26 +89,26 @@ public class FLArrayIterator {
      * @param itr (FLArrayIterator *)
      * @return long (FLValue)
      */
-    private static native long getValue(final long itr);
+    static native long getValue(final long itr);
 
     /**
      * @param itr    (FLArrayIterator *)
      * @param offset
      * @return long (FLValue)
      */
-    private static native long getValueAt(final long itr, int offset);
+    static native long getValueAt(final long itr, int offset);
 
     /**
      * Advances the iterator to the next value, or returns false if at the end.
      *
      * @param itr (FLArrayIterator *)
      */
-    private static native boolean next(long itr);
+    static native boolean next(long itr);
 
     /**
      * Free FLArrayIterator instance
      *
      * @param itr (FLArrayIterator *)
      */
-    private static native void free(long itr);
+    static native void free(long itr);
 }

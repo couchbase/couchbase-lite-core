@@ -24,6 +24,21 @@ using namespace litecore::jni;
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4BlobKey
 // ----------------------------------------------------------------------------
+
+/*
+ * Class:     com_couchbase_litecore_C4BlobStore
+ * Method:    getBlobStore
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4BlobStore_getBlobStore(JNIEnv *env, jclass clazz, jlong jdb) {
+    C4Error error = {};
+    C4BlobStore *store = c4db_getBlobStore((C4Database *) jdb, &error);
+    if (store == NULL)
+        throwError(env, error);
+    return (jlong) store;
+}
+
 /*
  * Class:     com_couchbase_litecore_C4BlobKey
  * Method:    fromString

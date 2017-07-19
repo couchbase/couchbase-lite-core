@@ -34,7 +34,9 @@ public class C4ReplicatorStatus {
     public C4ReplicatorStatus() {
     }
 
-    public C4ReplicatorStatus(int activityLevel, long progressCompleted, long progressTotal, int errorDomain, int errorCode, int errorInternalInfo) {
+    public C4ReplicatorStatus(int activityLevel,
+                              long progressCompleted, long progressTotal,
+                              int errorDomain, int errorCode, int errorInternalInfo) {
         this.activityLevel = activityLevel;
         this.progressCompleted = progressCompleted;
         this.progressTotal = progressTotal;
@@ -88,6 +90,7 @@ public class C4ReplicatorStatus {
     }
 
     public C4ReplicatorStatus copy() {
-        return new C4ReplicatorStatus(activityLevel, progressCompleted, progressTotal, errorDomain, errorCode, errorInternalInfo);
+        return new C4ReplicatorStatus(activityLevel, progressCompleted, progressTotal,
+                errorDomain, errorCode, errorInternalInfo);
     }
 }

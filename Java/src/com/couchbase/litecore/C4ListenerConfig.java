@@ -1,6 +1,8 @@
 package com.couchbase.litecore;
 
-/** Configuration for a C4Listener. */
+/**
+ * Configuration for a C4Listener.
+ */
 public class C4ListenerConfig {
     private int port;   ///< TCP port to listen on
     private int apis;   ///< Which API(s) to enable

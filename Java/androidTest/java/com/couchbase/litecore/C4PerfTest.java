@@ -14,8 +14,8 @@
 package com.couchbase.litecore;
 
 /**
- * Ported from c4ObserverTest.cc
+ * Ported from c4PerfTest.cc
  */
-public class ObserverTest extends BaseTest {
+public class C4PerfTest extends C4BaseTest {
     // TODO: DB00x
 }
