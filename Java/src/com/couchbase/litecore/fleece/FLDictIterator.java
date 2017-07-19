@@ -67,7 +67,7 @@ public class FLDictIterator {
      *
      * @return long (FLDictIterator *)
      */
-    private static native long init();
+    static native long init();
 
     /**
      * Initializes a FLDictIterator struct to iterate over a dictionary.
@@ -75,7 +75,7 @@ public class FLDictIterator {
      * @param dict (FLDict)
      * @param itr  (FLDictIterator *)
      */
-    private static native void begin(long dict, long itr);
+    static native void begin(long dict, long itr);
 
     /**
      * Returns the current key being iterated over.
@@ -83,7 +83,7 @@ public class FLDictIterator {
      * @param itr (FLDictIterator *)
      * @return
      */
-    private static native long getKey(final long itr);
+    static native long getKey(final long itr);
 
     /**
      * Returns the current value being iterated over.
@@ -91,19 +91,19 @@ public class FLDictIterator {
      * @param itr (FLDictIterator *)
      * @return long (FLValue)
      */
-    private static native long getValue(final long itr);
+    static native long getValue(final long itr);
 
     /**
      * Advances the iterator to the next value, or returns false if at the end.
      *
      * @param itr (FLDictIterator *)
      */
-    private static native boolean next(long itr);
+    static native boolean next(long itr);
 
     /**
      * Free FLDictIterator instance
      *
      * @param itr (FLDictIterator *)
      */
-    private static native void free(long itr);
+    static native void free(long itr);
 }

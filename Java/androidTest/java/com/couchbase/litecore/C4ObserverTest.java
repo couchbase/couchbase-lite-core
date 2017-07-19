@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class C4ObserverTest extends BaseTest {
+public class C4ObserverTest extends C4BaseTest implements C4Constants {
     public static final String TAG = C4ObserverTest.class.getSimpleName();
 
     C4DatabaseObserver dbObserver;
@@ -57,7 +57,7 @@ public class C4ObserverTest extends BaseTest {
     // - DB Observer
     @Test
     public void testDBObserver() throws LiteCoreException {
-        dbObserver = new C4DatabaseObserver(this.db, new C4DatabaseObserverListener() {
+        dbObserver = this.db.createDatabaseObserver(new C4DatabaseObserverListener() {
             @Override
             public void callback(C4DatabaseObserver observer, Object context) {
                 Log.e(TAG, "testDocObserver().C4DatabaseObserver.callback()");
@@ -67,16 +67,16 @@ public class C4ObserverTest extends BaseTest {
         }, this);
         assertEquals(0, dbCallbackCalls.get());
 
-        createRev("A", "1-aa", kBody.getBytes());
+        createRev("A", "1-aa", kBody);
         assertEquals(1, dbCallbackCalls.get());
-        createRev("B", "1-bb", kBody.getBytes());
+        createRev("B", "1-bb", kBody);
         assertEquals(1, dbCallbackCalls.get());
 
         checkChanges(Arrays.asList("A", "B"), Arrays.asList("1-aa", "1-bb"), false);
 
-        createRev("B", "2-bbbb", kBody.getBytes());
+        createRev("B", "2-bbbb", kBody);
         assertEquals(2, dbCallbackCalls.get());
-        createRev("C", "1-cc", kBody.getBytes());
+        createRev("C", "1-cc", kBody);
         assertEquals(2, dbCallbackCalls.get());
 
         checkChanges(Arrays.asList("B", "C"), Arrays.asList("2-bbbb", "1-cc"), false);
@@ -84,16 +84,16 @@ public class C4ObserverTest extends BaseTest {
         dbObserver.free();
         dbObserver = null;
 
-        createRev("A", "2-aaaa", kBody.getBytes());
+        createRev("A", "2-aaaa", kBody);
         assertEquals(2, dbCallbackCalls.get());
     }
 
     // - Doc Observer
     @Test
     public void testDocObserver() throws LiteCoreException {
-        createRev("A", "1-aa", kBody.getBytes());
+        createRev("A", "1-aa", kBody);
 
-        docObserver = new C4DocumentObserver(this.db, "A", new C4DocumentObserverListener() {
+        docObserver = this.db.createDocumentObserver("A", new C4DocumentObserverListener() {
             @Override
             public void callback(C4DocumentObserver observer, String docID, long sequence, Object context) {
                 Log.e(TAG, "testDocObserver().C4DocumentObserver.callback() docID: " + docID + ", sequence: " + sequence);
@@ -105,15 +105,15 @@ public class C4ObserverTest extends BaseTest {
         }, this);
         assertEquals(0, dbCallbackCalls.get());
 
-        createRev("A", "2-bb", kBody.getBytes());
-        createRev("B", "1-bb", kBody.getBytes());
+        createRev("A", "2-bb", kBody);
+        createRev("B", "1-bb", kBody);
         assertEquals(1, dbCallbackCalls.get());
     }
 
     // - Multi-DBs Observer
     @Test
     public void testMultiDBsObserver() throws LiteCoreException {
-        dbObserver = new C4DatabaseObserver(this.db, new C4DatabaseObserverListener() {
+        dbObserver = this.db.createDatabaseObserver(new C4DatabaseObserverListener() {
             @Override
             public void callback(C4DatabaseObserver observer, Object context) {
                 Log.e(TAG, "dbObserver.callback()");
@@ -123,23 +123,24 @@ public class C4ObserverTest extends BaseTest {
         }, this);
         assertEquals(0, dbCallbackCalls.get());
 
-        createRev("A", "1-aa", kBody.getBytes());
+        createRev("A", "1-aa", kBody);
         assertEquals(1, dbCallbackCalls.get());
-        createRev("B", "1-bb", kBody.getBytes());
+        createRev("B", "1-bb", kBody);
         assertEquals(1, dbCallbackCalls.get());
 
         checkChanges(Arrays.asList("A", "B"), Arrays.asList("1-aa", "1-bb"), false);
 
         // Open another database on the same file:
-        Database otherdb = new Database(dir.getPath(), Database.Create | Database.Bundle | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());
+        //C4Database otherdb = new Database(dir.getPath(), C4DatabaseFlags.kC4DB_Create | C4DatabaseFlags.kC4DB_Bundled | C4DatabaseFlags.kC4DB_SharedKeys, encryptionAlgorithm(), encryptionKey());
+        C4Database otherdb = new C4Database(dir.getPath(), getFlags(), null, getVersioning(), encryptionAlgorithm(), encryptionKey());
         assertNotNull(otherdb);
         {
             boolean commit = false;
             otherdb.beginTransaction();
             try {
-                createRev(otherdb, "c", "1-cc", kBody.getBytes());
-                createRev(otherdb, "d", "1-dd", kBody.getBytes());
-                createRev(otherdb, "e", "1-ee", kBody.getBytes());
+                createRev(otherdb, "c", "1-cc", kBody);
+                createRev(otherdb, "d", "1-dd", kBody);
+                createRev(otherdb, "e", "1-ee", kBody);
                 commit = true;
             } finally {
                 otherdb.endTransaction(commit);
@@ -152,7 +153,7 @@ public class C4ObserverTest extends BaseTest {
         dbObserver.free();
         dbObserver = null;
 
-        createRev("A", "2-aaaa", kBody.getBytes());
+        createRev("A", "2-aaaa", kBody);
         assertEquals(2, dbCallbackCalls.get());
 
         otherdb.close();
@@ -162,7 +163,7 @@ public class C4ObserverTest extends BaseTest {
     // - Multi-DBObservers
     @Test
     public void testMultiDBObservers() throws LiteCoreException {
-        dbObserver = new C4DatabaseObserver(this.db, new C4DatabaseObserverListener() {
+        dbObserver = this.db.createDatabaseObserver(new C4DatabaseObserverListener() {
             @Override
             public void callback(C4DatabaseObserver observer, Object context) {
                 Log.e(TAG, "dbObserver.callback()");
@@ -173,7 +174,7 @@ public class C4ObserverTest extends BaseTest {
         assertEquals(0, dbCallbackCalls.get());
 
         final AtomicInteger dbCallbackCalls1 = new AtomicInteger(0);
-        C4DatabaseObserver dbObserver1 = new C4DatabaseObserver(this.db, new C4DatabaseObserverListener() {
+        C4DatabaseObserver dbObserver1 = this.db.createDatabaseObserver(new C4DatabaseObserverListener() {
             @Override
             public void callback(C4DatabaseObserver observer, Object context) {
                 Log.e(TAG, "dbObserver1.callback()");
@@ -184,20 +185,20 @@ public class C4ObserverTest extends BaseTest {
         assertEquals(0, dbCallbackCalls1.get());
 
 
-        createRev("A", "1-aa", kBody.getBytes());
+        createRev("A", "1-aa", kBody);
         assertEquals(1, dbCallbackCalls.get());
         assertEquals(1, dbCallbackCalls1.get());
-        createRev("B", "1-bb", kBody.getBytes());
+        createRev("B", "1-bb", kBody);
         assertEquals(1, dbCallbackCalls.get());
         assertEquals(1, dbCallbackCalls1.get());
 
         checkChanges(dbObserver, Arrays.asList("A", "B"), Arrays.asList("1-aa", "1-bb"), false);
         checkChanges(dbObserver1, Arrays.asList("A", "B"), Arrays.asList("1-aa", "1-bb"), false);
 
-        createRev("B", "2-bbbb", kBody.getBytes());
+        createRev("B", "2-bbbb", kBody);
         assertEquals(2, dbCallbackCalls.get());
         assertEquals(2, dbCallbackCalls1.get());
-        createRev("C", "1-cc", kBody.getBytes());
+        createRev("C", "1-cc", kBody);
         assertEquals(2, dbCallbackCalls.get());
         assertEquals(2, dbCallbackCalls1.get());
 
@@ -211,7 +212,7 @@ public class C4ObserverTest extends BaseTest {
         dbObserver1.free();
         dbObserver1 = null;
 
-        createRev("A", "2-aaaa", kBody.getBytes());
+        createRev("A", "2-aaaa", kBody);
         assertEquals(2, dbCallbackCalls.get());
         assertEquals(2, dbCallbackCalls1.get());
     }

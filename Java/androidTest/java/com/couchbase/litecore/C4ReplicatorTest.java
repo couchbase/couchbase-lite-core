@@ -17,23 +17,23 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Map;
 
+import static com.couchbase.litecore.C4Constants.C4ErrorDomain.NetworkDomain;
+import static com.couchbase.litecore.C4Constants.C4ErrorDomain.POSIXDomain;
+import static com.couchbase.litecore.C4Constants.C4ErrorDomain.WebSocketDomain;
+import static com.couchbase.litecore.C4Constants.NetworkError.kC4NetErrUnknownHost;
 import static com.couchbase.litecore.C4Replicator.kC4Replicator2Scheme;
 import static com.couchbase.litecore.C4ReplicatorMode.kC4Continuous;
 import static com.couchbase.litecore.C4ReplicatorMode.kC4Disabled;
 import static com.couchbase.litecore.C4ReplicatorMode.kC4OneShot;
 import static com.couchbase.litecore.C4ReplicatorStatus.C4ReplicatorActivityLevel.kC4Busy;
 import static com.couchbase.litecore.C4ReplicatorStatus.C4ReplicatorActivityLevel.kC4Stopped;
-import static com.couchbase.litecore.Constants.C4ErrorDomain.NetworkDomain;
-import static com.couchbase.litecore.Constants.C4ErrorDomain.POSIXDomain;
-import static com.couchbase.litecore.Constants.C4ErrorDomain.WebSocketDomain;
-import static com.couchbase.litecore.Constants.NetworkError.kC4NetErrUnknownHost;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
  * Ported from LiteCore/Replicator/tests/ReplicatorAPITest.cc
  */
-public class C4ReplicatorTest extends BaseTest {
+public class C4ReplicatorTest extends C4BaseTest {
     static final String TAG = C4ReplicatorTest.class.getSimpleName();
 
     static final String kScratchDBName = "scratch";
@@ -41,7 +41,7 @@ public class C4ReplicatorTest extends BaseTest {
     static final String kWikipedia1kDBName = "wikipedia1k";
     static final String kProtectedDBName = "seekrit";
 
-    com.couchbase.litecore.Database db2 = null;
+    com.couchbase.litecore.C4Database db2 = null;
 
     String schema = kC4Replicator2Scheme; // kC4Replicator2Scheme;
     C4Replicator repl = null;
@@ -60,7 +60,7 @@ public class C4ReplicatorTest extends BaseTest {
     // internal methods
     //-------------------------------------------------------------------------
     private void replicate(int push, int pull, boolean expectSuccess) throws LiteCoreException {
-        repl = new C4Replicator(db, schema, host, port, path, remoteDB, db2, push, pull, options,
+        repl = db.createReplicator(schema, host, port, path, remoteDB, db2, push, pull, options,
                 new C4ReplicatorListener() {
                     @Override
                     public void statusChanged(C4Replicator replicator, C4ReplicatorStatus status, Object context) {
@@ -210,7 +210,7 @@ public class C4ReplicatorTest extends BaseTest {
         Context context2 = InstrumentationRegistry.getTargetContext();
         File dir2 = new File(context2.getFilesDir(), dbFilename2);
         FileUtils.cleanDirectory(dir2);
-        db2 = new Database(dir2.getPath(), Database.Create | Database.Bundle | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());
+        db2 = new C4Database(dir2.getPath(), C4DatabaseFlags.kC4DB_Create | C4DatabaseFlags.kC4DB_Bundled | C4DatabaseFlags.kC4DB_SharedKeys, null, getVersioning(), encryptionAlgorithm(), encryptionKey());
         try {
             this.remoteDB = null;
             replicate(kC4OneShot, kC4Disabled, true);

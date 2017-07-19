@@ -26,4 +26,13 @@ public class LiteCoreException extends Exception {
     public static void throwException(int domain, int code, String msg) throws LiteCoreException {
         throw new LiteCoreException(domain, code, msg);
     }
+
+    @Override
+    public String toString() {
+        return "LiteCoreException{" +
+                "domain=" + domain +
+                ", code=" + code +
+                ", msg=" + super.getMessage() +
+                '}';
+    }
 }

@@ -321,3 +321,40 @@ Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextTermLength(JNIEnv *env,
         return -1;
     return (jlong) ((C4QueryEnumerator *) handle)->fullTextTerms[jpos].length;
 }
+
+/*
+ * Class:     com_couchbase_litecore_C4Query
+ * Method:    createIndex
+ * Signature: (JLjava/lang/String;ILjava/lang/String;Z)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4Query_createIndex(JNIEnv *env, jclass clazz, jlong jdb,
+                                                jstring jexpressionsJSON, jint indexType,
+                                                jstring jlanguage, jboolean ignoreDiacritics) {
+
+    jstringSlice expressionsJSON(env, jexpressionsJSON);
+    jstringSlice language(env, jlanguage);
+    C4Error error = {};
+    bool res = c4db_createIndex((C4Database *) jdb, (C4Slice) expressionsJSON,
+                                (C4IndexType) indexType, nullptr, &error);
+    if (!res)
+        throwError(env, error);
+    return res;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Query
+ * Method:    deleteIndex
+ * Signature: (JLjava/lang/String;I)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4Query_deleteIndex(JNIEnv *env, jclass clazz, jlong jdb,
+                                                jstring jexpressionsJSON, jint indexType) {
+    jstringSlice expressionsJSON(env, jexpressionsJSON);
+    C4Error error = {};
+    bool res = c4db_deleteIndex((C4Database *) jdb, (C4Slice) expressionsJSON,
+                                (C4IndexType) indexType, &error);
+    if (!res)
+        throwError(env, error);
+    return res;
+}

@@ -16,17 +16,15 @@ public class SharedKeys implements FLValue.ISharedKeys {
     //---------------------------------------------
     // member variables
     //---------------------------------------------
-    /*package*/ FLSharedKeys flSharedKeys;
-    /*package*/ Map<Integer, String> documentStrings = new HashMap<>();
-    /*package*/ FLDict root;
+    FLSharedKeys flSharedKeys;
+    Map<Integer, String> documentStrings = new HashMap<>();
+    FLDict root;
 
     //---------------------------------------------
     // Constructors
     //---------------------------------------------
-    SharedKeys() {
-    }
 
-    public SharedKeys(com.couchbase.litecore.Database c4db) {
+    public SharedKeys(C4Database c4db) {
         flSharedKeys = c4db.getFLSharedKeys();
     }
 
@@ -69,7 +67,7 @@ public class SharedKeys implements FLValue.ISharedKeys {
             return null;
 
         if (key.isInteger())
-            return getKey((int)key.asInt());
+            return getKey((int) key.asInt());
 
         return (String) valueToObject(key);
     }
@@ -96,7 +94,8 @@ public class SharedKeys implements FLValue.ISharedKeys {
         return sk != null ? sk.valueToObject(value) : null;
     }
 
-    // static inline FLValue FLDict_GetSharedKey(FLDict __nullable dict, FLSlice key, cbl::SharedKeys *sk)
+    // static inline FLValue FLDict_GetSharedKey
+    //      (FLDict __nullable dict, FLSlice key, cbl::SharedKeys *sk)
     public static FLValue getValue(FLDict dict, String key, SharedKeys sk) {
         return sk != null && dict != null ? sk.getValue(dict, key) : null;
     }

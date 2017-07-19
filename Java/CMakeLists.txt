@@ -35,18 +35,17 @@ set(JNI_CLASSES
     com.couchbase.litecore.C4BlobStore
     com.couchbase.litecore.C4BlobReadStream
     com.couchbase.litecore.C4BlobWriteStream
+    com.couchbase.litecore.C4Database
     com.couchbase.litecore.C4DatabaseObserver
+    com.couchbase.litecore.C4DocEnumerator
+    com.couchbase.litecore.C4Document
     com.couchbase.litecore.C4DocumentObserver
     com.couchbase.litecore.C4Listener
     com.couchbase.litecore.C4Query
     com.couchbase.litecore.C4QueryEnumerator
+    com.couchbase.litecore.C4RawDocument
     com.couchbase.litecore.C4Replicator
     com.couchbase.litecore.C4Socket
-    com.couchbase.litecore.Database
-    com.couchbase.litecore.Document
-    com.couchbase.litecore.DocumentIterator
-    com.couchbase.litecore.LiteCoreException
-    com.couchbase.litecore.Logger
     com.couchbase.litecore.fleece.FLArray
     com.couchbase.litecore.fleece.FLArrayIterator
     com.couchbase.litecore.fleece.FLDict

@@ -1,16 +1,3 @@
-/**
- * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
- */
 package com.couchbase.litecore;
 
 import android.content.Context;
@@ -36,16 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static com.couchbase.litecore.Constants.C4DocumentVersioning.kC4RevisionTrees;
-import static com.couchbase.litecore.Constants.C4DocumentVersioning.kC4VersionVectors;
+import static com.couchbase.litecore.C4Constants.C4DocumentVersioning.kC4RevisionTrees;
+import static com.couchbase.litecore.C4Constants.C4DocumentVersioning.kC4VersionVectors;
 import static com.couchbase.litecore.utils.Config.TEST_PROPERTIES_FILE;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-/**
- * Ported from c4Test.cc
- */
-public class BaseTest implements Constants {
+public class C4BaseTest implements C4Constants {
     static {
         try {
             System.loadLibrary("sqlite3");
@@ -59,10 +43,10 @@ public class BaseTest implements Constants {
         }
     }
 
-    public static final String LOG_TAG = BaseTest.class.getSimpleName();
+    public static final String TAG = C4BaseTest.class.getSimpleName();
 
     protected int encryptionAlgorithm() {
-        return Database.NoEncryption;
+        return C4EncryptionAlgorithm.kC4EncryptionNone;
     }
 
     protected byte[] encryptionKey() {
@@ -72,7 +56,8 @@ public class BaseTest implements Constants {
     protected Config config;
     protected Context context;
     protected File dir;
-    protected Database db = null;
+    protected C4Database db = null;
+    protected int flags = C4DatabaseFlags.kC4DB_Create | C4DatabaseFlags.kC4DB_SharedKeys | C4DatabaseFlags.kC4DB_Bundled;
     protected int versioning = kC4RevisionTrees;
 
     protected static final String kDocID = "mydoc";
@@ -87,6 +72,10 @@ public class BaseTest implements Constants {
 
     protected boolean isVersionVectors() {
         return versioning == kC4VersionVectors;
+    }
+
+    public int getFlags() {
+        return flags;
     }
 
     public int getVersioning() {
@@ -105,7 +94,8 @@ public class BaseTest implements Constants {
         deleteDatabaseFile(dbFilename);
         dir = new File(context.getFilesDir(), dbFilename);
         FileUtils.cleanDirectory(dir);
-        db = new Database(dir.getPath(), Database.Create | Database.Bundle | Database.SharedKeys, encryptionAlgorithm(), encryptionKey());
+        db = new C4Database(dir.getPath(), getFlags(), null, getVersioning(),
+                encryptionAlgorithm(), encryptionKey());
     }
 
     protected void deleteDatabaseFile(String dbFileName) {
@@ -116,7 +106,7 @@ public class BaseTest implements Constants {
         File file = new File(context.getFilesDir(), filename);
         if (file.exists()) {
             if (!file.delete()) {
-                Log.e(LOG_TAG, "ERROR failed to delete: dbFile=" + file);
+                Log.e(TAG, "ERROR failed to delete: dbFile=" + file);
             }
         }
     }
@@ -131,34 +121,50 @@ public class BaseTest implements Constants {
         FileUtils.cleanDirectory(dir);
     }
 
-    protected void createRev(String docID, String revID, byte[] body) throws LiteCoreException {
+    protected void reopenDB() throws LiteCoreException {
+        if (db != null) {
+            db.close();
+            db.free();
+            db = null;
+        }
+        db = new C4Database(dir.getPath(), getFlags(), null, getVersioning(),
+                encryptionAlgorithm(), encryptionKey());
+        assertNotNull(db);
+    }
+
+    protected void createRev(String docID, String revID, String body) throws LiteCoreException {
         createRev(docID, revID, body, 0);
     }
 
-    protected void createRev(Database db, String docID, String revID, byte[] body) throws LiteCoreException {
+    protected void createRev(C4Database db, String docID, String revID, String body)
+            throws LiteCoreException {
         createRev(db, docID, revID, body, 0);
     }
 
-    protected void createRev(String docID, String revID, byte[] body, int flags) throws LiteCoreException {
+    protected void createRev(String docID, String revID, String body, int flags)
+            throws LiteCoreException {
         createRev(this.db, docID, revID, body, flags);
     }
 
     /**
      * @param flags C4RevisionFlags
      */
-    protected void createRev(Database db, String docID, String revID, byte[] body, int flags) throws LiteCoreException {
+    protected void createRev(C4Database db, String docID, String revID, String body, int flags)
+            throws LiteCoreException {
         boolean commit = false;
         db.beginTransaction();
         try {
-            Document doc = db.getDocument(docID, false);
-            assertNotNull(doc);
+            C4Document curDoc = db.get(docID, false);
+            assertNotNull(curDoc);
             List<String> revIDs = new ArrayList<String>();
             revIDs.add(revID);
-            if (doc.getRevID() != null)
-                revIDs.add(doc.getRevID());
+            if (curDoc.getRevID() != null)
+                revIDs.add(curDoc.getRevID());
             String[] history = revIDs.toArray(new String[revIDs.size()]);
-            db.put(docID, body, true, false, history, flags, true, 0);
+            C4Document doc = db.put(body != null ? body.getBytes() : null, docID, flags, true, false, history, true, 0);
+            assertNotNull(doc);
             doc.free();
+            curDoc.free();
             commit = true;
         } finally {
             db.endTransaction(commit);
@@ -178,8 +184,9 @@ public class BaseTest implements Constants {
     }
 
     // Read a file that contains a JSON document per line. Every line becomes a document.
-    protected long importJSONLines(InputStream is, double timeout, boolean verbose) throws LiteCoreException, IOException {
-        Log.i(LOG_TAG, String.format("Reading data from input stream ..."));
+    protected long importJSONLines(InputStream is, double timeout, boolean verbose)
+            throws LiteCoreException, IOException {
+        Log.i(TAG, String.format("Reading data from input stream ..."));
         StopWatch st = new StopWatch();
         long numDocs = 0;
         boolean commit = false;
@@ -187,34 +194,38 @@ public class BaseTest implements Constants {
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
             try {
-                String line = null;
+                String line;
                 while ((line = br.readLine()) != null) {
                     FLSliceResult body = db.encodeJSON(line.getBytes());
+
                     String docID = String.format(Locale.ENGLISH, "%07d", numDocs + 1);
-                    String[] history = new String[0];
-                    Document doc = db.put(docID, body, false, false, history, 0, true, 0);
+
+                    C4Document doc = db.put(body, docID, 0, false, false,
+                            new String[0], true, 0);
                     assertNotNull(doc);
                     doc.free();
                     body.free();
                     numDocs++;
                     if (numDocs % 1000 == 0 && st.getElapsedTimeSecs() >= timeout) {
-                        String msg = String.format(Locale.ENGLISH, "Stopping JSON import after %.3f sec", st.getElapsedTimeSecs());
-                        Log.w(LOG_TAG, msg);
+                        String msg = String.format(
+                                Locale.ENGLISH, "Stopping JSON import after %.3f sec",
+                                st.getElapsedTimeSecs());
+                        Log.w(TAG, msg);
                         throw new IOException(msg);
                     }
                     if (verbose && numDocs % 100000 == 0)
-                        Log.i(LOG_TAG, String.valueOf(numDocs));
+                        Log.i(TAG, String.valueOf(numDocs));
                 }
             } finally {
                 br.close();
             }
             commit = true;
         } finally {
-            Log.i(LOG_TAG, "Committing...");
+            Log.i(TAG, "Committing...");
             db.endTransaction(commit);
         }
 
-        if (verbose) Log.i(LOG_TAG, st.toString("Importing", numDocs, "doc"));
+        if (verbose) Log.i(TAG, st.toString("Importing", numDocs, "doc"));
         return numDocs;
     }
 
@@ -223,7 +234,7 @@ public class BaseTest implements Constants {
         try {
             json = FLValue.json5ToJson(input);
         } catch (LiteCoreException e) {
-            Log.e(LOG_TAG, String.format("Error in json5() input -> %s", input), e);
+            Log.e(TAG, String.format("Error in json5() input -> %s", input), e);
             fail(e.getMessage());
         }
         assertNotNull(json);

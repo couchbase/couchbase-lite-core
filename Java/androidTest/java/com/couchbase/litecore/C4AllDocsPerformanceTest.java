@@ -31,8 +31,8 @@ import static org.junit.Assert.assertNotNull;
 /**
  * Ported from c4AllDocsPerformanceTest.cc
  */
-public class AllDocsPerformanceTest extends BaseTest {
-    static final String TAG = "AllDocsPerformanceTest";
+public class C4AllDocsPerformanceTest extends C4BaseTest {
+    static final String TAG = C4AllDocsPerformanceTest.class.getSimpleName();
 
     static final int kSizeOfDocument = 1000;
     static final int kNumDocuments = 1000; // 100000
@@ -59,7 +59,7 @@ public class AllDocsPerformanceTest extends BaseTest {
                 else
                     list.add("1@deadbeefcafebabe80081e50");
                 String[] history = list.toArray(new String[list.size()]);
-                Document doc = db.put(docID, json.getBytes(), true, false, history, 0, true, 0);
+                C4Document doc = db.put(json.getBytes(), docID, 0, true, false, history, true, 0);
                 assertNotNull(doc);
                 doc.free();
             }
@@ -78,12 +78,12 @@ public class AllDocsPerformanceTest extends BaseTest {
         st.start();
 
         // No start or end ID:
-        int iteratorFlags = IteratorFlags.kDefault;
-        iteratorFlags &= ~IteratorFlags.kIncludeBodies;
-        DocumentIterator itr = db.iterator(null, null, 0, iteratorFlags);
-        Document doc;
+        int iteratorFlags = C4EnumeratorFlags.kC4Default;
+        iteratorFlags &= ~C4EnumeratorFlags.kC4IncludeBodies;
+        C4DocEnumerator e = db.enumerateAllDocs(null, null, 0, iteratorFlags);
+        C4Document doc;
         int i = 0;
-        while ((doc = itr.nextDocument()) != null) {
+        while ((doc = e.nextDocument()) != null) {
             try {
                 i++;
             } finally {

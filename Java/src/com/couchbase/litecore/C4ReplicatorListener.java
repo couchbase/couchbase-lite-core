@@ -14,7 +14,10 @@
 package com.couchbase.litecore;
 
 public interface C4ReplicatorListener {
-    void statusChanged(final C4Replicator replicator, final C4ReplicatorStatus status, final Object context);
+    void statusChanged(final C4Replicator replicator,
+                       final C4ReplicatorStatus status, final Object context);
 
-    void documentError(final C4Replicator replicator, final boolean pushing, final String docID, final C4Error error, final boolean trans, final Object context);
+    void documentError(final C4Replicator replicator, final boolean pushing,
+                       final String docID, final C4Error error, final boolean trans,
+                       final Object context);
 }

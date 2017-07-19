@@ -30,8 +30,6 @@ JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *jvm, void *reserved) {
     JNIEnv *env;
     if (jvm->GetEnv((void **) &env, JNI_VERSION_1_6) == JNI_OK
-        && initDatabase(env)
-        && initDocument(env)
         && initC4Observer(env)
         && initC4Replicator(env)
         && initC4Socket(env)) {

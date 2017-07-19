@@ -17,8 +17,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class FleeceTest extends BaseTest {
-    private static final String TAG = FleeceTest.class.getSimpleName();
+public class C4FleeceTest extends C4BaseTest {
+    private static final String TAG = C4FleeceTest.class.getSimpleName();
 
     @Before
     public void setUp() throws Exception {
@@ -64,7 +64,7 @@ public class FleeceTest extends BaseTest {
         Map<String, Object> map2 = value.asDict();
         assertNotNull(map2);
         assertTrue(map2.containsKey("bytes"));
-        byte[] output = (byte[])map2.get("bytes");
+        byte[] output = (byte[]) map2.get("bytes");
         assertNotNull(output);
         assertArrayEquals(input, output);
     }

@@ -18,8 +18,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class C4DatabaseObserver {
-    private static final String TAG = C4DatabaseObserver.class.getSimpleName();
-
     //-------------------------------------------------------------------------
     // Static Variables
     //-------------------------------------------------------------------------
@@ -38,11 +36,12 @@ public class C4DatabaseObserver {
     //-------------------------------------------------------------------------
     // Constructor
     //-------------------------------------------------------------------------
-    public C4DatabaseObserver(Database db, C4DatabaseObserverListener listener, Object context) {
+
+    C4DatabaseObserver(long db, C4DatabaseObserverListener listener, Object context) {
         this.listener = listener;
         this.context = context;
-        handle = create(db._handle);
-        reverseLookupTable.put(handle, this);
+        this.handle = create(db);
+        this.reverseLookupTable.put(handle, this);
     }
 
     //-------------------------------------------------------------------------
@@ -90,9 +89,9 @@ public class C4DatabaseObserver {
     // native methods
     //-------------------------------------------------------------------------
 
-    private native static long create(long db);
+    static native long create(long db);
 
-    private native static C4DatabaseChange[] getChanges(long observer, int maxChanges);
+    static native C4DatabaseChange[] getChanges(long observer, int maxChanges);
 
-    private static native void free(long c4observer);
+    static native void free(long c4observer);
 }

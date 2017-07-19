@@ -1,41 +1,37 @@
-/**
- * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
- */
-
 package com.couchbase.litecore;
 
-public interface Constants {
 
+public interface C4Constants {
     ////////////////////////////////////
     // c4Database.h
     ////////////////////////////////////
 
     // Boolean options for C4DatabaseConfig
     interface C4DatabaseFlags {
-        int kC4DB_Create = 1;        ///< Create the file if it doesn't exist
-        int kC4DB_ReadOnly = 2;      ///< Open file read-only
-        int kC4DB_AutoCompact = 4;   ///< Enable auto-compaction
-        int kC4DB_Bundled = 8;       ///< Store db & attachments inside a directory
-        int kC4DB_SharedKeys = 0x10; ///< Enable shared-keys optimization at creation time
+        int kC4DB_Create = 1;           ///< Create the file if it doesn't exist
+        int kC4DB_ReadOnly = 2;         ///< Open file read-only
+        int kC4DB_AutoCompact = 4;      ///< Enable auto-compaction
+        int kC4DB_Bundled = 8;          ///< Store db & attachments inside a directory
+        int kC4DB_SharedKeys = 0x10;    ///< Enable shared-keys optimization at creation time
+        int kC4DB_NoUpgrade = 0x20;     ///< Disable upgrading an older-version database
+        int kC4DB_NonObservable = 0x40; ///< Disable c4DatabaseObserver
     }
 
     // Document versioning system (also determines database storage schema)
     interface C4DocumentVersioning {
-        int kC4RevisionTrees = 0;///< CouchDB and Couchbase Mobile 1.x revision trees
-        int kC4VersionVectors = 1;///< Couchbase Mobile 2.x version vectors
+        int kC4RevisionTrees = 0;   ///< CouchDB and Couchbase Mobile 1.x revision trees
+        int kC4VersionVectors = 1; ///< Couchbase Mobile 2.x version vectors
     }
 
-    //////// DOCUMENTS:
+    // Encryption algorithms.
+    interface C4EncryptionAlgorithm {
+        int kC4EncryptionNone = 0;      ///< No encryption (default)
+        int kC4EncryptionAES256 = 1;    ///< AES with 256-bit key
+    }
+
+    ////////////////////////////////////
+    // c4Document.h
+    ////////////////////////////////////
 
     // Flags describing a document.
     // Note: Superset of DocumentFlags
@@ -58,19 +54,26 @@ public interface Constants {
         int kRevIsForeign = 0x40; ///< Rev comes from replicator, not created locally
     }
 
-    // Flags for document iteration
-    interface IteratorFlags {
-        int kDescending = 0x01;
-        int kInclusiveStart = 0x02;
-        int kInclusiveEnd = 0x04;
-        int kIncludeDeleted = 0x08;
-        int kIncludeNonConflicted = 0x10;
-        int kIncludeBodies = 0x20;
+    ////////////////////////////////////
+    // c4DocEnumerator.h
+    ////////////////////////////////////
 
-        int kDefault = kInclusiveStart | kInclusiveEnd | kIncludeNonConflicted | kIncludeBodies;
+    // Flags for document iteration
+    interface C4EnumeratorFlags {
+        int kC4Descending = 0x01;
+        int kC4InclusiveStart = 0x02;
+        int kC4InclusiveEnd = 0x04;
+        int kC4IncludeDeleted = 0x08;
+        int kC4IncludeNonConflicted = 0x10;
+        int kC4IncludeBodies = 0x20;
+
+        int kC4Default = kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted | kC4IncludeBodies;
     }
 
-    //////// INDEXES:
+
+    ////////////////////////////////////
+    // c4Query.h
+    ////////////////////////////////////
 
     // Types of indexes.
     interface C4IndexType {
@@ -79,7 +82,9 @@ public interface Constants {
         int kC4GeoIndex = 2; ///< Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
     }
 
-    //////// ERROR:
+    ////////////////////////////////////
+    // c4Base.h
+    ////////////////////////////////////
 
     // Error domains:
     interface C4ErrorDomain {

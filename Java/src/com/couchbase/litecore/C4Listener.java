@@ -42,8 +42,8 @@ public class C4Listener {
         }
     }
 
-    public boolean shareDB(String name, Database db) {
-        return shareDB(handle, name, db._handle);
+    public boolean shareDB(String name, C4Database db) {
+        return shareDB(handle, name, db.getHandle());
     }
 
     public boolean unshareDB(String name) {
@@ -62,30 +62,30 @@ public class C4Listener {
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
-    private static native int availableAPIs();
+    static native int availableAPIs();
 
-    private static native long start(int port,
-                                     int apis,
-                                     String directory,
-                                     boolean allowCreateDBs,
-                                     boolean allowDeleteDBs,
-                                     boolean allowPush, boolean allowPull) throws LiteCoreException;
+    static native long start(int port,
+                             int apis,
+                             String directory,
+                             boolean allowCreateDBs,
+                             boolean allowDeleteDBs,
+                             boolean allowPush, boolean allowPull) throws LiteCoreException;
 
-    private static native void free(long listener);
+    static native void free(long listener);
 
     /**
      * Makes a database available from the network, under the given name.
      */
-    private static native boolean shareDB(long listener, String name, long db);
+    static native boolean shareDB(long listener, String name, long db);
 
     /**
      * Makes a previously-shared database unavailable.
      */
-    private static native boolean unshareDB(long listener, String name);
+    static native boolean unshareDB(long listener, String name);
 
     /**
      * A convenience that, given a filesystem path to a database, returns the database name
      * for use in an HTTP URI path.
      */
-    private static native String uriNameFromPath(String path);
+    static native String uriNameFromPath(String path);
 }

@@ -19,13 +19,12 @@ public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
-
     private long handle = 0L; // hold pointer to C4QueryEnumerator
 
     //-------------------------------------------------------------------------
     // Constructor
     //-------------------------------------------------------------------------
-    /* package */C4QueryEnumerator(long handle) {
+    C4QueryEnumerator(long handle) {
         this.handle = handle;
     }
 
@@ -139,37 +138,40 @@ public class C4QueryEnumerator {
      * @return String (C4StringResult)
      * @throws LiteCoreException
      */
-    private static native byte[] getFullTextMatched(long c4queryenumerator) throws LiteCoreException;
+    static native byte[] getFullTextMatched(long c4queryenumerator) throws LiteCoreException;
 
-    private static native boolean next(long c4queryenumerator) throws LiteCoreException;
+    static native boolean next(long c4queryenumerator) throws LiteCoreException;
 
-    private static native long getRowCount(long c4queryenumerator) throws LiteCoreException;
+    static native long getRowCount(long c4queryenumerator) throws LiteCoreException;
 
-    private static native boolean seek(long c4queryenumerator, long rowIndex) throws LiteCoreException;
+    static native boolean seek(long c4queryenumerator, long rowIndex) throws LiteCoreException;
 
-    private static native long refresh(long c4queryenumerator) throws LiteCoreException;
+    static native long refresh(long c4queryenumerator) throws LiteCoreException;
 
-    private static native void close(long c4queryenumerator);
+    static native void close(long c4queryenumerator);
 
-    private static native void free(long c4queryenumerator);
+    static native void free(long c4queryenumerator);
 
     // -- Accessor methods to C4QueryEnumerator --
 
-    private static native String getDocID(long c4queryenumerator);
+    static native String getDocID(long c4queryenumerator);
 
-    private static native long getDocSequence(long c4queryenumerator);
+    static native long getDocSequence(long c4queryenumerator);
 
-    private static native String getRevID(long c4queryenumerator);
+    static native String getRevID(long c4queryenumerator);
 
-    private static native long getDocFlags(long c4queryenumerator);
+    static native long getDocFlags(long c4queryenumerator);
 
-    private static native long getColumns(long c4queryenumerator);
+    static native long getColumns(long c4queryenumerator);
 
-    private static native long getFullTextTermCount(long c4queryenumerator);
+    static native long getFullTextTermCount(long c4queryenumerator);
 
-    private static native long getFullTextTermIndex(long c4queryenumerator, long pos);  // C4FullTextTerm.termIndex
+    // C4FullTextTerm.index
+    static native long getFullTextTermIndex(long c4queryenumerator, long pos);
 
-    private static native long getFullTextTermStart(long c4queryenumerator, long pos);  // C4FullTextTerm.start
+    // C4FullTextTerm.start
+    static native long getFullTextTermStart(long c4queryenumerator, long pos);
 
-    private static native long getFullTextTermLength(long c4queryenumerator, long pos); // C4FullTextTerm.length
+    // C4FullTextTerm.length
+    static native long getFullTextTermLength(long c4queryenumerator, long pos);
 }

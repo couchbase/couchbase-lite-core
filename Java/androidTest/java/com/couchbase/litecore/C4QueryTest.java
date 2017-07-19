@@ -20,9 +20,8 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.couchbase.litecore.Constants.C4IndexType.kC4FullTextIndex;
-import static com.couchbase.litecore.Constants.C4IndexType.kC4ValueIndex;
-import static com.couchbase.litecore.Constants.C4RevisionFlags.kRevDeleted;
+import static com.couchbase.litecore.C4Constants.C4IndexType.kC4FullTextIndex;
+import static com.couchbase.litecore.C4Constants.C4IndexType.kC4ValueIndex;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -58,7 +57,7 @@ public class C4QueryTest extends C4QueryBaseTest {
     @Test
     public void testDatabaseErrorMessages() {
         try {
-            new C4Query(db, "[\"=\"]");
+            db.createQuery("[\"=\"]");
             fail();
         } catch (LiteCoreException e) {
             assertEquals(C4ErrorDomain.LiteCoreDomain, e.domain);
@@ -147,10 +146,10 @@ public class C4QueryTest extends C4QueryBaseTest {
             boolean commit = false;
             db.beginTransaction();
             try {
-                Document doc = db.getDocument("0000015", true);
+                C4Document doc = db.get("0000015", true);
                 assertNotNull(doc);
                 String[] history = {doc.getRevID()};
-                Document updatedDoc = db.put(doc.getDocID(), (byte[]) null, false, false, history, kRevDeleted, true, 0);
+                C4Document updatedDoc = db.put((byte[]) null, doc.getDocID(), C4RevisionFlags.kRevDeleted, false, false, history, true, 0);
                 assertNotNull(updatedDoc);
                 doc.free();
                 updatedDoc.free();

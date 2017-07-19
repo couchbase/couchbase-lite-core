@@ -67,9 +67,9 @@ public class FLSliceResult {
      *
      * @param slice (FLSliceResult)
      */
-    private static native void free(long slice);
+    static native void free(long slice);
 
-    private static native byte[] getBuf(long slice);
+    static native byte[] getBuf(long slice);
 
-    private static native long getSize(long slice);
+    static native long getSize(long slice);
 }

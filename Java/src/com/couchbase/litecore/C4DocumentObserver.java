@@ -37,10 +37,14 @@ public class C4DocumentObserver {
     //-------------------------------------------------------------------------
     // Constructor
     //-------------------------------------------------------------------------
-    public C4DocumentObserver(Database db, String docID, C4DocumentObserverListener listener, Object context) {
+
+    C4DocumentObserver(long db,
+                       String docID,
+                       C4DocumentObserverListener listener,
+                       Object context) {
         this.listener = listener;
         this.context = context;
-        handle = create(db._handle, docID);
+        this.handle = create(db, docID);
         reverseLookupTable.put(handle, this);
     }
 
@@ -85,12 +89,12 @@ public class C4DocumentObserver {
     // native methods
     //-------------------------------------------------------------------------
 
-    private native static long create(long db, String docID);
+    static native long create(long db, String docID);
 
     /**
      * Free C4DocumentObserver* instance
      *
      * @param c4observer (C4DocumentObserver*)
      */
-    private static native void free(long c4observer);
+    static native void free(long c4observer);
 }

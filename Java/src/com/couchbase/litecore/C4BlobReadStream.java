@@ -23,6 +23,16 @@ public class C4BlobReadStream {
     private long handle = 0L; // hold pointer to C4BlobReadStream
 
     //-------------------------------------------------------------------------
+    // Constructor
+    //-------------------------------------------------------------------------
+
+    C4BlobReadStream(long handle) {
+        if (handle == 0)
+            throw new IllegalArgumentException("handle is 0");
+        this.handle = handle;
+    }
+
+    //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
 
@@ -70,22 +80,13 @@ public class C4BlobReadStream {
     }
 
     //-------------------------------------------------------------------------
-    // package methods
-    //-------------------------------------------------------------------------
-    C4BlobReadStream(long handle) {
-        if (handle == 0)
-            throw new IllegalArgumentException("handle is 0");
-        this.handle = handle;
-    }
-
-    //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
-    private native static byte[] read(long readStream, long maxBytesToRead) throws LiteCoreException;
+    static native byte[] read(long readStream, long maxBytesToRead) throws LiteCoreException;
 
-    private native static long getLength(long readStream) throws LiteCoreException;
+    static native long getLength(long readStream) throws LiteCoreException;
 
-    private native static void seek(long readStream, long position) throws LiteCoreException;
+    static native void seek(long readStream, long position) throws LiteCoreException;
 
-    private native static void close(long readStream);
+    static native void close(long readStream);
 }
