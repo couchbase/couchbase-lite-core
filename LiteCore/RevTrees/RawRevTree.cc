@@ -17,11 +17,6 @@
 #include "RevTree.hh"
 #include "Error.hh"
 #include "varint.hh"
-#ifdef _MSC_VER
-#include <WinSock2.h>
-#else
-#include <arpa/inet.h>
-#endif
 
 using namespace std;
 using namespace fleece;
@@ -69,8 +64,8 @@ namespace litecore {
         for (Rev *src : revs) {
             dst = dst->copyFrom(*src);
         }
-        dst->size = _enc32(0);   // write trailing 0 size marker
-        Assert((&dst->size + 1) == result.end());
+        dst->size_BE = _enc32(0);   // write trailing 0 size marker
+        Assert((&dst->size_BE + 1) == result.end());
         return result;
     }
 
@@ -84,10 +79,10 @@ namespace litecore {
 
     RawRevision* RawRevision::copyFrom(const Rev &rev) {
         size_t revSize = sizeToWrite(rev);
-        this->size = _enc32((uint32_t)revSize);
+        this->size_BE = _enc32((uint32_t)revSize);
         this->revIDLen = (uint8_t)rev.revID.size;
         memcpy(this->revID, rev.revID.buf, rev.revID.size);
-        this->parentIndex = htons(rev.parent ? rev.parent->index() : kNoParent);
+        this->parentIndex_BE = (uint16_t)_enc16(rev.parent ? rev.parent->index() : kNoParent);
 
         uint8_t dstFlags = rev.flags & ~kNonPersistentFlags;
         if (rev._body)
@@ -105,11 +100,11 @@ namespace litecore {
         const void* end = this->next();
         dst.revID = {this->revID, this->revIDLen};
         dst.flags = (Rev::Flags)(this->flags & ~kPersistentOnlyFlags);
-        auto parent = ntohs(this->parentIndex);
-        if (parent == kNoParent)
+        auto parentIndex = _dec16(this->parentIndex_BE);
+        if (parentIndex == kNoParent)
             dst.parent = nullptr;
         else
-            dst.parent = &revs[parent];
+            dst.parent = &revs[parentIndex];
         const void *data = offsetby(&this->revID, this->revIDLen);
         ptrdiff_t len = (uint8_t*)end-(uint8_t*)data;
         data = offsetby(data, GetUVarInt(slice(data, len), &dst.sequence));

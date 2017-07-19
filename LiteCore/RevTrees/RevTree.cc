@@ -43,15 +43,19 @@ namespace litecore {
     ,_changed(other._changed)
     ,_unknown(other._unknown)
     {
-        // It's important to have _revs in the same order as other._revs so that the _parentIndex
-        // fields will be correct. That means we can't just copy other._revsStorage to _revsStorage;
+        // It's important to have _revs in the same order as other._revs.
+        // That means we can't just copy other._revsStorage to _revsStorage;
         // we have to copy _revs in order:
         _revs.reserve(other._revs.size());
-        for (const Rev *rev : other._revs) {
-            _revsStorage.emplace_back(*rev);
-            Rev *myRev = &_revsStorage.back();
-            myRev->owner = this;
-            _revs.push_back(myRev);
+        for (const Rev *otherRev : other._revs) {
+            _revsStorage.emplace_back(*otherRev);
+            _revs.push_back(&_revsStorage.back());
+        }
+        // Fix up the newly copied Revs so they point to me (and my other Revs), not other:
+        for (Rev *rev : _revs) {
+            if (rev->parent)
+                rev->parent = _revs[rev->parent->index()];
+            rev->owner = this;
         }
     }
 

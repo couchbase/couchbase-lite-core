@@ -40,24 +40,24 @@ namespace litecore {
             kPersistentOnlyFlags = (kHasData),          // Only used on disk, not in memory
         };
 
-        uint32_t        size;           // Total size of this tree rev
-        uint16_t        parentIndex;
+        uint32_t        size_BE;        // Total size of this tree rev (big-endian)
+        uint16_t        parentIndex_BE; // Index in list of parent, or kNoParent if none
         uint8_t         flags;
         uint8_t         revIDLen;
         char            revID[1];       // actual size is [revIDLen]
         // These follow the revID:
         // varint       sequence
         // if HasData flag:
-        //    char      data[];       // Contains the revision body (JSON)
+        //    char      data[];         // Contains the revision body (JSON)
 
         bool isValid() const {
-            return size != 0;
+            return size_BE != 0;
         }
 
         slice body() const;
 
         const RawRevision *next() const {
-            return (const RawRevision*)fleece::offsetby(this, _dec32(size));
+            return (const RawRevision*)fleece::offsetby(this, _dec32(size_BE));
         }
 
         unsigned count() const {

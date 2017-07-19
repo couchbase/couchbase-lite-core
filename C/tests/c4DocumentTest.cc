@@ -401,19 +401,21 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     auto doc2 = c4doc_get(db, kDocID, false, &error);
     REQUIRE(doc2->revID == kExpectedRevID);
 
-    {
-        C4Log("Begin 2nd save");
+    // Update it a few times:
+    for (int update = 2; update <= 5; ++update) {
+        C4Log("Begin save #%d", update);
         TransactionHelper t(db);
-        auto updatedDoc =c4doc_update(doc, C4STR("{\"ok\":\"go\"}"), 0, &error);
+        fleece::alloc_slice oldRevID = doc->revID;
+        auto updatedDoc = c4doc_update(doc, C4STR("{\"ok\":\"go\"}"), 0, &error);
         REQUIRE(updatedDoc);
-        REQUIRE(doc->selectedRev.revID == kExpectedRevID);
-        REQUIRE(doc->revID == kExpectedRevID);
+        REQUIRE(doc->selectedRev.revID == oldRevID);
+        REQUIRE(doc->revID == oldRevID);
         c4doc_free(doc);
         doc = updatedDoc;
     }
-    C4Log("After 2nd save");
-    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b")
-                                           : C4STR("2@*");
+    C4Log("After multiple updates");
+    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("5-a8fb5b9d05ee3a3b4f37ed6c06eeb2f64aaa1348")
+                                           : C4STR("5@*");
     REQUIRE(doc->revID == kExpectedRev2ID);
     REQUIRE(doc->selectedRev.revID == kExpectedRev2ID);
 
