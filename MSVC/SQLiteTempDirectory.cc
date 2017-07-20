@@ -1,5 +1,5 @@
 //
-//  SQLiteWinRT.cc
+//  SQLiteTempDirectory.cc
 //  Couchbase Lite Core
 //
 //  Created by Jim Borden on 7/20/17.

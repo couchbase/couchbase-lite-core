@@ -215,7 +215,14 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 endif()
 
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
-add_library(LiteCore SHARED MSVC/SQLiteWinRT.cc) #No-op for non-UWP
+if(WIN32)
+    add_library(LiteCore SHARED MSVC/SQLiteTempDirectory.cc) #No-op for non-UWP
+else()
+    file(WRITE empty.cpp)
+    add_library(LiteCore SHARED empty.cpp)
+endif()
+
+
 install (TARGETS LiteCore
          RUNTIME DESTINATION bin
          LIBRARY DESTINATION lib)
