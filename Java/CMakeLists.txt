@@ -31,6 +31,7 @@ set(OPENSSL_LIB_DIR ${TOP}/vendor/openssl/libs/android)
 set(JNI_CLASSPATH  ${PROJECT_SOURCE_DIR}/src)
 set(JNI_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/jni)
 set(JNI_CLASSES
+    com.couchbase.litecore.C4
     com.couchbase.litecore.C4BlobKey
     com.couchbase.litecore.C4BlobStore
     com.couchbase.litecore.C4BlobReadStream
