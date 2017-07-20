@@ -15,4 +15,7 @@
 
 // This can't go inside LiteCoreStatic because it needs to be compiled with /ZW (consume
 // Windows Runtime extensions) and any library that uses that cannot contain C source
+
+#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 extern "C" void setSqliteTempDirectory();
+#endif

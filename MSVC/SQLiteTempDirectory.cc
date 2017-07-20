@@ -18,10 +18,8 @@
 #if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 #include <sqlite3.h>
 #include <wtypes.h>
-#endif
 
 extern "C" void setSqliteTempDirectory() {
-    #if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
     LPCWSTR zPath = Windows::Storage::ApplicationData::Current->
         TemporaryFolder->Path->Data();
     char zPathBuf[MAX_PATH + 1];
@@ -29,5 +27,6 @@ extern "C" void setSqliteTempDirectory() {
     WideCharToMultiByte(CP_UTF8, 0, zPath, -1, zPathBuf, MAX_PATH + 1,
         NULL, NULL);
     sqlite3_temp_directory = sqlite3_mprintf("%s", zPathBuf);
-    #endif
 }
+
+#endif

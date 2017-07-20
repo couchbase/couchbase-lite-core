@@ -23,6 +23,7 @@
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include "PlatformCompat.hh"
 #include <mutex>
 #include <sqlite3.h>
 #include <sstream>
@@ -37,7 +38,7 @@ extern "C" {
 #include <TargetConditionals.h>
 #else
 #include <arc4random.h>
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 #include "SQLiteTempDirectory.h"
 #endif
 #endif
@@ -123,7 +124,7 @@ namespace litecore {
         // One-time initialization at startup:
         Assert(sqlite3_libversion_number() >= 300900, "LiteCore requires SQLite 3.9+");
         sqlite3_config(SQLITE_CONFIG_LOG, sqlite3_log_callback, NULL);
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         setSqliteTempDirectory();
 #endif
     }
