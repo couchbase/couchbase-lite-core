@@ -99,11 +99,11 @@ if(WIN32 OR ANDROID OR LITECORE_BUILD_SQLITE)
     else()
         set(SQLITE3_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER")
     endif()
-    set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS ${SQLITE3_FLAGS})
+    
     if(WIN32)
-        set_target_properties(sqlite3 PROPERTIES LINK_FLAGS
-                "/def:\"${CMAKE_CURRENT_LIST_DIR}/MSVC/sqlite3.def\"")
+        set(SQLITE3_FLAGS "${SQLITE3_FLAGS} -DSQLITE_API=__declspec(dllexport)")
     endif()
+    set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS ${SQLITE3_FLAGS})
 endif()
 
 add_subdirectory(REST)
@@ -215,8 +215,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 endif()
 
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
-file(WRITE empty.cpp)
-add_library(LiteCore SHARED empty.cpp)
+add_library(LiteCore SHARED MSVC/SQLiteWinRT.cc) #No-op for non-UWP
 install (TARGETS LiteCore
          RUNTIME DESTINATION bin
          LIBRARY DESTINATION lib)
@@ -254,7 +253,7 @@ elseif(ANDROID)
     target_link_libraries(LiteCore PRIVATE "atomic" "log")
     target_link_libraries(LiteCore PUBLIC z)
 else()
-    target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_MBEDTLS -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32)
+    target_compile_definitions(LiteCoreStatic PUBLIC -DUNICODE -D_UNICODE -D_CRYPTO_MBEDTLS -D_USE_MATH_DEFINES -DLITECORE_EXPORTS -DWIN32 "-DSQLITE_API=__declspec(dllimport)")
     if(WINDOWS_STORE)
         target_compile_definitions(LiteCoreStatic PUBLIC -DMBEDTLS_NO_PLATFORM_ENTROPY)
         set_target_properties(LiteCore PROPERTIES COMPILE_FLAGS /ZW)

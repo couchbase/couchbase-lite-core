@@ -23,6 +23,7 @@
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include "SQLiteWinRT.h"
 #include <mutex>
 #include <sqlite3.h>
 #include <sstream>
@@ -120,6 +121,7 @@ namespace litecore {
         // One-time initialization at startup:
         Assert(sqlite3_libversion_number() >= 300900, "LiteCore requires SQLite 3.9+");
         sqlite3_config(SQLITE_CONFIG_LOG, sqlite3_log_callback, NULL);
+        setSqliteTempDirectory();
     }
 
 

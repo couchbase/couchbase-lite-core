@@ -5,7 +5,9 @@
 #endif 
     unsafe struct C4SocketFactory
     {
+#pragma warning disable 0414
         private byte providesWebSockets;
+#pragma warning restore 0414
         public IntPtr open;
         public IntPtr write;
         public IntPtr completedReceive;

@@ -100,7 +100,7 @@ static int copyfile(const char* from, const char* to)
     CA2WEX<256> wideFrom(from, CP_UTF8);
     CA2WEX<256> wideTo(to, CP_UTF8);
     int err = 0;
-#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
     HMODULE kernelLib = LoadLibraryA("kernel32.dll");
     FARPROC cpFile2 = GetProcAddress(kernelLib, "CopyFile2");
     if (cpFile2 != nullptr) {
@@ -281,7 +281,7 @@ namespace litecore {
 
 
     FilePath FilePath::tempDirectory() {
-#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
+#if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         const char *tmpDir = getenv("TMPDIR");
 #else
         const char *tmpDir = nullptr;
