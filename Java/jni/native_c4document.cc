@@ -403,71 +403,6 @@ Java_com_couchbase_litecore_C4Document_getExpiration(JNIEnv *env, jclass clazz,
 
 /*
  * Class:     com_couchbase_litecore_C4Document
- * Method:    put2
- * Signature: (JJLjava/lang/String;IZZ[Ljava/lang/String;ZI)J
- */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_put2(JNIEnv *env, jclass clazz,
-                                                                    jlong jdb,
-                                                                    jlong jbody,
-                                                                    jstring jdocID,
-                                                                    jint revFlags,
-                                                                    jboolean existingRevision,
-                                                                    jboolean allowConflict,
-                                                                    jobjectArray jhistory,
-                                                                    jboolean save,
-                                                                    jint maxRevTreeDepth) {
-    C4Database *db = (C4Database *) jdb;
-    C4Slice *pBody = (C4Slice *) jbody;
-    jstringSlice docID(env, jdocID);
-
-    // Parameters for adding a revision using c4doc_put.
-    C4DocPutRequest rq = {};
-    rq.body = *pBody;       ///< Revision's body
-    rq.docID = docID;       ///< Document ID
-    rq.revFlags = revFlags; ///< Revision flags (deletion, attachments, keepBody)
-    rq.existingRevision = existingRevision; ///< Is this an already-existing rev coming from replication?
-    rq.allowConflict = allowConflict;       ///< OK to create a conflict, i.e. can parent be non-leaf?
-    rq.history = nullptr;                   ///< Array of ancestor revision IDs
-    rq.historyCount = 0;                    ///< Size of history[] array
-    rq.save = save;                         ///< Save the document after inserting the revision?
-    rq.maxRevTreeDepth = maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
-
-    // history
-    // Convert jhistory, a Java String[], to a C array of C4Slice:
-    jsize n = env->GetArrayLength(jhistory);
-    if (env->EnsureLocalCapacity(std::min(n + 1, MaxLocalRefsToUse)) < 0)
-        return -1;
-    std::vector<C4Slice> history(n);
-    std::vector<jstringSlice *> historyAlloc;
-    if (n > 0) {
-        for (jsize i = 0; i < n; i++) {
-            jstring js = (jstring) env->GetObjectArrayElement(jhistory, i);
-            jstringSlice *item = new jstringSlice(env, js);
-            if (i >= MaxLocalRefsToUse)
-                item->copyAndReleaseRef();
-            historyAlloc.push_back(item); // so its memory won't be freed
-            history[i] = *item;
-        }
-        rq.history = history.data();
-        rq.historyCount = history.size();
-    }
-
-    size_t commonAncestorIndex;
-    C4Error error;
-    C4Document *doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
-
-    // release memory
-    for (jsize i = 0; i < n; i++)
-        delete historyAlloc.at(i);
-
-    if (!doc)
-        throwError(env, error);
-
-    return (jlong) doc;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
  * Method:    put
  * Signature: (J[BLjava/lang/String;IZZ[Ljava/lang/String;ZI)J
  */
@@ -533,6 +468,71 @@ Java_com_couchbase_litecore_C4Document_put(JNIEnv *env, jclass clazz,
 
 /*
  * Class:     com_couchbase_litecore_C4Document
+ * Method:    put2
+ * Signature: (JJLjava/lang/String;IZZ[Ljava/lang/String;ZI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_put2(JNIEnv *env, jclass clazz,
+                                                                    jlong jdb,
+                                                                    jlong jbody,
+                                                                    jstring jdocID,
+                                                                    jint revFlags,
+                                                                    jboolean existingRevision,
+                                                                    jboolean allowConflict,
+                                                                    jobjectArray jhistory,
+                                                                    jboolean save,
+                                                                    jint maxRevTreeDepth) {
+    C4Database *db = (C4Database *) jdb;
+    C4Slice *pBody = (C4Slice *) jbody;
+    jstringSlice docID(env, jdocID);
+
+    // Parameters for adding a revision using c4doc_put.
+    C4DocPutRequest rq = {};
+    rq.body = *pBody;       ///< Revision's body
+    rq.docID = docID;       ///< Document ID
+    rq.revFlags = revFlags; ///< Revision flags (deletion, attachments, keepBody)
+    rq.existingRevision = existingRevision; ///< Is this an already-existing rev coming from replication?
+    rq.allowConflict = allowConflict;       ///< OK to create a conflict, i.e. can parent be non-leaf?
+    rq.history = nullptr;                   ///< Array of ancestor revision IDs
+    rq.historyCount = 0;                    ///< Size of history[] array
+    rq.save = save;                         ///< Save the document after inserting the revision?
+    rq.maxRevTreeDepth = maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
+
+    // history
+    // Convert jhistory, a Java String[], to a C array of C4Slice:
+    jsize n = env->GetArrayLength(jhistory);
+    if (env->EnsureLocalCapacity(std::min(n + 1, MaxLocalRefsToUse)) < 0)
+        return -1;
+    std::vector<C4Slice> history(n);
+    std::vector<jstringSlice *> historyAlloc;
+    if (n > 0) {
+        for (jsize i = 0; i < n; i++) {
+            jstring js = (jstring) env->GetObjectArrayElement(jhistory, i);
+            jstringSlice *item = new jstringSlice(env, js);
+            if (i >= MaxLocalRefsToUse)
+                item->copyAndReleaseRef();
+            historyAlloc.push_back(item); // so its memory won't be freed
+            history[i] = *item;
+        }
+        rq.history = history.data();
+        rq.historyCount = history.size();
+    }
+
+    size_t commonAncestorIndex;
+    C4Error error;
+    C4Document *doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
+
+    // release memory
+    for (jsize i = 0; i < n; i++)
+        delete historyAlloc.at(i);
+
+    if (!doc)
+        throwError(env, error);
+
+    return (jlong) doc;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Document
  * Method:    create
  * Signature: (JLjava/lang/String;[BI)J
  */
@@ -542,6 +542,27 @@ Java_com_couchbase_litecore_C4Document_create(JNIEnv *env, jclass clazz,
                                               jbyteArray jbody, jint flags) {
     jstringSlice docID(env, jdocID);
     jbyteArraySlice body(env, jbody, false);
+    C4Error error;
+    C4Document *doc = c4doc_create((C4Database *) jdb, docID, body, flags, &error);
+    if (!doc)
+        throwError(env, error);
+    return (jlong) doc;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Document
+ * Method:    create2
+ * Signature: (JLjava/lang/String;JI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_create2(JNIEnv *env, jclass clazz,
+                                                                       jlong jdb, jstring jdocID,
+                                                                       jlong jbody, jint flags) {
+    C4Slice body;
+    if(jbody!=0)
+        body = *(C4Slice *)jbody;
+    else
+        body = kC4SliceNull;
+    jstringSlice docID(env, jdocID);
     C4Error error;
     C4Document *doc = c4doc_create((C4Database *) jdb, docID, body, flags, &error);
     if (!doc)
@@ -566,3 +587,22 @@ Java_com_couchbase_litecore_C4Document_update(JNIEnv *env, jclass clazz,
     return (jlong) doc;
 }
 
+/*
+ * Class:     com_couchbase_litecore_C4Document
+ * Method:    update2
+ * Signature: (JJI)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_update2(JNIEnv *env, jclass clazz,
+                                                                       jlong jdoc,
+                                                                       jlong jbody, jint flags) {
+    C4Slice body;
+    if(jbody!=0)
+        body = *(C4Slice *)jbody;
+    else
+        body = kC4SliceNull;
+    C4Error error;
+    C4Document *doc = c4doc_update((C4Document *) jdoc, body, flags, &error);
+    if (!doc)
+        throwError(env, error);
+    return (jlong) doc;
+}

@@ -150,6 +150,10 @@ public class FLEncoder {
         return finish(handle);
     }
 
+    public FLSliceResult finish2() throws LiteCoreException {
+        return new FLSliceResult(finish2(handle));
+    }
+
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
@@ -200,4 +204,6 @@ public class FLEncoder {
     static native boolean writeValue(long encoder, long value);
 
     static native byte[] finish(long encoder) throws LiteCoreException;
+
+    static native long finish2(long encoder) throws LiteCoreException;
 }

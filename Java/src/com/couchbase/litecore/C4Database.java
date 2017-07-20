@@ -234,6 +234,10 @@ public class C4Database implements C4Constants {
         return new C4Document(C4Document.create(handle, docID, body, revisionFlags));
     }
 
+    public C4Document create(String docID, FLSliceResult body, int flags) throws LiteCoreException {
+        return new C4Document(C4Document.create2(handle, docID, body != null ? body.getHandle() : 0, flags));
+    }
+
     ////////////////////////////////////////////////////////////////
     // C4DatabaseObserver/C4DocumentObserver
     ////////////////////////////////////////////////////////////////

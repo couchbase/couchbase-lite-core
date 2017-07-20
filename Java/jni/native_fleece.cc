@@ -646,3 +646,18 @@ Java_com_couchbase_litecore_fleece_FLEncoder_finish(JNIEnv *env, jclass clazz, j
     FLSliceResult_Free(result);
     return res;
 }
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLEncoder
+ * Method:    finish2
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLEncoder_finish2(JNIEnv *env, jclass clazz, jlong jencoder) {
+    FLError error;
+    FLSliceResult res = FLEncoder_Finish((FLEncoder) jencoder, &error);
+    C4SliceResult *sliceResult = (C4SliceResult *) ::malloc(sizeof(C4SliceResult));
+    sliceResult->buf = res.buf;
+    sliceResult->size = res.size;
+    return (jlong) sliceResult;
+}
