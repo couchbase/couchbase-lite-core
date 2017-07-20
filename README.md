@@ -15,13 +15,7 @@ All platform implementations of Couchbase Lite 2.0 are built atop this core, add
     * API support for database encryption (as provided by SQLCipher or SQLite's Encryption Extension)
     * Highly efficient [Fleece][FLEECE] binary data encoding: supports JSON data types but
       requires no parsing, making it extremely efficient to read.
-* Map/reduce indexing & querying:
-    * Index API that uses a database as an index of an external data set
-    * Map-reduce indexes that update incrementally as documents are changed in the source DB (as in Couchbase Lite or CouchDB)
-    * JSON-compatible structured keys in indexes, sorted according to CouchDB's JSON collation spec
-    * Querying by key range, with typical options like descending order, offset, limit
 * Direct database querying based on N1QL:
-    * Currently only supported in SQLite-based databases
     * Supports most [N1QL][N1QL] functionality
     * JSON-based query syntax, similar to a parse tree; easy to generate from platform APIs like NSPredicate
     * Can search and index arbitrary document properties without requiring any schema
@@ -30,7 +24,15 @@ All platform implementations of Couchbase Lite 2.0 are built atop this core, add
     * Queries don't require indexes, but will run faster if indexes are created on the document
       properties being searched for.
     * Supports full-text search, using SQLite's FTS4 module.
-* Pluggable storage engines
+    * (Map-reduce is still in the source tree but hasn't been built in a while so it's unlikely to work without fixes.)
+* Replicator:
+    * Multi-master bidirectional document sync
+    * Uses BLIP multiplexing protocol over WebSockets
+    * Pluggable transports mean it could run over Bluetooth or other protocols
+* REST API:
+    * Implements a subset of the CouchDB / Sync Gateway / Couchbase Lite REST API
+    * Currently incomplete; not ready for prime time
+* Pluggable storage engines:
     * SQLite is available by default
     * Others can be added by implementing C++ `DataFile` and `KeyStore` interfaces
 * C and C++ APIs
@@ -40,16 +42,15 @@ All platform implementations of Couchbase Lite 2.0 are built atop this core, add
 
 LiteCore runs on Mac OS, iOS, tvOS, Android, various other flavors of Unix, and Windows.
 
-It is written in C++ (using C++11 features) and compiles with Clang (with libc++), GCC 5+ and MSVC.
+It is written in C++ (using C++11 features) and compiles with Clang and MSVC.
 
 # Status
 
-**As of March 2017:** Under heavy development. Almost all features are implemented, and seem pretty solid, but APIs may still change and there may be short-term build problems if one compiler or another dislikes a recent commit. 
+**As of July 2017:** Under heavy development, approaching beta. Almost all features are implemented, and seem pretty solid, but APIs may still change and there may be short-term build problems if one compiler or another dislikes a recent commit. 
 
 * The primary development platform is macOS, so the Xcode project should always build, and the code should pass its unit tests on Mac. iOS is pretty likely to work too ,since it's so similar to Mac at this level.
 * The CMake build is generally up to date but may fall behind.
-* The C# bindings are updated within a few days of C API changes.
-* The Java bindings are in progress but may not be fully functional yet.
+* The C# and Java bindings are updated within a few days of C API changes.
 
 # Building It
 
@@ -77,11 +78,18 @@ If you want to use the Objective-C or Swift APIs, you should instead check out a
 - libz
 - libatomic (usually comes with libgcc)
 
+You'll need Clang 3.8 or higher. Unfortunately a lot of distros only have 3.5; run `clang --version` to check, and upgrade manually if necessary. You also need a corresponding version of libc++. On Debian-like systems, the apt-get packages you need are `clang`, `libc++1`, `libc++-dev`, `libc++abi-dev`.
+
 ### Actually Building
 
 Once you've got the dependencies and compiler installed, do this from the root directory of the source tree:
 
     cd build_cmake/scripts
+    ./build_unix.sh
+
+If CMake's initial configuration checks fail, the setup may be left in a broken state and will then fail immediately. To remedy this:
+
+    rm -r ../unix
     ./build_unix.sh
 
 ## Windows Desktop
