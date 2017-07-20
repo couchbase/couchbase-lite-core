@@ -1,6 +1,8 @@
 package com.couchbase.litecore;
 
 
+import com.couchbase.litecore.fleece.FLSliceResult;
+
 public class C4Document implements C4Constants {
     //-------------------------------------------------------------------------
     // Member Variables
@@ -139,8 +141,12 @@ public class C4Document implements C4Constants {
 
     // - Creating and Updating Documents
 
-    public C4Document update(byte[] revisionBody, int revisionFlags) throws LiteCoreException {
-        return new C4Document(update(handle, revisionBody, revisionFlags));
+    public C4Document update(byte[] body, int flags) throws LiteCoreException {
+        return new C4Document(update(handle, body, flags));
+    }
+
+    public C4Document update(FLSliceResult body, int flags) throws LiteCoreException {
+        return new C4Document(update2(handle, body != null ? body.getHandle() : 0, flags));
     }
 
     //-------------------------------------------------------------------------
@@ -304,8 +310,11 @@ public class C4Document implements C4Constants {
                             int maxRevTreeDepth)
             throws LiteCoreException;
 
-    static native long create(long db, String docID, byte[] body, int flags)
-            throws LiteCoreException;
+    static native long create(long db, String docID, byte[] body, int flags) throws LiteCoreException;
+
+    static native long create2(long db, String docID, long body, int flags) throws LiteCoreException;
 
     static native long update(long doc, byte[] body, int flags) throws LiteCoreException;
+
+    static native long update2(long doc, long body, int flags) throws LiteCoreException;
 }
