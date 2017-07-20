@@ -155,7 +155,7 @@ namespace litecore {
             outKey->algorithm = (C4EncryptionAlgorithm) keyAlg;
             if (keyAlg != kC4EncryptionNone) {
                 jbyteArraySlice keyBytes(env, jKeyBytes);
-                fleece::slice keySlice = keyBytes;
+                fleece::slice keySlice = (slice) keyBytes;
                 if (!keySlice.buf || keySlice.size > sizeof(outKey->bytes)) {
                     throwError(env, C4Error{LiteCoreDomain, kC4ErrorCrypto});
                     return false;
