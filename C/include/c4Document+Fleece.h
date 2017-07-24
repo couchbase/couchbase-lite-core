@@ -54,6 +54,8 @@ extern "C" {
                           FLSharedKeys sk,
                           C4BlobKey *outKey C4NONNULL) C4API;
 
+    bool c4doc_dictContainsBlobs(FLDict dict C4NONNULL, FLSharedKeys sk) C4API;
+
     /** Translates the body of the selected revision from Fleece to JSON. */
     C4StringResult c4doc_bodyAsJSON(C4Document *doc C4NONNULL,
                                     bool canonical,

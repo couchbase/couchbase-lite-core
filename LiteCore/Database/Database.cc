@@ -260,7 +260,8 @@ namespace c4Internal {
                 
                 const Dict* body = Value::fromTrustedData(doc->selectedRev.body)->asDict();
                 auto keys = _db->documentKeys();
-                Document::findBlobReferences(body, keys, [&usedDigests](const blobKey& key, uint64_t size) {
+                Document::findBlobReferencesAndKeys(body, keys,
+                                                 [&usedDigests](const blobKey& key, uint64_t size) {
                     usedDigests.insert(key.filename());
                 });
             } while(doc->selectNextRevision());

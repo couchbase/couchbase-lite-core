@@ -429,7 +429,7 @@ using namespace fleece;
 
 
 FLEncoder c4db_createFleeceEncoder(C4Database* db) noexcept {
-    FLEncoder enc = FLEncoder_New();
+    FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true, true);
     FLEncoder_SetSharedKeys(enc, (FLSharedKeys)db->documentKeys());
     return enc;
 }
@@ -479,6 +479,16 @@ bool c4doc_hasOldMetaProperties(FLDict doc) noexcept {
 bool c4doc_dictIsBlob(FLDict dict, FLSharedKeys sk, C4BlobKey *outKey) C4API {
     assert(outKey);
     return Document::dictIsBlob((const Dict*)dict, *(blobKey*)outKey, (SharedKeys*)sk);
+}
+
+
+bool c4doc_dictContainsBlobs(FLDict dict, FLSharedKeys sk) noexcept {
+    bool found = false;
+    Document::findBlobReferences((Dict*)dict, (SharedKeys*)sk, [&](const Dict*) {
+        found = true;
+        return false; // to stop search
+    });
+    return found;
 }
 
 
