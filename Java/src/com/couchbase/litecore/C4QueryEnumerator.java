@@ -134,6 +134,9 @@ public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
 
     /**
+     * In a full-text query enumerator, returns the string that was emitted during indexing that
+     * contained the search term(s).
+     *
      * @param c4queryenumerator C4QueryEnumerator*
      * @return String (C4StringResult)
      * @throws LiteCoreException
