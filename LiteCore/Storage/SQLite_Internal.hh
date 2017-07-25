@@ -46,8 +46,7 @@ namespace litecore {
     };
 
 
-    int RegisterFleeceFunctions(sqlite3 *db, DataFile::FleeceAccessor, fleece::SharedKeys*);
-    int RegisterFleeceEachFunctions(sqlite3 *db, DataFile::FleeceAccessor, fleece::SharedKeys*);
-    int RegisterFTSRankFunction(sqlite3 *db);
-
+    void RegisterSQLiteFunctions(sqlite3 *db,
+                                 DataFile::FleeceAccessor accessor,
+                                 fleece::SharedKeys *sharedKeys);
 }

@@ -39,8 +39,7 @@ public:
         // Run test once with shared keys, once without:
         if (which & 1)
             sharedKeys = make_unique<SharedKeys>();
-        RegisterFleeceFunctions(db.getHandle(), flip, sharedKeys.get());
-        RegisterFleeceEachFunctions(db.getHandle(), flip, sharedKeys.get());
+        RegisterSQLiteFunctions(db.getHandle(), flip, sharedKeys.get());
         db.exec("CREATE TABLE kv (key TEXT, body BLOB)");
         insertStmt = make_unique<SQLite::Statement>(db, "INSERT INTO kv (key, body) VALUES (?, ?)");
     }
@@ -61,6 +60,8 @@ public:
             auto column = each.getColumn(0);
             if(column.getType() != SQLITE_NULL) {
                 results.push_back( each.getColumn(0).getText() );
+            } else {
+                results.push_back("MISSING");
             }
         }
         return results;
@@ -80,9 +81,9 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains", "[query]") {
     insert("four",  "{\"hey\": [1, \"T\", 3.15,   []]}");
     insert("yerg",  "{\"xxx\": [1, \"T\", 3.1416, []]}");
 
-    REQUIRE(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 0, 4)")
+    CHECK(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 0, 4)")
             == (vector<string>{"one", "two"}));
-    REQUIRE(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 1, 3.1416, 'T')")
+    CHECK(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 1, 3.1416, 'T')")
             == (vector<string>{"three"}));
 
 }
@@ -95,7 +96,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_sum of fl_value", "[qu
     insert("d",   "{\"hey\": [1, 2, true, \"foo\"]}");
     insert("e",   "{\"xxx\": [1, 2, 3, 4]}");
 
-    REQUIRE(query("SELECT ARRAY_SUM(fl_value(body, 'hey')) FROM kv")
+    CHECK(query("SELECT ARRAY_SUM(fl_value(body, 'hey')) FROM kv")
             == (vector<string>{"10.0", "20.0", "0.0", "4.0", "0.0"}));
 }
 
@@ -106,7 +107,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_avg of fl_value", "[qu
     insert("d",   "{\"hey\": [1, 2, true, \"foo\"]}");
     insert("e",   "{\"xxx\": [1, 2, 3, 4]}");
     
-    REQUIRE(query("SELECT ARRAY_AVG(fl_value(body, 'hey')) FROM kv")
+    CHECK(query("SELECT ARRAY_AVG(fl_value(body, 'hey')) FROM kv")
             == (vector<string>{"2.5", "5.0", "0.0", "1.0", "0.0"}));
 }
 
@@ -117,43 +118,43 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_contains of fl_value",
     insert("d",   "{\"xxx\": [1, 1, 2, \"bar\"]}");
     insert("e",   "{\"hey\": \"bar\"}");
     
-    REQUIRE(query("SELECT ARRAY_CONTAINS(fl_value(body, 'hey'), 'bar') FROM kv")
+    CHECK(query("SELECT ARRAY_CONTAINS(fl_value(body, 'hey'), 'bar') FROM kv")
             == (vector<string>{"1", "0", "1", "0", "0" }));
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_ifnull of fl_value", "[query]") {
     insert("a",   "{\"hey\": [null, null, 2, true, true, 4, \"bar\"]}");
     
-    REQUIRE(query("SELECT ARRAY_IFNULL(fl_value(body, 'hey')) FROM kv")
+    CHECK(query("SELECT ARRAY_IFNULL(fl_value(body, 'hey')) FROM kv")
             == (vector<string>{"2"}));
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_min_max of fl_value", "[query]") {
     insert("a",   "{\"hey\": [1, 4, 3, -50, 10, 4, \"bar\"]}");
     
-    REQUIRE(query("SELECT ARRAY_MAX(fl_value(body, 'hey')) FROM kv")
+    CHECK(query("SELECT ARRAY_MAX(fl_value(body, 'hey')) FROM kv")
             == (vector<string>{"10.0"}));
-    REQUIRE(query("SELECT ARRAY_MIN(fl_value(body, 'hey')) FROM kv")
+    CHECK(query("SELECT ARRAY_MIN(fl_value(body, 'hey')) FROM kv")
             == (vector<string>{"-50.0"}));
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite missingif", "[query]") {
     insert("a",   "{\"hey\": [null, null, 2, true, true, 4, \"bar\"]}");
     
-    REQUIRE(query("SELECT MISSINGIF('5', '5') FROM kv")
-            == (vector<string>{ }));
-    REQUIRE(query("SELECT MISSINGIF('5', '4') FROM kv")
+    CHECK(query("SELECT MISSINGIF('5', '5') FROM kv")
+            == (vector<string>{ "MISSING" }));
+    CHECK(query("SELECT MISSINGIF('5', '4') FROM kv")
             == (vector<string>{ "5" }));
-    REQUIRE(query("SELECT NULLIF('5', '5') FROM kv")
+    CHECK(query("SELECT NULLIF('5', '5') FROM kv")
             == (vector<string>{ "" }));
-    REQUIRE(query("SELECT NULLIF('5', '4') FROM kv")
+    CHECK(query("SELECT NULLIF('5', '4') FROM kv")
             == (vector<string>{ "5" }));
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite base64", "[query]") {
     insert("a",   "{\"hey\": \"there\"}");
     
-    REQUIRE(query("SELECT base64_decode(base64(fl_value(body, 'hey'))) FROM kv")
+    CHECK(query("SELECT base64_decode(base64(fl_value(body, 'hey'))) FROM kv")
             == (vector<string>{"there"}));
 }
 
@@ -162,7 +163,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite uuid", "[query]") {
     auto uuid = result[0];
     for(int i = 0; i < uuid.size(); i++) {
         char next = uuid[i];
-        REQUIRE((next == '-' || ishexnumber((int)next)));
+        CHECK((next == '-' || ishexnumber((int)next)));
     }
 }
 
@@ -171,13 +172,13 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[query][fl_
     insert("two",   "[2, 4, 6, 8]");
     insert("three", "[3, 6, 9, \"dozen\"]");
 
-    REQUIRE(query("SELECT fl_each.value FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
+    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
             == (vector<string>{"3", "6", "9", "dozen"}));
-    REQUIRE(query("SELECT fl_each.key FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
-            == (vector<string>{"", "", "", ""}));
-    REQUIRE(query("SELECT fl_each.type FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
+    CHECK(query("SELECT fl_each.key FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
+            == (vector<string>{"MISSING", "MISSING", "MISSING", "MISSING"}));
+    CHECK(query("SELECT fl_each.type FROM kv, fl_each(kv.body) WHERE kv.key = 'three'")
             == (vector<string>{"2", "2", "2", "3"}));
-    REQUIRE(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body) WHERE fl_each.value = 4")
+    CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body) WHERE fl_each.value = 4")
             == (vector<string>{"one", "two"}));
 }
 
@@ -187,13 +188,13 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each dict", "[query][fl_e
     insert("b",   "{\"one\": 2, \"two\": 4, \"three\": 6}");
     insert("c",   "{\"one\": 3, \"two\": 6, \"three\": 9}");
 
-    REQUIRE(query("SELECT fl_each.value FROM kv, fl_each(kv.body) WHERE kv.key = 'c' ORDER BY fl_each.value")
+    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body) WHERE kv.key = 'c' ORDER BY fl_each.value")
             == (vector<string>{"3", "6", "9"}));
-    REQUIRE(query("SELECT fl_each.key FROM kv, fl_each(kv.body) WHERE kv.key = 'c' ORDER BY fl_each.key")
+    CHECK(query("SELECT fl_each.key FROM kv, fl_each(kv.body) WHERE kv.key = 'c' ORDER BY fl_each.key")
             == (vector<string>{"one", "three", "two"}));
-    REQUIRE(query("SELECT fl_each.type FROM kv, fl_each(kv.body) WHERE kv.key = 'c'")
+    CHECK(query("SELECT fl_each.type FROM kv, fl_each(kv.body) WHERE kv.key = 'c'")
             == (vector<string>{"2", "2", "2"}));
-    REQUIRE(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body) WHERE fl_each.value = 2")
+    CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body) WHERE fl_each.value = 2")
             == (vector<string>{"a", "b"}));
 }
 
@@ -203,11 +204,11 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each with path", "[query]
     insert("two",   "{\"hey\": [2, 4, 6, 8]}");
     insert("three", "{\"xxx\": [1, 2, 3, 4]}");
 
-    REQUIRE(query("SELECT fl_each.value FROM kv, fl_each(kv.body, 'hey') WHERE kv.key = 'one'")
+    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, 'hey') WHERE kv.key = 'one'")
             == (vector<string>{"1", "2", "3", "4"}));
-    REQUIRE(query("SELECT fl_each.value FROM kv, fl_each(kv.body, 'hey') WHERE kv.key = 'three'")
+    CHECK(query("SELECT fl_each.value FROM kv, fl_each(kv.body, 'hey') WHERE kv.key = 'three'")
             == (vector<string>{}));
-    REQUIRE(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body, 'hey') WHERE fl_each.value = 3")
+    CHECK(query("SELECT DISTINCT kv.key FROM kv, fl_each(kv.body, 'hey') WHERE fl_each.value = 3")
             == (vector<string>{"one"}));
 }
 
@@ -216,26 +217,26 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite numeric ops", "[query]") {
     insert("one",   "{\"hey\": 2.5}");
     
     
-    REQUIRE(query("SELECT sqrt(fl_value(kv.body, 'hey')) FROM kv")
+    CHECK(query("SELECT sqrt(fl_value(kv.body, 'hey')) FROM kv")
             == (vector<string>{"2.0", "1.58113883008419"}));
-    REQUIRE(query("SELECT log(fl_value(kv.body, 'hey')) FROM kv")
+    CHECK(query("SELECT log(fl_value(kv.body, 'hey')) FROM kv")
             == (vector<string>{"0.602059991327962", "0.397940008672038"}));
-    REQUIRE(query("SELECT ln(fl_value(kv.body, 'hey')) FROM kv")
+    CHECK(query("SELECT ln(fl_value(kv.body, 'hey')) FROM kv")
             == (vector<string>{"1.38629436111989", "0.916290731874155"}));
-    REQUIRE(query("SELECT exp(fl_value(kv.body, 'hey')) FROM kv")
+    CHECK(query("SELECT exp(fl_value(kv.body, 'hey')) FROM kv")
             == (vector<string>{"54.5981500331442", "12.1824939607035"}));
-    REQUIRE(query("SELECT power(fl_value(kv.body, 'hey'), 3) FROM kv")
+    CHECK(query("SELECT power(fl_value(kv.body, 'hey'), 3) FROM kv")
             == (vector<string>{"64.0", "15.625"}));
-    REQUIRE(query("SELECT floor(fl_value(kv.body, 'hey')) FROM kv")
+    CHECK(query("SELECT floor(fl_value(kv.body, 'hey')) FROM kv")
             == (vector<string>{"4.0", "2.0"}));
-    REQUIRE(query("SELECT ceil(fl_value(kv.body, 'hey')) FROM kv")
+    CHECK(query("SELECT ceil(fl_value(kv.body, 'hey')) FROM kv")
             == (vector<string>{"4.0", "3.0"}));
-    REQUIRE(query("SELECT round(fl_value(kv.body, 'hey')) FROM kv")
+    CHECK(query("SELECT round(fl_value(kv.body, 'hey')) FROM kv")
            == (vector<string>{"4.0", "3.0"}));
-    REQUIRE(query("SELECT round(fl_value(kv.body, 'hey'), 1) FROM kv")
+    CHECK(query("SELECT round(fl_value(kv.body, 'hey'), 1) FROM kv")
             == (vector<string>{"4.0", "2.5"}));
-    REQUIRE(query("SELECT trunc(fl_value(kv.body, 'hey')) FROM kv")
+    CHECK(query("SELECT trunc(fl_value(kv.body, 'hey')) FROM kv")
             == (vector<string>{"4.0", "2.0"}));
-    REQUIRE(query("SELECT trunc(fl_value(kv.body, 'hey'), 1) FROM kv")
+    CHECK(query("SELECT trunc(fl_value(kv.body, 'hey'), 1) FROM kv")
             == (vector<string>{"4.0", "2.5"}));
 }

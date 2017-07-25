@@ -241,9 +241,7 @@ path.path().c_str());
             sqlite3_limit(sqlite, SQLITE_LIMIT_WORKER_THREADS, maxThreads);
 
         // Register custom functions and the tokenizer:
-        RegisterFleeceFunctions    (sqlite, fleeceAccessor(), documentKeys());
-        RegisterFleeceEachFunctions(sqlite, fleeceAccessor(), documentKeys());
-        RegisterFTSRankFunction(sqlite);
+        RegisterSQLiteFunctions(sqlite, fleeceAccessor(), documentKeys());
         register_unicodesn_tokenizer(sqlite);
     }
 

@@ -42,10 +42,29 @@ namespace litecore {
     const fleece::Value* fleeceParam(sqlite3_context*, sqlite3_value *arg) noexcept;
 
     int evaluatePath(slice path, fleece::SharedKeys*, const fleece::Value **pValue) noexcept;
+    const fleece::Value* evaluatePath(sqlite3_context *ctx,
+                                      slice path,
+                                      const fleece::Value *val) noexcept;
 
     void setResultFromValue(sqlite3_context*, const fleece::Value*) noexcept;
     void setResultFromValueType(sqlite3_context*, const fleece::Value*) noexcept;
     void setResultTextFromSlice(sqlite3_context*, slice) noexcept;
     void setResultBlobFromSlice(sqlite3_context*, slice) noexcept;
     bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::Value*);
+
+    //// Registering SQLite functions:
+
+    struct SQLiteFunctionSpec {
+        const char *name;
+        int argCount;
+        void (*function)(sqlite3_context*,int,sqlite3_value**);
+    };
+
+    extern const SQLiteFunctionSpec kFleeceFunctionsSpec[];
+    extern const SQLiteFunctionSpec kRankFunctionsSpec[];
+    extern const SQLiteFunctionSpec kN1QLFunctionsSpec[];
+
+    int RegisterFleeceEachFunctions(sqlite3 *db, DataFile::FleeceAccessor,
+                                    fleece::SharedKeys*);
+
 }
