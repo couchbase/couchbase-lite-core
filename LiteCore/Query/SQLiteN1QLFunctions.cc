@@ -13,6 +13,9 @@
 #include "Logging.hh"
 #include "SecureRandomize.hh"
 #include "function_ref.hh"
+#if defined(_MSC_VER) || defined(__linux__)
+#include "arc4random.h"
+#endif
 #include <regex>
 #include <cmath>
 #include <string>
