@@ -18,6 +18,10 @@
 #include <sstream>
 #include <iostream>
 
+extern "C" {
+#include "sqlite3_unicodesn_tokenizer.h"
+}
+
 using namespace std;
 using namespace fleece;
 
@@ -372,10 +376,17 @@ namespace litecore {
                 stringstream sql;
                 sql << "CREATE VIRTUAL TABLE \"" << tableName << "\" USING fts4(text, tokenize=unicodesn";
                 if (options) {
-                    if (options->stemmer)
-                        sql << " \"stemmer=" << options->stemmer << "\"";
-                    if (options->ignoreDiacritics)
+                    if (options->stemmer) {
+                        if (unicodesn_isSupportedStemmer(options->stemmer)) {
+                            sql << " \"stemmer=" << options->stemmer << "\"";
+                        } else {
+                            Warn("FTS does not support language code '%s'; ignoring it",
+                                 options->stemmer);
+                        }
+                    }
+                    if (options->ignoreDiacritics) {
                         sql << " \"remove_diacritics=1\"";
+                    }
                 }
                 sql << ")";
                 db().exec(sql.str());

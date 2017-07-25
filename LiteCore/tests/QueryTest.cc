@@ -125,7 +125,14 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
         t.commit();
     }
 
-    KeyStore::IndexOptions options = {"en", true};
+    KeyStore::IndexOptions options;
+    SECTION("English") {
+        options = {"en", true};
+    }
+    SECTION("Unknown language") {
+        options = {"elbonian", true};
+    }
+
     store->createIndex("[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
 
     Retained<Query> query{ store->compileQuery(json5(
@@ -148,7 +155,12 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
         CHECK((string)e->getMatchedText() == strings[expectedOrder[rows]]);
         ++rows;
     }
-    CHECK(rows == 4);
+    if (strcmp(options.stemmer, "en") == 0) {
+        CHECK(rows == 4);
+    } else {
+        // Non-English stemmer will not find "searching" in the 4th document
+        CHECK(rows == 3);
+    }
 
     // Redundant createIndex should not fail:
     store->createIndex("[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);

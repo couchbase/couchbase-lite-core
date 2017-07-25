@@ -242,7 +242,9 @@ path.path().c_str());
 
         // Register custom functions and the tokenizer:
         RegisterSQLiteFunctions(sqlite, fleeceAccessor(), documentKeys());
-        register_unicodesn_tokenizer(sqlite);
+        int rc = register_unicodesn_tokenizer(sqlite);
+        if (rc != SQLITE_OK)
+            Warn("Unable to register FTS tokenizer: SQLite err %d", rc);
     }
 
 
