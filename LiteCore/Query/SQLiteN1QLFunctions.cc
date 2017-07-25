@@ -810,13 +810,6 @@ namespace litecore {
                         setResultFromValue(ctx, arr->get(0));
                         break;
                     }
-                    case valueType::kBoolean:
-                        sqlite3_result_int64(ctx, fleece->asInt());
-                        break;
-                    case valueType::kData:
-                    case valueType::kNull:
-                        sqlite3_result_zeroblob(ctx, 0);
-                        break;
                     case valueType::kDict:
                     {
                         auto dict = fleece->asDict();
@@ -830,16 +823,11 @@ namespace litecore {
                         setResultFromValue(ctx, iter.value());
                         break;
                     }
-                    case valueType::kNumber:
-                        if(fleece->isInteger()) {
-                            sqlite3_result_int64(ctx, fleece->asInt());
-                        } else {
-                            sqlite3_result_double(ctx, fleece->asDouble());
-                        }
+                    case valueType::kData:
+                    default:                     // Other Fleece types never show up in blobs
+                        sqlite3_result_zeroblob(ctx, 0);
                         break;
-                    case valueType::kString:
-                        setResultTextFromSlice(ctx, fleece->asString());
-                        break;
+
                 }
         }
     }
@@ -894,14 +882,8 @@ namespace litecore {
                         sqlite3_result_int(ctx, result);
                         break;
                     }
-                    case valueType::kBoolean:
-                        sqlite3_result_int64(ctx, fleece->asInt());
-                        break;
                     case valueType::kData:
                         sqlite3_result_int(ctx, 1);
-                        break;
-                    case valueType::kNull:
-                        sqlite3_result_int(ctx, 0);
                         break;
                     case valueType::kDict:
                     {
@@ -910,23 +892,10 @@ namespace litecore {
                         sqlite3_result_int(ctx, result);
                         break;
                     }
-                    case valueType::kNumber:
-                    {
-                        auto val = fleece->asDouble();
-                        if(val == 0.0 || isnan(val)) {
-                            sqlite3_result_int(ctx, 0);
-                        } else {
-                            sqlite3_result_int(ctx, 1);
-                        }
+                    default:
+                        // Other Fleece types never show up in blobs
+                        sqlite3_result_int(ctx, 0);
                         break;
-                    }
-                    case valueType::kString:
-                    {
-                        auto str = fleece->asString();
-                        auto result = str.size > 0 ? 1 : 0;
-                        sqlite3_result_int(ctx, result);
-                        break;
-                    }
                 }
             }
         }
@@ -974,47 +943,11 @@ namespace litecore {
             }
             case SQLITE_BLOB:
             {
-                if(sqlite3_value_bytes(argv[0]) == 0) {
-                    sqlite3_result_zeroblob(ctx, 0);
-                    break;
-                }
-
-                auto fleece = fleeceParam(ctx, argv[0]);
-                if(fleece == nullptr) {
-                    sqlite3_result_zeroblob(ctx, 0);
-                    break;
-                }
-
-                switch(fleece->type()) {
-                    case valueType::kArray:
-                    case valueType::kDict:
-                    case valueType::kNull:
-                    case valueType::kData:
-                        sqlite3_result_zeroblob(ctx, 0);
-                        break;
-                    case valueType::kBoolean:
-                        sqlite3_result_int(ctx, fleece->asBool() ? 1 : 0);
-                        break;
-                    case valueType::kNumber:
-                        if(fleece->isInteger()) {
-                            sqlite3_result_int64(ctx, fleece->asInt());
-                        } else {
-                            sqlite3_result_double(ctx, fleece->asDouble());
-                        }
-                        break;
-                    case valueType::kString:
-                    {
-                        auto str = fleece->asString().asString();
-                        double result = tonumber(str);
-                        if(result == NAN) {
-                            sqlite3_result_zeroblob(ctx, 0);
-                        } else {
-                            sqlite3_result_double(ctx, result);
-                        }
-                        break;
-                    }
-                }
+                // A blob is a Fleece array, dict, or data; all of which result in NULL.
+                sqlite3_result_zeroblob(ctx, 0);
+                break;
             }
+
         }
     }
 
@@ -1051,49 +984,9 @@ namespace litecore {
             }
             case SQLITE_BLOB:
             {
-                if(sqlite3_value_bytes(argv[0]) == 0) {
-                    sqlite3_result_zeroblob(ctx, 0);
-                    break;
-                }
-
-                auto fleece = fleeceParam(ctx, argv[0]);
-                if(fleece == nullptr) {
-                    sqlite3_result_zeroblob(ctx, 0);
-                    break;
-                }
-
-                switch(fleece->type()) {
-                    case valueType::kArray:
-                    case valueType::kDict:
-                    case valueType::kNull:
-                    case valueType::kData:
-                        sqlite3_result_zeroblob(ctx, 0);
-                        break;
-                    case valueType::kBoolean:
-                        if(fleece->asBool()) {
-                            sqlite3_result_text(ctx, "true", 4, SQLITE_STATIC);
-                        } else {
-                            sqlite3_result_text(ctx, "false", 5, SQLITE_STATIC);
-                        }
-                        break;
-                    case valueType::kNumber:
-                    {
-                        string result;
-                        if(fleece->isInteger()) {
-                            result = to_string(fleece->asInt());
-                        } else {
-                            result = to_string(fleece->asDouble());
-                        }
-                        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
-                        break;
-                    }
-                    case valueType::kString:
-                    {
-                        auto str = fleece->asString();
-                        setResultTextFromSlice(ctx, str);
-                        break;
-                    }
-                }
+                // A blob is a Fleece array, dict, or data; all of which result in NULL.
+                sqlite3_result_zeroblob(ctx, 0);
+                break;
             }
         }
     }
