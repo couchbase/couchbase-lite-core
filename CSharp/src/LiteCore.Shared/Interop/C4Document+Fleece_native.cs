@@ -43,9 +43,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_hasOldMetaProperties(FLDict doc);
+        public static extern bool c4doc_hasOldMetaProperties(FLDict* doc);
 
-        public static byte[] c4doc_encodeStrippingOldMetaProperties(FLDict doc)
+        public static byte[] c4doc_encodeStrippingOldMetaProperties(FLDict* doc)
         {
             using(var retVal = NativeRaw.c4doc_encodeStrippingOldMetaProperties(doc)) {
                 return ((C4Slice)retVal).ToArrayFast();
@@ -54,11 +54,11 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_dictIsBlob(FLDict dict, FLSharedKeys* sk, C4BlobKey* outKey);
+        public static extern bool c4doc_dictIsBlob(FLDict* dict, FLSharedKeys* sk, C4BlobKey* outKey);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_dictContainsBlobs(FLDict dict, FLSharedKeys* sk);
+        public static extern bool c4doc_dictContainsBlobs(FLDict* dict, FLSharedKeys* sk);
 
         public static string c4doc_bodyAsJSON(C4Document* doc, bool canonical, C4Error* outError)
         {
@@ -104,7 +104,7 @@ namespace LiteCore.Interop
         public static extern bool c4doc_isOldMetaProperty(C4Slice prop);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc);
+        public static extern C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict* doc);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4doc_bodyAsJSON(C4Document* doc, [MarshalAs(UnmanagedType.U1)]bool canonical, C4Error* outError);
