@@ -45,10 +45,6 @@ namespace LiteCore.Interop
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_hasOldMetaProperties(FLDict doc);
 
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_dictIsBlob(FLDict dict, C4BlobKey* outKey);
-
         public static byte[] c4doc_encodeStrippingOldMetaProperties(FLDict doc)
         {
             using(var retVal = NativeRaw.c4doc_encodeStrippingOldMetaProperties(doc)) {
@@ -56,9 +52,17 @@ namespace LiteCore.Interop
             }
         }
 
-        public static string c4doc_bodyAsJSON(C4Document* doc, C4Error* outError)
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_dictIsBlob(FLDict dict, FLSharedKeys* sk, C4BlobKey* outKey);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_dictContainsBlobs(FLDict dict, FLSharedKeys* sk);
+
+        public static string c4doc_bodyAsJSON(C4Document* doc, bool canonical, C4Error* outError)
         {
-            using(var retVal = NativeRaw.c4doc_bodyAsJSON(doc, outError)) {
+            using(var retVal = NativeRaw.c4doc_bodyAsJSON(doc, canonical, outError)) {
                 return ((C4Slice)retVal).CreateString();
             }
         }
@@ -75,15 +79,15 @@ namespace LiteCore.Interop
             }
         }
 
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLSharedKeys* c4db_getFLSharedKeys(C4Database* db);
+
         public static FLDictKey c4db_initFLDictKey(C4Database* db, string @string)
         {
             using(var @string_ = new C4String(@string)) {
                 return NativeRaw.c4db_initFLDictKey(db, @string_.AsC4Slice());
             }
         }
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern FLSharedKeys* c4db_getFLSharedKeys(C4Database* db);
 
 
     }
@@ -103,7 +107,7 @@ namespace LiteCore.Interop
         public static extern C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4doc_bodyAsJSON(C4Document* doc, C4Error* outError);
+        public static extern C4SliceResult c4doc_bodyAsJSON(C4Document* doc, [MarshalAs(UnmanagedType.U1)]bool canonical, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4db_encodeJSON(C4Database* db, C4Slice jsonData, C4Error* outError);
