@@ -12,7 +12,6 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "SecureRandomize.hh"
-#include "Database.hh"
 #include "function_ref.hh"
 #include <regex>
 #include <cmath>
@@ -380,28 +379,6 @@ namespace litecore {
         }
     }
 
-    static void fl_uuid(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        Database::UUID uuid;
-        slice uuidSlice{&uuid, sizeof(uuid)};
-        GenerateUUID(uuidSlice);
-        char str[37] = {};
-        char* strPtr = str;
-        uint8_t* bytePtr = uuid.bytes;
-        for(int i = 0; i < 20; i++) {
-            if(i == 4 || i == 7 || i == 10 || i == 13) {
-                *strPtr = '-';
-                strPtr++;
-            } else {
-                sprintf(strPtr, "%.2x", *bytePtr);
-                bytePtr++;
-                strPtr += 2;
-            }
-        }
-
-        sqlite3_result_text(ctx, str, 37, SQLITE_TRANSIENT);
-    }
-
-#pragma mark - NON-FLEECE FUNCTIONS:
 
     static string lowercase(string input) {
         string result(input.size(), '\0');
@@ -1269,7 +1246,6 @@ namespace litecore {
         { "base64",            1, fl_base64 },
         { "base64_encode",     1, fl_base64 },
         { "base64_decode",     1, fl_base64_decode },
-        { "uuid",              0, fl_uuid },
 
         { "contains",          2, contains },
         { "initcap",           1, init_cap },

@@ -158,15 +158,6 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite base64", "[query]") {
             == (vector<string>{"there"}));
 }
 
-N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite uuid", "[query]") {
-    auto result = query("SELECT uuid()");
-    auto uuid = result[0];
-    for(int i = 0; i < uuid.size(); i++) {
-        char next = uuid[i];
-        CHECK((next == '-' || ishexnumber((int)next)));
-    }
-}
-
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[query][fl_each]") {
     insert("one",   "[1, 2, 3, 4]");
     insert("two",   "[2, 4, 6, 8]");
