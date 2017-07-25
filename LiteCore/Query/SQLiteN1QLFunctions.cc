@@ -592,190 +592,100 @@ namespace litecore {
 #pragma mark - MATH:
 
 
-    static void execute_if_numeric(sqlite3_context* ctx, int argc, sqlite3_value **argv,
-                                   function_ref<void(const vector<double>&)> op) {
-        vector<double> args;
-        for(int i = 0; i < argc; i++) {
-            auto arg = argv[i];
-            switch(sqlite3_value_numeric_type(arg)) {
-                case SQLITE_BLOB: {
-                    const Value *root = fleeceParam(ctx, arg);
-                    if (!root || root->type() != valueType::kNumber)
-                        return;
+    static bool isNumeric(sqlite3_context* ctx, sqlite3_value *arg) {
+        auto type = sqlite3_value_type(arg);
+        if (_usuallyTrue(type == SQLITE_FLOAT || type == SQLITE_INTEGER))
+            return true;
+        else {
+            sqlite3_result_error(ctx, "Invalid numeric value", SQLITE_MISMATCH);
+            return false;
+        }
+    }
 
-                    args.push_back(root->asDouble());
-                    break;
-                }
-                case SQLITE_INTEGER:
-                case SQLITE_FLOAT:
-                    args.push_back(sqlite3_value_double(arg));
-                    break;
-                default:
-                    sqlite3_result_error(ctx, "Invalid numeric value", SQLITE_MISMATCH);
-                    return;
-            }
+
+    static void unaryFunction(sqlite3_context* ctx, sqlite3_value **argv, double (*fn)(double)) {
+        sqlite3_value *arg = argv[0];
+        if (_usuallyTrue(isNumeric(ctx, arg)))
+            sqlite3_result_double(ctx, fn(sqlite3_value_double(arg)));
+    }
+
+    #define DefineUnaryMathFn(NAME, C_FN) \
+        static void fl_##NAME(sqlite3_context* ctx, int argc, sqlite3_value **argv) { \
+            unaryFunction(ctx, argv, C_FN); \
         }
 
-        op(args);
-    }
+    DefineUnaryMathFn(abs,   abs)
+    DefineUnaryMathFn(acos,  acos)
+    DefineUnaryMathFn(asin,  asin)
+    DefineUnaryMathFn(atan,  atan)
+    DefineUnaryMathFn(ceil,  ceil)
+    DefineUnaryMathFn(cos,   cos)
+    DefineUnaryMathFn(degrees, [](double rad) {return rad * 180 / M_PI;})
+    DefineUnaryMathFn(exp,   exp)
+    DefineUnaryMathFn(floor, floor)
+    DefineUnaryMathFn(ln,    log)
+    DefineUnaryMathFn(log,   log10)
+    DefineUnaryMathFn(radians, [](double deg) {return deg * M_PI / 180;})
+    DefineUnaryMathFn(sin,   sin)
+    DefineUnaryMathFn(sqrt,  sqrt)
+    DefineUnaryMathFn(tan,   tan)
 
-    static void fl_abs(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, abs(nums[0]));
-        });
-    }
-
-    static void fl_acos(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, acos(nums[0]));
-        });
-    }
-
-    static void fl_asin(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, asin(nums[0]));
-        });
-    }
-
-    static void fl_atan(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, atan(nums[0]));
-        });
-    }
 
     static void fl_atan2(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, atan2(nums[0], nums[1]));
-        });
+        if (isNumeric(ctx, argv[0]) && isNumeric(ctx, argv[1]))
+            sqlite3_result_double(ctx, atan2(sqlite3_value_double(argv[0]),
+                                             sqlite3_value_double(argv[1])));
     }
 
-    static void fl_ceiling(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, ceil(nums[0]));
-        });
-    }
-
-    static void fl_cos(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, cos(nums[0]));
-        });
-    }
-
-    static void fl_degrees(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, nums[0] * 180 / M_PI);
-        });
+    static void fl_power(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if (isNumeric(ctx, argv[0]) && isNumeric(ctx, argv[1]))
+            sqlite3_result_double(ctx, pow(sqlite3_value_double(argv[0]),
+                                           sqlite3_value_double(argv[1])));
     }
 
     static void fl_e(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         sqlite3_result_double(ctx, M_E);
     }
 
-    static void fl_exp(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, exp(nums[0]));
-        });
-    }
-
-    static void fl_ln(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, log(nums[0]));
-        });
-    }
-
-    static void fl_log(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, log10(nums[0]));
-        });
-    }
-
-    static void fl_floor(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, floor(nums[0]));
-        });
-    }
-
     static void fl_pi(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         sqlite3_result_double(ctx, M_PI);
-    }
-
-    static void fl_power(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, pow(nums[0], nums[1]));
-        });
-    }
-
-    static void fl_radians(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, nums[0] * M_PI / 180.0);
-        });
     }
 
     static void fl_random(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         sqlite3_result_int(ctx, arc4random());
     }
 
+    static void roundTo(sqlite3_context* ctx, int argc, sqlite3_value **argv, double (*fn)(double)) {
+        // Takes an optional 2nd argument giving the number of decimal places to round to.
+        if (!isNumeric(ctx, argv[0]))
+            return;
+        double result = sqlite3_value_double(argv[0]);
+
+        if(argc == 1) {
+            result = fn(result);
+        } else {
+            if (!isNumeric(ctx, argv[1]))
+                return;
+            double scale = pow(10, sqlite3_value_double(argv[1]));
+            result = fn(result * scale) / scale;
+        }
+
+        sqlite3_result_double(ctx, result);
+    }
+
     static void fl_round(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx, argc, argv](const vector<double>& nums) {
-            double result = nums[0];
-            if(argc == 2) {
-                result *= pow(10, sqlite3_value_double(argv[1]));
-            }
-
-            result = round(result);
-
-            if(argc == 2) {
-                result /= pow(10, sqlite3_value_double(argv[1]));
-            }
-
-            sqlite3_result_double(ctx, result);
-        });
-    }
-
-    static void fl_sign(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            auto num = nums[0];
-            if(num == 0) {
-                sqlite3_result_int(ctx, 0);
-            } else {
-                sqlite3_result_int(ctx, num < 0 ? -1 : 1);
-            }
-        });
-    }
-
-    static void fl_sin(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, sin(nums[0]));
-        });
-    }
-
-    static void fl_sqrt(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, sqrt(nums[0]));
-        });
-    }
-
-    static void fl_tan(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx](const vector<double>& nums) {
-            sqlite3_result_double(ctx, tan(nums[0]));
-        });
+        roundTo(ctx, argc, argv, round);
     }
 
     static void fl_trunc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        execute_if_numeric(ctx, argc, argv, [ctx, argc, argv](const vector<double>& nums) {
-            double result = nums[0];
-            if(argc == 2) {
-                result *= pow(10, sqlite3_value_double(argv[1]));
-            }
+        roundTo(ctx, argc, argv, trunc);
+    }
 
-            result = floor(result);
-
-            if(argc == 2) {
-                result /= pow(10, sqlite3_value_double(argv[1]));
-            }
-
-            sqlite3_result_double(ctx, result);
-        });
+    static void fl_sign(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if (!isNumeric(ctx, argv[0]))
+            return;
+        double num = sqlite3_value_double(argv[0]);
+        sqlite3_result_int(ctx, num > 0 ? 1 : (num < 0 ? -1 : 0) );
     }
 
 
@@ -1296,7 +1206,7 @@ namespace litecore {
         { "asin",              1, fl_asin },
         { "atan",              1, fl_atan },
         { "atan2",             2, fl_atan2 },
-        { "ceil",              1, fl_ceiling },
+        { "ceil",              1, fl_ceil },
         { "cos",               1, fl_cos },
         { "degrees",           1, fl_degrees },
         { "e",                 0, fl_e },
