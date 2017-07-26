@@ -576,7 +576,7 @@ namespace litecore { namespace repl {
             auto &bodyEncoder = msg.jsonBody();
             auto sk = c4db_getFLSharedKeys(_db);
             bodyEncoder.setSharedKeys(sk);
-            if (request.legacyAttachments && (doc->selectedRev.flags & kRevHasAttachments))
+            if (request.legacyAttachments && (revisionFlags & kRevHasAttachments))
                 writeRevWithLegacyAttachments(bodyEncoder, root, sk);
             else
                 bodyEncoder.writeValue(root);
