@@ -88,29 +88,14 @@ namespace litecore {
     struct FunctionSpec {slice name; int minArgs; int maxArgs; slice sqlite_name; bool aggregate;};
     static const FunctionSpec kFunctionList[] = {
         // Array:
-        {"array_append"_sl,     2, 2},
         {"array_avg"_sl,        1, 1},
-        {"array_concat"_sl,     2, 2},
         {"array_contains"_sl,   2, 2},
         {"array_count"_sl,      1, 1},
-        {"array_distinct"_sl,   1, 1},
         {"array_ifnull"_sl,     1, 1},
-        {"array_insert"_sl,     3, 3},
-        {"array_intersect"_sl,  2, 9},
         {"array_length"_sl,     1, 1},
         {"array_max"_sl,        1, 1},
         {"array_min"_sl,        1, 1},
-        {"array_position"_sl,   2, 2},
-        {"array_prepend"_sl,    2, 2},
-        {"array_put"_sl,        2, 2},
-        {"array_range"_sl,      2, 3},
-        {"array_remove"_sl,     2, 2},
-        {"array_repeat"_sl,     2, 2},
-        {"array_replace"_sl,    3, 4},
-        {"array_reverse"_sl,    1, 1},
-        {"array_sort"_sl,       1, 1},
         {"array_sum"_sl,        1, 1},
-        {"array_star"_sl,       1, 1},
 
         // Comparison:
         {"greatest"_sl,         1, 9, "max"_sl},
@@ -123,21 +108,6 @@ namespace litecore {
         {"missingif"_sl,        2, 2, "nullif"_sl},
         {"nullif"_sl,           2, 2},
 
-        // Conditional (numbers):
-        {"ifinf"_sl,            1, 9},
-        {"ifnan"_sl,            1, 9},
-        {"ifnanorinf"_sl,       1, 9},
-        {"nanif"_sl,            2, 2},
-        {"neginfif"_sl,         2, 2},
-        {"posinfif"_sl,         2, 2},
-
-        // Meta and UUID:
-        {"base64"_sl,           1, 1},
-        {"base64_encode"_sl,    1, 1},
-        {"base64_decode"_sl,    1, 1},
-        {"meta"_sl,             1, 1},
-        {"uuid"_sl,             0, 0},
-
         // Math:
         {"abs"_sl,              1, 1},
         {"acos"_sl,             1, 1},
@@ -149,32 +119,18 @@ namespace litecore {
         {"degrees"_sl,          1, 1},
         {"e"_sl,                0, 0},
         {"exp"_sl,              1, 1},
+        {"floor"_sl,            1, 1},
         {"ln"_sl,               1, 1},
         {"log"_sl,              1, 1},
-        {"floor"_sl,            1, 1},
         {"pi"_sl,               0, 0},
         {"power"_sl,            2, 2},
         {"radians"_sl,          1, 1},
-        {"random"_sl,           0, 1},
         {"round"_sl,            1, 2},
         {"sign"_sl,             1, 1},
         {"sin"_sl,              1, 1},
         {"sqrt"_sl,             1, 1},
         {"tan"_sl,              1, 1},
         {"trunc"_sl,            1, 2},
-
-        // Objects:
-        {"object_length"_sl,    1, 1},
-        {"object_names"_sl,     1, 1},
-        {"object_pairs"_sl,     1, 1},
-        {"object_length"_sl,    1, 1},
-        {"object_inner_pairs"_sl,   1, 1},
-        {"object_values"_sl,        1, 1},
-        {"object_inner_values"_sl,  1, 1},
-        {"object_add"_sl,       3, 3},
-        {"object_put"_sl,       3, 3},
-        {"object_remove"_sl,    2, 2},
-        {"object_unwrap"_sl,    1, 1},
 
         // Patterns:
         {"regexp_contains"_sl,  2, 2},
@@ -184,18 +140,10 @@ namespace litecore {
 
         // Strings:
         {"contains"_sl,         2, 2},
-        {"initcap"_sl,          1, 1},
         {"length"_sl,           1, 1},
         {"lower"_sl,            1, 1},
         {"ltrim"_sl,            1, 2},
-        {"position"_sl,         2, 2},
-        {"repeat"_sl,           2, 2},
-        {"replace"_sl,          3, 4},
         {"rtrim"_sl,            1, 2},
-        {"split"_sl,            1, 2},
-        {"substr"_sl,           2, 3},
-        {"suffixes"_sl,         1, 1},
-        {"title"_sl,            1, 1, "initcap"_sl}, // synonym for initcap
         {"trim"_sl,             1, 2},
         {"upper"_sl,            1, 1},
 
@@ -213,13 +161,11 @@ namespace litecore {
         {"tonumber"_sl,         1, 1},
         {"toobject"_sl,         1, 1},
         {"tostring"_sl,         1, 1},
-        {"upper"_sl,            1, 1},
 
         // FTS (not standard N1QL):
         {"rank"_sl,             1, 1},
 
         // Aggregate functions:
-        {"array_agg"_sl,        1, 1, nullslice, true},
         {"avg"_sl,              1, 1, nullslice, true},
         {"count"_sl,            0, 1, nullslice, true},
         {"max"_sl,              1, 1, nullslice, true},

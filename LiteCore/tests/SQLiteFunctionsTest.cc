@@ -151,13 +151,6 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite missingif", "[query]") {
             == (vector<string>{ "5" }));
 }
 
-N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite base64", "[query]") {
-    insert("a",   "{\"hey\": \"there\"}");
-    
-    CHECK(query("SELECT base64_decode(base64(fl_value(body, 'hey'))) FROM kv")
-            == (vector<string>{"there"}));
-}
-
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_each array", "[query][fl_each]") {
     insert("one",   "[1, 2, 3, 4]");
     insert("two",   "[2, 4, 6, 8]");

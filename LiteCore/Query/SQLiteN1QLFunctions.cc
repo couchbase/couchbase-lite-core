@@ -11,15 +11,11 @@
 #include "Path.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "SecureRandomize.hh"
 #include "function_ref.hh"
-#if defined(_MSC_VER) || defined(__linux__)
-#include "arc4random.h"
-#endif
 #include <regex>
 #include <cmath>
 #include <string>
-#include <sstream>
+
 #ifdef _MSC_VER
 #undef min
 #undef max
@@ -265,6 +261,7 @@ namespace litecore {
         }
     }
 
+#if 0
     static void ifinf(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         double num = 0.0;
         bool success = false;
@@ -288,7 +285,9 @@ namespace litecore {
             sqlite3_result_double(ctx, num);
         }
     }
+#endif
 
+#if 0
     static void ifnan(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         double num = 0.0;
         bool success = false;
@@ -312,7 +311,9 @@ namespace litecore {
             sqlite3_result_double(ctx, num);
         }
     }
+#endif
 
+#if 0
     static void ifnanorinf(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         double num = 0.0;
         bool success = false;
@@ -336,7 +337,9 @@ namespace litecore {
             sqlite3_result_double(ctx, num);
         }
     }
+#endif
 
+#if 0
     static void thisif(sqlite3_context* ctx, int argc, sqlite3_value **argv, double val) noexcept {
         auto slice0 = valueAsSlice(argv[0]);
         auto slice1 = valueAsSlice(argv[1]);
@@ -362,11 +365,12 @@ namespace litecore {
     static void posinfif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         thisif(ctx, argc, argv, numeric_limits<double>::infinity());
     }
-
+#endif
 
 #pragma mark - STRINGS:
 
 
+#if 0
     static void fl_base64(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto arg0 = valueAsSlice(argv[0]);
         string base64 = arg0.base64String();
@@ -385,7 +389,7 @@ namespace litecore {
             setResultBlobFromSlice(ctx, decoded);
         }
     }
-
+#endif
 
     static string lowercase(string input) {
         string result(input.size(), '\0');
@@ -399,6 +403,7 @@ namespace litecore {
         sqlite3_result_int(ctx, arg0.find(arg1).buf != nullptr);
     }
 
+#if 0
     static void init_cap(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto arg = valueAsStringSlice(argv[0]).asString();
         string result = lowercase(arg);
@@ -411,6 +416,7 @@ namespace litecore {
 
         sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
     }
+#endif
 
     static void length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto arg = valueAsStringSlice(argv[0]).asString();
@@ -456,6 +462,7 @@ namespace litecore {
         sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
     }
 
+#if 0
     static void position(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto val = valueAsStringSlice(argv[0]).asString();
         unsigned long result = val.find((char *)sqlite3_value_text(argv[1]));
@@ -465,7 +472,9 @@ namespace litecore {
             sqlite3_result_int64(ctx, result);
         }
     }
+#endif
 
+#if 0
     static void repeat(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto base = valueAsStringSlice(argv[0]).asString();
         auto num = sqlite3_value_int(argv[1]);
@@ -477,7 +486,9 @@ namespace litecore {
         auto resultStr = result.str();
         sqlite3_result_text(ctx, resultStr.c_str(), (int)resultStr.size(), SQLITE_TRANSIENT);
     }
+#endif
 
+#if 0
     static void replace(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto val = valueAsStringSlice(argv[0]).asString();
         auto search = valueAsStringSlice(argv[1]).asString();
@@ -495,12 +506,15 @@ namespace litecore {
 
         sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
     }
+#endif
 
+#if 0
     static void reverse(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto val = valueAsStringSlice(argv[0]).asString();
         reverse(val.begin(), val.end());
         sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
     }
+#endif
 
     static void rtrim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto val = valueAsStringSlice(argv[0]).asString();
@@ -513,6 +527,7 @@ namespace litecore {
         sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
     }
 
+#if 0
     static void substr(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto val = valueAsStringSlice(argv[0]).asString();
         if(argc == 3) {
@@ -523,6 +538,7 @@ namespace litecore {
 
         sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
     }
+#endif
 
     static void trim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto val = valueAsStringSlice(argv[0]).asString();
@@ -656,10 +672,6 @@ namespace litecore {
 
     static void fl_pi(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         sqlite3_result_double(ctx, M_PI);
-    }
-
-    static void fl_random(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        sqlite3_result_int(ctx, arc4random());
     }
 
     static void roundTo(sqlite3_context* ctx, int argc, sqlite3_value **argv, double (*fn)(double)) {
@@ -1009,36 +1021,36 @@ namespace litecore {
 
 
     const SQLiteFunctionSpec kN1QLFunctionsSpec[] = {
-        { "array_append",     -1, unimplemented },
+//        { "array_append",     -1, unimplemented },
         { "array_avg",        -1, fl_array_avg },
-        { "array_concat",     -1, unimplemented },
+//        { "array_concat",     -1, unimplemented },
         { "array_contains",   -1, fl_array_contains },
         { "array_count",      -1, fl_array_count },
-        { "array_distinct",    1, unimplemented },
-        { "array_flatten",     2, unimplemented },
-        { "array_agg",         1, unimplemented },
+//        { "array_distinct",    1, unimplemented },
+//        { "array_flatten",     2, unimplemented },
+//        { "array_agg",         1, unimplemented },
         { "array_ifnull",     -1, fl_array_ifnull },
-        { "array_insert",     -1, unimplemented },
-        { "array_intersect",  -1, unimplemented },
+//        { "array_insert",     -1, unimplemented },
+//        { "array_intersect",  -1, unimplemented },
         { "array_length",     -1, fl_array_length },
         { "array_max",        -1, fl_array_max },
         { "array_min",        -1, fl_array_min },
-        { "array_position",    2, unimplemented },
-        { "array_prepend",    -1, unimplemented },
-        { "array_put",        -1, unimplemented },
-        { "array_range",       2, unimplemented },
-        { "array_range",       3, unimplemented },
-        { "array_remove",     -1, unimplemented },
-        { "array_repeat",      2, unimplemented },
-        { "array_replace",     3, unimplemented },
-        { "array_replace",     4, unimplemented },
-        { "array_reverse",     1, unimplemented },
-        { "array_sort",        1, unimplemented },
-        { "array_star",        1, unimplemented },
+//        { "array_position",    2, unimplemented },
+//        { "array_prepend",    -1, unimplemented },
+//        { "array_put",        -1, unimplemented },
+//        { "array_range",       2, unimplemented },
+//        { "array_range",       3, unimplemented },
+//        { "array_remove",     -1, unimplemented },
+//        { "array_repeat",      2, unimplemented },
+//        { "array_replace",     3, unimplemented },
+//        { "array_replace",     4, unimplemented },
+//        { "array_reverse",     1, unimplemented },
+//        { "array_sort",        1, unimplemented },
+//        { "array_star",        1, unimplemented },
         { "array_sum",        -1, fl_array_sum },
-        { "array_symdiff",    -1, unimplemented },
-        { "array_symdiffn",   -1, unimplemented },
-        { "array_union",      -1, unimplemented },
+//        { "array_symdiff",    -1, unimplemented },
+//        { "array_symdiffn",   -1, unimplemented },
+//        { "array_union",      -1, unimplemented },
 
         { "ifmissing",        -1, ifmissing },
         { "ifmissingornull",  -1, ifmissingornull },
@@ -1046,37 +1058,37 @@ namespace litecore {
         { "missingif",         2, missingif },
         { "nullif",            2, nullif },
 
-        { "ifinf",            -1, ifinf },
-        { "isnan",            -1, ifnan },
-        { "isnanorinf",       -1, ifnanorinf },
-        { "nanif",             2, nanif },
-        { "neginfif",          2, neginfif },
-        { "posinfif",          2, posinfif },
+//        { "ifinf",            -1, ifinf },
+//        { "isnan",            -1, ifnan },
+//        { "isnanorinf",       -1, ifnanorinf },
+//        { "nanif",             2, nanif },
+//        { "neginfif",          2, neginfif },
+//        { "posinfif",          2, posinfif },
 
-        { "base64",            1, fl_base64 },
-        { "base64_encode",     1, fl_base64 },
-        { "base64_decode",     1, fl_base64_decode },
+//        { "base64",            1, fl_base64 },
+//        { "base64_encode",     1, fl_base64 },
+//        { "base64_decode",     1, fl_base64_decode },
 
         { "contains",          2, contains },
-        { "initcap",           1, init_cap },
+//        { "initcap",           1, init_cap },
         { "length",            1, length },
         { "lower",             1, lower },
         { "ltrim",             1, ltrim },
         { "ltrim",             2, ltrim },
-        { "position",          2, position },
-        { "repeat",            2, repeat },
-        { "replace",           3, replace },
-        { "replace",           4, replace },
-        { "reverse",           1, reverse },
+//        { "position",          2, position },
+//        { "repeat",            2, repeat },
+//        { "replace",           3, replace },
+//        { "replace",           4, replace },
+//        { "reverse",           1, reverse },
         { "rtrim",             1, rtrim },
         { "rtrim",             2, rtrim },
-        { "split",             1, unimplemented },
-        { "split",             2, unimplemented },
-        { "substr",            2, substr },
-        { "substr",            3, substr },
-        { "suffixes",          1, unimplemented },
-        { "title",             1, init_cap },
-        { "tokens",            2, unimplemented },
+//        { "split",             1, unimplemented },
+//        { "split",             2, unimplemented },
+//        { "substr",            2, substr },
+//        { "substr",            3, substr },
+//        { "suffixes",          1, unimplemented },
+//        { "title",             1, init_cap },
+//        { "tokens",            2, unimplemented },
         { "trim",              1, trim },
         { "trim",              2, trim },
         { "upper",             1, upper },
@@ -1117,7 +1129,6 @@ namespace litecore {
         { "pi",                0, fl_pi },
         { "power",             2, fl_power },
         { "radians",           1, fl_radians },
-        { "random",            0, fl_random },
         { "round",             1, fl_round },
         { "round",             2, fl_round },
         { "sign",              1, fl_sign },
