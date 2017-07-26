@@ -204,13 +204,16 @@ extern "C" {
      
         An example `expressionsJSON` is `[[".name.first"]]`, to index on the first-name property.
 
+        Currently, full-text indexes are limited to a single expression only.
+        Geospatial indexes are not implemented at all yet.
+
         It is not an error if the index already exists.
 
         @param database  The database to index.
         @param expressionsJSON  A JSON array of one or more expressions to index; the first is the
                             primary key. Each expression takes the same form as in a query, which
                             means it's a JSON array as well; don't get mixed up by the nesting.
-        @param indexType  The type of index (regular, full-text or geospatial.)
+        @param indexType  The type of index (regular or full-text.)
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
