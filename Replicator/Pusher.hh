@@ -51,6 +51,7 @@ namespace litecore { namespace repl {
         static const bool kChangeMessagesAreUrgent = true;    // Are change msgs high priority?
         static const unsigned kMaxRevsInFlight = 5;           // max # revs to be transmitting at once
         static const unsigned kMaxRevBytesAwaitingReply = 2*1024*1024;     // max bytes of revs sent but not replied
+        static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one
 
         DBWorker* const _dbWorker;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db

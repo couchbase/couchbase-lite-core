@@ -193,6 +193,29 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[Pull][.RealReplicat
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Deletion", "[Push][Pull][.RealReplicator]") {
+    createRev("doc"_sl, kRevID, kFleeceBody);
+    createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
+
+    replicate(kC4OneShot, kC4Disabled);
+
+    C4Log("-------- Deleting and re-creating database --------");
+    deleteAndRecreateDB();
+    createRev("doc"_sl, kRevID, kFleeceBody);
+
+    replicate(kC4Disabled, kC4OneShot);
+
+    c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
+    REQUIRE(doc);
+
+    CHECK(doc->revID == kRev2ID);
+    CHECK((doc->flags & kDocDeleted) != 0);
+    CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == kRevID);
+}
+
+
 TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[Push][Pull][blob][.RealReplicator]") {
     vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;

@@ -217,7 +217,7 @@ namespace litecore { namespace repl {
                 return gotError(reply);
 
             // The response contains an array that parallels the array I sent, with each item
-            int maxHistory = (int)max(0l, reply->intProperty("maxHistory"_sl));
+            int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl, kDefaultMaxHistory));
             bool legacyAttachments = !reply->boolProperty("blobs"_sl);
             auto requests = reply->JSONBody().asArray();
 

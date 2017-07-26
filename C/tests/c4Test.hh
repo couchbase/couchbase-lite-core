@@ -170,6 +170,7 @@ public:
     C4Slice kRev3ID;
     static const C4Slice kBody;     // "{\"name\":007}"
     static C4Slice kFleeceBody;
+    static C4Slice kEmptyFleeceBody;
 
 private:
     const C4StorageEngine _storage;
