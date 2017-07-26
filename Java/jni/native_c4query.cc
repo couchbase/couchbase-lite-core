@@ -63,6 +63,31 @@ Java_com_couchbase_litecore_C4Query_explain(JNIEnv *env, jclass clazz, jlong jqu
     return jstr;
 }
 
+
+/*
+ * Class:     com_couchbase_litecore_C4Query
+ * Method:    columnCount
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL
+Java_com_couchbase_litecore_C4Query_columnCount(JNIEnv *env, jclass clazz, jlong jquery) {
+    return c4query_columnCount((C4Query *) jquery);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Query
+ * Method:    nameOfColumn
+ * Signature: (JI)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_com_couchbase_litecore_C4Query_nameOfColumn(JNIEnv *env, jclass clazz, jlong jquery,
+                                                 jint jcol) {
+    C4StringResult result = c4query_nameOfColumn((C4Query *) jquery, jcol);
+    jstring jstr = toJString(env, result);
+    c4slice_free(result);
+    return jstr;
+}
+
 /*
  * Class:     com_couchbase_litecore_C4Query
  * Method:    run

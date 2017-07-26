@@ -42,6 +42,14 @@ public class C4Query {
         return explain(handle);
     }
 
+    public int columnCount() {
+        return columnCount(handle);
+    }
+
+    public String nameOfColumn(int col) {
+        return nameOfColumn(handle, col);
+    }
+
     public C4QueryEnumerator run(C4QueryOptions options, String encodedParameters)
             throws LiteCoreException {
         return new C4QueryEnumerator(
@@ -65,6 +73,8 @@ public class C4Query {
     // native methods
     //-------------------------------------------------------------------------
 
+    //////// DATABASE QUERIES:
+
     /**
      * @param db
      * @param expression
@@ -87,6 +97,25 @@ public class C4Query {
     static native String explain(long c4query);
 
     /**
+     * Returns the number of columns (the values specified in the WHAT clause) in each row.
+     *
+     * @param c4query (C4Query*)
+     * @return the number of columns
+     */
+    static native int columnCount(long c4query);
+
+    /**
+     * Returns the name of a column.
+     *
+     * @param c4query (C4Query*)
+     * @param col     column index
+     * @return the name of a column
+     */
+    static native String nameOfColumn(long c4query, int col);
+
+    //////// RUNNING QUERIES:
+
+    /**
      * @param c4query
      * @param rankFullText
      * @param encodedParameters
@@ -98,8 +127,14 @@ public class C4Query {
                            String encodedParameters)
             throws LiteCoreException;
 
+    /**
+     * Given a docID and sequence number from the enumerator, returns the text that was emitted
+     * during indexing.
+     */
     static native byte[] getFullTextMatched(long c4query, String docID, long seq)
             throws LiteCoreException;
+
+    //////// INDEXES:
 
     // - Creates a database index, to speed up subsequent queries.
 

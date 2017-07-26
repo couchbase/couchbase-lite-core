@@ -180,6 +180,11 @@ public class C4QueryTest extends C4QueryBaseTest {
         List<String> expectedLast = Arrays.asList("Bejcek", "Kolding", "Ogwynn");
         compileSelect(json5("{WHAT: ['.name.first', '.name.last'], WHERE: ['>=', ['length()', ['.name.first']], 9],ORDER_BY: [['.name.first']]}"));
 
+        assertEquals(2, query.columnCount());
+        // TODO: Names currently wrong
+        // String name0 = query.nameOfColumn(0);
+        // String name1 = query.nameOfColumn(1);
+
         C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
         assertNotNull(e);
         int i = 0;
