@@ -8,6 +8,7 @@
 
 #pragma once
 #include "MessageBuilder.hh"
+#include <ostream>
 
 namespace litecore { namespace blip {
 
@@ -38,6 +39,8 @@ namespace litecore { namespace blip {
         bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}
         MessageIn* createResponse();
         void disconnected();
+
+        void dump(std::ostream& out, bool withBody);
 
     private:
         static const uint32_t kMaxUnackedBytes = 128000;

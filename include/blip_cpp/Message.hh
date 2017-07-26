@@ -109,6 +109,7 @@ namespace litecore { namespace blip {
                           MessageIn *reply);
         void disconnected();
 
+        void dump(slice payload, slice body, std::ostream&);
 
         FrameFlags _flags;
         MessageNo _number;
@@ -156,6 +157,10 @@ namespace litecore { namespace blip {
             Call this if you don't know what to do with a request.
             (The message must be complete.) */
         void notHandled();
+
+        void dump(std::ostream& out, bool withBody) {
+            Message::dump(_properties, (withBody ? _body : fleece::nullslice), out);
+        }
 
     protected:
         friend class MessageOut;

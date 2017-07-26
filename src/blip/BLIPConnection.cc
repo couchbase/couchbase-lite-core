@@ -37,6 +37,7 @@ namespace litecore { namespace blip {
                                               "ACKREQ", "AKRES", "?6?", "?7?"};
 
     LogDomain BLIPLog("BLIP");
+    static LogDomain BLIPMessagesLog("BLIPMessages", LogLevel::None);
 
 
     /** Queue of outgoing messages; each message gets to send one frame in turn. */
@@ -374,6 +375,16 @@ namespace litecore { namespace blip {
             // Append the frame to the message:
             if (msg) {
                 auto state = msg->receivedFrame(payload, flags);
+                
+                if (state == MessageIn::kEnd) {
+                    if (BLIPMessagesLog.willLog(LogLevel::Info)) {
+                        stringstream dump;
+                        bool withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
+                        msg->dump(dump, withBody);
+                        BLIPMessagesLog.log(LogLevel::Info, "RECEIVED: %s", dump.str().c_str());
+                    }
+                }
+
                 if (type == kRequestType) {
                     if (state == MessageIn::kEnd || state == MessageIn::kBeginning) {
                         // Message complete!
@@ -566,6 +577,13 @@ namespace litecore { namespace blip {
 
     /** Internal API to send an outgoing message (a request, response, or ACK.) */
     void Connection::send(MessageOut *msg) {
+        if (BLIPMessagesLog.willLog(LogLevel::Info)) {
+            stringstream dump;
+            bool withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
+            msg->dump(dump, withBody);
+            BLIPMessagesLog.log(LogLevel::Info, "SENDING: %s", dump.str().c_str());
+        }
+
         _io->queueMessage(msg);
     }
 

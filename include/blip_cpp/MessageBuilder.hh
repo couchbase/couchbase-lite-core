@@ -80,13 +80,15 @@ namespace litecore { namespace blip {
         /** Should the message refuse replies? */
         bool noreply        {false};
 
+        static slice untokenizeProperty(slice property);
+        static uint8_t tokenizeProperty(slice property);
+
     protected:
         friend class MessageIn;
         friend class MessageOut;
 
         FrameFlags flags() const;
         alloc_slice extractOutput();
-        static uint8_t tokenizeProperty(slice property);
         void writeTokenizedString(std::ostream &out, slice str);
 
         MessageType type {kRequestType};

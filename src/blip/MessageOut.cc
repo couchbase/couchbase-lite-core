@@ -9,6 +9,7 @@
 #include "MessageOut.hh"
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
+#include "varint.hh"
 #include <algorithm>
 
 using namespace std;
@@ -86,6 +87,18 @@ namespace litecore { namespace blip {
         if (type() != kRequestType || noReply())
             return;
         Message::disconnected();
+    }
+
+
+    void MessageOut::dump(std::ostream& out, bool withBody) {
+        slice props = _payload;
+        uint32_t propertiesSize;
+        ReadUVarInt32(&props, &propertiesSize);
+        props.setSize(propertiesSize);
+        slice body;
+        if (withBody)
+            body = slice(props.end(), _payload.end());
+        Message::dump(props, body, out);
     }
 
 } }

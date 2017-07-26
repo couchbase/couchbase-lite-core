@@ -40,6 +40,8 @@ namespace litecore { namespace blip {
         nullslice
     };
 
+    static constexpr auto kNumSpecials = sizeof(kSpecialProperties) / sizeof(slice) - 1;
+
 
 #pragma mark - MESSAGE BUILDER:
 
@@ -98,6 +100,14 @@ namespace litecore { namespace blip {
                 return i + 1;
         }
         return 0;
+    }
+
+
+    slice MessageBuilder::untokenizeProperty(slice property) {
+        if (property.size == 1 && property[0] > 0 && property[0] <= kNumSpecials)
+            return kSpecialProperties[property[0] - 1];
+        else
+            return property;
     }
 
     // Abbreviates certain special strings as a single byte

@@ -39,6 +39,48 @@ namespace litecore { namespace blip {
     }
 
 
+    static ostream& operator<< (ostream& o, fleece::slice s) {
+        if (s.size == 0)
+            return o << "<<>>";
+        auto buf = (const uint8_t*)s.buf;
+        for (size_t i = 0; i < s.size; i++) {
+            if (buf[i] < 32 || buf[i] > 126)
+                return o << "<<" << s.hexString() << ">>";
+        }
+        return o.write((char*)s.buf, s.size);
+    }
+
+
+    void Message::dump(slice payload, slice body, std::ostream& out) {
+        out << kMessageTypeNames[type()] << " #" << _number << ' ';
+        if (_flags & kUrgent)  out << 'U';
+        if (_flags & kNoReply)  out << 'N';
+        if (_flags & kCompressed)  out << 'Z';
+        out << " {";
+
+        auto key = (const char*)payload.buf;
+        auto end = (const char*)payload.end();
+        while (key < end) {
+            auto endOfKey = key + strlen(key);
+            auto val = endOfKey + 1;
+            if (val >= end)
+                break;  // illegal: missing value
+            auto endOfVal = val + strlen(val);
+
+            slice propertyName = MessageBuilder::untokenizeProperty(slice(key, endOfKey));
+            slice propertyValue= MessageBuilder::untokenizeProperty(slice(val, endOfVal));
+            out << "\n\t" << propertyName << ": " << propertyValue;
+            key = endOfVal + 1;
+        }
+        if (body.size > 0)
+            out << "\n\tBODY: " << body;
+        out << " }";
+    }
+
+
+#pragma mark - MESSAGEIN:
+    
+
     MessageIn::~MessageIn()
     { }
 
