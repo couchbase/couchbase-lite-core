@@ -38,7 +38,7 @@ namespace litecore { namespace repl {
     // Starting an active pull.
     void Puller::_start(alloc_slice sinceSequence) {
         _lastSequence = sinceSequence;
-        _requestedSequences.clear(sinceSequence);
+        _missingSequences.clear(sinceSequence);
         log("Starting pull from remote seq %.*s", SPLAT(_lastSequence));
 
         MessageBuilder msg("subChanges"_sl);
@@ -126,17 +126,20 @@ namespace litecore { namespace repl {
                     // Keep track of which remote sequences I just requested:
                     for (size_t i = 0; i < which.size(); ++i) {
                         if (which[i]) {
+                            ++_pendingRevMessages;
                             auto change = changes[(unsigned)i].asArray();
                             uint64_t bodySize = max(change[4].asUnsigned(), (uint64_t)1);
                             alloc_slice sequence(change[0].toString()); //FIX: Should quote strings
                             if (sequence)
-                                _requestedSequences.add(sequence, bodySize);
+                                _missingSequences.add(sequence, bodySize);
                             else
                                 warn("Empty/invalid sequence in 'changes' message");
                             addProgress({0, bodySize});
+                            // now awaiting a handleRev call...
                         }
                     }
-                    logVerbose("Now waiting on %zu revisions", _requestedSequences.size());
+                    logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
+                               _pendingRevMessages, _missingSequences.size());
                 }
             }));
         }
@@ -145,6 +148,7 @@ namespace litecore { namespace repl {
 
     // Handles an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
+        --_pendingRevMessages;
         Retained<IncomingRev> inc;
         if (_spareIncomingRevs.empty()) {
             inc = new IncomingRev(this, _dbActor);
@@ -171,9 +175,9 @@ namespace litecore { namespace repl {
         if (complete && nonPassive()) {
             bool wasEarliest;
             uint64_t bodySize;
-            _requestedSequences.remove(sequence, wasEarliest, bodySize);
+            _missingSequences.remove(sequence, wasEarliest, bodySize);
             if (wasEarliest) {
-                _lastSequence = _requestedSequences.since();
+                _lastSequence = _missingSequences.since();
                 logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
                 if (replicator())
                     replicator()->updatePullCheckpoint(_lastSequence);
@@ -195,11 +199,13 @@ namespace litecore { namespace repl {
 
     
     Worker::ActivityLevel Puller::computeActivityLevel() const {
+        logDebug("Puller activity: level=%d, _caughtUp=%d, _pendingRevMessages=%u, _pendingCallbacks=%u",
+                 Worker::computeActivityLevel(), _caughtUp, _pendingRevMessages, _pendingCallbacks);
         if (_fatalError) {
             return kC4Stopped;
         } else if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
-                || !_requestedSequences.empty()
+                || _pendingRevMessages > 0
                 || _pendingCallbacks > 0) {
             return kC4Busy;
         } else if (_options.pull == kC4Continuous || isOpenServer()) {

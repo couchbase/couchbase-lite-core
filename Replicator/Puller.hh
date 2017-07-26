@@ -50,9 +50,10 @@ namespace litecore { namespace repl {
         bool _skipDeleted {false};
         bool _caughtUp {false};
         bool _fatalError {false};
-        RemoteSequenceSet _requestedSequences;
+        RemoteSequenceSet _missingSequences;
         std::vector<Retained<IncomingRev>> _spareIncomingRevs;
         unsigned _pendingCallbacks {0};
+        unsigned _pendingRevMessages {0};
     };
 
 
