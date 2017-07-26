@@ -20,6 +20,10 @@
 #include <cmath>
 #include <string>
 #include <sstream>
+#ifdef _MSC_VER
+#undef min
+#undef max
+#endif
 
 using namespace fleece;
 using namespace std;
