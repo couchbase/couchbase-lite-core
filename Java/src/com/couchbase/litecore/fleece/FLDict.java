@@ -93,7 +93,7 @@ public class FLDict {
     //-------------------------------------------------------------------------
     // package level access
     //-------------------------------------------------------------------------
-    long getHandle() {
+    public long getHandle() {
         return handle;
     }
 

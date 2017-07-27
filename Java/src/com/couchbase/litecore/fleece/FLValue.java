@@ -47,6 +47,10 @@ public class FLValue {
         return new FLValue(fromTrustedData(data));
     }
 
+    public static FLValue fromTrustedData(FLSliceResult data) {
+        return new FLValue(fromTrustedData2(data.getHandle()));
+    }
+
     public FLValue(long handle) {
         this.handle = handle;
     }
@@ -243,6 +247,14 @@ public class FLValue {
      * @return long (FLValue - const struct _FLValue*)
      */
     static native long fromTrustedData(byte[] data);
+
+    /**
+     * Returns a pointer to the root value in the encoded data
+     *
+     * @param data pointer to FLSlice (same with slice)
+     * @return long (FLValue - const struct _FLValue*)
+     */
+    static native long fromTrustedData2(long data);
 
     /**
      * Returns the data type of an arbitrary Value.

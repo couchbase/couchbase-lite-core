@@ -263,7 +263,17 @@ Java_com_couchbase_litecore_fleece_FLValue_fromTrustedData(JNIEnv *env, jclass c
     jbyteArraySlice data(env, jdata, true);
     return (jlong) FLValue_FromTrustedData({((slice) data).buf, ((slice) data).size});
 }
-
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    fromTrustedData2
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_fromTrustedData2(JNIEnv *env, jclass clazz,
+                                                            jlong jbody) {
+    FLSlice *flSlice = (FLSlice *) jbody;
+    return (jlong) FLValue_FromTrustedData(*flSlice);
+}
 /*
  * Class:     com_couchbase_litecore_fleece_FLValue
  * Method:    getType

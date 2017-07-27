@@ -1,6 +1,8 @@
 package com.couchbase.litecore;
 
 
+import com.couchbase.litecore.fleece.FLDict;
+import com.couchbase.litecore.fleece.FLSharedKeys;
 import com.couchbase.litecore.fleece.FLSliceResult;
 
 public class C4Document implements C4Constants {
@@ -196,6 +198,46 @@ public class C4Document implements C4Constants {
     }
 
     //-------------------------------------------------------------------------
+    // Fleece-related
+    //-------------------------------------------------------------------------
+
+    public static boolean hasOldMetaProperties(FLDict doc) {
+        return hasOldMetaProperties(doc.getHandle());
+    }
+
+    public static byte[] encodeStrippingOldMetaProperties(FLDict doc) {
+        return encodeStrippingOldMetaProperties(doc.getHandle());
+    }
+
+    // returns blobKey if the given dictionary is a [reference to a] blob; otherwise null (0)
+    public static C4BlobKey dictIsBlob(FLDict dict, FLSharedKeys sk) {
+        long handle = dictIsBlob(dict.getHandle(), sk.getHandle());
+        return handle != 0 ? new C4BlobKey(handle) : null;
+    }
+
+    public static boolean dictContainsBlobs(FLDict dict, SharedKeys sk) {
+        return dictContainsBlobs(dict, sk.flSharedKeys);
+    }
+
+    public static boolean dictContainsBlobs(FLDict dict, FLSharedKeys sk) {
+        return dictContainsBlobs(dict.getHandle(), sk.getHandle());
+    }
+
+    public static boolean dictContainsBlobs(FLSliceResult dict, SharedKeys sk) {
+        return dictContainsBlobs(dict, sk.flSharedKeys);
+    }
+
+    public static boolean dictContainsBlobs(FLSliceResult dict, FLSharedKeys sk) {
+        return dictContainsBlobs2(dict.getHandle(), sk.getHandle());
+    }
+
+    public String bodyAsJSON(boolean canonical) throws LiteCoreException {
+        return bodyAsJSON(handle, canonical);
+    }
+
+    // doc -> pointer to C4Document
+
+    //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
     @Override
@@ -317,4 +359,25 @@ public class C4Document implements C4Constants {
     static native long update(long doc, byte[] body, int flags) throws LiteCoreException;
 
     static native long update2(long doc, long body, int flags) throws LiteCoreException;
+
+    ////////////////////////////////
+    // c4Document+Fleece.h
+    ////////////////////////////////
+
+    // -- Fleece-related
+    static native boolean isOldMetaProperty(String prop);
+
+    static native boolean hasOldMetaProperties(long doc); // doc -> pointer to FLDict
+
+    static native byte[] encodeStrippingOldMetaProperties(long doc); // doc -> pointer to FLDict
+
+    // returns blobKey if the given dictionary is a [reference to a] blob; otherwise null (0)
+    static native long dictIsBlob(long dict, long sk);
+
+    static native boolean dictContainsBlobs(long dict, long sk); // dict -> FLDict
+
+    static native boolean dictContainsBlobs2(long dict, long sk); // dict -> FLSliceResult
+
+    static native String bodyAsJSON(long doc, boolean canonical) throws LiteCoreException;
+    // doc -> pointer to C4Document
 }

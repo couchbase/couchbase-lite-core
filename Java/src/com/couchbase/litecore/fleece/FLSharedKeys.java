@@ -26,7 +26,7 @@ public class FLSharedKeys {
     //-------------------------------------------------------------------------
     // package level access
     //-------------------------------------------------------------------------
-    long getHandle() {
+    public long getHandle() {
         return handle;
     }
 }
