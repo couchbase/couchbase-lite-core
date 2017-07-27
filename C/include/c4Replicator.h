@@ -165,6 +165,7 @@ extern "C" {
     #define kC4ReplicatorAuthType       "type"           // Auth property; string
     #define kC4ReplicatorAuthUserName   "username"       // Auth property; string
     #define kC4ReplicatorAuthPassword   "password"       // Auth property; string
+    #define kC4ReplicatorAuthClientCert "clientCert"     // Auth property; value platform-dependent
 
     // auth.type values:
     #define kC4AuthTypeBasic            "Basic"          // HTTP Basic (the default)
