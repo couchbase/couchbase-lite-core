@@ -13,9 +13,10 @@
  */
 #include <c4Document.h>
 #include <c4.h>
+#include <c4Document+Fleece.h>
+#include <c4Base.h>
 #include "com_couchbase_litecore_C4Document.h"
 #include "native_glue.hh"
-#include "c4Document.h"
 
 using namespace litecore;
 using namespace litecore::jni;
@@ -558,8 +559,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_create2(JNIEnv *e
                                                                        jlong jdb, jstring jdocID,
                                                                        jlong jbody, jint flags) {
     C4Slice body;
-    if(jbody!=0)
-        body = *(C4Slice *)jbody;
+    if (jbody != 0)
+        body = *(C4Slice *) jbody;
     else
         body = kC4SliceNull;
     jstringSlice docID(env, jdocID);
@@ -596,8 +597,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_update2(JNIEnv *e
                                                                        jlong jdoc,
                                                                        jlong jbody, jint flags) {
     C4Slice body;
-    if(jbody!=0)
-        body = *(C4Slice *)jbody;
+    if (jbody != 0)
+        body = *(C4Slice *) jbody;
     else
         body = kC4SliceNull;
     C4Error error;
@@ -605,4 +606,97 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_update2(JNIEnv *e
     if (!doc)
         throwError(env, error);
     return (jlong) doc;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Document
+ * Method:    isOldMetaProperty
+ * Signature: (Ljava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4Document_isOldMetaProperty(JNIEnv *env, jclass clazz, jstring jprop) {
+    jstringSlice prop(env, jprop);
+    return c4doc_isOldMetaProperty(prop);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Document
+ * Method:    hasOldMetaProperties
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4Document_hasOldMetaProperties(JNIEnv *env, jclass clazz,
+                                                            jlong jdict) {
+    return c4doc_hasOldMetaProperties((FLDict) jdict);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Document
+ * Method:    encodeStrippingOldMetaProperties
+ * Signature: (J)[B
+ */
+JNIEXPORT jbyteArray JNICALL
+Java_com_couchbase_litecore_C4Document_encodeStrippingOldMetaProperties(JNIEnv *env, jclass clazz,
+                                                                        jlong jdict) {
+    C4SliceResult s = c4doc_encodeStrippingOldMetaProperties((FLDict) jdict);
+    jbyteArray res = toJByteArray(env, {s.buf, s.size});
+    alloc_slice::release({s.buf, s.size});
+    return res;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Document
+ * Method:    dictIsBlob
+ * Signature: (JJ)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4Document_dictIsBlob(JNIEnv *env, jclass clazz, jlong jdict,
+                                                  jlong jsk) {
+    C4BlobKey blobKey;
+    if (c4doc_dictIsBlob((FLDict) jdict, (FLSharedKeys) jsk, &blobKey)) {
+        C4BlobKey *pBlobKey = (C4BlobKey *) ::malloc(sizeof(C4BlobKey));
+        *pBlobKey = blobKey;
+        return (jlong) pBlobKey;
+    }
+    return 0;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Document
+ * Method:    dictContainsBlobs
+ * Signature: (JJ)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4Document_dictContainsBlobs(JNIEnv *env, jclass clazz,
+                                                         jlong jdict, jlong jsk) {
+    return c4doc_dictContainsBlobs((FLDict) jdict, (FLSharedKeys) jsk);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Document
+ * Method:    dictContainsBlobs2
+ * Signature: (JJ)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4Document_dictContainsBlobs2(JNIEnv *env, jclass clazz,
+                                                          jlong jbody, jlong jsk) {
+    FLValue root = FLValue_FromTrustedData(*(FLSlice *) jbody);
+    return c4doc_dictContainsBlobs((FLDict) root, (FLSharedKeys) jsk);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Document
+ * Method:    bodyAsJSON
+ * Signature: (JZ)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_com_couchbase_litecore_C4Document_bodyAsJSON(JNIEnv *env, jclass clazz, jlong jdoc,
+                                                  jboolean canonical) {
+    C4Error error = {};
+    C4StringResult result = c4doc_bodyAsJSON((C4Document *) jdoc, canonical, &error);
+    if (error.code != 0)
+        throwError(env, error);
+    jstring jstr = toJString(env, result);
+    c4slice_free(result);
+    return jstr;
 }
