@@ -283,7 +283,7 @@ namespace litecore {
         // TODO: Add 'WHERE' clause for use with SQLite 3.15+
     }
 
-
+    // Unused?
     void QueryParser::writeResultColumn(const Value *val) {
         switch (val->type()) {
             case kArray:
@@ -320,10 +320,14 @@ namespace litecore {
 
 
     void QueryParser::writeStringLiteralAsProperty(slice str) {
-        require(str.size > 0 && str[0] == '.',
-                "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
+        require(str.size > 0 && (str[0] == '.' || str[0] == '*'),
+                "Invalid property name '%.*s'; must start with '.' or be '*'", SPLAT(str));
         str.moveStart(1);
-        writePropertyGetter("fl_value", str.asString());
+        if(str[0] == '*') {
+            writePropertyGetter("fl_value", string());
+        } else {
+            writePropertyGetter("fl_value", str.asString());
+        }
     }
 
 
@@ -847,8 +851,11 @@ namespace litecore {
                 fail("rank() can only be called on FTS-indexed properties");
             _sql << "rank(matchinfo(\"" << fts << "\"))";
         } else {
-            _sql << fn << "(" << tableName << _bodyColumnName << ", ";
-            writeSQLString(_sql, slice(property));
+            _sql << fn << "(" << tableName << _bodyColumnName;
+            if(!property.empty()) {
+                _sql << ", ";
+                writeSQLString(_sql, slice(property));
+            }
             _sql << ")";
         }
     }

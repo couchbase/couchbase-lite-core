@@ -28,12 +28,18 @@ namespace litecore {
     // Core SQLite functions for accessing values inside Fleece blobs.
 
 
-    // fl_value(fleeceData, propertyPath) -> propertyValue
+    // fl_value(fleeceData, [optional]propertyPath) -> propertyValue
     static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             const Value *root = fleeceParam(ctx, argv[0]);
             if (!root)
                 return;
+            
+            if(argc == 1) {
+                setResultFromValue(ctx, root);
+                return;
+            }
+            
             setResultFromValue(ctx, evaluatePath(ctx, valueAsSlice(argv[1]), root));
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_value: exception!", -1);
@@ -167,6 +173,7 @@ namespace litecore {
 
 
     const SQLiteFunctionSpec kFleeceFunctionsSpec[] = {
+        { "fl_value",          1, fl_value  },
         { "fl_value",          2, fl_value  },
         { "fl_exists",         2, fl_exists },
         { "fl_type",           2, fl_type },
