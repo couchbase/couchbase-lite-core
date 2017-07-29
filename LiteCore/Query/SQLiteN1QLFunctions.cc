@@ -656,8 +656,8 @@ namespace litecore {
 
     static void fl_atan2(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         if (isNumeric(ctx, argv[0]) && isNumeric(ctx, argv[1]))
-            sqlite3_result_double(ctx, atan2(sqlite3_value_double(argv[0]),
-                                             sqlite3_value_double(argv[1])));
+            sqlite3_result_double(ctx, atan2(sqlite3_value_double(argv[1]),
+                                             sqlite3_value_double(argv[0])));
     }
 
     static void fl_power(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
