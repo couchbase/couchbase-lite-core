@@ -46,8 +46,15 @@ namespace litecore {
         const Value *root = fleeceParam(ctx, argv[0]);
         if (!root)
             return;
-        const Value *val = evaluatePath(ctx, valueAsSlice(argv[1]), root);
-        sqlite3_result_int(ctx, (val ? 1 : 0));
+        
+        const Value* propertyVal = evaluatePath(ctx, valueAsSlice(argv[1]), root);
+        if(propertyVal == nullptr || propertyVal->type() != valueType::kArray) {
+            sqlite3_result_int(ctx, 0);
+            return;
+        }
+        
+        auto val = propertyVal->asArray()->count() > 0 ? 1 : 0;
+        sqlite3_result_int(ctx, val);
     }
 
     
