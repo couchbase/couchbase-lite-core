@@ -88,15 +88,6 @@ add_library(LiteCoreJNI SHARED ${JNI_SRC})
 # set dependency
 add_dependencies(LiteCoreJNI JNIHeaders)
 
-#
-# crypto
-#
-add_library(crypto STATIC IMPORTED)
-set_target_properties(crypto PROPERTIES IMPORTED_LOCATION
-        ${OPENSSL_LIB_DIR}/${ANDROID_ABI}/libcrypto.a)
-
-
-
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     target_link_libraries(  LiteCoreJNI
                             LiteCoreStatic
@@ -104,7 +95,6 @@ if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
                             BLIPStatic
                             FleeceStatic
                             sqlite3
-                            crypto
                             SQLite3_UnicodeSN
                             CivetWeb)
     if (REST)
@@ -120,7 +110,6 @@ else()
                             BLIPStatic
                         	FleeceStatic
                         	sqlite3
-                            crypto
                         	SQLite3_UnicodeSN
                             CivetWeb
                             "atomic"
