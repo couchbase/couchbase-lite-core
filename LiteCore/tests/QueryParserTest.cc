@@ -187,6 +187,21 @@ TEST_CASE("QueryParser Join", "[Query]") {
 }
 
 
+TEST_CASE("QueryParser Collate", "[Query]") {
+    CHECK(parseWhere("['COLLATE', {'unicode':true, 'case':false}, \
+                                  ['=', ['.', 'name'], 'Puddin\\' Tane']]")
+          == "(fl_value(body, 'name') = 'Puddin'' Tane') COLLATE LCUnicode_3");
+    CHECK(parse("{WHAT: ['.book.title'], \
+                  FROM: [{as: 'book'}],\
+                 WHERE: ['=', ['.book.author'], ['$AUTHOR']], \
+              ORDER_BY: [ ['COLLATE', {'unicode':true, 'case':false}, ['.book.title']] ]}")
+          == "SELECT fl_value(\"book\".body, 'title') "
+               "FROM kv_default AS \"book\" "
+              "WHERE fl_value(\"book\".body, 'author') = $_AUTHOR "
+           "ORDER BY fl_value(\"book\".body, 'title') COLLATE LCUnicode_3");
+}
+
+
 TEST_CASE("QueryParser errors", "[Query][!throws]") {
     mustFail("['poop()', 1]");
     mustFail("['power()', 1]");

@@ -237,6 +237,11 @@
 		27A924C71D9B372500086206 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
 		27A924C81D9B372F00086206 /* c4PerfTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270515601D91C2AE00D62D05 /* c4PerfTest.cc */; };
 		27A924C91D9B374500086206 /* Catch_Tests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27FA09D31D70EDBF005888AA /* Catch_Tests.mm */; };
+		27ADA7891F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27ADA7871F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc */; };
+		27ADA78A1F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27ADA7871F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc */; };
+		27ADA78B1F2AB6C800D9DE25 /* UnicodeCollator.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27ADA7881F2AB6C800D9DE25 /* UnicodeCollator.hh */; };
+		27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */; };
+		27ADA79C1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
@@ -1071,6 +1076,9 @@
 		27A924A71D9B316D00086206 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LiteCore-iOS Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A924B21D9B316D00086206 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		27ADA7871F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_Apple.cc; sourceTree = "<group>"; };
+		27ADA7881F2AB6C800D9DE25 /* UnicodeCollator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = UnicodeCollator.hh; sourceTree = "<group>"; };
+		27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator.cc; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
 		27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteN1QLFunctions.cc; sourceTree = "<group>"; };
@@ -1979,6 +1987,9 @@
 				274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */,
 				276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */,
 				27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */,
+				27ADA7871F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc */,
+				27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */,
+				27ADA7881F2AB6C800D9DE25 /* UnicodeCollator.hh */,
 			);
 			path = Storage;
 			sourceTree = "<group>";
@@ -2316,6 +2327,7 @@
 				27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */,
 				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
 				27D74A921D4D3F3400D806E0 /* Database.h in Headers */,
+				27ADA78B1F2AB6C800D9DE25 /* UnicodeCollator.hh in Headers */,
 				276683B81DC7DD2E00E3F187 /* SequenceTracker.hh in Headers */,
 				273407251DEE116600EA5532 /* PlatformIO.hh in Headers */,
 				27D74A901D4D3F3400D806E0 /* Backup.h in Headers */,
@@ -3135,6 +3147,7 @@
 				93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */,
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
+				27ADA7891F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc in Sources */,
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				279794AE1D3405CD001D0F3A /* CASRevisionStore.cc in Sources */,
@@ -3151,6 +3164,7 @@
 				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
+				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
 				2708FE381CF3A0F10022F721 /* VersionVector.cc in Sources */,
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
@@ -3228,6 +3242,7 @@
 				27D74A7D1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				27FDF13A1DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */,
 				72DE480A1E9C550A00B60952 /* Replicator.cc in Sources */,
+				27ADA78A1F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc in Sources */,
 				276CD4291D77E92E001346A3 /* BlobStore.cc in Sources */,
 				27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */,
 				270C6B961EBA3A1900E73415 /* LogEncoder.cc in Sources */,
@@ -3244,6 +3259,7 @@
 				276D15431DFF54BD00543B1B /* SQLiteQuery.cc in Sources */,
 				72DE48091E9C550A00B60952 /* DBWorker.cc in Sources */,
 				276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
+				27ADA79C1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
 				72DE48111E9C550A00B60952 /* c4Replicator.cc in Sources */,
 				72DE480B1E9C550A00B60952 /* Puller.cc in Sources */,

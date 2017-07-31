@@ -55,6 +55,8 @@ namespace litecore {
         {"BETWEEN"_sl, 3, 3,  3,  &QueryParser::betweenOp},
         {"EXISTS"_sl,  1, 1,  8,  &QueryParser::existsOp},
 
+        {"COLLATE"_sl, 2, 2,  8,  &QueryParser::collateOp},
+
         {"NOT"_sl,     1, 1,  9,  &QueryParser::prefixOp},
         {"AND"_sl,     2, 9,  2,  &QueryParser::infixOp},
         {"OR"_sl,      2, 9,  2,  &QueryParser::infixOp},

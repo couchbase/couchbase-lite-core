@@ -507,7 +507,39 @@ namespace litecore {
         parseNode(operands[0]);
     }
 
+
+    static void setCollationFlag(CollationFlags &flags, CollationFlags flag, bool normal,
+                                 const Dict *options, slice key)
+    {
+        const Value *val = getCaseInsensitive(options, key);
+        if (!val)
+            return;
+        if (val->asBool() == normal)
+            flags |= flag;
+        else
+            flags &= ~flag;
+    }
+
     
+    // Handles COLLATE
+    void QueryParser::collateOp(slice op, Array::iterator& operands) {
+        // Apply the collation options:
+        auto outerCollation = _collation;
+        const Dict *options = operands[0]->asDict();
+        require(options, "COLLATE options must be a dictionary");
+        setCollationFlag(_collation, kUnicodeAware,         true,  options, "UNICODE"_sl);
+        setCollationFlag(_collation, kCaseInsensitive,      false, options, "CASE"_sl);
+        setCollationFlag(_collation, kDiacriticInsensitive, false, options, "DIAC"_sl);
+
+        // Parse the expression, then the COLLATE postfix operator:
+        parseNode(operands[1]);
+        _sql << " COLLATE " << NameOfSQLiteCollation(_collation);
+
+        // Pop the collation flags:
+        _collation = outerCollation;
+    }
+
+
     // Handles "x BETWEEN y AND z" expressions
     void QueryParser::betweenOp(slice op, Array::iterator& operands) {
         parseNode(operands[0]);

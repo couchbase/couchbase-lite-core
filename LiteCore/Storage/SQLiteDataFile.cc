@@ -17,6 +17,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLite_Internal.hh"
 #include "Record.hh"
+#include "UnicodeCollator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "SharedKeys.hh"
@@ -240,7 +241,8 @@ path.path().c_str());
         if (maxThreads > 0)
             sqlite3_limit(sqlite, SQLITE_LIMIT_WORKER_THREADS, maxThreads);
 
-        // Register custom functions and the tokenizer:
+        // Register collators, custom functions, and the FTS tokenizer:
+        RegisterSQLiteUnicodeCollations(sqlite);
         RegisterSQLiteFunctions(sqlite, fleeceAccessor(), documentKeys());
         int rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)

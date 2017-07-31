@@ -40,8 +40,8 @@ public:
     }
 
     void compile(const std::string &whereExpr,
-                     const std::string &sortExpr ="",
-                     bool addOffsetLimit =false)
+                 const std::string &sortExpr ="",
+                 bool addOffsetLimit =false)
     {
         stringstream json;
         json << "[\"SELECT\", {\"WHERE\": " << whereExpr;
@@ -350,4 +350,49 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!th
     query = c4query_new(db, c4str("[\"=\"]"), &error);
     REQUIRE(query == nullptr);
     CheckError(error, LiteCoreDomain, kC4ErrorInvalidQuery, "Wrong number of arguments to =");
+}
+
+
+class CollatedQueryTest : public QueryTest {
+public:
+    CollatedQueryTest(int which)
+    :QueryTest(which, "iTunesMusicLibrary.json")
+    { }
+};
+
+
+N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query collated", "[Query][C]") {
+    compileSelect(json5("{WHAT: [ ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false}, \
+                                              ['.Artist']] ], \
+                      DISTINCT: true, \
+                      ORDER_BY: [ ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false}, \
+                                              ['.Artist']] ]}"));
+
+    vector<string> artists;
+
+    C4Error error;
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    if (!e)
+        INFO("c4query_run got error " << error.domain << "/" << error.code);
+    REQUIRE(e);
+    while (c4queryenum_next(e, &error)) {
+        string artist = Array::iterator(e->columns)[0].asstring();
+        //C4Log("Artist: %s", artist.c_str());//TEMP
+        artists.push_back(artist);
+    }
+    CHECK(error.code == 0);
+    CHECK(artists.size() == 2097);
+
+    // Benoît Pioulard appears twice in the database, once miscapitalized as BenoÎt Pioulard.
+    // Check that these got coalesced by the DISTINCT operator:
+    CHECK(artists[214] == "Benny Goodman");
+    CHECK(artists[215] == "Benoît Pioulard");
+    CHECK(artists[216] == "Bernhard Weiss");
+
+    // Make sure "Zoë Keating" sorts correctly:
+    CHECK(artists[2082] == "ZENИTH (feat. saåad)");
+    CHECK(artists[2083] == "Zoë Keating");
+    CHECK(artists[2084] == "Zola Jesus");
+
+    c4queryenum_free(e);
 }

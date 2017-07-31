@@ -8,6 +8,7 @@
 
 #pragma once
 #include "Base.hh"
+#include "UnicodeCollator.hh"
 #include "Array.hh"
 #include <memory>
 #include <set>
@@ -86,6 +87,7 @@ namespace litecore {
         void infixOp(slice, fleece::Array::iterator&);
         void betweenOp(slice, fleece::Array::iterator&);
         void existsOp(slice, fleece::Array::iterator&);
+        void collateOp(slice, fleece::Array::iterator&);
         void inOp(slice, fleece::Array::iterator&);
         void matchOp(slice, fleece::Array::iterator&);
         void anyEveryOp(slice, fleece::Array::iterator&);
@@ -124,6 +126,7 @@ namespace litecore {
         unsigned _1stCustomResultCol {0};
         bool _aggregatesOK {false};
         bool _isAggregateQuery {false};
+        CollationFlags _collation {0};
     };
 
 }
