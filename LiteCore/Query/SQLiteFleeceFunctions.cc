@@ -18,7 +18,6 @@
 #include "Path.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "RawRevTree.hh"
 
 using namespace fleece;
 using namespace std;
