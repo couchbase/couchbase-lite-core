@@ -8,7 +8,6 @@
 
 #include "UnicodeCollator.hh"
 #include "PlatformCompat.hh"
-#include "SQLiteCpp.h"
 #include <sqlite3.h>
 
 namespace litecore {

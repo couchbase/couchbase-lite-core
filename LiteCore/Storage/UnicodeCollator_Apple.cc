@@ -8,7 +8,7 @@
 
 #include "UnicodeCollator.hh"
 #include "PlatformCompat.hh"
-#include "SQLiteCpp.h"
+#include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
 
 #if __APPLE__ // For Apple platforms; see UnicodeCollator_std.cc for cross-platform implementation
