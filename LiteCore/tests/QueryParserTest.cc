@@ -187,10 +187,10 @@ TEST_CASE("QueryParser Join", "[Query]") {
 }
 
 
-TEST_CASE("QueryParser Collate", "[Query]") {
-    CHECK(parseWhere("['COLLATE', {'unicode':true, 'case':false}, \
+TEST_CASE("QueryParser Collate", "[Query][Collation]") {
+    CHECK(parseWhere("['COLLATE', {unicode: true, locale:'se', case:false}, \
                                   ['=', ['.', 'name'], 'Puddin\\' Tane']]")
-          == "(fl_value(body, 'name') = 'Puddin'' Tane') COLLATE LCUnicode_3");
+          == "(fl_value(body, 'name') = 'Puddin'' Tane') COLLATE LCUnicode_C__se");
     CHECK(parse("{WHAT: ['.book.title'], \
                   FROM: [{as: 'book'}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']], \
@@ -198,7 +198,7 @@ TEST_CASE("QueryParser Collate", "[Query]") {
           == "SELECT fl_value(\"book\".body, 'title') "
                "FROM kv_default AS \"book\" "
               "WHERE fl_value(\"book\".body, 'author') = $_AUTHOR "
-           "ORDER BY fl_value(\"book\".body, 'title') COLLATE LCUnicode_3");
+           "ORDER BY fl_value(\"book\".body, 'title') COLLATE LCUnicode_C__");
 }
 
 

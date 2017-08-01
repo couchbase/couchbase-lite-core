@@ -14,28 +14,43 @@ struct sqlite3;
 
 namespace litecore {
 
-    typedef int CollationFlags;
-    enum {
-        kUnicodeAware           = 1,
-        kCaseInsensitive        = 2,    // Ignore uppercase/lowercase distinction
-        kDiacriticInsensitive   = 4,    // Ignore diacritical/accent marks
-        kLocalized              = 8     // Use current locale's special sorting rules
+    // https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema#collation
+    struct Collation {
+        bool unicodeAware {false};
+        bool caseSensitive {true};
+        bool diacriticSensitive {true};
+        fleece::slice localeName;
+
+        Collation() { }
+
+        Collation(bool cs, bool ds =true) {
+            caseSensitive = cs;
+            diacriticSensitive = ds;
+        }
+
+        Collation(bool cs, bool ds, fleece::slice loc)
+        :Collation(cs, ds)
+        {
+            unicodeAware = true;
+            localeName = loc;
+        }
+
+        /** Returns the name of the SQLite collator with these options. */
+        std::string sqliteName() const;
+
+        bool readSQLiteName(const char *name);
     };
 
-    // TODO: Add language/locale specifier to options
 
     /** Unicode-aware comparison of two UTF8-encoded strings. */
-    int CompareUTF8(fleece::slice str1, fleece::slice str2, CollationFlags =0);
+    int CompareUTF8(fleece::slice str1, fleece::slice str2, const Collation&);
 
     /** Registers a specific SQLite collation function with the given name & flags. */
-    int RegisterSQLiteUnicodeCollation(sqlite3*, const char *name, CollationFlags);
+    int RegisterSQLiteUnicodeCollation(sqlite3*, const Collation&);
 
     /** Registers all collation functions; actually it registers a callback that lets SQLite ask
         for a specific collation, and then calls RegisterSQLiteUnicodeCollation. */
     void RegisterSQLiteUnicodeCollations(sqlite3*);
-
-    /** Returns the standard name of the collation with the given flags. */
-    std::string NameOfSQLiteCollation(CollationFlags);
 
 
     /** Simple comparison of two UTF8-encoded strings. Uses Unicode ordering, but gives up

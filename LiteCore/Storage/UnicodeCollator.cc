@@ -8,33 +8,54 @@
 
 #include "UnicodeCollator.hh"
 #include "PlatformCompat.hh"
+#include "StringUtil.hh"
 #include <sqlite3.h>
 #include <algorithm>
 
 namespace litecore {
+
+    using namespace fleece;
+    
 
     void RegisterSQLiteUnicodeCollations(sqlite3* dbHandle) {
         sqlite3_collation_needed(dbHandle, nullptr,
                                  [](void *, sqlite3 *db, int textRep, const char *name)
         {
             // Callback from SQLite when it needs a collation:
-            int flags;
-            if (sscanf(name, "LCUnicode_%d", &flags) > 0) {
-                RegisterSQLiteUnicodeCollation(db, name, flags);
-            }
+            Collation coll;
+            if (coll.readSQLiteName(name))
+                RegisterSQLiteUnicodeCollation(db, coll);
         });
     }
 
-    std::string NameOfSQLiteCollation(CollationFlags flags) {
-        if (flags & (kUnicodeAware | kDiacriticInsensitive | kLocalized)) {
+    std::string Collation::sqliteName() const {
+        if (unicodeAware) {
             char name[20];
-            sprintf(name, "LCUnicode_%d", (int)flags | kUnicodeAware);
+            sprintf(name, "LCUnicode_%c%c_%.*s",
+                    caseSensitive ? '_' : 'C',
+                    diacriticSensitive ? '_' : 'D',
+                    SPLAT(localeName));
             return name;
-        } else if (flags & kCaseInsensitive) {
-            return "NOCASE";
-        } else {
+        } else if (caseSensitive) {
             return "BINARY";
+        } else {
+            return "NOCASE";
         }
+    }
+
+
+    bool Collation::readSQLiteName(const char *name) {
+        // This only has to support the Unicode-aware names, since BINARY and NOCASE are built in
+        char caseFlag, diacFlag;
+        char locale[20] = "";
+        auto scanned = sscanf(name, "LCUnicode_%c%c_%19s", &caseFlag, &diacFlag, locale);
+        if (scanned < 2)
+            return false;
+        unicodeAware = true;
+        caseSensitive = (caseFlag != 'C');
+        diacriticSensitive = (diacFlag != 'D');
+        localeName = (scanned >= 3) ? slice(locale) : nullslice;
+        return true;
     }
 
 

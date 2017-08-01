@@ -126,7 +126,7 @@ namespace litecore {
         unsigned _1stCustomResultCol {0};
         bool _aggregatesOK {false};
         bool _isAggregateQuery {false};
-        CollationFlags _collation {0};
+        Collation _collation;
     };
 
 }

@@ -514,34 +514,32 @@ namespace litecore {
     }
 
 
-    static void setCollationFlag(CollationFlags &flags, CollationFlags flag, bool normal,
-                                 const Dict *options, slice key)
-    {
+    static void setFlagFromOption(bool &flag, const Dict *options, slice key) {
         const Value *val = getCaseInsensitive(options, key);
-        if (!val)
-            return;
-        if (val->asBool() == normal)
-            flags |= flag;
-        else
-            flags &= ~flag;
+        if (val)
+            flag = val->asBool();
     }
 
     
     // Handles COLLATE
     void QueryParser::collateOp(slice op, Array::iterator& operands) {
-        // Apply the collation options:
         auto outerCollation = _collation;
-        const Dict *options = operands[0]->asDict();
-        require(options, "COLLATE options must be a dictionary");
-        setCollationFlag(_collation, kUnicodeAware,         true,  options, "UNICODE"_sl);
-        setCollationFlag(_collation, kCaseInsensitive,      false, options, "CASE"_sl);
-        setCollationFlag(_collation, kDiacriticInsensitive, false, options, "DIAC"_sl);
+
+        // Apply the collation options, overriding the inherited ones:
+        const Dict *options = requiredDict(operands[0], "COLLATE options");
+        setFlagFromOption(_collation.unicodeAware,       options, "UNICODE"_sl);
+        setFlagFromOption(_collation.caseSensitive,      options, "CASE"_sl);
+        setFlagFromOption(_collation.diacriticSensitive, options, "DIAC"_sl);
+
+        auto localeName = getCaseInsensitive(options, "LOCALE"_sl);
+        if (localeName)
+            _collation.localeName = localeName->asString();
 
         // Parse the expression, then the COLLATE postfix operator:
         parseNode(operands[1]);
-        _sql << " COLLATE " << NameOfSQLiteCollation(_collation);
+        _sql << " COLLATE " << _collation.sqliteName();
 
-        // Pop the collation flags:
+        // Pop the collation options:
         _collation = outerCollation;
     }
 
