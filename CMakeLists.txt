@@ -296,7 +296,8 @@ elseif(MSVC)
     target_link_libraries(LiteCoreREST PUBLIC Dbghelp.lib)
     set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
               "/def:${PROJECT_SOURCE_DIR}/REST/c4REST.def")
-
+elseif(ANDROID)
+    target_link_libraries(LiteCoreREST PRIVATE "atomic" "log")
 endif()
 
 ### LITECORESERV:
