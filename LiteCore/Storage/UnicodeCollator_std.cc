@@ -1,8 +1,8 @@
 //
-//  UnicodeCollator_Apple.cc
+//  UnicodeCollator_std.cc
 //  LiteCore
 //
-//  Created by Jens Alfke on 7/27/17.
+//  Created by Jens Alfke on 7/31/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
@@ -11,10 +11,12 @@
 #include "SQLiteCpp.h"
 #include <sqlite3.h>
 
-#if __APPLE__ // For Apple platforms; see UnicodeCollator_std.cc for cross-platform implementation
+#include <string>
+#include <codecvt>
+#include <locale>
+#include <iostream>
 
-#include <CoreFoundation/CFString.h>
-
+#if !__APPLE__ // See UnicodeCollator_Apple.cc for Mac/iOS/etc implementation
 
 namespace litecore {
 
@@ -26,34 +28,31 @@ namespace litecore {
                                             int len2, const void * chars2,
                                             CollationFlags flags)
     {
-        // OPT: Consider using UCCompareText(), from <CarbonCore/UnicodeUtilities.h>, instead?
-        // The CollatorRef can be created when the callback is registered, and passed in via the
-        // callback's 'context' parameter.
+        /* This function isn't working correctly yet:
+           - No matter what locale string I use, accented letters always sort after unaccented
+             letters.
+           - If I use the default/current locale -- locale("") -- the wstring_convert calls fail
+             apparently because the locale isn't Unicode-aware. But I don't know another way to
+             get the current system locale.
+           Jens 8/1/17 */
+        auto locale = std::locale("en_US.UTF-8"); // i.e. Unicode-aware but non-localized
 
-        auto cfstr1 = CFStringCreateWithBytesNoCopy(nullptr, (const UInt8*)chars1, len1,
-                                                    kCFStringEncodingUTF8, false, kCFAllocatorNull);
-        if (_usuallyFalse(!cfstr1))
-            return -1;
-        auto cfstr2 = CFStringCreateWithBytesNoCopy(nullptr, (const UInt8*)chars2, len2,
-                                                    kCFStringEncodingUTF8, false, kCFAllocatorNull);
-        if (_usuallyFalse(!cfstr2)) {
-            CFRelease(cfstr1);
-            return 1;
+        wstring str1 = wstring_convert<codecvt_utf8<wchar_t>, wchar_t>{}
+                            .from_bytes((const char*)chars1, (const char*)chars1 + len1);
+        wstring str2 = wstring_convert<codecvt_utf8<wchar_t>, wchar_t>{}
+                            .from_bytes((const char*)chars2, (const char*)chars2 + len2);
+
+        if (flags & kCaseInsensitive) {
+            for (auto &c : str1)
+                c = tolower(c, locale);
+            for (auto &c : str2)
+                c = tolower(c, locale);
         }
 
-        auto cfFlags = kCFCompareNonliteral | kCFCompareWidthInsensitive;
-        if (flags & kCaseInsensitive)
-            cfFlags |= kCFCompareCaseInsensitive;
-        if (flags & kDiacriticInsensitive)
-            cfFlags |= kCFCompareDiacriticInsensitive;
-        if (flags & kLocalized)
-            cfFlags |= kCFCompareLocalized;
-
-        int result = CFStringCompare(cfstr1, cfstr2, cfFlags);
-        CFRelease(cfstr1);
-        CFRelease(cfstr2);
-        return result;
-    }
+        auto& collator = std::use_facet<std::collate<wchar_t>>(locale);
+        return collator.compare(&str1.front(), &str1.back() + 1,
+                                &str2.front(), &str2.back() + 1);
+}
 
 
     static int collateUnicodeCallback(void *context,
@@ -83,4 +82,4 @@ namespace litecore {
     }
 }
 
-#endif // __APPLE__
+#endif // !__APPLE__
