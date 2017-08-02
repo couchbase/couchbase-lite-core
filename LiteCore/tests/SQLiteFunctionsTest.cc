@@ -233,24 +233,35 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite numeric ops", "[Query]") {
 #if __APPLE__ //FIXME: Non-Apple collator implementation isn't working yet
 TEST_CASE("Unicode collation", "[Query][Collation]") {
     struct {slice a; slice b; int result; bool caseSensitive; bool diacriticSensitive;} tests[] = {
+        //---- First, test just ASCII:
+
         // Edge cases: empty and 1-char strings
         {""_sl,  ""_sl,   0, true, true},
         {""_sl,  "a"_sl, -1, true, true},
         {"a"_sl, "a"_sl,  0, true, true},
 
+        // Case sensitive: lowercase comes first by Unicode rules
+        {"a"_sl,   "A"_sl,   -1, true, true},
+        {"abc"_sl, "abc"_sl,  0, true, true},
+        {"Aaa"_sl, "abc"_sl, -1, true, true},               // Because 'a'-vs-'b' beats 'A'-vs-'a'
+        {"abc"_sl, "abC"_sl, -1, true, true},
+        {"AB"_sl,  "abc"_sl, -1, true, true},
+
         // Case insensitive:
         {"ABCDEF"_sl, "ZYXWVU"_sl, -1,  false, true},
         {"ABCDEF"_sl, "Z"_sl,      -1,  false, true},
 
-        {"a"_sl,   "A"_sl,   0, false, true},
-        {"abc"_sl, "ABC"_sl, 0, false, true},
-        {"abc"_sl, "ABA"_sl, 1, false, true},
+        {"a"_sl,   "A"_sl,    0, false, true},
+        {"abc"_sl, "ABC"_sl,  0, false, true},
+        {"ABA"_sl, "abc"_sl, -1, false, true},
 
         {"commonprefix1"_sl, "commonprefix2"_sl, -1,    false, true},
         {"commonPrefix1"_sl, "commonprefix2"_sl, -1,    false, true},
 
         {"abcdef"_sl, "abcdefghijklm"_sl, -1,    false, true},
         {"abcdeF"_sl, "abcdefghijklm"_sl, -1,    false, true},
+
+        //---- Now bring in non-ASCII characters:
 
         {"a"_sl,  "á"_sl, -1,   false, true},
         {""_sl,   "á"_sl, -1,   false, true},
@@ -262,24 +273,27 @@ TEST_CASE("Unicode collation", "[Query][Collation]") {
         {"test á"_sl,  "test Á"_sl,   0,    false, true},
         {"test á1"_sl, "test Á2"_sl, -1,    false, true},
 
-        // Case sensitive:
+        // Case sensitive, diacritic sensitive:
         {"ABCDEF"_sl, "ZYXWVU"_sl, -1,      true, true },
         {"ABCDEF"_sl, "Z"_sl, -1,           true, true },
-        {"a"_sl, "A"_sl, 1,                 true, true },
-        {"abc"_sl, "ABC"_sl, 1,             true, true },
-        {"abc"_sl, "ABA"_sl, 1,             true, true },
-        {"•a"_sl, "•A"_sl, 1,               true, true },
-        {"test á"_sl, "test a"_sl, 1,       true, true },
-        {"test Á"_sl, "test a"_sl, -1,      true, true },
-        {"test á"_sl, "test Á"_sl, 1,       true, true },
+        {"a"_sl, "A"_sl, -1,                true, true },
+        {"abc"_sl, "ABC"_sl, -1,            true, true },
+        {"•a"_sl, "•A"_sl, -1,              true, true },
+        {"test a"_sl, "test á"_sl, -1,      true, true },
+        {"Ähnlichkeit"_sl, "apple"_sl, -1,  true, true }, // Because 'h'-vs-'p' beats 'Ä'-vs-'a'
+        {"ax"_sl, "Äz"_sl, -1,      true, true },
+        {"test a"_sl, "test Á"_sl, -1,      true, true },
+        {"test Á"_sl, "test e"_sl, -1,      true, true },
+        {"test á"_sl, "test Á"_sl, -1,      true, true },
         {"test á"_sl, "test b"_sl, -1,      true, true },
+        {"test u"_sl, "test Ü"_sl, -1,      true, true },
 
-        // Diacritic insensitive:
-        {"abc"_sl, "ABC"_sl, 1,        true, false},
+        // Case sensitive, diacritic insensitive:
+        {"abc"_sl,    "ABC"_sl, -1,    true, false},
         {"test á"_sl, "test a"_sl, 0,  true, false},
-        {"test Á"_sl, "test a"_sl, -1, true, false},
+        {"test á"_sl, "test A"_sl, -1, true, false},
         {"test á"_sl, "test b"_sl, -1, true, false},
-        {"test á"_sl, "test Á"_sl, 1,  true, false},
+        {"test á"_sl, "test Á"_sl, -1, true, false},
 
         // Case and diacritic insensitive:
         {"test á"_sl, "test Á"_sl, 0,  false, false},
@@ -293,11 +307,11 @@ TEST_CASE("Unicode collation", "[Query][Collation]") {
         coll.caseSensitive = test->caseSensitive;
         coll.diacriticSensitive = test->diacriticSensitive;
         INFO("Comparing '" << test->a.asString() << "', '" << test->b.asString()
-             << "' case=" << test->caseSensitive << ", diac=" << test->diacriticSensitive);
+             << "' (casesens=" << test->caseSensitive << ", diacsens=" << test->diacriticSensitive << ")");
         CHECK(CompareUTF8(test->a, test->b, coll) ==  test->result);
 
         INFO("Comparing '" << test->b.asString() << "' , '" << test->a.asString()
-             << "' case=" << test->caseSensitive << ", diac=" << test->diacriticSensitive);
+             << "' casesens=" << test->caseSensitive << ", diacsens=" << test->diacriticSensitive << ")");
         CHECK(CompareUTF8(test->b, test->a, coll) == -test->result);
     }
 }
@@ -322,29 +336,47 @@ TEST_CASE("Unicode locale collation", "[Query][Collation]") {
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite collation", "[Query][Collation]") {
     RegisterSQLiteUnicodeCollations(db.getHandle());
-    insert("a",   "{\"hey\": \"apple\"}");
+    insert("a",   "{\"hey\": \"Apple\"}");
     insert("b",   "{\"hey\": \"Aardvark\"}");
     insert("c",   "{\"hey\": \"Ångström\"}");
     insert("d",   "{\"hey\": \"Zebra\"}");
+    insert("d",   "{\"hey\": \"äpple\"}");
 
+    {
+    INFO("BINARY collation");
     CHECK(query(string("SELECT fl_value(body, 'hey') FROM kv ORDER BY fl_value(body, 'hey')")
-                + "COLLATE " + Collation().sqliteName())
-          == (vector<string>{"Aardvark", "Zebra", "apple", "Ångström"}));
-
+                + "COLLATE " + Collation(true).sqliteName())
+          == (vector<string>{"Aardvark", "Apple", "Zebra", "Ångström", "äpple"}));
+    }
+    {
+    INFO("NOCASE collation");
     CHECK(query(string("SELECT fl_value(body, 'hey') FROM kv ORDER BY fl_value(body, 'hey')")
                 + "COLLATE " + Collation(false).sqliteName())
-          == (vector<string>{"Aardvark", "apple", "Zebra", "Ångström"}));
-
+          == (vector<string>{"Aardvark", "Apple", "Zebra", "Ångström", "äpple"}));
+    }
+    {
+    INFO("Unicode case-sensitive, diacritic-sensitive collation");
     CHECK(query(string("SELECT fl_value(body, 'hey') FROM kv ORDER BY fl_value(body, 'hey')")
                 + "COLLATE " + Collation(true, true, nullslice).sqliteName())
-          == (vector<string>{"Aardvark", "Ångström", "apple", "Zebra"}));
-
+          == (vector<string>{"Aardvark", "Ångström", "Apple", "äpple", "Zebra"}));
+    }
+    {
+    INFO("Unicode case-INsensitive, diacritic-sensitive collation");
     CHECK(query(string("SELECT fl_value(body, 'hey') FROM kv ORDER BY fl_value(body, 'hey')")
                 + "COLLATE " + Collation(false, true, nullslice).sqliteName())
-          == (vector<string>{"Aardvark", "apple", "Ångström", "Zebra"}));
-
+          == (vector<string>{"Aardvark", "Ångström", "Apple", "äpple", "Zebra"}));
+    }
+    {
+    INFO("Unicode case-sensitive, diacritic-INsensitive collation");
+    CHECK(query(string("SELECT fl_value(body, 'hey') FROM kv ORDER BY fl_value(body, 'hey')")
+                + "COLLATE " + Collation(true, false, nullslice).sqliteName())
+          == (vector<string>{"Aardvark", "Ångström", "äpple", "Apple", "Zebra"}));
+    }
+    {
+    INFO("Unicode case-INsensitive, diacritic-INsensitive collation");
     CHECK(query(string("SELECT fl_value(body, 'hey') FROM kv ORDER BY fl_value(body, 'hey')")
                 + "COLLATE " + Collation(false, false, nullslice).sqliteName())
-          == (vector<string>{"Aardvark", "Ångström", "apple", "Zebra"}));
+          == (vector<string>{"Aardvark", "Ångström", "Apple", "äpple", "Zebra"}));
+    }
 }
 #endif //__APPLE__

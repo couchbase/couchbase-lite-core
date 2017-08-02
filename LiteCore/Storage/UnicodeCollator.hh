@@ -53,13 +53,12 @@ namespace litecore {
     void RegisterSQLiteUnicodeCollations(sqlite3*);
 
 
-    /** Simple comparison of two UTF8-encoded strings. Uses Unicode ordering, but gives up
-        and returns kCompareASCIIGaveUp if it finds any non-ASCII characters.
-        This is used as a subroutine by CompareUTF8(), which is what you should probably call
-        instead. */
-    int CompareASCII(int len1, const void * chars1,
-                     int len2, const void * chars2,
-                     bool caseInsensitive);
+    /** Simple comparison of two UTF8- or UTF16-encoded strings. Uses Unicode ordering, but gives
+        up and returns kCompareASCIIGaveUp if it finds any non-ASCII characters. */
+    template <class CHAR>       // uint8_t or uchar16_t
+    int CompareASCII(int len1, const CHAR *chars1,
+                     int len2, const CHAR *chars2,
+                     bool caseSensitive);
 
     /** The value CompareASCII returns if it finds non-ASCII characters in either string. */
     static constexpr int kCompareASCIIGaveUp = 2;

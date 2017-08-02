@@ -29,11 +29,13 @@ namespace litecore {
     struct CollationContext {
         CFLocaleRef localeRef;
         CFStringCompareFlags flags;
+        bool caseSensitive;
         bool canCompareASCII {true};
 
         CollationContext(const Collation &coll)
         :localeRef(nullptr)
         ,flags(kCFCompareNonliteral | kCFCompareWidthInsensitive)
+        ,caseSensitive(coll.caseSensitive)
         {
             Assert(coll.unicodeAware);
             if (!coll.caseSensitive)
@@ -42,19 +44,18 @@ namespace litecore {
             if (!coll.diacriticSensitive)
                 flags |= kCFCompareDiacriticInsensitive;
 
-            if (coll.localeName) {
-                flags |= kCFCompareLocalized;
-                auto localeStr = CFStringCreateWithBytesNoCopy(nullptr,
-                                           (const UInt8*)coll.localeName.buf, coll.localeName.size,
-                                           kCFStringEncodingASCII, false, kCFAllocatorNull);
-                if (localeStr) {
-                    localeRef = CFLocaleCreate(NULL, localeStr);
-                    CFRelease(localeStr);
-                }
-                if (!localeRef)
-                    Warn("Unknown locale name '%.*s'", SPLAT(coll.localeName));
-                //TODO: Some locales have unusual rules for ASCII; for these, clear canCompareASCII.
+            slice localeName = coll.localeName ?: "en_US"_sl;
+            flags |= kCFCompareLocalized;
+            auto localeStr = CFStringCreateWithBytesNoCopy(nullptr,
+                                       (const UInt8*)localeName.buf, localeName.size,
+                                       kCFStringEncodingASCII, false, kCFAllocatorNull);
+            if (localeStr) {
+                localeRef = CFLocaleCreate(NULL, localeStr);
+                CFRelease(localeStr);
             }
+            if (!localeRef)
+                Warn("Unknown locale name '%.*s'", SPLAT(coll.localeName));
+            //TODO: Some locales have unusual rules for ASCII; for these, clear canCompareASCII.
         }
 
         ~CollationContext() {
@@ -98,8 +99,8 @@ namespace litecore {
     {
         auto &coll = *(CollationContext*)context;
         if (coll.canCompareASCII) {
-            int result = CompareASCII(len1, chars1, len2, chars2,
-                                      (coll.flags & kCFCompareCaseInsensitive) != 0);
+            int result = CompareASCII(len1, (const uint8_t*)chars1, len2, (const uint8_t*)chars2,
+                                      coll.caseSensitive);
             if (result != kCompareASCIIGaveUp)
                 return result;
         }
