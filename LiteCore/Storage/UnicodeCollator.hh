@@ -10,6 +10,7 @@
 #include <slice.hh>
 #include <memory>
 #include <string>
+#include <vector>
 
 struct sqlite3;
 

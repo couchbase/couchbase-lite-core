@@ -121,7 +121,7 @@ namespace litecore {
                                           (void*)context.get(),
                                           collateUnicodeCallback);
         if (rc != SQLITE_OK)
-            context.reset();
+            throw SQLite::Exception(dbHandle, rc);
         return context;
     }
 }

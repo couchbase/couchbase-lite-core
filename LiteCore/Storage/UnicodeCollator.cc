@@ -7,6 +7,7 @@
 //
 
 #include "UnicodeCollator.hh"
+#include "Logging.hh"
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
 #include <sqlite3.h>
@@ -24,11 +25,17 @@ namespace litecore {
                                  [](void *pContexts, sqlite3 *db, int textRep, const char *name)
         {
             // Callback from SQLite when it needs a collation:
-            Collation coll;
-            if (coll.readSQLiteName(name)) {
-                auto ctx = RegisterSQLiteUnicodeCollation(db, coll);
-                if (ctx)
-                    (*(CollationContextVector*)pContexts).push_back(move(ctx));
+            try {
+                Collation coll;
+                if (coll.readSQLiteName(name)) {
+                    auto ctx = RegisterSQLiteUnicodeCollation(db, coll);
+                    if (ctx)
+                        (*(CollationContextVector*)pContexts).push_back(move(ctx));
+                }
+            } catch (std::runtime_error &x) {
+                Warn("Exception registering a collator: %s", x.what());
+            } catch (...) {
+                Warn("Unexpected unknown exception registering a collator");
             }
         });
     }
