@@ -26,16 +26,14 @@ namespace litecore {
 
 
     // Stores CF collation parameters for fast lookup; callback context points to this
-    struct CollationContext {
-        CFLocaleRef localeRef;
+    class CFCollationContext : public CollationContext {
+    public:
+        CFLocaleRef localeRef {nullptr};
         CFStringCompareFlags flags;
-        bool caseSensitive;
-        bool canCompareASCII {true};
 
-        CollationContext(const Collation &coll)
-        :localeRef(nullptr)
+        CFCollationContext(const Collation &coll)
+        :CollationContext(coll)
         ,flags(kCFCompareNonliteral | kCFCompareWidthInsensitive)
-        ,caseSensitive(coll.caseSensitive)
         {
             Assert(coll.unicodeAware);
             if (!coll.caseSensitive)
@@ -55,10 +53,9 @@ namespace litecore {
             }
             if (!localeRef)
                 Warn("Unknown locale name '%.*s'", SPLAT(coll.localeName));
-            //TODO: Some locales have unusual rules for ASCII; for these, clear canCompareASCII.
         }
 
-        ~CollationContext() {
+        ~CFCollationContext() {
             if (localeRef)
                 CFRelease(localeRef);
         }
@@ -68,7 +65,7 @@ namespace litecore {
     /** Full Unicode-savvy string comparison. */
     static inline int compareStringsUnicode(int len1, const void * chars1,
                                             int len2, const void * chars2,
-                                            const CollationContext &ctx)
+                                            const CFCollationContext &ctx)
     {
         // OPT: Consider using UCCompareText(), from <CarbonCore/UnicodeUtilities.h>, instead?
 
@@ -97,7 +94,7 @@ namespace litecore {
                                       int len1, const void * chars1,
                                       int len2, const void * chars2)
     {
-        auto &coll = *(CollationContext*)context;
+        auto &coll = *(CFCollationContext*)context;
         if (coll.canCompareASCII) {
             int result = CompareASCII(len1, (const uint8_t*)chars1, len2, (const uint8_t*)chars2,
                                       coll.caseSensitive);
@@ -109,19 +106,23 @@ namespace litecore {
 
 
     int CompareUTF8(slice str1, slice str2, const Collation &coll) {
-        CollationContext ctx(coll);
+        CFCollationContext ctx(coll);
         return collateUnicodeCallback(&ctx, (int)str1.size, str1.buf,
                                             (int)str2.size, str2.buf);
     }
 
 
-    int RegisterSQLiteUnicodeCollation(sqlite3* dbHandle, const Collation &coll) {
-        auto permaColl = new CollationContext(coll);   //TEMP FIXME leak!!
-        return sqlite3_create_collation(dbHandle,
-                                        coll.sqliteName().c_str(),
-                                        SQLITE_UTF8,
-                                        permaColl,
-                                        collateUnicodeCallback);
+    unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3* dbHandle,
+                                                                const Collation &coll) {
+        unique_ptr<CollationContext> context(new CFCollationContext(coll));
+        int rc = sqlite3_create_collation(dbHandle,
+                                          coll.sqliteName().c_str(),
+                                          SQLITE_UTF8,
+                                          (void*)context.get(),
+                                          collateUnicodeCallback);
+        if (rc != SQLITE_OK)
+            context.reset();
+        return context;
     }
 }
 

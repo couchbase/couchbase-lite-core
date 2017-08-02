@@ -20,6 +20,17 @@
 
 #if !__APPLE__ && !_MSC_VER // See UnicodeCollator_Apple.cc for Mac/iOS/etc implementation
 
+/* Note: To build and test this collator in Xcode on a Mac (useful during development) you'll
+ need to:
+     1. Install ICU ("brew install icu4c")
+     2. In LiteCore.xcconfig add /usr/local/opt/icu4c/include at the _start_ of HEADER_SEARCH_PATHS.
+     3. In both LiteCore.xcconfig and CppTests.xcconfig, add a line
+            OTHER_LDFLAGS = -L/usr/local/opt/icu4c/lib -licui18n  -licuuc
+     4. Change "__APPLE__" to "x__APPLE__" in this source file and in UnicodeCollator_Apple.cc,
+        so this implementation gets used instead of the CFString one.
+ Of course these changes are temporary and shouldn't be committed!
+*/
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
 #include <unicode/uloc.h>
@@ -37,14 +48,12 @@ namespace litecore {
     using namespace litecore;
 
 
-    struct ICUCollationContext {
+    class ICUCollationContext : public CollationContext {
+    public:
         UCollator* ucoll {nullptr};
-        bool canCompareASCII;
-        bool caseSensitive;
 
         ICUCollationContext(const Collation &collation)
-        :caseSensitive(collation.caseSensitive)
-        ,canCompareASCII(true)
+        :CollationContext(collation)
         {
             UErrorCode status = U_ZERO_ERROR;
             ucoll = ucol_open(collation.localeName.asString().c_str(), &status);
@@ -111,13 +120,17 @@ namespace litecore {
     }
 
 
-    int RegisterSQLiteUnicodeCollation(sqlite3* dbHandle, const Collation &coll) {
-        auto permaColl = new ICUCollationContext(coll);   //TEMP FIXME leak!!
-        return sqlite3_create_collation(dbHandle,
+    unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3* dbHandle,
+                                                                const Collation &coll) {
+        unique_ptr<CollationContext> context(new ICUCollationContext(coll));
+        int rc = sqlite3_create_collation(dbHandle,
                                         coll.sqliteName().c_str(),
                                         SQLITE_UTF8,
-                                        permaColl,
+                                        (void*)context.get(),
                                         collateUnicodeCallback);
+        if (rc != SQLITE_OK)
+            context.reset();
+        return context;
     }
 
 }

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "DataFile.hh"
+#include "UnicodeCollator.hh"
 
 namespace SQLite {
     class Database;
@@ -82,6 +83,7 @@ namespace litecore {
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
+        CollationContextVector _collationContexts;
     };
 
 }

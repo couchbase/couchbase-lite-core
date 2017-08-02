@@ -242,7 +242,7 @@ path.path().c_str());
             sqlite3_limit(sqlite, SQLITE_LIMIT_WORKER_THREADS, maxThreads);
 
         // Register collators, custom functions, and the FTS tokenizer:
-        RegisterSQLiteUnicodeCollations(sqlite);
+        RegisterSQLiteUnicodeCollations(sqlite, _collationContexts);
         RegisterSQLiteFunctions(sqlite, fleeceAccessor(), documentKeys());
         int rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)
@@ -263,6 +263,7 @@ path.path().c_str());
             maybeVacuum();
             _sqlDb.reset();
         }
+        _collationContexts.clear();
     }
 
 

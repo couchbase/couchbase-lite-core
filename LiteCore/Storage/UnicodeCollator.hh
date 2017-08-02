@@ -8,6 +8,7 @@
 
 #pragma once
 #include <slice.hh>
+#include <memory>
 #include <string>
 
 struct sqlite3;
@@ -42,15 +43,35 @@ namespace litecore {
     };
 
 
+    /** Base class of context info managed by collation implementations. */
+    class CollationContext {
+    public:
+        CollationContext(const Collation &collation)
+        :caseSensitive(collation.caseSensitive)
+        ,canCompareASCII(true)
+        {
+            //TODO: Some locales have unusual rules for ASCII; for these, clear canCompareASCII.
+        }
+
+        virtual ~CollationContext() =default;
+
+        bool canCompareASCII;
+        bool caseSensitive;
+    };
+
+    using CollationContextVector = std::vector<std::unique_ptr<CollationContext>>;
+
     /** Unicode-aware comparison of two UTF8-encoded strings. */
     int CompareUTF8(fleece::slice str1, fleece::slice str2, const Collation&);
 
-    /** Registers a specific SQLite collation function with the given name & flags. */
-    int RegisterSQLiteUnicodeCollation(sqlite3*, const Collation&);
+    /** Registers a specific SQLite collation function with the given options.
+        The returned object needs to be kept alive until the database is closed, then deleted. */
+    std::unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3*, const Collation&);
 
     /** Registers all collation functions; actually it registers a callback that lets SQLite ask
-        for a specific collation, and then calls RegisterSQLiteUnicodeCollation. */
-    void RegisterSQLiteUnicodeCollations(sqlite3*);
+        for a specific collation, and then calls RegisterSQLiteUnicodeCollation.
+        The contexts created by the collations will be added to the vector. */
+    void RegisterSQLiteUnicodeCollations(sqlite3*, CollationContextVector&);
 
 
     /** Simple comparison of two UTF8- or UTF16-encoded strings. Uses Unicode ordering, but gives

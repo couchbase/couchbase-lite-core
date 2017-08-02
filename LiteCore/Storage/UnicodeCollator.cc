@@ -14,17 +14,22 @@
 
 namespace litecore {
 
+    using namespace std;
     using namespace fleece;
     
 
-    void RegisterSQLiteUnicodeCollations(sqlite3* dbHandle) {
-        sqlite3_collation_needed(dbHandle, nullptr,
-                                 [](void *, sqlite3 *db, int textRep, const char *name)
+    void RegisterSQLiteUnicodeCollations(sqlite3* dbHandle,
+                                         CollationContextVector &contexts) {
+        sqlite3_collation_needed(dbHandle, &contexts,
+                                 [](void *pContexts, sqlite3 *db, int textRep, const char *name)
         {
             // Callback from SQLite when it needs a collation:
             Collation coll;
-            if (coll.readSQLiteName(name))
-                RegisterSQLiteUnicodeCollation(db, coll);
+            if (coll.readSQLiteName(name)) {
+                auto ctx = RegisterSQLiteUnicodeCollation(db, coll);
+                if (ctx)
+                    (*(CollationContextVector*)pContexts).push_back(move(ctx));
+            }
         });
     }
 

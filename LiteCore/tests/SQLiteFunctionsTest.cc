@@ -335,7 +335,8 @@ TEST_CASE("Unicode locale collation", "[Query][Collation]") {
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite collation", "[Query][Collation]") {
-    RegisterSQLiteUnicodeCollations(db.getHandle());
+    CollationContextVector contexts;
+    RegisterSQLiteUnicodeCollations(db.getHandle(), contexts);
     insert("a",   "{\"hey\": \"Apple\"}");
     insert("b",   "{\"hey\": \"Aardvark\"}");
     insert("c",   "{\"hey\": \"Ångström\"}");
