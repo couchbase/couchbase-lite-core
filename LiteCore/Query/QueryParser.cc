@@ -321,13 +321,13 @@ namespace litecore {
 
     void QueryParser::writeStringLiteralAsProperty(slice str) {
         static const slice star = "*"_sl;
-        require(str.size > 0 && (str[0] == '.' || str == star),
-                "Invalid property name '%.*s'; must start with '.' or be '*'", SPLAT(str));
+        require(str.size > 0 && (str[0] == '.'),
+                "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
         
+        str.moveStart(1);
         if(str == star) {
             writePropertyGetter("fl_root", string());
         } else {
-            str.moveStart(1);
             writePropertyGetter("fl_value", str.asString());
         }
     }
