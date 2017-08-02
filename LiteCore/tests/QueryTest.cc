@@ -100,6 +100,25 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT WHAT", "[Query]") {
     REQUIRE(num == 101);
 }
 
+TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
+    addNumberedDocs(store);
+    Retained<Query> query{ store->compileQuery(json5("{WHAT: ['.*', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
+    int num = 11;
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    while (e->next()) {
+        string expectedDocID = stringWithFormat("rec-%03d", num);
+        REQUIRE(e->recordID() == alloc_slice(expectedDocID));
+        REQUIRE(e->sequence() == (sequence_t)num);
+        auto cols = e->columns();
+        REQUIRE(cols.count() == 2);
+        auto star = cols[0]->asDict();
+        REQUIRE(star->get("num"_sl)->asInt() == num);
+        REQUIRE(cols[1]->asInt() == num * num);
+        ++num;
+    }
+    REQUIRE(num == 101);
+}
+
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
     // Add some text to the database:

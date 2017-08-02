@@ -34,12 +34,22 @@ namespace litecore {
             const Value *root = fleeceParam(ctx, argv[0]);
             if (!root)
                 return;
+            
             setResultFromValue(ctx, evaluatePath(ctx, valueAsSlice(argv[1]), root));
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_value: exception!", -1);
         }
     }
 
+    static void fl_root(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        slice fleece = valueAsSlice(argv[0]);
+        // Pull the Fleece data out of a raw document body, if necessary:
+        auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
+        if (funcCtx->accessor)
+            fleece = funcCtx->accessor(fleece);
+        
+        setResultBlobFromSlice(ctx, fleece);
+    }
 
     // fl_exists(fleeceData, propertyPath) -> 0/1
     static void fl_exists(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
@@ -167,6 +177,7 @@ namespace litecore {
 
 
     const SQLiteFunctionSpec kFleeceFunctionsSpec[] = {
+        { "fl_root",           1, fl_root  },
         { "fl_value",          2, fl_value  },
         { "fl_exists",         2, fl_exists },
         { "fl_type",           2, fl_type },
