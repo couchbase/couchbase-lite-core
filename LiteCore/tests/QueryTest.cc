@@ -102,8 +102,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT WHAT", "[Query]") {
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
     addNumberedDocs(store);
-    Retained<Query> query{ store->compileQuery(json5("{WHAT: [['.*'], ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
-    Retained<Query> query2{ store->compileQuery(json5("{WHAT: ['.*', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
+    Retained<Query> query{ store->compileQuery(json5("{WHAT: [['.main.*'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
+    Retained<Query> query2{ store->compileQuery(json5("{WHAT: ['.main.*', ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
     
     int num = 11;
     unique_ptr<QueryEnumerator> e(query->createEnumerator());

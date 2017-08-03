@@ -318,15 +318,18 @@ namespace litecore {
         }
     }
 
-    static const slice star = "*"_sl;
+    static const slice star = ".*"_sl;
     void QueryParser::writeStringLiteralAsProperty(slice str) {
         require(str.size > 0 && (str[0] == '.'),
                 "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
         
-        str.moveStart(1);
+        auto offset = str.size - 2;
+        str.moveStart(offset); //.[name.]* -> .*
         if(str == star) {
-            writePropertyGetter("fl_root", string());
+            str.moveStart(-offset + 1); //.* -> [name.]*
+            writePropertyGetter("fl_root", str.asString());
         } else {
+            str.moveStart(-offset + 1);
             writePropertyGetter("fl_value", str.asString());
         }
     }
@@ -726,11 +729,14 @@ namespace litecore {
         _context.back() = &operation;
 
         if (op.size > 0 && op[0] == '.') {
-            op.moveStart(1);  // skip '.'
+            auto offset = op.size - 2;
+            op.moveStart(offset); //.[name.]* -> .*
             if(op == star) {
-                writePropertyGetter("fl_root", string());
+                op.moveStart(-offset + 1); // .* -> [name.]*
+                writePropertyGetter("fl_root", op.asString());
             } else {
-                writePropertyGetter("fl_value", string(op));
+                op.moveStart(-offset + 1);
+                writePropertyGetter("fl_value", op.asString());
             }
         } else if (op.size > 0 && op[0] == '$') {
             parameterOp(op, operands);
@@ -885,12 +891,11 @@ namespace litecore {
             if (find(_ftsTables.begin(), _ftsTables.end(), fts) == _ftsTables.end())
                 fail("rank() can only be called on FTS-indexed properties");
             _sql << "rank(matchinfo(\"" << fts << "\"))";
+        } else if (fn == "fl_root") {
+            _sql << fn << "(" << tableName << _bodyColumnName << ")";
         } else {
-            _sql << fn << "(" << tableName << _bodyColumnName;
-            if(!property.empty()) {
-                _sql << ", ";
-                writeSQLString(_sql, slice(property));
-            }
+            _sql << fn << "(" << tableName << _bodyColumnName << ", ";
+            writeSQLString(_sql, slice(property));
             _sql << ")";
         }
     }
