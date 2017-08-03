@@ -9,7 +9,7 @@
 #include "UnicodeCollator.hh"
 #include "Error.hh"
 
-#if !__APPLE__ && !LITECORE_USES_ICU  // Stub implementation for when collation is unavailable
+#if !__APPLE__ && !defined(_MSC_VER) && !LITECORE_USES_ICU  // Stub implementation for when collation is unavailable
 
 namespace litecore {
 
