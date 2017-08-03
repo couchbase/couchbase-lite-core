@@ -16,3 +16,6 @@
 [submodule "vendor/mbedtls"]
 	path = vendor/mbedtls
 	url = https://github.com/ARMmbed/mbedtls
+[submodule "wiki"]
+	path = wiki
+	url = https://github.com/couchbase/couchbase-lite-core.wiki.git

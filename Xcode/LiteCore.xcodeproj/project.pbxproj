@@ -1010,6 +1010,7 @@
 		2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStoreTest.cc; sourceTree = "<group>"; };
 		276301121F2FE960004A1592 /* UnicodeCollator_ICU.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_ICU.cc; sourceTree = "<group>"; };
 		2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_Stub.cc; sourceTree = "<group>"; };
+		2763011E1F338B77004A1592 /* wiki */ = {isa = PBXFileReference; lastKnownFileType = folder; name = wiki; path = ../wiki; sourceTree = "<group>"; };
 		276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTracker.cc; sourceTree = "<group>"; };
 		276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceTracker.hh; sourceTree = "<group>"; };
 		2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SequenceSet.hh; sourceTree = "<group>"; };
@@ -1647,6 +1648,7 @@
 				27A924951D9B316D00086206 /* LiteCore iOS */,
 				93FA3F491EE21A4D00D15CF5 /* LiteCoreServ iOS */,
 				27D74A721D4D3EC000D806E0 /* vendor */,
+				2763011E1F338B77004A1592 /* wiki */,
 				273E9FA41C519A1B003115A6 /* xcconfigs */,
 				2750723D18E3E52800A80C5A /* Frameworks */,
 				2750723C18E3E52800A80C5A /* Products */,
