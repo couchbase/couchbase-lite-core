@@ -318,9 +318,8 @@ namespace litecore {
         }
     }
 
-
+    static const slice star = "*"_sl;
     void QueryParser::writeStringLiteralAsProperty(slice str) {
-        static const slice star = "*"_sl;
         require(str.size > 0 && (str[0] == '.'),
                 "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
         
@@ -728,7 +727,11 @@ namespace litecore {
 
         if (op.size > 0 && op[0] == '.') {
             op.moveStart(1);  // skip '.'
-            writePropertyGetter("fl_value", string(op));
+            if(op == star) {
+                writePropertyGetter("fl_root", string());
+            } else {
+                writePropertyGetter("fl_value", string(op));
+            }
         } else if (op.size > 0 && op[0] == '$') {
             parameterOp(op, operands);
         } else if (op.size > 0 && op[0] == '?') {

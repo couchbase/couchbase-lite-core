@@ -102,18 +102,28 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT WHAT", "[Query]") {
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
     addNumberedDocs(store);
-    Retained<Query> query{ store->compileQuery(json5("{WHAT: ['.*', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
+    Retained<Query> query{ store->compileQuery(json5("{WHAT: [['.*'], ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
+    Retained<Query> query2{ store->compileQuery(json5("{WHAT: ['.*', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
+    
     int num = 11;
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
-    while (e->next()) {
+    unique_ptr<QueryEnumerator> e2(query->createEnumerator());
+    while (e->next() && e2->next()) {
         string expectedDocID = stringWithFormat("rec-%03d", num);
         REQUIRE(e->recordID() == alloc_slice(expectedDocID));
+        REQUIRE(e2->recordID() == alloc_slice(expectedDocID));
         REQUIRE(e->sequence() == (sequence_t)num);
+        REQUIRE(e2->sequence() == (sequence_t)num);
         auto cols = e->columns();
+        auto cols2 = e2->columns();
         REQUIRE(cols.count() == 2);
+        REQUIRE(cols2.count() == 2);
         auto star = cols[0]->asDict();
+        auto star2 = cols2[0]->asDict();
         REQUIRE(star->get("num"_sl)->asInt() == num);
+        REQUIRE(star2->get("num"_sl)->asInt() == num);
         REQUIRE(cols[1]->asInt() == num * num);
+        REQUIRE(cols2[1]->asInt() == num * num);
         ++num;
     }
     REQUIRE(num == 101);
