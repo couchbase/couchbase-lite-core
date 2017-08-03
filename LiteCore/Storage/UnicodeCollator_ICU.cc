@@ -18,7 +18,7 @@
 #include <locale>
 #include <iostream>
 
-#if !__APPLE__ && !_MSC_VER // See UnicodeCollator_Apple.cc for Mac/iOS/etc implementation
+#if LITECORE_USES_ICU // See UnicodeCollator_*.cc for other implementations
 
 /* Note: To build and test this collator in Xcode on a Mac (useful during development) you'll
  need to:
@@ -26,8 +26,9 @@
      2. In LiteCore.xcconfig add /usr/local/opt/icu4c/include at the _start_ of HEADER_SEARCH_PATHS.
      3. In both LiteCore.xcconfig and CppTests.xcconfig, add a line
             OTHER_LDFLAGS = -L/usr/local/opt/icu4c/lib -licui18n  -licuuc
-     4. Change "__APPLE__" to "x__APPLE__" in this source file and in UnicodeCollator_Apple.cc,
+     4. Change "__APPLE__" to "x__APPLE__" in in UnicodeCollator_Apple.cc,
         so this implementation gets used instead of the CFString one.
+     5. Define LITECORE_USES_ICU in the prefix header or a xcconfig
  Of course these changes are temporary and shouldn't be committed!
 */
 
@@ -45,7 +46,6 @@ namespace litecore {
 
     using namespace std;
     using namespace fleece;
-    using namespace litecore;
 
 
     class ICUCollationContext : public CollationContext {

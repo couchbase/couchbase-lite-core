@@ -14,7 +14,7 @@
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
 
-#if __APPLE__ // For Apple platforms; see UnicodeCollator_std.cc for cross-platform implementation
+#if __APPLE__ // For Apple platforms; see UnicodeCollator_*.cc for other implementations
 
 #include <CoreFoundation/CFString.h>
 

@@ -230,7 +230,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite numeric ops", "[Query]") {
             == (vector<string>{"4.0", "2.5"}));
 }
 
-#if __APPLE__ //FIXME: Non-Apple collator implementation isn't working yet
+#if __APPLE__ || LITECORE_USES_ICU //FIXME: collator isn't available on all platforms yet
 TEST_CASE("Unicode collation", "[Query][Collation]") {
     struct {slice a; slice b; int result; bool caseSensitive; bool diacriticSensitive;} tests[] = {
         //---- First, test just ASCII:
@@ -380,4 +380,4 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite collation", "[Query][Collati
           == (vector<string>{"Aardvark", "Ångström", "Apple", "äpple", "Zebra"}));
     }
 }
-#endif //__APPLE__
+#endif //__APPLE__ || LITECORE_USES_ICU
