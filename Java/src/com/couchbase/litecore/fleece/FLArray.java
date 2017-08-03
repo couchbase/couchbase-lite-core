@@ -29,14 +29,17 @@ public class FLArray {
     public List<Object> asArray() {
         List<Object> results = new ArrayList<>();
         FLArrayIterator itr = new FLArrayIterator();
-        itr.begin(this);
-        FLValue value;
-        while ((value = itr.getValue()) != null) {
-            results.add(value.asObject());
-            if (!itr.next())
-                break;
+        try {
+            itr.begin(this);
+            FLValue value;
+            while ((value = itr.getValue()) != null) {
+                results.add(value.asObject());
+                if (!itr.next())
+                    break;
+            }
+        } finally {
+            itr.free();
         }
-        itr.free();
         return results;
     }
 

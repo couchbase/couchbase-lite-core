@@ -166,34 +166,40 @@ public class FLValue {
             case kFLArray: {
                 List<Object> results = new ArrayList<>();
                 FLArrayIterator itr = new FLArrayIterator();
-                itr.begin(asFLArray());
-                FLValue value;
-                while ((value = itr.getValue()) != null) {
-                    results.add(value.toObject(sharedStrings, sharedKeys));
-                    if (!itr.next())
-                        break;
+                try {
+                    itr.begin(asFLArray());
+                    FLValue value;
+                    while ((value = itr.getValue()) != null) {
+                        results.add(value.toObject(sharedStrings, sharedKeys));
+                        if (!itr.next())
+                            break;
+                    }
+                } finally {
+                    itr.free();
                 }
-                itr.free();
                 return results;
             }
             case kFLDict: {
                 Map<String, Object> results = new HashMap<>();
                 FLDict dict = asFLDict();
                 FLDictIterator itr = new FLDictIterator();
-                itr.begin(dict);
-                do {
-                    FLValue rawKey = itr.getKey();
-                    String key;
-                    if (rawKey.isInteger()) {
-                        key = sharedKeys.getKey((int) rawKey.asInt());
-                    } else {
-                        key = rawKey.asString();
-                    }
-                    Object value = itr.getValue().toObject(sharedStrings, sharedKeys);
-                    results.put(key, value);
+                try {
+                    itr.begin(dict);
+                    do {
+                        FLValue rawKey = itr.getKey();
+                        String key;
+                        if (rawKey.isInteger()) {
+                            key = sharedKeys.getKey((int) rawKey.asInt());
+                        } else {
+                            key = rawKey.asString();
+                        }
+                        Object value = itr.getValue().toObject(sharedStrings, sharedKeys);
+                        results.put(key, value);
 
-                } while (itr.next());
-                itr.free();
+                    } while (itr.next());
+                } finally {
+                    itr.free();
+                }
                 return results;
             }
             default:

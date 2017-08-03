@@ -197,14 +197,20 @@ public class C4BaseTest implements C4Constants {
                 String line;
                 while ((line = br.readLine()) != null) {
                     FLSliceResult body = db.encodeJSON(line.getBytes());
+                    try {
+                        String docID = String.format(Locale.ENGLISH, "%07d", numDocs + 1);
 
-                    String docID = String.format(Locale.ENGLISH, "%07d", numDocs + 1);
+                        C4Document doc = db.put(body, docID, 0, false, false,
+                                new String[0], true, 0);
+                        try {
+                            assertNotNull(doc);
+                        } finally {
+                            doc.free();
+                        }
+                    } finally {
+                        body.free();
+                    }
 
-                    C4Document doc = db.put(body, docID, 0, false, false,
-                            new String[0], true, 0);
-                    assertNotNull(doc);
-                    doc.free();
-                    body.free();
                     numDocs++;
                     if (numDocs % 1000 == 0 && st.getElapsedTimeSecs() >= timeout) {
                         String msg = String.format(

@@ -18,7 +18,6 @@ public class SharedKeys implements FLValue.ISharedKeys {
     //---------------------------------------------
     FLSharedKeys flSharedKeys;
     Map<Integer, String> documentStrings = new HashMap<>();
-    FLDict root;
 
     //---------------------------------------------
     // Constructors
@@ -28,30 +27,12 @@ public class SharedKeys implements FLValue.ISharedKeys {
         flSharedKeys = c4db.getFLSharedKeys();
     }
 
-    SharedKeys(final SharedKeys sk) {
-        this.flSharedKeys = sk.flSharedKeys;
-    }
-
-    SharedKeys(final SharedKeys sk, FLDict root) {
-        this(sk);
-        useDocumentRoot(root);
-    }
-
     //---------------------------------------------
     // Package level methods
     //---------------------------------------------
 
-    // void useDocumentRoot(FLDict);
-    void useDocumentRoot(FLDict root) {
-        if (this.root != root) {
-            this.root = root;
-            documentStrings.clear();
-        }
-    }
-
     // id __nullable valueToObject(FLValue __nullable value)
     Object valueToObject(FLValue value) {
-        //return getObject(value, this, documentStrings);
         return value == null ? null : value.toObject(documentStrings, this);
     }
 
