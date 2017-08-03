@@ -35,16 +35,20 @@ public class C4FleeceTest extends C4BaseTest {
         byte[] input = "Hello World!".getBytes();
 
         FLEncoder enc = new FLEncoder();
-        enc.writeData(input);
-        byte[] optionsFleece = enc.finish();
-        assertNotNull(optionsFleece);
+        try {
+            enc.writeData(input);
+            byte[] optionsFleece = enc.finish();
+            assertNotNull(optionsFleece);
 
-        FLValue value = FLValue.fromData(optionsFleece);
-        assertNotNull(value);
-        assertEquals(kFLData, value.getType());
-        byte[] output = value.asData();
-        assertNotNull(output);
-        assertArrayEquals(input, output);
+            FLValue value = FLValue.fromData(optionsFleece);
+            assertNotNull(value);
+            assertEquals(kFLData, value.getType());
+            byte[] output = value.asData();
+            assertNotNull(output);
+            assertArrayEquals(input, output);
+        } finally {
+            enc.free();
+        }
     }
 
     @Test
@@ -54,18 +58,22 @@ public class C4FleeceTest extends C4BaseTest {
         map.put("bytes", input);
 
         FLEncoder enc = new FLEncoder();
-        enc.write(map);
-        byte[] optionsFleece = enc.finish();
-        assertNotNull(optionsFleece);
+        try {
+            enc.write(map);
+            byte[] optionsFleece = enc.finish();
+            assertNotNull(optionsFleece);
 
-        FLValue value = FLValue.fromData(optionsFleece);
-        assertNotNull(value);
-        assertEquals(kFLDict, value.getType());
-        Map<String, Object> map2 = value.asDict();
-        assertNotNull(map2);
-        assertTrue(map2.containsKey("bytes"));
-        byte[] output = (byte[]) map2.get("bytes");
-        assertNotNull(output);
-        assertArrayEquals(input, output);
+            FLValue value = FLValue.fromData(optionsFleece);
+            assertNotNull(value);
+            assertEquals(kFLDict, value.getType());
+            Map<String, Object> map2 = value.asDict();
+            assertNotNull(map2);
+            assertTrue(map2.containsKey("bytes"));
+            byte[] output = (byte[]) map2.get("bytes");
+            assertNotNull(output);
+            assertArrayEquals(input, output);
+        } finally {
+            enc.free();
+        }
     }
 }

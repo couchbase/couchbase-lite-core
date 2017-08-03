@@ -60,29 +60,33 @@ public class FLDict {
     public Iterator<String> iterator(SharedKeys sharedKeys) {
         List<String> keys = new ArrayList<>();
         FLDictIterator itr = new FLDictIterator();
-        itr.begin(this);
-        String key;
-        while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
-            //while ((key = itr.getKey().asString()) != null) {
-            keys.add(key);
-            itr.next();
+        try {
+            itr.begin(this);
+            String key;
+            while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
+                keys.add(key);
+                itr.next();
+            }
+        } finally {
+            itr.free();
         }
-
-        itr.free();
         return keys.iterator();
     }
 
     public Map<String, Object> asDict() {
         Map<String, Object> results = new HashMap<>();
         FLDictIterator itr = new FLDictIterator();
-        itr.begin(this);
-        String key;
-        while ((key = itr.getKey().asString()) != null) {
-            Object value = itr.getValue().asObject();
-            results.put(key, value);
-            itr.next();
+        try {
+            itr.begin(this);
+            String key;
+            while ((key = itr.getKey().asString()) != null) {
+                Object value = itr.getValue().asObject();
+                results.put(key, value);
+                itr.next();
+            }
+        } finally {
+            itr.free();
         }
-        itr.free();
         return results;
     }
 

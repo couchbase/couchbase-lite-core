@@ -249,16 +249,18 @@ public class C4ReplicatorTest extends C4BaseTest {
 
         // Use the extra-headers option to add HTTP Basic auth:
         FLEncoder enc = new FLEncoder();
-        enc.beginDict(0);
-        enc.writeKey("headers");
-        enc.beginDict(0);
-        enc.writeKey("Authorization");
-        enc.writeString("Basic cHVwc2hhdzpmcmFuaw=="); // that's user 'pupshaw', password 'frank'
-        enc.endDict();
-        enc.endDict();
-        this.options = enc.finish();
-        enc.free();
-
+        try {
+            enc.beginDict(0);
+            enc.writeKey("headers");
+            enc.beginDict(0);
+            enc.writeKey("Authorization");
+            enc.writeString("Basic cHVwc2hhdzpmcmFuaw=="); // that's user 'pupshaw', password 'frank'
+            enc.endDict();
+            enc.endDict();
+            this.options = enc.finish();
+        } finally {
+            enc.free();
+        }
         replicate(kC4OneShot, kC4Disabled, true);
     }
 
