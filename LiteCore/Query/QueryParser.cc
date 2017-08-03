@@ -323,7 +323,7 @@ namespace litecore {
         require(str.size > 0 && (str[0] == '.'),
                 "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
         
-        auto offset = str.size - 2;
+        int offset = str.size - 2;
         str.moveStart(offset); //.[name.]* -> .*
         if(str == star) {
             str.moveStart(-offset + 1); //.* -> [name.]*
@@ -729,7 +729,7 @@ namespace litecore {
         _context.back() = &operation;
 
         if (op.size > 0 && op[0] == '.') {
-            auto offset = op.size - 2;
+            int offset = op.size - 2;
             op.moveStart(offset); //.[name.]* -> .*
             if(op == star) {
                 op.moveStart(-offset + 1); // .* -> [name.]*
