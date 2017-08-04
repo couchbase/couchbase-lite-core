@@ -70,6 +70,7 @@ namespace litecore {
         void parseNode(const fleece::Value*);
         void parseOpNode(const fleece::Array*);
         void handleOperation(const Operation*, slice actualOperator, fleece::Array::iterator& operands);
+        void parseStringLiteral(slice str);
 
         void writeSelect(const fleece::Dict *dict);
         void writeSelect(const fleece::Value *where, const fleece::Dict *operands);
@@ -101,8 +102,8 @@ namespace litecore {
 
         void functionOp(slice, fleece::Array::iterator&);
 
-        bool writeNestedPropertyOpIfAny(const char *fnName, fleece::Array::iterator &operands);
-        void writePropertyGetter(const std::string &fn, std::string property);
+        bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::Array::iterator &operands);
+        void writePropertyGetter(slice fn, std::string property);
         void writeSQLString(slice str)              {writeSQLString(_sql, str);}
         void writeArgList(fleece::Array::iterator& operands);
         void writeColumnList(fleece::Array::iterator& operands);

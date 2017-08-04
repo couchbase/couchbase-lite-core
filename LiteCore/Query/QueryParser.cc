@@ -32,6 +32,17 @@ using namespace fleece;
 namespace litecore {
 
 
+    // Names of the SQLite functions we register for working with Fleece data:
+    static constexpr slice kValueFnName = "fl_value"_sl;
+    static constexpr slice kRootFnName  = "fl_root"_sl;
+    static constexpr slice kEachFnName  = "fl_each"_sl;
+    static constexpr slice kCountFnName = "fl_count"_sl;
+    static constexpr slice kExistsFnName= "fl_exists"_sl;
+
+    // Existing SQLite FTS rank function:
+    static constexpr slice kRankFnName  = "rank"_sl;
+
+
 #pragma mark - UTILITY FUNCTIONS:
 
 
@@ -283,30 +294,6 @@ namespace litecore {
         // TODO: Add 'WHERE' clause for use with SQLite 3.15+
     }
 
-    // Unused?
-    void QueryParser::writeResultColumn(const Value *val) {
-        switch (val->type()) {
-            case kArray:
-                parseNode(val);
-                return;
-            case kString: {
-                slice str = val->asString();
-                if (str == "*"_sl) {
-                    fail("'*' result column isn't supported");
-                    return;
-                } else {
-                    // "."-prefixed string becomes a property
-                    writeStringLiteralAsProperty(str);
-                    return;
-                }
-                break;
-            }
-            default:
-                break;
-        }
-        fail("Invalid item type in WHAT clause; must be array or '*' or '.property'");
-    }
-
 
     void QueryParser::writeOrderOrLimitClause(const Dict *operands,
                                               slice jsonKey,
@@ -318,20 +305,14 @@ namespace litecore {
         }
     }
 
-    static const slice star = ".*"_sl;
+
+    // Parses a string literal in the context of a column-list expression: a 'WHAT', 'GROUP BY',
+    // 'ORDER BY' clause, or an indexing expression.
     void QueryParser::writeStringLiteralAsProperty(slice str) {
-        require(str.size > 0 && (str[0] == '.'),
+        require(str.size > 0 && str[0] == '.',
                 "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
-        
-        int offset = (int)str.size - 2;
-        str.moveStart(offset); //.[name.]* -> .*
-        if(str == star) {
-            str.moveStart(-offset + 1); //.* -> [name.]*
-            writePropertyGetter("fl_root", str.asString());
-        } else {
-            str.moveStart(-offset + 1);
-            writePropertyGetter("fl_value", str.asString());
-        }
+        str.moveStart(1);
+        writePropertyGetter(kValueFnName, str.asString());
     }
 
 
@@ -408,14 +389,9 @@ namespace litecore {
             case kBoolean:
                 _sql << (node->asBool() ? '1' : '0');    // SQL doesn't have true/false
                 break;
-            case kString: {
-                slice str = node->asString();
-                if (_context.back() == &kColumnListOperation)
-                    writeStringLiteralAsProperty(str);
-                else
-                    writeSQLString(str);
+            case kString:
+                parseStringLiteral(node->asString());
                 break;
-            }
             case kData:
                 fail("Binary data not supported in query");
             case kArray:
@@ -470,6 +446,20 @@ namespace litecore {
     }
 
 
+    // Handles a node that's a string. It's treated as a string literal, except in the context of
+    // a column-list ('FROM', 'ORDER BY', creating index, etc.) where it's a property path.
+    void QueryParser::parseStringLiteral(slice str) {
+        if (_context.back() == &kColumnListOperation) {
+            require(str.size > 0 && str[0] == '.',
+                    "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
+            str.moveStart(1);
+            writePropertyGetter(kValueFnName, str.asString());
+        } else {
+            writeSQLString(str);
+        }
+    }
+
+
 #pragma mark - OPERATION HANDLERS:
 
 
@@ -506,7 +496,7 @@ namespace litecore {
     // Handles EXISTS
     void QueryParser::existsOp(slice op, Array::iterator& operands) {
         // "EXISTS propertyname" turns into a call to fl_exists()
-        if (writeNestedPropertyOpIfAny("fl_exists", operands))
+        if (writeNestedPropertyOpIfAny(kExistsFnName, operands))
             return;
 
         _sql << "EXISTS";
@@ -600,14 +590,14 @@ namespace litecore {
 
         if (anyAndEvery) {
             _sql << '(';
-            writePropertyGetter("fl_count", property);
+            writePropertyGetter(kCountFnName, property);
             _sql << " > 0 AND ";
         }
 
         if (every)
             _sql << "NOT ";
         _sql << "EXISTS (SELECT 1 FROM ";
-        writePropertyGetter("fl_each", property);
+        writePropertyGetter(kEachFnName, property);
         _sql << " AS _" << var << " WHERE ";
         if (every)
             _sql << "NOT (";
@@ -624,7 +614,7 @@ namespace litecore {
 
     // Handles doc property accessors, e.g. [".", "prop"] or [".prop"] --> fl_value(body, "prop")
     void QueryParser::propertyOp(slice op, Array::iterator& operands) {
-        writePropertyGetter("fl_value", propertyFromOperands(operands));
+        writePropertyGetter(kValueFnName, propertyFromOperands(operands));
     }
 
 
@@ -663,7 +653,7 @@ namespace litecore {
             _sql << '_' << var << ".value";
         } else {
             auto property = propertyFromOperands(operands);
-            _sql << "fl_value(_" << var << ".pointer, ";
+            _sql << kValueFnName << "(_" << var << ".pointer, ";
             writeSQLString(_sql, slice(property));
             _sql << ")";
         }
@@ -729,15 +719,8 @@ namespace litecore {
         _context.back() = &operation;
 
         if (op.size > 0 && op[0] == '.') {
-            int offset = (int)op.size - 2;
-            op.moveStart(offset); //.[name.]* -> .*
-            if(op == star) {
-                op.moveStart(-offset + 1); // .* -> [name.]*
-                writePropertyGetter("fl_root", op.asString());
-            } else {
-                op.moveStart(-offset + 1);
-                writePropertyGetter("fl_value", op.asString());
-            }
+            op.moveStart(1);  // skip '.'
+            writePropertyGetter(kValueFnName, string(op));
         } else if (op.size > 0 && op[0] == '$') {
             parameterOp(op, operands);
         } else if (op.size > 0 && op[0] == '?') {
@@ -778,10 +761,10 @@ namespace litecore {
             op = spec->name; // canonical case
 
         // Special case: "array_count(propertyname)" turns into a call to fl_count:
-        if (op.caseEquivalent("array_count"_sl) && writeNestedPropertyOpIfAny("fl_count", operands))
+        if (op.caseEquivalent("array_count"_sl) && writeNestedPropertyOpIfAny(kCountFnName, operands))
             return;
         else if (op.caseEquivalent("rank"_sl)) {
-            if (writeNestedPropertyOpIfAny("rank", operands))
+            if (writeNestedPropertyOpIfAny(kRankFnName, operands))
                 return;
             else
                 fail("rank() can only be called on FTS-indexed properties");
@@ -852,7 +835,7 @@ namespace litecore {
 
     // If the first operand is a property operation, writes it using the given SQL function name
     // and returns true; else returns false.
-    bool QueryParser::writeNestedPropertyOpIfAny(const char *fnName, Array::iterator &operands) {
+    bool QueryParser::writeNestedPropertyOpIfAny(slice fnName, Array::iterator &operands) {
         if (operands.count() == 0 )
             return false;
         auto property = propertyFromNode(operands[0]);
@@ -864,38 +847,53 @@ namespace litecore {
 
 
     // Writes a call to a Fleece SQL function, including the closing ")".
-    void QueryParser::writePropertyGetter(const string &fn, string property) {
+    void QueryParser::writePropertyGetter(slice fn, string property) {
         string tableName;
         if (!_aliases.empty()) {
             // Interpret the first component of the property as a db alias:
             auto dot = property.find('.');
-            auto bra = property.find('[');
-            require(dot != string::npos && (bra == string::npos || dot < bra),
-                    "Missing database alias name in property '%s'", property.c_str());
+            string rest;
+            if (dot == string::npos) {
+                dot = property.size();
+            } else {
+                rest = property.substr(dot+1);
+            }
             string first = property.substr(0, dot);
+
+            // Make sure there isn't a bracket (array index) before the dot:
+            auto bra = property.find('[');
+            require(bra == string::npos || dot < bra,
+                    "Missing database alias name in property '%s'", property.c_str());
+
             require(find(_aliases.begin(), _aliases.end(), first) != _aliases.end(),
                     "Unknown database alias name in property '%s'", property.c_str());
             tableName = "\"" + first + "\".";
-            property = property.substr(dot+1);
+            property = rest;
         }
 
         if (property == "_id") {
-            require(fn == "fl_value", "can't use '_id' in this context");
+            require(fn == kValueFnName, "can't use '_id' in this context");
             _sql << tableName << "key";
         } else if (property == "_sequence") {
-            require(fn == "fl_value", "can't use '_sequence' in this context");
+            require(fn == kValueFnName, "can't use '_sequence' in this context");
             _sql << tableName << "sequence";
-        } else if (fn == "rank") {
+        } else if (fn == kRankFnName) {
             // FTS rank() needs special treatment
             string fts = FTSIndexName(property);
             if (find(_ftsTables.begin(), _ftsTables.end(), fts) == _ftsTables.end())
                 fail("rank() can only be called on FTS-indexed properties");
             _sql << "rank(matchinfo(\"" << fts << "\"))";
-        } else if (fn == "fl_root") {
-            _sql << fn << "(" << tableName << _bodyColumnName << ")";
         } else {
-            _sql << fn << "(" << tableName << _bodyColumnName << ", ";
-            writeSQLString(_sql, slice(property));
+            // It's more efficent to get the doc root with fl_root than with fl_value:
+            if (property == "" && fn == kValueFnName)
+                fn = kRootFnName;
+
+            // Write the function call:
+            _sql << fn << "(" << tableName << _bodyColumnName;
+            if(!property.empty()) {
+                _sql << ", ";
+                writeSQLString(_sql, slice(property));
+            }
             _sql << ")";
         }
     }

@@ -23,7 +23,7 @@ namespace litecore {
     struct QueryParser::Operation {
         slice op; int minArgs; int maxArgs; int precedence; OpHandler handler;};
     const QueryParser::Operation QueryParser::kOperationList[] = {
-        {"."_sl,       1, 9,  9,  &QueryParser::propertyOp},
+        {"."_sl,       0, 9,  9,  &QueryParser::propertyOp},
         {"$"_sl,       1, 1,  9,  &QueryParser::parameterOp},
         {"?"_sl,       1, 9,  9,  &QueryParser::variableOp},
 

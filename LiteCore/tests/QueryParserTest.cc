@@ -163,6 +163,11 @@ TEST_CASE("QueryParser SELECT WHAT", "[Query]") {
     CHECK(parseWhere("['SELECT', {WHAT: [['.first'], ['length()', ['.middle']]],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
           == "SELECT fl_value(body, 'first'), length(fl_value(body, 'middle')) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+    // Check the "." operator (like SQL "*"):
+    CHECK(parseWhere("['SELECT', {WHAT: ['.'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
+          == "SELECT fl_root(body) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+    CHECK(parseWhere("['SELECT', {WHAT: [['.']], WHERE: ['=', ['.', 'last'], 'Smith']}]")
+          == "SELECT fl_root(body) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
 }
 
 
@@ -179,11 +184,11 @@ TEST_CASE("QueryParser CASE", "[Query]") {
 
 
 TEST_CASE("QueryParser Join", "[Query]") {
-    CHECK(parse("{WHAT: ['.book.title', '.library.name'], \
+    CHECK(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
                   FROM: [{as: 'book'}, \
                          {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
-          == "SELECT fl_value(\"book\".body, 'title'), fl_value(\"library\".body, 'name') FROM kv_default AS \"book\" JOIN kv_default AS \"library\" ON fl_value(\"book\".body, 'library') = \"library\".key WHERE fl_value(\"book\".body, 'author') = $_AUTHOR");
+          == "SELECT fl_value(\"book\".body, 'title'), fl_value(\"library\".body, 'name'), fl_root(\"library\".body) FROM kv_default AS \"book\" JOIN kv_default AS \"library\" ON fl_value(\"book\".body, 'library') = \"library\".key WHERE fl_value(\"book\".body, 'author') = $_AUTHOR");
 }
 
 
