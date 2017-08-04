@@ -21,7 +21,7 @@ namespace litecore {
         bool unicodeAware {false};
         bool caseSensitive {true};
         bool diacriticSensitive {true};
-        fleece::slice localeName;
+        fleece::alloc_slice localeName;
 
         Collation() { }
 
