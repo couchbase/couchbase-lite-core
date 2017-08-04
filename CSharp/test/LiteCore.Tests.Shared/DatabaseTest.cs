@@ -1,3 +1,23 @@
+// 
+// DatabaseTest.cs
+// 
+// Author:
+//     Jim Borden  <jim.borden@couchbase.com>
+// 
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+// http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+// 
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,151 +46,18 @@ namespace LiteCore.Tests
         }
 #endif
 
-        [Fact]
-        public void TestErrorMessages()
+        private void SetupAllDocs()
         {
-            var msg = Native.c4error_getMessage(new C4Error(C4ErrorDomain.LiteCoreDomain, 0));
-            msg.Should().BeNull("because there was no error");
+            CreateNumberedDocs(99);
 
-            AssertMessage(C4ErrorDomain.SQLiteDomain, (int)SQLiteStatus.Corrupt, "database disk image is malformed");
-            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)C4ErrorCode.InvalidParameter, "invalid parameter");
-            AssertMessage(C4ErrorDomain.POSIXDomain, (int)PosixStatus.NOENT, "No such file or directory");
-            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)C4ErrorCode.IndexBusy, "index busy; can't close view");
-            AssertMessage(C4ErrorDomain.SQLiteDomain, -1234, "unknown error");
-            AssertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
+            // Add a deleted doc to make sure it's skipped by default:
+            CreateRev("doc-005DEL", RevID, C4Slice.Null, C4RevisionFlags.Deleted);
         }
 
-        [Fact]
-        public void TestDatabaseInfo()
+        private void AssertMessage(C4ErrorDomain domain, int code, string expected)
         {
-            RunTestVariants(() => {
-                Native.c4db_getDocumentCount(Db).Should().Be(0, "because the database is empty");
-                Native.c4db_getLastSequence(Db).Should().Be(0, "because the database is empty");
-                var publicID = new C4UUID();
-                var privateID = new C4UUID();
-                LiteCoreBridge.Check(err => {
-                    var publicID_ = publicID;
-                    var privateID_ = privateID;
-                    var retVal = Native.c4db_getUUIDs(Db, &publicID_, &privateID_, err);
-                    publicID = publicID_;
-                    privateID = privateID_;
-                    return retVal;
-                });
-
-                // Odd quirk of C# means we need an additional copy
-                var p1 = publicID;
-                var p2 = privateID;
-                publicID.Should().NotBe(privateID, "because public UUID and private UUID should differ");
-                (p1.bytes[6] & 0xF0).Should().Be(0x40, "because otherwise the UUID is non-conformant");
-                (p1.bytes[8] & 0xC0).Should().Be(0x80, "because otherwise the UUID is non-conformant");
-                (p2.bytes[6] & 0xF0).Should().Be(0x40, "because otherwise the UUID is non-conformant");
-                (p2.bytes[8] & 0xC0).Should().Be(0x80, "because otherwise the UUID is non-conformant");
-
-                // Make sure the UUIDs are persistent
-                ReopenDB();
-                var publicID2 = new C4UUID();
-                var privateID2 = new C4UUID();
-                LiteCoreBridge.Check(err => {
-                    var publicID_ = publicID2;
-                    var privateID_ = privateID2;
-                    var retVal = Native.c4db_getUUIDs(Db, &publicID_, &privateID_, err);
-                    publicID2 = publicID_;
-                    privateID2 = privateID_;
-                    return retVal;
-                });
-
-                publicID2.Should().Be(publicID, "because the public UUID should persist");
-                privateID2.Should().Be(privateID, "because the private UUID should persist");
-            });
-        }
-
-        [Fact]
-        public void TestOpenBundle()
-        {
-            RunTestVariants(() => {
-                var config = C4DatabaseConfig.Clone(Native.c4db_getConfig(Db));
-                config.flags |= C4DatabaseFlags.Bundled;
-                var tmp = config;
-
-                var bundlePath = Path.Combine(TestDir, $"cbl_core_test_bundle{Path.DirectorySeparatorChar}");
-                Native.c4db_deleteAtPath(bundlePath, &config, null);
-                var bundle = (C4Database *)LiteCoreBridge.Check(err => {
-                    var localConfig = tmp;
-                    return Native.c4db_open(bundlePath, &localConfig, err);
-                });
-
-                var path = Native.c4db_getPath(bundle);
-                path.Should().Be(bundlePath, "because the database should store the correct path");
-                LiteCoreBridge.Check(err => Native.c4db_close(bundle, err));
-                Native.c4db_free(bundle);
-
-                // Reopen without the 'create' flag:
-                config.flags &= ~C4DatabaseFlags.Create;
-                tmp = config;
-                bundle = (C4Database *)LiteCoreBridge.Check(err => {
-                    var localConfig = tmp;
-                    return Native.c4db_open(bundlePath, &localConfig, err);
-                });
-                LiteCoreBridge.Check(err => Native.c4db_close(bundle, err));
-                Native.c4db_free(bundle);
-
-                // Reopen with wrong storage type:
-                NativePrivate.c4log_warnOnErrors(false);
-                var engine = config.storageEngine;
-                config.storageEngine = "b0gus";
-                ((long)Native.c4db_open(bundlePath, &config, null)).Should().Be(0, "because the storage engine is nonsense");
-                config.storageEngine = engine;
-
-                // Open nonexistent bundle
-                ((long)Native.c4db_open($"no_such_bundle{Path.DirectorySeparatorChar}", &config, null)).Should().Be(0, "because the bundle does not exist");
-                NativePrivate.c4log_warnOnErrors(true);
-
-                config.Dispose();
-            });
-        }
-
-        [Fact]
-        public void TestTransaction()
-        {
-            RunTestVariants(() => {
-                Native.c4db_getDocumentCount(Db).Should().Be(0, "because no documents have been added");
-                Native.c4db_isInTransaction(Db).Should().BeFalse("because no transaction has started yet");
-                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
-                Native.c4db_isInTransaction(Db).Should().BeTrue("because a transaction has started");
-                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
-                Native.c4db_isInTransaction(Db).Should().BeTrue("because another transaction has started");
-                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
-                Native.c4db_isInTransaction(Db).Should().BeTrue("because a transaction is still active");
-                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
-                Native.c4db_isInTransaction(Db).Should().BeFalse("because all transactions have ended");
-            });
-        }
-
-        [Fact]
-        public void TestCreateRawDoc()
-        {
-            RunTestVariants(() => {
-                var key = C4Slice.Constant("key");
-                var meta = C4Slice.Constant("meta");
-                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
-                LiteCoreBridge.Check(err => NativeRaw.c4raw_put(Db, C4Slice.Constant("test"), key, meta, 
-                    Body, err));
-                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
-
-                var doc = (C4RawDocument *)LiteCoreBridge.Check(err => NativeRaw.c4raw_get(Db,
-                    C4Slice.Constant("test"), key, err));
-                doc->key.Equals(key).Should().BeTrue("because the key should not change");
-                doc->meta.Equals(meta).Should().BeTrue("because the meta should not change");
-                doc->body.Equals(Body).Should().BeTrue("because the body should not change");
-                Native.c4raw_free(doc);
-
-                // Nonexistent:
-                C4Error error;
-                ((long)Native.c4raw_get(Db, "test", "bogus", &error)).Should().Be(0, 
-                    "because the document does not exist");
-                error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain, "because that is the correct domain");
-                error.code.Should().Be((int)C4ErrorCode.NotFound, "because that is the correct error code");
-            });
+            var msg = Native.c4error_getMessage(new C4Error(domain, code));
+            msg.Should().Be(expected, "because the error message should match the code");
         }
 
         [Fact]
@@ -329,6 +216,30 @@ namespace LiteCore.Tests
         }
 
         [Fact]
+        public void TestCancelExpire()
+        {
+            RunTestVariants(() => {
+                const string docID = "expire_me";
+                CreateRev(docID, RevID, Body);
+                var expire = (ulong)DateTimeOffset.UtcNow.AddSeconds(2).ToUnixTimeSeconds();
+                LiteCoreBridge.Check(err => Native.c4doc_setExpiration(Db, docID, expire, err));
+                LiteCoreBridge.Check(err => Native.c4doc_setExpiration(Db, docID, UInt64.MaxValue, err));
+
+                Task.Delay(TimeSpan.FromSeconds(2)).Wait();
+                var e = (C4ExpiryEnumerator *)LiteCoreBridge.Check(err => Native.c4db_enumerateExpired(Db, err));
+
+                int expiredCount = 0;
+                while(Native.c4exp_next(e, null)) {
+                    expiredCount++;
+                }
+
+                LiteCoreBridge.Check(err => Native.c4exp_purgeExpired(e, err));
+                Native.c4exp_free(e);
+                expiredCount.Should().Be(0, "because the expiration was cancelled");    
+            });
+        }
+
+        [Fact]
         public void TestChanges()
         {
             RunTestVariants(() => {
@@ -373,6 +284,154 @@ namespace LiteCore.Tests
                 Native.c4enum_free(e);
                 seq.Should().Be(100UL, "because that is the highest sequence in the DB");
             });
+        }
+
+        [Fact]
+        public void TestCreateRawDoc()
+        {
+            RunTestVariants(() => {
+                var key = C4Slice.Constant("key");
+                var meta = C4Slice.Constant("meta");
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                LiteCoreBridge.Check(err => NativeRaw.c4raw_put(Db, C4Slice.Constant("test"), key, meta, 
+                    Body, err));
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+
+                var doc = (C4RawDocument *)LiteCoreBridge.Check(err => NativeRaw.c4raw_get(Db,
+                    C4Slice.Constant("test"), key, err));
+                doc->key.Equals(key).Should().BeTrue("because the key should not change");
+                doc->meta.Equals(meta).Should().BeTrue("because the meta should not change");
+                doc->body.Equals(Body).Should().BeTrue("because the body should not change");
+                Native.c4raw_free(doc);
+
+                // Nonexistent:
+                C4Error error;
+                ((long)Native.c4raw_get(Db, "test", "bogus", &error)).Should().Be(0, 
+                    "because the document does not exist");
+                error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain, "because that is the correct domain");
+                error.code.Should().Be((int)C4ErrorCode.NotFound, "because that is the correct error code");
+            });
+        }
+
+        [Fact]
+        public void TestDatabaseBlobStore()
+        {
+            RunTestVariants(() => {
+                LiteCoreBridge.Check(err => Native.c4db_getBlobStore(Db, err));
+            });
+        }
+
+        [Fact]
+        public void TestDatabaseCompact()
+        {
+            RunTestVariants(() =>
+            {
+                var doc1ID = C4Slice.Constant("doc001");
+                var doc2ID = C4Slice.Constant("doc002");
+                var doc3ID = C4Slice.Constant("doc003");
+                var content1 = "This is the first attachment";
+                var content2 = "This is the second attachment";
+
+                var atts = new List<string>();
+                C4BlobKey key1, key2;
+                atts.Add(content1);
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    key1 = AddDocWithAttachments(doc1ID, atts, "text/plain")[0];
+                    atts.Clear();
+                    atts.Add(content2);
+                    key2 = AddDocWithAttachments(doc2ID, atts, "text/plain")[0];
+                    AddDocWithAttachments(doc3ID, atts, "text/plain");
+                } finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                var store = (C4BlobStore*) LiteCoreBridge.Check(err => Native.c4db_getBlobStore(Db, err));
+                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
+                Native.c4blob_getSize(store, key1).Should()
+                    .BeGreaterThan(0, "because the attachment should survive the first compact");
+                Native.c4blob_getSize(store, key2).Should()
+                    .BeGreaterThan(0, "because the attachment should survive the first compact");
+
+                CreateRev("doc001", Rev2ID, C4Slice.Null, C4RevisionFlags.Deleted);
+                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
+                Native.c4blob_getSize(store, key1).Should().Be(-1,
+                    "because the attachment should be collected in the second compact");
+                Native.c4blob_getSize(store, key2).Should()
+                    .BeGreaterThan(0, "because the attachment should survive the second compact");
+
+                CreateRev("doc002", Rev2ID, C4Slice.Null, C4RevisionFlags.Deleted);
+                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
+                Native.c4blob_getSize(store, key1).Should().Be(-1,
+                    "because the attachment should still be gone in the third compact");
+                Native.c4blob_getSize(store, key2).Should()
+                    .BeGreaterThan(0, "because the attachment should survive the third compact");
+
+                CreateRev("doc003", Rev2ID, C4Slice.Null, C4RevisionFlags.Deleted);
+                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
+                Native.c4blob_getSize(store, key1).Should().Be(-1,
+                    "because the attachment should still be gone in the fourth compact");
+                Native.c4blob_getSize(store, key2).Should().Be(-1,
+                    "because the attachment should be collected in the fourth compact");
+            });
+        }
+
+        [Fact]
+        public void TestDatabaseInfo()
+        {
+            RunTestVariants(() => {
+                Native.c4db_getDocumentCount(Db).Should().Be(0, "because the database is empty");
+                Native.c4db_getLastSequence(Db).Should().Be(0, "because the database is empty");
+                var publicID = new C4UUID();
+                var privateID = new C4UUID();
+                LiteCoreBridge.Check(err => {
+                    var publicID_ = publicID;
+                    var privateID_ = privateID;
+                    var retVal = Native.c4db_getUUIDs(Db, &publicID_, &privateID_, err);
+                    publicID = publicID_;
+                    privateID = privateID_;
+                    return retVal;
+                });
+
+                // Odd quirk of C# means we need an additional copy
+                var p1 = publicID;
+                var p2 = privateID;
+                publicID.Should().NotBe(privateID, "because public UUID and private UUID should differ");
+                (p1.bytes[6] & 0xF0).Should().Be(0x40, "because otherwise the UUID is non-conformant");
+                (p1.bytes[8] & 0xC0).Should().Be(0x80, "because otherwise the UUID is non-conformant");
+                (p2.bytes[6] & 0xF0).Should().Be(0x40, "because otherwise the UUID is non-conformant");
+                (p2.bytes[8] & 0xC0).Should().Be(0x80, "because otherwise the UUID is non-conformant");
+
+                // Make sure the UUIDs are persistent
+                ReopenDB();
+                var publicID2 = new C4UUID();
+                var privateID2 = new C4UUID();
+                LiteCoreBridge.Check(err => {
+                    var publicID_ = publicID2;
+                    var privateID_ = privateID2;
+                    var retVal = Native.c4db_getUUIDs(Db, &publicID_, &privateID_, err);
+                    publicID2 = publicID_;
+                    privateID2 = privateID_;
+                    return retVal;
+                });
+
+                publicID2.Should().Be(publicID, "because the public UUID should persist");
+                privateID2.Should().Be(privateID, "because the private UUID should persist");
+            });
+        }
+
+        [Fact]
+        public void TestErrorMessages()
+        {
+            var msg = Native.c4error_getMessage(new C4Error(C4ErrorDomain.LiteCoreDomain, 0));
+            msg.Should().BeNull("because there was no error");
+
+            AssertMessage(C4ErrorDomain.SQLiteDomain, (int)SQLiteStatus.Corrupt, "database disk image is malformed");
+            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)C4ErrorCode.InvalidParameter, "invalid parameter");
+            AssertMessage(C4ErrorDomain.POSIXDomain, (int)PosixStatus.NOENT, "No such file or directory");
+            AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)C4ErrorCode.IndexBusy, "index busy; can't close view");
+            AssertMessage(C4ErrorDomain.SQLiteDomain, -1234, "unknown error");
+            AssertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
         }
 
         [Fact]
@@ -443,104 +502,65 @@ namespace LiteCore.Tests
         }
 
         [Fact]
-        public void TestCancelExpire()
+        public void TestOpenBundle()
         {
             RunTestVariants(() => {
-                const string docID = "expire_me";
-                CreateRev(docID, RevID, Body);
-                var expire = (ulong)DateTimeOffset.UtcNow.AddSeconds(2).ToUnixTimeSeconds();
-                LiteCoreBridge.Check(err => Native.c4doc_setExpiration(Db, docID, expire, err));
-                LiteCoreBridge.Check(err => Native.c4doc_setExpiration(Db, docID, UInt64.MaxValue, err));
+                var config = C4DatabaseConfig.Clone(Native.c4db_getConfig(Db));
+                config.flags |= C4DatabaseFlags.Bundled;
+                var tmp = config;
 
-                Task.Delay(TimeSpan.FromSeconds(2)).Wait();
-                var e = (C4ExpiryEnumerator *)LiteCoreBridge.Check(err => Native.c4db_enumerateExpired(Db, err));
+                var bundlePath = Path.Combine(TestDir, $"cbl_core_test_bundle{Path.DirectorySeparatorChar}");
+                Native.c4db_deleteAtPath(bundlePath, &config, null);
+                var bundle = (C4Database *)LiteCoreBridge.Check(err => {
+                    var localConfig = tmp;
+                    return Native.c4db_open(bundlePath, &localConfig, err);
+                });
 
-                int expiredCount = 0;
-                while(Native.c4exp_next(e, null)) {
-                    expiredCount++;
-                }
+                var path = Native.c4db_getPath(bundle);
+                path.Should().Be(bundlePath, "because the database should store the correct path");
+                LiteCoreBridge.Check(err => Native.c4db_close(bundle, err));
+                Native.c4db_free(bundle);
 
-                LiteCoreBridge.Check(err => Native.c4exp_purgeExpired(e, err));
-                Native.c4exp_free(e);
-                expiredCount.Should().Be(0, "because the expiration was cancelled");    
+                // Reopen without the 'create' flag:
+                config.flags &= ~C4DatabaseFlags.Create;
+                tmp = config;
+                bundle = (C4Database *)LiteCoreBridge.Check(err => {
+                    var localConfig = tmp;
+                    return Native.c4db_open(bundlePath, &localConfig, err);
+                });
+                LiteCoreBridge.Check(err => Native.c4db_close(bundle, err));
+                Native.c4db_free(bundle);
+
+                // Reopen with wrong storage type:
+                NativePrivate.c4log_warnOnErrors(false);
+                var engine = config.storageEngine;
+                config.storageEngine = "b0gus";
+                ((long)Native.c4db_open(bundlePath, &config, null)).Should().Be(0, "because the storage engine is nonsense");
+                config.storageEngine = engine;
+
+                // Open nonexistent bundle
+                ((long)Native.c4db_open($"no_such_bundle{Path.DirectorySeparatorChar}", &config, null)).Should().Be(0, "because the bundle does not exist");
+                NativePrivate.c4log_warnOnErrors(true);
+
+                config.Dispose();
             });
         }
 
         [Fact]
-        public void TestDatabaseBlobStore()
+        public void TestTransaction()
         {
             RunTestVariants(() => {
-                LiteCoreBridge.Check(err => Native.c4db_getBlobStore(Db, err));
-            });
-        }
-
-        [Fact]
-        public void TestDatabaseCompact()
-        {
-            RunTestVariants(() =>
-            {
-                var doc1ID = C4Slice.Constant("doc001");
-                var doc2ID = C4Slice.Constant("doc002");
-                var doc3ID = C4Slice.Constant("doc003");
-                var content1 = "This is the first attachment";
-                var content2 = "This is the second attachment";
-
-                var atts = new List<string>();
-                C4BlobKey key1, key2;
-                atts.Add(content1);
+                Native.c4db_getDocumentCount(Db).Should().Be(0, "because no documents have been added");
+                Native.c4db_isInTransaction(Db).Should().BeFalse("because no transaction has started yet");
                 LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
-                try {
-                    key1 = AddDocWithAttachments(doc1ID, atts, "text/plain")[0];
-                    atts.Clear();
-                    atts.Add(content2);
-                    key2 = AddDocWithAttachments(doc2ID, atts, "text/plain")[0];
-                    AddDocWithAttachments(doc3ID, atts, "text/plain");
-                } finally {
-                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
-                }
-
-                var store = (C4BlobStore*) LiteCoreBridge.Check(err => Native.c4db_getBlobStore(Db, err));
-                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
-                Native.c4blob_getSize(store, key1).Should()
-                    .BeGreaterThan(0, "because the attachment should survive the first compact");
-                Native.c4blob_getSize(store, key2).Should()
-                    .BeGreaterThan(0, "because the attachment should survive the first compact");
-
-                CreateRev("doc001", Rev2ID, C4Slice.Null, C4RevisionFlags.Deleted);
-                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
-                Native.c4blob_getSize(store, key1).Should().Be(-1,
-                    "because the attachment should be collected in the second compact");
-                Native.c4blob_getSize(store, key2).Should()
-                    .BeGreaterThan(0, "because the attachment should survive the second compact");
-
-                CreateRev("doc002", Rev2ID, C4Slice.Null, C4RevisionFlags.Deleted);
-                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
-                Native.c4blob_getSize(store, key1).Should().Be(-1,
-                    "because the attachment should still be gone in the third compact");
-                Native.c4blob_getSize(store, key2).Should()
-                    .BeGreaterThan(0, "because the attachment should survive the third compact");
-
-                CreateRev("doc003", Rev2ID, C4Slice.Null, C4RevisionFlags.Deleted);
-                LiteCoreBridge.Check(err => Native.c4db_compact(Db, err));
-                Native.c4blob_getSize(store, key1).Should().Be(-1,
-                    "because the attachment should still be gone in the fourth compact");
-                Native.c4blob_getSize(store, key2).Should().Be(-1,
-                    "because the attachment should be collected in the fourth compact");
+                Native.c4db_isInTransaction(Db).Should().BeTrue("because a transaction has started");
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                Native.c4db_isInTransaction(Db).Should().BeTrue("because another transaction has started");
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                Native.c4db_isInTransaction(Db).Should().BeTrue("because a transaction is still active");
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                Native.c4db_isInTransaction(Db).Should().BeFalse("because all transactions have ended");
             });
-        }
-
-        private void SetupAllDocs()
-        {
-            CreateNumberedDocs(99);
-
-            // Add a deleted doc to make sure it's skipped by default:
-            CreateRev("doc-005DEL", RevID, C4Slice.Null, C4RevisionFlags.Deleted);
-        }
-
-        private void AssertMessage(C4ErrorDomain domain, int code, string expected)
-        {
-            var msg = Native.c4error_getMessage(new C4Error(domain, code));
-            msg.Should().Be(expected, "because the error message should match the code");
         }
     }
 }

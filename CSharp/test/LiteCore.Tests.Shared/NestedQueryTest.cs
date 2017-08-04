@@ -14,12 +14,7 @@ namespace LiteCore.Tests
 #endif
     public unsafe class NestedQueryTest : QueryTestBase
     {
-        protected override string JsonPath 
-        {
-            get {
-                return "C/tests/data/nested.json";
-            }
-        }
+        protected override string JsonPath => "C/tests/data/nested.json";
 
 #if !WINDOWS_UWP
         public NestedQueryTest(ITestOutputHelper output) : base(output)
