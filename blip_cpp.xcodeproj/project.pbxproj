@@ -129,6 +129,8 @@
 		275CE0EF1E590B190084E014 /* LoopbackProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = LoopbackProvider.hh; path = ../include/blip_cpp/LoopbackProvider.hh; sourceTree = "<group>"; };
 		2761F3F81EEB2F4D006D4BB8 /* Address.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Address.cc; sourceTree = "<group>"; };
 		2761F3F91EEB2F4D006D4BB8 /* Address.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Address.hh; sourceTree = "<group>"; };
+		276301211F38E6D7004A1592 /* BLIP Protocol.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "BLIP Protocol.md"; path = "docs/BLIP Protocol.md"; sourceTree = "<group>"; };
+		276301221F38E6DC004A1592 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		2773FCFF1E69FD9100108780 /* Timer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timer.cc; sourceTree = "<group>"; };
 		2773FD001E69FD9100108780 /* Timer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Timer.hh; sourceTree = "<group>"; };
 		2773FD031E69FE2000108780 /* ActorProperty.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ActorProperty.cc; sourceTree = "<group>"; };
@@ -254,6 +256,8 @@
 		27EF69AE1E282549004748DF = {
 			isa = PBXGroup;
 			children = (
+				276301221F38E6DC004A1592 /* README.md */,
+				276301211F38E6D7004A1592 /* BLIP Protocol.md */,
 				27EF69C71E2825E6004748DF /* include */,
 				27EF69C91E2825E6004748DF /* src */,
 				27EF69EE1E28268A004748DF /* tests */,
