@@ -32,9 +32,12 @@ namespace LiteCore.Tests
         [Fact]
         public void TestDBQueryCollated()
         {
+#if NETCOREAPP1_0
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                return; // Not yet supported
+                Console.WriteLine("Linux support not finished yet");
+                return;
             }
+#endif
 
             RunTestVariants(() =>
             {
