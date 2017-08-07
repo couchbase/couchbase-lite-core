@@ -2,9 +2,12 @@
 
 # The BLIP Protocol
 
-**Version 2**
+**Version 2.0.1**
 
-By [Jens Alfke](mailto:jens@mooseyard.com) (April 2015)
+By [Jens Alfke](mailto:jens@mooseyard.com) (January 2017)
+
+v2.0.1: No protocol changes; mostly just cleanup and extra details, especially about the WebSocket encoding. (It does add a confession that the "Bye" protocol for closing connections isn't actually implemented or honored by current implementations.)  
+v2.0: Major update that bases the protocol on an underlying message transport (usually WebSockets), simplifies the header, and uses varint encodings.
 
 ## 1. Messages
 
@@ -29,11 +32,12 @@ Every request or response message has a set of flags that can be set by the appl
 
 ### 1.2. Error Replies
 
-A reply can indicate an error, at either the BLIP level (i.e. couldn't deliver the request to the recipient application) or the application level. In an error reply, the message properties provide information about the error:
+A reply can indicate an error, at either the BLIP level (i.e. couldn't deliver the request to the recipient application) or the application level. In an error reply, the message properties provide structured information about the error:
 
 * The "Error-Code" property's value is a decimal integer expressed in ASCII, in the range of a signed 32-bit integer.
 * The "Error-Domain" property's value is a string denoting a domain in which the error code should be interpreted. If missing, its default value is "BLIP".
 * Other properties may provide additional data about the error; applications can define their own schema for this.
+* The message body, if non-empty, contains an error message in UTF-8 format.
 
 The "BLIP" error domain uses the HTTP status codes, insofar as they make sense, as its error codes. The ones used thus far are:
 
@@ -48,7 +52,7 @@ Unspecified = 599
 
 Other error domains are application-specific, undefined by the protocol itself.
 
-(**Note:** The Objective-C implementation encodes Foundation framework NSErrors into error responses by storing the NSError's code and domain as the BLIP Error-Code and Error-Domain properties, and adding the contents of the NSError's userInfo dictionary as additional properties. When receiving an error response it decodes an NSError in the same way. This behavior is of course platform-specific, and is a convenience not mandated by the protocol.)
+>**Note:** The Objective-C implementation encodes Foundation framework NSErrors into error responses by storing the NSError's code and domain as the BLIP Error-Code and Error-Domain properties, and adding the contents of the NSError's userInfo dictionary as additional properties. When receiving an error response it decodes an NSError in the same way. This behavior is of course platform-specific, and is a convenience not mandated by the protocol.)
 
 ## 2. Message Delivery
 
@@ -74,7 +78,15 @@ The transport connection between the two peers is opened in the normal way for t
 
 There are currently no greetings or other preliminaries sent when the connection opens. Either peer (or both peers) just start sending messages when ready. [A special greeting message may be defined in the future.]
 
+#### 3.2.1. WebSocket transport details
+
+* A BLIP client opening a connection MUST request the WebSocket [subprotocol](https://hpbn.co/websocket/#subprotocol-negotiation) `BLIP`. A server supporting BLIP also MUST advertise support for this subprotocol. If one side supports BLIP but the other doesn't, BLIP messages cannot be sent; either side can close the connection or downgrade to some other WebSocket based schema.
+* BLIP messages are sent in binary WebSocket messages; text messages are not used, and receiving one is a fatal connection error.
+* Both BLIP and WebSocket use the terminology "messages" and "frames", where messages can be broken into sequences of frames. Try not to get them confused! A BLIP frame corresponds to (is sent as) a WebSocket message.
+
 ### 3.2. Closing The Connection
+
+>**Note:** Current implementations don't actually follow this protocol for closing connections. It would be a good idea to; it just hasn't come up as necessary yet.
 
 To initiate closing the connection, the peer does the following:
 
@@ -109,7 +121,9 @@ Normal messages are always placed into the queue at the tail end, which results 
 
 ### 3.4. Receiving Messages
 
-The receiver simply reads the frames one at a time from the input transport and uses their message types and request numbers to group them together into messages. 
+The receiver simply reads the frames one at a time from the input transport and uses their message types and request numbers (sec. 3.6) to group them together into messages.
+
+>**Note:** Requests (MSG) and responses (RPY) have _independent_ message number sequences, so a MSG frame with number 1 refers to a different message than an RPY frame with number 1. This is because RPY frames use the message numbering of the MSG they reply to. This is important to keep in mind when building a data structure that maps incoming message numbers to message objects!
 
 When the current frame does not have its more-coming flag set, that message is complete. Its properties are decoded, its body is decompressed if necessary, and the message is delivered to the application.
 
@@ -117,15 +131,20 @@ When the current frame does not have its more-coming flag set, that message is c
 
 A message is encoded into binary data, prior to being broken into frames, as follows:
 
-1. The properties are written out in pairs as alternating key and value strings. Each string is in C format: UTF-8 characters ending with a NUL byte. There is no padding.
-2. Certain common strings are abbreviated using a hardcoded dictionary. The abbreviations are strings consisting of a single control character (the ascii value of the character is the index of the string in the dictionary, starting at 1.) The current dictionary can be found in BLIPProperties.m in the reference implementation.
-3. The total length in bytes of the encoded properties is prepended to the property data as an unsigned **[varint](http://techoverflow.net/blog/2013/01/25/efficiently-encoding-variable-length-integers-in-cc/)**. **Important Note:** If there are no properties, the length (zero) still needs to be written!
-5. The body is appended to the property data.
-4. If the message's "compressed" flag is set, the body is compressed using the gzip "deflate" algorithm.
+1. First the properties are encoded.
+  1. The properties are written out in pairs as alternating key and value strings. Each string is in C format: UTF-8 characters ending with a NUL byte. There is no padding.
+  2. Certain common strings are abbreviated using a hardcoded dictionary. The abbreviations are strings consisting of a single control character: the ascii value of the character is the index of the string in the dictionary, starting at 1. (The current dictionary can be found in BLIPProperties.m in the reference implementation.) For example, the string `Profile` is encoded as the single byte `0x01`.
+2. Then the message is encoded:
+  1. The encoded message begins with the length in bytes of the encoded properties, as an unsigned **[varint](http://techoverflow.net/blog/2013/01/25/efficiently-encoding-variable-length-integers-in-cc/)**. **Important Note:** If there are no properties, the length (zero) still needs to be written!
+  2. After that come the encoded properties (if any).
+  3. Then comes the message body. (It doesn't need a delimiter; it ends at the end of the final frame.)
+    * If the message's "compressed" flag is set, the body (but not properties) is compressed using the gzip "deflate" algorithm.
 
 ### 3.6. Framing
 
-Frames — chunks of messages — are what is actually sent to the transport. Each frame needs a header to identify it to the reader. The header consists of the _request number_ and the _frame flags_, each encoded as an unsigned **[varint](http://techoverflow.net/blog/2013/01/25/efficiently-encoding-variable-length-integers-in-cc/)**
+Frames — chunks of messages — are what is actually sent to the transport. Each frame needs a header to identify it to the reader. The header consists of the _request number_ and the _frame flags_, each encoded as an unsigned **[varint](http://techoverflow.net/blog/2013/01/25/efficiently-encoding-variable-length-integers-in-cc/)**.
+
+>**Note:** The frame flags are currently always written as a single byte. The encoding is defined as a varint to leave room for future expansion. If a flag with value 0x80 or higher is ever defined, then flags may encode to two bytes.
 
 The Request Number is the serial number of the request, as described above. (A reply frame uses the serial number of the request that it's a reply to.)
 
@@ -139,7 +158,7 @@ MoreComing= 0x20
 Meta      = 0x40
 ```
 
-The `TypeMask` is actually a 3-bit integer, not a flag. Of the 8 possible message types, the ones currently defined are:
+The `TypeMask` is actually a 3-bit field, not a flag. Of the 8 possible message types, the ones currently defined are:
 ```
 MSG =    0x00
 RPY =    0x01
@@ -150,16 +169,16 @@ ACKRPY = 0x05
 
 The frame data follows after the header, of course.
 
-Note that properties are encoded at the message level, not the frame level. That means that the first frame of a message -- but _only_ the first frame -- will have the properties' byte-count immediately following its header. In most cases the properties will appear only in the first frame, but if the encoded properties are too long to fit, the remainder might end up in subsequent frames.
+>**Note:** Properties are encoded at the message level, not the frame level. That means that the first frame of a message -- but _only_ the first frame -- will have the properties' byte-count immediately following its header. In most cases the properties will appear only in the first frame, but if the encoded properties are too long to fit, the remainder might end up in subsequent frames.
 
 ### 3.7. Flow Control
 
-Flow control is necessary because different messages can be processed at different rates. A process might be receiving two messages at once, and the frames of one message are processed more slowly (maybe they're being written to a file.) If the sender sends those frames too fast, the receiver will have to buffer them and its memory usage will keep going up. But the receiver can't just stop reading from the socket, or the other faster message receiver will stop getting data.
+Flow control is necessary because different messages can be processed at different rates. A process might be receiving two large messages at once, and the frames of one message are processed more slowly (maybe they're being written to a file.) If the sender sends those frames too fast, the receiver will have to buffer them and its memory usage will keep going up. But the receiver can't just stop reading from the socket, or the other faster message receiver will stop getting data.
 
 BLIP provides per-message flow control via ACK frames that acknowledge receipt of data from a message. There are two types, ACKMSG and ACKRPY, the only difference being whether they acknowledge a MSG or RPY frame. The content of an ACK frame is a varint representing the total number of payload bytes received of that message so far.
 
 * A process receiving a multi-frame message (request or reply) should send an ACK frame every time the number of bytes received exceeds a multiple of some byte interval (currently 50000 bytes.)
-* A process sending a multi-frame message should stop sending frames of that message whenever the number of unacknowledged bytes (bytes sent minus highest byte count received in an ACK) exceeds a threshold (which is currenly 128000 bytes.)
+* A process sending a multi-frame message should stop sending frames of that message whenever the number of unacknowledged bytes (bytes sent minus highest byte count received in an ACK) exceeds a threshold (which is currenly 128000 bytes.) A message suspended this way is removed from the normal queue (sec. 3.3) until an ACK with a sufficiently high byte count is received.
 
 ### 3.8. Protocol Error Handling
 
