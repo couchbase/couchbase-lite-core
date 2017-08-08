@@ -109,6 +109,7 @@ namespace litecore {
         sqlite3_result_double(ctx, sum);
     }
 
+    // array_avg() returns the mean value of a numeric array.
     static void fl_array_avg(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         double sum = 0.0;
         double count = 0.0;
@@ -124,6 +125,7 @@ namespace litecore {
         }
     }
 
+    // array_contains(array, value) returns true if `array` contains `value`.
     static void fl_array_contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         slice comparand = valueAsStringSlice(argv[1]);
         bool found = false;
@@ -136,6 +138,7 @@ namespace litecore {
         sqlite3_result_int(ctx, found ? 1 : 0);
     }
 
+    // array_count() returns the number of non-null items in an array.
     static void fl_array_count(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         sqlite3_int64 count = 0;
         aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, bool& stop) {
@@ -147,6 +150,7 @@ namespace litecore {
         sqlite3_result_int64(ctx, count);
     }
 
+    // array_ifnull() returns the first non-null item in an array.
     static void fl_array_ifnull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         const Value* foundVal = nullptr;
         aggregateArrayOperation(ctx, argc, argv, [&foundVal](const Value* val, bool& stop) {
@@ -163,6 +167,7 @@ namespace litecore {
         }
     }
 
+    // array_length() returns the length of an array.
     static void fl_array_length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         sqlite3_int64 count = 0;
         aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, bool& stop) {
@@ -172,6 +177,7 @@ namespace litecore {
         sqlite3_result_int64(ctx, count);
     }
 
+    // array_max() returns the maximum number in an array.
     static void fl_array_max(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         double max = numeric_limits<double>::min();
         bool nonEmpty = false;
@@ -187,6 +193,7 @@ namespace litecore {
         }
     }
 
+    // array_min() returns the minimum number in an array.
     static void fl_array_min(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         double max = numeric_limits<double>::max();
         bool nonEmpty = false;
@@ -206,6 +213,7 @@ namespace litecore {
 #pragma mark - CONDITIONAL TESTS (NULL / MISSING / INF / NAN):
 
 
+    // ifmissing(...) returns its first non-MISSING argument.
     static void ifmissing(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         for(int i = 0; i < argc; i++) {
             if(sqlite3_value_type(argv[i]) != SQLITE_NULL) {
@@ -215,6 +223,7 @@ namespace litecore {
         }
     }
 
+    // ifmissingornull(...) returns its first non-MISSING, non-null argument.
     static void ifmissingornull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         for(int i = 0; i < argc; i++) {
             if(sqlite3_value_type(argv[i]) != SQLITE_NULL && sqlite3_value_bytes(argv[i]) > 0) {
@@ -224,6 +233,7 @@ namespace litecore {
         }
     }
 
+    // ifnull(...) returns its first non-null argument.
     static void ifnull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         for(int i = 0; i < argc; i++) {
             if(sqlite3_value_bytes(argv[i]) > 0) {
@@ -233,6 +243,7 @@ namespace litecore {
         }
     }
 
+    // missingif(a,b) returns MISSING if a==b, else returns a.
     static void missingif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto slice0 = valueAsSlice(argv[0]);
         auto slice1 = valueAsSlice(argv[1]);
@@ -247,6 +258,7 @@ namespace litecore {
         }
     }
 
+    // nullif(a,b) returns null if a==b, else returns a.
     static void nullif(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto slice0 = valueAsSlice(argv[0]);
         auto slice1 = valueAsSlice(argv[1]);
@@ -397,6 +409,7 @@ namespace litecore {
         return result;
     }
 
+    // contains(string, substring) returns 1 if `string` contains `substring`, else 0
     static void contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto arg0 = valueAsStringSlice(argv[0]);
         auto arg1 = valueAsStringSlice(argv[1]);
@@ -418,11 +431,13 @@ namespace litecore {
     }
 #endif
 
+    // length() returns the length in characters of a string.
     static void length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto arg = valueAsStringSlice(argv[0]).asString();
         sqlite3_result_int64(ctx, arg.size());
     }
 
+    // lower() converts all uppercase letters in a string to lowercase and returns the result.
     static void lower(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto arg = valueAsStringSlice(argv[0]).asString();
         string result = lowercase(arg);
@@ -451,6 +466,8 @@ namespace litecore {
         }
     }
 
+    // ltrim(str) removes leading space characters from `str` and returns the result.
+    // ltrim(str, chars) removes leading characters that are contained in the string `chars`.
     static void ltrim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto val = valueAsStringSlice(argv[0]).asString();
         if(argc == 2) {
@@ -516,6 +533,8 @@ namespace litecore {
     }
 #endif
 
+    // rtrim(str) removes trailing space characters from `str` and returns the result.
+    // rtrim(str, chars) removes trailing characters that are contained in the string `chars`.
     static void rtrim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto val = valueAsStringSlice(argv[0]).asString();
         if(argc == 2) {
@@ -540,6 +559,7 @@ namespace litecore {
     }
 #endif
 
+    // trim(str, [chars]) combines the effects of ltrim() and rtrim().
     static void trim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto val = valueAsStringSlice(argv[0]).asString();
         if(argc == 2) {
@@ -554,6 +574,7 @@ namespace litecore {
         sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
     }
 
+    // upper() converts all lowercase letters in a string to uppercase and returns the result.
     static void upper(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto arg = valueAsStringSlice(argv[0]).asString();
         string result(arg.size(), '\0');
@@ -654,6 +675,8 @@ namespace litecore {
     DefineUnaryMathFn(tan,   tan)
 
 
+    // atan2(x, y) returns the arctangent of y/x, i.e. the angle of the vector from the origin to
+    // (x, y). It works correctly in all quadrants, and when x=0.
     static void fl_atan2(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         if (isNumeric(ctx, argv[0]) && isNumeric(ctx, argv[1]))
             sqlite3_result_double(ctx, atan2(sqlite3_value_double(argv[1]),
@@ -692,14 +715,18 @@ namespace litecore {
         sqlite3_result_double(ctx, result);
     }
 
+    // round(n) returns the value of `n` rounded to the nearest integer.
+    // round(n, places) rounds n to `places` decimal places.
     static void fl_round(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         roundTo(ctx, argc, argv, round);
     }
 
+    // trunc(n, [places]) is like round(), but truncates, i.e. rounds toward zero.
     static void fl_trunc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         roundTo(ctx, argc, argv, trunc);
     }
 
+    // sign(n) returns the numeric sign of `n` as either -1, 0, or 1.
     static void fl_sign(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         if (!isNumeric(ctx, argv[0]))
             return;
@@ -753,49 +780,58 @@ namespace litecore {
         }
     }
 
+    // isarray(v) returns true if `v` is an array.
     static void isarray(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "array" ? 1 : 0;
         sqlite3_result_int(ctx, result);
     }
 
+    // isatom(v) returns true if `v` is a boolean, number or string.
     static void isatom(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto type = value_type(ctx, argv[0]);
         int result = (type == "boolean" || type == "number" || type == "string") ? 1 : 0;
         sqlite3_result_int(ctx, result);
     }
 
+    // isboolean(v) returns true if `v` is a boolean. (Since SQLite doesn't distinguish between
+    // booleans and integers, this will return false if a boolean value has gone through SQLite.)
     static void isboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "boolean" ? 1 : 0;
         sqlite3_result_int(ctx, result);
     }
 
+    // isnumber(v) returns true if `v` is a number.
     static void isnumber(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "number" ? 1 : 0;
         sqlite3_result_int(ctx, result);
     }
 
+    // isobject(v) returns true if `v` is a dictionary.
     static void isobject(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "object" ? 1 : 0;
         sqlite3_result_int(ctx, result);
     }
 
+    // isatom(v) returns true if `v` is a string.
     static void isstring(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         int result =  value_type(ctx, argv[0]) == "string" ? 1 : 0;
         sqlite3_result_int(ctx, result);
     }
 
+    // isatom(v) returns a string naming the type of `v`.
     static void type(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto result =  value_type(ctx, argv[0]);
         sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
     }
 
+    // toatom(v) returns a boolean/number/string derived from `v`:
+    // MISSING is MISSING.
+    // NULL is NULL.
+    // Arrays of length 1 are the result of TOATOM() on their single element.
+    // Objects of length 1 are the result of TOATOM() on their single value.
+    // Booleans, numbers, and strings are themselves.
+    // All other values are NULL.
     static void toatom(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        // MISSING is MISSING.
-        // NULL is NULL.
-        // Arrays of length 1 are the result of TOATOM() on their single element.
-        // Objects of length 1 are the result of TOATOM() on their single value.
-        // Booleans, numbers, and strings are themselves.
-        // All other values are NULL.
         switch(sqlite3_value_type(argv[0])) {
             case SQLITE_NULL:
                 sqlite3_result_null(ctx);
@@ -851,13 +887,14 @@ namespace litecore {
         }
     }
 
+    // toboolean(v) returns a boolean derived from `v`:
+    // MISSING is MISSING.
+    // NULL is NULL.
+    // False is false.
+    // Numbers +0, -0, and NaN are false.
+    // Empty strings, arrays, and objects are false.
+    // All other values are true.
     static void toboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        // MISSING is MISSING.
-        // NULL is NULL.
-        // False is false.
-        // Numbers +0, -0, and NaN are false.
-        // Empty strings, arrays, and objects are false.
-        // All other values are true.
         switch(sqlite3_value_type(argv[0])) {
             case SQLITE_NULL:
                 sqlite3_result_null(ctx);
@@ -930,14 +967,15 @@ namespace litecore {
         }
     }
 
+    // tonumber(v) returns a number derived from `v`:
+    // MISSING is MISSING.
+    // NULL is NULL.
+    // False is 0.
+    // True is 1.
+    // Numbers are themselves.
+    // Strings that parse as numbers are those numbers.
+    // All other values are NULL.
     static void tonumber(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        // MISSING is MISSING.
-        // NULL is NULL.
-        // False is 0.
-        // True is 1.
-        // Numbers are themselves.
-        // Strings that parse as numbers are those numbers.
-        // All other values are NULL.
         switch(sqlite3_value_type(argv[0])) {
             case SQLITE_NULL:
                 sqlite3_result_null(ctx);
@@ -970,14 +1008,15 @@ namespace litecore {
         }
     }
 
+    // tostring(v) returns a string derived from `v`:
+    // MISSING is MISSING.
+    // NULL is NULL.
+    // False is "false".
+    // True is "true".
+    // Numbers are their string representation.
+    // Strings are themselves.
+    // All other values are NULL.
     static void tostring(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        // MISSING is MISSING.
-        // NULL is NULL.
-        // False is "false".
-        // True is "true".
-        // Numbers are their string representation.
-        // Strings are themselves.
-        // All other values are NULL.
         switch(sqlite3_value_type(argv[0])) {
             case SQLITE_NULL:
                 sqlite3_result_null(ctx);
@@ -1014,6 +1053,7 @@ namespace litecore {
 #pragma mark - REGISTRATION:
 
 
+    // placeholder implementation for unimplemented functions; just returns a SQLite error.
     static void unimplemented(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         Warn("Calling unimplemented N1QL function; query will fail");
         sqlite3_result_error(ctx, "unimplemented N1QL function", -1);
