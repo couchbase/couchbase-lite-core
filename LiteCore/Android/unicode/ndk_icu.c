@@ -22,6 +22,9 @@
 #include <string.h>
 #include <android/log.h>
 
+#include "unicode/utypes.h"
+#include "unicode/ucol.h"
+
 /* Allowed version number ranges between [44, 999].
  * 44 is the minimum supported ICU version that was shipped in
  * Gingerbread (2.3.3) devices.

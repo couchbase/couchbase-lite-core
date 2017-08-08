@@ -187,6 +187,9 @@ elseif(UNIX AND NOT APPLE)
   set(ALL_SRC_FILES ${ALL_SRC_FILES} 
     LiteCore/Android/strlcat.c
     LiteCore/Android/arc4random.cc)
+  if(ANDROID)
+    set(ALL_SRC_FILES ${ALL_SRC_FILES} LiteCore/Android/unicode/ndk_icu.c)
+  endif()
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
