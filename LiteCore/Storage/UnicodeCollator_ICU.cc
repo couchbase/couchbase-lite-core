@@ -11,6 +11,7 @@
 #include "Logging.hh"
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
+#include "SQLiteCpp/Exception.h"
 #include <sqlite3.h>
 
 #include <string>
