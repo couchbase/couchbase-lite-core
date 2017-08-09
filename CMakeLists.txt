@@ -30,6 +30,8 @@ if(MSVC)
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    add_definitions(-DLITECORE_USES_ICU=1)
+
     # Enable relative RPATHs for installed bits
     set (CMAKE_INSTALL_RPATH "\$ORIGIN")
 
@@ -56,6 +58,24 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     endif()
     message("Using libc++ header files in ${LIBCXX_INCLUDE}")
     include_directories("${LIBCXX_INCLUDE}/c++/v1")
+    find_library(ICU4C_COMMON icuuc)
+    if (NOT ICU4C_COMMON)
+        message(FATAL_ERROR "libicuuc not found")
+    endif()
+    message("Found libicuuc at ${ICU4C_COMMON}")
+    find_library(ICU4C_I18N icui18n)
+    if (NOT ICU4C_I18N)
+        message(FATAL_ERROR "libicui18n not found")
+    endif()
+    message("Found libicui18n at ${ICU4C_I18N}")
+    find_path(LIBICU_INCLUDE unicode/ucol.h
+        HINTS "${CMAKE_BINARY_DIR}/tlm/deps/icu4c.exploded"
+        PATH_SUFFIXES include)
+    if (NOT LIBCXX_INCLUDE)
+        message(FATAL_ERROR "libicu header files not found")
+    endif()
+    message("Using libicu header files in ${LIBICU_INCLUDE}")
+    include_directories("${LIBICU_INCLUDE}")
 endif()
 
 if(WIN32 OR ANDROID)
@@ -254,7 +274,7 @@ if (APPLE)
                                     "-framework Security"
                                     z)
 elseif(UNIX AND NOT ANDROID)
-    target_link_libraries(LiteCore PUBLIC z)
+    target_link_libraries(LiteCore PUBLIC z ${ICU4C_COMMON} ${ICU4C_I18N})
 elseif(ANDROID)
    target_compile_definitions(LiteCoreStatic PUBLIC -D_CRYPTO_MBEDTLS)
     target_link_libraries(LiteCore PRIVATE "atomic" "log")
