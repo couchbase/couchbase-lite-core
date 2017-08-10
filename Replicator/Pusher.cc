@@ -359,14 +359,16 @@ namespace litecore { namespace repl {
             MessageBuilder reply(req);
             reply.dataSource = [this,blob](void *buf, size_t capacity) {
                 // Callback to read bytes from the blob into the BLIP message:
+                // For performance reasons this is NOT run on my actor thread, so it can't access
+                // my state directly; instead it calls _attachmentSent() at the end.
                 C4Error err;
                 auto bytesRead = c4stream_read(blob, buf, capacity, &err);
                 if (bytesRead < capacity) {
                     c4stream_close(blob);
-                    --_blobsInFlight;
+                    this->enqueue(&Pusher::_attachmentSent);
                 }
                 if (err.code) {
-                    warn("Error reading from blob: %d/%d", err.domain, err.code);
+                    this->warn("Error reading from blob: %d/%d", err.domain, err.code);
                     return -1;
                 }
                 return (int)bytesRead;
@@ -375,6 +377,11 @@ namespace litecore { namespace repl {
             return;
         }
         req->respondWithError(c4ToBLIPError(err));
+    }
+
+
+    void Pusher::_attachmentSent() {
+        --_blobsInFlight;
     }
 
 

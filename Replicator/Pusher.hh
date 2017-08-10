@@ -42,6 +42,7 @@ namespace litecore { namespace repl {
         void doneWithRev(const Rev&, bool successful);
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);
+        void _attachmentSent();
         C4ReadStream* readBlobFromRequest(MessageIn *req, slice &digest, C4Error *outError);
         void filterByDocIDs(fleeceapi::Array docIDs);
 
