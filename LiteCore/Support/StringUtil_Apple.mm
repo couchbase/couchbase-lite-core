@@ -6,10 +6,10 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
+#if __APPLE__
 #include "StringUtil.hh"
 #include "Logging.hh"
 
-#if __APPLE__
 #include <Foundation/Foundation.h>
 
 namespace litecore {
