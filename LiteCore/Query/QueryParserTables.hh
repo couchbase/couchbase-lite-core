@@ -142,12 +142,12 @@ namespace litecore {
 
         // Strings:
         {"contains"_sl,         2, 2},
-        {"length"_sl,           1, 1},
-        {"lower"_sl,            1, 1},
-        {"ltrim"_sl,            1, 2},
-        {"rtrim"_sl,            1, 2},
-        {"trim"_sl,             1, 2},
-        {"upper"_sl,            1, 1},
+        {"length"_sl,           1, 1, "N1QL_length"_sl},
+        {"lower"_sl,            1, 1, "N1QL_lower"_sl},
+        {"ltrim"_sl,            1, 2, "N1QL_ltrim"_sl},
+        {"rtrim"_sl,            1, 2, "N1QL_rtrim"_sl},
+        {"trim"_sl,             1, 2, "N1QL_trim"_sl},
+        {"upper"_sl,            1, 1, "N1QL_upper"_sl},
 
         // Types:
         {"isarray"_sl,          1, 1},

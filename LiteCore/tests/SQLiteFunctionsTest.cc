@@ -294,19 +294,19 @@ TEST_CASE("Unicode string functions", "[Query]") {
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "N1QL string functions", "[Query]") {
-    CHECK(query("SELECT length('')") == (vector<string>{"0"}));
-    CHECK(query("SELECT length('12345')") == (vector<string>{"5"}));
-    CHECK(query("SELECT length('cafés')") == (vector<string>{"5"}));
+    CHECK(query("SELECT N1QL_length('')") == (vector<string>{"0"}));
+    CHECK(query("SELECT N1QL_length('12345')") == (vector<string>{"5"}));
+    CHECK(query("SELECT N1QL_length('cafés')") == (vector<string>{"5"}));
 
-    CHECK(query("SELECT lower('cAFES17•')") == (vector<string>{"cafes17•"}));
-    CHECK(query("SELECT upper('cafes17')") == (vector<string>{"CAFES17"}));
+    CHECK(query("SELECT N1QL_lower('cAFES17•')") == (vector<string>{"cafes17•"}));
+    CHECK(query("SELECT N1QL_upper('cafes17')") == (vector<string>{"CAFES17"}));
 #if __APPLE__   // TODO: Implement Unicode-savvy UTF8ChangeCase for other platforms
-    CHECK(query("SELECT lower('cAFÉS17•')") == (vector<string>{"cafés17•"}));
-    CHECK(query("SELECT upper('cafés17')") == (vector<string>{"CAFÉS17"}));
+    CHECK(query("SELECT N1QL_lower('cAFÉS17•')") == (vector<string>{"cafés17•"}));
+    CHECK(query("SELECT N1QL_upper('cafés17')") == (vector<string>{"CAFÉS17"}));
 #endif
-    CHECK(query("SELECT ltrim('  x  ')") == (vector<string>{"x  "}));
-    CHECK(query("SELECT rtrim('  x  ')") == (vector<string>{"  x"}));
-    CHECK(query("SELECT  trim('  x  ')") == (vector<string>{"x"}));
+    CHECK(query("SELECT N1QL_ltrim('  x  ')") == (vector<string>{"x  "}));
+    CHECK(query("SELECT N1QL_rtrim('  x  ')") == (vector<string>{"  x"}));
+    CHECK(query("SELECT N1QL_trim('  x  ')") == (vector<string>{"x"}));
 }
 
 #if __APPLE__ || defined(_MSC_VER) || LITECORE_USES_ICU //FIXME: collator isn't available on all platforms yet

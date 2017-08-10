@@ -162,7 +162,7 @@ TEST_CASE("QueryParser SELECT WHAT", "[Query]") {
           == "SELECT fl_value(body, 'first') FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
     CHECK(parseWhere("['SELECT', {WHAT: [['.first'], ['length()', ['.middle']]],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_value(body, 'first'), length(fl_value(body, 'middle')) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+          == "SELECT fl_value(body, 'first'), N1QL_length(fl_value(body, 'middle')) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
     // Check the "." operator (like SQL "*"):
     CHECK(parseWhere("['SELECT', {WHAT: ['.'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
           == "SELECT fl_root(body) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
