@@ -1,4 +1,4 @@
-﻿//
+//
 //  SQLiteFunctionsTest.cc
 //  LiteCore
 //
@@ -12,6 +12,7 @@
 
 #include "LiteCoreTest.hh"
 #include "SQLite_Internal.hh"
+#include "StringUtil.hh"
 #include "UnicodeCollator.hh"
 #include "Fleece.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
@@ -232,6 +233,80 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite numeric ops", "[Query]") {
             == (vector<string>{"4.0", "2.0"}));
     CHECK(query("SELECT trunc(fl_value(kv.body, 'hey'), 1) FROM kv")
             == (vector<string>{"4.0", "2.5"}));
+}
+
+static void testTrim(const char16_t *str, int onSide, int leftTrimmed, int rightTrimmed) {
+    auto newStr = str;
+    size_t length = 0;
+    for (auto cp = str; *cp; ++cp)
+        ++length;
+    size_t newLength = length;
+
+    UTF16Trim(newStr, newLength, onSide);
+    CHECK(newStr - str == leftTrimmed);
+    CHECK(newLength == max(0l, (long)length - leftTrimmed - rightTrimmed));
+}
+
+static void testTrim(const char16_t *str, unsigned leftTrimmed, unsigned rightTrimmed) {
+    testTrim(str,-1, leftTrimmed, 0);
+    testTrim(str, 0, leftTrimmed, rightTrimmed);
+    testTrim(str, 1, 0, rightTrimmed);
+}
+
+TEST_CASE("Unicode string functions", "[Query]") {
+    CHECK(UTF8Length(""_sl) == 0);
+    CHECK(UTF8Length("x"_sl) == 1);
+    CHECK(UTF8Length("xy"_sl) == 2);
+    CHECK(UTF8Length("cafés"_sl) == 5);
+    CHECK(UTF8Length("“÷”"_sl) == 3);
+    CHECK(UTF8Length("😀"_sl) == 1);
+
+    CHECK(UTF8ChangeCase(""_sl, true) == ""_sl);
+    CHECK(UTF8ChangeCase("e"_sl, true) == "E"_sl);
+    CHECK(UTF8ChangeCase("E"_sl, true) == "E"_sl);
+    CHECK(UTF8ChangeCase("-"_sl, true) == "-"_sl);
+    CHECK(UTF8ChangeCase("Z•rGMai2"_sl, true) == "Z•RGMAI2"_sl);
+#if __APPLE__   // TODO: Implement Unicode-savvy UTF8ChangeCase for other platforms
+    CHECK(UTF8ChangeCase("Zérgmåī2"_sl, true) == "ZÉRGMÅĪ2"_sl);
+#endif
+    CHECK(UTF8ChangeCase("😀"_sl, true) == "😀"_sl);
+
+    CHECK(UTF8ChangeCase(""_sl, false) == ""_sl);
+    CHECK(UTF8ChangeCase("E"_sl, false) == "e"_sl);
+    CHECK(UTF8ChangeCase("e"_sl, false) == "e"_sl);
+    CHECK(UTF8ChangeCase("-"_sl, false) == "-"_sl);
+    CHECK(UTF8ChangeCase("Z•rGMai2"_sl, false) == "z•rgmai2"_sl);
+#if __APPLE__   // TODO: Implement Unicode-savvy UTF8ChangeCase for other platforms
+    CHECK(UTF8ChangeCase("zÉRGMÅĪ2"_sl, false) == "zérgmåī2"_sl);
+#endif
+    CHECK(UTF8ChangeCase("😀"_sl, false) == "😀"_sl);
+
+    testTrim(u"", 0, 0);
+    testTrim(u"x", 0, 0);
+    testTrim(u" x", 1, 0);
+    testTrim(u"x ", 0, 1);
+    testTrim(u" x ", 1, 1);
+    testTrim(u"   ", 3, 3);
+    testTrim(u"\n stuff goes here\r\t", 2, 2);
+    testTrim(u"\n stuff goes here\r\t", 2, 2);
+    testTrim(u"\u1680\u180e\u2000\u2007\u200a", 3, 1);
+    testTrim(u"\u2028\u2029\u2030\u205f\u3000", 2, 2);
+}
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "N1QL string functions", "[Query]") {
+    CHECK(query("SELECT length('')") == (vector<string>{"0"}));
+    CHECK(query("SELECT length('12345')") == (vector<string>{"5"}));
+    CHECK(query("SELECT length('cafés')") == (vector<string>{"5"}));
+
+    CHECK(query("SELECT lower('cAFES17•')") == (vector<string>{"cafes17•"}));
+    CHECK(query("SELECT upper('cafes17')") == (vector<string>{"CAFES17"}));
+#if __APPLE__   // TODO: Implement Unicode-savvy UTF8ChangeCase for other platforms
+    CHECK(query("SELECT lower('cAFÉS17•')") == (vector<string>{"cafés17•"}));
+    CHECK(query("SELECT upper('cafés17')") == (vector<string>{"CAFÉS17"}));
+#endif
+    CHECK(query("SELECT ltrim('  x  ')") == (vector<string>{"x  "}));
+    CHECK(query("SELECT rtrim('  x  ')") == (vector<string>{"  x"}));
+    CHECK(query("SELECT  trim('  x  ')") == (vector<string>{"x"}));
 }
 
 #if __APPLE__ || defined(_MSC_VER) || LITECORE_USES_ICU //FIXME: collator isn't available on all platforms yet

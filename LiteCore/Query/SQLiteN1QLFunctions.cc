@@ -5,12 +5,14 @@
 //  Created by Jens Alfke on 7/25/17.
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
+// Implementations of N1QL functions (except for a few that are built into SQLite.)
 
 #include "SQLite_Internal.hh"
 #include "SQLiteFleeceUtil.hh"
 #include "Path.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include "function_ref.hh"
 #include <regex>
 #include <cmath>
@@ -26,7 +28,21 @@ using namespace std;
 
 namespace litecore {
 
-    // Implementations of N1QL functions (except for a few that are built into SQLite.)
+    // Returns a string argument as a slice, or a null slice if the argument isn't a string.
+    static inline slice stringArgument(sqlite3_value *arg) noexcept {
+        if (sqlite3_value_type(arg) != SQLITE_TEXT)
+            return nullslice;
+        return valueAsStringSlice(arg);
+    }
+
+
+    // Sets SQLite return value to a string value from an alloc_slice, without copying.
+    static void result_alloc_slice(sqlite3_context *ctx, alloc_slice s) {
+        s.retain();
+        sqlite3_result_text(ctx, (char*)s.buf, (int)s.size, [](void *buf) {
+            alloc_slice::release({buf, 1});
+        });
+    }
 
 
 #pragma mark - ARRAY AGGREGATES:
@@ -379,6 +395,7 @@ namespace litecore {
     }
 #endif
 
+
 #pragma mark - STRINGS:
 
 
@@ -391,7 +408,7 @@ namespace litecore {
 
 
     static void fl_base64_decode(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg0 = valueAsStringSlice(argv[0]);
+        auto arg0 = stringArgument(argv[0]);
         size_t expectedLen = (arg0.size + 3) / 4 * 3;
         alloc_slice decoded(expectedLen);
         arg0.readBase64Into(decoded);
@@ -403,85 +420,63 @@ namespace litecore {
     }
 #endif
 
-    static string lowercase(string input) {
-        string result(input.size(), '\0');
-        transform(input.begin(), input.end(), result.begin(), ptr_fun<int, int>(tolower));
-        return result;
-    }
-
     // contains(string, substring) returns 1 if `string` contains `substring`, else 0
     static void contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg0 = valueAsStringSlice(argv[0]);
-        auto arg1 = valueAsStringSlice(argv[1]);
+        auto arg0 = stringArgument(argv[0]);
+        auto arg1 = stringArgument(argv[1]);
         sqlite3_result_int(ctx, arg0.find(arg1).buf != nullptr);
     }
 
-#if 0
-    static void init_cap(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg = valueAsStringSlice(argv[0]).asString();
-        string result = lowercase(arg);
-        auto iter = result.begin();
-        while(iter != result.end()) {
-            *iter = (char)toupper(*iter);
-            iter = find_if(iter, result.end(), not1(ptr_fun<int, int>(isalpha)));
-            iter = find_if(iter, result.end(),      ptr_fun<int, int>(isalpha));
-        }
-
-        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
-    }
-#endif
-
     // length() returns the length in characters of a string.
     static void length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg = valueAsStringSlice(argv[0]).asString();
-        sqlite3_result_int64(ctx, arg.size());
+        auto arg = stringArgument(argv[0]);
+        sqlite3_result_int64(ctx, UTF8Length(arg));
+    }
+
+    static void changeCase(sqlite3_context* ctx, sqlite3_value **argv, bool isUpper) noexcept {
+        try {
+            auto arg = stringArgument(argv[0]);
+            result_alloc_slice(ctx, UTF8ChangeCase(arg, isUpper));
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "upper() or lower() caught an exception!", -1);
+        }
     }
 
     // lower() converts all uppercase letters in a string to lowercase and returns the result.
     static void lower(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg = valueAsStringSlice(argv[0]).asString();
-        string result = lowercase(arg);
-        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
+        changeCase(ctx, argv, false);
     }
 
-    static void ltrim(string &s, const char* chars = nullptr) {
-        if(chars != nullptr) {
-            auto startPos = s.find_first_not_of(chars);
-            if(string::npos != startPos) {
-                s = s.substr(startPos);
+    static void trim(sqlite3_context* ctx, int argc, sqlite3_value **argv, int onSide) noexcept {
+        try {
+            if (argc != 1) {
+                // TODO: Implement 2nd parameter (string containing characters to trim)
+                sqlite3_result_error(ctx, "two-parameter trim() is unimplemented", SQLITE_ERROR);
+                return;
             }
-        } else {
-            s.erase(s.begin(), find_if(s.begin(), s.end(), not1(ptr_fun<int, int>(isspace))));
+            auto arg = argv[0];
+            if (sqlite3_value_type(arg) != SQLITE_TEXT) {
+                sqlite3_result_value(ctx, arg);
+                return;
+            }
+            auto chars = (const char16_t*)sqlite3_value_text16(arg);
+            size_t count = sqlite3_value_bytes16(arg) / 2;
+            UTF16Trim(chars, count, onSide);
+            sqlite3_result_text16(ctx, chars, (int)(2 * count), SQLITE_TRANSIENT);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "trim() caught an exception!", -1);
         }
     }
 
-    static void rtrim(string& s, const char* chars = nullptr) {
-        if(chars != nullptr) {
-            auto endPos = s.find_last_not_of(chars);
-            if(string::npos != endPos) {
-                s = s.substr(0, endPos + 1);
-            }
-        } else {
-            s.erase(find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(), s.end());
-        }
-    }
-
-    // ltrim(str) removes leading space characters from `str` and returns the result.
+    // ltrim(str) removes leading whitespace characters from `str` and returns the result.
     // ltrim(str, chars) removes leading characters that are contained in the string `chars`.
     static void ltrim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto val = valueAsStringSlice(argv[0]).asString();
-        if(argc == 2) {
-            ltrim(val, (const char*)sqlite3_value_text(argv[1]));
-        } else {
-            ltrim(val);
-        }
-
-        sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
+        trim(ctx, argc, argv, -1);
     }
 
 #if 0
     static void position(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto val = valueAsStringSlice(argv[0]).asString();
+        auto val = stringArgument(argv[0]).asString();
         unsigned long result = val.find((char *)sqlite3_value_text(argv[1]));
         if(result == string::npos) {
             sqlite3_result_int64(ctx, -1);
@@ -493,7 +488,7 @@ namespace litecore {
 
 #if 0
     static void repeat(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto base = valueAsStringSlice(argv[0]).asString();
+        auto base = stringArgument(argv[0]).asString();
         auto num = sqlite3_value_int(argv[1]);
         stringstream result;
         for(int i = 0; i < num; i++) {
@@ -507,9 +502,9 @@ namespace litecore {
 
 #if 0
     static void replace(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto val = valueAsStringSlice(argv[0]).asString();
-        auto search = valueAsStringSlice(argv[1]).asString();
-        auto replacement = valueAsStringSlice(argv[2]).asString();
+        auto val = stringArgument(argv[0]).asString();
+        auto search = stringArgument(argv[1]).asString();
+        auto replacement = stringArgument(argv[2]).asString();
         int n = -1;
         if(argc == 4) {
             n = sqlite3_value_int(argv[3]);
@@ -527,28 +522,21 @@ namespace litecore {
 
 #if 0
     static void reverse(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto val = valueAsStringSlice(argv[0]).asString();
+        auto val = stringArgument(argv[0]).asString();
         reverse(val.begin(), val.end());
         sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
     }
 #endif
 
-    // rtrim(str) removes trailing space characters from `str` and returns the result.
+    // rtrim(str) removes trailing whitespace characters from `str` and returns the result.
     // rtrim(str, chars) removes trailing characters that are contained in the string `chars`.
     static void rtrim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto val = valueAsStringSlice(argv[0]).asString();
-        if(argc == 2) {
-            rtrim(val, (const char *)sqlite3_value_text(argv[1]));
-        } else {
-            rtrim(val);
-        }
-
-        sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
+        trim(ctx, argc, argv, 1);
     }
 
 #if 0
     static void substr(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto val = valueAsStringSlice(argv[0]).asString();
+        auto val = stringArgument(argv[0]).asString();
         if(argc == 3) {
             val = val.substr(sqlite3_value_int(argv[1]), sqlite3_value_int(argv[2]));
         } else {
@@ -561,25 +549,12 @@ namespace litecore {
 
     // trim(str, [chars]) combines the effects of ltrim() and rtrim().
     static void trim(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto val = valueAsStringSlice(argv[0]).asString();
-        if(argc == 2) {
-            auto chars = (const char *)sqlite3_value_text(argv[1]);
-            ltrim(val, chars);
-            rtrim(val, chars);
-        } else {
-            ltrim(val);
-            rtrim(val);
-        }
-
-        sqlite3_result_text(ctx, val.c_str(), (int)val.size(), SQLITE_TRANSIENT);
+        trim(ctx, argc, argv, 0);
     }
 
     // upper() converts all lowercase letters in a string to uppercase and returns the result.
     static void upper(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg = valueAsStringSlice(argv[0]).asString();
-        string result(arg.size(), '\0');
-        transform(arg.begin(), arg.end(), result.begin(), ptr_fun<int, int>(toupper));
-        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
+        changeCase(ctx, argv, true);
     }
 
 
@@ -587,16 +562,16 @@ namespace litecore {
 
 
     static void regexp_like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg0 = valueAsStringSlice(argv[0]);
-        auto arg1 = valueAsStringSlice(argv[1]);
+        auto arg0 = stringArgument(argv[0]);
+        auto arg1 = stringArgument(argv[1]);
         regex r((char *)arg1.buf);
         int result = regex_search((char *)arg0.buf, r) ? 1 : 0;
         sqlite3_result_int(ctx, result);
     }
 
     static void regexp_position(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg0 = valueAsStringSlice(argv[0]);
-        auto arg1 = valueAsStringSlice(argv[1]);
+        auto arg0 = stringArgument(argv[0]);
+        auto arg1 = stringArgument(argv[1]);
         regex r((char *)arg1.buf);
         cmatch pattern_match;
         if(!regex_search((char *)arg0.buf, pattern_match, r)) {
@@ -608,9 +583,9 @@ namespace litecore {
     }
 
     static void regexp_replace(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto expression = valueAsStringSlice(argv[0]).asString();
-        auto pattern = valueAsStringSlice(argv[1]);
-        auto repl = valueAsStringSlice(argv[2]).asString();
+        auto expression = stringArgument(argv[0]).asString();
+        auto pattern = stringArgument(argv[1]);
+        auto repl = stringArgument(argv[2]).asString();
         string result;
         auto out = back_inserter(result);
         int n = -1;

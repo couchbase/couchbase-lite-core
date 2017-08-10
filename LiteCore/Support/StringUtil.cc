@@ -7,10 +7,13 @@
 //
 
 #include "StringUtil.hh"
+#include "Logging.hh"
 #include "PlatformIO.hh"
 #include <stdlib.h>
 
 namespace litecore {
+
+    using namespace fleece;
 
     std::string format(const char *fmt, ...) {
         va_list args;
@@ -112,10 +115,77 @@ namespace litecore {
     bool hasNoControlCharacters(fleece::slice sl) noexcept {
         auto s = (const uint8_t*)sl.buf;
         for (auto e = s + sl.size; s != e; ++s) {
-            if (*s < 32)
+            if (_usuallyFalse(*s < 32))
+                return false;
+            else if (_usuallyFalse(*s == 0xC0 && s + 1 != e && s[1] == 0x80)) // UTF-8 encoded NUL
                 return false;
         }
         return true;
     }
+
+    size_t UTF8Length(slice str) noexcept {
+        // See <https://en.wikipedia.org/wiki/UTF-8>
+        size_t length = 0;
+        auto s = (const uint8_t*)str.buf, e = (const uint8_t*)str.end();
+        while (s < e) {
+            uint8_t c = *s;
+            if (_usuallyTrue((c & 0x80) == 0))
+                s += 1;
+            else if (_usuallyTrue((c & 0xE0) == 0xC0))
+                s += 2;
+            else if ((c & 0xF0) == 0xE0)
+                s += 3;
+            else if ((c & 0xF8) == 0xF0)
+                s += 4;
+            else
+                s += 1;        // Invalid byte; skip over it
+            ++length;
+        }
+        return length;
+    }
+
+    bool UTF16IsSpace(char16_t c) noexcept {
+        // "ISO 30112 defines POSIX space characters as Unicode characters U+0009..U+000D, U+0020,
+        // U+1680, U+180E, U+2000..U+2006, U+2008..U+200A, U+2028, U+2029, U+205F, and U+3000."
+        if (c <= 0x20)
+            return c == 0x20 || (c >= 0x09 && c <= 0x0D);
+        else if (_usuallyTrue(c < 0x1680))
+            return false;
+        else
+            return c == 0x1680 || c == 0x180E || (c >= 0x2000 && c <= 0x200A && c != 0x2007)
+                || c == 0x2028 || c == 0x2029 || c == 0x205F || c == 0x3000;
+    }
+
+
+    void UTF16Trim(const char16_t* &chars, size_t &count, int side) noexcept {
+        if (side <= 0) {
+            while (count > 0 && UTF16IsSpace(*chars)) {
+                ++chars;
+                --count;
+            }
+        }
+        if (side >= 0) {
+            auto last = chars + count - 1;
+            while (count > 0 && UTF16IsSpace(*last)) {
+                --last;
+                --count;
+            }
+        }
+    }
+
+
+#if !__APPLE__    // TODO: Full implementation of UTF8ChangeCase for other platforms (see StringUtil_Apple.mm)
+
+    // Stub implementation for when case conversion is unavailable
+    alloc_slice UTF8ChangeCase(slice str, bool toUppercase) {
+        auto f = toUppercase ? toupper : tolower;
+        auto size = str.size;
+        alloc_slice result(size);
+        for (size_t i = 0; i < size; i++)
+            (uint8_t&)(result[i]) = (uint8_t) f(str[i]);
+        return result;
+    }
+
+#endif
 
 }
