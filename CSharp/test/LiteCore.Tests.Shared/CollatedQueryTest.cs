@@ -32,13 +32,6 @@ namespace LiteCore.Tests
         [Fact]
         public void TestDBQueryCollated()
         {
-#if NETCOREAPP1_0
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                Console.WriteLine("Linux support not finished yet");
-                return;
-            }
-#endif
-
             RunTestVariants(() =>
             {
                 CompileSelect(Json5("{WHAT: [ ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false}, " +
