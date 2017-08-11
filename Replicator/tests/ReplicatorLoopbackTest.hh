@@ -59,6 +59,7 @@ public:
     }
 
     void runReplicators(Replicator::Options opts1, Replicator::Options opts2) {
+        _replicatorFinished = false;
         _gotResponse = false;
         _statusChangedCalls = 0;
         _statusReceived = {};
@@ -91,8 +92,9 @@ public:
         _replServer->start();
 
         Log("Waiting for replication to complete...");
-        while (_replClient->status().level > kC4Stopped || _replServer->status().level > kC4Stopped)
+        while (!_replicatorFinished)
             this_thread::sleep_for(chrono::milliseconds(100));
+        
         Log(">>> Replication complete <<<");
         _checkpointID = _replClient->checkpointID();
         CHECK(_gotResponse);
@@ -146,6 +148,9 @@ public:
                 repl->stop();
             }
         }
+
+        if (_replClient->status().level == kC4Stopped && _replServer->status().level == kC4Stopped)
+            _replicatorFinished = true;
     }
 
     virtual void replicatorDocumentError(Replicator *repl,
@@ -277,6 +282,7 @@ public:
     Retained<Replicator> _replClient, _replServer;
     alloc_slice _checkpointID;
     unique_ptr<thread> _parallelThread;
+    atomic<bool> _replicatorFinished;
     bool _stopOnIdle {false};
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };

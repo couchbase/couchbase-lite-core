@@ -17,6 +17,8 @@
 
 namespace litecore {
 
+#pragma pack(1)
+
     // Layout of a single revision in encoded form. Rev tree is stored as a sequence of these
     // followed by a 32-bit zero.
     // Revs are stored in decending priority, with the current leaf rev(s) coming first.
@@ -71,5 +73,7 @@ namespace litecore {
         void copyTo(Rev &dst, const std::deque<Rev>&) const;
         RawRevision* copyFrom(const Rev &rev);
     };
+
+#pragma pack()
     
 }

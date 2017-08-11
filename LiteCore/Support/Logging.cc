@@ -104,11 +104,13 @@ namespace litecore {
 
 
     void LogDomain::setCallbackLogLevel(LogLevel level) noexcept {
+        unique_lock<mutex> lock(sLogMutex);
         sCallbackMinLevel = level;
         invalidateEffectiveLevels();
     }
 
     void LogDomain::setFileLogLevel(LogLevel level) noexcept {
+        unique_lock<mutex> lock(sLogMutex);
         sFileMinLevel = level;
         invalidateEffectiveLevels();
     }
@@ -122,7 +124,7 @@ namespace litecore {
 
     LogLevel LogDomain::computeLevel() noexcept {
         if (_effectiveLevel == LogLevel::Uninitialized) {
-            auto level = _level;
+            LogLevel level = _level;
 #if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
             // Use the level specified in the environment, if any:
             char *val = getenv((string("LiteCoreLog") + _name).c_str());
@@ -137,8 +139,10 @@ namespace litecore {
                     }
             }
             // Setting "LiteCoreLog" also sets the callback level to this level:
-            if (this == &DefaultLog)
+            if (this == &DefaultLog) {
+                unique_lock<mutex> lock(sLogMutex);
                 sCallbackMinLevel = min(sCallbackMinLevel, level);
+            }
 #endif
             setLevel(level);
         }
@@ -152,10 +156,11 @@ namespace litecore {
 
 
     void LogDomain::setLevel(litecore::LogLevel level) noexcept {
+        unique_lock<mutex> lock(sLogMutex);     // synchronize access to sCallbackMinLevel
         _level = level;
         // The effective level is the level at which I will actually trigger because there is
         // a place for my output to go:
-        _effectiveLevel = max(_level, min(sCallbackMinLevel, sFileMinLevel));
+        _effectiveLevel = max((LogLevel)_level, min(sCallbackMinLevel, sFileMinLevel));
     }
 
 

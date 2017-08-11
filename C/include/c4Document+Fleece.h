@@ -45,7 +45,7 @@ extern "C" {
     bool c4doc_hasOldMetaProperties(FLDict doc C4NONNULL) C4API;
 
     /** Re-encodes to Fleece, without any 1.x metadata properties. */
-    C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc C4NONNULL) C4API;
+    C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc) C4API;
 
     /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key.
         (This function cannot recognize child dictionaries of "_attachments", because it's not

@@ -107,8 +107,8 @@ private:
     LogLevel computeLevel() noexcept;
     static void invalidateEffectiveLevels() noexcept;
 
-    LogLevel _effectiveLevel {LogLevel::Uninitialized};
-    LogLevel _level;
+    std::atomic<LogLevel> _effectiveLevel {LogLevel::Uninitialized};
+    std::atomic<LogLevel> _level;
     const char* const _name;
     LogDomain* const _next;
     unsigned _lastObjRef {0};
