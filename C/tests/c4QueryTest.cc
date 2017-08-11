@@ -99,6 +99,16 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query IN", "[Query][C]") {
+    // Type 1: RHS is an expression; generates a call to array_contains
+    compile(json5("['IN', 'reading', ['.', 'likes']]"));
+    CHECK(run() == (vector<string>{"0000004", "0000056", "0000064", "0000079", "0000099"}));
+
+    // Type 2: RHS is an array literal; generates a SQL "IN" expression
+    compile(json5("['IN', ['.', 'name', 'first'], ['[]', 'Eddie', 'Verna']]"));
+    CHECK(run() == (vector<string>{"0000091", "0000093"}));
+}
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query sorted", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"),
             json5("[['.', 'name', 'last']]"));

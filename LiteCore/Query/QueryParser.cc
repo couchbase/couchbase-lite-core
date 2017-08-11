@@ -493,6 +493,12 @@ namespace litecore {
     }
 
 
+    // Handles array literals (the "[]" op)
+    // But note that this op is treated specially if it's an operand of "IN" (see inOp)
+    void QueryParser::arrayLiteralOp(slice op, Array::iterator& operands) {
+        functionOp("array_of()"_sl, operands);
+    }
+
     // Handles EXISTS
     void QueryParser::existsOp(slice op, Array::iterator& operands) {
         // "EXISTS propertyname" turns into a call to fl_exists()
@@ -548,9 +554,33 @@ namespace litecore {
 
     // Handles "x IN y" and "x NOT IN y" expressions
     void QueryParser::inOp(slice op, Array::iterator& operands) {
-        parseNode(operands.value());
-        _sql << ' ' << op << ' ';
-        writeArgList(++operands);
+        bool notIn = (op != "IN"_sl);
+        auto arrayOperand = operands[1]->asArray();
+        if (arrayOperand && arrayOperand->count() > 0 && arrayOperand->get(0)->asString() == "[]"_sl) {
+            // RHS is a literal array, so use SQL "IN" syntax:
+            parseNode(operands[0]);
+            _sql << ' ' << op << ' ';
+            Array::iterator arrayOperands(arrayOperand);
+            writeArgList(++arrayOperands);
+
+        } else {
+            // Otherwise generate a call to array_contains():
+            _context.push_back(&kArgListOperation);     // prevents extra parens around operands
+
+            if (notIn)
+                _sql << "(NOT ";
+
+            _sql << "array_contains(";
+            parseNode(operands[1]);     // yes, operands are in reverse order
+            _sql << ", ";
+            parseNode(operands[0]);
+            _sql << ")";
+
+            if (notIn)
+                _sql << ")";
+
+            _context.pop_back();
+        }
     }
 
 

@@ -63,10 +63,16 @@ TEST_CASE("QueryParser basic", "[Query]") {
           == "(1 + 2) * -(3 + 4)");
     CHECK(parseWhere("['BETWEEN', 10, 0, 100]")
           == "10 BETWEEN 0 AND 100");
-    CHECK(parseWhere("['IN', ['.', 'name'], 'Webbis', 'Wowbagger']")
+    CHECK(parseWhere("['=', ['.', 'candies'], ['[]', 'm&ms', 'jujubes']]")
+          == "fl_value(body, 'candies') = array_of('m&ms', 'jujubes')");
+    CHECK(parseWhere("['IN', ['.', 'name'], ['[]', 'Webbis', 'Wowbagger']]")
           == "fl_value(body, 'name') IN ('Webbis', 'Wowbagger')");
-    CHECK(parseWhere("['NOT IN', ['.', 'age'], 6, 7, 8]")
-          == "fl_value(body, 'age') NOT IN (6, 7, 8)");
+    CHECK(parseWhere("['NOT IN', ['.', 'name'], ['[]', 'Webbis', 'Wowbagger']]")
+          == "fl_value(body, 'name') NOT IN ('Webbis', 'Wowbagger')");
+    CHECK(parseWhere("['IN', 'licorice', ['.', 'candies']]")
+          == "array_contains(fl_value(body, 'candies'), 'licorice')");
+    CHECK(parseWhere("['NOT IN', 7, ['.', 'ages']]")
+          == "(NOT array_contains(fl_value(body, 'ages'), 7))");
     CHECK(parseWhere("['.', 'addresses', [1], 'zip']")
           == "fl_value(body, 'addresses[1].zip')");
     CHECK(parseWhere("['.', 'addresses', [1], 'zip']")

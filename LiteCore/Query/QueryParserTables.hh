@@ -26,6 +26,7 @@ namespace litecore {
         {"."_sl,       0, 9,  9,  &QueryParser::propertyOp},
         {"$"_sl,       1, 1,  9,  &QueryParser::parameterOp},
         {"?"_sl,       1, 9,  9,  &QueryParser::variableOp},
+        {"[]"_sl,      0, 9,  9,  &QueryParser::arrayLiteralOp},
 
         {"MISSING"_sl, 0, 0,  9,  &QueryParser::missingOp},
 
@@ -97,6 +98,7 @@ namespace litecore {
         {"array_length"_sl,     1, 1},
         {"array_max"_sl,        1, 1},
         {"array_min"_sl,        1, 1},
+        {"array_of"_sl,         0, 9},
         {"array_sum"_sl,        1, 1},
 
         // Comparison:

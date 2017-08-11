@@ -86,6 +86,7 @@ namespace litecore {
         void prefixOp(slice, fleece::Array::iterator&);
         void postfixOp(slice, fleece::Array::iterator&);
         void infixOp(slice, fleece::Array::iterator&);
+        void arrayLiteralOp(slice, fleece::Array::iterator&);
         void betweenOp(slice, fleece::Array::iterator&);
         void existsOp(slice, fleece::Array::iterator&);
         void collateOp(slice, fleece::Array::iterator&);
