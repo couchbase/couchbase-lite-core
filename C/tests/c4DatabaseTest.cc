@@ -490,3 +490,16 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
     REQUIRE(c4blob_getSize(store, key1) == -1);
     REQUIRE(c4blob_getSize(store, key2) == -1);
 }
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
+    string srcPath(sFixturesDir + "iosdb.cblite2/");
+    string destPath(TempDir() + "iosdb.cblite2/");
+    C4DatabaseConfig config = { };
+    config.flags = kC4DB_Create | kC4DB_SharedKeys | kC4DB_Bundled;
+    C4Error error;
+    REQUIRE(c4db_copy(c4str(srcPath.data()), c4str(destPath.data()), &config, &error));
+    auto db = c4db_open(c4str(destPath.data()), &config, &error);
+    REQUIRE(db);
+    CHECK(c4db_getDocumentCount(db) == 2);
+    c4db_free(db);
+}

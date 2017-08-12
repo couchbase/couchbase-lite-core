@@ -394,6 +394,24 @@ namespace c4Internal {
         return uuid;
     }
     
+    void Database::resetUUIDs() {
+        auto &store = getKeyStore((string)kC4InfoStore);
+        beginTransaction();
+        try {
+            UUID uuid;
+            slice uuidSlice{&uuid, sizeof(uuid)};
+            GenerateUUID(uuidSlice);
+            store.set(kPublicUUIDKey, uuidSlice, transaction());
+            GenerateUUID(uuidSlice);
+            store.set(kPrivateUUIDKey, uuidSlice, transaction());
+        } catch (...) {
+            endTransaction(false);
+            throw;
+        }
+        
+        endTransaction(true);
+    }
+    
     
 #pragma mark - TRANSACTIONS:
 

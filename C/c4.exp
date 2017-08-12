@@ -35,6 +35,7 @@ _c4db_openAgain
 _c4db_retain
 _c4db_free
 _c4db_close
+_c4db_copy
 _c4db_delete
 _c4db_deleteAtPath
 _c4db_compact

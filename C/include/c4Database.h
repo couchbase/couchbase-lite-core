@@ -93,6 +93,15 @@ extern "C" {
         The new connection is completely independent and can be used on another thread. */
     C4Database* c4db_openAgain(C4Database* db C4NONNULL,
                                C4Error *outError) C4API;
+    
+    /** Copies a prebuilt database from the given source path and places it in the destination
+        path.  If a database already exists at that directory then it will be overwritten.  
+        However if there is a failure, the original database will be restored as if nothing
+        happened */
+    bool c4db_copy(C4String sourcePath,
+                   C4String destinationPath,
+                   const C4DatabaseConfig* config,
+                   C4Error* error);
 
     /** Increments the reference count of the database handle. The next call to
         c4db_free() will have no effect. Therefore calls to c4db_retain must be balanced by calls

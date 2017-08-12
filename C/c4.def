@@ -30,6 +30,7 @@ c4db_openAgain
 c4db_retain
 c4db_free
 c4db_close
+c4db_copy
 c4db_delete
 c4db_deleteAtPath
 c4db_compact
