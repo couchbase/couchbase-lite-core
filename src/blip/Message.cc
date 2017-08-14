@@ -112,7 +112,7 @@ namespace litecore { namespace blip {
                 _in.reset(new fleeceapi::JSONEncoder);
                 // Get the length of the properties, and move `frame` past the length field:
                 if (!ReadUVarInt32(&frame, &_propertiesSize))
-                    throw "frame too small";
+                    throw std::runtime_error("frame too small");
             }
 
             if (!_properties && (_in->bytesWritten() + frame.size) >= _propertiesSize) {
@@ -122,7 +122,7 @@ namespace litecore { namespace blip {
                 frame.moveStart(remaining);
                 _properties = _in->finish();
                 if (_properties.size > 0 && _properties[_properties.size - 1] != 0)
-                    throw "message properties not null-terminated";
+                    throw std::runtime_error("message properties not null-terminated");
                 _in->reset();
                 if (!isError())
                     state = kBeginning;
@@ -148,7 +148,7 @@ namespace litecore { namespace blip {
                     _decompressor.reset( new zlibcomplete::GZipDecompressor );
                 string output = _decompressor->decompress(frame.asString());
                 if (output.empty())
-                    throw "invalid gzipped data";
+                    throw std::runtime_error("invalid gzipped data");
                 _in->writeRaw(slice(output));
             } else {
                 _in->writeRaw(frame);
@@ -157,7 +157,7 @@ namespace litecore { namespace blip {
             if (!(frameFlags & kMoreComing)) {
                 // Completed!
                 if (!_properties)
-                    throw "message ends before end of properties";
+                    throw std::runtime_error("message ends before end of properties");
                 _body = _in->finish();
                 _in.reset();
                 _decompressor.reset();

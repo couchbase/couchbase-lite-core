@@ -34,7 +34,7 @@ namespace litecore { namespace websocket {
         virtual ~WebSocketImpl();
 
         virtual bool send(fleece::slice message, bool binary =true) override;
-        virtual void close(int status =1000, fleece::slice message =fleece::nullslice) override;
+        virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) override;
 
         // Concrete socket implementation needs to call these:
         void gotHTTPResponse(int status, const fleeceapi::AllocedDict &headers);

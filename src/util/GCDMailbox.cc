@@ -63,6 +63,17 @@ namespace litecore { namespace actor {
         return mailbox ? mailbox->_actor : nullptr;
     }
 
+
+    static void safelyCall(void (^block)()) {
+        try {
+            block();
+        } catch (const std::exception &x) {
+            Warn("Caught exception in Actor: %s", x.what());
+        } catch (...) {
+            Warn("Caught unknown exception in Actor");
+        }
+    }
+
     
     void GCDMailbox::enqueue(void (^block)()) {
         beginLatency();
@@ -71,7 +82,7 @@ namespace litecore { namespace actor {
         auto wrappedBlock = ^{
             endLatency();
             beginBusy();
-            block();
+            safelyCall(block);
             afterEvent();
         };
         dispatch_async(_queue, wrappedBlock);
@@ -85,7 +96,7 @@ namespace litecore { namespace actor {
         auto wrappedBlock = ^{
             endLatency();
             beginBusy();
-            block();
+            safelyCall(block);
             afterEvent();
         };
         int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(delay).count();

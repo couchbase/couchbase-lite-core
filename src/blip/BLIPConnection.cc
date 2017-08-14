@@ -173,6 +173,11 @@ namespace litecore { namespace blip {
                 _webSocket->close();
         }
 
+        void _closeWithError(const char *msg) {
+            if (_webSocket)
+                _webSocket->close(kCodeAbnormal, slice(msg));
+        }
+
         void _closed(websocket::CloseStatus status) {
             _webSocket = nullptr;
             if (_connection) {
@@ -335,62 +340,70 @@ namespace litecore { namespace blip {
         
         /** WebSocketDelegate method -- Received a frame: */
         void _onWebSocketMessage(alloc_slice frame, bool binary) {
-            if (!binary) {
-                warn("Ignoring non-binary WebSocket message");
-                return;
-            }
-            // Read the frame header:
-            slice payload = frame;
-            uint64_t msgNo, flagsInt;
-            if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt)) {
-                warn("Illegal frame header");
-                return;
-            }
-            auto flags = (FrameFlags)flagsInt;
-            logVerbose("Received frame: %s #%llu, flags %02x, length %5ld",
-                  kMessageTypeNames[flags & kTypeMask], msgNo,
-                  (flags & ~kTypeMask), (long)payload.size);
-
-            // Handle the frame according to its type, and look up the MessageIn:
-            Retained<MessageIn> msg;
-            auto type = (MessageType)(flags & kTypeMask);
-            switch (type) {
-                case kRequestType:
-                    msg = pendingRequest(msgNo, flags);
-                    break;
-                case kResponseType:
-                case kErrorType: {
-                    msg = pendingResponse(msgNo, flags);
-                    break;
-                case kAckRequestType:
-                case kAckResponseType:
-                    receivedAck(msgNo, (type == kAckResponseType), payload);
-                    break;
-                default:
-                    warn("  Unknown frame type received");
-                    break;
+            try {
+                if (!binary) {
+                    warn("Ignoring non-binary WebSocket message");
+                    return;
                 }
-            }
+                // Read the frame header:
+                slice payload = frame;
+                uint64_t msgNo, flagsInt;
+                if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt))
+                    throw runtime_error("Illegal frame header");
+                auto flags = (FrameFlags)flagsInt;
+                logVerbose("Received frame: %s #%llu, flags %02x, length %5ld",
+                      kMessageTypeNames[flags & kTypeMask], msgNo,
+                      (flags & ~kTypeMask), (long)payload.size);
 
-            // Append the frame to the message:
-            if (msg) {
-                auto state = msg->receivedFrame(payload, flags);
-                
-                if (state == MessageIn::kEnd) {
-                    if (BLIPMessagesLog.willLog(LogLevel::Info)) {
-                        stringstream dump;
-                        bool withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
-                        msg->dump(dump, withBody);
-                        BLIPMessagesLog.log(LogLevel::Info, "RECEIVED: %s", dump.str().c_str());
+                // Handle the frame according to its type, and look up the MessageIn:
+                Retained<MessageIn> msg;
+                auto type = (MessageType)(flags & kTypeMask);
+                switch (type) {
+                    case kRequestType:
+                        msg = pendingRequest(msgNo, flags);
+                        break;
+                    case kResponseType:
+                    case kErrorType: {
+                        msg = pendingResponse(msgNo, flags);
+                        break;
+                    case kAckRequestType:
+                    case kAckResponseType:
+                        receivedAck(msgNo, (type == kAckResponseType), payload);
+                        break;
+                    default:
+                        warn("  Unknown frame type received");
+                        // For forward compatibility let's just ignore this instead of closing
+                        break;
                     }
                 }
 
-                if (type == kRequestType) {
-                    if (state == MessageIn::kEnd || state == MessageIn::kBeginning) {
-                        // Message complete!
-                        handleRequestReceived(msg, state);
+                // Append the frame to the message:
+                if (msg) {
+                    auto state = msg->receivedFrame(payload, flags);
+
+                    if (state == MessageIn::kEnd) {
+                        if (BLIPMessagesLog.willLog(LogLevel::Info)) {
+                            stringstream dump;
+                            bool withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
+                            msg->dump(dump, withBody);
+                            BLIPMessagesLog.log(LogLevel::Info, "RECEIVED: %s", dump.str().c_str());
+                        }
+                    }
+
+                    if (type == kRequestType) {
+                        if (state == MessageIn::kEnd || state == MessageIn::kBeginning) {
+                            // Message complete!
+                            handleRequestReceived(msg, state);
+                        }
                     }
                 }
+
+            } catch (const std::exception &x) {
+                WarnError("Caught exception handling incoming BLIP message: %s", x.what());
+                _closeWithError(x.what());
+            } catch (...) {
+                WarnError("Caught unknown exception handling incoming BLIP message");
+                _closeWithError("Unknown exception handling incoming message");
             }
         }
 

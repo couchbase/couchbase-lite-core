@@ -105,7 +105,7 @@ namespace litecore { namespace websocket {
         virtual bool send(fleece::slice message, bool binary =true) =0;
 
         /** Closes the WebSocket. Callable from any thread. */
-        virtual void close(int status =1000, fleece::slice message =fleece::nullslice) =0;
+        virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) =0;
 
     protected:
         friend class Provider;

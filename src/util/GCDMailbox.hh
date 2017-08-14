@@ -42,6 +42,7 @@ namespace litecore { namespace actor {
         static Actor* currentActor();
 
     private:
+        void runEvent(void (^block)());
         void afterEvent();
         
         Actor *_actor;

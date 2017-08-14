@@ -179,8 +179,10 @@ namespace litecore { namespace actor {
         try {
             auto &fn = front();
             fn();
+        } catch (const std::exception &x) {
+            Warn("Caught exception in Actor: %s", x.what());
         } catch (...) {
-            Warn("EXCEPTION thrown from actor method");
+            Warn("Caught unknown exception in Actor");
         }
         _actor->afterEvent();
         
