@@ -1,5 +1,5 @@
 //
-//  PrebuiltCopier.cpp
+//  PrebuiltCopier.cc
 //  LiteCore
 //
 //  Created by Jim Borden on 2017/08/15.
@@ -24,11 +24,7 @@ namespace litecore {
         FilePath backupPath;
         Log("Copying prebuilt database from %s to %s", from.path().data(), to.path().data());
         bool needBackup = to.exists();
-        
-        if(needBackup) {
-            
-        }
-        
+
         try {
             FilePath temp = FilePath::tempDirectory().mkTempDir();
             temp.delRecursive();
