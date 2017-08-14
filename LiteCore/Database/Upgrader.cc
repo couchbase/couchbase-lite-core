@@ -128,7 +128,8 @@ namespace litecore {
                 if (parentSequence) {
                     auto i = parentSequences.find(parentSequence);
                     if (i == parentSequences.end())
-                        throw "missing parent sequence";//FIX
+                        error::_throw(error::CorruptData,
+                                      "missing parent sequence while upgrading database");
                     history[1] = i->second;
                     ++put.historyCount;
                 }
@@ -172,7 +173,7 @@ namespace litecore {
             Encoder &enc = _newDB->sharedEncoder();
             JSONConverter converter(enc);
             if (!converter.encodeJSON(json))
-                throw "bad JSON"; //FIX
+                error::_throw(error::CorruptData, "invalid JSON data in database being upgraded");
             return enc.extractOutput();
         }
 
@@ -230,7 +231,8 @@ namespace litecore {
                 Encoder enc;
                 JSONConverter converter(enc);
                 if (!converter.encodeJSON(json)) {
-                    throw "bad JSON"; //FIX
+                    Warn("Upgrader: invalid JSON data in _local doc being upgraded; skipping");
+                    continue;
                 }
                 auto body = enc.extractOutput();
                 _newDB->putRawDocument("_local", docID, revID, body);

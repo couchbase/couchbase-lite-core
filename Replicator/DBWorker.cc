@@ -84,26 +84,29 @@ namespace litecore { namespace repl {
 
     // Implementation of public getCheckpoint(): Reads the local checkpoint & calls the callback
     void DBWorker::_getCheckpoint(CheckpointCallback callback) {
-        alloc_slice checkpointID(effectiveRemoteCheckpointDocID());
-        C4Error err;
-        c4::ref<C4RawDocument> doc( c4raw_get(_db,
-                                              kLocalCheckpointStore,
-                                              checkpointID,
-                                              &err) );
         alloc_slice body;
-        if (doc)
-            body = alloc_slice(doc->body);
-        else if (isNotFoundError(err))
-            err = {};
-        bool dbIsEmpty = c4db_getLastSequence(_db) == 0;
+        bool dbIsEmpty = false;
+        C4Error err;
+        alloc_slice checkpointID(effectiveRemoteCheckpointDocID(&err));
+        if (checkpointID) {
+            c4::ref<C4RawDocument> doc( c4raw_get(_db,
+                                                  kLocalCheckpointStore,
+                                                  checkpointID,
+                                                  &err) );
+            if (doc)
+                body = alloc_slice(doc->body);
+            else if (isNotFoundError(err))
+                err = {};
+            dbIsEmpty = c4db_getLastSequence(_db) == 0;
+        }
         callback(checkpointID, body, dbIsEmpty, err);
     }
 
 
     void DBWorker::_setCheckpoint(alloc_slice data, std::function<void()> onComplete) {
-        alloc_slice checkpointID(effectiveRemoteCheckpointDocID());
         C4Error err;
-        if (c4raw_put(_db, kLocalCheckpointStore, checkpointID, nullslice, data, &err))
+        alloc_slice checkpointID(effectiveRemoteCheckpointDocID(&err));
+        if (checkpointID && c4raw_put(_db, kLocalCheckpointStore, checkpointID, nullslice, data, &err))
             log("Saved local checkpoint %.*s to db", SPLAT(checkpointID));
         else
             gotError(err);
@@ -112,13 +115,12 @@ namespace litecore { namespace repl {
 
 
     // Computes the ID of the checkpoint document.
-    slice DBWorker::effectiveRemoteCheckpointDocID() {
+    slice DBWorker::effectiveRemoteCheckpointDocID(C4Error *err) {
         if (_remoteCheckpointDocID.empty()) {
             // Simplistic default value derived from db UUID and remote URL:
             C4UUID privateUUID;
-            C4Error err;
-            if (!c4db_getUUIDs(_db, nullptr, &privateUUID, &err))
-                throw "fail";//FIX
+            if (!c4db_getUUIDs(_db, nullptr, &privateUUID, err))
+                return nullslice;
             fleeceapi::Encoder enc;
             enc.beginArray();
             enc.writeString({&privateUUID, sizeof(privateUUID)});

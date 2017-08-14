@@ -72,7 +72,7 @@ namespace litecore { namespace repl {
         bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
                                   fleece::slice &checkpointID, c4::ref<C4RawDocument> &doc);
 
-        slice effectiveRemoteCheckpointDocID();
+        slice effectiveRemoteCheckpointDocID(C4Error*);
         void _getCheckpoint(CheckpointCallback);
         void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
         void _getChanges(C4SequenceNumber since, DocIDSet, unsigned limit,
