@@ -28,6 +28,7 @@
 #include "FilePath.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
+#include "PrebuiltCopier.hh"
 #include <thread>
 
 using namespace fleece;
@@ -108,77 +109,9 @@ C4Database* c4db_openAgain(C4Database* db,
 
 bool c4db_copy(C4String sourcePath, C4String destinationPath, const C4DatabaseConfig* config,
                C4Error *error) {
-    FilePath srcPath(slice(sourcePath).asString());
-    if(!srcPath.exists()) {
-        Warn("No database exists at %s, cannot copy!", (char *)sourcePath.buf);
-        error->code = ENOENT;
-        error->domain = POSIXDomain;
-        return false;
-    }
-    
-    FilePath destPath(slice(destinationPath).asString());
-    FilePath backupPath;
-    Log("Copying prebuilt database from %s to %s", (char *)sourcePath.buf, (char *)destinationPath.buf);
-    bool needBackup = destPath.exists();
-    
-    if(needBackup) {
-        Log("    ...database already exists at destination, preparing for backup");
-        
-        try {
-            // TODO: Have a way to restore these temp backups if a crash happens
-            string p = destPath.path();
-            chomp(p, '/');
-            chomp(p, '\\');
-            backupPath = FilePath(p + "_TEMP/");
-        } catch (const std::exception &x) {
-            c4Internal::recordException(x, error);
-            Warn("Failure to create backup directory for existing db (%s)",
-                 error::_what((error::Domain)error->domain, error->code).data());
-            return false;
-        }
-    }
-    
-    try {
-        bool ok = true;
-        FilePath temp = FilePath::tempDirectory().mkTempDir();
-        temp.delRecursive();
-        srcPath.copyTo(temp);
-        
-        auto db = c4db_open(c4str(temp.path().data()), config, error);
-        if(!db) {
-            ok = false;
-        }
-        
-        if(ok) {
-            Log("Resetting UUIDs...");
-            db->resetUUIDs();
-            c4db_free(db);
-            
-            if(needBackup) {
-                Log("Backing up destination DB...");
-                backupPath.delRecursive();
-                destPath.moveTo(backupPath);
-            }
-            
-            Log("Moving source DB to destination DB...");
-            temp.moveTo(destPath);
-            Log("Finished, asynchronously deleting backup");
-            thread( [=]{
-                backupPath.delRecursive();
-                Log("Copier finished async delete of backup db at %s", backupPath.path().c_str());
-            } ).detach();
-            return true;
-        }
-    } catchError(error)
-    
-    Warn("Failed to finish copying database (%s)",
-         error::_what((error::Domain)error->domain, error->code).data());
-    c4db_deleteAtPath(destinationPath, config, error);
-    if(needBackup && backupPath.exists()) {
-        backupPath.moveTo(destPath);
-    }
-    
-    return false;
+    FilePath from(slice(sourcePath).asString());
+    FilePath to(slice(destinationPath).asString());
+    return CopyPrebuiltDB(from, to, config, error);
 }
 
 
