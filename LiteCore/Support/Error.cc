@@ -31,6 +31,10 @@
 #include <cxxabi.h>
 #endif
 
+#ifndef LITECORE_IMPL
+#include "c4Base.h"     // Ugly layering violation, but needed for using Error in other libs
+#endif
+
 
 namespace litecore {
 
@@ -89,6 +93,7 @@ namespace litecore {
     static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
                   "Incomplete domain name table");
 
+#ifdef LITECORE_IMPL
     static const char* litecore_errstr(error::LiteCoreError code) {
         static const char* kLiteCoreMessages[] = {
             // These must match up with the codes in the declaration of LiteCoreError
@@ -216,8 +221,11 @@ namespace litecore {
             str = "(unknown WebSocket status)";
         return str;
     }
+#endif // LITECORE_IMPL
+
 
     string error::_what(error::Domain domain, int code) noexcept {
+#ifdef LITECORE_IMPL
         switch (domain) {
             case LiteCore:
                 return litecore_errstr((LiteCoreError)code);
@@ -234,6 +242,12 @@ namespace litecore {
             default:
                 return "unknown error domain";
         }
+#else
+        C4StringResult msg = c4error_getMessage({(C4ErrorDomain)domain, code});
+        string result((const char*)msg.buf, msg.size);
+        c4slice_free(msg);
+        return result;
+#endif
     }
 
 

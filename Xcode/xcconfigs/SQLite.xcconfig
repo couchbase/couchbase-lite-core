@@ -1,0 +1,21 @@
+//
+//  SQLite.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 8/14/17.
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+#include "static_lib.xcconfig"
+
+EXECUTABLE_PREFIX            = lib
+
+GCC_TREAT_WARNINGS_AS_ERRORS = NO
+GCC_WARN_SHADOW              = NO
+
+OTHER_CFLAGS                 = $(inherited) -Wno-ambiguous-macro -Wno-conversion -Wno-comma -Wno-conditional-uninitialized -Wno-unreachable-code
+
+// Compile options are described at <http://www.sqlite.org/compile.html>
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) SQLITE_ENABLE_FTS4 SQLITE_ENABLE_JSON1 SQLITE_ENABLE_FTS3_TOKENIZER SQLITE_ENABLE_LOCKING_STYLE SQLITE_ENABLE_MEMORY_MANAGEMENT SQLITE_ENABLE_STAT4 SQLITE_DISABLE_FTS3_UNICODE SQLITE_OMIT_LOAD_EXTENSION SQLITE_HAVE_ISNAN
+
+RUN_CLANG_STATIC_ANALYZER    = NO       // Static analysis of sqlite3.c takes a VERY LONG TIME

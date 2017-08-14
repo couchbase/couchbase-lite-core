@@ -12,7 +12,8 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 OPTION(LITECORE_BUILD_SQLITE "If ON, builds libsqlite as part of the build process")
 
-add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
+add_definitions(-DLITECORE_IMPL                     # Flag that says we're building LiteCore itself
+                -DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
                 -DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
                 -DNO_FILES                          # No file system support in CivetWeb (unneeded)

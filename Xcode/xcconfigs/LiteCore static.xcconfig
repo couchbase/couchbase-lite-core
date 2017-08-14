@@ -12,3 +12,5 @@ DSTROOT                      = /tmp/LiteCore_iOS.dst
 PRODUCT_NAME                 = LiteCore-static
 SKIP_INSTALL                 = YES
 STRIP_INSTALLED_PRODUCT      = NO
+
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_IMPL SQLITE_OMIT_LOAD_EXTENSION   // For SQLiteCpp

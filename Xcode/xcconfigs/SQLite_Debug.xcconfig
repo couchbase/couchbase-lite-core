@@ -1,0 +1,17 @@
+//
+//  SQLite_Debug.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 8/14/17.
+//  Copyright © 2017 Couchbase. All rights reserved.
+//
+
+#include "SQLite.xcconfig"
+
+GCC_OPTIMIZATION_LEVEL       = fast     // We always want SQLite to run fast, even in debug builds
+
+GCC_PREPROCESSOR_DEFINITIONS = $(GCC_PREPROCESSOR_DEFINITIONS) SQLITE_ENABLE_API_ARMOR
+
+// Note: SQLITE_DEBUG could be #defined temporarily during troubleshooting
+// <http://www.sqlite.org/compile.html#debug>
+// SQLITE_ENABLE_SQLLOG might also be useful
