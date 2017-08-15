@@ -10,10 +10,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
-OPTION(LITECORE_BUILD_SQLITE "If ON, builds libsqlite as part of the build process")
 
-add_definitions(-DLITECORE_IMPL                     # Flag that says we're building LiteCore itself
-                -DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
+add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
                 -DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
                 -DNO_FILES                          # No file system support in CivetWeb (unneeded)
@@ -83,7 +81,6 @@ if(WIN32 OR ANDROID)
     if(ANDROID)
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,libgcc.a")
     endif()
-    set(SQLITE3_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendor/SQLiteCpp/sqlite3)
 endif()
 
 ### SUBMODULES:
@@ -91,6 +88,7 @@ endif()
 include_directories("vendor/fleece/Fleece"
                     "vendor/fleece/vendor"
                     "vendor/SQLiteCpp/include"
+                    "vendor/SQLiteCpp/sqlite3"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
                     "vendor/BLIP-Cpp/src/util"
@@ -104,28 +102,19 @@ elseif(UNIX AND NOT APPLE)
   include_directories("LiteCore/Android")
 endif()
 
-if(WIN32 OR ANDROID OR LITECORE_BUILD_SQLITE)
-    set(SQLITECPP_INTERNAL_SQLITE OFF)
-    add_library(sqlite3 SHARED
-     vendor/SQLiteCpp/sqlite3/sqlite3.c
-     vendor/SQLiteCpp/sqlite3/sqlite3.h
-    )
-    install (TARGETS sqlite3
-             RUNTIME DESTINATION bin
-             LIBRARY DESTINATION lib)
-    include_directories("vendor/SQLiteCpp/sqlite3/")
+set(SQLITECPP_INTERNAL_SQLITE OFF)
+add_library(sqlite3 STATIC
+  vendor/SQLiteCpp/sqlite3/sqlite3.c
+  vendor/SQLiteCpp/sqlite3/sqlite3.h
+)
 
-    if(WINDOWS_STORE)
-        set(SQLITE3_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER -DSQLITE_OS_WINRT")
-    else()
-        set(SQLITE3_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER")
-    endif()
-    
-    if(WIN32)
-        set(SQLITE3_FLAGS "${SQLITE3_FLAGS} -DSQLITE_API=__declspec(dllexport)")
-    endif()
-    set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS ${SQLITE3_FLAGS})
+if(WINDOWS_STORE)
+  set(SQLITE3_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER -DSQLITE_OS_WINRT")
+else()
+  set(SQLITE3_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER")
 endif()
+
+set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS ${SQLITE3_FLAGS})
 
 add_subdirectory(REST)
 
@@ -142,8 +131,6 @@ if (APPLE)
 
   elseif(UNIX AND NOT ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_MBEDTLS")
-else()
-    include_directories(${SQLITE3_INCLUDE_DIR})
 endif()
 
 ### SOURCE FILES:
@@ -236,6 +223,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 endif()
 
 add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
+target_compile_definitions(LiteCoreStatic PRIVATE -DLITECORE_IMPL)
 if(WIN32)
     add_library(LiteCore SHARED MSVC/SQLiteTempDirectory.cc) #No-op for non-UWP
 else()
@@ -255,15 +243,14 @@ endif()
 
 set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 LiteCoreStatic
-								FleeceStatic
+                                FleeceStatic
+                                sqlite3
                                 SQLite3_UnicodeSN
                                 BLIPStatic
                                 CivetWeb
                                 ${NO_WHOLE_LIBRARY_FLAG})
-set(LITECORE_LIBRARIES_PUBLIC   sqlite3)
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
-target_link_libraries(LiteCore PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
 
 # Mac/iOS stuff
 if (APPLE)

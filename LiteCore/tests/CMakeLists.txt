@@ -46,12 +46,6 @@ else()
     else()
         set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
         target_link_libraries(CppTests ws2_32 zlibstatic Dbghelp.lib)
-        set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/sqlite3)
-        add_custom_command(TARGET CppTests POST_BUILD
-            COMMAND ${CMAKE_COMMAND}
-            -DFilesToCopy="${FilesToCopy}"
-            -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
-            -P ${TOP}MSVC/copy_artifacts.cmake)
     endif()
 endif()
 

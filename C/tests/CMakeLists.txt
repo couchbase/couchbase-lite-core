@@ -38,8 +38,7 @@ file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 
 if(MSVC)
     set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
-    set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/sqlite3
-                    ${BIN_TOP}/\$\(Configuration\)/LiteCore
+    set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore
                     ${BIN_TOP}/\$\(Configuration\)/LiteCoreREST)
     add_custom_command(TARGET C4Tests POST_BUILD
         COMMAND ${CMAKE_COMMAND}
