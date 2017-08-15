@@ -244,11 +244,11 @@ endif()
 set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 LiteCoreStatic
                                 FleeceStatic
-                                sqlite3
+                                ${NO_WHOLE_LIBRARY_FLAG}
                                 SQLite3_UnicodeSN
                                 BLIPStatic
                                 CivetWeb
-                                ${NO_WHOLE_LIBRARY_FLAG})
+                                sqlite3)
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 

@@ -22,11 +22,16 @@ set(TEST_SRC ${TEST_SRC}
              ${TOP}/LiteCore/tests/main.cpp
              ${TOP}/LiteCore/Support/StringUtil.cc
              ${TOP}/LiteCore/Support/FilePath.cc
-             ${TOP}/LiteCore/Support/Error.cc
-             ${TOP}/LiteCore/Support/Error_android.cc
-             ${TOP}/LiteCore/Support/Error_windows.cc
              ${TOP}/LiteCore/Support/Logging_Stub.cc
              ${TOP}/REST/Response.cc)
+
+if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+  # I give up trying to explain why Linux is the way it is...
+  set(TEST_SRC ${TEST_SRC}
+    ${TOP}/LiteCore/Support/Error.cc
+    ${TOP}/LiteCore/Support/Error_android.cc
+    ${TOP}/LiteCore/Support/Error_windows.cc)
+endif()
 if(MSVC)
 	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c ${TOP}/LiteCore/Support/PlatformIO.cc ${TOP}/MSVC/strlcat.c ${TOP}/MSVC/mkdtemp.cc ${TOP}/MSVC/mkstemp.cc)
 endif()
