@@ -365,7 +365,7 @@ namespace litecore {
             case  kValueIndex: {
                 QueryParser qp(tableName());
                 qp.writeCreateIndex(params);
-                db().exec(qp.SQL());
+                db().exec(qp.SQL(), LogLevel::Info);
                 break;
             }
             case kFullTextIndex: {
@@ -389,7 +389,7 @@ namespace litecore {
                     }
                 }
                 sql << ")";
-                db().exec(sql.str());
+                db().exec(sql.str(), LogLevel::Info);
 
                 // Index existing records:
                 db().exec("INSERT INTO \"" + tableName + "\" (rowid, text) SELECT sequence, " + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
@@ -419,10 +419,10 @@ namespace litecore {
         Transaction t(db());
         switch (type) {
             case  kValueIndex:
-                db().exec(string("DROP INDEX ") + indexName);
+                db().exec(string("DROP INDEX ") + indexName, LogLevel::Info);
                 break;
             case kFullTextIndex: {
-                db().exec(string("DROP VIRTUAL TABLE ") + indexName);
+                db().exec(string("DROP VIRTUAL TABLE ") + indexName, LogLevel::Info);
                 // TODO: Do I have to explicitly delete the triggers too?
                 break;
             }

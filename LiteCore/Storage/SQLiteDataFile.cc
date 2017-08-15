@@ -57,6 +57,9 @@ namespace litecore {
     // SQLite page size
     static const int64_t kPageSize = 4096;
 
+    // SQLite cache size (per connection)
+    static const size_t kCacheSize = 10 * MB;
+
     // Maximum size WAL journal will be left at after a commit
     static const int64_t kJournalSize = 5 * MB;
 
@@ -195,7 +198,8 @@ path.path().c_str());
             // Prior to 3.12, the default page size was 1024, which is less than optimal.
             // Note that setting the page size has to be done before any other command that touches
             // the database file.
-            _exec(format("PRAGMA page_size=%lld; ", (long long)kPageSize));
+            // The cache_size value is negative to tell SQLite it's in KB (hence the /1024.)
+            _exec(format("PRAGMA page_size=%lld", (long long)kPageSize));
         }
 
         withFileLock([this]{
@@ -204,14 +208,14 @@ path.path().c_str());
             if (userVersion == 0) {
                 // Configure persistent db settings, and create the schema:
                 _exec("PRAGMA journal_mode=WAL; "        // faster writes, better concurrency
-                     "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
-                     "BEGIN; "
-                     "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
-                     "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID; ");
+                      "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
+                      "BEGIN; "
+                      "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
+                      "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID; ");
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
                 _exec("PRAGMA user_version=201; "
-                     "END;");
+                      "END;");
             } else if (userVersion < kMinUserVersion) {
                 error::_throw(error::DatabaseTooOld);
             } else if (userVersion > kMaxUserVersion) {
@@ -219,10 +223,11 @@ path.path().c_str());
             }
         });
 
-        _exec(format("PRAGMA mmap_size=%d; "             // Memory-mapped reads
-                    "PRAGMA synchronous=normal; "       // Speeds up commits
-                    "PRAGMA journal_size_limit=%lld",   // Limit WAL disk usage
-                    kMMapSize, (long long)kJournalSize));
+        _exec(format("PRAGMA cache_size=%d; "            // Memory cache
+                     "PRAGMA mmap_size=%d; "             // Memory-mapped reads
+                     "PRAGMA synchronous=normal; "       // Speeds up commits
+                     "PRAGMA journal_size_limit=%lld",   // Limit WAL disk usage
+                     -(int)kCacheSize/1024, kMMapSize, (long long)kJournalSize));
 
 #if DEBUG
         // Deliberately make unordered queries unpredictable, to expose any LiteCore code that
@@ -399,16 +404,16 @@ path.path().c_str());
     }
 
 
-    int SQLiteDataFile::_exec(const string &sql) {
-        LogVerbose(SQL, "%s", sql.c_str());
+    int SQLiteDataFile::_exec(const string &sql, LogLevel logLevel) {
+        if (_usuallyFalse(SQL.willLog(logLevel)))
+            SQL.log(logLevel, "%s", sql.c_str());
         return _sqlDb->exec(sql);
     }
 
-    int SQLiteDataFile::exec(const string &sql) {
+    int SQLiteDataFile::exec(const string &sql, LogLevel logLevel) {
         Assert(inTransaction());
-        return _exec(sql);
+        return _exec(sql, logLevel);
     }
-
 
     int SQLiteDataFile::execWithLock(const string &sql) {
         checkOpen();
