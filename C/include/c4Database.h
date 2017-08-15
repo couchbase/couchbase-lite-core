@@ -101,7 +101,7 @@ extern "C" {
     bool c4db_copy(C4String sourcePath,
                    C4String destinationPath,
                    const C4DatabaseConfig* config,
-                   C4Error* error);
+                   C4Error* error) C4API;
 
     /** Increments the reference count of the database handle. The next call to
         c4db_free() will have no effect. Therefore calls to c4db_retain must be balanced by calls

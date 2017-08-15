@@ -492,14 +492,54 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
-    string srcPath(sFixturesDir + "iosdb.cblite2/");
-    string destPath(TempDir() + "iosdb.cblite2/");
+    C4Slice doc1ID = C4STR("doc001");
+    
+    string srcPath(sFixturesDir + "iosdb.cblite2" + kPathSeparator);
+    string destPath(TempDir() + "iosdb.cblite2" + kPathSeparator);
     C4DatabaseConfig config = { };
     config.flags = kC4DB_Create | kC4DB_SharedKeys | kC4DB_Bundled;
     C4Error error;
-    REQUIRE(c4db_copy(c4str(srcPath.data()), c4str(destPath.data()), &config, &error));
-    auto db = c4db_open(c4str(destPath.data()), &config, &error);
+    if(!c4db_deleteAtPath(c4str(destPath.c_str()), &config, &error)) {
+        REQUIRE(error.code == 0);
+    }
+    
+    auto db = c4db_open(c4str(destPath.c_str()), &config, &error);
+    createRev(db, doc1ID, kRevID, kBody);
+    CHECK(c4db_getDocumentCount(db) == 1);
+    c4db_free(db);
+    
+    REQUIRE(c4db_copy(c4str(srcPath.c_str()), c4str(destPath.c_str()), &config, &error));
+    db = c4db_open(c4str(destPath.data()), &config, &error);
     REQUIRE(db);
     CHECK(c4db_getDocumentCount(db) == 2);
+    REQUIRE(c4db_delete(db, &error));
+    c4db_free(db);
+    
+    db = c4db_open(c4str(destPath.c_str()), &config, &error);
+    REQUIRE(db);
+    createRev(db, doc1ID, kRevID, kBody);
+    CHECK(c4db_getDocumentCount(db) == 1);
+    c4db_free(db);
+    
+    string originalDest = destPath;
+    destPath = TempDir() + "bogus" + kPathSeparator + "iosdb.cblite2" + kPathSeparator;
+    REQUIRE(!c4db_copy(c4str(srcPath.c_str()), c4str(destPath.c_str()), &config, &error));
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == C4ErrorCode::kC4ErrorNotFound);
+    
+    db = c4db_open(c4str(originalDest.c_str()), &config, &error);
+    REQUIRE(db);
+    CHECK(c4db_getDocumentCount(db) == 1);
+    c4db_free(db);
+    
+    srcPath += string("bogus") + kPathSeparator;
+    destPath = originalDest;
+    REQUIRE(!c4db_copy(c4str(srcPath.c_str()), c4str(destPath.c_str()), &config, &error));
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == C4ErrorCode::kC4ErrorNotFound);
+    
+    db = c4db_open(c4str(originalDest.c_str()), &config, &error);
+    REQUIRE(db);
+    CHECK(c4db_getDocumentCount(db) == 1);
     c4db_free(db);
 }

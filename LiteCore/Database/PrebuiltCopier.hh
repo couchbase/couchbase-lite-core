@@ -7,10 +7,11 @@
 //
 
 #pragma once
-#include "FilePath.hh"
-#include "Database.hh"
-#include "c4Database.h"
+
+struct C4DatabaseConfig;
 
 namespace litecore {
-    bool CopyPrebuiltDB(const FilePath& from, const FilePath& to, const C4DatabaseConfig*, C4Error*);
+    class FilePath;
+    
+    void CopyPrebuiltDB(const FilePath& from, const FilePath& to, const C4DatabaseConfig*);
 }
