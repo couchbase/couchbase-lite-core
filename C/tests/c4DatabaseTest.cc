@@ -494,7 +494,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     C4Slice doc1ID = C4STR("doc001");
     
-    string srcPath(sFixturesDir + "iosdb.cblite2" + kPathSeparator);
+    stringstream ss;
+    ss << "LiteCore" << kPathSeparator << "tests" << kPathSeparator << "data" << kPathSeparator <<
+        "replacedb" << kPathSeparator << "ios120" << kPathSeparator << "iosdb.cblite2";
+    string srcPath(ss.str());
     string destPath(TempDir() + "iosdb.cblite2" + kPathSeparator);
     C4DatabaseConfig config = { };
     config.flags = kC4DB_Create | kC4DB_SharedKeys | kC4DB_Bundled;
