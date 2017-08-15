@@ -239,7 +239,8 @@ namespace litecore {
 
     FilePath FilePath::appendingToName(const std::string &suffix) const {
         if (isDir())
-            return FilePath(_dir + suffix, _file);
+            // Cut off the trailing slash, it will get added back in the constructor
+            return FilePath(_dir.substr(0, _dir.size() - 1) + suffix, _file);
         else
             return FilePath(_dir, _file + suffix);
     }

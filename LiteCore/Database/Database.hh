@@ -58,6 +58,7 @@ namespace c4Internal {
         static const slice kPrivateUUIDKey;
 
         UUID getUUID(slice key);
+        void resetUUIDs();
 
         void rekey(const C4EncryptionKey *newKey);
 

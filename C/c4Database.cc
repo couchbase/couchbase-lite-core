@@ -26,6 +26,10 @@
 
 #include "SecureRandomize.hh"
 #include "FilePath.hh"
+#include "Error.hh"
+#include "StringUtil.hh"
+#include "PrebuiltCopier.hh"
+#include <thread>
 
 using namespace fleece;
 
@@ -101,6 +105,15 @@ C4Database* c4db_openAgain(C4Database* db,
         return nullptr;
     string path = db->path();
     return c4db_open({path.data(), path.size()}, c4db_getConfig(db), outError);
+}
+
+bool c4db_copy(C4String sourcePath, C4String destinationPath, const C4DatabaseConfig* config,
+               C4Error *error) noexcept {
+    return tryCatch(error, [=] {
+        FilePath from(slice(sourcePath).asString());
+        FilePath to(slice(destinationPath).asString());
+        return CopyPrebuiltDB(from, to, config);
+    });
 }
 
 
