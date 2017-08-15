@@ -671,6 +671,27 @@
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "LiteCore static";
 		};
+		27DF7D8A1F4289900022F3DF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27DF7D621F4236500022F3DF;
+			remoteInfo = SQLite;
+		};
+		27DF7D8F1F4289E60022F3DF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27DF7D621F4236500022F3DF;
+			remoteInfo = SQLite;
+		};
+		27DF7D911F428A510022F3DF /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
+			remoteInfo = Fleece;
+		};
 		27EF81151917EF4000A327B9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -2587,6 +2608,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				27DF7D921F428A510022F3DF /* PBXTargetDependency */,
 				272850E51E9CABD2009CA22F /* PBXTargetDependency */,
 			);
 			name = "LiteCore-iOS Tests";
@@ -2639,6 +2661,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				27DF7D901F4289E60022F3DF /* PBXTargetDependency */,
 				279D41071EA54F0200D8DD9D /* PBXTargetDependency */,
 				93CD01191E933C0600AFB3FA /* PBXTargetDependency */,
 				27FA09CA1D70BA3C005888AA /* PBXTargetDependency */,
@@ -2679,6 +2702,7 @@
 				720EA3F11BA7EAD9002B8416 /* PBXBuildRule */,
 			);
 			dependencies = (
+				27DF7D8B1F4289900022F3DF /* PBXTargetDependency */,
 				279D41091EA54F0900D8DD9D /* PBXTargetDependency */,
 				72DE481A1E9C559300B60952 /* PBXTargetDependency */,
 				27FA09C51D70AE96005888AA /* PBXTargetDependency */,
@@ -3456,6 +3480,21 @@
 			isa = PBXTargetDependency;
 			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
 			targetProxy = 27DF4C2A1ECCD79A00EE6B8D /* PBXContainerItemProxy */;
+		};
+		27DF7D8B1F4289900022F3DF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27DF7D621F4236500022F3DF /* SQLite */;
+			targetProxy = 27DF7D8A1F4289900022F3DF /* PBXContainerItemProxy */;
+		};
+		27DF7D901F4289E60022F3DF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27DF7D621F4236500022F3DF /* SQLite */;
+			targetProxy = 27DF7D8F1F4289E60022F3DF /* PBXContainerItemProxy */;
+		};
+		27DF7D921F428A510022F3DF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Fleece;
+			targetProxy = 27DF7D911F428A510022F3DF /* PBXContainerItemProxy */;
 		};
 		27EF81161917EF4000A327B9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
