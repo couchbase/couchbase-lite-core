@@ -109,9 +109,9 @@ C4Database* c4db_openAgain(C4Database* db,
 
 bool c4db_copy(C4String sourcePath, C4String destinationPath, const C4DatabaseConfig* config,
                C4Error *error) noexcept {
-    FilePath from(slice(sourcePath).asString());
-    FilePath to(slice(destinationPath).asString());
     return tryCatch(error, [=] {
+        FilePath from(slice(sourcePath).asString());
+        FilePath to(slice(destinationPath).asString());
         return CopyPrebuiltDB(from, to, config);
     });
 }

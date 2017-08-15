@@ -40,10 +40,7 @@ namespace litecore {
             Log("Backing up destination DB...");
             
             // TODO: Have a way to restore these temp backups if a crash happens?
-            string p = to.path();
-            chomp(p, '/');
-            chomp(p, '\\');
-            backupPath = FilePath(p + "_TEMP/");
+            backupPath = to.appendingToName("_TEMP");
             backupPath.delRecursive();
             to.moveTo(backupPath);
         }
@@ -51,15 +48,15 @@ namespace litecore {
         try {
             Log("Moving source DB to destination DB...");
             temp.moveTo(to);
-        } catch(exception &) {
+        } catch(...) {
             Warn("Failed to finish copying database");
             to.delRecursive();
             if(needBackup) {
                 if(backupPath.exists()) {
                     backupPath.moveTo(to);
                 } else {
-                    WarnError("The backup of the database has vanished. \
-                              This should be reported immediately");
+                    WarnError("The backup of the database has vanished. "
+                              "This should be reported immediately");
                 }
             }
             throw;
