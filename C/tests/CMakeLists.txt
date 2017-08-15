@@ -40,6 +40,8 @@ add_executable(C4Tests ${TEST_SRC} )
 
 target_link_libraries(C4Tests  LiteCore LiteCoreREST CivetWeb FleeceStatic)
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
+file(COPY ../../LiteCore/tests/data/replacedb/ios120/iosdb.cblite2 
+  DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests/data/replacedb/ios120)
 
 if(MSVC)
     set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
