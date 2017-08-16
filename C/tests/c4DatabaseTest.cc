@@ -496,7 +496,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     
     stringstream ss;
     ss << "LiteCore" << kPathSeparator << "tests" << kPathSeparator << "data" << kPathSeparator <<
-        "replacedb" << kPathSeparator << "ios120" << kPathSeparator << "iosdb.cblite2";
+        "replacedb" << kPathSeparator << "ios120" << kPathSeparator << "iosdb.cblite2" << kPathSeparator;
     string srcPath(ss.str());
     string destPath(TempDir() + "iosdb.cblite2" + kPathSeparator);
     C4DatabaseConfig config = { };
