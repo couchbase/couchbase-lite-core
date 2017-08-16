@@ -495,6 +495,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     C4Slice doc1ID = C4STR("doc001");
     
     stringstream ss;
+#if defined(CMAKE) && defined(_MSC_VER)
+    ss << ".." << kPathSeparator;
+#endif
     ss << "LiteCore" << kPathSeparator << "tests" << kPathSeparator << "data" << kPathSeparator <<
         "replacedb" << kPathSeparator << "ios120" << kPathSeparator << "iosdb.cblite2" << kPathSeparator;
     string srcPath(ss.str());
