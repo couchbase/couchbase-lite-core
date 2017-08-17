@@ -41,11 +41,12 @@ namespace litecore {
         void erase() override;
 
         bool supportsIndexes(IndexType t) const override               {return t == kValueIndex;}
-        void createIndex(slice expressionJSON,
+        void createIndex(slice name,
+                         slice expressionJSON,
                          IndexType =kValueIndex,
                          const IndexOptions* = nullptr) override;
-        void deleteIndex(slice expressionJSON, IndexType =kValueIndex) override;
         bool hasIndex(slice expressionJSON, IndexType =kValueIndex);
+        void deleteIndex(slice name, IndexType =kValueIndex) override;
 
         void createSequenceIndex();
 

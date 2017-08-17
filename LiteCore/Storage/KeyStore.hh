@@ -108,7 +108,8 @@ namespace litecore {
         };
 
         virtual bool supportsIndexes(IndexType) const                   {return false;}
-        virtual void createIndex(slice expressionJSON,
+        virtual void createIndex(slice name,
+                                 slice expressionJSON,
                                  IndexType =kValueIndex,
                                  const IndexOptions* = nullptr);
         virtual void deleteIndex(slice expressionJSON, IndexType =kValueIndex);

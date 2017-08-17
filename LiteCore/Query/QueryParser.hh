@@ -39,7 +39,7 @@ namespace litecore {
 
         void parseJustExpression(const fleece::Value *expression);
 
-        void writeCreateIndex(const fleece::Array *expressions);
+        void writeCreateIndex(const std::string &name, const fleece::Array *expressions);
 
         static void writeSQLString(std::ostream &out, slice str);
 

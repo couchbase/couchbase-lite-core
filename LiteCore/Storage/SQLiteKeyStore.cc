@@ -353,7 +353,8 @@ namespace litecore {
     }
 
 
-    void SQLiteKeyStore::createIndex(slice expression,
+    void SQLiteKeyStore::createIndex(slice indexName,
+                                     slice expression,
                                      IndexType type,
                                      const IndexOptions *options) {
         alloc_slice expressionFleece;
@@ -364,15 +365,32 @@ namespace litecore {
         switch (type) {
             case  kValueIndex: {
                 QueryParser qp(tableName());
-                qp.writeCreateIndex(params);
+                qp.writeCreateIndex((string)indexName, params);
                 db().exec(qp.SQL(), LogLevel::Info);
                 break;
             }
             case kFullTextIndex: {
                 // Create the FTS4 virtual table: ( https://www.sqlite.org/fts3.html )
                 auto tableName = SQLIndexName(params, type);
-                if (db().tableExists(tableName))
-                    return;
+                SQLite::Statement existingIndex(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
+                existingIndex.bind(1, (string)indexName);
+                if(existingIndex.executeStep()) {
+                    auto existingExpression = existingIndex.getColumn(0).getString();
+                    if(existingExpression == tableName) {
+                        existingIndex.reset();
+                        return; // No-op
+                    }
+                    
+                    deleteIndex((slice)existingExpression, kFullTextIndex);
+                }
+ 
+                existingIndex.reset();
+                if (db().tableExists(tableName)) {
+                    // This is a problem; the index already exists under another alias
+                    error::_throw(error::LiteCoreError::InvalidParameter, "Identical index was created "
+                                  "with another name already");
+                }
+                
                 stringstream sql;
                 sql << "CREATE VIRTUAL TABLE \"" << tableName << "\" USING fts4(text, tokenize=unicodesn";
                 if (options) {
@@ -391,6 +409,8 @@ namespace litecore {
                 sql << ")";
                 db().exec(sql.str(), LogLevel::Info);
 
+                db().exec("INSERT OR REPLACE INTO kv_fts_map (alias, expression) VALUES (\"" + (string)indexName + "\", \"" +
+                          tableName + "\")");
                 // Index existing records:
                 db().exec("INSERT INTO \"" + tableName + "\" (rowid, text) SELECT sequence, " + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
 
@@ -410,20 +430,27 @@ namespace litecore {
     }
 
 
-    void SQLiteKeyStore::deleteIndex(slice expression, IndexType type) {
-        alloc_slice expressionFleece;
-        const Array *params;
-        tie(expressionFleece, params) = parseIndexExpr(expression, type);
-        string indexName = SQLIndexName(params, type, true);
-
+    void SQLiteKeyStore::deleteIndex(slice name, IndexType type) {
         Transaction t(db());
         switch (type) {
-            case  kValueIndex:
+            case kValueIndex: {
+                string indexName = (string)name;
                 db().exec(string("DROP INDEX ") + indexName, LogLevel::Info);
                 break;
+            }
             case kFullTextIndex: {
-                db().exec(string("DROP VIRTUAL TABLE ") + indexName, LogLevel::Info);
-                // TODO: Do I have to explicitly delete the triggers too?
+                SQLite::Statement getExpression(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
+                getExpression.bind(1, (string)name);
+                if(!getExpression.executeStep()) {
+                    break;
+                }
+                
+                string indexName = getExpression.getColumn(0).getString();
+                getExpression.reset();
+                db().exec(string("DROP TABLE \"") + indexName + "\"", LogLevel::Info);
+                db().exec(string("DROP TRIGGER \"") + indexName + "::ins\"");
+                db().exec(string("DROP TRIGGER \"") + indexName + "::del\"");
+                db().exec(string("DROP TRIGGER \"") + indexName + "::upd\"");
                 break;
             }
             default:

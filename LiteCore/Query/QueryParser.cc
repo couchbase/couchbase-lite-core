@@ -286,9 +286,9 @@ namespace litecore {
     }
 
 
-    void QueryParser::writeCreateIndex(const Array *expressions) {
+    void QueryParser::writeCreateIndex(const string &name, const Array *expressions) {
         reset();
-        _sql << "CREATE INDEX IF NOT EXISTS \"" << indexName(expressions) << "\" ON " << _tableName << " ";
+        _sql << "CREATE INDEX IF NOT EXISTS \"" << name << "\" ON " << _tableName << " ";
         Array::iterator iter(expressions);
         writeColumnList(iter);
         // TODO: Add 'WHERE' clause for use with SQLite 3.15+
@@ -1020,7 +1020,6 @@ namespace litecore {
     string QueryParser::FTSIndexName(const string &property) const {
         return _tableName + "::." + property;
     }
-
 
     size_t QueryParser::FTSPropertyIndex(const Value *matchLHS, bool canAdd) {
         string key = FTSIndexName(matchLHS);

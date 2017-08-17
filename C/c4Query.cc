@@ -265,6 +265,7 @@ C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
 
 
 bool c4db_createIndex(C4Database *database,
+                      C4Slice name,
                       C4Slice propertyPath,
                       C4IndexType indexType,
                       const C4IndexOptions *indexOptions,
@@ -273,7 +274,8 @@ bool c4db_createIndex(C4Database *database,
     static_assert(sizeof(C4IndexOptions) == sizeof(KeyStore::IndexOptions),
                   "IndexOptions types must match");
     return tryCatch(outError, [&]{
-        database->defaultKeyStore().createIndex((string)propertyPath,
+        database->defaultKeyStore().createIndex((string)name,
+                                                (string)propertyPath,
                                                 (KeyStore::IndexType)indexType,
                                                 (const KeyStore::IndexOptions*)indexOptions);
     });
