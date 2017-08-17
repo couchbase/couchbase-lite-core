@@ -32,11 +32,6 @@ import static org.junit.Assert.fail;
 public class C4BaseTest implements C4Constants {
     static {
         try {
-            System.loadLibrary("sqlite3");
-        } catch (Exception e) {
-            fail("ERROR: Failed to load libsqlite3.so");
-        }
-        try {
             System.loadLibrary("LiteCoreJNI");
         } catch (Exception e) {
             fail("ERROR: Failed to load libLiteCoreJNI.so");
