@@ -59,7 +59,7 @@ namespace litecore {
         struct Operation;
         static const Operation kOperationList[];
         static const Operation kOuterOperation, kArgListOperation, kColumnListOperation,
-                               kExpressionListOperation;
+                               kExpressionListOperation, kHighPrecedenceOperation;
         struct JoinedOperations;
         static const JoinedOperations kJoinedOperationsList[];
 
@@ -110,6 +110,8 @@ namespace litecore {
         void writeColumnList(fleece::Array::iterator& operands);
         void writeResultColumn(const fleece::Value*);
         void writeStringLiteralAsProperty(slice str);
+        void writeCollation();
+        void parseCollatableNode(const fleece::Value*);
 
         void parseJoin(const fleece::Dict*);
 
@@ -129,6 +131,7 @@ namespace litecore {
         bool _aggregatesOK {false};
         bool _isAggregateQuery {false};
         Collation _collation;
+        bool _collationUsed {true};
     };
 
 }

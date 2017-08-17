@@ -201,7 +201,7 @@ TEST_CASE("QueryParser Join", "[Query]") {
 TEST_CASE("QueryParser Collate", "[Query][Collation]") {
     CHECK(parseWhere("['COLLATE', {unicode: true, locale:'se', case:false}, \
                                   ['=', ['.', 'name'], 'Puddin\\' Tane']]")
-          == "(fl_value(body, 'name') = 'Puddin'' Tane') COLLATE LCUnicode_C__se");
+          == "fl_value(body, 'name') COLLATE LCUnicode_C__se = 'Puddin'' Tane'");
     CHECK(parse("{WHAT: ['.book.title'], \
                   FROM: [{as: 'book'}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']], \

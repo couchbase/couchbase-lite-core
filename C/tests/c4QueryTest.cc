@@ -8,6 +8,7 @@
 
 #include "c4Test.hh"
 #include "c4Query.h"
+#include "c4.hh"
 #include <iostream>
 
 using namespace std;
@@ -363,35 +364,50 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!th
 }
 
 
+#if __APPLE__ || LITECORE_USES_ICU //FIXME: collator isn't available on all platforms yet
 class CollatedQueryTest : public QueryTest {
 public:
     CollatedQueryTest(int which)
     :QueryTest(which, "iTunesMusicLibrary.json")
     { }
+
+    vector<string> run() {
+        C4Error error;
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+        if (!e)
+            INFO("c4query_run got error " << error.domain << "/" << error.code);
+        REQUIRE(e);
+        vector<string> results;
+        while (c4queryenum_next(e, &error)) {
+            string result = Array::iterator(e->columns)[0].asstring();
+            results.push_back(result);
+        }
+        CHECK(error.code == 0);
+        return results;
+    }
 };
 
 
-#if __APPLE__ || LITECORE_USES_ICU //FIXME: collator isn't available on all platforms yet
 N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query collated", "[Query][C]") {
+    compileSelect(json5("{WHAT: [ ['.Name'] ], \
+                         WHERE: ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false},\
+                                            ['=', ['.Artist'], 'Benoît Pioulard']],\
+                      ORDER_BY: [ ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false}, \
+                                                ['.Name']] ]}"));
+
+    vector<string> tracks = run();
+    CHECK(tracks.size() == 2);
+}
+
+
+N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query aggregate collated", "[Query][C]") {
     compileSelect(json5("{WHAT: [ ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false}, \
                                               ['.Artist']] ], \
                       DISTINCT: true, \
                       ORDER_BY: [ ['COLLATE', {'unicode': true, 'case': false, 'diacritic': false}, \
                                               ['.Artist']] ]}"));
 
-    vector<string> artists;
-
-    C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
-    if (!e)
-        INFO("c4query_run got error " << error.domain << "/" << error.code);
-    REQUIRE(e);
-    while (c4queryenum_next(e, &error)) {
-        string artist = Array::iterator(e->columns)[0].asstring();
-        //C4Log("Artist: %s", artist.c_str());//TEMP
-        artists.push_back(artist);
-    }
-    CHECK(error.code == 0);
+    vector<string> artists = run();
     CHECK(artists.size() == 2097);
 
     // Benoît Pioulard appears twice in the database, once miscapitalized as BenoÎt Pioulard.
@@ -404,7 +420,5 @@ N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query collated", "[Query][C]") {
     CHECK(artists[2082] == "ZENИTH (feat. saåad)");
     CHECK(artists[2083] == "Zoë Keating");
     CHECK(artists[2084] == "Zola Jesus");
-
-    c4queryenum_free(e);
 }
 #endif // __APPLE__ || LITECORE_USES_ICU

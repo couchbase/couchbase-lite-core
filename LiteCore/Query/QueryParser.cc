@@ -404,6 +404,27 @@ namespace litecore {
     }
 
 
+    // Like parseNode(), but adds a SQL `COLLATE` operator if a collation is in effect and has not
+    // yet been written into the SQL.
+    void QueryParser::parseCollatableNode(const Value *node) {
+        if (_collationUsed) {
+            parseNode(node);
+        } else {
+            _collationUsed = true;
+            // enforce proper parenthesization; SQL COLLATE has super high precedence
+            _context.push_back(&kHighPrecedenceOperation);
+            parseNode(node);
+            _context.pop_back();
+            writeCollation();
+        }
+    }
+
+
+    void QueryParser::writeCollation() {
+        _sql << " COLLATE " << _collation.sqliteName();
+    }
+
+
     void QueryParser::parseOpNode(const Array *node) {
         Array::iterator array(node);
         require(array.count() > 0, "Empty JSON array");
@@ -483,12 +504,13 @@ namespace litecore {
     void QueryParser::infixOp(slice op, Array::iterator& operands) {
         int n = 0;
         for (auto &i = operands; i; ++i) {
+            // Write the operation/delimiter between arguments
             if (n++ > 0) {
                 if (op != ","_sl)           // special case for argument lists
                     _sql << ' ';
                 _sql << op << ' ';
             }
-            parseNode(i.value());
+            parseCollatableNode(i.value());
         }
     }
 
@@ -522,6 +544,7 @@ namespace litecore {
     // Handles COLLATE
     void QueryParser::collateOp(slice op, Array::iterator& operands) {
         auto outerCollation = _collation;
+        auto outerCollationUsed = _collationUsed;
 
         // Apply the collation options, overriding the inherited ones:
         const Dict *options = requiredDict(operands[0], "COLLATE options");
@@ -532,19 +555,31 @@ namespace litecore {
         auto localeName = getCaseInsensitive(options, "LOCALE"_sl);
         if (localeName)
             _collation.localeName = localeName->asString();
+        _collationUsed = false;
 
-        // Parse the expression, then the COLLATE postfix operator:
+        // Remove myself from the operator stack so my precedence doesn't cause confusion:
+        auto curContext = _context.back();
+        _context.pop_back();
+
+        // Parse the expression:
         parseNode(operands[1]);
-        _sql << " COLLATE " << _collation.sqliteName();
+
+        // If nothing in the expression (like a comparison operator) used the collation to generate
+        // a SQL 'COLLATE', generate one now for the entire expression:
+        if (!_collationUsed)
+            writeCollation();
+
+        _context.push_back(curContext);
 
         // Pop the collation options:
         _collation = outerCollation;
+        _collationUsed = outerCollationUsed;
     }
 
 
     // Handles "x BETWEEN y AND z" expressions
     void QueryParser::betweenOp(slice op, Array::iterator& operands) {
-        parseNode(operands[0]);
+        parseCollatableNode(operands[0]);
         _sql << ' ' << op << ' ';
         parseNode(operands[1]);
         _sql << " AND ";
@@ -558,7 +593,7 @@ namespace litecore {
         auto arrayOperand = operands[1]->asArray();
         if (arrayOperand && arrayOperand->count() > 0 && arrayOperand->get(0)->asString() == "[]"_sl) {
             // RHS is a literal array, so use SQL "IN" syntax:
-            parseNode(operands[0]);
+            parseCollatableNode(operands[0]);
             _sql << ' ' << op << ' ';
             Array::iterator arrayOperands(arrayOperand);
             writeArgList(++arrayOperands);
@@ -573,7 +608,7 @@ namespace litecore {
             _sql << "array_contains(";
             parseNode(operands[1]);     // yes, operands are in reverse order
             _sql << ", ";
-            parseNode(operands[0]);
+            parseCollatableNode(operands[0]);
             _sql << ")";
 
             if (notIn)
@@ -598,7 +633,7 @@ namespace litecore {
         auto ftsTableNo = FTSPropertyIndex(operands[0]);
         Assert(ftsTableNo > 0);
         _sql << "FTS" << ftsTableNo << ".text MATCH ";
-        parseNode(operands[1]);
+        parseCollatableNode(operands[1]);
     }
 
 

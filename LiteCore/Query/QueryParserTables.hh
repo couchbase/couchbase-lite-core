@@ -23,14 +23,14 @@ namespace litecore {
     struct QueryParser::Operation {
         slice op; int minArgs; int maxArgs; int precedence; OpHandler handler;};
     const QueryParser::Operation QueryParser::kOperationList[] = {
-        {"."_sl,       0, 9,  9,  &QueryParser::propertyOp},
-        {"$"_sl,       1, 1,  9,  &QueryParser::parameterOp},
-        {"?"_sl,       1, 9,  9,  &QueryParser::variableOp},
-        {"[]"_sl,      0, 9,  9,  &QueryParser::arrayLiteralOp},
+        {"."_sl,       0, 9, 99,  &QueryParser::propertyOp},
+        {"$"_sl,       1, 1, 99,  &QueryParser::parameterOp},
+        {"?"_sl,       1, 9, 99,  &QueryParser::variableOp},
+        {"[]"_sl,      0, 9, 99,  &QueryParser::arrayLiteralOp},
 
-        {"MISSING"_sl, 0, 0,  9,  &QueryParser::missingOp},
+        {"MISSING"_sl, 0, 0, 99,  &QueryParser::missingOp},
 
-        {"||"_sl,      2, 9,  8,  &QueryParser::infixOp},
+        {"||"_sl,      2, 9,  8,  &QueryParser::infixOp},       // string concatenation
 
         {"*"_sl,       2, 9,  7,  &QueryParser::infixOp},
         {"/"_sl,       2, 2,  7,  &QueryParser::infixOp},
@@ -56,7 +56,7 @@ namespace litecore {
         {"BETWEEN"_sl, 3, 3,  3,  &QueryParser::betweenOp},
         {"EXISTS"_sl,  1, 1,  8,  &QueryParser::existsOp},
 
-        {"COLLATE"_sl, 2, 2,  8,  &QueryParser::collateOp},
+        {"COLLATE"_sl, 2, 2, 10,  &QueryParser::collateOp},
 
         {"NOT"_sl,     1, 1,  9,  &QueryParser::prefixOp},
         {"AND"_sl,     2, 9,  2,  &QueryParser::infixOp},
@@ -72,7 +72,7 @@ namespace litecore {
 
         {"DESC"_sl,    1, 1,  2,  &QueryParser::postfixOp},
 
-        {nullslice,    0, 0, 10,  &QueryParser::fallbackOp} // fallback; must come last
+        {nullslice,    0, 0, 10,  &QueryParser::fallbackOp} // fallback; must come last in list
     };
 
     const QueryParser::Operation QueryParser::kArgListOperation
@@ -83,6 +83,8 @@ namespace litecore {
         {nullslice,    1, 9, -3, &QueryParser::infixOp};
     const QueryParser::Operation QueryParser::kOuterOperation
         {nullslice,    1, 1, -1};
+    const QueryParser::Operation QueryParser::kHighPrecedenceOperation
+        {nullslice,    1, 1, 10};
 
 
     // https://developer.couchbase.com/documentation/server/current/n1ql/n1ql-language-reference/functions.html
