@@ -46,7 +46,7 @@ static void addNumberedDocs(KeyStore *store) {
     t.commit();
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Create Index", "[Query]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query]") {
     KeyStore::IndexOptions options { "en", true };
     store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
     bool gotError = false;

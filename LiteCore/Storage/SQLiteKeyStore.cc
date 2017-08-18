@@ -381,7 +381,7 @@ namespace litecore {
                         return; // No-op
                     }
                     
-                    deleteIndex((slice)existingExpression, kFullTextIndex);
+                    _deleteIndex((slice)existingExpression, kFullTextIndex);
                 }
  
                 existingIndex.reset();
@@ -429,9 +429,7 @@ namespace litecore {
         t.commit();
     }
 
-
-    void SQLiteKeyStore::deleteIndex(slice name, IndexType type) {
-        Transaction t(db());
+    void SQLiteKeyStore::_deleteIndex(slice name, IndexType type) {
         switch (type) {
             case kValueIndex: {
                 string indexName = (string)name;
@@ -456,6 +454,11 @@ namespace litecore {
             default:
                 error::_throw(error::Unimplemented);
         }
+    }
+
+    void SQLiteKeyStore::deleteIndex(slice name, IndexType type) {
+        Transaction t(db());
+        _deleteIndex(name, type);
         t.commit();
     }
 
