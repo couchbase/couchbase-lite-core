@@ -371,28 +371,29 @@ namespace litecore {
             }
             case kFullTextIndex: {
                 // Create the FTS4 virtual table: ( https://www.sqlite.org/fts3.html )
-                auto tableName = SQLIndexName(params, type);
+                auto ftsTableName = SQLIndexName(params, type);
+                string alias = tableName() + "::" + (string)indexName;
                 SQLite::Statement existingIndex(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
-                existingIndex.bind(1, (string)indexName);
+                existingIndex.bind(1, alias);
                 if(existingIndex.executeStep()) {
                     auto existingExpression = existingIndex.getColumn(0).getString();
-                    if(existingExpression == tableName) {
-                        existingIndex.reset();
+                    existingIndex.reset();
+                    if(existingExpression == ftsTableName) {
+                        
                         return; // No-op
                     }
                     
-                    _deleteIndex((slice)existingExpression, kFullTextIndex);
+                    _deleteIndex(indexName, kFullTextIndex);
                 }
  
-                existingIndex.reset();
-                if (db().tableExists(tableName)) {
+                if (db().tableExists(ftsTableName)) {
                     // This is a problem; the index already exists under another alias
                     error::_throw(error::LiteCoreError::InvalidParameter, "Identical index was created "
                                   "with another name already");
                 }
                 
                 stringstream sql;
-                sql << "CREATE VIRTUAL TABLE \"" << tableName << "\" USING fts4(text, tokenize=unicodesn";
+                sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(text, tokenize=unicodesn";
                 if (options) {
                     if (options->stemmer) {
                         if (unicodesn_isSupportedStemmer(options->stemmer)) {
@@ -408,19 +409,18 @@ namespace litecore {
                 }
                 sql << ")";
                 db().exec(sql.str(), LogLevel::Info);
-
-                db().exec("INSERT OR REPLACE INTO kv_fts_map (alias, expression) VALUES (\"" + (string)indexName + "\", \"" +
-                          tableName + "\")");
+                db().exec("INSERT OR REPLACE INTO kv_fts_map (alias, expression) VALUES (\"" + alias +
+                          "\", \"" + ftsTableName + "\")");
                 // Index existing records:
-                db().exec("INSERT INTO \"" + tableName + "\" (rowid, text) SELECT sequence, " + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
+                db().exec("INSERT INTO \"" + ftsTableName + "\" (rowid, text) SELECT sequence, " + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
 
                 // Set up triggers to keep the FTS5 table up to date:
-                string ins = "INSERT INTO \"" + tableName + "\" (rowid, text) VALUES (new.sequence, " + QueryParser::expressionSQL(params, "new.body") + "); ";
-                string del = "DELETE FROM \"" + tableName + "\" WHERE rowid = old.sequence; ";
+                string ins = "INSERT INTO \"" + ftsTableName + "\" (rowid, text) VALUES (new.sequence, " + QueryParser::expressionSQL(params, "new.body") + "); ";
+                string del = "DELETE FROM \"" + ftsTableName + "\" WHERE rowid = old.sequence; ";
 
-                db().exec(string("CREATE TRIGGER \"") + tableName + "::ins\" AFTER INSERT ON kv_" + name() + " BEGIN " + ins + " END");
-                db().exec(string("CREATE TRIGGER \"") + tableName + "::del\" AFTER DELETE ON kv_" + name() + " BEGIN " + del + " END");
-                db().exec(string("CREATE TRIGGER \"") + tableName + "::upd\" AFTER UPDATE ON kv_" + name() + " BEGIN " + del + ins + " END");
+                db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::ins\" AFTER INSERT ON kv_" + name() + " BEGIN " + ins + " END");
+                db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::del\" AFTER DELETE ON kv_" + name() + " BEGIN " + del + " END");
+                db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::upd\" AFTER UPDATE ON kv_" + name() + " BEGIN " + del + ins + " END");
                 break;
             }
             default:
@@ -433,22 +433,24 @@ namespace litecore {
         switch (type) {
             case kValueIndex: {
                 string indexName = (string)name;
-                db().exec(string("DROP INDEX ") + indexName, LogLevel::Info);
+                db().exec(string("DROP INDEX IF EXISTS ") + indexName, LogLevel::Info);
                 break;
             }
             case kFullTextIndex: {
                 SQLite::Statement getExpression(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
-                getExpression.bind(1, (string)name);
+                string alias = tableName() + "::" + (string)name;
+                getExpression.bind(1, alias);
                 if(!getExpression.executeStep()) {
                     break;
                 }
                 
                 string indexName = getExpression.getColumn(0).getString();
                 getExpression.reset();
-                db().exec(string("DROP TABLE \"") + indexName + "\"", LogLevel::Info);
-                db().exec(string("DROP TRIGGER \"") + indexName + "::ins\"");
-                db().exec(string("DROP TRIGGER \"") + indexName + "::del\"");
-                db().exec(string("DROP TRIGGER \"") + indexName + "::upd\"");
+                db().exec(string("DROP TABLE IF EXISTS \"") + indexName + "\"", LogLevel::Info);
+                db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::ins\"");
+                db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::del\"");
+                db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::upd\"");
+                db().exec(string("DELETE FROM kv_fts_map WHERE alias=\"") + alias + "\"");
                 break;
             }
             default:

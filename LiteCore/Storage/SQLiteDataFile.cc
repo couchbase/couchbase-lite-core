@@ -213,7 +213,7 @@ path.path().c_str());
                      "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
                      "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID; "
                      "CREATE TABLE IF NOT EXISTS "
-                      " kv_fts_map (expression TEXT PRIMARY KEY, alias TEXT) WITHOUT ROWID; ");
+                      " kv_fts_map (alias TEXT PRIMARY KEY, expression TEXT) WITHOUT ROWID; ");
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
                 _exec("PRAGMA user_version=201; "

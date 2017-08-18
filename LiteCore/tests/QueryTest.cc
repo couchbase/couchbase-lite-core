@@ -65,6 +65,11 @@ TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query]") {
     store->createIndex("num"_sl, "[\".num\"]"_sl);
     store->createIndex("num_second"_sl, "[\".num\"]"_sl);
     store->deleteIndex("num"_sl);
+    
+    store->deleteIndex("num_second"_sl);
+    store->deleteIndex("num_second"_sl); // Duplicate should be no-op
+    store->deleteIndex("num_second"_sl, KeyStore::kFullTextIndex);
+    store->deleteIndex("num_second"_sl, KeyStore::kFullTextIndex); // Duplicate should be no-op
 }
 
 
