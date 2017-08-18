@@ -26,7 +26,16 @@ using namespace std;
 using namespace fleece;
 
 namespace litecore {
-
+    static void validateIndexName(slice name) {
+        if(name.size == 0) {
+            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty");
+        }
+        
+        if(name.findByte((uint8_t)'.') != nullptr) {
+            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not contain "
+                          "the period (.) character");
+        }
+    }
 
     vector<string> SQLiteDataFile::allKeyStoreNames() {
         checkOpen();
@@ -357,6 +366,7 @@ namespace litecore {
                                      slice expression,
                                      IndexType type,
                                      const IndexOptions *options) {
+        validateIndexName(indexName);
         alloc_slice expressionFleece;
         const Array *params;
         tie(expressionFleece, params) = parseIndexExpr(expression, type);
@@ -364,6 +374,7 @@ namespace litecore {
         Transaction t(db());
         switch (type) {
             case  kValueIndex: {
+                _deleteIndex(indexName, kValueIndex);
                 QueryParser qp(tableName());
                 qp.writeCreateIndex((string)indexName, params);
                 db().exec(qp.SQL(), LogLevel::Info);
@@ -409,7 +420,7 @@ namespace litecore {
                 }
                 sql << ")";
                 db().exec(sql.str(), LogLevel::Info);
-                db().exec("INSERT OR REPLACE INTO kv_fts_map (alias, expression) VALUES (\"" + alias +
+                db().exec("INSERT INTO kv_fts_map (alias, expression) VALUES (\"" + alias +
                           "\", \"" + ftsTableName + "\")");
                 // Index existing records:
                 db().exec("INSERT INTO \"" + ftsTableName + "\" (rowid, text) SELECT sequence, " + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
@@ -430,6 +441,7 @@ namespace litecore {
     }
 
     void SQLiteKeyStore::_deleteIndex(slice name, IndexType type) {
+        validateIndexName(name);
         switch (type) {
             case kValueIndex: {
                 string indexName = (string)name;

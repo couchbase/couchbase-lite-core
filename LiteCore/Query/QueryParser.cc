@@ -288,7 +288,7 @@ namespace litecore {
 
     void QueryParser::writeCreateIndex(const string &name, const Array *expressions) {
         reset();
-        _sql << "CREATE INDEX IF NOT EXISTS \"" << name << "\" ON " << _tableName << " ";
+        _sql << "CREATE INDEX \"" << name << "\" ON " << _tableName << " ";
         Array::iterator iter(expressions);
         writeColumnList(iter);
         // TODO: Add 'WHERE' clause for use with SQLite 3.15+

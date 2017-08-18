@@ -48,16 +48,19 @@ static void addNumberedDocs(KeyStore *store) {
 
 TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query]") {
     KeyStore::IndexOptions options { "en", true };
-    store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
-    bool gotError = false;
-    try {
-        store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
-    } catch(error &e) {
-        CHECK(e.code == error::LiteCoreError::InvalidParameter);
-        gotError = true;
-    }
+    ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
+        store->createIndex(""_sl, "[[\".num\"]]"_sl);
+    });
     
-    CHECK(gotError);
+    ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
+        store->createIndex("num."_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    });
+    
+    store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
+        store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    });
+    
     store->deleteIndex("num"_sl, KeyStore::kFullTextIndex);
     store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
     store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, KeyStore::kFullTextIndex, &options);
