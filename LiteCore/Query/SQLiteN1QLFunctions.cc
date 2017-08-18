@@ -1069,9 +1069,9 @@ namespace litecore {
 
         { "ifmissing",        -1, ifmissing },
         { "ifmissingornull",  -1, ifmissingornull },
-        { "ifnull",           -1, ifnull },
+        { "N1QL_ifnull",      -1, ifnull },
         { "missingif",         2, missingif },
-        { "nullif",            2, nullif },
+        { "N1QL_nullif",       2, nullif },
 
 //        { "ifinf",            -1, ifinf },
 //        { "isnan",            -1, ifnan },
@@ -1138,9 +1138,9 @@ namespace litecore {
         { "degrees",           1, fl_degrees },
         { "e",                 0, fl_e },
         { "exp",               1, fl_exp },
+        { "floor",             1, fl_floor },
         { "ln",                1, fl_ln },
         { "log",               1, fl_log },
-        { "floor",             1, fl_floor },
         { "pi",                0, fl_pi },
         { "power",             2, fl_power },
         { "radians",           1, fl_radians },

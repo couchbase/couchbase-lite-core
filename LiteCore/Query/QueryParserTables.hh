@@ -100,19 +100,18 @@ namespace litecore {
         {"array_length"_sl,     1, 1},
         {"array_max"_sl,        1, 1},
         {"array_min"_sl,        1, 1},
-        {"array_of"_sl,         0, 9},
         {"array_sum"_sl,        1, 1},
 
-        // Comparison:
-        {"greatest"_sl,         1, 9, "max"_sl},
-        {"least"_sl,            1, 9, "min"_sl},
+        // Comparison:  (SQLite min and max are used in non-aggregate form here)
+        {"greatest"_sl,         2, 9, "max"_sl},
+        {"least"_sl,            2, 9, "min"_sl},
 
         // Conditional (unknowns):
         {"ifmissing"_sl,        2, 2, "ifnull"_sl},
-        {"ifnull"_sl,           2, 2},
+        {"ifnull"_sl,           2, 2, "N1QL_ifnull"_sl},
         {"ifmissingornull"_sl,  2, 2},
         {"missingif"_sl,        2, 2, "nullif"_sl},
-        {"nullif"_sl,           2, 2},
+        {"nullif"_sl,           2, 2, "N1QL_nullif"_sl},
 
         // Math:
         {"abs"_sl,              1, 1},
@@ -178,8 +177,7 @@ namespace litecore {
         {"min"_sl,              1, 1, nullslice, true},
         {"sum"_sl,              1, 1, nullslice, true},
 
-        //TODO: Add date, JSON functions
-        {nullslice}
+        {nullslice} // End of data
     };
 
 
@@ -188,7 +186,7 @@ namespace litecore {
         "outer",
         "left outer",
         "cross",
-        nullptr
+        nullptr // End of data
     };
 
 }
