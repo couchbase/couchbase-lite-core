@@ -493,59 +493,63 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     C4Slice doc1ID = C4STR("doc001");
+    C4Slice doc2ID = C4STR("doc002");
+
+    createRev(doc1ID, kRevID, kBody);
+    createRev(doc2ID, kRevID, kBody);
+    C4SliceResult srcPath = c4db_getPath(db);
+    string srcPathStr = toString((C4Slice)srcPath);
+    c4slice_free(srcPath);
+    string nuPath = TempDir() + "nudb.cblite2" + kPathSeparator;
     
-    stringstream ss;
-#if defined(CMAKE) && defined(_MSC_VER)
-    ss << ".." << kPathSeparator;
-#endif
-    ss << "LiteCore" << kPathSeparator << "tests" << kPathSeparator << "data" << kPathSeparator <<
-        "replacedb" << kPathSeparator << "ios120" << kPathSeparator << "iosdb.cblite2" << kPathSeparator;
-    string srcPath(ss.str());
-    string destPath(TempDir() + "iosdb.cblite2" + kPathSeparator);
     C4DatabaseConfig config = { };
     config.flags = kC4DB_Create | kC4DB_SharedKeys | kC4DB_Bundled;
     C4Error error;
-    if(!c4db_deleteAtPath(c4str(destPath.c_str()), &config, &error)) {
+    if(!c4db_deleteAtPath(c4str(nuPath.c_str()), &config, &error)) {
         REQUIRE(error.code == 0);
     }
     
-    auto db = c4db_open(c4str(destPath.c_str()), &config, &error);
-    createRev(db, doc1ID, kRevID, kBody);
-    CHECK(c4db_getDocumentCount(db) == 1);
-    c4db_free(db);
+    REQUIRE(c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
+    auto nudb = c4db_open(c4str(nuPath.c_str()), &config, &error);
+    REQUIRE(nudb);
+    CHECK(c4db_getDocumentCount(nudb) == 2);
+    REQUIRE(c4db_delete(nudb, &error));
+    c4db_free(nudb);
     
-    REQUIRE(c4db_copy(c4str(srcPath.c_str()), c4str(destPath.c_str()), &config, &error));
-    db = c4db_open(c4str(destPath.data()), &config, &error);
-    REQUIRE(db);
-    CHECK(c4db_getDocumentCount(db) == 2);
-    REQUIRE(c4db_delete(db, &error));
-    c4db_free(db);
+    nudb = c4db_open(c4str(nuPath.c_str()), &config, &error);
+    REQUIRE(nudb);
+    createRev(nudb, doc1ID, kRevID, kBody);
+    CHECK(c4db_getDocumentCount(nudb) == 1);
+    c4db_free(nudb);
     
-    db = c4db_open(c4str(destPath.c_str()), &config, &error);
-    REQUIRE(db);
-    createRev(db, doc1ID, kRevID, kBody);
-    CHECK(c4db_getDocumentCount(db) == 1);
-    c4db_free(db);
-    
-    string originalDest = destPath;
-    destPath = TempDir() + "bogus" + kPathSeparator + "iosdb.cblite2" + kPathSeparator;
-    REQUIRE(!c4db_copy(c4str(srcPath.c_str()), c4str(destPath.c_str()), &config, &error));
+    string originalDest = nuPath;
+    nuPath = TempDir() + "bogus" + kPathSeparator + "nunudb.cblite2" + kPathSeparator;
+    REQUIRE(!c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == C4ErrorCode::kC4ErrorNotFound);
     
-    db = c4db_open(c4str(originalDest.c_str()), &config, &error);
-    REQUIRE(db);
-    CHECK(c4db_getDocumentCount(db) == 1);
-    c4db_free(db);
+    nudb = c4db_open(c4str(originalDest.c_str()), &config, &error);
+    REQUIRE(nudb);
+    CHECK(c4db_getDocumentCount(nudb) == 1);
+    c4db_free(nudb);
     
-    srcPath += string("bogus") + kPathSeparator;
-    destPath = originalDest;
-    REQUIRE(!c4db_copy(c4str(srcPath.c_str()), c4str(destPath.c_str()), &config, &error));
+    string originalSrc = srcPathStr;
+    srcPathStr += string("bogus") + kPathSeparator;
+    nuPath = originalDest;
+    REQUIRE(!c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == C4ErrorCode::kC4ErrorNotFound);
     
-    db = c4db_open(c4str(originalDest.c_str()), &config, &error);
-    REQUIRE(db);
-    CHECK(c4db_getDocumentCount(db) == 1);
-    c4db_free(db);
+    nudb = c4db_open(c4str(originalDest.c_str()), &config, &error);
+    REQUIRE(nudb);
+    CHECK(c4db_getDocumentCount(nudb) == 1);
+    c4db_free(nudb);
+
+    srcPathStr = originalSrc;
+    REQUIRE(c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
+    nudb = c4db_open(c4str(nuPath.c_str()), &config, &error);
+    REQUIRE(nudb);
+    CHECK(c4db_getDocumentCount(nudb) == 2);
+    REQUIRE(c4db_delete(nudb, &error));
+    c4db_free(nudb);
 }

@@ -562,5 +562,123 @@ namespace LiteCore.Tests
                 Native.c4db_isInTransaction(Db).Should().BeFalse("because all transactions have ended");
             });
         }
+
+        [Fact]
+        public void TestDatabaseCopy()
+        {
+            RunTestVariants(() =>
+            {
+                var doc1ID = "doc001";
+                var doc2ID = "doc002";
+
+                CreateRev(doc1ID, RevID, Body);
+                CreateRev(doc2ID, RevID, Body);
+
+                var srcPath = Native.c4db_getPath(Db);
+                var destPath = Path.Combine(Path.GetTempPath(), $"nudb.cblite2{Path.DirectorySeparatorChar}");
+                C4Error error;
+                var config = new C4DatabaseConfig {
+                    flags = C4DatabaseFlags.Create | C4DatabaseFlags.SharedKeys | C4DatabaseFlags.Bundled
+                };
+
+                var configCopy = config;
+                if (!Native.c4db_deleteAtPath(destPath, &configCopy, &error)) {
+                    error.code.Should().Be(0);
+                }
+                
+                LiteCoreBridge.Check(err =>
+                {
+                    var localConfig = config;
+                    return Native.c4db_copy(srcPath, destPath, &localConfig, err);
+                });
+                var nudb = (C4Database*)LiteCoreBridge.Check(err =>
+                {
+                    var localConfig = config;
+                    return Native.c4db_open(destPath, &localConfig, err);
+                });
+
+                try {
+                    Native.c4db_getDocumentCount(nudb).Should().Be(2L, "because the database was seeded");
+                    LiteCoreBridge.Check(err => Native.c4db_delete(nudb, err));
+                }
+                finally {
+                    Native.c4db_free(nudb);
+                }
+
+                nudb = (C4Database*)LiteCoreBridge.Check(err =>
+                {
+                    var localConfig = config;
+                    return Native.c4db_open(destPath, &localConfig, err);
+                });
+
+                try {
+                    CreateRev(nudb, doc1ID, RevID, Body);
+                    Native.c4db_getDocumentCount(nudb).Should().Be(1L, "because a document was inserted");
+                }
+                finally {
+                    Native.c4db_free(nudb);
+                }
+
+                var originalDest = destPath;
+                destPath = Path.Combine(Path.GetTempPath(), "bogus", $"nudb.cblite2{Path.DirectorySeparatorChar}");
+                Action a = () => LiteCoreBridge.Check(err =>
+                {
+                    var localConfig = config;
+                    return Native.c4db_copy(srcPath, destPath, &localConfig, err);
+                });
+                a.ShouldThrow<LiteCoreException>().Which.Error.Should().Be(new C4Error(C4ErrorCode.NotFound));
+
+                nudb = (C4Database*)LiteCoreBridge.Check(err =>
+                {
+                    var localConfig = config;
+                    return Native.c4db_open(originalDest, &localConfig, err);
+                });
+
+                try {
+                    Native.c4db_getDocumentCount(nudb).Should().Be(1L, "because the original database should remain");
+                }
+                finally {
+                    Native.c4db_free(nudb);
+                }
+
+                var originalSrc = srcPath;
+                srcPath = $"{srcPath}bogus{Path.DirectorySeparatorChar}";
+                destPath = originalDest;
+                a.ShouldThrow<LiteCoreException>().Which.Error.Should().Be(new C4Error(C4ErrorCode.NotFound));
+
+                nudb = (C4Database*)LiteCoreBridge.Check(err =>
+                {
+                    var localConfig = config;
+                    return Native.c4db_open(destPath, &localConfig, err);
+                });
+
+                try {
+                    Native.c4db_getDocumentCount(nudb).Should().Be(1L, "because the original database should remain");
+                }
+                finally {
+                    Native.c4db_free(nudb);
+                }
+
+                srcPath = originalSrc;
+                LiteCoreBridge.Check(err =>
+                {
+                    var localConfig = config;
+                    return Native.c4db_copy(srcPath, destPath, &localConfig, err);
+                });
+                nudb = (C4Database*)LiteCoreBridge.Check(err =>
+                {
+                    var localConfig = config;
+                    return Native.c4db_open(destPath, &localConfig, err);
+                });
+
+                try {
+                    Native.c4db_getDocumentCount(nudb).Should().Be(2L, "because the database was seeded");
+                    LiteCoreBridge.Check(err => Native.c4db_delete(nudb, err));
+                }
+                finally {
+                    Native.c4db_free(nudb);
+                }
+            });
+        }
     }
 }

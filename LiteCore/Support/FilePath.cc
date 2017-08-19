@@ -42,6 +42,7 @@
 #include "strlcat.h"
 #include "mkstemp.h"
 #include "mkdtemp.h"
+#include <sqlite3.h>
 #endif
 
 using namespace std;
@@ -285,7 +286,7 @@ namespace litecore {
 #if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         const char *tmpDir = getenv("TMPDIR");
 #else
-        const char *tmpDir = nullptr;
+        const char *tmpDir = sqlite3_temp_directory;
 #endif
 
         if(tmpDir == nullptr) {
