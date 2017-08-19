@@ -31,9 +31,9 @@ namespace litecore {
             error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty");
         }
         
-        if(name.findByte((uint8_t)'.') != nullptr) {
+        if(name.findByte((uint8_t)'"') != nullptr) {
             error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not contain "
-                          "the period (.) character");
+                          "the double quote (\") character");
         }
     }
 
