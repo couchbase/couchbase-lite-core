@@ -44,6 +44,14 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4Database* c4db_openAgain(C4Database* db, C4Error* outError);
 
+        public static bool c4db_copy(string sourcePath, string destinationPath, C4DatabaseConfig* config, C4Error* error)
+        {
+            using(var sourcePath_ = new C4String(sourcePath))
+            using(var destinationPath_ = new C4String(destinationPath)) {
+                return NativeRaw.c4db_copy(sourcePath_.AsC4Slice(), destinationPath_.AsC4Slice(), config, error);
+            }
+        }
+
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4Database* c4db_retain(C4Database* db);
 
@@ -152,6 +160,10 @@ namespace LiteCore.Interop
     {
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4Database* c4db_open(C4Slice path, C4DatabaseConfig* config, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4db_copy(C4Slice sourcePath, C4Slice destinationPath, C4DatabaseConfig* config, C4Error* error);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
