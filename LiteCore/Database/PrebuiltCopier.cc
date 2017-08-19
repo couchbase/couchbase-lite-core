@@ -62,14 +62,17 @@ namespace litecore {
             throw;
         }
         
-        Log("Finished, asynchronously deleting backup");
-        async([=]{
-            try {
-                backupPath.delRecursive();
-                Log("Copier finished async delete of backup db at %s", backupPath.path().c_str());
-            } catch(exception &x) {
-                Warn("Error deleting database backup (%s)", x.what());
-            }
-        });
+        if (needBackup) {
+            Log("Finished, asynchronously deleting backup");
+            async([=] {
+                try {
+                    backupPath.delRecursive();
+                    Log("Copier finished async delete of backup db at %s", backupPath.path().c_str());
+                }
+                catch (exception &x) {
+                    Warn("Error deleting database backup (%s)", x.what());
+                }
+            });
+        }
     }
 }
