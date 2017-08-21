@@ -147,7 +147,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query expression index", "[Query][C]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
     compile(json5("['=', ['length()', ['.name.first']], 9]"));
     CHECK(run() == (vector<string>{ "0000015", "0000099" }));
 
@@ -157,7 +157,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query expression index", "[Query][C]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
     // Create the same index as the above test:
     C4Error err;
-    REQUIRE(c4db_createIndex(db, c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));
 
     // Delete doc "0000015":
     {
@@ -187,7 +187,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
     CHECK(run() == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
 }
@@ -195,8 +195,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C][FTS]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text indexes", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
-    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['AND', ['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy'],\
                            ['MATCH', ['.', 'contact', 'address', 'city'], 'Santa']]"));
     CHECK(run() == (vector<string>{"0000015"}));
@@ -207,7 +207,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text queries", "[Query][C][FTS]
     // You can't query the same FTS index multiple times in a query (says SQLite)
     ExpectingExceptions x;
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     query = c4query_new(db,
                         json5slice("['AND', ['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy'],\
                                             ['MATCH', ['.', 'contact', 'address', 'street'], 'Blvd']]"),
@@ -222,7 +222,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Buried Full-text queries", "[Query][C][FTS][!
     // You can't put an FTS match inside an expression other than a top-level AND (says SQLite)
     ExpectingExceptions x;
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     query = c4query_new(db,
                         json5slice("['OR', ['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy'],\
                                            ['=', ['.', 'contact', 'address', 'state'], 'CA']]"),

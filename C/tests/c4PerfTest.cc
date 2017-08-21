@@ -169,7 +169,7 @@ N_WAY_TEST_CASE_METHOD(PerfTest, "Import names", "[Perf][C][.slow]") {
             Stopwatch st2;
             C4Error error;
 			C4Slice property = C4STR("[[\".contact.address.state\"]]");
-            REQUIRE(c4db_createIndex(db, property, kC4ValueIndex, nullptr, &error));
+            REQUIRE(c4db_createIndex(db, C4STR("byState"), property, kC4ValueIndex, nullptr, &error));
             st2.printReport("Creating SQL index of state", 1, "index");
         }
     }
