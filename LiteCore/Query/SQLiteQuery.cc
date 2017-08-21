@@ -397,10 +397,15 @@ namespace litecore {
                 case SQLITE_BLOB: {
                     if (i >= _query->_1stCustomResultColumn) {
                         slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
-                        const Value *value = Value::fromData(fleeceData);
-                        if (!value)
-                            error::_throw(error::CorruptData);
-                        enc.writeValue(value);
+                        if (fleeceData.size == 0) {
+                            // An empty SQL blob represents a Fleece/JSON null
+                            enc.writeNull();
+                        } else {
+                            const Value *value = Value::fromData(fleeceData);
+                            if (!value)
+                                error::_throw(error::CorruptData);
+                            enc.writeValue(value);
+                        }
                         break;
                     }
                     // else fall through:

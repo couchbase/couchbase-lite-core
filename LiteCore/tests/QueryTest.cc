@@ -161,6 +161,33 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(DataFileTestFixture, "Query null value", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        fleece::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("n");
+        enc.writeNull();
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+        store->set("null-and-void"_sl, body, t);
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery(json5("{WHAT: [['.n'], ['.']]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    auto cols = e->columns();
+    REQUIRE(cols.count() == 2);
+    CHECK(cols[0]->type() == kNull);
+    auto col1 = cols[1]->asDict();
+    REQUIRE(col1);
+    auto n = col1->get("n"_sl);
+    REQUIRE(n);
+    CHECK(n->type() == kNull);
+}
+
+
 TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
     // Add some text to the database:
     static const char* strings[] = {"FTS5 is an SQLite virtual table module that provides full-text search functionality to database applications.",
