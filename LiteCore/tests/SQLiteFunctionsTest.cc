@@ -1,4 +1,4 @@
-﻿//
+//
 //  SQLiteFunctionsTest.cc
 //  LiteCore
 //
@@ -155,9 +155,9 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite missingif", "[Query]") {
             == (vector<string>{ "MISSING" }));
     CHECK(query("SELECT MISSINGIF('5', '4') FROM kv")
             == (vector<string>{ "5" }));
-    CHECK(query("SELECT NULLIF('5', '5') FROM kv")
+    CHECK(query("SELECT N1QL_NULLIF('5', '5') FROM kv")
             == (vector<string>{ "" }));
-    CHECK(query("SELECT NULLIF('5', '4') FROM kv")
+    CHECK(query("SELECT N1QL_NULLIF('5', '4') FROM kv")
             == (vector<string>{ "5" }));
 }
 

@@ -100,6 +100,7 @@ namespace litecore {
         {"array_length"_sl,     1, 1},
         {"array_max"_sl,        1, 1},
         {"array_min"_sl,        1, 1},
+        {"array_of"_sl,         0, 9},
         {"array_sum"_sl,        1, 1},
 
         // Comparison:  (SQLite min and max are used in non-aggregate form here)

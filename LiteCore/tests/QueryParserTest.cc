@@ -90,9 +90,9 @@ TEST_CASE("QueryParser bindings", "[Query]") {
 
 TEST_CASE("QueryParser special properties", "[Query]") {
     CHECK(parseWhere("['ifnull()', ['.', '_id'], ['.', '_sequence']]")
-          == "ifnull(key, sequence)");
+          == "N1QL_ifnull(key, sequence)");
     CHECK(parseWhere("['ifnull()', ['._id'], ['.', '_sequence']]")
-          == "ifnull(key, sequence)");
+          == "N1QL_ifnull(key, sequence)");
 }
 
 
