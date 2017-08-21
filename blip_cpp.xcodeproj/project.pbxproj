@@ -115,6 +115,7 @@
 		27491C8F1E7AFCED001DC54B /* WebSocketImpl.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketImpl.cc; sourceTree = "<group>"; };
 		27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketProtocol.hh; sourceTree = "<group>"; };
 		27491CA01E7B417C001DC54B /* WebSocketImpl.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketImpl.hh; sourceTree = "<group>"; };
+		2750735C1F4B5EFF003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2759DC0D1E6FA7D300F3C4B2 /* gzipcomplete.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = gzipcomplete.cpp; path = lib/gzipcomplete.cpp; sourceTree = "<group>"; };
 		2759DC0E1E6FA7D300F3C4B2 /* mainpage.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = mainpage.cpp; path = lib/mainpage.cpp; sourceTree = "<group>"; };
 		2759DC101E6FA7D300F3C4B2 /* zlibmisc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = zlibmisc.cpp; path = lib/zlibmisc.cpp; sourceTree = "<group>"; };
@@ -265,6 +266,7 @@
 				273C77F01E846FF000BD7112 /* xcconfigs */,
 				27EF69B81E282549004748DF /* Products */,
 				27EF6AAA1E2B0D62004748DF /* Frameworks */,
+				2750735C1F4B5EFF003D2CCE /* CMakeLists.txt */,
 			);
 			sourceTree = "<group>";
 		};
