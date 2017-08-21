@@ -4,7 +4,6 @@ package com.couchbase.litecore;
 import com.couchbase.litecore.fleece.FLDict;
 import com.couchbase.litecore.fleece.FLSharedKeys;
 import com.couchbase.litecore.fleece.FLSliceResult;
-import com.couchbase.litecore.fleece.FLValue;
 
 public class C4Document implements C4Constants {
     //-------------------------------------------------------------------------
@@ -69,9 +68,9 @@ public class C4Document implements C4Constants {
         return getSelectedBody(handle);
     }
 
-    public FLValue getSelectedBody2() {
+    public FLDict getSelectedBody2() {
         long value = getSelectedBody2(handle);
-        return value == 0 ? null : new FLValue(value);
+        return value == 0 ? null : new FLDict(value);
     }
 
     // - Lifecycle

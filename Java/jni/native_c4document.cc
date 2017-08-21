@@ -119,10 +119,10 @@ Java_com_couchbase_litecore_C4Document_getSelectedBody(JNIEnv *env, jclass clazz
  */
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_getSelectedBody2(JNIEnv *env, jclass clazz, jlong jdoc){
     C4Document *doc = (C4Document *) jdoc;
-    FLValue root = NULL;
+    FLDict root = NULL;
     C4Slice body = doc->selectedRev.body;
     if (body.size > 0)
-        root = FLValue_FromTrustedData({body.buf, body.size});
+        root = FLValue_AsDict(FLValue_FromTrustedData({body.buf, body.size}));
     return (jlong)root;
 }
 
