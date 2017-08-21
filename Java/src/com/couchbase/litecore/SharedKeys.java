@@ -2,28 +2,23 @@ package com.couchbase.litecore;
 
 import com.couchbase.litecore.fleece.FLDict;
 import com.couchbase.litecore.fleece.FLDictIterator;
+import com.couchbase.litecore.fleece.FLEncoder;
 import com.couchbase.litecore.fleece.FLSharedKeys;
+import com.couchbase.litecore.fleece.FLSliceResult;
 import com.couchbase.litecore.fleece.FLValue;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class SharedKeys implements FLValue.ISharedKeys {
-
-    // Notes:
-    //  CBLSharedKeys.hh
+public final class SharedKeys {
 
     //---------------------------------------------
     // member variables
     //---------------------------------------------
-    FLSharedKeys flSharedKeys;
-    Map<Integer, String> documentStrings = new HashMap<>();
+    private final FLSharedKeys flSharedKeys;
+    private final Object lock = new Object();
 
     //---------------------------------------------
     // Constructors
     //---------------------------------------------
-
-    public SharedKeys(C4Database c4db) {
+    public SharedKeys(final C4Database c4db) {
         flSharedKeys = c4db.getFLSharedKeys();
     }
 
@@ -32,38 +27,64 @@ public class SharedKeys implements FLValue.ISharedKeys {
     //---------------------------------------------
 
     // id __nullable valueToObject(FLValue __nullable value)
-    Object valueToObject(FLValue value) {
-        return value == null ? null : value.toObject(documentStrings, this);
+    Object valueToObject(final FLValue value) {
+        synchronized (lock) {
+            return value == null ? null : value.toObject(this);
+        }
     }
 
     // FLValue getDictValue(FLDict __nullable dict, FLSlice key)
-    FLValue getValue(FLDict dict, String key) {
-        return dict.getSharedKey(key, flSharedKeys);
+    FLValue getValue(final FLDict dict, final String key) {
+        synchronized (lock) {
+            return dict.getSharedKey(key, flSharedKeys);
+        }
     }
 
     // NSString* getDictIterKey(FLDictIterator* iter)
-    String getDictIterKey(FLDictIterator itr) {
-        FLValue key = itr.getKey();
-        if (key == null)
-            return null;
+    public String getDictIterKey(final FLDictIterator itr) {
+        synchronized (lock) {
+            FLValue key = itr.getKey();
+            if (key == null)
+                return null;
 
-        if (key.isInteger())
-            return getKey((int) key.asInt());
+            if (key.isNumber())
+                return getKey((int) key.asInt());
 
-        return (String) valueToObject(key);
+            Object obj = valueToObject(key);
+            if (obj instanceof String)
+                return (String) obj;
+            else if (obj == null)
+                return null;
+            else
+                throw new IllegalStateException("obj is not String: obj type -> " + obj.getClass().getSimpleName());
+        }
     }
 
     // public string GetKey(int index)
-    public String getKey(int index) {
-        String retVal = documentStrings.get(index);
-        if (retVal != null)
-            return retVal;
+    public String getKey(final int index) {
+        synchronized (lock) {
+            return FLDict.getKeyString(flSharedKeys, index);
+        }
+    }
 
-        retVal = FLDict.getKeyString(flSharedKeys, index);
-        if (retVal != null)
-            documentStrings.put(index, retVal);
+    // bool encodeKey(FLEncoder encoder, FLSlice key)
+    boolean encodeKey(final FLEncoder encoder, final String key) {
+        synchronized (lock) {
+            return encoder.writeKey(key);
+        }
+    }
 
-        return retVal;
+    // bool encodeValue(FLEncoder encoder, FLValue __nullable value)
+    boolean encodeValue(final FLEncoder encoder, final FLValue value) {
+        synchronized (lock) {
+            return encoder.writeValueWithSharedKeys(value, flSharedKeys);
+        }
+    }
+
+    public boolean dictContainsBlobs(final FLSliceResult dict) {
+        synchronized (lock) {
+            return C4Document.dictContainsBlobs(dict, flSharedKeys);
+        }
     }
 
     //---------------------------------------------
@@ -71,19 +92,40 @@ public class SharedKeys implements FLValue.ISharedKeys {
     //---------------------------------------------
 
     // static inline id FLValue_GetNSObject(FLValue __nullable value, cbl::SharedKeys *sk)
-    public static Object valueToObject(FLValue value, SharedKeys sk) {
+    public static Object valueToObject(final FLValue value, final SharedKeys sk) {
+        if (sk == null) throw new RuntimeException("sk is null");
         return sk != null ? sk.valueToObject(value) : null;
     }
 
     // static inline FLValue FLDict_GetSharedKey
     //      (FLDict __nullable dict, FLSlice key, cbl::SharedKeys *sk)
-    public static FLValue getValue(FLDict dict, String key, SharedKeys sk) {
+    public static FLValue getValue(final FLDict dict, final String key, final SharedKeys sk) {
+        if (sk == null) throw new RuntimeException("sk is null");
         return sk != null && dict != null ? sk.getValue(dict, key) : null;
     }
 
     // static inline NSString* FLDictIterator_GetKey(FLDictIterator *iter, cbl::SharedKeys *sk)
-    public static String getKey(FLDictIterator itr, SharedKeys sk) {
+    public static String getKey(final FLDictIterator itr, final SharedKeys sk) {
+        if (sk == null) throw new RuntimeException("sk is null");
         return sk != null && itr != null ? sk.getDictIterKey(itr) : null;
     }
+
+    // static inline bool FL_WriteKey(FLEncoder encoder, FLSlice key, cbl::SharedKeys *sk)
+    public static boolean writeKey(final FLEncoder encoder, final String key, final SharedKeys sk) {
+        if (sk == null) throw new RuntimeException("sk is null");
+        return sk != null ? sk.encodeKey(encoder, key) : false;
+    }
+
+    // static inline bool FL_WriteValue(FLEncoder encoder, FLValue __nullable value, cbl::SharedKeys *sk)
+    public static boolean writeValue(final FLEncoder encoder, final FLValue value, final SharedKeys sk) {
+        if (sk == null) throw new RuntimeException("sk is null");
+        return sk != null ? sk.encodeValue(encoder, value) : false;
+    }
+
+    public static boolean dictContainsBlobs(final FLSliceResult dict, final SharedKeys sk) {
+        if (sk == null) throw new RuntimeException("sk is null");
+        return sk.dictContainsBlobs(dict);
+    }
+
 }
 

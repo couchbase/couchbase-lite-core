@@ -14,6 +14,7 @@
 package com.couchbase.litecore.fleece;
 
 import com.couchbase.litecore.LiteCoreException;
+import com.couchbase.litecore.SharedKeys;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,6 +54,10 @@ public class FLValue {
 
     public FLValue(long handle) {
         this.handle = handle;
+    }
+
+    public FLValue(FLArray flArray) {
+        this.handle = flArray.getHandle();
     }
 
     public int getType() {
@@ -133,18 +138,14 @@ public class FLValue {
         }
     }
 
-    public interface ISharedKeys {
-        String getKey(int index);
-    }
-
     // TODO: This method should be in `com.couchbase.lite.Properties` or `com.couchbase.lite.Document` ?
     // Equivalent to
     // in Value+ObjC.mm
     // id Value::toNSObject(__unsafe_unretained NSMapTable *sharedStrings, const SharedKeys *sk) const
     // In FLValueConverter.cs
     // public static object ToObject(FLValue* value, SharedStringCache sharedKeys)
-    public Object toObject(Map<Integer, String> sharedStrings, ISharedKeys sharedKeys) {
-        switch (getType()) {
+    public Object toObject(SharedKeys sharedKeys) {
+        switch (getType(handle)) {
             case kFLNull:
                 return null;
             case kFLBoolean:
@@ -170,7 +171,7 @@ public class FLValue {
                     itr.begin(asFLArray());
                     FLValue value;
                     while ((value = itr.getValue()) != null) {
-                        results.add(value.toObject(sharedStrings, sharedKeys));
+                        results.add(value.toObject(sharedKeys));
                         if (!itr.next())
                             break;
                     }
@@ -185,18 +186,12 @@ public class FLValue {
                 FLDictIterator itr = new FLDictIterator();
                 try {
                     itr.begin(dict);
-                    do {
-                        FLValue rawKey = itr.getKey();
-                        String key;
-                        if (rawKey.isInteger()) {
-                            key = sharedKeys.getKey((int) rawKey.asInt());
-                        } else {
-                            key = rawKey.asString();
-                        }
-                        Object value = itr.getValue().toObject(sharedStrings, sharedKeys);
+                    String key;
+                    while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
+                        Object value = itr.getValue().toObject(sharedKeys);
                         results.put(key, value);
-
-                    } while (itr.next());
+                        itr.next();
+                    }
                 } finally {
                     itr.free();
                 }
@@ -216,6 +211,10 @@ public class FLValue {
      */
     public static String json5ToJson(String json5) throws LiteCoreException {
         return JSON5ToJSON(json5);
+    }
+
+    public boolean isNumber() {
+        return getType() == kFLNumber;
     }
 
     public boolean isInteger() {

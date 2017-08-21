@@ -140,7 +140,7 @@ public class C4Database implements C4Constants {
         return new FLSliceResult(encodeJSON(handle, jsonData));
     }
 
-    public FLSharedKeys getFLSharedKeys() {
+    public final FLSharedKeys getFLSharedKeys() {
         return new FLSharedKeys(getFLSharedKeys(handle));
     }
 
