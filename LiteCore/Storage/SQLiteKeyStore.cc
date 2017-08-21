@@ -26,7 +26,16 @@ using namespace std;
 using namespace fleece;
 
 namespace litecore {
-
+    static void validateIndexName(slice name) {
+        if(name.size == 0) {
+            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty");
+        }
+        
+        if(name.findByte((uint8_t)'"') != nullptr) {
+            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not contain "
+                          "the double quote (\") character");
+        }
+    }
 
     vector<string> SQLiteDataFile::allKeyStoreNames() {
         checkOpen();
@@ -353,9 +362,11 @@ namespace litecore {
     }
 
 
-    void SQLiteKeyStore::createIndex(slice expression,
+    void SQLiteKeyStore::createIndex(slice indexName,
+                                     slice expression,
                                      IndexType type,
                                      const IndexOptions *options) {
+        validateIndexName(indexName);
         alloc_slice expressionFleece;
         const Array *params;
         tie(expressionFleece, params) = parseIndexExpr(expression, type);
@@ -363,18 +374,37 @@ namespace litecore {
         Transaction t(db());
         switch (type) {
             case  kValueIndex: {
+                _deleteIndex(indexName, kValueIndex);
                 QueryParser qp(tableName());
-                qp.writeCreateIndex(params);
+                qp.writeCreateIndex((string)indexName, params);
                 db().exec(qp.SQL(), LogLevel::Info);
                 break;
             }
             case kFullTextIndex: {
                 // Create the FTS4 virtual table: ( https://www.sqlite.org/fts3.html )
-                auto tableName = SQLIndexName(params, type);
-                if (db().tableExists(tableName))
-                    return;
+                auto ftsTableName = SQLIndexName(params, type);
+                string alias = tableName() + "::" + (string)indexName;
+                SQLite::Statement existingIndex(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
+                existingIndex.bind(1, alias);
+                if(existingIndex.executeStep()) {
+                    auto existingExpression = existingIndex.getColumn(0).getString();
+                    existingIndex.reset();
+                    if(existingExpression == ftsTableName) {
+                        
+                        return; // No-op
+                    }
+                    
+                    _deleteIndex(indexName, kFullTextIndex);
+                }
+ 
+                if (db().tableExists(ftsTableName)) {
+                    // This is a problem; the index already exists under another alias
+                    error::_throw(error::LiteCoreError::InvalidParameter, "Identical index was created "
+                                  "with another name already");
+                }
+                
                 stringstream sql;
-                sql << "CREATE VIRTUAL TABLE \"" << tableName << "\" USING fts4(text, tokenize=unicodesn";
+                sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(text, tokenize=unicodesn";
                 if (options) {
                     if (options->stemmer) {
                         if (unicodesn_isSupportedStemmer(options->stemmer)) {
@@ -390,17 +420,18 @@ namespace litecore {
                 }
                 sql << ")";
                 db().exec(sql.str(), LogLevel::Info);
-
+                db().exec("INSERT INTO kv_fts_map (alias, expression) VALUES (\"" + alias +
+                          "\", \"" + ftsTableName + "\")");
                 // Index existing records:
-                db().exec("INSERT INTO \"" + tableName + "\" (rowid, text) SELECT sequence, " + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
+                db().exec("INSERT INTO \"" + ftsTableName + "\" (rowid, text) SELECT sequence, " + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
 
                 // Set up triggers to keep the FTS5 table up to date:
-                string ins = "INSERT INTO \"" + tableName + "\" (rowid, text) VALUES (new.sequence, " + QueryParser::expressionSQL(params, "new.body") + "); ";
-                string del = "DELETE FROM \"" + tableName + "\" WHERE rowid = old.sequence; ";
+                string ins = "INSERT INTO \"" + ftsTableName + "\" (rowid, text) VALUES (new.sequence, " + QueryParser::expressionSQL(params, "new.body") + "); ";
+                string del = "DELETE FROM \"" + ftsTableName + "\" WHERE rowid = old.sequence; ";
 
-                db().exec(string("CREATE TRIGGER \"") + tableName + "::ins\" AFTER INSERT ON kv_" + name() + " BEGIN " + ins + " END");
-                db().exec(string("CREATE TRIGGER \"") + tableName + "::del\" AFTER DELETE ON kv_" + name() + " BEGIN " + del + " END");
-                db().exec(string("CREATE TRIGGER \"") + tableName + "::upd\" AFTER UPDATE ON kv_" + name() + " BEGIN " + del + ins + " END");
+                db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::ins\" AFTER INSERT ON kv_" + name() + " BEGIN " + ins + " END");
+                db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::del\" AFTER DELETE ON kv_" + name() + " BEGIN " + del + " END");
+                db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::upd\" AFTER UPDATE ON kv_" + name() + " BEGIN " + del + ins + " END");
                 break;
             }
             default:
@@ -409,26 +440,39 @@ namespace litecore {
         t.commit();
     }
 
-
-    void SQLiteKeyStore::deleteIndex(slice expression, IndexType type) {
-        alloc_slice expressionFleece;
-        const Array *params;
-        tie(expressionFleece, params) = parseIndexExpr(expression, type);
-        string indexName = SQLIndexName(params, type, true);
-
-        Transaction t(db());
+    void SQLiteKeyStore::_deleteIndex(slice name, IndexType type) {
+        validateIndexName(name);
         switch (type) {
-            case  kValueIndex:
-                db().exec(string("DROP INDEX ") + indexName, LogLevel::Info);
+            case kValueIndex: {
+                string indexName = (string)name;
+                db().exec(string("DROP INDEX IF EXISTS ") + indexName, LogLevel::Info);
                 break;
+            }
             case kFullTextIndex: {
-                db().exec(string("DROP VIRTUAL TABLE ") + indexName, LogLevel::Info);
-                // TODO: Do I have to explicitly delete the triggers too?
+                SQLite::Statement getExpression(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
+                string alias = tableName() + "::" + (string)name;
+                getExpression.bind(1, alias);
+                if(!getExpression.executeStep()) {
+                    break;
+                }
+                
+                string indexName = getExpression.getColumn(0).getString();
+                getExpression.reset();
+                db().exec(string("DROP TABLE IF EXISTS \"") + indexName + "\"", LogLevel::Info);
+                db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::ins\"");
+                db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::del\"");
+                db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::upd\"");
+                db().exec(string("DELETE FROM kv_fts_map WHERE alias=\"") + alias + "\"");
                 break;
             }
             default:
                 error::_throw(error::Unimplemented);
         }
+    }
+
+    void SQLiteKeyStore::deleteIndex(slice name, IndexType type) {
+        Transaction t(db());
+        _deleteIndex(name, type);
         t.commit();
     }
 

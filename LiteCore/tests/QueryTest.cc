@@ -46,6 +46,35 @@ static void addNumberedDocs(KeyStore *store) {
     t.commit();
 }
 
+TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query]") {
+    KeyStore::IndexOptions options { "en", true };
+    ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
+        store->createIndex(""_sl, "[[\".num\"]]"_sl);
+    });
+    
+    ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
+        store->createIndex("num."_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    });
+    
+    store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
+        store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    });
+    
+    store->deleteIndex("num"_sl, KeyStore::kFullTextIndex);
+    store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    
+    store->createIndex("num"_sl, "[\".num\"]"_sl);
+    store->createIndex("num_second"_sl, "[\".num\"]"_sl);
+    store->deleteIndex("num"_sl);
+    
+    store->deleteIndex("num_second"_sl);
+    store->deleteIndex("num_second"_sl); // Duplicate should be no-op
+    store->deleteIndex("num_second"_sl, KeyStore::kFullTextIndex);
+    store->deleteIndex("num_second"_sl, KeyStore::kFullTextIndex); // Duplicate should be no-op
+}
+
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT", "[Query]") {
     addNumberedDocs(store);
@@ -70,13 +99,13 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT", "[Query]") {
         // Add an index after the first pass:
         if (pass == 0) {
             Stopwatch st2;
-            store->createIndex("[\".num\"]"_sl);
+            store->createIndex("num"_sl, "[\".num\"]"_sl);
             st2.printReport("Index on .num", 1, "index");
         }
     }
 
     // Redundant createIndex should not fail:
-    store->createIndex("[\".num\"]"_sl);
+    store->createIndex("num"_sl, "[\".num\"]"_sl);
 }
 
 
@@ -164,7 +193,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
         options = {"elbonian", true};
     }
 
-    store->createIndex("[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    store->createIndex("sentence"_sl, "[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
 
     Retained<Query> query{ store->compileQuery(json5(
         "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\
@@ -194,7 +223,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
     }
 
     // Redundant createIndex should not fail:
-    store->createIndex("[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    store->createIndex("sentence"_sl, "[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
 }
 
 

@@ -208,10 +208,12 @@ path.path().c_str());
             if (userVersion == 0) {
                 // Configure persistent db settings, and create the schema:
                 _exec("PRAGMA journal_mode=WAL; "        // faster writes, better concurrency
-                      "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
-                      "BEGIN; "
-                      "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
-                      "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID; ");
+                     "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
+                     "BEGIN; "
+                     "CREATE TABLE IF NOT EXISTS "      // Table of metadata about KeyStores
+                     "  kvmeta (name TEXT PRIMARY KEY, lastSeq INTEGER DEFAULT 0) WITHOUT ROWID; "
+                     "CREATE TABLE IF NOT EXISTS "
+                      " kv_fts_map (alias TEXT PRIMARY KEY, expression TEXT) WITHOUT ROWID; ");
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
                 _exec("PRAGMA user_version=201; "
