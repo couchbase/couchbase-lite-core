@@ -11,8 +11,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 
-add_definitions(-DC4DB_THREADSAFE                   # Makes LiteCore C API thread-safe
-                -DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
+add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
                 -DNO_FILES                          # No file system support in CivetWeb (unneeded)
                 -DNO_CGI                            # No CGI support in CivetWeb (unneeded)
@@ -331,6 +330,10 @@ endif()
 #  endif()
 #endif()
 
+
+### TOOLS:
+
+add_subdirectory(Tools)
 
 ### TESTS:
 

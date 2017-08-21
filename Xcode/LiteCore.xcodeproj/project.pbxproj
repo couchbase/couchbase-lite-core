@@ -1002,6 +1002,11 @@
 		275073531F4903F7003D2CCE /* DirEndpoint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DirEndpoint.hh; sourceTree = "<group>"; };
 		275073551F4B4D1D003D2CCE /* ToolUtils.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ToolUtils.cc; sourceTree = "<group>"; };
 		275073561F4B4D1D003D2CCE /* ToolUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ToolUtils.hh; sourceTree = "<group>"; };
+		275073581F4B5E13003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = CMakeLists.txt; path = ../CMakeLists.txt; sourceTree = "<group>"; };
+		275073591F4B5E66003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		2750735A1F4B5ECC003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		2750735E1F4B5F6B003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
 		2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging_Stub.cc; sourceTree = "<group>"; };
@@ -1506,6 +1511,7 @@
 				2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */,
 				2708FE591CF4D0450022F721 /* LiteCoreTest.hh */,
 				274D040A1BA75E1C00FF7C35 /* main.cpp */,
+				2750735A1F4B5ECC003D2CCE /* CMakeLists.txt */,
 			);
 			name = "C++ Tests";
 			path = tests;
@@ -1543,6 +1549,7 @@
 				279D41281EA55A8D00D8DD9D /* c4REST.exp */,
 				279D414C1EA591C900D8DD9D /* LiteCoreServ.cc */,
 				276E020F1EA9712700FEFE8A /* tests */,
+				2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */,
 			);
 			name = REST;
 			path = ../REST;
@@ -1632,6 +1639,7 @@
 				275073481F490324003D2CCE /* litecp */,
 				275073551F4B4D1D003D2CCE /* ToolUtils.cc */,
 				275073561F4B4D1D003D2CCE /* ToolUtils.hh */,
+				2750735E1F4B5F6B003D2CCE /* CMakeLists.txt */,
 			);
 			name = Tools;
 			path = ../tools;
@@ -1663,6 +1671,7 @@
 				2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */,
 				270515601D91C2AE00D62D05 /* c4PerfTest.cc */,
 				2783DF981D27436700F84E6E /* c4ThreadingTest.cc */,
+				275073591F4B5E66003D2CCE /* CMakeLists.txt */,
 			);
 			path = tests;
 			sourceTree = "<group>";
@@ -1671,6 +1680,7 @@
 			isa = PBXGroup;
 			children = (
 				273AD3CF18F4B23A007D8C23 /* README.md */,
+				275073581F4B5E13003D2CCE /* CMakeLists.txt */,
 				2757DE551B9FC34E002EE261 /* C API */,
 				27E4871019217187007D8940 /* LiteCore */,
 				27CCC7CA1E525E6D00CE1989 /* Replicator */,
