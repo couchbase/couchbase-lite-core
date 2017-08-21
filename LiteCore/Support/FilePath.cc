@@ -125,11 +125,13 @@ static int copyfile(const char* from, const char* to)
 namespace litecore {
 
 #ifdef _MSC_VER
+    const string FilePath::kSeparator = "\\";
     static const char  kSeparatorChar = '\\';
     static const char  kBackupSeparatorChar = '/';
     static const char  kQuotedSeparatorChar = ':';
     static const char* kCurrentDir = ".\\";
 #else
+    const string FilePath::kSeparator = "/";
     static const char  kSeparatorChar = '/';
     static const char  kBackupSeparatorChar = '\\';
     static const char  kQuotedSeparatorChar = ':';

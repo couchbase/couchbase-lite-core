@@ -32,6 +32,8 @@ namespace litecore {
         /** Returns the system's temporary-files directory. */
         static FilePath tempDirectory();
 
+        static const std::string kSeparator;
+
         //////// DIRECTORY & FILE NAMES:
         
         bool isDir() const                  {return _file.empty();}

@@ -121,6 +121,12 @@
 		274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF41DA30B43003AD158 /* QueryParser.cc */; };
 		274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDF51DA30B43003AD158 /* QueryParser.hh */; };
 		274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
+		275073411F4794AC003D2CCE /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
+		2750734B1F490398003D2CCE /* Endpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275073491F490398003D2CCE /* Endpoint.cc */; };
+		2750734E1F4903C4003D2CCE /* JSONEndpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750734C1F4903C4003D2CCE /* JSONEndpoint.cc */; };
+		275073511F4903E5003D2CCE /* DBEndpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750734F1F4903E5003D2CCE /* DBEndpoint.cc */; };
+		275073541F4903F7003D2CCE /* DirEndpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275073521F4903F7003D2CCE /* DirEndpoint.cc */; };
+		275073571F4B4D1D003D2CCE /* ToolUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275073551F4B4D1D003D2CCE /* ToolUtils.cc */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
 		2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2753AF761EBD190700C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
@@ -948,7 +954,7 @@
 		27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SequenceTrackerTest.cc; sourceTree = "<group>"; };
 		2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorAPITest.cc; sourceTree = "<group>"; };
 		27468F071EAD147D00B1B4F5 /* litecp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = litecp; sourceTree = BUILT_PRODUCTS_DIR; };
-		27468F091EAD147D00B1B4F5 /* litecp.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = litecp.cc; path = litecp/litecp.cc; sourceTree = "<group>"; };
+		27468F091EAD147D00B1B4F5 /* litecp.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = litecp.cc; sourceTree = "<group>"; };
 		27491C9A1E7B1001001DC54B /* c4Socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Socket.h; sourceTree = "<group>"; };
 		27491C9E1E7B2532001DC54B /* c4Socket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Socket.cc; sourceTree = "<group>"; };
 		27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4Socket+Internal.hh"; sourceTree = "<group>"; };
@@ -986,6 +992,16 @@
 		275072AF18E4A68E00A80C5A /* LiteCore Tests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "LiteCore Tests-Info.plist"; sourceTree = "<group>"; };
 		275072B118E4A68E00A80C5A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		275072B518E4A68E00A80C5A /* LiteCore Tests-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "LiteCore Tests-Prefix.pch"; sourceTree = "<group>"; };
+		275073491F490398003D2CCE /* Endpoint.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Endpoint.cc; sourceTree = "<group>"; };
+		2750734A1F490398003D2CCE /* Endpoint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Endpoint.hh; sourceTree = "<group>"; };
+		2750734C1F4903C4003D2CCE /* JSONEndpoint.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = JSONEndpoint.cc; sourceTree = "<group>"; };
+		2750734D1F4903C4003D2CCE /* JSONEndpoint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = JSONEndpoint.hh; sourceTree = "<group>"; };
+		2750734F1F4903E5003D2CCE /* DBEndpoint.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DBEndpoint.cc; sourceTree = "<group>"; };
+		275073501F4903E5003D2CCE /* DBEndpoint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DBEndpoint.hh; sourceTree = "<group>"; };
+		275073521F4903F7003D2CCE /* DirEndpoint.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DirEndpoint.cc; sourceTree = "<group>"; };
+		275073531F4903F7003D2CCE /* DirEndpoint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DirEndpoint.hh; sourceTree = "<group>"; };
+		275073551F4B4D1D003D2CCE /* ToolUtils.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ToolUtils.cc; sourceTree = "<group>"; };
+		275073561F4B4D1D003D2CCE /* ToolUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ToolUtils.hh; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
 		2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging_Stub.cc; sourceTree = "<group>"; };
@@ -1325,6 +1341,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				275073411F4794AC003D2CCE /* CoreFoundation.framework in Frameworks */,
 				27468F111EAD7EC100B1B4F5 /* libLiteCore-static.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1611,8 +1628,10 @@
 		27468F081EAD147D00B1B4F5 /* Tools */ = {
 			isa = PBXGroup;
 			children = (
-				27468F091EAD147D00B1B4F5 /* litecp.cc */,
 				270C6BA81EBA754300E73415 /* litecorelog.cc */,
+				275073481F490324003D2CCE /* litecp */,
+				275073551F4B4D1D003D2CCE /* ToolUtils.cc */,
+				275073561F4B4D1D003D2CCE /* ToolUtils.hh */,
 			);
 			name = Tools;
 			path = ../tools;
@@ -1765,6 +1784,22 @@
 				275072B518E4A68E00A80C5A /* LiteCore Tests-Prefix.pch */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		275073481F490324003D2CCE /* litecp */ = {
+			isa = PBXGroup;
+			children = (
+				27468F091EAD147D00B1B4F5 /* litecp.cc */,
+				275073491F490398003D2CCE /* Endpoint.cc */,
+				2750734A1F490398003D2CCE /* Endpoint.hh */,
+				2750734F1F4903E5003D2CCE /* DBEndpoint.cc */,
+				275073501F4903E5003D2CCE /* DBEndpoint.hh */,
+				275073521F4903F7003D2CCE /* DirEndpoint.cc */,
+				275073531F4903F7003D2CCE /* DirEndpoint.hh */,
+				2750734D1F4903C4003D2CCE /* JSONEndpoint.hh */,
+				2750734C1F4903C4003D2CCE /* JSONEndpoint.cc */,
+			);
+			path = litecp;
 			sourceTree = "<group>";
 		};
 		275607791BA22E5700F58218 /* Java */ = {
@@ -3006,7 +3041,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				275073511F4903E5003D2CCE /* DBEndpoint.cc in Sources */,
+				2750734B1F490398003D2CCE /* Endpoint.cc in Sources */,
+				2750734E1F4903C4003D2CCE /* JSONEndpoint.cc in Sources */,
+				275073541F4903F7003D2CCE /* DirEndpoint.cc in Sources */,
 				27468F0A1EAD147D00B1B4F5 /* litecp.cc in Sources */,
+				275073571F4B4D1D003D2CCE /* ToolUtils.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
