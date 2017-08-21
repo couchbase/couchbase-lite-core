@@ -166,8 +166,10 @@ JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_fleece_FLDict_getKeyString
                                                                                  jclass clazz,
                                                                                  jlong jsharedKey,
                                                                                  jint jkeyCode) {
-    FLError error = {};
+    FLError error = kFLNoError;
     FLString str = FLSharedKey_GetKeyString((FLSharedKeys) jsharedKey, (int) jkeyCode, &error);
+    if (error != kFLNoError)
+        throwError(env, {FleeceDomain, error});
     return toJString(env, {str.buf, str.size});
 }
 
@@ -413,8 +415,10 @@ Java_com_couchbase_litecore_fleece_FLValue_isUnsigned(JNIEnv *env, jclass clazz,
 JNIEXPORT jstring JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_JSON5ToJSON(JNIEnv *env, jclass clazz, jstring jjson5) {
     jstringSlice json5(env, jjson5);
-    FLError error = {};
+    FLError error = kFLNoError;
     FLStringResult json = FLJSON5_ToJSON({((slice) json5).buf, ((slice) json5).size}, &error);
+    if (error != kFLNoError)
+        throwError(env, {FleeceDomain, error});
     jstring res = toJString(env, {json.buf, json.size});
     FLSliceResult_Free(json);
     return res;
@@ -645,13 +649,28 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeValue(JNIEnv *env, jclass claz
 
 /*
  * Class:     com_couchbase_litecore_fleece_FLEncoder
+ * Method:    writeValueWithSharedKeys
+ * Signature: (JJJ)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_fleece_FLEncoder_writeValueWithSharedKeys(JNIEnv *env, jclass clazz,
+                                                                      jlong jencoder, jlong jvalue,
+                                                                      jlong jsharedkeys) {
+    return (jboolean) FLEncoder_WriteValueWithSharedKeys((FLEncoder) jencoder, (FLValue) jvalue,
+                                                         (FLSharedKeys) jsharedkeys);
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLEncoder
  * Method:    finish
  * Signature: (J)[B
  */
 JNIEXPORT jbyteArray JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_finish(JNIEnv *env, jclass clazz, jlong jencoder) {
-    FLError error;
+    FLError error = kFLNoError;
     FLSliceResult result = FLEncoder_Finish((FLEncoder) jencoder, &error);
+    if (error != kFLNoError)
+        throwError(env, {FleeceDomain, error});
     jbyteArray res = toJByteArray(env, {result.buf, result.size});
     FLSliceResult_Free(result);
     return res;
@@ -664,8 +683,10 @@ Java_com_couchbase_litecore_fleece_FLEncoder_finish(JNIEnv *env, jclass clazz, j
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_finish2(JNIEnv *env, jclass clazz, jlong jencoder) {
-    FLError error;
+    FLError error = kFLNoError;
     FLSliceResult res = FLEncoder_Finish((FLEncoder) jencoder, &error);
+    if (error != kFLNoError)
+        throwError(env, {FleeceDomain, error});
     C4SliceResult *sliceResult = (C4SliceResult *) ::malloc(sizeof(C4SliceResult));
     sliceResult->buf = res.buf;
     sliceResult->size = res.size;

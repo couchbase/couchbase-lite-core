@@ -14,12 +14,13 @@
 package com.couchbase.litecore.fleece;
 
 public class FLSharedKeys {
-    private long handle = 0; // hold pointer to FLSharedKeys
+    private final long handle; // hold pointer to FLSharedKeys
 
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
     public FLSharedKeys(long handle) {
+        if (handle == 0L) throw new IllegalStateException();
         this.handle = handle;
     }
 

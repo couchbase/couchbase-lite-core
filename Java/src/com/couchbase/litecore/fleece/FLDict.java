@@ -90,7 +90,25 @@ public class FLDict {
         return results;
     }
 
+    public Map<String, Object> toObject(final SharedKeys sharedKeys) {
+        Map<String, Object> results = new HashMap<>();
+        FLDictIterator itr = new FLDictIterator();
+        try {
+            itr.begin(this);
+            String key;
+            while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
+                Object value = itr.getValue().toObject(sharedKeys);
+                results.put(key, value);
+                itr.next();
+            }
+        } finally {
+            itr.free();
+        }
+        return results;
+    }
+
     public long count() {
+        if (handle == 0L) throw new IllegalStateException("handle is 0L");
         return count(handle);
     }
 

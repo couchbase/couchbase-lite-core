@@ -100,30 +100,56 @@ public class FLEncoder {
         return writeValue(handle, flValue.getHandle());
     }
 
+    public boolean writeValueWithSharedKeys(FLValue flValue, FLSharedKeys flSharedKeys){
+        return writeValueWithSharedKeys(handle, flValue.getHandle(), flSharedKeys.getHandle());
+    }
+
     // C/Fleece+CoreFoundation.mm
     // bool FLEncoder_WriteNSObject(FLEncoder encoder, id obj)
     public boolean writeValue(Object value) {
+        // null
         if (value == null)
             return writeNull(handle);
+
+        // boolean
         else if (value instanceof Boolean)
             return writeBool(handle, (Boolean) value);
+
+        // Number
         else if (value instanceof Number) {
+            // Integer
             if (value instanceof Integer)
                 return writeInt(handle, ((Integer) value).longValue());
+
+            // Long
             else if (value instanceof Long)
                 return writeInt(handle, ((Long) value).longValue());
+
+            // Double
             else if (value instanceof Double)
                 return writeDouble(handle, ((Double) value).doubleValue());
+
+            // Float
             else
                 return writeFloat(handle, ((Float) value).floatValue());
-        } else if (value instanceof String)
+        }
+
+        // String
+        else if (value instanceof String)
             return writeString(handle, (String) value);
+
+        // byte[]
         else if (value instanceof byte[])
             return writeData(handle, (byte[]) value);
+
+        // List
         else if (value instanceof List)
             return write((List) value);
+
+        // Map
         else if (value instanceof Map)
             return write((Map) value);
+
         return false;
     }
 
@@ -140,9 +166,8 @@ public class FLEncoder {
 
     public boolean write(List list) {
         beginArray(list.size());
-        for (Object item : list) {
+        for (Object item : list)
             writeValue(item);
-        }
         return endArray();
     }
 
@@ -202,6 +227,8 @@ public class FLEncoder {
     static native boolean writeKey(long encoder, String slice);
 
     static native boolean writeValue(long encoder, long value);
+
+    static native boolean writeValueWithSharedKeys(long encoder, long value, long sharedKeys);
 
     static native byte[] finish(long encoder) throws LiteCoreException;
 

@@ -4,6 +4,7 @@ package com.couchbase.litecore;
 import com.couchbase.litecore.fleece.FLDict;
 import com.couchbase.litecore.fleece.FLSharedKeys;
 import com.couchbase.litecore.fleece.FLSliceResult;
+import com.couchbase.litecore.fleece.FLValue;
 
 public class C4Document implements C4Constants {
     //-------------------------------------------------------------------------
@@ -66,6 +67,11 @@ public class C4Document implements C4Constants {
 
     public byte[] getSelectedBody() {
         return getSelectedBody(handle);
+    }
+
+    public FLValue getSelectedBody2() {
+        long value = getSelectedBody2(handle);
+        return value == 0 ? null : new FLValue(value);
     }
 
     // - Lifecycle
@@ -215,18 +221,6 @@ public class C4Document implements C4Constants {
         return handle != 0 ? new C4BlobKey(handle) : null;
     }
 
-    public static boolean dictContainsBlobs(FLDict dict, SharedKeys sk) {
-        return dictContainsBlobs(dict, sk.flSharedKeys);
-    }
-
-    public static boolean dictContainsBlobs(FLDict dict, FLSharedKeys sk) {
-        return dictContainsBlobs(dict.getHandle(), sk.getHandle());
-    }
-
-    public static boolean dictContainsBlobs(FLSliceResult dict, SharedKeys sk) {
-        return dictContainsBlobs(dict, sk.flSharedKeys);
-    }
-
     public static boolean dictContainsBlobs(FLSliceResult dict, FLSharedKeys sk) {
         return dictContainsBlobs2(dict.getHandle(), sk.getHandle());
     }
@@ -268,6 +262,9 @@ public class C4Document implements C4Constants {
     static native long getSelectedSequence(long doc);
 
     static native byte[] getSelectedBody(long doc);
+
+    // return pointer to FLValue
+    static native long getSelectedBody2(long doc);
 
     // - Lifecycle
 
