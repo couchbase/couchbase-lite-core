@@ -53,7 +53,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query]") {
     });
     
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
-        store->createIndex("num."_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+        store->createIndex("\"num\""_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
     });
     
     store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
