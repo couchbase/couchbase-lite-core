@@ -320,7 +320,7 @@ endif()
 
 ### TOOLS:
 
-add_subdirectory(Tools)
+add_subdirectory(tools)
 
 ### TESTS:
 

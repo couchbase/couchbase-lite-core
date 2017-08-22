@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 3.1)
 cmake_policy(VERSION 3.1)
 project (LiteCoreTools)
 
+if(ANDROID)
+    return()
+endif()
+
 set(TOP ${PROJECT_SOURCE_DIR}/../)
 
 include_directories(${PROJECT_SOURCE_DIR}
@@ -11,11 +15,18 @@ include_directories(${PROJECT_SOURCE_DIR}
 
 ### LITECORELOG
 
-add_executable(litecorelog
-               litecorelog.cc
+set(LITECORELOG_SRC  litecorelog.cc
                ${TOP}LiteCore/Support/StringUtil.cc
                ${TOP}LiteCore/Support/LogDecoder.cc
                ${TOP}LiteCore/Support/LogEncoder.cc)
+
+if(MSVC)
+    aux_source_directory(${TOP}MSVC MSVC_SOURCE)
+    set(LITECORELOG_SRC ${LITECORELOG_SRC} ${MSVC_SOURCE})
+endif()
+
+add_executable(litecorelog
+               ${LITECORELOG_SRC})
 
 target_link_libraries(litecorelog  FleeceStatic)
 if (APPLE)
@@ -36,4 +47,8 @@ if (APPLE)
     target_link_libraries(litecp 
       "-framework CoreFoundation"
       "-framework Security")
+elseif(MSVC)
+    target_link_libraries(litecp Dbghelp.lib)
+else()
+    target_link_libraries(litecp pthread z dl ${ICU4C_COMMON} ${ICU4C_I18N})
 endif()
