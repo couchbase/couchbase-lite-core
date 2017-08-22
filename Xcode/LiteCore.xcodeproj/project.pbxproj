@@ -127,6 +127,7 @@
 		275073511F4903E5003D2CCE /* DBEndpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750734F1F4903E5003D2CCE /* DBEndpoint.cc */; };
 		275073541F4903F7003D2CCE /* DirEndpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275073521F4903F7003D2CCE /* DirEndpoint.cc */; };
 		275073571F4B4D1D003D2CCE /* ToolUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275073551F4B4D1D003D2CCE /* ToolUtils.cc */; };
+		275073701F4C8CA5003D2CCE /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = 2750736D1F4C8C62003D2CCE /* sqlite3.c */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
 		2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2753AF761EBD190700C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
@@ -185,6 +186,8 @@
 		277C14721EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
 		277C147A1EA826790075348F /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
+		2787EB271F4C91B000DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		278963621D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
 		278963631D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
 		278963641D7A376900493096 /* EncryptedStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278963611D7A376900493096 /* EncryptedStream.hh */; };
@@ -286,11 +289,8 @@
 		27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Record.cc */; };
 		27DF4C271ECCD70B00EE6B8D /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		27DF7D351F3ACEBF0022F3DF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
-		27DF7D5E1F422FF20022F3DF /* sqlite3.h in Headers */ = {isa = PBXBuildFile; fileRef = 27DF7D5B1F422FF20022F3DF /* sqlite3.h */; };
-		27DF7D671F4236630022F3DF /* sqlite3.c in Sources */ = {isa = PBXBuildFile; fileRef = 27DF7D5A1F422FF20022F3DF /* sqlite3.c */; };
-		27DF7D681F4236690022F3DF /* sqlite3.h in Headers */ = {isa = PBXBuildFile; fileRef = 27DF7D5B1F422FF20022F3DF /* sqlite3.h */; };
-		27DF7D691F42368D0022F3DF /* libSQLite.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DF7D631F4236500022F3DF /* libSQLite.a */; };
-		27DF7D6A1F4236950022F3DF /* libSQLite.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DF7D631F4236500022F3DF /* libSQLite.a */; };
+		27DF7D691F42368D0022F3DF /* libSQLCipher.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DF7D631F4236500022F3DF /* libSQLCipher.a */; };
+		27DF7D6A1F4236950022F3DF /* libSQLCipher.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DF7D631F4236500022F3DF /* libSQLCipher.a */; };
 		27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9D1DBEAA130089A9C0 /* c4DocumentTest.cc */; };
 		27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */; };
 		27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */; };
@@ -1007,6 +1007,9 @@
 		2750735A1F4B5ECC003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		2750735E1F4B5F6B003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		2750736C1F4C8BA9003D2CCE /* CMakeLists.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		2750736D1F4C8C62003D2CCE /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sqlite3.c; path = src/c/sqlite3.c; sourceTree = "<group>"; };
+		2750736F1F4C8C96003D2CCE /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sqlite3.h; path = src/headers/sqlite3.h; sourceTree = "<group>"; };
 		27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sqlite3_unicodesn_tokenizer.c; sourceTree = "<group>"; };
 		27513A5C1A687EA70055DC40 /* sqlite3_unicodesn_tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sqlite3_unicodesn_tokenizer.h; sourceTree = "<group>"; };
 		2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging_Stub.cc; sourceTree = "<group>"; };
@@ -1158,9 +1161,7 @@
 		27DD1512193CD005009A367D /* RevID.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevID.hh; sourceTree = "<group>"; };
 		27DF46C21A12CF46007BB4A4 /* Record.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Record.cc; sourceTree = "<group>"; };
 		27DF46C31A12CF46007BB4A4 /* Record.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Record.hh; sourceTree = "<group>"; };
-		27DF7D5A1F422FF20022F3DF /* sqlite3.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sqlite3.c; sourceTree = "<group>"; };
-		27DF7D5B1F422FF20022F3DF /* sqlite3.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sqlite3.h; sourceTree = "<group>"; };
-		27DF7D631F4236500022F3DF /* libSQLite.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSQLite.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		27DF7D631F4236500022F3DF /* libSQLCipher.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSQLCipher.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27DF7D6B1F4236E90022F3DF /* SQLite.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SQLite.xcconfig; sourceTree = "<group>"; wrapsLines = 1; };
 		27DF7D6C1F42399E0022F3DF /* SQLite_Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SQLite_Debug.xcconfig; sourceTree = "<group>"; wrapsLines = 1; };
 		27DF7D6D1F4239A80022F3DF /* SQLite_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SQLite_Release.xcconfig; sourceTree = "<group>"; };
@@ -1319,6 +1320,7 @@
 				272850EE1E9D4D23009CA22F /* libz.tbd in Frameworks */,
 				27DF7D351F3ACEBF0022F3DF /* Foundation.framework in Frameworks */,
 				2753AFC91EC0F4E900C12E98 /* CoreFoundation.framework in Frameworks */,
+				2787EB271F4C91B000DB97B0 /* Security.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1446,7 +1448,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27DF7D6A1F4236950022F3DF /* libSQLite.a in Frameworks */,
+				27DF7D6A1F4236950022F3DF /* libSQLCipher.a in Frameworks */,
 				279D41031EA54B0300D8DD9D /* libcivetweb.a in Frameworks */,
 				93CD011A1E933C0B00AFB3FA /* libblip_cpp.a in Frameworks */,
 				27FA09CB1D70BA42005888AA /* libFleece.a in Frameworks */,
@@ -1466,7 +1468,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27DF7D691F42368D0022F3DF /* libSQLite.a in Frameworks */,
+				27DF7D691F42368D0022F3DF /* libSQLCipher.a in Frameworks */,
 				2753AFEA1EC2738D00C12E98 /* libcivetweb.a in Frameworks */,
 				72DE48181E9C559000B60952 /* libblip_cpp.a in Frameworks */,
 				27FA09C31D70AE90005888AA /* libFleece.a in Frameworks */,
@@ -1474,6 +1476,7 @@
 				72DE481B1E9C559B00B60952 /* libz.tbd in Frameworks */,
 				270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */,
 				2753B00D1EC39E5D00C12E98 /* Foundation.framework in Frameworks */,
+				2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1719,7 +1722,7 @@
 				270C6BA11EBA74D800E73415 /* litecorelog */,
 				279691631ED4B29E0086565D /* libSupport.a */,
 				93FA3F481EE21A4D00D15CF5 /* LiteCoreServ-iOS.app */,
-				27DF7D631F4236500022F3DF /* libSQLite.a */,
+				27DF7D631F4236500022F3DF /* libSQLCipher.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2054,7 +2057,7 @@
 		27D74A721D4D3EC000D806E0 /* vendor */ = {
 			isa = PBXGroup;
 			children = (
-				27DF7D561F422FD70022F3DF /* SQLite3 */,
+				27DF7D561F422FD70022F3DF /* SQLCipher */,
 				27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */,
 				277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */,
 				272851151EA44921009CA22F /* civetweb */,
@@ -2088,14 +2091,15 @@
 			path = SQLiteCpp;
 			sourceTree = "<group>";
 		};
-		27DF7D561F422FD70022F3DF /* SQLite3 */ = {
+		27DF7D561F422FD70022F3DF /* SQLCipher */ = {
 			isa = PBXGroup;
 			children = (
-				27DF7D5A1F422FF20022F3DF /* sqlite3.c */,
-				27DF7D5B1F422FF20022F3DF /* sqlite3.h */,
+				2750736F1F4C8C96003D2CCE /* sqlite3.h */,
+				2750736D1F4C8C62003D2CCE /* sqlite3.c */,
+				2750736C1F4C8BA9003D2CCE /* CMakeLists.txt */,
 			);
-			name = SQLite3;
-			path = SQLiteCpp/sqlite3;
+			name = SQLCipher;
+			path = sqlcipher;
 			sourceTree = "<group>";
 		};
 		27E4871019217187007D8940 /* LiteCore */ = {
@@ -2340,7 +2344,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27DF7D681F4236690022F3DF /* sqlite3.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2400,7 +2403,6 @@
 				27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */,
 				27D74A911D4D3F3400D806E0 /* Column.h in Headers */,
 				279794A11D305EC2001D0F3A /* Revision.hh in Headers */,
-				27DF7D5E1F422FF20022F3DF /* sqlite3.h in Headers */,
 				27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */,
 				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
 				27D74A921D4D3F3400D806E0 /* Database.h in Headers */,
@@ -2669,9 +2671,9 @@
 			productReference = 27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		27DF7D621F4236500022F3DF /* SQLite */ = {
+		27DF7D621F4236500022F3DF /* SQLCipher */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 27DF7D641F4236500022F3DF /* Build configuration list for PBXNativeTarget "SQLite" */;
+			buildConfigurationList = 27DF7D641F4236500022F3DF /* Build configuration list for PBXNativeTarget "SQLCipher" */;
 			buildPhases = (
 				27DF7D5F1F4236500022F3DF /* Sources */,
 				27DF7D601F4236500022F3DF /* Frameworks */,
@@ -2681,9 +2683,9 @@
 			);
 			dependencies = (
 			);
-			name = SQLite;
+			name = SQLCipher;
 			productName = SQLite;
-			productReference = 27DF7D631F4236500022F3DF /* libSQLite.a */;
+			productReference = 27DF7D631F4236500022F3DF /* libSQLCipher.a */;
 			productType = "com.apple.product-type.library.static";
 		};
 		27EF807319142C2500A327B9 /* Tokenizer */ = {
@@ -2892,7 +2894,7 @@
 				27468F061EAD147D00B1B4F5 /* litecp */,
 				270C6BA01EBA74D800E73415 /* litecorelog */,
 				274D03D21BA732B000FF7C35 /* LiteCoreJNI */,
-				27DF7D621F4236500022F3DF /* SQLite */,
+				27DF7D621F4236500022F3DF /* SQLCipher */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
 				279D40FD1EA54A9D00D8DD9D /* civetweb */,
 				27139B2F18F8E9750021A9A3 /* LiteCore XCTests */,
@@ -3176,7 +3178,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27DF7D671F4236630022F3DF /* sqlite3.c in Sources */,
+				275073701F4C8CA5003D2CCE /* sqlite3.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3543,12 +3545,12 @@
 		};
 		27DF7D8B1F4289900022F3DF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27DF7D621F4236500022F3DF /* SQLite */;
+			target = 27DF7D621F4236500022F3DF /* SQLCipher */;
 			targetProxy = 27DF7D8A1F4289900022F3DF /* PBXContainerItemProxy */;
 		};
 		27DF7D901F4289E60022F3DF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27DF7D621F4236500022F3DF /* SQLite */;
+			target = 27DF7D621F4236500022F3DF /* SQLCipher */;
 			targetProxy = 27DF7D8F1F4289E60022F3DF /* PBXContainerItemProxy */;
 		};
 		27DF7D921F428A510022F3DF /* PBXTargetDependency */ = {
@@ -4438,7 +4440,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		27DF7D641F4236500022F3DF /* Build configuration list for PBXNativeTarget "SQLite" */ = {
+		27DF7D641F4236500022F3DF /* Build configuration list for PBXNativeTarget "SQLCipher" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27DF7D651F4236500022F3DF /* Debug */,
