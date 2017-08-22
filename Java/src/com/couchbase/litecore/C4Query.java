@@ -139,6 +139,7 @@ public class C4Query {
     // - Creates a database index, to speed up subsequent queries.
 
     static native boolean createIndex(long db,
+                                      String name,
                                       String expressionsJSON,
                                       int indexType,
                                       String language,
