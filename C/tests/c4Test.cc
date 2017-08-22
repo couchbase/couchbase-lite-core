@@ -158,7 +158,7 @@ string C4Test::sFixturesDir = "C/tests/data/";
 C4Test::C4Test(int testOption)
 :_storage(kC4SQLiteStorageEngine),
 #if ENABLE_VERSION_VECTORS
- _versioning((testOption & 1) ? kC4VersionVectors : kC4RevisionTrees),
+ _versioning((testOption > 1) ? kC4VersionVectors : kC4RevisionTrees),
 #else
 _versioning(kC4RevisionTrees),
 #endif
@@ -217,12 +217,11 @@ _versioning(kC4RevisionTrees),
         FLEncoder_Free(enc);
     }
 
-#if 0
-    if (testOption & 4) {
+    if (testOption & 1) {
         config.encryptionKey.algorithm = kC4EncryptionAES256;
         memcpy(config.encryptionKey.bytes, "this is not a random key at all.", 32);
     }
-#endif
+
     static C4DatabaseConfig sLastConfig = { };
     if (config.flags != sLastConfig.flags || config.versioning != sLastConfig.versioning) {
         fprintf(stderr, "            %s, %s\n",

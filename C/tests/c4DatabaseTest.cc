@@ -502,8 +502,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     c4slice_free(srcPath);
     string nuPath = TempDir() + "nudb.cblite2" + kPathSeparator;
     
-    C4DatabaseConfig config = { };
-    config.flags = kC4DB_Create | kC4DB_SharedKeys | kC4DB_Bundled;
+    C4DatabaseConfig config = *c4db_getConfig(db);
     C4Error error;
     if(!c4db_deleteAtPath(c4str(nuPath.c_str()), &config, &error)) {
         REQUIRE(error.code == 0);

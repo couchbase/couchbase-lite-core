@@ -87,12 +87,12 @@ endif()
 include_directories("vendor/fleece/Fleece"
                     "vendor/fleece/vendor"
                     "vendor/SQLiteCpp/include"
-                    "vendor/SQLiteCpp/sqlite3"
+                    "vendor/sqlcipher/src/headers"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
                     "vendor/BLIP-Cpp/src/util"
                     "vendor/civetweb/include"
-                    "vendor/mbedtls/include")
+                    "vendor/sqlcipher/vendor/mbedtls/include")
 
 if(WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
@@ -101,25 +101,12 @@ elseif(UNIX AND NOT APPLE)
   include_directories("LiteCore/Android")
 endif()
 
-set(SQLITECPP_INTERNAL_SQLITE OFF)
-add_library(sqlite3 STATIC
-  vendor/SQLiteCpp/sqlite3/sqlite3.c
-  vendor/SQLiteCpp/sqlite3/sqlite3.h
-)
-
-if(WINDOWS_STORE)
-  set(SQLITE3_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER -DSQLITE_OS_WINRT")
-else()
-  set(SQLITE3_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER")
-endif()
-
-set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS ${SQLITE3_FLAGS})
-
 add_subdirectory(REST)
 
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/BLIP-Cpp            EXCLUDE_FROM_ALL)
+add_subdirectory(vendor/sqlcipher           EXCLUDE_FROM_ALL)
 
 ### MORE BUILD SETTINGS:
 
@@ -160,21 +147,7 @@ aux_source_directory(Replicator               REPLICATOR_SRC)
 
 set(CIVETWEB_SRC "vendor/civetweb/src/civetweb.c"
                  "REST/civetUtils.cc")
-set(MBEDTLS_SRC "vendor/mbedtls/library/md5.c"
-                "vendor/mbedtls/library/sha1.c"
-                "vendor/mbedtls/library/sha256.c"
-                "vendor/mbedtls/library/sha512.c"
-                "vendor/mbedtls/library/ctr_drbg.c"
-                "vendor/mbedtls/library/cipher.c"
-                "vendor/mbedtls/library/cipher_wrap.c"
-                "vendor/mbedtls/library/entropy.c"
-                "vendor/mbedtls/library/entropy_poll.c"
-                "vendor/mbedtls/library/timing.c"
-                "vendor/mbedtls/library/aes.c"
-                "vendor/mbedtls/library/aesni.c"
-                "vendor/mbedtls/library/padlock.c")
 
-configure_file(CMake/mbedtls_config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/vendor/mbedtls/include/mbedtls/config.h COPYONLY)
 if(!MSVC)
     set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
 endif()
@@ -192,8 +165,7 @@ set(ALL_SRC_FILES
   ${VERSIONVECTORS_SRC}
   ${C_SRC}
   ${SQLITECPP_SRC}
-  ${REPLICATOR_SRC}
-  ${MBEDTLS_SRC}) 
+  ${REPLICATOR_SRC}) 
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
@@ -247,7 +219,8 @@ set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 SQLite3_UnicodeSN
                                 BLIPStatic
                                 CivetWeb
-                                sqlite3)
+                                sqlcipher
+                                mbedcrypto)
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 
@@ -333,7 +306,7 @@ endif()
 
 ### TOOLS:
 
-add_subdirectory(Tools)
+add_subdirectory(tools)
 
 ### TESTS:
 

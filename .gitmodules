@@ -13,9 +13,10 @@
 [submodule "vendor/civetweb"]
 	path = vendor/civetweb
 	url = https://github.com/couchbasedeps/civetweb.git
-[submodule "vendor/mbedtls"]
-	path = vendor/mbedtls
-	url = https://github.com/ARMmbed/mbedtls
 [submodule "wiki"]
 	path = wiki
 	url = https://github.com/couchbase/couchbase-lite-core.wiki.git
+[submodule "vendor/sqlcipher"]
+	path = vendor/sqlcipher
+	url = https://github.com/couchbaselabs/couchbase-lite-libsqlcipher
+	branch = feature/mbedtls

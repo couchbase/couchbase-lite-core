@@ -115,9 +115,9 @@ struct ExpectingExceptions {
 class C4Test {
 public:
 #if ENABLE_VERSION_VECTORS
-    static const int numberOfOptions = 2;       // rev-trees or version vectors
+    static const int numberOfOptions = 3;       // rev-tree, rev-tree encrypted, version vector
 #else
-    static const int numberOfOptions = 1;       // rev-trees
+    static const int numberOfOptions = 2;       // rev-tree, rev-tree encrypted
 #endif
 
     static std::string sFixturesDir;            // directory where test files live

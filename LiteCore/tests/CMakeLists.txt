@@ -29,7 +29,8 @@ add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTes
 
 target_link_libraries(CppTests  LiteCoreStatic
                                 FleeceStatic
-                                sqlite3
+                                sqlcipher
+                                mbedcrypto
                                 SQLite3_UnicodeSN
                                 BLIPStatic
                                 CivetWeb)
@@ -37,6 +38,7 @@ target_link_libraries(CppTests  LiteCoreStatic
 if(APPLE)
     target_link_libraries(CppTests  "-framework Foundation"
                                     "-framework CFNetwork"
+                                    "-framework Security"
                                     "z")
 else()
     if(UNIX AND NOT ANDROID)
