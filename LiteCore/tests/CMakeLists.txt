@@ -29,7 +29,7 @@ add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTes
 
 target_link_libraries(CppTests  LiteCoreStatic
                                 FleeceStatic
-                                sqlcipher_static
+                                sqlcipher
                                 mbedcrypto
                                 SQLite3_UnicodeSN
                                 BLIPStatic

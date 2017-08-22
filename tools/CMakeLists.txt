@@ -17,8 +17,10 @@ add_executable(litecorelog
                ${TOP}LiteCore/Support/LogDecoder.cc
                ${TOP}LiteCore/Support/LogEncoder.cc)
 
-target_link_libraries(litecorelog  Fleece "-framework CoreFoundation")
-
+target_link_libraries(litecorelog  FleeceStatic)
+if (APPLE)
+    target_link_libraries(litecorelog "-framework CoreFoundation")
+endif()
 
 ### LITECP
 
@@ -31,5 +33,7 @@ add_executable(litecp
 target_link_libraries(litecp ${LITECORE_LIBRARIES_PRIVATE})
 
 if (APPLE)
-    target_link_libraries(litecp "-framework CoreFoundation")
+    target_link_libraries(litecp 
+      "-framework CoreFoundation"
+      "-framework Security")
 endif()

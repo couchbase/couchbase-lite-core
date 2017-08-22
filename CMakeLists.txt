@@ -233,7 +233,8 @@ set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 SQLite3_UnicodeSN
                                 BLIPStatic
                                 CivetWeb
-                                sqlcipher_static mbedcrypto)
+                                sqlcipher
+                                mbedcrypto)
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 
