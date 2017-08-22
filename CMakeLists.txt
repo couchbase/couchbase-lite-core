@@ -87,12 +87,12 @@ endif()
 include_directories("vendor/fleece/Fleece"
                     "vendor/fleece/vendor"
                     "vendor/SQLiteCpp/include"
-                    "vendor/SQLiteCpp/sqlite3"
+                    "vendor/sqlcipher/src/headers"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
                     "vendor/BLIP-Cpp/src/util"
                     "vendor/civetweb/include"
-                    "vendor/mbedtls/include")
+                    "vendor/sqlcipher/vendor/mbedtls/include")
 
 if(WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
@@ -100,20 +100,6 @@ if(WIN32)
 elseif(UNIX AND NOT APPLE)
   include_directories("LiteCore/Android")
 endif()
-
-set(SQLITECPP_INTERNAL_SQLITE OFF)
-add_library(sqlite3 STATIC
-  vendor/SQLiteCpp/sqlite3/sqlite3.c
-  vendor/SQLiteCpp/sqlite3/sqlite3.h
-)
-
-if(WINDOWS_STORE)
-  set(SQLITE3_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER -DSQLITE_OS_WINRT")
-else()
-  set(SQLITE3_FLAGS "-DSQLITE_ENABLE_FTS4_UNICODE61 -DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_FTS4 -DSQLITE_ENABLE_FTS3_TOKENIZER")
-endif()
-
-set_target_properties(sqlite3 PROPERTIES COMPILE_FLAGS ${SQLITE3_FLAGS})
 
 add_subdirectory(REST)
 
