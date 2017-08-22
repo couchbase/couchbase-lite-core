@@ -350,17 +350,17 @@ Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextTermLength(JNIEnv *env,
 /*
  * Class:     com_couchbase_litecore_C4Query
  * Method:    createIndex
- * Signature: (JLjava/lang/String;ILjava/lang/String;Z)Z
+ * Signature: (JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;Z)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_C4Query_createIndex(JNIEnv *env, jclass clazz, jlong jdb,
+Java_com_couchbase_litecore_C4Query_createIndex(JNIEnv *env, jclass clazz, jlong jdb, jstring jname,
                                                 jstring jexpressionsJSON, jint indexType,
                                                 jstring jlanguage, jboolean ignoreDiacritics) {
-
+    jstringSlice name(env, jname);
     jstringSlice expressionsJSON(env, jexpressionsJSON);
     jstringSlice language(env, jlanguage);
     C4Error error = {};
-    bool res = c4db_createIndex((C4Database *) jdb, (C4Slice) expressionsJSON,
+    bool res = c4db_createIndex((C4Database *) jdb, name, (C4Slice) expressionsJSON,
                                 (C4IndexType) indexType, nullptr, &error);
     if (!res)
         throwError(env, error);

@@ -268,9 +268,9 @@ public class C4Database implements C4Constants {
         return new C4Query(handle, expression);
     }
 
-    public boolean createIndex(String expressionsJSON, int indexType, String language,
+    public boolean createIndex(String name, String expressionsJSON, int indexType, String language,
                                boolean ignoreDiacritics) throws LiteCoreException {
-        return C4Query.createIndex(handle, expressionsJSON, indexType, language, ignoreDiacritics);
+        return C4Query.createIndex(handle, name, expressionsJSON, indexType, language, ignoreDiacritics);
     }
 
     public boolean deleteIndex(String expressionsJSON, int indexType) throws LiteCoreException {

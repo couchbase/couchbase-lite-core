@@ -130,7 +130,7 @@ public class C4QueryTest extends C4QueryBaseTest {
     // - DB Query expression index
     @Test
     public void testDBQueryExpressionIndex() throws LiteCoreException {
-        db.createIndex(json5("[['length()', ['.name.first']]]"), kC4ValueIndex, null, true);
+        db.createIndex("length", json5("[['length()', ['.name.first']]]"), kC4ValueIndex, null, true);
         compile(json5("['=', ['length()', ['.name.first']], 9]"));
         assertEquals(Arrays.asList("0000015", "0000099"), run());
     }
@@ -139,7 +139,7 @@ public class C4QueryTest extends C4QueryBaseTest {
     @Test
     public void testDeleteIndexedDoc() throws LiteCoreException {
         // Create the same index as the above test:
-        db.createIndex(json5("[['length()', ['.name.first']]]"), kC4ValueIndex, null, true);
+        db.createIndex("length", json5("[['length()', ['.name.first']]]"), kC4ValueIndex, null, true);
 
         // Delete doc "0000015":
         {
@@ -168,7 +168,7 @@ public class C4QueryTest extends C4QueryBaseTest {
     // - Full-text query
     @Test
     public void testFullTextQuery() throws LiteCoreException {
-        db.createIndex("[[\".contact.address.street\"]]", kC4FullTextIndex, null, true);
+        db.createIndex("byStreet", "[[\".contact.address.street\"]]", kC4FullTextIndex, null, true);
         compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
         assertEquals(Arrays.asList("0000013", "0000015", "0000043", "0000044", "0000052"), run());
     }
