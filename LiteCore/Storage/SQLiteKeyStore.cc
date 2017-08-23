@@ -387,6 +387,7 @@ namespace litecore {
                         return; // no-op
                     }
                 }
+                getExistingSQL.reset();
                 
                 _deleteIndex(indexName);
                 db().exec(qp.SQL(), LogLevel::Info);
