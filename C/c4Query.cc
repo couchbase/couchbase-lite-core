@@ -294,7 +294,6 @@ bool c4db_deleteIndex(C4Database *database,
 C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept
 {
     return tryCatch<C4SliceResult>(outError, [&]{
-        auto result = database->defaultKeyStore().getIndexes();
-        return (C4SliceResult){result.buf, result.size};
+        return sliceResult(database->defaultKeyStore().getIndexes());
     });
 }
