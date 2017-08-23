@@ -146,8 +146,5 @@ public class C4Query {
                                       boolean ignoreDiacritics)
             throws LiteCoreException;
 
-    static native boolean deleteIndex(long db,
-                                      String expressionsJSON,
-                                      int indexType)
-            throws LiteCoreException;
+    static native boolean deleteIndex(long db, String name) throws LiteCoreException;
 }

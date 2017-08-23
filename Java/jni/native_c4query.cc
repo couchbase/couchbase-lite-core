@@ -370,15 +370,14 @@ Java_com_couchbase_litecore_C4Query_createIndex(JNIEnv *env, jclass clazz, jlong
 /*
  * Class:     com_couchbase_litecore_C4Query
  * Method:    deleteIndex
- * Signature: (JLjava/lang/String;I)Z
+ * Signature: (JLjava/lang/String;)Z
  */
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_C4Query_deleteIndex(JNIEnv *env, jclass clazz, jlong jdb,
-                                                jstring jexpressionsJSON, jint indexType) {
-    jstringSlice expressionsJSON(env, jexpressionsJSON);
+                                                jstring jname) {
+    jstringSlice name(env, jname);
     C4Error error = {};
-    bool res = c4db_deleteIndex((C4Database *) jdb, (C4Slice) expressionsJSON,
-                                (C4IndexType) indexType, &error);
+    bool res = c4db_deleteIndex((C4Database *) jdb, name, &error);
     if (!res)
         throwError(env, error);
     return res;
