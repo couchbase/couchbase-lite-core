@@ -31,6 +31,8 @@ add_executable(litecorelog
 target_link_libraries(litecorelog  FleeceStatic)
 if (APPLE)
     target_link_libraries(litecorelog "-framework CoreFoundation")
+elseif(UNIX)
+    target_link_libraries(litecorelog ${LIBCXX_LIB} ${LIBCXXABI_LIB})
 endif()
 
 ### LITECP
