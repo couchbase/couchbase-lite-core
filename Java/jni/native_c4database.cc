@@ -62,7 +62,30 @@ Java_com_couchbase_litecore_C4Database_openAgain(JNIEnv *env, jclass clazz, jlon
         throwError(env, error);
     return (jlong) db;
 }
+/*
+ * Class:     com_couchbase_litecore_C4Database
+ * Method:    copy
+ * Signature: (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;II[B)Z
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_C4Database_copy(JNIEnv *env, jclass clazz,
+                                            jstring jFromPath, jstring jToPath,
+                                            jint jflags,
+                                            jstring storageEngine, jint versioning,
+                                            jint encryptionAlg, jbyteArray encryptionKey) {
+    jstringSlice fromPath(env, jFromPath);
+    jstringSlice toPath(env, jToPath);
+    C4DatabaseConfig config{};
+    config.flags = (C4DatabaseFlags) jflags;
+    config.storageEngine = kC4SQLiteStorageEngine;
+    config.versioning = versioning == 0 ? kC4RevisionTrees : kC4VersionVectors;
+    if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &config.encryptionKey))
+        return;
 
+    C4Error error;
+    if(!c4db_copy(fromPath, toPath, &config, &error))
+        throwError(env, error);
+}
 /*
  * Class:     com_couchbase_litecore_C4Database
  * Method:    retain

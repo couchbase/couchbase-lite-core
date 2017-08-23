@@ -324,6 +324,14 @@ public class C4Database implements C4Constants {
 
     static native long openAgain(long db) throws LiteCoreException;
 
+    public static native void copy(String sourcePath, String destinationPath,
+                               int flags,
+                               String storageEngine,
+                               int versioning,
+                               int algorithm,
+                               byte[] encryptionKey)
+            throws LiteCoreException;
+
     static native long retain(long db);
 
     static native boolean free(long db);
