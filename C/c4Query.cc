@@ -283,12 +283,18 @@ bool c4db_createIndex(C4Database *database,
 
 
 bool c4db_deleteIndex(C4Database *database,
-                      C4Slice propertyPath,
-                      C4IndexType indexType,
+                      C4Slice name,
                       C4Error *outError) noexcept
 {
     return tryCatch(outError, [&]{
-        database->defaultKeyStore().deleteIndex((string)propertyPath,
-                                                (KeyStore::IndexType)indexType);
+        database->defaultKeyStore().deleteIndex((string)name);
+    });
+}
+
+C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept
+{
+    return tryCatch<C4SliceResult>(outError, [&]{
+        auto result = database->defaultKeyStore().getIndexes();
+        return (C4SliceResult){result.buf, result.size};
     });
 }

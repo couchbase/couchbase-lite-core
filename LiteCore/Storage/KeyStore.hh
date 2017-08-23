@@ -112,7 +112,8 @@ namespace litecore {
                                  slice expressionJSON,
                                  IndexType =kValueIndex,
                                  const IndexOptions* = nullptr);
-        virtual void deleteIndex(slice expressionJSON, IndexType =kValueIndex);
+        virtual void deleteIndex(slice name);
+        virtual alloc_slice getIndexes() const;
 
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore()                             { }

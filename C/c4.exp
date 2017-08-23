@@ -102,6 +102,7 @@ _c4db_enumerateSomeDocs
 _c4db_enumerateExpired
 _c4db_createIndex
 _c4db_deleteIndex
+_c4db_getIndexes
 _c4enum_next
 _c4enum_nextDocument
 _c4enum_getDocumentInfo

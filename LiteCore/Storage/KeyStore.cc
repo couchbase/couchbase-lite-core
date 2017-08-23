@@ -89,7 +89,11 @@ namespace litecore {
         error::_throw(error::Unimplemented);
     }
 
-    void KeyStore::deleteIndex(slice expressionJSON, IndexType) {
+    void KeyStore::deleteIndex(slice name) {
+        error::_throw(error::Unimplemented);
+    }
+    
+    alloc_slice KeyStore::getIndexes() const {
         error::_throw(error::Unimplemented);
     }
 

@@ -40,13 +40,14 @@ namespace litecore {
 
         void erase() override;
 
-        bool supportsIndexes(IndexType t) const override               {return t == kValueIndex;}
+        bool supportsIndexes(IndexType t) const override               {return true;}
         void createIndex(slice name,
                          slice expressionJSON,
                          IndexType =kValueIndex,
                          const IndexOptions* = nullptr) override;
-        bool hasIndex(slice expressionJSON, IndexType =kValueIndex);
-        void deleteIndex(slice name, IndexType =kValueIndex) override;
+
+        void deleteIndex(slice name) override;
+        alloc_slice getIndexes() const override;
 
         void createSequenceIndex();
 
@@ -83,7 +84,7 @@ namespace litecore {
         void writeSQLOptions(std::stringstream &sql, RecordEnumerator::Options &options);
         void setLastSequence(sequence_t seq);
         std::string SQLIndexName(const fleece::Array*, IndexType, bool quoted =false);
-        void _deleteIndex(slice name, IndexType =kValueIndex);
+        void _deleteIndex(slice name);
 
         std::unique_ptr<SQLite::Statement> _recCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;

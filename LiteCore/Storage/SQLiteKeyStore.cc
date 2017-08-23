@@ -374,9 +374,21 @@ namespace litecore {
         Transaction t(db());
         switch (type) {
             case  kValueIndex: {
-                _deleteIndex(indexName, kValueIndex);
                 QueryParser qp(tableName());
-                qp.writeCreateIndex((string)indexName, params);
+                string indexNameStr = (string)indexName;
+                qp.writeCreateIndex(indexNameStr, params);
+                string sql = qp.SQL();
+                SQLite::Statement getExistingSQL(db(), "SELECT sql FROM sqlite_master WHERE type='index' "
+                                                "AND name=?");
+                getExistingSQL.bind(1, indexNameStr);
+                if(getExistingSQL.executeStep()) {
+                    string existingSQL = getExistingSQL.getColumn(0).getString();
+                    if(existingSQL == sql) {
+                        return; // no-op
+                    }
+                }
+                
+                _deleteIndex(indexName);
                 db().exec(qp.SQL(), LogLevel::Info);
                 break;
             }
@@ -394,7 +406,7 @@ namespace litecore {
                         return; // No-op
                     }
                     
-                    _deleteIndex(indexName, kFullTextIndex);
+                    _deleteIndex(indexName);
                 }
  
                 if (db().tableExists(ftsTableName)) {
@@ -440,59 +452,54 @@ namespace litecore {
         t.commit();
     }
 
-    void SQLiteKeyStore::_deleteIndex(slice name, IndexType type) {
+    void SQLiteKeyStore::_deleteIndex(slice name) {
         validateIndexName(name);
-        switch (type) {
-            case kValueIndex: {
-                string indexName = (string)name;
-                db().exec(string("DROP INDEX IF EXISTS ") + indexName, LogLevel::Info);
-                break;
-            }
-            case kFullTextIndex: {
-                SQLite::Statement getExpression(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
-                string alias = tableName() + "::" + (string)name;
-                getExpression.bind(1, alias);
-                if(!getExpression.executeStep()) {
-                    break;
-                }
-                
-                string indexName = getExpression.getColumn(0).getString();
-                getExpression.reset();
-                db().exec(string("DROP TABLE IF EXISTS \"") + indexName + "\"", LogLevel::Info);
-                db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::ins\"");
-                db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::del\"");
-                db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::upd\"");
-                db().exec(string("DELETE FROM kv_fts_map WHERE alias=\"") + alias + "\"");
-                break;
-            }
-            default:
-                error::_throw(error::Unimplemented);
+        string indexName = (string)name;
+        db().exec(string("DROP INDEX IF EXISTS ") + indexName, LogLevel::Info);
+        
+        SQLite::Statement getExpression(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
+        string alias = tableName() + "::" + (string)name;
+        getExpression.bind(1, alias);
+        if(!getExpression.executeStep()) {
+            return;
         }
+        
+        indexName = getExpression.getColumn(0).getString();
+        getExpression.reset();
+        db().exec(string("DROP TABLE IF EXISTS \"") + indexName + "\"", LogLevel::Info);
+        db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::ins\"");
+        db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::del\"");
+        db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::upd\"");
+        db().exec(string("DELETE FROM kv_fts_map WHERE alias=\"") + alias + "\"");
     }
 
-    void SQLiteKeyStore::deleteIndex(slice name, IndexType type) {
+    void SQLiteKeyStore::deleteIndex(slice name) {
         Transaction t(db());
-        _deleteIndex(name, type);
+        _deleteIndex(name);
         t.commit();
     }
 
-
-    bool SQLiteKeyStore::hasIndex(slice expression, IndexType type) {
-        alloc_slice expressionFleece;
-        const Array *params;
-        tie(expressionFleece, params) = parseIndexExpr(expression, type);
-        string indexName = SQLIndexName(params, type);
-
-        switch (type) {
-            case kFullTextIndex: {
-                return db().tableExists(indexName);
-                break;
-            }
-            default:
-                error::_throw(error::Unimplemented);
+    alloc_slice SQLiteKeyStore::getIndexes() const {
+        Encoder enc;
+        enc.beginArray();
+        string tableNameStr = tableName();
+        SQLite::Statement getIndex(db(), "SELECT name FROM sqlite_master WHERE type='index' "
+                                   "AND tbl_name=? AND sql NOT NULL");
+        getIndex.bind(1, tableNameStr);
+        while(getIndex.executeStep()) {
+            enc.writeString(getIndex.getColumn(0).getString());
         }
+        
+        SQLite::Statement getFTSIndex(db(), "SELECT alias FROM kv_fts_map WHERE alias LIKE ?");
+        getFTSIndex.bind(1, tableNameStr + "::%");
+        while(getFTSIndex.executeStep()) {
+            string alias = getFTSIndex.getColumn(0).getString();
+            enc.writeString(alias.substr(tableNameStr.size() + 2));
+        }
+        
+        enc.endArray();
+        return enc.extractOutput();
     }
-
 
     void SQLiteKeyStore::createSequenceIndex() {
         if (!_createdSeqIndex) {

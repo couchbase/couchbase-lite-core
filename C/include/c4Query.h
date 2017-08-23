@@ -226,14 +226,20 @@ extern "C" {
 
     /** Deletes an index that was created by `c4db_createIndex`.
         @param database  The database to index.
-        @param expressionsJSON  The same JSON array value used when creating the index.
-        @param indexType  The type of the index.
+        @param name The name of the index to delete
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_deleteIndex(C4Database *database C4NONNULL,
-                          C4String expressionsJSON,
-                          C4IndexType indexType,
+                          C4String name,
                           C4Error *outError) C4API;
+    
+    /** Gets a fleece encoded array of indexes in the given database that
+        were created by `c4db_createIndex`
+        @param database  The database to check
+        @param outError  On failure, will be set to the error status.
+        @return  The fleece encoded array of indexes */
+    C4SliceResult c4db_getIndexes(C4Database* database C4NONNULL,
+                                  C4Error* outError) C4API;
 
     /** @} */
 

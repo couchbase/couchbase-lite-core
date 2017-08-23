@@ -46,6 +46,19 @@ static void addNumberedDocs(KeyStore *store) {
     t.commit();
 }
 
+static vector<string> extractIndexes(slice encodedIndexes) {
+    vector<string> retVal;
+    const Array *val = Value::fromTrustedData(encodedIndexes)->asArray();
+    CHECK(val != nullptr);
+    Array::iterator iter(val);
+    int size = iter.count();
+    for(int i = 0; i < size; i++, ++iter) {
+        retVal.emplace_back(iter.value()->asString().asString());
+    }
+    
+    return retVal;
+}
+
 TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query]") {
     KeyStore::IndexOptions options { "en", true };
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
@@ -60,19 +73,34 @@ TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query]") {
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
         store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
     });
+    auto indexes = extractIndexes(store->getIndexes());
+    CHECK(indexes.size() == 1);
+    CHECK(indexes[0] == "num");
     
-    store->deleteIndex("num"_sl, KeyStore::kFullTextIndex);
+    store->deleteIndex("num"_sl);
     store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
     store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    indexes = extractIndexes(store->getIndexes());
+    CHECK(indexes.size() == 1);
+    CHECK(indexes[0] == "num_second");
     
     store->createIndex("num"_sl, "[\".num\"]"_sl);
     store->createIndex("num_second"_sl, "[\".num\"]"_sl);
+    indexes = extractIndexes(store->getIndexes());
+    CHECK(indexes.size() == 2);
+    CHECK(find(indexes.begin(), indexes.end(), "num") != indexes.end());
+    CHECK(find(indexes.begin(), indexes.end(), "num_second") != indexes.end());
     store->deleteIndex("num"_sl);
+    indexes = extractIndexes(store->getIndexes());
+    CHECK(indexes.size() == 1);
+    CHECK(indexes[0] == "num_second");
     
     store->deleteIndex("num_second"_sl);
     store->deleteIndex("num_second"_sl); // Duplicate should be no-op
-    store->deleteIndex("num_second"_sl, KeyStore::kFullTextIndex);
-    store->deleteIndex("num_second"_sl, KeyStore::kFullTextIndex); // Duplicate should be no-op
+    store->deleteIndex("num_second"_sl);
+    store->deleteIndex("num_second"_sl); // Duplicate should be no-op
+    indexes = extractIndexes(store->getIndexes());
+    CHECK(indexes.size() == 0);
 }
 
 
