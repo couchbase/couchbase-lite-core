@@ -94,9 +94,10 @@ if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
                             LiteCoreREST_Static
                             BLIPStatic
                             FleeceStatic
-                            sqlite3
                             SQLite3_UnicodeSN
-                            CivetWeb)
+                            CivetWeb
+                            sqlcipher
+                            mbedcrypto)
     if (REST)
         target_link_libraries(LiteCoreJNI 
                             LiteCoreREST_Static)
@@ -109,9 +110,10 @@ else()
                         	LiteCoreStatic
                             BLIPStatic
                         	FleeceStatic
-                        	sqlite3
                         	SQLite3_UnicodeSN
                             CivetWeb
+                            sqlcipher
+                            mbedcrypto
                             "atomic"
                         	"log"
                             z)
