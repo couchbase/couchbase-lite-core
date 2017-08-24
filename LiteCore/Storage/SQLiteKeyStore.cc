@@ -406,8 +406,6 @@ namespace litecore {
                         
                         return; // No-op
                     }
-                    
-                    _deleteIndex(indexName);
                 }
  
                 if (db().tableExists(ftsTableName)) {
@@ -416,6 +414,7 @@ namespace litecore {
                                   "with another name already");
                 }
                 
+                _deleteIndex(indexName);
                 stringstream sql;
                 sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(text, tokenize=unicodesn";
                 if (options) {
