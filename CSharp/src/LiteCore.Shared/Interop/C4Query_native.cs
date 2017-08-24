@@ -104,17 +104,25 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4queryenum_free(C4QueryEnumerator* e);
 
-        public static bool c4db_createIndex(C4Database* database, string expressionsJSON, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError)
+        public static bool c4db_createIndex(C4Database* database, string name, string expressionsJSON, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError)
         {
+            using(var name_ = new C4String(name))
             using(var expressionsJSON_ = new C4String(expressionsJSON)) {
-                return NativeRaw.c4db_createIndex(database, expressionsJSON_.AsC4Slice(), indexType, indexOptions, outError);
+                return NativeRaw.c4db_createIndex(database, name_.AsC4Slice(), expressionsJSON_.AsC4Slice(), indexType, indexOptions, outError);
             }
         }
 
-        public static bool c4db_deleteIndex(C4Database* database, string expressionsJSON, C4IndexType indexType, C4Error* outError)
+        public static bool c4db_deleteIndex(C4Database* database, string name, C4Error* outError)
         {
-            using(var expressionsJSON_ = new C4String(expressionsJSON)) {
-                return NativeRaw.c4db_deleteIndex(database, expressionsJSON_.AsC4Slice(), indexType, outError);
+            using(var name_ = new C4String(name)) {
+                return NativeRaw.c4db_deleteIndex(database, name_.AsC4Slice(), outError);
+            }
+        }
+
+        public static byte[] c4db_getIndexes(C4Database* database, C4Error* outError)
+        {
+            using(var retVal = NativeRaw.c4db_getIndexes(database, outError)) {
+                return ((C4Slice)retVal).ToArrayFast();
             }
         }
 
@@ -148,11 +156,14 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_createIndex(C4Database* database, C4Slice expressionsJSON, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError);
+        public static extern bool c4db_createIndex(C4Database* database, C4Slice name, C4Slice expressionsJSON, C4IndexType indexType, C4IndexOptions* indexOptions, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4db_deleteIndex(C4Database* database, C4Slice expressionsJSON, C4IndexType indexType, C4Error* outError);
+        public static extern bool c4db_deleteIndex(C4Database* database, C4Slice name, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError);
 
 
     }

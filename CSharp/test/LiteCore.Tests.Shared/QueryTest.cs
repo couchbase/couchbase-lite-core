@@ -105,7 +105,7 @@ namespace LiteCore.Tests
         public void TestDBQueryExpressionIndex()
         {
             RunTestVariants(() => {
-                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, Json5("[['length()', ['.name.first']]]"), 
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "test", Json5("[['length()', ['.name.first']]]"), 
                     C4IndexType.ValueIndex, null, err));
                 Compile(Json5("['=', ['length()', ['.name.first']], 9]"));
                 Run().Should().Equal(new[] { "0000015", "0000099" }, "because otherwise the query returned incorrect results");
@@ -116,7 +116,7 @@ namespace LiteCore.Tests
         public void TestDeleteIndexedDoc()
         {
             RunTestVariants(() => {
-                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, Json5("[['length()', ['.name.first']]]"), 
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "test", Json5("[['length()', ['.name.first']]]"), 
                     C4IndexType.ValueIndex, null, err));
                 
                 // Delete doc "0000015":
@@ -151,7 +151,7 @@ namespace LiteCore.Tests
         public void TestFullTextQuery()
         {
             RunTestVariants(() => {
-                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "[[\".contact.address.street\"]]", 
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "test", "[[\".contact.address.street\"]]", 
                 C4IndexType.FullTextIndex, null, err));
                 Compile(Json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
                 Run().Should().Equal(new[] { "0000013", "0000015", "0000043", "0000044", "0000052" }, 

@@ -218,7 +218,7 @@ extern "C" {
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
     bool c4db_createIndex(C4Database *database C4NONNULL,
-                          C4Slice name,
+                          C4String name,
                           C4String expressionsJSON,
                           C4IndexType indexType,
                           const C4IndexOptions *indexOptions,
