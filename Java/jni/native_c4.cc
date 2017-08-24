@@ -12,6 +12,7 @@
  * and limitations under the License.
  */
 #include "com_couchbase_litecore_C4.h"
+#include "com_couchbase_litecore_C4Log.h"
 #include "native_glue.hh"
 
 using namespace litecore;
@@ -42,4 +43,19 @@ JNIEXPORT jstring JNICALL
 Java_com_couchbase_litecore_C4_getenv(JNIEnv *env, jclass clazz, jstring jname) {
     jstringSlice name(env, jname);
     return env->NewStringUTF(getenv(((slice) name).cString()));
+}
+
+// ----------------------------------------------------------------------------
+// com_couchbase_litecore_C4Log
+// ----------------------------------------------------------------------------
+
+/*
+ * Class:     com_couchbase_litecore_C4Log
+ * Method:    setLevel
+ * Signature: (Ljava/lang/String;I)V
+ */
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jdomain, jint jlevel) {
+    jstringSlice domain(env, jdomain);
+    C4LogDomain logDomain = c4log_getDomain(((slice)domain).cString(), true);
+    c4log_setLevel(logDomain, (C4LogLevel)jlevel);
 }
