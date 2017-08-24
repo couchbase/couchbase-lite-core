@@ -3,6 +3,28 @@ package com.couchbase.litecore;
 
 public interface C4Constants {
     ////////////////////////////////////
+    // c4Base.h
+    ////////////////////////////////////
+    interface C4LogLevel {
+        int kC4LogDebug = 0;
+        int kC4LogVerbose = 1;
+        int kC4LogInfo = 2;
+        int kC4LogWarning = 3;
+        int kC4LogError = 4;
+        int kC4LogNone = 5;
+    }
+
+    interface C4LogDomain {
+        String DB = "DB";
+        String Enum = "Enum";
+        String Blob = "Blob";
+        String SQL = "SQL";
+        String BLIP = "BLIP";
+        String BLIPMessages = "BLIPMessages";
+        String ACTOR = "ACTOR";
+    }
+
+    ////////////////////////////////////
     // c4Database.h
     ////////////////////////////////////
 
