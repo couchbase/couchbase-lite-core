@@ -551,10 +551,16 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     c4db_free(nudb);
 
     srcPathStr = originalSrc;
-    REQUIRE(c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
+    {
+        ExpectingExceptions x;
+        REQUIRE(!c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
+        CHECK(error.domain == POSIXDomain);
+        CHECK(error.code == EEXIST);
+    }
+
     nudb = c4db_open(c4str(nuPath.c_str()), &config, &error);
     REQUIRE(nudb);
-    CHECK(c4db_getDocumentCount(nudb) == 2);
+    CHECK(c4db_getDocumentCount(nudb) == 1);
     REQUIRE(c4db_delete(nudb, &error));
     c4db_free(nudb);
 }

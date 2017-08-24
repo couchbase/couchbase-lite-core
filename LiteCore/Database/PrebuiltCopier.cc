@@ -24,10 +24,14 @@ namespace litecore {
             Warn("No database exists at %s, cannot copy!", from.path().c_str());
             error::_throw(error::Domain::LiteCore, C4ErrorCode::kC4ErrorNotFound);
         }
+
+        if (to.exists()) {
+            Warn("Database already exists at %s, cannot copy!", to.path().c_str());
+            error::_throw(error::Domain::POSIX, EEXIST);
+        }
         
         FilePath backupPath;
         Log("Copying prebuilt database from %s to %s", from.path().c_str(), to.path().c_str());
-        bool needBackup = to.exists();
 
         FilePath temp = FilePath::tempDirectory().mkTempDir();
         temp.delRecursive();
@@ -36,14 +40,6 @@ namespace litecore {
         auto db = unique_ptr<C4Database>(new C4Database(temp.path(), *config));
         db->resetUUIDs();
         db->close();
-        if(needBackup) {
-            Log("Backing up destination DB...");
-            
-            // TODO: Have a way to restore these temp backups if a crash happens?
-            backupPath = to.appendingToName("_TEMP");
-            backupPath.delRecursive();
-            to.moveTo(backupPath);
-        }
         
         try {
             Log("Moving source DB to destination DB...");
@@ -51,28 +47,7 @@ namespace litecore {
         } catch(...) {
             Warn("Failed to finish copying database");
             to.delRecursive();
-            if(needBackup) {
-                if(backupPath.exists()) {
-                    backupPath.moveTo(to);
-                } else {
-                    WarnError("The backup of the database has vanished. "
-                              "This should be reported immediately");
-                }
-            }
             throw;
-        }
-        
-        if (needBackup) {
-            Log("Finished, asynchronously deleting backup");
-            async([=] {
-                try {
-                    backupPath.delRecursive();
-                    Log("Copier finished async delete of backup db at %s", backupPath.path().c_str());
-                }
-                catch (exception &x) {
-                    Warn("Error deleting database backup (%s)", x.what());
-                }
-            });
         }
     }
 }
