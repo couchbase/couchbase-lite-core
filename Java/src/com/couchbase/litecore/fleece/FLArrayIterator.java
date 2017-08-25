@@ -35,7 +35,8 @@ public class FLArrayIterator {
     }
 
     public FLValue getValue() {
-        return new FLValue(getValue(handle));
+        long hValue = getValue(handle);
+        return hValue != 0L ? new FLValue(hValue) : null;
     }
 
     public FLValue getValueAt(int index) {

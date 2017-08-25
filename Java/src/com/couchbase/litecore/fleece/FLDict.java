@@ -38,7 +38,8 @@ public class FLDict {
 
     public FLValue getSharedKey(String key, FLSharedKeys sharedKeys) {
         if (key == null) return null;
-        return new FLValue(getSharedKey(handle, key.getBytes(), sharedKeys.getHandle()));
+        long hValue = getSharedKey(handle, key.getBytes(), sharedKeys.getHandle());
+        return hValue != 0L ? new FLValue(hValue) : null;
     }
 
     public static String getKeyString(FLSharedKeys sharedKeys, int keyCode) {
@@ -46,7 +47,8 @@ public class FLDict {
     }
 
     public FLValue getUnsorted(String key) {
-        return new FLValue(getUnsorted(handle, key == null ? null : key.getBytes()));
+        long hValue = getUnsorted(handle, key == null ? null : key.getBytes());
+        return hValue != 0L ? new FLValue(hValue) : null;
     }
 
     /**

@@ -53,6 +53,7 @@ public class FLValue {
     }
 
     public FLValue(long handle) {
+        if (handle == 0L) throw new IllegalArgumentException("handle is 0L.");
         this.handle = handle;
     }
 
