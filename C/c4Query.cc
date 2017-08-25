@@ -101,9 +101,9 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
             auto &ft = _enum->fullTextTerms();
             fullTextTerms = (const C4FullTextTerm*)ft.data();
             fullTextTermCount = (uint32_t)ft.size();
-        } else {
-            (fleece::Array::iterator&)columns = _enum->columns();
         }
+
+        (fleece::Array::iterator&)columns = _enum->columns();
     }
 
     C4QueryEnumeratorImpl* refresh() {
