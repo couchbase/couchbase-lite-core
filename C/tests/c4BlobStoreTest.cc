@@ -168,30 +168,34 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "read blob with stream", "[blob][C]") {
         CHECK( c4blob_openReadStream(store, bogusKey, &error) == nullptr);
     }
 
-    auto stream = c4blob_openReadStream(store, key, &error);
-    REQUIRE(stream);
+    char buf[10000];
+    size_t kReadSizes[5] = {1, 6, blob.size(), 4096, 10000};
+    for (int i = 0; i < 5; i++) {
+        size_t readSize = kReadSizes[i];
 
-    CHECK(c4stream_getLength(stream, &error) == blob.size());
+        auto stream = c4blob_openReadStream(store, key, &error);
+        REQUIRE(stream);
 
-    // Read it back, 6 bytes at a time:
-    string readBack;
-    char buf[6];
-    size_t bytesRead;
-    do {
-        bytesRead = c4stream_read(stream, buf, sizeof(buf), &error);
-        REQUIRE(bytesRead > 0);
-        readBack.append(buf, bytesRead);
-    } while (bytesRead == sizeof(buf));
-    REQUIRE(error.code == 0);
-    CHECK(readBack == blob);
+        // Read it back, 6 bytes at a time:
+        string readBack;
+        size_t bytesRead;
+        do {
+            bytesRead = c4stream_read(stream, buf, readSize, &error);
+            readBack.append(buf, bytesRead);
+        } while (bytesRead == readSize);
+        REQUIRE(error.code == 0);
+        CHECK(readBack == blob);
 
-    // Try seeking:
-    REQUIRE(c4stream_seek(stream, 10, &error));
-    REQUIRE(c4stream_read(stream, buf, 4, &error) == 4);
-    CHECK(memcmp(buf, "blob", 4) == 0);
+        // Try seeking:
+        REQUIRE(c4stream_seek(stream, 10, &error));
+        REQUIRE(c4stream_read(stream, buf, 4, &error) == 4);
+        CHECK(memcmp(buf, "blob", 4) == 0);
 
-    c4stream_close(stream);
-    c4stream_close(nullptr); // this should be a no-op, not a crash
+        CHECK(c4stream_getLength(stream, &error) == blob.size());
+
+        c4stream_close(stream);
+        c4stream_close(nullptr); // this should be a no-op, not a crash
+    }
 }
 
 

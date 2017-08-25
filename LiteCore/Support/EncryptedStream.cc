@@ -181,7 +181,8 @@ namespace litecore {
     // Reads & decrypts the next block from the file into `output`
     size_t EncryptedReadStream::readBlockFromFile(slice output) {
 #if AES256_AVAILABLE
-        Assert(_blockID <= _finalBlockID);
+        if (_blockID > _finalBlockID)
+            return 0; // at EOF already
         uint8_t blockBuf[kFileBlockSize + kAESBlockSize];
         bool finalBlock = (_blockID == _finalBlockID);
         size_t readSize = kFileBlockSize;

@@ -216,7 +216,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Deletion", "[Push][Pull][.RealR
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[Push][Pull][blob][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[Push][Pull][ReplBlobs][.RealReplicator]") {
     vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
     {
@@ -255,7 +255,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[Push][Pull][blo
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Prove Attachments", "[Push][blob][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Prove Attachments", "[Push][ReplBlobs][.RealReplicator]") {
     vector<string> attachments = {"Hey, this is an attachment!"};
     {
         TransactionHelper t(db);
