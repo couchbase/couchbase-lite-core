@@ -110,8 +110,6 @@ namespace c4Internal {
         static DataFile* newDataFile(const FilePath &path,
                                      const C4DatabaseConfig &config,
                                      bool isMainDB);
-        static void rekeyDataFile(DataFile* database NONNULL, const C4EncryptionKey *newKey);
-
     protected:
         virtual ~Database();
         void mustBeInTransaction();
@@ -122,6 +120,7 @@ namespace c4Internal {
         static FilePath findOrCreateBundle(const string &path, C4DatabaseConfig &config);
         void _cleanupTransaction(bool committed);
         
+        std::unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey);
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);
 
@@ -195,6 +194,5 @@ struct c4Database : public c4Internal::Database {
     bool mustUseVersioning(C4DocumentVersioning, C4Error*) noexcept;
     bool mustBeInTransaction(C4Error *outError) noexcept;
     bool mustNotBeInTransaction(C4Error *outError) noexcept;
-    static bool rekeyDataFile(DataFile*, const C4EncryptionKey*, C4Error*) noexcept;
 };
 

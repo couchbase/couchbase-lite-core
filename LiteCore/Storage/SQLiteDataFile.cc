@@ -294,10 +294,18 @@ path.path().c_str());
 
 
     void SQLiteDataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
+        bool currentlyEncrypted = (options().encryptionAlgorithm != kNoEncryption);
         switch (alg) {
             case kNoEncryption:
+                if (!currentlyEncrypted)
+                    return;
+                LogTo(DBLog, "Decrypting DataFile");
                 break;
             case kAES256:
+                if (currentlyEncrypted)
+                    LogTo(DBLog, "Changing DataFile encryption key");
+                else
+                    LogTo(DBLog, "Encrypting DataFile");
                 if(newKey.buf == nullptr || newKey.size != 32)
                     error::_throw(error::InvalidParameter);
                 break;

@@ -26,6 +26,7 @@
 #include "Upgrader.hh"
 #include "forestdb_endian.h"
 #include "SecureRandomize.hh"
+#include "make_unique.h"
 
 
 namespace c4Internal {
@@ -281,19 +282,33 @@ namespace c4Internal {
 
 
     void Database::rekey(const C4EncryptionKey *newKey) {
+        LogTo(DBLog, "Rekeying database...");
+        C4EncryptionKey keyBuf {kC4EncryptionNone, {}};
+        if (!newKey)
+            newKey = &keyBuf;
+
         mustNotBeInTransaction();
-        rekeyDataFile(dataFile(), newKey);
-    }
 
+        // Create a new BlobStore and copy/rekey the blobs into it:
+        BlobStore *realBlobStore = blobStore();
+        path().subdirectoryNamed("Attachments_temp").delRecursive();
+        auto newStore = createBlobStore("Attachments_temp", *newKey);
+        try {
+            realBlobStore->copyBlobsTo(*newStore);
 
-    /*static*/ void Database::rekeyDataFile(DataFile* database, const C4EncryptionKey *newKey)
-    {
-        if (newKey) {
-            database->rekey((EncryptionAlgorithm)newKey->algorithm,
-                            slice(newKey->bytes, 32));
-        } else {
-            database->rekey(kNoEncryption, nullslice);
+            // Rekey the database itself:
+            dataFile()->rekey((EncryptionAlgorithm)newKey->algorithm,
+                              slice(newKey->bytes, 32));
+        } catch (...) {
+            newStore->deleteStore();
+            throw;
         }
+
+        ((C4DatabaseConfig&)config).encryptionKey = *newKey;
+
+        // Finally replace the old BlobStore with the new one:
+        newStore->moveTo(*realBlobStore);
+        LogTo(DBLog, "Finished rekeying database!");
     }
 
 
@@ -343,20 +358,25 @@ namespace c4Internal {
 
 
     BlobStore* Database::blobStore() {
-        if (!_blobStore) {
-            if (!(config.flags & kC4DB_Bundled))
-                error::_throw(error::UnsupportedOperation);
-            FilePath blobStorePath = path().subdirectoryNamed("Attachments");
-            auto options = BlobStore::Options::defaults;
-            options.create = options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
-            options.encryptionAlgorithm =(EncryptionAlgorithm)config.encryptionKey.algorithm;
-            if (options.encryptionAlgorithm != kNoEncryption) {
-                options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
-                                                    sizeof(config.encryptionKey.bytes));
-            }
-            _blobStore.reset(new BlobStore(blobStorePath, &options));
-        }
+        if (!_blobStore)
+            _blobStore = createBlobStore("Attachments", config.encryptionKey);
         return _blobStore.get();
+    }
+
+
+    unique_ptr<BlobStore> Database::createBlobStore(const string &dirname,
+                                                    C4EncryptionKey encryptionKey)
+    {
+        if (!(config.flags & kC4DB_Bundled))
+            error::_throw(error::UnsupportedOperation);
+        FilePath blobStorePath = path().subdirectoryNamed(dirname);
+        auto options = BlobStore::Options::defaults;
+        options.create = options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
+        options.encryptionAlgorithm =(EncryptionAlgorithm)encryptionKey.algorithm;
+        if (options.encryptionAlgorithm != kNoEncryption) {
+            options.encryptionKey = alloc_slice(encryptionKey.bytes, sizeof(encryptionKey.bytes));
+        }
+        return make_unique<BlobStore>(blobStorePath, &options);
     }
 
 

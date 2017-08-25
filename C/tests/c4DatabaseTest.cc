@@ -166,6 +166,43 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]")
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][blob][C]") {
+    createNumberedDocs(99);
+
+    // Add blob to the store:
+    C4Slice blobToStore = C4STR("This is a blob to store in the store!");
+    C4BlobKey blobKey;
+    C4Error error;
+    auto blobStore = c4db_getBlobStore(db, &error);
+    REQUIRE(blobStore);
+    REQUIRE(c4blob_create(blobStore, blobToStore, nullptr, &blobKey, &error));
+
+    C4SliceResult blobResult = c4blob_getContents(blobStore, blobKey, &error);
+    CHECK(blobResult == blobToStore);
+    c4slice_free(blobResult);
+
+    // If we're on the unencrypted pass, encrypt the db. Otherwise decrypt it:
+    C4EncryptionKey newKey = {kC4EncryptionNone, {}};
+    if (c4db_getConfig(db)->encryptionKey.algorithm == kC4EncryptionNone) {
+        newKey.algorithm = kC4EncryptionAES256;
+        memcpy(newKey.bytes, "a different key than default....", 32);
+    }
+    REQUIRE(c4db_rekey(db, &newKey, &error));
+
+    // Verify the db works:
+    REQUIRE(c4db_getDocumentCount(db) == 99);
+    REQUIRE(blobStore);
+    blobResult = c4blob_getContents(blobStore, blobKey, &error);
+    CHECK(blobResult == blobToStore);
+    c4slice_free(blobResult);
+
+    // Check that db can be reopened with the new key:
+    REQUIRE(c4db_getConfig(db)->encryptionKey.algorithm == newKey.algorithm);
+    REQUIRE(memcmp(c4db_getConfig(db)->encryptionKey.bytes, newKey.bytes, 32) == 0);
+    reopenDB();
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
     setupAllDocs();
     C4Error error;

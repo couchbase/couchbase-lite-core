@@ -110,9 +110,17 @@ namespace litecore {
 
         bool delWithAllExtensions(char separator ='.') const;
 
-        /** Moves this file/directory to a different path. */
+        /** Moves this file/directory to a different path.
+             An existing file or empty directory at the destination path will be replaced.
+             A non-empty directory at the destination triggers an error. */
         void moveTo(const FilePath& to) const  {moveTo(to.path());}
         void moveTo(const std::string&) const;
+
+        /** Like moveTo, but can replace a non-empty directory.
+             First moves the destination dir aside to the temp directory,
+             then moves the source into place,
+             then deletes the moved-aside dir (asynchronously if that flag is set.) */
+        void moveToReplacingDir(const FilePath &to, bool asyncCleanup) const;
 
         /** Copies this file (or directory, recursively) to a different path. */
         void copyTo(const FilePath& to) const  {copyTo(to.path());}

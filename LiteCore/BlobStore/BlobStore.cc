@@ -18,12 +18,14 @@
 #include "Error.hh"
 #include "EncryptedStream.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include <stdint.h>
 #include <stdio.h>
 #include <algorithm>
 
 namespace litecore {
     using namespace std;
+    using namespace fleece;
 
     LogDomain BlobLog("Blob");
 
@@ -31,7 +33,7 @@ namespace litecore {
 #pragma mark - BLOBKEY:
 
 
-    static constexpr size_t kBlobKeyStringLength = 5 + ((sizeof(blobKey::bytes) + 2) / 3) * 4;
+    static constexpr size_t kBlobKeyStringLength = ((sizeof(blobKey::bytes) + 2) / 3) * 4;
 
 
     blobKey::blobKey(slice s) {
@@ -46,9 +48,14 @@ namespace litecore {
     }
 
 
-    bool blobKey::readFromBase64(slice data) {
-        if (data.size == kBlobKeyStringLength && 0 == memcmp(data.buf, "sha1-", 5)) {
-            data.moveStart(5);
+    bool blobKey::readFromBase64(slice data, bool prefixed) {
+        if (prefixed) {
+            if (data.hasPrefix("sha1-"_sl))
+                data.moveStart(5);
+            else
+                return false;
+        }
+        if (data.size == kBlobKeyStringLength) {
             // Decoder always writes a multiple of 3 bytes, so round up:
             uint8_t buf[21];
             slice result = data.readBase64Into(slice(buf, sizeof(buf)));
@@ -70,6 +77,15 @@ namespace litecore {
         string str = slice(bytes, sizeof(bytes)).base64String();
         replace(str.begin(), str.end(), '/', '_');
         return str + ".blob";
+    }
+
+
+    bool blobKey::readFromFilename(string filename) {
+        if (!hasSuffix(filename, ".blob"))
+            return false;
+        filename.resize(filename.size() - 5);
+        replace(filename.begin(), filename.end(), '_', '/');
+        return readFromBase64(slice(filename), false);
     }
 
 
@@ -219,6 +235,30 @@ namespace litecore {
         BlobWriteStream stream(*this);
         stream.write(data);
         return stream.install(expectedKey);
+    }
+
+
+    void BlobStore::copyBlobsTo(BlobStore &toStore) {
+        _dir.forEachFile([&](const FilePath &path) {
+            blobKey key;
+            if (!key.readFromFilename(path.fileName()))
+                return;
+            Blob srcBlob(*this, key);
+            auto src = srcBlob.read();
+            BlobWriteStream dst(toStore);
+            uint8_t buffer[4096];
+            size_t bytesRead;
+            while ((bytesRead = src->read(buffer, sizeof(buffer))) > 0) {
+                dst.write(slice(buffer, bytesRead));
+            }
+            dst.install(&key);
+        });
+    }
+
+
+    void BlobStore::moveTo(BlobStore &toStore) {
+        _dir.moveToReplacingDir(toStore.dir(), true);
+        toStore._options = _options;
     }
 
 }

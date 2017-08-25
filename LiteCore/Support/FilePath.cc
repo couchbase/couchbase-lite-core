@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <thread>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -525,6 +526,44 @@ namespace litecore {
         }
 #endif
         check(rename_u8(path().c_str(), to.c_str()));
+    }
+
+
+    void FilePath::moveToReplacingDir(const FilePath &to, bool asyncCleanup) const {
+#ifdef _MSC_VER
+        bool overwriting = to.exists();
+#else
+        bool overwriting = to.existsAsDir();
+#endif
+        if (!overwriting) {
+            // Simple case; can do an atomic move
+            moveTo(to);
+            return;
+        }
+
+        // Move the old item aside, to be deleted later:
+        FilePath trashDir(FilePath::tempDirectory()["CBL_Obsolete-"].mkTempDir());
+        FilePath trashPath(trashDir, to.fileOrDirName());
+        to.moveTo(trashPath);
+
+        try {
+            // Move to the destination:
+            moveTo(to);
+        } catch (...) {
+            // Crap! Put the old item back and fail:
+            trashPath.moveTo(to);
+            throw;
+        }
+
+        // Finally delete the old item:
+        if (asyncCleanup) {
+            thread( [=]{
+                trashDir.delRecursive();
+                Log("Finished async delete of replaced <%s>", trashPath.path().c_str());
+            } ).detach();
+        } else {
+            trashDir.delRecursive();
+        }
     }
 
 

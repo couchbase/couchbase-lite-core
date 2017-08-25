@@ -265,7 +265,6 @@ namespace litecore {
         chomp(p, '/');
         chomp(p, '\\');
         FilePath newTempPath(p + "_TEMP/");
-        auto trashPath(FilePath::tempDirectory()["CBL_Obsolete_DB-"].mkTempDir());
 
         try {
             // Upgrade to a new db:
@@ -275,27 +274,12 @@ namespace litecore {
                 path.path().c_str(), newTempPath.path().c_str());
             UpgradeDatabase(path, newTempPath, newConfig);
 
-            // Move the old db aside, to be deleted later:
-            path.moveTo(trashPath);
-
-            try {
-                // Move the new db to the real path:
-                newTempPath.moveTo(path);
-            } catch (...) {
-                // Shazbatt! Back out moving the old db:
-                trashPath.moveTo(path);
-                throw;
-            }
+            // Move the new db to the real path:
+            newTempPath.moveToReplacingDir(path, true);
         } catch (...) {
             newTempPath.delRecursive();
             throw;
         }
-
-        // Finally delete the old db, asynchronously:
-        thread( [=]{
-            trashPath.delRecursive();
-            Log("Upgrader finished async delete of old db at <%s>", trashPath.path().c_str());
-        } ).detach();
         
         Log("Upgrader finished");
         return true;

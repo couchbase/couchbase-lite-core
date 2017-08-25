@@ -66,17 +66,6 @@ bool c4Database::mustNotBeInTransaction(C4Error *outError) noexcept {
     return false;
 }
 
-/*static*/ bool c4Database::rekeyDataFile(DataFile* database,
-                                          const C4EncryptionKey *newKey,
-                                          C4Error *outError) noexcept
-{
-    try {
-        Database::rekeyDataFile(database, newKey);
-        return true;
-    } catchError(outError);
-    return false;
-}
-
 
 #pragma mark - C API:
 

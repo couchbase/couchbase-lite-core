@@ -30,7 +30,8 @@ namespace litecore {
         blobKey(slice);
         blobKey(const std::string &base64);
 
-        bool readFromBase64(slice base64);
+        bool readFromBase64(slice base64, bool prefixed =true);
+        bool readFromFilename(std::string filename);
 
         operator slice() const          {return slice(bytes, sizeof(bytes));}
         std::string hexString() const   {return operator slice().hexString();}
@@ -137,9 +138,12 @@ namespace litecore {
 
         Blob put(slice data, const blobKey *expectedKey =nullptr);
 
+        void copyBlobsTo(BlobStore &toStore);       // Copy my blobs into toStore
+        void moveTo(BlobStore &toStore);            // Replace toStore's dir & options
+
     private:
-        FilePath const          _dir;                           // Location
-        Options const           _options;                       // Option/capability flags
+        FilePath const  _dir;                           // Location
+        Options         _options;                       // Option/capability flags
     };
 
 }
