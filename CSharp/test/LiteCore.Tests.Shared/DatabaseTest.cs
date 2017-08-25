@@ -577,9 +577,7 @@ namespace LiteCore.Tests
                 var srcPath = Native.c4db_getPath(Db);
                 var destPath = Path.Combine(Path.GetTempPath(), $"nudb.cblite2{Path.DirectorySeparatorChar}");
                 C4Error error;
-                var config = new C4DatabaseConfig {
-                    flags = C4DatabaseFlags.Create | C4DatabaseFlags.SharedKeys | C4DatabaseFlags.Bundled
-                };
+                var config = *(Native.c4db_getConfig(Db));
 
                 var configCopy = config;
                 if (!Native.c4db_deleteAtPath(destPath, &configCopy, &error)) {
@@ -660,11 +658,7 @@ namespace LiteCore.Tests
                 }
 
                 srcPath = originalSrc;
-                LiteCoreBridge.Check(err =>
-                {
-                    var localConfig = config;
-                    return Native.c4db_copy(srcPath, destPath, &localConfig, err);
-                });
+                a.ShouldThrow<LiteCoreException>().Which.Error.Should().Be(new C4Error(C4ErrorDomain.POSIXDomain, (int)PosixStatus.EXIST));
                 nudb = (C4Database*)LiteCoreBridge.Check(err =>
                 {
                     var localConfig = config;
@@ -672,7 +666,7 @@ namespace LiteCore.Tests
                 });
 
                 try {
-                    Native.c4db_getDocumentCount(nudb).Should().Be(2L, "because the database was seeded");
+                    Native.c4db_getDocumentCount(nudb).Should().Be(1L, "because the database copy failed");
                     LiteCoreBridge.Check(err => Native.c4db_delete(nudb, err));
                 }
                 finally {

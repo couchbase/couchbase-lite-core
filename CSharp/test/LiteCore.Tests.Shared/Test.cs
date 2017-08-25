@@ -42,7 +42,7 @@ namespace LiteCore.Tests
         protected override int NumberOfOptions
         {
             get {
-                return 1;
+                return 2;
             }
         }
         
@@ -110,7 +110,7 @@ namespace LiteCore.Tests
         protected override void SetupVariant(int option)
         {
             _objectCount = Native.c4_getObjectCount();
-            Versioning = (option & 1) != 0 ? C4DocumentVersioning.VersionVectors : C4DocumentVersioning.RevisionTrees;
+            Versioning = option > 1 ? C4DocumentVersioning.VersionVectors : C4DocumentVersioning.RevisionTrees;
             Native.c4_shutdown(null);
 
             var config = new C4DatabaseConfig();
@@ -121,10 +121,19 @@ namespace LiteCore.Tests
                 config.flags |= C4DatabaseFlags.Bundled;
             }
 
-            WriteLine($"Opening SQLite database using {Versioning}");
+            var encryptedStr = (option & 1) == 1 ? "encrypted " : String.Empty;
+            WriteLine($"Opening {encryptedStr}SQLite database using {Versioning}");
 
             C4Error err;
             config.storageEngine = C4StorageEngine.SQLite;
+            if ((option & 1) == 1) {
+                config.encryptionKey.algorithm = C4EncryptionAlgorithm.AES256;
+                var i = 0;
+                foreach (var b in Encoding.UTF8.GetBytes("this is not a random key at all.")) {
+                    config.encryptionKey.bytes[i++] = b;
+                }
+            }
+
             Native.c4db_deleteAtPath(DatabasePath(), &config, null);
             Db = Native.c4db_open(DatabasePath(), &config, &err);
             ((long)Db).Should().NotBe(0, "because otherwise the database failed to open");
