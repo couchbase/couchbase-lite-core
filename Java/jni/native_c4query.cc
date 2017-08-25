@@ -370,9 +370,9 @@ Java_com_couchbase_litecore_C4Query_createIndex(JNIEnv *env, jclass clazz, jlong
 /*
  * Class:     com_couchbase_litecore_C4Query
  * Method:    deleteIndex
- * Signature: (JLjava/lang/String;)Z
+ * Signature: (JLjava/lang/String;)V
  */
-JNIEXPORT jboolean JNICALL
+JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Query_deleteIndex(JNIEnv *env, jclass clazz, jlong jdb,
                                                 jstring jname) {
     jstringSlice name(env, jname);
@@ -380,5 +380,15 @@ Java_com_couchbase_litecore_C4Query_deleteIndex(JNIEnv *env, jclass clazz, jlong
     bool res = c4db_deleteIndex((C4Database *) jdb, name, &error);
     if (!res)
         throwError(env, error);
-    return res;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Query
+ * Method:    getIndexes
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4Query_getIndexes(JNIEnv *env, jclass clazz, jlong jdb) {
+    C4SliceResult data = c4db_getIndexes((C4Database *) jdb, nullptr);
+    return (jlong) FLValue_FromTrustedData({data.buf, data.size});
 }

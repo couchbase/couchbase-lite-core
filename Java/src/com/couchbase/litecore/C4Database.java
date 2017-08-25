@@ -3,6 +3,7 @@ package com.couchbase.litecore;
 import com.couchbase.litecore.fleece.FLEncoder;
 import com.couchbase.litecore.fleece.FLSharedKeys;
 import com.couchbase.litecore.fleece.FLSliceResult;
+import com.couchbase.litecore.fleece.FLValue;
 
 public class C4Database implements C4Constants {
     //-------------------------------------------------------------------------
@@ -273,8 +274,12 @@ public class C4Database implements C4Constants {
         return C4Query.createIndex(handle, name, expressionsJSON, indexType, language, ignoreDiacritics);
     }
 
-    public boolean deleteIndex(String name) throws LiteCoreException {
-        return C4Query.deleteIndex(handle, name);
+    public void deleteIndex(String name) throws LiteCoreException {
+        C4Query.deleteIndex(handle, name);
+    }
+
+    public FLValue getIndexes() throws LiteCoreException {
+        return new FLValue(C4Query.getIndexes(handle));
     }
 
     ////////////////////////////////
@@ -325,11 +330,11 @@ public class C4Database implements C4Constants {
     static native long openAgain(long db) throws LiteCoreException;
 
     public static native void copy(String sourcePath, String destinationPath,
-                               int flags,
-                               String storageEngine,
-                               int versioning,
-                               int algorithm,
-                               byte[] encryptionKey)
+                                   int flags,
+                                   String storageEngine,
+                                   int versioning,
+                                   int algorithm,
+                                   byte[] encryptionKey)
             throws LiteCoreException;
 
     static native long retain(long db);

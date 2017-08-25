@@ -146,5 +146,15 @@ public class C4Query {
                                       boolean ignoreDiacritics)
             throws LiteCoreException;
 
-    static native boolean deleteIndex(long db, String name) throws LiteCoreException;
+    static native void deleteIndex(long db, String name) throws LiteCoreException;
+
+    /**
+     * Gets a fleece encoded array of indexes in the given database
+     * that were created by `c4db_createIndex`
+     *
+     * @param db
+     * @return pointer to FLValue
+     * @throws LiteCoreException
+     */
+    static native long getIndexes(long db) throws LiteCoreException;
 }

@@ -29,11 +29,13 @@ public class FLDictIterator {
     }
 
     public FLValue getKey() {
-        return new FLValue(getKey(handle));
+        long hValue = getKey(handle);
+        return hValue != 0L ? new FLValue(hValue) : null;
     }
 
     public FLValue getValue() {
-        return new FLValue(getValue(handle));
+        long hValue = getValue(handle);
+        return hValue != 0L ? new FLValue(hValue) : null;
     }
 
     public boolean next() {
