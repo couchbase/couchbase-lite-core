@@ -4,6 +4,7 @@ var searchData=
   ['flarray_5fget',['FLArray_Get',['../group___fleece.html#gab8d90045227779e67c855bbd651b8d26',1,'Fleece.h']]],
   ['flarrayiterator_5fbegin',['FLArrayIterator_Begin',['../group___fleece.html#ga4e489619b8a6d736a88b68beb890b340',1,'Fleece.h']]],
   ['flarrayiterator_5fgetvalue',['FLArrayIterator_GetValue',['../group___fleece.html#gad2f5fe5b3f7c55284bf78f3c726963d8',1,'Fleece.h']]],
+  ['flarrayiterator_5fgetvalueat',['FLArrayIterator_GetValueAt',['../group___fleece.html#ga5ff8697d091a897af18ca9feb90389b9',1,'Fleece.h']]],
   ['flarrayiterator_5fnext',['FLArrayIterator_Next',['../group___fleece.html#gac951dc4a25144dc319644a4f490a8dde',1,'Fleece.h']]],
   ['fldata_5fconvertjson',['FLData_ConvertJSON',['../group___fleece.html#gac1d09cfcb920f705d1e9a7afa0602368',1,'Fleece.h']]],
   ['fldata_5fdump',['FLData_Dump',['../group___fleece.html#ga903e8b70bc38fad7b7a4b16239323336',1,'Fleece.h']]],
@@ -47,6 +48,7 @@ var searchData=
   ['flencoder_5fwritestring',['FLEncoder_WriteString',['../group___fleece.html#gaa0139307b6cec6de105a41774067a6ee',1,'Fleece.h']]],
   ['flencoder_5fwriteuint',['FLEncoder_WriteUInt',['../group___fleece.html#ga1b827735d085a8735dc2327bd29f2663',1,'Fleece.h']]],
   ['flencoder_5fwritevalue',['FLEncoder_WriteValue',['../group___fleece.html#ga9f3b2ee2fb101cf71787f23cb8b2086b',1,'Fleece.h']]],
+  ['flencoder_5fwritevaluewithsharedkeys',['FLEncoder_WriteValueWithSharedKeys',['../group___fleece.html#ga6c53eb156566d804bfd44d4ba4b7b45e',1,'Fleece.h']]],
   ['fljson5_5ftojson',['FLJSON5_ToJSON',['../group___fleece.html#ga9e24d46b9bb5f6db3c35300f41d7a9e2',1,'Fleece.h']]],
   ['flkeypath_5feval',['FLKeyPath_Eval',['../group___fleece.html#gafcad708088b3ef5ead878c0465fd60a0',1,'Fleece.h']]],
   ['flkeypath_5fevalonce',['FLKeyPath_EvalOnce',['../group___fleece.html#ga42ba26d4e72a2d629e41e6e3cd714c0a',1,'Fleece.h']]],
@@ -74,5 +76,6 @@ var searchData=
   ['flvalue_5fisunsigned',['FLValue_IsUnsigned',['../group___fleece.html#ga60de05a3164520b65ea6dfe39512d579',1,'Fleece.h']]],
   ['flvalue_5ftojson',['FLValue_ToJSON',['../group___fleece.html#ga3450acc0690101545d75986b91e4080f',1,'Fleece.h']]],
   ['flvalue_5ftojson5',['FLValue_ToJSON5',['../group___fleece.html#ga10d07af21d7dd47f9a3412291561c1b5',1,'Fleece.h']]],
+  ['flvalue_5ftojsonx',['FLValue_ToJSONX',['../group___fleece.html#gafc079cc378c23f29674474856169fada',1,'Fleece.h']]],
   ['flvalue_5ftostring',['FLValue_ToString',['../group___fleece.html#ga2d9f9dd804594a7a2aa9f865eee23ada',1,'Fleece.h']]]
 ];

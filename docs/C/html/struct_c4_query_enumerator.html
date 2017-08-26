@@ -83,6 +83,8 @@ Data Fields</h2></td></tr>
 <tr class="separator:af68ac78bd7c3d93c2060b4d111f94887"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3a4625e8a9b3829113207f0448625f7"><td class="memItemLeft" align="right" valign="top">C4DocumentFlags&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#ac3a4625e8a9b3829113207f0448625f7">docFlags</a></td></tr>
 <tr class="separator:ac3a4625e8a9b3829113207f0448625f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15a13ce942164de297319895e7cf944e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a15a13ce942164de297319895e7cf944e">columns</a></td></tr>
+<tr class="separator:a15a13ce942164de297319895e7cf944e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a632523828738c016004fa51686a78d99"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_query_enumerator.html#a632523828738c016004fa51686a78d99">fullTextTermCount</a></td></tr>
 <tr class="memdesc:a632523828738c016004fa51686a78d99"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of terms that were matched.  <a href="#a632523828738c016004fa51686a78d99">More...</a><br /></td></tr>
 <tr class="separator:a632523828738c016004fa51686a78d99"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -94,6 +96,20 @@ Data Fields</h2></td></tr>
 <div class="textblock"><p>A query result enumerator. </p>
 <p>Created by c4db_query. Must be freed with c4queryenum_free. The fields of this struct represent the current matched index row, and are replaced by the next call to c4queryenum_next or c4queryenum_free. The memory pointed to by slice fields is valid until the enumerator is advanced or freed. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
+<a id="a15a13ce942164de297319895e7cf944e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15a13ce942164de297319895e7cf944e">&sect;&nbsp;</a></span>columns</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> C4QueryEnumerator::columns</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ac3a4625e8a9b3829113207f0448625f7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac3a4625e8a9b3829113207f0448625f7">&sect;&nbsp;</a></span>docFlags</h2>
 

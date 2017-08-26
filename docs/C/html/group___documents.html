@@ -90,102 +90,183 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Fleece-related</h2></td></tr>
-<tr class="memitem:ga6e1445f5f4e305779a6b9b9cf3df182a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga6e1445f5f4e305779a6b9b9cf3df182a">c4doc_bodyAsJSON</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga6e1445f5f4e305779a6b9b9cf3df182a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Translates the body of the selected revision from Fleece to JSON.  <a href="#ga6e1445f5f4e305779a6b9b9cf3df182a">More...</a><br /></td></tr>
-<tr class="separator:ga6e1445f5f4e305779a6b9b9cf3df182a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1d69c197d7757ca63504232b5bc5d294"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___fleece.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga1d69c197d7757ca63504232b5bc5d294">c4db_createFleeceEncoder</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga1d69c197d7757ca63504232b5bc5d294"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a Fleece encoder for creating documents for a given database.  <a href="#ga1d69c197d7757ca63504232b5bc5d294">More...</a><br /></td></tr>
-<tr class="separator:ga1d69c197d7757ca63504232b5bc5d294"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5526fcdc94b35e4c8781aa2ac8a62d35"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga5526fcdc94b35e4c8781aa2ac8a62d35">c4db_encodeJSON</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> jsonData, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga5526fcdc94b35e4c8781aa2ac8a62d35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encodes JSON data to Fleece, to store into a document.  <a href="#ga5526fcdc94b35e4c8781aa2ac8a62d35">More...</a><br /></td></tr>
-<tr class="separator:ga5526fcdc94b35e4c8781aa2ac8a62d35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga49fb97d48909e6d9125856275d59658f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_dict_key.html">FLDictKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga49fb97d48909e6d9125856275d59658f">c4db_initFLDictKey</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> string) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="separator:ga49fb97d48909e6d9125856275d59658f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga844f8637b99045131722c6ea0236cbb7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga844f8637b99045131722c6ea0236cbb7">c4db_getFLSharedKeys</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="separator:ga844f8637b99045131722c6ea0236cbb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaab37be0338ac36f798c81b4ef454dbd1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaab37be0338ac36f798c81b4ef454dbd1">c4doc_isOldMetaProperty</a> (<a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> prop) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaab37be0338ac36f798c81b4ef454dbd1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if this is the name of a 1.x metadata property ("_id", "_rev", "_deleted".) Does NOT return true for "_attachments" because that property isn't obsolete.  <a href="#gaab37be0338ac36f798c81b4ef454dbd1">More...</a><br /></td></tr>
+<tr class="separator:gaab37be0338ac36f798c81b4ef454dbd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga46a97e9b26463e3b0c14763dfa738f7d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga46a97e9b26463e3b0c14763dfa738f7d">c4doc_hasOldMetaProperties</a> (<a class="el" href="group___fleece.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga46a97e9b26463e3b0c14763dfa738f7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the document contains 1.x metadata properties at top level.  <a href="#ga46a97e9b26463e3b0c14763dfa738f7d">More...</a><br /></td></tr>
+<tr class="separator:ga46a97e9b26463e3b0c14763dfa738f7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafd7d1c3484ce4f2f7afa0455bf67bf72"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gafd7d1c3484ce4f2f7afa0455bf67bf72">c4doc_encodeStrippingOldMetaProperties</a> (<a class="el" href="group___fleece.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> doc) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gafd7d1c3484ce4f2f7afa0455bf67bf72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Re-encodes to Fleece, without any 1.x metadata properties.  <a href="#gafd7d1c3484ce4f2f7afa0455bf67bf72">More...</a><br /></td></tr>
+<tr class="separator:gafd7d1c3484ce4f2f7afa0455bf67bf72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga35d0f46451d70c5736889e175263466d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga35d0f46451d70c5736889e175263466d">c4doc_dictIsBlob</a> (<a class="el" href="group___fleece.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> dict <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> sk, <a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *outKey <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga35d0f46451d70c5736889e175263466d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the given dictionary is a [reference to a] blob; if so, gets its key.  <a href="#ga35d0f46451d70c5736889e175263466d">More...</a><br /></td></tr>
+<tr class="separator:ga35d0f46451d70c5736889e175263466d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1f05d8fa25e17e5612a5ffa022061043"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga1f05d8fa25e17e5612a5ffa022061043">c4doc_dictContainsBlobs</a> (<a class="el" href="group___fleece.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> dict <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> sk) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="separator:ga1f05d8fa25e17e5612a5ffa022061043"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1c05793dcc1c8cd8e7c317513019d34d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga1c05793dcc1c8cd8e7c317513019d34d">c4doc_bodyAsJSON</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, bool canonical, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga1c05793dcc1c8cd8e7c317513019d34d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Translates the body of the selected revision from Fleece to JSON.  <a href="#ga1c05793dcc1c8cd8e7c317513019d34d">More...</a><br /></td></tr>
+<tr class="separator:ga1c05793dcc1c8cd8e7c317513019d34d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaac21ff9c9fea430f1627c07118461b5c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___fleece.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaac21ff9c9fea430f1627c07118461b5c">c4db_createFleeceEncoder</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaac21ff9c9fea430f1627c07118461b5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a Fleece encoder for creating documents for a given database.  <a href="#gaac21ff9c9fea430f1627c07118461b5c">More...</a><br /></td></tr>
+<tr class="separator:gaac21ff9c9fea430f1627c07118461b5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1d9772dd3f248cd4cc49329469907b2b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga1d9772dd3f248cd4cc49329469907b2b">c4db_encodeJSON</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> jsonData, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga1d9772dd3f248cd4cc49329469907b2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encodes JSON data to Fleece, to store into a document.  <a href="#ga1d9772dd3f248cd4cc49329469907b2b">More...</a><br /></td></tr>
+<tr class="separator:ga1d9772dd3f248cd4cc49329469907b2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga36bf2f7c66cffd665d90084719c1c483"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga36bf2f7c66cffd665d90084719c1c483">c4db_getFLSharedKeys</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga36bf2f7c66cffd665d90084719c1c483"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the FLSharedKeys object used by the given database.  <a href="#ga36bf2f7c66cffd665d90084719c1c483">More...</a><br /></td></tr>
+<tr class="separator:ga36bf2f7c66cffd665d90084719c1c483"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3416da540303ca2d6fbd5c8da9376c0d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_dict_key.html">FLDictKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga3416da540303ca2d6fbd5c8da9376c0d">c4db_initFLDictKey</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> string) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga3416da540303ca2d6fbd5c8da9376c0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an initialized <a class="el" href="struct_f_l_dict_key.html" title="Opaque key for a dictionary. ">FLDictKey</a> for the given key string, taking into account the shared keys of the given database.  <a href="#ga3416da540303ca2d6fbd5c8da9376c0d">More...</a><br /></td></tr>
+<tr class="separator:ga3416da540303ca2d6fbd5c8da9376c0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad4a66f7c443c04f3fea6202305103ba6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gad4a66f7c443c04f3fea6202305103ba6">kC4ObjectTypeProperty</a>&#160;&#160;&#160;&quot;@type&quot;</td></tr>
+<tr class="memdesc:gad4a66f7c443c04f3fea6202305103ba6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The sub-document property that identifies it as a special type of object.  <a href="#gad4a66f7c443c04f3fea6202305103ba6">More...</a><br /></td></tr>
+<tr class="separator:gad4a66f7c443c04f3fea6202305103ba6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga54ca6aba487f620de76c3b1e6024ee41"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga54ca6aba487f620de76c3b1e6024ee41">kC4ObjectType_Blob</a>&#160;&#160;&#160;&quot;blob&quot;</td></tr>
+<tr class="memdesc:ga54ca6aba487f620de76c3b1e6024ee41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Value of kC4ObjectTypeProperty that denotes a blob.  <a href="#ga54ca6aba487f620de76c3b1e6024ee41">More...</a><br /></td></tr>
+<tr class="separator:ga54ca6aba487f620de76c3b1e6024ee41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafe0a97fcdeed2889a0dd3a9fc8ba310e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gafe0a97fcdeed2889a0dd3a9fc8ba310e">kC4LegacyAttachmentsProperty</a>&#160;&#160;&#160;&quot;_attachments&quot;</td></tr>
+<tr class="memdesc:gafe0a97fcdeed2889a0dd3a9fc8ba310e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Top-level document property whose value is a CBL 1.x / CouchDB attachments container.  <a href="#gafe0a97fcdeed2889a0dd3a9fc8ba310e">More...</a><br /></td></tr>
+<tr class="separator:gafe0a97fcdeed2889a0dd3a9fc8ba310e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Lifecycle</h2></td></tr>
-<tr class="memitem:ga27396fa9d92fa78f80a7a2d2ba3edac4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga27396fa9d92fa78f80a7a2d2ba3edac4">c4doc_get</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docID, bool mustExist, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga27396fa9d92fa78f80a7a2d2ba3edac4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a document from the database.  <a href="#ga27396fa9d92fa78f80a7a2d2ba3edac4">More...</a><br /></td></tr>
-<tr class="separator:ga27396fa9d92fa78f80a7a2d2ba3edac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadb39058b93d4cb9b588f7c107115caf9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gadb39058b93d4cb9b588f7c107115caf9">c4doc_getBySequence</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="c4_base_8h.html#a6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gadb39058b93d4cb9b588f7c107115caf9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a document from the database given its sequence number.  <a href="#gadb39058b93d4cb9b588f7c107115caf9">More...</a><br /></td></tr>
-<tr class="separator:gadb39058b93d4cb9b588f7c107115caf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad3e2513dc7bf7e142f7a426ed714eac2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gad3e2513dc7bf7e142f7a426ed714eac2">c4doc_save</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc, uint32_t maxRevTreeDepth, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gad3e2513dc7bf7e142f7a426ed714eac2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Saves changes to a <a class="el" href="struct_c4_document.html" title="Describes a version-controlled document. ">C4Document</a>.  <a href="#gad3e2513dc7bf7e142f7a426ed714eac2">More...</a><br /></td></tr>
-<tr class="separator:gad3e2513dc7bf7e142f7a426ed714eac2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf1342b604040b26d33a7cca978f19ad2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaf1342b604040b26d33a7cca978f19ad2">c4doc_get</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docID, bool mustExist, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaf1342b604040b26d33a7cca978f19ad2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a document from the database.  <a href="#gaf1342b604040b26d33a7cca978f19ad2">More...</a><br /></td></tr>
+<tr class="separator:gaf1342b604040b26d33a7cca978f19ad2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa4ef44d829ee1dc35826cd7193fbebf5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaa4ef44d829ee1dc35826cd7193fbebf5">c4doc_getBySequence</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaa4ef44d829ee1dc35826cd7193fbebf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets a document from the database given its sequence number.  <a href="#gaa4ef44d829ee1dc35826cd7193fbebf5">More...</a><br /></td></tr>
+<tr class="separator:gaa4ef44d829ee1dc35826cd7193fbebf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaab42d74e535b229c8c3cca1a8a9069e1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaab42d74e535b229c8c3cca1a8a9069e1">c4doc_save</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, uint32_t maxRevTreeDepth, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaab42d74e535b229c8c3cca1a8a9069e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Saves changes to a <a class="el" href="struct_c4_document.html" title="Describes a version-controlled document. ">C4Document</a>.  <a href="#gaab42d74e535b229c8c3cca1a8a9069e1">More...</a><br /></td></tr>
+<tr class="separator:gaab42d74e535b229c8c3cca1a8a9069e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga613747ae2d6093521e73a13409648770"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga613747ae2d6093521e73a13409648770">c4doc_free</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="memdesc:ga613747ae2d6093521e73a13409648770"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a <a class="el" href="struct_c4_document.html" title="Describes a version-controlled document. ">C4Document</a>.  <a href="#ga613747ae2d6093521e73a13409648770">More...</a><br /></td></tr>
 <tr class="separator:ga613747ae2d6093521e73a13409648770"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Revisions</h2></td></tr>
-<tr class="memitem:gabfda88142d7c1c390a9f398f851ab3cf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gabfda88142d7c1c390a9f398f851ab3cf">c4doc_selectRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> revID, bool withBody, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gabfda88142d7c1c390a9f398f851ab3cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects a specific revision of a document (or no revision, if revID is NULL.)  <a href="#gabfda88142d7c1c390a9f398f851ab3cf">More...</a><br /></td></tr>
-<tr class="separator:gabfda88142d7c1c390a9f398f851ab3cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa37c7e1bceda10cb4f4bf7b395f3a101"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaa37c7e1bceda10cb4f4bf7b395f3a101">c4doc_selectCurrentRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gaa37c7e1bceda10cb4f4bf7b395f3a101"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the current revision of a document.  <a href="#gaa37c7e1bceda10cb4f4bf7b395f3a101">More...</a><br /></td></tr>
-<tr class="separator:gaa37c7e1bceda10cb4f4bf7b395f3a101"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0df69d4b2b5d5afdf986649f1050387b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga0df69d4b2b5d5afdf986649f1050387b">c4doc_loadRevisionBody</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga0df69d4b2b5d5afdf986649f1050387b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Populates the body field of a doc's selected revision, if it was initially loaded without its body.  <a href="#ga0df69d4b2b5d5afdf986649f1050387b">More...</a><br /></td></tr>
-<tr class="separator:ga0df69d4b2b5d5afdf986649f1050387b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad3e4df5ee8473b4a056ad90d0b8243bf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gad3e4df5ee8473b4a056ad90d0b8243bf">c4doc_detachRevisionBody</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gad3e4df5ee8473b4a056ad90d0b8243bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transfers ownership of the document's <code>selectedRev.body</code> to the caller, without copying.  <a href="#gad3e4df5ee8473b4a056ad90d0b8243bf">More...</a><br /></td></tr>
-<tr class="separator:gad3e4df5ee8473b4a056ad90d0b8243bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5a7c996c4ed4a8983112baccf6c1175b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga5a7c996c4ed4a8983112baccf6c1175b">c4doc_hasRevisionBody</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga5a7c996c4ed4a8983112baccf6c1175b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the body of the selected revision is available, i.e.  <a href="#ga5a7c996c4ed4a8983112baccf6c1175b">More...</a><br /></td></tr>
-<tr class="separator:ga5a7c996c4ed4a8983112baccf6c1175b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2318d2fa88eca9707a34bf792e3f0d3f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga2318d2fa88eca9707a34bf792e3f0d3f">c4doc_selectParentRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga2318d2fa88eca9707a34bf792e3f0d3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the parent of the selected revision, if it's known, else returns NULL.  <a href="#ga2318d2fa88eca9707a34bf792e3f0d3f">More...</a><br /></td></tr>
-<tr class="separator:ga2318d2fa88eca9707a34bf792e3f0d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga07448ff2da4bf29b9d6992a581ee941b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga07448ff2da4bf29b9d6992a581ee941b">c4doc_selectNextRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga07448ff2da4bf29b9d6992a581ee941b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the next revision in priority order.  <a href="#ga07448ff2da4bf29b9d6992a581ee941b">More...</a><br /></td></tr>
-<tr class="separator:ga07448ff2da4bf29b9d6992a581ee941b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga59c59b91ce8a95460641b83c0df7721a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga59c59b91ce8a95460641b83c0df7721a">c4doc_selectNextLeafRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc, bool includeDeleted, bool withBody, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga59c59b91ce8a95460641b83c0df7721a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the next leaf revision; like selectNextRevision but skips over non-leaves.  <a href="#ga59c59b91ce8a95460641b83c0df7721a">More...</a><br /></td></tr>
-<tr class="separator:ga59c59b91ce8a95460641b83c0df7721a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5569a0f0a64aab66af7a3b81302576e7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga5569a0f0a64aab66af7a3b81302576e7">c4doc_selectFirstPossibleAncestorOf</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> revID) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga5569a0f0a64aab66af7a3b81302576e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the first revision that could be an ancestor of the given revID, or returns false if there is none.  <a href="#ga5569a0f0a64aab66af7a3b81302576e7">More...</a><br /></td></tr>
-<tr class="separator:ga5569a0f0a64aab66af7a3b81302576e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga784c8bc28690a9cc74bb8a9813dcae97"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga784c8bc28690a9cc74bb8a9813dcae97">c4doc_selectNextPossibleAncestorOf</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> revID) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga784c8bc28690a9cc74bb8a9813dcae97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the next revision (after the selected one) that could be an ancestor of the given revID, or returns false if there are no more.  <a href="#ga784c8bc28690a9cc74bb8a9813dcae97">More...</a><br /></td></tr>
-<tr class="separator:ga784c8bc28690a9cc74bb8a9813dcae97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaea3be1160c1e4e4b388e3fd469664a7e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaea3be1160c1e4e4b388e3fd469664a7e">c4doc_selectRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> revID, bool withBody, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaea3be1160c1e4e4b388e3fd469664a7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects a specific revision of a document (or no revision, if revID is NULL.)  <a href="#gaea3be1160c1e4e4b388e3fd469664a7e">More...</a><br /></td></tr>
+<tr class="separator:gaea3be1160c1e4e4b388e3fd469664a7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga565cf21e508348bf3141425401622668"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga565cf21e508348bf3141425401622668">c4doc_selectCurrentRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga565cf21e508348bf3141425401622668"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the current revision of a document.  <a href="#ga565cf21e508348bf3141425401622668">More...</a><br /></td></tr>
+<tr class="separator:ga565cf21e508348bf3141425401622668"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8799e376a6bbb2ae4b67be0898aee898"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga8799e376a6bbb2ae4b67be0898aee898">c4doc_loadRevisionBody</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga8799e376a6bbb2ae4b67be0898aee898"><td class="mdescLeft">&#160;</td><td class="mdescRight">Populates the body field of a doc's selected revision, if it was initially loaded without its body.  <a href="#ga8799e376a6bbb2ae4b67be0898aee898">More...</a><br /></td></tr>
+<tr class="separator:ga8799e376a6bbb2ae4b67be0898aee898"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab4fe11876b050b6044a1e074a667dcae"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gab4fe11876b050b6044a1e074a667dcae">c4doc_detachRevisionBody</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gab4fe11876b050b6044a1e074a667dcae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transfers ownership of the document's <code>selectedRev.body</code> to the caller, without copying.  <a href="#gab4fe11876b050b6044a1e074a667dcae">More...</a><br /></td></tr>
+<tr class="separator:gab4fe11876b050b6044a1e074a667dcae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga14edefe7643933ba620829e5eb5b621e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga14edefe7643933ba620829e5eb5b621e">c4doc_hasRevisionBody</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga14edefe7643933ba620829e5eb5b621e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if the body of the selected revision is available, i.e.  <a href="#ga14edefe7643933ba620829e5eb5b621e">More...</a><br /></td></tr>
+<tr class="separator:ga14edefe7643933ba620829e5eb5b621e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab019ada520ff9bcd92cba0a5f7495890"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gab019ada520ff9bcd92cba0a5f7495890">c4doc_selectParentRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gab019ada520ff9bcd92cba0a5f7495890"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the parent of the selected revision, if it's known, else returns NULL.  <a href="#gab019ada520ff9bcd92cba0a5f7495890">More...</a><br /></td></tr>
+<tr class="separator:gab019ada520ff9bcd92cba0a5f7495890"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadf9ae517d494aafbafeb819834894d5b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gadf9ae517d494aafbafeb819834894d5b">c4doc_selectNextRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gadf9ae517d494aafbafeb819834894d5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the next revision in priority order.  <a href="#gadf9ae517d494aafbafeb819834894d5b">More...</a><br /></td></tr>
+<tr class="separator:gadf9ae517d494aafbafeb819834894d5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaef5ecd9a38ef8efdf045ad7fdd19559c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaef5ecd9a38ef8efdf045ad7fdd19559c">c4doc_selectNextLeafRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, bool includeDeleted, bool withBody, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaef5ecd9a38ef8efdf045ad7fdd19559c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the next leaf revision; like selectNextRevision but skips over non-leaves.  <a href="#gaef5ecd9a38ef8efdf045ad7fdd19559c">More...</a><br /></td></tr>
+<tr class="separator:gaef5ecd9a38ef8efdf045ad7fdd19559c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga31f0d109095b0f2479719e72e2f233fb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga31f0d109095b0f2479719e72e2f233fb">c4doc_selectFirstPossibleAncestorOf</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> revID) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga31f0d109095b0f2479719e72e2f233fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the first revision that could be an ancestor of the given revID, or returns false if there is none.  <a href="#ga31f0d109095b0f2479719e72e2f233fb">More...</a><br /></td></tr>
+<tr class="separator:ga31f0d109095b0f2479719e72e2f233fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6e8d8a8d640f06c8715d78dd44a39c0f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga6e8d8a8d640f06c8715d78dd44a39c0f">c4doc_selectNextPossibleAncestorOf</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> revID) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga6e8d8a8d640f06c8715d78dd44a39c0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the next revision (after the selected one) that could be an ancestor of the given revID, or returns false if there are no more.  <a href="#ga6e8d8a8d640f06c8715d78dd44a39c0f">More...</a><br /></td></tr>
+<tr class="separator:ga6e8d8a8d640f06c8715d78dd44a39c0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga764b2b7171bf8d46dc01a5cddfe7f876"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga764b2b7171bf8d46dc01a5cddfe7f876">c4doc_selectCommonAncestorRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> rev1ID, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> rev2ID) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga764b2b7171bf8d46dc01a5cddfe7f876"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the common ancestor of two revisions.  <a href="#ga764b2b7171bf8d46dc01a5cddfe7f876">More...</a><br /></td></tr>
+<tr class="separator:ga764b2b7171bf8d46dc01a5cddfe7f876"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3bb6320e59828595b73a5cbf7e3137f9"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga3bb6320e59828595b73a5cbf7e3137f9">c4rev_getGeneration</a> (<a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> revID) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="memdesc:ga3bb6320e59828595b73a5cbf7e3137f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a revision ID, returns its generation number (the decimal number before the hyphen), or zero if it's unparseable.  <a href="#ga3bb6320e59828595b73a5cbf7e3137f9">More...</a><br /></td></tr>
 <tr class="separator:ga3bb6320e59828595b73a5cbf7e3137f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac456e11e3495709909e23fd0c3cec8f4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gac456e11e3495709909e23fd0c3cec8f4">c4doc_removeRevisionBody</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gac456e11e3495709909e23fd0c3cec8f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes the body of the selected revision and clears its kKeepBody flag.  <a href="#gac456e11e3495709909e23fd0c3cec8f4">More...</a><br /></td></tr>
-<tr class="separator:gac456e11e3495709909e23fd0c3cec8f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga926ba5c137fe399d27e91a7cdeee2bf3"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga926ba5c137fe399d27e91a7cdeee2bf3">c4doc_purgeRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> revID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga926ba5c137fe399d27e91a7cdeee2bf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes a branch from a document's history.  <a href="#ga926ba5c137fe399d27e91a7cdeee2bf3">More...</a><br /></td></tr>
-<tr class="separator:ga926ba5c137fe399d27e91a7cdeee2bf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad655cc42b4375a539c287e6a2af15010"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gad655cc42b4375a539c287e6a2af15010">c4doc_removeRevisionBody</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gad655cc42b4375a539c287e6a2af15010"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes the body of the selected revision and clears its kKeepBody flag.  <a href="#gad655cc42b4375a539c287e6a2af15010">More...</a><br /></td></tr>
+<tr class="separator:gad655cc42b4375a539c287e6a2af15010"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0f016b2387255cb43f1e8a79790b7e16"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga0f016b2387255cb43f1e8a79790b7e16">c4doc_purgeRevision</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> revID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga0f016b2387255cb43f1e8a79790b7e16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes a branch from a document's history.  <a href="#ga0f016b2387255cb43f1e8a79790b7e16">More...</a><br /></td></tr>
+<tr class="separator:ga0f016b2387255cb43f1e8a79790b7e16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga57a0236e8cfdc3f81b3ef5ee70b1a33f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga57a0236e8cfdc3f81b3ef5ee70b1a33f">c4doc_resolveConflict</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> winningRevID, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> losingRevID, <a class="el" href="struct_c4_slice.html">C4Slice</a> mergedBody, <a class="el" href="struct_c4_error.html">C4Error</a> *error) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga57a0236e8cfdc3f81b3ef5ee70b1a33f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resolves a conflict between two leaf revisions, by deleting one of them and optionally adding a new merged revision as a child of the other.  <a href="#ga57a0236e8cfdc3f81b3ef5ee70b1a33f">More...</a><br /></td></tr>
+<tr class="separator:ga57a0236e8cfdc3f81b3ef5ee70b1a33f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Purging and Expiration</h2></td></tr>
-<tr class="memitem:ga634f3c3f7636cd5479eb1be32029ba57"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga634f3c3f7636cd5479eb1be32029ba57">c4db_purgeDoc</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga634f3c3f7636cd5479eb1be32029ba57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all trace of a document and its revisions from the database.  <a href="#ga634f3c3f7636cd5479eb1be32029ba57">More...</a><br /></td></tr>
-<tr class="separator:ga634f3c3f7636cd5479eb1be32029ba57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf630c5d757aa735a42989f8aa1a3b90f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaf630c5d757aa735a42989f8aa1a3b90f">c4doc_setExpiration</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docId, uint64_t timestamp, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gaf630c5d757aa735a42989f8aa1a3b90f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets an expiration date on a document.  <a href="#gaf630c5d757aa735a42989f8aa1a3b90f">More...</a><br /></td></tr>
-<tr class="separator:gaf630c5d757aa735a42989f8aa1a3b90f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae833ce53a8a533bdd66eea87e038eb59"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gae833ce53a8a533bdd66eea87e038eb59">c4doc_getExpiration</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docId) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gae833ce53a8a533bdd66eea87e038eb59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the expiration time of a document, if one has been set, else 0.  <a href="#gae833ce53a8a533bdd66eea87e038eb59">More...</a><br /></td></tr>
-<tr class="separator:gae833ce53a8a533bdd66eea87e038eb59"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae48c48f2d491edb2755850c67afb8d2f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gae48c48f2d491edb2755850c67afb8d2f">c4db_purgeDoc</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gae48c48f2d491edb2755850c67afb8d2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all trace of a document and its revisions from the database.  <a href="#gae48c48f2d491edb2755850c67afb8d2f">More...</a><br /></td></tr>
+<tr class="separator:gae48c48f2d491edb2755850c67afb8d2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacf3c934840ef7c2bf48a8e232ca648c1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gacf3c934840ef7c2bf48a8e232ca648c1">c4doc_setExpiration</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docId, uint64_t timestamp, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gacf3c934840ef7c2bf48a8e232ca648c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets an expiration date on a document.  <a href="#gacf3c934840ef7c2bf48a8e232ca648c1">More...</a><br /></td></tr>
+<tr class="separator:gacf3c934840ef7c2bf48a8e232ca648c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa5dcdf772ced0828fcadb92e50a077a5"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#gaa5dcdf772ced0828fcadb92e50a077a5">c4doc_getExpiration</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docId) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaa5dcdf772ced0828fcadb92e50a077a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the expiration time of a document, if one has been set, else 0.  <a href="#gaa5dcdf772ced0828fcadb92e50a077a5">More...</a><br /></td></tr>
+<tr class="separator:gaa5dcdf772ced0828fcadb92e50a077a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="member-group"></a>
 Creating and Updating Documents</h2></td></tr>
-<tr class="memitem:ga895b3d2bdc37285974cad3d6749dfd7d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga895b3d2bdc37285974cad3d6749dfd7d">c4doc_put</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, const <a class="el" href="struct_c4_doc_put_request.html">C4DocPutRequest</a> *request, size_t *outCommonAncestorIndex, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga895b3d2bdc37285974cad3d6749dfd7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">A high-level Put operation, to insert a new or downloaded revision.  <a href="#ga895b3d2bdc37285974cad3d6749dfd7d">More...</a><br /></td></tr>
-<tr class="separator:ga895b3d2bdc37285974cad3d6749dfd7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7443ac4226fe59b94b4e3310ae79c004"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga7443ac4226fe59b94b4e3310ae79c004">c4doc_generateRevID</a> (<a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> body, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> parentRevID, bool deletion) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga7443ac4226fe59b94b4e3310ae79c004"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generates the revision ID for a new document revision.  <a href="#ga7443ac4226fe59b94b4e3310ae79c004">More...</a><br /></td></tr>
-<tr class="separator:ga7443ac4226fe59b94b4e3310ae79c004"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga06a138bdcd4b3b5f935d031d7f4d1060"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga06a138bdcd4b3b5f935d031d7f4d1060">c4doc_generateOldStyleRevID</a> (bool generateOldStyle) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga06a138bdcd4b3b5f935d031d7f4d1060"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set this to true to make c4doc_generateRevID and c4doc_put create revision IDs that are identical to the ones Couchbase Lite 1.0&ndash;1.2 would create.  <a href="#ga06a138bdcd4b3b5f935d031d7f4d1060">More...</a><br /></td></tr>
-<tr class="separator:ga06a138bdcd4b3b5f935d031d7f4d1060"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga177318738c7da6931434f21e2027fffc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga177318738c7da6931434f21e2027fffc">c4doc_put</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, const <a class="el" href="struct_c4_doc_put_request.html">C4DocPutRequest</a> *request <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, size_t *outCommonAncestorIndex, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga177318738c7da6931434f21e2027fffc"><td class="mdescLeft">&#160;</td><td class="mdescRight">A high-level Put operation, to insert a new or downloaded revision.  <a href="#ga177318738c7da6931434f21e2027fffc">More...</a><br /></td></tr>
+<tr class="separator:ga177318738c7da6931434f21e2027fffc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6dd31ca6fd87c52e16f86563b622851a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga6dd31ca6fd87c52e16f86563b622851a">c4doc_create</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="struct_c4_slice.html">C4Slice</a> body, C4RevisionFlags revisionFlags, <a class="el" href="struct_c4_error.html">C4Error</a> *error) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga6dd31ca6fd87c52e16f86563b622851a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function to create a new document.  <a href="#ga6dd31ca6fd87c52e16f86563b622851a">More...</a><br /></td></tr>
+<tr class="separator:ga6dd31ca6fd87c52e16f86563b622851a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1341b715a124ef8130619a8b14955947"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___documents.html#ga1341b715a124ef8130619a8b14955947">c4doc_update</a> (<a class="el" href="struct_c4_document.html">C4Document</a> *doc <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_slice.html">C4Slice</a> revisionBody, C4RevisionFlags revisionFlags, <a class="el" href="struct_c4_error.html">C4Error</a> *error) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga1341b715a124ef8130619a8b14955947"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a revision to a document already in memory as a <a class="el" href="struct_c4_document.html" title="Describes a version-controlled document. ">C4Document</a>.  <a href="#ga1341b715a124ef8130619a8b14955947">More...</a><br /></td></tr>
+<tr class="separator:ga1341b715a124ef8130619a8b14955947"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="gafe0a97fcdeed2889a0dd3a9fc8ba310e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafe0a97fcdeed2889a0dd3a9fc8ba310e">&sect;&nbsp;</a></span>kC4LegacyAttachmentsProperty</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define kC4LegacyAttachmentsProperty&#160;&#160;&#160;&quot;_attachments&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Top-level document property whose value is a CBL 1.x / CouchDB attachments container. </p>
+
+</div>
+</div>
+<a id="ga54ca6aba487f620de76c3b1e6024ee41"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga54ca6aba487f620de76c3b1e6024ee41">&sect;&nbsp;</a></span>kC4ObjectType_Blob</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define kC4ObjectType_Blob&#160;&#160;&#160;&quot;blob&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Value of kC4ObjectTypeProperty that denotes a blob. </p>
+
+</div>
+</div>
+<a id="gad4a66f7c443c04f3fea6202305103ba6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad4a66f7c443c04f3fea6202305103ba6">&sect;&nbsp;</a></span>kC4ObjectTypeProperty</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define kC4ObjectTypeProperty&#160;&#160;&#160;&quot;@type&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>The sub-document property that identifies it as a special type of object. </p>
+<p>For example, a blob is represented as <code>{"@type":"blob", "digest":"xxxx", ...}</code> </p>
+
+</div>
+</div>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="ga6898a92b18343c5afd9c7aa7fc767a18"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga6898a92b18343c5afd9c7aa7fc767a18">&sect;&nbsp;</a></span>C4_OPTIONS() <span class="overload">[1/2]</span></h2>
@@ -252,12 +333,14 @@ Creating and Updating Documents</h2></td></tr>
 <p>&lt; Is this revision a leaf (no children?)</p>
 <p>&lt; Has this rev been inserted since the doc was read?</p>
 <p>&lt; Does this rev's body contain attachments?</p>
-<p>&lt; Revision's body should not be discarded when non-leaf </p>
+<p>&lt; Revision's body should not be discarded when non-leaf</p>
+<p>&lt; Unresolved conflicting revision; will never be current</p>
+<p>&lt; Rev comes from replicator, not created locally </p>
 
 </div>
 </div>
-<a id="ga1d69c197d7757ca63504232b5bc5d294"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1d69c197d7757ca63504232b5bc5d294">&sect;&nbsp;</a></span>c4db_createFleeceEncoder()</h2>
+<a id="gaac21ff9c9fea430f1627c07118461b5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaac21ff9c9fea430f1627c07118461b5c">&sect;&nbsp;</a></span>c4db_createFleeceEncoder()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -265,8 +348,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___fleece.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a> c4db_createFleeceEncoder </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -276,8 +359,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga5526fcdc94b35e4c8781aa2ac8a62d35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5526fcdc94b35e4c8781aa2ac8a62d35">&sect;&nbsp;</a></span>c4db_encodeJSON()</h2>
+<a id="ga1d9772dd3f248cd4cc49329469907b2b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1d9772dd3f248cd4cc49329469907b2b">&sect;&nbsp;</a></span>c4db_encodeJSON()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -286,7 +369,7 @@ Creating and Updating Documents</h2></td></tr>
           <td class="memname"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a> c4db_encodeJSON </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -312,8 +395,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga844f8637b99045131722c6ea0236cbb7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga844f8637b99045131722c6ea0236cbb7">&sect;&nbsp;</a></span>c4db_getFLSharedKeys()</h2>
+<a id="ga36bf2f7c66cffd665d90084719c1c483"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga36bf2f7c66cffd665d90084719c1c483">&sect;&nbsp;</a></span>c4db_getFLSharedKeys()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -321,17 +404,19 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> c4db_getFLSharedKeys </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>db</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>Returns the FLSharedKeys object used by the given database. </p>
+
 </div>
 </div>
-<a id="ga49fb97d48909e6d9125856275d59658f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga49fb97d48909e6d9125856275d59658f">&sect;&nbsp;</a></span>c4db_initFLDictKey()</h2>
+<a id="ga3416da540303ca2d6fbd5c8da9376c0d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3416da540303ca2d6fbd5c8da9376c0d">&sect;&nbsp;</a></span>c4db_initFLDictKey()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -339,8 +424,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_f_l_dict_key.html">FLDictKey</a> c4db_initFLDictKey </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>db</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -356,10 +441,12 @@ Creating and Updating Documents</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Returns an initialized <a class="el" href="struct_f_l_dict_key.html" title="Opaque key for a dictionary. ">FLDictKey</a> for the given key string, taking into account the shared keys of the given database. </p>
+
 </div>
 </div>
-<a id="ga634f3c3f7636cd5479eb1be32029ba57"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga634f3c3f7636cd5479eb1be32029ba57">&sect;&nbsp;</a></span>c4db_purgeDoc()</h2>
+<a id="gae48c48f2d491edb2755850c67afb8d2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae48c48f2d491edb2755850c67afb8d2f">&sect;&nbsp;</a></span>c4db_purgeDoc()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -367,8 +454,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4db_purgeDoc </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>database</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -394,8 +481,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga6e1445f5f4e305779a6b9b9cf3df182a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6e1445f5f4e305779a6b9b9cf3df182a">&sect;&nbsp;</a></span>c4doc_bodyAsJSON()</h2>
+<a id="ga1c05793dcc1c8cd8e7c317513019d34d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1c05793dcc1c8cd8e7c317513019d34d">&sect;&nbsp;</a></span>c4doc_bodyAsJSON()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -403,8 +490,14 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4doc_bodyAsJSON </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>canonical</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -424,8 +517,67 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="gad3e4df5ee8473b4a056ad90d0b8243bf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad3e4df5ee8473b4a056ad90d0b8243bf">&sect;&nbsp;</a></span>c4doc_detachRevisionBody()</h2>
+<a id="ga6dd31ca6fd87c52e16f86563b622851a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6dd31ca6fd87c52e16f86563b622851a">&sect;&nbsp;</a></span>c4doc_create()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_c4_document.html">C4Document</a>* c4doc_create </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>docID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td>
+          <td class="paramname"><em>body</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">C4RevisionFlags&#160;</td>
+          <td class="paramname"><em>revisionFlags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Convenience function to create a new document. </p>
+<p>This just a wrapper around c4doc_put. If the document already exists, it will fail with the error kC4ErrorConflict. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">db</td><td>The database to create the document in </td></tr>
+    <tr><td class="paramname">docID</td><td>Document ID to create; if null, a UUID will be generated </td></tr>
+    <tr><td class="paramname">body</td><td>Body of the document </td></tr>
+    <tr><td class="paramname">revisionFlags</td><td>The flags of the new revision </td></tr>
+    <tr><td class="paramname">error</td><td>Information about any error that occurred </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>On success, a new <a class="el" href="struct_c4_document.html" title="Describes a version-controlled document. ">C4Document</a> with the new revision selected; else NULL. </dd></dl>
+
+</div>
+</div>
+<a id="gab4fe11876b050b6044a1e074a667dcae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab4fe11876b050b6044a1e074a667dcae">&sect;&nbsp;</a></span>c4doc_detachRevisionBody()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -433,8 +585,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4doc_detachRevisionBody </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -442,6 +594,91 @@ Creating and Updating Documents</h2></td></tr>
 
 <p>Transfers ownership of the document's <code>selectedRev.body</code> to the caller, without copying. </p>
 <p>The <a class="el" href="struct_c4_document.html" title="Describes a version-controlled document. ">C4Document</a>'s field is cleared, and the value returned from this function. As with all C4SliceResult values, the caller is responsible for freeing it when finished. </p>
+
+</div>
+</div>
+<a id="ga1f05d8fa25e17e5612a5ffa022061043"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1f05d8fa25e17e5612a5ffa022061043">&sect;&nbsp;</a></span>c4doc_dictContainsBlobs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool c4doc_dictContainsBlobs </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> dict&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
+          <td class="paramname"><em>sk</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ga35d0f46451d70c5736889e175263466d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga35d0f46451d70c5736889e175263466d">&sect;&nbsp;</a></span>c4doc_dictIsBlob()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool c4doc_dictIsBlob </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> dict&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
+          <td class="paramname"><em>sk</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_blob_key.html">C4BlobKey</a> *outKey&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns true if the given dictionary is a [reference to a] blob; if so, gets its key. </p>
+<p>(This function cannot recognize child dictionaries of "_attachments", because it's not possible to look at the parent of a Fleece value.) </p>
+
+</div>
+</div>
+<a id="gafd7d1c3484ce4f2f7afa0455bf67bf72"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafd7d1c3484ce4f2f7afa0455bf67bf72">&sect;&nbsp;</a></span>c4doc_encodeStrippingOldMetaProperties()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a> c4doc_encodeStrippingOldMetaProperties </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a>&#160;</td>
+          <td class="paramname"><em>doc</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Re-encodes to Fleece, without any 1.x metadata properties. </p>
 
 </div>
 </div>
@@ -465,74 +702,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga06a138bdcd4b3b5f935d031d7f4d1060"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga06a138bdcd4b3b5f935d031d7f4d1060">&sect;&nbsp;</a></span>c4doc_generateOldStyleRevID()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void c4doc_generateOldStyleRevID </td>
-          <td>(</td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>generateOldStyle</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Set this to true to make c4doc_generateRevID and c4doc_put create revision IDs that are identical to the ones Couchbase Lite 1.0&ndash;1.2 would create. </p>
-<p>These use MD5 digests. </p>
-
-</div>
-</div>
-<a id="ga7443ac4226fe59b94b4e3310ae79c004"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7443ac4226fe59b94b4e3310ae79c004">&sect;&nbsp;</a></span>c4doc_generateRevID()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4doc_generateRevID </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
-          <td class="paramname"><em>body</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
-          <td class="paramname"><em>parentRevID</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>deletion</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Generates the revision ID for a new document revision. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">body</td><td>The (JSON) body of the revision, exactly as it'll be stored. </td></tr>
-    <tr><td class="paramname">parentRevID</td><td>The revID of the parent revision, or null if there's none. </td></tr>
-    <tr><td class="paramname">deletion</td><td>True if this revision is a deletion. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>The new revID. Caller is responsible for freeing its buf. </dd></dl>
-
-</div>
-</div>
-<a id="ga27396fa9d92fa78f80a7a2d2ba3edac4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga27396fa9d92fa78f80a7a2d2ba3edac4">&sect;&nbsp;</a></span>c4doc_get()</h2>
+<a id="gaf1342b604040b26d33a7cca978f19ad2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf1342b604040b26d33a7cca978f19ad2">&sect;&nbsp;</a></span>c4doc_get()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -540,8 +711,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_c4_document.html">C4Document</a>* c4doc_get </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>database</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -574,8 +745,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="gadb39058b93d4cb9b588f7c107115caf9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gadb39058b93d4cb9b588f7c107115caf9">&sect;&nbsp;</a></span>c4doc_getBySequence()</h2>
+<a id="gaa4ef44d829ee1dc35826cd7193fbebf5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa4ef44d829ee1dc35826cd7193fbebf5">&sect;&nbsp;</a></span>c4doc_getBySequence()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -583,8 +754,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_c4_document.html">C4Document</a>* c4doc_getBySequence </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>database</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -610,8 +781,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="gae833ce53a8a533bdd66eea87e038eb59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae833ce53a8a533bdd66eea87e038eb59">&sect;&nbsp;</a></span>c4doc_getExpiration()</h2>
+<a id="gaa5dcdf772ced0828fcadb92e50a077a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa5dcdf772ced0828fcadb92e50a077a5">&sect;&nbsp;</a></span>c4doc_getExpiration()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -619,8 +790,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">uint64_t c4doc_getExpiration </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>db</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -640,8 +811,29 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga5a7c996c4ed4a8983112baccf6c1175b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5a7c996c4ed4a8983112baccf6c1175b">&sect;&nbsp;</a></span>c4doc_hasRevisionBody()</h2>
+<a id="ga46a97e9b26463e3b0c14763dfa738f7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga46a97e9b26463e3b0c14763dfa738f7d">&sect;&nbsp;</a></span>c4doc_hasOldMetaProperties()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool c4doc_hasOldMetaProperties </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#ga20f7b17c87c48ffd2ff6d1cfeddd44e6">FLDict</a> doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns true if the document contains 1.x metadata properties at top level. </p>
+<p>Does NOT return true for "_attachments" because that property isn't obsolete. </p>
+
+</div>
+</div>
+<a id="ga14edefe7643933ba620829e5eb5b621e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga14edefe7643933ba620829e5eb5b621e">&sect;&nbsp;</a></span>c4doc_hasRevisionBody()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -649,20 +841,40 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_hasRevisionBody </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Returns true if the body of the selected revision is available, i.e. </p>
-<p>if <a class="el" href="group___documents.html#ga0df69d4b2b5d5afdf986649f1050387b" title="Populates the body field of a doc&#39;s selected revision, if it was initially loaded without its body...">c4doc_loadRevisionBody()</a> would succeed. </p>
+<p>if <a class="el" href="group___documents.html#ga8799e376a6bbb2ae4b67be0898aee898" title="Populates the body field of a doc&#39;s selected revision, if it was initially loaded without its body...">c4doc_loadRevisionBody()</a> would succeed. </p>
 
 </div>
 </div>
-<a id="ga0df69d4b2b5d5afdf986649f1050387b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga0df69d4b2b5d5afdf986649f1050387b">&sect;&nbsp;</a></span>c4doc_loadRevisionBody()</h2>
+<a id="gaab37be0338ac36f798c81b4ef454dbd1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaab37be0338ac36f798c81b4ef454dbd1">&sect;&nbsp;</a></span>c4doc_isOldMetaProperty()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool c4doc_isOldMetaProperty </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>prop</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns true if this is the name of a 1.x metadata property ("_id", "_rev", "_deleted".) Does NOT return true for "_attachments" because that property isn't obsolete. </p>
+
+</div>
+</div>
+<a id="ga8799e376a6bbb2ae4b67be0898aee898"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8799e376a6bbb2ae4b67be0898aee898">&sect;&nbsp;</a></span>c4doc_loadRevisionBody()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -670,8 +882,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_loadRevisionBody </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -691,8 +903,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga926ba5c137fe399d27e91a7cdeee2bf3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga926ba5c137fe399d27e91a7cdeee2bf3">&sect;&nbsp;</a></span>c4doc_purgeRevision()</h2>
+<a id="ga0f016b2387255cb43f1e8a79790b7e16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0f016b2387255cb43f1e8a79790b7e16">&sect;&nbsp;</a></span>c4doc_purgeRevision()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -700,8 +912,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">int32_t c4doc_purgeRevision </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -736,8 +948,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga895b3d2bdc37285974cad3d6749dfd7d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga895b3d2bdc37285974cad3d6749dfd7d">&sect;&nbsp;</a></span>c4doc_put()</h2>
+<a id="ga177318738c7da6931434f21e2027fffc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga177318738c7da6931434f21e2027fffc">&sect;&nbsp;</a></span>c4doc_put()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -745,14 +957,14 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_c4_document.html">C4Document</a>* c4doc_put </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>database</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="struct_c4_doc_put_request.html">C4DocPutRequest</a> *&#160;</td>
-          <td class="paramname"><em>request</em>, </td>
+          <td class="paramtype">const <a class="el" href="struct_c4_doc_put_request.html">C4DocPutRequest</a> *request&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -779,8 +991,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="gac456e11e3495709909e23fd0c3cec8f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac456e11e3495709909e23fd0c3cec8f4">&sect;&nbsp;</a></span>c4doc_removeRevisionBody()</h2>
+<a id="gad655cc42b4375a539c287e6a2af15010"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad655cc42b4375a539c287e6a2af15010">&sect;&nbsp;</a></span>c4doc_removeRevisionBody()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -788,8 +1000,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_removeRevisionBody </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -806,8 +1018,67 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="gad3e2513dc7bf7e142f7a426ed714eac2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad3e2513dc7bf7e142f7a426ed714eac2">&sect;&nbsp;</a></span>c4doc_save()</h2>
+<a id="ga57a0236e8cfdc3f81b3ef5ee70b1a33f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga57a0236e8cfdc3f81b3ef5ee70b1a33f">&sect;&nbsp;</a></span>c4doc_resolveConflict()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool c4doc_resolveConflict </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>winningRevID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>losingRevID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td>
+          <td class="paramname"><em>mergedBody</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Resolves a conflict between two leaf revisions, by deleting one of them and optionally adding a new merged revision as a child of the other. </p>
+<p>Must be called within a transaction. Remember to save the document afterwards. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">doc</td><td>The document. </td></tr>
+    <tr><td class="paramname">winningRevID</td><td>The conflicting revision to be kept (and optionally updated.) </td></tr>
+    <tr><td class="paramname">losingRevID</td><td>The conflicting revision to be deleted. </td></tr>
+    <tr><td class="paramname">mergedBody</td><td>The body of the merged revision, or NULL if none. </td></tr>
+    <tr><td class="paramname">error</td><td>Error information is stored here. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True on success, false on failure. </dd></dl>
+
+</div>
+</div>
+<a id="gaab42d74e535b229c8c3cca1a8a9069e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaab42d74e535b229c8c3cca1a8a9069e1">&sect;&nbsp;</a></span>c4doc_save()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -815,8 +1086,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_save </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -843,8 +1114,45 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="gaa37c7e1bceda10cb4f4bf7b395f3a101"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa37c7e1bceda10cb4f4bf7b395f3a101">&sect;&nbsp;</a></span>c4doc_selectCurrentRevision()</h2>
+<a id="ga764b2b7171bf8d46dc01a5cddfe7f876"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga764b2b7171bf8d46dc01a5cddfe7f876">&sect;&nbsp;</a></span>c4doc_selectCommonAncestorRevision()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool c4doc_selectCommonAncestorRevision </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>rev1ID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a>&#160;</td>
+          <td class="paramname"><em>rev2ID</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Selects the common ancestor of two revisions. </p>
+<p>Returns false if none is found. </p>
+
+</div>
+</div>
+<a id="ga565cf21e508348bf3141425401622668"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga565cf21e508348bf3141425401622668">&sect;&nbsp;</a></span>c4doc_selectCurrentRevision()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -852,8 +1160,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_selectCurrentRevision </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -864,8 +1172,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga5569a0f0a64aab66af7a3b81302576e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5569a0f0a64aab66af7a3b81302576e7">&sect;&nbsp;</a></span>c4doc_selectFirstPossibleAncestorOf()</h2>
+<a id="ga31f0d109095b0f2479719e72e2f233fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga31f0d109095b0f2479719e72e2f233fb">&sect;&nbsp;</a></span>c4doc_selectFirstPossibleAncestorOf()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -873,8 +1181,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_selectFirstPossibleAncestorOf </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -894,8 +1202,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga59c59b91ce8a95460641b83c0df7721a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga59c59b91ce8a95460641b83c0df7721a">&sect;&nbsp;</a></span>c4doc_selectNextLeafRevision()</h2>
+<a id="gaef5ecd9a38ef8efdf045ad7fdd19559c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaef5ecd9a38ef8efdf045ad7fdd19559c">&sect;&nbsp;</a></span>c4doc_selectNextLeafRevision()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -903,8 +1211,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_selectNextLeafRevision </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -937,8 +1245,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga784c8bc28690a9cc74bb8a9813dcae97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga784c8bc28690a9cc74bb8a9813dcae97">&sect;&nbsp;</a></span>c4doc_selectNextPossibleAncestorOf()</h2>
+<a id="ga6e8d8a8d640f06c8715d78dd44a39c0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6e8d8a8d640f06c8715d78dd44a39c0f">&sect;&nbsp;</a></span>c4doc_selectNextPossibleAncestorOf()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -946,8 +1254,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_selectNextPossibleAncestorOf </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -967,8 +1275,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga07448ff2da4bf29b9d6992a581ee941b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga07448ff2da4bf29b9d6992a581ee941b">&sect;&nbsp;</a></span>c4doc_selectNextRevision()</h2>
+<a id="gadf9ae517d494aafbafeb819834894d5b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadf9ae517d494aafbafeb819834894d5b">&sect;&nbsp;</a></span>c4doc_selectNextRevision()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -976,8 +1284,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_selectNextRevision </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -988,8 +1296,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="ga2318d2fa88eca9707a34bf792e3f0d3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2318d2fa88eca9707a34bf792e3f0d3f">&sect;&nbsp;</a></span>c4doc_selectParentRevision()</h2>
+<a id="gab019ada520ff9bcd92cba0a5f7495890"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab019ada520ff9bcd92cba0a5f7495890">&sect;&nbsp;</a></span>c4doc_selectParentRevision()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -997,8 +1305,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_selectParentRevision </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1008,8 +1316,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="gabfda88142d7c1c390a9f398f851ab3cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabfda88142d7c1c390a9f398f851ab3cf">&sect;&nbsp;</a></span>c4doc_selectRevision()</h2>
+<a id="gaea3be1160c1e4e4b388e3fd469664a7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaea3be1160c1e4e4b388e3fd469664a7e">&sect;&nbsp;</a></span>c4doc_selectRevision()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1017,8 +1325,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_selectRevision </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td>
-          <td class="paramname"><em>doc</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1050,8 +1358,8 @@ Creating and Updating Documents</h2></td></tr>
 
 </div>
 </div>
-<a id="gaf630c5d757aa735a42989f8aa1a3b90f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaf630c5d757aa735a42989f8aa1a3b90f">&sect;&nbsp;</a></span>c4doc_setExpiration()</h2>
+<a id="gacf3c934840ef7c2bf48a8e232ca648c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gacf3c934840ef7c2bf48a8e232ca648c1">&sect;&nbsp;</a></span>c4doc_setExpiration()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1059,8 +1367,8 @@ Creating and Updating Documents</h2></td></tr>
         <tr>
           <td class="memname">bool c4doc_setExpiration </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
-          <td class="paramname"><em>db</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *db&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1099,6 +1407,58 @@ Creating and Updating Documents</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true on sucess, false on failure </dd></dl>
+
+</div>
+</div>
+<a id="ga1341b715a124ef8130619a8b14955947"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1341b715a124ef8130619a8b14955947">&sect;&nbsp;</a></span>c4doc_update()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_c4_document.html">C4Document</a>* c4doc_update </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document.html">C4Document</a> *doc&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td>
+          <td class="paramname"><em>revisionBody</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">C4RevisionFlags&#160;</td>
+          <td class="paramname"><em>revisionFlags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname"><em>error</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds a revision to a document already in memory as a <a class="el" href="struct_c4_document.html" title="Describes a version-controlled document. ">C4Document</a>. </p>
+<p>This is more efficient than c4doc_put because it doesn't have to read from the database before writing; but if the <a class="el" href="struct_c4_document.html" title="Describes a version-controlled document. ">C4Document</a> doesn't have the current state of the document, it will fail with the error kC4ErrorConflict &ndash; then you'll need to get the current document and try again. The new revision is added as a child of the currently selected revision. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">doc</td><td>The document to update </td></tr>
+    <tr><td class="paramname">revisionBody</td><td>The body of the new revision </td></tr>
+    <tr><td class="paramname">revisionFlags</td><td>The flags of the new revision </td></tr>
+    <tr><td class="paramname">error</td><td>Information about any error that occurred </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>On success, a new <a class="el" href="struct_c4_document.html" title="Describes a version-controlled document. ">C4Document</a> with the new revision selected; else NULL. </dd></dl>
 
 </div>
 </div>

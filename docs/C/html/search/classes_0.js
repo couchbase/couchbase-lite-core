@@ -16,6 +16,7 @@ var searchData=
   ['c4queryenumerator',['C4QueryEnumerator',['../struct_c4_query_enumerator.html',1,'']]],
   ['c4queryoptions',['C4QueryOptions',['../struct_c4_query_options.html',1,'']]],
   ['c4rawdocument',['C4RawDocument',['../struct_c4_raw_document.html',1,'']]],
+  ['c4replicatorparameters',['C4ReplicatorParameters',['../struct_c4_replicator_parameters.html',1,'']]],
   ['c4replicatorstatus',['C4ReplicatorStatus',['../struct_c4_replicator_status.html',1,'']]],
   ['c4revision',['C4Revision',['../struct_c4_revision.html',1,'']]],
   ['c4slice',['C4Slice',['../struct_c4_slice.html',1,'']]],

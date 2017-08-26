@@ -73,31 +73,36 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a5e148423e09d6e02bd241e479b5ee6fb"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#a5e148423e09d6e02bd241e479b5ee6fb">open</a> )(<a class="el" href="struct_c4_socket.html">C4Socket</a> *, const <a class="el" href="struct_c4_address.html">C4Address</a> *)</td></tr>
-<tr class="memdesc:a5e148423e09d6e02bd241e479b5ee6fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">open the socket  <a href="#a5e148423e09d6e02bd241e479b5ee6fb">More...</a><br /></td></tr>
-<tr class="separator:a5e148423e09d6e02bd241e479b5ee6fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2f741778a3fd5fada72ca758d9fe4b6"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#ac2f741778a3fd5fada72ca758d9fe4b6">close</a> )(<a class="el" href="struct_c4_socket.html">C4Socket</a> *)</td></tr>
-<tr class="memdesc:ac2f741778a3fd5fada72ca758d9fe4b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">close the socket  <a href="#ac2f741778a3fd5fada72ca758d9fe4b6">More...</a><br /></td></tr>
-<tr class="separator:ac2f741778a3fd5fada72ca758d9fe4b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d216ae53b764e2f8df107a36bb96d58"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#a2d216ae53b764e2f8df107a36bb96d58">write</a> )(<a class="el" href="struct_c4_socket.html">C4Socket</a> *, <a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a> allocatedData)</td></tr>
-<tr class="memdesc:a2d216ae53b764e2f8df107a36bb96d58"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write bytes; free when done.  <a href="#a2d216ae53b764e2f8df107a36bb96d58">More...</a><br /></td></tr>
-<tr class="separator:a2d216ae53b764e2f8df107a36bb96d58"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9c18cb5fda8b83c18ad5dc546cb23119"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#a9c18cb5fda8b83c18ad5dc546cb23119">completedReceive</a> )(<a class="el" href="struct_c4_socket.html">C4Socket</a> *, size_t byteCount)</td></tr>
-<tr class="memdesc:a9c18cb5fda8b83c18ad5dc546cb23119"><td class="mdescLeft">&#160;</td><td class="mdescRight">Completion of c4socket_received.  <a href="#a9c18cb5fda8b83c18ad5dc546cb23119">More...</a><br /></td></tr>
-<tr class="separator:a9c18cb5fda8b83c18ad5dc546cb23119"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ffdb161d5848e7bad419837e9c91b73"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#a6ffdb161d5848e7bad419837e9c91b73">providesWebSockets</a></td></tr>
+<tr class="separator:a6ffdb161d5848e7bad419837e9c91b73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a00d1741692456d45f1cc6b964ff0f1ab"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#a00d1741692456d45f1cc6b964ff0f1ab">open</a> )(<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, const <a class="el" href="struct_c4_address.html">C4Address</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_slice.html">C4Slice</a> optionsFleece)</td></tr>
+<tr class="memdesc:a00d1741692456d45f1cc6b964ff0f1ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">open the socket  <a href="#a00d1741692456d45f1cc6b964ff0f1ab">More...</a><br /></td></tr>
+<tr class="separator:a00d1741692456d45f1cc6b964ff0f1ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14ba11f1ac27ce086d2b04d78fd9e1dd"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#a14ba11f1ac27ce086d2b04d78fd9e1dd">write</a> )(<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a> allocatedData)</td></tr>
+<tr class="memdesc:a14ba11f1ac27ce086d2b04d78fd9e1dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write bytes; free when done.  <a href="#a14ba11f1ac27ce086d2b04d78fd9e1dd">More...</a><br /></td></tr>
+<tr class="separator:a14ba11f1ac27ce086d2b04d78fd9e1dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a703cd6f25cdff0053724bef11a4f8aa1"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#a703cd6f25cdff0053724bef11a4f8aa1">completedReceive</a> )(<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, size_t byteCount)</td></tr>
+<tr class="memdesc:a703cd6f25cdff0053724bef11a4f8aa1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Completion of c4socket_received.  <a href="#a703cd6f25cdff0053724bef11a4f8aa1">More...</a><br /></td></tr>
+<tr class="separator:a703cd6f25cdff0053724bef11a4f8aa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36172da4158ca379aed7982a7554c489"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#a36172da4158ca379aed7982a7554c489">close</a> )(<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>)</td></tr>
+<tr class="memdesc:a36172da4158ca379aed7982a7554c489"><td class="mdescLeft">&#160;</td><td class="mdescRight">close the socket  <a href="#a36172da4158ca379aed7982a7554c489">More...</a><br /></td></tr>
+<tr class="separator:a36172da4158ca379aed7982a7554c489"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79a991e0d13b523a1ced4ed2a284fe45"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html#a79a991e0d13b523a1ced4ed2a284fe45">requestClose</a> )(<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, int status, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> message)</td></tr>
+<tr class="separator:a79a991e0d13b523a1ced4ed2a284fe45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A group of callbacks that define the implementation of sockets; the client must fill this out and pass it to <a class="el" href="group___socket.html#ga980d2100633714d507b41f0fe97be6b8" title="One-time registration of socket callbacks. ">c4socket_registerFactory()</a> before using any socket-based API. </p>
-<p>These callbacks will be invoked on arbitrary background threads owned by LiteCore. They should return quickly, and perform the operation asynchronously without blocking. </p>
+<p>These callbacks will be invoked on arbitrary background threads owned by LiteCore. They should return quickly, and perform the operation asynchronously without blocking.</p>
+<p>The <code>providesWebSockets</code> flag indicates whether this factory provides a WebSocket implementation or just a raw TCP socket. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
-<a id="ac2f741778a3fd5fada72ca758d9fe4b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac2f741778a3fd5fada72ca758d9fe4b6">&sect;&nbsp;</a></span>close</h2>
+<a id="a36172da4158ca379aed7982a7554c489"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36172da4158ca379aed7982a7554c489">&sect;&nbsp;</a></span>close</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void(* C4SocketFactory::close) (<a class="el" href="struct_c4_socket.html">C4Socket</a> *)</td>
+          <td class="memname">void(* C4SocketFactory::close) (<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -106,14 +111,14 @@ Data Fields</h2></td></tr>
 
 </div>
 </div>
-<a id="a9c18cb5fda8b83c18ad5dc546cb23119"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c18cb5fda8b83c18ad5dc546cb23119">&sect;&nbsp;</a></span>completedReceive</h2>
+<a id="a703cd6f25cdff0053724bef11a4f8aa1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a703cd6f25cdff0053724bef11a4f8aa1">&sect;&nbsp;</a></span>completedReceive</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void(* C4SocketFactory::completedReceive) (<a class="el" href="struct_c4_socket.html">C4Socket</a> *, size_t byteCount)</td>
+          <td class="memname">void(* C4SocketFactory::completedReceive) (<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, size_t byteCount)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -122,14 +127,14 @@ Data Fields</h2></td></tr>
 
 </div>
 </div>
-<a id="a5e148423e09d6e02bd241e479b5ee6fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e148423e09d6e02bd241e479b5ee6fb">&sect;&nbsp;</a></span>open</h2>
+<a id="a00d1741692456d45f1cc6b964ff0f1ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a00d1741692456d45f1cc6b964ff0f1ab">&sect;&nbsp;</a></span>open</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void(* C4SocketFactory::open) (<a class="el" href="struct_c4_socket.html">C4Socket</a> *, const <a class="el" href="struct_c4_address.html">C4Address</a> *)</td>
+          <td class="memname">void(* C4SocketFactory::open) (<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, const <a class="el" href="struct_c4_address.html">C4Address</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_slice.html">C4Slice</a> optionsFleece)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -138,14 +143,42 @@ Data Fields</h2></td></tr>
 
 </div>
 </div>
-<a id="a2d216ae53b764e2f8df107a36bb96d58"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d216ae53b764e2f8df107a36bb96d58">&sect;&nbsp;</a></span>write</h2>
+<a id="a6ffdb161d5848e7bad419837e9c91b73"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ffdb161d5848e7bad419837e9c91b73">&sect;&nbsp;</a></span>providesWebSockets</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void(* C4SocketFactory::write) (<a class="el" href="struct_c4_socket.html">C4Socket</a> *, <a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a> allocatedData)</td>
+          <td class="memname">bool C4SocketFactory::providesWebSockets</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a79a991e0d13b523a1ced4ed2a284fe45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79a991e0d13b523a1ced4ed2a284fe45">&sect;&nbsp;</a></span>requestClose</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void(* C4SocketFactory::requestClose) (<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, int status, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> message)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a14ba11f1ac27ce086d2b04d78fd9e1dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14ba11f1ac27ce086d2b04d78fd9e1dd">&sect;&nbsp;</a></span>write</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void(* C4SocketFactory::write) (<a class="el" href="struct_c4_socket.html">C4Socket</a> *<a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a> allocatedData)</td>
         </tr>
       </table>
 </div><div class="memdoc">

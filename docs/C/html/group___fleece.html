@@ -228,6 +228,9 @@ Value Accessors</h2></td></tr>
 <tr class="memitem:ga10d07af21d7dd47f9a3412291561c1b5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___fleece.html#ga10d07af21d7dd47f9a3412291561c1b5">FLValue_ToJSON5</a> (<a class="el" href="group___fleece.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> v)</td></tr>
 <tr class="memdesc:ga10d07af21d7dd47f9a3412291561c1b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encodes a Fleece value as JSON5, a more lenient variant of JSON that allows dictionary keys to be unquoted if they're alphanumeric.  <a href="#ga10d07af21d7dd47f9a3412291561c1b5">More...</a><br /></td></tr>
 <tr class="separator:ga10d07af21d7dd47f9a3412291561c1b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafc079cc378c23f29674474856169fada"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___fleece.html#gafc079cc378c23f29674474856169fada">FLValue_ToJSONX</a> (<a class="el" href="group___fleece.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> v, <a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a> sk, bool json5, bool canonicalForm)</td></tr>
+<tr class="memdesc:gafc079cc378c23f29674474856169fada"><td class="mdescLeft">&#160;</td><td class="mdescRight">Most general Fleece to JSON converter.  <a href="#gafc079cc378c23f29674474856169fada">More...</a><br /></td></tr>
+<tr class="separator:gafc079cc378c23f29674474856169fada"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9e24d46b9bb5f6db3c35300f41d7a9e2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___fleece.html#gab08438b1f08efeefe09ece8079734fdd">FLStringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___fleece.html#ga9e24d46b9bb5f6db3c35300f41d7a9e2">FLJSON5_ToJSON</a> (<a class="el" href="group___fleece.html#gabab0e7979cf6c99ffe836e84e55b6c76">FLString</a> json5, <a class="el" href="group___fleece.html#ga6a3de980e42db083a0ec3081c4ae8ece">FLError</a> *error)</td></tr>
 <tr class="memdesc:ga9e24d46b9bb5f6db3c35300f41d7a9e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts valid JSON5 to JSON.  <a href="#ga9e24d46b9bb5f6db3c35300f41d7a9e2">More...</a><br /></td></tr>
 <tr class="separator:ga9e24d46b9bb5f6db3c35300f41d7a9e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -246,6 +249,9 @@ Arrays</h2></td></tr>
 <tr class="memitem:gad2f5fe5b3f7c55284bf78f3c726963d8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___fleece.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___fleece.html#gad2f5fe5b3f7c55284bf78f3c726963d8">FLArrayIterator_GetValue</a> (const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *)</td></tr>
 <tr class="memdesc:gad2f5fe5b3f7c55284bf78f3c726963d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current value being iterated over.  <a href="#gad2f5fe5b3f7c55284bf78f3c726963d8">More...</a><br /></td></tr>
 <tr class="separator:gad2f5fe5b3f7c55284bf78f3c726963d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5ff8697d091a897af18ca9feb90389b9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___fleece.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___fleece.html#ga5ff8697d091a897af18ca9feb90389b9">FLArrayIterator_GetValueAt</a> (const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *, uint32_t offset)</td></tr>
+<tr class="memdesc:ga5ff8697d091a897af18ca9feb90389b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a value in the array at the given offset from the current value.  <a href="#ga5ff8697d091a897af18ca9feb90389b9">More...</a><br /></td></tr>
+<tr class="separator:ga5ff8697d091a897af18ca9feb90389b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac951dc4a25144dc319644a4f490a8dde"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___fleece.html#gac951dc4a25144dc319644a4f490a8dde">FLArrayIterator_Next</a> (<a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *)</td></tr>
 <tr class="memdesc:gac951dc4a25144dc319644a4f490a8dde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advances the iterator to the next value, or returns false if at the end.  <a href="#gac951dc4a25144dc319644a4f490a8dde">More...</a><br /></td></tr>
 <tr class="separator:gac951dc4a25144dc319644a4f490a8dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -374,6 +380,9 @@ Encoder</h2></td></tr>
 <tr class="memitem:ga9f3b2ee2fb101cf71787f23cb8b2086b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___fleece.html#ga9f3b2ee2fb101cf71787f23cb8b2086b">FLEncoder_WriteValue</a> (<a class="el" href="group___fleece.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>, <a class="el" href="group___fleece.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>)</td></tr>
 <tr class="memdesc:ga9f3b2ee2fb101cf71787f23cb8b2086b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes a Fleece Value to an Encoder.  <a href="#ga9f3b2ee2fb101cf71787f23cb8b2086b">More...</a><br /></td></tr>
 <tr class="separator:ga9f3b2ee2fb101cf71787f23cb8b2086b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6c53eb156566d804bfd44d4ba4b7b45e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___fleece.html#ga6c53eb156566d804bfd44d4ba4b7b45e">FLEncoder_WriteValueWithSharedKeys</a> (<a class="el" href="group___fleece.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>, <a class="el" href="group___fleece.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>, <a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>)</td></tr>
+<tr class="memdesc:ga6c53eb156566d804bfd44d4ba4b7b45e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes a Fleece Value that uses SharedKeys to an Encoder.  <a href="#ga6c53eb156566d804bfd44d4ba4b7b45e">More...</a><br /></td></tr>
+<tr class="separator:ga6c53eb156566d804bfd44d4ba4b7b45e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4a8dc19b4c893ad25dd0c2a64801d72e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___fleece.html#ga4a8dc19b4c893ad25dd0c2a64801d72e">FLEncoder_ConvertJSON</a> (<a class="el" href="group___fleece.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a> e, <a class="el" href="struct_f_l_slice.html">FLSlice</a> json)</td></tr>
 <tr class="memdesc:ga4a8dc19b4c893ad25dd0c2a64801d72e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parses JSON data and writes the object(s) to the encoder.  <a href="#ga4a8dc19b4c893ad25dd0c2a64801d72e">More...</a><br /></td></tr>
 <tr class="separator:ga4a8dc19b4c893ad25dd0c2a64801d72e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -737,6 +746,36 @@ Encoder</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Returns the current value being iterated over. </p>
+
+</div>
+</div>
+<a id="ga5ff8697d091a897af18ca9feb90389b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5ff8697d091a897af18ca9feb90389b9">&sect;&nbsp;</a></span>FLArrayIterator_GetValueAt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group___fleece.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a> FLArrayIterator_GetValueAt </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="struct_f_l_array_iterator.html">FLArrayIterator</a> *&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t&#160;</td>
+          <td class="paramname"><em>offset</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns a value in the array at the given offset from the current value. </p>
 
 </div>
 </div>
@@ -1951,6 +1990,42 @@ Encoder</h2></td></tr>
 
 </div>
 </div>
+<a id="ga6c53eb156566d804bfd44d4ba4b7b45e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6c53eb156566d804bfd44d4ba4b7b45e">&sect;&nbsp;</a></span>FLEncoder_WriteValueWithSharedKeys()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool FLEncoder_WriteValueWithSharedKeys </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#ga8a91e0aaf4bd2987f0ded9fbcaf05fad">FLEncoder</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Writes a Fleece Value that uses SharedKeys to an Encoder. </p>
+
+</div>
+</div>
 <a id="ga9e24d46b9bb5f6db3c35300f41d7a9e2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga9e24d46b9bb5f6db3c35300f41d7a9e2">&sect;&nbsp;</a></span>FLJSON5_ToJSON()</h2>
 
@@ -2600,6 +2675,48 @@ Encoder</h2></td></tr>
 
 <p>Encodes a Fleece value as JSON5, a more lenient variant of JSON that allows dictionary keys to be unquoted if they're alphanumeric. </p>
 <p>This tends to be more readable. </p>
+
+</div>
+</div>
+<a id="gafc079cc378c23f29674474856169fada"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafc079cc378c23f29674474856169fada">&sect;&nbsp;</a></span>FLValue_ToJSONX()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_f_l_slice_result.html">FLSliceResult</a> FLValue_ToJSONX </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#gae0bde7a426f944395dbe59e3d52ba2c7">FLValue</a>&#160;</td>
+          <td class="paramname"><em>v</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group___fleece.html#gabbd898ed871a7b340c817b6facba7568">FLSharedKeys</a>&#160;</td>
+          <td class="paramname"><em>sk</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>json5</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>canonicalForm</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Most general Fleece to JSON converter. </p>
 
 </div>
 </div>

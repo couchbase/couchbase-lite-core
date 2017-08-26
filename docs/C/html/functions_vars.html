@@ -101,7 +101,8 @@ $(function() {
 , <a class="el" href="struct_c4_revision.html#a1533d9ed4e5507aabca4186cb2e331e7">C4Revision</a>
 </li>
 <li>bodySize
-: <a class="el" href="struct_c4_document_info.html#a78f698ad44aec5b764bba97b2cbb23f2">C4DocumentInfo</a>
+: <a class="el" href="struct_c4_database_change.html#aa5740497cc98f3197e013cf9184a26c7">C4DatabaseChange</a>
+, <a class="el" href="struct_c4_document_info.html#a78f698ad44aec5b764bba97b2cbb23f2">C4DocumentInfo</a>
 </li>
 <li>buf
 : <a class="el" href="struct_c4_slice.html#a1faabacb3856496186ebc43514a01498">C4Slice</a>
@@ -117,17 +118,23 @@ $(function() {
 
 
 <h3><a id="index_c"></a>- c -</h3><ul>
+<li>callbackContext
+: <a class="el" href="struct_c4_replicator_parameters.html#a8eba26a34452e36508d93004f856f882">C4ReplicatorParameters</a>
+</li>
 <li>close
-: <a class="el" href="struct_c4_socket_factory.html#ac2f741778a3fd5fada72ca758d9fe4b6">C4SocketFactory</a>
+: <a class="el" href="struct_c4_socket_factory.html#a36172da4158ca379aed7982a7554c489">C4SocketFactory</a>
 </li>
 <li>code
 : <a class="el" href="struct_c4_error.html#ab0c43df2658bd401e9109527cffe4c92">C4Error</a>
+</li>
+<li>columns
+: <a class="el" href="struct_c4_query_enumerator.html#a15a13ce942164de297319895e7cf944e">C4QueryEnumerator</a>
 </li>
 <li>completed
 : <a class="el" href="struct_c4_progress.html#acd1f4816d7bc58fad03c40f668c4f4ec">C4Progress</a>
 </li>
 <li>completedReceive
-: <a class="el" href="struct_c4_socket_factory.html#a9c18cb5fda8b83c18ad5dc546cb23119">C4SocketFactory</a>
+: <a class="el" href="struct_c4_socket_factory.html#a703cd6f25cdff0053724bef11a4f8aa1">C4SocketFactory</a>
 </li>
 </ul>
 
@@ -145,9 +152,6 @@ $(function() {
 </li>
 <li>docSequence
 : <a class="el" href="struct_c4_query_enumerator.html#a44a2c235875948339718ef692c9d8504">C4QueryEnumerator</a>
-</li>
-<li>docType
-: <a class="el" href="struct_c4_doc_put_request.html#a81d4faa9b8850e34e6d553c583a4b69b">C4DocPutRequest</a>
 </li>
 <li>domain
 : <a class="el" href="struct_c4_error.html#a5d007c63db3e71548b611d49013bd362">C4Error</a>
@@ -225,9 +229,6 @@ $(function() {
 <li>level
 : <a class="el" href="struct_c4_replicator_status.html#af636661b9dab5d90e87a9fde633bcf2e">C4ReplicatorStatus</a>
 </li>
-<li>limit
-: <a class="el" href="struct_c4_query_options.html#aa40c5425944f65d1a17098b10509a647">C4QueryOptions</a>
-</li>
 </ul>
 
 
@@ -249,8 +250,17 @@ $(function() {
 
 
 <h3><a id="index_o"></a>- o -</h3><ul>
+<li>onDocumentError
+: <a class="el" href="struct_c4_replicator_parameters.html#aa76b6ed6721461bd8a2db682cfa5fd3a">C4ReplicatorParameters</a>
+</li>
+<li>onStatusChanged
+: <a class="el" href="struct_c4_replicator_parameters.html#a5e2114d96204de333c24cdb38bb72f1d">C4ReplicatorParameters</a>
+</li>
 <li>open
-: <a class="el" href="struct_c4_socket_factory.html#a5e148423e09d6e02bd241e479b5ee6fb">C4SocketFactory</a>
+: <a class="el" href="struct_c4_socket_factory.html#a00d1741692456d45f1cc6b964ff0f1ab">C4SocketFactory</a>
+</li>
+<li>optionsDictFleece
+: <a class="el" href="struct_c4_replicator_parameters.html#ad72456941cec980af028def07c394063">C4ReplicatorParameters</a>
 </li>
 </ul>
 
@@ -271,12 +281,24 @@ $(function() {
 <li>progress
 : <a class="el" href="struct_c4_replicator_status.html#a2de879a27c205e0eb4b0b7edd1ed112d">C4ReplicatorStatus</a>
 </li>
+<li>providesWebSockets
+: <a class="el" href="struct_c4_socket_factory.html#a6ffdb161d5848e7bad419837e9c91b73">C4SocketFactory</a>
+</li>
+<li>pull
+: <a class="el" href="struct_c4_replicator_parameters.html#a2e2e04c89e9d4493640ff747bb9f2ca0">C4ReplicatorParameters</a>
+</li>
+<li>push
+: <a class="el" href="struct_c4_replicator_parameters.html#a8724676c6b4ff3da03ec80edc27b730b">C4ReplicatorParameters</a>
+</li>
 </ul>
 
 
 <h3><a id="index_r"></a>- r -</h3><ul>
 <li>rankFullText
 : <a class="el" href="struct_c4_query_options.html#a6bb835fbee604614a2f763976ef6b706">C4QueryOptions</a>
+</li>
+<li>requestClose
+: <a class="el" href="struct_c4_socket_factory.html#a79a991e0d13b523a1ced4ed2a284fe45">C4SocketFactory</a>
 </li>
 <li>revFlags
 : <a class="el" href="struct_c4_doc_put_request.html#aa1673083f7a825c698dfa1267d952704">C4DocPutRequest</a>
@@ -314,7 +336,6 @@ $(function() {
 </li>
 <li>skip
 : <a class="el" href="struct_c4_enumerator_options.html#a34a6407128093ee45bc9476c00e8ff03">C4EnumeratorOptions</a>
-, <a class="el" href="struct_c4_query_options.html#a93a7d34ad5e9f372ae6bd83be9db987b">C4QueryOptions</a>
 </li>
 <li>start
 : <a class="el" href="struct_c4_full_text_term.html#ab96da725a3cfbf93c6b3069e08d35762">C4FullTextTerm</a>
@@ -336,6 +357,9 @@ $(function() {
 
 
 <h3><a id="index_v"></a>- v -</h3><ul>
+<li>validationFunc
+: <a class="el" href="struct_c4_replicator_parameters.html#a21c3f94c0a7e8594309c22d6349cf347">C4ReplicatorParameters</a>
+</li>
 <li>versioning
 : <a class="el" href="struct_c4_database_config.html#abffdb440cdba975b77453c1e9fb6b34c">C4DatabaseConfig</a>
 </li>
@@ -344,7 +368,7 @@ $(function() {
 
 <h3><a id="index_w"></a>- w -</h3><ul>
 <li>write
-: <a class="el" href="struct_c4_socket_factory.html#a2d216ae53b764e2f8df107a36bb96d58">C4SocketFactory</a>
+: <a class="el" href="struct_c4_socket_factory.html#a14ba11f1ac27ce086d2b04d78fd9e1dd">C4SocketFactory</a>
 </li>
 </ul>
 </div><!-- contents -->

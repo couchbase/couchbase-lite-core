@@ -98,24 +98,36 @@ Functions</h2></td></tr>
 <tr class="memitem:gaa9e244b4cda2c13b84794b78586edd40"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gaa9e244b4cda2c13b84794b78586edd40">c4query_explain</a> (<a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="memdesc:gaa9e244b4cda2c13b84794b78586edd40"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a string describing the implementation of the compiled query.  <a href="#gaa9e244b4cda2c13b84794b78586edd40">More...</a><br /></td></tr>
 <tr class="separator:gaa9e244b4cda2c13b84794b78586edd40"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga28282aad8d208a7350225d82bd62c76b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga28282aad8d208a7350225d82bd62c76b">c4query_run</a> (<a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query, const <a class="el" href="struct_c4_query_options.html">C4QueryOptions</a> *options, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> encodedParameters, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga28282aad8d208a7350225d82bd62c76b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a compiled query.  <a href="#ga28282aad8d208a7350225d82bd62c76b">More...</a><br /></td></tr>
-<tr class="separator:ga28282aad8d208a7350225d82bd62c76b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae1477f95bbc41d25ec4403fcf5f4746f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gae1477f95bbc41d25ec4403fcf5f4746f">c4queryenum_customColumns</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gae1477f95bbc41d25ec4403fcf5f4746f"><td class="mdescLeft">&#160;</td><td class="mdescRight">In an expression-based query enumerator, returns the values of the custom columns of the query (the "WHAT" expressions), as a Fleece-encoded array.  <a href="#gae1477f95bbc41d25ec4403fcf5f4746f">More...</a><br /></td></tr>
-<tr class="separator:gae1477f95bbc41d25ec4403fcf5f4746f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga111e23d189909ca9fed986ea73d3e5cf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga111e23d189909ca9fed986ea73d3e5cf">c4queryenum_fullTextMatched</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga111e23d189909ca9fed986ea73d3e5cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">In a full-text query enumerator, returns the string that was emitted during indexing that contained the search term(s).  <a href="#ga111e23d189909ca9fed986ea73d3e5cf">More...</a><br /></td></tr>
-<tr class="separator:ga111e23d189909ca9fed986ea73d3e5cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae2950c766a509029a635d1283b28f4d0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gae2950c766a509029a635d1283b28f4d0">c4query_fullTextMatched</a> (<a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="c4_base_8h.html#a6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a> seq, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gae2950c766a509029a635d1283b28f4d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a docID and sequence number from the enumerator, returns the text that was emitted during indexing.  <a href="#gae2950c766a509029a635d1283b28f4d0">More...</a><br /></td></tr>
-<tr class="separator:gae2950c766a509029a635d1283b28f4d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga183bcaf5d886e72a235983aff966d288"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga183bcaf5d886e72a235983aff966d288">c4queryenum_next</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga183bcaf5d886e72a235983aff966d288"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advances a query enumerator to the next row, populating its fields.  <a href="#ga183bcaf5d886e72a235983aff966d288">More...</a><br /></td></tr>
-<tr class="separator:ga183bcaf5d886e72a235983aff966d288"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2cc361fa4edc32b19478cdd6bf353ee8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga2cc361fa4edc32b19478cdd6bf353ee8">c4queryenum_close</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga2cc361fa4edc32b19478cdd6bf353ee8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes an enumerator without freeing it.  <a href="#ga2cc361fa4edc32b19478cdd6bf353ee8">More...</a><br /></td></tr>
-<tr class="separator:ga2cc361fa4edc32b19478cdd6bf353ee8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga569ec093b55a7453ac4c9df3953b4cf9"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga569ec093b55a7453ac4c9df3953b4cf9">c4query_columnCount</a> (<a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga569ec093b55a7453ac4c9df3953b4cf9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of columns (the values specified in the WHAT clause) in each row.  <a href="#ga569ec093b55a7453ac4c9df3953b4cf9">More...</a><br /></td></tr>
+<tr class="separator:ga569ec093b55a7453ac4c9df3953b4cf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa964f91502167253a92c860ca31bafbb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gaa964f91502167253a92c860ca31bafbb">c4query_nameOfColumn</a> (<a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query, unsigned col) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gaa964f91502167253a92c860ca31bafbb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of a column.  <a href="#gaa964f91502167253a92c860ca31bafbb">More...</a><br /></td></tr>
+<tr class="separator:gaa964f91502167253a92c860ca31bafbb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2d722ef79085980eab3a080d032c59fb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga2d722ef79085980eab3a080d032c59fb">c4query_run</a> (<a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, const <a class="el" href="struct_c4_query_options.html">C4QueryOptions</a> *options, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> encodedParameters, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga2d722ef79085980eab3a080d032c59fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a compiled query.  <a href="#ga2d722ef79085980eab3a080d032c59fb">More...</a><br /></td></tr>
+<tr class="separator:ga2d722ef79085980eab3a080d032c59fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga12ea4f2d56b9aedd9203366f8ba85b66"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga12ea4f2d56b9aedd9203366f8ba85b66">c4queryenum_fullTextMatched</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga12ea4f2d56b9aedd9203366f8ba85b66"><td class="mdescLeft">&#160;</td><td class="mdescRight">In a full-text query enumerator, returns the string that was emitted during indexing that contained the search term(s).  <a href="#ga12ea4f2d56b9aedd9203366f8ba85b66">More...</a><br /></td></tr>
+<tr class="separator:ga12ea4f2d56b9aedd9203366f8ba85b66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab00bb867cb66a632b4c0494893be338a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gab00bb867cb66a632b4c0494893be338a">c4query_fullTextMatched</a> (<a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docID, <a class="el" href="c4_base_8h.html#a6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a> seq, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gab00bb867cb66a632b4c0494893be338a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a docID and sequence number from the enumerator, returns the text that was emitted during indexing.  <a href="#gab00bb867cb66a632b4c0494893be338a">More...</a><br /></td></tr>
+<tr class="separator:gab00bb867cb66a632b4c0494893be338a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacad4e56d0c77a29d1e70c36280e8531c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#gacad4e56d0c77a29d1e70c36280e8531c">c4queryenum_next</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:gacad4e56d0c77a29d1e70c36280e8531c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advances a query enumerator to the next row, populating its fields.  <a href="#gacad4e56d0c77a29d1e70c36280e8531c">More...</a><br /></td></tr>
+<tr class="separator:gacad4e56d0c77a29d1e70c36280e8531c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga07c96f58afde11c3323664f5d3671feb"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga07c96f58afde11c3323664f5d3671feb">c4queryenum_getRowCount</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga07c96f58afde11c3323664f5d3671feb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the total number of rows in the query, if known.  <a href="#ga07c96f58afde11c3323664f5d3671feb">More...</a><br /></td></tr>
+<tr class="separator:ga07c96f58afde11c3323664f5d3671feb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga62cc6ed2a7712e135369c5e2b6cf7c05"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga62cc6ed2a7712e135369c5e2b6cf7c05">c4queryenum_seek</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, uint64_t rowIndex, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga62cc6ed2a7712e135369c5e2b6cf7c05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Jumps to a specific row.  <a href="#ga62cc6ed2a7712e135369c5e2b6cf7c05">More...</a><br /></td></tr>
+<tr class="separator:ga62cc6ed2a7712e135369c5e2b6cf7c05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3b342ec228013a74426f3b1edf3c7029"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga3b342ec228013a74426f3b1edf3c7029">c4queryenum_refresh</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga3b342ec228013a74426f3b1edf3c7029"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks whether the query results have changed since this enumerator was created; if so, returns a new enumerator.  <a href="#ga3b342ec228013a74426f3b1edf3c7029">More...</a><br /></td></tr>
+<tr class="separator:ga3b342ec228013a74426f3b1edf3c7029"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga217263d804c59f200a19b1f46b41af9f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga217263d804c59f200a19b1f46b41af9f">c4queryenum_close</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
+<tr class="memdesc:ga217263d804c59f200a19b1f46b41af9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes an enumerator without freeing it.  <a href="#ga217263d804c59f200a19b1f46b41af9f">More...</a><br /></td></tr>
+<tr class="separator:ga217263d804c59f200a19b1f46b41af9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9d165f15deecf0e29e5efc76694c9912"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___querying_d_b.html#ga9d165f15deecf0e29e5efc76694c9912">c4queryenum_free</a> (<a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="memdesc:ga9d165f15deecf0e29e5efc76694c9912"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a query enumerator.  <a href="#ga9d165f15deecf0e29e5efc76694c9912">More...</a><br /></td></tr>
 <tr class="separator:ga9d165f15deecf0e29e5efc76694c9912"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -145,6 +157,26 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="ga569ec093b55a7453ac4c9df3953b4cf9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga569ec093b55a7453ac4c9df3953b4cf9">&sect;&nbsp;</a></span>c4query_columnCount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned c4query_columnCount </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td>
+          <td class="paramname"><em>query</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the number of columns (the values specified in the WHAT clause) in each row. </p>
+
+</div>
+</div>
 <a id="gaa9e244b4cda2c13b84794b78586edd40"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaa9e244b4cda2c13b84794b78586edd40">&sect;&nbsp;</a></span>c4query_explain()</h2>
 
@@ -187,8 +219,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gae2950c766a509029a635d1283b28f4d0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae2950c766a509029a635d1283b28f4d0">&sect;&nbsp;</a></span>c4query_fullTextMatched()</h2>
+<a id="gab00bb867cb66a632b4c0494893be338a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab00bb867cb66a632b4c0494893be338a">&sect;&nbsp;</a></span>c4query_fullTextMatched()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -196,8 +228,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4query_fullTextMatched </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td>
-          <td class="paramname"><em>query</em>, </td>
+          <td class="paramtype"><a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -226,6 +258,36 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Given a docID and sequence number from the enumerator, returns the text that was emitted during indexing. </p>
+
+</div>
+</div>
+<a id="gaa964f91502167253a92c860ca31bafbb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa964f91502167253a92c860ca31bafbb">&sect;&nbsp;</a></span>c4query_nameOfColumn()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4query_nameOfColumn </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td>
+          <td class="paramname"><em>query</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>col</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the name of a column. </p>
 
 </div>
 </div>
@@ -275,8 +337,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga28282aad8d208a7350225d82bd62c76b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga28282aad8d208a7350225d82bd62c76b">&sect;&nbsp;</a></span>c4query_run()</h2>
+<a id="ga2d722ef79085980eab3a080d032c59fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2d722ef79085980eab3a080d032c59fb">&sect;&nbsp;</a></span>c4query_run()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -284,8 +346,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a>* c4query_run </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *&#160;</td>
-          <td class="paramname"><em>query</em>, </td>
+          <td class="paramtype"><a class="el" href="group___querying_d_b.html#ga5742de87a925059b9259d898f699fb2c">C4Query</a> *query&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -327,8 +389,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga2cc361fa4edc32b19478cdd6bf353ee8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2cc361fa4edc32b19478cdd6bf353ee8">&sect;&nbsp;</a></span>c4queryenum_close()</h2>
+<a id="ga217263d804c59f200a19b1f46b41af9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga217263d804c59f200a19b1f46b41af9f">&sect;&nbsp;</a></span>c4queryenum_close()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -336,8 +398,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void c4queryenum_close </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td>
-          <td class="paramname"><em>e</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -345,26 +407,6 @@ Variables</h2></td></tr>
 
 <p>Closes an enumerator without freeing it. </p>
 <p>This is optional, but can be used to free up resources if the enumeration has not reached its end, but will not be freed for a while. </p>
-
-</div>
-</div>
-<a id="gae1477f95bbc41d25ec4403fcf5f4746f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae1477f95bbc41d25ec4403fcf5f4746f">&sect;&nbsp;</a></span>c4queryenum_customColumns()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a> c4queryenum_customColumns </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td>
-          <td class="paramname"><em>e</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>In an expression-based query enumerator, returns the values of the custom columns of the query (the "WHAT" expressions), as a Fleece-encoded array. </p>
 
 </div>
 </div>
@@ -388,8 +430,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga111e23d189909ca9fed986ea73d3e5cf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga111e23d189909ca9fed986ea73d3e5cf">&sect;&nbsp;</a></span>c4queryenum_fullTextMatched()</h2>
+<a id="ga12ea4f2d56b9aedd9203366f8ba85b66"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga12ea4f2d56b9aedd9203366f8ba85b66">&sect;&nbsp;</a></span>c4queryenum_fullTextMatched()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -397,8 +439,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a> c4queryenum_fullTextMatched </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td>
-          <td class="paramname"><em>e</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -418,8 +460,46 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga183bcaf5d886e72a235983aff966d288"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga183bcaf5d886e72a235983aff966d288">&sect;&nbsp;</a></span>c4queryenum_next()</h2>
+<a id="ga07c96f58afde11c3323664f5d3671feb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga07c96f58afde11c3323664f5d3671feb">&sect;&nbsp;</a></span>c4queryenum_getRowCount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t c4queryenum_getRowCount </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname"><em>outError</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns the total number of rows in the query, if known. </p>
+<p>Not all query enumerators may support this (but the current implementation does.) </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">e</td><td>The query enumerator </td></tr>
+    <tr><td class="paramname">outError</td><td>On failure, an error will be stored here (probably kC4ErrorUnsupported.) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The number of rows, or -1 on failure. </dd></dl>
+
+</div>
+</div>
+<a id="gacad4e56d0c77a29d1e70c36280e8531c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gacad4e56d0c77a29d1e70c36280e8531c">&sect;&nbsp;</a></span>c4queryenum_next()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -427,8 +507,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">bool c4queryenum_next </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *&#160;</td>
-          <td class="paramname"><em>e</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -446,6 +526,82 @@ Variables</h2></td></tr>
 
 <p>Advances a query enumerator to the next row, populating its fields. </p>
 <p>Returns true on success, false at the end of enumeration or on error. </p>
+
+</div>
+</div>
+<a id="ga3b342ec228013a74426f3b1edf3c7029"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3b342ec228013a74426f3b1edf3c7029">&sect;&nbsp;</a></span>c4queryenum_refresh()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a>* c4queryenum_refresh </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname"><em>outError</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Checks whether the query results have changed since this enumerator was created; if so, returns a new enumerator. </p>
+<p>Otherwise returns NULL. </p>
+
+</div>
+</div>
+<a id="ga62cc6ed2a7712e135369c5e2b6cf7c05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga62cc6ed2a7712e135369c5e2b6cf7c05">&sect;&nbsp;</a></span>c4queryenum_seek()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool c4queryenum_seek </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="struct_c4_query_enumerator.html">C4QueryEnumerator</a> *e&#160;</td>
+          <td class="paramname"><em>C4NONNULL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t&#160;</td>
+          <td class="paramname"><em>rowIndex</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="struct_c4_error.html">C4Error</a> *&#160;</td>
+          <td class="paramname"><em>outError</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Jumps to a specific row. </p>
+<p>Not all query enumerators may support this (but the current implementation does.) </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">e</td><td>The query enumerator </td></tr>
+    <tr><td class="paramname">rowIndex</td><td>The number of the row, starting at 0 </td></tr>
+    <tr><td class="paramname">outError</td><td>On failure, an error will be stored here (probably kC4ErrorUnsupported.) </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True on success, false on failure. </dd></dl>
 
 </div>
 </div>

@@ -1,5 +1,6 @@
 var searchData=
 [
+  ['kc4databasefilenameextension',['kC4DatabaseFilenameExtension',['../group___database.html#ga30623fe81a410cb1931377dd9c81f378',1,'c4Database.h']]],
   ['kc4defaultenumeratoroptions',['kC4DefaultEnumeratorOptions',['../group___document.html#ga3e384303ed75401aee4ec67b69143eac',1,'c4DocEnumerator.h']]],
   ['kc4defaultlog',['kC4DefaultLog',['../c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731',1,'c4Base.h']]],
   ['kc4defaultqueryoptions',['kC4DefaultQueryOptions',['../group___querying_d_b.html#gafb878475a7c9c7560878b79e8a786ab5',1,'c4Query.h']]],

@@ -5,7 +5,7 @@ var searchData=
   ['selectedrev',['selectedRev',['../struct_c4_document.html#a786f2fafe6221939119f97d91587e96d',1,'C4Document']]],
   ['sequence',['sequence',['../struct_c4_document_info.html#afabd4bff5f16dad26ec8ffa0889642b1',1,'C4DocumentInfo::sequence()'],['../struct_c4_revision.html#a62bb8ff181a95903dd74a99c53e476b6',1,'C4Revision::sequence()'],['../struct_c4_document.html#ab6d7b7f75bf2b684b5bfd325f9a41037',1,'C4Document::sequence()'],['../struct_c4_database_change.html#aa8e203ed64d903b7a0a6f070de701dec',1,'C4DatabaseChange::sequence()']]],
   ['size',['size',['../struct_c4_slice.html#a702455796e972afc5be753c2be44e6c8',1,'C4Slice::size()'],['../struct_f_l_slice.html#a8fb4c8187bdd5a8d645809d5d0a72c90',1,'FLSlice::size()'],['../struct_f_l_slice_result.html#a622d35e8c1031bb88d0fe89cfaca12e1',1,'FLSliceResult::size()']]],
-  ['skip',['skip',['../struct_c4_enumerator_options.html#a34a6407128093ee45bc9476c00e8ff03',1,'C4EnumeratorOptions::skip()'],['../struct_c4_query_options.html#a93a7d34ad5e9f372ae6bd83be9db987b',1,'C4QueryOptions::skip()']]],
+  ['skip',['skip',['../struct_c4_enumerator_options.html#a34a6407128093ee45bc9476c00e8ff03',1,'C4EnumeratorOptions']]],
   ['start',['start',['../struct_c4_full_text_term.html#ab96da725a3cfbf93c6b3069e08d35762',1,'C4FullTextTerm']]],
   ['storageengine',['storageEngine',['../struct_c4_database_config.html#a312a3524d12a83cf51e44b28d54a9a32',1,'C4DatabaseConfig']]]
 ];
