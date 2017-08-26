@@ -24,6 +24,7 @@
 
 #include "unicode/utypes.h"
 #include "unicode/ucol.h"
+#include "unicode/ucasemap.h"
 
 /* Allowed version number ranges between [44, 999].
  * 44 is the minimum supported ICU version that was shipped in
@@ -38,7 +39,7 @@ static char icudata_version[ICUDATA_VERSION_MAX_LENGTH + 1];
 
 static void* handle_i18n = NULL;
 static void* handle_common = NULL;
-static void* syms[4];
+static void* syms[9];
 
 /* ICU data filename on Android is like 'icudt49l.dat'.
  *
@@ -111,22 +112,42 @@ static void init_icudata_version() {
     return;
   }
 
-  char func_name[128];
-  strcpy(func_name, "ucol_open");
-  strcat(func_name, icudata_version);
-  syms[0] = dlsym(handle_i18n, func_name);
-  
-  strcpy(func_name, "ucol_setAttribute");
-  strcat(func_name, icudata_version);
-  syms[1] = dlsym(handle_i18n, func_name);
-  
-  strcpy(func_name, "ucol_strcollUTF8");
-  strcat(func_name, icudata_version);
-  syms[2] = dlsym(handle_i18n, func_name);
-  
-  strcpy(func_name, "ucol_close");
-  strcat(func_name, icudata_version);
-  syms[3] = dlsym(handle_i18n, func_name);
+    char func_name[128];
+    strcpy(func_name, "ucol_open");
+    strcat(func_name, icudata_version);
+    syms[0] = dlsym(handle_i18n, func_name);
+
+    strcpy(func_name, "ucol_setAttribute");
+    strcat(func_name, icudata_version);
+    syms[1] = dlsym(handle_i18n, func_name);
+
+    strcpy(func_name, "ucol_strcollUTF8");
+    strcat(func_name, icudata_version);
+    syms[2] = dlsym(handle_i18n, func_name);
+
+    strcpy(func_name, "ucol_close");
+    strcat(func_name, icudata_version);
+    syms[3] = dlsym(handle_i18n, func_name);
+
+    strcpy(func_name, "ucol_strcoll");
+    strcat(func_name, icudata_version);
+    syms[4] = dlsym(handle_i18n, func_name);
+
+    strcpy(func_name, "ucasemap_open");
+    strcat(func_name, icudata_version);
+    syms[5] = dlsym(handle_common, func_name);
+
+    strcpy(func_name, "ucasemap_close");
+    strcat(func_name, icudata_version);
+    syms[6] = dlsym(handle_common, func_name);
+
+    strcpy(func_name, "ucasemap_utf8ToLower");
+    strcat(func_name, icudata_version);
+    syms[7] = dlsym(handle_common, func_name);
+
+    strcpy(func_name, "ucasemap_utf8ToUpper");
+    strcat(func_name, icudata_version);
+    syms[8] = dlsym(handle_common, func_name);
 }
 
 UCollator* ucol_open(const char* loc, UErrorCode* status) {
@@ -168,4 +189,53 @@ void ucol_close(UCollator* coll) {
   void (*ptr)(UCollator*);
   ptr = (void(*)(UCollator*))syms[3];
   ptr(coll);
+}
+
+UCollationResult ucol_strcoll(const UCollator* coll, const UChar* source, int32_t sourceLength, const UChar* target, int32_t targetLength) {
+    pthread_once(&once_control, &init_icudata_version);
+    UCollationResult (*ptr)(const UCollator*, const UChar*, int32_t, const UChar*, int32_t);
+    ptr = (UCollationResult(*)(const UCollator*, const UChar*, int32_t, const UChar*, int32_t))syms[4];
+    return ptr(coll, source, sourceLength, target, targetLength);
+}
+
+/* unicode/ucasemap.h */
+UCaseMap* ucasemap_open(const char* locale, uint32_t options, UErrorCode* pErrorCode) {
+  pthread_once(&once_control, &init_icudata_version);
+  UCaseMap* (*ptr)(const char*, uint32_t, UErrorCode*);
+  if (syms[5] == NULL) {
+    *pErrorCode = U_UNSUPPORTED_ERROR;
+    return (UCaseMap*)0;
+  }
+  ptr = (UCaseMap*(*)(const char*, uint32_t, UErrorCode*))syms[5];
+  return ptr(locale, options, pErrorCode);
+}
+
+void ucasemap_close(UCaseMap* csm) {
+  pthread_once(&once_control, &init_icudata_version);
+  void (*ptr)(UCaseMap*);
+  ptr = (void(*)(UCaseMap*))syms[6];
+  ptr(csm);
+  return;
+}
+
+int32_t ucasemap_utf8ToLower(const UCaseMap* csm, char* dest, int32_t destCapacity, const char* src, int32_t srcLength, UErrorCode* pErrorCode) {
+  pthread_once(&once_control, &init_icudata_version);
+  int32_t (*ptr)(const UCaseMap*, char*, int32_t, const char*, int32_t, UErrorCode*);
+  if (syms[7] == NULL) {
+    *pErrorCode = U_UNSUPPORTED_ERROR;
+    return (int32_t)0;
+  }
+  ptr = (int32_t(*)(const UCaseMap*, char*, int32_t, const char*, int32_t, UErrorCode*))syms[7];
+  return ptr(csm, dest, destCapacity, src, srcLength, pErrorCode);
+}
+
+int32_t ucasemap_utf8ToUpper(const UCaseMap* csm, char* dest, int32_t destCapacity, const char* src, int32_t srcLength, UErrorCode* pErrorCode) {
+  pthread_once(&once_control, &init_icudata_version);
+  int32_t (*ptr)(const UCaseMap*, char*, int32_t, const char*, int32_t, UErrorCode*);
+  if (syms[8] == NULL) {
+    *pErrorCode = U_UNSUPPORTED_ERROR;
+    return (int32_t)0;
+  }
+  ptr = (int32_t(*)(const UCaseMap*, char*, int32_t, const char*, int32_t, UErrorCode*))syms[8];
+  return ptr(csm, dest, destCapacity, src, srcLength, pErrorCode);
 }
