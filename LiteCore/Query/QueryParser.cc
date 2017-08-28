@@ -1014,7 +1014,7 @@ namespace litecore {
         if (op[0] == '.')
             return FTSIndexName(propertyFromNode(key));     // abbreviation for common case
         else
-            return _tableName + "::" + indexName(key->asArray());
+            return indexName(key->asArray());
     }
 
     string QueryParser::FTSIndexName(const string &property) const {
