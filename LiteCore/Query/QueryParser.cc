@@ -703,21 +703,33 @@ namespace litecore {
 
     // Handles variables used in ANY/EVERY predicates
     void QueryParser::variableOp(slice op, Array::iterator& operands) {
+        // Concatenate the op and operands as a path:
         string var;
-        if (op.size == 1) {
-            var = (string)operands[0]->asString();
-            ++operands;
-        } else {
+        if (op.size > 1) {
             op.moveStart(1);
             var = op.asString();
         }
+        if (operands.count() > 0) {
+            if (!var.empty())
+                var += '.';
+            var += propertyFromOperands(operands);
+        }
+
+        // Split the path into variable name and property:
+        string property;
+        auto dot = var.find('.');
+        if (dot != string::npos) {
+            property = var.substr(dot + 1);
+            var = var.substr(0, dot);
+        }
+
         require(isValidIdentifier(var), "Invalid variable name '%.*s'", SPLAT(op));
         require(_variables.count(var) > 0, "No such variable '%.*s'", SPLAT(op));
 
-        if (operands.count() == 0) {
+        // Now generate the function call:
+        if (property.empty()) {
             _sql << '_' << var << ".value";
         } else {
-            auto property = propertyFromOperands(operands);
             _sql << kValueFnName << "(_" << var << ".pointer, ";
             writeSQLString(_sql, slice(property));
             _sql << ")";

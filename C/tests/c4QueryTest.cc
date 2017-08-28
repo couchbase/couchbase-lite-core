@@ -77,6 +77,14 @@ protected:
 };
 
 
+class PathsQueryTest : public QueryTest {
+public:
+    PathsQueryTest(int which)
+    :QueryTest(which, "paths.json")
+    { }
+};
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
@@ -142,6 +150,19 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
     // Look for people where every like contains an L:
     compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['LIKE', ['?', 'like'], '%l%']]"));
     CHECK(run() == (vector<string>{ "0000017", "0000027", "0000060", "0000068" }));
+}
+
+
+N_WAY_TEST_CASE_METHOD(PathsQueryTest, "DB Query ANY w/paths", "[Query][C]") {
+    // For https://github.com/couchbase/couchbase-lite-core/issues/238
+    compile(json5("['ANY','path',['.paths'],['=',['?path','city'],'San Jose']]"));
+    CHECK(run() == (vector<string>{ "0000001" }));
+
+    compile(json5("['ANY','path',['.paths'],['=',['?path.city'],'San Jose']]"));
+    CHECK(run() == (vector<string>{ "0000001" }));
+
+    compile(json5("['ANY','path',['.paths'],['=',['?path','city'],'Palo Alto']]"));
+    CHECK(run() == (vector<string>{ "0000001", "0000002" }));
 }
 
 
