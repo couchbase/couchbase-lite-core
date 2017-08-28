@@ -252,13 +252,17 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
 
     Retained<Query> query{ store->compileQuery(json5(
         "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\
-                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]]}]")) };
+                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+                    WHAT: [['.sentence']]}]")) };
     REQUIRE(query != nullptr);
     unsigned rows = 0;
     int expectedOrder[] = {1, 2, 0, 4};
     int expectedTerms[] = {3, 3, 1, 1};
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     while (e->next()) {
+        auto cols = e->columns();
+        REQUIRE(cols.count() == 1);
+        CHECK(cols[0]->asString() == slice(strings[expectedOrder[rows]]));
         Log("key = %s", e->recordID().cString());
         CHECK(e->hasFullText());
         CHECK(e->fullTextTerms().size() == expectedTerms[rows]);
