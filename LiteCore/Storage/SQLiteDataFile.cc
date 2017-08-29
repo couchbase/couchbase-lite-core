@@ -302,10 +302,13 @@ path.path().c_str());
                 LogTo(DBLog, "Decrypting DataFile");
                 break;
             case kAES256:
-                if (currentlyEncrypted)
+                if (currentlyEncrypted) {
                     LogTo(DBLog, "Changing DataFile encryption key");
-                else
+                }
+                else {
                     LogTo(DBLog, "Encrypting DataFile");
+                }
+
                 if(newKey.buf == nullptr || newKey.size != 32)
                     error::_throw(error::InvalidParameter);
                 break;
