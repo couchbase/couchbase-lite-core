@@ -41,6 +41,7 @@ set(JNI_CLASSES
     com.couchbase.litecore.C4DocEnumerator
     com.couchbase.litecore.C4Document
     com.couchbase.litecore.C4DocumentObserver
+    com.couchbase.litecore.C4Key
     com.couchbase.litecore.C4Listener
     com.couchbase.litecore.C4Log
     com.couchbase.litecore.C4Query
