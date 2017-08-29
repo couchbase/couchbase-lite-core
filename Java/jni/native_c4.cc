@@ -13,6 +13,8 @@
  */
 #include "com_couchbase_litecore_C4.h"
 #include "com_couchbase_litecore_C4Log.h"
+#include "com_couchbase_litecore_C4Key.h"
+#include "mbedtls/pkcs5.h"
 #include "native_glue.hh"
 
 using namespace litecore;
@@ -54,8 +56,74 @@ Java_com_couchbase_litecore_C4_getenv(JNIEnv *env, jclass clazz, jstring jname) 
  * Method:    setLevel
  * Signature: (Ljava/lang/String;I)V
  */
-JNIEXPORT void JNICALL Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jdomain, jint jlevel) {
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jdomain,
+                                           jint jlevel) {
     jstringSlice domain(env, jdomain);
-    C4LogDomain logDomain = c4log_getDomain(((slice)domain).cString(), true);
-    c4log_setLevel(logDomain, (C4LogLevel)jlevel);
+    C4LogDomain logDomain = c4log_getDomain(((slice) domain).cString(), true);
+    c4log_setLevel(logDomain, (C4LogLevel) jlevel);
+}
+
+// ----------------------------------------------------------------------------
+// com_couchbase_litecore_C4Key
+// ----------------------------------------------------------------------------
+
+/*
+ * Class:     com_couchbase_litecore_C4Key
+ * Method:    derivePBKDF2SHA256Key
+ * Signature: (Ljava/lang/String;[BI)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Key_derivePBKDF2SHA256Key
+        (JNIEnv *env, jclass clazz, jstring jpassword, jbyteArray jsalt, jint jrounds) {
+
+    if (jpassword == NULL || jsalt == NULL)
+        return NULL;
+
+    // Password:
+    const char *password = env->GetStringUTFChars(jpassword, NULL);
+    int passwordSize = (int) env->GetStringLength(jpassword);
+
+    // Salt:
+    int saltSize = env->GetArrayLength(jsalt);
+    unsigned char *salt = new unsigned char[saltSize];
+    env->GetByteArrayRegion(jsalt, 0, saltSize, reinterpret_cast<jbyte *>(salt));
+
+    // Rounds
+    int rounds = jrounds;
+
+    // PKCS5 PBKDF2 HMAC SHA256
+    const int KEY_SIZE = 32; // 32 bytes (256 bit)
+    unsigned char key[KEY_SIZE];
+
+    mbedtls_md_context_t ctx;
+    mbedtls_md_init(&ctx);
+
+    const mbedtls_md_info_t *info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA512);
+    if (info == NULL) {
+        // error
+        mbedtls_md_free(&ctx);
+        env->ReleaseStringUTFChars(jpassword, password);
+        delete[] salt;
+        return NULL;
+    }
+
+    int status = 0;
+    if ((status = mbedtls_md_setup(&ctx, info, 1)) == 0)
+        status = mbedtls_pkcs5_pbkdf2_hmac(&ctx, (const unsigned char *) password, passwordSize,
+                                           salt, saltSize, rounds, KEY_SIZE, key);
+
+    mbedtls_md_free(&ctx);
+
+    // Release memory:
+    env->ReleaseStringUTFChars(jpassword, password);
+    delete[] salt;
+
+    // Return null if not success:
+    if (status != 0)
+        return NULL;
+
+    // Return result:
+    jbyteArray result = env->NewByteArray(KEY_SIZE);
+    env->SetByteArrayRegion(result, 0, KEY_SIZE, (jbyte *) key);
+    return result;
 }
