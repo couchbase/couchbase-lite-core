@@ -7,5 +7,6 @@ var searchData=
   ['documents',['Documents',['../group___documents.html',1,'']]],
   ['domain',['domain',['../struct_c4_error.html#a5d007c63db3e71548b611d49013bd362',1,'C4Error']]],
   ['document_20expiration',['Document Expiration',['../group___expiration.html',1,'']]],
+  ['database_20indexes',['Database Indexes',['../group___indexing.html',1,'']]],
   ['database_20and_20document_20observers',['Database and Document Observers',['../group___observer.html',1,'']]]
 ];

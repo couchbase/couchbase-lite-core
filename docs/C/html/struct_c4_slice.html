@@ -80,7 +80,7 @@ Data Fields</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A slice is simply a pointer to a range of bytes, usually interpreted as a UTF-8 string. </p>
-<p>A "null slice" has chars==NULL and length==0. A slice with length==0 is not necessarily null; if chars!=NULL it's an empty string. A slice as a function parameter is temporary and read-only: the function will not alter or free the bytes, and the pointer won't be accessed after the function returns. A slice <em>returned from</em> a function points to newly-allocated memory and must be freed by the caller, with <a class="el" href="c4_base_8h.html#af9107ebabfb83f227173ad9b638972f4" title="Frees the memory of a heap-allocated slice by calling free(buf). ">c4slice_free()</a>. </p>
+<p>A "null slice" has chars==NULL and length==0. A slice with length==0 is not necessarily null; if chars!=NULL it's an empty string. A slice as a function parameter is temporary and read-only: the function will not alter or free the bytes, and the pointer won't be accessed after the function returns. A slice <em>returned from</em> a function points to newly-allocated memory and must be freed by the caller, with <a class="el" href="c4_base_8h.html#a380ffb161850bc77df08e824307a093b" title="Frees the memory of a heap-allocated slice by calling free(buf). ">c4slice_free()</a>. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
 <a id="a1faabacb3856496186ebc43514a01498"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1faabacb3856496186ebc43514a01498">&sect;&nbsp;</a></span>buf</h2>

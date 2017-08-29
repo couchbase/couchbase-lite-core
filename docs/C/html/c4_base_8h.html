@@ -67,6 +67,7 @@ $(function() {
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
@@ -101,9 +102,9 @@ Macros</h2></td></tr>
 <tr class="separator:ab6e8c999f5a33767c27706fb4392831d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8944e5062c19897c26a00074e7c4550b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>&#160;&#160;&#160;__attribute((nonnull))</td></tr>
 <tr class="separator:a8944e5062c19897c26a00074e7c4550b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cde79f4cdebebaf3cc012398f80929d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a4cde79f4cdebebaf3cc012398f80929d">C4_ENUM</a>(_type,  _name)&#160;&#160;&#160;_type _name; enum</td></tr>
+<tr class="memitem:a4cde79f4cdebebaf3cc012398f80929d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a4cde79f4cdebebaf3cc012398f80929d">C4_ENUM</a>(_type,  _name)&#160;&#160;&#160;enum _name : _type _name; enum _name : _type</td></tr>
 <tr class="separator:a4cde79f4cdebebaf3cc012398f80929d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ba9baea964974f4e8742c63d5e9013c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a0ba9baea964974f4e8742c63d5e9013c">C4_OPTIONS</a>(_type,  _name)&#160;&#160;&#160;_type _name; enum</td></tr>
+<tr class="memitem:a0ba9baea964974f4e8742c63d5e9013c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a0ba9baea964974f4e8742c63d5e9013c">C4_OPTIONS</a>(_type,  _name)&#160;&#160;&#160;enum _name : _type _name; enum _name : _type</td></tr>
 <tr class="separator:a0ba9baea964974f4e8742c63d5e9013c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58e05642a5ffd7b621ed01bbd8fe7868"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
 <tr class="separator:a58e05642a5ffd7b621ed01bbd8fe7868"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -117,13 +118,13 @@ Macros</h2></td></tr>
 <tr class="separator:a64a4736910f7ff775c24aa0a2b4b3155"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b5c1e31bf67e2f9874201b15a106801"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(DOMAIN,  LEVEL,  FMT, ...)</td></tr>
 <tr class="separator:a0b5c1e31bf67e2f9874201b15a106801"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab215c8761710809dcff7165f3fff5cd3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ab215c8761710809dcff7165f3fff5cd3">C4Debug</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, kC4LogDebug,   FMT, ## __VA_ARGS__)</td></tr>
+<tr class="memitem:ab215c8761710809dcff7165f3fff5cd3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ab215c8761710809dcff7165f3fff5cd3">C4Debug</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96acea58c4ab61546a09849f79707b643cc990">kC4LogDebug</a>,   FMT, ## __VA_ARGS__)</td></tr>
 <tr class="separator:ab215c8761710809dcff7165f3fff5cd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ad43e3afdc4edbfc5811e2ebd0eaff4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a0ad43e3afdc4edbfc5811e2ebd0eaff4">C4Log</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, kC4LogInfo,    FMT, ## __VA_ARGS__)</td></tr>
+<tr class="memitem:a0ad43e3afdc4edbfc5811e2ebd0eaff4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a0ad43e3afdc4edbfc5811e2ebd0eaff4">C4Log</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96aceacd23bf53526d7d191aec63097713b698">kC4LogInfo</a>,    FMT, ## __VA_ARGS__)</td></tr>
 <tr class="separator:a0ad43e3afdc4edbfc5811e2ebd0eaff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c8f3034f294aa2e3c92bd23020a3252"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a2c8f3034f294aa2e3c92bd23020a3252">C4Warn</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, kC4LogWarning, FMT, ## __VA_ARGS__)</td></tr>
+<tr class="memitem:a2c8f3034f294aa2e3c92bd23020a3252"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a2c8f3034f294aa2e3c92bd23020a3252">C4Warn</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96aceaf40f415b75caded03ecbad539aefd7f2">kC4LogWarning</a>, FMT, ## __VA_ARGS__)</td></tr>
 <tr class="separator:a2c8f3034f294aa2e3c92bd23020a3252"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4b74b787c81e9c7c9819fe657273f18"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#af4b74b787c81e9c7c9819fe657273f18">C4WarnError</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, kC4LogError,   FMT, ## __VA_ARGS__)</td></tr>
+<tr class="memitem:af4b74b787c81e9c7c9819fe657273f18"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#af4b74b787c81e9c7c9819fe657273f18">C4WarnError</a>(FMT, ...)&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96aceaf2e8d69bfcab44c808994d4713fa549c">kC4LogError</a>,   FMT, ## __VA_ARGS__)</td></tr>
 <tr class="separator:af4b74b787c81e9c7c9819fe657273f18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="typedef-members"></a>
@@ -141,81 +142,169 @@ Typedefs</h2></td></tr>
 <tr class="memitem:afb4f9f2f009acfd258b1be28e171da47"><td class="memItemLeft" align="right" valign="top">typedef struct c4LogDomain *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a></td></tr>
 <tr class="memdesc:afb4f9f2f009acfd258b1be28e171da47"><td class="mdescLeft">&#160;</td><td class="mdescRight">A log domain, a specific source of logs that can be enabled or disabled.  <a href="#afb4f9f2f009acfd258b1be28e171da47">More...</a><br /></td></tr>
 <tr class="separator:afb4f9f2f009acfd258b1be28e171da47"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ddf53a68840d1fa70d0731d08ba8810"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a9ddf53a68840d1fa70d0731d08ba8810">C4LogCallback</a>) (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>, C4LogLevel, const char *fmt <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, va_list args)</td></tr>
-<tr class="memdesc:a9ddf53a68840d1fa70d0731d08ba8810"><td class="mdescLeft">&#160;</td><td class="mdescRight">A logging callback that the application can register.  <a href="#a9ddf53a68840d1fa70d0731d08ba8810">More...</a><br /></td></tr>
-<tr class="separator:a9ddf53a68840d1fa70d0731d08ba8810"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acbf01172fb411807d198d96c98d4e091"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#acbf01172fb411807d198d96c98d4e091">C4LogCallback</a>) (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>, const char *fmt, va_list args)</td></tr>
+<tr class="memdesc:acbf01172fb411807d198d96c98d4e091"><td class="mdescLeft">&#160;</td><td class="mdescRight">A logging callback that the application can register.  <a href="#acbf01172fb411807d198d96c98d4e091">More...</a><br /></td></tr>
+<tr class="separator:acbf01172fb411807d198d96c98d4e091"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a6cbe7be44f2f63425404284687e6861c"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861c">C4ErrorDomain</a> : uint32_t { <br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861caaa4196b6e3b217bd68cc55529805e0fa">LiteCoreDomain</a> = 1, 
+<a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861ca0fcf36dd88fc41ab53e720a3410f8bf1">POSIXDomain</a>, 
+<a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861cab14b819a5f23eedbfb517cd9ba1419d5">SQLiteDomain</a> = 4, 
+<a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861ca8b416e51b735e834728f74539e4ee017">FleeceDomain</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861ca230c802d66f2578bb3142fbfa52946d4">NetworkDomain</a>, 
+<a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861ca0302b37e37e11311e3cd992f9373b048">WebSocketDomain</a>, 
+<a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861ca3b6e90735c16e90e9cd0d56d74e4af92">kC4MaxErrorDomainPlus1</a>
+<br />
+ }</td></tr>
+<tr class="separator:a6cbe7be44f2f63425404284687e6861c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc1eabfb65d7e55ac9efb8a95db4647f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647f">C4ErrorCode</a> : int32_t { <br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647faff592ca492d70aa527bbe7c29b4c68f9">kC4ErrorAssertionFailed</a> = 1, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa5bf4f46c46c2a014c0ed100638365b50">kC4ErrorUnimplemented</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647faf31deb386bcf648f207b557aac0a2491">kC4ErrorNoSequences</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa8333f8805b048c96703b9190d393147a">kC4ErrorUnsupportedEncryption</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa93c173d1d9b3e2f24bb4e306db3f0e83">kC4ErrorNoTransaction</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa28cdd53a5065f8c8c54f2526cf44f888">kC4ErrorBadRevisionID</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fab32a803edd9f6d5d955eb4a70fea0cb2">kC4ErrorBadVersionVector</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647faf8282094b53f4d102b087484d80e5555">kC4ErrorCorruptRevisionData</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647faa45cffbbb326ee400e69305f4617e712">kC4ErrorCorruptIndexData</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa3061bbdc9cfa2662163b0495b35e596f">kC4ErrorTokenizerError</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa53844dbddb547aee05eb3c6523121123">kC4ErrorNotOpen</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa5d112e4810d2a4b0a0c96af789664b20">kC4ErrorNotFound</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647faced9bb3ce1872e5666427e4cced48eff">kC4ErrorDeleted</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fadeebf4d3cd05868b05ae35314a0df4f6">kC4ErrorConflict</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa68fc96251e144bfbaddd721047c8672b">kC4ErrorInvalidParameter</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa3d4b1a292b4c7ccc9f964021b60607a4">kC4ErrorDatabaseError</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa9b3e061cd882ea1852032a11e4328eb7">kC4ErrorUnexpectedError</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fac9bb39873025e9ef13af22b5d1e60200">kC4ErrorCantOpenFile</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa34c60964e4957f89d4f2ed8566e0c5ea">kC4ErrorIOError</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa54ef784a63adb80b6f230714d5aee45c">kC4ErrorCommitFailed</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa83bbcfd8df9ff47a6054c0c3e9fef290">kC4ErrorMemoryError</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa835eeda1746f6334ecbd7d67de502591">kC4ErrorNotWriteable</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647faf5ef4c2b6a6bcf14af93942b40131862">kC4ErrorCorruptData</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa72593c5a1ddf7c710aa8d6cc331d17e3">kC4ErrorBusy</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa8e2b5016dc63972e926ee8569c027326">kC4ErrorNotInTransaction</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fabc61126f1169a511694a5d95744b5503">kC4ErrorTransactionNotClosed</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa7699709fa865f6fd9e8a0bbb32260b2c">kC4ErrorIndexBusy</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa3ec13a03e1e24b03f7e4b85e82e1704e">kC4ErrorUnsupported</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa1a54e625adee939361be7471e58e6591">kC4ErrorNotADatabaseFile</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa8d2b81e5bd5763ed3acae5bdd67c5f61">kC4ErrorWrongFormat</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa0a465fe48488b7a04c54c945c9ba00fa">kC4ErrorCrypto</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa12dd52a25fe77c9b296407e4d5621208">kC4ErrorInvalidQuery</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa70cc778a879c33924752ac6014ed48b6">kC4ErrorMissingIndex</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647facb97903f7447f3f65f9ff380296b987c">kC4ErrorInvalidQueryParam</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647faab2f5f925263526d93037e7a8ea35d1e">kC4ErrorRemoteError</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fadf1b48472b6d4f9f05d41836edf8bda8">kC4ErrorDatabaseTooOld</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647faacc414a83d2a29578a63785af27a4b24">kC4ErrorDatabaseTooNew</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa5ca1c4cc22c2f3bad6a5d5aabb1a48fa">kC4ErrorBadDocID</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fafa1ee8c45240ea4961514751994f56e8">kC4ErrorCantUpgradeDatabase</a>, 
+<a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647fa722cb0e8ba993d667f97ec108417e2f0">kC4NumErrorCodesPlus1</a>
+<br />
+ }</td></tr>
+<tr class="separator:abc1eabfb65d7e55ac9efb8a95db4647f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5153e11176806637d6354f57957ce803"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803">C4NetworkErrorCode</a> : int32_t { <br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803a68fedd99e7e15fc11169c4cd49760e0d">kC4NetErrDNSFailure</a> = 1, 
+<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803ab1ec4dc6907db657ead615f346d6c027">kC4NetErrUnknownHost</a>, 
+<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803a60245732ba15b7495790a494106c2760">kC4NetErrTimeout</a>, 
+<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803af6b11f55b7676b1de25a47ad84648ce5">kC4NetErrInvalidURL</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803a48504acc356bfedb86513ea7da54abd3">kC4NetErrTooManyRedirects</a>, 
+<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803ae248f6811e3f318e69ec04a63aee68eb">kC4NetErrTLSHandshakeFailed</a>, 
+<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803a0bc1da2445dd5c26d281db4285520a32">kC4NetErrTLSCertExpired</a>, 
+<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803a961fa356292eaccba0f385be76294356">kC4NetErrTLSCertUntrusted</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803aa36febb5b8f79543438332168a4fb803">kC4NetErrTLSClientCertRequired</a>, 
+<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803a8d083f091cd0a47ce10f13e0b37311fd">kC4NetErrTLSClientCertRejected</a>, 
+<a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803a0ca7d9301ee0e106eecf84f4d7a03b25">kC4NetErrTLSCertUnknownRoot</a>
+<br />
+ }<tr class="memdesc:a5153e11176806637d6354f57957ce803"><td class="mdescLeft">&#160;</td><td class="mdescRight">Network error codes (higher level than POSIX, lower level than HTTP.)  <a href="c4_base_8h.html#a5153e11176806637d6354f57957ce803">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:a5153e11176806637d6354f57957ce803"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70ee0c0c337aa9fae2e31d8686b96ace"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> : int8_t { <br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96acea58c4ab61546a09849f79707b643cc990">kC4LogDebug</a>, 
+<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96acea199adaaf5428feaee1941cdb99af5729">kC4LogVerbose</a>, 
+<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96aceacd23bf53526d7d191aec63097713b698">kC4LogInfo</a>, 
+<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96aceaf40f415b75caded03ecbad539aefd7f2">kC4LogWarning</a>, 
+<br />
+&#160;&#160;<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96aceaf2e8d69bfcab44c808994d4713fa549c">kC4LogError</a>, 
+<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96acea813f8bcad7ddd8b20db4da81367c57a1">kC4LogNone</a>
+<br />
+ }<tr class="memdesc:a70ee0c0c337aa9fae2e31d8686b96ace"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logging levels.  <a href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:a70ee0c0c337aa9fae2e31d8686b96ace"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ac31b9ac7221905e49e777e0d7b96b984"><td class="memItemLeft" align="right" valign="top">typedef&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ac31b9ac7221905e49e777e0d7b96b984">C4_ENUM</a> (uint32_t, C4ErrorDomain)</td></tr>
-<tr class="separator:ac31b9ac7221905e49e777e0d7b96b984"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aade6b53a76f7705c984aea68bcd32c1a"><td class="memItemLeft" align="right" valign="top">typedef&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#aade6b53a76f7705c984aea68bcd32c1a">C4_ENUM</a> (int32_t, C4ErrorCode)</td></tr>
-<tr class="separator:aade6b53a76f7705c984aea68bcd32c1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a512f4c0a85e0ce1649f65ce24472f951"><td class="memItemLeft" align="right" valign="top">typedef&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a512f4c0a85e0ce1649f65ce24472f951">C4_ENUM</a> (int32_t, C4NetworkErrorCode)</td></tr>
-<tr class="memdesc:a512f4c0a85e0ce1649f65ce24472f951"><td class="mdescLeft">&#160;</td><td class="mdescRight">Network error codes (higher level than POSIX, lower level than HTTP.)  <a href="#a512f4c0a85e0ce1649f65ce24472f951">More...</a><br /></td></tr>
-<tr class="separator:a512f4c0a85e0ce1649f65ce24472f951"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0419d888a0524b718da8c06fabe5a21"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="c4_base_8h.html#ab6e8c999f5a33767c27706fb4392831d">C4INLINE</a> <a class="el" href="struct_c4_slice.html">C4Slice</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ae0419d888a0524b718da8c06fabe5a21">c4str</a> (const char *str)</td></tr>
 <tr class="memdesc:ae0419d888a0524b718da8c06fabe5a21"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a slice pointing to the contents of a C string.  <a href="#ae0419d888a0524b718da8c06fabe5a21">More...</a><br /></td></tr>
 <tr class="separator:ae0419d888a0524b718da8c06fabe5a21"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad135b86ac747dba68a6e444bc06aed3f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ad135b86ac747dba68a6e444bc06aed3f">c4SliceEqual</a> (<a class="el" href="struct_c4_slice.html">C4Slice</a> a, <a class="el" href="struct_c4_slice.html">C4Slice</a> b) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ad135b86ac747dba68a6e444bc06aed3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if two slices have equal contents.  <a href="#ad135b86ac747dba68a6e444bc06aed3f">More...</a><br /></td></tr>
-<tr class="separator:ad135b86ac747dba68a6e444bc06aed3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af9107ebabfb83f227173ad9b638972f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#af9107ebabfb83f227173ad9b638972f4">c4slice_free</a> (<a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:af9107ebabfb83f227173ad9b638972f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees the memory of a heap-allocated slice by calling free(buf).  <a href="#af9107ebabfb83f227173ad9b638972f4">More...</a><br /></td></tr>
-<tr class="separator:af9107ebabfb83f227173ad9b638972f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad38061b5462d2f534913e1fdd78de590"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ad38061b5462d2f534913e1fdd78de590">c4error_getMessage</a> (<a class="el" href="struct_c4_error.html">C4Error</a> error) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ad38061b5462d2f534913e1fdd78de590"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an error message describing a <a class="el" href="struct_c4_error.html" title="An error value. ">C4Error</a>.  <a href="#ad38061b5462d2f534913e1fdd78de590">More...</a><br /></td></tr>
-<tr class="separator:ad38061b5462d2f534913e1fdd78de590"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adca62bdeae752a2fb111f894a6503668"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#adca62bdeae752a2fb111f894a6503668">c4error_getMessageC</a> (<a class="el" href="struct_c4_error.html">C4Error</a> error, char buffer[] <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, size_t bufferSize) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:adca62bdeae752a2fb111f894a6503668"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes an error message describing a <a class="el" href="struct_c4_error.html" title="An error value. ">C4Error</a> to a buffer, as a C string.  <a href="#adca62bdeae752a2fb111f894a6503668">More...</a><br /></td></tr>
-<tr class="separator:adca62bdeae752a2fb111f894a6503668"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a606a2e06ee2de1eabaf38f96443a622a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_error.html">C4Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a606a2e06ee2de1eabaf38f96443a622a">c4error_make</a> (C4ErrorDomain domain, int code, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> message) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:a606a2e06ee2de1eabaf38f96443a622a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a <a class="el" href="struct_c4_error.html" title="An error value. ">C4Error</a> struct with the given domain and code, and associates the message with it.  <a href="#a606a2e06ee2de1eabaf38f96443a622a">More...</a><br /></td></tr>
-<tr class="separator:a606a2e06ee2de1eabaf38f96443a622a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c2a8a3d19f7c59607375508b94f119a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a3c2a8a3d19f7c59607375508b94f119a">c4error_mayBeTransient</a> (<a class="el" href="struct_c4_error.html">C4Error</a> err) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:a3c2a8a3d19f7c59607375508b94f119a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if this is a network error that may be transient, i.e.  <a href="#a3c2a8a3d19f7c59607375508b94f119a">More...</a><br /></td></tr>
-<tr class="separator:a3c2a8a3d19f7c59607375508b94f119a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85211c05d6d769fdad5c0e0a350ee385"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a85211c05d6d769fdad5c0e0a350ee385">c4error_mayBeNetworkDependent</a> (<a class="el" href="struct_c4_error.html">C4Error</a> err) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:a85211c05d6d769fdad5c0e0a350ee385"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if this error might go away when the network environment changes, i.e.  <a href="#a85211c05d6d769fdad5c0e0a350ee385">More...</a><br /></td></tr>
-<tr class="separator:a85211c05d6d769fdad5c0e0a350ee385"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31d7535ab44f5a819eae7fdfc9bbc86e"><td class="memItemLeft" align="right" valign="top">typedef&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a31d7535ab44f5a819eae7fdfc9bbc86e">C4_ENUM</a> (int8_t, C4LogLevel)</td></tr>
-<tr class="memdesc:a31d7535ab44f5a819eae7fdfc9bbc86e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logging levels.  <a href="#a31d7535ab44f5a819eae7fdfc9bbc86e">More...</a><br /></td></tr>
-<tr class="separator:a31d7535ab44f5a819eae7fdfc9bbc86e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2cc9d60b9677fd5ec24c4edc3c18377"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ae2cc9d60b9677fd5ec24c4edc3c18377">c4log_writeToCallback</a> (C4LogLevel level, <a class="el" href="c4_base_8h.html#a9ddf53a68840d1fa70d0731d08ba8810">C4LogCallback</a> callback, bool preformatted) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ae2cc9d60b9677fd5ec24c4edc3c18377"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registers (or unregisters) a log callback, and sets the minimum log level to report.  <a href="#ae2cc9d60b9677fd5ec24c4edc3c18377">More...</a><br /></td></tr>
-<tr class="separator:ae2cc9d60b9677fd5ec24c4edc3c18377"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add58fc93f5821222a02068cc26e200f6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#add58fc93f5821222a02068cc26e200f6">c4log_writeToBinaryFile</a> (C4LogLevel level, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> path, <a class="el" href="struct_c4_error.html">C4Error</a> *error) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:add58fc93f5821222a02068cc26e200f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Causes log messages to be written to a file, overwriting any previous contents.  <a href="#add58fc93f5821222a02068cc26e200f6">More...</a><br /></td></tr>
-<tr class="separator:add58fc93f5821222a02068cc26e200f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a640f7f98e3e87bbb60be55f6729327e8"><td class="memItemLeft" align="right" valign="top">C4LogLevel&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a640f7f98e3e87bbb60be55f6729327e8">c4log_callbackLevel</a> (void) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="separator:a640f7f98e3e87bbb60be55f6729327e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a023e8ef590fb76839b5cf710768af4c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a023e8ef590fb76839b5cf710768af4c1">c4log_setCallbackLevel</a> (C4LogLevel level) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="separator:a023e8ef590fb76839b5cf710768af4c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6ee63b4678dddac25a29b204c0a59d1"><td class="memItemLeft" align="right" valign="top">C4LogLevel&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#aa6ee63b4678dddac25a29b204c0a59d1">c4log_binaryFileLevel</a> (void) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="separator:aa6ee63b4678dddac25a29b204c0a59d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6df899728a7f0f262aaa777980a7d448"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a6df899728a7f0f262aaa777980a7d448">c4log_setBinaryFileLevel</a> (C4LogLevel level) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="separator:a6df899728a7f0f262aaa777980a7d448"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a39157f7ae06dfc5aae77c508880a2842"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a39157f7ae06dfc5aae77c508880a2842">c4log_getDomain</a> (const char *name <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, bool create) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:a39157f7ae06dfc5aae77c508880a2842"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up a named log domain.  <a href="#a39157f7ae06dfc5aae77c508880a2842">More...</a><br /></td></tr>
-<tr class="separator:a39157f7ae06dfc5aae77c508880a2842"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae5f71162be1fa3a8d8b222b5de786ee4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ae5f71162be1fa3a8d8b222b5de786ee4">c4log_getDomainName</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ae5f71162be1fa3a8d8b222b5de786ee4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of a log domain.  <a href="#ae5f71162be1fa3a8d8b222b5de786ee4">More...</a><br /></td></tr>
-<tr class="separator:ae5f71162be1fa3a8d8b222b5de786ee4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a48fb871e48ace512cd2116d409b958"><td class="memItemLeft" align="right" valign="top">C4LogLevel&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a2a48fb871e48ace512cd2116d409b958">c4log_getLevel</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:a2a48fb871e48ace512cd2116d409b958"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current log level of a domain, the minimum level of message it will log.  <a href="#a2a48fb871e48ace512cd2116d409b958">More...</a><br /></td></tr>
-<tr class="separator:a2a48fb871e48ace512cd2116d409b958"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d6c8be792adb4bd765c8d1bd60db2bc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a4d6c8be792adb4bd765c8d1bd60db2bc">c4log_setLevel</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> c4Domain, C4LogLevel level) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:a4d6c8be792adb4bd765c8d1bd60db2bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Changes the level of the given log domain.  <a href="#a4d6c8be792adb4bd765c8d1bd60db2bc">More...</a><br /></td></tr>
-<tr class="separator:a4d6c8be792adb4bd765c8d1bd60db2bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab5078f8e36fdf13b4802ad9f2aea144f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ab5078f8e36fdf13b4802ad9f2aea144f">c4log</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> domain, C4LogLevel level, const char *fmt <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>,...) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a> <a class="el" href="c4_base_8h.html#ab302334d9a77a6925be4e5b45397e4a3">__printflike</a>(3</td></tr>
-<tr class="memdesc:ab5078f8e36fdf13b4802ad9f2aea144f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logs a message/warning/error to a specific domain, if its current level is less than or equal to the given level.  <a href="#ab5078f8e36fdf13b4802ad9f2aea144f">More...</a><br /></td></tr>
-<tr class="separator:ab5078f8e36fdf13b4802ad9f2aea144f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6bc58da1b667292ddb9ee5d129dd8e80"><td class="memItemLeft" align="right" valign="top">void void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a6bc58da1b667292ddb9ee5d129dd8e80">c4vlog</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> domain, C4LogLevel level, const char *fmt <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, va_list args) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:a6bc58da1b667292ddb9ee5d129dd8e80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as c4log, for use in calling functions that already take variable args.  <a href="#a6bc58da1b667292ddb9ee5d129dd8e80">More...</a><br /></td></tr>
-<tr class="separator:a6bc58da1b667292ddb9ee5d129dd8e80"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4115d00c230046d1aa469f76cf5815aa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a4115d00c230046d1aa469f76cf5815aa">c4_getObjectCount</a> (void) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:a4115d00c230046d1aa469f76cf5815aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of objects that have been created but not yet freed.  <a href="#a4115d00c230046d1aa469f76cf5815aa">More...</a><br /></td></tr>
-<tr class="separator:a4115d00c230046d1aa469f76cf5815aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09c9f146d7f2c8e02ef8203ccee5e3b8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a09c9f146d7f2c8e02ef8203ccee5e3b8">c4SliceEqual</a> (<a class="el" href="struct_c4_slice.html">C4Slice</a> a, <a class="el" href="struct_c4_slice.html">C4Slice</a> b)</td></tr>
+<tr class="memdesc:a09c9f146d7f2c8e02ef8203ccee5e3b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if two slices have equal contents.  <a href="#a09c9f146d7f2c8e02ef8203ccee5e3b8">More...</a><br /></td></tr>
+<tr class="separator:a09c9f146d7f2c8e02ef8203ccee5e3b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a380ffb161850bc77df08e824307a093b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a380ffb161850bc77df08e824307a093b">c4slice_free</a> (<a class="el" href="c4_base_8h.html#a888462a5f9574c8b2c90dd55ea7d4af2">C4SliceResult</a>)</td></tr>
+<tr class="memdesc:a380ffb161850bc77df08e824307a093b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees the memory of a heap-allocated slice by calling free(buf).  <a href="#a380ffb161850bc77df08e824307a093b">More...</a><br /></td></tr>
+<tr class="separator:a380ffb161850bc77df08e824307a093b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae52f7d1192e8484521eaab234fbea8fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a9621f4998e1f10a82cca421fede5588a">C4StringResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ae52f7d1192e8484521eaab234fbea8fa">c4error_getMessage</a> (<a class="el" href="struct_c4_error.html">C4Error</a> error)</td></tr>
+<tr class="memdesc:ae52f7d1192e8484521eaab234fbea8fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns an error message describing a <a class="el" href="struct_c4_error.html" title="An error value. ">C4Error</a>.  <a href="#ae52f7d1192e8484521eaab234fbea8fa">More...</a><br /></td></tr>
+<tr class="separator:ae52f7d1192e8484521eaab234fbea8fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad186a0ff801a68900ef7a3caaabc6faf"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ad186a0ff801a68900ef7a3caaabc6faf">c4error_getMessageC</a> (<a class="el" href="struct_c4_error.html">C4Error</a> error, char buffer[], size_t bufferSize)</td></tr>
+<tr class="memdesc:ad186a0ff801a68900ef7a3caaabc6faf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes an error message describing a <a class="el" href="struct_c4_error.html" title="An error value. ">C4Error</a> to a buffer, as a C string.  <a href="#ad186a0ff801a68900ef7a3caaabc6faf">More...</a><br /></td></tr>
+<tr class="separator:ad186a0ff801a68900ef7a3caaabc6faf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a479dac7185e74e3881c3ca45fd1156dc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="struct_c4_error.html">C4Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a479dac7185e74e3881c3ca45fd1156dc">c4error_make</a> (<a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861c">C4ErrorDomain</a> domain, int code, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> message)</td></tr>
+<tr class="memdesc:a479dac7185e74e3881c3ca45fd1156dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a <a class="el" href="struct_c4_error.html" title="An error value. ">C4Error</a> struct with the given domain and code, and associates the message with it.  <a href="#a479dac7185e74e3881c3ca45fd1156dc">More...</a><br /></td></tr>
+<tr class="separator:a479dac7185e74e3881c3ca45fd1156dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab551bff34c518cd1228569eeded1b0c7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ab551bff34c518cd1228569eeded1b0c7">c4error_mayBeTransient</a> (<a class="el" href="struct_c4_error.html">C4Error</a> err)</td></tr>
+<tr class="memdesc:ab551bff34c518cd1228569eeded1b0c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if this is a network error that may be transient, i.e.  <a href="#ab551bff34c518cd1228569eeded1b0c7">More...</a><br /></td></tr>
+<tr class="separator:ab551bff34c518cd1228569eeded1b0c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adae61f7f9095f0a602e9401292b32898"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#adae61f7f9095f0a602e9401292b32898">c4error_mayBeNetworkDependent</a> (<a class="el" href="struct_c4_error.html">C4Error</a> err)</td></tr>
+<tr class="memdesc:adae61f7f9095f0a602e9401292b32898"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if this error might go away when the network environment changes, i.e.  <a href="#adae61f7f9095f0a602e9401292b32898">More...</a><br /></td></tr>
+<tr class="separator:adae61f7f9095f0a602e9401292b32898"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2711d7833a0ffef8ed54321945e03158"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a2711d7833a0ffef8ed54321945e03158">c4log_writeToCallback</a> (<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level, <a class="el" href="c4_base_8h.html#acbf01172fb411807d198d96c98d4e091">C4LogCallback</a> callback, bool preformatted)</td></tr>
+<tr class="memdesc:a2711d7833a0ffef8ed54321945e03158"><td class="mdescLeft">&#160;</td><td class="mdescRight">Registers (or unregisters) a log callback, and sets the minimum log level to report.  <a href="#a2711d7833a0ffef8ed54321945e03158">More...</a><br /></td></tr>
+<tr class="separator:a2711d7833a0ffef8ed54321945e03158"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87c48130147822c41254361eb6fb01d4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a87c48130147822c41254361eb6fb01d4">c4log_writeToBinaryFile</a> (<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> path, <a class="el" href="struct_c4_error.html">C4Error</a> *error)</td></tr>
+<tr class="memdesc:a87c48130147822c41254361eb6fb01d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Causes log messages to be written to a file, overwriting any previous contents.  <a href="#a87c48130147822c41254361eb6fb01d4">More...</a><br /></td></tr>
+<tr class="separator:a87c48130147822c41254361eb6fb01d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68c1807153a23f21509ee4f3afe0510a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a68c1807153a23f21509ee4f3afe0510a">c4log_callbackLevel</a> (void)</td></tr>
+<tr class="separator:a68c1807153a23f21509ee4f3afe0510a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e26e6c6ed4977d0bcf9c64dde7d130a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a1e26e6c6ed4977d0bcf9c64dde7d130a">c4log_setCallbackLevel</a> (<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level)</td></tr>
+<tr class="separator:a1e26e6c6ed4977d0bcf9c64dde7d130a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a88467cdc16ad9e0157bb0d1fdb44aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a7a88467cdc16ad9e0157bb0d1fdb44aa">c4log_binaryFileLevel</a> (void)</td></tr>
+<tr class="separator:a7a88467cdc16ad9e0157bb0d1fdb44aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4d933282a870bc9fb0f76b5420e76b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#af4d933282a870bc9fb0f76b5420e76b6">c4log_setBinaryFileLevel</a> (<a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level)</td></tr>
+<tr class="separator:af4d933282a870bc9fb0f76b5420e76b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32577ceed42cd2a39e3cb6a6e18794f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a32577ceed42cd2a39e3cb6a6e18794f7">c4log_getDomain</a> (const char *name, bool create)</td></tr>
+<tr class="memdesc:a32577ceed42cd2a39e3cb6a6e18794f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up a named log domain.  <a href="#a32577ceed42cd2a39e3cb6a6e18794f7">More...</a><br /></td></tr>
+<tr class="separator:a32577ceed42cd2a39e3cb6a6e18794f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d8df5ec1a37bd0f88cdc53482b5bd67"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a4d8df5ec1a37bd0f88cdc53482b5bd67">c4log_getDomainName</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>)</td></tr>
+<tr class="memdesc:a4d8df5ec1a37bd0f88cdc53482b5bd67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of a log domain.  <a href="#a4d8df5ec1a37bd0f88cdc53482b5bd67">More...</a><br /></td></tr>
+<tr class="separator:a4d8df5ec1a37bd0f88cdc53482b5bd67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ada0fe619b244eb56210ac80792062c70"><td class="memItemLeft" align="right" valign="top"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#ada0fe619b244eb56210ac80792062c70">c4log_getLevel</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>)</td></tr>
+<tr class="memdesc:ada0fe619b244eb56210ac80792062c70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current log level of a domain, the minimum level of message it will log.  <a href="#ada0fe619b244eb56210ac80792062c70">More...</a><br /></td></tr>
+<tr class="separator:ada0fe619b244eb56210ac80792062c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4261638ad897214463814fe211114a5b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a4261638ad897214463814fe211114a5b">c4log_setLevel</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> c4Domain, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level)</td></tr>
+<tr class="memdesc:a4261638ad897214463814fe211114a5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Changes the level of the given log domain.  <a href="#a4261638ad897214463814fe211114a5b">More...</a><br /></td></tr>
+<tr class="separator:a4261638ad897214463814fe211114a5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a601fea02fe1389a61bf6218493544206"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a601fea02fe1389a61bf6218493544206">c4log</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> domain, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level, const char *fmt,...) <a class="el" href="c4_base_8h.html#ab302334d9a77a6925be4e5b45397e4a3">__printflike</a>(3</td></tr>
+<tr class="memdesc:a601fea02fe1389a61bf6218493544206"><td class="mdescLeft">&#160;</td><td class="mdescRight">Logs a message/warning/error to a specific domain, if its current level is less than or equal to the given level.  <a href="#a601fea02fe1389a61bf6218493544206">More...</a><br /></td></tr>
+<tr class="separator:a601fea02fe1389a61bf6218493544206"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea9c2d6e9e8ada1d17044a0435cd37db"><td class="memItemLeft" align="right" valign="top">void void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#aea9c2d6e9e8ada1d17044a0435cd37db">c4vlog</a> (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> domain, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> level, const char *fmt, va_list args)</td></tr>
+<tr class="memdesc:aea9c2d6e9e8ada1d17044a0435cd37db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as c4log, for use in calling functions that already take variable args.  <a href="#aea9c2d6e9e8ada1d17044a0435cd37db">More...</a><br /></td></tr>
+<tr class="separator:aea9c2d6e9e8ada1d17044a0435cd37db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31c0b80a7f0b94d1e7dfdeeceea518be"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="c4_base_8h.html#a31c0b80a7f0b94d1e7dfdeeceea518be">c4_getObjectCount</a> (void)</td></tr>
+<tr class="memdesc:a31c0b80a7f0b94d1e7dfdeeceea518be"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of objects that have been created but not yet freed.  <a href="#a31c0b80a7f0b94d1e7dfdeeceea518be">More...</a><br /></td></tr>
+<tr class="separator:a31c0b80a7f0b94d1e7dfdeeceea518be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -327,7 +416,7 @@ Variables</h2></td></tr>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td>&#160;&#160;&#160;_type _name; enum</td>
+          <td></td><td>&#160;&#160;&#160;enum _name : _type _name; enum _name : _type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -355,7 +444,7 @@ Variables</h2></td></tr>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td>&#160;&#160;&#160;_type _name; enum</td>
+          <td></td><td>&#160;&#160;&#160;enum _name : _type _name; enum _name : _type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -397,7 +486,7 @@ Variables</h2></td></tr>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td>&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, kC4LogDebug,   FMT, ## __VA_ARGS__)</td>
+          <td></td><td>&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96acea58c4ab61546a09849f79707b643cc990">kC4LogDebug</a>,   FMT, ## __VA_ARGS__)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -439,7 +528,7 @@ Variables</h2></td></tr>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td>&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, kC4LogInfo,    FMT, ## __VA_ARGS__)</td>
+          <td></td><td>&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96aceacd23bf53526d7d191aec63097713b698">kC4LogInfo</a>,    FMT, ## __VA_ARGS__)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -483,7 +572,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">{<span class="keywordflow">if</span> (<a class="code" href="c4_base_8h.html#a2a48fb871e48ace512cd2116d409b958">c4log_getLevel</a>(DOMAIN) &lt;= LEVEL)   \</div><div class="line">            c4log(DOMAIN, LEVEL, FMT, ## __VA_ARGS__);}</div><div class="ttc" id="c4_base_8h_html_a2a48fb871e48ace512cd2116d409b958"><div class="ttname"><a href="c4_base_8h.html#a2a48fb871e48ace512cd2116d409b958">c4log_getLevel</a></div><div class="ttdeci">C4LogLevel c4log_getLevel(C4LogDomain) C4API</div><div class="ttdoc">Returns the current log level of a domain, the minimum level of message it will log. </div></div>
+<b>Value:</b><div class="fragment"><div class="line">{<span class="keywordflow">if</span> (<a class="code" href="c4_base_8h.html#ada0fe619b244eb56210ac80792062c70">c4log_getLevel</a>(DOMAIN) &lt;= LEVEL)   \</div><div class="line">            c4log(DOMAIN, LEVEL, FMT, ## __VA_ARGS__);}</div><div class="ttc" id="c4_base_8h_html_ada0fe619b244eb56210ac80792062c70"><div class="ttname"><a href="c4_base_8h.html#ada0fe619b244eb56210ac80792062c70">c4log_getLevel</a></div><div class="ttdeci">C4LogLevel c4log_getLevel(C4LogDomain)</div><div class="ttdoc">Returns the current log level of a domain, the minimum level of message it will log. </div></div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -540,7 +629,7 @@ Variables</h2></td></tr>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td>&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, kC4LogWarning, FMT, ## __VA_ARGS__)</td>
+          <td></td><td>&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96aceaf40f415b75caded03ecbad539aefd7f2">kC4LogWarning</a>, FMT, ## __VA_ARGS__)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -568,7 +657,7 @@ Variables</h2></td></tr>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td>&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, kC4LogError,   FMT, ## __VA_ARGS__)</td>
+          <td></td><td>&#160;&#160;&#160;<a class="el" href="c4_base_8h.html#a0b5c1e31bf67e2f9874201b15a106801">C4LogToAt</a>(<a class="el" href="c4_base_8h.html#a8a08dd9ac099a3155af75949612fd731">kC4DefaultLog</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96aceaf2e8d69bfcab44c808994d4713fa549c">kC4LogError</a>,   FMT, ## __VA_ARGS__)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -604,14 +693,14 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Typedef Documentation</h2>
-<a id="a9ddf53a68840d1fa70d0731d08ba8810"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ddf53a68840d1fa70d0731d08ba8810">&sect;&nbsp;</a></span>C4LogCallback</h2>
+<a id="acbf01172fb411807d198d96c98d4e091"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acbf01172fb411807d198d96c98d4e091">&sect;&nbsp;</a></span>C4LogCallback</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* C4LogCallback) (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>, C4LogLevel, const char *fmt <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, va_list args)</td>
+          <td class="memname">typedef void(* C4LogCallback) (<a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>, <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>, const char *fmt, va_list args)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -696,125 +785,142 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ac31b9ac7221905e49e777e0d7b96b984"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac31b9ac7221905e49e777e0d7b96b984">&sect;&nbsp;</a></span>C4_ENUM() <span class="overload">[1/4]</span></h2>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="abc1eabfb65d7e55ac9efb8a95db4647f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abc1eabfb65d7e55ac9efb8a95db4647f">&sect;&nbsp;</a></span>C4ErrorCode</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef C4_ENUM </td>
-          <td>(</td>
-          <td class="paramtype">uint32_t&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">C4ErrorDomain&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">enum <a class="el" href="c4_base_8h.html#abc1eabfb65d7e55ac9efb8a95db4647f">C4ErrorCode</a> : int32_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647faff592ca492d70aa527bbe7c29b4c68f9"></a>kC4ErrorAssertionFailed&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa5bf4f46c46c2a014c0ed100638365b50"></a>kC4ErrorUnimplemented&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647faf31deb386bcf648f207b557aac0a2491"></a>kC4ErrorNoSequences&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa8333f8805b048c96703b9190d393147a"></a>kC4ErrorUnsupportedEncryption&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa93c173d1d9b3e2f24bb4e306db3f0e83"></a>kC4ErrorNoTransaction&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa28cdd53a5065f8c8c54f2526cf44f888"></a>kC4ErrorBadRevisionID&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fab32a803edd9f6d5d955eb4a70fea0cb2"></a>kC4ErrorBadVersionVector&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647faf8282094b53f4d102b087484d80e5555"></a>kC4ErrorCorruptRevisionData&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647faa45cffbbb326ee400e69305f4617e712"></a>kC4ErrorCorruptIndexData&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa3061bbdc9cfa2662163b0495b35e596f"></a>kC4ErrorTokenizerError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa53844dbddb547aee05eb3c6523121123"></a>kC4ErrorNotOpen&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa5d112e4810d2a4b0a0c96af789664b20"></a>kC4ErrorNotFound&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647faced9bb3ce1872e5666427e4cced48eff"></a>kC4ErrorDeleted&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fadeebf4d3cd05868b05ae35314a0df4f6"></a>kC4ErrorConflict&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa68fc96251e144bfbaddd721047c8672b"></a>kC4ErrorInvalidParameter&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa3d4b1a292b4c7ccc9f964021b60607a4"></a>kC4ErrorDatabaseError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa9b3e061cd882ea1852032a11e4328eb7"></a>kC4ErrorUnexpectedError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fac9bb39873025e9ef13af22b5d1e60200"></a>kC4ErrorCantOpenFile&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa34c60964e4957f89d4f2ed8566e0c5ea"></a>kC4ErrorIOError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa54ef784a63adb80b6f230714d5aee45c"></a>kC4ErrorCommitFailed&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa83bbcfd8df9ff47a6054c0c3e9fef290"></a>kC4ErrorMemoryError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa835eeda1746f6334ecbd7d67de502591"></a>kC4ErrorNotWriteable&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647faf5ef4c2b6a6bcf14af93942b40131862"></a>kC4ErrorCorruptData&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa72593c5a1ddf7c710aa8d6cc331d17e3"></a>kC4ErrorBusy&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa8e2b5016dc63972e926ee8569c027326"></a>kC4ErrorNotInTransaction&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fabc61126f1169a511694a5d95744b5503"></a>kC4ErrorTransactionNotClosed&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa7699709fa865f6fd9e8a0bbb32260b2c"></a>kC4ErrorIndexBusy&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa3ec13a03e1e24b03f7e4b85e82e1704e"></a>kC4ErrorUnsupported&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa1a54e625adee939361be7471e58e6591"></a>kC4ErrorNotADatabaseFile&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa8d2b81e5bd5763ed3acae5bdd67c5f61"></a>kC4ErrorWrongFormat&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa0a465fe48488b7a04c54c945c9ba00fa"></a>kC4ErrorCrypto&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa12dd52a25fe77c9b296407e4d5621208"></a>kC4ErrorInvalidQuery&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa70cc778a879c33924752ac6014ed48b6"></a>kC4ErrorMissingIndex&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647facb97903f7447f3f65f9ff380296b987c"></a>kC4ErrorInvalidQueryParam&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647faab2f5f925263526d93037e7a8ea35d1e"></a>kC4ErrorRemoteError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fadf1b48472b6d4f9f05d41836edf8bda8"></a>kC4ErrorDatabaseTooOld&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647faacc414a83d2a29578a63785af27a4b24"></a>kC4ErrorDatabaseTooNew&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa5ca1c4cc22c2f3bad6a5d5aabb1a48fa"></a>kC4ErrorBadDocID&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fafa1ee8c45240ea4961514751994f56e8"></a>kC4ErrorCantUpgradeDatabase&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="abc1eabfb65d7e55ac9efb8a95db4647fa722cb0e8ba993d667f97ec108417e2f0"></a>kC4NumErrorCodesPlus1&#160;</td><td class="fielddoc"></td></tr>
+</table>
 
 </div>
 </div>
-<a id="aade6b53a76f7705c984aea68bcd32c1a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aade6b53a76f7705c984aea68bcd32c1a">&sect;&nbsp;</a></span>C4_ENUM() <span class="overload">[2/4]</span></h2>
+<a id="a6cbe7be44f2f63425404284687e6861c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6cbe7be44f2f63425404284687e6861c">&sect;&nbsp;</a></span>C4ErrorDomain</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef C4_ENUM </td>
-          <td>(</td>
-          <td class="paramtype">int32_t&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">C4ErrorCode&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">enum <a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861c">C4ErrorDomain</a> : uint32_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a6cbe7be44f2f63425404284687e6861caaa4196b6e3b217bd68cc55529805e0fa"></a>LiteCoreDomain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a6cbe7be44f2f63425404284687e6861ca0fcf36dd88fc41ab53e720a3410f8bf1"></a>POSIXDomain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a6cbe7be44f2f63425404284687e6861cab14b819a5f23eedbfb517cd9ba1419d5"></a>SQLiteDomain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a6cbe7be44f2f63425404284687e6861ca8b416e51b735e834728f74539e4ee017"></a>FleeceDomain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a6cbe7be44f2f63425404284687e6861ca230c802d66f2578bb3142fbfa52946d4"></a>NetworkDomain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a6cbe7be44f2f63425404284687e6861ca0302b37e37e11311e3cd992f9373b048"></a>WebSocketDomain&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a6cbe7be44f2f63425404284687e6861ca3b6e90735c16e90e9cd0d56d74e4af92"></a>kC4MaxErrorDomainPlus1&#160;</td><td class="fielddoc"></td></tr>
+</table>
 
 </div>
 </div>
-<a id="a512f4c0a85e0ce1649f65ce24472f951"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a512f4c0a85e0ce1649f65ce24472f951">&sect;&nbsp;</a></span>C4_ENUM() <span class="overload">[3/4]</span></h2>
+<a id="a70ee0c0c337aa9fae2e31d8686b96ace"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70ee0c0c337aa9fae2e31d8686b96ace">&sect;&nbsp;</a></span>C4LogLevel</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef C4_ENUM </td>
-          <td>(</td>
-          <td class="paramtype">int32_t&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">C4NetworkErrorCode&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Network error codes (higher level than POSIX, lower level than HTTP.) </p>
-
-</div>
-</div>
-<a id="a31d7535ab44f5a819eae7fdfc9bbc86e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31d7535ab44f5a819eae7fdfc9bbc86e">&sect;&nbsp;</a></span>C4_ENUM() <span class="overload">[4/4]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef C4_ENUM </td>
-          <td>(</td>
-          <td class="paramtype">int8_t&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">C4LogLevel&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">enum <a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> : int8_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Logging levels. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a70ee0c0c337aa9fae2e31d8686b96acea58c4ab61546a09849f79707b643cc990"></a>kC4LogDebug&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a70ee0c0c337aa9fae2e31d8686b96acea199adaaf5428feaee1941cdb99af5729"></a>kC4LogVerbose&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a70ee0c0c337aa9fae2e31d8686b96aceacd23bf53526d7d191aec63097713b698"></a>kC4LogInfo&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a70ee0c0c337aa9fae2e31d8686b96aceaf40f415b75caded03ecbad539aefd7f2"></a>kC4LogWarning&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a70ee0c0c337aa9fae2e31d8686b96aceaf2e8d69bfcab44c808994d4713fa549c"></a>kC4LogError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a70ee0c0c337aa9fae2e31d8686b96acea813f8bcad7ddd8b20db4da81367c57a1"></a>kC4LogNone&#160;</td><td class="fielddoc"></td></tr>
+</table>
 
 </div>
 </div>
-<a id="a4115d00c230046d1aa469f76cf5815aa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4115d00c230046d1aa469f76cf5815aa">&sect;&nbsp;</a></span>c4_getObjectCount()</h2>
+<a id="a5153e11176806637d6354f57957ce803"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5153e11176806637d6354f57957ce803">&sect;&nbsp;</a></span>C4NetworkErrorCode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="c4_base_8h.html#a5153e11176806637d6354f57957ce803">C4NetworkErrorCode</a> : int32_t</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Network error codes (higher level than POSIX, lower level than HTTP.) </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803a68fedd99e7e15fc11169c4cd49760e0d"></a>kC4NetErrDNSFailure&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803ab1ec4dc6907db657ead615f346d6c027"></a>kC4NetErrUnknownHost&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803a60245732ba15b7495790a494106c2760"></a>kC4NetErrTimeout&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803af6b11f55b7676b1de25a47ad84648ce5"></a>kC4NetErrInvalidURL&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803a48504acc356bfedb86513ea7da54abd3"></a>kC4NetErrTooManyRedirects&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803ae248f6811e3f318e69ec04a63aee68eb"></a>kC4NetErrTLSHandshakeFailed&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803a0bc1da2445dd5c26d281db4285520a32"></a>kC4NetErrTLSCertExpired&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803a961fa356292eaccba0f385be76294356"></a>kC4NetErrTLSCertUntrusted&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803aa36febb5b8f79543438332168a4fb803"></a>kC4NetErrTLSClientCertRequired&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803a8d083f091cd0a47ce10f13e0b37311fd"></a>kC4NetErrTLSClientCertRejected&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a5153e11176806637d6354f57957ce803a0ca7d9301ee0e106eecf84f4d7a03b25"></a>kC4NetErrTLSCertUnknownRoot&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a31c0b80a7f0b94d1e7dfdeeceea518be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31c0b80a7f0b94d1e7dfdeeceea518be">&sect;&nbsp;</a></span>c4_getObjectCount()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -834,8 +940,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ad38061b5462d2f534913e1fdd78de590"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad38061b5462d2f534913e1fdd78de590">&sect;&nbsp;</a></span>c4error_getMessage()</h2>
+<a id="ae52f7d1192e8484521eaab234fbea8fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae52f7d1192e8484521eaab234fbea8fa">&sect;&nbsp;</a></span>c4error_getMessage()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -855,8 +961,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="adca62bdeae752a2fb111f894a6503668"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adca62bdeae752a2fb111f894a6503668">&sect;&nbsp;</a></span>c4error_getMessageC()</h2>
+<a id="ad186a0ff801a68900ef7a3caaabc6faf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad186a0ff801a68900ef7a3caaabc6faf">&sect;&nbsp;</a></span>c4error_getMessageC()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -870,8 +976,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">char buffer []&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype">char&#160;</td>
+          <td class="paramname"><em>buffer</em>[], </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -900,8 +1006,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a606a2e06ee2de1eabaf38f96443a622a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a606a2e06ee2de1eabaf38f96443a622a">&sect;&nbsp;</a></span>c4error_make()</h2>
+<a id="a479dac7185e74e3881c3ca45fd1156dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a479dac7185e74e3881c3ca45fd1156dc">&sect;&nbsp;</a></span>c4error_make()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -909,7 +1015,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="struct_c4_error.html">C4Error</a> c4error_make </td>
           <td>(</td>
-          <td class="paramtype">C4ErrorDomain&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a6cbe7be44f2f63425404284687e6861c">C4ErrorDomain</a>&#160;</td>
           <td class="paramname"><em>domain</em>, </td>
         </tr>
         <tr>
@@ -936,8 +1042,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a85211c05d6d769fdad5c0e0a350ee385"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a85211c05d6d769fdad5c0e0a350ee385">&sect;&nbsp;</a></span>c4error_mayBeNetworkDependent()</h2>
+<a id="adae61f7f9095f0a602e9401292b32898"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adae61f7f9095f0a602e9401292b32898">&sect;&nbsp;</a></span>c4error_mayBeNetworkDependent()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -957,8 +1063,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a3c2a8a3d19f7c59607375508b94f119a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3c2a8a3d19f7c59607375508b94f119a">&sect;&nbsp;</a></span>c4error_mayBeTransient()</h2>
+<a id="ab551bff34c518cd1228569eeded1b0c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab551bff34c518cd1228569eeded1b0c7">&sect;&nbsp;</a></span>c4error_mayBeTransient()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -978,8 +1084,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ab5078f8e36fdf13b4802ad9f2aea144f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab5078f8e36fdf13b4802ad9f2aea144f">&sect;&nbsp;</a></span>c4log()</h2>
+<a id="a601fea02fe1389a61bf6218493544206"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a601fea02fe1389a61bf6218493544206">&sect;&nbsp;</a></span>c4log()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -993,14 +1099,14 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">C4LogLevel&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td>
           <td class="paramname"><em>level</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const char *fmt&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>fmt</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1028,14 +1134,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="aa6ee63b4678dddac25a29b204c0a59d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6ee63b4678dddac25a29b204c0a59d1">&sect;&nbsp;</a></span>c4log_binaryFileLevel()</h2>
+<a id="a7a88467cdc16ad9e0157bb0d1fdb44aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a88467cdc16ad9e0157bb0d1fdb44aa">&sect;&nbsp;</a></span>c4log_binaryFileLevel()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">C4LogLevel c4log_binaryFileLevel </td>
+          <td class="memname"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> c4log_binaryFileLevel </td>
           <td>(</td>
           <td class="paramtype">void&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -1046,14 +1152,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a640f7f98e3e87bbb60be55f6729327e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a640f7f98e3e87bbb60be55f6729327e8">&sect;&nbsp;</a></span>c4log_callbackLevel()</h2>
+<a id="a68c1807153a23f21509ee4f3afe0510a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68c1807153a23f21509ee4f3afe0510a">&sect;&nbsp;</a></span>c4log_callbackLevel()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">C4LogLevel c4log_callbackLevel </td>
+          <td class="memname"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> c4log_callbackLevel </td>
           <td>(</td>
           <td class="paramtype">void&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -1064,8 +1170,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a39157f7ae06dfc5aae77c508880a2842"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a39157f7ae06dfc5aae77c508880a2842">&sect;&nbsp;</a></span>c4log_getDomain()</h2>
+<a id="a32577ceed42cd2a39e3cb6a6e18794f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a32577ceed42cd2a39e3cb6a6e18794f7">&sect;&nbsp;</a></span>c4log_getDomain()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1073,8 +1179,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a> c4log_getDomain </td>
           <td>(</td>
-          <td class="paramtype">const char *name&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1095,8 +1201,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ae5f71162be1fa3a8d8b222b5de786ee4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae5f71162be1fa3a8d8b222b5de786ee4">&sect;&nbsp;</a></span>c4log_getDomainName()</h2>
+<a id="a4d8df5ec1a37bd0f88cdc53482b5bd67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d8df5ec1a37bd0f88cdc53482b5bd67">&sect;&nbsp;</a></span>c4log_getDomainName()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1116,14 +1222,14 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a2a48fb871e48ace512cd2116d409b958"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2a48fb871e48ace512cd2116d409b958">&sect;&nbsp;</a></span>c4log_getLevel()</h2>
+<a id="ada0fe619b244eb56210ac80792062c70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ada0fe619b244eb56210ac80792062c70">&sect;&nbsp;</a></span>c4log_getLevel()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">C4LogLevel c4log_getLevel </td>
+          <td class="memname"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a> c4log_getLevel </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="c4_base_8h.html#afb4f9f2f009acfd258b1be28e171da47">C4LogDomain</a>&#160;</td>
           <td class="paramname"></td><td>)</td>
@@ -1136,8 +1242,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a6df899728a7f0f262aaa777980a7d448"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6df899728a7f0f262aaa777980a7d448">&sect;&nbsp;</a></span>c4log_setBinaryFileLevel()</h2>
+<a id="af4d933282a870bc9fb0f76b5420e76b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4d933282a870bc9fb0f76b5420e76b6">&sect;&nbsp;</a></span>c4log_setBinaryFileLevel()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1145,7 +1251,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void c4log_setBinaryFileLevel </td>
           <td>(</td>
-          <td class="paramtype">C4LogLevel&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td>
           <td class="paramname"><em>level</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1154,8 +1260,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a023e8ef590fb76839b5cf710768af4c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a023e8ef590fb76839b5cf710768af4c1">&sect;&nbsp;</a></span>c4log_setCallbackLevel()</h2>
+<a id="a1e26e6c6ed4977d0bcf9c64dde7d130a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e26e6c6ed4977d0bcf9c64dde7d130a">&sect;&nbsp;</a></span>c4log_setCallbackLevel()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1163,7 +1269,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void c4log_setCallbackLevel </td>
           <td>(</td>
-          <td class="paramtype">C4LogLevel&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td>
           <td class="paramname"><em>level</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1172,8 +1278,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a4d6c8be792adb4bd765c8d1bd60db2bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d6c8be792adb4bd765c8d1bd60db2bc">&sect;&nbsp;</a></span>c4log_setLevel()</h2>
+<a id="a4261638ad897214463814fe211114a5b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4261638ad897214463814fe211114a5b">&sect;&nbsp;</a></span>c4log_setLevel()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1187,7 +1293,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">C4LogLevel&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td>
           <td class="paramname"><em>level</em>&#160;</td>
         </tr>
         <tr>
@@ -1203,8 +1309,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="add58fc93f5821222a02068cc26e200f6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#add58fc93f5821222a02068cc26e200f6">&sect;&nbsp;</a></span>c4log_writeToBinaryFile()</h2>
+<a id="a87c48130147822c41254361eb6fb01d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87c48130147822c41254361eb6fb01d4">&sect;&nbsp;</a></span>c4log_writeToBinaryFile()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1212,7 +1318,7 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">bool c4log_writeToBinaryFile </td>
           <td>(</td>
-          <td class="paramtype">C4LogLevel&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td>
           <td class="paramname"><em>level</em>, </td>
         </tr>
         <tr>
@@ -1248,8 +1354,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ae2cc9d60b9677fd5ec24c4edc3c18377"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2cc9d60b9677fd5ec24c4edc3c18377">&sect;&nbsp;</a></span>c4log_writeToCallback()</h2>
+<a id="a2711d7833a0ffef8ed54321945e03158"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2711d7833a0ffef8ed54321945e03158">&sect;&nbsp;</a></span>c4log_writeToCallback()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1257,13 +1363,13 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void c4log_writeToCallback </td>
           <td>(</td>
-          <td class="paramtype">C4LogLevel&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td>
           <td class="paramname"><em>level</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="c4_base_8h.html#a9ddf53a68840d1fa70d0731d08ba8810">C4LogCallback</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#acbf01172fb411807d198d96c98d4e091">C4LogCallback</a>&#160;</td>
           <td class="paramname"><em>callback</em>, </td>
         </tr>
         <tr>
@@ -1292,8 +1398,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="af9107ebabfb83f227173ad9b638972f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af9107ebabfb83f227173ad9b638972f4">&sect;&nbsp;</a></span>c4slice_free()</h2>
+<a id="a380ffb161850bc77df08e824307a093b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a380ffb161850bc77df08e824307a093b">&sect;&nbsp;</a></span>c4slice_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1312,8 +1418,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ad135b86ac747dba68a6e444bc06aed3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad135b86ac747dba68a6e444bc06aed3f">&sect;&nbsp;</a></span>c4SliceEqual()</h2>
+<a id="a09c9f146d7f2c8e02ef8203ccee5e3b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09c9f146d7f2c8e02ef8203ccee5e3b8">&sect;&nbsp;</a></span>c4SliceEqual()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1370,8 +1476,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="a6bc58da1b667292ddb9ee5d129dd8e80"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6bc58da1b667292ddb9ee5d129dd8e80">&sect;&nbsp;</a></span>c4vlog()</h2>
+<a id="aea9c2d6e9e8ada1d17044a0435cd37db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea9c2d6e9e8ada1d17044a0435cd37db">&sect;&nbsp;</a></span>c4vlog()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1385,14 +1491,14 @@ Variables</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">C4LogLevel&#160;</td>
+          <td class="paramtype"><a class="el" href="c4_base_8h.html#a70ee0c0c337aa9fae2e31d8686b96ace">C4LogLevel</a>&#160;</td>
           <td class="paramname"><em>level</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const char *fmt&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>fmt</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

@@ -17,6 +17,10 @@ extern "C" {
     /** \defgroup Blobs Blobs
         @{ */
 
+    /** Opaque handle for an object that manages storage of blobs. */
+    typedef struct c4BlobStore C4BlobStore;
+
+
     //////// BLOB KEYS:
 
     /** \name Blob Keys
@@ -33,10 +37,6 @@ extern "C" {
 
     /** Encodes a blob key to a string of the form "sha1-"+base64. */
     C4StringResult c4blob_keyToString(C4BlobKey) C4API;
-
-
-    /** Opaque handle for an object that manages storage of blobs. */
-    typedef struct c4BlobStore C4BlobStore;
 
     /** @} */
 

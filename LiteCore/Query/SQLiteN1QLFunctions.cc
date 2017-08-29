@@ -793,7 +793,7 @@ namespace litecore {
         sqlite3_result_int(ctx, result);
     }
 
-    // isatom(v) returns a string naming the type of `v`.
+    // type(v) returns a string naming the type of `v`.
     static void type(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         auto result =  value_type(ctx, argv[0]);
         sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);

@@ -61,6 +61,7 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">TCP Socket Provider API</div>  </div>
@@ -76,71 +77,94 @@ Data Structures</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents an open bidirectional byte stream (typically a TCP socket.) <a class="el" href="struct_c4_socket.html" title="Represents an open bidirectional byte stream (typically a TCP socket.) C4Socket is allocated and free...">C4Socket</a> is allocated and freed by LiteCore, but the client can associate it with a native stream/socket (like a file descriptor or a Java stream reference) by storing a value in its <code>nativeHandle</code> field.  <a href="struct_c4_socket.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_c4_socket_factory.html">C4SocketFactory</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A group of callbacks that define the implementation of sockets; the client must fill this out and pass it to <a class="el" href="group___socket.html#ga980d2100633714d507b41f0fe97be6b8" title="One-time registration of socket callbacks. ">c4socket_registerFactory()</a> before using any socket-based API.  <a href="struct_c4_socket_factory.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A group of callbacks that define the implementation of sockets; the client must fill this out and pass it to <a class="el" href="group___socket.html#gaee208cc2aedf57c8dc0549a707f25026" title="One-time registration of socket callbacks. ">c4socket_registerFactory()</a> before using any socket-based API.  <a href="struct_c4_socket_factory.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:gae841435a1dff329c3851655a240fdadb"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#gae841435a1dff329c3851655a240fdadb">C4WebSocketCloseCode</a> : int32_t { <br />
+&#160;&#160;<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadbaca859963bb1858d07f6c12e0d5eebf08">kWebSocketCloseNormal</a> = 1000, 
+<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadbadc4f507c1f844d2798f4484eae8f18e4">kWebSocketCloseGoingAway</a> = 1001, 
+<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadbaa4b5291fcf7747e7b73c7221b37434d6">kWebSocketCloseProtocolError</a> = 1002, 
+<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadba2e7c4be6994798299c6fd2ab482f9d23">kWebSocketCloseDataError</a> = 1003, 
+<br />
+&#160;&#160;<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadbabf02a322410efb5583f7a36e23429a86">kWebSocketCloseNoCode</a> = 1005, 
+<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadba3326312a4285f7f332775d57cac8d084">kWebSocketCloseAbnormal</a> = 1006, 
+<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadba42685aa2a646740cc5241bffecc3b60c">kWebSocketCloseBadMessageFormat</a> = 1007, 
+<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadba6b3cadf9174461539ce2aa30dad6d702">kWebSocketClosePolicyError</a> = 1008, 
+<br />
+&#160;&#160;<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadba30b8b850d56ee2dbb57df2eb27a062fd">kWebSocketCloseMessageTooBig</a> = 1009, 
+<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadba7bf18a53b32632ded68a08a162cdee25">kWebSocketCloseMissingExtension</a> = 1010, 
+<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadbaa41e1448a628efeeedd2e94fa6572d9a">kWebSocketCloseCantFulfill</a> = 1011, 
+<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadba225702b1196e05380082e5b04f046724">kWebSocketCloseTLSFailure</a> = 1015, 
+<br />
+&#160;&#160;<a class="el" href="group___socket.html#ggae841435a1dff329c3851655a240fdadba2fcd758e6f5ffd209fc12749ed3ba7f0">kWebSocketCloseFirstAvailable</a> = 4000
+<br />
+ }<tr class="memdesc:gae841435a1dff329c3851655a240fdadb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Standard WebSocket close status codes, for use in C4Errors with WebSocketDomain.  <a href="group___socket.html#gae841435a1dff329c3851655a240fdadb">More...</a><br /></td></tr>
+</td></tr>
+<tr class="separator:gae841435a1dff329c3851655a240fdadb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga3b082e1b6a0a5a26cc748f5209bee8d0"><td class="memItemLeft" align="right" valign="top">typedef&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga3b082e1b6a0a5a26cc748f5209bee8d0">C4_ENUM</a> (int32_t, C4WebSocketCloseCode)</td></tr>
-<tr class="memdesc:ga3b082e1b6a0a5a26cc748f5209bee8d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Standard WebSocket close status codes, for use in C4Errors with WebSocketDomain.  <a href="#ga3b082e1b6a0a5a26cc748f5209bee8d0">More...</a><br /></td></tr>
-<tr class="separator:ga3b082e1b6a0a5a26cc748f5209bee8d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga980d2100633714d507b41f0fe97be6b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga980d2100633714d507b41f0fe97be6b8">c4socket_registerFactory</a> (<a class="el" href="struct_c4_socket_factory.html">C4SocketFactory</a> factory) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga980d2100633714d507b41f0fe97be6b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">One-time registration of socket callbacks.  <a href="#ga980d2100633714d507b41f0fe97be6b8">More...</a><br /></td></tr>
-<tr class="separator:ga980d2100633714d507b41f0fe97be6b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5d088a3ca376270e687ff747be0eb74a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga5d088a3ca376270e687ff747be0eb74a">c4socket_gotHTTPResponse</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, int httpStatus, <a class="el" href="struct_c4_slice.html">C4Slice</a> responseHeadersFleece) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga5d088a3ca376270e687ff747be0eb74a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that a socket has received an HTTP response, with the given headers (encoded as a Fleece dictionary.) This should be called just before c4socket_opened or c4socket_closed.  <a href="#ga5d088a3ca376270e687ff747be0eb74a">More...</a><br /></td></tr>
-<tr class="separator:ga5d088a3ca376270e687ff747be0eb74a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaede3dcc8e9044dff37fc55122d4b9958"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#gaede3dcc8e9044dff37fc55122d4b9958">c4socket_opened</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gaede3dcc8e9044dff37fc55122d4b9958"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that a socket has opened, i.e.  <a href="#gaede3dcc8e9044dff37fc55122d4b9958">More...</a><br /></td></tr>
-<tr class="separator:gaede3dcc8e9044dff37fc55122d4b9958"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga218d46abacc5e15a386073fcab2b71bc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga218d46abacc5e15a386073fcab2b71bc">c4socket_closed</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_error.html">C4Error</a> errorIfAny) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga218d46abacc5e15a386073fcab2b71bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that a socket has finished closing, or that it disconnected, or failed to open.  <a href="#ga218d46abacc5e15a386073fcab2b71bc">More...</a><br /></td></tr>
-<tr class="separator:ga218d46abacc5e15a386073fcab2b71bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga11d70f817aaf1a915cddc273e8c096b6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga11d70f817aaf1a915cddc273e8c096b6">c4socket_closeRequested</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, int status, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> message)</td></tr>
-<tr class="memdesc:ga11d70f817aaf1a915cddc273e8c096b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that the peer has requested to close the socket using the WebSocket protocol.  <a href="#ga11d70f817aaf1a915cddc273e8c096b6">More...</a><br /></td></tr>
-<tr class="separator:ga11d70f817aaf1a915cddc273e8c096b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga079510269c1f87f1a1038e93c0eae83b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga079510269c1f87f1a1038e93c0eae83b">c4socket_completedWrite</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, size_t byteCount) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga079510269c1f87f1a1038e93c0eae83b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that bytes have been written to the socket, in response to a <a class="el" href="struct_c4_socket_factory.html#a14ba11f1ac27ce086d2b04d78fd9e1dd" title="Write bytes; free when done. ">C4SocketFactory.write</a> request.  <a href="#ga079510269c1f87f1a1038e93c0eae83b">More...</a><br /></td></tr>
-<tr class="separator:ga079510269c1f87f1a1038e93c0eae83b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaadd687a99f1f3efc93bdce85eb44ba38"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#gaadd687a99f1f3efc93bdce85eb44ba38">c4socket_received</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_slice.html">C4Slice</a> data) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gaadd687a99f1f3efc93bdce85eb44ba38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that bytes have been read from the socket.  <a href="#gaadd687a99f1f3efc93bdce85eb44ba38">More...</a><br /></td></tr>
-<tr class="separator:gaadd687a99f1f3efc93bdce85eb44ba38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaee208cc2aedf57c8dc0549a707f25026"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#gaee208cc2aedf57c8dc0549a707f25026">c4socket_registerFactory</a> (<a class="el" href="struct_c4_socket_factory.html">C4SocketFactory</a> factory)</td></tr>
+<tr class="memdesc:gaee208cc2aedf57c8dc0549a707f25026"><td class="mdescLeft">&#160;</td><td class="mdescRight">One-time registration of socket callbacks.  <a href="#gaee208cc2aedf57c8dc0549a707f25026">More...</a><br /></td></tr>
+<tr class="separator:gaee208cc2aedf57c8dc0549a707f25026"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga91a21c0e1dabf8f0d3c5a835f1b4e8f9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga91a21c0e1dabf8f0d3c5a835f1b4e8f9">c4socket_gotHTTPResponse</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket, int httpStatus, <a class="el" href="struct_c4_slice.html">C4Slice</a> responseHeadersFleece)</td></tr>
+<tr class="memdesc:ga91a21c0e1dabf8f0d3c5a835f1b4e8f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that a socket has received an HTTP response, with the given headers (encoded as a Fleece dictionary.) This should be called just before c4socket_opened or c4socket_closed.  <a href="#ga91a21c0e1dabf8f0d3c5a835f1b4e8f9">More...</a><br /></td></tr>
+<tr class="separator:ga91a21c0e1dabf8f0d3c5a835f1b4e8f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6ab98510bc105b524628e2cae88faf81"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga6ab98510bc105b524628e2cae88faf81">c4socket_opened</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket)</td></tr>
+<tr class="memdesc:ga6ab98510bc105b524628e2cae88faf81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that a socket has opened, i.e.  <a href="#ga6ab98510bc105b524628e2cae88faf81">More...</a><br /></td></tr>
+<tr class="separator:ga6ab98510bc105b524628e2cae88faf81"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga322960ea95270309dce56f4415c11240"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga322960ea95270309dce56f4415c11240">c4socket_closed</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket, <a class="el" href="struct_c4_error.html">C4Error</a> errorIfAny)</td></tr>
+<tr class="memdesc:ga322960ea95270309dce56f4415c11240"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that a socket has finished closing, or that it disconnected, or failed to open.  <a href="#ga322960ea95270309dce56f4415c11240">More...</a><br /></td></tr>
+<tr class="separator:ga322960ea95270309dce56f4415c11240"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga35fdf9bd9439d67f338cc5f3429dd06d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga35fdf9bd9439d67f338cc5f3429dd06d">c4socket_closeRequested</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket, int status, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> message)</td></tr>
+<tr class="memdesc:ga35fdf9bd9439d67f338cc5f3429dd06d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that the peer has requested to close the socket using the WebSocket protocol.  <a href="#ga35fdf9bd9439d67f338cc5f3429dd06d">More...</a><br /></td></tr>
+<tr class="separator:ga35fdf9bd9439d67f338cc5f3429dd06d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa62f4c4c2d6156fdd289e1fb781f27c6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#gaa62f4c4c2d6156fdd289e1fb781f27c6">c4socket_completedWrite</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket, size_t byteCount)</td></tr>
+<tr class="memdesc:gaa62f4c4c2d6156fdd289e1fb781f27c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that bytes have been written to the socket, in response to a <a class="el" href="struct_c4_socket_factory.html#a2d216ae53b764e2f8df107a36bb96d58" title="Write bytes; free when done. ">C4SocketFactory.write</a> request.  <a href="#gaa62f4c4c2d6156fdd289e1fb781f27c6">More...</a><br /></td></tr>
+<tr class="separator:gaa62f4c4c2d6156fdd289e1fb781f27c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1e1797e15c6cd30c0a1a16844f0f8b2f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___socket.html#ga1e1797e15c6cd30c0a1a16844f0f8b2f">c4socket_received</a> (<a class="el" href="struct_c4_socket.html">C4Socket</a> *socket, <a class="el" href="struct_c4_slice.html">C4Slice</a> data)</td></tr>
+<tr class="memdesc:ga1e1797e15c6cd30c0a1a16844f0f8b2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notification that bytes have been read from the socket.  <a href="#ga1e1797e15c6cd30c0a1a16844f0f8b2f">More...</a><br /></td></tr>
+<tr class="separator:ga1e1797e15c6cd30c0a1a16844f0f8b2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ga3b082e1b6a0a5a26cc748f5209bee8d0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3b082e1b6a0a5a26cc748f5209bee8d0">&sect;&nbsp;</a></span>C4_ENUM()</h2>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="gae841435a1dff329c3851655a240fdadb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae841435a1dff329c3851655a240fdadb">&sect;&nbsp;</a></span>C4WebSocketCloseCode</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef C4_ENUM </td>
-          <td>(</td>
-          <td class="paramtype">int32_t&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">C4WebSocketCloseCode&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">enum <a class="el" href="group___socket.html#gae841435a1dff329c3851655a240fdadb">C4WebSocketCloseCode</a> : int32_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Standard WebSocket close status codes, for use in C4Errors with WebSocketDomain. </p>
 <p>These are defined at <a href="http://tools.ietf.org/html/rfc6455#section-7.4.1">http://tools.ietf.org/html/rfc6455#section-7.4.1</a> </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadbaca859963bb1858d07f6c12e0d5eebf08"></a>kWebSocketCloseNormal&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadbadc4f507c1f844d2798f4484eae8f18e4"></a>kWebSocketCloseGoingAway&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadbaa4b5291fcf7747e7b73c7221b37434d6"></a>kWebSocketCloseProtocolError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadba2e7c4be6994798299c6fd2ab482f9d23"></a>kWebSocketCloseDataError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadbabf02a322410efb5583f7a36e23429a86"></a>kWebSocketCloseNoCode&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadba3326312a4285f7f332775d57cac8d084"></a>kWebSocketCloseAbnormal&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadba42685aa2a646740cc5241bffecc3b60c"></a>kWebSocketCloseBadMessageFormat&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadba6b3cadf9174461539ce2aa30dad6d702"></a>kWebSocketClosePolicyError&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadba30b8b850d56ee2dbb57df2eb27a062fd"></a>kWebSocketCloseMessageTooBig&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadba7bf18a53b32632ded68a08a162cdee25"></a>kWebSocketCloseMissingExtension&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadbaa41e1448a628efeeedd2e94fa6572d9a"></a>kWebSocketCloseCantFulfill&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadba225702b1196e05380082e5b04f046724"></a>kWebSocketCloseTLSFailure&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ggae841435a1dff329c3851655a240fdadba2fcd758e6f5ffd209fc12749ed3ba7f0"></a>kWebSocketCloseFirstAvailable&#160;</td><td class="fielddoc"></td></tr>
+</table>
 
 </div>
 </div>
-<a id="ga218d46abacc5e15a386073fcab2b71bc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga218d46abacc5e15a386073fcab2b71bc">&sect;&nbsp;</a></span>c4socket_closed()</h2>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="ga322960ea95270309dce56f4415c11240"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga322960ea95270309dce56f4415c11240">&sect;&nbsp;</a></span>c4socket_closed()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -148,8 +172,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4socket_closed </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *socket&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -166,12 +190,12 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Notification that a socket has finished closing, or that it disconnected, or failed to open. </p>
-<p>If this is a normal close in response to a <a class="el" href="struct_c4_socket_factory.html#a36172da4158ca379aed7982a7554c489" title="close the socket ">C4SocketFactory.close</a> request, the error parameter should have a code of 0. If it's a socket-level error, set the <a class="el" href="struct_c4_error.html" title="An error value. ">C4Error</a> appropriately. If it's a WebSocket-level close (when the factory's providesWebSockets is true), set the error domain to WebSocketDomain and the code to the WebSocket status code. </p>
+<p>If this is a normal close in response to a <a class="el" href="struct_c4_socket_factory.html#ac2f741778a3fd5fada72ca758d9fe4b6" title="close the socket ">C4SocketFactory.close</a> request, the error parameter should have a code of 0. If it's a socket-level error, set the <a class="el" href="struct_c4_error.html" title="An error value. ">C4Error</a> appropriately. If it's a WebSocket-level close (when the factory's providesWebSockets is true), set the error domain to WebSocketDomain and the code to the WebSocket status code. </p>
 
 </div>
 </div>
-<a id="ga11d70f817aaf1a915cddc273e8c096b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga11d70f817aaf1a915cddc273e8c096b6">&sect;&nbsp;</a></span>c4socket_closeRequested()</h2>
+<a id="ga35fdf9bd9439d67f338cc5f3429dd06d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga35fdf9bd9439d67f338cc5f3429dd06d">&sect;&nbsp;</a></span>c4socket_closeRequested()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -179,8 +203,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4socket_closeRequested </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *socket&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -207,8 +231,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga079510269c1f87f1a1038e93c0eae83b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga079510269c1f87f1a1038e93c0eae83b">&sect;&nbsp;</a></span>c4socket_completedWrite()</h2>
+<a id="gaa62f4c4c2d6156fdd289e1fb781f27c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa62f4c4c2d6156fdd289e1fb781f27c6">&sect;&nbsp;</a></span>c4socket_completedWrite()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -216,8 +240,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4socket_completedWrite </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *socket&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -233,12 +257,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Notification that bytes have been written to the socket, in response to a <a class="el" href="struct_c4_socket_factory.html#a14ba11f1ac27ce086d2b04d78fd9e1dd" title="Write bytes; free when done. ">C4SocketFactory.write</a> request. </p>
+<p>Notification that bytes have been written to the socket, in response to a <a class="el" href="struct_c4_socket_factory.html#a2d216ae53b764e2f8df107a36bb96d58" title="Write bytes; free when done. ">C4SocketFactory.write</a> request. </p>
 
 </div>
 </div>
-<a id="ga5d088a3ca376270e687ff747be0eb74a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5d088a3ca376270e687ff747be0eb74a">&sect;&nbsp;</a></span>c4socket_gotHTTPResponse()</h2>
+<a id="ga91a21c0e1dabf8f0d3c5a835f1b4e8f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga91a21c0e1dabf8f0d3c5a835f1b4e8f9">&sect;&nbsp;</a></span>c4socket_gotHTTPResponse()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -246,8 +270,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4socket_gotHTTPResponse </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *socket&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -273,8 +297,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gaede3dcc8e9044dff37fc55122d4b9958"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaede3dcc8e9044dff37fc55122d4b9958">&sect;&nbsp;</a></span>c4socket_opened()</h2>
+<a id="ga6ab98510bc105b524628e2cae88faf81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6ab98510bc105b524628e2cae88faf81">&sect;&nbsp;</a></span>c4socket_opened()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -282,20 +306,20 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4socket_opened </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *socket&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *&#160;</td>
+          <td class="paramname"><em>socket</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Notification that a socket has opened, i.e. </p>
-<p>a <a class="el" href="struct_c4_socket_factory.html#a00d1741692456d45f1cc6b964ff0f1ab" title="open the socket ">C4SocketFactory.open</a> request has completed successfully. </p>
+<p>a <a class="el" href="struct_c4_socket_factory.html#add891990f5426ecb5380df2d835a8f08" title="open the socket ">C4SocketFactory.open</a> request has completed successfully. </p>
 
 </div>
 </div>
-<a id="gaadd687a99f1f3efc93bdce85eb44ba38"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaadd687a99f1f3efc93bdce85eb44ba38">&sect;&nbsp;</a></span>c4socket_received()</h2>
+<a id="ga1e1797e15c6cd30c0a1a16844f0f8b2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1e1797e15c6cd30c0a1a16844f0f8b2f">&sect;&nbsp;</a></span>c4socket_received()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -303,8 +327,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void c4socket_received </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *socket&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="struct_c4_socket.html">C4Socket</a> *&#160;</td>
+          <td class="paramname"><em>socket</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -321,12 +345,12 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Notification that bytes have been read from the socket. </p>
-<p>LiteCore will acknowledge receiving and processing the data by calling <a class="el" href="struct_c4_socket_factory.html#a703cd6f25cdff0053724bef11a4f8aa1" title="Completion of c4socket_received. ">C4SocketFactory.completedReceive</a>. For flow-control purposes, the client should keep track of the number of unacknowledged bytes, and stop reading from the underlying stream if it grows too large. </p>
+<p>LiteCore will acknowledge receiving and processing the data by calling <a class="el" href="struct_c4_socket_factory.html#a9c18cb5fda8b83c18ad5dc546cb23119" title="Completion of c4socket_received. ">C4SocketFactory.completedReceive</a>. For flow-control purposes, the client should keep track of the number of unacknowledged bytes, and stop reading from the underlying stream if it grows too large. </p>
 
 </div>
 </div>
-<a id="ga980d2100633714d507b41f0fe97be6b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga980d2100633714d507b41f0fe97be6b8">&sect;&nbsp;</a></span>c4socket_registerFactory()</h2>
+<a id="gaee208cc2aedf57c8dc0549a707f25026"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaee208cc2aedf57c8dc0549a707f25026">&sect;&nbsp;</a></span>c4socket_registerFactory()</h2>
 
 <div class="memitem">
 <div class="memproto">

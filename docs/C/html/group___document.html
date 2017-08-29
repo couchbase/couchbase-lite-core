@@ -62,6 +62,7 @@ $(function() {
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
+<a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
@@ -84,37 +85,49 @@ Typedefs</h2></td></tr>
 <tr class="memdesc:ga59fb880ac20dc61d0ef5568541b9cbca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a document enumerator.  <a href="#ga59fb880ac20dc61d0ef5568541b9cbca">More...</a><br /></td></tr>
 <tr class="separator:ga59fb880ac20dc61d0ef5568541b9cbca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:ga5a2edf1aa3e4aa494966dbb1efab3e28"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga5a2edf1aa3e4aa494966dbb1efab3e28">C4EnumeratorFlags</a> : uint16_t { <br />
+&#160;&#160;<a class="el" href="group___document.html#gga5a2edf1aa3e4aa494966dbb1efab3e28ad97fed09425b9aabe01208e995d7f8b8">kC4Descending</a> = 0x01, 
+<a class="el" href="group___document.html#gga5a2edf1aa3e4aa494966dbb1efab3e28af366a3dadb8a5a6601da520924d9604c">kC4InclusiveStart</a> = 0x02, 
+<a class="el" href="group___document.html#gga5a2edf1aa3e4aa494966dbb1efab3e28a64bee5a7afea9d73c1a5a5c58c538287">kC4InclusiveEnd</a> = 0x04, 
+<a class="el" href="group___document.html#gga5a2edf1aa3e4aa494966dbb1efab3e28a5486f0af219a2227e44df7b3274492f7">kC4IncludeDeleted</a> = 0x08, 
+<br />
+&#160;&#160;<a class="el" href="group___document.html#gga5a2edf1aa3e4aa494966dbb1efab3e28addaa4d609d0b505d645c1df4bd055e55">kC4IncludeNonConflicted</a> = 0x10, 
+<a class="el" href="group___document.html#gga5a2edf1aa3e4aa494966dbb1efab3e28ad3190e8ee2546606458f4dd104b1dc7e">kC4IncludeBodies</a> = 0x20
+<br />
+ }</td></tr>
+<tr class="separator:ga5a2edf1aa3e4aa494966dbb1efab3e28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga330422a9e07f6ad6b10e191588b37151"><td class="memItemLeft" align="right" valign="top">typedef&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga330422a9e07f6ad6b10e191588b37151">C4_OPTIONS</a> (uint16_t, C4EnumeratorFlags)</td></tr>
-<tr class="separator:ga330422a9e07f6ad6b10e191588b37151"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga47c425feea01044bced8c97c4f83888d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga47c425feea01044bced8c97c4f83888d">c4enum_close</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga47c425feea01044bced8c97c4f83888d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes an enumeration.  <a href="#ga47c425feea01044bced8c97c4f83888d">More...</a><br /></td></tr>
-<tr class="separator:ga47c425feea01044bced8c97c4f83888d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4908d14b1f075ae3ee9b20c74552c5c1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga4908d14b1f075ae3ee9b20c74552c5c1">c4enum_free</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga4908d14b1f075ae3ee9b20c74552c5c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a C4DocEnumerator handle.  <a href="#ga4908d14b1f075ae3ee9b20c74552c5c1">More...</a><br /></td></tr>
-<tr class="separator:ga4908d14b1f075ae3ee9b20c74552c5c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabdb8ee81cfad46eaf3a0fe5b22bfb103"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#gabdb8ee81cfad46eaf3a0fe5b22bfb103">c4db_enumerateChanges</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a> since, const <a class="el" href="struct_c4_enumerator_options.html">C4EnumeratorOptions</a> *options, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gabdb8ee81cfad46eaf3a0fe5b22bfb103"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an enumerator ordered by sequence.  <a href="#gabdb8ee81cfad46eaf3a0fe5b22bfb103">More...</a><br /></td></tr>
-<tr class="separator:gabdb8ee81cfad46eaf3a0fe5b22bfb103"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaab9f7b0e18f98755fc62cf2a3b8f452c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#gaab9f7b0e18f98755fc62cf2a3b8f452c">c4db_enumerateAllDocs</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> startDocID, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> endDocID, const <a class="el" href="struct_c4_enumerator_options.html">C4EnumeratorOptions</a> *options, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gaab9f7b0e18f98755fc62cf2a3b8f452c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an enumerator ordered by docID.  <a href="#gaab9f7b0e18f98755fc62cf2a3b8f452c">More...</a><br /></td></tr>
-<tr class="separator:gaab9f7b0e18f98755fc62cf2a3b8f452c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga215a290d169a33b42edbf6af5596bfab"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga215a290d169a33b42edbf6af5596bfab">c4db_enumerateSomeDocs</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, const <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docIDs[], size_t docIDsCount, const <a class="el" href="struct_c4_enumerator_options.html">C4EnumeratorOptions</a> *options, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga215a290d169a33b42edbf6af5596bfab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an enumerator on a series of document IDs.  <a href="#ga215a290d169a33b42edbf6af5596bfab">More...</a><br /></td></tr>
-<tr class="separator:ga215a290d169a33b42edbf6af5596bfab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaeb6a88ae2d5efa7c4f976bbaeeb33927"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#gaeb6a88ae2d5efa7c4f976bbaeeb33927">c4enum_next</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gaeb6a88ae2d5efa7c4f976bbaeeb33927"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advances the enumerator to the next document.  <a href="#gaeb6a88ae2d5efa7c4f976bbaeeb33927">More...</a><br /></td></tr>
-<tr class="separator:gaeb6a88ae2d5efa7c4f976bbaeeb33927"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gacf8a6b297e772fde21a72a9a7f2b5d97"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#gacf8a6b297e772fde21a72a9a7f2b5d97">c4enum_getDocument</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:gacf8a6b297e772fde21a72a9a7f2b5d97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current document, if any, from an enumerator.  <a href="#gacf8a6b297e772fde21a72a9a7f2b5d97">More...</a><br /></td></tr>
-<tr class="separator:gacf8a6b297e772fde21a72a9a7f2b5d97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga019b47a5a2f9794ed2e2fc4336f56d79"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga019b47a5a2f9794ed2e2fc4336f56d79">c4enum_getDocumentInfo</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_document_info.html">C4DocumentInfo</a> *outInfo <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga019b47a5a2f9794ed2e2fc4336f56d79"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores the metadata of the enumerator's current document into the supplied <a class="el" href="struct_c4_document_info.html" title="Metadata about a document (actually about its current revision.) ">C4DocumentInfo</a> struct.  <a href="#ga019b47a5a2f9794ed2e2fc4336f56d79">More...</a><br /></td></tr>
-<tr class="separator:ga019b47a5a2f9794ed2e2fc4336f56d79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga036392c65a29790ab6334c134fc9703b"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga036392c65a29790ab6334c134fc9703b">c4enum_nextDocument</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e <a class="el" href="c4_base_8h.html#a8944e5062c19897c26a00074e7c4550b">C4NONNULL</a>, <a class="el" href="struct_c4_error.html">C4Error</a> *outError) <a class="el" href="c4_base_8h.html#a58e05642a5ffd7b621ed01bbd8fe7868">C4API</a></td></tr>
-<tr class="memdesc:ga036392c65a29790ab6334c134fc9703b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function that combines <a class="el" href="group___document.html#gaeb6a88ae2d5efa7c4f976bbaeeb33927" title="Advances the enumerator to the next document. ">c4enum_next()</a> and <a class="el" href="group___document.html#gacf8a6b297e772fde21a72a9a7f2b5d97" title="Returns the current document, if any, from an enumerator. ">c4enum_getDocument()</a>.  <a href="#ga036392c65a29790ab6334c134fc9703b">More...</a><br /></td></tr>
-<tr class="separator:ga036392c65a29790ab6334c134fc9703b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa87c6ecf9e92dd11bc74539141ce7111"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#gaa87c6ecf9e92dd11bc74539141ce7111">c4enum_close</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e)</td></tr>
+<tr class="memdesc:gaa87c6ecf9e92dd11bc74539141ce7111"><td class="mdescLeft">&#160;</td><td class="mdescRight">Closes an enumeration.  <a href="#gaa87c6ecf9e92dd11bc74539141ce7111">More...</a><br /></td></tr>
+<tr class="separator:gaa87c6ecf9e92dd11bc74539141ce7111"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga53af9cfa56dcd0bbb80fd1234c8cf834"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga53af9cfa56dcd0bbb80fd1234c8cf834">c4enum_free</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e)</td></tr>
+<tr class="memdesc:ga53af9cfa56dcd0bbb80fd1234c8cf834"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a C4DocEnumerator handle.  <a href="#ga53af9cfa56dcd0bbb80fd1234c8cf834">More...</a><br /></td></tr>
+<tr class="separator:ga53af9cfa56dcd0bbb80fd1234c8cf834"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga66c19b8626fa5e706044d899913aea01"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga66c19b8626fa5e706044d899913aea01">c4db_enumerateChanges</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="c4_base_8h.html#a6c2d959939ef287ba3f2ee719c949229">C4SequenceNumber</a> since, const <a class="el" href="struct_c4_enumerator_options.html">C4EnumeratorOptions</a> *options, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga66c19b8626fa5e706044d899913aea01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an enumerator ordered by sequence.  <a href="#ga66c19b8626fa5e706044d899913aea01">More...</a><br /></td></tr>
+<tr class="separator:ga66c19b8626fa5e706044d899913aea01"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf40fcb2afd4e1da574039c3eb4575d21"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#gaf40fcb2afd4e1da574039c3eb4575d21">c4db_enumerateAllDocs</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> startDocID, <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> endDocID, const <a class="el" href="struct_c4_enumerator_options.html">C4EnumeratorOptions</a> *options, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gaf40fcb2afd4e1da574039c3eb4575d21"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an enumerator ordered by docID.  <a href="#gaf40fcb2afd4e1da574039c3eb4575d21">More...</a><br /></td></tr>
+<tr class="separator:gaf40fcb2afd4e1da574039c3eb4575d21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga66fc402627690d68b3bf3b1d991574e6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga66fc402627690d68b3bf3b1d991574e6">c4db_enumerateSomeDocs</a> (<a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database, const <a class="el" href="c4_base_8h.html#a04de3d84e73df3c8b75092054abcc117">C4String</a> docIDs[], size_t docIDsCount, const <a class="el" href="struct_c4_enumerator_options.html">C4EnumeratorOptions</a> *options, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga66fc402627690d68b3bf3b1d991574e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an enumerator on a series of document IDs.  <a href="#ga66fc402627690d68b3bf3b1d991574e6">More...</a><br /></td></tr>
+<tr class="separator:ga66fc402627690d68b3bf3b1d991574e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadc1ab47918d407aef4738ea1069c5256"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#gadc1ab47918d407aef4738ea1069c5256">c4enum_next</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gadc1ab47918d407aef4738ea1069c5256"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advances the enumerator to the next document.  <a href="#gadc1ab47918d407aef4738ea1069c5256">More...</a><br /></td></tr>
+<tr class="separator:gadc1ab47918d407aef4738ea1069c5256"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac7523930117e4afbf616b41cf8fcb273"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#gac7523930117e4afbf616b41cf8fcb273">c4enum_getDocument</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:gac7523930117e4afbf616b41cf8fcb273"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current document, if any, from an enumerator.  <a href="#gac7523930117e4afbf616b41cf8fcb273">More...</a><br /></td></tr>
+<tr class="separator:gac7523930117e4afbf616b41cf8fcb273"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa61f4d2a22f951d8d96cefeb29553a61"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#gaa61f4d2a22f951d8d96cefeb29553a61">c4enum_getDocumentInfo</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e, <a class="el" href="struct_c4_document_info.html">C4DocumentInfo</a> *outInfo)</td></tr>
+<tr class="memdesc:gaa61f4d2a22f951d8d96cefeb29553a61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores the metadata of the enumerator's current document into the supplied <a class="el" href="struct_c4_document_info.html" title="Metadata about a document (actually about its current revision.) ">C4DocumentInfo</a> struct.  <a href="#gaa61f4d2a22f951d8d96cefeb29553a61">More...</a><br /></td></tr>
+<tr class="separator:gaa61f4d2a22f951d8d96cefeb29553a61"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga67cbc25ec0181076f645fa44c350431d"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="struct_c4_document.html">C4Document</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___document.html#ga67cbc25ec0181076f645fa44c350431d">c4enum_nextDocument</a> (<a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e, <a class="el" href="struct_c4_error.html">C4Error</a> *outError)</td></tr>
+<tr class="memdesc:ga67cbc25ec0181076f645fa44c350431d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience function that combines <a class="el" href="group___document.html#gadc1ab47918d407aef4738ea1069c5256" title="Advances the enumerator to the next document. ">c4enum_next()</a> and <a class="el" href="group___document.html#gac7523930117e4afbf616b41cf8fcb273" title="Returns the current document, if any, from an enumerator. ">c4enum_getDocument()</a>.  <a href="#ga67cbc25ec0181076f645fa44c350431d">More...</a><br /></td></tr>
+<tr class="separator:ga67cbc25ec0181076f645fa44c350431d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -140,43 +153,39 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ga330422a9e07f6ad6b10e191588b37151"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga330422a9e07f6ad6b10e191588b37151">&sect;&nbsp;</a></span>C4_OPTIONS()</h2>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="ga5a2edf1aa3e4aa494966dbb1efab3e28"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5a2edf1aa3e4aa494966dbb1efab3e28">&sect;&nbsp;</a></span>C4EnumeratorFlags</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef C4_OPTIONS </td>
-          <td>(</td>
-          <td class="paramtype">uint16_t&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">C4EnumeratorFlags&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">enum <a class="el" href="group___document.html#ga5a2edf1aa3e4aa494966dbb1efab3e28">C4EnumeratorFlags</a> : uint16_t</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>&lt; If true, iteration goes by descending document IDs.</p>
-<p>&lt; If false, iteration starts just <em>after</em> startDocID.</p>
-<p>&lt; If false, iteration stops just <em>before</em> endDocID.</p>
-<p>&lt; If true, include deleted documents.</p>
-<p>&lt; If false, include <em>only</em> documents in conflict. </p><pre class="fragment">    &lt; If false, document bodies will not be preloaded, just
-</pre><p> metadata (docID, revID, sequence, flags.) This is faster if you don't need to access the revision tree or revision bodies. You can still access all the data of the document, but it will trigger loading the document body from the database. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga5a2edf1aa3e4aa494966dbb1efab3e28ad97fed09425b9aabe01208e995d7f8b8"></a>kC4Descending&#160;</td><td class="fielddoc"><p>If true, iteration goes by descending document IDs. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga5a2edf1aa3e4aa494966dbb1efab3e28af366a3dadb8a5a6601da520924d9604c"></a>kC4InclusiveStart&#160;</td><td class="fielddoc"><p>If false, iteration starts just <em>after</em> startDocID. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga5a2edf1aa3e4aa494966dbb1efab3e28a64bee5a7afea9d73c1a5a5c58c538287"></a>kC4InclusiveEnd&#160;</td><td class="fielddoc"><p>If false, iteration stops just <em>before</em> endDocID. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga5a2edf1aa3e4aa494966dbb1efab3e28a5486f0af219a2227e44df7b3274492f7"></a>kC4IncludeDeleted&#160;</td><td class="fielddoc"><p>If true, include deleted documents. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga5a2edf1aa3e4aa494966dbb1efab3e28addaa4d609d0b505d645c1df4bd055e55"></a>kC4IncludeNonConflicted&#160;</td><td class="fielddoc"><p>If false, include <em>only</em> documents in conflict. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga5a2edf1aa3e4aa494966dbb1efab3e28ad3190e8ee2546606458f4dd104b1dc7e"></a>kC4IncludeBodies&#160;</td><td class="fielddoc"><p>If false, document bodies will not be preloaded, just metadata (docID, revID, sequence, flags.) This is faster if you don't need to access the revision tree or revision bodies. </p>
+<p>You can still access all the data of the document, but it will trigger loading the document body from the database. </p>
+</td></tr>
+</table>
 
 </div>
 </div>
-<a id="gaab9f7b0e18f98755fc62cf2a3b8f452c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaab9f7b0e18f98755fc62cf2a3b8f452c">&sect;&nbsp;</a></span>c4db_enumerateAllDocs()</h2>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="gaf40fcb2afd4e1da574039c3eb4575d21"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf40fcb2afd4e1da574039c3eb4575d21">&sect;&nbsp;</a></span>c4db_enumerateAllDocs()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -184,8 +193,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a>* c4db_enumerateAllDocs </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -234,8 +243,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gabdb8ee81cfad46eaf3a0fe5b22bfb103"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabdb8ee81cfad46eaf3a0fe5b22bfb103">&sect;&nbsp;</a></span>c4db_enumerateChanges()</h2>
+<a id="ga66c19b8626fa5e706044d899913aea01"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga66c19b8626fa5e706044d899913aea01">&sect;&nbsp;</a></span>c4db_enumerateChanges()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -243,8 +252,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a>* c4db_enumerateChanges </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -286,8 +295,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga215a290d169a33b42edbf6af5596bfab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga215a290d169a33b42edbf6af5596bfab">&sect;&nbsp;</a></span>c4db_enumerateSomeDocs()</h2>
+<a id="ga66fc402627690d68b3bf3b1d991574e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga66fc402627690d68b3bf3b1d991574e6">&sect;&nbsp;</a></span>c4db_enumerateSomeDocs()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -295,8 +304,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a>* c4db_enumerateSomeDocs </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *database&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="group___database.html#ga15e027d347f40041585744dad4dac1c9">C4Database</a> *&#160;</td>
+          <td class="paramname"><em>database</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -345,8 +354,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga47c425feea01044bced8c97c4f83888d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga47c425feea01044bced8c97c4f83888d">&sect;&nbsp;</a></span>c4enum_close()</h2>
+<a id="gaa87c6ecf9e92dd11bc74539141ce7111"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa87c6ecf9e92dd11bc74539141ce7111">&sect;&nbsp;</a></span>c4enum_close()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -354,8 +363,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">void c4enum_close </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em></td><td>)</td>
+          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td>
+          <td class="paramname"><em>e</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -366,8 +375,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga4908d14b1f075ae3ee9b20c74552c5c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4908d14b1f075ae3ee9b20c74552c5c1">&sect;&nbsp;</a></span>c4enum_free()</h2>
+<a id="ga53af9cfa56dcd0bbb80fd1234c8cf834"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga53af9cfa56dcd0bbb80fd1234c8cf834">&sect;&nbsp;</a></span>c4enum_free()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -386,8 +395,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gacf8a6b297e772fde21a72a9a7f2b5d97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gacf8a6b297e772fde21a72a9a7f2b5d97">&sect;&nbsp;</a></span>c4enum_getDocument()</h2>
+<a id="gac7523930117e4afbf616b41cf8fcb273"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac7523930117e4afbf616b41cf8fcb273">&sect;&nbsp;</a></span>c4enum_getDocument()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -395,8 +404,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">struct <a class="el" href="struct_c4_document.html">C4Document</a>* c4enum_getDocument </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td>
+          <td class="paramname"><em>e</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -424,8 +433,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga019b47a5a2f9794ed2e2fc4336f56d79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga019b47a5a2f9794ed2e2fc4336f56d79">&sect;&nbsp;</a></span>c4enum_getDocumentInfo()</h2>
+<a id="gaa61f4d2a22f951d8d96cefeb29553a61"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa61f4d2a22f951d8d96cefeb29553a61">&sect;&nbsp;</a></span>c4enum_getDocumentInfo()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -433,14 +442,14 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">bool c4enum_getDocumentInfo </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td>
+          <td class="paramname"><em>e</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="struct_c4_document_info.html">C4DocumentInfo</a> *outInfo&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="struct_c4_document_info.html">C4DocumentInfo</a> *&#160;</td>
+          <td class="paramname"><em>outInfo</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -451,7 +460,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Stores the metadata of the enumerator's current document into the supplied <a class="el" href="struct_c4_document_info.html" title="Metadata about a document (actually about its current revision.) ">C4DocumentInfo</a> struct. </p>
-<p>Unlike <a class="el" href="group___document.html#gacf8a6b297e772fde21a72a9a7f2b5d97" title="Returns the current document, if any, from an enumerator. ">c4enum_getDocument()</a>, this allocates no memory. </p><dl class="params"><dt>Parameters</dt><dd>
+<p>Unlike <a class="el" href="group___document.html#gac7523930117e4afbf616b41cf8fcb273" title="Returns the current document, if any, from an enumerator. ">c4enum_getDocument()</a>, this allocates no memory. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">e</td><td>The enumerator. </td></tr>
     <tr><td class="paramname">outInfo</td><td>A pointer to a <a class="el" href="struct_c4_document_info.html" title="Metadata about a document (actually about its current revision.) ">C4DocumentInfo</a> struct that will be filled in if a document is found. </td></tr>
@@ -462,8 +471,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="gaeb6a88ae2d5efa7c4f976bbaeeb33927"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaeb6a88ae2d5efa7c4f976bbaeeb33927">&sect;&nbsp;</a></span>c4enum_next()</h2>
+<a id="gadc1ab47918d407aef4738ea1069c5256"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadc1ab47918d407aef4738ea1069c5256">&sect;&nbsp;</a></span>c4enum_next()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -471,8 +480,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">bool c4enum_next </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td>
+          <td class="paramname"><em>e</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -493,8 +502,8 @@ Variables</h2></td></tr>
 
 </div>
 </div>
-<a id="ga036392c65a29790ab6334c134fc9703b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga036392c65a29790ab6334c134fc9703b">&sect;&nbsp;</a></span>c4enum_nextDocument()</h2>
+<a id="ga67cbc25ec0181076f645fa44c350431d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga67cbc25ec0181076f645fa44c350431d">&sect;&nbsp;</a></span>c4enum_nextDocument()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -502,8 +511,8 @@ Variables</h2></td></tr>
         <tr>
           <td class="memname">struct <a class="el" href="struct_c4_document.html">C4Document</a>* c4enum_nextDocument </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *e&#160;</td>
-          <td class="paramname"><em>C4NONNULL</em>, </td>
+          <td class="paramtype"><a class="el" href="group___document.html#ga59fb880ac20dc61d0ef5568541b9cbca">C4DocEnumerator</a> *&#160;</td>
+          <td class="paramname"><em>e</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -519,7 +528,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Convenience function that combines <a class="el" href="group___document.html#gaeb6a88ae2d5efa7c4f976bbaeeb33927" title="Advances the enumerator to the next document. ">c4enum_next()</a> and <a class="el" href="group___document.html#gacf8a6b297e772fde21a72a9a7f2b5d97" title="Returns the current document, if any, from an enumerator. ">c4enum_getDocument()</a>. </p>
+<p>Convenience function that combines <a class="el" href="group___document.html#gadc1ab47918d407aef4738ea1069c5256" title="Advances the enumerator to the next document. ">c4enum_next()</a> and <a class="el" href="group___document.html#gac7523930117e4afbf616b41cf8fcb273" title="Returns the current document, if any, from an enumerator. ">c4enum_getDocument()</a>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">e</td><td>The enumerator. </td></tr>

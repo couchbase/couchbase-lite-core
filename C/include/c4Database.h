@@ -73,9 +73,6 @@ extern "C" {
     //////// DATABASE API:
 
     
-    /** \name Lifecycle
-        @{ */
-
     /** Filename extension of databases -- ".cblite2". Includes the period. */
     CBL_CORE_API extern const char* const kC4DatabaseFilenameExtension;
 
@@ -83,6 +80,9 @@ extern "C" {
     /** Opaque handle to an opened database. */
     typedef struct c4Database C4Database;
 
+
+    /** \name Lifecycle
+        @{ */
 
     /** Opens a database. */
     C4Database* c4db_open(C4String path,

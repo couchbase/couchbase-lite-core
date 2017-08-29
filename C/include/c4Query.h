@@ -166,7 +166,7 @@ extern "C" {
     //////// INDEXES:
 
 
-    /** \name Database Indexes
+    /** \defgroup Indexing  Database Indexes
      @{ */
 
 
@@ -195,25 +195,39 @@ extern "C" {
     } C4IndexOptions;
 
 
-    /** Creates a database index, to speed up subsequent queries.
+    /** Creates a database index, of the values of specific expressions across all documents.
+        The name is used to identify the index for later updating or deletion; if an index with the
+        same name already exists, it will be replaced unless it has the exact same expressions.
 
-        The index is on one or more expressions, encoded in the same form as in a query. The first
-        expression becomes the primary key. These expressions are evaluated for every document in
-        the database and stored in the index. The values must be scalars (no arrays or objects),
-        although it's OK if they're `missing` in some documents.
-     
-        An example `expressionsJSON` is `[[".name.first"]]`, to index on the first-name property.
+        Currently two types of indexes are supported:
+
+        * Value indexes speed up queries by making it possible to look up property (or expression)
+          values without scanning every document. They're just like regular indexes in SQL or N1QL.
+          Multiple expressions are supported; the first is the primary key, second is secondary.
+          Expressions must evaluate to scalar types (boolean, number, string).
+        * Full-Text Search (FTS) indexes enable fast search of natural-language words or phrases
+          by using the `MATCH` operator in a query. A FTS index is **required** for full-text
+          search: a query with a `MATCH` operator will fail to compile unless there is already a
+          FTS index for the property/expression being matched. Only a single expression is
+          currently allowed, and it must evaluate to a string.
+
+        Note: If the value of an expression in some document is missing or an unsupported type,
+        that document will just be omitted from the index. It's not an error.
+
+        Expressions are defined in JSON, as in a query, and wrapped in a JSON array. For example,
+        `[[".name.first"]]` will index on the first-name property. Note the two levels of brackets,
+        since an expression is already an array.
 
         Currently, full-text indexes are limited to a single expression only.
         Geospatial indexes are not implemented at all yet.
 
-        It is not an error if the index already exists.
-
         @param database  The database to index.
-        @param expressionsJSON  A JSON array of one or more expressions to index; the first is the
-                            primary key. Each expression takes the same form as in a query, which
-                            means it's a JSON array as well; don't get mixed up by the nesting.
-        @param indexType  The type of index (regular or full-text.)
+        @param name  The name of the index. Any existing index with the same name will be replaced,
+                     unless it has the identical expressions (in which case this is a no-op.)
+        @param expressionsJSON  A JSON array of one or more expressions to index. Each expression
+                     takes the same form as in a query, which means it's a JSON array as well;
+                     don't get mixed up by the nesting!
+        @param indexType  The type of index (value or full-text.)
         @param indexOptions  Options for the index. If NULL, each option will get a default value.
         @param outError  On failure, will be set to the error status.
         @return  True on success, false on failure. */
@@ -233,11 +247,10 @@ extern "C" {
                           C4String name,
                           C4Error *outError) C4API;
     
-    /** Gets a fleece encoded array of indexes in the given database that
-        were created by `c4db_createIndex`
+    /** Returns the names of all indexes in the database.
         @param database  The database to check
         @param outError  On failure, will be set to the error status.
-        @return  The fleece encoded array of indexes */
+        @return  A Fleece-encoded array of strings, or NULL on failure. */
     C4SliceResult c4db_getIndexes(C4Database* database C4NONNULL,
                                   C4Error* outError) C4API;
 

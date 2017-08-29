@@ -98,7 +98,8 @@ extern "C" {
 
     /** Creates a new replicator.
         @param db  The local database.
-        @param remoteAddress  The address of the remote database (null if other db is local.)
+        @param remoteAddress  The address of the remote server (null if other db is local.)
+        @param remoteDatabaseName  The name of the database at the remote address.
         @param otherLocalDB  The other local database (null if other db is remote.)
         @param params Replication parameters (see above.)
         @param err  Error, if replication can't be created.

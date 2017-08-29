@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['noerror',['NoError',['../group___fleece.html#gga6a3de980e42db083a0ec3081c4ae8eceaef9104c292609ba6db320509be8fe27f',1,'Fleece.h']]]
+  ['sqlitedomain',['SQLiteDomain',['../c4_base_8h.html#a6cbe7be44f2f63425404284687e6861cab14b819a5f23eedbfb517cd9ba1419d5',1,'c4Base.h']]]
 ];
