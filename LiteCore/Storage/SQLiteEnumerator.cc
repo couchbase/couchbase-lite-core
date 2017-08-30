@@ -116,7 +116,8 @@ namespace litecore {
     RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(sequence_t min, sequence_t max,
                                                               RecordEnumerator::Options &options)
     {
-        createSequenceIndex();
+        if (_db.options().writeable)
+            createSequenceIndex();
 
         stringstream sql;
         selectFrom(sql, options);

@@ -376,6 +376,22 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
     }
     c4enum_free(e);
     REQUIRE(seq == (C4SequenceNumber)100);
+
+    // Descending:
+    options.flags |= kC4Descending;
+    e = c4db_enumerateChanges(db, 94, &options, &error);
+    REQUIRE(e);
+    seq = 99;
+    while (nullptr != (doc = c4enum_nextDocument(e, &error))) {
+        REQUIRE(doc->selectedRev.sequence == seq);
+        char docID[30];
+        sprintf(docID, "doc-%03llu", (unsigned long long)seq);
+        REQUIRE(doc->docID == c4str(docID));
+        c4doc_free(doc);
+        seq--;
+    }
+    c4enum_free(e);
+    REQUIRE(seq == (C4SequenceNumber)94);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {

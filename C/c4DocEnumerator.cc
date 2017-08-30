@@ -146,7 +146,10 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        C4Error *outError) noexcept
 {
     return tryCatch<C4DocEnumerator*>(outError, [&]{
-        return new C4DocEnumerator(database, since+1, UINT64_MAX,
+        C4SequenceNumber start = since + 1, end = UINT64_MAX;
+        if (c4options && (c4options->flags & kC4Descending))
+            swap(start, end);
+        return new C4DocEnumerator(database, start, end,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     });
 }
