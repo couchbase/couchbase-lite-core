@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Check NDK
-if [ -z "$ANDROID_NDK" ]; then
-    echo "Need to set ANDROID_NDK"
+if [ -z "$ANDROID_NDK_ROOT" ]; then
+    echo "Need to set ANDROID_NDK_ROOT"
     exit 1
 else
-	if [ ! -d "$ANDROID_NDK" ]; then
-	    echo "The directory $ANDROID_NDK does not exist"
+	if [ ! -d "$ANDROID_NDK_ROOT" ]; then
+	    echo "The directory $ANDROID_NDK_ROOT does not exist"
 	    exit 1
 	fi	
 fi
@@ -26,7 +26,7 @@ function build_litecore {
 	pushd build_$ARCH_ABI
 
 	cmake -DCMAKE_SYSTEM_NAME=Android \
-	-DCMAKE_ANDROID_NDK=$ANDROID_NDK \
+	-DCMAKE_ANDROID_NDK=$ANDROID_NDK_ROOT \
 	-DCMAKE_ANDROID_STL_TYPE=c++_static \
 	-DCMAKE_ANDROID_ARCH_ABI="$ARCH_ABI" \
 	-DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang \
