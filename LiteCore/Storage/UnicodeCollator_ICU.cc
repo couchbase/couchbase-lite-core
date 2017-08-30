@@ -85,19 +85,16 @@ namespace litecore {
 
 
     /** Full Unicode-savvy string comparison. */
-    static inline int compareStringsUnicode(int len1, const void *chars1,
-                                            int len2, const void *chars2,
-                                            const ICUCollationContext &ctx) {
-#ifdef __ANDROID__
-        int result = ucol_strcoll(ctx.ucoll, (const UChar *) chars1, len1,
-                                  (const UChar *) chars2, len2);
-#else
+    static inline int compareStringsUnicode(int len1, const void * chars1,
+                                            int len2, const void * chars2,
+                                            const ICUCollationContext &ctx)
+    {
         UErrorCode status = U_ZERO_ERROR;
         int result = ucol_strcollUTF8(ctx.ucoll, (const char*)chars1, len1,
                                                  (const char*)chars2, len2, &status);
         if (U_FAILURE(status))
             Warn("Unicode collation failed with ICU status %d", status);
-#endif
+
         return result;
     }
 
@@ -124,22 +121,19 @@ namespace litecore {
     }
 
 
-    unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3 *dbHandle,
+    unique_ptr<CollationContext> RegisterSQLiteUnicodeCollation(sqlite3* dbHandle,
                                                                 const Collation &coll) {
-        unique_ptr <CollationContext> context(new ICUCollationContext(coll));
+        unique_ptr<CollationContext> context(new ICUCollationContext(coll));
         int rc = sqlite3_create_collation(dbHandle,
-                                          coll.sqliteName().c_str(),
-#ifdef  __ANDROID__
-                                          SQLITE_UTF16,
-#else
-                                          SQLITE_UTF8,
-#endif
-                                          (void *) context.get(),
-                                          collateUnicodeCallback);
+                                        coll.sqliteName().c_str(),
+                                        SQLITE_UTF8,
+                                        (void*)context.get(),
+                                        collateUnicodeCallback);
         if (rc != SQLITE_OK)
             throw SQLite::Exception(dbHandle, rc);
         return context;
     }
+
 }
 
 #endif // !__APPLE__
