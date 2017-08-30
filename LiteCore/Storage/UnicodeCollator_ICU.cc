@@ -85,16 +85,22 @@ namespace litecore {
 
 
     /** Full Unicode-savvy string comparison. */
-    static inline int compareStringsUnicode(int len1, const void * chars1,
-                                            int len2, const void * chars2,
-                                            const ICUCollationContext &ctx)
-    {
+    static inline int compareStringsUnicode(int len1, const void *chars1,
+                                            int len2, const void *chars2,
+                                            const ICUCollationContext &ctx) {
         UErrorCode status = U_ZERO_ERROR;
+#ifdef __ANDROID__
+        // Android 4.1 (API 16-17) comes with ICU 4.8 which does not support `ucol_strcollUTF8(...)`
+        UCharIterator sIter, tIter;
+        uiter_setUTF8(&sIter, (const char *) chars1, len1);
+        uiter_setUTF8(&tIter, (const char *) chars2, len2);
+        int result = ucol_strcollIter(ctx.ucoll, &sIter, &tIter, &status);
+#else
         int result = ucol_strcollUTF8(ctx.ucoll, (const char*)chars1, len1,
                                                  (const char*)chars2, len2, &status);
+#endif
         if (U_FAILURE(status))
             Warn("Unicode collation failed with ICU status %d", status);
-
         return result;
     }
 

@@ -39,7 +39,7 @@ static char icudata_version[ICUDATA_VERSION_MAX_LENGTH + 1];
 
 static void* handle_i18n = NULL;
 static void* handle_common = NULL;
-static void* syms[9];
+static void* syms[11];
 
 /* ICU data filename on Android is like 'icudt49l.dat'.
  *
@@ -148,6 +148,14 @@ static void init_icudata_version() {
     strcpy(func_name, "ucasemap_utf8ToUpper");
     strcat(func_name, icudata_version);
     syms[8] = dlsym(handle_common, func_name);
+
+    strcpy(func_name, "uiter_setUTF8");
+    strcat(func_name, icudata_version);
+    syms[9] = dlsym(handle_common, func_name);
+
+    strcpy(func_name, "ucol_strcollIter");
+    strcat(func_name, icudata_version);
+    syms[10] = dlsym(handle_i18n, func_name);
 }
 
 UCollator* ucol_open(const char* loc, UErrorCode* status) {
@@ -196,6 +204,26 @@ UCollationResult ucol_strcoll(const UCollator* coll, const UChar* source, int32_
     UCollationResult (*ptr)(const UCollator*, const UChar*, int32_t, const UChar*, int32_t);
     ptr = (UCollationResult(*)(const UCollator*, const UChar*, int32_t, const UChar*, int32_t))syms[4];
     return ptr(coll, source, sourceLength, target, targetLength);
+}
+
+UCollationResult ucol_strcollIter(const UCollator* coll, UCharIterator* sIter, UCharIterator* tIter, UErrorCode* status) {
+  pthread_once(&once_control, &init_icudata_version);
+  UCollationResult (*ptr)(const UCollator*, UCharIterator*, UCharIterator*, UErrorCode*);
+  if (syms[10] == NULL) {
+    *status = U_UNSUPPORTED_ERROR;
+    return (UCollationResult)0;
+  }
+  ptr = (UCollationResult(*)(const UCollator*, UCharIterator*, UCharIterator*, UErrorCode*))syms[10];
+  return ptr(coll, sIter, tIter, status);
+}
+
+/* unicode/uiter.h */
+void uiter_setUTF8(UCharIterator* iter, const char* s, int32_t length) {
+  pthread_once(&once_control, &init_icudata_version);
+  void (*ptr)(UCharIterator*, const char*, int32_t);
+  ptr = (void(*)(UCharIterator*, const char*, int32_t))syms[9];
+  ptr(iter, s, length);
+  return;
 }
 
 /* unicode/ucasemap.h */
