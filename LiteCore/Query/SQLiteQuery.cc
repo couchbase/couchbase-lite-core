@@ -48,6 +48,7 @@ namespace litecore {
             qp.setBaseResultColumns({"sequence", "key", "version", "flags"});
             qp.parseJSON(selectorExpression);
 
+            _parameters = qp.parameters();
             _ftsTables = qp.ftsTablesUsed();
             for (auto ftsTable : _ftsTables) {
                 if (!keyStore.db().tableExists(ftsTable))
@@ -138,6 +139,7 @@ namespace litecore {
         virtual QueryEnumerator* createEnumerator(const Options *options) override;
         SQLitePrerecordedQueryEnum* createEnumerator(const Options *options, sequence_t lastSeq);
 
+        set<string> _parameters;
         vector<string> _ftsTables;
         unsigned _1stCustomResultColumn;
         bool _isAggregate;
@@ -310,8 +312,17 @@ namespace litecore {
         ,_statement(query->statement())
         {
             _statement->clearBindings();
+            _unboundParameters = _query->_parameters;
             if (options && options->paramBindings.buf)
                 bindParameters(options->paramBindings);
+            if (!_unboundParameters.empty()) {
+                stringstream msg;
+                for (const string &param : _unboundParameters)
+                    msg << " $" << param;
+                Warn("Some query parameters were left unbound and will have value `MISSING`:%s",
+                     msg.str().c_str());
+            }
+
             LogStatement(*_statement);
         }
 
@@ -322,12 +333,14 @@ namespace litecore {
         }
 
         void bindParameters(slice json) {
-            auto fleeceData = JSONConverter::convertJSON(json);
+            alloc_slice fleeceData;
+            fleeceData = JSONConverter::convertJSON(json);
             const Dict *root = Value::fromData(fleeceData)->asDict();
             if (!root)
                 error::_throw(error::InvalidParameter);
             for (Dict::iterator it(root); it; ++it) {
                 auto key = (string)it.key()->asString();
+                _unboundParameters.erase(key);
                 auto sqlKey = string("$_") + key;
                 const Value *val = it.value();
                 try {
@@ -453,6 +466,7 @@ namespace litecore {
 
     private:
         shared_ptr<SQLite::Statement> _statement;
+        set<string> _unboundParameters;
     };
 
 

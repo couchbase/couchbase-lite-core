@@ -45,6 +45,7 @@ namespace litecore {
 
         std::string SQL()  const                                    {return _sql.str();}
 
+        const std::set<std::string>& parameters()                   {return _parameters;}
         const std::vector<std::string>& ftsTablesUsed() const       {return _ftsTables;}
         unsigned firstCustomResultColumn() const                    {return _1stCustomResultCol;}
 

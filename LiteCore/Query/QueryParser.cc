@@ -150,7 +150,12 @@ namespace litecore {
 
 
     void QueryParser::parseJSON(slice expressionJSON) {
-        alloc_slice expressionFleece = JSONConverter::convertJSON(expressionJSON);
+        alloc_slice expressionFleece;
+        try {
+            expressionFleece = JSONConverter::convertJSON(expressionJSON);
+        } catch (FleeceException x) {
+            fail("JSON parse error: %s", x.what());
+        }
         return parse(Value::fromTrustedData(expressionFleece));
     }
     
