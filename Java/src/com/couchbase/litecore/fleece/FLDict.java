@@ -67,7 +67,8 @@ public class FLDict {
             String key;
             while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
                 keys.add(key);
-                itr.next();
+                if (!itr.next())
+                    break;
             }
         } finally {
             itr.free();
@@ -84,7 +85,8 @@ public class FLDict {
             while ((key = itr.getKey().asString()) != null) {
                 Object value = itr.getValue().asObject();
                 results.put(key, value);
-                itr.next();
+                if (!itr.next())
+                    break;
             }
         } finally {
             itr.free();
@@ -101,7 +103,8 @@ public class FLDict {
             while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
                 Object value = itr.getValue().toObject(sharedKeys);
                 results.put(key, value);
-                itr.next();
+                if (!itr.next())
+                    break;
             }
         } finally {
             itr.free();
