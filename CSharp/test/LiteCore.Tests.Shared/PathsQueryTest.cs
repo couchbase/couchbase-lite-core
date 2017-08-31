@@ -17,7 +17,7 @@ namespace LiteCore.Tests
         protected override string JsonPath => "C/tests/data/paths.json";
 
 #if !WINDOWS_UWP
-        public NestedQueryTest(ITestOutputHelper output) : base(output)
+        public PathsQueryTest(ITestOutputHelper output) : base(output)
         {
 
         }
