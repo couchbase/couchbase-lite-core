@@ -16,11 +16,15 @@
 #include <sstream>
 #include <vector>
 
+#if __APPLE__
+#include <sys/ioctl.h>
+#endif
+
 using namespace fleeceapi;
 
 
 static const int kListColumnWidth = 16;
-static const int kLineWidth = 100;
+static const int kDefaultLineWidth = 100;
 
 
 class CBLiteTool : public Tool {
@@ -228,9 +232,10 @@ public:
 
             } else {
                 // Short form:
+                int lineWidth = terminalWidth();
                 int nSpaces = xpos ? (kListColumnWidth - (xpos % kListColumnWidth)) : 0;
                 int newXpos = xpos + nSpaces + idWidth;
-                if (newXpos < kLineWidth) {
+                if (newXpos < lineWidth) {
                     if (xpos > 0)
                         cout << spaces(nSpaces);
                     xpos = newXpos;
@@ -252,6 +257,16 @@ public:
 
     string spaces(int n) {
         return string(max(n, 1), ' ');
+    }
+
+
+    int terminalWidth() {
+#if __APPLE__
+        struct ttysize ts;
+        if (ioctl(0, TIOCGSIZE, &ts) == 0 && ts.ts_cols > 0)
+            return ts.ts_cols;
+#endif
+        return kDefaultLineWidth;
     }
 
 
