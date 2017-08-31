@@ -402,6 +402,9 @@ namespace c4Internal {
                 uuid = *(UUID*)r2.body().buf;
             } else {
                 // Create the UUIDs:
+                if (config.flags & kC4DB_ReadOnly)
+                    error::_throw(error::NotWriteable,
+                                  "DB has no UUIDs yet, and can't add them while opened read-only");
                 slice uuidSlice{&uuid, sizeof(uuid)};
                 GenerateUUID(uuidSlice);
                 store.set(key, uuidSlice, transaction());
