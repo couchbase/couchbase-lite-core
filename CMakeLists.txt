@@ -19,6 +19,10 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_IPV6                          # Enable IPv6 support in CivetWeb
                 -DCMAKE                             # Let the source know this is a CMAKE build
                 -D__STDC_LIMIT_MACROS)              # Ensure the presence of UINT64_MAX, etc
+                
+if(ANDROID)
+    add_definitions(-DLITECORE_USES_ICU=1)
+endif()
 
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
     $<$<CONFIG:Debug>:DEBUG>
@@ -183,6 +187,9 @@ elseif(UNIX AND NOT APPLE)
   set(ALL_SRC_FILES ${ALL_SRC_FILES} 
     LiteCore/Android/strlcat.c
     LiteCore/Android/arc4random.cc)
+  if(ANDROID)
+    set(ALL_SRC_FILES ${ALL_SRC_FILES} LiteCore/Android/unicode/ndk_icu.c)
+  endif()
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
