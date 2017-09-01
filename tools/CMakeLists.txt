@@ -13,6 +13,33 @@ include_directories(${PROJECT_SOURCE_DIR}
                     ${TOP}LiteCore/Support/
                     ${TOP}vendor/fleece/Fleece/)
 
+### CBLITE
+
+if (APPLE)   ### TODO: Make this build on other platforms (may require source changes)
+
+aux_source_directory("interactive" CBLITE_SRC)
+
+add_executable(cblite
+               ${CBLITE_SRC}
+               Tool.cc)
+
+target_link_libraries(cblite ${LITECORE_LIBRARIES_PRIVATE})
+
+if (APPLE)
+    target_link_libraries(cblite
+      readline
+      "-framework CoreFoundation"
+      "-framework Security")
+elseif(MSVC)
+    target_link_libraries(cblite Dbghelp.lib)
+else()
+    target_link_libraries(cblite pthread z dl readline
+                          ${ICU4C_COMMON} ${ICU4C_I18N} ${LIBCXX_LIB} ${LIBCXXABI_LIB})
+endif()
+
+endif() # APPLE
+
+
 ### LITECORELOG
 
 set(LITECORELOG_SRC  litecorelog.cc
