@@ -189,6 +189,8 @@
 		277C14711EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
 		277C14721EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
 		277C147A1EA826790075348F /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
+		277C1B1F1F58770400031200 /* Tool.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C1B1E1F58770400031200 /* Tool.cc */; };
+		277C1B241F58794100031200 /* libreadline.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 277C1B231F58794100031200 /* libreadline.tbd */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		2787EB271F4C91B000DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
@@ -1093,6 +1095,8 @@
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
 		277C14701EA8102B0075348F /* Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Document.cc; sourceTree = "<group>"; };
+		277C1B1E1F58770400031200 /* Tool.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Tool.cc; sourceTree = "<group>"; };
+		277C1B231F58794100031200 /* libreadline.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libreadline.tbd; path = usr/lib/libreadline.tbd; sourceTree = SDKROOT; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
@@ -1373,9 +1377,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				272AEC561F560FF600051F0A /* libLiteCore-static.a in Frameworks */,
 				272AEC611F56194A00051F0A /* Security.framework in Frameworks */,
 				272AEC551F560FF600051F0A /* CoreFoundation.framework in Frameworks */,
-				272AEC561F560FF600051F0A /* libLiteCore-static.a in Frameworks */,
+				277C1B241F58794100031200 /* libreadline.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1685,6 +1690,7 @@
 				272AEC461F560F7D00051F0A /* interactive */,
 				275073481F490324003D2CCE /* litecp */,
 				272AEC5E1F56120F00051F0A /* Tool.hh */,
+				277C1B1E1F58770400031200 /* Tool.cc */,
 				275073551F4B4D1D003D2CCE /* ToolUtils.cc */,
 				275073561F4B4D1D003D2CCE /* ToolUtils.hh */,
 				2750735E1F4B5F6B003D2CCE /* CMakeLists.txt */,
@@ -1776,6 +1782,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				277C1B231F58794100031200 /* libreadline.tbd */,
 				27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */,
 				930BE2AC1EE0C47500CCC14C /* libz.tbd */,
 				2759DC251E70908900F3C4B2 /* libz.tbd */,
@@ -3121,6 +3128,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				272AEC5D1F56115400051F0A /* cbliteTool.cc in Sources */,
+				277C1B1F1F58770400031200 /* Tool.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

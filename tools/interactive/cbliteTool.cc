@@ -11,6 +11,7 @@
 #include "FilePath.hh"
 #include "StringUtil.hh"
 #include <exception>
+#include <fnmatch.h>        // POSIX (?)
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -30,40 +31,51 @@ static const int kDefaultLineWidth = 100;
 class CBLiteTool : public Tool {
 public:
     CBLiteTool() {
-        const FlagSpec flags[] = {
-            {nullptr, nullptr}
-        };
-        registerFlags(flags);
     }
 
     virtual ~CBLiteTool() {
         c4db_free(_db);
     }
 
+
+    string it(const char *str) {
+        return ansiItalic() + str + ansiReset();
+    }
+
     void usage() override {
         cerr <<
-        "cblite: Interactive LiteCore / Couchbase Lite tool\n"
-        "Usage: cblite query [FLAGS] DBPATH JSONQUERY\n"
-        "           --offset N : Skip first N rows\n"
-        "           --limit N : Stop after N rows\n"
-        "       cblite ls [FLAGS] DBPATH\n"
-        "           -l : Long format (one doc per line, with metadata)\n"
-        "           --offset N : Skip first N docs\n"
-        "           --limit N : Stop after N docs\n"
-        "           --desc : Descending order\n"
-        "           --seq : Order by sequence, not docID\n"
-        "           --del : Include deleted documents\n"
-        "           --conf : Show only conflicted documents\n"
-        "       cblite file DBPATH\n"
+        ansiBold() << "cblite: Couchbase Lite / LiteCore database multi-tool\n" << ansiReset() <<
+        "Usage: cblite query " << it("[FLAGS] DBPATH JSONQUERY") << "\n"
+        "       cblite ls " << it("[FLAGS] DBPATH [PATTERN]") << "\n"
+        "       cblite cat " << it("[FLAGS] DBPATH DOCID [DOCID...]") << "\n"
+        "       cblite file " << it("DBPATH") << "\n"
+        "       cblite help " << it("[SUBCOMMAND]") << "\n"
+        "       cblite " << it("DBPATH") << "   (interactive shell)\n"
+        "           The shell accepts the same commands listed above, but without the\n"
+        "           'cblite' and DBPATH parameters. For example, 'ls -l'.\n"
+        "   For information about parameters, run `cblite help`.\n"
         ;
     }
 
-
     int run() override {
         c4log_setCallbackLevel(kC4LogWarning);
+        clearFlags();
+        if (argCount() == 0) {
+            cerr << "Missing subcommand or database path.\n"
+                 << "For a list of subcommands, run " << ansiBold() << "cblite help" << ansiReset() << ".\n"
+                 << "To start the interactive mode, run "
+                 << ansiBold() << "cblite " << ansiItalic() << "DBPATH" << ansiReset() << '\n';
+            fail();
+        }
         string cmd = nextArg("subcommand");
-        if (!processFlag(cmd, kSubcommands))
-            failMisuse(format("Unknown subcommand '%s'", cmd.c_str()));
+        if (hasSuffix(cmd, ".cblite2")) {
+            endOfArgs();
+            openDatabase(cmd);
+            runInteractively();
+        } else {
+            if (!processFlag(cmd, kSubcommands))
+                failMisuse(format("Unknown subcommand '%s'", cmd.c_str()));
+        }
         return 0;
     }
 
@@ -77,20 +89,46 @@ public:
     }
 
     void openDatabaseFromNextArg() {
-        openDatabase(nextArg("database path"));
+        if (!_db)
+            openDatabase(nextArg("database path"));
     }
 
 
 #pragma mark - QUERY:
 
+    void writeUsageCommand(const char *cmd, bool hasFlags, const char *otherArgs ="") {
+        cerr << ansiBold();
+        if (!_interactive)
+            cerr << "cblite ";
+        cerr << cmd << ' ' << ansiItalic();
+        if (hasFlags)
+            cerr << "[FLAGS]" << ' ';
+        if (!_interactive)
+            cerr << "DBPATH ";
+        cerr << otherArgs << ansiReset() << "\n";
+    }
 
-    void queryDatabase(string) {
+    void queryUsage() {
+        writeUsageCommand("query", true, "JSONQUERY");
+        cerr <<
+        "  Runs a query against the database."
+        "    --offset N : Skip first N rows\n"
+        "    --limit N : Stop after N rows\n"
+        "    " << it("JSONQUERY") << " : LiteCore JSON (or JSON5) query expression\n"
+        ;
+    }
+
+
+    void queryDatabase() {
         // Read params:
         processFlags(kQueryFlags);
+        if (_showHelp) {
+            queryUsage();
+            return;
+        }
         openDatabaseFromNextArg();
         alloc_slice queryJSON = convertQuery(nextArg("query string"));
         endOfArgs();
-
 
         // Compile query:
         C4Error error;
@@ -171,12 +209,44 @@ public:
 #pragma mark - LIST DOCS:
 
 
-    void listDocs(string) {
+    void listUsage() {
+        writeUsageCommand("ls", true, "[PATTERN]");
+        cerr <<
+        "  Lists the IDs, and optionally other metadata, of the documents in the database.\n"
+        "    -l : Long format (one doc per line, with metadata)\n"
+        "    --offset N : Skip first N docs\n"
+        "    --limit N : Stop after N docs\n"
+        "    --desc : Descending order\n"
+        "    --seq : Order by sequence, not docID\n"
+        "    --del : Include deleted documents\n"
+        "    --conf : Show only conflicted documents\n"
+        "    --body : Display document bodies\n"
+        "    --pretty : Pretty-print document bodies (implies --body)\n"
+        "    --json5 : JSON5 syntax, i.e. unquoted dict keys (implies --body)\n"
+        "    " << it("PATTERN") << " : pattern for matching docIDs, with shell-style wildcards '*', '?'\n"
+        ;
+    }
+
+
+    void listDocsCommand() {
         // Read params:
+        _prettyPrint = false;
         processFlags(kListFlags);
+        if (_showHelp) {
+            listUsage();
+            return;
+        }
         openDatabaseFromNextArg();
+        string docIDPattern;
+        if (argCount() > 0)
+            docIDPattern = nextArg("docID pattern");
         endOfArgs();
 
+        listDocs(docIDPattern);
+    }
+
+
+    void listDocs(string docIDPattern) {
         C4Error error;
         C4EnumeratorOptions options {_offset, _enumFlags};
         c4::ref<C4DocEnumerator> e;
@@ -187,18 +257,35 @@ public:
         if (!e)
             fail("creating enumerator", error);
 
-        if (_offset > 0)
+        if (_offset > 0) {
             cout << "(Skipping first " << _offset << " docs)\n";
+            if (!docIDPattern.empty())
+                options.skip = 0;           // need to skip manually if there's a pattern to match
+        }
+
         int64_t nDocs = 0;
         int xpos = 0;
         while (c4enum_next(e, &error)) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+
+            if (!docIDPattern.empty()) {
+                // Check whether docID matches pattern:
+                string docID = slice(info.docID).asString();
+                if (fnmatch(docIDPattern.c_str(), docID.c_str(), 0) != 0)
+                    continue;
+                if (_offset > 0) {
+                    --_offset;
+                    continue;
+                }
+            }
+
             if (++nDocs > _limit && _limit >= 0) {
                 cout << "\n(Stopping after " << _limit << " docs)";
                 error.code = 0;
                 break;
             }
-            C4DocumentInfo info;
-            c4enum_getDocumentInfo(e, &info);
+            
             int idWidth = (int)info.docID.size;        //TODO: Account for UTF-8 chars
             if (_enumFlags & kC4IncludeBodies) {
                 if (nDocs > 1)
@@ -206,20 +293,15 @@ public:
                 c4::ref<C4Document> doc = c4enum_getDocument(e, &error);
                 if (!doc)
                     fail("reading document");
-                cout << "{\"_id\":\"" << doc->docID << "\"";
-                alloc_slice json = c4doc_bodyAsJSON(doc, true, &error);
-                slice j = json;
-                j.moveStart(1);
-                if (j.size > 1)
-                    cout << ", ";
-                cout << j;
+                catDoc(doc, true);
 
             } else if (_longListing) {
                 // Long form:
-                if (nDocs == 1)
-                    cout << "Document ID     Rev ID     Flags   Seq     Size\n";
-                else
+                if (nDocs == 1) {
+                    cout << ansi("4") << "Document ID     Rev ID     Flags   Seq     Size" << ansiReset() << "\n";
+                } else {
                     cout << "\n";
+                }
                 info.revID.size = min(info.revID.size, (size_t)10);
                 cout << info.docID << spaces(kListColumnWidth - idWidth);
                 cout << info.revID << spaces(10 - (int)info.revID.size);
@@ -249,8 +331,12 @@ public:
         if (error.code)
             fail("enumerating documents", error);
 
-        if (nDocs == 0)
-            cout << "(No documents)";
+        if (nDocs == 0) {
+            if (docIDPattern.empty())
+                cout << "(No documents)";
+            else
+                cout << "(No documents with IDs matching \"" << docIDPattern << "\")";
+        }
         cout << "\n";
     }
 
@@ -270,11 +356,185 @@ public:
     }
 
 
+#pragma mark - CAT:
+
+
+    void catUsage() {
+        writeUsageCommand("cat", true, "DOCID [DOCID...]");
+        cerr <<
+        "  Displays the bodies of documents in JSON form.\n"
+        "    --raw : Raw JSON (not pretty-printed)\n"
+        "    --json5 : JSON5 syntax (no quotes around dict keys)\n"
+        "    " << it("DOCID") << " : Document ID, or pattern if it includes '*' or '?'\n"
+        ;
+    }
+
+
+    void catDocs() {
+        // Read params:
+        processFlags(kCatFlags);
+        if (_showHelp) {
+            catUsage();
+            return;
+        }
+        openDatabaseFromNextArg();
+
+        bool includeIDs = (argCount() > 1);
+        while (argCount() > 0) {
+            string docID = nextArg("document ID");
+            if (isGlobPattern(docID)) {
+                _enumFlags |= kC4IncludeBodies; // force displaying doc bodies
+                listDocs(docID);
+            } else {
+                unquoteGlobPattern(docID); // remove any protective backslashes
+                C4Error error;
+                c4::ref<C4Document> doc = c4doc_get(_db, slice(docID), true, &error);
+                if (!doc) {
+                    if (error.domain == LiteCoreDomain && error.code == kC4ErrorNotFound)
+                        cerr << "Error: Document \"" << docID << "\" not found.\n";
+                    else
+                        errorOccurred(format("reading document \"%s\"", docID.c_str()), error);
+                    continue;
+                }
+                catDoc(doc, includeIDs);
+                cout << '\n';
+            }
+        }
+    }
+
+
+    void catDoc(C4Document *doc, bool includeID) {
+        Value body = Value::fromData(doc->selectedRev.body);
+        slice docID = (includeID ? slice(doc->docID) : nullslice);
+        if (_prettyPrint)
+            prettyPrint(body, "", docID);
+        else
+            rawPrint(body, docID);
+    }
+
+
+    void rawPrint(Value body, slice docID) {
+        FLSharedKeys sharedKeys = c4db_getFLSharedKeys(_db);
+        alloc_slice jsonBuf = body.toJSON(sharedKeys, _json5, true);
+        slice restOfJSON = jsonBuf;
+        if (docID) {
+            // Splice a synthesized "_id" property into the start of the JSON object:
+            cout << "{" << ansiDim() << ansiItalic()
+                 << (_json5 ? "_id" : "\"_id\"") << ":\""
+                 << ansiReset() << ansiDim()
+                 << docID << "\"";
+            restOfJSON.moveStart(1);
+            if (restOfJSON.size > 1)
+                cout << ", ";
+            cout << ansiReset();
+        }
+        cout << restOfJSON;
+    }
+
+
+    void prettyPrint(Value value, const string &indent ="", slice docID =nullslice) {
+        // TODO: Support an includeID option
+        switch (value.type()) {
+            case kFLDict: {
+                auto sk = c4db_getFLSharedKeys(_db);
+                string subIndent = indent + "  ";
+                cout << "{\n";
+                if (docID) {
+                    cout << subIndent << ansiDim() << ansiItalic();
+                    cout << (_json5 ? "_id" : "\"_id\"");
+                    cout << ansiReset() << ansiDim() << ": \"" << docID << "\"";
+                    if (value.asDict().count() > 0)
+                        cout << ',';
+                    cout << ansiReset() << '\n';
+                }
+                for (Dict::iterator i(value.asDict(), sk); i; ++i) {
+                    cout << subIndent << ansiItalic();
+                    slice key = i.keyString();
+                    if (_json5 && canBeUnquotedJSON5Key(key))
+                        cout << key;
+                    else
+                        cout << '"' << key << '"';      //FIX: Escape quotes
+                    cout << ansiReset() << ": ";
+
+                    prettyPrint(i.value(), subIndent);
+                    if (i.count() > 1)
+                        cout << ',';
+                    cout << '\n';
+                }
+                cout << indent << "}";
+                break;
+            }
+            case kFLArray: {
+                string subIndent = indent + "  ";
+                cout << "[\n";
+                for (Array::iterator i(value.asArray()); i; ++i) {
+                    cout << subIndent;
+                    prettyPrint(i.value(), subIndent);
+                    if (i.count() > 1)
+                        cout << ',';
+                    cout << '\n';
+                    }
+                cout << indent << "]";
+                break;
+            }
+            default: {
+                alloc_slice json(value.toJSON());
+                cout << json;
+                break;
+            }
+        }
+    }
+
+    static bool canBeUnquotedJSON5Key(slice key) {
+        if (key.size == 0 || isdigit(key[0]))
+            return false;
+        for (unsigned i = 0; i < key.size; i++) {
+            if (!isalnum(key[i]) && key[i] != '_' && key[i] != '$')
+                return false;
+        }
+        return true;
+    }
+
+
+    static bool isGlobPattern(string &str) {
+        size_t size = str.size();
+        for (size_t i = 0; i < size; ++i) {
+            char c = str[i];
+            if ((c == '*' || c == '?') && (i == 0 || str[i-1] != '\\'))
+                return true;
+        }
+        return false;
+    }
+
+    static void unquoteGlobPattern(string &str) {
+        size_t size = str.size();
+        for (size_t i = 0; i < size; ++i) {
+            if (str[i] == '\\') {
+                str.erase(i, 1);
+                --size;
+            }
+        }
+    }
+
+
 #pragma mark - FILE INFO:
 
 
-    void fileInfo(string) {
+    void fileUsage() {
+        writeUsageCommand("file", false);
+        cerr <<
+        "  Displays information about the database\n"
+        ;
+    }
+
+
+    void fileInfo() {
         // Read params:
+        processFlags(nullptr);
+        if (_showHelp) {
+            fileUsage();
+            return;
+        }
         openDatabaseFromNextArg();
         endOfArgs();
 
@@ -335,26 +595,119 @@ public:
     }
 
 
-private:
-    void offsetFlag(string flag)    {_offset = stoul(nextArg("offset value"));}
-    void limitFlag(string flag)     {_limit = stol(nextArg("limit value"));}
-    void longListFlag(string flag)  {_longListing = true;}
-    void seqFlag(string flag)       {_listBySeq = true;}
-    void bodyFlag(string flag)      {_enumFlags |= kC4IncludeBodies;}
-    void descFlag(string flag)      {_enumFlags |= kC4Descending;}
-    void delFlag(string flag)       {_enumFlags |= kC4IncludeDeleted;}
-    void confFlag(string flag)      {_enumFlags &= ~kC4IncludeNonConflicted;}
+#pragma mark - INTERACTIVE MODE:
+
+
+    void shell() {
+        // Read params:
+        openDatabaseFromNextArg();
+        endOfArgs();
+        runInteractively();
+    }
+
+
+    void runInteractively() {
+        _interactive = true;
+        cout << "Opened database " << alloc_slice(c4db_getPath(_db)) << '\n';
+
+        while(true) {
+            try {
+                if (!readLine("(cblite) "))
+                    return;
+                string cmd = nextArg("subcommand");
+                clearFlags();
+                if (!processFlag(cmd, kInteractiveSubcommands))
+                    cerr << format("Unknown subcommand '%s'; type 'help' for a list of commands.\n",
+                                   cmd.c_str());
+            } catch (const fail_error &x) {
+                // subcommand failed (error message was already printed); continue
+            }
+        }
+    }
+
+
+    void helpCommand() {
+        if (argCount() > 0) {
+            _showHelp = true; // forces command to show help and return
+            string cmd = nextArg("subcommand");
+            if (!processFlag(cmd, kInteractiveSubcommands))
+                cerr << format("Unknown subcommand '%s'\n", cmd.c_str());
+        } else {
+            fileUsage();
+            catUsage();
+            listUsage();
+            queryUsage();
+            if (_interactive)
+                cerr << ansiBold() << "help " << it("[COMMAND]") << ansiReset() << '\n'
+                     << ansiBold() << "quit" << ansiReset() << "  (or Ctrl-D)\n";
+            else {
+                cerr <<
+                ansiBold() << "cblite help [SUBCOMMAND]\n" << ansiReset() <<
+                "  Displays help for a command, or for all commands.\n" <<
+                ansiBold() << "cblite DBPATH\n" << ansiReset() <<
+                "  Starts an interactive shell where you can run multiple commands on the same database.\n";
+            }
+        }
+    }
+
+
+    void quitCommand() {
+        exit(0);
+    }
+
+
+#pragma mark - FLAGS:
+
+
+    void clearFlags() {
+        _offset = 0;
+        _limit = -1;
+        _startKey = _endKey = nullslice;
+        _enumFlags = kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted;
+        _longListing = _listBySeq = false;
+        _prettyPrint = true;
+        _json5 = false;
+        _showHelp = false;
+    }
+
+
+    void offsetFlag()    {_offset = stoul(nextArg("offset value"));}
+    void limitFlag()     {_limit = stol(nextArg("limit value"));}
+    void longListFlag()  {_longListing = true;}
+    void seqFlag()       {_listBySeq = true;}
+    void bodyFlag()      {_enumFlags |= kC4IncludeBodies;}
+    void descFlag()      {_enumFlags |= kC4Descending;}
+    void delFlag()       {_enumFlags |= kC4IncludeDeleted;}
+    void confFlag()      {_enumFlags &= ~kC4IncludeNonConflicted;}
+    void prettyFlag()    {_prettyPrint = true; _enumFlags |= kC4IncludeBodies;}
+    void json5Flag()     {_json5 = true; _enumFlags |= kC4IncludeBodies;}
+    void rawFlag()       {_prettyPrint = false; _enumFlags |= kC4IncludeBodies;}
+    void helpFlag()      {_showHelp = true;}
 
     static constexpr FlagSpec kSubcommands[] = {
         {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
-        {"ls",      (FlagHandler)&CBLiteTool::listDocs},
+        {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
+        {"cat",     (FlagHandler)&CBLiteTool::catDocs},
         {"file",    (FlagHandler)&CBLiteTool::fileInfo},
+        {"shell",   (FlagHandler)&CBLiteTool::shell},
+        {"help",    (FlagHandler)&CBLiteTool::helpCommand},
+        {nullptr, nullptr}
+    };
+
+    static constexpr FlagSpec kInteractiveSubcommands[] = {
+        {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
+        {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
+        {"cat",     (FlagHandler)&CBLiteTool::catDocs},
+        {"file",    (FlagHandler)&CBLiteTool::fileInfo},
+        {"help",    (FlagHandler)&CBLiteTool::helpCommand},
+        {"quit",    (FlagHandler)&CBLiteTool::quitCommand},
         {nullptr, nullptr}
     };
 
     static constexpr FlagSpec kQueryFlags[] = {
         {"--offset", (FlagHandler)&CBLiteTool::offsetFlag},
         {"--limit",  (FlagHandler)&CBLiteTool::limitFlag},
+        {"--help",   (FlagHandler)&CBLiteTool::helpFlag},
         {nullptr, nullptr}
     };
 
@@ -363,25 +716,42 @@ private:
         {"--limit",  (FlagHandler)&CBLiteTool::limitFlag},
         {"-l",       (FlagHandler)&CBLiteTool::longListFlag},
         {"--body",   (FlagHandler)&CBLiteTool::bodyFlag},
+        {"--pretty", (FlagHandler)&CBLiteTool::prettyFlag},
+        {"--raw",    (FlagHandler)&CBLiteTool::rawFlag},
+        {"--json5",  (FlagHandler)&CBLiteTool::json5Flag},
         {"--desc",   (FlagHandler)&CBLiteTool::descFlag},
         {"--seq",    (FlagHandler)&CBLiteTool::seqFlag},
         {"--del",    (FlagHandler)&CBLiteTool::delFlag},
         {"--conf",   (FlagHandler)&CBLiteTool::confFlag},
+        {"--help",   (FlagHandler)&CBLiteTool::helpFlag},
+        {nullptr, nullptr}
+    };
+
+    static constexpr FlagSpec kCatFlags[] = {
+        {"--pretty", (FlagHandler)&CBLiteTool::prettyFlag},
+        {"--raw",    (FlagHandler)&CBLiteTool::rawFlag},
+        {"--json5",  (FlagHandler)&CBLiteTool::json5Flag},
         {nullptr, nullptr}
     };
 
     C4Database* _db {nullptr};
+    bool _interactive {false};
     uint64_t _offset {0};
     int64_t _limit {-1};
     alloc_slice _startKey, _endKey;
     C4EnumeratorFlags _enumFlags {kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted};
     bool _longListing {false};
     bool _listBySeq {false};
+    bool _prettyPrint {true};
+    bool _json5 {false};
+    bool _showHelp {false};
 };
 
 
-constexpr CBLiteTool::FlagSpec CBLiteTool::kSubcommands[], CBLiteTool::kQueryFlags[],
-          CBLiteTool::kListFlags[];
+constexpr CBLiteTool::FlagSpec CBLiteTool::kSubcommands[], CBLiteTool::kInteractiveSubcommands[],
+                               CBLiteTool::kQueryFlags[],
+                               CBLiteTool::kListFlags[],
+                               CBLiteTool::kCatFlags[];
 
 
 int main(int argc, const char * argv[]) {
