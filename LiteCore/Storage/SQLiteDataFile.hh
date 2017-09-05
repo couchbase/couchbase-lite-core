@@ -73,7 +73,7 @@ namespace litecore {
         int exec(const std::string &sql, LogLevel =LogLevel::Verbose);
         int execWithLock(const std::string &sql);
         int64_t intQuery(const char *query);
-        void maybeVacuum();
+        void optimizeAndVacuum();
 
     private:
         friend class SQLiteKeyStore;

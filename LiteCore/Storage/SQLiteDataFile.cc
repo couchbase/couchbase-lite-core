@@ -267,7 +267,7 @@ path.path().c_str());
         _getLastSeqStmt.reset();
         _setLastSeqStmt.reset();
         if (_sqlDb) {
-            maybeVacuum();
+            optimizeAndVacuum();
             _sqlDb.reset();
         }
         _collationContexts.clear();
@@ -509,13 +509,17 @@ path.path().c_str());
     }
 
 
-    void SQLiteDataFile::maybeVacuum() {
-        // For info, see https://blogs.gnome.org/jnelson/2015/01/06/sqlite-vacuum-and-auto_vacuum/
+    void SQLiteDataFile::optimizeAndVacuum() {
+        // <https://sqlite.org/pragma.html#pragma_optimize>
+        // <https://blogs.gnome.org/jnelson/2015/01/06/sqlite-vacuum-and-auto_vacuum/>
         try {
             int64_t pageCount = intQuery("PRAGMA page_count");
             int64_t freePages = intQuery("PRAGMA freelist_count");
             LogVerbose(DBLog, "Pre-close housekeeping: %lld of %lld pages free (%.0f%%)",
                        (long long)freePages, (long long)pageCount, (float)freePages / pageCount);
+
+            _exec("PRAGMA optimize");
+
             if ((pageCount > 0 && (float)freePages / pageCount >= kVacuumFractionThreshold)
                     || (freePages * kPageSize >= kVacuumSizeThreshold)) {
                 Log("Vacuuming database '%s'...", filePath().dirName().c_str());
@@ -529,7 +533,7 @@ path.path().c_str());
 
     void SQLiteDataFile::compact() {
         checkOpen();
-        maybeVacuum();
+        optimizeAndVacuum();
     }
 
 }
