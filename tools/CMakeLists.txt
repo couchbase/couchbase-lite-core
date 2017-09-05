@@ -27,7 +27,7 @@ target_link_libraries(cblite ${LITECORE_LIBRARIES_PRIVATE})
 
 if (APPLE)
     target_link_libraries(cblite
-      readline
+      z readline
       "-framework CoreFoundation"
       "-framework Security")
 elseif(MSVC)
@@ -73,7 +73,8 @@ add_executable(litecp
 target_link_libraries(litecp ${LITECORE_LIBRARIES_PRIVATE})
 
 if (APPLE)
-    target_link_libraries(litecp 
+    target_link_libraries(litecp
+      z
       "-framework CoreFoundation"
       "-framework Security")
 elseif(MSVC)

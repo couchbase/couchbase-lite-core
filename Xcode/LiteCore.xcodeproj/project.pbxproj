@@ -151,6 +151,7 @@
 		275A74D41ED3A4E1008CB57B /* Listener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275A74D01ED3A4E1008CB57B /* Listener.hh */; };
 		275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
 		275A74D71ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
+		275BF35D1F5F3F920051374A /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275CED461D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
@@ -1380,6 +1381,7 @@
 				272AEC561F560FF600051F0A /* libLiteCore-static.a in Frameworks */,
 				272AEC611F56194A00051F0A /* Security.framework in Frameworks */,
 				272AEC551F560FF600051F0A /* CoreFoundation.framework in Frameworks */,
+				275BF35D1F5F3F920051374A /* libz.tbd in Frameworks */,
 				277C1B241F58794100031200 /* libreadline.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
