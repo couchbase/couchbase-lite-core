@@ -73,7 +73,7 @@ namespace litecore { namespace websocket {
 
     using namespace uWS;
 
-    static LogDomain WSLogDomain("WS");
+    LogDomain WSLogDomain("WS");
 
 
     WebSocketImpl::WebSocketImpl(ProviderImpl &provider, const Address &address,
