@@ -118,9 +118,8 @@ private:
     static LogLevel sFileMinLevel;
 };
 
-extern "C" {
-    extern LogDomain DefaultLog;
-}
+extern "C" LogDomain kC4Cpp_DefaultLog;
+extern LogDomain DBLog, QueryLog, SyncLog;
 
 
 // logSlice() returns an ephemeral C string with a description of the slice: in double quotes if
@@ -138,10 +137,10 @@ std::string _logSlice(fleece::slice);
 #define LogVerbose(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
 #define LogDebug(DOMAIN, FMT, ...)      LogToAt(DOMAIN, Debug, FMT, ##__VA_ARGS__)
 
-#define Debug(FMT, ...)                 LogToAt(DefaultLog, Debug,   FMT, ##__VA_ARGS__)
-#define Log(FMT, ...)                   LogToAt(DefaultLog, Info,    FMT, ##__VA_ARGS__)
-#define Warn(FMT, ...)                  LogToAt(DefaultLog, Warning, FMT, ##__VA_ARGS__)
-#define WarnError(FMT, ...)             LogToAt(DefaultLog, Error,   FMT, ##__VA_ARGS__)
+#define Debug(FMT, ...)                 LogToAt(kC4Cpp_DefaultLog, Debug,   FMT, ##__VA_ARGS__)
+#define Log(FMT, ...)                   LogToAt(kC4Cpp_DefaultLog, Info,    FMT, ##__VA_ARGS__)
+#define Warn(FMT, ...)                  LogToAt(kC4Cpp_DefaultLog, Warning, FMT, ##__VA_ARGS__)
+#define WarnError(FMT, ...)             LogToAt(kC4Cpp_DefaultLog, Error,   FMT, ##__VA_ARGS__)
 #else
 #define LogToAt(DOMAIN, LEVEL, FMT, ARGS...) \
     ({if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \
@@ -151,14 +150,14 @@ std::string _logSlice(fleece::slice);
 #define LogVerbose(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Verbose, FMT, ##ARGS)
 #define LogDebug(DOMAIN, FMT, ARGS...)      LogToAt(DOMAIN, Debug, FMT, ##ARGS)
 
-#define Debug(FMT, ARGS...)                 LogToAt(DefaultLog, Debug,   FMT, ##ARGS)
-#define Log(FMT, ARGS...)                   LogToAt(DefaultLog, Info,    FMT, ##ARGS)
-#define Warn(FMT, ARGS...)                  LogToAt(DefaultLog, Warning, FMT, ##ARGS)
-#define WarnError(FMT, ARGS...)             LogToAt(DefaultLog, Error,   FMT, ##ARGS)
+#define Debug(FMT, ARGS...)                 LogToAt(kC4Cpp_DefaultLog, Debug,   FMT, ##ARGS)
+#define Log(FMT, ARGS...)                   LogToAt(kC4Cpp_DefaultLog, Info,    FMT, ##ARGS)
+#define Warn(FMT, ARGS...)                  LogToAt(kC4Cpp_DefaultLog, Warning, FMT, ##ARGS)
+#define WarnError(FMT, ARGS...)             LogToAt(kC4Cpp_DefaultLog, Error,   FMT, ##ARGS)
 #endif
 
 
-static inline bool WillLog(LogLevel lv)     {return DefaultLog.willLog(lv);}
+static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv);}
 
 
 // Debug(...) is stripped out of release builds

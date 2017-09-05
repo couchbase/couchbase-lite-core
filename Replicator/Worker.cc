@@ -23,11 +23,11 @@ using namespace fleece;
 using namespace fleeceapi;
 using namespace litecore::blip;
 
+namespace litecore {
+    LogDomain SyncLog("Sync");
+}
+
 namespace litecore { namespace repl {
-
-
-    static LogDomain SyncLog("Sync");
-
 
     Worker::Worker(blip::Connection *connection,
                          Worker *parent,

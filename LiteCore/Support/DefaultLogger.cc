@@ -9,5 +9,5 @@
 #include "Logging.hh"
 
 extern "C" {
-    litecore::LogDomain DefaultLog("", litecore::LogLevel::Info);
+    litecore::LogDomain kC4Cpp_DefaultLog("", litecore::LogLevel::Info);
 }

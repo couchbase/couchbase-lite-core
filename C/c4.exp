@@ -7,8 +7,12 @@
 _kC4SQLiteStorageEngine
 _kC4DatabaseFilenameExtension
 
-_DefaultLog
+_kC4Cpp_DefaultLog
 _kC4DefaultLog
+_kC4DatabaseLog
+_kC4QueryLog
+_kC4SyncLog
+_kC4WebSocketLog
 _c4SliceEqual
 _c4slice_free
 _c4log

@@ -25,8 +25,6 @@ using namespace std;
 
 namespace litecore {
 
-    extern LogDomain DBLog;
-
     const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false};
 
     Record KeyStore::get(slice key, ContentOptions options) const {

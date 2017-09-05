@@ -139,7 +139,7 @@ namespace litecore {
                     }
             }
             // Setting "LiteCoreLog" also sets the callback level to this level:
-            if (this == &DefaultLog) {
+            if (this == &kC4Cpp_DefaultLog) {
                 unique_lock<mutex> lock(sLogMutex);
                 sCallbackMinLevel = min(sCallbackMinLevel, level);
             }

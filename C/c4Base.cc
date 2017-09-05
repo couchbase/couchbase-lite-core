@@ -21,6 +21,7 @@
 #include "Logging.hh"
 
 #include "WebSocketInterface.hh"
+#include "WebSocketImpl.hh"         // just for WSLogDomain
 #include "SQLiteCpp/Exception.h"
 #include <ctype.h>
 #include <algorithm>
@@ -261,7 +262,11 @@ void c4log_setCallbackLevel(C4LogLevel level) noexcept   {LogDomain::setCallback
 void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {LogDomain::setFileLogLevel((LogLevel)level);}
 
 
-CBL_CORE_API const C4LogDomain kC4DefaultLog = (C4LogDomain)&DefaultLog;
+CBL_CORE_API const C4LogDomain kC4DefaultLog    = (C4LogDomain)&kC4Cpp_DefaultLog;
+CBL_CORE_API const C4LogDomain kC4DatabaseLog   = (C4LogDomain)&DBLog;
+CBL_CORE_API const C4LogDomain kC4QueryLog      = (C4LogDomain)&QueryLog;
+CBL_CORE_API const C4LogDomain kC4SyncLog       = (C4LogDomain)&SyncLog;
+CBL_CORE_API const C4LogDomain kC4WebSocketLog  = (C4LogDomain)&websocket::WSLogDomain;
 
 
 C4LogDomain c4log_getDomain(const char *name, bool create) noexcept {

@@ -299,8 +299,13 @@ typedef struct c4LogDomain *C4LogDomain;
 /** A logging callback that the application can register. */
 typedef void (*C4LogCallback)(C4LogDomain, C4LogLevel, const char *fmt C4NONNULL, va_list args);
 
-/** The default log domain. */
-CBL_CORE_API extern const C4LogDomain kC4DefaultLog;
+
+CBL_CORE_API extern const C4LogDomain
+    kC4DefaultLog,                  ///< The default log domain
+    kC4DatabaseLog,                 ///< Log domain for database operations
+    kC4QueryLog,                    ///< Log domain for query operations
+    kC4SyncLog,                     ///< Log domain for replication operations
+    kC4WebSocketLog;                ///< Log domain for WebSocket operations
 
 
 /** Registers (or unregisters) a log callback, and sets the minimum log level to report.

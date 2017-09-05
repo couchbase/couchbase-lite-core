@@ -15,8 +15,11 @@
 
 #include "Query.hh"
 #include "KeyStore.hh"
+#include "Logging.hh"
 
 
 namespace litecore {
+
+    LogDomain QueryLog("Query");
 
 }
