@@ -92,6 +92,7 @@ _c4doc_hasOldMetaProperties
 _c4doc_dictIsBlob
 _c4doc_dictContainsBlobs
 _c4doc_encodeStrippingOldMetaProperties
+_c4doc_detachRevisionBody
 
 _c4rev_getGeneration
 _c4rev_flagsFromDocFlags
@@ -120,6 +121,7 @@ _kC4DefaultQueryOptions
 
 _c4queryenum_next
 _c4queryenum_getRowCount
+_c4queryenum_fullTextMatched
 _c4queryenum_seek
 _c4queryenum_refresh
 _c4queryenum_close
@@ -141,6 +143,7 @@ _c4blob_deleteStore
 _c4blob_getSize
 _c4blob_getContents
 _c4blob_getFilePath
+_c4blob_computeKey
 _c4blob_openReadStream
 _c4blob_create
 _c4blob_delete
@@ -176,6 +179,7 @@ _c4repl_getResponseHeaders
 _c4socket_registerFactory
 _c4socket_fromNative
 _c4socket_opened
+_c4socket_closeRequested
 _c4socket_closed
 _c4socket_completedWrite
 _c4socket_received
@@ -267,6 +271,10 @@ _FLEncoder_BytesWritten
 _FLEncoder_Finish
 _FLEncoder_GetError
 _FLEncoder_GetErrorMessage
+_FLKeyPath_New
+_FLKeyPath_Free
+_FLKeyPath_Eval
+_FLKeyPath_EvalOnce
 
 # Fleece CF/Obj-C:
 _FLEncoder_WriteCFObject
