@@ -2,6 +2,8 @@ EXPORTS
 kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension
 
+c4_getBuildInfo
+
 kC4Cpp_DefaultLog
 kC4DefaultLog
 kC4DatabaseLog

@@ -124,6 +124,15 @@ if (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_MBEDTLS")
 endif()
 
+# Generate file repo_version.h containing Git repo information, and add it to #include path:
+if (UNIX)       # TODO: Make this work on Windows (use a PowerShell script?)
+    set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
+    file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
+    execute_process(COMMAND /bin/bash "${CMAKE_SOURCE_DIR}/build_cmake/scripts/get_repo_version.sh"
+                                      "${GENERATED_HEADERS_DIR}/repo_version.h")
+    include_directories(${GENERATED_HEADERS_DIR})
+endif()
+
 ### SOURCE FILES:
 
 include_directories(LiteCore/BlobStore

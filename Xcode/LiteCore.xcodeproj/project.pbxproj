@@ -1057,6 +1057,7 @@
 		275A74D01ED3A4E1008CB57B /* Listener.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Listener.hh; sourceTree = "<group>"; };
 		275A74D51ED3AA11008CB57B /* c4Listener.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Listener.cc; sourceTree = "<group>"; };
 		275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ListenerInternal.hh; sourceTree = "<group>"; };
+		275BF36B1F5F671C0051374A /* get_repo_version.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = get_repo_version.sh; sourceTree = "<group>"; };
 		275CE0E11E57B7E70084E014 /* c4Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Replicator.cc; sourceTree = "<group>"; };
 		275CE0E21E57B7E70084E014 /* c4Replicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Replicator.h; sourceTree = "<group>"; };
 		275CE0EE1E57BE7E0084E014 /* Replicator.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = Replicator.exp; sourceTree = "<group>"; };
@@ -1749,6 +1750,7 @@
 				27D74A721D4D3EC000D806E0 /* vendor */,
 				2763011E1F338B77004A1592 /* wiki */,
 				273E9FA41C519A1B003115A6 /* xcconfigs */,
+				275BF36A1F5F671C0051374A /* Scripts */,
 				2750723D18E3E52800A80C5A /* Frameworks */,
 				2750723C18E3E52800A80C5A /* Products */,
 			);
@@ -1912,6 +1914,15 @@
 			);
 			name = "C API";
 			path = ../C;
+			sourceTree = "<group>";
+		};
+		275BF36A1F5F671C0051374A /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+				275BF36B1F5F671C0051374A /* get_repo_version.sh */,
+			);
+			name = Scripts;
+			path = ../build_cmake/scripts;
 			sourceTree = "<group>";
 		};
 		275CE0FC1E5B78570084E014 /* tests */ = {
@@ -2784,6 +2795,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 27EF810F1917EEC600A327B9 /* Build configuration list for PBXNativeTarget "LiteCore static" */;
 			buildPhases = (
+				275BF36C1F5F67940051374A /* Generate repo_version.h */,
 				27EF80FC1917EEC600A327B9 /* Sources */,
 				27EF810B1917EEC600A327B9 /* Frameworks */,
 				27EF810E1917EEC600A327B9 /* CopyFiles */,
@@ -2824,6 +2836,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 720EA3F21BA7EAD9002B8416 /* Build configuration list for PBXNativeTarget "LiteCore dylib" */;
 			buildPhases = (
+				275BF3731F5F6CA20051374A /* Generate repo_version.h */,
 				720EA3DE1BA7EAD9002B8416 /* Sources */,
 				720EA3E91BA7EAD9002B8416 /* Frameworks */,
 				720EA3EF1BA7EAD9002B8416 /* Headers */,
@@ -3051,6 +3064,40 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		275BF36C1F5F67940051374A /* Generate repo_version.h */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../build_cmake/scripts/get_repo_version.sh",
+			);
+			name = "Generate repo_version.h";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/repo_version.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"";
+			showEnvVarsInLog = 0;
+		};
+		275BF3731F5F6CA20051374A /* Generate repo_version.h */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../build_cmake/scripts/get_repo_version.sh",
+			);
+			name = "Generate repo_version.h";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/repo_version.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"";
+			showEnvVarsInLog = 0;
+		};
 		27E6739E1EC8D958008F50C4 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;

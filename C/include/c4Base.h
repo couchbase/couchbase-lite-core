@@ -376,6 +376,14 @@ void c4slog(C4LogDomain domain, C4LogLevel level, C4String msg) C4API;
 #define C4WarnError(FMT, ...)       C4LogToAt(kC4DefaultLog, kC4LogError,   FMT, ## __VA_ARGS__)
 
 
+//////// INFO:
+
+
+/** A string describing the version of LiteCore. Currently this just describes the Git branch and
+    commit, in the form "Built from master branch, commit 0bc68f0d". */
+C4StringResult c4_getBuildInfo(void) C4API;
+
+
 /** Returns the number of objects that have been created but not yet freed.
     This can be used as a debugging/testing tool to detect leaks. */
 int c4_getObjectCount(void) C4API;

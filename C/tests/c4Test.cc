@@ -10,6 +10,7 @@
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "slice.hh"
+#include "StringUtil.hh"
 #include "Benchmark.hh"
 #include <iostream>
 #include <fstream>
@@ -166,12 +167,14 @@ _versioning(kC4RevisionTrees),
 {
     static once_flag once;
     call_once(once, [] {
+        fleece::alloc_slice version = c4_getBuildInfo();
         if (c4log_binaryFileLevel() == kC4LogNone) {
             string path = TempDir() + "LiteCoreAPITests.c4log";
             C4Log("Beginning logging to %s", path.c_str());
             C4Error error;
             REQUIRE(c4log_writeToBinaryFile(kC4LogVerbose, c4str(path.c_str()), &error));
         }
+        C4Log("This is LiteCore %.*s", SPLAT(version));
     });
     c4log_warnOnErrors(true);
 
