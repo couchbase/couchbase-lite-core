@@ -3120,13 +3120,10 @@
 			files = (
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
-				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
-				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
+				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
-				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
-				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 				27FA09A71D6FAE4F005888AA /* VersionedDocumentTests.cc in Sources */,
 				27FA09AF1D6FB616005888AA /* VersionVectorTest.cc in Sources */,
 				27FA09B11D6FB7AE005888AA /* RevisionTest.cc in Sources */,
@@ -3136,7 +3133,10 @@
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
+				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
+				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
+				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

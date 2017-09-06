@@ -90,8 +90,11 @@ public:
 
     /** Registers (or unregisters) a file to which log messages will be written in binary format.
         @param filePath  The file to write to, or an empty string to stop writing.
-        @param atLevel  Only log messages at this or a higher level will be written. */
-    static void writeEncodedLogsTo(const std::string &filePath, LogLevel atLevel);
+        @param atLevel  Only log messages at this or a higher level will be written.
+        @param initialMessage  First message that will be written to the log, e.g. version info */
+    static void writeEncodedLogsTo(const std::string &filePath,
+                                   LogLevel atLevel,
+                                   const std::string &initialMessage);
 
     static LogLevel callbackLogLevel() noexcept         {return sCallbackMinLevel;}
     static LogLevel fileLogLevel() noexcept             {return sFileMinLevel;}

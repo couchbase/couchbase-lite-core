@@ -10,6 +10,7 @@
 #include "SQLiteDataFile.hh"
 #include "FilePath.hh"
 #include "PlatformIO.hh"
+#include "StringUtil.hh"
 #include "c4Private.h"
 #include <stdlib.h>
 #include <stdarg.h>
@@ -164,9 +165,15 @@ void DataFileTestFixture::reopenDatabase(const DataFile::Options *newOptions) {
 DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options *options) {
     static once_flag once;
     call_once(once, [] {
-        auto path = FilePath::tempDirectory()["LiteCoreC++Tests.c4log"];
-        Log("Beginning logging to %s", path.path().c_str());
-        LogDomain::writeEncodedLogsTo(path, LogLevel::Verbose);
+        C4StringResult version = c4_getBuildInfo();
+        Log("This is LiteCore %.*s", SPLAT(version));
+        if (LogDomain::fileLogLevel() == LogLevel::None) {
+            auto path = FilePath::tempDirectory()["LiteCoreC++Tests.c4log"];
+            Log("Beginning logging to %s", path.path().c_str());
+            LogDomain::writeEncodedLogsTo(path, LogLevel::Verbose,
+                                          format("LiteCore %.*s", SPLAT(version)));
+        }
+        c4slice_free(version);
     });
     error::sWarnOnError = true;
 

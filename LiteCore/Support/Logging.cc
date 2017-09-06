@@ -71,7 +71,9 @@ namespace litecore {
     }
 
 
-    void LogDomain::writeEncodedLogsTo(const string &filePath, LogLevel atLevel) {
+    void LogDomain::writeEncodedLogsTo(const string &filePath, LogLevel atLevel,
+                                       const string &initialMessage)
+    {
         unique_lock<mutex> lock(sLogMutex);
         delete sLogEncoder;
         sLogEncoder = nullptr;
@@ -83,6 +85,9 @@ namespace litecore {
             sFileMinLevel = atLevel;
             sFileOut = new ofstream(filePath, ofstream::out|ofstream::trunc|ofstream::binary);
             sLogEncoder = new LogEncoder(*sFileOut);
+            if (!initialMessage.empty())
+                sLogEncoder->log((int)LogLevel::Info, "", LogEncoder::None,
+                                 "---- %s ----", initialMessage.c_str());
 
             // Make sure to flush the log when the process exits:
             static once_flag f;
