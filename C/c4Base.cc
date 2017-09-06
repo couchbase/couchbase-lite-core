@@ -51,12 +51,16 @@ extern "C" {
 
 static string getBuildInfo() {
 #ifndef _MSC_VER             // TODO: Remove this check when CMakeLists.txt is fixed to generate repo_version.h on Windows
+#if LiteCoreOfficial
+    return format("build number %s from commit %.8s", LiteCoreBuildNum, GitCommit);
+#else
     if (strcmp(GitBranch, "HEAD") == 0)
         return format("built from commit %.8s%s on %s %s",
                       GitCommit, GitDirty, __DATE__, __TIME__);
     else
         return format("built from %s branch, commit %.8s%s on %s %s",
                       GitBranch, GitCommit, GitDirty, __DATE__, __TIME__);
+#endif
 #else
     return "build info unknown";
 #endif
