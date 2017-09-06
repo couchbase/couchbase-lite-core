@@ -128,7 +128,7 @@ endif()
 if (UNIX)       # TODO: Make this work on Windows (use a PowerShell script?)
     set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
     file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
-    execute_process(COMMAND /bin/bash "${CMAKE_SOURCE_DIR}/build_cmake/scripts/get_repo_version.sh"
+    execute_process(COMMAND /bin/bash "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.sh"
                                       "${GENERATED_HEADERS_DIR}/repo_version.h")
     include_directories(${GENERATED_HEADERS_DIR})
 endif()
