@@ -47,7 +47,7 @@ public:
                  bool addOffsetLimit =false)
     {
         stringstream json;
-        json << "[\"SELECT\", {\"WHERE\": " << whereExpr;
+        json << "[\"SELECT\", {\"WHAT\": [[\"._id\"]], \"WHERE\": " << whereExpr;
         if (!sortExpr.empty())
             json << ", \"ORDER_BY\": " << sortExpr;
         if (addOffsetLimit)
@@ -66,8 +66,9 @@ public:
         INFO("c4query_run got error " << error.domain << "/" << error.code);
         REQUIRE(e);
         while (c4queryenum_next(e, &error)) {
-            std::string docID((const char*)e->docID.buf, e->docID.size);
-            docIDs.push_back(docID);
+            REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
+            fleece::slice docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
+            docIDs.push_back(docID.asString());
         }
         CHECK(error.code == 0);
         c4queryenum_free(e);

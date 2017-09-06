@@ -70,6 +70,10 @@ extern "C" {
 	CBL_CORE_API extern const C4QueryOptions kC4DefaultQueryOptions;
 
 
+    /** An opaque identifier of the matched text in a query row. */
+    typedef uint64_t C4FullTextID;
+
+
     /** Info about a match of a full-text query term. */
     typedef struct {
         uint32_t termIndex;                 ///< Index of the search term in the tokenized query
@@ -83,16 +87,10 @@ extern "C" {
         next call to c4queryenum_next or c4queryenum_free.
         The memory pointed to by slice fields is valid until the enumerator is advanced or freed. */
     typedef struct {
-        // All query types:
-        C4String docID;                       ///< ID of doc that emitted this row
-        C4SequenceNumber docSequence;        ///< Sequence number of doc that emitted row
-
-        // Expression-based only:
-        C4String revID;
-        C4DocumentFlags docFlags;
         FLArrayIterator columns;
 
         // Full-text only:
+        C4FullTextID fullTextID;
         uint32_t fullTextTermCount;          ///< The number of terms that were matched
         const C4FullTextTerm *fullTextTerms; ///< Array of terms that were matched
     } C4QueryEnumerator;
@@ -113,17 +111,11 @@ extern "C" {
                                    C4String encodedParameters,
                                    C4Error *outError) C4API;
 
-    /** In a full-text query enumerator, returns the string that was emitted during indexing that
-        contained the search term(s). */
-    C4StringResult c4queryenum_fullTextMatched(C4QueryEnumerator *e C4NONNULL,
-                                               C4Error *outError) C4API;
-
-    /** Given a docID and sequence number from the enumerator, returns the text that was emitted
+    /** Given a C4FullTextID from the enumerator, returns the text that was emitted
         during indexing. */
     C4StringResult c4query_fullTextMatched(C4Query *query C4NONNULL,
-                                          C4String docID,
-                                          C4SequenceNumber seq,
-                                          C4Error *outError) C4API;
+                                           C4FullTextID fullTextID,
+                                           C4Error *outError) C4API;
 
     /** Advances a query enumerator to the next row, populating its fields.
         Returns true on success, false at the end of enumeration or on error. */

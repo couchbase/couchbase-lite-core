@@ -20,12 +20,14 @@ namespace litecore {
         These are created by the factory method KeyStore::compileQuery(). */
     class Query : public RefCounted {
     public:
+        using FullTextID = uint64_t;
+
         KeyStore& keyStore() const                                      {return _keyStore;}
 
         virtual unsigned columnCount() const noexcept                   {return 0;}
         virtual std::string nameOfColumn(unsigned col) const            {return "";}
 
-        virtual alloc_slice getMatchedText(slice recordID, sequence_t)  {return alloc_slice();}
+        virtual alloc_slice getMatchedText(FullTextID)                  {return alloc_slice();}
 
         virtual std::string explain()                                   {return "";}
 
@@ -54,11 +56,6 @@ namespace litecore {
 
         virtual bool next() =0;
 
-        slice recordID() const                                  {return _recordID;}
-        sequence_t sequence() const                             {return _sequence;}
-        slice version() const                                   {return _version;}
-        DocumentFlags flags() const                             {return _flags;}
-
         virtual fleece::Array::iterator columns() const noexcept =0;
 
         /** Random access to rows. May not be supported by all implementations, but does work with
@@ -74,18 +71,13 @@ namespace litecore {
 
         virtual bool hasFullText() const                        {return false;}
         virtual const std::vector<FullTextTerm>& fullTextTerms(){return _fullTextTerms;}
-        virtual alloc_slice getMatchedText() const              {return alloc_slice();}
+        virtual Query::FullTextID fullTextID() const            {return 0;}
 
         /** If the query results have changed since `currentEnumerator`, returns a new enumerator
             that will return the new results. Otherwise returns null. */
         virtual QueryEnumerator* refresh() =0;
 
     protected:
-        // The implementation of next() should set these:
-        slice _recordID;
-        sequence_t _sequence;
-        slice _version;
-        DocumentFlags _flags {DocumentFlags::kNone};
         // The implementation of fullTextTerms() should populate this and return a reference:
         std::vector<FullTextTerm> _fullTextTerms;
     };

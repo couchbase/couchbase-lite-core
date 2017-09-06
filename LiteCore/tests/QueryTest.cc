@@ -109,17 +109,20 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT", "[Query]") {
     addNumberedDocs(store);
     // Use a (SQL) query based on the Fleece "num" property:
     Retained<Query> query{ store->compileQuery(json5("['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]")) };
-    CHECK(query->columnCount() == 0);
+    CHECK(query->columnCount() == 2);   // docID and sequence, by default
 
     for (int pass = 0; pass < 2; ++pass) {
         Stopwatch st;
         int i = 30;
         unique_ptr<QueryEnumerator> e(query->createEnumerator());
         while (e->next()) {
+            auto cols = e->columns();
+            REQUIRE(e->columns().count() == 2);
+            slice docID = cols[0]->asString();
+            sequence_t seq = cols[1]->asInt();
             string expectedDocID = stringWithFormat("rec-%03d", i);
-            REQUIRE(e->recordID() == alloc_slice(expectedDocID));
-            REQUIRE(e->sequence() == (sequence_t)i);
-            REQUIRE(e->columns().count() == 0);
+            REQUIRE(docID == slice(expectedDocID));
+            REQUIRE(seq == (sequence_t)i);
             ++i;
         }
         st.printReport("Query of $.num", i, "row");
@@ -147,8 +150,6 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT WHAT", "[Query]") {
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     while (e->next()) {
         string expectedDocID = stringWithFormat("rec-%03d", num);
-        REQUIRE(e->recordID() == alloc_slice(expectedDocID));
-        REQUIRE(e->sequence() == (sequence_t)num);
         auto cols = e->columns();
         REQUIRE(cols.count() == 2);
         REQUIRE(cols[0]->asInt() == num);
@@ -160,8 +161,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT WHAT", "[Query]") {
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
     addNumberedDocs(store);
-    Retained<Query> query{ store->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
-    Retained<Query> query2{ store->compileQuery(json5("{WHAT: ['.main', ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
+    Retained<Query> query1{ store->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
+    Retained<Query> query2{ store->compileQuery(json5("{WHAT: [ '.main',  ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
 
     SECTION("Just regular docs") {
     }
@@ -174,14 +175,10 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
     }
 
     int num = 11;
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
-    unique_ptr<QueryEnumerator> e2(query->createEnumerator());
+    unique_ptr<QueryEnumerator> e(query1->createEnumerator());
+    unique_ptr<QueryEnumerator> e2(query1->createEnumerator());
     while (e->next() && e2->next()) {
         string expectedDocID = stringWithFormat("rec-%03d", num);
-        REQUIRE(e->recordID() == alloc_slice(expectedDocID));
-        REQUIRE(e2->recordID() == alloc_slice(expectedDocID));
-        REQUIRE(e->sequence() == (sequence_t)num);
-        REQUIRE(e2->sequence() == (sequence_t)num);
         auto cols = e->columns();
         auto cols2 = e2->columns();
         REQUIRE(cols.count() == 2);
@@ -274,15 +271,13 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
         auto cols = e->columns();
         REQUIRE(cols.count() == 1);
         CHECK(cols[0]->asString() == slice(strings[expectedOrder[rows]]));
-        Log("key = %s", e->recordID().cString());
         CHECK(e->hasFullText());
         CHECK(e->fullTextTerms().size() == expectedTerms[rows]);
         for (auto term : e->fullTextTerms()) {
-            CHECK(e->recordID() == (slice)stringWithFormat("rec-%03d", expectedOrder[rows]));
             auto word = string(strings[expectedOrder[rows]] + term.start, term.length);
             CHECK(word == (rows == 3 ? "searching" : "search"));
         }
-        CHECK((string)e->getMatchedText() == strings[expectedOrder[rows]]);
+        CHECK((string)query->getMatchedText(e->fullTextID()) == strings[expectedOrder[rows]]);
         ++rows;
     }
     if (strcmp(options.stemmer, "en") == 0) {

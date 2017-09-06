@@ -109,7 +109,9 @@ public:
         REQUIRE(query);
         auto e = c4query_run(query, nullptr, kC4SliceNull, &error);
         while (c4queryenum_next(e, &error)) {
-            std::string artist((const char*)e->docID.buf, e->docID.size);
+            REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
+            fleece::slice docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
+            std::string artist = docID.asString();
             if (verbose) std::cerr << artist << "  ";
             docIDs.push_back(artist);
         }

@@ -30,13 +30,10 @@ namespace litecore {
     class SQLitePrerecordedQueryEnum;
 
 
-    // Default columns in query result
+    // Implicit columns in full-text query result:
     enum {
-        kSeqCol = 0,
-        kDocIDCol,
-        kVersionCol,
-        kFlagsCol,
-        kFTSOffsetsCol,     // only if there is a MATCH expression
+        kFTSSeqCol,
+        kFTSOffsetsCol
     };
 
 
@@ -47,7 +44,6 @@ namespace litecore {
         {
             LogTo(SQL, "Compiling JSON query: %.*s", SPLAT(selectorExpression));
             QueryParser qp(keyStore.tableName());
-            qp.setBaseResultColumns({"sequence", "key", "version", "flags"});
             qp.parseJSON(selectorExpression);
 
             _parameters = qp.parameters();
@@ -80,8 +76,8 @@ namespace litecore {
         }
 
 
-        alloc_slice getMatchedText(slice recordID, sequence_t seq) override {
-            if (!recordID || seq == 0)
+        alloc_slice getMatchedText(FullTextID ftsID) override {
+            if (ftsID == 0)
                 error::_throw(error::InvalidParameter);
             // Get the expression that generated the text
             if (_ftsTables.size() == 0)
@@ -99,8 +95,8 @@ namespace litecore {
 
             // Now load the document and evaluate the expression:
             alloc_slice result;
-            keyStore().get(recordID, kDefaultContent, [&](const Record &rec) {
-                if (rec.body() && rec.sequence() == seq) {
+            keyStore().get(ftsID, kDefaultContent, [&](const Record &rec) {
+                if (rec.body()) {
                     slice fleeceData = rec.body();
                     auto accessor = keyStore().dataFile().fleeceAccessor();
                     if (accessor)
@@ -181,19 +177,9 @@ namespace litecore {
 
         const Query::Options* options() const                   {return &_options;}
 
-        virtual int columnCount() =0;
-        virtual slice getStringColumn(int col) =0;
-        virtual int64_t getIntColumn(int col) =0;
-
-        // call after next() or seek()
-        void populateFields() {
-            if (!_query->_isAggregate) {
-                _recordID = getStringColumn(kDocIDCol);
-                _version = getStringColumn(kVersionCol);
-                _sequence = getIntColumn(kSeqCol);
-                _flags = (DocumentFlags)getIntColumn(kFlagsCol);
-            }
-        }
+        virtual int columnCount() const =0;
+        virtual slice getStringColumn(int col) const =0;
+        virtual int64_t getIntColumn(int col) const =0;
 
         bool hasFullText() const override {
             return !_query->_ftsTables.empty();
@@ -216,8 +202,8 @@ namespace litecore {
             return _fullTextTerms;
         }
 
-        alloc_slice getMatchedText() const override {
-            return _query->getMatchedText(_recordID, _sequence);
+        Query::FullTextID fullTextID() const override {
+            return getIntColumn(kFTSSeqCol);
         }
 
     protected:
@@ -256,7 +242,6 @@ namespace litecore {
             _iter = Array::iterator(_rows);
             _iter += (uint32_t)rowIndex;
             _first = false;
-            populateFields();
         }
 
         bool next() override {
@@ -266,19 +251,18 @@ namespace litecore {
                 ++_iter;
             if (!_iter)
                 return false;
-            populateFields();
             return true;
         }
 
-        int columnCount() override {
+        int columnCount() const override {
             return _iter->asArray()->count();
         }
 
-        slice getStringColumn(int col) override {
+        slice getStringColumn(int col) const override {
             return _iter->asArray()->get(col)->asString();
         }
 
-        int64_t getIntColumn(int col) override {
+        int64_t getIntColumn(int col) const override {
             return (int)_iter->asArray()->get(col)->asInt();
         }
 
@@ -385,22 +369,19 @@ namespace litecore {
         }
 
         bool next() override {
-            if (!_statement->executeStep())
-                return false;
-            populateFields();
-            return true;
+            return _statement->executeStep();
         }
 
-        int columnCount() override {
+        int columnCount() const override {
             return _statement->getColumnCount();
         }
 
-        slice getStringColumn(int col) override {
+        slice getStringColumn(int col) const override {
             return {(const void*)_statement->getColumn(col),
                 (size_t)_statement->getColumn(col).size()};
         }
 
-        int64_t getIntColumn(int col) override {
+        int64_t getIntColumn(int col) const override {
             return _statement->getColumn(col);
         }
 

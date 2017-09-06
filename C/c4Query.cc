@@ -70,8 +70,8 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
         return *_enum;
     }
 
-    int64_t getRowCount() const     {return enumerator().getRowCount();}
-    alloc_slice getMatchedText()    {return enumerator().getMatchedText();}
+    int64_t getRowCount() const         {return enumerator().getRowCount();}
+    Query::FullTextID getFullTextID()   {return enumerator().fullTextID();}
 
     bool next() {
         if (!enumerator().next()) {
@@ -92,18 +92,13 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
     }
 
     void populatePublicFields() {
-        docID = _enum->recordID();
-        docSequence = _enum->sequence();
-        docFlags = (C4DocumentFlags)_enum->flags();
-        revID = _revIDBuf = _database->documentFactory().revIDFromVersion(_enum->version());
-
+        (fleece::Array::iterator&)columns = _enum->columns();
         if (_hasFullText) {
+            fullTextID = _enum->fullTextID();
             auto &ft = _enum->fullTextTerms();
             fullTextTerms = (const C4FullTextTerm*)ft.data();
             fullTextTermCount = (uint32_t)ft.size();
         }
-
-        (fleece::Array::iterator&)columns = _enum->columns();
     }
 
     C4QueryEnumeratorImpl* refresh() {
@@ -121,7 +116,6 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
 private:
     Retained<Database> _database;
     unique_ptr<QueryEnumerator> _enum;
-    alloc_slice _revIDBuf;
     bool _hasFullText;
 };
 
@@ -184,12 +178,11 @@ C4StringResult c4query_explain(C4Query *query) noexcept {
 
 
 C4SliceResult c4query_fullTextMatched(C4Query *query,
-                                      C4Slice docID,
-                                      C4SequenceNumber seq,
+                                      C4FullTextID ftsID,
                                       C4Error *outError) noexcept
 {
     return tryCatch<C4SliceResult>(outError, [&]{
-        return sliceResult(query->query()->getMatchedText(docID, seq));
+        return sliceResult(query->query()->getMatchedText(ftsID));
     });
 }
 
@@ -249,15 +242,6 @@ void c4queryenum_close(C4QueryEnumerator *e) noexcept {
 
 void c4queryenum_free(C4QueryEnumerator *e) noexcept {
     delete internal(e);
-}
-
-
-C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator *e,
-                                          C4Error *outError) noexcept
-{
-    return tryCatch<C4SliceResult>(outError, [&]{
-        return sliceResult(((C4QueryEnumeratorImpl*)e)->getMatchedText());
-    });
 }
 
 

@@ -199,6 +199,8 @@ namespace litecore {
             unsigned numMatches = findFTSProperties(where);
             require(numMatches <= _ftsTables.size(),
                     "Sorry, multiple MATCHes of the same property are not allowed");
+            if (numMatches > 0)
+                _baseResultColumns.push_back("sequence");
         }
 
         // Find all the joins in the FROM clause first, to populate _aliases. This has to be done
@@ -227,14 +229,20 @@ namespace litecore {
             for (auto &col : _baseResultColumns)
             _sql << (nCol++ ? ", " : "") << defaultTablePrefix << col;
         }
-        
+
         for (auto ftsTable : _ftsTables) {
             _sql << (nCol++ ? ", " : "") << "offsets(\"" << ftsTable << "\")";
         }
         _1stCustomResultCol = nCol;
 
-        nCol += writeSelectListClause(operands, "WHAT"_sl, (nCol ? ", " : ""), true);
-        require(nCol > 0, "No result columns");
+        auto nCustomCol = writeSelectListClause(operands, "WHAT"_sl, (nCol ? ", " : ""), true);
+
+        if (nCustomCol == 0) {
+            // If no return columns are specified, add the docID and sequence as defaults
+            if (nCol > 0)
+                _sql << ", ";
+            _sql << defaultTablePrefix << "key, " << defaultTablePrefix << "sequence";
+        }
 
         // FROM clause:
         writeFromClause(from);

@@ -123,7 +123,6 @@ kC4DefaultQueryOptions
 
 c4queryenum_next
 c4queryenum_getRowCount
-c4queryenum_fullTextMatched
 c4queryenum_seek
 c4queryenum_refresh
 c4queryenum_close
