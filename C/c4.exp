@@ -17,6 +17,7 @@ _c4SliceEqual
 _c4slice_free
 _c4log
 _c4vlog
+_c4slog
 _c4log_writeToCallback
 _c4log_writeToBinaryFile
 _c4log_callbackLevel

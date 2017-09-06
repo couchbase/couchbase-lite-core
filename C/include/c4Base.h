@@ -363,6 +363,9 @@ void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt C4NONNULL, ...)
 /** Same as c4log, for use in calling functions that already take variable args. */
 void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt C4NONNULL, va_list args) C4API;
 
+/** Same as c4log, except it accepts preformatted messages as C4Slices */
+void c4slog(C4LogDomain domain, C4LogLevel level, C4String msg) C4API;
+
 // Convenient aliases for c4log:
 #define C4LogToAt(DOMAIN, LEVEL, FMT, ...)        \
         {if (c4log_getLevel(DOMAIN) <= LEVEL)   \

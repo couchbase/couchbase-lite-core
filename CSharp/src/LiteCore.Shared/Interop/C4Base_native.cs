@@ -100,6 +100,13 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4log_setLevel(C4LogDomain* c4Domain, C4LogLevel level);
 
+        public static void c4slog(C4LogDomain* domain, C4LogLevel level, string msg)
+        {
+            using(var msg_ = new C4String(msg)) {
+                NativeRaw.c4slog(domain, level, msg_.AsC4Slice());
+            }
+        }
+
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int c4_getObjectCount();
 
@@ -125,6 +132,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern byte* c4log_getDomainName(C4LogDomain* x);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4slog(C4LogDomain* domain, C4LogLevel level, C4Slice msg);
 
 
     }

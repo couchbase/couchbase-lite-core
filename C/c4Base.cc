@@ -19,6 +19,7 @@
 #include "c4Private.h"
 
 #include "Logging.hh"
+#include "StringUtil.hh"
 
 #include "WebSocketInterface.hh"
 #include "WebSocketImpl.hh"         // just for WSLogDomain
@@ -314,4 +315,8 @@ void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, va_list arg
     try {
         ((LogDomain*)c4Domain)->vlog((LogLevel)level, fmt, args);
     } catch (...) { }
+}
+
+void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
+    c4log(c4Domain, level, "%.*s", SPLAT(msg));
 }

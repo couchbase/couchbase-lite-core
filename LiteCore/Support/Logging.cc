@@ -198,7 +198,7 @@ namespace litecore {
                 size_t n = 0;
                 if (objRef)
                     n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%u} ", objRef);
-                vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args);
+                vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args2);
                 va_list noArgs { };
                 sCallback(*this, level, sFormatBuffer, noArgs);
             } else {
