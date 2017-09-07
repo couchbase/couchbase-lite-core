@@ -276,7 +276,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     
     // with previous revision ID -> success
     doc = putDoc(docID, revID2, kC4SliceNull, kRevDeleted);
-    REQUIRE(doc->flags == (C4DocumentFlags)(kExists | kDeleted));
+    REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->docID == docID);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "3-") == 0);
     C4String revID3 = copy(doc->revID);
@@ -287,7 +287,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc);
     REQUIRE(doc->docID == docID);
     REQUIRE(doc->revID == revID3);
-    REQUIRE(doc->flags == (C4DocumentFlags)(kExists | kDeleted));
+    REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.revID == revID3);
     REQUIRE(doc->selectedRev.body == kC4SliceNull);
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
@@ -505,7 +505,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     doc = c4doc_get(db, docID, true, &error);
     REQUIRE(doc);
     REQUIRE(c4doc_selectRevision(doc, revID2, true, &error));
-    REQUIRE(doc->flags == (C4DocumentFlags)(kExists | kDeleted));
+    REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
     REQUIRE(doc->selectedRev.body == body2);
     c4doc_free(doc);
@@ -545,7 +545,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     // Delete a document
     doc = putDoc(C4STR("dock"), revID1, kC4SliceNull, kRevDeleted);
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
-    REQUIRE(doc->flags == (C4DocumentFlags)(kExists | kDeleted));
+    REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
     REQUIRE(doc->selectedRev.body == kC4SliceNull);
     C4String revID2 = copy(doc->revID);
@@ -741,7 +741,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeterministicRevIDs", "[Database
     C4String revID = copy(doc->revID);
     c4doc_free(doc);
     
-    eraseTestDB();
+    reopenDB();
     
     doc = putDoc(docID, kC4SliceNull, body);
     REQUIRE(doc->revID == revID);

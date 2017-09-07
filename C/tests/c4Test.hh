@@ -137,6 +137,7 @@ public:
     bool isVersionVectors() const               {return _versioning == kC4VersionVectors;}
 
     void reopenDB();
+    void deleteDatabase();
     void deleteAndRecreateDB();
 
     // Creates a new document revision with the given revID as a child of the current rev
