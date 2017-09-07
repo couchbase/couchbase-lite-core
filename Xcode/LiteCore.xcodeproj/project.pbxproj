@@ -3219,11 +3219,11 @@
 			files = (
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
+				275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */,
 				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
 				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
 				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
 				27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */,
-				275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */,
 				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
 				2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */,
 				272850E91E9D484A009CA22F /* ReplicatorAPITest.cc in Sources */,

@@ -291,6 +291,9 @@ C4Document* c4doc_put(C4Database *database,
     } else {
         if (!checkParam(rq->historyCount <= 1, "Too much history", outError))
             return nullptr;
+        if (!checkParam(rq->historyCount > 0 || !(rq->revFlags & kRevDeleted),
+                        "Can't create a new already-deleted document", outError))
+            return nullptr;
     }
 
     int commonAncestorIndex = 0;
@@ -301,10 +304,6 @@ C4Document* c4doc_put(C4Database *database,
         if (isNewDocPutRequest(database, rq)) {
             // As an optimization, write the doc assuming there is no prior record in the db:
             doc = putNewDoc(database, rq);
-            if (!doc && !rq->existingRevision && !rq->allowConflict) {
-                recordError(LiteCoreDomain, kC4ErrorConflict, "Document already exists",  outError);
-                return nullptr;
-            }
             // If there's already a record, doc will be null, so we'll continue down regular path.
         }
         if (!doc) {
