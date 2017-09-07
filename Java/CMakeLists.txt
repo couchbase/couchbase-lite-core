@@ -20,11 +20,6 @@ MESSAGE( STATUS "JAVA_INCLUDE_PATH: "     ${JAVA_INCLUDE_PATH} )
 MESSAGE( STATUS "JAVA_INCLUDE_PATH2: "    ${JAVA_INCLUDE_PATH2} )
 MESSAGE( STATUS "Java_JAVAH_EXECUTABLE: " ${Java_JAVAH_EXECUTABLE} )
 
-
-# configure import libs
-set(OPENSSL_LIB_DIR ${TOP}/vendor/openssl/libs/android)
-
-
 #
 # Generate JNI header files
 #
