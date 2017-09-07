@@ -14,6 +14,8 @@
 #include <fnmatch.h>        // POSIX (?)
 #include <fstream>
 #include <iomanip>
+#include <map>
+#include <set>
 #include <sstream>
 #include <vector>
 
@@ -21,6 +23,7 @@
 #include <sys/ioctl.h>
 #endif
 
+using namespace std;
 using namespace fleeceapi;
 
 
@@ -48,6 +51,7 @@ public:
         "Usage: cblite query " << it("[FLAGS] DBPATH JSONQUERY") << "\n"
         "       cblite ls " << it("[FLAGS] DBPATH [PATTERN]") << "\n"
         "       cblite cat " << it("[FLAGS] DBPATH DOCID [DOCID...]") << "\n"
+        "       cblite revs " << it("DBPATH DOCID") << "\n"
         "       cblite file " << it("DBPATH") << "\n"
         "       cblite help " << it("[SUBCOMMAND]") << "\n"
         "       cblite " << it("DBPATH") << "   (interactive shell)\n"
@@ -387,19 +391,26 @@ public:
                 listDocs(docID);
             } else {
                 unquoteGlobPattern(docID); // remove any protective backslashes
-                C4Error error;
-                c4::ref<C4Document> doc = c4doc_get(_db, slice(docID), true, &error);
-                if (!doc) {
-                    if (error.domain == LiteCoreDomain && error.code == kC4ErrorNotFound)
-                        cerr << "Error: Document \"" << docID << "\" not found.\n";
-                    else
-                        errorOccurred(format("reading document \"%s\"", docID.c_str()), error);
-                    continue;
+                c4::ref<C4Document> doc = readDoc(docID);
+                if (doc) {
+                    catDoc(doc, includeIDs);
+                    cout << '\n';
                 }
-                catDoc(doc, includeIDs);
-                cout << '\n';
             }
         }
+    }
+
+
+    c4::ref<C4Document> readDoc(string docID) {
+        C4Error error;
+        c4::ref<C4Document> doc = c4doc_get(_db, slice(docID), true, &error);
+        if (!doc) {
+            if (error.domain == LiteCoreDomain && error.code == kC4ErrorNotFound)
+                cerr << "Error: Document \"" << docID << "\" not found.\n";
+            else
+                errorOccurred(format("reading document \"%s\"", docID.c_str()), error);
+        }
+        return doc;
     }
 
 
@@ -517,6 +528,103 @@ public:
     }
 
 
+#pragma mark - DOCUMENT INFO:
+
+
+    void revsUsage() {
+        writeUsageCommand("revs", false, "DOCID");
+        cerr <<
+        "  Shows a document's revision history\n"
+        ;
+    }
+
+
+    using RevTree = map<alloc_slice,set<alloc_slice>>; // Maps revID to set of child revIDs
+
+    void revsInfo() {
+        // Read params:
+        processFlags(nullptr);
+        if (_showHelp) {
+            revsUsage();
+            return;
+        }
+        openDatabaseFromNextArg();
+        string docID = nextArg("document ID");
+        endOfArgs();
+
+        auto doc = readDoc(docID);
+        if (!doc)
+            return;
+
+        cout << "Document \"" << ansiBold() << doc->docID << ansiReset()
+             << "\", current revID " << ansiBold() << doc->revID << ansiReset()
+             << ", sequence #" << doc->sequence;
+        if (doc->flags & kDocDeleted)
+            cout << ", Deleted";
+        if (doc->flags & kDocConflicted)
+            cout << ", Conflicted";
+        if (doc->flags & kDocHasAttachments)
+            cout << ", Has Attachments";
+        cout << "\n";
+
+        // Collect revision tree info:
+        RevTree tree;
+        alloc_slice root; // use empty slice as root of tree
+
+        do {
+            alloc_slice leafRevID = doc->selectedRev.revID;
+            alloc_slice childID = leafRevID;
+            while (c4doc_selectParentRevision(doc)) {
+                alloc_slice parentID = doc->selectedRev.revID;
+                tree[parentID].insert(childID);
+                childID = parentID;
+            }
+            tree[root].insert(childID);
+            c4doc_selectRevision(doc, leafRevID, false, nullptr);
+        } while (c4doc_selectNextLeafRevision(doc, true, true, nullptr));
+
+        writeRevisionChildren(doc, tree, root, "");
+    }
+
+
+    void writeRevisionTree(C4Document *doc,
+                           RevTree &tree,
+                           alloc_slice root,
+                           const string &indent)
+    {
+        static const char* const kRevFlagName[7] = {
+            "Deleted", "Leaf", "New", "Attach", "KeepBody", "Conflict", "Foreign"
+        };
+        C4Error error;
+        if (!c4doc_selectRevision(doc, root, true, &error))
+            fail("accessing revision", error);
+        auto &rev = doc->selectedRev;
+        cout << indent << "* ";
+        if (rev.flags & kRevLeaf)
+            cout << ansiBold();
+        cout << rev.revID << ansiReset() << " (#" << rev.sequence << ")";
+        if (rev.body.buf)
+            cout << ", " << rev.body.size << " bytes";
+        for (int bit = 0; bit < 7; bit++) {
+            if (rev.flags & (1 << bit))
+                cout << ", " << kRevFlagName[bit];
+        }
+        cout << "\n";
+        writeRevisionChildren(doc, tree, root, indent + "  ");
+    }
+
+    void writeRevisionChildren(C4Document *doc,
+                               RevTree &tree,
+                               alloc_slice root,
+                               const string &indent)
+    {
+        auto &children = tree[root];
+        for (auto i = children.rbegin(); i != children.rend(); ++i) {
+            writeRevisionTree(doc, tree, *i, indent);
+        }
+    }
+
+
 #pragma mark - FILE INFO:
 
 
@@ -568,6 +676,7 @@ public:
                     cout << ", ";
                 cout << i.value().asString();
             }
+            cout << "\n";
         }
 
         if (nBlobs > 0) {
@@ -633,9 +742,10 @@ public:
             if (!processFlag(cmd, kInteractiveSubcommands))
                 cerr << format("Unknown subcommand '%s'\n", cmd.c_str());
         } else {
-            fileUsage();
-            catUsage();
             listUsage();
+            catUsage();
+            revsUsage();
+            fileUsage();
             queryUsage();
             if (_interactive)
                 cerr << ansiBold() << "help " << it("[COMMAND]") << ansiReset() << '\n'
@@ -688,6 +798,7 @@ public:
         {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
         {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
         {"cat",     (FlagHandler)&CBLiteTool::catDocs},
+        {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
         {"file",    (FlagHandler)&CBLiteTool::fileInfo},
         {"shell",   (FlagHandler)&CBLiteTool::shell},
         {"help",    (FlagHandler)&CBLiteTool::helpCommand},
@@ -698,6 +809,7 @@ public:
         {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
         {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
         {"cat",     (FlagHandler)&CBLiteTool::catDocs},
+        {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
         {"file",    (FlagHandler)&CBLiteTool::fileInfo},
         {"help",    (FlagHandler)&CBLiteTool::helpCommand},
         {"quit",    (FlagHandler)&CBLiteTool::quitCommand},

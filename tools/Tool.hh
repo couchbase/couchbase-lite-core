@@ -137,6 +137,8 @@ protected:
                 return;
             _args.pop_front();
 
+            if (flag == "--")
+                return;
             if (!processFlag(flag, specs)) {
                 if (flag == "--help") {
                     usage();
