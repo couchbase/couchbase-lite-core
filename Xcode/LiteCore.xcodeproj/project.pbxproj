@@ -153,6 +153,11 @@
 		275A74D71ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
 		275BF35D1F5F3F920051374A /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
+		275BF3991F6326910051374A /* cbliteTool+query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF3981F6326910051374A /* cbliteTool+query.cc */; };
+		275BF39C1F6327270051374A /* cbliteTool+ls.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF39B1F6327270051374A /* cbliteTool+ls.cc */; };
+		275BF39E1F6328050051374A /* cbliteTool+cat.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF39D1F6328050051374A /* cbliteTool+cat.cc */; };
+		275BF3A01F6328B70051374A /* cbliteTool+revs.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF39F1F6328B70051374A /* cbliteTool+revs.cc */; };
+		275BF3A21F63291A0051374A /* cbliteTool+file.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF3A11F63291A0051374A /* cbliteTool+file.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275CED461D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
@@ -1060,6 +1065,12 @@
 		275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4ListenerInternal.hh; sourceTree = "<group>"; };
 		275BF36B1F5F671C0051374A /* get_repo_version.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = get_repo_version.sh; sourceTree = "<group>"; };
 		275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseInternalTest.cc; sourceTree = "<group>"; };
+		275BF3941F63222E0051374A /* cbliteTool.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = cbliteTool.hh; sourceTree = "<group>"; };
+		275BF3981F6326910051374A /* cbliteTool+query.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+query.cc"; sourceTree = "<group>"; };
+		275BF39B1F6327270051374A /* cbliteTool+ls.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+ls.cc"; sourceTree = "<group>"; };
+		275BF39D1F6328050051374A /* cbliteTool+cat.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+cat.cc"; sourceTree = "<group>"; };
+		275BF39F1F6328B70051374A /* cbliteTool+revs.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+revs.cc"; sourceTree = "<group>"; };
+		275BF3A11F63291A0051374A /* cbliteTool+file.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+file.cc"; sourceTree = "<group>"; };
 		275CE0E11E57B7E70084E014 /* c4Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Replicator.cc; sourceTree = "<group>"; };
 		275CE0E21E57B7E70084E014 /* c4Replicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Replicator.h; sourceTree = "<group>"; };
 		275CE0EE1E57BE7E0084E014 /* Replicator.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = Replicator.exp; sourceTree = "<group>"; };
@@ -1618,6 +1629,12 @@
 			isa = PBXGroup;
 			children = (
 				272AEC5C1F56115400051F0A /* cbliteTool.cc */,
+				275BF3941F63222E0051374A /* cbliteTool.hh */,
+				275BF3981F6326910051374A /* cbliteTool+query.cc */,
+				275BF39B1F6327270051374A /* cbliteTool+ls.cc */,
+				275BF39D1F6328050051374A /* cbliteTool+cat.cc */,
+				275BF39F1F6328B70051374A /* cbliteTool+revs.cc */,
+				275BF3A11F63291A0051374A /* cbliteTool+file.cc */,
 			);
 			path = interactive;
 			sourceTree = "<group>";
@@ -3179,8 +3196,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				275BF3A01F6328B70051374A /* cbliteTool+revs.cc in Sources */,
+				275BF3991F6326910051374A /* cbliteTool+query.cc in Sources */,
+				275BF3A21F63291A0051374A /* cbliteTool+file.cc in Sources */,
+				275BF39E1F6328050051374A /* cbliteTool+cat.cc in Sources */,
 				272AEC5D1F56115400051F0A /* cbliteTool.cc in Sources */,
 				277C1B1F1F58770400031200 /* Tool.cc in Sources */,
+				275BF39C1F6327270051374A /* cbliteTool+ls.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

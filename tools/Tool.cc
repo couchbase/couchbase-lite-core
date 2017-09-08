@@ -13,7 +13,11 @@
 
 #if __APPLE__
 #include <unistd.h>
+#include <sys/ioctl.h>
 #endif
+
+
+static constexpr int kDefaultLineWidth = 100;
 
 
 Tool::~Tool() {
@@ -53,6 +57,16 @@ string Tool::ansi(const char *command) {
         return format("\033[%sm", command);
     else
         return "";
+}
+
+
+int Tool::terminalWidth() {
+#if __APPLE__
+    struct ttysize ts;
+    if (ioctl(0, TIOCGSIZE, &ts) == 0 && ts.ts_cols > 0)
+        return ts.ts_cols;
+#endif
+    return kDefaultLineWidth;
 }
 
 
