@@ -18,18 +18,20 @@ int main(int argc, const char * argv[]) {
 void CBLiteTool::usage() {
     cerr <<
     ansiBold() << "cblite: Couchbase Lite / LiteCore database multi-tool\n" << ansiReset() <<
-    "Usage: cblite query " << it("[FLAGS] DBPATH JSONQUERY") << "\n"
-    "       cblite ls " << it("[FLAGS] DBPATH [PATTERN]") << "\n"
+    "Usage: cblite help " << it("[SUBCOMMAND]") << "\n"
     "       cblite cat " << it("[FLAGS] DBPATH DOCID [DOCID...]") << "\n"
-    "       cblite revs " << it("DBPATH DOCID") << "\n"
     "       cblite file " << it("DBPATH") << "\n"
-    "       cblite help " << it("[SUBCOMMAND]") << "\n"
+    "       cblite ls " << it("[FLAGS] DBPATH [PATTERN]") << "\n"
+    "       cblite query " << it("[FLAGS] DBPATH JSONQUERY") << "\n"
+    "       cblite revs " << it("DBPATH DOCID") << "\n"
+    "       cblite sql " << it("DBPATH QUERY") << "\n"
     "       cblite " << it("DBPATH") << "   (interactive shell)\n"
     "           The shell accepts the same commands listed above, but without the\n"
     "           'cblite' and DBPATH parameters. For example, 'ls -l'.\n"
     "   For information about parameters, run `cblite help`.\n"
     ;
 }
+
 
 void CBLiteTool::writeUsageCommand(const char *cmd, bool hasFlags, const char *otherArgs) {
     cerr << ansiBold();
@@ -42,6 +44,8 @@ void CBLiteTool::writeUsageCommand(const char *cmd, bool hasFlags, const char *o
         cerr << "DBPATH ";
     cerr << otherArgs << ansiReset() << "\n";
 }
+
+
 int CBLiteTool::run() {
     c4log_setCallbackLevel(kC4LogWarning);
     clearFlags();
@@ -72,6 +76,7 @@ void CBLiteTool::openDatabase(string path) {
     if (!_db)
         fail(format("Couldn't open database %s", path.c_str()), err);
 }
+
 
 void CBLiteTool::openDatabaseFromNextArg() {
     if (!_db)
@@ -117,11 +122,12 @@ void CBLiteTool::helpCommand() {
         if (!processFlag(cmd, kInteractiveSubcommands))
             cerr << format("Unknown subcommand '%s'\n", cmd.c_str());
     } else {
-        listUsage();
         catUsage();
-        revsUsage();
         fileUsage();
+        listUsage();
         queryUsage();
+        revsUsage();
+        sqlUsage();
         if (_interactive)
             cerr << ansiBold() << "help " << it("[COMMAND]") << ansiReset() << '\n'
             << ansiBold() << "quit" << ansiReset() << "  (or Ctrl-D)\n";
@@ -145,23 +151,27 @@ void CBLiteTool::quitCommand() {
 
 
 const Tool::FlagSpec CBLiteTool::kSubcommands[] = {
-    {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
-    {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
     {"cat",     (FlagHandler)&CBLiteTool::catDocs},
-    {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
     {"file",    (FlagHandler)&CBLiteTool::fileInfo},
-    {"shell",   (FlagHandler)&CBLiteTool::shell},
     {"help",    (FlagHandler)&CBLiteTool::helpCommand},
+    {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
+    {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
+    {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
+    {"sql",     (FlagHandler)&CBLiteTool::sqlQuery},
+
+    {"shell",   (FlagHandler)&CBLiteTool::shell},
     {nullptr, nullptr}
 };
 
 const Tool::FlagSpec CBLiteTool::kInteractiveSubcommands[] = {
-    {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
-    {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
     {"cat",     (FlagHandler)&CBLiteTool::catDocs},
-    {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
     {"file",    (FlagHandler)&CBLiteTool::fileInfo},
     {"help",    (FlagHandler)&CBLiteTool::helpCommand},
+    {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
+    {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
+    {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
+    {"sql",     (FlagHandler)&CBLiteTool::sqlQuery},
+
     {"quit",    (FlagHandler)&CBLiteTool::quitCommand},
     {nullptr, nullptr}
 };

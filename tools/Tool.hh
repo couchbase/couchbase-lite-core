@@ -3,7 +3,7 @@
 //  LiteCore
 //
 //  Created by Jens Alfke on 8/29/17.
-//Copyright © 2017 Couchbase. All rights reserved.
+//  Copyright © 2017 Couchbase. All rights reserved.
 //
 
 #pragma once

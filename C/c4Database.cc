@@ -243,6 +243,15 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
     return false;
 }
 
+
+C4SliceResult cdb_rawQuery(C4Database *database, C4String query, C4Error *outError) noexcept {
+    try {
+        return sliceResult(database->dataFile()->rawQuery(slice(query).asString()));
+    } catchError(outError)
+    return {};
+}
+
+
 #pragma mark - RAW DOCUMENTS:
 
 

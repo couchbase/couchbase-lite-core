@@ -134,6 +134,31 @@ void CBLiteTool::prettyPrint(Value value, const string &indent, slice docID) {
             cout << indent << "]";
             break;
         }
+        case kFLData: {
+            // toJSON would convert to base64, which isn't readable, so use escapes instead:
+            static const char kHexDigits[17] = "0123456789abcdef";
+            slice data = value.asData();
+            auto end = (const uint8_t*)data.end();
+            cout << "«";
+            bool dim = false;
+            for (auto c = (const uint8_t*)data.buf; c != end; ++c) {
+                if (*c >= 32 && *c < 127) {
+                    if (dim)
+                        cout << ansiReset();
+                    dim = false;
+                    cout << (char)*c;
+                } else {
+                    if (!dim)
+                        cout << ansiDim();
+                    dim = true;
+                    cout << '\\' << kHexDigits[*c/16] << kHexDigits[*c%16];
+                }
+            }
+            if (dim)
+                cout << ansiReset();
+            cout << "»";
+            break;
+        }
         default: {
             alloc_slice json(value.toJSON());
             cout << json;

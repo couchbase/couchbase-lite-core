@@ -89,6 +89,9 @@ namespace litecore {
 
         void forOtherDataFiles(function_ref<void(DataFile*)> fn);
 
+        /** Private API to run a raw (e.g. SQL) query, for diagnostic purposes only */
+        virtual fleece::alloc_slice rawQuery(const std::string &query) =0;
+
         //////// KEY-STORES:
 
         static const std::string kDefaultKeyStoreName;

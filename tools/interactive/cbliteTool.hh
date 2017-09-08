@@ -71,6 +71,10 @@ private:
     void revsUsage();
     void revsInfo();
 
+    // sql command
+    void sqlUsage();
+    void sqlQuery();
+
     using RevTree = map<alloc_slice,set<alloc_slice>>; // Maps revID to set of child revIDs
 
     void writeRevisionTree(C4Document *doc,

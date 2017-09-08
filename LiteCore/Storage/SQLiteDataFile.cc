@@ -25,6 +25,7 @@
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "PlatformCompat.hh"
+#include "FleeceCpp.hh"
 #include <mutex>
 #include <sqlite3.h>
 #include <sstream>
@@ -534,6 +535,35 @@ path.path().c_str());
     void SQLiteDataFile::compact() {
         checkOpen();
         optimizeAndVacuum();
+    }
+
+
+    alloc_slice SQLiteDataFile::rawQuery(const string &query) {
+        SQLite::Statement stmt(*_sqlDb, query);
+        int nCols = stmt.getColumnCount();
+        fleeceapi::Encoder enc;
+        enc.beginArray();
+        while (stmt.executeStep()) {
+            enc.beginArray();
+            for (int i = 0; i < nCols; ++i) {
+                SQLite::Column col = stmt.getColumn(i);
+                switch (col.getType()) {
+                    case SQLITE_NULL:
+                        enc.writeNull(); break;
+                    case SQLITE_INTEGER:
+                        enc.writeInt(col.getInt64()); break;
+                    case SQLITE_FLOAT:
+                        enc.writeDouble(col.getDouble()); break;
+                    case SQLITE_TEXT:
+                        enc.writeString(col.getString()); break;
+                    case SQLITE_BLOB:
+                        enc.writeData(slice(col.getBlob(), col.getBytes())); break;
+                }
+            }
+            enc.endArray();
+        }
+        enc.endArray();
+        return enc.finish();
     }
 
 }

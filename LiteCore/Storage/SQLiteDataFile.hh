@@ -43,6 +43,8 @@ namespace litecore {
         bool keyStoreExists(const std::string &name);
         bool tableExists(const std::string &name) const;
 
+        fleece::alloc_slice rawQuery(const std::string &query) override;
+
         class Factory : public DataFile::Factory {
         public:
             Factory();
