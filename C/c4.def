@@ -7,7 +7,7 @@ c4_getBuildInfo
 kC4Cpp_DefaultLog
 kC4DefaultLog
 kC4DatabaseLog
-kC4QueryLog,
+kC4QueryLog
 kC4SyncLog
 kC4WebSocketLog
 c4SliceEqual

@@ -125,13 +125,17 @@ if (APPLE)
 endif()
 
 # Generate file repo_version.h containing Git repo information, and add it to #include path:
-if (UNIX)       # TODO: Make this work on Windows (use a PowerShell script?)
-    set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
-    file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
+set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
+file(MAKE_DIRECTORY "${GENERATED_HEADERS_DIR}")
+if (UNIX)
     execute_process(COMMAND /bin/bash "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.sh"
                                       "${GENERATED_HEADERS_DIR}/repo_version.h")
-    include_directories(${GENERATED_HEADERS_DIR})
+else()
+    execute_process(COMMAND powershell "${PROJECT_SOURCE_DIR}/build_cmake/scripts/get_repo_version.ps1"
+                                      "${GENERATED_HEADERS_DIR}/repo_version.h")
 endif()
+include_directories(${GENERATED_HEADERS_DIR})
+
 
 ### SOURCE FILES:
 
