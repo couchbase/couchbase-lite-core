@@ -87,15 +87,14 @@ public:
                        C4Slice body, C4RevisionFlags flags, C4Error* error) {
         TransactionHelper t(db);
         C4Slice history[1] = {revID};
-        C4DocPutRequest rq = {
-            .allowConflict = false,
-            .docID = docID,
-            .history = revID == kC4SliceNull? NULL : history,
-            .historyCount = (size_t)(revID == kC4SliceNull? 0 : 1),
-            .body = body,
-            .revFlags = flags,
-            .save = true
-        };
+        C4DocPutRequest rq = {};
+        rq.allowConflict = false;
+        rq.docID = docID;
+        rq.history = revID == kC4SliceNull? NULL : history;
+        rq.historyCount = (size_t)(revID == kC4SliceNull? 0 : 1);
+        rq.body = body;
+        rq.revFlags = flags;
+        rq.save = true;
         return c4doc_put(db, &rq, nullptr, error);
     }
     
@@ -123,16 +122,15 @@ public:
                             C4Slice body, C4RevisionFlags flags,
                             C4Error* error) {
         TransactionHelper t(db);
-        C4DocPutRequest rq = {
-            .docID = docID,
-            .existingRevision = true,
-            .allowConflict = true,
-            .history = history,
-            .historyCount = historyCount,
-            .body = body,
-            .revFlags = flags,
-            .save = true,
-        };
+        C4DocPutRequest rq = {};
+        rq.docID = docID;
+        rq.existingRevision = true;
+        rq.allowConflict = true;
+        rq.history = history;
+        rq.historyCount = historyCount;
+        rq.body = body;
+        rq.revFlags = flags;
+        rq.save = true;
         size_t commonAncestorIndex;
         return c4doc_put(db, &rq, &commonAncestorIndex, error);
     }
@@ -254,8 +252,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4doc_free(doc);
     
     // Try to update the first rev, which should fail:
-    putDocMustFail(docID, revID1, updatedBody, kRevKeepBody,
-                   {.domain = LiteCoreDomain, .code = kC4ErrorConflict});
+    C4Error err;
+    err.domain = LiteCoreDomain;
+    err.code = kC4ErrorConflict;
+    putDocMustFail(docID, revID1, updatedBody, kRevKeepBody, err);
     
     // Check the changes feed, with and without filters:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
@@ -277,8 +277,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     // Delete it:
     
     // without previous revision ID -> error
-    putDocMustFail(docID, kC4SliceNull, kC4SliceNull, kRevDeleted,
-                   {.domain = LiteCoreDomain, .code = kC4ErrorInvalidParameter});
+    err.domain = LiteCoreDomain;
+    err.code = kC4ErrorInvalidParameter;
+    putDocMustFail(docID, kC4SliceNull, kC4SliceNull, kRevDeleted, err);
     
     // with previous revision ID -> success
     doc = putDoc(docID, revID2, kC4SliceNull, kRevDeleted);
@@ -300,8 +301,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     c4doc_free(doc);
     
     // Delete nonexistent doc:
-    putDocMustFail(C4STR("fake"), kC4SliceNull, kC4SliceNull, kRevDeleted,
-                   {.domain = LiteCoreDomain, .code = kC4ErrorInvalidParameter});
+    putDocMustFail(C4STR("fake"), kC4SliceNull, kC4SliceNull, kRevDeleted, err);
     
     // Read it back (should fail):
     // NOTE: LiteCore's c4doc_get() returns document even though document is deleted.
@@ -782,15 +782,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DuplicateRev", "[Database][C]") 
     {
         TransactionHelper t(db);
         C4Slice history[1] = {revID};
-        C4DocPutRequest rq = {
-            .allowConflict = true,
-            .docID = docID,
-            .history = history,
-            .historyCount = 1,
-            .body = body,
-            .revFlags = 0,
-            .save = true
-        };
+        C4DocPutRequest rq = {};
+        rq.allowConflict = true;
+        rq.docID = docID;
+        rq.history = history;
+        rq.historyCount = 1;
+        rq.body = body;
+        rq.revFlags = 0;
+        rq.save = true;
         C4Error error = {};
         doc = c4doc_put(db, &rq, nullptr, &error);
         REQUIRE(doc->docID == docID);

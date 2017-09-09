@@ -78,7 +78,7 @@ if (APPLE)
       "-framework CoreFoundation"
       "-framework Security")
 elseif(MSVC)
-    target_link_libraries(litecp Dbghelp.lib)
+    target_link_libraries(litecp Dbghelp.lib zlibstatic)
 else()
     target_link_libraries(litecp pthread z dl ${ICU4C_COMMON} ${ICU4C_I18N} ${LIBCXX_LIB} ${LIBCXXABI_LIB})
 endif()
