@@ -72,7 +72,7 @@ namespace litecore {
 
         {"DESC"_sl,    1, 1,  2,  &QueryParser::postfixOp},
 
-        {nullslice,    0, 0, 10,  &QueryParser::fallbackOp} // fallback; must come last in list
+        {nullslice,    0, 0, 99,  &QueryParser::fallbackOp} // fallback; must come last in list
     };
 
     const QueryParser::Operation QueryParser::kArgListOperation

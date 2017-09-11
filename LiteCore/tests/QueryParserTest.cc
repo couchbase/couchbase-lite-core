@@ -199,6 +199,8 @@ TEST_CASE("QueryParser Join", "[Query]") {
 
 
 TEST_CASE("QueryParser Collate", "[Query][Collation]") {
+    CHECK(parseWhere("['AND',['COLLATE',{'UNICODE':true,'CASE':false,'DIAC':false},['=',['.Artist'],['$ARTIST']]],['IS',['.Compilation'],['MISSING']]]")
+          == "fl_value(body, 'Artist') COLLATE LCUnicode_CD_ = $_ARTIST AND fl_value(body, 'Compilation') IS NULL");
     CHECK(parseWhere("['COLLATE', {unicode: true, locale:'se', case:false}, \
                                   ['=', ['.', 'name'], 'Puddin\\' Tane']]")
           == "fl_value(body, 'name') COLLATE LCUnicode_C__se = 'Puddin'' Tane'");
