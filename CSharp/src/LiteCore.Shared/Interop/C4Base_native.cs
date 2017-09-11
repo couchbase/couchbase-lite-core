@@ -107,6 +107,13 @@ namespace LiteCore.Interop
             }
         }
 
+        public static string c4_getBuildInfo()
+        {
+            using(var retVal = NativeRaw.c4_getBuildInfo()) {
+                return ((C4Slice)retVal).CreateString();
+            }
+        }
+
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int c4_getObjectCount();
 
@@ -135,6 +142,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4slog(C4LogDomain* domain, C4LogLevel level, C4Slice msg);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4_getBuildInfo();
 
 
     }
