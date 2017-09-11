@@ -13,6 +13,7 @@
 #include "Query.hh"
 #include "QueryParser.hh"
 #include "Error.hh"
+#include "StringUtil.hh"
 #include "Fleece.hh"
 #include "Path.hh"
 #include "Stopwatch.hh"
@@ -44,11 +45,19 @@ namespace litecore {
         SQLiteQuery(SQLiteKeyStore &keyStore, slice selectorExpression)
         :Query(keyStore)
         {
+            LogTo(SQL, "Compiling JSON query: %.*s", SPLAT(selectorExpression));
             QueryParser qp(keyStore.tableName());
             qp.setBaseResultColumns({"sequence", "key", "version", "flags"});
             qp.parseJSON(selectorExpression);
 
             _parameters = qp.parameters();
+            for (auto p = _parameters.begin(); p != _parameters.end();) {
+                if (hasPrefix(*p, "opt_"))
+                    p = _parameters.erase(p);       // Optional param, don't warn if it's unbound
+                else
+                    ++p;
+            }
+
             _ftsTables = qp.ftsTablesUsed();
             for (auto ftsTable : _ftsTables) {
                 if (!keyStore.db().tableExists(ftsTable))
