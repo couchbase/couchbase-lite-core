@@ -9,9 +9,11 @@
 #include "c4Test.hh"
 #include "c4Query.h"
 #include "c4.hh"
+#include "c4Document+Fleece.h"
 #include <iostream>
 
 using namespace std;
+using namespace fleece;
 
 
 class QueryTest : public C4Test {
@@ -273,6 +275,37 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
     while (c4queryenum_next(e, &error)) {
         CHECK(Array::iterator(e->columns)[0].asstring() == expectedFirst[i]);
         CHECK(Array::iterator(e->columns)[1].asstring() == expectedLast[i]);
+        ++i;
+    }
+    CHECK(error.code == 0);
+    CHECK(i == 3);
+    c4queryenum_free(e);
+}
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT returning object", "[Query][C]") {
+    auto sk = c4db_getFLSharedKeys(db);
+    vector<string> expectedFirst = {"Cleveland", "Georgetta", "Margaretta"};
+    vector<string> expectedLast  = {"Bejcek",    "Kolding",   "Ogwynn"};
+    compileSelect(json5("{WHAT: ['.name'], \
+                         WHERE: ['>=', ['length()', ['.name.first']], 9],\
+                      ORDER_BY: [['.name.first']]}"));
+
+    REQUIRE(c4query_columnCount(query) == 1);
+
+    C4Error error;
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    if (!e)
+        INFO("c4query_run got error " << error.domain << "/" << error.code);
+    REQUIRE(e);
+    int i = 0;
+    while (c4queryenum_next(e, &error)) {
+        Value col = Array::iterator(e->columns)[0];
+        REQUIRE(col.type() == kFLDict);
+        Dict name = col.asDict();
+        INFO("name = " << name.toJSON(sk));
+        CHECK(name.get("first"_sl, sk).asstring() == expectedFirst[i]);
+        CHECK(name.get("last"_sl,  sk).asstring() == expectedLast[i]);
         ++i;
     }
     CHECK(error.code == 0);
