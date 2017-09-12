@@ -162,7 +162,9 @@ bool c4doc_selectNextPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept
 
 
 bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1, C4String rev2) noexcept {
-    return internal(doc)->selectCommonAncestorRevision(rev1, rev2);
+    return tryCatch<bool>(nullptr, [&]{
+        return internal(doc)->selectCommonAncestorRevision(rev1, rev2);
+    });
 }
 
 
