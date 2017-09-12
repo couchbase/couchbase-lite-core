@@ -28,19 +28,19 @@ namespace litecore {
     // Core SQLite functions for accessing values inside Fleece blobs.
 
 
-    // fl_value(fleeceData, propertyPath) -> propertyValue
+    // fl_value(body, propertyPath) -> propertyValue
     static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
-            const Value *root = fleeceParam(ctx, argv[0]);
-            if (!root)
+            const Value *val;
+            if (!evaluatePath(ctx, argv, &val))
                 return;
-            
-            setResultFromValue(ctx, evaluatePath(ctx, valueAsSlice(argv[1]), root));
+            setResultFromValue(ctx, val);
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_value: exception!", -1);
         }
     }
 
+    // fl_root(body) -> fleeceData
     static void fl_root(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         slice fleece = valueAsSlice(argv[0]);
         // Pull the Fleece data out of a raw document body, if necessary:
@@ -51,31 +51,29 @@ namespace litecore {
         setResultBlobFromSlice(ctx, fleece);
     }
 
-    // fl_exists(fleeceData, propertyPath) -> 0/1
+    // fl_exists(body, propertyPath) -> 0/1
     static void fl_exists(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        const Value *root = fleeceParam(ctx, argv[0]);
-        if (!root)
+        const Value *val;
+        if (!evaluatePath(ctx, argv, &val))
             return;
-        const Value *val = evaluatePath(ctx, valueAsSlice(argv[1]), root);
         sqlite3_result_int(ctx, (val ? 1 : 0));
     }
 
     
-    // fl_type(fleeceData, propertyPath) -> int  (fleece::valueType, or -1 for no value)
+    // fl_type(body, propertyPath) -> int  (fleece::valueType, or -1 for no value)
     static void fl_type(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        const Value *root = fleeceParam(ctx, argv[0]);
-        if (!root)
+        const Value *val;
+        if (!evaluatePath(ctx, argv, &val))
             return;
-        setResultFromValueType(ctx, evaluatePath(ctx, valueAsSlice(argv[1]), root));
+        setResultFromValueType(ctx, val);
     }
 
     
-    // fl_count(fleeceData, propertyPath) -> int
+    // fl_count(body, propertyPath) -> int
     static void fl_count(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        const Value *root = fleeceParam(ctx, argv[0]);
-        if (!root)
+        const Value *val;
+        if (!evaluatePath(ctx, argv, &val))
             return;
-        const Value *val = evaluatePath(ctx, valueAsSlice(argv[1]), root);
         switch (val->type()) {
             case kArray:
                 sqlite3_result_int(ctx, val->asArray()->count());
@@ -90,23 +88,21 @@ namespace litecore {
     }
 
 
-    // fl_contains(fleeceData, propertyPath, all?, value1, ...) -> 0/1
+    // fl_contains(body, propertyPath, all?, value1, ...) -> 0/1
     static void fl_contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         if (argc < 4) {
             sqlite3_result_error(ctx, "fl_contains: too few arguments", -1);
             return;
         }
-        const Value *root = fleeceParam(ctx, argv[0]);
-        if (!root)
+        const Value *val;
+        if (!evaluatePath(ctx, argv, &val))
             return;
-        root = evaluatePath(ctx, valueAsSlice(argv[1]), root);
-        if (!root)
-            return;
-        const Array *array = root->asArray();
+        const Array *array = val ? val->asArray() : nullptr;
         if (!array) {
             sqlite3_result_int(ctx, 0);
             return;
         }
+
         int found = 0, needed = 1;
         if (sqlite3_value_int(argv[2]) != 0)    // 'all' flag
             needed = (argc - 3);

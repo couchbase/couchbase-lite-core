@@ -45,12 +45,6 @@ namespace litecore {
     }
 
 
-    slice RawRevision::getCurrentRevBody(slice raw_tree) noexcept {
-        const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
-        return rawRev->body();
-    }
-
-
     alloc_slice RawRevision::encodeTree(const vector<Rev*> &revs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
@@ -116,11 +110,10 @@ namespace litecore {
 
 
     slice RawRevision::body() const {
-        if (this->flags & RawRevision::kHasData) {
+        if (_usuallyTrue(this->flags & RawRevision::kHasData)) {
             const void* end = this->next();
             const void *data = offsetby(&this->revID, this->revIDLen);
-            uint64_t sequence;
-            data = offsetby(data, GetUVarInt(slice(data, end), &sequence));
+            data = SkipVarInt(data);
             return slice(data, end);
         } else {
             return nullslice;

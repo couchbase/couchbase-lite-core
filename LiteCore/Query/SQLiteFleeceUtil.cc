@@ -79,6 +79,29 @@ namespace litecore {
         return nullptr;
     }
 
+
+    bool evaluatePath(sqlite3_context *ctx, sqlite3_value **argv, const Value* *outValue) {
+        const Value *val = fleeceParam(ctx, argv[0]);
+        if (!val)
+            return false;
+
+        // Cache a pre-parsed Path object using SQLite's auxdata API:
+        auto path = (Path*)sqlite3_get_auxdata(ctx, 1);
+        if (path) {
+            *outValue = path->eval(val);
+        } else {
+            // No cached Path yet, so create one, use it & cache it:
+            auto sharedKeys = ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys;
+            path = new Path(valueAsSlice(argv[1]).asString(), sharedKeys);
+            *outValue = path->eval(val);
+            sqlite3_set_auxdata(ctx, 1, path, [](void *auxdata) {
+                delete (Path*)auxdata;
+            });
+        }
+        return true;
+    }
+
+
     void setResultFromValue(sqlite3_context *ctx, const Value *val) noexcept {
         if (val == nullptr) {
             sqlite3_result_null(ctx);
