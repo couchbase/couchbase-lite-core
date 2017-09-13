@@ -108,11 +108,8 @@ namespace LiteCore.Interop
 #endif
     unsafe struct C4QueryEnumerator
     {
-        public C4Slice docID;
-        public ulong docSequence;
-        public C4Slice revID;
-        public C4DocumentFlags docFlags;
         public FLArrayIterator columns;
+        public ulong fullTextID;
         public uint fullTextTermCount;
         public C4FullTextTerm* fullTextTerms;
     }

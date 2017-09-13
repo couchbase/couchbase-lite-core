@@ -68,19 +68,10 @@ namespace LiteCore.Interop
             }
         }
 
-        public static string c4queryenum_fullTextMatched(C4QueryEnumerator* e, C4Error* outError)
+        public static string c4query_fullTextMatched(C4Query* query, ulong fullTextID, C4Error* outError)
         {
-            using(var retVal = NativeRaw.c4queryenum_fullTextMatched(e, outError)) {
+            using(var retVal = NativeRaw.c4query_fullTextMatched(query, fullTextID, outError)) {
                 return ((C4Slice)retVal).CreateString();
-            }
-        }
-
-        public static string c4query_fullTextMatched(C4Query* query, string docID, ulong seq, C4Error* outError)
-        {
-            using(var docID_ = new C4String(docID)) {
-                using(var retVal = NativeRaw.c4query_fullTextMatched(query, docID_.AsC4Slice(), seq, outError)) {
-                    return ((C4Slice)retVal).CreateString();
-                }
             }
         }
 
@@ -149,10 +140,7 @@ namespace LiteCore.Interop
         public static extern C4QueryEnumerator* c4query_run(C4Query* query, C4QueryOptions* options, C4Slice encodedParameters, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4queryenum_fullTextMatched(C4QueryEnumerator* e, C4Error* outError);
-
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4SliceResult c4query_fullTextMatched(C4Query* query, C4Slice docID, ulong seq, C4Error* outError);
+        public static extern C4SliceResult c4query_fullTextMatched(C4Query* query, ulong fullTextID, C4Error* outError);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
