@@ -87,23 +87,32 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[Push]") {
 TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
-    auto db2Path = TempDir() + "cbl_core_test2";
-    auto db2PathSlice = c4str(db2Path.c_str());
-
-    auto config = c4db_getConfig(db);
-    C4Error error;
-    if (!c4db_deleteAtPath(db2PathSlice, config, &error))
-        REQUIRE(error.code == 0);
-    db2 = c4db_open(db2PathSlice, config, &error);
-    REQUIRE(db2 != nullptr);
-
-    _address = { };
-    _remoteDBName = nullslice;
-
+    createDB2();
     replicate(kC4OneShot, kC4Disabled);
 
     REQUIRE(c4db_getDocumentCount(db2) == 100);
 }
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push][Pull]") {
+    createRev("doc"_sl, kRevID, kFleeceBody);
+    createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
+
+    createDB2();
+    replicate(kC4OneShot, kC4Disabled);
+
+    c4::ref<C4Document> doc = c4doc_get(db2, "doc"_sl, true, nullptr);
+    REQUIRE(doc);
+
+    CHECK(doc->revID == kRev2ID);
+    CHECK((doc->flags & kDocDeleted) != 0);
+    CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == kRevID);
+}
+
+
+#pragma mark - REAL-REPLICATOR (SYNC GATEWAY) TESTS
 
 
 // The tests below are tagged [.RealReplicator] to keep them from running during normal testing.

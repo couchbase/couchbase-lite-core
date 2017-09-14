@@ -526,6 +526,8 @@ namespace litecore { namespace repl {
                     blipError = 500;
                     c4err = c4error_make(LiteCoreDomain, kC4ErrorCorruptData,
                                          "Unparseable revision body"_sl);
+                } else if (root.count() == 0) {
+                    root = Dict(); // no sense encoding an empty body later
                 }
             }
             revisionFlags = doc->selectedRev.flags;
@@ -573,8 +575,8 @@ namespace litecore { namespace repl {
         if (blipError)
             msg["error"_sl] = blipError;
 
+        // Write doc body as JSON:
         if (root) {
-            // Write doc body as JSON:
             auto &bodyEncoder = msg.jsonBody();
             auto sk = c4db_getFLSharedKeys(_db);
             bodyEncoder.setSharedKeys(sk);
@@ -582,6 +584,8 @@ namespace litecore { namespace repl {
                 writeRevWithLegacyAttachments(bodyEncoder, root, sk);
             else
                 bodyEncoder.writeValue(root);
+        } else {
+            msg.write("{}"_sl);
         }
         sendRequest(msg, onProgress);
     }
