@@ -306,6 +306,9 @@ namespace litecore { namespace repl {
                                                     alloc_slice data,
                                                     bool dbIsEmpty,
                                                     C4Error err) {
+            if (status().level == kC4Stopped)
+                return;
+            
             _checkpointDocID = checkpointID;
             bool haveLocalCheckpoint = false;
 
