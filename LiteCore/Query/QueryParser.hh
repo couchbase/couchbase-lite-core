@@ -77,6 +77,9 @@ namespace litecore {
         void writeSelect(const fleece::Value *where, const fleece::Dict *operands);
         unsigned writeSelectListClause(const fleece::Dict *operands, slice key, const char *sql, bool aggregatesOK =false);
 
+        void writeWhereClause(const fleece::Value *where);
+        void writeNotDeletedTest(unsigned tableIndex);
+
         void parseFromClause(const fleece::Value *from);
         void writeFromClause(const fleece::Value *from);
         bool isValidJoinType(const std::string&);
@@ -131,6 +134,7 @@ namespace litecore {
         unsigned _1stCustomResultCol {0};
         bool _aggregatesOK {false};
         bool _isAggregateQuery {false};
+        bool _includeDeleted {false};           // In future add an accessor to set this
         Collation _collation;
         bool _collationUsed {true};
     };

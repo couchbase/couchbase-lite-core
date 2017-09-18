@@ -31,6 +31,10 @@ namespace litecore {
         return ((uint8_t)a & (uint8_t)b) != 0;
     }
 
+    static inline DocumentFlags operator| (DocumentFlags a, DocumentFlags b) {
+        return (DocumentFlags)((uint8_t)a | (uint8_t)b);
+    }
+
     /** The unit of storage in a DataFile: a key, version and body (all opaque blobs);
         and some extra metadata like flags and a sequence number. */
     class Record {

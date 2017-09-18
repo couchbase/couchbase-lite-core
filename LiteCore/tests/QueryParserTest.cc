@@ -133,47 +133,47 @@ TEST_CASE("QueryParser SELECT", "[Query]") {
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'],\
                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
                               ORDER_BY: [['.', 'first'], ['.', 'age']]}]")
-          == "SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
+          == "SELECT key FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
     CHECK(parseWhere("['array_count()', ['SELECT',\
                                   {WHAT: ['._id'],\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                ORDER_BY: [['.', 'first'], ['.', 'age']]}]]")
-          == "array_count(SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "array_count(SELECT key FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
     // note this query is lowercase, to test case-insensitivity
     CHECK(parseWhere("['exists', ['select',\
                                   {what: ['._id'],\
                                   where: ['=', ['.', 'last'], 'Smith'],\
                                order_by: [['.', 'first'], ['.', 'age']]}]]")
-          == "EXISTS (SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith' ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "EXISTS (SELECT key FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
     CHECK(parseWhere("['EXISTS', ['SELECT',\
                                   {WHAT: [['MAX()', ['.weight']]],\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                DISTINCT: true,\
                                GROUP_BY: [['.', 'first'], ['.', 'age']]}]]")
-          == "EXISTS (SELECT DISTINCT max(fl_value(body, 'weight')) FROM kv_default WHERE fl_value(body, 'last') = 'Smith' GROUP BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "EXISTS (SELECT DISTINCT max(fl_value(body, 'weight')) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 GROUP BY fl_value(body, 'first'), fl_value(body, 'age'))");
 }
 
 
 TEST_CASE("QueryParser SELECT FTS", "[Query]") {
     CHECK(parseWhere("['SELECT', {\
                      WHERE: ['MATCH', ['.', 'bio'], 'mobile']}]")
-          == "SELECT offsets(\"kv_default::.bio\") FROM kv_default JOIN \"kv_default::.bio\" AS FTS1 ON FTS1.rowid = kv_default.sequence WHERE FTS1.text MATCH 'mobile'");
+          == "SELECT offsets(\"kv_default::.bio\") FROM kv_default JOIN \"kv_default::.bio\" AS FTS1 ON FTS1.rowid = kv_default.sequence WHERE (FTS1.text MATCH 'mobile') AND (flags & 1) = 0");
 }
 
 TEST_CASE("QueryParser SELECT WHAT", "[Query]") {
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT key FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+          == "SELECT key FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {WHAT: [['.first']],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_value(body, 'first') FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+          == "SELECT fl_value(body, 'first') FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {WHAT: [['.first'], ['length()', ['.middle']]],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_value(body, 'first'), N1QL_length(fl_value(body, 'middle')) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+          == "SELECT fl_value(body, 'first'), N1QL_length(fl_value(body, 'middle')) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
     // Check the "." operator (like SQL "*"):
     CHECK(parseWhere("['SELECT', {WHAT: ['.'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_root(body) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+          == "SELECT fl_root(body) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {WHAT: [['.']], WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_root(body) FROM kv_default WHERE fl_value(body, 'last') = 'Smith'");
+          == "SELECT fl_root(body) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
 }
 
 
@@ -194,7 +194,7 @@ TEST_CASE("QueryParser Join", "[Query]") {
                   FROM: [{as: 'book'}, \
                          {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
-          == "SELECT fl_value(\"book\".body, 'title'), fl_value(\"library\".body, 'name'), fl_root(\"library\".body) FROM kv_default AS \"book\" JOIN kv_default AS \"library\" ON fl_value(\"book\".body, 'library') = \"library\".key WHERE fl_value(\"book\".body, 'author') = $_AUTHOR");
+          == "SELECT fl_value(\"book\".body, 'title'), fl_value(\"library\".body, 'name'), fl_root(\"library\".body) FROM kv_default AS \"book\" JOIN kv_default AS \"library\" ON (fl_value(\"book\".body, 'library') = \"library\".key) AND (\"library\".flags & 1) = 0 WHERE (fl_value(\"book\".body, 'author') = $_AUTHOR) AND (\"book\".flags & 1) = 0");
 }
 
 
@@ -210,7 +210,7 @@ TEST_CASE("QueryParser Collate", "[Query][Collation]") {
               ORDER_BY: [ ['COLLATE', {'unicode':true, 'case':false}, ['.book.title']] ]}")
           == "SELECT fl_value(\"book\".body, 'title') "
                "FROM kv_default AS \"book\" "
-              "WHERE fl_value(\"book\".body, 'author') = $_AUTHOR "
+              "WHERE (fl_value(\"book\".body, 'author') = $_AUTHOR) AND (\"book\".flags & 1) = 0 "
            "ORDER BY fl_value(\"book\".body, 'title') COLLATE LCUnicode_C__");
 }
 

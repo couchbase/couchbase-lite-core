@@ -20,7 +20,8 @@ using namespace litecore;
 using namespace std;
 
 
-static sequence_t writeNumberedDoc(KeyStore *store, int i, slice str, Transaction &t) {
+static sequence_t writeNumberedDoc(KeyStore *store, int i, slice str, Transaction &t,
+                                   DocumentFlags flags =DocumentFlags::kNone) {
     string docID = stringWithFormat("rec-%03d", i);
 
     fleece::Encoder enc;
@@ -34,7 +35,7 @@ static sequence_t writeNumberedDoc(KeyStore *store, int i, slice str, Transactio
     enc.endDictionary();
     alloc_slice body = enc.extractOutput();
 
-    return store->set(slice(docID), body, t);
+    return store->set(slice(docID), nullslice, body, flags, t);
 }
 
 
@@ -161,7 +162,17 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
     addNumberedDocs(store);
     Retained<Query> query{ store->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
     Retained<Query> query2{ store->compileQuery(json5("{WHAT: ['.main', ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
-    
+
+    SECTION("Just regular docs") {
+    }
+    SECTION("Ignore deleted docs") {
+        Transaction t(store->dataFile());
+        for (int i = 201; i <= 300; i++)
+            writeNumberedDoc(store, i, nullslice, t,
+                             DocumentFlags::kDeleted | DocumentFlags::kHasAttachments);
+        t.commit();
+    }
+
     int num = 11;
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     unique_ptr<QueryEnumerator> e2(query->createEnumerator());

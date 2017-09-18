@@ -17,6 +17,7 @@
 
 #include "QueryParser.hh"
 #include "QueryParserTables.hh"
+#include "Record.hh"
 #include "Error.hh"
 #include "Fleece.hh"
 #include "Path.hh"
@@ -239,10 +240,7 @@ namespace litecore {
         writeFromClause(from);
 
         // WHERE clause:
-        if (where) {
-            _sql << " WHERE ";
-            parseNode(where);
-        }
+        writeWhereClause(where);
 
         // GROUP_BY clause:
         bool grouped = (writeSelectListClause(operands, "GROUP_BY"_sl, " GROUP BY ") > 0);
@@ -288,6 +286,35 @@ namespace litecore {
         _aggregatesOK = false;
         _context.pop_back();
         return count;
+    }
+
+
+    void QueryParser::writeWhereClause(const Value *where) {
+        if (_includeDeleted) {
+            if (where) {
+                _sql << " WHERE ";
+                parseNode(where);
+            }
+        } else {
+            _sql << " WHERE ";
+            if (where) {
+                _sql << "(";
+                parseNode(where);
+                _sql << ") AND ";
+            }
+            writeNotDeletedTest(0);
+        }
+    }
+
+
+    void QueryParser::writeNotDeletedTest(unsigned tableIndex) {
+        _sql << '(';
+        if (_aliases.empty())
+            Assert(tableIndex == 0);
+        else
+            _sql << '"' << _aliases[tableIndex] << "\".";
+        _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << ") = 0";
+
     }
 
 
@@ -356,7 +383,13 @@ namespace litecore {
                         _sql << " " << typeStr;
                     }
                     _sql << " JOIN " << _tableName << " AS \"" << _aliases[i] << "\" ON ";
+                    if (!_includeDeleted)
+                        _sql << "(";
                     parseNode(on);
+                    if (!_includeDeleted) {
+                        _sql << ") AND ";
+                        writeNotDeletedTest(i);
+                    }
                 }
             }
         }
