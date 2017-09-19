@@ -210,7 +210,7 @@ bool c4error_mayBeTransient(C4Error err) C4API {
 
 bool c4error_mayBeNetworkDependent(C4Error err) C4API {
     static CodeList kUnreachablePOSIX = {
-        ENETDOWN, ENETUNREACH, ETIMEDOUT, EHOSTDOWN, EHOSTUNREACH, 0};
+        ENETDOWN, ENETUNREACH, ENOTCONN, ETIMEDOUT, EHOSTDOWN, EHOSTUNREACH, 0};
     static CodeList kUnreachableNetwork = {
         kC4NetErrDNSFailure,
         kC4NetErrUnknownHost,   // Result may change if user logs into VPN or moves to intranet
