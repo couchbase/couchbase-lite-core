@@ -103,7 +103,7 @@ namespace litecore { namespace repl {
     void Pusher::maybeGetMoreChanges() {
         if (!_gettingChanges && _changeListsInFlight < kMaxChangeListsInFlight && !_caughtUp ) {
             _gettingChanges = true;
-            ++_changeListsInFlight;
+            ++_changeListsInFlight; // will be decremented at start of _gotChanges
             log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
             _dbWorker->getChanges(_lastSequenceRead, _docIDs,
                                   _changesBatchSize, _continuous, _skipDeleted,
@@ -117,6 +117,9 @@ namespace litecore { namespace repl {
     // Received a list of changes from the database [initiated in maybeGetMoreChanges]
     void Pusher::_gotChanges(RevList changes, C4Error err) {
         _gettingChanges = false;
+        assert(_changeListsInFlight >= 0);
+        --_changeListsInFlight;
+
         if (err.code)
             return gotError(err);
         if (!changes.empty()) {
@@ -140,7 +143,6 @@ namespace litecore { namespace repl {
                 if (!changes.empty() && !nonPassive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
                     // one if we didn't already:
-                    ++_changeListsInFlight;
                     sendChanges(RevList());
                 }
             }
@@ -183,12 +185,12 @@ namespace litecore { namespace repl {
             // Empty == just announcing 'caught up', so no need to get a reply
             req.noreply = true;
             sendRequest(req);
-            --_changeListsInFlight;
             return;
         }
 
         bool proposedChanges = _proposeChanges;
 
+        ++_changeListsInFlight;
         sendRequest(req, [=](MessageProgress progress) {
             // Progress callback follows:
             MessageIn *reply = progress.reply;
@@ -196,6 +198,8 @@ namespace litecore { namespace repl {
                 return;
 
             // Got reply to the "changes" or "proposeChanges":
+            assert(_changeListsInFlight >= 0);
+            --_changeListsInFlight;
             _proposeChangesKnown = true;
             if (!proposedChanges && reply->isError()) {
                 auto err = progress.reply->getError();
@@ -209,8 +213,6 @@ namespace litecore { namespace repl {
             }
 
             // Request another batch of changes from the db:
-            assert(_changeListsInFlight >= 0);
-            --_changeListsInFlight;
             maybeGetMoreChanges();
 
             if (reply->isError())
