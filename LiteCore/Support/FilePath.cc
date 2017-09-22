@@ -97,6 +97,8 @@ static int copyfile(const char* from, const char* to)
     return 0;
 }
 #elif defined(_MSC_VER)
+typedef HRESULT (WINAPI *CopyFileFunc)(_In_ PCWSTR, _In_ PCWSTR, _In_opt_  COPYFILE2_EXTENDED_PARAMETERS *);
+
 static int copyfile(const char* from, const char* to)
 {
     CA2WEX<256> wideFrom(from, CP_UTF8);
@@ -104,11 +106,12 @@ static int copyfile(const char* from, const char* to)
     int err = 0;
 #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
     HMODULE kernelLib = LoadLibraryA("kernel32.dll");
-    FARPROC cpFile2 = GetProcAddress(kernelLib, "CopyFile2");
+    CopyFileFunc cpFile2 = (CopyFileFunc)GetProcAddress(kernelLib, "CopyFile2");
     if (cpFile2 != nullptr) {
-        err = CopyFile2(wideFrom, wideTo, nullptr);
+        err = cpFile2(wideFrom, wideTo, nullptr);
     }
     else {
+        // Windows 7 doesn't have CopyFile2
         err = CopyFileW(wideFrom, wideTo, false);
     }
 #else
