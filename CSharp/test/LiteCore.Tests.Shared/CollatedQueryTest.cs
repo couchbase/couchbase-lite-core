@@ -27,8 +27,7 @@ namespace LiteCore.Tests
 
         }
 #endif
-
-#if !__ANDROID__ // TODO
+        
         [Fact]
         public void TestDBQueryCollated()
         {
@@ -72,6 +71,5 @@ namespace LiteCore.Tests
                 }
             });
         }
-#endif
     }
 }
