@@ -135,13 +135,11 @@ namespace LiteCore.Interop
     {
         public static object ToObject(FLValue* value)
         {
-            if (value == null)
-            {
+            if (value == null) {
                 return null;
             }
 
-            switch (Native.FLValue_GetType(value))
-            {
+            switch (Native.FLValue_GetType(value)) {
                 case FLValueType.Array:
                 {
                     var arr = Native.FLValue_AsArray(value);
@@ -149,8 +147,7 @@ namespace LiteCore.Interop
                     var i = default(FLArrayIterator);
                     Native.FLArrayIterator_Begin(arr, &i);
                     int pos = 0;
-                    do
-                    {
+                    do {
                         retVal[pos++] = ToObject(Native.FLArrayIterator_GetValue(&i));
                     } while (Native.FLArrayIterator_Next(&i));
 
@@ -163,11 +160,10 @@ namespace LiteCore.Interop
                 case FLValueType.Dict:
                 {
                     var dict = Native.FLValue_AsDict(value);
-                    var retVal = new Dictionary<string, object>((int)Native.FLDict_Count(dict));
+                    var retVal = new Dictionary<string, object>((int) Native.FLDict_Count(dict));
                     var i = default(FLDictIterator);
                     Native.FLDictIterator_Begin(dict, &i);
-                    do
-                    {
+                    do {
                         var rawKey = Native.FLDictIterator_GetKey(&i);
                         string key = Native.FLValue_AsString(rawKey);
                         if (key == null) {
@@ -182,17 +178,13 @@ namespace LiteCore.Interop
                 case FLValueType.Null:
                     return null;
                 case FLValueType.Number:
-                    if (Native.FLValue_IsInteger(value))
-                    {
-                        if (Native.FLValue_IsUnsigned(value))
-                        {
+                    if (Native.FLValue_IsInteger(value)) {
+                        if (Native.FLValue_IsUnsigned(value)) {
                             return Native.FLValue_AsUnsigned(value);
                         }
 
                         return Native.FLValue_AsInt(value);
-                    }
-                    else if (Native.FLValue_IsDouble(value))
-                    {
+                    } else if (Native.FLValue_IsDouble(value)) {
                         return Native.FLValue_AsDouble(value);
                     }
 
@@ -221,14 +213,14 @@ namespace LiteCore.Interop
             }
         }
 
-        public static void FLEncode(this IDictionary<string, object> dict, FLEncoder* enc)
+        public static void FLEncode<TVal>(this IDictionary<string, TVal> dict, FLEncoder* enc)
         {
             if (dict == null) {
                 Native.FLEncoder_WriteNull(enc);
                 return;
             }
 
-            Native.FLEncoder_BeginDict(enc, (ulong)dict.Count);
+            Native.FLEncoder_BeginDict(enc, (ulong) dict.Count);
             foreach (var pair in dict) {
                 Native.FLEncoder_WriteKey(enc, pair.Key);
                 pair.Value.FLEncode(enc);
@@ -294,6 +286,9 @@ namespace LiteCore.Interop
                     Native.FLEncoder_WriteNull(enc);
                     break;
                 case IDictionary<string, object> dict:
+                    dict.FLEncode(enc);
+                    break;
+                case IDictionary<string, string> dict:
                     dict.FLEncode(enc);
                     break;
                 case IEnumerable<byte> data:
