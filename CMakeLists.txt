@@ -18,11 +18,16 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DNO_CACHING                        # No file caching support in CivetWeb (unneeded)
                 -DUSE_IPV6                          # Enable IPv6 support in CivetWeb
                 -DCMAKE                             # Let the source know this is a CMAKE build
-                -D__STDC_LIMIT_MACROS               # Ensure the presence of UINT64_MAX, etc
-                -D_WIN32_WINNT=0x0601               # Signal Windows 7 support
-                -DINCL_EXTRA_HTON_FUNCTIONS)        # Make sure htonll is defined for WebSocketProtocol.hh
+                -D__STDC_LIMIT_MACROS)              # Ensure the presence of UINT64_MAX, etc
                 
-if(ANDROID)
+if(MSVC)
+    if(WINDOWS_STORE)
+        add_definitions(-D_WIN32_WINNT=0x0602)      # Support back to Windows 8 for Windows Store
+    else()
+        add_definitions(-D_WIN32_WINNT=0x0601       # Support back to Windows 7 for Windows desktop
+                        -DINCL_EXTRA_HTON_FUNCTIONS)# Make sure htonll is defined for WebSocketProtocol.hh
+    endif()
+elseif(ANDROID)
     add_definitions(-DLITECORE_USES_ICU=1)
 endif()
 
