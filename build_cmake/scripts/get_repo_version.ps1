@@ -34,7 +34,7 @@ $outContent = @"
 "@
 
 echo $outContent | Out-File -FilePath "${outputPath}.tmp" -Force
-Touch $outputPath
+New-Item $outputPath -ItemType File -ErrorAction Ignore
 $existingContent = Get-Content $outputPath
 if($existingContent -eq $null) {
     $existingContent = ""
@@ -42,7 +42,7 @@ if($existingContent -eq $null) {
 
 if($(Compare-Object $(Get-Content "${outputPath}.tmp") $existingContent).Count) {
     Move-Item -Force "${outputPath}.tmp" "$outputPath"
-    echo "get_repo_version.sh: Updated $outputPath"
+    echo "get_repo_version.ps1: Updated $outputPath"
 } else {
     rm "${outputPath}.tmp"
 } 
