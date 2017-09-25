@@ -54,7 +54,7 @@ namespace litecore { namespace repl {
         static const unsigned kMaxRevBytesAwaitingReply = 2*1024*1024;     // max bytes of revs sent but not replied
         static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one
 
-        DBWorker* const _dbWorker;
+        Retained<DBWorker> _dbWorker;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
         DocIDSet _docIDs;
         bool _continuous;

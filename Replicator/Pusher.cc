@@ -120,6 +120,8 @@ namespace litecore { namespace repl {
         assert(_changeListsInFlight >= 0);
         --_changeListsInFlight;
 
+        if (!connection())
+            return;
         if (err.code)
             return gotError(err);
         if (!changes.empty()) {

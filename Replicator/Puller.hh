@@ -45,7 +45,7 @@ namespace litecore { namespace repl {
         static const unsigned kChangesBatchSize = 500;      // Number of changes in one response
         static const unsigned kMaxSpareIncomingRevs = 500;
 
-        DBWorker* const _dbActor;
+        Retained<DBWorker> _dbActor;
         alloc_slice _lastSequence;
         bool _skipDeleted {false};
         bool _caughtUp {false};

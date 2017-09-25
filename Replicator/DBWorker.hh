@@ -65,8 +65,6 @@ namespace litecore { namespace repl {
         }
 
     private:
-        virtual ~DBWorker();
-        
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
         bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
@@ -86,9 +84,9 @@ namespace litecore { namespace repl {
         void _insertRevision(RevToInsert *rev);
         void _setCookie(alloc_slice setCookieHeader);
 
-
         void insertRevisionsNow()   {enqueue(&DBWorker::_insertRevisionsNow);}
         void _insertRevisionsNow();
+        void _connectionClosed() override;
 
         void dbChanged();
         bool markRevsSynced(const std::vector<Rev> changes, C4Error *outError);
@@ -102,7 +100,7 @@ namespace litecore { namespace repl {
 
         static const size_t kMaxPossibleAncestors = 10;
 
-        C4Database* const _db;
+        c4::ref<C4Database> _db;
         C4BlobStore* _blobStore;
         const websocket::Address _remoteAddress;
         std::string _remoteCheckpointDocID;

@@ -62,11 +62,6 @@ namespace litecore { namespace repl {
     }
 
 
-    DBWorker::~DBWorker() {
-        c4db_free(_db);
-    }
-
-
     void DBWorker::_setCookie(alloc_slice setCookieHeader) {
         C4Error err;
         if (c4db_setCookie(_db, setCookieHeader, slice(_remoteAddress.hostname), &err)) {
@@ -317,6 +312,13 @@ namespace litecore { namespace repl {
                 _pusher->gotChanges(changes, {});
             }
         }
+    }
+
+
+    void DBWorker::_connectionClosed() {
+        Worker::_connectionClosed();
+        _pusher = nullptr;                      // breaks ref-cycle
+        _changeObserver = nullptr;
     }
 
 
