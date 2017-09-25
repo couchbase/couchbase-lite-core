@@ -32,12 +32,14 @@ namespace litecore {
 #if DEBUG
         void _retain() noexcept;
         void _release() noexcept;
+        static constexpr int32_t kInitialRefCount = -66666;
 #else
         inline void _retain() noexcept          { ++_refCount; }
         inline void _release() noexcept         { if (--_refCount <= 0) delete this; }
+        static constexpr int32_t kInitialRefCount = 0;
 #endif
 
-        std::atomic<int32_t> _refCount {0};
+        std::atomic<int32_t> _refCount {kInitialRefCount};
     };
 
 
