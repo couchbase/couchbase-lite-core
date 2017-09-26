@@ -13,6 +13,7 @@
 #include "FilePath.hh"
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
+#include <algorithm>
 #include <exception>
 #include <fstream>
 #include <vector>
@@ -39,7 +40,8 @@ void usage() {
     "    * a JSON file path (.json extension) in one-object-per line format\n"
     "    * a '/'-terminated path to a directory of JSON files (.json extensions)\n"
     "      in one-object-per-file format\n"
-    "    * a remote database URL (blip: or blips: scheme) [NOT YET IMPLEMENTED]\n"
+//  "    * a remote database URL (blip: or blips: scheme) [NOT YET IMPLEMENTED]\n"
+    "  All combinations are allowed. Copying database-to-database uses the replicator.\n"
     "Options:\n"
     "    --existing or -x : Fail if <dst> doesn't already exist.\n"
     "    --id <property>: When <src> is JSON, this is a property name/path whose value will\n"
@@ -49,6 +51,7 @@ void usage() {
     "    --limit <n>: Stop after <n> documents.\n"
     "    --careful: Abort on any error.\n"
     "    --verbose or -v: Log every 1000 docs. If given twice, log every docID.\n"
+    "           If given three times, turn on LiteCore DB and Sync logging.\n"
     "    --help: You're looking at it.\n"
     ;
 }
@@ -96,6 +99,13 @@ static int LiteCpMain(vector<string> &args) {
         if (args.size() != 2)
             fail("Missing source or destination path/URL");
 
+        auto level = kC4LogWarning;
+        if (gVerbose > 2)
+            level = (C4LogLevel)std::max(0, level - (gVerbose - 2));
+        c4log_setCallbackLevel(level);
+        c4log_setLevel(c4log_getDomain("Sync", true), level);
+        c4log_setLevel(c4log_getDomain("DB", true), level);
+
         Stopwatch timer;
 
         Endpoint *src = Endpoint::create(args[0]);
@@ -104,8 +114,8 @@ static int LiteCpMain(vector<string> &args) {
         Endpoint *dst = Endpoint::create(args[1]);
         if (!dst)
             fail("Unknown destination type");
-        src->prepare(true, true, docIDProperty);
-        dst->prepare(false,!createDst, docIDProperty);
+        src->prepare(true, true, docIDProperty, dst);
+        dst->prepare(false,!createDst, docIDProperty, src);
 
         if (gVerbose)
             cout << "Copying...\n";

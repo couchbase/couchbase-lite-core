@@ -9,7 +9,8 @@
 #include "DirEndpoint.hh"
 
 
-void DirectoryEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty) {
+void DirectoryEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty, const Endpoint *other) {
+    Endpoint::prepare(readOnly, mustExist, docIDProperty, other);
     if (_dir.exists()) {
         if (!_dir.existsAsDir())
             fail(format("%s is not a directory", _spec.c_str()));

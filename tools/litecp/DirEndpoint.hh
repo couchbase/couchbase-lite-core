@@ -19,7 +19,7 @@ public:
     ,_dir(spec, "")
     { }
 
-    virtual void prepare(bool readOnly, bool mustExist, slice docIDProperty) override;
+    virtual void prepare(bool readOnly, bool mustExist, slice docIDProperty, const Endpoint*) override;
     virtual void copyTo(Endpoint*, uint64_t limit) override;
     virtual void writeJSON(slice docID, slice json) override;
 

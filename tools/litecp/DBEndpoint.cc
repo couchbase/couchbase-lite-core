@@ -8,22 +8,26 @@
 
 #include "DBEndpoint.hh"
 #include "c4Document+Fleece.h"
+#include "c4Replicator.h"
 #include "Stopwatch.hh"
+#include <algorithm>
+#include <thread>
 
 
-void DbEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty) {
-    Endpoint::prepare(readOnly, mustExist, docIDProperty);
+void DbEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty, const Endpoint *other) {
+    Endpoint::prepare(readOnly, mustExist, docIDProperty, other);
     C4DatabaseConfig config = {kC4DB_Bundled | kC4DB_SharedKeys | kC4DB_NonObservable};
-    if (readOnly)
-        config.flags |= kC4DB_ReadOnly;
-    else if (!mustExist)
-        config.flags |= kC4DB_Create;
+    if (readOnly) {
+        if (!dynamic_cast<const DbEndpoint*>(other))    // need write permission if replicating
+            config.flags |= kC4DB_ReadOnly;
+    } else {
+        if (!mustExist)
+            config.flags |= kC4DB_Create;
+    }
     C4Error err;
     _db = c4db_open(c4str(_spec), &config, &err);
     if (!_db)
         fail(format("Couldn't open database %s", _spec.c_str()), err);
-    if (!c4db_beginTransaction(_db, &err))
-        fail("starting transaction", err);
 
     auto sk = c4db_getFLSharedKeys(_db);
     _encoder.setSharedKeys(sk);
@@ -31,6 +35,16 @@ void DbEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty) {
         _docIDPath.reset(new KeyPath(docIDProperty, sk, nullptr));
         if (!*_docIDPath)
             fail("Invalid key-path");
+    }
+}
+
+
+void DbEndpoint::enterTransaction() {
+    if (!_inTransaction) {
+        C4Error err;
+        if (!c4db_beginTransaction(_db, &err))
+            fail("starting transaction", err);
+        _inTransaction = true;
     }
 }
 
@@ -80,6 +94,8 @@ void DbEndpoint::writeJSON(slice docID, slice json) {
     if (!docID && _docIDProperty)
         docID = docIDBuf = docIDFromFleece(body, json);
 
+    enterTransaction();
+
     C4DocPutRequest put { };
     put.docID = docID;
     put.body = body;
@@ -99,8 +115,7 @@ void DbEndpoint::writeJSON(slice docID, slice json) {
 
     if (++_transactionSize >= kMaxTransactionSize) {
         commit();
-        if (!c4db_beginTransaction(_db, &err))
-            fail("starting transaction", err);
+        enterTransaction();
     }
 }
 
@@ -114,22 +129,115 @@ void DbEndpoint::finish() {
 
 
 void DbEndpoint::commit() {
-    if (gVerbose > 1) {
-        cout << "[Committing ... ";
-        cout.flush();
+    if (_inTransaction) {
+        if (gVerbose > 1) {
+            cout << "[Committing ... ";
+            cout.flush();
+        }
+        Stopwatch st;
+        C4Error err;
+        if (!c4db_endTransaction(_db, true, &err))
+            fail("committing transaction", err);
+        if (gVerbose > 1) {
+            double time = st.elapsed();
+            cout << time << " sec for " << _transactionSize << " docs]\n";
+        }
+        _transactionSize = 0;
     }
-    Stopwatch st;
-    C4Error err;
-    if (!c4db_endTransaction(_db, true, &err))
-        fail("committing transaction", err);
-    if (gVerbose > 1) {
-        double time = st.elapsed();
-        cout << time << " sec for " << _transactionSize << " docs]\n";
-    }
-    _transactionSize = 0;
 }
 
 
-void DbEndpoint::pushTo(DbEndpoint *) {
-    fail("Sorry, db-to-db replication is not implemented yet");
+#pragma mark - REPLICATION:
+
+
+void DbEndpoint::pushTo(DbEndpoint *dst) {
+    _dstDb = dst;
+    C4ReplicatorParameters params = {};
+    params.push = kC4OneShot;
+    params.callbackContext = this;
+
+    params.onStatusChanged = [](C4Replicator *replicator,
+                                C4ReplicatorStatus status,
+                                void *context)
+    {
+        ((DbEndpoint*)context)->onStateChanged(status);
+    };
+
+    params.onDocumentError = [](C4Replicator *repl,
+                                bool pushing,
+                                C4String docID,
+                                C4Error error,
+                                bool transient,
+                                void *context)
+    {
+        ((DbEndpoint*)context)->onDocError(pushing, docID, error, transient);
+    };
+
+    C4Error err;
+    _repl = c4repl_new(_db, {}, nullslice, dst->_db, params, &err);
+    if (!_repl)
+        errorOccurred("starting replication", err);
+
+    C4ReplicatorStatus status;
+    while ((status = c4repl_getStatus(_repl)).level != kC4Stopped)
+        this_thread::sleep_for(chrono::milliseconds(100));
+    startLine();
+}
+
+
+void DbEndpoint::onStateChanged(C4ReplicatorStatus status) {
+    switch (status.level) {
+        case kC4Connecting:
+            printf("\rConnecting...");
+            _needNewline = true;
+            break;
+        case kC4Busy: {
+            double progress = status.progress.total ? (status.progress.completed / (double)status.progress.total) : 0.0;
+            printf("\rReplicating ... %3.0f%%", round(progress * 100.0));
+            _needNewline = true;
+            if (progress >= 1.0)
+                startLine();
+            break;
+        }
+        default:
+            break;
+    }
+    fflush(stdout);
+    
+    if (status.error.code != 0) {
+        startLine();
+        char message[200];
+        c4error_getMessageC(status.error, message, sizeof(message));
+        C4Log("-- C4Replicator state: %s, progress=%llu/%llu, error=%d/%d: %s",
+              kC4ReplicatorActivityLevelNames[status.level],
+              status.progress.completed, status.progress.total,
+              status.error.domain, status.error.code, message);
+    }
+}
+
+
+void DbEndpoint::onDocError(bool pushing,
+                            C4String docID,
+                            C4Error error,
+                            bool transient)
+{
+    if (error.code == 0) {
+        _dstDb->logDocument(docID);
+    } else {
+        startLine();
+        char message[200];
+        c4error_getMessageC(error, message, sizeof(message));
+        C4Log("** Error %s doc \"%.*s\": %s",
+              (pushing ? "pushing" : "pulling"),
+              (int)docID.size, docID.buf,
+              message)
+    }
+}
+
+
+void DbEndpoint::startLine() {
+    if (_needNewline) {
+        printf("\n");
+        _needNewline = false;
+    }
 }

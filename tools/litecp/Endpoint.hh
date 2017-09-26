@@ -20,7 +20,7 @@ public:
 
     static Endpoint* create(const string &str);
     virtual ~Endpoint() { }
-    virtual void prepare(bool readOnly, bool mustExist, slice docIDProperty) {
+    virtual void prepare(bool readOnly, bool mustExist, slice docIDProperty, const Endpoint *other) {
         _docIDProperty = docIDProperty;
     }
     virtual void copyTo(Endpoint*, uint64_t limit) =0;
@@ -40,6 +40,14 @@ protected:
         if (gVerbose >= 2)
             cout << to_string(docID) << '\n';
         else if (gVerbose == 1 && (_docCount % 1000) == 0)
+            cout << _docCount << '\n';
+    }
+
+    void logDocuments(unsigned n) {
+        _docCount += n;
+        if (gVerbose >= 2)
+            cout << n << " more documents\n";
+        else if (gVerbose == 1 && (_docCount % 1000) < n)
             cout << _docCount << '\n';
     }
 

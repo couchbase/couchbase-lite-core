@@ -86,6 +86,8 @@
 		273E55661F79B535000182F1 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		273E55671F79B564000182F1 /* libSupport.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279691631ED4B29E0086565D /* libSupport.a */; };
 		273E55681F79B587000182F1 /* libLiteCoreREST.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D410E1EA5558100D8DD9D /* libLiteCoreREST.dylib */; };
+		273E55741F7AC9F3000182F1 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		273E55781F7AC9FE000182F1 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
 		273E9EC41C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
 		273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
@@ -1434,6 +1436,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				273E55781F7AC9FE000182F1 /* libz.tbd in Frameworks */,
+				273E55741F7AC9F3000182F1 /* Security.framework in Frameworks */,
 				275073411F4794AC003D2CCE /* CoreFoundation.framework in Frameworks */,
 				27468F111EAD7EC100B1B4F5 /* libLiteCore-static.a in Frameworks */,
 			);

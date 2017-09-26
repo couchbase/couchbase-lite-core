@@ -9,8 +9,8 @@
 #include "JSONEndpoint.hh"
 
 
-void JSONEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty) {
-    Endpoint::prepare(readOnly, mustExist, docIDProperty);
+void JSONEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty, const Endpoint *other) {
+    Endpoint::prepare(readOnly, mustExist, docIDProperty, other);
     if (!docIDProperty)
         _docIDProperty = c4str("_id");
     bool err;
