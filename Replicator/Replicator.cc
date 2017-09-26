@@ -124,6 +124,9 @@ namespace litecore { namespace repl {
     // The status of one of the actors has changed; update mine
     void Replicator::_childChangedStatus(Worker *task, Status taskStatus)
     {
+        if (status().level == kC4Stopped)       // I've already stopped & cleared refs; ignore this
+            return;
+
         if (task == _pusher) {
             _pushStatus = taskStatus;
         } else if (task == _puller) {

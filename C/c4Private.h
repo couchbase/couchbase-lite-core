@@ -67,9 +67,18 @@ C4Replicator* c4repl_newWithSocket(C4Database* db C4NONNULL,
     This is useful for leak detection. */
 class C4InstanceCounted {
 public:
+#if DEBUG
+    C4InstanceCounted()                             {++gC4InstanceCount; track();}
+    C4InstanceCounted(const C4InstanceCounted&)     {++gC4InstanceCount; track();}
+    virtual ~C4InstanceCounted()                    {--gC4InstanceCount; untrack();}
+
+    void track() const;
+    void untrack() const;
+#else
     C4InstanceCounted()                             {++gC4InstanceCount;}
     C4InstanceCounted(const C4InstanceCounted&)     {++gC4InstanceCount;}
     ~C4InstanceCounted()                            {--gC4InstanceCount;}
+#endif
 };
 
 #endif

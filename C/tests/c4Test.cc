@@ -256,7 +256,13 @@ C4Test::~C4Test() {
 #if ATOMIC_INT_LOCK_FREE > 1
     if (!current_exception()) {
         // Check for leaks:
-        REQUIRE(c4_getObjectCount() == objectCount);
+        int leaks = c4_getObjectCount() - objectCount;
+        if (leaks > 0) {
+            fprintf(stderr, "*** LEAKED LITECORE OBJECTS: ");
+            c4_dumpInstances();
+            fprintf(stderr, " ***\n");
+        }
+        REQUIRE(leaks == 0);
     }
 #endif
 }

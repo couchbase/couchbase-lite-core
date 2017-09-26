@@ -150,6 +150,7 @@ namespace litecore { namespace repl {
 
         /** Implementation of connectionClosed(). May be overridden, but call super. */
         virtual void _connectionClosed() {
+            logDebug("connectionClosed");
             _connection = nullptr;
         }
 

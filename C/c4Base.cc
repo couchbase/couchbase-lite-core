@@ -29,10 +29,15 @@
 #include <algorithm>
 #include <deque>
 #include <mutex>
+#include <set>
 
 #ifdef _MSC_VER
 #include <winerror.h>
 #define EHOSTDOWN WSAEHOSTDOWN
+#endif
+
+#if defined(__clang__) // For __cxa_demangle
+#include <cxxabi.h>
 #endif
 
 
@@ -153,11 +158,6 @@ char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) noexc
     buffer[len] = '\0';
     c4slice_free(msg);
     return buffer;
-}
-
-
-int c4_getObjectCount() noexcept {
-    return gC4InstanceCount;
 }
 
 
@@ -341,3 +341,50 @@ void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, va_list arg
 void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
     c4log(c4Domain, level, "%.*s", SPLAT(msg));
 }
+
+
+#pragma mark - INSTANCE COUNTED:
+
+
+int c4_getObjectCount() noexcept {
+    return gC4InstanceCount;
+}
+
+
+#if DEBUG
+static mutex sInstancesMutex;
+static set<const C4InstanceCounted*> sInstances;
+
+void C4InstanceCounted::track() const {
+    lock_guard<mutex> lock(sInstancesMutex);
+    sInstances.insert(this);
+}
+
+void C4InstanceCounted::untrack() const {
+    lock_guard<mutex> lock(sInstancesMutex);
+    sInstances.erase(this);
+}
+
+void c4_dumpInstances(void) C4API {
+    char* unmangled = nullptr;
+    lock_guard<mutex> lock(sInstancesMutex);
+    int n = 0;
+    for (const C4InstanceCounted *obj : sInstances) {
+        if (n++)
+            fprintf(stderr, ", ");
+        const char *name =  typeid(*obj).name();
+#ifdef __clang__x
+        int status;
+        size_t unmangledLen = 0;
+        unmangled = abi::__cxa_demangle(name, unmangled, &unmangledLen, &status);
+        if (unmangled && status == 0)
+            name = unmangled;
+#endif
+        fprintf(stderr, "%s at %p", name, obj);
+    }
+    free(unmangled);
+}
+
+#else
+void c4_dumpInstances(void) C4API { }
+#endif

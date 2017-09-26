@@ -195,6 +195,7 @@ kC4ReplicatorActivityLevelNames
 c4error_return
 c4doc_getForPut
 c4_getObjectCount
+c4_dumpInstances
 c4_shutdown
 gC4InstanceCount
 gC4ExpectExceptions

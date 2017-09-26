@@ -388,6 +388,8 @@ C4StringResult c4_getBuildInfo(void) C4API;
     This can be used as a debugging/testing tool to detect leaks. */
 int c4_getObjectCount(void) C4API;
 
+void c4_dumpInstances(void) C4API;
+
 
 #ifdef __cplusplus
 }

@@ -230,6 +230,8 @@ namespace litecore { namespace repl {
                                bool continuous, bool skipDeleted, bool getForeignAncestors,
                                Retained<Pusher> pusher)
     {
+        if (!connection())
+            return;
         log("Reading up to %u local changes since #%llu", limit, since);
         if (_firstChangeSequence == 0)
             _firstChangeSequence = since + 1;
@@ -276,6 +278,7 @@ namespace litecore { namespace repl {
                                                  self->enqueue(&DBWorker::dbChanged);
                                              },
                                              this);
+            logDebug("Started DB observer");
         }
 
         pusher->gotChanges(changes, error);
