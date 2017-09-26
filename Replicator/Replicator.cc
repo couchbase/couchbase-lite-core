@@ -328,7 +328,9 @@ namespace litecore { namespace repl {
                 if (dbIsEmpty && _options.pull > kC4Passive)
                     _puller->setSkipDeleted();
             } else {
+                log("Fatal error getting checkpoint");
                 gotError(err);
+                stop();
                 return;
             }
 
