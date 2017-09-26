@@ -339,11 +339,10 @@ namespace litecore {
     }
     
     void Logging::_logv(LogLevel level, const char *format, va_list args) const {
-#if DEBUG
-        if (!_domain.willLog(level))
-            return;
-#endif
         if (!_objectRef) {
+            _domain.computeLevel();
+            if (!_domain.willLog(level))
+                return;
             string identifier = loggingIdentifier();
             const_cast<Logging*>(this)->_objectRef = _domain.registerObject(identifier, level);
         }

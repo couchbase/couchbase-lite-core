@@ -45,14 +45,15 @@ namespace litecore { namespace repl {
         bool match = true;
         auto itsState = checkpoint.sequences();
         if (_seq.local > 0 && _seq.local != itsState.local) {
-            Log("Local sequence mismatch: I had %llu, remote had %llu", (unsigned long long)_seq.local,
-                (unsigned long long)itsState.local);
+            LogTo(SyncLog, "Local sequence mismatch: I had %llu, remote had %llu",
+                  (unsigned long long)_seq.local,
+                  (unsigned long long)itsState.local);
             _seq.local = 0;
             match = false;
         }
         if (_seq.remote && _seq.remote != itsState.remote) {
-            Log("Remote sequence mismatch: I had '%.*s', remote had '%.*s'",
-                SPLAT(_seq.remote), SPLAT(itsState.remote));
+            LogTo(SyncLog, "Remote sequence mismatch: I had '%.*s', remote had '%.*s'",
+                  SPLAT(_seq.remote), SPLAT(itsState.remote));
             _seq.remote = nullslice;
             match = false;
         }
