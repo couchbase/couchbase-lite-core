@@ -138,7 +138,7 @@ namespace litecore { namespace blip {
     protected:
 
         ~BLIPIO() {
-            Log("~BLIPIO: Max outbox depth was %zu, avg %.2f", _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
+            log("~BLIPIO: Max outbox depth was %zu, avg %.2f", _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
         }
 
         virtual void onWebSocketGotHTTPResponse(int status,
