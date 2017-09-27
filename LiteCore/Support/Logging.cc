@@ -137,16 +137,17 @@ namespace litecore {
                 level = LogLevel::Info;
                 static const char* const kLevelNames[] = {"debug", "verbose", "info",
                                                           "warning", "error", "none", nullptr};
-                for (int i = 0; kLevelNames[i]; i++)
+                for (int i = 0; kLevelNames[i]; i++) {
                     if (0 == strcasecmp(val, kLevelNames[i])) {
                         level = LogLevel(i);
                         break;
                     }
-            }
-            // Setting "LiteCoreLog" also sets the callback level to this level:
-            if (this == &kC4Cpp_DefaultLog) {
-                unique_lock<mutex> lock(sLogMutex);
-                sCallbackMinLevel = min(sCallbackMinLevel, level);
+                }
+                // Setting "LiteCoreLog" also sets the callback level to this level:
+                if (this == &kC4Cpp_DefaultLog) {
+                    unique_lock<mutex> lock(sLogMutex);
+                    sCallbackMinLevel = min(sCallbackMinLevel, level);
+                }
             }
 #endif
             setLevel(level);
