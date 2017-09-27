@@ -133,6 +133,13 @@ namespace litecore { namespace repl {
     }
 
 
+    void Worker::finishedDocument(slice docID, bool pushing) {
+        addProgress({0, 0, 1});
+//        if (_notifyAllDocuments)  // experimental
+//            gotDocumentError(docID, {}, pushing, true);
+    }
+
+
 #pragma mark - ACTIVITY / PROGRESS:
 
 
@@ -142,7 +149,7 @@ namespace litecore { namespace repl {
 
 
     void Worker::addProgress(C4Progress p) {
-        if (p.completed || p.total) {
+        if (p.unitsCompleted || p.unitsTotal || p.documentCount) {
             _status.progressDelta += p;
             _status.progress += p;
             _statusChanged = true;
@@ -164,9 +171,11 @@ namespace litecore { namespace repl {
         bool changed = _statusChanged;
         _statusChanged = false;
         if (changed && _important) {
-            logVerbose("progress +%llu/+%llu -- now %llu / %llu",
-                       _status.progressDelta.completed, _status.progressDelta.total,
-                       _status.progress.completed, _status.progress.total);
+            logVerbose("progress +%llu/+%llu, %llu docs -- now %llu / %llu, %llu docs",
+                       _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
+                       _status.progressDelta.documentCount,
+                       _status.progress.unitsCompleted, _status.progress.unitsTotal,
+                       _status.progress.documentCount);
         }
 
         auto newLevel = computeActivityLevel();

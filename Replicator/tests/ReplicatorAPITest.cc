@@ -68,8 +68,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
     replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == POSIXDomain);
     CHECK(_callbackStatus.error.code == ECONNREFUSED);
-    CHECK(_callbackStatus.progress.completed == 0);
-    CHECK(_callbackStatus.progress.total == 0);
+    CHECK(_callbackStatus.progress.unitsCompleted == 0);
+    CHECK(_callbackStatus.progress.unitsTotal == 0);
 }
 
 
@@ -79,8 +79,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[Push]") {
     replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == NetworkDomain);
     CHECK(_callbackStatus.error.code == kC4NetErrUnknownHost);
-    CHECK(_callbackStatus.progress.completed == 0);
-    CHECK(_callbackStatus.progress.total == 0);
+    CHECK(_callbackStatus.progress.unitsCompleted == 0);
+    CHECK(_callbackStatus.progress.unitsTotal == 0);
 }
 
 

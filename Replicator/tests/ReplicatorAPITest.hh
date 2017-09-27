@@ -82,7 +82,7 @@ public:
         c4error_getMessageC(status.error, message, sizeof(message));
         C4Log("*** C4Replicator state: %-s, progress=%llu/%llu, error=%d/%d: %s",
               kC4ReplicatorActivityLevelNames[status.level],
-              status.progress.completed, status.progress.total,
+              status.progress.unitsCompleted, status.progress.unitsTotal,
               status.error.domain, status.error.code, message);
     }
 

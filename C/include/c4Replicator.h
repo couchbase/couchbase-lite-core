@@ -41,8 +41,9 @@ extern "C" {
 
 
     typedef struct {
-        uint64_t    completed;
-        uint64_t    total;
+        uint64_t    unitsCompleted;
+        uint64_t    unitsTotal;
+        uint64_t    documentCount;
     } C4Progress;
 
     /** Current status of replication. Passed to callback. */

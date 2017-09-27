@@ -163,14 +163,17 @@ namespace litecore { namespace repl {
     }
 
 
-    void Puller::revWasHandled(IncomingRev *inc, slice sequence, bool complete) {
-        enqueue(&Puller::_revWasHandled, retained(inc),
-                alloc_slice(sequence), complete);
+    void Puller::revWasHandled(IncomingRev *inc,
+                               const alloc_slice &docID,
+                               slice sequence,
+                               bool complete)
+    {
+        enqueue(&Puller::_revWasHandled, retained(inc), docID, alloc_slice(sequence), complete);
     }
 
 
     // Records that a sequence has been successfully pulled.
-    void Puller::_revWasHandled(Retained<IncomingRev> inc, alloc_slice sequence, bool complete) {
+    void Puller::_revWasHandled(Retained<IncomingRev> inc, alloc_slice docID, alloc_slice sequence, bool complete) {
         --_pendingCallbacks;
         if (complete && nonPassive()) {
             bool wasEarliest;
@@ -183,6 +186,7 @@ namespace litecore { namespace repl {
                     replicator()->updatePullCheckpoint(_lastSequence);
             }
             addProgress({bodySize, 0});
+            finishedDocument(docID, false);
         }
 
         if (_spareIncomingRevs.size() < kMaxSpareIncomingRevs) {

@@ -316,6 +316,7 @@ namespace litecore { namespace repl {
                     if (completed) {
                         logVerbose("Completed rev %.*s #%.*s (seq %llu)",
                                    SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
+                        finishedDocument(rev.docID, true);
                     } else {
                         auto err = progress.reply->getError();
                         auto c4err = blipToC4Error(err);

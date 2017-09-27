@@ -173,7 +173,7 @@ namespace litecore { namespace repl {
             _error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
         if (_error.code)
             gotDocumentError(_rev.docID, _error, false, false);
-        _puller->revWasHandled(this, remoteSequence(), (_error.code == 0));
+        _puller->revWasHandled(this, _rev.docID, remoteSequence(), (_error.code == 0));
         clear();
     }
 

@@ -152,20 +152,20 @@ namespace litecore { namespace REST {
                 writeErrorInfo(json);
             }
 
-            if (_status.progress.total) {
-                double fraction = _status.progress.completed * 100.0 / _status.progress.total;
+            if (_status.progress.unitsTotal > 0) {
+                double fraction = _status.progress.unitsCompleted * 100.0 / _status.progress.unitsTotal;
                 json.writeKey("progress"_sl);
                 json.writeInt(int64_t(fraction));
             }
 
-            if (_status.progress.completed > 0) {
+            if (_status.progress.documentCount > 0) {
                 slice key;
                 if (_bidi)
                     key = "docs_transferred"_sl;
                 else
                     key = _push ? "docs_written"_sl : "docs_read"_sl;
                 json.writeKey(key);
-                json.writeUInt(_status.progress.completed);
+                json.writeUInt(_status.progress.documentCount);
             }
         }
 

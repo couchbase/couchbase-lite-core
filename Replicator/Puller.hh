@@ -25,7 +25,10 @@ namespace litecore { namespace repl {
         void start(alloc_slice sinceSequence)   {enqueue(&Puller::_start, sinceSequence);}
 
         // Called only by IncomingRev
-        void revWasHandled(IncomingRev *inc, slice sequence, bool complete);
+        void revWasHandled(IncomingRev *inc,
+                           const alloc_slice &docID,
+                           slice sequence,
+                           bool complete);
 
     protected:
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
@@ -38,7 +41,8 @@ namespace litecore { namespace repl {
         void _start(alloc_slice sinceSequence);
         void handleChanges(Retained<MessageIn>);
         void handleRev(Retained<MessageIn>);
-        void _revWasHandled(Retained<IncomingRev>, alloc_slice sequence, bool complete);
+        void _revWasHandled(Retained<IncomingRev>, alloc_slice docID, alloc_slice sequence,
+                            bool complete);
 
         void _setSkipDeleted()                  {_skipDeleted = true;}
 

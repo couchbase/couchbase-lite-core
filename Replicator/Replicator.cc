@@ -141,7 +141,7 @@ namespace litecore { namespace repl {
                  kC4ReplicatorActivityLevelNames[_pushStatus.level],
                  kC4ReplicatorActivityLevelNames[_pullStatus.level],
                  kC4ReplicatorActivityLevelNames[_dbStatus.level],
-                 status().progress.completed, status().progress.total);
+                 status().progress.unitsCompleted, status().progress.unitsTotal);
 
         if (_pullStatus.error.code)
             onError(_pullStatus.error);

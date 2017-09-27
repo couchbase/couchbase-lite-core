@@ -100,7 +100,8 @@ public:
         CHECK(_gotResponse);
         CHECK(_statusChangedCalls > 0);
         CHECK(_statusReceived.level == kC4Stopped);
-        CHECK(_statusReceived.progress.completed == _statusReceived.progress.total);
+        CHECK(_statusReceived.progress.unitsCompleted == _statusReceived.progress.unitsTotal);
+        CHECK(_statusReceived.progress.documentCount == _expectedDocumentCount);
         CHECK(_statusReceived.error.code == _expectedError.code);
         if (_expectedError.code)
             CHECK(_statusReceived.error.domain == _expectedError.domain);
@@ -133,13 +134,17 @@ public:
         if (repl == _replClient) {
             Assert(_gotResponse);
             ++_statusChangedCalls;
-            Log(">> Replicator is %-s, progress %lu/%lu",
+            Log(">> Replicator is %-s, progress %lu/%lu, %lu docs",
                 kC4ReplicatorActivityLevelNames[status.level],
-                (unsigned long)status.progress.completed, (unsigned long)status.progress.total);
-            Assert(status.progress.completed <= status.progress.total);
-            if (status.progress.total > 0) {
-                Assert(status.progress.completed >= _statusReceived.progress.completed);
-                Assert(status.progress.total     >= _statusReceived.progress.total);
+                (unsigned long)status.progress.unitsCompleted,
+                (unsigned long)status.progress.unitsTotal,
+                (unsigned long)status.progress.documentCount);
+            Assert(status.progress.unitsCompleted <= status.progress.unitsTotal);
+            Assert(status.progress.documentCount < 1000000);
+            if (status.progress.unitsTotal > 0) {
+                Assert(status.progress.unitsCompleted >= _statusReceived.progress.unitsCompleted);
+                Assert(status.progress.unitsTotal     >= _statusReceived.progress.unitsTotal);
+                Assert(status.progress.documentCount  >= _statusReceived.progress.documentCount);
             }
             _statusReceived = status;
 
@@ -287,6 +292,7 @@ public:
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };
     unsigned _statusChangedCalls {0};
+    uint64_t _expectedDocumentCount {0};
     C4Error _expectedError {};
     set<string> _docPushErrors, _docPullErrors;
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;

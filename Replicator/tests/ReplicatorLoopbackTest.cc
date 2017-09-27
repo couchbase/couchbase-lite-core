@@ -21,6 +21,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty DB", "[Push]") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
     runPushReplication();
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
@@ -33,6 +34,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
     enc.endDict();
     alloc_slice body = enc.finish();
     createRev("doc"_sl, kRevID, body);
+    _expectedDocumentCount = 1;
 
     runPushReplication();
     compareDatabases();
@@ -42,6 +44,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
     runPushReplication();
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
@@ -49,6 +52,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     Log("-------- Second Replication --------");
     createRev("new1"_sl, kRev2ID, kFleeceBody);
     createRev("new2"_sl, kRev3ID, kFleeceBody);
+    _expectedDocumentCount = 2;
 
     runPushReplication();
     compareDatabases();
@@ -65,6 +69,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Empty DB", "[Pull]") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Small Non-Empty DB", "[Pull]") {
     importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
     runPullReplication();
     compareDatabases();
     validateCheckpoints(db2, db, "{\"remote\":100}");
@@ -73,6 +78,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Small Non-Empty DB", "[Pull]") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
     importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
     runPullReplication();
     compareDatabases();
     validateCheckpoints(db2, db, "{\"remote\":100}");
@@ -80,6 +86,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
     Log("-------- Second Replication --------");
     createRev("new1"_sl, kRev2ID, kFleeceBody);
     createRev("new2"_sl, kRev3ID, kFleeceBody);
+    _expectedDocumentCount = 2;
 
     runPullReplication();
     compareDatabases();
@@ -95,6 +102,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
         sprintf(docID, "%07u", i);
         createRev(slice(docID), kRev2ID, nullslice, kRevDeleted); // delete it
     }
+    _expectedDocumentCount = 50;
 
     auto pushOpt = Replicator::Options::passive();
     auto pullOpt = Replicator::Options::passive();
@@ -141,6 +149,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
 
     // Import names_100.json into db:
     importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
 
     // Push db into db2:
     runPushReplication();
@@ -163,6 +172,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][Continuous]") {
     createRev(db, "doc1"_sl, "1-11"_sl, kFleeceBody);
     createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
+    _expectedDocumentCount = 2;
 
     _stopOnIdle = true;
     auto pushOpt = Replicator::Options::pushing(kC4Continuous);
@@ -174,6 +184,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][C
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][Continuous]") {
     createRev(db, "doc1"_sl, "1-11"_sl, kFleeceBody);
     createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
+    _expectedDocumentCount = 2;
 
     _stopOnIdle = true;
     auto pullOpt = Replicator::Options::pulling(kC4Continuous);
@@ -212,6 +223,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
     {
         TransactionHelper t(db);
         blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        _expectedDocumentCount = 1;
     }
     runPushReplication();
     compareDatabases();
@@ -227,6 +239,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
     {
         TransactionHelper t(db);
         blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        _expectedDocumentCount = 1;
     }
     runPullReplication();
     compareDatabases();
@@ -246,6 +259,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]
     {
         TransactionHelper t(db);
         blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        _expectedDocumentCount = 1;
     }
     runPullReplication();
     compareDatabases();
@@ -275,12 +289,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
     SECTION("Push") {
         auto pushOptions = Replicator::Options::pushing();
         pushOptions.properties = properties;
+        _expectedDocumentCount = 3;
         runReplicators(pushOptions,
                        Replicator::Options::passive());
     }
     SECTION("Pull") {
         auto pullOptions = Replicator::Options::pulling();
         pullOptions.properties = properties;
+        _expectedDocumentCount = 3;
         runReplicators(Replicator::Options::passive(),
                        pullOptions);
     }
@@ -322,6 +338,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     };
     _expectedDocPushErrors = set<string>{"0000052", "0000065", "0000071", "0000072"};
     _expectedDocPullErrors = set<string>{"0000052", "0000065", "0000071", "0000072"};
+    _expectedDocumentCount = 100 - 4;
     runReplicators(Replicator::Options::pushing(),
                    pullOptions);
     validateCheckpoints(db, db2, "{\"local\":100}");
@@ -335,7 +352,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push]") {
     createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
-
+    _expectedDocumentCount = 1;
+    
     // Push db to db2, so both will have the doc:
     runPushReplication();
     validateCheckpoints(db, db2, "{\"local\":1}");
@@ -385,6 +403,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
 
     createRev(kDocID, kRevID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody);
+    _expectedDocumentCount = 1;
 
     Log("-------- First Replication db->db2 --------");
     runReplicators(serverOpts,
@@ -404,6 +423,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
 
     createRev(db2, kDocID, kRev3ID, body);
     createRev(db2, kDocID, "4-4444"_sl, body);
+    _expectedDocumentCount = 1;
 
     Log("-------- Second Replication db2->db --------");
     runReplicators(serverOpts,
@@ -414,6 +434,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     Log("-------- Update Doc Again --------");
     createRev(db2, kDocID, "5-5555"_sl, body);
     createRev(db2, kDocID, "6-6666"_sl, body);
+    _expectedDocumentCount = 1;
 
     Log("-------- Third Replication db2->db --------");
     runReplicators(serverOpts,
@@ -431,11 +452,13 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Pull]
     createRev(kDocID, kRev2ID, kFleeceBody);
 
     Log("-------- First Replication: push db->db2 --------");
+    _expectedDocumentCount = 1;
     runReplicators(Replicator::Options::pushing(), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":2}");
 
     clearCheckpoint(db, true);
     Log("-------- Second Replication: push db->db2 --------");
+    _expectedDocumentCount = 0;
     runReplicators(Replicator::Options::pushing(), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":2}");
 }

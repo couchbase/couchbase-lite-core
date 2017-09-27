@@ -165,6 +165,8 @@ namespace litecore { namespace repl {
         /** Report less-serious errors that affect a document but don't stop replication. */
         virtual void gotDocumentError(slice docID, C4Error, bool pushing, bool transient);
 
+        void finishedDocument(slice docID, bool pushing);
+
         static blip::ErrorBuf c4ToBLIPError(C4Error);
         static C4Error blipToC4Error(const blip::Error&);
 
