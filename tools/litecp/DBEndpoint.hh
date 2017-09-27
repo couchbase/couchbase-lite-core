@@ -11,6 +11,7 @@
 #include "c4Replicator.h"
 
 class JSONEndpoint;
+class RemoteEndpoint;
 
 
 class DbEndpoint : public Endpoint {
@@ -19,12 +20,19 @@ public:
     :Endpoint(spec)
     { }
 
-    virtual void prepare(bool readOnly, bool mustExist, slice docIDProperty, const Endpoint*) override;
+    virtual bool isDatabase() const override {
+        return true;
+    }
+
+
+    virtual void prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint*) override;
     virtual void copyTo(Endpoint *dst, uint64_t limit) override;
     virtual void writeJSON(slice docID, slice json) override;
     virtual void finish() override;
 
-    void pushTo(DbEndpoint*);
+    void pushToLocal(DbEndpoint&);
+    void replicateWith(RemoteEndpoint&, C4ReplicatorMode push, C4ReplicatorMode pull);
+
     void exportTo(JSONEndpoint*);
     void importFrom(JSONEndpoint*);
 
@@ -39,13 +47,16 @@ private:
     void commit();
     void startLine();
 
+    void exportTo(Endpoint *dst, uint64_t limit);
+    C4ReplicatorParameters replicatorParameters(C4ReplicatorMode push, C4ReplicatorMode pull);
+    void replicate(C4Replicator*, C4Error&);
+
     c4::ref<C4Database> _db;
     unsigned _transactionSize {0};
     bool _inTransaction {false};
 
     // Replication mode only:
-    DbEndpoint* _dstDb;
-    c4::ref<C4Replicator> _repl;
+    Endpoint* _otherEndpoint;
     bool _needNewline {false};
 
     static constexpr unsigned kMaxTransactionSize = 1000;

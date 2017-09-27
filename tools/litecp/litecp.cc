@@ -7,9 +7,7 @@
 //
 
 #include "ToolUtils.hh"
-#include "JSONEndpoint.hh"
-#include "DBEndpoint.hh"
-#include "DirEndpoint.hh"
+#include "Endpoint.hh"
 #include "FilePath.hh"
 #include "StringUtil.hh"
 #include "Stopwatch.hh"
@@ -19,39 +17,30 @@
 #include <vector>
 
 
-#if 0
-class RemoteEndpoint : public Endpoint {
-public:
-    RemoteEndpoint(const string &spec)
-    :Endpoint(spec)
-    { }
-    virtual void prepare(bool readOnly, bool mustExist, slice docIDProperty) override;
-    virtual void copyTo(Endpoint*, uint64_t limit) override;
-};
-#endif
-
-
 void usage() {
     cerr <<
     "litecp: Replicates/imports/exports LiteCore and Couchbase Lite 2 databases\n"
     "Usage: litecp <options> <src> <dst>\n"
     "  where <src> and <dst> may be any of:\n"
     "    * a database path (.cblite2 extension)\n"
+    "    * a remote database URL starting with 'blip:' or 'blips:'\n"
     "    * a JSON file path (.json extension) in one-object-per line format\n"
     "    * a '/'-terminated path to a directory of JSON files (.json extensions)\n"
     "      in one-object-per-file format\n"
-//  "    * a remote database URL (blip: or blips: scheme) [NOT YET IMPLEMENTED]\n"
-    "  All combinations are allowed. Copying database-to-database uses the replicator.\n"
+    "  Copying a local database to a local database uses the replicator.\n"
+    "  If a database URL is used, the other parameter must be a local database.\n"
+    "\n"
     "Options:\n"
     "    --existing or -x : Fail if <dst> doesn't already exist.\n"
     "    --id <property>: When <src> is JSON, this is a property name/path whose value will\n"
     "           be used as the docID. (If omitted, documents are given UUIDs.)\n"
     "           When <dst> is JSON, this is a property name that will be added to the JSON, whose\n"
     "           value is the docID. (If omitted, defaults to \"_id\".)\n"
-    "    --limit <n>: Stop after <n> documents.\n"
+    "    --limit <n>: Stop after <n> documents. (Replicator ignores this)\n"
     "    --careful: Abort on any error.\n"
-    "    --verbose or -v: Log every 1000 docs. If given twice, log every docID.\n"
-    "           If given three times, turn on LiteCore DB and Sync logging.\n"
+    "    --verbose or -v: Log replicator progress, or every 1000 docs copied.\n"
+    "           If given twice, log every docID.\n"
+    "           If given three times, turn on LiteCore `DB` and `Sync` logging.\n"
     "    --help: You're looking at it.\n"
     ;
 }
@@ -117,8 +106,6 @@ static int LiteCpMain(vector<string> &args) {
         src->prepare(true, true, docIDProperty, dst);
         dst->prepare(false,!createDst, docIDProperty, src);
 
-        if (gVerbose)
-            cout << "Copying...\n";
         src->copyTo(dst, limit);
         dst->finish();
 

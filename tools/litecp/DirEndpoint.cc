@@ -9,13 +9,13 @@
 #include "DirEndpoint.hh"
 
 
-void DirectoryEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty, const Endpoint *other) {
-    Endpoint::prepare(readOnly, mustExist, docIDProperty, other);
+void DirectoryEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
+    Endpoint::prepare(isSource, mustExist, docIDProperty, other);
     if (_dir.exists()) {
         if (!_dir.existsAsDir())
             fail(format("%s is not a directory", _spec.c_str()));
     } else {
-        if (readOnly || mustExist)
+        if (isSource || mustExist)
             fail(format("Directory %s doesn't exist", _spec.c_str()));
         else
             _dir.mkdir();
@@ -30,6 +30,8 @@ void DirectoryEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProper
 
 // As source:
 void DirectoryEndpoint::copyTo(Endpoint *dst, uint64_t limit) {
+    if (gVerbose)
+        cout << "Importing JSON files...\n";
     alloc_slice buffer(10000);
     _dir.forEachFile([&](const FilePath &file) {
         string filename = file.fileName();

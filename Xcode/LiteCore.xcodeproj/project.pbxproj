@@ -88,6 +88,7 @@
 		273E55681F79B587000182F1 /* libLiteCoreREST.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D410E1EA5558100D8DD9D /* libLiteCoreREST.dylib */; };
 		273E55741F7AC9F3000182F1 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		273E55781F7AC9FE000182F1 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
+		273E55811F7B0ED7000182F1 /* RemoteEndpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E55801F7B0ED7000182F1 /* RemoteEndpoint.cc */; };
 		273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */; };
 		273E9EC41C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
 		273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
@@ -999,6 +1000,8 @@
 		273AD3DB18F5E8D8007D8C23 /* snappy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snappy.h; sourceTree = "<group>"; };
 		273AD3E718F5EB15007D8C23 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
 		273AD3E818F5EB15007D8C23 /* snappy-stubs-public.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "snappy-stubs-public.h"; sourceTree = "<group>"; };
+		273E557F1F7B0ED7000182F1 /* RemoteEndpoint.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RemoteEndpoint.hh; sourceTree = "<group>"; };
+		273E55801F7B0ED7000182F1 /* RemoteEndpoint.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteEndpoint.cc; sourceTree = "<group>"; };
 		273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocEnumerator.cc; sourceTree = "<group>"; };
 		273E9EC11C506C60003115A6 /* c4DocEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4DocEnumerator.h; sourceTree = "<group>"; };
 		273E9EC61C506C70003115A6 /* c4.def */ = {isa = PBXFileReference; lastKnownFileType = text; path = c4.def; sourceTree = "<group>"; };
@@ -1924,6 +1927,8 @@
 				2750734A1F490398003D2CCE /* Endpoint.hh */,
 				2750734F1F4903E5003D2CCE /* DBEndpoint.cc */,
 				275073501F4903E5003D2CCE /* DBEndpoint.hh */,
+				273E55801F7B0ED7000182F1 /* RemoteEndpoint.cc */,
+				273E557F1F7B0ED7000182F1 /* RemoteEndpoint.hh */,
 				275073521F4903F7003D2CCE /* DirEndpoint.cc */,
 				275073531F4903F7003D2CCE /* DirEndpoint.hh */,
 				2750734D1F4903C4003D2CCE /* JSONEndpoint.hh */,
@@ -3252,6 +3257,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				273E55811F7B0ED7000182F1 /* RemoteEndpoint.cc in Sources */,
 				275073511F4903E5003D2CCE /* DBEndpoint.cc in Sources */,
 				2750734B1F490398003D2CCE /* Endpoint.cc in Sources */,
 				2750734E1F4903C4003D2CCE /* JSONEndpoint.cc in Sources */,

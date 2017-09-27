@@ -20,20 +20,23 @@ public:
 
     static Endpoint* create(const string &str);
     virtual ~Endpoint() { }
-    virtual void prepare(bool readOnly, bool mustExist, slice docIDProperty, const Endpoint *other) {
+
+    virtual bool isDatabase() const {
+        return false;
+    }
+
+    virtual void prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
         _docIDProperty = docIDProperty;
     }
+
     virtual void copyTo(Endpoint*, uint64_t limit) =0;
 
     virtual void writeJSON(slice docID, slice json) = 0;
 
     virtual void finish() { }
 
-    uint64_t docCount() {
-        return _docCount;
-    }
-
-protected:
+    uint64_t docCount()             {return _docCount;}
+    void setDocCount(uint64_t n)    {_docCount = n;}
 
     void logDocument(slice docID) {
         ++_docCount;
@@ -50,6 +53,8 @@ protected:
         else if (gVerbose == 1 && (_docCount % 1000) < n)
             cout << _docCount << '\n';
     }
+
+protected:
 
     alloc_slice docIDFromJSON(slice json) {
         alloc_slice body = Encoder::convertJSON(json, nullptr);

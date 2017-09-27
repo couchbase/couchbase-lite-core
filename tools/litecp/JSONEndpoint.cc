@@ -9,12 +9,12 @@
 #include "JSONEndpoint.hh"
 
 
-void JSONEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty, const Endpoint *other) {
-    Endpoint::prepare(readOnly, mustExist, docIDProperty, other);
+void JSONEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
+    Endpoint::prepare(isSource, mustExist, docIDProperty, other);
     if (!docIDProperty)
         _docIDProperty = c4str("_id");
     bool err;
-    if (readOnly) {
+    if (isSource) {
         _in.reset(new ifstream(_spec, ios_base::in));
         err = _in->fail();
         if (!err && _in->peek() != '{')
@@ -33,6 +33,8 @@ void JSONEndpoint::prepare(bool readOnly, bool mustExist, slice docIDProperty, c
 
 // As source:
 void JSONEndpoint::copyTo(Endpoint *dst, uint64_t limit) {
+    if (gVerbose)
+        cout << "Importing JSON file...\n";
     string line;
     unsigned lineNo;
     for (lineNo = 0; lineNo < limit && getline(*_in, line); ++lineNo) {
