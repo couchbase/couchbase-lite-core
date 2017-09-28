@@ -483,8 +483,13 @@ namespace litecore {
     }
 
     ReadOnlyTransaction::~ReadOnlyTransaction() {
-        if (_db)
-            _db->endReadOnlyTransaction();
+        if (_db) {
+            try {
+                _db->endReadOnlyTransaction();
+            } catch (...) {
+                Warn("~ReadOnlyTransaction caught C++ exception in endReadOnlyTransaction");
+            }
+        }
     }
 
 }
