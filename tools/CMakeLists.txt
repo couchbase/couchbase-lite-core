@@ -17,7 +17,7 @@ include_directories(${PROJECT_SOURCE_DIR}
 
 if (APPLE)   ### TODO: Make this build on other platforms (may require source changes)
 
-aux_source_directory("interactive" CBLITE_SRC)
+aux_source_directory("cblite" CBLITE_SRC)
 
 add_executable(cblite
                ${CBLITE_SRC}

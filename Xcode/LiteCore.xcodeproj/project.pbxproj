@@ -1106,6 +1106,7 @@
 		275BF39F1F6328B70051374A /* cbliteTool+revs.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+revs.cc"; sourceTree = "<group>"; };
 		275BF3A11F63291A0051374A /* cbliteTool+file.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+file.cc"; sourceTree = "<group>"; };
 		275BF3A31F632C110051374A /* cbliteTool+sql.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+sql.cc"; sourceTree = "<group>"; };
+		275C4AE61F7D939000F15938 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		275CE0E11E57B7E70084E014 /* c4Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Replicator.cc; sourceTree = "<group>"; };
 		275CE0E21E57B7E70084E014 /* c4Replicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Replicator.h; sourceTree = "<group>"; };
 		275CE0EE1E57BE7E0084E014 /* Replicator.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = Replicator.exp; sourceTree = "<group>"; };
@@ -1665,7 +1666,7 @@
 			path = civetweb;
 			sourceTree = "<group>";
 		};
-		272AEC461F560F7D00051F0A /* interactive */ = {
+		272AEC461F560F7D00051F0A /* cblite */ = {
 			isa = PBXGroup;
 			children = (
 				275BF3941F63222E0051374A /* cbliteTool.hh */,
@@ -1677,7 +1678,7 @@
 				275BF39F1F6328B70051374A /* cbliteTool+revs.cc */,
 				275BF3A31F632C110051374A /* cbliteTool+sql.cc */,
 			);
-			path = interactive;
+			path = cblite;
 			sourceTree = "<group>";
 		};
 		273AD3D018F5E8B0007D8C23 /* snappy */ = {
@@ -1749,8 +1750,9 @@
 		27468F081EAD147D00B1B4F5 /* Tools */ = {
 			isa = PBXGroup;
 			children = (
+				275C4AE61F7D939000F15938 /* README.md */,
 				270C6BA81EBA754300E73415 /* litecorelog.cc */,
-				272AEC461F560F7D00051F0A /* interactive */,
+				272AEC461F560F7D00051F0A /* cblite */,
 				275073481F490324003D2CCE /* litecp */,
 				272AEC5E1F56120F00051F0A /* Tool.hh */,
 				277C1B1E1F58770400031200 /* Tool.cc */,
