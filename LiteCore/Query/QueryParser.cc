@@ -662,7 +662,7 @@ namespace litecore {
         // Is a MATCH legal here? Look at the parent operation(s):
         auto parentCtx = _context.rbegin() + 1;
         auto parentOp = (*parentCtx)->op;
-        if (parentOp == "AND"_sl)
+        while (parentOp == "AND"_sl)
             parentOp = (*++parentCtx)->op;
         require(parentOp == "SELECT"_sl || parentOp == nullslice,
                 "MATCH can only appear at top-level, or in a top-level AND");

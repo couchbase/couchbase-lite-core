@@ -226,6 +226,17 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text indexes", "[Query][C][FTS]
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query in multiple ANDs", "[Query][C][FTS]") {
+    C4Error err;
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
+    compile(json5("['AND', ['AND', ['=', ['.gender'], 'male'],\
+                                   ['MATCH', ['.', 'contact', 'address', 'city'], 'Santa']],\
+                           ['=', ['.name.first'], 'Cleveland']]"));
+    CHECK(run() == (vector<string>{"0000015"}));
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text queries", "[Query][C][FTS][!throws]") {
     // You can't query the same FTS index multiple times in a query (says SQLite)
     ExpectingExceptions x;
