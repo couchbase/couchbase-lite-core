@@ -193,22 +193,20 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][Continuous][.neverending]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][Continuous]") {
     addDocsInParallel(chrono::milliseconds(1500), 6);
     runPushReplication(kC4Continuous);
-    //FIX: Stop this when bg thread stops adding docs
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pull][Continuous][.neverending]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pull][Continuous]") {
     addDocsInParallel(chrono::milliseconds(1500), 6);
     runPullReplication(kC4Continuous);
-    //FIX: Stop this when bg thread stops adding docs
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continuous][.neverending]") {
-    addDocsInParallel(chrono::milliseconds(250), 1000000);
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continuous]") {
+    addDocsInParallel(chrono::milliseconds(100), 5000);
     runPushReplication(kC4Continuous);
     //FIX: Stop this when bg thread stops adding docs
 }

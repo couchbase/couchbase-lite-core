@@ -148,7 +148,7 @@ public:
             }
             _statusReceived = status;
 
-            if (status.level == kC4Idle) {
+            if (_stopOnIdle && status.level == kC4Idle) {
                 Log(">>    Stopping idle replicator...");
                 repl->stop();
             }
@@ -211,6 +211,9 @@ public:
                 }
                 Assert(t.commit(&err));
             }
+            Log("-------- Done creating docs --------");
+            _expectedDocumentCount = docNo - 1;
+            _stopOnIdle = true;
         });
     }
 
@@ -287,8 +290,8 @@ public:
     Retained<Replicator> _replClient, _replServer;
     alloc_slice _checkpointID;
     unique_ptr<thread> _parallelThread;
+    atomic<bool> _stopOnIdle;
     atomic<bool> _replicatorFinished;
-    bool _stopOnIdle {false};
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };
     unsigned _statusChangedCalls {0};

@@ -116,9 +116,11 @@ namespace litecore { namespace repl {
 
     // Received a list of changes from the database [initiated in maybeGetMoreChanges]
     void Pusher::_gotChanges(RevList changes, C4Error err) {
-        _gettingChanges = false;
-        assert(_changeListsInFlight >= 0);
-        --_changeListsInFlight;
+        if (_gettingChanges) {
+            _gettingChanges = false;
+            assert(_changeListsInFlight > 0);
+            --_changeListsInFlight;
+        }
 
         if (!connection())
             return;
@@ -200,7 +202,7 @@ namespace litecore { namespace repl {
                 return;
 
             // Got reply to the "changes" or "proposeChanges":
-            assert(_changeListsInFlight >= 0);
+            assert(_changeListsInFlight > 0);
             --_changeListsInFlight;
             _proposeChangesKnown = true;
             if (!proposedChanges && reply->isError()) {
