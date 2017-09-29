@@ -95,8 +95,12 @@ private:
 
     c4::ref<C4Document> readDoc(string docID);
 
-    void rawPrint(Value body, slice docID);
-    void prettyPrint(Value value, const string &indent ="", slice docID =nullslice);
+    void rawPrint(Value body, slice docID, slice revID =nullslice);
+    void prettyPrint(Value value,
+                     const string &indent ="",
+                     slice docID =nullslice,
+                     slice revID =nullslice,
+                     const std::set<alloc_slice> *onlyKeys =nullptr);
 
     static bool canBeUnquotedJSON5Key(slice key);
 
@@ -111,8 +115,10 @@ private:
         _offset = 0;
         _limit = -1;
         _startKey = _endKey = nullslice;
+        _keys.clear();
         _enumFlags = kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted;
         _longListing = _listBySeq = false;
+        _showRevID = false;
         _prettyPrint = true;
         _json5 = false;
         _showHelp = false;
@@ -121,12 +127,14 @@ private:
 
     void offsetFlag()    {_offset = stoul(nextArg("offset value"));}
     void limitFlag()     {_limit = stol(nextArg("limit value"));}
+    void keyFlag()       {_keys.insert(alloc_slice(nextArg("key")));}
     void longListFlag()  {_longListing = true;}
     void seqFlag()       {_listBySeq = true;}
     void bodyFlag()      {_enumFlags |= kC4IncludeBodies;}
     void descFlag()      {_enumFlags |= kC4Descending;}
     void delFlag()       {_enumFlags |= kC4IncludeDeleted;}
     void confFlag()      {_enumFlags &= ~kC4IncludeNonConflicted;}
+    void revIDFlag()     {_showRevID = true;}
     void prettyFlag()    {_prettyPrint = true; _enumFlags |= kC4IncludeBodies;}
     void json5Flag()     {_json5 = true; _enumFlags |= kC4IncludeBodies;}
     void rawFlag()       {_prettyPrint = false; _enumFlags |= kC4IncludeBodies;}
@@ -145,10 +153,12 @@ private:
     uint64_t _offset {0};
     int64_t _limit {-1};
     alloc_slice _startKey, _endKey;
+    std::set<alloc_slice> _keys;
     C4EnumeratorFlags _enumFlags {kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted};
     bool _longListing {false};
     bool _listBySeq {false};
     bool _prettyPrint {true};
     bool _json5 {false};
+    bool _showRevID {false};
     bool _showHelp {false};
 };

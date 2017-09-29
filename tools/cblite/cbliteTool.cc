@@ -203,6 +203,8 @@ const Tool::FlagSpec CBLiteTool::kCatFlags[] = {
     {"--pretty", (FlagHandler)&CBLiteTool::prettyFlag},
     {"--raw",    (FlagHandler)&CBLiteTool::rawFlag},
     {"--json5",  (FlagHandler)&CBLiteTool::json5Flag},
+    {"--key",    (FlagHandler)&CBLiteTool::keyFlag},
+    {"--rev",    (FlagHandler)&CBLiteTool::revIDFlag},
     {nullptr, nullptr}
 };
 
