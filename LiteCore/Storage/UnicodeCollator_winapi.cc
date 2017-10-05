@@ -13,6 +13,7 @@
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "StringUtil.hh"
 #include <sqlite3.h>
+#include <algorithm>
 
 #ifdef _MSC_VER
 
@@ -47,7 +48,9 @@ namespace litecore {
                 LCIDToLocaleName(lcid, localeName, LOCALE_NAME_MAX_LENGTH, 0);
             }
             else {
-                MultiByteToWideChar(CP_UTF8, 0, (char *)localeSlice.buf, localeSlice.size, localeName, LOCALE_NAME_MAX_LENGTH);
+                string tmp((const char*)localeSlice.buf, localeSlice.size);
+                replace(tmp, '_', '-');
+                MultiByteToWideChar(CP_UTF8, 0, tmp.c_str(), tmp.size(), localeName, LOCALE_NAME_MAX_LENGTH);
                 if (LocaleNameToLCID(localeName, 0) == 0) {
                     Warn("Unknown locale name '%.*s', using default", SPLAT(coll.localeName));
                     LCID lcid = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT);
