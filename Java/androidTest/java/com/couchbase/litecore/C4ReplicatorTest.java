@@ -176,8 +176,8 @@ public class C4ReplicatorTest extends C4BaseTest {
         this.host = "localhost";
         this.port = 1;
         replicate(kC4OneShot, kC4Disabled, false);
-        assertEquals(0, callbackStatus.getProgressCompleted());
-        assertEquals(0, callbackStatus.getProgressTotal());
+        assertEquals(0, callbackStatus.getProgressUnitsCompleted());
+        assertEquals(0, callbackStatus.getProgressUnitsTotal());
         assertEquals(POSIXDomain, callbackStatus.getErrorDomain());
         assertEquals(111, callbackStatus.getErrorCode()); // ECONNREFUSED 111 -  Connection refused
     }
@@ -191,8 +191,8 @@ public class C4ReplicatorTest extends C4BaseTest {
 
         this.host = "qux.ftaghn.miskatonic.edu";
         replicate(kC4OneShot, kC4Disabled, false);
-        assertEquals(0, callbackStatus.getProgressCompleted());
-        assertEquals(0, callbackStatus.getProgressTotal());
+        assertEquals(0, callbackStatus.getProgressUnitsCompleted());
+        assertEquals(0, callbackStatus.getProgressUnitsTotal());
         assertEquals(NetworkDomain, callbackStatus.getErrorDomain());
         assertEquals(kC4NetErrUnknownHost, callbackStatus.getErrorCode());
     }
