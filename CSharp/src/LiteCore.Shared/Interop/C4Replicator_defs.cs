@@ -79,8 +79,9 @@ namespace LiteCore.Interop
 #endif
     unsafe struct C4Progress
     {
-        public ulong completed;
-        public ulong total;
+        public ulong unitsCompleted;
+        public ulong unitsTotal;
+        public ulong documentCount;
     }
 
 #if LITECORE_PACKAGED
