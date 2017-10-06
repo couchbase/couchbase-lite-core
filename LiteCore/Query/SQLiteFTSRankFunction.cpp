@@ -64,6 +64,10 @@ namespace litecore {
          */
         if( nVal!=1 ) goto wrong_number_args;
         aMatchinfo = (int32_t *)sqlite3_value_blob(apVal[0]);
+        if(!aMatchinfo) {
+            sqlite3_result_error(pCtx, "nothing for rank() to match", -1);
+            return;
+        }
         nPhrase = aMatchinfo[0];
         nCol = aMatchinfo[1];
 //        if( nVal!=(1+nCol) ) goto wrong_number_args;
