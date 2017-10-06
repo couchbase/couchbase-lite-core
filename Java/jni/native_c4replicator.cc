@@ -34,8 +34,9 @@ static jmethodID m_C4Replicator_documentErrorCallback; // documentErrorCallback 
 static jclass cls_C4ReplStatus; // global reference
 static jmethodID m_C4ReplStatus_init;
 static jfieldID f_C4ReplStatus_activityLevel;
-static jfieldID f_C4ReplStatus_progressCompleted;
-static jfieldID f_C4ReplStatus_progressTotal;
+static jfieldID f_C4ReplStatus_progressUnitsCompleted;
+static jfieldID f_C4ReplStatus_progressUnitsTotal;
+static jfieldID f_C4ReplStatus_progressDocumentCount;
 static jfieldID f_C4ReplStatus_errorDomain;
 static jfieldID f_C4ReplStatus_errorCode;
 static jfieldID f_C4ReplStatus_errorInternalInfo;
@@ -82,13 +83,19 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
         if (!f_C4ReplStatus_activityLevel)
             return false;
 
-        f_C4ReplStatus_progressCompleted = env->GetFieldID(cls_C4ReplStatus, "progressCompleted",
-                                                           "J");
-        if (!f_C4ReplStatus_progressCompleted)
+        f_C4ReplStatus_progressUnitsCompleted = env->GetFieldID(cls_C4ReplStatus,
+                                                                "progressUnitsCompleted", "J");
+        if (!f_C4ReplStatus_progressUnitsCompleted)
             return false;
 
-        f_C4ReplStatus_progressTotal = env->GetFieldID(cls_C4ReplStatus, "progressTotal", "J");
-        if (!f_C4ReplStatus_progressTotal)
+        f_C4ReplStatus_progressUnitsTotal = env->GetFieldID(cls_C4ReplStatus, "progressUnitsTotal",
+                                                            "J");
+        if (!f_C4ReplStatus_progressUnitsTotal)
+            return false;
+
+        f_C4ReplStatus_progressDocumentCount = env->GetFieldID(cls_C4ReplStatus,
+                                                               "progressDocumentCount", "J");
+        if (!f_C4ReplStatus_progressUnitsTotal)
             return false;
 
         f_C4ReplStatus_errorDomain = env->GetFieldID(cls_C4ReplStatus, "errorDomain", "I");
@@ -110,8 +117,11 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
 static jobject toJavaObject(JNIEnv *env, C4ReplicatorStatus status) {
     jobject obj = env->NewObject(cls_C4ReplStatus, m_C4ReplStatus_init);
     env->SetIntField(obj, f_C4ReplStatus_activityLevel, (int) status.level);
-    env->SetLongField(obj, f_C4ReplStatus_progressCompleted, (long) status.progress.completed);
-    env->SetLongField(obj, f_C4ReplStatus_progressTotal, (long) status.progress.total);
+    env->SetLongField(obj, f_C4ReplStatus_progressUnitsCompleted,
+                      (long) status.progress.unitsCompleted);
+    env->SetLongField(obj, f_C4ReplStatus_progressUnitsTotal, (long) status.progress.unitsTotal);
+    env->SetLongField(obj, f_C4ReplStatus_progressDocumentCount,
+                      (long) status.progress.documentCount);
     env->SetIntField(obj, f_C4ReplStatus_errorDomain, (int) status.error.domain);
     env->SetIntField(obj, f_C4ReplStatus_errorCode, (int) status.error.code);
     env->SetIntField(obj, f_C4ReplStatus_errorInternalInfo, (int) status.error.internal_info);

@@ -24,22 +24,24 @@ public class C4ReplicatorStatus {
         int kC4Busy = 4;
     }
 
-    private int activityLevel = -1;     // C4ReplicatorActivityLevel
-    private long progressCompleted = 0L; // C4Progress.completed
-    private long progressTotal = 0L;     // C4Progress.total
-    private int errorDomain = 0;        // C4Error.domain
-    private int errorCode = 0;          // C4Error.code
-    private int errorInternalInfo = 0;  // C4Error.internal_info
+    private int activityLevel = -1;      // C4ReplicatorActivityLevel
+    private long progressUnitsCompleted = 0L; // C4Progress.unitsCompleted
+    private long progressUnitsTotal = 0L;     // C4Progress.unitsTotal
+    private long progressDocumentCount = 0L;     // C4Progress.documentCount
+    private int errorDomain = 0;         // C4Error.domain
+    private int errorCode = 0;           // C4Error.code
+    private int errorInternalInfo = 0;   // C4Error.internal_info
 
     public C4ReplicatorStatus() {
     }
 
-    public C4ReplicatorStatus(int activityLevel,
-                              long progressCompleted, long progressTotal,
+    public C4ReplicatorStatus(int activityLevel, long progressUnitsCompleted,
+                              long progressUnitsTotal, long progressDocumentCount,
                               int errorDomain, int errorCode, int errorInternalInfo) {
         this.activityLevel = activityLevel;
-        this.progressCompleted = progressCompleted;
-        this.progressTotal = progressTotal;
+        this.progressUnitsCompleted = progressUnitsCompleted;
+        this.progressUnitsTotal = progressUnitsTotal;
+        this.progressDocumentCount = progressDocumentCount;
         this.errorDomain = errorDomain;
         this.errorCode = errorCode;
         this.errorInternalInfo = errorInternalInfo;
@@ -53,12 +55,16 @@ public class C4ReplicatorStatus {
         this.activityLevel = activityLevel;
     }
 
-    public long getProgressCompleted() {
-        return progressCompleted;
+    public long getProgressUnitsCompleted() {
+        return progressUnitsCompleted;
     }
 
-    public long getProgressTotal() {
-        return progressTotal;
+    public long getProgressUnitsTotal() {
+        return progressUnitsTotal;
+    }
+
+    public long getProgressDocumentCount() {
+        return progressDocumentCount;
     }
 
     public int getErrorDomain() {
@@ -81,8 +87,9 @@ public class C4ReplicatorStatus {
     public String toString() {
         return "C4ReplicatorStatus{" +
                 "activityLevel=" + activityLevel +
-                ", progressCompleted=" + progressCompleted +
-                ", progressTotal=" + progressTotal +
+                ", progressUnitsCompleted=" + progressUnitsCompleted +
+                ", progressUnitsTotal=" + progressUnitsTotal +
+                ", progressDocumentCount=" + progressDocumentCount +
                 ", errorDomain=" + errorDomain +
                 ", errorCode=" + errorCode +
                 ", errorInternalInfo=" + errorInternalInfo +
@@ -90,7 +97,7 @@ public class C4ReplicatorStatus {
     }
 
     public C4ReplicatorStatus copy() {
-        return new C4ReplicatorStatus(activityLevel, progressCompleted, progressTotal,
-                errorDomain, errorCode, errorInternalInfo);
+        return new C4ReplicatorStatus(activityLevel, progressUnitsCompleted, progressUnitsTotal,
+                progressDocumentCount, errorDomain, errorCode, errorInternalInfo);
     }
 }
