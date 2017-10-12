@@ -368,19 +368,16 @@ void C4InstanceCounted::untrack() const {
 void c4_dumpInstances(void) C4API {
     char* unmangled = nullptr;
     lock_guard<mutex> lock(sInstancesMutex);
-    int n = 0;
     for (const C4InstanceCounted *obj : sInstances) {
-        if (n++)
-            fprintf(stderr, ", ");
         const char *name =  typeid(*obj).name();
-#ifdef __clang__x
+#ifdef __clang__
         int status;
         size_t unmangledLen = 0;
         unmangled = abi::__cxa_demangle(name, unmangled, &unmangledLen, &status);
         if (unmangled && status == 0)
             name = unmangled;
 #endif
-        fprintf(stderr, "%s at %p", name, obj);
+        fprintf(stderr, "    * %s at %p\n", name, obj);
     }
     free(unmangled);
 }
