@@ -678,7 +678,7 @@ namespace litecore { namespace repl {
         C4Error transactionErr;
         c4::Transaction transaction(_db);
         if (transaction.begin(&transactionErr)) {
-            Encoder enc(c4db_createFleeceEncoder(_db));
+            SharedEncoder enc(c4db_getSharedFleeceEncoder(_db));
             
             for (auto &rev : *revs) {
                 // Add a revision:

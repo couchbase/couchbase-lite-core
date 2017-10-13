@@ -191,8 +191,15 @@ struct c4Database : public c4Internal::Database {
     c4Database(const FilePath &path, C4DatabaseConfig config)
     :Database(path, config) { }
     
+    ~c4Database();
+    
+    FLEncoder sharedFLEncoder();
+
     bool mustUseVersioning(C4DocumentVersioning, C4Error*) noexcept;
     bool mustBeInTransaction(C4Error *outError) noexcept;
     bool mustNotBeInTransaction(C4Error *outError) noexcept;
+
+private:
+    FLEncoder                   _flEncoder {nullptr};
 };
 

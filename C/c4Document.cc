@@ -436,6 +436,11 @@ FLEncoder c4db_createFleeceEncoder(C4Database* db) noexcept {
 }
 
 
+FLEncoder c4db_getSharedFleeceEncoder(C4Database* db) noexcept {
+    return db->sharedFLEncoder();
+}
+
+
 C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
         Encoder &enc = db->sharedEncoder();

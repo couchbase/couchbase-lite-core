@@ -42,6 +42,22 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 #pragma mark - C4DATABASE METHODS:
 
 
+c4Database::~c4Database() {
+    FLEncoder_Free(_flEncoder);
+}
+
+
+FLEncoder c4Database::sharedFLEncoder() {
+    if (_flEncoder) {
+        FLEncoder_Reset(_flEncoder);
+    } else {
+        _flEncoder = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true, true);
+        FLEncoder_SetSharedKeys(_flEncoder, (FLSharedKeys)documentKeys());
+    }
+    return _flEncoder;
+}
+
+
 bool c4Database::mustUseVersioning(C4DocumentVersioning requiredVersioning,
                                    C4Error *outError) noexcept
 {

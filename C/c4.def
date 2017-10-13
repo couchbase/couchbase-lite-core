@@ -53,6 +53,7 @@ c4db_beginTransaction
 c4db_endTransaction
 c4db_isInTransaction
 c4db_createFleeceEncoder
+c4db_getSharedFleeceEncoder
 c4db_encodeJSON
 c4db_initFLDictKey
 c4db_getFLSharedKeys

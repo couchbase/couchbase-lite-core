@@ -64,6 +64,10 @@ extern "C" {
     /** Creates a Fleece encoder for creating documents for a given database. */
     FLEncoder c4db_createFleeceEncoder(C4Database* db C4NONNULL) C4API;
 
+    /** Returns a shared Fleece encoder for creating documents for a given database.
+        DO NOT FREE THIS ENCODER. Instead, call FLEncoder_Reset() when finished. */
+    FLEncoder c4db_getSharedFleeceEncoder(C4Database* db) C4API;
+
     /** Encodes JSON data to Fleece, to store into a document. */
     C4SliceResult c4db_encodeJSON(C4Database* C4NONNULL, C4String jsonData, C4Error *outError) C4API;
 

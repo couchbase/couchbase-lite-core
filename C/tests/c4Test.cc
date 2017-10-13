@@ -474,7 +474,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
         char docID[20];
         sprintf(docID, "%s%07u", idPrefix.c_str(), numDocs+1);
 
-        FLEncoder enc = c4db_createFleeceEncoder(db);
+        FLEncoder enc = c4db_getSharedFleeceEncoder(db);
         FLEncoder_WriteValue(enc, item);
         FLSliceResult body = FLEncoder_Finish(enc, nullptr);
 
