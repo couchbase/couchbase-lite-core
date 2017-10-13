@@ -581,4 +581,31 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile]") {
 
     Record rec = store->get((slice)"rec-001");
     REQUIRE(rec.exists());
+    
+    // Change encryption key
+    randomBytes(options.encryptionKey);
+    db->rekey(options.encryptionAlgorithm, options.encryptionKey);
+    
+    reopenDatabase(&options);
+    
+    Record rec2 = store->get((slice)"rec-001");
+    REQUIRE(rec2.exists());
+    
+    // Remove encryption
+    options.encryptionAlgorithm = kNoEncryption;
+    options.encryptionKey = nullslice;
+    db->rekey(options.encryptionAlgorithm, options.encryptionKey);
+    
+    reopenDatabase(&options);
+    
+    Record rec3 = store->get((slice)"rec-001");
+    REQUIRE(rec3.exists());
+    
+    // No-op, adding no encryption to a database with no encryption
+    db->rekey(options.encryptionAlgorithm, options.encryptionKey);
+    
+    reopenDatabase(&options);
+    
+    Record rec4 = store->get((slice)"rec-001");
+    REQUIRE(rec4.exists());
 }

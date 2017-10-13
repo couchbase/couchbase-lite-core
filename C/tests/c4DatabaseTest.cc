@@ -141,6 +141,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][C]") 
     REQUIRE(c4db_isInTransaction(db));
     REQUIRE(c4db_endTransaction(db, true, &error));
     REQUIRE(!c4db_isInTransaction(db));
+    
+    REQUIRE(c4db_beginTransaction(db, &error));
+    REQUIRE(c4db_isInTransaction(db));
+    createRev(kDocID, kRevID, kBody);
+    REQUIRE(c4db_endTransaction(db, false, &error));
+    REQUIRE(!c4db_isInTransaction(db));
+    CHECK(c4db_getDocumentCount(db) == 0);
 }
 
 
@@ -161,6 +168,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]")
 
     // Nonexistent:
     REQUIRE(c4raw_get(db, c4str("test"), c4str("bogus"), &error) == (C4RawDocument*)nullptr);
+    REQUIRE(error.domain == LiteCoreDomain);
+    REQUIRE(error.code == (int)kC4ErrorNotFound);
+    
+    // Delete
+    REQUIRE(c4db_beginTransaction(db, &error));
+    c4raw_put(db, c4str("test"), key, kC4SliceNull, kC4SliceNull, &error);
+    REQUIRE(c4db_endTransaction(db, true, &error));
+    REQUIRE(c4raw_get(db, c4str("test"), key, &error) == (C4RawDocument*)nullptr);
     REQUIRE(error.domain == LiteCoreDomain);
     REQUIRE(error.code == (int)kC4ErrorNotFound);
 }

@@ -192,6 +192,49 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
     c4doc_free(doc);
 }
 
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][C]") {
+    const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
+    const C4Slice kBody3 = C4STR("{\"ubu\":\"roi\"}");
+    createRev(kDocID, kRevID, kBody);
+    createRev(kDocID, kRev2ID, kBody2);
+    createRev(kDocID, kRev3ID, kBody3);
+    
+    C4Slice history[3] = {C4STR("3-ababab"), kRev2ID};
+    C4DocPutRequest rq = {};
+    rq.existingRevision = true;
+    rq.docID = kDocID;
+    rq.history = history;
+    rq.historyCount = 2;
+    rq.body = kBody3;
+    rq.save = true;
+    C4Error err;
+    REQUIRE(c4db_beginTransaction(db, &err));
+    auto doc = c4doc_put(db, &rq, nullptr, &err);
+    REQUIRE(doc);
+    c4doc_free(doc);
+    REQUIRE(c4db_endTransaction(db, true, &err));
+    
+    REQUIRE(c4db_beginTransaction(db, &err));
+    REQUIRE(c4db_purgeDoc(db, kDocID, &err));
+    REQUIRE(c4db_endTransaction(db, true, &err));
+    
+    REQUIRE(c4db_getDocumentCount(db) == 0);
+    
+    createRev(kDocID, kRevID, kBody);
+    createRev(kDocID, kRev2ID, kBody2);
+    createRev(kDocID, kRev3ID, kBody3);
+    REQUIRE(c4db_beginTransaction(db, &err));
+    doc = c4doc_put(db, &rq, nullptr, &err);
+    REQUIRE(doc);
+    REQUIRE(c4db_endTransaction(db, true, &err));
+    
+    REQUIRE(c4db_beginTransaction(db, &err));
+    REQUIRE(c4doc_purgeRevision(doc, kC4SliceNull, &err) == 4);
+    REQUIRE(c4doc_save(doc, 20, &err));
+    c4doc_free(doc);
+    REQUIRE(c4db_endTransaction(db, true, &err));
+    REQUIRE(c4db_getDocumentCount(db) == 0);
+}
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][C]") {
     if (isRevTrees()) {
