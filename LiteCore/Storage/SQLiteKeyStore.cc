@@ -119,7 +119,6 @@ namespace litecore {
     {
         if (ref != nullptr) {
             db().checkOpen();
-            ref->reset();  // prepare statement to be run again
             return *ref.get();
         } else {
             return db().compile(ref, subst(sqlTemplate).c_str());
