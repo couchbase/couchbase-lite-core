@@ -85,14 +85,14 @@ namespace LiteCore.Interop
         public static C4BlobKey c4blob_computeKey(byte[] contents)
         {
             fixed(byte *contents_ = contents) {
-                return NativeRaw.c4blob_computeKey(new C4Slice(contents_, (ulong)contents?.Length));
+                return NativeRaw.c4blob_computeKey(new C4Slice(contents_, contents == null ? 0 : (ulong)contents.Length));
             }
         }
 
         public static bool c4blob_create(C4BlobStore* store, byte[] contents, C4BlobKey* expectedKey, C4BlobKey* outKey, C4Error* error)
         {
             fixed(byte *contents_ = contents) {
-                return NativeRaw.c4blob_create(store, new C4Slice(contents_, (ulong)contents?.Length), expectedKey, outKey, error);
+                return NativeRaw.c4blob_create(store, new C4Slice(contents_, contents == null ? 0 : (ulong)contents.Length), expectedKey, outKey, error);
             }
         }
 
