@@ -36,7 +36,6 @@ void CBLiteTool::queryDatabase() {
     c4::ref<C4Query> query = c4query_new(_db, queryJSON, &error);
     if (!query)
         fail("compiling query", error);
-    bool columnsSpecified = (c4query_columnCount(query) > 0);
 
     // Set parameters:
     alloc_slice params;
@@ -63,10 +62,6 @@ void CBLiteTool::queryDatabase() {
         ++nRows;
         cout << "[";
         int nCols = 0;
-        if (!columnsSpecified) {
-            cout << "\"_id\": \"" << e->docID << "\"";
-            ++nCols;
-        }
         for (Array::iterator i(e->columns); i; ++i) {
             if (nCols++)
                 cout << ", ";
