@@ -43,7 +43,8 @@ namespace LiteCore.Tests
 
             C4Error error;
             while(Native.c4queryenum_next(e, &error)) {
-                docIDs.Add(e->docID.CreateString());
+                Native.FLArrayIterator_GetCount(&e->columns).Should().BeGreaterThan(0);
+                docIDs.Add(Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0)));
             }
 
             error.code.Should().Be(0, "because otherwise an error occurred during enumeration");

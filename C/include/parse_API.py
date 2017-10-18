@@ -7,6 +7,7 @@ This file is meant to parse C++ headers into a syntax that is parseable
 into other things like C# bindings and export symbol lists.  It is customizable
 via an external config file (--config) which has the following properties:
 
+'skip_files': []            Files to exclude from processing
 'excluded': []              Functions to exclude from processing
 'force_no_bridge': []       Functions to not create a bridge for, even if it contains
                             parameters that would otherwise require one
@@ -35,7 +36,20 @@ if __name__ == "__main__":
     if args.config is not None:
         config_module = importlib.import_module(args.config)
     
+    skip_files = []
+    if hasattr(config_module, "skip_files"):
+        skip_files = getattr(config_module, "skip_files")
+                 
     for file in glob.iglob("./*.h"):
+        skip = False
+        for skipFile in skip_files:
+            if ".\\{}".format(skipFile) == file:
+                skip = True
+    
+        if skip:
+            print("Skipping {}".format(file))
+            continue
+
         #HACK: Typedefs choke CppHeaderParser if the struct and typename have the same name (i.e. typedef struct foo foo)
         fin = open(file, "r")
         file_contents = fin.read().replace("C4NONNULL", "")

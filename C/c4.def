@@ -226,6 +226,7 @@ FLJSON5_ToJSON
 FLArray_Count
 FLArray_Get
 FLArrayIterator_Begin
+FLArrayIterator_GetCount
 FLArrayIterator_GetValue
 FLArrayIterator_GetValueAt
 FLArrayIterator_Next

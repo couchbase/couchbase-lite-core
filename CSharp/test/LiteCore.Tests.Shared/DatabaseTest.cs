@@ -560,6 +560,13 @@ namespace LiteCore.Tests
                 Native.c4db_isInTransaction(Db).Should().BeTrue("because a transaction is still active");
                 LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
                 Native.c4db_isInTransaction(Db).Should().BeFalse("because all transactions have ended");
+
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                Native.c4db_isInTransaction(Db).Should().BeTrue("because a transaction has started");
+                CreateRev(DocID.CreateString(), RevID, Body);
+                LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, false, err));
+                Native.c4db_isInTransaction(Db).Should().BeFalse("because all transactions have ended");
+                Native.c4db_getDocumentCount(Db).Should().Be(0, "because the transaction was aborted");
             });
         }
 

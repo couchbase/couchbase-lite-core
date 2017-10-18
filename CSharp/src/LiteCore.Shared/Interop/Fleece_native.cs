@@ -143,6 +143,13 @@ namespace LiteCore.Interop
             }
         }
 
+        public static byte[] FLValue_ToJSONX(FLValue* v, FLSharedKeys* sk, bool json5, bool canonicalForm)
+        {
+            using(var retVal = NativeRaw.FLValue_ToJSONX(v, sk, json5, canonicalForm)) {
+                return ((C4Slice)retVal).ToArrayFast();
+            }
+        }
+
         public static string FLJSON5_ToJSON(string json5, FLError* error)
         {
             using(var json5_ = new C4String(json5)) {
@@ -154,6 +161,10 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint FLArray_Count(FLArray* array);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool FLArray_IsEmpty(FLArray* array);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLValue* FLArray_Get(FLArray* array, uint index);
@@ -168,11 +179,18 @@ namespace LiteCore.Interop
         public static extern FLValue* FLArrayIterator_GetValueAt(FLArrayIterator* i, uint offset);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint FLArrayIterator_GetCount(FLArrayIterator* i);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool FLArrayIterator_Next(FLArrayIterator* i);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint FLDict_Count(FLDict* dict);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool FLDict_IsEmpty(FLDict* dict);
 
         public static FLValue* FLDict_Get(FLDict* dict, byte[] keyString)
         {
@@ -216,6 +234,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLValue* FLDictIterator_GetValue(FLDictIterator* i);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern uint FLDictIterator_GetCount(FLDictIterator* i);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
@@ -359,6 +380,10 @@ namespace LiteCore.Interop
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool FLEncoder_WriteValue(FLEncoder* encoder, FLValue* value);
 
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool FLEncoder_WriteValueWithSharedKeys(FLEncoder* encoder, FLValue* value, FLSharedKeys* shared);
+
         public static bool FLEncoder_ConvertJSON(FLEncoder* e, byte[] json)
         {
             fixed(byte *json_ = json) {
@@ -419,6 +444,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLSliceResult FLValue_ToJSON5(FLValue* v);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLSliceResult FLValue_ToJSONX(FLValue* v, FLSharedKeys* sk, [MarshalAs(UnmanagedType.U1)]bool json5, [MarshalAs(UnmanagedType.U1)]bool canonicalForm);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLSliceResult FLJSON5_ToJSON(FLSlice json5, FLError* error);

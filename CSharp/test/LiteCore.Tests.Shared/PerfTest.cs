@@ -99,7 +99,8 @@ namespace LiteCore.Tests
             string artist;
             C4Error error;
             while(Native.c4queryenum_next(e, &error)) {
-                artist = e->docID.CreateString();
+                Native.FLArrayIterator_GetCount(&e->columns).Should().BeGreaterThan(0);
+                artist = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0));
                 if(verbose) {
                     Write($"{artist}  ");
                 }
