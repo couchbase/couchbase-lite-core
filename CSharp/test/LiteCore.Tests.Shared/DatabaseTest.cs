@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -679,6 +680,62 @@ namespace LiteCore.Tests
                 finally {
                     Native.c4db_free(nudb);
                 }
+            });
+        }
+
+        [Fact]
+        public void TestDatabaseRekey()
+        {
+            RunTestVariants(() =>
+            {
+                CreateNumberedDocs(99);
+
+                // Add blob to the store:
+                var blobToStore = C4Slice.Constant("This is a blob to store in the store!");
+                var blobKey = new C4BlobKey();
+                var blobStore = (C4BlobStore*)LiteCoreBridge.Check(err => Native.c4db_getBlobStore(Db, err));
+                LiteCoreBridge.Check(err =>
+                {
+                    C4BlobKey local;
+                    var retVal = NativeRaw.c4blob_create(blobStore, blobToStore, null, &local, err);
+                    blobKey = local;
+                    return retVal;
+                });
+
+                C4Error error;
+                var blobResult = NativeRaw.c4blob_getContents(blobStore, blobKey, &error);
+                ((C4Slice)blobResult).Should().Equal(blobToStore);
+                Native.c4slice_free(blobResult);
+
+                // If we're on the unexcrypted pass, encrypt the db.  Otherwise, decrypt it:
+                var newKey = new C4EncryptionKey();
+                if(Native.c4db_getConfig(Db)->encryptionKey.algorithm == C4EncryptionAlgorithm.None) {
+                    newKey.algorithm = C4EncryptionAlgorithm.AES256;
+                    var keyBytes = Encoding.ASCII.GetBytes("a different key than default....");
+                    Marshal.Copy(keyBytes, 0, (IntPtr)newKey.bytes, 32);
+                }
+
+                var tmp = newKey;
+                LiteCoreBridge.Check(err =>
+                {
+                    var local = tmp;
+                    return Native.c4db_rekey(Db, &local, err);
+                });
+
+                // Verify the db works:
+                Native.c4db_getDocumentCount(Db).Should().Be(99);
+                ((IntPtr)blobStore).Should().NotBe(IntPtr.Zero);
+                blobResult = NativeRaw.c4blob_getContents(blobStore, blobKey, &error);
+                ((C4Slice)blobResult).Should().Equal(blobToStore);
+                Native.c4slice_free(blobResult);
+
+                // Check thqat db can be reopened with the new key:
+                Native.c4db_getConfig(Db)->encryptionKey.algorithm.Should().Be(newKey.algorithm);
+                for(int i = 0; i < 32; i++) {
+                    Native.c4db_getConfig(Db)->encryptionKey.bytes[i].Should().Be(newKey.bytes[i]);
+                }
+
+                ReopenDB();
             });
         }
     }

@@ -107,6 +107,18 @@ namespace LiteCore.Tests
             return Versioning == C4DocumentVersioning.RevisionTrees;
         }
 
+        protected void DeleteAndRecreateDB()
+        {
+            var config = *Native.c4db_getConfig(Db);
+            LiteCoreBridge.Check(err => Native.c4db_delete(Db, err));
+            Native.c4db_free(Db);
+            Db = (C4Database*)LiteCoreBridge.Check(err =>
+           {
+               var localConfig = config;
+               return Native.c4db_open(DatabasePath(), &localConfig, err);
+           });
+        }
+
         protected override void SetupVariant(int option)
         {
             _objectCount = Native.c4_getObjectCount();

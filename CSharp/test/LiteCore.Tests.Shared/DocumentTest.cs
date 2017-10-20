@@ -228,6 +228,74 @@ namespace LiteCore.Tests
         }
 
         [Fact]
+        public void TestPurge()
+        {
+            RunTestVariants(() => {
+                var body2 = C4Slice.Constant("{\"ok\":\"go\"}");
+                var body3 = C4Slice.Constant("{\"ubu\":\"roi\"}");
+                CreateRev(DocID.CreateString(), RevID, Body);
+                CreateRev(DocID.CreateString(), Rev2ID, body2);
+                CreateRev(DocID.CreateString(), Rev3ID, body3);
+
+                var history = new[] { C4Slice.Constant("3-ababab"), Rev2ID };
+                fixed(C4Slice* history_ = history) {
+                    var rq = new C4DocPutRequest
+                    {
+                        existingRevision = true,
+                        docID = DocID,
+                        history = history_,
+                        historyCount = 2,
+                        body = body3,
+                        save = true
+                    };
+
+                    C4Error error;
+                    C4Document* doc = null;
+                    LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                    try {
+                        doc = Native.c4doc_put(Db, &rq, null, &error);
+                        ((IntPtr)doc).Should().NotBe(IntPtr.Zero);
+                        Native.c4doc_free(doc);
+                    } finally {
+                        LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                    }
+
+                    LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                    try {
+                        LiteCoreBridge.Check(err => NativeRaw.c4db_purgeDoc(Db, DocID, err));
+                    } finally {
+                        LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                    }
+
+                    Native.c4db_getDocumentCount(Db).Should().Be(0UL);
+
+                    CreateRev(DocID.CreateString(), RevID, Body);
+                    CreateRev(DocID.CreateString(), Rev2ID, body2);
+                    CreateRev(DocID.CreateString(), Rev3ID, body3);
+
+                    LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                    try {
+                        doc = Native.c4doc_put(Db, &rq, null, &error);
+                        ((IntPtr)doc).Should().NotBe(IntPtr.Zero);
+                    } finally {
+                        LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                    }
+
+                    LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                    try {
+                        LiteCoreBridge.Check(err => Native.c4doc_purgeRevision(doc, null, err));
+                        LiteCoreBridge.Check(err => Native.c4doc_save(doc, 0, err));
+                    } finally {
+                        Native.c4doc_free(doc);
+                        LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                    }
+
+                    Native.c4db_getDocumentCount(Db).Should().Be(0UL);
+                }   
+            });
+        }
+
+        [Fact]
         public void TestMaxRevTreeDepth()
         {
             RunTestVariants(() =>
@@ -536,6 +604,90 @@ namespace LiteCore.Tests
 
                 Native.c4doc_free(doc);
                 Native.c4doc_free(doc2);
+            });
+        }
+
+        [Fact]
+        public void TestConflict()
+        {
+            RunTestVariants(() =>
+            {
+                if(!IsRevTrees()) {
+                    return;
+                }
+
+                var body2 = C4Slice.Constant("{\"ok\":\"go\"}");
+                var body3 = C4Slice.Constant("{\"ubu\":\"roi\"}");
+                CreateRev(DocID.CreateString(), RevID, Body);
+                CreateRev(DocID.CreateString(), Rev2ID, body2, C4RevisionFlags.KeepBody);
+                CreateRev(DocID.CreateString(), C4Slice.Constant("3-aaaaaa"), body3);
+
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    // "Pull" a conflicting revision:
+                    var history = new C4Slice[] { C4Slice.Constant("4-dddd"), C4Slice.Constant("3-ababab"), Rev2ID };
+                    fixed(C4Slice* history_ = history) {
+                        var rq = new C4DocPutRequest
+                        {
+                            existingRevision = true,
+                            docID = DocID,
+                            history = history_,
+                            historyCount = 3,
+                            body = body3,
+                            save = true
+                        };
+
+                        C4Error error;
+                        var doc = Native.c4doc_put(Db, &rq, null, &error);
+                        ((IntPtr)doc).Should().NotBe(IntPtr.Zero);
+
+                        Native.c4doc_selectCommonAncestorRevision(doc, "3-aaaaaa", "4-dddd").Should().BeTrue();
+                        doc->selectedRev.revID.CreateString().Should().Be(Rev2ID.CreateString());
+                        Native.c4doc_selectCommonAncestorRevision(doc, "4-dddd", "3-aaaaaa").Should().BeTrue();
+                        doc->selectedRev.revID.CreateString().Should().Be(Rev2ID.CreateString());
+
+                        Native.c4doc_selectCommonAncestorRevision(doc, "3-ababab", "3-aaaaaa").Should().BeTrue();
+                        doc->selectedRev.revID.CreateString().Should().Be(Rev2ID.CreateString());
+                        Native.c4doc_selectCommonAncestorRevision(doc, "3-aaaaaa", "3-ababab").Should().BeTrue();
+                        doc->selectedRev.revID.CreateString().Should().Be(Rev2ID.CreateString());
+
+                        Native.c4doc_selectCommonAncestorRevision(doc, Rev2ID.CreateString(), "3-aaaaaa").Should().BeTrue();
+                        doc->selectedRev.revID.CreateString().Should().Be(Rev2ID.CreateString());
+                        Native.c4doc_selectCommonAncestorRevision(doc, "3-aaaaaa", Rev2ID.CreateString()).Should().BeTrue();
+                        doc->selectedRev.revID.CreateString().Should().Be(Rev2ID.CreateString());
+
+                        NativeRaw.c4doc_selectCommonAncestorRevision(doc, Rev2ID, Rev2ID).Should().BeTrue();
+                        doc->selectedRev.revID.CreateString().Should().Be(Rev2ID.CreateString());
+                    }
+                } finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                     var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, DocID.CreateString(), true, err));
+                     LiteCoreBridge.Check(err => Native.c4doc_resolveConflict(doc, "4-dddd", "3-aaaaaa", Encoding.UTF8.GetBytes("{\"merged\":true}"), err));
+                     Native.c4doc_selectCurrentRevision(doc);
+                     doc->selectedRev.revID.CreateString().Should().Be("5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99");
+                     doc->selectedRev.body.CreateString().Should().Be("{\"merged\":true}");
+                     Native.c4doc_selectParentRevision(doc);
+                     doc->selectedRev.revID.CreateString().Should().Be("4-dddd");
+                } finally {
+                     LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, false, err));
+                }
+
+                 LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                 try {
+                     var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, DocID.CreateString(), true, err));
+                     LiteCoreBridge.Check(err => Native.c4doc_resolveConflict(doc, "3-aaaaaa", "4-dddd", Encoding.UTF8.GetBytes("{\"merged\":true}"), err));
+                     Native.c4doc_selectCurrentRevision(doc);
+                     doc->selectedRev.revID.CreateString().Should().Be("4-333ee0677b5f1e1e5064b050d417a31d2455dc30");
+                     doc->selectedRev.body.CreateString().Should().Be("{\"merged\":true}");
+                     Native.c4doc_selectParentRevision(doc);
+                     doc->selectedRev.revID.CreateString().Should().Be("3-aaaaaa");
+                 } finally {
+                     LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, false, err));
+                 }
             });
         }
     }

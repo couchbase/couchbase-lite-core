@@ -134,6 +134,34 @@ namespace LiteCore.Tests
         }
 
         [Fact]
+        public void TestCreateBlobKeyMismatch()
+        {
+            RunTestVariants(() =>
+            {
+                var blobToStore = C4Slice.Constant("This is a blob to store in the store!");
+                C4BlobKey key, expectedKey = new C4BlobKey();
+                var i = 0;
+                foreach (var b in Enumerable.Repeat<byte>(0x55, sizeof(C4BlobKey))) {
+                    expectedKey.bytes[i++] = b;
+                }
+
+                C4Error error;
+                NativePrivate.c4log_warnOnErrors(false);
+                try {
+                    
+                    NativeRaw.c4blob_create(_store, blobToStore, &expectedKey, &key, &error).Should().BeFalse();
+                    error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                    error.code.Should().Be((int) C4ErrorCode.CorruptData);
+                } finally {
+                    NativePrivate.c4log_warnOnErrors(true);
+                }
+
+                Native.c4blob_keyFromString("sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=", &expectedKey);
+                NativeRaw.c4blob_create(_store, blobToStore, &expectedKey, &key, &error).Should().BeTrue();
+            });
+        }
+
+        [Fact]
         public void TestReadBlobWithStream()
         {
             RunTestVariants(() => {
