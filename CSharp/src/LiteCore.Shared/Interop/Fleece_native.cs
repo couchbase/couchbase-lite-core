@@ -304,6 +304,19 @@ namespace LiteCore.Interop
         public static extern void FLEncoder_SetSharedKeys(FLEncoder* encoder, FLSharedKeys* shared);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void FLEncoder_SetExtraInfo(FLEncoder* e, void* info);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void* FLEncoder_GetExtraInfo(FLEncoder* e);
+
+        public static void FLEncoder_MakeDelta(FLEncoder* e, byte[] base, bool reuseStrings)
+        {
+            fixed(byte *base_ = base) {
+                NativeRaw.FLEncoder_MakeDelta(e, new FLSlice(base_, (ulong)base.Length), reuseStrings);
+            }
+        }
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void FLEncoder_Reset(FLEncoder* encoder);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
@@ -486,6 +499,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLEncoder* FLEncoder_NewWithOptions(FLEncoderFormat format, UIntPtr reserveSize, [MarshalAs(UnmanagedType.U1)]bool uniqueStrings, [MarshalAs(UnmanagedType.U1)]bool sortKeys);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void FLEncoder_MakeDelta(FLEncoder* e, FLSlice base, [MarshalAs(UnmanagedType.U1)]bool reuseStrings);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]

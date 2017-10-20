@@ -70,6 +70,9 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLEncoder* c4db_createFleeceEncoder(C4Database* db);
 
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern FLEncoder* c4db_getSharedFleeceEncoder(C4Database* db);
+
         public static byte[] c4db_encodeJSON(C4Database* db, string jsonData, C4Error* outError)
         {
             using(var jsonData_ = new C4String(jsonData)) {
