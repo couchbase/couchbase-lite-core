@@ -309,10 +309,10 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void* FLEncoder_GetExtraInfo(FLEncoder* e);
 
-        public static void FLEncoder_MakeDelta(FLEncoder* e, byte[] base, bool reuseStrings)
+        public static void FLEncoder_MakeDelta(FLEncoder* e, byte[] @base, bool reuseStrings)
         {
-            fixed(byte *base_ = base) {
-                NativeRaw.FLEncoder_MakeDelta(e, new FLSlice(base_, (ulong)base.Length), reuseStrings);
+            fixed(byte *@base_ = @base) {
+                NativeRaw.FLEncoder_MakeDelta(e, new FLSlice(@base_, (ulong)@base.Length), reuseStrings);
             }
         }
 
@@ -501,7 +501,7 @@ namespace LiteCore.Interop
         public static extern FLEncoder* FLEncoder_NewWithOptions(FLEncoderFormat format, UIntPtr reserveSize, [MarshalAs(UnmanagedType.U1)]bool uniqueStrings, [MarshalAs(UnmanagedType.U1)]bool sortKeys);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern void FLEncoder_MakeDelta(FLEncoder* e, FLSlice base, [MarshalAs(UnmanagedType.U1)]bool reuseStrings);
+        public static extern void FLEncoder_MakeDelta(FLEncoder* e, FLSlice @base, [MarshalAs(UnmanagedType.U1)]bool reuseStrings);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
