@@ -31,7 +31,7 @@ void CBLiteTool::sqlQuery() {
         fail("Sorry, the entire SQL command needs be \"quoted\".");
 
     C4Error error;
-    alloc_slice fleeceResult = cdb_rawQuery(_db, slice(sql), &error);
+    alloc_slice fleeceResult = c4db_rawQuery(_db, slice(sql), &error);
     if (!fleeceResult)
         fail("Query failed", error);
 
