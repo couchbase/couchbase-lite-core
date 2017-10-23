@@ -142,10 +142,10 @@ bool c4db_delete(C4Database* database, C4Error *outError) noexcept {
 }
 
 
-bool c4db_deleteAtPath(C4Slice dbPath, const C4DatabaseConfig *config, C4Error *outError) noexcept {
+bool c4db_deleteAtPath(C4Slice dbPath, C4Error *outError) noexcept {
     if (outError)
         *outError = {};     // deleteDatabaseAtPath may return false w/o throwing an exception
-    return tryCatch<bool>(outError, bind(&Database::deleteDatabaseAtPath, (string)dbPath, config));
+    return tryCatch<bool>(outError, bind(&Database::deleteDatabaseAtPath, (string)dbPath));
 }
 
 

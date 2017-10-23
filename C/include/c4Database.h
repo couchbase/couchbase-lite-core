@@ -31,7 +31,7 @@ extern "C" {
         kC4DB_Create        = 1,    ///< Create the file if it doesn't exist
         kC4DB_ReadOnly      = 2,    ///< Open file read-only
         kC4DB_AutoCompact   = 4,    ///< Enable auto-compaction
-        kC4DB_Bundled       = 8,    ///< Store db & attachments inside a directory
+//      kC4DB_Bundled       = 8,    // OBSOLETE; all dbs are now bundled
         kC4DB_SharedKeys    = 0x10, ///< Enable shared-keys optimization at creation time
         kC4DB_NoUpgrade     = 0x20, ///< Disable upgrading an older-version database
         kC4DB_NonObservable = 0x40, ///< Disable c4DatabaseObserver
@@ -124,7 +124,7 @@ extern "C" {
     /** Deletes the file(s) for the database at the given path.
         All C4Databases at that path must be closed first or an error will result.
         Returns false, with no error, if the database doesn't exist. */
-    bool c4db_deleteAtPath(C4String dbPath, const C4DatabaseConfig *config, C4Error *outError) C4API;
+    bool c4db_deleteAtPath(C4String dbPath, C4Error *outError) C4API;
 
 
     /** Changes a database's encryption key (removing encryption if it's NULL.) */

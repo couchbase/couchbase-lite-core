@@ -320,19 +320,6 @@ namespace litecore {
 #pragma mark - INDEXES:
 
 
-    // Returns a unique name for the FTS table that indexes the given property path.
-    string SQLiteKeyStore::SQLIndexName(const Array *expression, IndexType type, bool quoted) {
-        stringstream sql;
-        if (quoted)
-            sql << '"';
-        QueryParser qp(tableName());
-        sql << (type == kFullTextIndex ? qp.FTSIndexName(expression) : qp.indexName(expression));
-        if (quoted)
-            sql << '"';
-        return sql.str();
-    }
-
-
     // Parses the JSON index-spec expression into an Array:
     static pair<alloc_slice, const Array*> parseIndexExpr(slice expression,
                                                           KeyStore::IndexType type)
@@ -394,7 +381,8 @@ namespace litecore {
             }
             case kFullTextIndex: {
                 // Create the FTS4 virtual table: ( https://www.sqlite.org/fts3.html )
-                auto ftsTableName = SQLIndexName(params, type);
+                QueryParser qp(tableName());
+                auto ftsTableName = qp.FTSIndexName(params);
                 string alias = tableName() + "::" + (string)indexName;
                 SQLite::Statement existingIndex(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
                 existingIndex.bind(1, alias);

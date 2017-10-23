@@ -62,8 +62,6 @@ namespace c4Internal {
 
         Database* database()    {return _db;}
 
-        virtual const Record& record() =0;
-
         virtual bool exists() =0;
         virtual void loadRevisions() =0;
         virtual bool revisionsLoaded() const noexcept =0;

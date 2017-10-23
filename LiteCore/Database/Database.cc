@@ -46,17 +46,15 @@ namespace c4Internal {
 
     // `path` is path to bundle; return value is path to db file. Updates config.storageEngine. */
     /*static*/ FilePath Database::findOrCreateBundle(const string &path,
-                                                     C4DatabaseConfig &config)
+                                                     bool canCreate,
+                                                     C4StorageEngine &storageEngine)
     {
-        if (!(config.flags & kC4DB_Bundled))
-            return path;
-
         FilePath bundle(path, "");
-        bool createdDir = ((config.flags & kC4DB_Create) && bundle.mkdir());
+        bool createdDir = (canCreate && bundle.mkdir());
         if (!createdDir)
             bundle.mustExistAsDir();
 
-        DataFile::Factory *factory = DataFile::factoryNamed(config.storageEngine);
+        DataFile::Factory *factory = DataFile::factoryNamed(storageEngine);
         if (!factory)
             error::_throw(error::InvalidParameter);
 
@@ -64,12 +62,13 @@ namespace c4Internal {
 
         FilePath dbPath = bundle["db"].withExtension(factory->filenameExtension());
         if (createdDir || factory->fileExists(dbPath)) {
-            if (config.storageEngine == nullptr)
-                config.storageEngine = factory->cname();
+            // Db exists in expected format, or else we just created this blank bundle dir, so exit:
+            if (storageEngine == nullptr)
+                storageEngine = factory->cname();
             return dbPath;
         }
 
-        if (config.storageEngine != nullptr) {
+        if (storageEngine != nullptr) {
             // DB exists but not in the format they specified, so fail:
             error::_throw(error::WrongFormat);
         }
@@ -79,7 +78,7 @@ namespace c4Internal {
             if (otherFactory != factory) {
                 dbPath = bundle["db"].withExtension(otherFactory->filenameExtension());
                 if (factory->fileExists(dbPath)) {
-                    config.storageEngine = factory->cname();
+                    storageEngine = factory->cname();
                     return dbPath;
                 }
             }
@@ -145,7 +144,10 @@ namespace c4Internal {
 
     Database::Database(const string &path,
                        C4DatabaseConfig inConfig)
-    :_db(newDataFile(findOrCreateBundle(path, inConfig), inConfig, true))
+    :_db(newDataFile(findOrCreateBundle(path,
+                                        (inConfig.flags & kC4DB_Create) != 0,
+                                        inConfig.storageEngine),
+                     inConfig, true))
     ,config(inConfig)
     ,_encoder(new fleece::Encoder())
     {
@@ -200,50 +202,44 @@ namespace c4Internal {
         mustNotBeInTransaction();
         FilePath bundle = path().dir();
         _db->deleteDataFile();
-        if (config.flags & kC4DB_Bundled)
-            bundle.delRecursive();
+        bundle.delRecursive();
     }
 
 
-    /*static*/ bool Database::deleteDatabaseAtPath(const string &dbPath,
-                                                   const C4DatabaseConfig *config) {
-        if (config == nullptr) {
-            return FilePath(dbPath).delWithAllExtensions();
-        } else if (config->flags & kC4DB_Bundled) {
-            // Find the db file in the bundle:
-            FilePath bundle {dbPath, ""};
-            if (bundle.exists()) {
-                try {
-                    auto tempConfig = *config;
-                    tempConfig.flags &= ~kC4DB_Create;
-                    tempConfig.storageEngine = nullptr;
-                    auto dbFilePath = findOrCreateBundle(dbPath, tempConfig);
-                    // Delete it:
-                    tempConfig.flags &= ~kC4DB_Bundled;
-                    deleteDatabaseAtPath(dbFilePath, &tempConfig);
-                } catch (const error &x) {
-                    if (x.code != error::WrongFormat)   // ignore exception if db file isn't found
-                        throw;
-                }
+    /*static*/ bool Database::deleteDatabaseAtPath(const string &dbPath) {
+        // Find the db file in the bundle:
+        FilePath bundle {dbPath, ""};
+        if (bundle.exists()) {
+            try {
+                C4StorageEngine storageEngine = nullptr;
+                auto dbFilePath = findOrCreateBundle(dbPath, false, storageEngine);
+                // Delete it:
+                deleteDatabaseFileAtPath(dbFilePath, storageEngine);
+            } catch (const error &x) {
+                if (x.code != error::WrongFormat)   // ignore exception if db file isn't found
+                    throw;
             }
-            // Delete the rest of the bundle:
-            return bundle.delRecursive();
-        } else {
-            FilePath path(dbPath);
-            DataFile::Factory *factory = nullptr;
-            if (config && config->storageEngine) {
-                factory = DataFile::factoryNamed(config->storageEngine);
-                if (!factory)
-                    Warn("c4db_deleteAtPath: unknown storage engine '%s'", config->storageEngine);
-            } else {
-                factory = DataFile::factoryForFile(path);
-                if (!factory)
-                    factory = DataFile::factories()[0];
-            }
-            if (!factory)
-                error::_throw(error::WrongFormat);
-            return factory->deleteFile(path);
         }
+        // Delete the rest of the bundle:
+        return bundle.delRecursive();
+    }
+
+    bool Database::deleteDatabaseFileAtPath(const string &dbPath,
+                                            C4StorageEngine storageEngine) {
+        FilePath path(dbPath);
+        DataFile::Factory *factory = nullptr;
+        if (storageEngine) {
+            factory = DataFile::factoryNamed(storageEngine);
+            if (!factory)
+                Warn("c4db_deleteAtPath: unknown storage engine '%s'", storageEngine);
+        } else {
+            factory = DataFile::factoryForFile(path);
+            if (!factory)
+                factory = DataFile::factories()[0];
+        }
+        if (!factory)
+            error::_throw(error::WrongFormat);
+        return factory->deleteFile(path);
     }
 
     unordered_set<string> Database::collectBlobs() {
@@ -316,10 +312,7 @@ namespace c4Internal {
 
 
     FilePath Database::path() const {
-        FilePath path = _db->filePath();
-        if (config.flags & kC4DB_Bundled)
-            path = path.dir();
-        return path;
+        return _db->filePath().dir();
     }
 
 
@@ -367,8 +360,6 @@ namespace c4Internal {
     unique_ptr<BlobStore> Database::createBlobStore(const string &dirname,
                                                     C4EncryptionKey encryptionKey)
     {
-        if (!(config.flags & kC4DB_Bundled))
-            error::_throw(error::UnsupportedOperation);
         FilePath blobStorePath = path().subdirectoryNamed(dirname);
         auto options = BlobStore::Options::defaults;
         options.create = options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
@@ -504,11 +495,6 @@ namespace c4Internal {
         }
     }
 
-
-    void Database::mustBeInTransaction() {
-        if (!inTransaction())
-            error::_throw(error::NotInTransaction);
-    }
 
     void Database::mustNotBeInTransaction() {
         if (inTransaction())

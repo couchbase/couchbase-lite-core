@@ -18,7 +18,7 @@
 void DbEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
     Endpoint::prepare(isSource, mustExist, docIDProperty, other);
     _otherEndpoint = const_cast<Endpoint*>(other);
-    C4DatabaseConfig config = {kC4DB_Bundled | kC4DB_SharedKeys | kC4DB_NonObservable};
+    C4DatabaseConfig config = {kC4DB_SharedKeys | kC4DB_NonObservable};
     if (isSource) {
         if (!other->isDatabase())    // need write permission if replicating, even for push
             config.flags |= kC4DB_ReadOnly;

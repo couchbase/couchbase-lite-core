@@ -41,7 +41,7 @@ namespace c4Internal {
 
         void close();
         void deleteDatabase();
-        static bool deleteDatabaseAtPath(const string &dbPath, const C4DatabaseConfig*);
+        static bool deleteDatabaseAtPath(const string &dbPath);
 
         DataFile* dataFile()                                {return _db.get();}
         FilePath path() const;
@@ -112,12 +112,13 @@ namespace c4Internal {
                                      bool isMainDB);
     protected:
         virtual ~Database();
-        void mustBeInTransaction();
         void mustNotBeInTransaction();
         void externalTransactionCommitted(const SequenceTracker&);
 
     private:
-        static FilePath findOrCreateBundle(const string &path, C4DatabaseConfig &config);
+        static FilePath findOrCreateBundle(const string &path, bool canCreate,
+                                           C4StorageEngine &outStorageEngine);
+        static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
         void _cleanupTransaction(bool committed);
         
         std::unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey);

@@ -27,7 +27,7 @@ protected:
         newPath.delRecursive();
 
         C4DatabaseConfig config { };
-        config.flags = kC4DB_Create | kC4DB_Bundled | kC4DB_SharedKeys;
+        config.flags = kC4DB_Create | kC4DB_SharedKeys;
         config.storageEngine = kC4SQLiteStorageEngine;
         config.versioning = kC4RevisionTrees;
 
@@ -43,7 +43,7 @@ protected:
         srcPath.copyTo(dbPath);
 
         C4DatabaseConfig config { };
-        config.flags = kC4DB_Bundled | kC4DB_SharedKeys | kC4DB_NoUpgrade;
+        config.flags = kC4DB_SharedKeys | kC4DB_NoUpgrade;
         config.storageEngine = kC4SQLiteStorageEngine;
         config.versioning = kC4RevisionTrees;
 

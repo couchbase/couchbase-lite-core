@@ -87,10 +87,6 @@ namespace c4Internal {
             sequence = _versionedDoc.sequence();
         }
 
-        const Record& record() override {
-            return _versionedDoc.record();
-        }
-
         bool exists() override {
             return _versionedDoc.exists();
         }

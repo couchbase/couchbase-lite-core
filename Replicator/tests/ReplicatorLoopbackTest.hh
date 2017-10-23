@@ -43,7 +43,7 @@ public:
 
         auto config = c4db_getConfig(db);
         C4Error error;
-        if (!c4db_deleteAtPath(db2PathSlice, config, &error))
+        if (!c4db_deleteAtPath(db2PathSlice, &error))
             REQUIRE(error.code == 0);
         db2 = c4db_open(db2PathSlice, config, &error);
         REQUIRE(db2 != nullptr);

@@ -125,7 +125,7 @@ namespace litecore {
                     setResultTextFromSlice(ctx, val->asString());
                     break;
                 case kData:
-                    setResultBlobFromSlice(ctx, val->asString());
+                    setResultBlobFromSlice(ctx, val->asData());
                     break;
                 case kArray:
                 case kDict:

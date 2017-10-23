@@ -177,7 +177,6 @@ namespace litecore {
 
         const Query::Options* options() const                   {return &_options;}
 
-        virtual int columnCount() const =0;
         virtual slice getStringColumn(int col) const =0;
         virtual int64_t getIntColumn(int col) const =0;
 
@@ -252,10 +251,6 @@ namespace litecore {
             if (!_iter)
                 return false;
             return true;
-        }
-
-        int columnCount() const override {
-            return _iter->asArray()->count();
         }
 
         slice getStringColumn(int col) const override {
@@ -370,10 +365,6 @@ namespace litecore {
 
         bool next() override {
             return _statement->executeStep();
-        }
-
-        int columnCount() const override {
-            return _statement->getColumnCount();
         }
 
         slice getStringColumn(int col) const override {

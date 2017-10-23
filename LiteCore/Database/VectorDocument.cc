@@ -76,11 +76,6 @@ namespace c4Internal {
         }
 
 
-        virtual const Record& record() override {
-            return _current->record();
-        }
-
-
         virtual bool exists() override {
             return _current->exists();
         }

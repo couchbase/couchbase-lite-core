@@ -346,16 +346,6 @@ namespace litecore {
     }
 
 
-    // Parses a string literal in the context of a column-list expression: a 'WHAT', 'GROUP BY',
-    // 'ORDER BY' clause, or an indexing expression.
-    void QueryParser::writeStringLiteralAsProperty(slice str) {
-        require(str.size > 0 && str[0] == '.',
-                "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
-        str.moveStart(1);
-        writePropertyGetter(kValueFnName, str.asString());
-    }
-
-
 #pragma mark - "FROM" / "JOIN" clauses:
 
 
@@ -1056,23 +1046,17 @@ namespace litecore {
     }
 
 
-    string QueryParser::indexName(const Array *keys) const {
-        string name = keys->toJSON().asString();
-        for (int i = (int)name.size(); i >= 0; --i) {
-            if (name[i] == '"')
-                name[i] = '\'';
-        }
-        return _tableName + "::" + name;
-    }
-
-    
     string QueryParser::FTSIndexName(const Value *key) const {
         slice op = requiredArray(key, "left-hand side of MATCH expression")->get(0)->asString();
         require(op.size > 0, "Invalid left-hand-side of MATCH");
-        if (op[0] == '.')
-            return FTSIndexName(propertyFromNode(key));     // abbreviation for common case
-        else
-            return indexName(key->asArray());
+        if (op[0] == '.') {
+            // abbreviation for common case where expression is a property:
+            return FTSIndexName(propertyFromNode(key));
+        } else {
+            string name = key->toJSON().asString();
+            replace(name, '"', '\'');
+            return _tableName + "::" + name;
+        }
     }
 
     string QueryParser::FTSIndexName(const string &property) const {

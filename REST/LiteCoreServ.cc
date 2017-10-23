@@ -22,7 +22,7 @@ static C4Listener *gListener;
 static C4ListenerConfig gListenerConfig;
 
 static C4DatabaseConfig gDatabaseConfig = {
-    kC4DB_Bundled | kC4DB_SharedKeys
+    kC4DB_SharedKeys
 };
 
 static string gDirectory;

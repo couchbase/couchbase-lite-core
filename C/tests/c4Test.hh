@@ -176,7 +176,6 @@ public:
 private:
     const C4StorageEngine _storage;
     const C4DocumentVersioning _versioning;
-    const bool _bundled;
     std::string _dbPath;
     int objectCount;
 };

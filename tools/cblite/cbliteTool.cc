@@ -70,7 +70,7 @@ int CBLiteTool::run() {
 
 
 void CBLiteTool::openDatabase(string path) {
-    C4DatabaseConfig config = {kC4DB_Bundled | kC4DB_SharedKeys | kC4DB_NonObservable | kC4DB_ReadOnly};
+    C4DatabaseConfig config = {kC4DB_SharedKeys | kC4DB_NonObservable | kC4DB_ReadOnly};
     C4Error err;
     _db = c4db_open(c4str(path), &config, &err);
     if (!_db)

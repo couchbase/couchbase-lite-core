@@ -253,13 +253,8 @@ namespace litecore {
     }
 
 
-    void UpgradeDatabase(const FilePath &oldPath, Database *newDB) {
-        Upgrader(oldPath, newDB).run();
-    }
-
-
     bool UpgradeDatabaseInPlace(const FilePath &path, C4DatabaseConfig config) {
-        if (!(config.flags & kC4DB_Bundled) || (config.flags & (kC4DB_NoUpgrade | kC4DB_ReadOnly))) return false;
+        if (config.flags & (kC4DB_NoUpgrade | kC4DB_ReadOnly)) return false;
 
         string p = path.path();
         chomp(p, '/');

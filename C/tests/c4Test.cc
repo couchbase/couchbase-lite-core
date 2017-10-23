@@ -159,11 +159,10 @@ string C4Test::sFixturesDir = "C/tests/data/";
 C4Test::C4Test(int testOption)
 :_storage(kC4SQLiteStorageEngine),
 #if ENABLE_VERSION_VECTORS
- _versioning((testOption > 1) ? kC4VersionVectors : kC4RevisionTrees),
+ _versioning((testOption > 1) ? kC4VersionVectors : kC4RevisionTrees)
 #else
-_versioning(kC4RevisionTrees),
+_versioning(kC4RevisionTrees)
 #endif
- _bundled(true)
 {
     static once_flag once;
     call_once(once, [] {
@@ -187,9 +186,6 @@ _versioning(kC4RevisionTrees),
     config.flags = kC4DB_Create | kC4DB_SharedKeys;
     config.storageEngine = _storage;
     config.versioning = _versioning;
-
-    if (_bundled)
-        config.flags |= kC4DB_Bundled;
 
     if (config.versioning == kC4RevisionTrees) {
         kRevID = C4STR("1-abcd");
@@ -234,17 +230,10 @@ _versioning(kC4RevisionTrees),
         sLastConfig = config;
     }
 
-    _dbPath = TempDir();
-    if (_bundled)
-        _dbPath += "cbl_core_test";
-    else if (storageType() == kC4SQLiteStorageEngine)
-        _dbPath += "cbl_core_test.sqlite3";
-    else {
-        FAIL("Unknown storage type");
-    }
+    _dbPath = TempDir() + "cbl_core_test";
 
     C4Error error;
-    if (!c4db_deleteAtPath(databasePath(), &config, &error))
+    if (!c4db_deleteAtPath(databasePath(), &error))
         REQUIRE(error.code == 0);
     db = c4db_open(databasePath(), &config, &error);
     REQUIRE(db != nullptr);

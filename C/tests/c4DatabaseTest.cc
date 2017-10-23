@@ -94,12 +94,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Info", "[Database][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!throws]") {
     auto config = *c4db_getConfig(db);
-    config.flags |= kC4DB_Bundled;
 
     std::string bundlePathStr = TempDir() + "cbl_core_test_bundle";
     C4Slice bundlePath = c4str(bundlePathStr.c_str());
     C4Error error;
-    if (!c4db_deleteAtPath(bundlePath, &config, &error))
+    if (!c4db_deleteAtPath(bundlePath, &error))
         REQUIRE(error.code == 0);
     auto bundle = c4db_open(bundlePath, &config, &error);
     REQUIRE(bundle);
@@ -572,7 +571,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     
     C4DatabaseConfig config = *c4db_getConfig(db);
     C4Error error;
-    if(!c4db_deleteAtPath(c4str(nuPath.c_str()), &config, &error)) {
+    if(!c4db_deleteAtPath(c4str(nuPath.c_str()), &error)) {
         REQUIRE(error.code == 0);
     }
     

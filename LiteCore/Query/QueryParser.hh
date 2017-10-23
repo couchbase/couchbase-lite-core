@@ -52,7 +52,6 @@ namespace litecore {
         bool isAggregateQuery() const                               {return _isAggregateQuery;}
 
         static std::string expressionSQL(const fleece::Value*, const char *bodyColumnName = "body");
-        std::string indexName(const fleece::Array *keys) const;
         std::string FTSIndexName(const fleece::Value *key) const;
         std::string FTSIndexName(const std::string &property) const;
 
@@ -113,7 +112,6 @@ namespace litecore {
         void writeArgList(fleece::Array::iterator& operands);
         void writeColumnList(fleece::Array::iterator& operands);
         void writeResultColumn(const fleece::Value*);
-        void writeStringLiteralAsProperty(slice str);
         void writeCollation();
         void parseCollatableNode(const fleece::Value*);
 
@@ -134,7 +132,7 @@ namespace litecore {
         unsigned _1stCustomResultCol {0};
         bool _aggregatesOK {false};
         bool _isAggregateQuery {false};
-        bool _includeDeleted {false};           // In future add an accessor to set this
+        static constexpr bool _includeDeleted {false};  // In future add an accessor to set this
         Collation _collation;
         bool _collationUsed {true};
     };
