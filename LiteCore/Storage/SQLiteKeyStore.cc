@@ -13,6 +13,7 @@
 #include "Record.hh"
 #include "RecordEnumerator.hh"
 #include "Error.hh"
+#include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "Fleece.hh"
 #include <sstream>
@@ -280,20 +281,18 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::_del(slice key, sequence_t seq, Transaction&) {
+    bool SQLiteKeyStore::del(slice key, Transaction&, sequence_t seq) {
+        Assert(key);
         SQLite::Statement *stmt;
-        if (key) {
-            if (seq) {
-                stmt = &compile(_delByBothStmt, "DELETE FROM kv_@ WHERE key=? AND sequence=?");
-                stmt->bind(2, (long long)seq);
-            } else {
-                stmt = &compile(_delByKeyStmt, "DELETE FROM kv_@ WHERE key=?");
-            }
-            stmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
+        LogVerbose(DBLog, "SQLiteKeyStore(%s) del key '%.*s' seq %llu",
+                   _name.c_str(), SPLAT(key), seq);
+        if (seq) {
+            stmt = &compile(_delByBothStmt, "DELETE FROM kv_@ WHERE key=? AND sequence=?");
+            stmt->bind(2, (long long)seq);
         } else {
-            stmt = &compile(_delBySeqStmt, "DELETE FROM kv_@ WHERE sequence=?");
-            stmt->bind(1, (long long)seq);
+            stmt = &compile(_delByKeyStmt, "DELETE FROM kv_@ WHERE key=?");
         }
+        stmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
         UsingStatement u(*stmt);
         return stmt->exec() > 0;
     }

@@ -36,6 +36,8 @@ namespace litecore {
         sequence_t set(slice key, slice meta, slice value, DocumentFlags,
                        Transaction&, const sequence_t *replacingSequence =nullptr) override;
 
+        bool del(slice key, Transaction&, sequence_t s) override;
+
         bool setDocumentFlag(slice key, sequence_t sequence, DocumentFlags) override;
 
         void erase() override;
@@ -53,11 +55,10 @@ namespace litecore {
 
     protected:
         std::string tableName() const                       {return std::string("kv_") + name();}
-        bool _del(slice key, sequence_t s, Transaction&) override;
 
         RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                   sequence_t since,
-                                                  RecordEnumerator::Options&) override;
+                                                  RecordEnumerator::Options) override;
         Retained<Query> compileQuery(slice expression) override;
 
         SQLite::Statement* compile(const std::string &sql) const;

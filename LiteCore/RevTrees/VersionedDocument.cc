@@ -102,7 +102,7 @@ namespace litecore {
             _rec.setExists();
             saved(seq);
         } else {
-            if (seq && !_db.del(_rec.key(), transaction, &seq))
+            if (seq && !_db.del(_rec.key(), transaction, seq))
                 return false;
         }
         _changed = false;

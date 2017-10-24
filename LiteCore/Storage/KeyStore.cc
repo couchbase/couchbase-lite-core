@@ -64,22 +64,6 @@ namespace litecore {
         rec.updateSequence(seq);
     }
 
-    bool KeyStore::del(slice key, sequence_t seq, Transaction &t) {
-        if (key) {
-            LogVerbose(DBLog, "KeyStore(%s) del key '%.*s'", _name.c_str(), SPLAT(key));
-        } else {
-            LogVerbose(DBLog, "KeyStore(%s) del seq %llu", _name.c_str(), (unsigned long long)seq);
-        }
-        
-        if (!_del(key, seq, t))
-            return false;
-        return true;
-    }
-
-    bool KeyStore::del(const litecore::Record &rec, Transaction &t) {
-        return del(rec.key(), 0, t);
-    }
-
     bool KeyStore::setDocumentFlag(slice key, sequence_t sequence, DocumentFlags) {
         error::_throw(error::Unimplemented);
     }

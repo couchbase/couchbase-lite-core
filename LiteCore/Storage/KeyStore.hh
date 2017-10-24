@@ -87,11 +87,8 @@ namespace litecore {
 
         void write(Record&, Transaction&, const sequence_t *replacingSequence =nullptr);
 
-        bool del(slice key, Transaction &t, const sequence_t *replacingSequence =nullptr) {
-            return del(key, (replacingSequence ? *replacingSequence : 0), t);
-        }
-        bool del(sequence_t s, Transaction& t)  {return del(nullslice, s, t);}
-        bool del(const Record&, Transaction&);
+        virtual bool del(slice key, Transaction&, sequence_t replacingSequence =0) =0;
+        bool del(const Record &rec, Transaction &t)                 {return del(rec.key(), t);}
 
         /** Sets a flag of a record, without having to read/write the Record. */
         virtual bool setDocumentFlag(slice key, sequence_t sequence, DocumentFlags);
@@ -127,11 +124,9 @@ namespace litecore {
         virtual void reopen()                           { }
         virtual void close()                            { }
 
-        virtual bool _del(slice key, sequence_t s, Transaction&) =0;
-
         virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                           sequence_t since,
-                                                          RecordEnumerator::Options&) =0;
+                                                          RecordEnumerator::Options) =0;
 
         DataFile &          _db;            // The DataFile I'm contained in
         const std::string   _name;          // My name
@@ -140,7 +135,6 @@ namespace litecore {
     private:
         KeyStore(const KeyStore&) = delete;     // not copyable
         KeyStore& operator=(const KeyStore&) = delete;
-        bool del(slice key, sequence_t s, Transaction&);
 
         friend class DataFile;
         friend class RecordEnumerator;
