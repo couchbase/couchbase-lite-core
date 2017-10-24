@@ -156,13 +156,6 @@ namespace litecore {
     }
 
 
-    void SequenceTracker::documentsChanged(const vector<const Entry*>& entries) {
-        for (auto change : entries)
-            documentChanged(change->docID, change->revID,
-                            change->committedSequence, change->bodySize);
-    }
-
-
     void SequenceTracker::addExternalTransaction(const SequenceTracker &other) {
         Assert(!inTransaction());
         Assert(other.inTransaction());
@@ -210,17 +203,6 @@ namespace litecore {
     }
 
 
-    vector<const SequenceTracker::Entry*>
-    SequenceTracker::changesSincePlaceholder(const_iterator placeholder) {
-        vector<const SequenceTracker::Entry*> changes;
-        for (auto i = next(placeholder); i != _changes.end(); ++i) {
-            if (!i->isPlaceholder())
-                changes.push_back(&*i);
-        }
-        return changes;
-    }
-
-
     size_t SequenceTracker::readChanges(const_iterator placeholder,
                                         Change changes[], size_t maxChanges,
                                         bool &external)
@@ -245,12 +227,6 @@ namespace litecore {
         }
         return n;
    }
-
-
-    void SequenceTracker::catchUpPlaceholder(const_iterator placeholder) {
-        _changes.splice(_changes.end(), _changes, placeholder);
-        removeObsoleteEntries();
-    }
 
 
     void SequenceTracker::removeObsoleteEntries() {

@@ -50,8 +50,6 @@ namespace litecore {
                              sequence_t sequence,
                              uint64_t bodySize);
 
-        void documentsChanged(const std::vector<const Entry*>&);
-
         /** Copy the other tracker's transaction's changes into myself as committed & external */
         void addExternalTransaction(const SequenceTracker &from);
 
@@ -119,8 +117,6 @@ namespace litecore {
         size_t readChanges(const_iterator placeholder,
                            Change changes[], size_t maxChanges,
                            bool &external);
-        std::vector<const Entry*> changesSincePlaceholder(const_iterator);
-        void catchUpPlaceholder(const_iterator);
         const_iterator addDocChangeNotifier(slice docID, DocChangeNotifier*);
         void removeDocChangeNotifier(const_iterator, DocChangeNotifier*);
         void removeObsoleteEntries();

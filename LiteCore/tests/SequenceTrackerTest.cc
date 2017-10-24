@@ -103,13 +103,17 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DatabaseChangeN
 
         tracker.documentChanged("B"_asl, "2-bb"_asl, ++seq, 4444);
 
+        REQUIRE(cn1.hasChanges());
         REQUIRE(cn1.readChanges(changes, 5, external) == 1);
         CHECK(changes[0].docID == "B"_sl);
         CHECK(changes[0].revID == "2-bb"_sl);
         CHECK(changes[0].sequence == 4);
         CHECK(!external);
+        REQUIRE(!cn1.hasChanges());
         REQUIRE(cn1.readChanges(changes, 5, external) == 0);
         CHECK(!external);
+
+        REQUIRE(cn2.hasChanges());
 
         CHECK(count1==1);
         CHECK(count2==1);
@@ -143,7 +147,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
     tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
     tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, 3333);
 
-    int countA=0, countB=0, countB2=0;
+    int countA=0, countB=0, countB2=0, countD=0;
 
     DocChangeNotifier cnA(tracker, "A"_sl, [&](DocChangeNotifier&, slice docID, sequence_t s) {
         CHECK(docID == "A"_sl);
@@ -154,6 +158,12 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
         CHECK(docID == "B"_sl);
         CHECK(s == seq);
         ++countB;
+    });
+    // Create one for a doc that doesn't exist yet:
+    DocChangeNotifier cnD(tracker, "D"_sl, [&](DocChangeNotifier&, slice docID, sequence_t s) {
+        CHECK(docID == "D"_sl);
+        CHECK(s == seq);
+        ++countD;
     });
 
     tracker.documentChanged("A"_asl, "2-aa"_asl, ++seq, 4444);
@@ -176,6 +186,13 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
     CHECK(countA==1);
     CHECK(countB==3);
     CHECK(countB2==1);
+    CHECK(countD==0);
+
+    tracker.documentChanged("D"_asl, "1-dd"_asl, ++seq, 8888);
+    CHECK(countA==1);
+    CHECK(countB==3);
+    CHECK(countB2==1);
+    CHECK(countD==1);
 }
 
 
