@@ -126,7 +126,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
 
         {
             int i = 1;
-            RecordEnumerator e(*store, nullslice, nullslice, opts);
+            RecordEnumerator e(*store, opts);
             for (; e.next(); ++i) {
                 string expectedDocID = stringWithFormat("rec-%03d", i);
                 REQUIRE(e->key() == alloc_slice(expectedDocID));
@@ -136,48 +136,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             REQUIRE(i == 101);
             REQUIRE_FALSE(e);
         }
-
-        INFO("Enumerate over range of docs:");
-        int i = 24;
-        for (RecordEnumerator e(*store, "rec-024"_sl, "rec-029"_sl, opts); e.next(); ++i) {
-            string expectedDocID = stringWithFormat("rec-%03d", i);
-            REQUIRE(e->key() == alloc_slice(expectedDocID));
-            REQUIRE(e->sequence() == (sequence_t)i);
-            REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
-        }
-        REQUIRE(i == 30);
-
-        INFO("Enumerate over range of docs without inclusive:");
-        opts.inclusiveStart = opts.inclusiveEnd = false;
-        i = 25;
-        for (RecordEnumerator e(*store, "rec-024"_sl, "rec-029"_sl, opts); e.next(); ++i) {
-            string expectedDocID = stringWithFormat("rec-%03d", i);
-            REQUIRE(e->key() == alloc_slice(expectedDocID));
-            REQUIRE(e->sequence() == (sequence_t)i);
-            REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
-        }
-        REQUIRE(i == 29);
-        opts.inclusiveStart = opts.inclusiveEnd = true;
-
-        INFO("Enumerate over vector of docs:");
-        i = 0;
-        vector<string> docIDs;
-        docIDs.push_back("rec-005");
-        docIDs.push_back("rec-029");
-        docIDs.push_back("rec-023"); // out of order! (check for random-access fdb_seek)
-        docIDs.push_back("rec-028");
-        docIDs.push_back("rec-098");
-        docIDs.push_back("rec-100");
-        docIDs.push_back("rec-105"); // doesn't exist!
-        for (RecordEnumerator e(*store, docIDs, opts); e.next(); ++i) {
-            INFO("key = " << e->key());
-            REQUIRE((string)e->key() == docIDs[i]);
-            REQUIRE(e->exists() == i < 6);
-            if (i < 6) {
-                REQUIRE(e->bodySize() > 0); // even metaOnly should set the body length
-            }
-        }
-        REQUIRE(i == 7);
     }
 }
 
@@ -190,7 +148,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
     SECTION("Enumerate over all docs, descending:") {
         int i = 100;
-        for (RecordEnumerator e(*store, nullslice, nullslice, opts); e.next(); --i) {
+        for (RecordEnumerator e(*store, opts); e.next(); --i) {
             alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
             REQUIRE(e->key() == expectedDocID);
             REQUIRE(e->sequence() == (sequence_t)i);
@@ -198,74 +156,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
         REQUIRE(i == 0);
     }
 
-    SECTION("Enumerate over range of docs from max, descending:") {
-        int i = 100;
-        for (RecordEnumerator e(*store, nullslice, "rec-090"_sl, opts); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
-            REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence_t)i);
-        }
-        REQUIRE(i == 89);
-    }
-
-    SECTION("Enumerate over range of docs to min, descending:") {
-        int i = 10;
-        for (RecordEnumerator e(*store, "rec-010"_sl, nullslice, opts); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
-            REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence_t)i);
-        }
-        REQUIRE(i == 0);
-    }
-
-    SECTION("Enumerate over range of docs, descending:") {
-        int i = 29;
-        for (RecordEnumerator e(*store, "rec-029"_sl, "rec-024"_sl, opts); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
-            REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence_t)i);
-        }
-        REQUIRE(i == 23);
-    }
-
-    SECTION("Enumerate over range of docs, descending, max key doesn't exist:") {
-        int i = 29;
-        for (RecordEnumerator e(*store, "rec-029b"_sl, "rec-024"_sl, opts); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
-            REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence_t)i);
-        }
-        REQUIRE(i == 23);
-    }
-
-    SECTION("Enumerate over range of docs without inclusive, descending:") {
-        auto optsExcl = opts;
-        optsExcl.inclusiveStart = optsExcl.inclusiveEnd = false;
-        int i = 28;
-        for (RecordEnumerator e(*store, "rec-029"_sl, "rec-024"_sl, optsExcl); e.next(); --i) {
-            alloc_slice expectedDocID(stringWithFormat("rec-%03d", i));
-            REQUIRE(e->key() == expectedDocID);
-            REQUIRE(e->sequence() == (sequence_t)i);
-        }
-        REQUIRE(i == 24);
-    }
-
-    SECTION("Enumerate over vector of docs, descending:") {
-        vector<string> docIDs;
-        docIDs.push_back("rec-005");
-        docIDs.push_back("rec-029");
-        docIDs.push_back("rec-023"); // out of order! (check for random-access fdb_seek)
-        docIDs.push_back("rec-028");
-        docIDs.push_back("rec-098");
-        docIDs.push_back("rec-100");
-        docIDs.push_back("rec-105");
-        int i = (int)docIDs.size() - 1;
-        for (RecordEnumerator e(*store, docIDs, opts); e.next(); --i) {
-            INFO("key = " << e->key());
-            REQUIRE((string)e->key() == docIDs[i]);
-        }
-        REQUIRE(i == -1);
-    }
 }
 
 

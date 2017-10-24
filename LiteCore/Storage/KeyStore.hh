@@ -129,10 +129,9 @@ namespace litecore {
 
         virtual bool _del(slice key, sequence_t s, Transaction&) =0;
 
-        virtual RecordEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey,
-                                                       RecordEnumerator::Options&) =0;
-        virtual RecordEnumerator::Impl* newEnumeratorImpl(sequence_t min, sequence_t max,
-                                                       RecordEnumerator::Options&) =0;
+        virtual RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
+                                                          sequence_t since,
+                                                          RecordEnumerator::Options&) =0;
 
         DataFile &          _db;            // The DataFile I'm contained in
         const std::string   _name;          // My name

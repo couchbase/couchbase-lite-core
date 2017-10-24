@@ -23,8 +23,6 @@ extern "C" {
 
     typedef C4_OPTIONS(uint16_t, C4EnumeratorFlags) {
         kC4Descending           = 0x01, ///< If true, iteration goes by descending document IDs.
-        kC4InclusiveStart       = 0x02, ///< If false, iteration starts just _after_ startDocID.
-        kC4InclusiveEnd         = 0x04, ///< If false, iteration stops just _before_ endDocID.
         kC4IncludeDeleted       = 0x08, ///< If true, include deleted documents.
         kC4IncludeNonConflicted = 0x10, ///< If false, include _only_ documents in conflict.
         kC4IncludeBodies        = 0x20  /**< If false, document bodies will not be preloaded, just
@@ -37,13 +35,12 @@ extern "C" {
 
     /** Options for enumerating over all documents. */
     typedef struct {
-        uint64_t          skip;     ///< The number of initial results to skip. */
         C4EnumeratorFlags flags;    ///< Option flags */
     } C4EnumeratorOptions;
 
     /** Default all-docs enumeration options.
-        Includes inclusiveStart, inclusiveEnd, includeBodies, includeNonConflicts.
-        Does not include descending, skip, includeDeleted. */
+        Includes includeBodies, includeNonConflicted.
+        Does not include descending, includeDeleted. */
     CBL_CORE_API extern const C4EnumeratorOptions kC4DefaultEnumeratorOptions;
     
 
@@ -85,31 +82,12 @@ extern "C" {
         There's no 'limit' option; just stop enumerating when you're done.
         Caller is responsible for freeing the enumerator when finished with it.
         @param database  The database.
-        @param startDocID  The document ID to begin at.
-        @param endDocID  The document ID to end at.
         @param options  Enumeration options (NULL for defaults).
         @param outError  Error will be stored here on failure.
         @return  A new enumerator, or NULL on failure. */
     C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database C4NONNULL,
-                                           C4String startDocID,
-                                           C4String endDocID,
                                            const C4EnumeratorOptions *options,
                                            C4Error *outError) C4API;
-
-    /** Creates an enumerator on a series of document IDs.
-        Options have the same meanings as in Couchbase Lite.
-        Caller is responsible for freeing the enumerator when finished with it.
-        @param database  The database.
-        @param docIDs  Array of doc IDs to traverse in order.
-        @param docIDsCount  Number of doc IDs.
-        @param options  Enumeration options (NULL for defaults).
-        @param outError  Error will be stored here on failure.
-        @return  A new enumerator, or NULL on failure. */
-    C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database C4NONNULL,
-                                            const C4String docIDs[],
-                                            size_t docIDsCount,
-                                            const C4EnumeratorOptions *options,
-                                            C4Error *outError) C4API;
 
     /** Advances the enumerator to the next document.
         Returns false at the end, or on error; look at the C4Error to determine which occurred,
@@ -132,14 +110,6 @@ extern "C" {
         @return  True if the info was stored, false if there is no current document. */
     bool c4enum_getDocumentInfo(C4DocEnumerator *e C4NONNULL,
                                 C4DocumentInfo *outInfo C4NONNULL) C4API;
-
-    /** Convenience function that combines c4enum_next() and c4enum_getDocument().
-        @param e  The enumerator.
-        @param outError  Error will be stored here on failure.
-        @return  The next document, or NULL at the end of the enumeration (or an error occurred.)
-                 Caller is responsible for calling c4document_free when done with it. */
-    struct C4Document* c4enum_nextDocument(C4DocEnumerator *e C4NONNULL,
-                                           C4Error *outError) C4API;
 
     /** @} */
 

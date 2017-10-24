@@ -31,86 +31,47 @@ namespace litecore {
 
 
     RecordEnumerator::Options::Options()
-    :skip(0),
-     limit(UINT_MAX),
-     descending(false),
-     inclusiveStart(true),
-     inclusiveEnd(true),
+    :descending(false),
      includeDeleted(false),
      onlyBlobs(false),
      contentOptions(kDefaultContent)
     { }
 
 
-    RecordEnumerator::RecordEnumerator(KeyStore &store, const Options& options)
+    RecordEnumerator::RecordEnumerator(KeyStore &store, const Options& options, bool x)
     :_store(&store),
      _options(options)
     { }
 
 
-    // Key-range constructor
+    // By-key constructor
     RecordEnumerator::RecordEnumerator(KeyStore &store,
-                                 slice startKey, slice endKey,
-                                 const Options& options)
-    :RecordEnumerator(store, options)
+                                       const Options& options)
+    :RecordEnumerator(store, options, false)
     {
-        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, [%s] -- [%s]%s) --> %p",
-              store.name().c_str(), startKey.hexCString(), endKey.hexCString(),
-              (options.descending ? " desc" : ""), this);
-        if (startKey.size == 0)
-            startKey.setBuf(nullptr);
-        if (endKey.size == 0)
-            endKey.setBuf(nullptr);
-
-        slice minKey = startKey, maxKey = endKey;
-        if (options.descending)
-            swap(minKey, maxKey);
-
-        _impl.reset(_store->newEnumeratorImpl(minKey, maxKey, _options));
+        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s%s) --> %p",
+              store.name().c_str(), (options.descending ? " desc" : ""), this);
+        _impl.reset(_store->newEnumeratorImpl(false, 0, _options));
         _skipStep = _impl->shouldSkipFirstStep();
     }
 
-    // Sequence-range constructor
+    // By-sequence constructor
     RecordEnumerator::RecordEnumerator(KeyStore &store,
-                                 sequence_t start, sequence_t end,
-                                 const Options& options)
-    :RecordEnumerator(store, options)
+                                       sequence_t since,
+                                       const Options& options)
+    :RecordEnumerator(store, options, false)
     {
-        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, #%llu -- #%llu) --> %p",
-                store.name().c_str(), (unsigned long long)start, (unsigned long long)end, this);
+        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, #%llu --) --> %p",
+                store.name().c_str(), (unsigned long long)since, this);
 
-        sequence_t minSeq = start, maxSeq = end;
-        if (options.descending)
-            swap(minSeq, maxSeq);
-
-        _impl.reset(_store->newEnumeratorImpl(minSeq, maxSeq, _options));
+        _impl.reset(_store->newEnumeratorImpl(true, since, _options));
         _skipStep = _impl->shouldSkipFirstStep();
-    }
-
-    // Key-array constructor
-    RecordEnumerator::RecordEnumerator(KeyStore &store,
-                                 vector<string> recordIDs,
-                                 const Options& options)
-    :RecordEnumerator(store, options)
-    {
-        _recordIDs = recordIDs;
-        LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, %zu keys) --> %p",
-                store.name().c_str(), recordIDs.size(), this);
-        if (_options.skip > 0)
-            _recordIDs.erase(_recordIDs.begin(), _recordIDs.begin() + _options.skip);
-        if (_options.limit < _recordIDs.size())
-            _recordIDs.resize(_options.limit);
-        if (_options.descending)
-            reverse(_recordIDs.begin(), _recordIDs.end());
-        // (this mode doesn't actually create an fdb_iterator)
     }
 
     // Assignment from a temporary
     RecordEnumerator& RecordEnumerator::operator=(RecordEnumerator&& e) noexcept {
         _store = e._store;
         _impl = move(e._impl);
-        _recordIDs = e._recordIDs;
-        _curDocIndex = e._curDocIndex;
         _options = e._options;
         _skipStep = e._skipStep;
         return *this;
@@ -124,39 +85,15 @@ namespace litecore {
 
 
     bool RecordEnumerator::next() {
-        // Enumerating an array of records is handled specially:
-        if (_recordIDs.size() > 0)
-            return nextFromArray();
-
         if (!_impl)
             return false;
-        if (_options.limit-- == 0) {
+        if (_skipStep) {
+            _skipStep = false;
+        } else if (!_impl->next()) {
             close();
             return false;
         }
-        do {
-            if (_skipStep) {
-                _skipStep = false;
-            } else if (!_impl->next()) {
-                close();
-                return false;
-            }
-        } while (_options.skip > 0 && _options.skip-- > 0);
         return getDoc();
-    }
-
-    // implementation of next() when enumerating a vector of keys
-    bool RecordEnumerator::nextFromArray() {
-        if (_curDocIndex >= _recordIDs.size()) {
-            LogToAt(EnumLog, Debug, "enum: at end of vector");
-            close();
-            return false;
-        }
-        _record.clearMetaAndBody();
-        _record.setKey(_recordIDs[_curDocIndex++]);
-        _store->read(_record);
-        LogToAt(EnumLog, Debug, "enum:     --> [%s]", _record.key().hexCString());
-        return true;
     }
 
     bool RecordEnumerator::getDoc() {

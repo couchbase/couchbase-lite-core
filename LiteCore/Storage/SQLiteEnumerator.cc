@@ -62,78 +62,41 @@ namespace litecore {
     void SQLiteKeyStore::writeSQLOptions(stringstream &sql, RecordEnumerator::Options &options) {
         if (options.descending)
             sql << " DESC";
-        if (options.limit < UINT_MAX)
-            sql << " LIMIT " << options.limit;
-        if (options.skip > 0) {
-            if (options.limit == UINT_MAX)
-                sql << " LIMIT -1";             // OFFSET has to have a LIMIT before it
-            sql << " OFFSET " << options.skip;
-            options.skip = 0;                   // tells RecordEnumerator not to do skip on its own
-        }
-        options.limit = UINT_MAX;               // ditto for limit
     }
 
 
-    // iterate by key:
-    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(slice minKey, slice maxKey,
-                                                           RecordEnumerator::Options &options)
-    {
-        stringstream sql;
-        selectFrom(sql, options);
-        if (minKey.buf || maxKey.buf || !options.includeDeleted) {
-            sql << " WHERE ";
-            bool writeAnd = false;
-            if (minKey.buf) {
-                sql << (options.inclusiveMin() ? "key >= ?" : "key > ?");
-                writeAnd = true;
-            }
-            if (maxKey.buf) {
-                if (writeAnd) sql << " AND "; else writeAnd = true;
-                sql << (options.inclusiveMax() ? "key <= ?" : "key < ?");
-            }
-            if (!options.includeDeleted) {
-                if (writeAnd) sql << " AND "; else writeAnd = true;
-                sql << "(flags & 1) != 1";
-            }
-            if (options.onlyBlobs) {
-                if(writeAnd) sql << " AND "; // else writeAnd = true;
-                sql << "(flags & 4) != 0";
-            }
-        }
-        sql << " ORDER BY key";
-        writeSQLOptions(sql, options);
-
-        auto stmt = new SQLite::Statement(db(), sql.str());    //TODO: Cache a statement
-        int param = 1;
-        if (minKey.buf)
-            stmt->bind(param++, (const char*)minKey.buf, (int)minKey.size);
-        if (maxKey.buf)
-            stmt->bind(param++, (const char*)maxKey.buf, (int)maxKey.size);
-        return new SQLiteEnumerator(stmt, options.descending, options.contentOptions);
-    }
-
-    // iterate by sequence:
-    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(sequence_t min, sequence_t max,
+    RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(bool bySequence,
+                                                              sequence_t since,
                                                               RecordEnumerator::Options &options)
     {
-        if (_db.options().writeable)
+        if (bySequence && _db.options().writeable)
             createSequenceIndex();
 
         stringstream sql;
         selectFrom(sql, options);
-        sql << (options.inclusiveMin() ? " WHERE sequence >= ?" : " WHERE sequence > ?");
-        if (max < INT64_MAX)
-            sql << (options.inclusiveMax() ? " AND sequence <= ?"   : " AND sequence < ?");
-        if (!options.includeDeleted)
-            sql << " AND (flags & 1) != 1";
-        sql << " ORDER BY sequence";
+        bool writeAnd = false;
+        if (bySequence) {
+            sql << " WHERE sequence > ?";
+            writeAnd = true;
+        } else {
+            if (!options.includeDeleted || options.onlyBlobs)
+                sql << " WHERE ";
+        }
+        if (!options.includeDeleted) {
+            if (writeAnd) sql << " AND "; else writeAnd = true;
+            sql << "(flags & 1) != 1";
+        }
+        if (options.onlyBlobs) {
+            if(writeAnd) sql << " AND "; // else writeAnd = true;
+            sql << "(flags & 4) != 0";
+        }
+        sql << (bySequence ? " ORDER BY sequence" : " ORDER BY key");
         writeSQLOptions(sql, options);
 
-        auto st = new SQLite::Statement(db(), sql.str());        // TODO: Cache a statement
-        st->bind(1, (long long)min);
-        if (max < INT64_MAX)
-            st->bind(2, (long long)max);
-        return new SQLiteEnumerator(st, options.descending, options.contentOptions);
+        auto stmt = new SQLite::Statement(db(), sql.str());        // TODO: Cache a statement
+        if (bySequence)
+            stmt->bind(1, (long long)since);
+        return new SQLiteEnumerator(stmt, options.descending, options.contentOptions);
     }
 
 }

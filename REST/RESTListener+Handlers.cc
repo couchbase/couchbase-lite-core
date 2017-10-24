@@ -134,8 +134,7 @@ namespace litecore { namespace REST {
     void RESTListener::handleGetAllDocs(RequestResponse &rq, C4Database *db) {
         // Apply options:
         C4EnumeratorOptions options;
-        options.flags = kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted;
-        options.skip = 0;
+        options.flags = kC4IncludeNonConflicted;
         if (rq.boolQuery("descending"))
             options.flags |= kC4Descending;
         bool includeDocs = rq.boolQuery("include_docs");
@@ -145,7 +144,7 @@ namespace litecore { namespace REST {
 
         // Create enumerator:
         C4Error err;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &err);
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, &options, &err);
         if (!e)
             return rq.respondWithError(err);
 

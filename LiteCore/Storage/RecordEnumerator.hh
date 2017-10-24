@@ -40,33 +40,20 @@ namespace litecore {
     class RecordEnumerator {
     public:
         struct Options {
-            unsigned       skip    {0};         ///< Number of results to skip
-            unsigned       limit   {UINT_MAX};  ///< Max number of results to return
             bool           descending     :1;   ///< Reverse order? (Start must be
-            bool           inclusiveStart :1;   ///< Include the start key/seq?
-            bool           inclusiveEnd   :1;   ///< Include the end key/seq?
             bool           includeDeleted :1;   ///< Include deleted records?
             bool           onlyBlobs      :1;   ///< Only include records which contain linked binary data
             ContentOptions contentOptions :4;   ///< Load record bodies?
 
             /** Default options have inclusiveStart, inclusiveEnd, and include bodies. */
             Options();
-
-            bool inclusiveMin() const {return descending ? inclusiveEnd : inclusiveStart;}
-            bool inclusiveMax() const {return descending ? inclusiveStart : inclusiveEnd;}
         };
 
         RecordEnumerator(KeyStore&,
-                      slice startKey = nullslice,
-                      slice endKey = nullslice,
-                      const Options& options = Options());
+                         const Options& options = Options());
         RecordEnumerator(KeyStore&,
-                      sequence_t start,
-                      sequence_t end = UINT64_MAX,
-                      const Options& options = Options());
-        RecordEnumerator(KeyStore&,
-                      std::vector<std::string> recordIDs,
-                      const Options& options = Options());
+                         sequence_t since,
+                         const Options& options = Options());
 
         RecordEnumerator(RecordEnumerator&& e) noexcept    :_store(e._store) {*this = std::move(e);}
         RecordEnumerator& operator=(RecordEnumerator&& e) noexcept; // move assignment
@@ -114,15 +101,13 @@ namespace litecore {
     private:
         friend class KeyStore;
 
-        RecordEnumerator(KeyStore &store, const Options& options);
+        RecordEnumerator(KeyStore &store, const Options& options, bool);
         void initialPosition();
         bool nextFromArray();
         bool getDoc();
 
         KeyStore *      _store;             // The KeyStore I'm enumerating
         Options         _options;           // Enumeration options
-        std::vector<std::string>  _recordIDs; // The set of recordIDs to enumerate (if any)
-        int             _curDocIndex {0};   // Current index in _recordIDs, else -1
         Record          _record;            // Current record
         bool            _skipStep {false};  // Should next call to next() skip _impl->next()?
         std::unique_ptr<Impl> _impl;        // The storage-specific implementation

@@ -234,9 +234,9 @@ public:
 
     void compareDatabases(bool db2MayHaveMoreDocs =false) {
         C4Error error;
-        c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, nullslice, nullslice, nullptr,  &error);
+        c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, nullptr,  &error);
         REQUIRE(e1);
-        c4::ref<C4DocEnumerator> e2 = c4db_enumerateAllDocs(db2, nullslice, nullslice, nullptr,  &error);
+        c4::ref<C4DocEnumerator> e2 = c4db_enumerateAllDocs(db2, nullptr,  &error);
         REQUIRE(e2);
 
         unsigned i = 0;

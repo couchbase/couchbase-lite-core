@@ -248,12 +248,14 @@ namespace litecore {
 
     RecordEnumerator RevisionStore::enumerateRevisions(slice docID, slice author) {
         static RecordEnumerator::Options kRevEnumOptions;
-        kRevEnumOptions.inclusiveStart = kRevEnumOptions.inclusiveEnd = false;
+//FIX:        kRevEnumOptions.inclusiveStart = kRevEnumOptions.inclusiveEnd = false;
         kRevEnumOptions.contentOptions = kMetaOnly;
         
         return RecordEnumerator(_nonCurrentStore,
+        /* FIX: Removed RecordEnumerator options used for this
                              startKeyFor(docID, author),
                              endKeyFor(docID, author),
+         */
                              kRevEnumOptions);
     }
 

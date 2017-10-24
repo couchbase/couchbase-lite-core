@@ -15,6 +15,11 @@
 #include <thread>
 
 
+static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
+    return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
+}
+
+
 void DbEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
     Endpoint::prepare(isSource, mustExist, docIDProperty, other);
     _otherEndpoint = const_cast<Endpoint*>(other);

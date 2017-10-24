@@ -28,35 +28,23 @@
 #pragma mark - DOC ENUMERATION:
 
 CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
-    0, // skip
-    kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted | kC4IncludeBodies
+    kC4IncludeNonConflicted | kC4IncludeBodies
 };
 
 
 struct C4DocEnumerator: C4InstanceCounted {
     C4DocEnumerator(C4Database *database,
-                    sequence_t start,
-                    sequence_t end,
+                    sequence_t since,
                     const C4EnumeratorOptions &options)
     :_database(database),
-     _e(database->defaultKeyStore(), start, end, allDocOptions(options)),
+     _e(database->defaultKeyStore(), since, allDocOptions(options)),
      _options(options)
     { }
 
     C4DocEnumerator(C4Database *database,
-                    C4Slice startDocID,
-                    C4Slice endDocID,
                     const C4EnumeratorOptions &options)
     :_database(database),
-     _e(database->defaultKeyStore(), startDocID, endDocID, allDocOptions(options)),
-     _options(options)
-    { }
-
-    C4DocEnumerator(C4Database *database,
-                    vector<string>docIDs,
-                    const C4EnumeratorOptions &options)
-    :_database(database),
-     _e(database->defaultKeyStore(), docIDs, allDocOptions(options)),
+     _e(database->defaultKeyStore(), allDocOptions(options)),
      _options(options)
     { }
 
@@ -66,10 +54,7 @@ struct C4DocEnumerator: C4InstanceCounted {
 
     static RecordEnumerator::Options allDocOptions(const C4EnumeratorOptions &c4options) {
         RecordEnumerator::Options options;
-        options.skip = (unsigned)c4options.skip;
         options.descending      = (c4options.flags & kC4Descending) != 0;
-        options.inclusiveStart  = (c4options.flags & kC4InclusiveStart) != 0;
-        options.inclusiveEnd    = (c4options.flags & kC4InclusiveEnd) != 0;
         options.includeDeleted  = (c4options.flags & kC4IncludeDeleted) != 0;
         if ((c4options.flags & kC4IncludeBodies) == 0)
             options.contentOptions = kMetaOnly;
@@ -146,41 +131,18 @@ C4DocEnumerator* c4db_enumerateChanges(C4Database *database,
                                        C4Error *outError) noexcept
 {
     return tryCatch<C4DocEnumerator*>(outError, [&]{
-        C4SequenceNumber start = since + 1, end = UINT64_MAX;
-        if (c4options && (c4options->flags & kC4Descending))
-            swap(start, end);
-        return new C4DocEnumerator(database, start, end,
+        return new C4DocEnumerator(database, since,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     });
 }
 
 
 C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
-                                       C4Slice startDocID,
-                                       C4Slice endDocID,
                                        const C4EnumeratorOptions *c4options,
                                        C4Error *outError) noexcept
 {
     return tryCatch<C4DocEnumerator*>(outError, [&]{
-        return new C4DocEnumerator(database, startDocID, endDocID,
-                                   c4options ? *c4options : kC4DefaultEnumeratorOptions);
-    });
-}
-
-
-C4DocEnumerator* c4db_enumerateSomeDocs(C4Database *database,
-                                        const C4Slice docIDs[],
-                                        size_t docIDsCount,
-                                        const C4EnumeratorOptions *c4options,
-                                        C4Error *outError) noexcept
-{
-    return tryCatch<C4DocEnumerator*>(outError, [&]{
-        vector<string> docIDStrings;
-        for (size_t i = 0; i < docIDsCount; ++i) {
-            string docID = (string)docIDs[i];
-            docIDStrings.push_back(docID);
-        }
-        return new C4DocEnumerator(database, docIDStrings,
+        return new C4DocEnumerator(database,
                                    c4options ? *c4options : kC4DefaultEnumeratorOptions);
     });
 }
@@ -217,6 +179,3 @@ C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
     return nullptr;
 }
 
-C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
-    return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
-}

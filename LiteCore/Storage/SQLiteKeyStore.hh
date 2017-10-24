@@ -55,8 +55,9 @@ namespace litecore {
         std::string tableName() const                       {return std::string("kv_") + name();}
         bool _del(slice key, sequence_t s, Transaction&) override;
 
-        RecordEnumerator::Impl* newEnumeratorImpl(slice minKey, slice maxKey, RecordEnumerator::Options&) override;
-        RecordEnumerator::Impl* newEnumeratorImpl(sequence_t min, sequence_t max, RecordEnumerator::Options&) override;
+        RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
+                                                  sequence_t since,
+                                                  RecordEnumerator::Options&) override;
         Retained<Query> compileQuery(slice expression) override;
 
         SQLite::Statement* compile(const std::string &sql) const;

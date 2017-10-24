@@ -27,6 +27,10 @@
 
 using namespace std;
 
+static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
+    return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
+}
+
 class C4DatabaseTest : public C4Test {
     public:
 
@@ -227,7 +231,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
     // No start or end ID:
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
-    e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &error);
+    e = c4db_enumerateAllDocs(db, &options, &error);
     REQUIRE(e);
     char docID[20];
     int i = 1;
@@ -257,71 +261,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
     }
     c4enum_free(e);
     REQUIRE(i == 100);
-
-    // Start and end ID:
-    e = c4db_enumerateAllDocs(db, c4str("doc-007"), c4str("doc-090"), nullptr, &error);
-    REQUIRE(e);
-    i = 7;
-    while (c4enum_next(e, &error)) {
-        auto doc = c4enum_getDocument(e, &error);
-        REQUIRE(error.code == 0);
-        REQUIRE(doc);
-        sprintf(docID, "doc-%03d", i);
-        REQUIRE(doc->docID == c4str(docID));
-        c4doc_free(doc);
-        i++;
-    }
-    c4enum_free(e);
-    REQUIRE(error.code == 0);
-    REQUIRE(i == 91);
-
-    // Some docs, by ID:
-    options = kC4DefaultEnumeratorOptions;
-    options.flags |= kC4IncludeDeleted;
-    C4Slice docIDs[4] = {C4STR("doc-042"), C4STR("doc-007"), C4STR("bogus"), C4STR("doc-001")};
-    e = c4db_enumerateSomeDocs(db, docIDs, 4, &options, &error);
-    REQUIRE(e);
-    i = 0;
-    while (c4enum_next(e, &error)) {
-        auto doc = c4enum_getDocument(e, &error);
-        REQUIRE(error.code == 0);
-        REQUIRE(doc);
-        REQUIRE(doc->docID == docIDs[i]);
-        REQUIRE((doc->sequence != 0) == (i != 2));
-        c4doc_free(doc);
-        i++;
-    }
-    c4enum_free(e);
-    REQUIRE(error.code == 0);
-    REQUIRE(i == 4);
-}
-
-
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsIncludeDeleted", "[Database][C]") {
-    char docID[20];
-    setupAllDocs();
-
-    C4Error error;
-    C4DocEnumerator* e;
-
-    C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    options.flags |= kC4IncludeDeleted;
-    e = c4db_enumerateAllDocs(db, c4str("doc-004"), c4str("doc-007"), &options, &error);
-    REQUIRE(e);
-    int i = 4;
-    while (c4enum_next(e, &error)) {
-        auto doc = c4enum_getDocument(e, &error);
-        REQUIRE(doc);
-        if (i == 6)
-            strncpy(docID, "doc-005DEL", sizeof(docID));
-        else
-            sprintf(docID, "doc-%03d", i - (i>=6));
-        REQUIRE(doc->docID == c4str(docID));
-        c4doc_free(doc);
-        i++;
-    }
-    c4enum_free(e);
-    REQUIRE(i == 9);
 }
 
 
@@ -331,7 +270,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocsInfo", "[Database][C]") 
     C4DocEnumerator* e;
 
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &error);
+    e = c4db_enumerateAllDocs(db, &options, &error);
     REQUIRE(e);
     int i = 1;
     while(c4enum_next(e, &error)) {

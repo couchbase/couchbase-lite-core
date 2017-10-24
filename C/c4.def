@@ -102,13 +102,11 @@ c4rev_flagsFromDocFlags
 
 c4db_enumerateChanges
 c4db_enumerateAllDocs
-c4db_enumerateSomeDocs
 c4db_enumerateExpired
 c4db_createIndex
 c4db_deleteIndex
 c4db_getIndexes
 c4enum_next
-c4enum_nextDocument
 c4enum_getDocumentInfo
 c4enum_getDocument
 c4enum_close

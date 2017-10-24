@@ -129,7 +129,7 @@ struct C4ExpiryEnumerator
 public:
     C4ExpiryEnumerator(C4Database *database) :
     _db(database),
-    _e(_db->getKeyStore("expiry"), nullslice, nullslice)
+    _e(_db->getKeyStore("expiry"))
     
     {
         _endTimestamp = time(nullptr);
@@ -140,8 +140,11 @@ public:
         if(!_e.next()) {
             return false;
         }
-
-        auto info = Value::fromData(_e.record().key()).asArray();
+        auto key = _e.record().key();
+        if (key > _endKey) {
+            return false;
+        }
+        auto info = Value::fromData(key).asArray();
         _current = alloc_slice(info[1U].asString());
         
         return true;
@@ -165,8 +168,8 @@ public:
         e.beginDict();
         e.endDict();
         e.endArray();
-        alloc_slice endKey(e.finish());
-        _e = RecordEnumerator(_db->getKeyStore("expiry"), nullslice, endKey);
+        _endKey = e.finish();
+        _e = RecordEnumerator(_db->getKeyStore("expiry"));
     }
 
     void close()
@@ -184,6 +187,7 @@ private:
     RecordEnumerator _e;
     alloc_slice _current;
     uint64_t _endTimestamp;
+    alloc_slice _endKey;
 };
 
 C4ExpiryEnumerator *c4db_enumerateExpired(C4Database *database, C4Error *outError) noexcept {

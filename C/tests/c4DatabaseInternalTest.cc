@@ -34,6 +34,9 @@ static char sErrorMessageBuffer[256];
 #define errorInfo(error) \
     INFO("Error: " << c4error_getMessageC(error, sErrorMessageBuffer, sizeof(sErrorMessageBuffer)))
 
+static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
+    return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Ported from DatabaseInternal_Tests.m
@@ -436,8 +439,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "EmptyDoc", "[Database][C]") {
     
     C4Error error = {};
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-    C4String keys[1] = {docID};
-    C4DocEnumerator *e = c4db_enumerateSomeDocs(db, keys, 1, &options, &error);
+    C4DocEnumerator *e = c4db_enumerateAllDocs(db, &options, &error);
     REQUIRE(e);
     C4SequenceNumber seq = 1;
     while (nullptr != (doc = c4enum_nextDocument(e, &error))) {

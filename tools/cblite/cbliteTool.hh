@@ -116,7 +116,7 @@ private:
         _limit = -1;
         _startKey = _endKey = nullslice;
         _keys.clear();
-        _enumFlags = kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted;
+        _enumFlags = kC4IncludeNonConflicted;
         _longListing = _listBySeq = false;
         _showRevID = false;
         _prettyPrint = true;
@@ -154,7 +154,7 @@ private:
     int64_t _limit {-1};
     alloc_slice _startKey, _endKey;
     std::set<alloc_slice> _keys;
-    C4EnumeratorFlags _enumFlags {kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted};
+    C4EnumeratorFlags _enumFlags {kC4IncludeNonConflicted};
     bool _longListing {false};
     bool _listBySeq {false};
     bool _prettyPrint {true};

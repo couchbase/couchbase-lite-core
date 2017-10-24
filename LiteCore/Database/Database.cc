@@ -245,7 +245,7 @@ namespace c4Internal {
     unordered_set<string> Database::collectBlobs() {
         RecordEnumerator::Options options;
         options.onlyBlobs = true;
-        RecordEnumerator e(defaultKeyStore(), 0, INT64_MAX, options);
+        RecordEnumerator e(defaultKeyStore(), 0, options);
         unordered_set<string> usedDigests;
         for(const Record& rec : e) {
             auto doc = documentFactory().newDocumentInstance(rec);

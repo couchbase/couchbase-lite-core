@@ -15,6 +15,10 @@
 static const size_t kSizeOfDocument = 1000;
 static const unsigned kNumDocuments = 100000;
 
+static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
+    return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
+}
+
 
 class C4AllDocsPerformanceTest : public C4Test {
 public:
@@ -66,7 +70,7 @@ N_WAY_TEST_CASE_METHOD(C4AllDocsPerformanceTest, "AllDocsPerformance", "[Perf][.
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     options.flags &= ~kC4IncludeBodies;
     C4Error error;
-    auto e = c4db_enumerateAllDocs(db, kC4SliceNull, kC4SliceNull, &options, &error);
+    auto e = c4db_enumerateAllDocs(db, &options, &error);
     REQUIRE(e);
     C4Document* doc;
     unsigned i = 0;

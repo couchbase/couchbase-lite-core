@@ -81,51 +81,6 @@ Java_com_couchbase_litecore_C4DocEnumerator_enumerateAllDocs(JNIEnv *env, jclass
 
 /*
  * Class:     com_couchbase_litecore_C4DocEnumerator
- * Method:    enumerateSomeDocs
- * Signature: (J[Ljava/lang/String;JI)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4DocEnumerator_enumerateSomeDocs(JNIEnv *env, jclass clazz, jlong jdb,
-                                                              jobjectArray jdocIDs, jlong jskip,
-                                                              jint jflags) {
-    // Convert jdocIDs, a Java String[], to a C array of C4Slice:
-
-    jsize n = env->GetArrayLength(jdocIDs);
-
-    C4Slice *docIDs = (C4Slice *) ::malloc(sizeof(C4Slice) * n);
-    if (docIDs == nullptr) {
-        throwError(env, C4Error{POSIXDomain, errno});
-        return 0;
-    }
-
-    std::vector<jstringSlice *> keeper;
-    for (jsize i = 0; i < n; i++) {
-        jstring js = (jstring) env->GetObjectArrayElement(jdocIDs, i);
-        jstringSlice *item = new jstringSlice(env, js);
-        docIDs[i] = *item;
-        keeper.push_back(item); // so its memory won't be freed
-    }
-
-    const C4EnumeratorOptions options = {uint64_t(jskip), C4EnumeratorFlags(jflags)};
-    C4Error error;
-    C4DocEnumerator *e = c4db_enumerateSomeDocs((C4Database *) jdb, docIDs, n, &options, &error);
-
-    // release memory
-    for (jsize i = 0; i < n; i++) {
-        delete keeper.at(i);
-    }
-    keeper.clear();
-    ::free(docIDs);
-
-    if (!e) {
-        throwError(env, error);
-        return 0;
-    }
-    return (jlong) e;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4DocEnumerator
  * Method:    next
  * Signature: (J)Z
  */
