@@ -38,43 +38,26 @@ namespace litecore {
     { }
 
 
-    RecordEnumerator::RecordEnumerator(KeyStore &store, const Options& options, bool x)
-    :_store(&store),
-     _options(options)
-    { }
-
-
     // By-key constructor
     RecordEnumerator::RecordEnumerator(KeyStore &store,
-                                       const Options& options)
-    :RecordEnumerator(store, options, false)
+                                       Options options)
+    :_store(&store)
     {
         LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s%s) --> %p",
               store.name().c_str(), (options.descending ? " desc" : ""), this);
-        _impl.reset(_store->newEnumeratorImpl(false, 0, _options));
-        _skipStep = _impl->shouldSkipFirstStep();
+        _impl.reset(_store->newEnumeratorImpl(false, 0, options));
     }
 
     // By-sequence constructor
     RecordEnumerator::RecordEnumerator(KeyStore &store,
                                        sequence_t since,
-                                       const Options& options)
-    :RecordEnumerator(store, options, false)
+                                       Options options)
+    :_store(&store)
     {
         LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, #%llu --) --> %p",
                 store.name().c_str(), (unsigned long long)since, this);
 
-        _impl.reset(_store->newEnumeratorImpl(true, since, _options));
-        _skipStep = _impl->shouldSkipFirstStep();
-    }
-
-    // Assignment from a temporary
-    RecordEnumerator& RecordEnumerator::operator=(RecordEnumerator&& e) noexcept {
-        _store = e._store;
-        _impl = move(e._impl);
-        _options = e._options;
-        _skipStep = e._skipStep;
-        return *this;
+        _impl.reset(_store->newEnumeratorImpl(true, since, options));
     }
 
 
@@ -85,25 +68,20 @@ namespace litecore {
 
 
     bool RecordEnumerator::next() {
-        if (!_impl)
+        if (!_impl) {
             return false;
-        if (_skipStep) {
-            _skipStep = false;
         } else if (!_impl->next()) {
             close();
             return false;
+        } else {
+            _record.clear();
+            if (!_impl->read(_record)) {
+                close();
+                return false;
+            }
+            LogToAt(EnumLog, Debug, "enum:     --> [%s]", _record.key().hexCString());
+            return true;
         }
-        return getDoc();
-    }
-
-    bool RecordEnumerator::getDoc() {
-        _record.clear();
-        if (!_impl->read(_record)) {
-            close();
-            return false;
-        }
-        LogToAt(EnumLog, Debug, "enum:     --> [%s]", _record.key().hexCString());
-        return true;
     }
 
 }

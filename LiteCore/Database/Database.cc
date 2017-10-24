@@ -245,10 +245,10 @@ namespace c4Internal {
     unordered_set<string> Database::collectBlobs() {
         RecordEnumerator::Options options;
         options.onlyBlobs = true;
-        RecordEnumerator e(defaultKeyStore(), 0, options);
+        RecordEnumerator e(defaultKeyStore(), options);
         unordered_set<string> usedDigests;
-        for(const Record& rec : e) {
-            auto doc = documentFactory().newDocumentInstance(rec);
+        while (e.next()) {
+            auto doc = documentFactory().newDocumentInstance(*e);
             doc->selectCurrentRevision();
             do {
                 if(!doc->loadSelectedRevBody()) {

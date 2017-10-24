@@ -50,7 +50,7 @@ namespace litecore {
     };
 
 
-    void SQLiteKeyStore::selectFrom(stringstream& in, const RecordEnumerator::Options &options) {
+    void SQLiteKeyStore::selectFrom(stringstream& in, RecordEnumerator::Options options) {
         in << "SELECT sequence, flags, key, version";
         if (options.contentOptions & kMetaOnly)
             in << ", length(body)";
@@ -59,7 +59,7 @@ namespace litecore {
         in << " FROM kv_" << name();
     }
 
-    void SQLiteKeyStore::writeSQLOptions(stringstream &sql, RecordEnumerator::Options &options) {
+    void SQLiteKeyStore::writeSQLOptions(stringstream &sql, RecordEnumerator::Options options) {
         if (options.descending)
             sql << " DESC";
     }
@@ -67,7 +67,7 @@ namespace litecore {
 
     RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(bool bySequence,
                                                               sequence_t since,
-                                                              RecordEnumerator::Options &options)
+                                                              RecordEnumerator::Options options)
     {
         if (bySequence && _db.options().writeable)
             createSequenceIndex();
