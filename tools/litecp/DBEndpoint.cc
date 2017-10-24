@@ -76,7 +76,7 @@ void DbEndpoint::exportTo(Endpoint *dst, uint64_t limit) {
         cout << "Exporting documents...\n";
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     C4Error err;
-    c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(_db, nullslice, nullslice, &options, &err);
+    c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(_db, &options, &err);
     if (!e)
         fail("enumerating source db", err);
     uint64_t line;

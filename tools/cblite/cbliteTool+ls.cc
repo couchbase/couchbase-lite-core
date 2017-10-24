@@ -51,20 +51,17 @@ void CBLiteTool::listDocsCommand() {
 
 void CBLiteTool::listDocs(string docIDPattern) {
     C4Error error;
-    C4EnumeratorOptions options {_offset, _enumFlags};
+    C4EnumeratorOptions options {_enumFlags};
     c4::ref<C4DocEnumerator> e;
     if (_listBySeq)
         e = c4db_enumerateChanges(_db, 0, &options, &error);
     else
-        e = c4db_enumerateAllDocs(_db, _startKey, _endKey, &options, &error);
+        e = c4db_enumerateAllDocs(_db, &options, &error);
     if (!e)
         fail("creating enumerator", error);
 
-    if (_offset > 0) {
+    if (_offset > 0)
         cout << "(Skipping first " << _offset << " docs)\n";
-        if (!docIDPattern.empty())
-            options.skip = 0;           // need to skip manually if there's a pattern to match
-    }
 
     int64_t nDocs = 0;
     int xpos = 0;
@@ -72,17 +69,20 @@ void CBLiteTool::listDocs(string docIDPattern) {
         C4DocumentInfo info;
         c4enum_getDocumentInfo(e, &info);
 
+        //TODO: Skip if docID is not in range of _startKey and _endKey
+
         if (!docIDPattern.empty()) {
             // Check whether docID matches pattern:
             string docID = slice(info.docID).asString();
             if (fnmatch(docIDPattern.c_str(), docID.c_str(), 0) != 0)
                 continue;
-            if (_offset > 0) {
-                --_offset;
-                continue;
-            }
         }
 
+        // Handle offset & limit:
+        if (_offset > 0) {
+            --_offset;
+            continue;
+        }
         if (++nDocs > _limit && _limit >= 0) {
             cout << "\n(Stopping after " << _limit << " docs)";
             error.code = 0;
