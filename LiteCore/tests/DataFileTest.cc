@@ -21,7 +21,6 @@ using namespace std;
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
     REQUIRE(db->isOpen());
-    REQUIRE(db->purgeCount() == 0);
     REQUIRE(&store->dataFile() == db);
     REQUIRE(store->recordCount() == 0);
     REQUIRE(store->lastSequence() == 0);
@@ -327,7 +326,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]")
         t.commit();
     }
     REQUIRE(store->lastSequence() == 1);
-    REQUIRE(db->purgeCount() == 0);
     {
         Transaction t(db);
         store->del(key, t);
@@ -336,7 +334,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]")
     Record rec = store->get(key);
     REQUIRE_FALSE(rec.exists());
     REQUIRE(store->lastSequence() == 1);
-    REQUIRE(db->purgeCount() == 1);
 }
 
 
@@ -358,8 +355,6 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]")
     Record rec = store->get(key);
     //    REQUIRE(rec.deleted());
     REQUIRE_FALSE(rec.exists());
-    
-    REQUIRE(db->purgeCount() == 1);
 }
 
 

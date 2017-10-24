@@ -299,10 +299,11 @@ namespace litecore {
     }
 
 
-#pragma mark KEY-STORES:
+#pragma mark - KEY-STORES:
 
 
     const string DataFile::kDefaultKeyStoreName{"default"};
+    const string DataFile::kInfoKeyStoreName{"info"};
 
 
     KeyStore& DataFile::getKeyStore(const string &name) const {
@@ -365,28 +366,9 @@ namespace litecore {
     }
 
 
-
-#pragma mark PURGE/DELETION COUNT:
-
-
-    const string DataFile::kInfoKeyStoreName = "info";
-
-    static const char* const kPurgeCountKey = "purgeCount";
-
-    void DataFile::incrementPurgeCount(Transaction &t) {
-        KeyStore &infoStore = getKeyStore(kInfoKeyStoreName);
-        Record rec = infoStore.get(slice(kPurgeCountKey));
-        rec.setBodyAsUInt(rec.bodyAsUInt() + 1);
-        infoStore.write(rec, t);
-    }
-
-    uint64_t DataFile::purgeCount() const {
-        return getKeyStore(kInfoKeyStoreName).get(slice(kPurgeCountKey)).bodyAsUInt();
-    }
-
-
 #pragma mark - TRANSACTION:
 
+    
     void DataFile::beginTransactionScope(Transaction* t) {
         Assert(!_inTransaction);
         checkOpen();

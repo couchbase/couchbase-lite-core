@@ -387,10 +387,11 @@ path.path().c_str());
         return new SQLiteKeyStore(*this, name, options);
     }
 
+#if ENABLE_DELETE_KEY_STORES
     void SQLiteDataFile::deleteKeyStore(const string &name) {
         execWithLock(string("DROP TABLE IF EXISTS kv_") + name);
     }
-
+#endif
 
     void SQLiteDataFile::_beginTransaction(Transaction*) {
         checkOpen();

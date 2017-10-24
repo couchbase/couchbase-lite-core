@@ -52,10 +52,12 @@ namespace litecore {
         }
     }
 
+#if ENABLE_DELETE_KEY_STORES
     void KeyStore::deleteKeyStore(Transaction& trans) {
         trans.dataFile().deleteKeyStore(name());
     }
-
+#endif
+    
     void KeyStore::write(Record &rec, Transaction &t, const sequence_t *replacingSequence) {
         auto seq = set(rec.key(), rec.version(), rec.body(), rec.flags(), t, replacingSequence);
         rec.setExists();
@@ -71,7 +73,6 @@ namespace litecore {
         
         if (!_del(key, seq, t))
             return false;
-        t.incrementPurgeCount();
         return true;
     }
 

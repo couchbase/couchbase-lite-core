@@ -78,9 +78,6 @@ namespace litecore {
 
         virtual void rekey(EncryptionAlgorithm, slice newKey);
 
-        /** The number of record deletions since the DataFile was created (Used by the indexer) */
-        uint64_t purgeCount() const;
-
         FleeceAccessor fleeceAccessor() const               {return _options.fleeceAccessor;}
         fleece::SharedKeys* documentKeys() const;
 
@@ -109,8 +106,10 @@ namespace litecore {
 
         void closeKeyStore(const std::string &name);
 
+#if ENABLE_DELETE_KEY_STORES
         /** Permanently deletes a KeyStore. */
         virtual void deleteKeyStore(const std::string &name) =0;
+#endif
 
 
         //////// SHARED OBJECTS:
@@ -201,8 +200,6 @@ namespace litecore {
         DataFile(const DataFile&) = delete;
         DataFile& operator=(const DataFile&) = delete;
 
-        void incrementPurgeCount(Transaction &t);
-
         Retained<Shared>        _shared;                        // Shared state of file (lock)
         Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
@@ -231,8 +228,6 @@ namespace litecore {
     private:
         friend class DataFile;
         friend class KeyStore;
-
-        void incrementPurgeCount()       {_db.incrementPurgeCount(*this);}
 
         Transaction(DataFile*, bool begin);
         Transaction(const Transaction&) = delete;
