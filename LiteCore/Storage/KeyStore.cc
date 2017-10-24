@@ -40,14 +40,14 @@ namespace litecore {
         fn(rec);
     }
 
-    void KeyStore::get(sequence_t seq, ContentOptions options, function_ref<void(const Record&)> fn) {
-        fn(get(seq, options));
+    void KeyStore::get(sequence_t seq, function_ref<void(const Record&)> fn) {
+        fn(get(seq));
     }
 
     void KeyStore::readBody(Record &rec) const {
         if (!rec.body()) {
-            Record fullDoc = rec.sequence() ? get(rec.sequence(), kDefaultContent)
-                                              : get(rec.key(), kDefaultContent);
+            Record fullDoc = rec.sequence() ? get(rec.sequence())
+                                            : get(rec.key(), kDefaultContent);
             rec._body = fullDoc._body;
         }
     }

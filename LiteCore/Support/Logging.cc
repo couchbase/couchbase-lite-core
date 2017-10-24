@@ -290,24 +290,6 @@ namespace litecore {
     }
 
 
-    string _logSlice(fleece::slice s) {
-        stringstream o;
-        if (s.buf == nullptr) {
-            return "<null>";
-        } else {
-            auto buf = (const uint8_t*)s.buf;
-            for (size_t i = 0; i < s.size; i++) {
-                if (buf[i] < 32 || buf[i] > 126) {
-                    o << "<" << s.hexString() << ">";
-                    return o.str();
-                }
-            }
-            o << "\"" << string((char*)s.buf, s.size) << "\"";
-        }
-        return o.str();
-    }
-
-
 #pragma mark - LOGGING CLASS:
 
 

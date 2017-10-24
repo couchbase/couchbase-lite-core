@@ -43,12 +43,6 @@ namespace litecore {
 #pragma mark - FACTORY:
 
 
-    bool DataFile::Factory::deleteFile(const FilePath &path, const Options*) {
-        if (openCount(path) > 0)
-            error::_throw(error::Busy);
-        return path.delWithAllExtensions();
-    }
-
     void DataFile::Factory::moveFile(const FilePath &from, const FilePath &to) {
         auto fromBaseLen = from.fileName().size();
         from.forEachMatch([&](const FilePath &f) {

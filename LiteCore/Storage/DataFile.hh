@@ -101,9 +101,11 @@ namespace litecore {
         KeyStore& getKeyStore(const std::string &name) const;
         KeyStore& getKeyStore(const std::string &name, KeyStore::Capabilities) const;
 
+#if 0 //UNUSED:
         /** The names of all existing KeyStores (whether opened yet or not) */
         virtual std::vector<std::string> allKeyStoreNames() =0;
-
+#endif
+        
         void closeKeyStore(const std::string &name);
 
 #if ENABLE_DELETE_KEY_STORES
@@ -135,7 +137,7 @@ namespace litecore {
             virtual DataFile* openFile(const FilePath &path, const Options* =nullptr) =0;
 
             /** Deletes a non-open file. Returns false if it doesn't exist. */
-            virtual bool deleteFile(const FilePath &path, const Options* =nullptr);
+            virtual bool deleteFile(const FilePath &path, const Options* =nullptr) =0;
 
             /** Moves a non-open file. */
             virtual void moveFile(const FilePath &fromPath, const FilePath &toPath);

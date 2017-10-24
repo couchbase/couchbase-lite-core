@@ -55,10 +55,10 @@ namespace litecore {
         // Keys/values:
 
         Record get(slice key, ContentOptions = kDefaultContent) const;
-        virtual Record get(sequence_t, ContentOptions = kDefaultContent) const =0;
+        virtual Record get(sequence_t) const =0;
 
         virtual void get(slice key, ContentOptions, function_ref<void(const Record&)>);
-        virtual void get(sequence_t, ContentOptions, function_ref<void(const Record&)>);
+        virtual void get(sequence_t, function_ref<void(const Record&)>);
 
         /** Reads a record whose key() is already set. */
         virtual bool read(Record &rec, ContentOptions options = kDefaultContent) const =0;

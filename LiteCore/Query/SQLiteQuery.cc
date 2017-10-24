@@ -95,7 +95,7 @@ namespace litecore {
 
             // Now load the document and evaluate the expression:
             alloc_slice result;
-            keyStore().get(ftsID, kDefaultContent, [&](const Record &rec) {
+            keyStore().get(ftsID, [&](const Record &rec) {
                 if (rec.body()) {
                     slice fleeceData = rec.body();
                     auto accessor = keyStore().dataFile().fleeceAccessor();

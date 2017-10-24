@@ -30,7 +30,7 @@ namespace litecore {
         uint64_t recordCount() const override;
         sequence_t lastSequence() const override;
 
-        Record get(sequence_t, ContentOptions) const override;
+        Record get(sequence_t) const override;
         bool read(Record &rec, ContentOptions options) const override;
 
         sequence_t set(slice key, slice meta, slice value, DocumentFlags,

@@ -125,12 +125,6 @@ extern "C" LogDomain kC4Cpp_DefaultLog;
 extern LogDomain DBLog, QueryLog, SyncLog;
 
 
-// logSlice() returns an ephemeral C string with a description of the slice: in double quotes if
-// it's printable, in hex otherwise. For use in log calls.
-std::string _logSlice(fleece::slice);
-#define logSlice(S) (_logSlice((S)).c_str())
-
-
 #ifdef _MSC_VER
 #define LogToAt(DOMAIN, LEVEL, FMT, ...) \
     {if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \

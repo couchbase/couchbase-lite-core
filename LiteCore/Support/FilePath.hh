@@ -47,9 +47,6 @@ namespace litecore {
 
         operator std::string () const       {return path();}
 
-        /** Simple equality test that requires paths to be identical. */
-        bool operator== (const FilePath&) const;
-
         /** Converts a string to a valid filename by escaping invalid characters,
             including the directory separator ('/') */
         static std::string sanitizedFileName(std::string);
@@ -107,8 +104,6 @@ namespace litecore {
 
         /** Deletes the file or directory tree at this path. */
         bool delRecursive() const;
-
-        bool delWithAllExtensions(char separator ='.') const;
 
         /** Moves this file/directory to a different path.
              An existing file or empty directory at the destination path will be replaced.

@@ -39,7 +39,9 @@ namespace litecore {
 
         operator SQLite::Database&() {return *_sqlDb;}
 
+#if 0 //UNUSED:
         std::vector<std::string> allKeyStoreNames() override;
+#endif
         bool keyStoreExists(const std::string &name);
         bool tableExists(const std::string &name) const;
 

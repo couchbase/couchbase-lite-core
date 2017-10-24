@@ -38,6 +38,7 @@ namespace litecore {
         }
     }
 
+#if 0 //UNUSED:
     vector<string> SQLiteDataFile::allKeyStoreNames() {
         checkOpen();
         vector<string> names;
@@ -51,6 +52,7 @@ namespace litecore {
         
         return names;
     }
+#endif
 
 
     bool SQLiteDataFile::keyStoreExists(const string &name) {
@@ -213,7 +215,8 @@ namespace litecore {
     }
 
 
-    Record SQLiteKeyStore::get(sequence_t seq, ContentOptions options) const {
+    Record SQLiteKeyStore::get(sequence_t seq /*, ContentOptions options*/) const {
+        constexpr ContentOptions options = kDefaultContent;  // this used to be a param but not used
         if (!_capabilities.sequences)
             error::_throw(error::NoSequences);
         Record rec;
@@ -238,14 +241,14 @@ namespace litecore {
         SQLite::Statement *stmt;
         if (replacingSequence == nullptr) {
             // Default:
-            LogVerbose(DBLog, "KeyStore(%s) set %s", name().c_str(), logSlice(key));
+            LogVerbose(DBLog, "KeyStore(%s) set %.*s", name().c_str(), SPLAT(key));
             compile(_setStmt,
                     "INSERT OR REPLACE INTO kv_@ (version, body, flags, sequence, key)"
                     " VALUES (?, ?, ?, ?, ?)");
             stmt = _setStmt.get();
         } else if (*replacingSequence == 0) {
             // Insert only:
-            LogVerbose(DBLog, "KeyStore(%s) insert %s", name().c_str(), logSlice(key));
+            LogVerbose(DBLog, "KeyStore(%s) insert %.*s", name().c_str(), SPLAT(key));
             compile(_insertStmt,
                     "INSERT OR IGNORE INTO kv_@ (version, body, flags, sequence, key)"
                     " VALUES (?, ?, ?, ?, ?)");
@@ -253,7 +256,7 @@ namespace litecore {
         } else {
             // Replace only:
             Assert(_capabilities.sequences);
-            LogVerbose(DBLog, "KeyStore(%s) update %s", name().c_str(), logSlice(key));
+            LogVerbose(DBLog, "KeyStore(%s) update %.*s", name().c_str(), SPLAT(key));
             compile(_replaceStmt,
                     "UPDATE kv_@ SET version=?, body=?, flags=?, sequence=?"
                     " WHERE key=? AND sequence=?");

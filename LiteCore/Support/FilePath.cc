@@ -196,11 +196,6 @@ namespace litecore {
     }
 
 
-    bool FilePath::operator== (const FilePath &other) const {
-        return _dir == other._dir && _file == other._file;
-    }
-
-
     string FilePath::unextendedName() const {
         return splitExtension(fileOrDirName()).first;
     }
@@ -459,15 +454,6 @@ namespace litecore {
 #endif
 
         error::_throwErrno();
-    }
-
-    bool FilePath::delWithAllExtensions(char separator) const {
-        bool deleted = del();
-        FilePath(_dir, _file + separator).forEachMatch([&](const FilePath &f) {
-            if (f.del())
-                deleted = true;
-        });
-        return deleted;
     }
 
     static void _delRecursive(const FilePath &path) {
