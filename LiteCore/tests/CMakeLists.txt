@@ -19,7 +19,7 @@ aux_source_directory(.  TEST_SRC)
 if(MSVC)
 	set(TEST_SRC ${TEST_SRC} ../../MSVC/arc4random.cc)
 elseif(UNIX AND NOT APPLE)
-  set(TEST_SRC ${TEST_SRC} ../Android/arc4random.cc)
+  set(TEST_SRC ${TEST_SRC} ../Unix/arc4random.cc)
 endif()
 
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
