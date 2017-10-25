@@ -309,7 +309,8 @@ namespace litecore { namespace websocket {
     void WebSocketImpl::onClose(CloseStatus status) {
         if (_framing) {
             std::lock_guard<std::mutex> lock(_mutex);
-            bool clean = (status.code == 0);
+            bool clean = (status.code == 0
+                          || (status.reason == kWebSocketClose && status.code == kCodeNormal));
             bool expected = (_closeSent && _closeReceived);
             if (expected && clean)
                 log("Socket disconnected cleanly");
