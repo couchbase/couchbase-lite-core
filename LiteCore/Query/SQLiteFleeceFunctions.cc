@@ -42,12 +42,9 @@ namespace litecore {
 
     // fl_root(body) -> fleeceData
     static void fl_root(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        slice fleece = valueAsSlice(argv[0]);
-        // Pull the Fleece data out of a raw document body, if necessary:
+        // Pull the Fleece data out of a raw document body:
         auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-        if (funcCtx->accessor)
-            fleece = funcCtx->accessor(fleece);
-        
+        slice fleece = funcCtx->accessor(valueAsSlice(argv[0]));
         setResultBlobFromSlice(ctx, fleece);
     }
 

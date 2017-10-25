@@ -36,8 +36,7 @@ namespace litecore {
             if (sqlite3_value_subtype(arg) != kFleeceDataSubtype) {
                 // Pull the Fleece data out of a raw document body:
                 auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-                if (funcCtx->accessor)
-                    fleece = funcCtx->accessor(fleece);
+                fleece = funcCtx->accessor(fleece);
             }
             if (!fleece)
                 return Dict::kEmpty;             // No body; may be deleted rev
@@ -178,6 +177,8 @@ namespace litecore {
                                       fleece::SharedKeys *sharedKeys,
                                       const SQLiteFunctionSpec functions[])
     {
+        if (!accessor)
+            accessor = [](slice data) {return data;};
         for (auto fn = functions; fn->name; ++fn) {
             int rc = sqlite3_create_function_v2(db,
                                                 fn->name,

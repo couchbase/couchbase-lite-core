@@ -169,6 +169,14 @@ N_WAY_TEST_CASE_METHOD(PathsQueryTest, "DB Query ANY w/paths", "[Query][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY of dict", "[Query][C]") {
+    compile(json5("['ANY', 'n', ['.', 'name'], ['=', ['?', 'n'], 'Arturo']]"));
+    CHECK(run() == (vector<string>{"0000090"}));
+    compile(json5("['ANY', 'n', ['.', 'name'], ['contains()', ['?', 'n'], 'V']]"));
+    CHECK(run() == (vector<string>{ "0000044", "0000048", "0000053", "0000093" }));
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query expression index", "[Query][C]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("length"), c4str(json5("[['length()', ['.name.first']]]").c_str()), kC4ValueIndex, nullptr, &err));

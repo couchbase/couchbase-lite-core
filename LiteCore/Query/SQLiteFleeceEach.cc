@@ -41,7 +41,7 @@ enum {
     kValueColumn,           // 'value': The item as a SQL value
     kTypeColumn,            // 'type':  The item's type, an integer
     kDataColumn,            // 'data':  The item as encoded Fleece data
-    kPointerColumn,         // 'data':  The item as a raw Value*
+    kPointerColumn,         // 'pointer':  The item as a raw Value*
     kRootFleeceDataColumn,  // 'root_data': The Fleece data of the root [hidden]
     kRootPathColumn,        // 'root_path': Path from the root to the item being iterated [hidden]
 };
@@ -201,9 +201,7 @@ private:
 
         // Parse the Fleece data:
         _fleeceData = valueAsSlice(argv[0]);
-        slice data = _fleeceData;
-        if (_vtab->context.accessor)
-            data = _vtab->context.accessor(data);
+        slice data = _vtab->context.accessor(_fleeceData);
         _container = Value::fromTrustedData(data);
         if (!_container) {
             Warn("Invalid Fleece data in SQLite table");
@@ -258,22 +256,25 @@ private:
             case kTypeColumn:
                 setResultFromValueType(ctx, currentValue());
                 break;
-            case kDataColumn:
-                setResultBlobFromEncodedValue(ctx, currentValue());
-                break;
             case kPointerColumn: {
                 auto value = currentValue();
                 sqlite3_result_blob(ctx, &value, sizeof(value), SQLITE_TRANSIENT);
                 sqlite3_result_subtype(ctx, kFleecePointerSubtype);
                 break;
             }
+#if 0 // these columns are used for the join but are never actually queried
+            case kDataColumn:
+                setResultBlobFromEncodedValue(ctx, currentValue());
+                break;
             case kRootFleeceDataColumn:
                 setResultBlobFromSlice(ctx, _fleeceData);
                 break;
             case kRootPathColumn:
                 setResultTextFromSlice(ctx, _rootPath);
                 break;
+#endif
             default:
+                Warn("fl_each: Unexpected column(%d)", column);
                 return SQLITE_ERROR;
         }
         return SQLITE_OK;
