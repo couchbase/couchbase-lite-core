@@ -39,47 +39,21 @@ namespace LiteCore.Tests
 
         internal static readonly C4Slice FleeceBody;
         
-        protected override int NumberOfOptions
-        {
-            get {
-                return 2;
-            }
-        }
-        
-        private bool _bundled = true;
+        protected override int NumberOfOptions => 2;
+
         private int _objectCount = 0;
 
         internal C4Database* Db { get; private set; }
         internal C4DocumentVersioning Versioning { get; private set; }
         protected string Storage { get; private set; }
 
-        internal C4Slice DocID
-        {
-            get {
-                return C4Slice.Constant("mydoc");
-            }
-        }
+        internal C4Slice DocID => C4Slice.Constant("mydoc");
 
-        internal C4Slice RevID
-        {
-            get {
-                return IsRevTrees() ? C4Slice.Constant("1-abcd") : C4Slice.Constant("1@*");
-            }
-        }
+        internal C4Slice RevID => IsRevTrees() ? C4Slice.Constant("1-abcd") : C4Slice.Constant("1@*");
 
-        internal C4Slice Rev2ID
-        {
-            get {
-                return IsRevTrees() ? C4Slice.Constant("2-c001d00d") : C4Slice.Constant("2@*");
-            }
-        }
+        internal C4Slice Rev2ID => IsRevTrees() ? C4Slice.Constant("2-c001d00d") : C4Slice.Constant("2@*");
 
-        internal C4Slice Rev3ID
-        {
-            get {
-                return IsRevTrees() ? C4Slice.Constant("3-deadbeef") : C4Slice.Constant("3@*");
-            }
-        }
+        internal C4Slice Rev3ID => IsRevTrees() ? C4Slice.Constant("3-deadbeef") : C4Slice.Constant("3@*");
 
         static Test()
         {
@@ -101,6 +75,11 @@ namespace LiteCore.Tests
 
         }
 #endif
+
+        internal static C4Document* c4enum_nextDocument(C4DocEnumerator* e, C4Error* outError)
+        {
+            return Native.c4enum_next(e, outError) ? Native.c4enum_getDocument(e, outError) : null;
+        }
 
         protected bool IsRevTrees()
         {
@@ -129,10 +108,6 @@ namespace LiteCore.Tests
             config.flags = C4DatabaseFlags.Create;
             config.versioning = Versioning;
 
-            if(_bundled) {
-                config.flags |= C4DatabaseFlags.Bundled;
-            }
-
             var encryptedStr = (option & 1) == 1 ? "encrypted " : String.Empty;
             WriteLine($"Opening {encryptedStr}SQLite database using {Versioning}");
 
@@ -146,7 +121,7 @@ namespace LiteCore.Tests
                 }
             }
 
-            Native.c4db_deleteAtPath(DatabasePath(), &config, null);
+            Native.c4db_deleteAtPath(DatabasePath(), null);
             Db = Native.c4db_open(DatabasePath(), &config, &err);
             ((long)Db).Should().NotBe(0, "because otherwise the database failed to open");
         }
@@ -206,16 +181,7 @@ namespace LiteCore.Tests
             }
         }
 
-        protected string DatabasePath()
-        {
-            if(_bundled) {
-                return Path.Combine(TestDir, "cbl_core_test");
-            } else if(Storage == C4StorageEngine.SQLite) {
-                return Path.Combine(TestDir, "cbl_core_test.sqlite3");
-            } else {
-                return Path.Combine(TestDir, "cbl_core_test.forestdb");
-            }
-        }
+        protected string DatabasePath() => Path.Combine(TestDir, "cbl_core_test");
 
         private void Log(C4LogLevel level, C4Slice s)
         {

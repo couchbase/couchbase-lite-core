@@ -74,7 +74,7 @@ namespace LiteCore.Tests
                 options.flags &= ~C4EnumeratorFlags.IncludeBodies;
                 var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => {
                     var localOpts = options;
-                    return Native.c4db_enumerateAllDocs(Db, null, null, &localOpts, err);
+                    return Native.c4db_enumerateAllDocs(Db, &localOpts, err);
                 });
 
                 int i = 1;
@@ -103,83 +103,6 @@ namespace LiteCore.Tests
 
                 Native.c4enum_free(e);
                 i.Should().Be(100);
-
-                // Start and end ID:
-                e = (C4DocEnumerator *)LiteCoreBridge.Check(err => Native.c4db_enumerateAllDocs(Db, 
-                    "doc-007", "doc-090", null, err));
-                i = 7;
-                while(Native.c4enum_next(e, &error)) {
-                    error.code.Should().Be(0, "because otherwise an enumeration error occurred");
-                    var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4enum_getDocument(e, err));
-                    var docID = $"doc-{i:D3}";
-                    doc->docID.CreateString().Should().Be(docID, "because the doc should have the correct doc ID");
-                    Native.c4doc_free(doc);
-                    i++;
-                }
-
-                Native.c4enum_free(e);
-                error.code.Should().Be(0, "because otherwise an error occurred");
-                i.Should().Be(91, "because that is how many documents fall in the given range");
-
-                // Some docs, by ID:
-                options = C4EnumeratorOptions.Default;
-                options.flags |= C4EnumeratorFlags.IncludeDeleted;
-                var docIDs = new[] { "doc-042", "doc-007", "bogus", "doc-001" };
-                e = (C4DocEnumerator *)LiteCoreBridge.Check(err => {
-                    var localOpts = options;
-                    return Native.c4db_enumerateSomeDocs(Db, docIDs, &localOpts, err);
-                });
-
-                i = 0;
-                while(Native.c4enum_next(e, &error)) {
-                    error.code.Should().Be(0, "because otherwise an enumeration error occurred");
-                    var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4enum_getDocument(e, err));
-                    doc->docID.CreateString().Should().Be(docIDs[i], "because the doc should have the correct sorted doc ID");
-                    if(doc->sequence != 0) {
-                        i.Should().NotBe(2, "because no document exists with the 'bogus' key");
-                    }
-
-                    Native.c4doc_free(doc);
-                    i++;
-                }
-
-                Native.c4enum_free(e);
-                error.code.Should().Be(0, "because otherwise an error occurred");
-                i.Should().Be(4, "because four document IDs were specified");
-            });
-        }
-
-        [Fact]
-        public void TestAllDocsIncludeDeleted()
-        {
-            RunTestVariants(() => {
-                SetupAllDocs();
-                var options = C4EnumeratorOptions.Default;
-                options.flags |= C4EnumeratorFlags.IncludeDeleted;
-                var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => {
-                    var localOpts = options;
-                    return Native.c4db_enumerateAllDocs(Db, "doc-004", "doc-007", &localOpts, err);
-                });
-
-                int i = 4;
-                C4Error error;
-                while(Native.c4enum_next(e, &error)) {
-                    var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4enum_getDocument(e, err));
-                    var docID = default(string);
-                    if(i == 6) {
-                        docID = "doc-005DEL";
-                    } else {
-                        var docNum = i >= 6 ? i - 1 : i;
-                        docID = $"doc-{docNum:D3}";
-                    }
-
-                    doc->docID.CreateString().Should().Be(docID, "because the doc should have the correct doc ID");
-                    Native.c4doc_free(doc);
-                    i++;
-                }
-
-                Native.c4enum_free(e);
-                i.Should().Be(9, "because that is the last ID suffix in the given range");
             });
         }
 
@@ -192,7 +115,7 @@ namespace LiteCore.Tests
                 var options = C4EnumeratorOptions.Default;
                 var e = (C4DocEnumerator *)LiteCoreBridge.Check(err => {
                     var localOpts = options;
-                    return Native.c4db_enumerateAllDocs(Db, null, null, &localOpts, err);
+                    return Native.c4db_enumerateAllDocs(Db, &localOpts, err);
                 });
 
                 int i = 1;
@@ -257,7 +180,7 @@ namespace LiteCore.Tests
                 var seq = 1UL;
                 C4Document* doc;
                 C4Error error;
-                while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
+                while(null != (doc = c4enum_nextDocument(e, &error))) {
                     doc->selectedRev.sequence.Should().Be(seq, "because the sequence numbers should be ascending");
                     var docID = $"doc-{seq:D3}";
                     doc->docID.CreateString().Should().Be(docID, "because the doc should have the correct doc ID");
@@ -274,7 +197,7 @@ namespace LiteCore.Tests
                 });
 
                 seq = 7;
-                while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
+                while(null != (doc = c4enum_nextDocument(e, &error))) {
                     doc->selectedRev.sequence.Should().Be(seq, "because the sequence numbers should be ascending");
                     var docID = $"doc-{seq:D3}";
                     doc->docID.CreateString().Should().Be(docID, "because the doc should have the correct doc ID");
@@ -507,11 +430,10 @@ namespace LiteCore.Tests
         {
             RunTestVariants(() => {
                 var config = C4DatabaseConfig.Clone(Native.c4db_getConfig(Db));
-                config.flags |= C4DatabaseFlags.Bundled;
                 var tmp = config;
 
                 var bundlePath = Path.Combine(TestDir, $"cbl_core_test_bundle{Path.DirectorySeparatorChar}");
-                Native.c4db_deleteAtPath(bundlePath, &config, null);
+                Native.c4db_deleteAtPath(bundlePath, null);
                 var bundle = (C4Database *)LiteCoreBridge.Check(err => {
                     var localConfig = tmp;
                     return Native.c4db_open(bundlePath, &localConfig, err);
@@ -587,8 +509,7 @@ namespace LiteCore.Tests
                 C4Error error;
                 var config = *(Native.c4db_getConfig(Db));
 
-                var configCopy = config;
-                if (!Native.c4db_deleteAtPath(destPath, &configCopy, &error)) {
+                if (!Native.c4db_deleteAtPath(destPath, &error)) {
                     error.code.Should().Be(0);
                 }
                 

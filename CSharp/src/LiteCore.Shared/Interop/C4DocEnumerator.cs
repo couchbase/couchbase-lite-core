@@ -28,9 +28,7 @@ namespace LiteCore.Interop
         partial struct C4EnumeratorOptions
     {
         public static readonly C4EnumeratorOptions Default = new C4EnumeratorOptions {
-            skip = 0,
-            flags = C4EnumeratorFlags.InclusiveStart | C4EnumeratorFlags.InclusiveEnd |
-                                     C4EnumeratorFlags.IncludeNonConflicted | C4EnumeratorFlags.IncludeBodies
+            flags = C4EnumeratorFlags.IncludeNonConflicted | C4EnumeratorFlags.IncludeBodies
         };
     }
 }

@@ -272,7 +272,7 @@ namespace LiteCore.Tests
                 });
 
                 var seq = 2UL;
-                while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
+                while(null != (doc = c4enum_nextDocument(e, &error))) {
                     doc->selectedRev.sequence.Should().Be(seq);
                     doc->selectedRev.revID.CreateString().Should().Be(revID2);
                     doc->docID.CreateString().Should().Be(docID);
@@ -313,7 +313,7 @@ namespace LiteCore.Tests
                });
 
                 seq = 3UL;
-                while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
+                while(null != (doc = c4enum_nextDocument(e, &error))) {
                     Native.c4doc_free(doc);
                     seq++;
                 }
@@ -329,7 +329,7 @@ namespace LiteCore.Tests
                 });
 
                 seq = 3UL;
-                while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
+                while(null != (doc = c4enum_nextDocument(e, &error))) {
                     doc->selectedRev.sequence.Should().Be(seq);
                     doc->selectedRev.revID.CreateString().Should().Be(revID3);
                     doc->docID.CreateString().Should().Be(docID);
@@ -417,12 +417,12 @@ namespace LiteCore.Tests
                 var e = (C4DocEnumerator*)LiteCoreBridge.Check(err =>
                 {
                     var options = C4EnumeratorOptions.Default;
-                    return Native.c4db_enumerateSomeDocs(Db, new[] { docID }, &options, err);
+                    return Native.c4db_enumerateAllDocs(Db, &options, err);
                 });
 
                 var seq = 1UL;
                 C4Error error;
-                while(null != (doc = Native.c4enum_nextDocument(e, &error))) {
+                while(null != (doc = c4enum_nextDocument(e, &error))) {
                     doc->selectedRev.sequence.Should().Be(seq);
                     doc->docID.CreateString().Should().Be(docID);
                     Native.c4doc_free(doc);
