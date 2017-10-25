@@ -39,7 +39,6 @@ namespace LiteCore.Interop
         Create        = 1,
         ReadOnly      = 2,
         AutoCompact   = 4,
-        Bundled       = 8,
         SharedKeys    = 0x10,
         NoUpgrade     = 0x20,
         NonObservable = 0x40,

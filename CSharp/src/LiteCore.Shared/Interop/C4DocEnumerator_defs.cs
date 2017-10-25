@@ -37,8 +37,6 @@ namespace LiteCore.Interop
     enum C4EnumeratorFlags : ushort
     {
         Descending           = 0x01,
-        InclusiveStart       = 0x02,
-        InclusiveEnd         = 0x04,
         IncludeDeleted       = 0x08,
         IncludeNonConflicted = 0x10,
         IncludeBodies        = 0x20
@@ -51,7 +49,6 @@ namespace LiteCore.Interop
 #endif
     unsafe partial struct C4EnumeratorOptions
     {
-        public ulong skip;
         public C4EnumeratorFlags flags;
     }
 
