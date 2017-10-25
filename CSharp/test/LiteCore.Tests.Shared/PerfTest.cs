@@ -88,8 +88,6 @@ namespace LiteCore.Tests
             });
         }
 
-#endif
-
         private uint QueryWhere(string whereStr, bool verbose = false)
         {
             var docIDs = new List<string>(1200);
@@ -164,10 +162,11 @@ namespace LiteCore.Tests
                     Native.FLEncoder_Reset(enc);
 
                     // Save Document:
-                    var rq = new C4DocPutRequest();
-                    rq.docID = (C4Slice)trackID;
-                    rq.body = body;
-                    rq.save = true;
+                    var rq = new C4DocPutRequest {
+                        docID = (C4Slice) trackID,
+                        body = (C4Slice) body,
+                        save = true
+                    };
                     var doc = (C4Document *)LiteCoreBridge.Check(c4err => {
                         var localRq = rq;
                         return Native.c4doc_put(Db, &localRq, null, c4err);
@@ -195,5 +194,6 @@ namespace LiteCore.Tests
             Native.FLEncoder_WriteValue(enc, value);
             return true;
         }
-    }
+         #endif
+    } 
 }

@@ -253,6 +253,8 @@ _FLDictKey_InitWithSharedKeys
 _FLDictKey_GetString
 _FLDict_GetWithKey
 _FLDict_GetWithKeys
+_FLEncoder_GetExtraInfo
+_FLEncoder_SetExtraInfo
 _FLEncoder_New
 _FLEncoder_NewWithOptions
 _FLEncoder_Free

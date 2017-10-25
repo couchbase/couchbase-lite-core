@@ -44,11 +44,7 @@ namespace LiteCore.Interop
 #endif
         partial struct C4EncryptionKey
     {
-        // ReSharper disable InconsistentNaming
-        private const int _Size = 32;
-        // ReSharper restore InconsistentNaming
-
-        public static readonly int Size = _Size;
+        public static readonly int Size = 32;
     }
 
 #if LITECORE_PACKAGED
@@ -58,17 +54,13 @@ namespace LiteCore.Interop
 #endif
          unsafe partial struct C4UUID
     {
-        // ReSharper disable InconsistentNaming
-        private const int _Size = 32;
-        // ReSharper restore InconsistentNaming
-
         public static readonly int Size = 32;
 
         public override int GetHashCode()
         {
             var hasher = Hasher.Start;
             fixed (byte* b = bytes) {
-                for (int i = 0; i < _Size; i++) {
+                for (int i = 0; i < Size; i++) {
                     hasher.Add(b[i]);
                 }
             }
@@ -84,7 +76,7 @@ namespace LiteCore.Interop
 
             var other = (C4UUID)obj;
             fixed(byte* b = bytes) {
-                for(var i = 0; i < _Size; i++) {
+                for(var i = 0; i < Size; i++) {
                     if(b[i] != other.bytes[i]) {
                         return false;
                     }

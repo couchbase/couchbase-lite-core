@@ -196,7 +196,7 @@ namespace LiteCore.Interop
             IDictionary<string, object> headers)
         {
             using (var headers_ = headers.FLEncode()) {
-                c4socket_gotHTTPResponse(socket, httpStatus, headers_);
+                c4socket_gotHTTPResponse(socket, httpStatus, (C4Slice)headers_);
             }
         }
     }

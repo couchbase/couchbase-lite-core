@@ -122,7 +122,7 @@ namespace LiteCore.Interop
             _stateChangedCallback = stateChangedCallback;
             _context = context;
             _nativeContext = (void*)nextId;
-            C4Params = new C4ReplicatorParameters(push, pull, options.FLEncode(), _nativeContext);
+            C4Params = new C4ReplicatorParameters(push, pull, (C4Slice)options.FLEncode(), _nativeContext);
             _StaticMap[_id] = this;
         }
 

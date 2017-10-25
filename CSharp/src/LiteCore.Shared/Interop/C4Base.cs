@@ -144,14 +144,19 @@ namespace LiteCore.Interop
             return bytes;
         }
 
-        public static explicit operator C4Slice(FLSlice input)
+        public static explicit operator C4SliceResult(C4Slice input)
         {
-            return new C4Slice(input.buf, input.size);
+            return new C4SliceResult(input.buf, input.size);
         }
 
         public static explicit operator FLSlice(C4Slice input)
         {
             return new FLSlice(input.buf, input.size);
+        }
+
+        public static explicit operator FLSliceResult(C4Slice input)
+        {
+            return new FLSliceResult(input.buf, input.size);
         }
 
 #pragma warning disable 1591
@@ -209,15 +214,31 @@ namespace LiteCore.Interop
         public void* buf;
         private UIntPtr _size;
 
+        public C4SliceResult(void* buf, ulong size)
+        {
+            this.buf = buf;
+            _size = (UIntPtr)size;
+        }
+
         public ulong size
         {
             get => _size.ToUInt64();
             set => _size = (UIntPtr)value;
         }
 
-        public static implicit operator C4Slice(C4SliceResult input)
+        public static explicit operator C4Slice(C4SliceResult input)
         {
             return new C4Slice(input.buf, input.size);
+        }
+
+        public static explicit operator FLSlice(C4SliceResult input)
+        {
+            return new FLSlice(input.buf, input.size);
+        }
+
+        public static explicit operator FLSliceResult(C4SliceResult input)
+        {
+            return new FLSliceResult(input.buf, input.size);
         }
 
         public void Dispose()

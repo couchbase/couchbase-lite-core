@@ -92,7 +92,7 @@ namespace LiteCore.Tests
             Native.FLEncoder_WriteInt(enc, 42);
             Native.FLEncoder_EndDict(enc);
             var result = NativeRaw.FLEncoder_Finish(enc, null);
-            FleeceBody = result;
+            FleeceBody = (C4Slice)result;
         }
 
 #if !WINDOWS_UWP
@@ -375,7 +375,7 @@ namespace LiteCore.Tests
                 var rq = new C4DocPutRequest();
                 rq.docID = docID;
                 rq.revFlags = C4RevisionFlags.HasAttachments;
-                rq.body = body;
+                rq.body = (C4Slice)body;
                 rq.save = true;
                 var doc = Native.c4doc_put(Db, &rq, null, &error);
                 Native.c4slice_free(body);
@@ -437,7 +437,7 @@ namespace LiteCore.Tests
             }
 
             ((long)fleeceData.buf).Should().NotBe(0, "because otherwise the conversion failed");
-            var root = Native.FLValue_AsArray(NativeRaw.FLValue_FromTrustedData(fleeceData));
+            var root = Native.FLValue_AsArray(NativeRaw.FLValue_FromTrustedData((FLSlice)fleeceData));
             ((long)root).Should().NotBe(0, "because otherwise the value is not of the expected type");
 
             LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
@@ -453,10 +453,12 @@ namespace LiteCore.Tests
                     Native.FLEncoder_WriteValue(enc, item);
                     var body = NativeRaw.FLEncoder_Finish(enc, &error);
 
-                    var rq = new C4DocPutRequest();
-                    rq.docID = C4Slice.Allocate(docID);
-                    rq.body = body;
-                    rq.save = true;
+                    var rq = new C4DocPutRequest {
+                        docID = C4Slice.Allocate(docID),
+                        body = (C4Slice)body,
+                        save = true
+                    };
+
                     var doc = (C4Document*)LiteCoreBridge.Check(err =>
                     {
                         var localPut = rq;
@@ -483,6 +485,7 @@ namespace LiteCore.Tests
                 return numDocs;
             }
             finally {
+                Native.FLSliceResult_Free(fleeceData);
                 LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
             }
         }

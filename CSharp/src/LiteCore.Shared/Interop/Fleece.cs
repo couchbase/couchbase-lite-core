@@ -29,6 +29,17 @@ using LiteCore.Util;
 
 namespace LiteCore.Interop
 {
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+        unsafe interface IFLEncodable
+    {
+        void FLEncode(FLEncoder* enc);
+    }
+
 #if LITECORE_PACKAGED
     internal
 #else
@@ -101,6 +112,21 @@ namespace LiteCore.Interop
 
             return Native.FLSlice_Compare(this, (FLSlice)obj) == 0;
         }
+
+        public static explicit operator FLSliceResult(FLSlice input)
+        {
+            return new FLSliceResult(input.buf, input.size);
+        }
+
+        public static explicit operator C4Slice(FLSlice input)
+        {
+            return new C4Slice(input.buf, input.size);
+        }
+
+        public static explicit operator C4SliceResult(FLSlice input)
+        {
+            return new C4SliceResult(input.buf, input.size);
+        }
     }
 
 #if LITECORE_PACKAGED
@@ -110,14 +136,25 @@ namespace LiteCore.Interop
 #endif
          unsafe partial struct FLSliceResult : IDisposable
     {
-        public static implicit operator FLSlice(FLSliceResult input)
+        public FLSliceResult(void* buf, ulong size)
+        {
+            this.buf = buf;
+            _size = (UIntPtr)size;
+        }
+
+        public static explicit operator FLSlice(FLSliceResult input)
         {
             return new FLSlice(input.buf, input.size);
         }
 
-        public static implicit operator C4Slice(FLSliceResult input)
+        public static explicit operator C4Slice(FLSliceResult input)
         {
             return new C4Slice(input.buf, input.size);
+        }
+
+        public static explicit operator C4SliceResult(FLSliceResult input)
+        {
+            return new C4SliceResult(input.buf, input.size);
         }
 
         public void Dispose()
@@ -285,6 +322,9 @@ namespace LiteCore.Interop
                 case null:
                     Native.FLEncoder_WriteNull(enc);
                     break;
+                case IFLEncodable flObj:
+                    flObj.FLEncode(enc);
+                    break;
                 case IDictionary<string, object> dict:
                     dict.FLEncode(enc);
                     break;
@@ -321,9 +361,24 @@ namespace LiteCore.Interop
                 case bool b:
                     b.FLEncode(enc);
                     break;
+                case DateTimeOffset dto:
+                    (dto.ToString("o")).FLEncode(enc);
+                    break;
                 default:
-                    throw new InvalidCastException($"Cannot encode {obj.GetType().FullName} to Fleece!");
+                    if (_FLEncodeExtension?.Invoke(obj, enc) != true) {
+                        throw new InvalidCastException($"Cannot encode {obj.GetType().FullName} to Fleece!");
+                    }
+
+                    break;
             }
+        }
+
+        public delegate bool FLEncodeExtension(object obj, FLEncoder* encoder);
+
+        private static FLEncodeExtension _FLEncodeExtension;
+        public static void RegisterFLEncodeExtension(FLEncodeExtension extension)
+        {
+            _FLEncodeExtension = extension;
         }
     }
 }

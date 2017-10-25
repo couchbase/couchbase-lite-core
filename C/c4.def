@@ -245,6 +245,8 @@ FLDictKey_InitWithSharedKeys
 FLDictKey_GetString
 FLDict_GetWithKey
 FLDict_GetWithKeys
+FLEncoder_GetExtraInfo
+FLEncoder_SetExtraInfo
 FLEncoder_New
 FLEncoder_NewWithOptions
 FLEncoder_Free
