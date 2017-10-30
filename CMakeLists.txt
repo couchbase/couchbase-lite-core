@@ -68,6 +68,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     endif()
     message("Using libc++ header files in ${LIBCXX_INCLUDE}")
     include_directories("${LIBCXX_INCLUDE}/c++/v1")
+    include_directories("/usr/include/libcxxabi") # this fixed path is here to avoid Clang issue noted at http://lists.alioth.debian.org/pipermail/pkg-llvm-team/2015-September/005208.html
     find_library(ICU4C_COMMON icuuc)
     if (NOT ICU4C_COMMON)
         message(FATAL_ERROR "libicuuc not found")
@@ -109,8 +110,11 @@ include_directories("vendor/fleece/Fleece"
 if(WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
   include_directories("MSVC")
-elseif(UNIX AND NOT APPLE)
+elseif(ANDROID)
+  include_directories("LiteCore/Unix")
   include_directories("LiteCore/Android")
+elseif(UNIX AND NOT APPLE)
+  include_directories("LiteCore/Unix")
 endif()
 
 add_subdirectory(REST)
@@ -203,13 +207,15 @@ if(MSVC)
     MSVC/vasprintf-msvc.c 
     MSVC/arc4random.cc 
     MSVC/strptime.cc)
+elseif(ANDROID)
+    set(ALL_SRC_FILES ${ALL_SRC_FILES} 
+    LiteCore/Unix/strlcat.c
+    LiteCore/Unix/arc4random.cc
+    LiteCore/Android/unicode/ndk_icu.c)
 elseif(UNIX AND NOT APPLE)
-  set(ALL_SRC_FILES ${ALL_SRC_FILES} 
-    LiteCore/Android/strlcat.c
-    LiteCore/Android/arc4random.cc)
-  if(ANDROID)
-    set(ALL_SRC_FILES ${ALL_SRC_FILES} LiteCore/Android/unicode/ndk_icu.c)
-  endif()
+    set(ALL_SRC_FILES ${ALL_SRC_FILES}
+    LiteCore/Unix/strlcat.c
+    LiteCore/Unix/arc4random.cc)
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
