@@ -210,7 +210,7 @@ public class C4ReplicatorTest extends C4BaseTest {
         Context context2 = InstrumentationRegistry.getTargetContext();
         File dir2 = new File(context2.getFilesDir(), dbFilename2);
         FileUtils.cleanDirectory(dir2);
-        db2 = new C4Database(dir2.getPath(), C4DatabaseFlags.kC4DB_Create | C4DatabaseFlags.kC4DB_Bundled | C4DatabaseFlags.kC4DB_SharedKeys, null, getVersioning(), encryptionAlgorithm(), encryptionKey());
+        db2 = new C4Database(dir2.getPath(), C4DatabaseFlags.kC4DB_Create | C4DatabaseFlags.kC4DB_SharedKeys, null, getVersioning(), encryptionAlgorithm(), encryptionKey());
         try {
             this.remoteDB = null;
             replicate(kC4OneShot, kC4Disabled, true);

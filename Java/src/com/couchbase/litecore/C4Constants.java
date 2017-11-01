@@ -33,7 +33,6 @@ public interface C4Constants {
         int kC4DB_Create = 1;           ///< Create the file if it doesn't exist
         int kC4DB_ReadOnly = 2;         ///< Open file read-only
         int kC4DB_AutoCompact = 4;      ///< Enable auto-compaction
-        int kC4DB_Bundled = 8;          ///< Store db & attachments inside a directory
         int kC4DB_SharedKeys = 0x10;    ///< Enable shared-keys optimization at creation time
         int kC4DB_NoUpgrade = 0x20;     ///< Disable upgrading an older-version database
         int kC4DB_NonObservable = 0x40; ///< Disable c4DatabaseObserver
@@ -83,13 +82,11 @@ public interface C4Constants {
     // Flags for document iteration
     interface C4EnumeratorFlags {
         int kC4Descending = 0x01;
-        int kC4InclusiveStart = 0x02;
-        int kC4InclusiveEnd = 0x04;
         int kC4IncludeDeleted = 0x08;
         int kC4IncludeNonConflicted = 0x10;
         int kC4IncludeBodies = 0x20;
 
-        int kC4Default = kC4InclusiveStart | kC4InclusiveEnd | kC4IncludeNonConflicted | kC4IncludeBodies;
+        int kC4Default = kC4IncludeNonConflicted | kC4IncludeBodies;
     }
 
 

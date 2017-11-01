@@ -83,7 +83,7 @@ Java_com_couchbase_litecore_C4Database_copy(JNIEnv *env, jclass clazz,
         return;
 
     C4Error error;
-    if(!c4db_copy(fromPath, toPath, &config, &error))
+    if (!c4db_copy(fromPath, toPath, &config, &error))
         throwError(env, error);
 }
 /*
@@ -130,40 +130,16 @@ Java_com_couchbase_litecore_C4Database_delete(JNIEnv *env, jclass clazz, jlong j
         throwError(env, error);
 }
 
-
 /*
  * Class:     com_couchbase_litecore_C4Database
  * Method:    deleteAtPath
- * Signature: (Ljava/lang/String;ILjava/lang/String;I)V
+ * Signature: (Ljava/lang/String;)V
  */
 JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4Database_deleteAtPath(JNIEnv *env, jclass clazz,
-                                                    jstring jpath,
-                                                    jint jflag,
-                                                    jstring jstorageEngine,
-                                                    jint jversioning) {
-    jstringSlice path(env, jpath);
-    C4DatabaseConfig config = {
-            .flags = (C4DatabaseFlags) jflag,
-            .versioning = (C4DocumentVersioning) jversioning
-    };
-    C4Error error;
-    if (!c4db_deleteAtPath(path, &config, &error))
-        throwError(env, error);
-}
-
-
-/*
- * Class:     com_couchbase_litecore_C4Database
- * Method:    deleteAtPath
- * Signature: (Ljava/lang/String;J)V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4Database_deleteAtPath(JNIEnv *env, jclass clazz, jstring jpath,
-                                                    jlong jconfig) {
+Java_com_couchbase_litecore_C4Database_deleteAtPath(JNIEnv *env, jclass clazz, jstring jpath) {
     jstringSlice path(env, jpath);
     C4Error error;
-    if (!c4db_deleteAtPath(path, (const C4DatabaseConfig *) jconfig, &error))
+    if (!c4db_deleteAtPath(path, &error))
         throwError(env, error);
 }
 
@@ -388,22 +364,6 @@ Java_com_couchbase_litecore_C4Database_rawPut(JNIEnv *env, jclass clazz, jlong j
     C4Error error;
     if (!c4raw_put((C4Database *) jdb, storeName, key, meta, body, &error))
         throwError(env, error);
-}
-
-
-bool getEncryptionKey(JNIEnv *env, jint keyAlg, jbyteArray jKeyBytes, C4EncryptionKey *outKey) {
-    outKey->algorithm = (C4EncryptionAlgorithm) keyAlg;
-    if (keyAlg != kC4EncryptionNone) {
-        jbyteArraySlice keyBytes(env, jKeyBytes);
-        fleece::slice keySlice = (fleece::slice) keyBytes;
-        if (!keySlice.buf || keySlice.size > sizeof(outKey->bytes)) {
-            throwError(env, C4Error{LiteCoreDomain, kC4ErrorCrypto});
-            return false;
-        }
-        memset(outKey->bytes, 0, sizeof(outKey->bytes));
-        memcpy(outKey->bytes, keySlice.buf, keySlice.size);
-    }
-    return true;
 }
 
 /*

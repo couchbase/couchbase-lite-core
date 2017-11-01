@@ -45,13 +45,12 @@ Java_com_couchbase_litecore_C4DocEnumerator_free(JNIEnv *env, jclass clazz, jlon
 /*
  * Class:     com_couchbase_litecore_C4DocEnumerator
  * Method:    enumerateChanges
- * Signature: (JJJI)J
+ * Signature: (JJI)J
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4DocEnumerator_enumerateChanges(JNIEnv *env, jclass clazz, jlong jdb,
-                                                             jlong since, jlong jskip,
-                                                             jint jflags) {
-    const C4EnumeratorOptions options = {uint64_t(jskip), C4EnumeratorFlags(jflags)};
+                                                             jlong since, jint jflags) {
+    const C4EnumeratorOptions options = {C4EnumeratorFlags(jflags)};
     C4Error error;
     C4DocEnumerator *e = c4db_enumerateChanges((C4Database *) jdb, since, &options, &error);
     if (!e)
@@ -62,18 +61,14 @@ Java_com_couchbase_litecore_C4DocEnumerator_enumerateChanges(JNIEnv *env, jclass
 /*
  * Class:     com_couchbase_litecore_C4DocEnumerator
  * Method:    enumerateAllDocs
- * Signature: (JLjava/lang/String;Ljava/lang/String;JI)J
+ * Signature: (JI)J
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4DocEnumerator_enumerateAllDocs(JNIEnv *env, jclass clazz, jlong jdb,
-                                                             jstring jStartDocID, jstring jEndDocID,
-                                                             jlong jskip, jint jflags) {
-    jstringSlice startDocID(env, jStartDocID);
-    jstringSlice endDocID(env, jEndDocID);
-    const C4EnumeratorOptions options = {uint64_t(jskip), C4EnumeratorFlags(jflags)};
+                                                             jint jflags) {
+    const C4EnumeratorOptions options = {C4EnumeratorFlags(jflags)};
     C4Error error;
-    C4DocEnumerator *e = c4db_enumerateAllDocs((C4Database *) jdb, startDocID, endDocID, &options,
-                                               &error);
+    C4DocEnumerator *e = c4db_enumerateAllDocs((C4Database *) jdb, &options, &error);
     if (!e)
         throwError(env, error);
     return (jlong) e;
@@ -103,20 +98,6 @@ Java_com_couchbase_litecore_C4DocEnumerator_getDocument(JNIEnv *env, jclass claz
     C4Error error = {};
     C4Document *doc = c4enum_getDocument((C4DocEnumerator *) handle, &error);
     if (!doc)
-        throwError(env, error);
-    return (jlong) doc;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4DocEnumerator
- * Method:    nextDocument
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4DocEnumerator_nextDocument(JNIEnv *env, jclass clazz, jlong handle) {
-    C4Error error = {};
-    C4Document *doc = c4enum_nextDocument((C4DocEnumerator *) handle, &error);
-    if (!doc && error.code != 0)
         throwError(env, error);
     return (jlong) doc;
 }
