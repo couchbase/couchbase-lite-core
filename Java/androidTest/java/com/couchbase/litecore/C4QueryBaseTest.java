@@ -88,15 +88,17 @@ public class C4QueryBaseTest extends C4BaseTest {
         return run(null);
     }
 
+
     protected List<String> run(String bindings) throws LiteCoreException {
         List<String> docIDs = new ArrayList<>();
         C4QueryOptions opts = new C4QueryOptions();
         C4QueryEnumerator e = query.run(opts, bindings);
         assertNotNull(e);
         while (e.next()) {
-            docIDs.add(e.getDocID());
+            docIDs.add(e.getColumns().getValueAt(0).asString());
         }
         e.free();
         return docIDs;
     }
+
 }

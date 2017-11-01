@@ -32,13 +32,6 @@ public class C4QueryEnumerator {
     // public methods
     //-------------------------------------------------------------------------
 
-    public byte[] getFullTextMatched() throws LiteCoreException {
-        if (handle != 0)
-            return getFullTextMatched(handle);
-        else
-            return null;
-    }
-
     public boolean next() throws LiteCoreException {
         boolean ok = next(handle);
         // NOTE: Please keep folowing line of code for a while.
@@ -83,22 +76,6 @@ public class C4QueryEnumerator {
 
     // -- Accessor methods to C4QueryEnumerator --
 
-    public String getDocID() {
-        return getDocID(handle);
-    }
-
-    public long getDocSequence() {
-        return getDocSequence(handle);
-    }
-
-    public String getRevID() {
-        return getRevID(handle);
-    }
-
-    public long getDocFlags() {
-        return getDocFlags(handle);
-    }
-
     // NOTE: FLArrayIterator is member variable of C4QueryEnumerator. Not necessary to release.
     public FLArrayIterator getColumns() {
         return new FLArrayIterator(getColumns(handle));
@@ -133,16 +110,6 @@ public class C4QueryEnumerator {
     // native methods
     //-------------------------------------------------------------------------
 
-    /**
-     * In a full-text query enumerator, returns the string that was emitted during indexing that
-     * contained the search term(s).
-     *
-     * @param c4queryenumerator C4QueryEnumerator*
-     * @return String (C4StringResult)
-     * @throws LiteCoreException
-     */
-    static native byte[] getFullTextMatched(long c4queryenumerator) throws LiteCoreException;
-
     static native boolean next(long c4queryenumerator) throws LiteCoreException;
 
     static native long getRowCount(long c4queryenumerator) throws LiteCoreException;
@@ -156,14 +123,6 @@ public class C4QueryEnumerator {
     static native void free(long c4queryenumerator);
 
     // -- Accessor methods to C4QueryEnumerator --
-
-    static native String getDocID(long c4queryenumerator);
-
-    static native long getDocSequence(long c4queryenumerator);
-
-    static native String getRevID(long c4queryenumerator);
-
-    static native long getDocFlags(long c4queryenumerator);
 
     static native long getColumns(long c4queryenumerator);
 
