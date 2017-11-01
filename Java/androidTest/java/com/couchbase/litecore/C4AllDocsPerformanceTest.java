@@ -71,6 +71,10 @@ public class C4AllDocsPerformanceTest extends C4BaseTest {
         assertEquals(kNumDocuments, db.getDocumentCount());
     }
 
+    static C4Document nextDocument(C4DocEnumerator e) throws LiteCoreException {
+        return e.next() ? e.getDocument() : null;
+    }
+
     // - AllDocsPerformance
     @Test
     public void testAllDocsPerformance() throws LiteCoreException {
@@ -80,10 +84,10 @@ public class C4AllDocsPerformanceTest extends C4BaseTest {
         // No start or end ID:
         int iteratorFlags = C4EnumeratorFlags.kC4Default;
         iteratorFlags &= ~C4EnumeratorFlags.kC4IncludeBodies;
-        C4DocEnumerator e = db.enumerateAllDocs(null, null, 0, iteratorFlags);
+        C4DocEnumerator e = db.enumerateAllDocs(iteratorFlags);
         C4Document doc;
         int i = 0;
-        while ((doc = e.nextDocument()) != null) {
+        while ((doc = nextDocument(e)) != null) {
             try {
                 i++;
             } finally {

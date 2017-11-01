@@ -149,26 +149,12 @@ public class C4Database implements C4Constants {
     // C4DocEnumerator
     ////////////////////////////////
 
-    public C4DocEnumerator enumerateChanges(long since,
-                                            long skip,
-                                            int flags)
-            throws LiteCoreException {
-        return new C4DocEnumerator(handle, since, skip, flags);
+    public C4DocEnumerator enumerateChanges(long since, int flags) throws LiteCoreException {
+        return new C4DocEnumerator(handle, since, flags);
     }
 
-    public C4DocEnumerator enumerateAllDocs(String startDocID,
-                                            String endDocID,
-                                            long skip,
-                                            int flags)
-            throws LiteCoreException {
-        return new C4DocEnumerator(handle, startDocID, endDocID, skip, flags);
-    }
-
-    public C4DocEnumerator enumerateSomeDocs(String[] docIDs,
-                                             long skip,
-                                             int flags)
-            throws LiteCoreException {
-        return new C4DocEnumerator(handle, docIDs, skip, flags);
+    public C4DocEnumerator enumerateAllDocs(int flags) throws LiteCoreException {
+        return new C4DocEnumerator(handle, flags);
     }
 
     ////////////////////////////////
@@ -345,9 +331,7 @@ public class C4Database implements C4Constants {
 
     static native void delete(long db) throws LiteCoreException;
 
-    public static native void deleteAtPath(String path, int flags,
-                                           String storageEngine, int versioning)
-            throws LiteCoreException;
+    public static native void deleteAtPath(String path) throws LiteCoreException;
 
     static native void rekey(long db, int keyType, byte[] newKey) throws LiteCoreException;
 

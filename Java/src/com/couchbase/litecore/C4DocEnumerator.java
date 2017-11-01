@@ -10,17 +10,12 @@ public class C4DocEnumerator implements C4Constants {
     // Constructor
     //-------------------------------------------------------------------------
 
-    C4DocEnumerator(long db, long since, long skip, int flags) throws LiteCoreException {
-        handle = enumerateChanges(db, since, skip, flags);
+    C4DocEnumerator(long db, long since, int flags) throws LiteCoreException {
+        handle = enumerateChanges(db, since, flags);
     }
 
-    C4DocEnumerator(long db, String startDocID,
-                    String endDocID, long skip, int flags) throws LiteCoreException {
-        handle = enumerateAllDocs(db, startDocID, endDocID, skip, flags);
-    }
-
-    C4DocEnumerator(long db, String[] docIDs, long skip, int flags) throws LiteCoreException {
-        handle = enumerateSomeDocs(db, docIDs, skip, flags);
+    C4DocEnumerator(long db, int flags) throws LiteCoreException {
+        handle = enumerateAllDocs(db, flags);
     }
 
     //-------------------------------------------------------------------------
@@ -46,11 +41,6 @@ public class C4DocEnumerator implements C4Constants {
         return doc != 0 ? new C4Document(doc) : null;
     }
 
-    public C4Document nextDocument() throws LiteCoreException {
-        long doc = nextDocument(handle);
-        return doc != 0 ? new C4Document(doc) : null;
-    }
-
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
@@ -68,30 +58,14 @@ public class C4DocEnumerator implements C4Constants {
 
     static native void free(long e);
 
-    static native long enumerateChanges(long db,
-                                        long since,
-                                        long skip,
-                                        int flags)
+    static native long enumerateChanges(long db, long since, int flags)
             throws LiteCoreException;
 
-    static native long enumerateAllDocs(long db,
-                                        String startDocID,
-                                        String endDocID,
-                                        long skip,
-                                        int flags)
-            throws LiteCoreException;
-
-    static native long enumerateSomeDocs(long db,
-                                         String[] docIDs,
-                                         long skip,
-                                         int flags)
-            throws LiteCoreException;
+    static native long enumerateAllDocs(long db, int flags) throws LiteCoreException;
 
     static native boolean next(long e) throws LiteCoreException;
 
     static native long getDocument(long e) throws LiteCoreException;
 
     static native void getDocumentInfo(long e, Object[] outIDs, long[] outNumbers);
-
-    static native long nextDocument(long e) throws LiteCoreException;
 }

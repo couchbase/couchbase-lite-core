@@ -52,7 +52,7 @@ public class C4BaseTest implements C4Constants {
     protected Context context;
     protected File dir;
     protected C4Database db = null;
-    protected int flags = C4DatabaseFlags.kC4DB_Create | C4DatabaseFlags.kC4DB_SharedKeys | C4DatabaseFlags.kC4DB_Bundled;
+    protected int flags = C4DatabaseFlags.kC4DB_Create | C4DatabaseFlags.kC4DB_SharedKeys;
     protected int versioning = kC4RevisionTrees;
 
     protected static final String kDocID = "mydoc";

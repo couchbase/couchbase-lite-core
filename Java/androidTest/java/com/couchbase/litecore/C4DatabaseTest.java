@@ -19,6 +19,11 @@ import static org.junit.Assert.fail;
  * Ported from c4DatabaseTest.cc
  */
 public class C4DatabaseTest extends C4BaseTest {
+
+    static C4Document nextDocument(C4DocEnumerator e) throws LiteCoreException {
+        return e.next() ? e.getDocument() : null;
+    }
+
     // - "Database ErrorMessages"
     @Test
     public void testDatabaseErrorMessages() {
@@ -27,8 +32,8 @@ public class C4DatabaseTest extends C4BaseTest {
             fail();
         } catch (LiteCoreException e) {
             assertEquals(LiteCoreDomain, e.domain);
-            assertEquals(LiteCoreError.kC4ErrorCantOpenFile, e.code);
-            assertEquals("unable to open database file", e.getMessage());
+            assertEquals(LiteCoreError.kC4ErrorWrongFormat, e.code);
+            assertEquals("file/data is not in the requested format", e.getMessage());
         }
 
         try {
@@ -81,11 +86,11 @@ public class C4DatabaseTest extends C4BaseTest {
     // - "Database OpenBundle"
     @Test
     public void testDatabaseOpenBundle() throws LiteCoreException {
-        int flags = getFlags() | C4DatabaseFlags.kC4DB_Bundled;
+        int flags = getFlags();
         File bundlePath = new File(context.getFilesDir(), "cbl_core_test_bundle");
 
         if (bundlePath.exists())
-            C4Database.deleteAtPath(bundlePath.getPath(), flags, null, getVersioning());
+            C4Database.deleteAtPath(bundlePath.getPath());
         C4Database bundle = new C4Database(bundlePath.getPath(), flags, null, getVersioning(),
                 encryptionAlgorithm(), encryptionKey());
         assertNotNull(bundle);
@@ -174,7 +179,7 @@ public class C4DatabaseTest extends C4BaseTest {
         // No start or end ID:
         int iteratorFlags = C4EnumeratorFlags.kC4Default;
         iteratorFlags &= ~C4EnumeratorFlags.kC4IncludeBodies;
-        C4DocEnumerator e = db.enumerateAllDocs(null, null, 0, iteratorFlags);
+        C4DocEnumerator e = db.enumerateAllDocs(iteratorFlags);
         assertNotNull(e);
         try {
             i = 1;
@@ -199,78 +204,6 @@ public class C4DatabaseTest extends C4BaseTest {
         } finally {
             e.free();
         }
-
-        // Start and end ID:
-        e = db.enumerateAllDocs("doc-007", "doc-090", 0, C4EnumeratorFlags.kC4Default);
-        assertNotNull(e);
-        try {
-            i = 7;
-            while ((doc = e.nextDocument()) != null) {
-                try {
-                    String docID = String.format(Locale.ENGLISH, "doc-%03d", i);
-                    assertEquals(docID, doc.getDocID());
-                    i++;
-                } finally {
-                    doc.free();
-                }
-            }
-            assertEquals(91, i);
-        } finally {
-            e.free();
-        }
-
-        // Some docs, by ID:
-        String[] docIDs = {"doc-042", "doc-007", "bogus", "doc-001"};
-        iteratorFlags = C4EnumeratorFlags.kC4Default;
-        iteratorFlags |= C4EnumeratorFlags.kC4IncludeDeleted;
-        e = db.enumerateSomeDocs(docIDs, 0, iteratorFlags);
-        assertNotNull(e);
-        try {
-            i = 0;
-            while ((doc = e.nextDocument()) != null) {
-                try {
-                    assertEquals(docIDs[i], doc.getDocID());
-                    assertEquals(i != 2, doc.getSelectedSequence() != 0);
-                    i++;
-                } finally {
-                    doc.free();
-                }
-            }
-            assertEquals(4, i);
-        } finally {
-            e.free();
-        }
-    }
-
-    // - "Database AllDocsIncludeDeleted"
-    @Test
-    public void testDatabaseAllDocsIncludeDeleted() throws LiteCoreException {
-        setupAllDocs();
-
-        int iteratorFlags = C4EnumeratorFlags.kC4Default;
-        iteratorFlags |= C4EnumeratorFlags.kC4IncludeDeleted;
-        C4DocEnumerator e = db.enumerateAllDocs("doc-004", "doc-007", 0, iteratorFlags);
-        assertNotNull(e);
-        try {
-            C4Document doc;
-            int i = 4;
-            while ((doc = e.nextDocument()) != null) {
-                try {
-                    String docID;
-                    if (i == 6)
-                        docID = "doc-005DEL";
-                    else
-                        docID = String.format(Locale.ENGLISH, "doc-%03d", i >= 6 ? i - 1 : i);
-                    assertEquals(docID, doc.getDocID());
-                    i++;
-                } finally {
-                    doc.free();
-                }
-            }
-            assertEquals(9, i);
-        } finally {
-            e.free();
-        }
     }
 
     // - "Database AllDocsInfo"
@@ -280,12 +213,12 @@ public class C4DatabaseTest extends C4BaseTest {
 
         // No start or end ID:
         int iteratorFlags = C4EnumeratorFlags.kC4Default;
-        C4DocEnumerator e = db.enumerateAllDocs(null, null, 0, iteratorFlags);
+        C4DocEnumerator e = db.enumerateAllDocs(iteratorFlags);
         assertNotNull(e);
         try {
             C4Document doc;
             int i = 1;
-            while ((doc = e.nextDocument()) != null) {
+            while ((doc = nextDocument(e)) != null) {
                 try {
                     String docID = String.format(Locale.ENGLISH, "doc-%03d", i);
                     assertEquals(docID, doc.getDocID());
@@ -320,11 +253,11 @@ public class C4DatabaseTest extends C4BaseTest {
         // Since start:
         int iteratorFlags = C4EnumeratorFlags.kC4Default;
         iteratorFlags &= ~C4EnumeratorFlags.kC4IncludeBodies;
-        C4DocEnumerator e = db.enumerateChanges(0, 0, iteratorFlags);
+        C4DocEnumerator e = db.enumerateChanges(0, iteratorFlags);
         assertNotNull(e);
         try {
             seq = 1;
-            while ((doc = e.nextDocument()) != null) {
+            while ((doc = nextDocument(e)) != null) {
                 try {
                     String docID = String.format(Locale.ENGLISH, "doc-%03d", seq);
                     assertEquals(docID, doc.getDocID());
@@ -340,11 +273,11 @@ public class C4DatabaseTest extends C4BaseTest {
         }
 
         // Since 6:
-        e = db.enumerateChanges(6, 0, iteratorFlags);
+        e = db.enumerateChanges(6, iteratorFlags);
         assertNotNull(e);
         try {
             seq = 7;
-            while ((doc = e.nextDocument()) != null) {
+            while ((doc = nextDocument(e)) != null) {
                 try {
                     String docID = String.format(Locale.ENGLISH, "doc-%03d", seq);
                     assertEquals(docID, doc.getDocID());
