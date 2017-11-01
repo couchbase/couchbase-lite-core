@@ -112,36 +112,20 @@ Java_com_couchbase_litecore_C4Query_run(JNIEnv *env, jclass clazz,
 /*
  * Class:     com_couchbase_litecore_C4Query
  * Method:    getFullTextMatched
- * Signature: (JLjava/lang/String;J)[B
+ * Signature: (JJ)[B
  */
-JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_C4Query_getFullTextMatched(JNIEnv *env, jclass clazz, jlong jquery,
-                                                       jstring jdocid, jlong jseq) {
-    jstringSlice docID(env, jdocid);
-    C4SliceResult s = c4query_fullTextMatched((C4Query *) jquery, docID,
-                                              (C4SequenceNumber) jseq, nullptr);
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Query_getFullTextMatched(JNIEnv *env, jclass clazz, jlong jquery, jlong jfullTextID){
+    C4Error error = {};
+    C4SliceResult s = c4query_fullTextMatched((C4Query *) jquery, (C4FullTextID)jfullTextID, &error);
     jbyteArray res = toJByteArray(env, s);
     c4slice_free(s);
     return res;
 }
+
 
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4QueryEnumerator
 // ----------------------------------------------------------------------------
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getFullTextMatched
- * Signature: (J)[B
- */
-JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextMatched(JNIEnv *env, jclass clazz,
-                                                                 jlong handle) {
-    C4SliceResult s = c4queryenum_fullTextMatched((C4QueryEnumerator *) handle, nullptr);
-    jbyteArray res = toJByteArray(env, s);
-    c4slice_free(s);
-    return res;
-}
 
 /*
  * Class:     com_couchbase_litecore_C4QueryEnumerator
@@ -232,55 +216,6 @@ Java_com_couchbase_litecore_C4QueryEnumerator_free(JNIEnv *env, jclass clazz, jl
     if (!handle)
         return;
     c4queryenum_free((C4QueryEnumerator *) handle);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getDocID
- * Signature: (J)Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_getDocID(JNIEnv *env, jclass clazz, jlong handle) {
-    if (!handle)
-        return nullptr;
-    return toJString(env, ((C4QueryEnumerator *) handle)->docID);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getDocSequence
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_getDocSequence(JNIEnv *env, jclass clazz,
-                                                             jlong handle) {
-    if (!handle)
-        return 0;
-    return ((C4QueryEnumerator *) handle)->docSequence;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getRevID
- * Signature: (J)Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_getRevID(JNIEnv *env, jclass clazz, jlong handle) {
-    if (!handle)
-        return nullptr;
-    return toJString(env, ((C4QueryEnumerator *) handle)->revID);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getDocFlags
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_getDocFlags(JNIEnv *env, jclass clazz, jlong handle) {
-    if (!handle)
-        return 0;
-    return ((C4QueryEnumerator *) handle)->docFlags;
 }
 
 /*

@@ -56,8 +56,8 @@ public class C4Query {
                 run(handle, options.rankFullText, encodedParameters));
     }
 
-    public byte[] getFullTextMatched(String docID, long seq) throws LiteCoreException {
-        return getFullTextMatched(handle, docID, seq);
+    public byte[] getFullTextMatched(long fullTextID) throws LiteCoreException {
+        return getFullTextMatched(handle, fullTextID);
     }
 
     //-------------------------------------------------------------------------
@@ -131,8 +131,7 @@ public class C4Query {
      * Given a docID and sequence number from the enumerator, returns the text that was emitted
      * during indexing.
      */
-    static native byte[] getFullTextMatched(long c4query, String docID, long seq)
-            throws LiteCoreException;
+    static native byte[] getFullTextMatched(long c4query, long fullTextID) throws LiteCoreException;
 
     //////// INDEXES:
 
