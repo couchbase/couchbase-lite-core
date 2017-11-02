@@ -2,7 +2,7 @@
 extern "C" {
 #endif
 
-    char* strptime(const char* s, const char* f, struct tm* tm);
+    const char* strptime(const char* s, const char* f, struct tm* tm);
     
 #ifdef __cplusplus
 }

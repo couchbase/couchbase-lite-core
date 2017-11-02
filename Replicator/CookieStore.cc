@@ -27,6 +27,29 @@ using namespace litecore::websocket;
 
 namespace litecore { namespace repl {
 
+	static int kTimeOffset = -1;
+
+	static void get_time_offset()
+	{
+		if (kTimeOffset != -1) {
+			return;
+		}
+
+		time_t gmt, rawtime = time(nullptr);
+		struct tm* ptm;
+
+#if !defined(WIN32)
+		struct tm gbuf;
+		ptm = gmtime_r(&rawtime, &gbuf);
+#else
+		ptm = gmtime(&rawtime);
+#endif
+
+		ptm->tm_isdst = -1;
+		gmt = mktime(ptm);
+
+		kTimeOffset = difftime(rawtime, gmt);
+	}
 
 #pragma mark - COOKIE:
 
@@ -61,11 +84,14 @@ namespace litecore { namespace repl {
                 secure = true;
             } else if (key == "Expires") {
                 if (expires == 0) {
-                    struct tm datetime;
-                    if (strptime(val.c_str(), "%a, %d %b %Y %T %Z", &datetime) == NULL) {
+                    struct tm datetime = { 0 };
+                    if (strptime(val.c_str(), "%a, %d %b %Y %T", &datetime) == NULL) {
                         Warn("Couldn't parse Expires in cookie");
                         return;
                     }
+
+					get_time_offset();
+					datetime.tm_sec += kTimeOffset;
                     expires = mktime(&datetime);
                 }
             } else if (key == "Max-Age") {
