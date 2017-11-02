@@ -7,7 +7,7 @@ add_definitions(-DLITECORE_CPP_TESTS=1 -D_USE_MATH_DEFINES)
 
 include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}LiteCore/RevTrees/
                     ${TOP}LiteCore/Storage/ ${TOP}LiteCore/Support/ ${TOP}LiteCore/VersionVectors/
-                    ${TOP}LiteCore/
+                    ${TOP}LiteCore/ ${TOP}REST/
                     ${TOP}vendor/fleece/Fleece/
                     ${TOP}vendor/fleece/vendor/catch/
                     ${TOP}vendor/SQLiteCpp/include/
@@ -25,7 +25,8 @@ endif()
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
 file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTest.cc 
-  ../../C/tests/c4Test.cc)
+  ../../C/tests/c4Test.cc ../../Replicator/tests/ReplicatorAPITest.cc ../../Replicator/tests/CookieStoreTest.cc
+  ../../REST/Response.cc)
 
 target_link_libraries(CppTests  LiteCoreStatic
                                 FleeceStatic

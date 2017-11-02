@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
+option(CODE_COVERAGE_ENABLED "Set whether or not code coverage information should be generated" OFF)
 
 add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
@@ -19,7 +20,7 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_IPV6                          # Enable IPv6 support in CivetWeb
                 -DCMAKE                             # Let the source know this is a CMAKE build
                 -D__STDC_LIMIT_MACROS)              # Ensure the presence of UINT64_MAX, etc
-                
+
 if(MSVC)
     if(WINDOWS_STORE)
         add_definitions(-D_WIN32_WINNT=0x0602)      # Support back to Windows 8 for Windows Store
@@ -34,6 +35,19 @@ endif()
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
     $<$<CONFIG:Debug>:DEBUG>
 )
+
+if(CODE_COVERAGE_ENABLED)
+  if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -O0")
+  elseif(NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    message(WARN " Code coverage not supported for non-debug builds")
+  else()
+    message(WARN " Code coverage only supported on Clang")
+  endif()
+endif()
+
+
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /wd4068 /wd4244 /wd4018 /wd4819 /wd4800 -D_CRT_SECURE_NO_WARNINGS=1")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_CRT_SECURE_NO_WARNINGS=1")
