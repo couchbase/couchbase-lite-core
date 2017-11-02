@@ -6,7 +6,7 @@
 //Copyright © 2017 Couchbase. All rights reserved.
 //
 
-#include "C4Test.hh"
+#include "c4Test.hh"
 #include "c4.hh"
 #include "CookieStore.hh"
 #include "DatabaseCookies.hh"

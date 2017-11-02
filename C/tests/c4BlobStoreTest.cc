@@ -102,6 +102,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][C]") {
 
     auto str = c4blob_keyToString(key);
     CHECK(string((char*)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
+    CHECK(memcmp(c4blob_computeKey(blobToStore).bytes, key.bytes, 20) == 0);
 
     // Read it back and compare
     int64_t blobSize = c4blob_getSize(store, key);
@@ -134,6 +135,34 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blobs", "[blob][C]") {
     CHECK(memcmp(&key2, &key, sizeof(key2)) == 0);
 }
 
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "delete blobs", "[blob][C]") {
+    C4Slice blobToStore = C4STR("This is a blob to store in the store!");
+    
+    // Add blob to the store:
+    C4BlobKey key;
+    C4Error error;
+    REQUIRE(c4blob_create(store, blobToStore, nullptr, &key, &error));
+    
+    auto str = c4blob_keyToString(key);
+    CHECK(string((char*)str.buf, str.size) == "sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
+    
+    // Delete it
+    REQUIRE(c4blob_delete(store, key, &error));
+    
+    // Try to read it (should be gone):
+    int64_t blobSize = c4blob_getSize(store, key);
+    CHECK(blobSize == -1);
+    
+    auto gotBlob = c4blob_getContents(store, key, &error);
+    REQUIRE(gotBlob.buf == nullptr);
+    REQUIRE(gotBlob.size == 0);
+    
+    C4SliceResult p = c4blob_getFilePath(store, key, &error);
+    CHECK(p.buf == nullptr);
+    CHECK(p.size == 0);
+    CHECK(error.code == kC4ErrorNotFound);
+    c4slice_free(p);
+}
 
 N_WAY_TEST_CASE_METHOD(BlobStoreTest, "create blob, key mismatch", "[blob][C][!throws]") {
     C4Slice blobToStore = C4STR("This is a blob to store in the store!");

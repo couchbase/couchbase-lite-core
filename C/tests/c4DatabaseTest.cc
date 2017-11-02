@@ -204,8 +204,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][blob][C]") 
     if (c4db_getConfig(db)->encryptionKey.algorithm == kC4EncryptionNone) {
         newKey.algorithm = kC4EncryptionAES256;
         memcpy(newKey.bytes, "a different key than default....", 32);
+        REQUIRE(c4db_rekey(db, &newKey, &error));
+    } else {
+        REQUIRE(c4db_rekey(db, nullptr, &error));
     }
-    REQUIRE(c4db_rekey(db, &newKey, &error));
 
     // Verify the db works:
     REQUIRE(c4db_getDocumentCount(db) == 99);
