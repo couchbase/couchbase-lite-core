@@ -14,7 +14,7 @@ if [[ ! -z "$BLD_NUM" ]] && [[ ! -z "$VERSION" ]]; then
   OFFICIAL=true
 else
   GIT_BRANCH=`git rev-parse --symbolic-full-name HEAD | sed -e 's/refs\/heads\///'`
-  GIT_COMMIT=`git rev-parse HEAD`
+  GIT_COMMIT=`git rev-parse HEAD || true`
   GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
   BUILD_NUM=""
 fi
