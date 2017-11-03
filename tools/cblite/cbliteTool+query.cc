@@ -65,8 +65,7 @@ void CBLiteTool::queryDatabase() {
         for (Array::iterator i(e->columns); i; ++i) {
             if (nCols++)
                 cout << ", ";
-            alloc_slice json = i.value().toJSON();
-            cout << json;
+            rawPrint(i.value(), nullslice);
         }
         cout << "]\n";
     }
