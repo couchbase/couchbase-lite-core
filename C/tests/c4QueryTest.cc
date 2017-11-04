@@ -381,6 +381,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Grouped", "[Query][C]") {
     }
     CHECK(error.code == 0);
     CHECK(i == expectedRowCount);
+    CHECK(c4queryenum_getRowCount(e, &error) == 42);
     c4queryenum_free(e);
 }
 
@@ -413,6 +414,31 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Join", "[Query][C]") {
     c4queryenum_free(e);
 }
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Seek", "[Query][C]") {
+    compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
+    C4Error error;
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    REQUIRE(e);
+    REQUIRE(c4queryenum_next(e, &error));
+    REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
+    FLString docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
+    REQUIRE(docID == "0000001"_sl);
+    REQUIRE(c4queryenum_next(e, &error));
+    REQUIRE(c4queryenum_seek(e, 0, &error));
+    docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
+    REQUIRE(docID == "0000001"_sl);
+    REQUIRE(c4queryenum_seek(e, 7, &error));
+    docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
+    REQUIRE(docID == "0000073"_sl);
+    {
+        ExpectingExceptions ex;
+        REQUIRE(!c4queryenum_seek(e, 100, &error));
+    }
+    
+    CHECK(error.code == kC4ErrorInvalidParameter);
+    CHECK(error.domain == LiteCoreDomain);
+    c4queryenum_free(e);
+}
 
 class NestedQueryTest : public QueryTest {
 public:
