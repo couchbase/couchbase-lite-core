@@ -682,15 +682,18 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
             if(counter == 0){
                 REQUIRE(doc->docID == docID);
                 REQUIRE(doc->selectedRev.revID == history[0]);
+                REQUIRE(c4SliceEqual(doc->selectedRev.body, body));
             }else if(counter == 1){
                 REQUIRE(doc->docID == docID);
                 REQUIRE(doc->selectedRev.revID == conflictHistory[0]);
+                REQUIRE(c4SliceEqual(doc->selectedRev.body, conflictBody));
             }else if(counter == 2){
                 REQUIRE(doc->docID == otherDocID);
                 REQUIRE(doc->selectedRev.revID == otherHistory[0]);
+                REQUIRE(c4SliceEqual(doc->selectedRev.body, otherBody));
             }
             counter++;
-        }while(c4doc_selectNextLeafRevision(doc, true, false, &error));
+        }while(c4doc_selectNextLeafRevision(doc, true, true, &error));
         c4doc_free(doc);
     }
     c4enum_free(e);

@@ -9,7 +9,7 @@
 #include "c4Test.hh"
 #include "c4Private.h"
 #include "Benchmark.hh"
-
+#include "c4Document+Fleece.h"
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Database][C]") {
     c4log_warnOnErrors(false);
@@ -416,8 +416,12 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     REQUIRE(doc->flags == (kDocExists | kDocConflicted));
     // The conflicting rev will now never be the default, even with rev-trees.
     REQUIRE(doc->revID == kExpectedRev2ID);
-
+    
+    C4SliceResult body = c4doc_detachRevisionBody(doc);
+    CHECK(body == rq.body);
+    CHECK(!doc->selectedRev.body.buf);
     c4doc_free(doc);
+    c4slice_free(body);
 }
 
 
@@ -551,4 +555,46 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     }
 
     c4doc_free(doc);
+}
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {
+    CHECK(c4doc_isOldMetaProperty(C4STR("_attachments")));
+    CHECK(!c4doc_isOldMetaProperty(C4STR("@type")));
+    
+    FLEncoder enc = c4db_getSharedFleeceEncoder(db);
+    
+    {
+        TransactionHelper t(db);
+        FLEncoder_BeginDict(enc, 2);
+        FLEncoder_WriteKey(enc, FLSTR("@type"));
+        FLEncoder_WriteString(enc, FLSTR("blob"));
+        FLEncoder_WriteKey(enc, FLSTR("digest"));
+        FLEncoder_WriteString(enc, FLSTR(""));
+        FLEncoder_EndDict(enc);
+    }
+    
+    FLSliceResult result = FLEncoder_Finish(enc, nullptr);
+    REQUIRE(result.buf);
+    FLValue val = FLValue_FromTrustedData((FLSlice)result);
+    FLDict d = FLValue_AsDict(val);
+    REQUIRE(d);
+    
+    FLDictKey testKey = c4db_initFLDictKey(db, C4STR("@type"));
+    FLValue testVal = FLDict_GetWithKey(d, &testKey);
+    REQUIRE(FLValue_AsString(testVal) == FLSTR("blob"));
+    
+    CHECK(c4doc_dictContainsBlobs(d, c4db_getFLSharedKeys(db)));
+    FLSliceResult_Free(result);
+    
+    enc = c4db_getSharedFleeceEncoder(db);
+    FLEncoder_BeginDict(enc, 0);
+    FLEncoder_EndDict(enc);
+    result = FLEncoder_Finish(enc, nullptr);
+    REQUIRE(result.buf);
+    val = FLValue_FromTrustedData((FLSlice)result);
+    d = FLValue_AsDict(val);
+    REQUIRE(d);
+    
+    CHECK(!c4doc_dictContainsBlobs(d, nullptr));
+    FLSliceResult_Free(result);
 }
