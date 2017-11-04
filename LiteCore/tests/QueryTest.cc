@@ -339,3 +339,46 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query refresh", "[Query]") {
         ++num;
     CHECK(num == 100);
 }
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query boolean", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        for(int i = 0; i < 2; i++) {
+            string docID = stringWithFormat("rec-%03d", i + 1);
+            
+            fleece::Encoder enc;
+            enc.beginDictionary();
+            enc.writeKey("value");
+            enc.writeBool(i == 0);
+            enc.endDictionary();
+            alloc_slice body = enc.extractOutput();
+            
+            store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        }
+        
+        // Integer 0 and 1 would have fooled ISBOOLEAN() before
+        for(int i = 2; i < 4; i++) {
+            string docID = stringWithFormat("rec-%03d", i + 1);
+            
+            fleece::Encoder enc;
+            enc.beginDictionary();
+            enc.writeKey("value");
+            enc.writeInt(i - 2);
+            enc.endDictionary();
+            alloc_slice body = enc.extractOutput();
+            
+            store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        }
+        
+        t.commit();
+    }
+    
+    Retained<Query> query{ store->compileQuery(json5(
+        "{WHAT: ['._id'], WHERE: ['ISBOOLEAN()', ['.value']]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+    int i = 1;
+    while (e->next()) {
+        CHECK(e->columns()[0]->asString().asString() == stringWithFormat("rec-%03d", i++));
+    }
+}

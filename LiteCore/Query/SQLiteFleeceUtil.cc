@@ -113,10 +113,16 @@ namespace litecore {
                     break;
                 case kBoolean:
                     sqlite3_result_int(ctx, val->asBool());
+                    sqlite3_result_subtype(ctx, kFleeceIntBoolean);
                     break;
                 case kNumber:
-                    if (val->isInteger() && !val->isUnsigned())
-                        sqlite3_result_int64(ctx, val->asInt());
+                    if (val->isInteger())
+                        if(val->isUnsigned()) {
+                            sqlite3_result_int64(ctx, val->asUnsigned());
+                            sqlite3_result_subtype(ctx, kFleeceIntUnsigned);
+                        } else {
+                            sqlite3_result_int64(ctx, val->asInt());
+                        }
                     else
                         sqlite3_result_double(ctx, val->asDouble());
                     break;

@@ -716,8 +716,10 @@ namespace litecore {
     static const string value_type(sqlite3_context* ctx, sqlite3_value *arg) {
         switch(sqlite3_value_type(arg)) {
             case SQLITE_FLOAT:
-            case SQLITE_INTEGER:
                 return "number";
+            case SQLITE_INTEGER:
+                return sqlite3_value_subtype(arg) == kFleeceIntBoolean ?
+                "boolean" : "number";
             case SQLITE_TEXT:
                 return "string";
             case SQLITE_NULL:
