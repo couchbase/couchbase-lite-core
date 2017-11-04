@@ -27,31 +27,29 @@ using namespace litecore::websocket;
 
 namespace litecore { namespace repl {
 
-    static int kTimeOffset = -1;
-    static once_flag once;
-
-    static void get_time_offset()
+    static void offset_to_gmt(struct tm* inputTime)
     {
-        call_once(once, [] {
-            if (kTimeOffset != -1) {
-                return;
-            }
+        // Get the raw time_t from the local time
+        time_t rawtime = mktime(inputTime);
+        struct tm* ptm;
 
-            time_t gmt, rawtime = time(nullptr);
-            struct tm* ptm;
-
+        // Convert that raw time_t to GMT
 #if !defined(WIN32)
-            struct tm gbuf;
-            ptm = gmtime_r(&rawtime, &gbuf);
+        struct tm gbuf;
+        ptm = gmtime_r(&rawtime, &gbuf);
 #else
-            ptm = gmtime(&rawtime);
+        ptm = gmtime(&rawtime);
 #endif
 
-            ptm->tm_isdst = -1;
-            gmt = mktime(ptm);
+        // Force recalculation of the DST value based on the date given
+        // Note: this might cause occassional odd behavior during ambigious times
+        // such as those that happen twice during the transition out of DST
+        // but this is not avoidable without (probably) a new C time API
+        ptm->tm_isdst = -1;
+        time_t gmt = mktime(ptm);
 
-            kTimeOffset = difftime(rawtime, gmt);
-        });
+        // Offset the original time by the difference that was calculated
+        inputTime->tm_sec += difftime(rawtime, gmt);
     }
 
     static time_t parse_gmt_time(const char* timeStr)
@@ -62,8 +60,7 @@ namespace litecore { namespace repl {
             return 0;
         }
 
-        get_time_offset();
-        datetime.tm_sec += kTimeOffset;
+        offset_to_gmt(&datetime);
         return mktime(&datetime);
     }
 
