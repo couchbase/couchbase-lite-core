@@ -27,29 +27,45 @@ using namespace litecore::websocket;
 
 namespace litecore { namespace repl {
 
-	static int kTimeOffset = -1;
+    static int kTimeOffset = -1;
+    static once_flag once;
 
-	static void get_time_offset()
-	{
-		if (kTimeOffset != -1) {
-			return;
-		}
+    static void get_time_offset()
+    {
+        call_once(once, [] {
+            if (kTimeOffset != -1) {
+                return;
+            }
 
-		time_t gmt, rawtime = time(nullptr);
-		struct tm* ptm;
+            time_t gmt, rawtime = time(nullptr);
+            struct tm* ptm;
 
 #if !defined(WIN32)
-		struct tm gbuf;
-		ptm = gmtime_r(&rawtime, &gbuf);
+            struct tm gbuf;
+            ptm = gmtime_r(&rawtime, &gbuf);
 #else
-		ptm = gmtime(&rawtime);
+            ptm = gmtime(&rawtime);
 #endif
 
-		ptm->tm_isdst = -1;
-		gmt = mktime(ptm);
+            ptm->tm_isdst = -1;
+            gmt = mktime(ptm);
 
-		kTimeOffset = difftime(rawtime, gmt);
-	}
+            kTimeOffset = difftime(rawtime, gmt);
+        });
+    }
+
+    static time_t parse_gmt_time(const char* timeStr)
+    {
+        struct tm datetime = { 0 };
+        if (strptime(timeStr, "%a, %d %b %Y %T", &datetime) == nullptr) {
+            Warn("Couldn't parse Expires in cookie");
+            return 0;
+        }
+
+        get_time_offset();
+        datetime.tm_sec += kTimeOffset;
+        return mktime(&datetime);
+    }
 
 #pragma mark - COOKIE:
 
@@ -84,15 +100,7 @@ namespace litecore { namespace repl {
                 secure = true;
             } else if (key == "Expires") {
                 if (expires == 0) {
-                    struct tm datetime = { 0 };
-                    if (strptime(val.c_str(), "%a, %d %b %Y %T", &datetime) == NULL) {
-                        Warn("Couldn't parse Expires in cookie");
-                        return;
-                    }
-
-					get_time_offset();
-					datetime.tm_sec += kTimeOffset;
-                    expires = mktime(&datetime);
+                    expires = parse_gmt_time(val.c_str());
                 }
             } else if (key == "Max-Age") {
                 char *valEnd = &val[val.size()];
