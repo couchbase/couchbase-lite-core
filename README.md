@@ -77,6 +77,7 @@ If you want to use Objective-C or Swift APIs, you should use Couchbase Lite inst
     
 - libz
 - libatomic (usually comes with libgcc)
+- libicu
 
 You'll need Clang 3.8 or higher. Unfortunately a lot of distros only have 3.5; run `clang --version` to check, and upgrade manually if necessary. You also need a corresponding version of libc++. On Debian-like systems, the apt-get packages you need are `clang`, `libc++1`, `libc++-dev`, `libc++abi-dev`.
 
