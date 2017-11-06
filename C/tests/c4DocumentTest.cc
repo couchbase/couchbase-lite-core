@@ -581,7 +581,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {
     
     FLDictKey testKey = c4db_initFLDictKey(db, C4STR("@type"));
     FLValue testVal = FLDict_GetWithKey(d, &testKey);
-    REQUIRE(FLValue_AsString(testVal) == FLSTR("blob"));
+    
+    FLSlice blobSl = FLSTR("blob"); // Windows cannot compile this inside of a REQUIRE
+    REQUIRE(FLValue_AsString(testVal) == blobSl);
     
     CHECK(c4doc_dictContainsBlobs(d, c4db_getFLSharedKeys(db)));
     FLSliceResult_Free(result);

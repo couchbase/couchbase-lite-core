@@ -98,6 +98,10 @@ namespace litecore { namespace repl {
             } else if (key == "Expires") {
                 if (expires == 0) {
                     expires = parse_gmt_time(val.c_str());
+                    if(expires == 0) {
+                        Warn("Couldn't parse Expires in cookie");
+                        return;
+                    }
                 }
             } else if (key == "Max-Age") {
                 char *valEnd = &val[val.size()];
