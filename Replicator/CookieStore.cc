@@ -27,6 +27,42 @@ using namespace litecore::websocket;
 
 namespace litecore { namespace repl {
 
+    static void offset_to_gmt(struct tm* inputTime)
+    {
+        // Get the raw time_t from the local time
+        time_t rawtime = mktime(inputTime);
+        struct tm* ptm;
+
+        // Convert that raw time_t to GMT
+#if !defined(WIN32)
+        struct tm gbuf;
+        ptm = gmtime_r(&rawtime, &gbuf);
+#else
+        ptm = gmtime(&rawtime);
+#endif
+
+        // Force recalculation of the DST value based on the date given
+        // Note: this might cause occassional odd behavior during ambigious times
+        // such as those that happen twice during the transition out of DST
+        // but this is not avoidable without (probably) a new C time API
+        ptm->tm_isdst = -1;
+        time_t gmt = mktime(ptm);
+
+        // Offset the original time by the difference that was calculated
+        inputTime->tm_sec += difftime(rawtime, gmt);
+    }
+
+    static time_t parse_gmt_time(const char* timeStr)
+    {
+        struct tm datetime = { 0 };
+        if (strptime(timeStr, "%a, %d %b %Y %T", &datetime) == nullptr) {
+            Warn("Couldn't parse Expires in cookie");
+            return 0;
+        }
+
+        offset_to_gmt(&datetime);
+        return mktime(&datetime);
+    }
 
 #pragma mark - COOKIE:
 
@@ -61,12 +97,7 @@ namespace litecore { namespace repl {
                 secure = true;
             } else if (key == "Expires") {
                 if (expires == 0) {
-                    struct tm datetime;
-                    if (strptime(val.c_str(), "%a, %d %b %Y %T %Z", &datetime) == NULL) {
-                        Warn("Couldn't parse Expires in cookie");
-                        return;
-                    }
-                    expires = mktime(&datetime);
+                    expires = parse_gmt_time(val.c_str());
                 }
             } else if (key == "Max-Age") {
                 char *valEnd = &val[val.size()];

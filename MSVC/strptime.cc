@@ -3,13 +3,14 @@
 #include <sstream>
 using namespace std;
 
-extern "C" char* strptime(const char* s, const char* f, struct tm* tm) {
+
+extern "C" const char* strptime(const char* s, const char* f, struct tm* tm) {
     istringstream input(s);
-    input.imbue(locale(setlocale(LC_ALL, nullptr)));
+    input.imbue(locale("en"));
     input >> get_time(tm, f);
     if (input.fail()) {
         return nullptr;
     }
-    
-    return (char*)(s + input.tellg());
+
+    return s;
 }

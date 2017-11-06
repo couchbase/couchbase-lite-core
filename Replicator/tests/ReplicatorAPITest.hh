@@ -95,7 +95,7 @@ public:
 
         if (!_headers) {
             _headers = AllocedDict(alloc_slice(c4repl_getResponseHeaders(_repl)));
-            if (_headers) {
+            if (!!_headers) {
                 for (Dict::iterator header(_headers); header; ++header)
                     C4Log("    %.*s: %.*s", SPLAT(header.keyString()), SPLAT(header.value().asString()));
             }
