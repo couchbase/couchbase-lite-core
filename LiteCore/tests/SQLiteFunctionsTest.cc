@@ -1,4 +1,4 @@
-﻿//
+//
 //  SQLiteFunctionsTest.cc
 //  LiteCore
 //
@@ -146,6 +146,33 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_min_max of fl_value", 
             == (vector<string>{"10.0"}));
     CHECK(query("SELECT ARRAY_MIN(fl_value(body, 'hey')) FROM kv")
             == (vector<string>{"-50.0"}));
+}
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_agg", "[Query]") {
+    insert("a", "{\"hey\": 17}");
+    insert("b", "{\"hey\": 8.125}");
+    insert("c", "{\"hey\": \"there\"}");
+    insert("c", "{\"hey\": null}");
+    insert("d", "{}");
+    insert("e", "{\"hey\": [99, -5.5, \"wow\"]}");
+    insert("f", "{\"hey\": 8.125}");
+
+    const char *sql = "SELECT ARRAY_AGG(fl_value(body, 'hey')) FROM kv";
+    slice expectedJSON = "[17,8.125,\"there\",null,[99,-5.5,\"wow\"],8.125]"_sl;
+    SECTION("Distinct") {
+        sql = "SELECT ARRAY_AGG(DISTINCT fl_value(body, 'hey')) FROM kv";
+        expectedJSON = "[17,8.125,\"there\",null,[99,-5.5,\"wow\"]]"_sl;
+    }
+    SQLite::Statement st(db, sql);
+    REQUIRE(st.executeStep());
+    auto column = st.getColumn(0);
+    REQUIRE(column.getType() == SQLITE_BLOB);
+    auto array = Value::fromData({column.getBlob(), (size_t)column.getBytes()});
+    REQUIRE(array);
+    // Note: Ordering is "arbitrary" according to SQLite docs, so it isn't required to be in the
+    // order in this CHECK, though in practice it is.
+    CHECK((slice)array->toJSON() == expectedJSON);
+    CHECK(!st.executeStep());
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite missingif", "[Query]") {

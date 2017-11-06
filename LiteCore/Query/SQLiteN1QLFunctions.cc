@@ -45,7 +45,7 @@ namespace litecore {
     }
 
 
-#pragma mark - ARRAY AGGREGATES:
+#pragma mark - ARRAY FUNCTIONS:
 
 
     static void aggregateNumericArrayOperation(sqlite3_context* ctx, int argc, sqlite3_value **argv,
@@ -223,6 +223,65 @@ namespace litecore {
         } else {
             sqlite3_result_zeroblob(ctx, 0);
         }
+    }
+
+
+#pragma mark - ARRAY AGGREGATE:
+
+
+    static void array_agg(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
+        try {
+            auto enc = (Encoder*) sqlite3_aggregate_context(ctx, sizeof(fleece::Encoder));
+            if (*(void**)enc == nullptr) {
+                // On first call, initialize Fleece encoder:
+                enc = new (enc) fleece::Encoder();
+                enc->beginArray();
+            }
+
+            if (arg) {
+                // On step, write the arg to the encoder:
+                switch (sqlite3_value_type(arg)) {
+                    case SQLITE_INTEGER:
+                        enc->writeInt(sqlite3_value_int(arg));
+                        break;
+                    case SQLITE_FLOAT:
+                        enc->writeDouble(sqlite3_value_double(arg));
+                        break;
+                    case SQLITE_TEXT:
+                        enc->writeString({sqlite3_value_text(arg),
+                                          (size_t)sqlite3_value_bytes(arg)});
+                        break;
+                    case SQLITE_BLOB:
+                        if(sqlite3_value_bytes(arg) == 0) {
+                            enc->writeNull();
+                        } else {
+                            const Value *value = fleeceParam(ctx, arg);
+                            if (!value)
+                                return; // error
+                            enc->writeValue(value);
+                        }
+                        break;
+                    case SQLITE_NULL:
+                    default:
+                        return;
+                }
+
+            } else {
+                // On final call, finish encoding and set the result to the encoded data:
+                enc->endArray();
+                setResultBlobFromSlice(ctx,  enc->extractOutput() );
+                sqlite3_result_subtype(ctx, kFleeceDataSubtype);
+            }
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "array_agg: exception!", -1);
+        }
+    }
+
+    static void array_agg_step(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        array_agg(ctx, argv[0]);
+    }
+    static void array_agg_final(sqlite3_context* ctx) noexcept {
+        array_agg(ctx, nullptr);
     }
 
 
@@ -1038,6 +1097,7 @@ namespace litecore {
 
 
     const SQLiteFunctionSpec kN1QLFunctionsSpec[] = {
+        { "array_agg",         1, nullptr, array_agg_step, array_agg_final },
 //        { "array_append",     -1, unimplemented },
         { "array_avg",        -1, fl_array_avg },
 //        { "array_concat",     -1, unimplemented },

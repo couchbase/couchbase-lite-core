@@ -191,7 +191,7 @@ namespace litecore {
                                                 fn->argCount,
                                                 SQLITE_UTF8 | SQLITE_DETERMINISTIC,
                                                 new fleeceFuncContext{accessor, sharedKeys},
-                                                fn->function, nullptr, nullptr,
+                                                fn->function, fn->stepCallback, fn->finalCallback,
                                                 [](void *param) {delete (fleeceFuncContext*)param;});
             if (rc != SQLITE_OK)
                 throw SQLite::Exception(db, rc);
