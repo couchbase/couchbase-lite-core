@@ -424,3 +424,12 @@ namespace litecore {
     }
 #endif
 }
+
+
+// Resolves a link error building with libc++ in debug mode. Apparently this symbol would be in
+// the debug version of libc++.dylib, but we don't have that on Apple platforms.
+#ifdef __APPLE__
+#ifdef _LIBCPP_DEBUG
+std::__1::__libcpp_debug_function_type std::__1::__libcpp_debug_function;
+#endif
+#endif
