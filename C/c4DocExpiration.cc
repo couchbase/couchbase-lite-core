@@ -59,7 +59,7 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
             }
 
             // Remove old entry
-            uint64_t oldTimestamp;
+            uint64_t oldTimestamp = 0;
             fleeceapi::Encoder oldKeyEnc;
             GetUVarInt(existingDoc.body(), &oldTimestamp);
             oldKeyEnc.beginArray();
@@ -100,7 +100,7 @@ uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID) noexcept {
         return 0;
     }
 
-    uint64_t timestamp;
+    uint64_t timestamp = 0;
     GetUVarInt(existing.body(), &timestamp);
     return timestamp;
 }
