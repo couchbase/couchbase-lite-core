@@ -7,10 +7,8 @@
 //
 
 #include "DataFile.hh"
-//#include "RecordEnumerator.hh"
 #include "Query.hh"
 #include "Error.hh"
-//#include "FilePath.hh"
 #include "Fleece.hh"
 #include "Benchmark.hh"
 
@@ -224,74 +222,6 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query null value", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query FullText", "[Query]") {
-    // Add some text to the database:
-    static const char* strings[] = {"FTS5 is an SQLite virtual table module that provides full-text search functionality to database applications.",
-        "In their most elementary form, full-text search engines allow the user to efficiently search a large collection of documents for the subset that contain one or more instances of a search term.",
-        "The search functionality provided to world wide web users by Google is, among other things, a full-text search engine, as it allows users to search for all documents on the web that contain, for example, the term \"fts5\".",
-        "To use FTS5, the user creates an FTS5 virtual table with one or more columns.",
-        "Looking for things, searching for things, going on adventures..."};
-    {
-        Transaction t(store->dataFile());
-        for (int i = 0; i < sizeof(strings)/sizeof(strings[0]); i++) {
-            string docID = stringWithFormat("rec-%03d", i);
-
-            fleece::Encoder enc;
-            enc.beginDictionary();
-            enc.writeKey("sentence");
-            enc.writeString(strings[i]);
-            enc.endDictionary();
-            alloc_slice body = enc.extractOutput();
-
-            store->set(slice(docID), body, t);
-        }
-        t.commit();
-    }
-
-    KeyStore::IndexOptions options;
-    SECTION("English") {
-        options = {"en", true};
-    }
-    SECTION("Unknown language") {
-        options = {"elbonian", true};
-    }
-
-    store->createIndex("sentence"_sl, "[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
-
-    Retained<Query> query{ store->compileQuery(json5(
-        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\
-                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
-                    WHAT: [['.sentence']]}]")) };
-    REQUIRE(query != nullptr);
-    unsigned rows = 0;
-    int expectedOrder[] = {1, 2, 0, 4};
-    int expectedTerms[] = {3, 3, 1, 1};
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
-    while (e->next()) {
-        auto cols = e->columns();
-        REQUIRE(cols.count() == 1);
-        CHECK(cols[0]->asString() == slice(strings[expectedOrder[rows]]));
-        CHECK(e->hasFullText());
-        CHECK(e->fullTextTerms().size() == expectedTerms[rows]);
-        for (auto term : e->fullTextTerms()) {
-            auto word = string(strings[expectedOrder[rows]] + term.start, term.length);
-            CHECK(word == (rows == 3 ? "searching" : "search"));
-        }
-        CHECK((string)query->getMatchedText(e->fullTextID()) == strings[expectedOrder[rows]]);
-        ++rows;
-    }
-    if (strcmp(options.stemmer, "en") == 0) {
-        CHECK(rows == 4);
-    } else {
-        // Non-English stemmer will not find "searching" in the 4th document
-        CHECK(rows == 3);
-    }
-
-    // Redundant createIndex should not fail:
-    store->createIndex("sentence"_sl, "[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
-}
-
-
 TEST_CASE_METHOD(DataFileTestFixture, "Query refresh", "[Query]") {
     addNumberedDocs(store);
     Retained<Query> query{ store->compileQuery(json5(
@@ -339,6 +269,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query refresh", "[Query]") {
         ++num;
     CHECK(num == 100);
 }
+
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query boolean", "[Query]") {
     {

@@ -1,0 +1,135 @@
+//
+//  FTSTest.cc
+//  LiteCore
+//
+//  Created by Jens Alfke on 11/6/17.
+//Copyright © 2017 Couchbase. All rights reserved.
+//
+
+#include "DataFile.hh"
+#include "Query.hh"
+#include "Error.hh"
+
+#include "LiteCoreTest.hh"
+
+using namespace litecore;
+using namespace std;
+
+
+class FTSTest : public DataFileTestFixture {
+public:
+    static constexpr const char* kStrings[] = {
+        "FTS5 is an SQLite virtual table module that provides full-text search functionality to database applications.",
+        "In their most elementary form, full-text search engines allow the user to efficiently search a large collection of documents for the subset that contain one or more instances of a search term.",
+        "The search functionality provided to world wide web users by Google is, among other things, a full-text search engine, as it allows users to search for all documents on the web that contain, for example, the term \"fts5\".",
+        "To use FTS5, the user creates an FTS5 virtual table with one or more columns.",
+        "Looking for things, searching for things, going on adventures..."};
+
+    FTSTest() {
+        {
+            Transaction t(store->dataFile());
+            for (int i = 0; i < sizeof(kStrings)/sizeof(kStrings[0]); i++) {
+                string docID = stringWithFormat("rec-%03d", i);
+
+                fleece::Encoder enc;
+                enc.beginDictionary();
+                enc.writeKey("sentence");
+                enc.writeString(kStrings[i]);
+                enc.endDictionary();
+                alloc_slice body = enc.extractOutput();
+
+                store->set(slice(docID), body, t);
+            }
+            t.commit();
+        }
+    }
+
+    void createIndex(KeyStore::IndexOptions options) {
+        store->createIndex("sentence"_sl, "[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    }
+
+    void testQuery(const char *queryStr,
+                   vector<int> expectedOrder,
+                   vector<int> expectedTerms) {
+        Retained<Query> query{ store->compileQuery(json5(queryStr)) };
+        REQUIRE(query != nullptr);
+        unsigned rows = 0;
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        while (e->next()) {
+            auto cols = e->columns();
+            REQUIRE(cols.count() == 1);
+            REQUIRE(rows < expectedOrder.size());
+            int stringNo = expectedOrder[rows];
+            slice sentence = cols[0]->asString();
+            CHECK(sentence == slice(kStrings[stringNo]));
+            CHECK(e->hasFullText());
+            CHECK(e->fullTextTerms().size() == expectedTerms[rows]);
+            for (auto term : e->fullTextTerms()) {
+                auto word = string(sentence).substr(term.start, term.length);
+                //CHECK(word == (stringNo == 4 ? "searching" : "search"));
+            }
+            CHECK(query->getMatchedText(e->fullTextID()) == sentence);
+            ++rows;
+        }
+        CHECK(rows == expectedOrder.size());
+    }
+};
+
+constexpr const char* const FTSTest::kStrings[5];
+
+
+TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
+    createIndex({"english", true});
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\
+                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+                    WHAT: [['.sentence']]}]",
+              {1, 2, 0, 4},
+              {3, 3, 1, 1});
+}
+
+
+TEST_CASE_METHOD(FTSTest, "Query Full-Text Unsupported Language", "[Query][FTS]") {
+    createIndex({"elbonian", true});
+    testQuery(
+              "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\
+              ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+              WHAT: [['.sentence']]}]",
+              {1, 2, 0},
+              {3, 3, 1});
+}
+
+
+TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words", "[Query][FTS]") {
+    // Check that English stop-words like "the" and "is" are being ignored by FTS.
+    createIndex({"en", true});
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'the search is'],\
+                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+                    WHAT: [['.sentence']]}]",
+              {1, 2, 0, 4},
+              {3, 3, 1, 1});
+}
+
+
+TEST_CASE_METHOD(FTSTest, "Query Full-Text No stop-words", "[Query][FTS]") {
+    createIndex({"en", true, false, ""});
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'the search is'],\
+                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+                    WHAT: [['.sentence']]}]",
+              {2},
+              {7});
+}
+
+
+TEST_CASE_METHOD(FTSTest, "Query Full-Text Custom stop-words", "[Query][FTS]") {
+    createIndex({"en", true, false, "the a an"});
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'the search is'],\
+                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+                    WHAT: [['.sentence']]}]",
+              {2, 0},
+              {4, 2});
+}
+

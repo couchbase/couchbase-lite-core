@@ -407,12 +407,20 @@ namespace litecore {
                 stringstream sql;
                 sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(text, tokenize=unicodesn";
                 if (options) {
-                    if (options->stemmer) {
-                        if (unicodesn_isSupportedStemmer(options->stemmer)) {
-                            sql << " \"stemmer=" << options->stemmer << "\"";
+                    if (options->stopWords) {
+                        string arg(options->stopWords);
+                        replace(arg, '"', ' ');
+                        replace(arg, ',', ' ');
+                        sql << " \"stopwordlist=" << arg << "\"";
+                    }
+                    if (options->language) {
+                        if (unicodesn_isSupportedStemmer(options->language)) {
+                            sql << " \"stemmer=" << options->language << "\"";
+                            if (!options->stopWords)
+                                sql << " \"stopwords=" << options->language << "\"";
                         } else {
                             Warn("FTS does not support language code '%s'; ignoring it",
-                                 options->stemmer);
+                                 options->language);
                         }
                     }
                     if (options->ignoreDiacritics) {

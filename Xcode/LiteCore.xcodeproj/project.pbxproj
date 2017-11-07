@@ -74,6 +74,9 @@
 		272AEC561F560FF600051F0A /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		272AEC5D1F56115400051F0A /* cbliteTool.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272AEC5C1F56115400051F0A /* cbliteTool.cc */; };
 		272AEC611F56194A00051F0A /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		272B1BE11FB13B7400F56620 /* stopwordset.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BDF1FB13B7400F56620 /* stopwordset.cc */; };
+		272B1BE21FB13B7400F56620 /* stopwordset.h in Headers */ = {isa = PBXBuildFile; fileRef = 272B1BE01FB13B7400F56620 /* stopwordset.h */; };
+		272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
 		273407241DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
 		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
@@ -583,6 +586,13 @@
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "LiteCore static";
 		};
+		272B1BE71FB13B7500F56620 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 27D721901F8E8EEA00AA4458;
+			remoteInfo = FleeceMutableObjC;
+		};
 		273E55691F79B59C000182F1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -988,6 +998,10 @@
 		272AEC5B1F560FF600051F0A /* cblite */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cblite; sourceTree = BUILT_PRODUCTS_DIR; };
 		272AEC5C1F56115400051F0A /* cbliteTool.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = cbliteTool.cc; sourceTree = "<group>"; };
 		272AEC5E1F56120F00051F0A /* Tool.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Tool.hh; sourceTree = "<group>"; };
+		272B1BDF1FB13B7400F56620 /* stopwordset.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = stopwordset.cc; sourceTree = "<group>"; };
+		272B1BE01FB13B7400F56620 /* stopwordset.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwordset.h; sourceTree = "<group>"; };
+		272B1BE91FB1477800F56620 /* stopwords_en.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_en.h; sourceTree = "<group>"; };
+		272B1BEA1FB1513100F56620 /* FTSTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FTSTest.cc; sourceTree = "<group>"; };
 		273407211DEE116600EA5532 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
 		273407221DEE116600EA5532 /* PlatformIO.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PlatformIO.hh; sourceTree = "<group>"; };
 		273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorLoopbackTest.hh; sourceTree = "<group>"; };
@@ -1138,6 +1152,7 @@
 		276E021A1EA983EE00FEFE8A /* Response.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Response.hh; sourceTree = "<group>"; };
 		277015081D523E2E008BADD7 /* DataFileTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFileTest.cc; sourceTree = "<group>"; };
 		2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocumentTests.cc; sourceTree = "<group>"; };
+		2771B00E1FB23DD800C6B794 /* stopwords_fr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_fr.h; sourceTree = "<group>"; };
 		2773FCF41E6783A000108780 /* Checkpoint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Checkpoint.cc; sourceTree = "<group>"; };
 		2773FCF51E6783A000108780 /* Checkpoint.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Checkpoint.hh; sourceTree = "<group>"; };
 		2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RemoteSequenceSet.hh; sourceTree = "<group>"; };
@@ -1611,6 +1626,7 @@
 				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
 				27E6737C1EC78144008F50C4 /* QueryTest.cc */,
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
+				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
 				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
 				279794B31D34583A001D0F3A /* RevisionTest.cc */,
 				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
@@ -2382,6 +2398,10 @@
 			children = (
 				27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */,
 				27EF7FA61914296D00A327B9 /* fts3_unicode2.c */,
+				272B1BE91FB1477800F56620 /* stopwords_en.h */,
+				2771B00E1FB23DD800C6B794 /* stopwords_fr.h */,
+				272B1BDF1FB13B7400F56620 /* stopwordset.cc */,
+				272B1BE01FB13B7400F56620 /* stopwordset.h */,
 				27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */,
 				27EF7FA81914296D00A327B9 /* fts3_unicodesn.h */,
 				27EF7FA91914296D00A327B9 /* fts3Int.h */,
@@ -2417,6 +2437,7 @@
 			isa = PBXGroup;
 			children = (
 				27FA09BC1D70ADE8005888AA /* libFleece.a */,
+				272B1BE81FB13B7500F56620 /* libFleeceMutableObjC.a */,
 				27FA09BE1D70ADE8005888AA /* Test */,
 				27FA09C01D70ADE8005888AA /* fleece */,
 			);
@@ -2531,6 +2552,7 @@
 				27EF809019142C9900A327B9 /* stem_ISO_8859_1_porter.h in Headers */,
 				27EF809819142C9900A327B9 /* stem_ISO_8859_2_romanian.h in Headers */,
 				27EF80AE19142C9900A327B9 /* stem_UTF_8_porter.h in Headers */,
+				272B1BE21FB13B7400F56620 /* stopwordset.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3080,6 +3102,13 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		272B1BE81FB13B7500F56620 /* libFleeceMutableObjC.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libFleeceMutableObjC.a;
+			remoteRef = 272B1BE71FB13B7500F56620 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -3213,6 +3242,7 @@
 				27FA09B11D6FB7AE005888AA /* RevisionTest.cc in Sources */,
 				27FA09B31D6FB939005888AA /* RevisionStoreTest.cc in Sources */,
 				27FA09B51D6FBAAD005888AA /* CASRevisionStoreTest.cc in Sources */,
+				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
@@ -3445,6 +3475,7 @@
 				27EF807D19142C9900A327B9 /* stem_ISO_8859_1_danish.c in Sources */,
 				27EF80AB19142C9900A327B9 /* stem_UTF_8_norwegian.c in Sources */,
 				27EF808B19142C9900A327B9 /* stem_ISO_8859_1_italian.c in Sources */,
+				272B1BE11FB13B7400F56620 /* stopwordset.cc in Sources */,
 				27EF80B119142C9900A327B9 /* stem_UTF_8_romanian.c in Sources */,
 				27EF807B19142C7E00A327B9 /* api_sq3.c in Sources */,
 				27EF80B919142C9900A327B9 /* stem_UTF_8_turkish.c in Sources */,

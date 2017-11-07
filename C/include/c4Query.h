@@ -175,12 +175,30 @@ extern "C" {
             languages are: da/danish, nl/dutch, en/english, fi/finnish, fr/french, de/german,
             hu/hungarian, it/italian, no/norwegian, pt/portuguese, ro/romanian, ru/russian,
             es/spanish, sv/swedish, tr/turkish.
-            If left null, no stemming occurs.*/
+            If left null,  or set to an unrecognized language, no language-specific behaviors
+            such as stemming and stop-word removal occur. */
         const char *language;
 
         /** Should diacritical marks (accents) be ignored? Defaults to false.
             Generally this should be left false for non-English text. */
         bool ignoreDiacritics;
+
+        /** "Stemming" coalesces different grammatical forms of the same word ("big" and "bigger",
+            for instance.) Full-text search normally uses stemming if the language is one for
+            which stemming rules are available, but this flag can be set to `true` to disable it.
+            Stemming is currently available for these languages: da/danish, nl/dutch, en/english,
+            fi/finnish, fr/french, de/german, hu/hungarian, it/italian, no/norwegian, pt/portuguese,
+            ro/romanian, ru/russian, s/spanish, sv/swedish, tr/turkish. */
+        bool disableStemming;
+
+        /** List of words to ignore ("stop words") for full-text search. Ignoring common words
+            like "the" and "a" helps keep down the size of the index.
+            If NULL, a default word list will be used based on the `language` option, if there is
+            one for that language.
+            To suppress stop-words, use an empty string.
+            To provide a custom list of words, use a string containing the words in lowercase
+            separated by spaces. */
+        const char *stopWords;
     } C4IndexOptions;
 
 

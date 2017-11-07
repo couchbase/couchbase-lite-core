@@ -102,8 +102,10 @@ namespace litecore {
         };
 
         struct IndexOptions {
-            const char *stemmer;
-            bool ignoreDiacritics;
+            const char *language;   ///< NULL or an ISO language code ("en", etc)
+            bool ignoreDiacritics;  ///< True to strip diacritical marks/accents from letters
+            bool disableStemming;   ///< Disables stemming
+            const char *stopWords;  ///< NULL for default, or comma-delimited string, or empty
         };
 
         virtual bool supportsIndexes(IndexType) const                   {return false;}
