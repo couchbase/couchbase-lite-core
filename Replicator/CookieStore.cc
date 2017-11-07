@@ -41,11 +41,8 @@ namespace litecore { namespace repl {
         ptm = gmtime(&rawtime);
 #endif
 
-        // Force recalculation of the DST value based on the date given
-        // Note: this might cause occassional odd behavior during ambigious times
-        // such as those that happen twice during the transition out of DST
-        // but this is not avoidable without (probably) a new C time API
-        ptm->tm_isdst = -1;
+        // Caveat: Undefined behavior during ambigiuous times (e.g. during a repeated
+        // hour at the end of daylight savings time)
         time_t gmt = mktime(ptm);
 
         // Offset the original time by the difference that was calculated
@@ -99,7 +96,6 @@ namespace litecore { namespace repl {
                 if (expires == 0) {
                     expires = parse_gmt_time(val.c_str());
                     if(expires == 0) {
-                        Warn("Couldn't parse Expires in cookie");
                         return;
                     }
                 }
