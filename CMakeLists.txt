@@ -82,7 +82,9 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     endif()
     message("Using libc++ header files in ${LIBCXX_INCLUDE}")
     include_directories("${LIBCXX_INCLUDE}/c++/v1")
-    include_directories("${LIBCXX_INCLUDE}/c++/v1/support/xlocale") # this fixed path is here to avoid compilation on Ubuntu 17.10 where xlocale.h is searched by some header(s) in libc++ as <xinclude.h> but not found from search path without this modification.
+    if(NOT EXISTS "/usr/include/xlocale.h")
+      include_directories("${LIBCXX_INCLUDE}/c++/v1/support/xlocale") # this fixed path is here to avoid compilation on Ubuntu 17.10 where xlocale.h is searched by some header(s) in libc++ as <xinclude.h> but not found from search path without this modification.  However, only do it if the original xlocale.h does not exist since this will get searched before /usr/include and override a valid file with an empty one.
+    endif()
     include_directories("/usr/include/libcxxabi") # this fixed path is here to avoid Clang issue noted at http://lists.alioth.debian.org/pipermail/pkg-llvm-team/2015-September/005208.html
     find_library(ICU4C_COMMON icuuc)
     if (NOT ICU4C_COMMON)
