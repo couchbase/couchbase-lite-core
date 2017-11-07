@@ -25,7 +25,6 @@ namespace litecore {
         KeyStore& keyStore() const                                      {return _keyStore;}
 
         virtual unsigned columnCount() const noexcept                   {return 0;}
-        virtual std::string nameOfColumn(unsigned col) const            {return "";}
 
         virtual alloc_slice getMatchedText(FullTextID)                  {return alloc_slice();}
 

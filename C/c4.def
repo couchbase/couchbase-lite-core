@@ -130,7 +130,6 @@ c4queryenum_free
 c4query_new
 c4query_free
 c4query_columnCount
-c4query_nameOfColumn
 c4query_run
 c4query_explain
 c4query_fullTextMatched

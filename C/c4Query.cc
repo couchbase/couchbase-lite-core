@@ -146,13 +146,6 @@ unsigned c4query_columnCount(C4Query *query) noexcept {
 }
 
 
-C4StringResult c4query_nameOfColumn(C4Query *query, unsigned col) noexcept {
-    return tryCatch<C4StringResult>(nullptr, [&]{
-        return sliceResult( query->query()->nameOfColumn(col) );
-    });
-}
-
-
 C4QueryEnumerator* c4query_run(C4Query *query,
                                const C4QueryOptions *c4options,
                                C4Slice encodedParameters,

@@ -284,8 +284,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
                       ORDER_BY: [['.name.first']]}"));
 
     REQUIRE(c4query_columnCount(query) == 2);
-    //CHECK(c4query_nameOfColumn(query, 0) == C4STR("name.first")); //TODO: Names currently wrong
-    //CHECK(c4query_nameOfColumn(query, 1) == C4STR("name.last"));
 
     C4Error error;
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);

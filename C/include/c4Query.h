@@ -53,9 +53,6 @@ extern "C" {
     /** Returns the number of columns (the values specified in the WHAT clause) in each row. */
     unsigned c4query_columnCount(C4Query *query) C4API;
 
-    /** Returns the name of a column. */
-    C4StringResult c4query_nameOfColumn(C4Query *query, unsigned col) C4API;
-
 
     //////// RUNNING QUERIES:
 

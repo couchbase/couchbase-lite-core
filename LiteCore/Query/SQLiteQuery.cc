@@ -119,11 +119,6 @@ namespace litecore {
         }
 
 
-        virtual string nameOfColumn(unsigned col) const override {
-            return _statement->getColumnName(_1stCustomResultColumn + col);
-        }
-
-        
         string explain() override {
             stringstream result;
             // https://www.sqlite.org/eqp.html
