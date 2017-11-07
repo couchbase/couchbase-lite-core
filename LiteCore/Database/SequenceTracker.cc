@@ -109,9 +109,10 @@ namespace litecore {
             if (entry->isIdle() && !hasDBChangeNotifiers()) {
                 listChanged = false;
             } else {
-                if (entry->isIdle())
+                if (entry->isIdle()) {
                     _changes.splice(_changes.end(), _idle, i->second);
-                else if (next(i->second) != _changes.end())
+                    entry->idle = false;
+                } else if (next(i->second) != _changes.end())
                     _changes.splice(_changes.end(), _changes, i->second);
                 else
                     listChanged = false;
@@ -267,6 +268,7 @@ namespace litecore {
         observers.erase(i);
         if (observers.empty() && entry->isIdle()) {
             _byDocID.erase(entry->docID);
+            Assert(!_idle.empty());
             _idle.erase(entry);
         }
     }
