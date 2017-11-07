@@ -1,4 +1,4 @@
-//
+﻿//
 //  SQLiteFunctionsTest.cc
 //  LiteCore
 //

@@ -32,6 +32,43 @@ using namespace fleeceapi;
 
 namespace litecore { namespace websocket {
 
+#ifdef _MSC_VER
+    static void toPOSIX(struct mg_error* error)
+    {
+        switch(error->code) {
+            case WSAECONNREFUSED:
+                error->code = ECONNREFUSED;
+                break;
+            case WSAENETRESET:
+                error->code = ENETRESET;
+                break;
+            case WSAECONNABORTED:
+                error->code = ECONNABORTED;
+                break;
+            case WSAECONNRESET:
+                error->code = ECONNRESET;
+                break;
+            case WSAETIMEDOUT:
+                error->code = ETIMEDOUT;
+                break;
+            case WSAENETDOWN:
+                error->code = ENETDOWN;
+                break;
+            case WSAENETUNREACH:
+                error->code = ENETUNREACH;
+                break;
+            case WSAENOTCONN:
+                error->code = ENOTCONN;
+                break;
+            case WSAEHOSTDOWN:
+                error->code = 64;
+                break;
+            case WSAEHOSTUNREACH:
+                error->code = EHOSTUNREACH;
+                break;
+        }
+    }
+#endif
 
     static Address addressOf(struct mg_connection *connection) {
         auto info = mg_get_request_info(connection);
@@ -62,7 +99,9 @@ namespace litecore { namespace websocket {
         ,_connection(nullptr)
         ,_isServer(false)
         ,_options(options)
-        { }
+        {
+            mg_init_library(0);
+        }
 
 
         // Server-side constructor: takes an already-open connection
@@ -72,6 +111,7 @@ namespace litecore { namespace websocket {
         ,_connection(connection)
         ,_isServer(true)
         {
+            mg_init_library(0);
             mg_set_user_connection_data(connection, this);
         }
 
@@ -79,6 +119,8 @@ namespace litecore { namespace websocket {
         virtual ~CivetWebSocket() {
             if (_connection)
                 mg_close_connection(_connection);
+
+            mg_exit_library();
         }
 
 
@@ -136,6 +178,9 @@ namespace litecore { namespace websocket {
                             break;
                     }
                 } else {
+#ifdef _MSC_VER
+                    toPOSIX(&error);
+#endif
                     _closeStatus = {kPOSIXError, error.code};
                 }
                 _closeStatus.message = errorStr;

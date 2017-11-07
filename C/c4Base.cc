@@ -33,7 +33,7 @@
 
 #ifdef _MSC_VER
 #include <winerror.h>
-#define EHOSTDOWN WSAEHOSTDOWN
+#define EHOSTDOWN 64
 #endif
 
 #if defined(__clang__) // For __cxa_demangle
