@@ -172,7 +172,7 @@ namespace litecore { namespace actor {
 
 
     void ThreadedMailbox::performNextMessage() {
-        LogTo(ActorLog, "%s performNextMessage", _actor->actorName().c_str());
+        LogToAt(ActorLog, Verbose, "%s performNextMessage", _actor->actorName().c_str());
 #if DEBUG
         assert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
 #endif
