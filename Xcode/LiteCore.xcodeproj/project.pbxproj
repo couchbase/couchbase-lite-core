@@ -196,6 +196,8 @@
 		276E02141EA980D900FEFE8A /* civetUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* civetUtils.cc */; };
 		276E021B1EA983EE00FEFE8A /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		276E021C1EA9875E00FEFE8A /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
+		2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */; };
+		2771B01B1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		277C14711EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
 		277C14721EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
@@ -1133,6 +1135,7 @@
 		277015081D523E2E008BADD7 /* DataFileTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFileTest.cc; sourceTree = "<group>"; };
 		2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocumentTests.cc; sourceTree = "<group>"; };
 		2771B00E1FB23DD800C6B794 /* stopwords_fr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_fr.h; sourceTree = "<group>"; };
+		2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+Indexes.cc"; sourceTree = "<group>"; };
 		2773FCF41E6783A000108780 /* Checkpoint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Checkpoint.cc; sourceTree = "<group>"; };
 		2773FCF51E6783A000108780 /* Checkpoint.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Checkpoint.hh; sourceTree = "<group>"; };
 		2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RemoteSequenceSet.hh; sourceTree = "<group>"; };
@@ -2050,6 +2053,7 @@
 		276D153D1DFF528B00543B1B /* Query */ = {
 			isa = PBXGroup;
 			children = (
+				2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */,
 				27E6DFEE1DA5AFF3008EB681 /* Query.cc */,
 				27E6DFEF1DA5AFF3008EB681 /* Query.hh */,
 				276D15401DFF541000543B1B /* SQLiteQuery.cc */,
@@ -3465,6 +3469,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
@@ -3559,6 +3564,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2771B01B1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
 				272850AC1E9AF53B009CA22F /* Upgrader.cc in Sources */,
 				27B699DC1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
 				726F2B911EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,

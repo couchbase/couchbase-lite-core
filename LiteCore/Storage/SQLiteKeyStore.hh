@@ -85,6 +85,9 @@ namespace litecore {
         void selectFrom(std::stringstream& in, const RecordEnumerator::Options options);
         void writeSQLOptions(std::stringstream &sql, RecordEnumerator::Options options);
         void setLastSequence(sequence_t seq);
+        void createFTSIndex(fleece::slice indexName,
+                            const fleece::Array *params,
+                            const IndexOptions *options);
         void _deleteIndex(slice name);
 
         std::unique_ptr<SQLite::Statement> _recCountStmt;
