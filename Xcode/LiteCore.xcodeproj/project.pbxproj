@@ -4254,14 +4254,14 @@
 		};
 		27DF7D651F4236500022F3DF /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27DF7D6B1F4236E90022F3DF /* SQLite.xcconfig */;
+			baseConfigurationReference = 27DF7D6C1F42399E0022F3DF /* SQLite_Debug.xcconfig */;
 			buildSettings = {
 			};
 			name = Debug;
 		};
 		27DF7D661F4236500022F3DF /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 27DF7D6B1F4236E90022F3DF /* SQLite.xcconfig */;
+			baseConfigurationReference = 27DF7D6D1F4239A80022F3DF /* SQLite_Release.xcconfig */;
 			buildSettings = {
 			};
 			name = Release;

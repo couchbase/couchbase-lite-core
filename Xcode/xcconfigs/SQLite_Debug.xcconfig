@@ -10,7 +10,7 @@
 
 GCC_OPTIMIZATION_LEVEL       = fast     // We always want SQLite to run fast, even in debug builds
 
-GCC_PREPROCESSOR_DEFINITIONS = $(GCC_PREPROCESSOR_DEFINITIONS) SQLITE_ENABLE_API_ARMOR
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) $(SQLITE_PREPROCESSOR_DEFINITIONS) SQLITE_ENABLE_API_ARMOR
 
 // Note: SQLITE_DEBUG could be #defined temporarily during troubleshooting
 // <http://www.sqlite.org/compile.html#debug>
