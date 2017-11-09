@@ -181,6 +181,10 @@ namespace LiteCore.Interop
                 {
                     var arr = Native.FLValue_AsArray(value);
                     var retVal = new object[Native.FLArray_Count(arr)];
+                    if (retVal.Length == 0) {
+                        return retVal;
+                    }
+
                     var i = default(FLArrayIterator);
                     Native.FLArrayIterator_Begin(arr, &i);
                     int pos = 0;
@@ -198,6 +202,10 @@ namespace LiteCore.Interop
                 {
                     var dict = Native.FLValue_AsDict(value);
                     var retVal = new Dictionary<string, object>((int) Native.FLDict_Count(dict));
+                    if (retVal.Count == 0) {
+                        return retVal;
+                    }
+
                     var i = default(FLDictIterator);
                     Native.FLDictIterator_Begin(dict, &i);
                     do {
