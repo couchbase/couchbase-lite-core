@@ -88,3 +88,19 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
         ++i;
     }
 }
+
+
+TEST_CASE("LogEncoder auto-flush", "[Log]") {
+    stringstream out;
+    LogEncoder logger(out);
+    logger.log(0, nullptr, LogEncoder::None, "Hi there");
+
+    CHECK(out.str().empty());
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1200));
+
+    string encoded = out.str();
+    CHECK(!encoded.empty());
+    string result = dumpLog(encoded, {});
+    CHECK(!result.empty());
+}

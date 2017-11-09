@@ -11,6 +11,7 @@
 #include "Endian.hh"
 #include "varint.hh"
 #include <exception>
+#include <iostream>
 #include <time.h>
 
 #if __APPLE__
@@ -32,17 +33,18 @@ namespace litecore {
     static const size_t kBufferSize = 64 * 1024;
 
     // ...or when this many seconds have elapsed since the previous save:
-    static const uint64_t kSaveInterval = 5 * kTicksPerSec;
+    static const uint64_t kSaveInterval = 1 * kTicksPerSec;
 
 
     LogEncoder::LogEncoder(ostream &out)
     :_out(out)
+    ,_flushTimer(bind(&LogEncoder::performScheduledFlush, this))
     {
         _writer.write(&kMagicNumber, 4);
         uint8_t header[2] = {kFormatVersion, sizeof(void*)};
         _writer.write(&header, sizeof(header));
         auto now = LogDecoder::now();
-        writeUVarInt(now.secs);
+        _writeUVarInt(now.secs);
         _lastElapsed = -(int)now.microsecs;  // so first delta will be accurate
         _st.reset();
     }
@@ -53,6 +55,9 @@ namespace litecore {
     }
 
 
+#pragma mark - LOGGING:
+
+
     void LogEncoder::log(int8_t level, const char *domain, ObjectRef object, const char *format, ...) {
         va_list args;
         va_start(args, format);
@@ -61,18 +66,25 @@ namespace litecore {
     }
 
 
+    int64_t LogEncoder::_timeElapsed() const {
+        return int64_t(_st.elapsed() * kTicksPerSec);
+    }
+
+
     void LogEncoder::vlog(int8_t level, const char *domain, ObjectRef object, const char *format, va_list args) {
+        lock_guard<mutex> lock(_mutex);
+
         // Write the number of ticks elapsed since the last message:
-        auto elapsed = int64_t(_st.elapsed() * kTicksPerSec);
+        auto elapsed = _timeElapsed();
         uint64_t delta = elapsed - _lastElapsed;
         _lastElapsed = elapsed;
-        writeUVarInt(delta);
+        _writeUVarInt(delta);
 
         // Write level, domain, format string:
         _writer.write(&level, sizeof(level));
-        writeStringToken(domain ? domain : "");
+        _writeStringToken(domain ? domain : "");
 
-        writeUVarInt((unsigned)object);
+        _writeUVarInt((unsigned)object);
         if (object != ObjectRef::None) {
             auto i = _objects.find(unsigned(object));
             if (i != _objects.end()) {
@@ -82,7 +94,7 @@ namespace litecore {
             }
         }
 
-        writeStringToken(format);
+        _writeStringToken(format);
 
         // Parse the format string looking for substitutions:
         for (const char *c = format; *c != '\0'; ++c) {
@@ -126,7 +138,7 @@ namespace litecore {
                             param = va_arg(args, long long);
                         uint8_t sign = (param < 0) ? 1 : 0;
                         _writer.write(&sign, 1);
-                        writeUVarInt(abs(param));
+                        _writeUVarInt(abs(param));
                         break;
                     }
                     case 'u':
@@ -142,7 +154,7 @@ namespace litecore {
                             param = va_arg(args, unsigned long);
                         else
                             param = va_arg(args, unsigned long long);
-                        writeUVarInt(param);
+                        _writeUVarInt(param);
                         break;
                     }
                     case 'e': case 'E':
@@ -164,9 +176,9 @@ namespace litecore {
                             size = strlen(str);
                         }
                         if (minus && !dotStar) {
-                            writeStringToken(str);
+                            _writeStringToken(str);
                         } else {
-                            writeUVarInt(size);
+                            _writeUVarInt(size);
                             _writer.write(str, size);
                         }
                         break;
@@ -185,7 +197,7 @@ namespace litecore {
                         // "%@" substitutes an Objective-C or CoreFoundation object's description.
                         CFTypeRef param = va_arg(args, CFTypeRef);
                         if (param == nullptr) {
-                            writeUVarInt(6);
+                            _writeUVarInt(6);
                             _writer.write("(null)", 6);
                         } else {
                             CFStringRef description;
@@ -194,7 +206,7 @@ namespace litecore {
                             else
                                 description = CFCopyDescription(param);
                             nsstring_slice descSlice(description);
-                            writeUVarInt(descSlice.size);
+                            _writeUVarInt(descSlice.size);
                             _writer.write(descSlice);
                             if (description != param)
                                 CFRelease(description);
@@ -209,12 +221,17 @@ namespace litecore {
                 }
             }
         }
-        if (_writer.length() > kBufferSize || elapsed - _lastSaved > kSaveInterval)
-            flush();
+
+        if (_writer.length() > kBufferSize)
+            _flush();
+        else
+            _scheduleFlush();
     }
 
 
     LogEncoder::ObjectRef LogEncoder::registerObject(std::string description) {
+        lock_guard<mutex> lock(_mutex);
+
         ObjectRef ref = _lastObjectRef = ObjectRef(unsigned(_lastObjectRef) + 1);
         _objects[unsigned(ref)] = description;
         return ref;
@@ -222,35 +239,69 @@ namespace litecore {
 
 
     void LogEncoder::unregisterObject(ObjectRef obj) {
+        lock_guard<mutex> lock(_mutex);
+
         _objects.erase(unsigned(obj));
     }
 
 
-    void LogEncoder::writeUVarInt(uint64_t n) {
+    void LogEncoder::_writeUVarInt(uint64_t n) {
         uint8_t buf[kMaxVarintLen64];
         _writer.write(buf, PutUVarInt(buf, n));
     }
 
 
-    void LogEncoder::writeStringToken(const char *token) {
+    void LogEncoder::_writeStringToken(const char *token) {
         auto i = _formats.find((size_t)token);
         if (i == _formats.end()) {
             unsigned n = (unsigned)_formats.size();
             _formats.insert({(size_t)token, n});
-            writeUVarInt(n);
+            _writeUVarInt(n);
             _writer.write(token, strlen(token)+1);  // add the actual string the first time
         } else {
-            writeUVarInt(i->second);
+            _writeUVarInt(i->second);
         }
     }
 
-    
+
+#pragma mark - FLUSHING:
+
+
     void LogEncoder::flush() {
+        lock_guard<mutex> lock(_mutex);
+        _flush();
+    }
+    
+    void LogEncoder::_flush() {
+        if (_writer.length() == 0)
+            return;
+
         for (slice s : _writer.output())
             _out.write((const char*)s.buf, s.size);
         _writer.reset();
         _out.flush();
         _lastSaved = _lastElapsed;
+    }
+
+
+    void LogEncoder::_scheduleFlush() {
+        if (!_flushTimer.scheduled()) {
+            _flushTimer.fireAfter(std::chrono::microseconds(kSaveInterval));
+        }
+    }
+
+
+    // This is called on a background thread by the Timer
+    void LogEncoder::performScheduledFlush() {
+        lock_guard<mutex> lock(_mutex);
+
+        // Don't flush if there's already been a flush since the timer started:
+        auto timeSinceSave = _timeElapsed() - _lastSaved;
+        if (timeSinceSave >= kSaveInterval) {
+            _flush();
+        } else {
+            _flushTimer.fireAfter(std::chrono::microseconds(kSaveInterval - timeSinceSave));
+        }
     }
 
 }

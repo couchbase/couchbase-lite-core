@@ -9,16 +9,19 @@
 #pragma once
 #include "Writer.hh"
 #include "Stopwatch.hh"
+#include "Timer.hh"
 #include "PlatformCompat.hh"
 #include <stdarg.h>
 #include <iostream>
+#include <mutex>
 #include <unordered_map>
 
 namespace litecore {
 
     /** A very fast & compact logging service.
         The output is written in a binary format to avoid the CPU and space overhead of converting
-        everything to ASCII. It can be decoded by the LogDecoder class. */
+        everything to ASCII. It can be decoded by the LogDecoder class.
+        The API is thread-safe. */
     class LogEncoder {
     public:
         LogEncoder(std::ostream &out);
@@ -45,15 +48,21 @@ namespace litecore {
 
     private:
         friend class LogDecoder;
-        
-        void writeUVarInt(uint64_t);
-        void writeStringToken(const char *token);
+
+        int64_t _timeElapsed() const;
+        void _writeUVarInt(uint64_t);
+        void _writeStringToken(const char *token);
+        void _flush();
+        void _scheduleFlush();
+        void performScheduledFlush();
 
         static const uint8_t kMagicNumber[4];
         static constexpr uint8_t kFormatVersion = 1;
 
+        std::mutex _mutex;
         fleece::Writer _writer;
         std::ostream &_out;
+        actor::Timer _flushTimer;
         fleece::Stopwatch _st;
         int64_t _lastElapsed {0};
         int64_t _lastSaved {0};
