@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
 
     // Resets the object so it can be reused for another revision.
     void IncomingRev::clear() {
-        assert(_pendingCallbacks == 0 && _pendingBlobs == 0);
+        Assert(_pendingCallbacks == 0 && _pendingBlobs == 0);
         _revMessage = nullptr;
         _rev.clear();
         _error = {};
@@ -119,7 +119,7 @@ namespace litecore { namespace repl {
                 uint64_t length = dict["length"_sl].asUnsigned();
                 Retained<IncomingBlob> b(new IncomingBlob(this, blobStore));
                 b->start(key, length);
-                ++_pendingBlobs;
+                increment(_pendingBlobs);
             }
         });
         if (_pendingBlobs > 0)
@@ -134,8 +134,7 @@ namespace litecore { namespace repl {
         if (status.level == kC4Stopped) {
             if (status.error.code && !_error.code)
                 _error = status.error;
-            assert(_pendingBlobs > 0);
-            if (--_pendingBlobs == 0) {
+            if (decrement(_pendingBlobs) == 0) {
                 // All blobs completed, now finish:
                 if (_error.code == 0) {
                     logVerbose("All blobs received, now inserting revision");
@@ -150,10 +149,10 @@ namespace litecore { namespace repl {
 
     // Asks the DBAgent to insert the revision, then sends the reply and notifies the Puller.
     void IncomingRev::insertRevision() {
-        ++_pendingCallbacks;
+        increment(_pendingCallbacks);
         _rev.onInserted = asynchronize([this](C4Error err) {
             // Callback that will run _after_ insertRevision() completes:
-            --_pendingCallbacks;
+            decrement(_pendingCallbacks);
             _error = err;
             finish();
         });

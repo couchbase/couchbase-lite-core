@@ -10,6 +10,7 @@
 #include "Puller.hh"
 #include "DBWorker.hh"
 #include "IncomingRev.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "BLIP.hh"
 #include <algorithm>
@@ -119,14 +120,15 @@ namespace litecore { namespace repl {
             req->respondWithError({"BLIP"_sl, 409});
         } else {
             // Pass the buck to the DBWorker so it can find the missing revs & request them:
-            ++_pendingCallbacks;
+            increment(_pendingCallbacks);
             _dbActor->findOrRequestRevs(req, asynchronize([this,req,changes](vector<bool> which) {
-                --_pendingCallbacks;
-                if (nonPassive() && !_options.noConflicts()) {
-                    // Keep track of which remote sequences I just requested:
-                    for (size_t i = 0; i < which.size(); ++i) {
-                        if (which[i]) {
-                            ++_pendingRevMessages;
+                decrement(_pendingCallbacks);
+                bool tracksProgress = (nonPassive() && !_options.noConflicts());
+                for (size_t i = 0; i < which.size(); ++i) {
+                    if (which[i]) {
+                        increment(_pendingRevMessages);
+                        if (tracksProgress) {
+                            // Keep track of which remote sequences I just requested:
                             auto change = changes[(unsigned)i].asArray();
                             uint64_t bodySize = max(change[4].asUnsigned(), (uint64_t)1);
                             alloc_slice sequence(change[0].toString()); //FIX: Should quote strings
@@ -135,9 +137,11 @@ namespace litecore { namespace repl {
                             else
                                 warn("Empty/invalid sequence in 'changes' message");
                             addProgress({0, bodySize});
-                            // now awaiting a handleRev call...
                         }
+                        // now awaiting a handleRev call...
                     }
+                }
+                if (tracksProgress) {
                     logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
                                _pendingRevMessages, _missingSequences.size());
                 }
@@ -148,7 +152,7 @@ namespace litecore { namespace repl {
 
     // Handles an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
-        --_pendingRevMessages;
+        decrement(_pendingRevMessages);
         Retained<IncomingRev> inc;
         if (_spareIncomingRevs.empty()) {
             inc = new IncomingRev(this, _dbActor);
@@ -159,7 +163,7 @@ namespace litecore { namespace repl {
             logDebug("Re-using IncomingRev<%p>", inc.get());
         }
         inc->handleRev(msg);
-        ++_pendingCallbacks;
+        increment(_pendingCallbacks);
     }
 
 
@@ -174,7 +178,7 @@ namespace litecore { namespace repl {
 
     // Records that a sequence has been successfully pulled.
     void Puller::_revWasHandled(Retained<IncomingRev> inc, alloc_slice docID, alloc_slice sequence, bool complete) {
-        --_pendingCallbacks;
+        decrement(_pendingCallbacks);
         if (complete && nonPassive()) {
             bool wasEarliest;
             uint64_t bodySize;

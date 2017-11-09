@@ -70,7 +70,7 @@ namespace litecore { namespace repl {
         bool _caughtUp {false};                   // Received backlog of existing changes?
         unsigned _changeListsInFlight {0};        // # change lists being requested from db or sent to peer
         unsigned _revisionsInFlight {0};          // # 'rev' messages being sent
-        unsigned _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
+        MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
         unsigned _blobsInFlight {0};              // # of blobs being sent
         std::deque<RevRequest> _revsToSend;       // Revs to send to peer but not sent yet
     };

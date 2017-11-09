@@ -59,10 +59,10 @@ namespace litecore { namespace repl {
 
     void Worker::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
         if (callback) {
-            ++_pendingResponseCount;
+            increment(_pendingResponseCount);
             builder.onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state >= MessageProgress::kComplete)
-                    --_pendingResponseCount;
+                    decrement(_pendingResponseCount);
                 callback(progress);
             });
         } else {

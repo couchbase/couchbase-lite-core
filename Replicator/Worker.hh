@@ -14,6 +14,7 @@
 #include "c4.hh"
 #include "c4Private.h"
 #include "FleeceCpp.hh"
+#include "Error.hh"
 #include <chrono>
 #include <functional>
 
@@ -182,10 +183,24 @@ namespace litecore { namespace repl {
 
         virtual void _childChangedStatus(Worker *task, Status) { }
 
-       virtual void afterEvent() override;
+        virtual void afterEvent() override;
 
         virtual std::string loggingIdentifier() const override {
             return actorName();
+        }
+
+        template <class T>
+        static T increment(T &value, T by =1) {
+            Assert(value + by >= value, "overflow incrementing a counter");
+            value += by;
+            return value;
+        }
+
+        template <class T>
+        static T decrement(T &value, T by =1) {
+            Assert(value >= by, "underflow decrementing a counter");
+            value -= by;
+            return value;
         }
 
         Options _options;

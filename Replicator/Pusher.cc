@@ -10,6 +10,7 @@
 #include "Pusher.hh"
 #include "DBWorker.hh"
 #include "c4BlobStore.h"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
 #include "BLIP.hh"
@@ -103,7 +104,7 @@ namespace litecore { namespace repl {
     void Pusher::maybeGetMoreChanges() {
         if (!_gettingChanges && _changeListsInFlight < kMaxChangeListsInFlight && !_caughtUp ) {
             _gettingChanges = true;
-            ++_changeListsInFlight; // will be decremented at start of _gotChanges
+            increment(_changeListsInFlight); // will be decremented at start of _gotChanges
             log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
             _dbWorker->getChanges(_lastSequenceRead, _docIDs,
                                   _changesBatchSize, _continuous, _skipDeleted,
@@ -118,8 +119,7 @@ namespace litecore { namespace repl {
     void Pusher::_gotChanges(RevList changes, C4Error err) {
         if (_gettingChanges) {
             _gettingChanges = false;
-            assert(_changeListsInFlight > 0);
-            --_changeListsInFlight;
+            decrement(_changeListsInFlight);
         }
 
         if (!connection())
@@ -194,7 +194,7 @@ namespace litecore { namespace repl {
 
         bool proposedChanges = _proposeChanges;
 
-        ++_changeListsInFlight;
+        increment(_changeListsInFlight);
         sendRequest(req, [=](MessageProgress progress) {
             // Progress callback follows:
             MessageIn *reply = progress.reply;
@@ -202,8 +202,7 @@ namespace litecore { namespace repl {
                 return;
 
             // Got reply to the "changes" or "proposeChanges":
-            assert(_changeListsInFlight > 0);
-            --_changeListsInFlight;
+            decrement(_changeListsInFlight);
             _proposeChangesKnown = true;
             if (!proposedChanges && reply->isError()) {
                 auto err = progress.reply->getError();
@@ -295,12 +294,12 @@ namespace litecore { namespace repl {
         MessageProgressCallback onProgress;
         if (nonPassive()) {
             // Callback for after the peer receives the "rev" message:
-            ++_revisionsInFlight;
+            increment(_revisionsInFlight);
             logDebug("Uploading rev %.*s #%.*s (seq %llu)",
                 SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
-                    --_revisionsInFlight;
+                    decrement(_revisionsInFlight);
                     doneWithRev(rev, false);
                     maybeSendMoreRevs();
                     return;
@@ -308,12 +307,12 @@ namespace litecore { namespace repl {
                 if (progress.state == MessageProgress::kAwaitingReply) {
                     logDebug("Uploaded rev %.*s #%.*s (seq %llu)",
                              SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
-                    --_revisionsInFlight;
-                    _revisionBytesAwaitingReply += progress.bytesSent;
+                    decrement(_revisionsInFlight);
+                    increment(_revisionBytesAwaitingReply, progress.bytesSent);
                     maybeSendMoreRevs();
                 }
                 if (progress.reply) {
-                    _revisionBytesAwaitingReply -= progress.bytesSent;
+                    decrement(_revisionBytesAwaitingReply, progress.bytesSent);
                     bool completed = !progress.reply->isError();
                     if (completed) {
                         logVerbose("Completed rev %.*s #%.*s (seq %llu)",
@@ -362,7 +361,7 @@ namespace litecore { namespace repl {
         auto blob = readBlobFromRequest(req, digest, &err);
         if (blob) {
             log("Sending attachment %.*s", SPLAT(digest));
-            ++_blobsInFlight;
+            increment(_blobsInFlight);
             MessageBuilder reply(req);
             reply.dataSource = [this,blob](void *buf, size_t capacity) {
                 // Callback to read bytes from the blob into the BLIP message:
@@ -388,7 +387,7 @@ namespace litecore { namespace repl {
 
 
     void Pusher::_attachmentSent() {
-        --_blobsInFlight;
+        decrement(_blobsInFlight);
     }
 
 
@@ -467,7 +466,7 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
-        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%u, revsToSend=%zu, pendingSequences=%zu",
+        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
                  _caughtUp, _changeListsInFlight, _revisionsInFlight, _revisionBytesAwaitingReply,
                  _revsToSend.size(), _pendingSequences.size());
         if (Worker::computeActivityLevel() == kC4Busy
