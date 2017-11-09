@@ -152,10 +152,13 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "delete blobs", "[blob][C]") {
     // Try to read it (should be gone):
     int64_t blobSize = c4blob_getSize(store, key);
     CHECK(blobSize == -1);
-    
-    auto gotBlob = c4blob_getContents(store, key, &error);
-    REQUIRE(gotBlob.buf == nullptr);
-    REQUIRE(gotBlob.size == 0);
+
+    {
+        ExpectingExceptions x;
+        auto gotBlob = c4blob_getContents(store, key, &error);
+        REQUIRE(gotBlob.buf == nullptr);
+        REQUIRE(gotBlob.size == 0);
+    }
     
     C4SliceResult p = c4blob_getFilePath(store, key, &error);
     CHECK(p.buf == nullptr);
