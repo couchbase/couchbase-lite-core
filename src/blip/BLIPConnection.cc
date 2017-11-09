@@ -13,6 +13,7 @@
 #include "Actor.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include "varint.hh"
 #include "PlatformCompat.hh"
 #include <algorithm>
@@ -349,7 +350,7 @@ namespace litecore { namespace blip {
                 slice payload = frame;
                 uint64_t msgNo, flagsInt;
                 if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt))
-                    throw runtime_error("Illegal frame header");
+                    throw runtime_error("Illegal BLIP frame header");
                 auto flags = (FrameFlags)flagsInt;
                 logVerbose("Received frame: %s #%llu, flags %02x, length %5ld",
                       kMessageTypeNames[flags & kTypeMask], msgNo,
@@ -371,7 +372,7 @@ namespace litecore { namespace blip {
                         receivedAck(msgNo, (type == kAckResponseType), payload);
                         break;
                     default:
-                        warn("  Unknown frame type received");
+                        warn("  Unknown BLIP frame type received");
                         // For forward compatibility let's just ignore this instead of closing
                         break;
                     }
@@ -399,11 +400,11 @@ namespace litecore { namespace blip {
                 }
 
             } catch (const std::exception &x) {
-                WarnError("Caught exception handling incoming BLIP message: %s", x.what());
+                logError("Caught exception handling incoming BLIP message: %s", x.what());
                 _closeWithError(x.what());
             } catch (...) {
-                WarnError("Caught unknown exception handling incoming BLIP message");
-                _closeWithError("Unknown exception handling incoming message");
+                logError("Caught unknown exception handling incoming BLIP message");
+                _closeWithError("Unknown exception handling incoming BLIP message");
             }
         }
 
@@ -451,7 +452,8 @@ namespace litecore { namespace blip {
                 if (flags & kMoreComing)
                     _pendingRequests.emplace(msgNo, msg);
             } else {
-                warn("Bad incoming request number %llu", msgNo);
+                throw runtime_error(format("BLIP protocol error: Bad incoming request number %llu (%s)",
+                         msgNo, (msgNo <= _numRequestsReceived ? "already finished" : "too high")));
             }
             return msg;
         }
@@ -466,7 +468,8 @@ namespace litecore { namespace blip {
                 if (!(flags & kMoreComing))
                     _pendingResponses.erase(i);
             } else {
-                warn("Unexpected response to my message %llu", msgNo);
+                throw runtime_error(format("BLIP protocol error: Bad incoming response number %llu (%s)",
+                       msgNo, (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
             }
             return msg;
         }
