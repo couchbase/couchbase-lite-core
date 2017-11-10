@@ -7,10 +7,30 @@
 //
 
 #include "ReplicatorLoopbackTest.hh"
+#include "Timer.hh"
+#include <chrono>
 
+using namespace litecore::actor;
 
 constexpr duration ReplicatorLoopbackTest::kLatency;
 constexpr duration ReplicatorLoopbackTest::kCheckpointSaveDelay;
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull]") {
+    int counter = 0;
+    Timer t1([&counter] { 
+        counter++; 
+    });
+
+    Timer t2([&counter] {
+        counter++;
+    });
+    auto at = chrono::steady_clock::now() + chrono::milliseconds(500);
+    t1.fireAt(at);
+    t2.fireAt(at);
+
+    this_thread::sleep_for(chrono::milliseconds(600));
+    CHECK(counter == 2);
+}
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty DB", "[Push]") {
