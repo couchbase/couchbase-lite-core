@@ -6,6 +6,6 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-HEADER_SEARCH_PATHS                = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece $(SRCROOT)/../vendor/SQLiteCpp/include/
+HEADER_SEARCH_PATHS                = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/BLIP-Cpp/src/util
 PRODUCT_NAME                       = $(TARGET_NAME)
 VALID_ARCHS                        = x86_64
