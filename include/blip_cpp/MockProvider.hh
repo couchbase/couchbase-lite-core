@@ -125,6 +125,8 @@ namespace litecore { namespace websocket {
         }
 
         virtual void _simulateClosed(CloseStatus status) {
+            if (!_isOpen)
+                return;
             LogTo(WSMock, "%s Closing with %-s %d: %.*s",
                   name.c_str(), status.reasonName(), status.code,
                   (int)status.message.size, status.message.buf);

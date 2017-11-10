@@ -85,7 +85,8 @@ namespace litecore { namespace blip {
         using RequestHandlers = map<HandlerKey, Connection::RequestHandler>;
 
         Retained<Connection>    _connection;
-        WebSocket*              _webSocket {nullptr};
+        WebSocket*              _webSocket;
+        bool                    _closingWithError {false};
         MessageQueue            _outbox;
         MessageQueue            _icebox;
         bool                    _writeable {true};
@@ -170,13 +171,16 @@ namespace litecore { namespace blip {
 
         /** Implementation of public close() method. Closes the WebSocket. */
         void _close() {
-            if (_webSocket)
+            if (_webSocket && !_closingWithError) {
                 _webSocket->close();
+            }
         }
 
         void _closeWithError(const char *msg) {
-            if (_webSocket)
+            if (_webSocket && !_closingWithError) {
                 _webSocket->close(kCodeAbnormal, slice(msg));
+                _closingWithError = true;
+            }
         }
 
         void _closed(websocket::CloseStatus status) {
@@ -201,8 +205,9 @@ namespace litecore { namespace blip {
         /** Implementation of public queueMessage() method.
             Adds a new message to the outgoing queue and wakes up the queue. */
         void _queueMessage(Retained<MessageOut> msg) {
-            if (!_webSocket) {
-                log("Can't send request; socket is closed");
+            if (!_webSocket || _closingWithError) {
+                log("Can't send %s #%llu; socket is closed",
+                    kMessageTypeNames[msg->type()], msg->number());
                 msg->disconnected();
                 return;
             }
@@ -342,6 +347,8 @@ namespace litecore { namespace blip {
         /** WebSocketDelegate method -- Received a frame: */
         void _onWebSocketMessage(alloc_slice frame, bool binary) {
             try {
+                if (_closingWithError)
+                    return;
                 if (!binary) {
                     warn("Ignoring non-binary WebSocket message");
                     return;

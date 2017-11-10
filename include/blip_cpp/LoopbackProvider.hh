@@ -85,12 +85,13 @@ namespace litecore { namespace websocket {
         virtual void _close(int status, fleece::alloc_slice message) override {
             std::string messageStr(message);
             LogTo(WSMock, "%s CLOSE; status=%d", name.c_str(), status);
-            assert(_peer);
-            _peer->simulateClosed(kWebSocketClose, status, messageStr.c_str(), _latency);
+            if (_peer)
+                _peer->simulateClosed(kWebSocketClose, status, messageStr.c_str(), _latency);
             MockWebSocket::_close(status, message);
         }
 
         virtual void _closed() override {
+            LogTo(WSMock, "%s _closed()", name.c_str());
             _peer = nullptr;
             MockWebSocket::_closed();
         }
