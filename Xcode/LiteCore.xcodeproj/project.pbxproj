@@ -1153,6 +1153,7 @@
 		276E02101EA9717200FEFE8A /* ListenerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ListenerTest.cc; sourceTree = "<group>"; };
 		276E02191EA983EE00FEFE8A /* Response.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Response.cc; sourceTree = "<group>"; };
 		276E021A1EA983EE00FEFE8A /* Response.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Response.hh; sourceTree = "<group>"; };
+		27700DFD1FB642B80005D48E /* Increment.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Increment.hh; sourceTree = "<group>"; };
 		277015081D523E2E008BADD7 /* DataFileTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFileTest.cc; sourceTree = "<group>"; };
 		2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocumentTests.cc; sourceTree = "<group>"; };
 		2771B00E1FB23DD800C6B794 /* stopwords_fr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_fr.h; sourceTree = "<group>"; };
@@ -1915,6 +1916,7 @@
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
 				27EF69A41E26E347004748DF /* function_ref.hh */,
+				27700DFD1FB642B80005D48E /* Increment.hh */,
 				27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */,
 				27BF033C1FB62A87003D5BB8 /* Logging */,
 				2759BD4C1DDFB15100C263B4 /* make_unique.h */,

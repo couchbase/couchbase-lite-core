@@ -10,6 +10,7 @@
 #include "Actor.hh"
 #include "BLIPConnection.hh"
 #include "Message.hh"
+#include "Increment.hh"
 #include "Timer.hh"
 #include "c4.hh"
 #include "c4Private.h"
@@ -187,20 +188,6 @@ namespace litecore { namespace repl {
 
         virtual std::string loggingIdentifier() const override {
             return actorName();
-        }
-
-        template <class T>
-        static T increment(T &value, T by =1) {
-            Assert(value + by >= value, "overflow incrementing a counter");
-            value += by;
-            return value;
-        }
-
-        template <class T>
-        static T decrement(T &value, T by =1) {
-            Assert(value >= by, "underflow decrementing a counter");
-            value -= by;
-            return value;
         }
 
         Options _options;

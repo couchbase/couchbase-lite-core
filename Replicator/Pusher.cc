@@ -299,9 +299,7 @@ namespace litecore { namespace repl {
                 SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
-                    decrement(_revisionsInFlight);
                     doneWithRev(rev, false);
-                    maybeSendMoreRevs();
                     return;
                 }
                 if (progress.state == MessageProgress::kAwaitingReply) {

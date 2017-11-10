@@ -371,6 +371,8 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_saveCheckpoint(alloc_slice json) {
+        if (!connection())
+            return;
         log("Saving remote checkpoint %.*s with rev='%.*s' ...",
             SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
         MessageBuilder msg("setCheckpoint"_sl);
