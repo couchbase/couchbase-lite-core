@@ -45,7 +45,8 @@ endif() # APPLE
 set(LITECORELOG_SRC  litecorelog.cc
                ${TOP}LiteCore/Support/StringUtil.cc
                ${TOP}LiteCore/Support/LogDecoder.cc
-               ${TOP}LiteCore/Support/LogEncoder.cc)
+               ${TOP}LiteCore/Support/LogEncoder.cc
+			   ${TOP}/vendor/BLIP-Cpp/src/util/Timer.cc)
 
 if(MSVC)
     aux_source_directory(${TOP}MSVC MSVC_SOURCE)
