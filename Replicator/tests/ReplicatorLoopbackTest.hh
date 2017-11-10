@@ -30,7 +30,7 @@ using namespace litecore::websocket;
 
 class ReplicatorLoopbackTest : public C4Test, Replicator::Delegate {
 public:
-    static constexpr duration kLatency              = chrono::milliseconds(50);
+    static constexpr duration kLatency              = chrono::milliseconds(5);
     static constexpr duration kCheckpointSaveDelay  = chrono::milliseconds(500);
 
 
@@ -290,8 +290,8 @@ public:
     Retained<Replicator> _replClient, _replServer;
     alloc_slice _checkpointID;
     unique_ptr<thread> _parallelThread;
-    atomic<bool> _stopOnIdle;
-    atomic<bool> _replicatorFinished;
+    atomic<bool> _stopOnIdle {0};
+    atomic<bool> _replicatorFinished {0};
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };
     unsigned _statusChangedCalls {0};

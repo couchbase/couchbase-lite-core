@@ -138,17 +138,19 @@ namespace litecore {
         assert(!_readMessage);
         _readMessage = true;
 
+        // Read the object ID:
         uint64_t objRef = readUVarInt();
         if (objRef > 0) {
-            if (objRef - 1 < _objects.size()) {
+            if (_objects.find(objRef) != _objects.end()) {
                 out << '{' << objRef << "} ";
             } else {
                 string description = readCString();
-                _objects.push_back(description);
+                _objects.insert({objRef, description});
                 out << '{' << objRef << "|" << description << "} ";
             }
         }
 
+        // Read the format string, then the parameters:
         const char *format = readStringToken().c_str();
         for (const char *c = format; *c != '\0'; ++c) {
             if (*c != '%') {

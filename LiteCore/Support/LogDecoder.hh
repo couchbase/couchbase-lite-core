@@ -8,6 +8,7 @@
 
 #pragma once
 #include <iostream>
+#include <map>
 #include <vector>
 
 namespace litecore {
@@ -66,7 +67,7 @@ namespace litecore {
         time_t _startTime;
         uint64_t _elapsedTicks {0};
         std::vector<std::string> _tokens;
-        std::vector<std::string> _objects;
+        std::map<uint64_t,std::string> _objects;
 
         int8_t _curLevel {0};
         const std::string *_curDomain {nullptr};

@@ -90,6 +90,29 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
 }
 
 
+TEST_CASE("LogEncoder tokens", "[Log]") {
+    stringstream out;
+    {
+        LogEncoder logger(out);
+        size_t size = 0xabcdabcd;
+        auto tweedledum = logger.registerObject("Tweedledum");
+        logger.log(0, nullptr, tweedledum, "I'm Tweedledum");
+        auto rattle = logger.registerObject("rattle");
+        auto tweedledee = logger.registerObject("Tweedledee");
+        logger.log(0, nullptr, tweedledee, "I'm Tweedledee");
+        logger.log(0, nullptr, rattle, "and I'm the rattle");
+    }
+    string encoded = out.str();
+    string result = dumpLog(encoded, {});
+
+    regex expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
+                   TIMESTAMP "\\{1\\|Tweedledum\\} I'm Tweedledum\\n"
+                   TIMESTAMP "\\{3\\|Tweedledee\\} I'm Tweedledee\\n"
+                   TIMESTAMP "\\{2\\|rattle\\} and I'm the rattle\\n");
+    CHECK(regex_match(result, expected));
+}
+
+
 TEST_CASE("LogEncoder auto-flush", "[Log]") {
     stringstream out;
     LogEncoder logger(out);

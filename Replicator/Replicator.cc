@@ -181,10 +181,6 @@ namespace litecore { namespace repl {
             case Connection::kClosed:
                 // After connection closes, remain active while I wait for db to finish writes:
                 return (_dbStatus.level == kC4Busy) ? kC4Busy : kC4Stopped;
-            default:
-                log("Panic, invalid connection state");
-                assert(false);
-                return kC4Offline;
         }
     }
 
