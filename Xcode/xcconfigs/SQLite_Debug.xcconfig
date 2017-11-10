@@ -8,7 +8,7 @@
 
 #include "SQLite.xcconfig"
 
-GCC_OPTIMIZATION_LEVEL       = fast     // We always want SQLite to run fast, even in debug builds
+//GCC_OPTIMIZATION_LEVEL       = fast     // Makes SQLite run fast, even in debug builds
 
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) $(SQLITE_PREPROCESSOR_DEFINITIONS) SQLITE_ENABLE_API_ARMOR
 
