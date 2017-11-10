@@ -191,7 +191,7 @@ namespace litecore { namespace actor {
 #endif
 
         bool empty;
-        pop(empty);
+        popNoWaiting(empty);
         if (!empty)
             reschedule();
         release(_actor);

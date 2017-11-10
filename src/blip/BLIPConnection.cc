@@ -452,7 +452,7 @@ namespace litecore { namespace blip {
                 if (flags & kMoreComing)
                     _pendingRequests.emplace(msgNo, msg);
             } else {
-                throw runtime_error(format("BLIP protocol error: Bad incoming request number %llu (%s)",
+                throw runtime_error(format("BLIP protocol error: Bad incoming REQ #%llu (%s)",
                          msgNo, (msgNo <= _numRequestsReceived ? "already finished" : "too high")));
             }
             return msg;
@@ -468,7 +468,7 @@ namespace litecore { namespace blip {
                 if (!(flags & kMoreComing))
                     _pendingResponses.erase(i);
             } else {
-                throw runtime_error(format("BLIP protocol error: Bad incoming response number %llu (%s)",
+                throw runtime_error(format("BLIP protocol error: Bad incoming RES #%llu (%s)",
                        msgNo, (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
             }
             return msg;

@@ -43,6 +43,7 @@ namespace litecore { namespace actor {
             } else if (earliest->first <= clock::now()) {
                 // A Timer is ready to fire, so remove it and call the callback:
                 auto timer = earliest->second;
+                timer->_triggered = true;
                 _unschedule(timer);
 
                 // Fire the timer, while not holding the mutex (to avoid deadlocks if the

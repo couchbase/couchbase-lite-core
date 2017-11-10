@@ -25,13 +25,10 @@ namespace litecore { namespace actor {
     }
 
 
-    /** Pops the next value from the end of the queue.
-     If the queue is empty, blocks until another thread adds something to the queue.
-     @param empty  Will be set to true if there are no more values remaining in the queue. */
     template <class T>
-    T Channel<T>::pop(bool &empty) {
+    T Channel<T>::pop(bool &empty, bool wait) {
         std::unique_lock<std::mutex> lock(_mutex);
-        while (_queue.empty() && !_closed)
+        while (wait && _queue.empty() && !_closed)
             _cond.wait(lock);
         if (_queue.empty()) {
             empty = true;
@@ -45,19 +42,6 @@ namespace litecore { namespace actor {
     }
 
 
-    /** Pops the next value from the end of the queue, or returns if the queue is empty.
-     @return  True if a value was popped, or false if the queue was empty. */
-    template <class T>
-    bool Channel<T>::popNoWaiting(T &t) {
-        std::unique_lock<std::mutex> lock(_mutex);
-        if (_queue.empty())
-            return false;
-        t = std::move(_queue.front());
-        _queue.pop();
-        return true;
-    }
-
-
     template <class T>
     const T& Channel<T>::front() const {
         std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(_mutex));
@@ -66,19 +50,10 @@ namespace litecore { namespace actor {
     }
 
 
-
-    /** Returns true if the queue is currently empty. */
-    template <class T>
-    bool Channel<T>::empty() const {
-        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(_mutex));
-        return _queue.empty();
-    }
-
-
     template <class T>
     size_t Channel<T>::size() const {
         std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(_mutex));
-        return _queue.empty();
+        return _queue.size();
     }
 
 

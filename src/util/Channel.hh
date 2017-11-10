@@ -24,26 +24,27 @@ namespace litecore { namespace actor {
 
         /** Pops the next value from the end of the queue.
             If the queue is empty, blocks until another thread adds something to the queue.
-            @param empty  Will be set to true if there are no more values remaining in the queue. */
-        T pop(bool &empty);
+            If the queue is closed and empty, returns a default (zero) T.
+            @param empty  Will be set to true if the queue is now empty. */
+        T pop(bool &empty)               {return pop(empty, true);}
 
         /** Pops the next value from the end of the queue.
-            If the queue is empty, blocks until another thread adds something to the queue. */
+            If the queue is empty, immediately returns a default (zero) T.
+            @param empty  Will be set to true if the queue is now empty. */
+        T popNoWaiting(bool &empty)      {return pop(empty, false);}
+
+        /** Pops the next value from the end of the queue.
+            If the queue is empty, blocks until another thread adds something to the queue.
+            If the queue is closed and empty, returns a default (zero) T. */
         T pop() {
             bool more;
             return pop(more);
         }
 
-        /** Pops the next value from the end of the queue, or returns if the queue is empty.
-            @return  True if a value was popped, or false if the queue was empty. */
-        bool popNoWaiting(T &t);
-
         /** Returns the front item of the queue without popping it. The queue MUST be non-empty. */
         const T& front() const;
 
-        /** Returns true if the queue is currently empty. */
-        bool empty() const;
-
+        /** Returns the number of items in the queue. */
         size_t size() const;
 
         /** When the queue is closed, after it empties all pops will return immediately with a 
@@ -54,6 +55,8 @@ namespace litecore { namespace actor {
         std::mutex _mutex;
         
     private:
+        T pop(bool &empty, bool wait);
+
         std::condition_variable _cond;
         std::queue<T> _queue;
         bool _closed {false};

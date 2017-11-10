@@ -93,8 +93,8 @@ namespace litecore { namespace actor {
         callback _callback;                     // The function to call when I fire
         time _fireTime;                         // Absolute time that I fire
         std::atomic<state> _state {kUnscheduled};   // Current state
-        std::atomic<bool> _triggered {false};
-        bool _autoDelete {false};
+        std::atomic<bool> _triggered {false};   // True while callback is being called
+        bool _autoDelete {false};               // If true, delete after firing
         Manager::map::iterator _entry;          // My map entry in Manager::_schedule
     };
 
