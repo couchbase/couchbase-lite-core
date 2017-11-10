@@ -69,7 +69,7 @@ namespace litecore { namespace actor {
         /** Internal singleton that tracks all scheduled Timers and runs a background thread. */
         class Manager {
         public:
-            using map = std::map<time, Timer*>;
+            using map = std::multimap<time, Timer*>;
             
             Manager();
             void setFireTime(Timer*, time);

@@ -104,8 +104,7 @@ namespace litecore { namespace actor {
     void Timer::Manager::setFireTime(Timer *timer, clock::time_point when) {
         unique_lock<mutex> lock(_mutex);
         bool notify = _unschedule(timer);
-        auto result = _schedule.insert({when, timer});
-        timer->_entry = result.first;
+        timer->_entry = _schedule.insert({when, timer});
         timer->_state = kScheduled;
         if (timer->_entry == _schedule.begin() || notify)
             _condition.notify_one();        // wakes up run() so it can recalculate its wait time
