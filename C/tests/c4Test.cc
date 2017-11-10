@@ -245,13 +245,17 @@ C4Test::~C4Test() {
 #if ATOMIC_INT_LOCK_FREE > 1
     if (!current_exception()) {
         // Check for leaks:
-        int leaks = c4_getObjectCount() - objectCount;
-        if (leaks > 0) {
-            fprintf(stderr, "*** LEAKED LITECORE OBJECTS: ");
-            c4_dumpInstances();
-            fprintf(stderr, " ***\n");
+        int leaks;
+        int attempt = 0;
+        while ((leaks = c4_getObjectCount() - objectCount) > 0 && attempt++ < 10) {
+            usleep(200000);     // wait up to 2 seconds for bg threads to free objects
         }
-        REQUIRE(leaks == 0);
+        if (leaks > 0) {
+            fprintf(stderr, "*** LEAKED LITECORE OBJECTS: \n");
+            c4_dumpInstances();
+            fprintf(stderr, "***\n");
+        }
+        CHECK(leaks == 0);
     }
 #endif
 }
