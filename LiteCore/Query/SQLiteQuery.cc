@@ -83,34 +83,21 @@ namespace litecore {
             if (_ftsTables.size() == 0)
                 error::_throw(error::NoSuchIndex);
             string expr = _ftsTables[0];    // TODO: Support for multiple matches in a query
-            auto delim = expr.find("::");
-            Assert(delim != string::npos);
 
-            // FIXME: Currently only property expressions are supported:
-            if (expr[delim+2] != '.') {
-                Warn("Unable to get matched text from expression %s", expr.c_str());
-                error::_throw(error::Unimplemented);
+            if (!_matchedTextStatement) {
+                auto &df = (SQLiteDataFile&) keyStore().dataFile();
+                string sql = "SELECT text FROM \"" + expr + "\" WHERE docid=?";
+                _matchedTextStatement.reset(new SQLite::Statement(df, sql));
             }
-            string path = expr.substr(delim+3);
 
-            // Now load the document and evaluate the expression:
-            alloc_slice result;
-            keyStore().get(ftsID, [&](const Record &rec) {
-                if (rec.body()) {
-                    slice fleeceData = rec.body();
-                    auto accessor = keyStore().dataFile().fleeceAccessor();
-                    if (accessor)
-                        fleeceData = accessor(fleeceData);
-                    auto root = fleece::Value::fromTrustedData(fleeceData);
-                    //TODO: Support multiple FTS properties in a query
-                    auto textObj = fleece::Path::eval(path,
-                                                      keyStore().dataFile().documentKeys(),
-                                                      root);
-                    if (textObj)
-                        result = textObj->asString();
-                }
-            });
-            return result;
+            alloc_slice matchedText;
+            _matchedTextStatement->bind(1, (long long)ftsID);
+            if (_matchedTextStatement->executeStep())
+                matchedText = alloc_slice( ((SQLiteKeyStore&)keyStore()).columnAsSlice(_matchedTextStatement->getColumn(0)) );
+            else
+                Warn("FTS index %s has no row for sequence %llu", expr.c_str(), ftsID);
+            _matchedTextStatement->reset();
+            return matchedText;
         }
 
 
@@ -151,6 +138,7 @@ namespace litecore {
             
     private:
         shared_ptr<SQLite::Statement> _statement;
+        unique_ptr<SQLite::Statement> _matchedTextStatement;
     };
 
 

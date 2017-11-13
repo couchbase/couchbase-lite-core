@@ -58,7 +58,7 @@ static vector<string> extractIndexes(slice encodedIndexes) {
     return retVal;
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query]") {
+TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query][FTS]") {
     KeyStore::IndexOptions options { "en", true };
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
         store->createIndex(""_sl, "[[\".num\"]]"_sl);
@@ -69,9 +69,6 @@ TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query]") {
     });
     
     store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
-    ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
-        store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
-    });
     auto indexes = extractIndexes(store->getIndexes());
     CHECK(indexes.size() == 1);
     CHECK(indexes[0] == "num");

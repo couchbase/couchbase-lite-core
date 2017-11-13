@@ -114,28 +114,12 @@ namespace litecore {
     {
         // Check whether the index already exists:
         QueryParser qp(tableName());
-        auto ftsTableName = qp.FTSIndexName(params);
-        string alias = tableName() + "::" + (string)indexName;
-        SQLite::Statement existingIndex(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
-        existingIndex.bind(1, alias);
-        if(existingIndex.executeStep()) {
-            auto existingExpression = existingIndex.getColumn(0).getString();
-            existingIndex.reset();
-            if (existingExpression == ftsTableName) {
-                return; // No-op
-            }
-        }
+        auto ftsTableName = qp.FTSTableName(string(indexName));
 
-        if (db().tableExists(ftsTableName)) {
-            // This is a problem; the index already exists under another alias
-            error::_throw(error::LiteCoreError::InvalidParameter,
-                          "Identical index was created with another name already");
-        }
+        // TODO: Check for no-op where FTS table already exists with identical properties/options
 
-        // Delete any existing index, then create an entry for it in kv_fts_map:
+        // Delete any existing index:
         _deleteIndex(indexName);
-        db().exec("INSERT INTO kv_fts_map (alias, expression) VALUES (\"" + alias +
-                  "\", \"" + ftsTableName + "\")");
 
         // Create the FTS4 table, with the tokenizer options: ( https://www.sqlite.org/fts3.html )
         stringstream sql;
@@ -183,24 +167,18 @@ namespace litecore {
 
 
     void SQLiteKeyStore::_deleteIndex(slice name) {
+        // Delete any expression index:
         validateIndexName(name);
         string indexName = (string)name;
-        db().exec(string("DROP INDEX IF EXISTS ") + indexName, LogLevel::Info);
+        db().exec(string("DROP INDEX IF EXISTS \"") + indexName + "\"", LogLevel::Info);
 
-        SQLite::Statement getExpression(db(), "SELECT expression FROM kv_fts_map WHERE alias=?");
-        string alias = tableName() + "::" + (string)name;
-        getExpression.bind(1, alias);
-        if(!getExpression.executeStep()) {
-            return;
-        }
-
-        indexName = getExpression.getColumn(0).getString();
-        getExpression.reset();
-        db().exec(string("DROP TABLE IF EXISTS \"") + indexName + "\"", LogLevel::Info);
-        db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::ins\"");
-        db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::del\"");
-        db().exec(string("DROP TRIGGER IF EXISTS \"") + indexName + "::upd\"");
-        db().exec(string("DELETE FROM kv_fts_map WHERE alias=\"") + alias + "\"");
+        // Delete any FTS index:
+        QueryParser qp(tableName());
+        auto ftsTableName = qp.FTSTableName(indexName);
+        db().exec(string("DROP TABLE IF EXISTS \"") + ftsTableName + "\"", LogLevel::Info);
+        db().exec(string("DROP TRIGGER IF EXISTS \"") + ftsTableName + "::ins\"");
+        db().exec(string("DROP TRIGGER IF EXISTS \"") + ftsTableName + "::del\"");
+        db().exec(string("DROP TRIGGER IF EXISTS \"") + ftsTableName + "::upd\"");
     }
 
 
@@ -216,17 +194,21 @@ namespace litecore {
         enc.beginArray();
         string tableNameStr = tableName();
         SQLite::Statement getIndex(db(), "SELECT name FROM sqlite_master WHERE type='index' "
-                                   "AND tbl_name=? AND sql NOT NULL");
+                                            "AND tbl_name=? "
+                                            "AND sql NOT NULL");
         getIndex.bind(1, tableNameStr);
         while(getIndex.executeStep()) {
             enc.writeString(getIndex.getColumn(0).getString());
         }
 
-        SQLite::Statement getFTSIndex(db(), "SELECT alias FROM kv_fts_map WHERE alias LIKE ?");
-        getFTSIndex.bind(1, tableNameStr + "::%");
-        while(getFTSIndex.executeStep()) {
-            string alias = getFTSIndex.getColumn(0).getString();
-            enc.writeString(alias.substr(tableNameStr.size() + 2));
+        SQLite::Statement getFTS(db(), "SELECT name FROM sqlite_master WHERE type='table' "
+                                            "AND name like ? || '::%' "
+                                            "AND sql LIKE 'CREATE VIRTUAL TABLE % USING fts%'");
+        getFTS.bind(1, tableNameStr);
+        while(getFTS.executeStep()) {
+            string ftsName = getFTS.getColumn(0).getString();
+            ftsName = ftsName.substr(ftsName.find("::") + 2);
+            enc.writeString(ftsName);
         }
 
         enc.endArray();

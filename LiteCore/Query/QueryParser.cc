@@ -43,6 +43,8 @@ namespace litecore {
     // Existing SQLite FTS rank function:
     static constexpr slice kRankFnName  = "rank"_sl;
 
+    static constexpr slice kArrayCountFnName = "array_count"_sl;
+
 
 #pragma mark - UTILITY FUNCTIONS:
 
@@ -655,7 +657,7 @@ namespace litecore {
     }
 
 
-    // Handles "property MATCH pattern" expressions (FTS)
+    // Handles "fts_index MATCH pattern" expressions (FTS)
     void QueryParser::matchOp(slice op, Array::iterator& operands) {
         // Is a MATCH legal here? Look at the parent operation(s):
         auto parentCtx = _context.rbegin() + 1;
@@ -874,13 +876,16 @@ namespace litecore {
             op = spec->name; // canonical case
 
         // Special case: "array_count(propertyname)" turns into a call to fl_count:
-        if (op.caseEquivalent("array_count"_sl) && writeNestedPropertyOpIfAny(kCountFnName, operands))
+        if (op.caseEquivalent(kArrayCountFnName) && writeNestedPropertyOpIfAny(kCountFnName, operands))
             return;
-        else if (op.caseEquivalent("rank"_sl)) {
-            if (writeNestedPropertyOpIfAny(kRankFnName, operands))
-                return;
-            else
-                fail("rank() can only be called on FTS-indexed properties");
+
+        // Special case: in "rank(ftsName)" the param has to be a matchinfo() call:
+        if (op.caseEquivalent(kRankFnName)) {
+            string fts = FTSTableName(operands[0]);
+            if (find(_ftsTables.begin(), _ftsTables.end(), fts) == _ftsTables.end())
+                fail("rank() can only be called on FTS indexes");
+            _sql << "rank(matchinfo(\"" << fts << "\"))";
+            return;
         }
 
         _sql << op;
@@ -990,12 +995,6 @@ namespace litecore {
         } else if (property == "_sequence") {
             require(fn == kValueFnName, "can't use '_sequence' in this context");
             _sql << tableName << "sequence";
-        } else if (fn == kRankFnName) {
-            // FTS rank() needs special treatment
-            string fts = FTSIndexName(property);
-            if (find(_ftsTables.begin(), _ftsTables.end(), fts) == _ftsTables.end())
-                fail("rank() can only be called on FTS-indexed properties");
-            _sql << "rank(matchinfo(\"" << fts << "\"))";
         } else {
             // It's more efficent to get the doc root with fl_root than with fl_value:
             if (property == "" && fn == kValueFnName)
@@ -1046,25 +1045,19 @@ namespace litecore {
     }
 
 
-    string QueryParser::FTSIndexName(const Value *key) const {
-        slice op = requiredArray(key, "left-hand side of MATCH expression")->get(0)->asString();
-        require(op.size > 0, "Invalid left-hand-side of MATCH");
-        if (op[0] == '.') {
-            // abbreviation for common case where expression is a property:
-            return FTSIndexName(propertyFromNode(key));
-        } else {
-            string name = key->toJSON().asString();
-            replace(name, '"', '\'');
-            return _tableName + "::" + name;
-        }
+    string QueryParser::FTSTableName(const Value *key) const {
+        slice ftsName = requiredString(key, "left-hand side of MATCH expression");
+        return FTSTableName(string(ftsName));
     }
 
-    string QueryParser::FTSIndexName(const string &property) const {
-        return _tableName + "::." + property;
+    string QueryParser::FTSTableName(const string &indexName) const {
+        require(!indexName.empty() && indexName.find('"') == string::npos,
+                "FTS index name may not contain double-quotes nor be empty");
+        return _tableName + "::" + indexName;
     }
 
     size_t QueryParser::FTSPropertyIndex(const Value *matchLHS, bool canAdd) {
-        string key = FTSIndexName(matchLHS);
+        string key = FTSTableName(matchLHS);
         auto i = find(_ftsTables.begin(), _ftsTables.end(), key);
         if (i != _ftsTables.end()) {
             return i - _ftsTables.begin() + 1;

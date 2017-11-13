@@ -52,8 +52,8 @@ namespace litecore {
         bool isAggregateQuery() const                               {return _isAggregateQuery;}
 
         static std::string expressionSQL(const fleece::Value*, const char *bodyColumnName = "body");
-        std::string FTSIndexName(const fleece::Value *key) const;
-        std::string FTSIndexName(const std::string &property) const;
+        std::string FTSTableName(const fleece::Value *key) const;
+        std::string FTSTableName(const std::string &property) const;
 
     private:
         struct Operation;

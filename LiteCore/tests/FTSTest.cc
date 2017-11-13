@@ -81,8 +81,8 @@ constexpr const char* const FTSTest::kStrings[5];
 TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
     createIndex({"english", true});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\
-                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                     WHAT: [['.sentence']]}]",
               {1, 2, 0, 4},
               {3, 3, 1, 1});
@@ -92,8 +92,8 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
 TEST_CASE_METHOD(FTSTest, "Query Full-Text Unsupported Language", "[Query][FTS]") {
     createIndex({"elbonian", true});
     testQuery(
-              "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'search'],\
-              ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+              "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+              ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
               WHAT: [['.sentence']]}]",
               {1, 2, 0},
               {3, 3, 1});
@@ -104,8 +104,8 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words", "[Query][FTS]") {
     // Check that English stop-words like "the" and "is" are being ignored by FTS.
     createIndex({"en", true});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'the search is'],\
-                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'the search is'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                     WHAT: [['.sentence']]}]",
               {1, 2, 0, 4},
               {3, 3, 1, 1});
@@ -115,8 +115,8 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words", "[Query][FTS]") {
 TEST_CASE_METHOD(FTSTest, "Query Full-Text No stop-words", "[Query][FTS]") {
     createIndex({"en", true, false, ""});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'the search is'],\
-                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'the search is'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                     WHAT: [['.sentence']]}]",
               {2},
               {7});
@@ -126,8 +126,8 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text No stop-words", "[Query][FTS]") {
 TEST_CASE_METHOD(FTSTest, "Query Full-Text Custom stop-words", "[Query][FTS]") {
     createIndex({"en", true, false, "the a an"});
     testQuery(
-        "['SELECT', {'WHERE': ['MATCH', ['.', 'sentence'], 'the search is'],\
-                    ORDER_BY: [['DESC', ['rank()', ['.', 'sentence']]]],\
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'the search is'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
                     WHAT: [['.sentence']]}]",
               {2, 0},
               {4, 2});

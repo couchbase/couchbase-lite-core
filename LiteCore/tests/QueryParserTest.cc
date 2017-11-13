@@ -154,10 +154,10 @@ TEST_CASE("QueryParser SELECT", "[Query]") {
 }
 
 
-TEST_CASE("QueryParser SELECT FTS", "[Query]") {
+TEST_CASE("QueryParser SELECT FTS", "[Query][FTS]") {
     CHECK(parseWhere("['SELECT', {\
-                     WHERE: ['MATCH', ['.', 'bio'], 'mobile']}]")
-          == "SELECT sequence, offsets(\"kv_default::.bio\"), key, sequence FROM kv_default JOIN \"kv_default::.bio\" AS FTS1 ON FTS1.rowid = kv_default.sequence WHERE (FTS1.text MATCH 'mobile') AND (flags & 1) = 0");
+                     WHERE: ['MATCH', 'bio', 'mobile']}]")
+          == "SELECT sequence, offsets(\"kv_default::bio\"), key, sequence FROM kv_default JOIN \"kv_default::bio\" AS FTS1 ON FTS1.rowid = kv_default.sequence WHERE (FTS1.text MATCH 'mobile') AND (flags & 1) = 0");
 }
 
 TEST_CASE("QueryParser SELECT WHAT", "[Query]") {

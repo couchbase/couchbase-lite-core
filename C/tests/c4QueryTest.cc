@@ -220,7 +220,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
 N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
-    compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
+    compile(json5("['MATCH', 'byStreet', 'Hwy']"));
     CHECK(run() == (vector<string>{"0000013", "0000015", "0000043", "0000044", "0000052"}));
 }
 
@@ -229,8 +229,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text indexes", "[Query][C][FTS]
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
-    compile(json5("['AND', ['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy'],\
-                           ['MATCH', ['.', 'contact', 'address', 'city'], 'Santa']]"));
+    compile(json5("['AND', ['MATCH', 'byStreet', 'Hwy'],\
+                           ['MATCH', 'byCity',   'Santa']]"));
     CHECK(run() == (vector<string>{"0000015"}));
 }
 
@@ -240,7 +240,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query in multiple ANDs", "[Query][C
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     REQUIRE(c4db_createIndex(db, C4STR("byCity"), C4STR("[[\".contact.address.city\"]]"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['AND', ['AND', ['=', ['.gender'], 'male'],\
-                                   ['MATCH', ['.', 'contact', 'address', 'city'], 'Santa']],\
+                                   ['MATCH', 'byCity', 'Santa']],\
                            ['=', ['.name.first'], 'Cleveland']]"));
     CHECK(run() == (vector<string>{"0000015"}));
 }
@@ -252,8 +252,8 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Multiple Full-text queries", "[Query][C][FTS]
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     query = c4query_new(db,
-                        json5slice("['AND', ['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy'],\
-                                            ['MATCH', ['.', 'contact', 'address', 'street'], 'Blvd']]"),
+                        json5slice("['AND', ['MATCH', 'byStreet', 'Hwy'],\
+                                            ['MATCH', 'byStreet', 'Blvd']]"),
                         &err);
     REQUIRE(query == nullptr);
     CheckError(err, LiteCoreDomain, kC4ErrorInvalidQuery,
@@ -267,7 +267,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Buried Full-text queries", "[Query][C][FTS][!
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     query = c4query_new(db,
-                        json5slice("['OR', ['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy'],\
+                        json5slice("['OR', ['MATCH', 'byStreet', 'Hwy'],\
                                            ['=', ['.', 'contact', 'address', 'state'], 'CA']]"),
                         &err);
     REQUIRE(query == nullptr);
