@@ -155,16 +155,16 @@ namespace litecore {
     }
 
     // array_count() returns the number of non-null items in an array.
-    static void fl_array_count(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        sqlite3_int64 count = 0;
-        aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, bool& stop) {
-            if(val->type() != valueType::kNull) {
-                count++;
-            }
-        });
-
-        sqlite3_result_int64(ctx, count);
-    }
+//    static void fl_array_count(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+//        sqlite3_int64 count = 0;
+//        aggregateArrayOperation(ctx, argc, argv, [&count](const Value* val, bool& stop) {
+//            if(val->type() != valueType::kNull) {
+//                count++;
+//            }
+//        });
+//
+//        sqlite3_result_int64(ctx, count);
+//    }
 
     // array_ifnull() returns the first non-null item in an array.
     static void fl_array_ifnull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
@@ -1102,7 +1102,7 @@ namespace litecore {
         { "array_avg",        -1, fl_array_avg },
 //        { "array_concat",     -1, unimplemented },
         { "array_contains",   -1, fl_array_contains },
-        { "array_count",      -1, fl_array_count },
+//        { "array_count",      -1, fl_array_count },
 //        { "array_distinct",    1, unimplemented },
 //        { "array_flatten",     2, unimplemented },
 //        { "array_agg",         1, unimplemented },

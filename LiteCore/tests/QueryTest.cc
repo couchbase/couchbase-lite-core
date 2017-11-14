@@ -313,3 +313,152 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query boolean", "[Query]") {
         CHECK(e->columns()[0]->asString().asString() == stringWithFormat("rec-%03d", i++));
     }
 }
+    
+#pragma mark Targeted N1QL tests
+    
+TEST_CASE_METHOD(DataFileTestFixture, "Query array length", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        for(int i = 0; i < 2; i++) {
+            string docID = stringWithFormat("rec-%03d", i + 1);
+            
+            fleece::Encoder enc;
+            enc.beginDictionary(1);
+            enc.writeKey("value");
+            enc.beginArray(i + 1);
+            for(int j = 0; j < i + 1; j++) {
+                enc.writeInt(j);
+            }
+            
+            enc.endArray();
+            enc.endDictionary();
+            alloc_slice body = enc.extractOutput();
+            
+            store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        }
+        
+        t.commit();
+    }
+    
+    Retained<Query> query{ store->compileQuery(json5(
+        "{WHAT: ['._id'], WHERE: ['>', ['ARRAY_LENGTH()', ['.value']], 1]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "rec-002"_sl);
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query missing and null", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        string docID = "doc1";
+        
+        fleece::Encoder enc;
+        enc.beginDictionary(1);
+        enc.writeKey("value");
+        enc.writeNull();
+        enc.writeKey("real_value");
+        enc.writeInt(1);
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        
+        enc.reset();
+        docID = "doc2";
+        enc.beginDictionary(2);
+        enc.writeKey("value");
+        enc.writeNull();
+        enc.writeKey("atai");
+        enc.writeInt(1);
+        enc.endDictionary();
+        body = enc.extractOutput();
+        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        
+        t.commit();
+    }
+    
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSING()', ['.bogus'], ['.value']], null]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.atai'], ['.value']], 1]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFNULL()', ['.real_value'], ['.atai']], 1]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query regex", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        string docID = "doc1";
+        
+        fleece::Encoder enc;
+        enc.beginDictionary(1);
+        enc.writeKey("value");
+        enc.writeString("awesome value");
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        
+        enc.reset();
+        docID = "doc2";
+        enc.beginDictionary(1);
+        enc.writeKey("value");
+        enc.writeString("cool value");
+        enc.endDictionary();
+        body = enc.extractOutput();
+        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        
+        enc.reset();
+        docID = "doc3";
+        enc.beginDictionary(1);
+        enc.writeKey("value");
+        enc.writeString("invalid");
+        enc.endDictionary();
+        body = enc.extractOutput();
+        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        
+        t.commit();
+    }
+    
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['REGEXP_CONTAINS()', ['.value'], '.*? value']}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query = store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['REGEXP_LIKE()', ['.value'], '.*? value']}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
+    
+    query = store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['>', ['REGEXP_POSITION()', ['.value'], '[ ]+value'], 4]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+}
