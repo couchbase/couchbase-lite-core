@@ -67,29 +67,28 @@ extern "C" {
 	CBL_CORE_API extern const C4QueryOptions kC4DefaultQueryOptions;
 
 
-    /** An opaque identifier of the matched text in a query row. */
-    typedef uint64_t C4FullTextID;
-
-
     /** Info about a match of a full-text query term. */
     typedef struct {
-        uint32_t termIndex;                 ///< Index of the search term in the tokenized query
-        uint32_t start, length;             ///< *Byte* range of word in query string
-    } C4FullTextTerm;
+        uint64_t dataSource;    ///< Opaque identifier of where text is stored
+        uint32_t property;      ///< Which property in the index was matched (array index in `expressionsJSON`)
+        uint32_t term;          ///< Which search term (word) in the query was matched
+        uint32_t start, length; ///< *Byte* range of the match in the full text
+    } C4FullTextMatch;
 
 
     /** A query result enumerator.
         Created by c4db_query. Must be freed with c4queryenum_free.
-        The fields of this struct represent the current matched index row, and are replaced by the
-        next call to c4queryenum_next or c4queryenum_free.
-        The memory pointed to by slice fields is valid until the enumerator is advanced or freed. */
+        The fields of this struct represent the current matched index row, and are valid until the
+        next call to c4queryenum_next or c4queryenum_free. */
     typedef struct {
+        /** The columns of this result, in the same order as in the query's `WHAT` clause. */
         FLArrayIterator columns;
 
-        // Full-text only:
-        C4FullTextID fullTextID;
-        uint32_t fullTextTermCount;          ///< The number of terms that were matched
-        const C4FullTextTerm *fullTextTerms; ///< Array of terms that were matched
+        /** The number of full-text matches (i.e. the number of items in `fullTextMatches`) */
+        uint32_t fullTextMatchCount;
+
+        /** Array with details of each full-text match */
+        const C4FullTextMatch *fullTextMatches;
     } C4QueryEnumerator;
 
 
@@ -108,10 +107,14 @@ extern "C" {
                                    C4String encodedParameters,
                                    C4Error *outError) C4API;
 
-    /** Given a C4FullTextID from the enumerator, returns the text that was emitted
-        during indexing. */
+    /** Given a C4FullTextMatch from the enumerator, returns the entire text of the property that
+        was matched. (The result depends only on the term's `dataSource` and `property` fields,
+        so if you get multiple matches of the same property in the same document, you can skip
+        redundant calls with the same values.)
+        To find the actual word that was matched, use the term's `start` and `length` fields
+        to get a substring of the returned (UTF-8) string. */
     C4StringResult c4query_fullTextMatched(C4Query *query C4NONNULL,
-                                           C4FullTextID fullTextID,
+                                           const C4FullTextMatch *term C4NONNULL,
                                            C4Error *outError) C4API;
 
     /** Advances a query enumerator to the next row, populating its fields.

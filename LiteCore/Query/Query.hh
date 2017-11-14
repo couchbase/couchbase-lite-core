@@ -20,15 +20,23 @@ namespace litecore {
         These are created by the factory method KeyStore::compileQuery(). */
     class Query : public RefCounted {
     public:
-        using FullTextID = uint64_t;
+
+        /** Info about a match of a full-text query term */
+        struct FullTextTerm {
+            uint64_t dataSource;              ///< Opaque identifier of where text is stored
+            uint32_t keyIndex;                ///< Which index key the match occurred in
+            uint32_t termIndex;               ///< Index of the search term in the tokenized query
+            uint32_t start, length;           ///< *Byte* range of word in query string
+        };
+
 
         KeyStore& keyStore() const                                      {return _keyStore;}
 
-        virtual unsigned columnCount() const noexcept                   {return 0;}
+        virtual unsigned columnCount() const noexcept =0;
 
-        virtual alloc_slice getMatchedText(FullTextID)                  {return alloc_slice();}
+        virtual alloc_slice getMatchedText(const FullTextTerm&) =0;
 
-        virtual std::string explain()                                   {return "";}
+        virtual std::string explain() =0;
 
         struct Options {
             alloc_slice paramBindings;
@@ -51,6 +59,8 @@ namespace litecore {
     /** Iterator/enumerator of query results. Abstract class created by Query::createEnumerator. */
     class QueryEnumerator {
     public:
+        using FullTextTerms = std::vector<Query::FullTextTerm>;
+
         virtual ~QueryEnumerator() =default;
 
         virtual bool next() =0;
@@ -62,15 +72,8 @@ namespace litecore {
         virtual int64_t getRowCount() const         {return -1;}
         virtual void seek(uint64_t rowIndex)        {error::_throw(error::UnsupportedOperation);}
 
-        /** Info about a match of a full-text query term */
-        struct FullTextTerm {
-            uint32_t termIndex;               ///< Index of the search term in the tokenized query
-            uint32_t start, length;           ///< *Byte* range of word in query string
-        };
-
         virtual bool hasFullText() const                        {return false;}
-        virtual const std::vector<FullTextTerm>& fullTextTerms(){return _fullTextTerms;}
-        virtual Query::FullTextID fullTextID() const            {return 0;}
+        virtual const FullTextTerms& fullTextTerms()            {return _fullTextTerms;}
 
         /** If the query results have changed since `currentEnumerator`, returns a new enumerator
             that will return the new results. Otherwise returns null. */
@@ -78,7 +81,7 @@ namespace litecore {
 
     protected:
         // The implementation of fullTextTerms() should populate this and return a reference:
-        std::vector<FullTextTerm> _fullTextTerms;
+        FullTextTerms _fullTextTerms;
     };
 
 }

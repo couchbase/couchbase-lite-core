@@ -670,7 +670,7 @@ namespace litecore {
         // Write the expression:
         auto ftsTableNo = FTSPropertyIndex(operands[0]);
         Assert(ftsTableNo > 0);
-        _sql << "FTS" << ftsTableNo << ".text MATCH ";
+        _sql << "FTS" << ftsTableNo << ".\"" << FTSTableName(operands[0]) << "\" MATCH ";
         parseCollatableNode(operands[1]);
     }
 
@@ -1067,6 +1067,16 @@ namespace litecore {
         } else {
             return 0;
         }
+    }
+
+
+    string QueryParser::FTSColumnName(const Value *expression) {
+        slice op = requiredArray(expression, "FTS index expression")->get(0)->asString();
+        require(op.size > 0, "invalid FTS index expression");
+        require(op[0] == '.', "FTS index expression must be a property");
+        string property = propertyFromNode(expression);
+        require(!property.empty(), "invalid property expression");
+        return property;
     }
 
 }

@@ -54,6 +54,7 @@ namespace litecore {
         static std::string expressionSQL(const fleece::Value*, const char *bodyColumnName = "body");
         std::string FTSTableName(const fleece::Value *key) const;
         std::string FTSTableName(const std::string &property) const;
+        static std::string FTSColumnName(const fleece::Value *expression);
 
     private:
         struct Operation;

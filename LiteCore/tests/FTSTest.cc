@@ -53,25 +53,25 @@ public:
                    vector<int> expectedTerms) {
         Retained<Query> query{ store->compileQuery(json5(queryStr)) };
         REQUIRE(query != nullptr);
-        unsigned rows = 0;
+        unsigned row = 0;
         unique_ptr<QueryEnumerator> e(query->createEnumerator());
         while (e->next()) {
             auto cols = e->columns();
             REQUIRE(cols.count() == 1);
-            REQUIRE(rows < expectedOrder.size());
-            int stringNo = expectedOrder[rows];
+            REQUIRE(row < expectedOrder.size());
+            int stringNo = expectedOrder[row];
             slice sentence = cols[0]->asString();
             CHECK(sentence == slice(kStrings[stringNo]));
             CHECK(e->hasFullText());
-            CHECK(e->fullTextTerms().size() == expectedTerms[rows]);
+            CHECK(e->fullTextTerms().size() == expectedTerms[row]);
             for (auto term : e->fullTextTerms()) {
                 auto word = string(sentence).substr(term.start, term.length);
                 //CHECK(word == (stringNo == 4 ? "searching" : "search"));
+                CHECK(query->getMatchedText(term) == sentence);
             }
-            CHECK(query->getMatchedText(e->fullTextID()) == sentence);
-            ++rows;
+            ++row;
         }
-        CHECK(rows == expectedOrder.size());
+        CHECK(row == expectedOrder.size());
     }
 };
 

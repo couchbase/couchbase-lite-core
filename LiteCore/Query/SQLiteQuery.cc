@@ -76,9 +76,7 @@ namespace litecore {
         }
 
 
-        alloc_slice getMatchedText(FullTextID ftsID) override {
-            if (ftsID == 0)
-                error::_throw(error::InvalidParameter);
+        alloc_slice getMatchedText(const FullTextTerm &term) override {
             // Get the expression that generated the text
             if (_ftsTables.size() == 0)
                 error::_throw(error::NoSuchIndex);
@@ -86,16 +84,16 @@ namespace litecore {
 
             if (!_matchedTextStatement) {
                 auto &df = (SQLiteDataFile&) keyStore().dataFile();
-                string sql = "SELECT text FROM \"" + expr + "\" WHERE docid=?";
+                string sql = "SELECT * FROM \"" + expr + "\" WHERE docid=?";
                 _matchedTextStatement.reset(new SQLite::Statement(df, sql));
             }
 
             alloc_slice matchedText;
-            _matchedTextStatement->bind(1, (long long)ftsID);
+            _matchedTextStatement->bind(1, (long long)term.dataSource); // dataSource is sequence
             if (_matchedTextStatement->executeStep())
-                matchedText = alloc_slice( ((SQLiteKeyStore&)keyStore()).columnAsSlice(_matchedTextStatement->getColumn(0)) );
+                matchedText = alloc_slice( ((SQLiteKeyStore&)keyStore()).columnAsSlice(_matchedTextStatement->getColumn(term.keyIndex)) );
             else
-                Warn("FTS index %s has no row for sequence %llu", expr.c_str(), ftsID);
+                Warn("FTS index %s has no row for sequence %llu", expr.c_str(), term.dataSource);
             _matchedTextStatement->reset();
             return matchedText;
         }
@@ -231,8 +229,9 @@ namespace litecore {
             return !_query->_ftsTables.empty();
         }
 
-        const std::vector<FullTextTerm>& fullTextTerms() override {
+        const FullTextTerms& fullTextTerms() override {
             _fullTextTerms.clear();
+            sequence_t sequence = _iter->asArray()->get(kFTSSeqCol)->asInt();
             // The offsets() function returns a string of space-separated numbers in groups of 4.
             string offsets = _iter->asArray()->get(kFTSOffsetsCol)->asString().asString();
             const char *termStr = offsets.c_str();
@@ -243,13 +242,10 @@ namespace litecore {
                     n[i] = (uint32_t)strtol(termStr, &next, 10);
                     termStr = next;
                 }
-                _fullTextTerms.push_back({n[1], n[2], n[3]});    // {term #, byte offset, byte length}
+                _fullTextTerms.push_back({sequence, n[0], n[1], n[2], n[3]});
+                // {sequence, key #, term #, byte offset, byte length}
             }
             return _fullTextTerms;
-        }
-
-        Query::FullTextID fullTextID() const override {
-            return (int)_iter->asArray()->get(kFTSSeqCol)->asInt();
         }
 
     private:

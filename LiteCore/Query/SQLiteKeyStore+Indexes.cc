@@ -53,16 +53,6 @@ namespace litecore {
         } catch (const FleeceException &) { }
         if (!params || params->count() == 0)
             error::_throw(error::InvalidQuery);
-
-        if (type == KeyStore::kFullTextIndex) {
-            // Full-text index can only have one key, so use that:
-            if (params->count() != 1)
-                error::_throw(error::InvalidQuery);
-            params = params->get(0)->asArray();
-            if (!params)
-                error::_throw(error::InvalidQuery);
-        }
-
         return {expressionFleece, params};
     }
 
@@ -120,11 +110,18 @@ namespace litecore {
 
     // Generates the SQL that creates an FTS table, including the tokenizer options.
     static string sqlToCreateFTSTable(const string &ftsTableName,
+                                      const Array *params,
                                       const KeyStore::IndexOptions *options)
     {
         // ( https://www.sqlite.org/fts3.html )
         stringstream sql;
-        sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(text, tokenize=unicodesn";
+        sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(";
+        for (Array::iterator i(params); i; ++i) {
+            sql << '"' << QueryParser::FTSColumnName(i.value()) << "\", ";
+        }
+
+        // Add tokenizer options:
+        sql << "tokenize=unicodesn";
         if (options) {
             if (options->stopWords) {
                 string arg(options->stopWords);
@@ -159,24 +156,39 @@ namespace litecore {
         // Create the FTS table, but if an identical one already exists, return:
         auto ftsTableName = QueryParser(tableName()).FTSTableName(indexName);
         if (!_createIndex(kFullTextIndex, ftsTableName, indexName,
-                          sqlToCreateFTSTable(ftsTableName, options)))
+                          sqlToCreateFTSTable(ftsTableName, params, options)))
             return;
 
+        // Construct a string with the FTS table column names:
+        stringstream sColumns;
+        sColumns << "rowid";
+        for (Array::iterator i(params); i; ++i)
+            sColumns << ", \"" << QueryParser::FTSColumnName(i.value()) << "\"";
+        string columns = sColumns.str();
+
         // Index the existing records:
-        db().exec("INSERT INTO \"" + ftsTableName + "\" (rowid, text) SELECT sequence, "
-                  + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
+        stringstream inSQL;
+        inSQL << "INSERT INTO \"" << ftsTableName << "\" (" << columns << ") SELECT sequence";
+        for (Array::iterator i(params); i; ++i)
+            inSQL << ", " << QueryParser::expressionSQL(i.value(), "body");
+        inSQL << " FROM kv_" << name();
+        db().exec(inSQL.str());
 
         // Set up triggers to keep the FTS table up to date:
-        string ins = "INSERT INTO \"" + ftsTableName + "\" (rowid, text) VALUES (new.sequence, "
-                    + QueryParser::expressionSQL(params, "new.body") + "); ";
-        string del = "DELETE FROM \"" + ftsTableName + "\" WHERE rowid = old.sequence; ";
+        stringstream ins, del;
+        ins << "INSERT INTO \"" << ftsTableName << "\" (" << columns << ") VALUES (new.sequence";
+        for (Array::iterator i(params); i; ++i)
+            ins << ", " << QueryParser::expressionSQL(i.value(), "new.body");
+        ins << "); ";
+
+        del << "DELETE FROM \"" << ftsTableName << "\" WHERE rowid = old.sequence; ";
 
         db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::ins\" AFTER INSERT ON kv_"
-                  + name() + " BEGIN " + ins + " END");
+                  + name() + " BEGIN " + ins.str() + " END");
         db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::del\" AFTER DELETE ON kv_"
-                  + name() + " BEGIN " + del + " END");
+                  + name() + " BEGIN " + del.str() + " END");
         db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::upd\" AFTER UPDATE ON kv_"
-                  + name() + " BEGIN " + del + ins + " END");
+                  + name() + " BEGIN " + del.str() + ins.str() + " END");
     }
 
 

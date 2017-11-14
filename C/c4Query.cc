@@ -71,7 +71,6 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
     }
 
     int64_t getRowCount() const         {return enumerator().getRowCount();}
-    Query::FullTextID getFullTextID()   {return enumerator().fullTextID();}
 
     bool next() {
         if (!enumerator().next()) {
@@ -92,12 +91,13 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
     }
 
     void populatePublicFields() {
+        static_assert(sizeof(C4FullTextMatch) == sizeof(Query::FullTextTerm),
+                      "C4FullTextMatch does not match Query::FullTextTerm");
         (fleece::Array::iterator&)columns = _enum->columns();
         if (_hasFullText) {
-            fullTextID = _enum->fullTextID();
             auto &ft = _enum->fullTextTerms();
-            fullTextTerms = (const C4FullTextTerm*)ft.data();
-            fullTextTermCount = (uint32_t)ft.size();
+            fullTextMatches = (const C4FullTextMatch*)ft.data();
+            fullTextMatchCount = (uint32_t)ft.size();
         }
     }
 
@@ -171,11 +171,11 @@ C4StringResult c4query_explain(C4Query *query) noexcept {
 
 
 C4SliceResult c4query_fullTextMatched(C4Query *query,
-                                      C4FullTextID ftsID,
+                                      const C4FullTextMatch *term,
                                       C4Error *outError) noexcept
 {
     return tryCatch<C4SliceResult>(outError, [&]{
-        return sliceResult(query->query()->getMatchedText(ftsID));
+        return sliceResult(query->query()->getMatchedText(*(Query::FullTextTerm*)term));
     });
 }
 
