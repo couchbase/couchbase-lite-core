@@ -83,7 +83,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
     testQuery(
         "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
-                    WHAT: [['.sentence']]}]",
+                        WHAT: [['.sentence']]}]",
               {1, 2, 0, 4},
               {3, 3, 1, 1});
 }
@@ -92,9 +92,9 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
 TEST_CASE_METHOD(FTSTest, "Query Full-Text Unsupported Language", "[Query][FTS]") {
     createIndex({"elbonian", true});
     testQuery(
-              "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
-              ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
-              WHAT: [['.sentence']]}]",
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
+                        WHAT: [['.sentence']]}]",
               {1, 2, 0},
               {3, 3, 1});
 }
@@ -106,18 +106,24 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words", "[Query][FTS]") {
     testQuery(
         "['SELECT', {'WHERE': ['MATCH', 'sentence', 'the search is'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
-                    WHAT: [['.sentence']]}]",
+                        WHAT: [['.sentence']]}]",
               {1, 2, 0, 4},
               {3, 3, 1, 1});
 }
 
 
 TEST_CASE_METHOD(FTSTest, "Query Full-Text No stop-words", "[Query][FTS]") {
+    SECTION("Recreate index, no-op") {
+        createIndex({"en", true, false, ""});
+    }
+    SECTION("Recreate index") {
+        createIndex({"en", true});
+    }
     createIndex({"en", true, false, ""});
     testQuery(
         "['SELECT', {'WHERE': ['MATCH', 'sentence', 'the search is'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
-                    WHAT: [['.sentence']]}]",
+                        WHAT: [['.sentence']]}]",
               {2},
               {7});
 }
@@ -128,7 +134,7 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Custom stop-words", "[Query][FTS]") {
     testQuery(
         "['SELECT', {'WHERE': ['MATCH', 'sentence', 'the search is'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
-                    WHAT: [['.sentence']]}]",
+                        WHAT: [['.sentence']]}]",
               {2, 0},
               {4, 2});
 }

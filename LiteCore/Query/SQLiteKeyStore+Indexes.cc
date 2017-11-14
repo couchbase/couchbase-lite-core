@@ -72,56 +72,57 @@ namespace litecore {
                                      IndexType type,
                                      const IndexOptions *options) {
         validateIndexName(indexName);
+        auto indexNameStr = string(indexName);
         alloc_slice expressionFleece;
         const Array *params;
         tie(expressionFleece, params) = parseIndexExpr(expression, type);
 
         Transaction t(db());
         switch (type) {
-            case  kValueIndex: {
-                QueryParser qp(tableName());
-                string indexNameStr = (string)indexName;
-                qp.writeCreateIndex(indexNameStr, params);
-                string sql = qp.SQL();
-                SQLite::Statement getExistingSQL(db(), "SELECT sql FROM sqlite_master WHERE type='index' "
-                                                "AND name=?");
-                getExistingSQL.bind(1, indexNameStr);
-                if(getExistingSQL.executeStep()) {
-                    string existingSQL = getExistingSQL.getColumn(0).getString();
-                    if(existingSQL == sql) {
-                        return; // no-op
-                    }
-                }
-                getExistingSQL.reset();
-
-                _deleteIndex(indexName);
-                db().exec(qp.SQL(), LogLevel::Info);
-                break;
-            }
-            case kFullTextIndex:
-                createFTSIndex(indexName, params, options);
-                break;
-            default:
-                error::_throw(error::Unimplemented);
+            case kValueIndex:    createValueIndex(indexNameStr, params, options); break;
+            case kFullTextIndex: createFTSIndex(indexNameStr, params, options); break;
+            default:             error::_throw(error::Unimplemented);
         }
         t.commit();
     }
 
 
-    void SQLiteKeyStore::createFTSIndex(slice indexName,
-                                        const Array *params,
-                                        const IndexOptions *options)
+    // Actually creates a value or FTS index, given the SQL statement to do so.
+    // If an identical index with the same name exists, returns false.
+    // Otherwise, any index with the same name is replaced.
+    bool SQLiteKeyStore::_createIndex(IndexType type, const string &sqlName,
+                                      const string &liteCoreName, const string &sql) {
+        {
+            SQLite::Statement check(db(), "SELECT sql FROM sqlite_master "
+                                          "WHERE name = ? AND tbl_name = ? AND type = ?");
+            check.bind(1, sqlName);
+            check.bind(2, type == kValueIndex ? name()  : sqlName);
+            check.bind(3, type == kValueIndex ? "index" : "table");
+            if (check.executeStep() && check.getColumn(0).getString() == sql)
+                return false;
+        }
+        _deleteIndex(liteCoreName);
+        db().exec(sql, LogLevel::Info);
+        return true;
+    }
+
+
+    // Creates a value index.
+    void SQLiteKeyStore::createValueIndex(string indexName,
+                                          const Array *params,
+                                          const IndexOptions *options)
     {
-        // Check whether the index already exists:
         QueryParser qp(tableName());
-        auto ftsTableName = qp.FTSTableName(string(indexName));
+        qp.writeCreateIndex(indexName, params);
+        _createIndex(kValueIndex, indexName, indexName, qp.SQL());
+    }
 
-        // TODO: Check for no-op where FTS table already exists with identical properties/options
 
-        // Delete any existing index:
-        _deleteIndex(indexName);
-
-        // Create the FTS4 table, with the tokenizer options: ( https://www.sqlite.org/fts3.html )
+    // Generates the SQL that creates an FTS table, including the tokenizer options.
+    static string sqlToCreateFTSTable(const string &ftsTableName,
+                                      const KeyStore::IndexOptions *options)
+    {
+        // ( https://www.sqlite.org/fts3.html )
         stringstream sql;
         sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(text, tokenize=unicodesn";
         if (options) {
@@ -146,13 +147,26 @@ namespace litecore {
             }
         }
         sql << ")";
-        db().exec(sql.str(), LogLevel::Info);
+        return sql.str();
+    }
 
-        // Index existing records:
+
+    // Creates a FTS index.
+    void SQLiteKeyStore::createFTSIndex(string indexName,
+                                        const Array *params,
+                                        const IndexOptions *options)
+    {
+        // Create the FTS table, but if an identical one already exists, return:
+        auto ftsTableName = QueryParser(tableName()).FTSTableName(indexName);
+        if (!_createIndex(kFullTextIndex, ftsTableName, indexName,
+                          sqlToCreateFTSTable(ftsTableName, options)))
+            return;
+
+        // Index the existing records:
         db().exec("INSERT INTO \"" + ftsTableName + "\" (rowid, text) SELECT sequence, "
                   + QueryParser::expressionSQL(params, "body") + " FROM kv_" + name());
 
-        // Set up triggers to keep the FTS5 table up to date:
+        // Set up triggers to keep the FTS table up to date:
         string ins = "INSERT INTO \"" + ftsTableName + "\" (rowid, text) VALUES (new.sequence, "
                     + QueryParser::expressionSQL(params, "new.body") + "); ";
         string del = "DELETE FROM \"" + ftsTableName + "\" WHERE rowid = old.sequence; ";

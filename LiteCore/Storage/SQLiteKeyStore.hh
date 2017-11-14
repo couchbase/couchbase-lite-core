@@ -85,7 +85,12 @@ namespace litecore {
         void selectFrom(std::stringstream& in, const RecordEnumerator::Options options);
         void writeSQLOptions(std::stringstream &sql, RecordEnumerator::Options options);
         void setLastSequence(sequence_t seq);
-        void createFTSIndex(fleece::slice indexName,
+        bool _createIndex(IndexType type, const std::string &sqlName,
+                          const std::string &liteCoreName, const std::string &sql);
+        void createValueIndex(std::string indexName,
+                              const fleece::Array *params,
+                              const IndexOptions *options);
+        void createFTSIndex(std::string indexName,
                             const fleece::Array *params,
                             const IndexOptions *options);
         void _deleteIndex(slice name);
