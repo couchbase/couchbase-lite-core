@@ -18,7 +18,11 @@ namespace litecore {
 
     // Adds EXPR to a stringstream and returns the resulting string.
     // Example: CONCAT("2+2=" << 4 << "!") --> "2+2=4!"
+#ifdef _MSC_VER
     #define CONCAT(EXPR)   (static_cast<std::stringstream&>(std::stringstream() << EXPR)).str()
+#else
+    #define CONCAT(EXPR)   (std::stringstream() << EXPR).str()
+#endif
 
     /** Like sprintf(), but returns a std::string */
     std::string format(const char *fmt NONNULL, ...) __printflike(1, 2);
