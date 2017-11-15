@@ -12,12 +12,13 @@
 #include <stdarg.h>
 #include <string>
 #include <vector>
+#include <sstream>
 
 namespace litecore {
 
     // Adds EXPR to a stringstream and returns the resulting string.
     // Example: CONCAT("2+2=" << 4 << "!") --> "2+2=4!"
-    #define CONCAT(EXPR)   (std::stringstream() << EXPR).str()
+    #define CONCAT(EXPR)   (static_cast<std::stringstream&>(std::stringstream() << EXPR)).str()
 
     /** Like sprintf(), but returns a std::string */
     std::string format(const char *fmt NONNULL, ...) __printflike(1, 2);

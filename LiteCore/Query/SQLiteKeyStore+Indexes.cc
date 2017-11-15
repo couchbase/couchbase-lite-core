@@ -175,7 +175,8 @@ namespace litecore {
                       CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid"));
 
         // ...on update:
-        auto upd = stringstream() << "UPDATE \"" << ftsTableName << "\" SET ";
+        stringstream upd;
+        upd << "UPDATE \"" << ftsTableName << "\" SET ";
         for (size_t i = 0; i < colNames.size(); ++i) {
             if (i > 0)
                 upd << ", ";
