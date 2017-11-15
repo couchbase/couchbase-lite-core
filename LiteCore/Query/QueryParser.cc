@@ -202,7 +202,7 @@ namespace litecore {
             require(numMatches <= _ftsTables.size(),
                     "Sorry, multiple MATCHes of the same property are not allowed");
             if (numMatches > 0)
-                _baseResultColumns.push_back("sequence");
+                _baseResultColumns.push_back(_tableName + ".rowid");
         }
 
         // Find all the joins in the FROM clause first, to populate _aliases. This has to be done
@@ -399,7 +399,7 @@ namespace litecore {
             if (i > 1)
                 _sql << ",";
             _sql << " JOIN \"" << ftsTable << "\" AS FTS" << ftsTableNo
-                 << " ON FTS" << ftsTableNo << ".rowid = kv_default.sequence";
+                 << " ON FTS" << ftsTableNo << ".docid = kv_default.rowid";
         }
     }
 

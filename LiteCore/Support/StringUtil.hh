@@ -11,14 +11,30 @@
 #include "PlatformCompat.hh"
 #include <stdarg.h>
 #include <string>
+#include <vector>
 
 namespace litecore {
+
+    // Adds EXPR to a stringstream and returns the resulting string.
+    // Example: CONCAT("2+2=" << 4 << "!") --> "2+2=4!"
+    #define CONCAT(EXPR)   (std::stringstream() << EXPR).str()
 
     /** Like sprintf(), but returns a std::string */
     std::string format(const char *fmt NONNULL, ...) __printflike(1, 2);
 
     /** Like vsprintf(), but returns a std::string */
     std::string vformat(const char *fmt NONNULL, va_list);
+
+    /** Returns the strings in the vector concatenated together,
+        with the separator (if non-null) between them. */
+    std::string join(const std::vector<std::string>&,
+                     const char *separator =nullptr);
+
+    /** Concatenates the strings in the vector onto the stream,
+        with the separator (if non-null) between them. */
+    std::stringstream& join(std::stringstream&,
+                            const std::vector<std::string>&,
+                            const char *separator =nullptr);
 
     /** Removes last character from string (in place.) Does nothing if string is empty. */
     void chop(std::string&) noexcept;

@@ -32,7 +32,7 @@ namespace litecore {
 
     // Implicit columns in full-text query result:
     enum {
-        kFTSSeqCol,
+        kFTSRowidCol,
         kFTSOffsetsCol
     };
 
@@ -59,8 +59,6 @@ namespace litecore {
                 if (!keyStore.db().tableExists(ftsTable))
                     error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
             }
-            if (!_ftsTables.empty())
-                keyStore.createSequenceIndex();     // 'match' operator uses a join on the sequence
 
             string sql = qp.SQL();
             LogTo(SQL, "Compiled Query: %s", sql.c_str());
@@ -89,11 +87,11 @@ namespace litecore {
             }
 
             alloc_slice matchedText;
-            _matchedTextStatement->bind(1, (long long)term.dataSource); // dataSource is sequence
+            _matchedTextStatement->bind(1, (long long)term.dataSource); // dataSource is docid
             if (_matchedTextStatement->executeStep())
                 matchedText = alloc_slice( ((SQLiteKeyStore&)keyStore()).columnAsSlice(_matchedTextStatement->getColumn(term.keyIndex)) );
             else
-                Warn("FTS index %s has no row for sequence %llu", expr.c_str(), term.dataSource);
+                Warn("FTS index %s has no row for docid %llu", expr.c_str(), term.dataSource);
             _matchedTextStatement->reset();
             return matchedText;
         }
@@ -231,7 +229,7 @@ namespace litecore {
 
         const FullTextTerms& fullTextTerms() override {
             _fullTextTerms.clear();
-            sequence_t sequence = _iter->asArray()->get(kFTSSeqCol)->asInt();
+            uint64_t dataSource = _iter->asArray()->get(kFTSRowidCol)->asInt();
             // The offsets() function returns a string of space-separated numbers in groups of 4.
             string offsets = _iter->asArray()->get(kFTSOffsetsCol)->asString().asString();
             const char *termStr = offsets.c_str();
@@ -242,8 +240,8 @@ namespace litecore {
                     n[i] = (uint32_t)strtol(termStr, &next, 10);
                     termStr = next;
                 }
-                _fullTextTerms.push_back({sequence, n[0], n[1], n[2], n[3]});
-                // {sequence, key #, term #, byte offset, byte length}
+                _fullTextTerms.push_back({dataSource, n[0], n[1], n[2], n[3]});
+                // {rowid, key #, term #, byte offset, byte length}
             }
             return _fullTextTerms;
         }

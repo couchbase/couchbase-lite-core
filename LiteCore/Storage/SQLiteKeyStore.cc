@@ -301,4 +301,20 @@ namespace litecore {
         t.commit();
     }
 
+
+    void SQLiteKeyStore::createTrigger(const string &triggerName,
+                                       const char *triggerSuffix,
+                                       const char *operation,
+                                       const string &statements)
+    {
+        db().exec(CONCAT("CREATE TRIGGER \"" << triggerName << "::" << triggerSuffix
+                            << "\" AFTER " << operation << " ON kv_" << name()
+                            << " BEGIN " << statements << "; END"));
+    }
+
+
+    void SQLiteKeyStore::dropTrigger(const string &name, const char *suffix) {
+        db().exec(CONCAT("DROP TRIGGER IF EXISTS \"" << name << "::" << suffix << "\""));
+    }
+
 }

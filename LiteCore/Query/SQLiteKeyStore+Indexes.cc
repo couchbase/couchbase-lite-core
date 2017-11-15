@@ -108,19 +108,8 @@ namespace litecore {
     }
 
 
-    // Generates the SQL that creates an FTS table, including the tokenizer options.
-    static string sqlToCreateFTSTable(const string &ftsTableName,
-                                      const Array *params,
-                                      const KeyStore::IndexOptions *options)
-    {
-        // ( https://www.sqlite.org/fts3.html )
-        stringstream sql;
-        sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(";
-        for (Array::iterator i(params); i; ++i) {
-            sql << '"' << QueryParser::FTSColumnName(i.value()) << "\", ";
-        }
-
-        // Add tokenizer options:
+    static void writeTokenizerOptions(stringstream &sql, const KeyStore::IndexOptions *options) {
+        // See https://www.sqlite.org/fts3.html#tokenizer . 'unicodesn' is our custom tokenizer.
         sql << "tokenize=unicodesn";
         if (options) {
             if (options->stopWords) {
@@ -143,8 +132,6 @@ namespace litecore {
                 sql << " \"remove_diacritics=1\"";
             }
         }
-        sql << ")";
-        return sql.str();
     }
 
 
@@ -153,42 +140,49 @@ namespace litecore {
                                         const Array *params,
                                         const IndexOptions *options)
     {
-        // Create the FTS table, but if an identical one already exists, return:
         auto ftsTableName = QueryParser(tableName()).FTSTableName(indexName);
-        if (!_createIndex(kFullTextIndex, ftsTableName, indexName,
-                          sqlToCreateFTSTable(ftsTableName, params, options)))
+        // Collect the name of each FTS column and the SQL expression that populates it:
+        vector<string> colNames, colExprs;
+        for (Array::iterator i(params); i; ++i) {
+            colNames.push_back(CONCAT('"' << QueryParser::FTSColumnName(i.value()) << '"'));
+            colExprs.push_back(QueryParser::expressionSQL(i.value(), "new.body"));
+        }
+        string columns = join(colNames, ", ");
+        string exprs = join(colExprs, ", ");
+
+        // Build the SQL that creates an FTS table, including the tokenizer options:
+        stringstream sql;
+        sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(" << columns << ", ";
+        writeTokenizerOptions(sql, options);
+        sql << ")";
+
+        // Create the FTS table, but if an identical one already exists, return:
+        if (!_createIndex(kFullTextIndex, ftsTableName, indexName, sql.str()))
             return;
 
-        // Construct a string with the FTS table column names:
-        stringstream sColumns;
-        sColumns << "rowid";
-        for (Array::iterator i(params); i; ++i)
-            sColumns << ", \"" << QueryParser::FTSColumnName(i.value()) << "\"";
-        string columns = sColumns.str();
-
         // Index the existing records:
-        stringstream inSQL;
-        inSQL << "INSERT INTO \"" << ftsTableName << "\" (" << columns << ") SELECT sequence";
-        for (Array::iterator i(params); i; ++i)
-            inSQL << ", " << QueryParser::expressionSQL(i.value(), "body");
-        inSQL << " FROM kv_" << name();
-        db().exec(inSQL.str());
+        db().exec(CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
+                         "SELECT rowid, " << exprs << " FROM kv_" << name() << " AS new"));
 
-        // Set up triggers to keep the FTS table up to date:
-        stringstream ins, del;
-        ins << "INSERT INTO \"" << ftsTableName << "\" (" << columns << ") VALUES (new.sequence";
-        for (Array::iterator i(params); i; ++i)
-            ins << ", " << QueryParser::expressionSQL(i.value(), "new.body");
-        ins << "); ";
+        // Set up triggers to keep the FTS table up to date
+        // ...on insertion:
+        createTrigger(ftsTableName, "ins", "INSERT",
+                      CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
+                             "VALUES (new.rowid, " << exprs << ")"));
 
-        del << "DELETE FROM \"" << ftsTableName << "\" WHERE rowid = old.sequence; ";
+        // ...on delete:
+        createTrigger(ftsTableName, "del", "DELETE",
+                      CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid"));
 
-        db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::ins\" AFTER INSERT ON kv_"
-                  + name() + " BEGIN " + ins.str() + " END");
-        db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::del\" AFTER DELETE ON kv_"
-                  + name() + " BEGIN " + del.str() + " END");
-        db().exec(string("CREATE TRIGGER \"") + ftsTableName + "::upd\" AFTER UPDATE ON kv_"
-                  + name() + " BEGIN " + del.str() + ins.str() + " END");
+        // ...on update:
+        auto upd = stringstream() << "UPDATE \"" << ftsTableName << "\" SET ";
+        for (size_t i = 0; i < colNames.size(); ++i) {
+            if (i > 0)
+                upd << ", ";
+            upd << colNames[i] << " = " << colExprs[i];
+        }
+        upd << " WHERE docid = new.rowid";
+        createTrigger(ftsTableName, "upd", "UPDATE", upd.str());
     }
 
 
@@ -196,15 +190,15 @@ namespace litecore {
         // Delete any expression index:
         validateIndexName(name);
         string indexName = (string)name;
-        db().exec(string("DROP INDEX IF EXISTS \"") + indexName + "\"", LogLevel::Info);
+        db().exec(CONCAT("DROP INDEX IF EXISTS \"" << indexName << "\""), LogLevel::Info);
 
         // Delete any FTS index:
         QueryParser qp(tableName());
         auto ftsTableName = qp.FTSTableName(indexName);
-        db().exec(string("DROP TABLE IF EXISTS \"") + ftsTableName + "\"", LogLevel::Info);
-        db().exec(string("DROP TRIGGER IF EXISTS \"") + ftsTableName + "::ins\"");
-        db().exec(string("DROP TRIGGER IF EXISTS \"") + ftsTableName + "::del\"");
-        db().exec(string("DROP TRIGGER IF EXISTS \"") + ftsTableName + "::upd\"");
+        db().exec(CONCAT("DROP TABLE IF EXISTS \"" << ftsTableName << "\""), LogLevel::Info);
+        dropTrigger(ftsTableName, "ins");
+        dropTrigger(ftsTableName, "upd");
+        dropTrigger(ftsTableName, "del");
     }
 
 
@@ -246,8 +240,8 @@ namespace litecore {
         if (!_createdSeqIndex) {
             if (!_capabilities.sequences)
                 error::_throw(error::NoSequences);
-            db().execWithLock(string("CREATE UNIQUE INDEX IF NOT EXISTS kv_"+name()+"_seqs"
-                                     " ON kv_"+name()+" (sequence)"));
+            db().execWithLock(CONCAT("CREATE UNIQUE INDEX IF NOT EXISTS kv_" << name() << "_seqs"
+                                     " ON kv_" << name() << " (sequence)"));
             _createdSeqIndex = true;
         }
     }

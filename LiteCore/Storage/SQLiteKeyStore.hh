@@ -85,6 +85,11 @@ namespace litecore {
         void selectFrom(std::stringstream& in, const RecordEnumerator::Options options);
         void writeSQLOptions(std::stringstream &sql, RecordEnumerator::Options options);
         void setLastSequence(sequence_t seq);
+        void createTrigger(const std::string &triggerName,
+                           const char *triggerSuffix,
+                           const char *operation,
+                           const std::string &statements);
+        void dropTrigger(const std::string &name, const char *suffix);
         bool _createIndex(IndexType type, const std::string &sqlName,
                           const std::string &liteCoreName, const std::string &sql);
         void createValueIndex(std::string indexName,

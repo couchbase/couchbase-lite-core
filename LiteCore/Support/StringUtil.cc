@@ -9,10 +9,12 @@
 #include "StringUtil.hh"
 #include "Logging.hh"
 #include "PlatformIO.hh"
+#include <sstream>
 #include <stdlib.h>
 
 namespace litecore {
 
+    using namespace std;
     using namespace fleece;
 
     std::string format(const char *fmt, ...) {
@@ -32,6 +34,21 @@ namespace litecore {
         return result;
     }
 
+
+    stringstream& join(stringstream &s, const std::vector<std::string> &strings, const char *separator) {
+        int n = 0;
+        for (const string &str : strings) {
+            if (n++ && separator)
+                s << separator;
+            s << str;
+        }
+        return s;
+    }
+
+    std::string join(const std::vector<std::string> &strings, const char *separator) {
+        stringstream s;
+        return join(s, strings, separator).str();
+    }
 
     void chop(std::string &str) noexcept {
         auto sz = str.size();
