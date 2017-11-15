@@ -656,10 +656,14 @@ namespace litecore {
         auto iter = sregex_iterator(expression.begin(), expression.end(), r);
         auto last_iter = iter;
         auto stop = sregex_iterator();
-        for(; n-- && iter != stop; ++iter) {
-            out = copy(iter->prefix().first, iter->prefix().second, out);
-            out = iter->format(out, repl);
-            last_iter = iter;
+        if(iter == stop) {
+            result = expression;
+        } else {
+            for(; n-- && iter != stop; ++iter) {
+                out = copy(iter->prefix().first, iter->prefix().second, out);
+                out = iter->format(out, repl);
+                last_iter = iter;
+            }
         }
 
         out = copy(last_iter->suffix().first, last_iter->suffix().second, out);
@@ -1027,7 +1031,7 @@ namespace litecore {
                 auto txt = (const char *)sqlite3_value_text(argv[0]);
                 string str(txt, sqlite3_value_bytes(argv[0]));
                 double result = tonumber(str);
-                if(result == NAN) {
+                if(isnan(result)) {
                     sqlite3_result_zeroblob(ctx, 0);
                 } else {
                     sqlite3_result_double(ctx, result);
@@ -1066,8 +1070,15 @@ namespace litecore {
             }
             case SQLITE_INTEGER:
             {
+                
                 auto num = sqlite3_value_int64(argv[0]);
-                auto str = to_string(num);
+                string str;
+                if(sqlite3_value_subtype(argv[0]) == kFleeceIntBoolean) {
+                    str = num == 1 ? "true" : "false";
+                } else {
+                    str = to_string(num);
+                }
+                
                 sqlite3_result_text(ctx, str.c_str(), (int)str.size(), SQLITE_TRANSIENT);
                 break;
             }

@@ -36,6 +36,90 @@ static sequence_t writeNumberedDoc(KeyStore *store, int i, slice str, Transactio
     return store->set(slice(docID), nullslice, body, flags, t);
 }
 
+static void writeMultipleTypeDocs(KeyStore* store, Transaction &t) {
+    string docID = "doc1";
+    
+    fleece::Encoder enc;
+    enc.beginDictionary(1);
+    enc.writeKey("value");
+    enc.beginArray();
+    enc.writeInt(1);
+    enc.endArray();
+    enc.endDictionary();
+    alloc_slice body = enc.extractOutput();
+    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+    
+    enc.reset();
+    docID = "doc2";
+    enc.beginDictionary(1);
+    enc.writeKey("value");
+    enc.writeString("cool value");
+    enc.endDictionary();
+    body = enc.extractOutput();
+    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+    
+    enc.reset();
+    docID = "doc3";
+    enc.beginDictionary(1);
+    enc.writeKey("value");
+    enc.writeDouble(4.5);
+    enc.endDictionary();
+    body = enc.extractOutput();
+    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+    
+    enc.reset();
+    docID = "doc4";
+    enc.beginDictionary(1);
+    enc.writeKey("value");
+    enc.beginDictionary(1);
+    enc.writeKey("subvalue");
+    enc.writeString("FTW");
+    enc.endDictionary();
+    enc.endDictionary();
+    body = enc.extractOutput();
+    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+    
+    enc.reset();
+    docID = "doc5";
+    enc.beginDictionary(1);
+    enc.writeKey("value");
+    enc.writeBool(true);
+    enc.endDictionary();
+    body = enc.extractOutput();
+    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+}
+
+static void writeFalselyDocs(KeyStore* store, Transaction &t) {
+    string docID = "doc6";
+    
+    fleece::Encoder enc;
+    enc.beginDictionary(1);
+    enc.writeKey("value");
+    enc.beginArray(0);
+    enc.endArray();
+    enc.endDictionary();
+    alloc_slice body = enc.extractOutput();
+    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+    
+    enc.reset();
+    docID = "doc7";
+    enc.beginDictionary(1);
+    enc.writeKey("value");
+    enc.beginDictionary(0);
+    enc.endDictionary();
+    enc.endDictionary();
+    body = enc.extractOutput();
+    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+    
+    enc.reset();
+    docID = "doc8";
+    enc.beginDictionary(1);
+    enc.writeKey("value");
+    enc.writeBool(false);
+    enc.endDictionary();
+    body = enc.extractOutput();
+    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+}
 
 // Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
 static void addNumberedDocs(KeyStore *store) {
@@ -458,4 +542,193 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query regex", "[Query]") {
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+    
+    query = store->compileQuery(json5(
+       "{'WHAT': [['REGEXP_REPLACE()', ['.value'], '.*?value', 'nothing']]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 3);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "nothing"_sl);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "nothing"_sl);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "invalid"_sl);
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query type check", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        writeMultipleTypeDocs(store, t);
+        t.commit();
+    }
+    
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: ['ISARRAY()', ['.value']]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "array"_sl);
+    CHECK(e->columns()[1]->asString() == "doc1"_sl);
+    
+    query = store->compileQuery(json5(
+        "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: ['ISNUMBER()', ['.value']]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "number"_sl);
+    CHECK(e->columns()[1]->asString() == "doc3"_sl);
+    CHECK(e->columns()[2]->asDouble() == 4.5);
+    
+    query = store->compileQuery(json5(
+        "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: ['ISSTRING()', ['.value']]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "string"_sl);
+    CHECK(e->columns()[1]->asString() == "doc2"_sl);
+    CHECK(e->columns()[2]->asString() == "cool value"_sl);
+    
+    query = store->compileQuery(json5(
+        "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: ['ISOBJECT()', ['.value']]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "object"_sl);
+    CHECK(e->columns()[1]->asString() == "doc4"_sl);
+    
+    query = store->compileQuery(json5(
+        "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: ['ISBOOLEAN()', ['.value']]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "boolean"_sl);
+    CHECK(e->columns()[1]->asString() == "doc5"_sl);
+    CHECK(e->columns()[2]->asBool());
+    
+    query = store->compileQuery(json5(
+        "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: ['ISATOM()', ['.value']]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 3);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "string"_sl);
+    CHECK(e->columns()[1]->asString() == "doc2"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "number"_sl);
+    CHECK(e->columns()[1]->asString() == "doc3"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "boolean"_sl);
+    CHECK(e->columns()[1]->asString() == "doc5"_sl);
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query toboolean", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        writeMultipleTypeDocs(store, t);
+        writeFalselyDocs(store, t);
+        t.commit();
+    }
+    
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': [['TOBOOLEAN()', ['.value']]]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 8);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asBool());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asBool());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asBool());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asBool());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asBool());
+    REQUIRE(e->next());
+    CHECK(!e->columns()[0]->asBool());
+    REQUIRE(e->next());
+    CHECK(!e->columns()[0]->asBool());
+    REQUIRE(e->next());
+    CHECK(!e->columns()[0]->asBool());
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query toatom", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        writeMultipleTypeDocs(store, t);
+        writeFalselyDocs(store, t);
+        t.commit();
+    }
+    
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': [['TOATOM()', ['.value']]]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 8);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "cool value"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == 4.5);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "FTW"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asBool());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    REQUIRE(e->next());
+    CHECK(!e->columns()[0]->asBool());
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query tonumber", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        writeMultipleTypeDocs(store, t);
+        t.commit();
+    }
+    
+    Retained<Query> query{ store->compileQuery(json5(
+    "{'WHAT': [['TONUMBER()', ['.value']]]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 5);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == 0.0);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == 0.0);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == 4.5);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == 0.0);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == 1.0);
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query tostring", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        writeMultipleTypeDocs(store, t);
+        writeFalselyDocs(store, t);
+        t.commit();
+    }
+    
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': [['TOSTRING()', ['.value']]]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 8);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "cool value"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString().asString().substr(0, 3) == "4.5");
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "true"_sl);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->type() == kNull);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "false"_sl);
 }
