@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 #if !WINDOWS_UWP
@@ -85,46 +86,61 @@ namespace LiteCore.Tests
 
         internal static void LoadDLL()
         {
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-            {
-                var codeBase = AppContext.BaseDirectory;
-                if (!codeBase.EndsWith("\\"))
-                {
-                    codeBase = codeBase + "\\";
-                }
-
-                UriBuilder uri = new UriBuilder(codeBase);
-                var directory = System.IO.Path.GetDirectoryName(Uri.UnescapeDataString(uri.Path));
-
-                System.Diagnostics.Debug.Assert(System.IO.Path.IsPathRooted(directory), "directory is not rooted.");
-                var architecture = IntPtr.Size == 4
-                    ? "x86"
-                    : "x64";
-
-                var dllPath = System.IO.Path.Combine(directory, architecture, "LiteCore.dll");
-                var dllPathAsp = System.IO.Path.Combine(directory, "bin", architecture, "LiteCore.dll");
-                var foundPath = default(string);
-                foreach (var path in new[] { dllPath, dllPathAsp })
-                {
-                    foundPath = System.IO.File.Exists(path) ? path : null;
-                    if (foundPath != null)
-                    {
-                        break;
-                    }
-                }
-
-                if (foundPath == null)
-                {
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows)) {
+                var foundPath = LoadFromNuget() ?? LoadFromAppContext();
+                if (foundPath == null) {
                     throw new DllNotFoundException("Could not find LiteCore.dll!  Nothing is going to work!");
                 }
 
                 const uint loadWithAlteredSearchPath = 8;
                 var ptr = LoadLibraryEx(foundPath, IntPtr.Zero, loadWithAlteredSearchPath);
-                if (ptr == IntPtr.Zero)
-                {
+                if (ptr == IntPtr.Zero)  {
                     throw new BadImageFormatException("Could not load LiteCore.dll!  Nothing is going to work!");
                 }
             }
+        }
+
+        internal static string LoadFromNuget()
+        {
+            var architecture = IntPtr.Size == 4
+                ? "x86"
+                : "x64";
+            var nugetBase = Type.GetType("Couchbase.Lite.Support.NetDesktop, Couchbase.Lite.Support.NetDesktop")?.GetTypeInfo()?.Assembly?.Location;
+            if (nugetBase != null) {
+                for (int i = 0; i < 3; i++) {
+                    nugetBase = System.IO.Path.GetDirectoryName(nugetBase);
+                }
+            }
+
+            var nugetPath = System.IO.Path.Combine(nugetBase, "runtimes", $"win7-{architecture}", "native", "LiteCore.dll");
+            return System.IO.File.Exists(nugetPath) ? nugetPath : null;
+        }
+
+        internal static string LoadFromAppContext()
+        {
+            var codeBase = AppContext.BaseDirectory;
+            if (!codeBase.EndsWith("\\")) {
+                codeBase = codeBase + "\\";
+            }
+
+            UriBuilder uri = new UriBuilder(codeBase);
+            var directory = System.IO.Path.GetDirectoryName(Uri.UnescapeDataString(uri.Path));
+
+            System.Diagnostics.Debug.Assert(System.IO.Path.IsPathRooted(directory), "directory is not rooted.");
+            var architecture = IntPtr.Size == 4
+                ? "x86"
+                : "x64";
+
+            var dllPath = System.IO.Path.Combine(directory, architecture, "LiteCore.dll");
+            var dllPathAsp = System.IO.Path.Combine(directory, "bin", architecture, "LiteCore.dll");
+            foreach (var path in new[] { dllPath, dllPathAsp }) {
+                var foundPath = System.IO.File.Exists(path) ? path : null;
+                if (foundPath != null) {
+                    return foundPath;
+                }
+            }
+
+            return null;
         }
 #endif
     }
