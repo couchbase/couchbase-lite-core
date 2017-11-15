@@ -10,11 +10,14 @@
 #include "MessageOut.hh"
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
+#include "Flater.hh"
 #include "FleeceCpp.hh"
 #include "varint.hh"
-#include <zlc/zlibcomplete.hpp>
 #include <algorithm>
 #include <assert.h>
+#include <sstream>
+
+#include <iostream>
 
 using namespace std;
 using namespace fleece;
@@ -143,18 +146,17 @@ namespace litecore { namespace blip {
                 _unackedBytes = 0;
             }
 
+            bool lastFrame = !(frameFlags & kMoreComing);
+
             if (_properties && (_flags & kCompressed)) {
                 if (!_decompressor)
-                    _decompressor.reset( new zlibcomplete::GZipDecompressor );
-                string output = _decompressor->decompress(frame.asString());
-                if (output.empty())
-                    throw std::runtime_error("invalid gzipped data");
-                _in->writeRaw(slice(output));
+                    _decompressor.reset( new Inflater(*_in) );
+                _decompressor->write(frame, lastFrame);
             } else {
                 _in->writeRaw(frame);
             }
 
-            if (!(frameFlags & kMoreComing)) {
+            if (lastFrame) {
                 // Completed!
                 if (!_properties)
                     throw std::runtime_error("message ends before end of properties");

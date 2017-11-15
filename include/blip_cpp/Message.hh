@@ -12,15 +12,12 @@
 #include "Fleece.h"
 #include "slice.hh"
 #include <functional>
+#include <strstream>
 #include <memory>
 #include <mutex>
 
 namespace fleeceapi {
     class Value;
-}
-namespace zlibcomplete {
-    class GZipDecompressor;
-    class GZipCompressor;
 }
 
 namespace litecore { namespace blip {
@@ -28,6 +25,7 @@ namespace litecore { namespace blip {
     class Connection;
     class MessageBuilder;
     class MessageIn;
+    class Inflater;
 
 
     /** Progress notification for an outgoing request. */
@@ -180,7 +178,8 @@ namespace litecore { namespace blip {
         Connection* const _connection;          // The owning BLIP connection
         std::mutex _receiveMutex;
         std::unique_ptr<fleeceapi::JSONEncoder> _in; // Accumulates message data (not just JSON)
-        std::unique_ptr<zlibcomplete::GZipDecompressor> _decompressor;
+        std::unique_ptr<Inflater> _decompressor;
+        std::unique_ptr<std::strstream> _decompressorInput;
         uint32_t _propertiesSize {0};           // Length of properties in bytes
         uint32_t _unackedBytes {0};             // # bytes received that haven't been ACKed yet
         alloc_slice _properties;                // Just the (still encoded) properties

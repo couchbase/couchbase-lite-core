@@ -8,9 +8,11 @@
 
 #include "MessageBuilder.hh"
 #include "BLIPInternal.hh"
+#include "Flater.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "varint.hh"
-#include <zlc/zlibcomplete.hpp>
+#include <strstream>
 
 using namespace std;
 using namespace fleece;
@@ -169,19 +171,19 @@ namespace litecore { namespace blip {
         if (compressed) {
             compressed = false;
             if (output.size > _propertiesLength) {
-                // Compress the body (but not the properties):      //OPT: Could be optimized
-                slice body = output;
-                body.moveStart(_propertiesLength);
-                zlibcomplete::GZipCompressor compressor;
-                string zip1 = compressor.compress(body.asString());
-                string zip2 = compressor.finish();
-                size_t len1 = zip1.size(), len2 = zip2.size();
-                if (len1 + len2 < (output.size - _propertiesLength)) {
-                    LogToAt(BLIPLog, Debug, "Message compressed from %zu to %zu bytes",
-                            output.size, _propertiesLength + len1 + len2);
-                    memcpy((void*)&output[_propertiesLength],        zip1.data(), len1);
-                    memcpy((void*)&output[_propertiesLength + len1], zip2.data(), len2);
-                    output.shorten(_propertiesLength + len1 + len2);
+                // Compress the body (but not the properties):
+                alloc_slice zippedOutput(output.size);
+                memcpy((void*)zippedOutput.buf, output.buf, _propertiesLength);
+
+                slice src = output.from(_propertiesLength);
+                slice dst = zippedOutput.from(_propertiesLength);
+                Deflater dfl;
+                if (dfl.deflate(src, dst)) {
+                    Assert(src.size == 0);
+                    zippedOutput.resize((char*)dst.buf - (char*)zippedOutput.buf);
+                    LogToAt(BLIPLog, Info/*TEMP*/, "Message compressed from %zu to %zu bytes",
+                            output.size, zippedOutput.size);
+                    output = zippedOutput;
                     compressed = true;
                 }
             }

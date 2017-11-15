@@ -21,7 +21,7 @@ PRODUCT_NAME                                       = $(TARGET_NAME)
 
 ALWAYS_SEARCH_USER_PATHS                           = NO
 HEADER_SEARCH_PATHS                                = $(inherited) $(SRCROOT)/../../LiteCore/Support/ $(SRCROOT)/../fleece/Fleece/
-SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/vendor/zlibcomplete/lib/
+SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/vendor/zstr/src/
 
 CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW         = YES    // range-check C++ STL containers
 
