@@ -44,13 +44,22 @@ set(JNI_CLASSES
     com.couchbase.litecore.C4RawDocument
     com.couchbase.litecore.C4Replicator
     com.couchbase.litecore.C4Socket
+    com.couchbase.litecore.fleece.AllocSlice
+    com.couchbase.litecore.fleece.Encoder
     com.couchbase.litecore.fleece.FLArray
     com.couchbase.litecore.fleece.FLArrayIterator
     com.couchbase.litecore.fleece.FLDict
     com.couchbase.litecore.fleece.FLDictIterator
     com.couchbase.litecore.fleece.FLEncoder
     com.couchbase.litecore.fleece.FLSliceResult
-    com.couchbase.litecore.fleece.FLValue)
+    com.couchbase.litecore.fleece.FLValue
+    com.couchbase.litecore.fleece.MArray
+    com.couchbase.litecore.fleece.MCollection
+    com.couchbase.litecore.fleece.MContext
+    com.couchbase.litecore.fleece.MDict
+    com.couchbase.litecore.fleece.MDictIterator
+    com.couchbase.litecore.fleece.MRoot
+    com.couchbase.litecore.fleece.MValue)
 
 create_javah(TARGET JNIHeaders
     CLASSES ${JNI_CLASSES}
@@ -74,7 +83,8 @@ include_directories(
 	${TOP}/C/include/
 	${TOP}/LiteCore/Storage/
     ${TOP}/LiteCore/Support/
-    ${TOP}/vendor/fleece/Fleece/)
+    ${TOP}/vendor/fleece/Fleece/
+    ${TOP}/vendor/fleece/Fleece/Mutable)
 
 aux_source_directory(./jni  JNI_SRC)
 if (NOT REST)

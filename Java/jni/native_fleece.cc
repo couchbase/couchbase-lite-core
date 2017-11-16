@@ -11,8 +11,8 @@
  * either express or implied. See the License for the specific language governing permissions
  * and limitations under the License.
  */
-#include <c4.h>
-#include <Fleece.h>
+
+#include "native_glue.hh"
 #include "com_couchbase_litecore_fleece_FLArray.h"
 #include "com_couchbase_litecore_fleece_FLArrayIterator.h"
 #include "com_couchbase_litecore_fleece_FLDict.h"
@@ -20,7 +20,9 @@
 #include "com_couchbase_litecore_fleece_FLValue.h"
 #include "com_couchbase_litecore_fleece_FLEncoder.h"
 #include "com_couchbase_litecore_fleece_FLSliceResult.h"
-#include "native_glue.hh"
+
+
+using namespace fleeceapi;
 
 using namespace litecore;
 using namespace litecore::jni;
@@ -256,6 +258,17 @@ Java_com_couchbase_litecore_fleece_FLDictIterator_free(JNIEnv *env, jclass clazz
 
 /*
  * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    fromData
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_fromData(JNIEnv *env, jclass clazz, jlong jflslice) {
+    alloc_slice *s = (alloc_slice *) jflslice;
+    return (jlong) FLValue_FromData({s->buf, s->size});
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
  * Method:    fromTrustedData
  * Signature: (J)J
  */
@@ -423,7 +436,44 @@ Java_com_couchbase_litecore_fleece_FLValue_JSON5ToJSON(JNIEnv *env, jclass clazz
     FLSliceResult_Free(json);
     return res;
 }
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    toString
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_toString(JNIEnv *env, jclass clazz, jlong jvalue) {
+    FLStringResult str = FLValue_ToString((FLValue) jvalue);
+    jstring res = toJString(env, {str.buf, str.size});
+    FLSliceResult_Free(str);
+    return res;
+}
 
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    toJSON
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_toJSON(JNIEnv *env, jclass clazz, jlong jvalue) {
+    FLStringResult str = FLValue_ToJSON((FLValue) jvalue);
+    jstring res = toJString(env, {str.buf, str.size});
+    FLSliceResult_Free(str);
+    return res;
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    toJSON5
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_toJSON5(JNIEnv *env, jclass clazz, jlong jvalue) {
+    FLStringResult str = FLValue_ToJSON5((FLValue) jvalue);
+    jstring res = toJString(env, {str.buf, str.size});
+    FLSliceResult_Free(str);
+    return res;
+}
 // ----------------------------------------------------------------------------
 // FLSliceResult
 // ----------------------------------------------------------------------------
@@ -436,7 +486,6 @@ Java_com_couchbase_litecore_fleece_FLValue_JSON5ToJSON(JNIEnv *env, jclass clazz
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_FLSliceResult_free(JNIEnv *env, jclass clazz, jlong jslice) {
     FLSliceResult_Free(*(FLSliceResult *) jslice);
-    ::free((FLSliceResult *) jslice);
 }
 
 /*
@@ -461,7 +510,7 @@ Java_com_couchbase_litecore_fleece_FLSliceResult_getSize(JNIEnv *env, jclass cla
 }
 
 // ----------------------------------------------------------------------------
-// FLValue
+// FLEncoder
 // ----------------------------------------------------------------------------
 
 /*
@@ -691,4 +740,14 @@ Java_com_couchbase_litecore_fleece_FLEncoder_finish2(JNIEnv *env, jclass clazz, 
     sliceResult->buf = res.buf;
     sliceResult->size = res.size;
     return (jlong) sliceResult;
+}
+/*
+ * Class:     com_couchbase_litecore_fleece_FLEncoder
+ * Method:    setExtraInfo
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_fleece_FLEncoder_setExtraInfo(JNIEnv *env, jclass clazz, jlong jencoder,
+                                                          jlong jinfo) {
+    FLEncoder_SetExtraInfo((FLEncoder) jencoder, (void *) jinfo);
 }

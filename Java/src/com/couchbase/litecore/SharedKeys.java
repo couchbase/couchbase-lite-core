@@ -21,7 +21,9 @@ public final class SharedKeys {
     public SharedKeys(final C4Database c4db) {
         flSharedKeys = c4db.getFLSharedKeys();
     }
-
+    public SharedKeys(final FLSharedKeys flSharedKeys){
+        this.flSharedKeys = flSharedKeys;
+    }
     //---------------------------------------------
     // Package level methods
     //---------------------------------------------
@@ -87,6 +89,9 @@ public final class SharedKeys {
         }
     }
 
+    public FLSharedKeys getFLSharedKeys(){
+        return flSharedKeys;
+    }
     //---------------------------------------------
     // static methods
     //---------------------------------------------

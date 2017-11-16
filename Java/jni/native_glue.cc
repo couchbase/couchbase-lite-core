@@ -32,7 +32,8 @@ JNI_OnLoad(JavaVM *jvm, void *reserved) {
     if (jvm->GetEnv((void **) &env, JNI_VERSION_1_6) == JNI_OK
         && initC4Observer(env)
         && initC4Replicator(env)
-        && initC4Socket(env)) {
+        && initC4Socket(env)
+        && initMValue(env)) {
         assert(gJVM == nullptr);
         gJVM = jvm;
         return JNI_VERSION_1_6;
@@ -137,6 +138,10 @@ namespace litecore {
             std::string utf8Buf((char *) s.buf, s.size);
             // NOTE: This return value will be taken care by JVM. So not necessary to free by our self
             return env->NewStringUTF(utf8Buf.c_str());
+        }
+
+        jstring toJStringFromSlice(JNIEnv *env, slice s) {
+            return toJString(env, {s.buf, s.size});
         }
 
         jbyteArray toJByteArray(JNIEnv *env, C4Slice s) {

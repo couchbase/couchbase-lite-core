@@ -14,7 +14,7 @@
 package com.couchbase.litecore.fleece;
 
 public class FLSharedKeys {
-    private final long handle; // hold pointer to FLSharedKeys
+    final long handle; // hold pointer to FLSharedKeys
 
     //-------------------------------------------------------------------------
     // public methods

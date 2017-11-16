@@ -21,26 +21,31 @@ import java.util.Map;
 
 public class FLEncoder {
     //-------------------------------------------------------------------------
-    // private variable
+    // package level variable
     //-------------------------------------------------------------------------
-    private long handle = 0;
-
+    long handle = 0L;
+    private boolean managed = false;
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
 
     public FLEncoder() {
-        this.handle = init();
+        this(init());
     }
 
     public FLEncoder(long handle) {
+        this(handle, false);
+    }
+
+    public FLEncoder(long handle, boolean managed) {
+        this.managed = managed;
         this.handle = handle;
     }
 
     public void free() {
-        if (handle != 0) {
+        if (handle != 0 && !managed) {
             free(handle);
-            handle = 0;
+            handle = 0L;
         }
     }
 
@@ -100,7 +105,7 @@ public class FLEncoder {
         return writeValue(handle, flValue.getHandle());
     }
 
-    public boolean writeValueWithSharedKeys(FLValue flValue, FLSharedKeys flSharedKeys){
+    public boolean writeValueWithSharedKeys(FLValue flValue, FLSharedKeys flSharedKeys) {
         return writeValueWithSharedKeys(handle, flValue.getHandle(), flSharedKeys.getHandle());
     }
 
@@ -111,25 +116,25 @@ public class FLEncoder {
         if (value == null)
             return writeNull(handle);
 
-        // boolean
+            // boolean
         else if (value instanceof Boolean)
             return writeBool(handle, (Boolean) value);
 
-        // Number
+            // Number
         else if (value instanceof Number) {
             // Integer
             if (value instanceof Integer)
                 return writeInt(handle, ((Integer) value).longValue());
 
-            // Long
+                // Long
             else if (value instanceof Long)
                 return writeInt(handle, ((Long) value).longValue());
 
-            // Double
+                // Double
             else if (value instanceof Double)
                 return writeDouble(handle, ((Double) value).doubleValue());
 
-            // Float
+                // Float
             else
                 return writeFloat(handle, ((Float) value).floatValue());
         }
@@ -138,15 +143,15 @@ public class FLEncoder {
         else if (value instanceof String)
             return writeString(handle, (String) value);
 
-        // byte[]
+            // byte[]
         else if (value instanceof byte[])
             return writeData(handle, (byte[]) value);
 
-        // List
+            // List
         else if (value instanceof List)
             return write((List) value);
 
-        // Map
+            // Map
         else if (value instanceof Map)
             return write((Map) value);
 
@@ -177,6 +182,10 @@ public class FLEncoder {
 
     public FLSliceResult finish2() throws LiteCoreException {
         return new FLSliceResult(finish2(handle));
+    }
+
+    public void setExtraInfo(long info) {
+        setExtraInfo(handle, info);
     }
 
     //-------------------------------------------------------------------------
@@ -233,4 +242,6 @@ public class FLEncoder {
     static native byte[] finish(long encoder) throws LiteCoreException;
 
     static native long finish2(long encoder) throws LiteCoreException;
+
+    static native void setExtraInfo(long encoder, long info);
 }

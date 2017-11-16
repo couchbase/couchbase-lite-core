@@ -10,18 +10,20 @@
 #define native_glue_hpp
 
 #include <jni.h>
-#include "c4Database.h"
-#include "slice.hh"
 #include <vector>
+#include <c4.h>
+#include "RefCounted.hh"
+#include "Fleece.h"
+#include "slice.hh"
 
 namespace litecore {
     namespace jni {
 
         using namespace fleece;
 
-// Soft limit of number of local JNI refs to use. Even using PushLocalFrame(), you may not get as
-// many refs as you asked for. At least, that's what happens on Android: the new frame won't have
-// more than 512 refs available. So 200 is being conservative.
+        // Soft limit of number of local JNI refs to use. Even using PushLocalFrame(), you may not get as
+        // many refs as you asked for. At least, that's what happens on Android: the new frame won't have
+        // more than 512 refs available. So 200 is being conservative.
         static const jsize MaxLocalRefsToUse = 200;
 
         extern JavaVM *gJVM;
@@ -29,8 +31,9 @@ namespace litecore {
         bool initC4Observer(JNIEnv *);   // Implemented in native_c4observer.cc
         bool initC4Replicator(JNIEnv *); // Implemented in native_c4replicator.cc
         bool initC4Socket(JNIEnv *);     // Implemented in native_c4socket.cc
+        bool initMValue(JNIEnv *);       // Implemented in native_mvalue.cc
 
-// Creates a temporary slice value from a Java String object
+        // Creates a temporary slice value from a Java String object
         class jstringSlice {
         public:
             jstringSlice(JNIEnv *env, jstring js);
@@ -58,7 +61,7 @@ namespace litecore {
         };
 
 
-// Creates a temporary slice value from a Java byte[], attempting to avoid copying
+        // Creates a temporary slice value from a Java byte[], attempting to avoid copying
         class jbyteArraySlice {
         public:
             // Warning: If `critical` is true, you cannot make any further JNI calls (except other
@@ -85,32 +88,18 @@ namespace litecore {
             bool _critical;
         };
 
-// Creates a Java String from the contents of a C4Slice.
+        // Creates a Java String from the contents of a C4Slice.
         jstring toJString(JNIEnv *, C4Slice);
 
-// Creates a Java byte[] from the contents of a C4Slice.
+        jstring toJStringFromSlice(JNIEnv *, slice);
+
+        // Creates a Java byte[] from the contents of a C4Slice.
         jbyteArray toJByteArray(JNIEnv *, C4Slice);
 
-// Sets a Java exception based on the LiteCore error.
+        // Sets a Java exception based on the LiteCore error.
         void throwError(JNIEnv *, C4Error);
 
-// Copies an array of handles from a Java long[] to a C++ vector.
-        template<typename T>
-        std::vector<T> handlesToVector(JNIEnv *env, jlongArray jhandles) {
-            jsize count = env->GetArrayLength(jhandles);
-            std::vector<T> objects(count);
-            if (count > 0) {
-                jboolean isCopy;
-                auto handles = env->GetLongArrayElements(jhandles, &isCopy);
-                for (jsize i = 0; i < count; i++) {
-                    objects[i] = (T) handles[i];
-                }
-                env->ReleaseLongArrayElements(jhandles, handles, JNI_ABORT);
-            }
-            return objects;
-        }
-
-// Copies an encryption key to a C4EncryptionKey. Returns false on exception.
+        // Copies an encryption key to a C4EncryptionKey. Returns false on exception.
         bool getEncryptionKey(JNIEnv *env,
                               jint keyAlg,
                               jbyteArray jKeyBytes,
