@@ -10,12 +10,18 @@ include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}Lite
                     ${TOP}LiteCore/ ${TOP}REST/
                     ${TOP}vendor/fleece/Fleece/
                     ${TOP}vendor/fleece/vendor/catch/
+                    ${TOP}vendor/fleece/vendor/jsonsl/
                     ${TOP}vendor/SQLiteCpp/include/
                     ${TOP}Replicator/
                     ${TOP}C/tests/
                 )
-                    
+
 aux_source_directory(.  TEST_SRC)
+aux_source_directory(${TOP}vendor/fleece/Tests FLEECE_TEST_SRC)
+if(NOT APPLE)
+    LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/ObjCTests.mm)
+endif()
+set(TEST_SRC ${TEST_SRC} ${FLEECE_TEST_SRC})
 if(MSVC)
 	set(TEST_SRC ${TEST_SRC} ../../MSVC/arc4random.cc)
 elseif(UNIX AND NOT APPLE)
@@ -24,7 +30,10 @@ endif()
 
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
 file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
-add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTest.cc 
+file(COPY ../../vendor/fleece/Tests/1000people.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Tests)
+file(COPY ../../vendor/fleece/Tests/1person.fleece DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Tests)
+file(COPY ../../vendor/fleece/Tests/1000people.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Tests)
+add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTest.cc
   ../../C/tests/c4Test.cc ../../Replicator/tests/ReplicatorAPITest.cc ../../Replicator/tests/CookieStoreTest.cc
   ../../REST/Response.cc)
 
