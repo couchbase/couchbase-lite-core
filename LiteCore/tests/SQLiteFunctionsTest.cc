@@ -6,10 +6,6 @@
 //  Copyright © 2016 Couchbase. All rights reserved.
 //
 
-#ifdef _MSC_VER
-#pragma execution_character_set("UTF-8")
-#endif
-
 #include "LiteCoreTest.hh"
 #include "SQLite_Internal.hh"
 #include "StringUtil.hh"

@@ -3,7 +3,7 @@
 //  LiteCore
 //
 //  Created by Jim Borden on 2017/08/10.
-//  Copyright © 2017 Couchbase. All rights reserved.
+//  Copyright Â© 2017 Couchbase. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
 //  except in compliance with the License. You may obtain a copy of the License at
