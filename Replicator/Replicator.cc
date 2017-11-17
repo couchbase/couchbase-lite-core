@@ -91,7 +91,7 @@ namespace litecore { namespace repl {
                            Delegate &delegate,
                            Options options)
     :Replicator(db, webSocket->address(), delegate, options,
-                new Connection(webSocket, *this))
+                new Connection(webSocket, options.properties, *this))
     { }
 
 

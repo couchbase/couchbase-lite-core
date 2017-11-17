@@ -62,6 +62,15 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large docs", "[Push]") {
+    importJSONLines(sFixturesDir + "wikipedia_100.json");
+    _expectedDocumentCount = 100;
+    runPushReplication();
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
@@ -106,6 +115,28 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
     runPushReplication();
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":12189}");
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database no-conflicts", "[Push][NoConflicts]") {
+    auto serverOpts = Replicator::Options::passive().setNoConflicts();
+
+    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
+    _expectedDocumentCount = 12189;
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":12189}");
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull large database no-conflicts", "[Pull][NoConflicts]") {
+    auto serverOpts = Replicator::Options::passive().setNoConflicts();
+
+    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
+    _expectedDocumentCount = 12189;
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
+    compareDatabases();
+    validateCheckpoints(db2, db, "{\"remote\":12189}");
 }
 
 

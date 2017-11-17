@@ -136,8 +136,10 @@ namespace litecore { namespace repl {
             return gotError(err);
         if (!changes.empty()) {
             _lastSequenceRead = changes.back().sequence;
-            log("Read %zu changes: Pusher sending 'changes' with sequences %llu - %llu",
-                  changes.size(), changes[0].sequence, _lastSequenceRead);
+            log("Read %zu changes: Pusher sending '%s' with sequences %llu - %llu",
+                changes.size(),
+                (_proposeChanges ? "proposeChanges" : "changes"),
+                changes[0].sequence, _lastSequenceRead);
         }
 
         uint64_t bodySize = 0;

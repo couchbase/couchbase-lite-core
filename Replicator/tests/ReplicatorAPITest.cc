@@ -139,6 +139,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push]
 // The tests below are tagged [.SyncServer] to keep them from running during normal testing.
 // Instead, they have to be invoked manually via Catch command-line options.
 // This is because they require that an external replication server is running.
+// The default URL the tests connect to is blip://localhost:4984/scratch/, but this can be
+// overridden by setting environment vars REMOTE_HOST, REMOTE_PORT, REMOTE_DB.
+// ** The tests will erase this database (via the SG REST API.) **
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
