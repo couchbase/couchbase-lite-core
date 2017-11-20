@@ -2,9 +2,11 @@ package com.couchbase.litecore.fleece;
 
 public class MDictIterator {
     long _handle;
+    boolean _managed;
 
     public MDictIterator(MDict dict) {
         _handle = init(dict._handle);
+        _managed = false;
     }
 
     public String key() {
@@ -26,7 +28,7 @@ public class MDictIterator {
     }
 
     protected void free() {
-        if (_handle != 0L) {
+        if (_handle != 0L && !_managed) {
             free(_handle);
             _handle = 0L;
         }

@@ -2,24 +2,25 @@ package com.couchbase.litecore.fleece;
 
 public class MRoot extends MCollection {
 
-    public MRoot(long handle) {
-        super(handle);
-    }
-
-    public MRoot(AllocSlice fleeceData, FLSharedKeys sk, boolean isMutable) {
-        _handle = init(fleeceData._handle, sk != null ? sk.handle : 0L, true);
-    }
-
-    public MRoot(AllocSlice fleeceData, FLSharedKeys sk) {
-        this(fleeceData, sk, true);
+    public MRoot(MContext context, FLValue flValue, boolean  isMutable){
+        super(initWithContext(context._handle, flValue.getHandle(), isMutable), false);
     }
 
     public MRoot(AllocSlice fleeceData) {
         this(fleeceData, null);
     }
 
+    MRoot(AllocSlice fleeceData, FLSharedKeys sk) {
+        this(fleeceData, sk, true);
+    }
+
+    public MRoot(AllocSlice fleeceData, FLSharedKeys sk, boolean isMutable) {
+        super(init(fleeceData._handle, sk != null ? sk.handle : 0L, true), false);
+    }
+
+    @Override
     public void free() {
-        if (_handle != 0L) {
+        if (_handle != 0L && !_managed) {
             free(_handle);
             _handle = 0L;
         }
@@ -38,7 +39,7 @@ public class MRoot extends MCollection {
     }
 
     public MContext context() {
-        return new MContext(context(_handle));
+        return new MContext(context(_handle), true);
     }
 
     public Object asNative() {
@@ -69,6 +70,8 @@ public class MRoot extends MCollection {
 
     // static Native asNative(alloc_slice, FLSharedKeys, bool)
     private static native Object toNative(long fleeceData, long sk, boolean mutableContainers);
+
+    private static native long initWithContext(long context, long value, boolean isMutable);
 
     private static native long init(long fleeceData, long sk, boolean isMutable);
 

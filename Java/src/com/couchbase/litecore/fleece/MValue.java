@@ -70,10 +70,7 @@ public class MValue {
     private static void encodeNative(long hEncoder, Object obj) {
         if (hEncoder == 0L) return;
         Encoder encoder = new Encoder(hEncoder, true);
-        if (obj != null && obj instanceof FLEncodable)
-            ((FLEncodable) obj).encodeTo(encoder);
-        else
-            encoder.writeValue(obj);
+        encoder.writeObject(obj);
     }
 
     private static native void free(long handle);

@@ -13,10 +13,15 @@ using namespace litecore::jni;
 // MValue + JNI implementation (See MValue+ObjC.mm)
 // ----------------------------------------------------------------------------
 static jclass cls_FleeceArray;              // global reference to FleeceArray
-static jmethodID m_FleeceArray_init;           // callback method for FleeceArray(long, long)
+static jmethodID m_FleeceArray_init;        // callback method for FleeceArray(long, long)
 
 static jclass cls_FleeceDict;               // global reference to FleeceDict
-static jmethodID m_FleeceDict_init;            // callback method for FleeceDict(long, long)
+static jmethodID m_FleeceDict_init;         // callback method for FleeceDict(long, long)
+
+static jclass    cls_CBLFleece;            // global reference to Dictionary
+static jmethodID m_MValue_toDictionary;    // callback method for MValue_toDictionary(long, long)
+static jmethodID m_MValue_toArray;         // callback method for MValue_toArray(long, long)
+
 
 static jclass cls_FLValue;                  // global reference to FLValue
 static jmethodID m_FLValue_toObject;           // static method for asObject(long)
@@ -51,6 +56,23 @@ bool litecore::jni::initMValue(JNIEnv *env) {
         if (!m_FleeceArray_init)
             return false;
     }
+
+    // Find Dictionary class and constructor
+    {
+        jclass localClass = env->FindClass("com/couchbase/lite/CBLFleece");
+        if (!localClass)
+            return false;
+        cls_CBLFleece = reinterpret_cast<jclass>(env->NewGlobalRef(localClass));
+        if (!cls_CBLFleece)
+            return false;
+        m_MValue_toDictionary = env->GetStaticMethodID(cls_CBLFleece, "MValue_toDictionary", "(JJ)Ljava/lang/Object;");
+        if (!m_MValue_toDictionary)
+            return false;
+        m_MValue_toArray = env->GetStaticMethodID(cls_CBLFleece, "MValue_toArray", "(JJ)Ljava/lang/Object;");
+        if (!m_MValue_toArray)
+            return false;
+    }
+
 
     // Find FLValue class and asObject(long) static method
     {
@@ -89,7 +111,7 @@ bool litecore::jni::initMValue(JNIEnv *env) {
 static JNIRef *createFleeceArray(jlong hMv, jlong hParent) {
     JNIRef *jniRef = NULL;
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         jobject newObj = env->NewObject(cls_FleeceArray, m_FleeceArray_init, hMv, hParent);
         jniRef = new JNIRef(env, newObj);
@@ -107,7 +129,7 @@ static JNIRef *createFleeceArray(jlong hMv, jlong hParent) {
 static JNIRef *createFleeceDict(jlong hMv, jlong hParent) {
     JNIRef *jniRef = NULL;
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         jobject newObj = env->NewObject(cls_FleeceDict, m_FleeceDict_init, hMv, hParent);
         jniRef = new JNIRef(env, newObj);
@@ -125,7 +147,7 @@ static JNIRef *createFleeceDict(jlong hMv, jlong hParent) {
 static JNIRef *createObject(jlong hFLValue) {
     JNIRef *jniRef = NULL;
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         jobject newObj = env->CallStaticObjectMethod(cls_FLValue,
                                                      m_FLValue_toObject,
@@ -143,23 +165,62 @@ static JNIRef *createObject(jlong hFLValue) {
     }
     return jniRef;
 }
+static JNIRef *createArray(jlong hMv, jlong hParent) {
+    JNIRef *jniRef = NULL;
+    JNIEnv *env = NULL;
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    if (getEnvStat == JNI_OK) {
+        jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toArray, hMv, hParent);
+        jniRef = new JNIRef(env, newObj);
+    } else if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
+            jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toArray, hMv, hParent);
+            jniRef = new JNIRef(env, newObj);
+            if (gJVM->DetachCurrentThread() != 0) {
+            }
+        }
+    }
+    return jniRef;
+}
+
+static JNIRef *createDict(jlong hMv, jlong hParent) {
+    JNIRef *jniRef = NULL;
+    JNIEnv *env = NULL;
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    if (getEnvStat == JNI_OK) {
+        jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toDictionary, hMv, hParent);
+        jniRef = new JNIRef(env, newObj);
+    } else if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
+            jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toDictionary, hMv, hParent);
+            jniRef = new JNIRef(env, newObj);
+            if (gJVM->DetachCurrentThread() != 0) {
+            }
+        }
+    }
+    return jniRef;
+}
 
 // ----------------------------------------------------------------------------
 // MValue + JNI implementation (See MValue+ObjC.mm)
 // ----------------------------------------------------------------------------
 template<>
-JNative JMValue::toNative(MValue *mv, JMCollection *parent, bool &cacheIt) {
-    switch (mv->value().type()) {
-        case kFLArray:
+JNative JMValue::toNative(JMValue *mv, JMCollection *parent, bool &cacheIt) {
+    Value value = mv->value();
+    switch (value.type()) {
+        case kFLArray: {
             cacheIt = true;
-            return JNative(createFleeceArray((jlong) mv, (jlong) parent));
-        case kFLDict:
+            return JNative(createArray((jlong) mv, (jlong) parent));
+        }
+        case kFLDict: {
             cacheIt = true;
-            return JNative(createFleeceDict((jlong) mv, (jlong) parent));
-        default:
+            return JNative(createDict((jlong) mv, (jlong) parent));
+        }
+        default: {
             cacheIt = true;
             FLValue val = (FLValue) mv->value();
             return JNative(createObject((jlong) val));
+        }
     }
 }
 
@@ -167,7 +228,7 @@ template<>
 JMCollection *JMValue::collectionFromNative(JNative native) {
     jobject obj = native->native();
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK)
         return (JMCollection *) env->CallStaticLongMethod(cls_MValue, m_MValue_getFLCollection,
                                                           obj);
@@ -178,7 +239,7 @@ template<>
 void JMValue::encodeNative(Encoder &enc, JNative native) {
     jobject obj = native->native();
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_MValue, m_MValue_encodeNative, (jlong) &enc, obj);
     }

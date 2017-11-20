@@ -13,6 +13,7 @@
  */
 package com.couchbase.litecore.fleece;
 
+
 import com.couchbase.litecore.LiteCoreException;
 
 import java.util.Iterator;
@@ -23,8 +24,8 @@ public class FLEncoder {
     //-------------------------------------------------------------------------
     // package level variable
     //-------------------------------------------------------------------------
-    long handle = 0L;
-    private boolean managed = false;
+    long _handle = 0L;
+    boolean _managed = false;
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
@@ -38,75 +39,79 @@ public class FLEncoder {
     }
 
     public FLEncoder(long handle, boolean managed) {
-        this.managed = managed;
-        this.handle = handle;
+        _managed = managed;
+        _handle = handle;
     }
 
     public void free() {
-        if (handle != 0 && !managed) {
-            free(handle);
-            handle = 0L;
+        if (_handle != 0 && !_managed) {
+            free(_handle);
+            _handle = 0L;
         }
     }
 
+    public String toString() {
+        return String.format("FLEncoder{_handle: 0x%x}", _handle);
+    }
+
     public void setSharedKeys(FLSharedKeys flSharedKeys) {
-        setSharedKeys(handle, flSharedKeys.getHandle());
+        setSharedKeys(_handle, flSharedKeys.getHandle());
     }
 
     public boolean writeNull() {
-        return writeNull(handle);
+        return writeNull(_handle);
     }
 
     public boolean writeBool(boolean value) {
-        return writeBool(handle, value);
+        return writeBool(_handle, value);
     }
 
     public boolean writeInt(long value) {
-        return writeInt(handle, value);
+        return writeInt(_handle, value);
     }
 
     public boolean writeFloat(float value) {
-        return writeFloat(handle, value);
+        return writeFloat(_handle, value);
     }
 
     public boolean writeDouble(double value) {
-        return writeDouble(handle, value);
+        return writeDouble(_handle, value);
     }
 
     public boolean writeString(String value) {
-        return writeString(handle, value);
+        return writeString(_handle, value);
     }
 
     public boolean writeData(byte[] value) {
-        return writeData(handle, value);
+        return writeData(_handle, value);
     }
 
     public boolean beginDict(long reserve) {
-        return beginDict(handle, reserve);
+        return beginDict(_handle, reserve);
     }
 
     public boolean endDict() {
-        return endDict(handle);
+        return endDict(_handle);
     }
 
     public boolean beginArray(long reserve) {
-        return beginArray(handle, reserve);
+        return beginArray(_handle, reserve);
     }
 
     public boolean endArray() {
-        return endArray(handle);
+        return endArray(_handle);
     }
 
     public boolean writeKey(String slice) {
-        return writeKey(handle, slice);
+        return writeKey(_handle, slice);
     }
 
     public boolean writeValue(FLValue flValue) {
-        return writeValue(handle, flValue.getHandle());
+        return writeValue(_handle, flValue.getHandle());
     }
 
     public boolean writeValueWithSharedKeys(FLValue flValue, FLSharedKeys flSharedKeys) {
-        return writeValueWithSharedKeys(handle, flValue.getHandle(), flSharedKeys.getHandle());
+        return writeValueWithSharedKeys(_handle, flValue.getHandle(), flSharedKeys.getHandle());
     }
 
     // C/Fleece+CoreFoundation.mm
@@ -114,38 +119,38 @@ public class FLEncoder {
     public boolean writeValue(Object value) {
         // null
         if (value == null)
-            return writeNull(handle);
+            return writeNull(_handle);
 
             // boolean
         else if (value instanceof Boolean)
-            return writeBool(handle, (Boolean) value);
+            return writeBool(_handle, (Boolean) value);
 
             // Number
         else if (value instanceof Number) {
             // Integer
             if (value instanceof Integer)
-                return writeInt(handle, ((Integer) value).longValue());
+                return writeInt(_handle, ((Integer) value).longValue());
 
                 // Long
             else if (value instanceof Long)
-                return writeInt(handle, ((Long) value).longValue());
+                return writeInt(_handle, ((Long) value).longValue());
 
                 // Double
             else if (value instanceof Double)
-                return writeDouble(handle, ((Double) value).doubleValue());
+                return writeDouble(_handle, ((Double) value).doubleValue());
 
                 // Float
             else
-                return writeFloat(handle, ((Float) value).floatValue());
+                return writeFloat(_handle, ((Float) value).floatValue());
         }
 
         // String
         else if (value instanceof String)
-            return writeString(handle, (String) value);
+            return writeString(_handle, (String) value);
 
             // byte[]
         else if (value instanceof byte[])
-            return writeData(handle, (byte[]) value);
+            return writeData(_handle, (byte[]) value);
 
             // List
         else if (value instanceof List)
@@ -177,15 +182,19 @@ public class FLEncoder {
     }
 
     public byte[] finish() throws LiteCoreException {
-        return finish(handle);
+        return finish(_handle);
     }
 
     public FLSliceResult finish2() throws LiteCoreException {
-        return new FLSliceResult(finish2(handle));
+        return new FLSliceResult(finish2(_handle));
     }
 
-    public void setExtraInfo(long info) {
-        setExtraInfo(handle, info);
+    public void setExtraInfo(Object info) {
+        setExtraInfo(_handle, info);
+    }
+
+    public Object getExtraInfo() {
+        return getExtraInfo(_handle);
     }
 
     //-------------------------------------------------------------------------
@@ -243,5 +252,7 @@ public class FLEncoder {
 
     static native long finish2(long encoder) throws LiteCoreException;
 
-    static native void setExtraInfo(long encoder, long info);
+    static native void setExtraInfo(long encoder, Object info);
+
+    static native Object getExtraInfo(long encoder);
 }

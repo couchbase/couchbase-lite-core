@@ -24,12 +24,36 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_Encoder_init(JNIEnv *
 
 /*
  * Class:     com_couchbase_litecore_fleece_Encoder
+ * Method:    initWithFLEncoder
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_Encoder_initWithFLEncoder(JNIEnv *env, jclass clazz,
+                                                             jlong jflenc) {
+    return (jlong) new Encoder((FLEncoder)jflenc);
+}
+
+
+/*
+ * Class:     com_couchbase_litecore_fleece_Encoder
  * Method:    free
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_Encoder_free(JNIEnv *env, jclass clazz, jlong jenc) {
     delete (Encoder *) jenc;
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_Encoder
+ * Method:    release
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_fleece_Encoder_release(JNIEnv *env, jclass clazz, jlong jenc) {
+    Encoder *enc = (Encoder *) jenc;
+    enc->release();
+    delete enc;
 }
 
 /*
@@ -42,7 +66,16 @@ Java_com_couchbase_litecore_fleece_Encoder_setSharedKeys(JNIEnv *env, jclass cla
                                                          jlong jsharedKeys) {
     ((Encoder *) jenc)->setSharedKeys((FLSharedKeys) jsharedKeys);
 }
-
+/*
+ * Class:     com_couchbase_litecore_fleece_Encoder
+ * Method:    getFLEncoder
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_Encoder_getFLEncoder(JNIEnv *env, jclass clazz, jlong jenc){
+    Encoder *enc = (Encoder *) jenc;
+    FLEncoder flenc = (FLEncoder)*enc;
+    return (jlong)flenc;
+}
 /*
  * Class:     com_couchbase_litecore_fleece_Encoder
  * Method:    writeNull

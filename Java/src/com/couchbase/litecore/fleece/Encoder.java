@@ -14,7 +14,11 @@ public class Encoder {
         this(init(), false);
     }
 
-    public Encoder(long handle, boolean managed) {
+    public Encoder(FLEncoder enc){
+        this(initWithFLEncoder(enc._handle), false);
+    }
+
+    Encoder(long handle, boolean managed) {
         if (handle == 0)
             throw new IllegalArgumentException();
         this._handle = handle;
@@ -28,8 +32,18 @@ public class Encoder {
         }
     }
 
+    public void release(){
+        if (_handle != 0L && !_managed) {
+            release(_handle);
+            _handle = 0L;
+        }
+    }
+
     public void setSharedKeys(FLSharedKeys flSharedKeys) {
         setSharedKeys(_handle, flSharedKeys.getHandle());
+    }
+    public FLEncoder getFLEncoder(){
+        return new FLEncoder(getFLEncoder(_handle),true);
     }
 
     public boolean writeNull() {
@@ -90,7 +104,7 @@ public class Encoder {
         while (keys.hasNext()) {
             String key = (String) keys.next();
             writeKey(key);
-            writeValue(map.get(key));
+            writeObject(map.get(key));
         }
         return endDict();
     }
@@ -98,13 +112,13 @@ public class Encoder {
     public boolean write(List list) {
         beginArray(list.size());
         for (Object item : list)
-            writeValue(item);
+            writeObject(item);
         return endArray();
     }
 
     // C/Fleece+CoreFoundation.mm
     // bool FLEncoder_WriteNSObject(FLEncoder encoder, id obj)
-    public boolean writeValue(Object value) {
+    public boolean writeObject(Object value) {
         // null
         if (value == null)
             return writeNull(_handle);
@@ -148,6 +162,10 @@ public class Encoder {
         else if (value instanceof Map)
             return write((Map) value);
 
+        // FLEncodable
+        else if(value instanceof FLEncodable)
+            ((FLEncodable) value).encodeTo(getFLEncoder());
+
         return false;
     }
 
@@ -174,9 +192,15 @@ public class Encoder {
 
     static native long init();
 
+    static native long initWithFLEncoder(long enc);
+
     static native void free(long handle);
 
+    static native void release(long handle);
+
     static native void setSharedKeys(long handle, long sharedKeys);
+
+    static native long getFLEncoder(long handle);
 
     static native boolean writeNull(long handle);
 

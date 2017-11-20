@@ -94,8 +94,7 @@ Java_com_couchbase_litecore_fleece_MDict_get(JNIEnv *env, jclass clazz, jlong jm
  * Signature: (JLjava/lang/String;J)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_MDict_set(JNIEnv *env, jclass clazz, jlong jmdict, jstring jkey,
-                                             jlong jval) {
+Java_com_couchbase_litecore_fleece_MDict_set(JNIEnv *env, jclass clazz, jlong jmdict, jstring jkey, jlong jval) {
     jstringSlice key(env, jkey);
     return ((JMDict *) jmdict)->set(key, *((JMValue *) jval));
 }

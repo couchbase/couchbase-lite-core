@@ -142,7 +142,7 @@ static void statusChangedCallback(C4Replicator *repl, C4ReplicatorStatus status,
          status.level);
 
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Replicator, m_C4Replicator_statusChangedCallback,
                                   (jlong) repl,
@@ -180,7 +180,7 @@ static void documentErrorCallback(C4Replicator *repl, bool pushing, C4String doc
          (pushing ? "pushing" : "pulling"), message);
 
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Replicator,
                                   m_C4Replicator_documentErrorCallback,

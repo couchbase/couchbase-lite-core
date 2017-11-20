@@ -29,6 +29,16 @@ Java_com_couchbase_litecore_fleece_MRoot_toNative(JNIEnv *env, jclass clazz, jlo
 
 /*
  * Class:     com_couchbase_litecore_fleece_MRoot
+ * Method:    initWithContext
+ * Signature: (JJZ)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_MRoot_initWithContext(JNIEnv *env, jclass clazz, jlong jcontext, jlong jvalue, jboolean isMutable){
+    Value value((FLValue)jvalue);
+    return (jlong) new JMRoot((MContext *)jcontext, value, isMutable);
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_MRoot
  * Method:    init
  * Signature: (JJZ)J
  */

@@ -16,6 +16,8 @@
 #include "Fleece.h"
 #include "slice.hh"
 
+#include "logging.h"
+
 namespace litecore {
     namespace jni {
 
@@ -27,6 +29,8 @@ namespace litecore {
         static const jsize MaxLocalRefsToUse = 200;
 
         extern JavaVM *gJVM;
+
+        void deleteGlobalRef(jobject gRef);
 
         bool initC4Observer(JNIEnv *);   // Implemented in native_c4observer.cc
         bool initC4Replicator(JNIEnv *); // Implemented in native_c4replicator.cc
@@ -87,6 +91,33 @@ namespace litecore {
             jbyteArray _jbytes;
             bool _critical;
         };
+
+        class JNIRef : public RefCounted {
+        public:
+            JNIRef(JNIEnv *env, jobject native) {
+                if (env != NULL && native != NULL) {
+                    _native = env->NewGlobalRef(native);
+                }else{
+                    _native = NULL;
+                }
+            }
+
+            ~JNIRef() {
+                if (_native != NULL) {
+                    deleteGlobalRef(_native);
+                    _native = NULL;
+                }
+            }
+
+            jobject native() {
+                return _native;
+            }
+
+        private:
+            jobject _native;
+        };
+
+        typedef Retained<JNIRef> JNative;
 
         // Creates a Java String from the contents of a C4Slice.
         jstring toJString(JNIEnv *, C4Slice);

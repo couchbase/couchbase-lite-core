@@ -83,7 +83,7 @@ bool litecore::jni::initC4Socket(JNIEnv *env) {
 static void doOpen(C4Socket *s, const C4Address *addr, C4Slice optionsFleece) {
     //LOGI("doOpen() s -> 0x%x", s);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket,
                                   m_C4Socket_open,
@@ -117,7 +117,7 @@ static void doOpen(C4Socket *s, const C4Address *addr, C4Slice optionsFleece) {
 static void doWrite(C4Socket *s, C4SliceResult allocatedData) {
     //LOGI("doWrite() s -> 0x%x data.size -> %d", s, allocatedData.size);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket,
                                   m_C4Socket_write,
@@ -143,7 +143,7 @@ static void doWrite(C4Socket *s, C4SliceResult allocatedData) {
 static void doCompletedReceive(C4Socket *s, size_t byteCount) {
     //LOGI("doCompletedReceive() s -> 0x%x byteCount -> %ld", s, byteCount);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket,
                                   m_C4Socket_completedReceive,
@@ -169,7 +169,7 @@ static void doCompletedReceive(C4Socket *s, size_t byteCount) {
 static void doClose(C4Socket *s) {
     ////LOGI("doClose() s -> 0x%x", s);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket, m_C4Socket_close, (jlong) s);
     } else if (getEnvStat == JNI_EDETACHED) {
@@ -189,7 +189,7 @@ static void doClose(C4Socket *s) {
 static void doRequestClose(C4Socket *s, int status, C4String message) {
     //LOGI("doRequestClose() s -> 0x%x status -> %d", s, status);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv((void **) &env, JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket,
                                   m_C4Socket_requestClose,

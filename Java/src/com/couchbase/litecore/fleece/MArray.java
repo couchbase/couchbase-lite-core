@@ -2,11 +2,7 @@ package com.couchbase.litecore.fleece;
 
 public class MArray extends MCollection {
     public MArray() {
-        super(init());
-    }
-
-    public MArray(long handle) {
-        super(handle);
+        super(init(), false);
     }
 
     public void initInSlot(MValue mv, MCollection parent) {
@@ -67,8 +63,9 @@ public class MArray extends MCollection {
         super.finalize();
     }
 
-    protected void free() {
-        if (_handle != 0L) {
+    @Override
+    public void free() {
+        if (_handle != 0L && !_managed) {
             free(_handle);
             _handle = 0L;
         }

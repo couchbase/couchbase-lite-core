@@ -2,12 +2,11 @@ package com.couchbase.litecore.fleece;
 
 public class MCollection {
     long _handle;
+    boolean _managed;
 
-    public MCollection() {
-    }
-
-    public MCollection(long handle) {
+    public MCollection(long handle, boolean managed) {
         _handle = handle;
+        _managed = managed;
     }
 
     public boolean isMutable() {
@@ -27,11 +26,11 @@ public class MCollection {
     }
 
     public MContext context() {
-        return new MContext(context(_handle));
+        return new MContext(context(_handle), true);
     }
 
     public MCollection parent() {
-        return new MCollection(parent(_handle));
+        return new MCollection(parent(_handle), true);
     }
 
     @Override
@@ -41,8 +40,7 @@ public class MCollection {
     }
 
     // should be overridden
-    protected void free() {
-        // should be override
+    public void free() {
     }
 
     private static native boolean isMutable(long handle);

@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class FleeceDict implements Map<String, Object>, FLEncodable, FLCollection {
+public class FleeceDict implements Map<String, Object>, Encodable, FLCollection {
     private MDict _dict;
 
     private FleeceDict() {

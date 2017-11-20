@@ -19,40 +19,33 @@ using namespace fleeceapi;
 
 namespace litecore {
     namespace jni {
-        class JNIRef : public RefCounted {
-        public:
-            JNIRef(JNIEnv *env, jobject native) {
-                if (env != NULL && native != NULL) {
-                    _env = env;
-                    _native = _env->NewGlobalRef(native);
-                }
-            }
-
-            ~JNIRef() {
-                if (_env != NULL && _native != NULL) {
-                    _env->DeleteGlobalRef(_native);
-                    _native = NULL;
-                    _env = NULL;
-                }
-            }
-
-            jobject native() {
-                return _native;
-            }
-
-        private:
-            jobject _native;
-            JNIEnv *_env;
-        };
-
-        typedef Retained<JNIRef> JNative;
-
         typedef MArray<JNative> JMArray;
         typedef MCollection<JNative> JMCollection;
         typedef MDict<JNative> JMDict;
         typedef MDictIterator<JNative> JMDictIterator;
         typedef MRoot<JNative> JMRoot;
         typedef MValue<JNative> JMValue;
+
+        class JMContext : public MContext {
+        public:
+            JMContext(const alloc_slice &data, FLSharedKeys sk) : MContext(data, sk) {
+            }
+
+            virtual ~JMContext() {
+            }
+
+            void setJNative(JNIEnv *env, jobject native) {
+                if (env != NULL && native != NULL)
+                    _nativeRef = JNative(new JNIRef(env, native));
+            }
+
+            jobject getJNative() {
+                return _nativeRef.get() != NULL ? _nativeRef->native() : NULL;
+            }
+
+        private:
+            JNative _nativeRef;
+        };
     }
 }
 

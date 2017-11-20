@@ -43,7 +43,7 @@ public class C4MutableFleeceTest extends C4BaseTest {
 
     static AllocSlice encode(Object obj) throws LiteCoreException {
         Encoder enc = new Encoder();
-        enc.writeValue(obj);
+        enc.writeObject(obj);
         return enc.finish();
     }
 

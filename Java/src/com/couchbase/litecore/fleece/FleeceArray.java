@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
-public class FleeceArray implements List<Object>, FLEncodable, FLCollection {
+public class FleeceArray implements List<Object>, Encodable, FLCollection {
     private MArray _array;
 
     private FleeceArray() {

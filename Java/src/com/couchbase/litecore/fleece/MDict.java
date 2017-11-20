@@ -2,18 +2,14 @@ package com.couchbase.litecore.fleece;
 
 public class MDict extends MCollection {
     public MDict() {
-        super(init());
-    }
-
-    public MDict(long handle) {
-        super(handle);
+        super(init(), false);
     }
 
     public void initInSlot(MValue mv, MCollection parent) {
         initInSlot(mv._handle, parent._handle);
     }
 
-    void initInSlot(long hMv, long hParent) {
+    public void initInSlot(long hMv, long hParent) {
         initInSlot(_handle, hMv, hParent);
     }
 
@@ -21,7 +17,7 @@ public class MDict extends MCollection {
         initAsCopyOf(mDict._handle, isMutable);
     }
 
-    void initAsCopyOf(long hMDict, boolean isMutable) {
+    public void initAsCopyOf(long hMDict, boolean isMutable) {
         initAsCopyOf(_handle, hMDict, isMutable);
     }
 
@@ -63,8 +59,8 @@ public class MDict extends MCollection {
     }
 
     @Override
-    protected void free() {
-        if (_handle != 0L) {
+    public void free() {
+        if (_handle != 0L && !_managed) {
             free(_handle);
             _handle = 0L;
         }
