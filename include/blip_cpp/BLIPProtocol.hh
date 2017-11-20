@@ -11,7 +11,7 @@
 
 namespace litecore { namespace blip {
 
-    // https://github.com/couchbaselabs/BLIP-Cocoa/blob/master/Docs/BLIP%20Protocol.md
+    // https://github.com/couchbaselabs/BLIP-Cpp/blob/master/docs/BLIP%20Protocol.md
 
     enum MessageType: uint8_t {
         kRequestType     = 0,  // A message initiated by a peer
@@ -38,4 +38,6 @@ namespace litecore { namespace blip {
     typedef uint64_t MessageNo;
     typedef uint64_t MessageSize;
 
+    // Implementation-imposed max encoded size of message properties (not part of protocol)
+    constexpr uint64_t kMaxPropertiesSize = 100 * 1024;
 } }

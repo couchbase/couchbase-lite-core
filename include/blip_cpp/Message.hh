@@ -25,7 +25,8 @@ namespace litecore { namespace blip {
     class Connection;
     class MessageBuilder;
     class MessageIn;
-    class Inflater;
+    class InflaterWriter;
+    class Codec;
 
 
     /** Progress notification for an outgoing request. */
@@ -85,6 +86,8 @@ namespace litecore { namespace blip {
         MessageNo number() const            {return _number;}
 
     protected:
+        friend class BLIPIO;
+        
         Message(FrameFlags f, MessageNo n)
         :_flags(f), _number(n)
         {
@@ -99,6 +102,7 @@ namespace litecore { namespace blip {
         bool hasFlag(FrameFlags f) const    {return (_flags & f) != 0;}
         bool isAck() const                  {return type() == kAckRequestType ||
                                                     type() == kAckResponseType;}
+        virtual bool isIncoming() const     {return false;}
         MessageType type() const            {return (MessageType)(_flags & kTypeMask);}
         const char* typeName() const        {return kMessageTypeNames[type()];}
 
@@ -170,17 +174,23 @@ namespace litecore { namespace blip {
             kEnd
         };
 
-        MessageIn(Connection*, FrameFlags, MessageNo, MessageProgressCallback =nullptr, MessageSize outgoingSize =0);
+        MessageIn(Connection*, FrameFlags, MessageNo,
+                  MessageProgressCallback =nullptr,
+                  MessageSize outgoingSize =0);
         virtual ~MessageIn();
-        ReceiveState receivedFrame(slice, FrameFlags);
+        virtual bool isIncoming() const     {return true;}
+        ReceiveState receivedFrame(Codec&, slice frame, FrameFlags);
 
     private:
+        void readFrame(Codec&, slice frame, bool finalFrame);
+        void acknowledge(size_t frameSize);
+
         Connection* const _connection;          // The owning BLIP connection
         std::mutex _receiveMutex;
-        std::unique_ptr<fleeceapi::JSONEncoder> _in; // Accumulates message data (not just JSON)
-        std::unique_ptr<Inflater> _decompressor;
-        std::unique_ptr<std::strstream> _decompressorInput;
+        MessageSize _rawBytesReceived {0};
+        std::unique_ptr<fleeceapi::JSONEncoder> _in; // Accumulates body data (not JSON)
         uint32_t _propertiesSize {0};           // Length of properties in bytes
+        slice _propertiesRemaining;             // Subrange of _properties still to be read
         uint32_t _unackedBytes {0};             // # bytes received that haven't been ACKed yet
         alloc_slice _properties;                // Just the (still encoded) properties
         alloc_slice _body;                      // Just the body

@@ -8,7 +8,7 @@
 
 #include "MessageBuilder.hh"
 #include "BLIPInternal.hh"
-#include "Flater.hh"
+#include "Codec.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "varint.hh"
@@ -146,12 +146,13 @@ namespace litecore { namespace blip {
             string properties = _properties.str();
             _properties.clear();
             size_t propertiesSize = properties.size();
+            if (propertiesSize > kMaxPropertiesSize)
+                throw std::runtime_error("properties excessively large");
             char buf[kMaxVarintLen64];
             slice encodedSize(buf, PutUVarInt(buf, propertiesSize));
             _out.writeRaw(encodedSize);
             _out.writeRaw(slice(properties));
             _wroteProperties = true;
-            _propertiesLength = (uint32_t)_out.bytesWritten();
         }
     }
 
@@ -166,29 +167,7 @@ namespace litecore { namespace blip {
 
     alloc_slice MessageBuilder::extractOutput() {
         finishProperties();
-        alloc_slice output = _out.finish();
-
-        if (compressed) {
-            compressed = false;
-            if (output.size > _propertiesLength) {
-                // Compress the body (but not the properties):
-                alloc_slice zippedOutput(output.size);
-                memcpy((void*)zippedOutput.buf, output.buf, _propertiesLength);
-
-                slice src = output.from(_propertiesLength);
-                slice dst = zippedOutput.from(_propertiesLength);
-                Deflater dfl;
-                if (dfl.deflate(src, dst)) {
-                    Assert(src.size == 0);
-                    zippedOutput.resize((char*)dst.buf - (char*)zippedOutput.buf);
-                    LogToAt(BLIPLog, Info/*TEMP*/, "Message compressed from %zu to %zu bytes",
-                            output.size, zippedOutput.size);
-                    output = zippedOutput;
-                    compressed = true;
-                }
-            }
-        }
-        return output;
+        return _out.finish();
     }
 
 
@@ -198,7 +177,6 @@ namespace litecore { namespace blip {
         _out.reset();
         _properties.clear();
         _wroteProperties = false;
-        _propertiesLength = 0;
     }
 
 } }

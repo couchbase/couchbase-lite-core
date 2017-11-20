@@ -27,8 +27,8 @@
 		2799762C1E944B2F00B27639 /* MessageBuilder.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2799762A1E944B2F00B27639 /* MessageBuilder.hh */; };
 		2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2799762D1E94509000B27639 /* MessageBuilder.cc */; };
 		279976301E94518200B27639 /* BLIP.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2799762F1E94518200B27639 /* BLIP.hh */; };
-		27AE22BA1FBE559100C40EB9 /* Flater.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27AE22B81FBE559100C40EB9 /* Flater.hh */; };
-		27AE22BB1FBE559100C40EB9 /* Flater.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27AE22B91FBE559100C40EB9 /* Flater.cc */; };
+		27AE22BA1FBE559100C40EB9 /* Codec.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27AE22B81FBE559100C40EB9 /* Codec.hh */; };
+		27AE22BB1FBE559100C40EB9 /* Codec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27AE22B91FBE559100C40EB9 /* Codec.cc */; };
 		27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A51E524F0B00CE1989 /* Logging.cc */; };
 		27CCC7AA1E524F0B00CE1989 /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A61E524F0B00CE1989 /* Logging.hh */; };
 		27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */; };
@@ -123,8 +123,8 @@
 		2799762A1E944B2F00B27639 /* MessageBuilder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageBuilder.hh; sourceTree = "<group>"; };
 		2799762D1E94509000B27639 /* MessageBuilder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MessageBuilder.cc; sourceTree = "<group>"; };
 		2799762F1E94518200B27639 /* BLIP.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIP.hh; sourceTree = "<group>"; };
-		27AE22B81FBE559100C40EB9 /* Flater.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Flater.hh; sourceTree = "<group>"; };
-		27AE22B91FBE559100C40EB9 /* Flater.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Flater.cc; sourceTree = "<group>"; };
+		27AE22B81FBE559100C40EB9 /* Codec.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Codec.hh; sourceTree = "<group>"; };
+		27AE22B91FBE559100C40EB9 /* Codec.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Codec.cc; sourceTree = "<group>"; };
 		27CCC7A51E524F0B00CE1989 /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27CCC7A61E524F0B00CE1989 /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
@@ -302,8 +302,8 @@
 				27EF6A671E2858E7004748DF /* Channel.hh */,
 				2773FCFF1E69FD9100108780 /* Timer.cc */,
 				2773FD001E69FD9100108780 /* Timer.hh */,
-				27AE22B81FBE559100C40EB9 /* Flater.hh */,
-				27AE22B91FBE559100C40EB9 /* Flater.cc */,
+				27AE22B81FBE559100C40EB9 /* Codec.hh */,
+				27AE22B91FBE559100C40EB9 /* Codec.cc */,
 			);
 			path = util;
 			sourceTree = "<group>";
@@ -386,7 +386,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27EF6A631E28587A004748DF /* encode.h in Headers */,
-				27AE22BA1FBE559100C40EB9 /* Flater.hh in Headers */,
+				27AE22BA1FBE559100C40EB9 /* Codec.hh in Headers */,
 				27EF6A6B1E2858E7004748DF /* Channel.hh in Headers */,
 				27EF6A611E28587A004748DF /* cencode.h in Headers */,
 				27EF6ABD1E2E97B5004748DF /* Future.hh in Headers */,
@@ -501,7 +501,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27AE22BB1FBE559100C40EB9 /* Flater.cc in Sources */,
+				27AE22BB1FBE559100C40EB9 /* Codec.cc in Sources */,
 				2773FD011E69FD9100108780 /* Timer.cc in Sources */,
 				27EF6A6A1E2858E7004748DF /* Channel.cc in Sources */,
 				272850F81EA022B5009CA22F /* GCDMailbox.cc in Sources */,

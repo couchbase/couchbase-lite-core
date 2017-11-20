@@ -10,7 +10,7 @@
 #include "MessageOut.hh"
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
-#include "Flater.hh"
+#include "Codec.hh"
 #include "FleeceCpp.hh"
 #include "varint.hh"
 #include <algorithm>
@@ -98,71 +98,78 @@ namespace litecore { namespace blip {
     }
 
 
-    MessageIn::ReceiveState MessageIn::receivedFrame(slice frame, FrameFlags frameFlags) {
+    MessageIn::ReceiveState MessageIn::receivedFrame(Codec &codec,
+                                                     slice frame,
+                                                     FrameFlags frameFlags)
+    {
         ReceiveState state = kOther;
-        MessageSize bytesReceived = frame.size;
+        MessageSize bodyBytesReceived;
         {
             // First, lock the mutex:
             lock_guard<mutex> lock(_receiveMutex);
-            if (_in) {
-                bytesReceived += _in->bytesWritten();
-            } else {
-                // On first frame, update my flags and allocate the Writer:
+
+            // Update byte count and send acknowledgement packet when appropriate:
+            _rawBytesReceived += frame.size;
+            acknowledge(frame.size);
+
+            bool justFinishedProperties = false;
+            if (!_in) {
+                // First frame!
+                // Update my flags and allocate the Writer:
                 assert(_number > 0);
                 _flags = (FrameFlags)(frameFlags & ~kMoreComing);
                 _connection->logVerbose("Receiving %s #%llu, flags=%02x",
                                  kMessageTypeNames[type()], _number, flags());
                 _in.reset(new fleeceapi::JSONEncoder);
-                // Get the length of the properties, and move `frame` past the length field:
-                if (!ReadUVarInt32(&frame, &_propertiesSize))
+
+                // Read just a few bytes to get the length of the properties (a varint at the
+                // start of the frame):
+                char buf[kMaxVarintLen32];
+                slice dst(buf, sizeof(buf));
+                codec.write(frame, dst);
+                dst = slice(buf, dst.buf);
+                // Decode the properties length:
+                if (!ReadUVarInt32(&dst, &_propertiesSize))
                     throw std::runtime_error("frame too small");
+                if (_propertiesSize > kMaxPropertiesSize)
+                    throw std::runtime_error("properties excessively large");
+                // Allocate properties and put any remaining decoded data there:
+                _properties = alloc_slice(_propertiesSize);
+                _propertiesRemaining = _properties;
+                _propertiesRemaining.writeFrom(dst.readAtMost(_propertiesSize));
+                if (_propertiesRemaining.size == 0)
+                    justFinishedProperties = true;
+                // And anything left over after that becomes the start of the body:
+                if (dst.size > 0)
+                    _in->writeRaw(dst);
             }
 
-            if (!_properties && (_in->bytesWritten() + frame.size) >= _propertiesSize) {
-                // OK, we now have the complete properties:
-                size_t remaining = _propertiesSize - _in->bytesWritten();
-                _in->writeRaw({frame.buf, remaining});
-                frame.moveStart(remaining);
-                _properties = _in->finish();
-                if (_properties.size > 0 && _properties[_properties.size - 1] != 0)
+            if (_propertiesRemaining.size > 0) {
+                // Read into properties buffer:
+                codec.write(frame, _propertiesRemaining);
+                if (_propertiesRemaining.size == 0)
+                    justFinishedProperties = true;
+            }
+            if (justFinishedProperties) {
+                // Finished reading properties:
+                if (_propertiesSize > 0 && _properties[_properties.size - 1] != 0)
                     throw std::runtime_error("message properties not null-terminated");
-                _in->reset();
                 if (!isError())
                     state = kBeginning;
             }
 
-            _unackedBytes += frame.size;
-            if (_unackedBytes >= kIncomingAckThreshold) {
-                // Send an ACK every 50k bytes:
-                MessageType msgType = isResponse() ? kAckResponseType : kAckRequestType;
-                uint8_t buf[kMaxVarintLen64];
-                alloc_slice payload(buf, PutUVarInt(buf, bytesReceived));
-                Retained<MessageOut> ack = new MessageOut(_connection,
-                                                          (FrameFlags)(msgType | kUrgent | kNoReply),
-                                                          payload,
-                                                          nullptr,
-                                                          _number);
-                _connection->send(ack);
-                _unackedBytes = 0;
+            if (_propertiesRemaining.size == 0) {
+                // Read/decompress the frame into _in:
+                readFrame(codec, frame, frameFlags);
             }
+            bodyBytesReceived = _in->bytesWritten();
 
-            bool lastFrame = !(frameFlags & kMoreComing);
-
-            if (_properties && (_flags & kCompressed)) {
-                if (!_decompressor)
-                    _decompressor.reset( new Inflater(*_in) );
-                _decompressor->write(frame, lastFrame);
-            } else {
-                _in->writeRaw(frame);
-            }
-
-            if (lastFrame) {
+            if (!(frameFlags & kMoreComing)) {
                 // Completed!
-                if (!_properties)
+                if (_propertiesRemaining.size > 0)
                     throw std::runtime_error("message ends before end of properties");
                 _body = _in->finish();
                 _in.reset();
-                _decompressor.reset();
                 _complete = true;
 
                 _connection->logVerbose("Finished receiving %s #%llu, flags=%02x",
@@ -177,9 +184,44 @@ namespace litecore { namespace blip {
         // incomplete error. (We need the error body first since it contains the message.)
         bool includeThis = (state == kEnd || (_properties && !isError()));
         sendProgress(state == kEnd ? MessageProgress::kComplete : MessageProgress::kReceivingReply,
-                     _outgoingSize, bytesReceived,
+                     _outgoingSize, bodyBytesReceived,
                      (includeThis ? this : nullptr));
         return state;
+    }
+
+
+    void MessageIn::acknowledge(size_t frameSize) {
+        _unackedBytes += frameSize;
+        if (_unackedBytes >= kIncomingAckThreshold) {
+            // Send an ACK after enough data has been received of this message:
+            MessageType msgType = isResponse() ? kAckResponseType : kAckRequestType;
+            uint8_t buf[kMaxVarintLen64];
+            alloc_slice payload(buf, PutUVarInt(buf, _rawBytesReceived));
+            Retained<MessageOut> ack = new MessageOut(_connection,
+                                                      (FrameFlags)(msgType | kUrgent | kNoReply),
+                                                      payload,
+                                                      nullptr,
+                                                      _number);
+            _connection->send(ack);
+            _unackedBytes = 0;
+        }
+    }
+
+
+    void MessageIn::readFrame(Codec &codec, slice frame, bool finalFrame) {
+//        LogTo(Zip, "Decompressing %ld bytes%s",
+//              frame.size, (finalFrame ? " (finished)" : ""));
+        uint8_t outBuf[4096];
+        while (frame.size > 0) {
+            slice output {outBuf, sizeof(outBuf)};
+            codec.write(frame, output);
+
+            // Write output to JSONEncoder:
+            if (output.buf > outBuf) {
+//                LogToAt(Zip, Verbose, "    decompressed: %.*s", (int)(_z.next_out - outBuf), outBuf);
+                _in->writeRaw(slice(outBuf, output.buf));
+            }
+        }
     }
 
 

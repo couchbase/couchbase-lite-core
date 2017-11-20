@@ -11,6 +11,7 @@
 #include <ostream>
 
 namespace litecore { namespace blip {
+    class Codec;
 
     /** An outgoing message that's been constructed by a MessageBuilder. */
     class MessageOut : public Message {
@@ -34,7 +35,7 @@ namespace litecore { namespace blip {
             _onProgress = std::move(builder.onProgress);
         }
 
-        fleece::slice nextFrameToSend(size_t maxSize, FrameFlags &outFlags);
+        void nextFrameToSend(Codec &codec, slice &dst, FrameFlags &outFlags);
         void receivedAck(uint32_t byteCount);
         bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}
         MessageIn* createResponse();
@@ -43,14 +44,19 @@ namespace litecore { namespace blip {
         void dump(std::ostream& out, bool withBody);
 
     private:
+        void readFromDataSource();
+
         static const uint32_t kMaxUnackedBytes = 128000;
 
-        Connection* const _connection;
-        fleece::alloc_slice _payload;
-        MessageDataSource _dataSource;
-        alloc_slice _dataBuffer;
-        uint32_t _bytesSent {0};
-        uint32_t _unackedBytes {0};
+        Connection* const _connection;      // My BLIP connection
+        alloc_slice _payload;               // Message data (uncompressed)
+        slice _unsentPayload;               // Unsent subrange of _payload
+        MessageDataSource _dataSource;      // Callback that produces more data to send
+        alloc_slice _dataBuffer;            // Data read from _dataSource
+        slice _dataBufferAvail;
+        bool _dataSourceMoreComing {true};
+        uint32_t _bytesSent {0};            // Number of bytes transmitted (after compression)
+        uint32_t _unackedBytes {0};         // Bytes transmitted but no ack received
     };
 
 } }

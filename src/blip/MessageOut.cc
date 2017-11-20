@@ -9,6 +9,7 @@
 #include "MessageOut.hh"
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
+#include "Codec.hh"
 #include "varint.hh"
 #include <algorithm>
 
@@ -16,6 +17,8 @@ using namespace std;
 using namespace fleece;
 
 namespace litecore { namespace blip {
+
+    static const size_t kDataBufferSize = 4096;
 
     MessageOut::MessageOut(Connection *connection,
                            FrameFlags flags,
@@ -25,33 +28,40 @@ namespace litecore { namespace blip {
     :Message(flags, number)
     ,_connection(connection)
     ,_payload(payload)
+    ,_unsentPayload(payload.buf, payload.size)
     ,_dataSource(dataSource)
     {
         assert(payload.size <= UINT32_MAX);
     }
 
 
-    slice MessageOut::nextFrameToSend(size_t maxSize, FrameFlags &outFlags) {
+    void MessageOut::nextFrameToSend(Codec &codec, slice &dst, FrameFlags &outFlags) {
         slice frame;
-        bool moreComing;
-        if (_bytesSent < _payload.size) {
-            size_t size = min(maxSize, _payload.size - _bytesSent);
-            frame = _payload(_bytesSent, size);
-            moreComing = _bytesSent + size < _payload.size || _dataSource != nullptr;
+        size_t frameSize = dst.size;
+        bool allWritten, moreComing;
+        if (_unsentPayload.size > 0) {
+            // Send data from my payload:
+            allWritten = codec.write(_unsentPayload, dst);
+            moreComing = _unsentPayload.size > 0 || _dataSource != nullptr;
         } else {
-            if (_dataBuffer.size < maxSize)
-                _dataBuffer.resize(maxSize);
-            int size = _dataSource((void*)_dataBuffer.buf, maxSize);
-            if (size < 0) {
-                WarnError("Error from BLIP message dataSource");
-                size = 0;
-                //FIX: How to report/handle the error?
+            // Send data from data-source:
+            allWritten = moreComing = true;
+            while (_dataSourceMoreComing && allWritten && dst.size >= 1024) {
+                if (_dataBufferAvail.size == 0) {
+                    readFromDataSource();
+                    moreComing = _dataSourceMoreComing;
+                }
+                allWritten = codec.write(_dataBufferAvail, dst);
             }
-            frame = slice(_dataBuffer.buf, size);
-            moreComing = (size == maxSize);
         }
-        _bytesSent += frame.size;
-        _unackedBytes += frame.size;
+
+        if (!allWritten)
+            throw runtime_error("Compression buffer overflow");
+
+        frameSize -= dst.size;  // compute the compressed frame size
+        _bytesSent += frameSize;
+        _unackedBytes += frameSize;
+        
         outFlags = flags();
         MessageProgress::State state;
         if (moreComing) {
@@ -62,8 +72,22 @@ namespace litecore { namespace blip {
         } else {
             state = MessageProgress::kAwaitingReply;
         }
-        sendProgress(state, _bytesSent, 0, nullptr);
-        return frame;
+        sendProgress(state, _payload.size - _unsentPayload.size, 0, nullptr);
+    }
+
+
+    void MessageOut::readFromDataSource() {
+        if (!_dataBuffer)
+            _dataBuffer.reset(kDataBufferSize);
+        auto bytesWritten = _dataSource((void*)_dataBuffer.buf, _dataBuffer.size);
+        _dataBufferAvail = _dataBuffer.upTo(bytesWritten);
+        if (bytesWritten < _dataBuffer.size) {
+            _dataSourceMoreComing = false;
+            if (bytesWritten < 0) {
+                WarnError("Error from BLIP message dataSource");
+                //FIX: How to report/handle the error?
+            }
+        }
     }
 
 

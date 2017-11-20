@@ -11,6 +11,7 @@
 #include "BLIPInternal.hh"
 #include "WebSocketInterface.hh"
 #include "Actor.hh"
+#include "Codec.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -93,6 +94,9 @@ namespace litecore { namespace blip {
         MessageMap              _pendingRequests, _pendingResponses;
         atomic<MessageNo>       _lastMessageNo {0};
         MessageNo               _numRequestsReceived {0};
+        Deflater                _outputCodec;
+        Inflater                _inputCodec;
+        Nullflater              _nullCodec;
         unique_ptr<uint8_t[]>   _frameBuf;
         RequestHandlers         _requestHandlers;
         size_t                  _maxOutboxDepth {0}, _totalOutboxDepth {0}, _countOutboxDepth {0};
@@ -295,29 +299,30 @@ namespace litecore { namespace blip {
 
                 FrameFlags frameFlags;
                 {
-                    // Read a frame from it:
+                    // Set up a buffer for the frame contents:
                     size_t maxSize = kDefaultFrameSize;
                     if (msg->urgent() || _outbox.empty() || !_outbox.front()->urgent())
                         maxSize = kBigFrameSize;
 
-                    slice body = msg->nextFrameToSend(maxSize - 10, frameFlags);
-
-                    logVerbose("    Sending frame: %s #%llu, flags %02x, bytes %llu--%llu",
-                          kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
-                          (frameFlags & ~kTypeMask),
-                          (uint64_t)(msg->_bytesSent - body.size),
-                          (uint64_t)(msg->_bytesSent - 1));
-
-                    // Copy header and frame to a buffer, and send over the WebSocket:
                     if (!_frameBuf)
                         _frameBuf.reset(new uint8_t[2*kMaxVarintLen64 + kBigFrameSize]);
-                    uint8_t *end = _frameBuf.get();
-                    end += PutUVarInt(end, msg->_number);
-                    end += PutUVarInt(end, frameFlags);
-                    memcpy(end, body.buf, body.size);
-                    end += body.size;
-                    slice frame {_frameBuf.get(), end};
+                    slice out(_frameBuf.get(), maxSize);
+                    WriteUVarInt(&out, msg->_number);
+                    auto flagsPos = (FrameFlags*)out.buf;
+                    out.moveStart(1);
+
+                    // Ask the MessageOut to write data to fill the buffer:
+                    auto prevBytesSent = msg->_bytesSent;
+                    msg->nextFrameToSend(codecForMessage(msg), out, frameFlags);
+                    *flagsPos = frameFlags;
+                    slice frame(_frameBuf.get(), out.buf);
                     bytesWritten += frame.size;
+
+                    logVerbose("    Sending frame: %s #%llu, flags %02x, bytes %u--%u",
+                               kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
+                               (frameFlags & ~kTypeMask), prevBytesSent, msg->_bytesSent - 1);
+
+                    // Write it to the WebSocket:
                     _writeable = _webSocket->send(frame);
                 }
                 
@@ -342,6 +347,16 @@ namespace litecore { namespace blip {
             _totalBytesWritten += bytesWritten;
             logVerbose("...Wrote %zu bytes to WebSocket (writeable=%d)",
                        bytesWritten, _writeable);
+        }
+
+
+        Codec& codecForMessage(const Message *msg) {
+            if (!msg->hasFlag(kCompressed))
+                return _nullCodec;
+            else if (msg->isIncoming())
+                return _inputCodec;
+            else
+                return _outputCodec;
         }
 
 
@@ -393,7 +408,7 @@ namespace litecore { namespace blip {
 
                 // Append the frame to the message:
                 if (msg) {
-                    auto state = msg->receivedFrame(payload, flags);
+                    auto state = msg->receivedFrame(codecForMessage(msg), payload, flags);
 
                     if (state == MessageIn::kEnd) {
                         if (BLIPMessagesLog.willLog(LogLevel::Info)) {

@@ -99,7 +99,6 @@ namespace litecore { namespace blip {
         fleeceapi::JSONEncoder _out;    // Actually using it for the entire msg, not just JSON
         std::stringstream _properties;  // Accumulates encoded properties
         bool _wroteProperties {false};  // Have _properties been written to _out yet?
-        uint32_t _propertiesLength {0};
     };
 
 } }
