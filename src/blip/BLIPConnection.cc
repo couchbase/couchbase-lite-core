@@ -96,6 +96,7 @@ namespace litecore { namespace blip {
         unique_ptr<uint8_t[]>   _frameBuf;
         RequestHandlers         _requestHandlers;
         size_t                  _maxOutboxDepth {0}, _totalOutboxDepth {0}, _countOutboxDepth {0};
+        uint64_t                _totalBytesWritten {0}, _totalBytesRead {0};
 
     public:
 
@@ -140,7 +141,9 @@ namespace litecore { namespace blip {
     protected:
 
         ~BLIPIO() {
-            log("~BLIPIO: Max outbox depth was %zu, avg %.2f", _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
+            log("~BLIPIO: Sent %llu bytes, rcvd %llu. Max outbox depth was %zu, avg %.2f",
+                _totalBytesWritten, _totalBytesRead,
+                _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
         }
 
         virtual void onWebSocketGotHTTPResponse(int status,
@@ -336,6 +339,7 @@ namespace litecore { namespace blip {
                     }
                 }
             }
+            _totalBytesWritten += bytesWritten;
             logVerbose("...Wrote %zu bytes to WebSocket (writeable=%d)",
                        bytesWritten, _writeable);
         }
@@ -353,6 +357,8 @@ namespace litecore { namespace blip {
                     warn("Ignoring non-binary WebSocket message");
                     return;
                 }
+                _totalBytesRead += frame.size;
+
                 // Read the frame header:
                 slice payload = frame;
                 uint64_t msgNo, flagsInt;
