@@ -1,6 +1,16 @@
-//
-// Created by hideki on 11/9/17.
-//
+/**
+ * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 #include "native_mutable.hh"
 #include "com_couchbase_litecore_fleece_MValue.h"
@@ -15,12 +25,12 @@ using namespace litecore::jni;
 #define OBJECT_FACTORY_CLASSNAME "com/couchbase/lite/CBLFleece"
 #define TEST_OBJECT_FACTORY_CLASSNAME "com/couchbase/litecore/fleece/Fleece"
 
-static jclass    cls_CBLFleece;            // global reference to Dictionary
+static jclass cls_CBLFleece;            // global reference to Dictionary
 static jmethodID m_MValue_toDictionary;    // callback method for MValue_toDictionary(long, long)
 static jmethodID m_MValue_toArray;         // callback method for MValue_toArray(long, long)
 static jmethodID m_MValue_toObject;         // callback method for MValue_toArray(long, long)
 
-static jclass    cls_MValue;                   // global reference to MValue
+static jclass cls_MValue;                   // global reference to MValue
 static jmethodID m_MValue_getFLCollection;     // static method for getFLCollection(Object)
 static jmethodID m_MValue_encodeNative;        // static method for encodeNative(long, Object)
 
@@ -31,10 +41,12 @@ bool loadObjectFactory(JNIEnv *env, const char *className) {
     cls_CBLFleece = reinterpret_cast<jclass>(env->NewGlobalRef(localClass));
     if (!cls_CBLFleece)
         return false;
-    m_MValue_toDictionary = env->GetStaticMethodID(cls_CBLFleece, "MValue_toDictionary", "(JJ)Ljava/lang/Object;");
+    m_MValue_toDictionary = env->GetStaticMethodID(cls_CBLFleece, "MValue_toDictionary",
+                                                   "(JJ)Ljava/lang/Object;");
     if (!m_MValue_toDictionary)
         return false;
-    m_MValue_toArray = env->GetStaticMethodID(cls_CBLFleece, "MValue_toArray", "(JJ)Ljava/lang/Object;");
+    m_MValue_toArray = env->GetStaticMethodID(cls_CBLFleece, "MValue_toArray",
+                                              "(JJ)Ljava/lang/Object;");
     if (!m_MValue_toArray)
         return false;
     m_MValue_toObject = env->GetStaticMethodID(cls_CBLFleece, "toObject", "(J)Ljava/lang/Object;");
@@ -51,10 +63,12 @@ bool loadMValueJavaMethods(JNIEnv *env) {
     cls_MValue = reinterpret_cast<jclass>(env->NewGlobalRef(localClass));
     if (!cls_MValue)
         return false;
-    m_MValue_getFLCollection = env->GetStaticMethodID(cls_MValue, "getFLCollection", "(Ljava/lang/Object;)J");
+    m_MValue_getFLCollection = env->GetStaticMethodID(cls_MValue, "getFLCollection",
+                                                      "(Ljava/lang/Object;)J");
     if (!m_MValue_getFLCollection)
         return false;
-    m_MValue_encodeNative = env->GetStaticMethodID(cls_MValue, "encodeNative", "(JLjava/lang/Object;)V");
+    m_MValue_encodeNative = env->GetStaticMethodID(cls_MValue, "encodeNative",
+                                                   "(JLjava/lang/Object;)V");
     if (!m_MValue_encodeNative)
         return false;
     return true;
@@ -74,13 +88,14 @@ bool litecore::jni::initMValue(JNIEnv *env) {
 static JNIRef *createObject(jlong hFLValue) {
     JNIRef *jniRef = NULL;
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toObject, hFLValue);
         jniRef = new JNIRef(env, newObj);
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
-            jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toObject, hFLValue);
+            jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toObject,
+                                                         hFLValue);
             jniRef = new JNIRef(env, newObj);
             if (gJVM->DetachCurrentThread() != 0) {
             }
@@ -92,13 +107,14 @@ static JNIRef *createObject(jlong hFLValue) {
 static JNIRef *createArray(jlong hMv, jlong hParent) {
     JNIRef *jniRef = NULL;
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toArray, hMv, hParent);
         jniRef = new JNIRef(env, newObj);
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
-            jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toArray, hMv, hParent);
+            jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toArray, hMv,
+                                                         hParent);
             jniRef = new JNIRef(env, newObj);
             if (gJVM->DetachCurrentThread() != 0) {
             }
@@ -110,13 +126,15 @@ static JNIRef *createArray(jlong hMv, jlong hParent) {
 static JNIRef *createDict(jlong hMv, jlong hParent) {
     JNIRef *jniRef = NULL;
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
-        jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toDictionary, hMv, hParent);
+        jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toDictionary, hMv,
+                                                     hParent);
         jniRef = new JNIRef(env, newObj);
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
-            jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toDictionary, hMv, hParent);
+            jobject newObj = env->CallStaticObjectMethod(cls_CBLFleece, m_MValue_toDictionary, hMv,
+                                                         hParent);
             jniRef = new JNIRef(env, newObj);
             if (gJVM->DetachCurrentThread() != 0) {
             }
@@ -152,7 +170,7 @@ template<>
 JMCollection *JMValue::collectionFromNative(JNative native) {
     jobject obj = native->native();
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK)
         return (JMCollection *) env->CallStaticLongMethod(cls_MValue, m_MValue_getFLCollection,
                                                           obj);
@@ -163,7 +181,7 @@ template<>
 void JMValue::encodeNative(Encoder &enc, JNative native) {
     jobject obj = native->native();
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_MValue, m_MValue_encodeNative, (jlong) &enc, obj);
     }
@@ -274,6 +292,8 @@ Java_com_couchbase_litecore_fleece_MValue_mutate(JNIEnv *env, jclass clazz, jlon
  * Method:    loadTestMethods
  * Signature: (Z)Z
  */
-JNIEXPORT jboolean JNICALL Java_com_couchbase_litecore_fleece_MValue_loadTestMethods(JNIEnv *env, jclass clazz, jboolean test){
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_fleece_MValue_loadTestMethods(JNIEnv *env, jclass clazz,
+                                                          jboolean test) {
     return loadObjectFactory(env, test ? TEST_OBJECT_FACTORY_CLASSNAME : OBJECT_FACTORY_CLASSNAME);
 }

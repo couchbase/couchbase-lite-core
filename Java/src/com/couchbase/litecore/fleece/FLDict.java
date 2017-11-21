@@ -117,7 +117,9 @@ public class FLDict {
         return count(handle);
     }
 
-    public FLValue toFLValue(){ return new FLValue(handle); }
+    public FLValue toFLValue() {
+        return new FLValue(handle);
+    }
 
     //-------------------------------------------------------------------------
     // package level access

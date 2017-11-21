@@ -13,7 +13,6 @@
  */
 package com.couchbase.litecore.fleece;
 
-
 import com.couchbase.litecore.LiteCoreException;
 
 import java.util.Iterator;

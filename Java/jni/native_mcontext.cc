@@ -1,6 +1,16 @@
-//
-// Created by hideki on 11/15/17.
-//
+/**
+ * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied. See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 #include "native_mutable.hh"
 #include "com_couchbase_litecore_fleece_MContext.h"
@@ -61,7 +71,6 @@ Java_com_couchbase_litecore_fleece_MContext_sharedKeys(JNIEnv *env, jclass clazz
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_MContext_setNative(JNIEnv *env, jclass clazz, jlong jmcontext,
                                                       jobject jobj) {
-    //((JMContext *) jmcontext)->setJNative(env, jobj);
     JMContext *mcontext = (JMContext *) jmcontext;
     if (mcontext != NULL)
         mcontext->setJNative(env, jobj);
@@ -72,7 +81,6 @@ Java_com_couchbase_litecore_fleece_MContext_setNative(JNIEnv *env, jclass clazz,
  * Signature: (J)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_com_couchbase_litecore_fleece_MContext_getNative(JNIEnv *env, jclass clazz, jlong jmcontext){
-    //return ((JMContext *) jmcontext)->getJNative();
     JMContext *mcontext = (JMContext *) jmcontext;
     if (mcontext != NULL)
         return (jobject) mcontext->getJNative();
