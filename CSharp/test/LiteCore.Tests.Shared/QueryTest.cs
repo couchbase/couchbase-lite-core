@@ -151,9 +151,9 @@ namespace LiteCore.Tests
         public void TestFullTextQuery()
         {
             RunTestVariants(() => {
-                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "test", "[[\".contact.address.street\"]]", 
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byStreet", "[[\".contact.address.street\"]]", 
                 C4IndexType.FullTextIndex, null, err));
-                Compile(Json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
+                Compile(Json5("['MATCH', 'byStreet', 'Hwy']"));
                 Run().Should().Equal(new[] { "0000013", "0000015", "0000043", "0000044", "0000052" }, 
                 "because otherwise the query returned incorrect results");
             });
@@ -171,15 +171,6 @@ namespace LiteCore.Tests
                             "ORDER_BY: [['.name.first']]}"));
 
                 Native.c4query_columnCount(query).Should().Be(2, "because there are two requested items in WHAT");
-
-                //TODO: Needs C API update
-                //Native.c4query_nameOfColumn(query, 0U)
-                //    .Should()
-                //    .Be("name.first", "because that is the first requested item");
-                //Native.c4query_nameOfColumn(query, 1U)
-                //    .Should()
-                //    .Be("name.list", "because that is the second requested item");
-
                 var e = (C4QueryEnumerator*)LiteCoreBridge.Check(err =>
                {
                    var localOpts = C4QueryOptions.Default;

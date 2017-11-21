@@ -78,6 +78,8 @@ namespace LiteCore.Interop
     {
         private IntPtr _language;
         private byte _ignoreDiacritics;
+        private byte _disableStemming;
+        private IntPtr _stopWords;
 
         public string language
         {
@@ -99,6 +101,27 @@ namespace LiteCore.Interop
                 _ignoreDiacritics = Convert.ToByte(value);
             }
         }
+
+        public bool disableStemming
+        {
+            get {
+                return Convert.ToBoolean(_disableStemming);
+            }
+            set {
+                _disableStemming = Convert.ToByte(value);
+            }
+        }
+
+        public string stopWords
+        {
+            get {
+                return Marshal.PtrToStringAnsi(_stopWords);
+            }
+            set {
+                var old = Interlocked.Exchange(ref _stopWords, Marshal.StringToHGlobalAnsi(value));
+                Marshal.FreeHGlobal(old);
+            }
+        }
     }
 
 #if LITECORE_PACKAGED
@@ -109,19 +132,21 @@ namespace LiteCore.Interop
     unsafe struct C4QueryEnumerator
     {
         public FLArrayIterator columns;
-        public ulong fullTextID;
-        public uint fullTextTermCount;
-        public C4FullTextTerm* fullTextTerms;
+        public uint fullTextMatchCount;
+        public C4FullTextMatch* fullTextMatches;
     }
 
 #if LITECORE_PACKAGED
     internal
 #else
     public
-#endif 
-    struct C4FullTextTerm
+#endif
+    unsafe struct C4FullTextMatch
     {
-        public uint termIndex;
-        public uint start, length;
+        public ulong dataSource;
+        public uint property;
+        public uint term;
+        public uint start;
+        public uint length;
     }
 }

@@ -72,7 +72,8 @@ extern "C" {
         uint64_t dataSource;    ///< Opaque identifier of where text is stored
         uint32_t property;      ///< Which property in the index was matched (array index in `expressionsJSON`)
         uint32_t term;          ///< Which search term (word) in the query was matched
-        uint32_t start, length; ///< *Byte* range of the match in the full text
+        uint32_t start;         ///< *Byte* range start of the match in the full text
+        uint32_t length;        ///< *Byte* range length of the match in the full text
     } C4FullTextMatch;
 
 

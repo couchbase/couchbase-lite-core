@@ -53,10 +53,13 @@ if __name__ == "__main__":
                             in_comment -= 1
                         
                         continue
-                    
+
                     if "/*" in line:
                         in_comment += 1
-                        
+                        if "*/" in line:
+                            in_comment -= 1
+                            continue
+
                     stripped = re.search(r'([^ ;{}]+) +(\**)([^ ;{}*]+);', line)
                     if not stripped:
                         continue
