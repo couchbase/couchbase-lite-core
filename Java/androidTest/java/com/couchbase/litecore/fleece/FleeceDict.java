@@ -13,7 +13,7 @@ public class FleeceDict implements Map<String, Object>, Encodable, FLCollection 
     }
 
     // Call from native method
-    private FleeceDict(long mv, long parent) {
+    FleeceDict(long mv, long parent) {
         this();
         _dict.initInSlot(mv, parent);
     }

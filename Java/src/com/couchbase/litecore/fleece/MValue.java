@@ -90,4 +90,6 @@ public class MValue {
     private static native void encodeTo(long handle, long enc);
 
     private static native void mutate(long handle);
+
+    public static native boolean loadTestMethods(boolean test);
 }

@@ -14,7 +14,7 @@ public class FleeceArray implements List<Object>, Encodable, FLCollection {
     }
 
     // Call from native method
-    private FleeceArray(long mv, long parent) {
+    FleeceArray(long mv, long parent) {
         this();
         _array.initInSlot(mv, parent);
     }

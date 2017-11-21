@@ -154,11 +154,11 @@ public class FLValue {
     }
 
     // call from native (JNI)
-    private static Object toObject(long h) {
+    static Object toObject(long h) {
         return toObject(new FLValue(h));
     }
 
-    private static Object toObject(FLValue flValue) {
+    public static Object toObject(FLValue flValue) {
         return flValue.toObject((SharedKeys) null);
     }
 

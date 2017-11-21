@@ -34,10 +34,12 @@ public class C4MutableFleeceTest extends C4BaseTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
+        MValue.loadTestMethods(true);
     }
 
     @After
     public void tearDown() throws Exception {
+        MValue.loadTestMethods(false);
         super.tearDown();
     }
 
@@ -144,24 +146,6 @@ public class C4MutableFleeceTest extends C4BaseTest {
                 fleece2JSON(encode(dict)));
         assertEquals("{array:[\"boo\",false],dict:{boil:212,freeze:[32,\"Fahrenheit\"]},greeting:\"hi\"}",
                 fleece2JSON(encode(root)));
-
-        AllocSlice newData = root.encode();
-
-        // Delta encoding:
-        AllocSlice delta = root.encodeDelta();
-        assertNotNull(delta.getBuf());
-        assertEquals(52, delta.getSize());// may change
-
-//        alloc_slice combinedData(data);
-//        combinedData.append(delta);
-//        Dict newDict = Value::fromData(combinedData).asDict();
-//        std::cerr << "\nContents:      " << alloc_slice(newDict.toJSON()).asString() << "\n";
-//        std::cerr <<   "Old:           " << data.size << " bytes: " << data << "\n\n";
-//        std::cerr <<   "New:           " << newData.size << " bytes: " << newData << "\n\n";
-//        std::cerr <<   "Delta:         " << delta.size << " bytes: " << delta << "\n\n";
-//
-//        alloc_slice dump(FLData_Dump(combinedData));
-//        std::cerr << dump.asString();
     }
 
     // TEST_CASE("MArray", "[Mutable]")
@@ -278,8 +262,7 @@ public class C4MutableFleeceTest extends C4BaseTest {
         verifyDictIterator(nested);
         verifyDictIterator(dict);
 
-        assertEquals("{array:[\"boo\",false],dict:{boil:212,freeze:[32,\"Fahrenheit\"]},greeting:\"hi\"}",
-                fleece2JSON(encode(dict)));
+        assertEquals("{array:[\"boo\",false],dict:{boil:212,freeze:[32,\"Fahrenheit\"]},greeting:\"hi\"}", fleece2JSON(encode(dict)));
     }
 
     // TEST_CASE("Adding mutable collections", "[Mutable]")
