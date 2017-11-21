@@ -19,42 +19,45 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class FLEncoder {
-    //-------------------------------------------------------------------------
-    // package level variable
-    //-------------------------------------------------------------------------
-    long _handle = 0L;
-    boolean _managed = false;
-    //-------------------------------------------------------------------------
-    // public methods
-    //-------------------------------------------------------------------------
+public class Encoder {
+    long _handle = 0; // hold pointer to Encoder*
+    boolean _managed;
 
-    public FLEncoder() {
-        this(init());
+    public Encoder() {
+        this(init(), false);
     }
 
-    public FLEncoder(long handle) {
-        this(handle, false);
+    public Encoder(FLEncoder enc) {
+        this(initWithFLEncoder(enc._handle), false);
     }
 
-    public FLEncoder(long handle, boolean managed) {
-        _managed = managed;
-        _handle = handle;
+    Encoder(long handle, boolean managed) {
+        if (handle == 0)
+            throw new IllegalArgumentException();
+        this._handle = handle;
+        this._managed = managed;
     }
 
     public void free() {
-        if (_handle != 0 && !_managed) {
+        if (_handle != 0L && !_managed) {
             free(_handle);
             _handle = 0L;
         }
     }
 
-    public String toString() {
-        return String.format("FLEncoder{_handle: 0x%x}", _handle);
+    public void release() {
+        if (_handle != 0L && !_managed) {
+            release(_handle);
+            _handle = 0L;
+        }
     }
 
     public void setSharedKeys(FLSharedKeys flSharedKeys) {
         setSharedKeys(_handle, flSharedKeys.getHandle());
+    }
+
+    public FLEncoder getFLEncoder() {
+        return new FLEncoder(getFLEncoder(_handle), true);
     }
 
     public boolean writeNull() {
@@ -109,13 +112,27 @@ public class FLEncoder {
         return writeValue(_handle, flValue.getHandle());
     }
 
-    public boolean writeValueWithSharedKeys(FLValue flValue, FLSharedKeys flSharedKeys) {
-        return writeValueWithSharedKeys(_handle, flValue.getHandle(), flSharedKeys.getHandle());
+    public boolean write(Map map) {
+        beginDict(map.size());
+        Iterator keys = map.keySet().iterator();
+        while (keys.hasNext()) {
+            String key = (String) keys.next();
+            writeKey(key);
+            writeObject(map.get(key));
+        }
+        return endDict();
+    }
+
+    public boolean write(List list) {
+        beginArray(list.size());
+        for (Object item : list)
+            writeObject(item);
+        return endArray();
     }
 
     // C/Fleece+CoreFoundation.mm
     // bool FLEncoder_WriteNSObject(FLEncoder encoder, id obj)
-    public boolean writeValue(Object value) {
+    public boolean writeObject(Object value) {
         // null
         if (value == null)
             return writeNull(_handle);
@@ -159,41 +176,19 @@ public class FLEncoder {
         else if (value instanceof Map)
             return write((Map) value);
 
+            // FLEncodable
+        else if (value instanceof FLEncodable)
+            ((FLEncodable) value).encodeTo(getFLEncoder());
+
         return false;
     }
 
-    public boolean write(Map map) {
-        beginDict(map.size());
-        Iterator keys = map.keySet().iterator();
-        while (keys.hasNext()) {
-            String key = (String) keys.next();
-            writeKey(key);
-            writeValue(map.get(key));
-        }
-        return endDict();
+    public AllocSlice finish() throws LiteCoreException {
+        return new AllocSlice(finish(_handle), false);
     }
 
-    public boolean write(List list) {
-        beginArray(list.size());
-        for (Object item : list)
-            writeValue(item);
-        return endArray();
-    }
-
-    public byte[] finish() throws LiteCoreException {
-        return finish(_handle);
-    }
-
-    public FLSliceResult finish2() throws LiteCoreException {
-        return new FLSliceResult(finish2(_handle));
-    }
-
-    public void setExtraInfo(Object info) {
-        setExtraInfo(_handle, info);
-    }
-
-    public Object getExtraInfo() {
-        return getExtraInfo(_handle);
+    public byte[] finishAsBytes() {
+        return finishAsBytes(_handle);
     }
 
     //-------------------------------------------------------------------------
@@ -206,52 +201,48 @@ public class FLEncoder {
     }
 
     //-------------------------------------------------------------------------
-    // private methods
-    //-------------------------------------------------------------------------
-
-    //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
 
-    static native long init(); // FLEncoder FLEncoder_New(void);
+    static native long init();
 
-    static native void free(long encoder);
+    static native long initWithFLEncoder(long enc);
 
-    static native void setSharedKeys(long encoder, long sharedKeys);
+    static native void free(long handle);
 
-    static native boolean writeNull(long encoder);
+    static native void release(long handle);
 
-    static native boolean writeBool(long encoder, boolean value);
+    static native void setSharedKeys(long handle, long sharedKeys);
 
-    static native boolean writeInt(long encoder, long value); // 64bit
+    static native long getFLEncoder(long handle);
 
-    static native boolean writeFloat(long encoder, float value);
+    static native boolean writeNull(long handle);
 
-    static native boolean writeDouble(long encoder, double value);
+    static native boolean writeBool(long handle, boolean value);
 
-    static native boolean writeString(long encoder, String value);
+    static native boolean writeInt(long handle, long value); // 64bit
 
-    static native boolean writeData(long encoder, byte[] value);
+    static native boolean writeFloat(long handle, float value);
 
-    static native boolean beginArray(long encoder, long reserve);
+    static native boolean writeDouble(long handle, double value);
 
-    static native boolean endArray(long encoder);
+    static native boolean writeString(long handle, String value);
 
-    static native boolean beginDict(long encoder, long reserve);
+    static native boolean writeData(long handle, byte[] value);
 
-    static native boolean endDict(long encoder);
+    static native boolean writeValue(long handle, long value);
 
-    static native boolean writeKey(long encoder, String slice);
+    static native boolean beginArray(long handle, long reserve);
 
-    static native boolean writeValue(long encoder, long value);
+    static native boolean endArray(long handle);
 
-    static native boolean writeValueWithSharedKeys(long encoder, long value, long sharedKeys);
+    static native boolean beginDict(long handle, long reserve);
 
-    static native byte[] finish(long encoder) throws LiteCoreException;
+    static native boolean writeKey(long handle, String slice);
 
-    static native long finish2(long encoder) throws LiteCoreException;
+    static native boolean endDict(long handle);
 
-    static native void setExtraInfo(long encoder, Object info);
+    static native byte[] finishAsBytes(long handle);
 
-    static native Object getExtraInfo(long encoder);
+    static native long finish(long handle);
 }

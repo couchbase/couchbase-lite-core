@@ -11,8 +11,8 @@
  * either express or implied. See the License for the specific language governing permissions
  * and limitations under the License.
  */
-#include <c4.h>
-#include <Fleece.h>
+
+#include "native_glue.hh"
 #include "com_couchbase_litecore_fleece_FLArray.h"
 #include "com_couchbase_litecore_fleece_FLArrayIterator.h"
 #include "com_couchbase_litecore_fleece_FLDict.h"
@@ -20,8 +20,8 @@
 #include "com_couchbase_litecore_fleece_FLValue.h"
 #include "com_couchbase_litecore_fleece_FLEncoder.h"
 #include "com_couchbase_litecore_fleece_FLSliceResult.h"
-#include "native_glue.hh"
 
+using namespace fleeceapi;
 using namespace litecore;
 using namespace litecore::jni;
 
@@ -256,6 +256,17 @@ Java_com_couchbase_litecore_fleece_FLDictIterator_free(JNIEnv *env, jclass clazz
 
 /*
  * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    fromData
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_fromData(JNIEnv *env, jclass clazz, jlong jflslice) {
+    alloc_slice *s = (alloc_slice *) jflslice;
+    return (jlong) FLValue_FromData({s->buf, s->size});
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
  * Method:    fromTrustedData
  * Signature: (J)J
  */
@@ -423,7 +434,44 @@ Java_com_couchbase_litecore_fleece_FLValue_JSON5ToJSON(JNIEnv *env, jclass clazz
     FLSliceResult_Free(json);
     return res;
 }
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    toString
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_toString(JNIEnv *env, jclass clazz, jlong jvalue) {
+    FLStringResult str = FLValue_ToString((FLValue) jvalue);
+    jstring res = toJString(env, {str.buf, str.size});
+    FLSliceResult_Free(str);
+    return res;
+}
 
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    toJSON
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_toJSON(JNIEnv *env, jclass clazz, jlong jvalue) {
+    FLStringResult str = FLValue_ToJSON((FLValue) jvalue);
+    jstring res = toJString(env, {str.buf, str.size});
+    FLSliceResult_Free(str);
+    return res;
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLValue
+ * Method:    toJSON5
+ * Signature: (J)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_com_couchbase_litecore_fleece_FLValue_toJSON5(JNIEnv *env, jclass clazz, jlong jvalue) {
+    FLStringResult str = FLValue_ToJSON5((FLValue) jvalue);
+    jstring res = toJString(env, {str.buf, str.size});
+    FLSliceResult_Free(str);
+    return res;
+}
 // ----------------------------------------------------------------------------
 // FLSliceResult
 // ----------------------------------------------------------------------------
@@ -436,7 +484,6 @@ Java_com_couchbase_litecore_fleece_FLValue_JSON5ToJSON(JNIEnv *env, jclass clazz
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_FLSliceResult_free(JNIEnv *env, jclass clazz, jlong jslice) {
     FLSliceResult_Free(*(FLSliceResult *) jslice);
-    ::free((FLSliceResult *) jslice);
 }
 
 /*
@@ -460,235 +507,3 @@ Java_com_couchbase_litecore_fleece_FLSliceResult_getSize(JNIEnv *env, jclass cla
     return (jlong) ((FLSliceResult *) jslice)->size;
 }
 
-// ----------------------------------------------------------------------------
-// FLValue
-// ----------------------------------------------------------------------------
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    init
- * Signature: ()J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_init(JNIEnv *env,
-                                                  jclass clazz) {
-    return (jlong) FLEncoder_New();
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    free
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_free(JNIEnv *env,
-                                                  jclass clazz,
-                                                  jlong jencoder) {
-    FLEncoder_Free((FLEncoder) jencoder);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    setSharedKeys
- * Signature: (JJ)V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_setSharedKeys(JNIEnv *env,
-                                                           jclass clazz,
-                                                           jlong jencoder,
-                                                           jlong jsharedKeys) {
-    FLEncoder_SetSharedKeys((FLEncoder) jencoder, (FLSharedKeys) jsharedKeys);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeNull
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeNull(JNIEnv *env, jclass clazz, jlong jencoder) {
-    return (jboolean) FLEncoder_WriteNull((FLEncoder) jencoder);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeBool
- * Signature: (JZ)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeBool(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                       jboolean jvalue) {
-    return (jboolean) FLEncoder_WriteBool((FLEncoder) jencoder, (bool) jvalue);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeInt
- * Signature: (JJ)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeInt(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                      jlong jvalue) {
-    return (jboolean) FLEncoder_WriteInt((FLEncoder) jencoder, (int64_t) jvalue);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeFloat
- * Signature: (JF)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeFloat(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                        jfloat jvalue) {
-    return (jboolean) FLEncoder_WriteFloat((FLEncoder) jencoder, (float) jvalue);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeDouble
- * Signature: (JD)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeDouble(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                         jdouble jvalue) {
-    return (jboolean) FLEncoder_WriteDouble((FLEncoder) jencoder, (double) jvalue);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeString
- * Signature: (JLjava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeString(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                         jstring jvalue) {
-    jstringSlice value(env, jvalue);
-    return (jboolean) FLEncoder_WriteString((FLEncoder) jencoder,
-                                            {((slice) value).buf, ((slice) value).size});
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeData
- * Signature: (J[B)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeData(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                       jbyteArray jvalue) {
-    jbyteArraySlice value(env, jvalue, true);
-    return (jboolean) FLEncoder_WriteData((FLEncoder) jencoder,
-                                          {((slice) value).buf, ((slice) value).size});
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    beginArray
- * Signature: (JJ)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_beginArray(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                        jlong jreserve) {
-    return (jboolean) FLEncoder_BeginArray((FLEncoder) jencoder, (size_t) jreserve);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    endArray
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_endArray(JNIEnv *env, jclass clazz, jlong jencoder) {
-    return (jboolean) FLEncoder_EndArray((FLEncoder) jencoder);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    beginDict
- * Signature: (JJ)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_beginDict(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                       jlong jreserve) {
-    return (jboolean) FLEncoder_BeginDict((FLEncoder) jencoder, (size_t) jreserve);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    endDict
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_endDict(JNIEnv *env, jclass clazz, jlong jencoder) {
-    return (jboolean) FLEncoder_EndDict((FLEncoder) jencoder);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeKey
- * Signature: (J[B)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeKey(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                      jstring jkey) {
-    if (jkey == NULL) return false;
-    jstringSlice key(env, jkey);
-    return (jboolean) FLEncoder_WriteKey((FLEncoder) jencoder,
-                                         {((slice) key).buf, ((slice) key).size});
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeValue
- * Signature: (JJ)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeValue(JNIEnv *env, jclass clazz, jlong jencoder,
-                                                        jlong jvalue) {
-    return (jboolean) FLEncoder_WriteValue((FLEncoder) jencoder, (FLValue) jvalue);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeValueWithSharedKeys
- * Signature: (JJJ)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeValueWithSharedKeys(JNIEnv *env, jclass clazz,
-                                                                      jlong jencoder, jlong jvalue,
-                                                                      jlong jsharedkeys) {
-    return (jboolean) FLEncoder_WriteValueWithSharedKeys((FLEncoder) jencoder, (FLValue) jvalue,
-                                                         (FLSharedKeys) jsharedkeys);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    finish
- * Signature: (J)[B
- */
-JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_finish(JNIEnv *env, jclass clazz, jlong jencoder) {
-    FLError error = kFLNoError;
-    FLSliceResult result = FLEncoder_Finish((FLEncoder) jencoder, &error);
-    if (error != kFLNoError)
-        throwError(env, {FleeceDomain, error});
-    jbyteArray res = toJByteArray(env, {result.buf, result.size});
-    FLSliceResult_Free(result);
-    return res;
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    finish2
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_finish2(JNIEnv *env, jclass clazz, jlong jencoder) {
-    FLError error = kFLNoError;
-    FLSliceResult res = FLEncoder_Finish((FLEncoder) jencoder, &error);
-    if (error != kFLNoError)
-        throwError(env, {FleeceDomain, error});
-    C4SliceResult *sliceResult = (C4SliceResult *) ::malloc(sizeof(C4SliceResult));
-    sliceResult->buf = res.buf;
-    sliceResult->size = res.size;
-    return (jlong) sliceResult;
-}

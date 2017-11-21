@@ -43,6 +43,10 @@ public class FLValue {
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
+    public static FLValue fromData(AllocSlice slice) {
+        long value = fromData(slice._handle);
+        return value != 0 ? new FLValue(value) : null;
+    }
 
     public static FLValue fromData(byte[] data) {
         return new FLValue(fromTrustedData(data));
@@ -109,6 +113,16 @@ public class FLValue {
         return asFLArray().asArray();
     }
 
+    // call from native (JNI)
+    private static Object asObject(long h) {
+        return asObject(new FLValue(h));
+    }
+
+    private static Object asObject(FLValue flValue) {
+        return flValue.asObject();
+    }
+
+
     Object asObject() {
         switch (getType(handle)) {
             case kFLNull:
@@ -137,6 +151,15 @@ public class FLValue {
             default:
                 return null;
         }
+    }
+
+    // call from native (JNI)
+    static Object toObject(long h) {
+        return toObject(new FLValue(h));
+    }
+
+    public static Object toObject(FLValue flValue) {
+        return flValue.toObject((SharedKeys) null);
     }
 
     // TODO: This method should be in `com.couchbase.lite.Properties` or `com.couchbase.lite.Document` ?
@@ -230,6 +253,19 @@ public class FLValue {
         return isUnsigned(handle);
     }
 
+    // @note instead of toString()
+    public String toStr() {
+        return toString(handle);
+    }
+
+    public String toJSON() {
+        return toJSON(handle);
+    }
+
+    public String toJSON5() {
+        return toJSON5(handle);
+    }
+
     //-------------------------------------------------------------------------
     // package level access
     //-------------------------------------------------------------------------
@@ -245,6 +281,8 @@ public class FLValue {
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
+
+    static native long fromData(long slice);
 
     /**
      * Returns a pointer to the root value in the encoded data
@@ -377,6 +415,16 @@ public class FLValue {
      */
     static native String JSON5ToJSON(String json5) throws LiteCoreException;
 
+
+    static native String toString(long handle);
+
+    static native String toJSON(long handle);
+
+    static native String toJSON5(long handle);
+
+
     // TODO: Need free()?
+
+    //static native Object asObject(long h);
 }
 

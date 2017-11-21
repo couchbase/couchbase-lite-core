@@ -117,6 +117,10 @@ public class FLDict {
         return count(handle);
     }
 
+    public FLValue toFLValue() {
+        return new FLValue(handle);
+    }
+
     //-------------------------------------------------------------------------
     // package level access
     //-------------------------------------------------------------------------
@@ -158,6 +162,4 @@ public class FLDict {
     static native String getKeyString(long sharedKeys, int keyCode);
 
     static native long getUnsorted(long dict, byte[] keyString);
-
-    // TODO: Need free()?
 }

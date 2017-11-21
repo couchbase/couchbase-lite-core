@@ -13,21 +13,6 @@
  */
 package com.couchbase.litecore.fleece;
 
-public class FLSharedKeys {
-    final long handle; // hold pointer to FLSharedKeys
-
-    //-------------------------------------------------------------------------
-    // public methods
-    //-------------------------------------------------------------------------
-    public FLSharedKeys(long handle) {
-        if (handle == 0L) throw new IllegalStateException();
-        this.handle = handle;
-    }
-
-    //-------------------------------------------------------------------------
-    // package level access
-    //-------------------------------------------------------------------------
-    public long getHandle() {
-        return handle;
-    }
+public interface FLEncodable {
+    void encodeTo(FLEncoder enc);
 }
