@@ -52,10 +52,6 @@ public class C4Query {
                 run(handle, options.rankFullText, encodedParameters));
     }
 
-    public byte[] getFullTextMatched(long fullTextID) throws LiteCoreException {
-        return getFullTextMatched(handle, fullTextID);
-    }
-
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
@@ -113,12 +109,6 @@ public class C4Query {
                            boolean rankFullText,
                            String encodedParameters)
             throws LiteCoreException;
-
-    /**
-     * Given a docID and sequence number from the enumerator, returns the text that was emitted
-     * during indexing.
-     */
-    static native byte[] getFullTextMatched(long c4query, long fullTextID) throws LiteCoreException;
 
     //////// INDEXES:
 

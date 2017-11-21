@@ -95,20 +95,6 @@ Java_com_couchbase_litecore_C4Query_run(JNIEnv *env, jclass clazz,
     return (jlong) e;
 }
 
-/*
- * Class:     com_couchbase_litecore_C4Query
- * Method:    getFullTextMatched
- * Signature: (JJ)[B
- */
-JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Query_getFullTextMatched(JNIEnv *env, jclass clazz, jlong jquery, jlong jfullTextID){
-    C4Error error = {};
-    C4SliceResult s = c4query_fullTextMatched((C4Query *) jquery, (C4FullTextID)jfullTextID, &error);
-    jbyteArray res = toJByteArray(env, s);
-    c4slice_free(s);
-    return res;
-}
-
-
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4QueryEnumerator
 // ----------------------------------------------------------------------------
@@ -214,58 +200,6 @@ Java_com_couchbase_litecore_C4QueryEnumerator_getColumns(JNIEnv *env, jclass cla
     if (!handle)
         return 0;
     return (jlong) &((C4QueryEnumerator *) handle)->columns;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getFullTextTermCount
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextTermCount(JNIEnv *env, jclass clazz,
-                                                                   jlong handle) {
-    if (!handle)
-        return 0;
-    return (jlong) ((C4QueryEnumerator *) handle)->fullTextTermCount;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getFullTextTermIndex
- * Signature: (JJ)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextTermIndex(JNIEnv *env, jclass clazz,
-                                                                   jlong handle, jlong jpos) {
-    if (!handle || jpos >= ((C4QueryEnumerator *) handle)->fullTextTermCount)
-        return -1;
-    return (jlong) ((C4QueryEnumerator *) handle)->fullTextTerms[jpos].termIndex;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getFullTextTermStart
- * Signature: (JJ)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextTermStart(JNIEnv *env, jclass clazz,
-                                                                   jlong handle, jlong jpos) {
-    if (!handle || jpos >= ((C4QueryEnumerator *) handle)->fullTextTermCount)
-        return -1;
-    return (jlong) ((C4QueryEnumerator *) handle)->fullTextTerms[jpos].start;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4QueryEnumerator
- * Method:    getFullTextTermLength
- * Signature: (JJ)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextTermLength(JNIEnv *env, jclass clazz,
-                                                                    jlong handle, jlong jpos) {
-    if (!handle || jpos >= ((C4QueryEnumerator *) handle)->fullTextTermCount)
-        return -1;
-    return (jlong) ((C4QueryEnumerator *) handle)->fullTextTerms[jpos].length;
 }
 
 /*

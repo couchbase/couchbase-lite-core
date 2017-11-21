@@ -81,22 +81,6 @@ public class C4QueryEnumerator {
         return new FLArrayIterator(getColumns(handle));
     }
 
-    public long getFullTextTermCount() {
-        return getFullTextTermCount(handle);
-    }
-
-    public long getFullTextTermIndex(long pos) {
-        return getFullTextTermIndex(handle, pos);
-    }
-
-    public long getFullTextTermStart(long pos) {
-        return getFullTextTermStart(handle, pos);
-    }
-
-    public long getFullTextTermLength(long pos) {
-        return getFullTextTermLength(handle, pos);
-    }
-
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
@@ -125,15 +109,4 @@ public class C4QueryEnumerator {
     // -- Accessor methods to C4QueryEnumerator --
 
     static native long getColumns(long c4queryenumerator);
-
-    static native long getFullTextTermCount(long c4queryenumerator);
-
-    // C4FullTextTerm.index
-    static native long getFullTextTermIndex(long c4queryenumerator, long pos);
-
-    // C4FullTextTerm.start
-    static native long getFullTextTermStart(long c4queryenumerator, long pos);
-
-    // C4FullTextTerm.length
-    static native long getFullTextTermLength(long c4queryenumerator, long pos);
 }
