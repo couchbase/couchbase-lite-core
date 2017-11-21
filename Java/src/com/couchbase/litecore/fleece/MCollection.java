@@ -1,8 +1,8 @@
 package com.couchbase.litecore.fleece;
 
 public class MCollection {
-    long _handle;
-    boolean _managed;
+    long _handle = 0L;
+    boolean _managed = false;
 
     public MCollection(long handle, boolean managed) {
         _handle = handle;

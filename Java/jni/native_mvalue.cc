@@ -256,7 +256,9 @@ void JMValue::encodeNative(Encoder &enc, JNative native) {
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_MValue_free(JNIEnv *env, jclass clazz, jlong jmval) {
-    delete (JMValue *) jmval;
+    JMValue *mval = (JMValue *) jmval;
+    if (mval != NULL)
+        delete mval;
 }
 
 /*

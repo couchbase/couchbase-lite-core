@@ -23,6 +23,7 @@ Java_com_couchbase_litecore_fleece_MContext_init(JNIEnv *env, jclass clazz, jlon
     alloc_slice* data = (alloc_slice *) jdata;
     FLSharedKeys sk = (FLSharedKeys) jsk;
     JMContext* context = new JMContext(*data, sk);
+    context->retain();
     return (jlong) context;
 }
 
@@ -34,7 +35,8 @@ Java_com_couchbase_litecore_fleece_MContext_init(JNIEnv *env, jclass clazz, jlon
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_MContext_free(JNIEnv *env, jclass clazz, jlong jmcontext) {
     JMContext* context = (JMContext *) jmcontext;
-    if (context != NULL) delete context;
+    if (context != NULL)
+        context->release();
 }
 
 /*
@@ -42,8 +44,13 @@ Java_com_couchbase_litecore_fleece_MContext_free(JNIEnv *env, jclass clazz, jlon
  * Method:    sharedKeys
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_MContext_sharedKeys(JNIEnv *env, jclass clazz, jlong jmcontext){
-    return (jlong)((JMContext *) jmcontext)->sharedKeys();
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_MContext_sharedKeys(JNIEnv *env, jclass clazz, jlong jmcontext) {
+    JMContext *mcontext = (JMContext *) jmcontext;
+    if (mcontext != NULL)
+        return (jlong) mcontext->sharedKeys();
+    else
+        return (jlong) 0L;
 }
 
 /*
@@ -51,8 +58,13 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_MContext_sharedKeys(J
  * Method:    setNative
  * Signature: (JLjava/lang/Object;)V
  */
-JNIEXPORT void JNICALL Java_com_couchbase_litecore_fleece_MContext_setNative(JNIEnv *env, jclass clazz, jlong jmcontext, jobject jobj){
-    ((JMContext *) jmcontext)->setJNative(env, jobj);
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_fleece_MContext_setNative(JNIEnv *env, jclass clazz, jlong jmcontext,
+                                                      jobject jobj) {
+    //((JMContext *) jmcontext)->setJNative(env, jobj);
+    JMContext *mcontext = (JMContext *) jmcontext;
+    if (mcontext != NULL)
+        mcontext->setJNative(env, jobj);
 }
 /*
  * Class:     com_couchbase_litecore_fleece_MContext
@@ -60,5 +72,10 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_fleece_MContext_setNative(JNI
  * Signature: (J)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_com_couchbase_litecore_fleece_MContext_getNative(JNIEnv *env, jclass clazz, jlong jmcontext){
-    return ((JMContext *) jmcontext)->getJNative();
+    //return ((JMContext *) jmcontext)->getJNative();
+    JMContext *mcontext = (JMContext *) jmcontext;
+    if (mcontext != NULL)
+        return (jobject) mcontext->getJNative();
+    else
+        return (jobject) NULL;
 }

@@ -29,7 +29,9 @@ static jstring key(JNIEnv *env, JMDictIterator *itr) {
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_MDictIterator_free(JNIEnv *env, jclass clazz, jlong jitr) {
-    delete (JMDictIterator *) jitr;
+    JMDictIterator *itr = (JMDictIterator *) jitr;
+    if (itr != NULL)
+        delete itr;
 }
 
 /*

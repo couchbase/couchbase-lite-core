@@ -57,7 +57,9 @@ Java_com_couchbase_litecore_fleece_MRoot_init(JNIEnv *env, jclass clazz, jlong j
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_MRoot_free(JNIEnv *env, jclass clazz, jlong jmroot) {
-    delete (JMRoot *) jmroot;
+    JMRoot *mroot = (JMRoot *) jmroot;
+    if(mroot != NULL)
+        delete mroot;
 }
 
 /*

@@ -20,7 +20,9 @@ using namespace litecore::jni;
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_MDict_free(JNIEnv *env, jclass clazz, jlong jmdict) {
-    delete (JMDict *) jmdict;
+    JMDict *mdict = (JMDict *) jmdict;
+    if(mdict != NULL)
+        delete mdict;
 }
 
 /*
@@ -29,7 +31,8 @@ Java_com_couchbase_litecore_fleece_MDict_free(JNIEnv *env, jclass clazz, jlong j
  * Signature: ()J
  */
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_MDict_init(JNIEnv *env, jclass clazz) {
-    return (jlong) new JMDict();
+    JMDict* mdict = new JMDict();
+    return (jlong) mdict;
 }
 
 /*
