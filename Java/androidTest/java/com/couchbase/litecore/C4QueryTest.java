@@ -166,7 +166,8 @@ public class C4QueryTest extends C4QueryBaseTest {
     }
 
     // - Full-text query
-    @Test
+    // TODO - https://github.com/couchbase/couchbase-lite-android/issues/1445
+    // @Test
     public void testFullTextQuery() throws LiteCoreException {
         db.createIndex("byStreet", "[[\".contact.address.street\"]]", kC4FullTextIndex, null, true);
         compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
