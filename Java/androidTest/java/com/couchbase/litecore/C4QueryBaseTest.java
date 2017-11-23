@@ -88,7 +88,6 @@ public class C4QueryBaseTest extends C4BaseTest {
         return run(null);
     }
 
-
     protected List<String> run(String bindings) throws LiteCoreException {
         List<String> docIDs = new ArrayList<>();
         C4QueryOptions opts = new C4QueryOptions();
@@ -101,4 +100,22 @@ public class C4QueryBaseTest extends C4BaseTest {
         return docIDs;
     }
 
+    protected List<List<List<Long>>> runFTS() throws LiteCoreException {
+        return runFTS(null);
+    }
+
+    protected List<List<List<Long>>> runFTS(String bindings) throws LiteCoreException {
+        List<List<List<Long>>> matches = new ArrayList<>();
+        C4QueryOptions opts = new C4QueryOptions();
+        C4QueryEnumerator e = query.run(opts, bindings);
+        assertNotNull(e);
+        while (e.next()) {
+            List<List<Long>> match = new ArrayList<>();
+            for (int i = 0; i < e.getFullTextMatchCount(); i++)
+                match.add(e.getFullTextMatchs(i).toList());
+            matches.add(match);
+        }
+        e.free();
+        return matches;
+    }
 }

@@ -20,8 +20,10 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.couchbase.litecore.C4Constants.C4ErrorDomain.LiteCoreDomain;
 import static com.couchbase.litecore.C4Constants.C4IndexType.kC4FullTextIndex;
 import static com.couchbase.litecore.C4Constants.C4IndexType.kC4ValueIndex;
+import static com.couchbase.litecore.C4Constants.LiteCoreError.kC4ErrorInvalidQuery;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -60,8 +62,8 @@ public class C4QueryTest extends C4QueryBaseTest {
             db.createQuery("[\"=\"]");
             fail();
         } catch (LiteCoreException e) {
-            assertEquals(C4ErrorDomain.LiteCoreDomain, e.domain);
-            assertEquals(LiteCoreError.kC4ErrorInvalidQuery, e.code);
+            assertEquals(LiteCoreDomain, e.domain);
+            assertEquals(kC4ErrorInvalidQuery, e.code);
         }
     }
 
@@ -165,14 +167,117 @@ public class C4QueryTest extends C4QueryBaseTest {
         assertEquals(Arrays.asList("0000099"), run());
     }
 
+    // ----- FTS:
+
     // - Full-text query
-    // TODO - https://github.com/couchbase/couchbase-lite-android/issues/1445
-    // @Test
+    @Test
     public void testFullTextQuery() throws LiteCoreException {
         db.createIndex("byStreet", "[[\".contact.address.street\"]]", kC4FullTextIndex, null, true);
-        compile(json5("['MATCH', ['.', 'contact', 'address', 'street'], 'Hwy']"));
-        assertEquals(Arrays.asList("0000013", "0000015", "0000043", "0000044", "0000052"), run());
+        compile(json5("['MATCH', 'byStreet', 'Hwy']"));
+        assertEquals(Arrays.asList(
+                Arrays.asList(Arrays.asList(13L, 0L, 0L, 10L, 3L)),
+                Arrays.asList(Arrays.asList(15L, 0L, 0L, 11L, 3L)),
+                Arrays.asList(Arrays.asList(43L, 0L, 0L, 12L, 3L)),
+                Arrays.asList(Arrays.asList(44L, 0L, 0L, 12L, 3L)),
+                Arrays.asList(Arrays.asList(52L, 0L, 0L, 11L, 3L))
+        ), runFTS());
+
     }
+
+    // - Full-text multiple properties
+    @Test
+    public void testFullTextMultipleProperties() throws LiteCoreException {
+        db.createIndex("byAddress", "[[\".contact.address.street\"], [\".contact.address.city\"], [\".contact.address.state\"]]", kC4FullTextIndex, null, true);
+
+        // Some docs match 'Santa' in the street name, some in the city name
+        compile(json5("['MATCH', 'byAddress', 'Santa']"));
+        assertEquals(Arrays.asList(
+                Arrays.asList(Arrays.asList(15L, 1L, 0L, 0L, 5L)),
+                Arrays.asList(Arrays.asList(44L, 0L, 0L, 3L, 5L)),
+                Arrays.asList(Arrays.asList(68L, 0L, 0L, 3L, 5L)),
+                Arrays.asList(Arrays.asList(72L, 1L, 0L, 0L, 5L))
+        ), runFTS());
+
+        // Search only the street name:
+        compile(json5("['MATCH', 'byAddress', 'contact.address.street:Santa']"));
+        assertEquals(Arrays.asList(
+                Arrays.asList(Arrays.asList(44L, 0L, 0L, 3L, 5L)),
+                Arrays.asList(Arrays.asList(68L, 0L, 0L, 3L, 5L))
+        ), runFTS());
+
+        // Search for 'Santa' in the street name, and 'Saint' in either:
+        compile(json5("['MATCH', 'byAddress', 'contact.address.street:Santa Saint']"));
+        assertEquals(
+                Arrays.asList(
+                        Arrays.asList(
+                                Arrays.asList(68L, 0L, 0L, 3L, 5L),
+                                Arrays.asList(68L, 1L, 1L, 0L, 5L))
+                ), runFTS());
+
+        // Search for 'Santa' in the street name, _or_ 'Saint' in either:
+        compile(json5("['MATCH', 'byAddress', 'contact.address.street:Santa OR Saint']"));
+        assertEquals(Arrays.asList(
+                Arrays.asList(Arrays.asList(20L, 1l, 1L, 0L, 5L)),
+                Arrays.asList(Arrays.asList(44L, 0L, 0L, 3L, 5L)),
+                Arrays.asList(
+                        Arrays.asList(68L, 0L, 0L, 3L, 5L),
+                        Arrays.asList(68L, 1L, 1L, 0L, 5L)),
+                Arrays.asList(Arrays.asList(77L, 1L, 1L, 0L, 5L))
+        ), runFTS());
+    }
+
+
+    // - Multiple Full-text indexes
+    @Test
+    public void testMultipleFullTextIndexes() throws LiteCoreException {
+        db.createIndex("byStreet", "[[\".contact.address.street\"]]", kC4FullTextIndex, null, true);
+        db.createIndex("byCity", "[[\".contact.address.city\"]]", kC4FullTextIndex, null, true);
+        compile(json5("['AND', ['MATCH', 'byStreet', 'Hwy'], ['MATCH', 'byCity',   'Santa']]"));
+        assertEquals(Arrays.asList("0000015"), run());
+        assertEquals(Arrays.asList(
+                Arrays.asList(Arrays.asList(15L, 0L, 0L, 11L, 3L))
+        ), runFTS());
+    }
+
+    // - Full-text query in multiple ANDs
+    @Test
+    public void testFullTextQueryInMultipleANDs() throws LiteCoreException {
+        db.createIndex("byStreet", "[[\".contact.address.street\"]]", kC4FullTextIndex, null, true);
+        db.createIndex("byCity", "[[\".contact.address.city\"]]", kC4FullTextIndex, null, true);
+        compile(json5("['AND', ['AND', ['=', ['.gender'], 'male'], ['MATCH', 'byCity', 'Santa']], ['=', ['.name.first'], 'Cleveland']]"));
+        assertEquals(Arrays.asList("0000015"), run());
+        assertEquals(Arrays.asList(
+                Arrays.asList(Arrays.asList(15L, 0L, 0L, 0L, 5L))
+        ), runFTS());
+    }
+
+    // - Multiple Full-text queries
+    @Test
+    public void testMultipleFullTextQueries() throws LiteCoreException {
+        // You can't query the same FTS index multiple times in a query (says SQLite)
+        db.createIndex("byStreet", "[[\".contact.address.street\"]]", kC4FullTextIndex, null, true);
+        try {
+            C4Query query = db.createQuery(json5("['AND', ['MATCH', 'byStreet', 'Hwy'], ['MATCH', 'byStreet', 'Blvd']]"));
+        } catch (LiteCoreException e) {
+            assertEquals(LiteCoreDomain, e.domain);
+            assertEquals(kC4ErrorInvalidQuery, e.code);
+        }
+    }
+
+    // - Buried Full-text queries
+    @Test
+    public void testBuriedFullTextQueries() throws LiteCoreException {
+        // You can't put an FTS match inside an expression other than a top-level AND (says SQLite)
+        db.createIndex("byStreet", "[[\".contact.address.street\"]]", kC4FullTextIndex, null, true);
+        try {
+            C4Query query = db.createQuery(json5("['OR', ['MATCH', 'byStreet', 'Hwy'], ['=', ['.', 'contact', 'address', 'state'], 'CA']]"));
+        } catch (LiteCoreException e) {
+            assertEquals(LiteCoreDomain, e.domain);
+            assertEquals(kC4ErrorInvalidQuery, e.code);
+        }
+    }
+
+    // - WHAT, JOIN, etc:
 
     // - DB Query WHAT
     @Test
