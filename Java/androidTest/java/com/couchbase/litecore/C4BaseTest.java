@@ -176,7 +176,7 @@ public class C4BaseTest implements C4Constants {
 
     protected long importJSONLines(InputStream is) throws LiteCoreException, IOException {
         // Android API 16 arm emulator is slow. This is reason timeout is set 60 sec
-        return importJSONLines(is, 60, true);
+        return importJSONLines(is, 120, true);
     }
 
     // Read a file that contains a JSON document per line. Every line becomes a document.
