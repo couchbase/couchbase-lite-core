@@ -19,13 +19,13 @@ public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
-    private long handle = 0L; // hold pointer to C4QueryEnumerator
+    long _handle = 0L; // hold pointer to C4QueryEnumerator
 
     //-------------------------------------------------------------------------
     // Constructor
     //-------------------------------------------------------------------------
     C4QueryEnumerator(long handle) {
-        this.handle = handle;
+        this._handle = handle;
     }
 
     //-------------------------------------------------------------------------
@@ -33,7 +33,7 @@ public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
 
     public boolean next() throws LiteCoreException {
-        boolean ok = next(handle);
+        boolean ok = next(_handle);
         // NOTE: Please keep folowing line of code for a while.
         //if (!ok)
         //    handle = 0;
@@ -41,36 +41,36 @@ public class C4QueryEnumerator {
     }
 
     public long getRowCount() throws LiteCoreException {
-        return getRowCount(handle);
+        return getRowCount(_handle);
     }
 
     public boolean seek(long rowIndex) throws LiteCoreException {
-        return seek(handle, rowIndex);
+        return seek(_handle, rowIndex);
     }
 
     public C4QueryEnumerator refresh() throws LiteCoreException {
         // handle is closed or reached end.
-        if (handle == 0)
+        if (_handle == 0)
             return null;
-        long newHandle = refresh(handle);
+        long newHandle = refresh(_handle);
         if (newHandle == 0)
             return null;
         return new C4QueryEnumerator(newHandle);
     }
 
     public void close() {
-        if (handle != 0)
-            close(handle);
+        if (_handle != 0)
+            close(_handle);
     }
 
     public boolean isClosed() {
-        return handle == 0;
+        return _handle == 0;
     }
 
     public void free() {
-        if (handle != 0) {
-            free(handle);
-            handle = 0;
+        if (_handle != 0L) {
+            free(_handle);
+            _handle = 0L;
         }
     }
 
@@ -78,7 +78,15 @@ public class C4QueryEnumerator {
 
     // NOTE: FLArrayIterator is member variable of C4QueryEnumerator. Not necessary to release.
     public FLArrayIterator getColumns() {
-        return new FLArrayIterator(getColumns(handle));
+        return new FLArrayIterator(getColumns(_handle));
+    }
+
+    public long getFullTextMatchCount() {
+        return getFullTextMatchCount(_handle);
+    }
+
+    public C4FullTextMatch getFullTextMatchs(int idx) {
+        return new C4FullTextMatch(getFullTextMatch(_handle, idx));
     }
 
     //-------------------------------------------------------------------------
@@ -94,19 +102,26 @@ public class C4QueryEnumerator {
     // native methods
     //-------------------------------------------------------------------------
 
-    static native boolean next(long c4queryenumerator) throws LiteCoreException;
+    static native boolean next(long handle) throws LiteCoreException;
 
-    static native long getRowCount(long c4queryenumerator) throws LiteCoreException;
+    static native long getRowCount(long handle) throws LiteCoreException;
 
-    static native boolean seek(long c4queryenumerator, long rowIndex) throws LiteCoreException;
+    static native boolean seek(long handle, long rowIndex) throws LiteCoreException;
 
-    static native long refresh(long c4queryenumerator) throws LiteCoreException;
+    static native long refresh(long handle) throws LiteCoreException;
 
-    static native void close(long c4queryenumerator);
+    static native void close(long handle);
 
-    static native void free(long c4queryenumerator);
+    static native void free(long handle);
 
     // -- Accessor methods to C4QueryEnumerator --
 
-    static native long getColumns(long c4queryenumerator);
+    // C4QueryEnumerator.columns
+    static native long getColumns(long handle);
+
+    // C4QueryEnumerator.fullTextMatchCount
+    static native long getFullTextMatchCount(long handle);
+
+    // C4QueryEnumerator.fullTextMatches
+    static native long getFullTextMatch(long handle, int idx);
 }

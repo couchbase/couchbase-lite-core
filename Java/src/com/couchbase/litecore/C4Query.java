@@ -17,14 +17,14 @@ public class C4Query {
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
-    private long handle = 0L; // hold pointer to C4Query
+    long _handle = 0L; // hold pointer to C4Query
 
     //-------------------------------------------------------------------------
     // Constructors
     //-------------------------------------------------------------------------
 
     C4Query(long db, String expression) throws LiteCoreException {
-        handle = init(db, expression);
+        _handle = init(db, expression);
     }
 
     //-------------------------------------------------------------------------
@@ -32,24 +32,28 @@ public class C4Query {
     //-------------------------------------------------------------------------
 
     public void free() {
-        if (handle != 0L) {
-            free(handle);
-            handle = 0L;
+        if (_handle != 0L) {
+            free(_handle);
+            _handle = 0L;
         }
     }
 
     public String explain() {
-        return explain(handle);
+        return explain(_handle);
     }
 
     public int columnCount() {
-        return columnCount(handle);
+        return columnCount(_handle);
     }
 
     public C4QueryEnumerator run(C4QueryOptions options, String encodedParameters)
             throws LiteCoreException {
         return new C4QueryEnumerator(
-                run(handle, options.rankFullText, encodedParameters));
+                run(_handle, options.rankFullText, encodedParameters));
+    }
+
+    public byte[] getFullTextMatched(C4FullTextMatch match) throws LiteCoreException {
+        return getFullTextMatched(_handle, match._handle);
     }
 
     //-------------------------------------------------------------------------
@@ -78,37 +82,43 @@ public class C4Query {
     /**
      * Free C4Query* instance
      *
-     * @param c4query (C4Query*)
+     * @param handle (C4Query*)
      */
-    static native void free(long c4query);
+    static native void free(long handle);
 
     /**
-     * @param c4query (C4Query*)
+     * @param handle (C4Query*)
      * @return C4StringResult
      */
-    static native String explain(long c4query);
+    static native String explain(long handle);
 
     /**
      * Returns the number of columns (the values specified in the WHAT clause) in each row.
      *
-     * @param c4query (C4Query*)
+     * @param handle (C4Query*)
      * @return the number of columns
      */
-    static native int columnCount(long c4query);
+    static native int columnCount(long handle);
 
     //////// RUNNING QUERIES:
 
     /**
-     * @param c4query
+     * @param handle
      * @param rankFullText
      * @param encodedParameters
      * @return C4QueryEnumerator*
      * @throws LiteCoreException
      */
-    static native long run(long c4query,
+    static native long run(long handle,
                            boolean rankFullText,
                            String encodedParameters)
             throws LiteCoreException;
+
+    /**
+     * Given a docID and sequence number from the enumerator, returns the text that was emitted
+     * during indexing.
+     */
+    static native byte[] getFullTextMatched(long handle, long fullTextMatch) throws LiteCoreException;
 
     //////// INDEXES:
 
