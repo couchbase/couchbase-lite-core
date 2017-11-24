@@ -201,8 +201,9 @@ namespace LiteCore.Interop
                 case FLValueType.Dict:
                 {
                     var dict = Native.FLValue_AsDict(value);
-                    var retVal = new Dictionary<string, object>((int) Native.FLDict_Count(dict));
-                    if (retVal.Count == 0) {
+                    var count = (int) Native.FLDict_Count(dict);
+                    var retVal = new Dictionary<string, object>(count);
+                    if (count == 0) {
                         return retVal;
                     }
 
