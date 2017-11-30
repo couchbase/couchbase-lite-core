@@ -20,6 +20,10 @@
 //
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+
+using JetBrains.Annotations;
 
 namespace LiteCore.Interop
 {
@@ -84,6 +88,8 @@ namespace LiteCore.Interop
         #region Variables
 
         private Action<LiteCoreException> _exceptionHandler;
+
+        [NotNull]
         private readonly List<C4Error> _allowedErrors = new List<C4Error>();
 
         #endregion
@@ -103,6 +109,7 @@ namespace LiteCore.Interop
         /// Creates a new object for chaining in a fluent fashion
         /// </summary>
         /// <returns>A constructed object</returns>
+        [NotNull]
         public static NativeHandler Create()
         {
             return new NativeHandler();
@@ -151,7 +158,7 @@ namespace LiteCore.Interop
         /// <param name="errors">The errors to allow.</param>
         public NativeHandler AllowErrors(IEnumerable<C4Error> errors)
         {
-            foreach(var error in errors) {
+            foreach(var error in errors ?? Enumerable.Empty<C4Error>()) {
                 AllowError(error);
             }
 
@@ -171,8 +178,10 @@ namespace LiteCore.Interop
             return this;
         }
 
-        public unsafe bool Execute(C4TryLogicDelegate1 block)
+        public unsafe bool Execute([NotNull]C4TryLogicDelegate1 block)
         {
+            Debug.Assert(block != null);
+
             var err = default(C4Error);
             if(block(&err) || err.code == 0) {
                 Exception = null;
@@ -184,8 +193,10 @@ namespace LiteCore.Interop
             return false;
         }
 
-        public unsafe void* Execute(C4TryLogicDelegate2 block)
-        {
+        public unsafe void* Execute([NotNull]C4TryLogicDelegate2 block)
+        { 
+            Debug.Assert(block != null);
+
             var err = default(C4Error);
             var retVal = block(&err);
             if(retVal != null || err.code == 0) {
@@ -198,8 +209,10 @@ namespace LiteCore.Interop
             return null;
         }
 
-        public unsafe int Execute(C4TryLogicDelegate3 block)
+        public unsafe int Execute([NotNull]C4TryLogicDelegate3 block)
         {
+            Debug.Assert(block != null);
+
             var err = default(C4Error);
             var retVal = block(&err);
             if(retVal >= 0 || err.code == 0) {
@@ -212,8 +225,10 @@ namespace LiteCore.Interop
             return retVal;
         }
 
-        public unsafe C4Slice Execute(C4TryLogicDelegate4 block)
+        public unsafe C4Slice Execute([NotNull]C4TryLogicDelegate4 block)
         {
+            Debug.Assert(block != null);
+
             var err = default(C4Error);
             var retVal = block(&err);
             if(retVal.buf != null || err.code == 0) {
@@ -232,6 +247,10 @@ namespace LiteCore.Interop
 
         private void ThrowOrHandle()
         {
+            if (Exception == null) {
+                return;
+            }
+
             foreach(var error in _allowedErrors) {
                 if(error.Equals(Exception.Error) || (error.domain == 0 &&
                     error.code.Equals(Exception.Error.code))) {
