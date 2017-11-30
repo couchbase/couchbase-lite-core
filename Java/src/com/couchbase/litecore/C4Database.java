@@ -198,7 +198,7 @@ public class C4Database implements C4Constants {
             throws LiteCoreException {
         return new C4Document(C4Document.put(handle,
                 body, docID, revFlags, existingRevision, allowConflict,
-                history, save, maxRevTreeDepth));
+                history, save, maxRevTreeDepth), false);
     }
 
     public C4Document put(
@@ -213,16 +213,16 @@ public class C4Database implements C4Constants {
             throws LiteCoreException {
         return new C4Document(C4Document.put2(handle,
                 body.getHandle(), docID, revFlags, existingRevision, allowConflict,
-                history, save, maxRevTreeDepth));
+                history, save, maxRevTreeDepth), false);
     }
 
     public C4Document create(String docID, byte[] body, int revisionFlags)
             throws LiteCoreException {
-        return new C4Document(C4Document.create(handle, docID, body, revisionFlags));
+        return new C4Document(C4Document.create(handle, docID, body, revisionFlags), false);
     }
 
     public C4Document create(String docID, FLSliceResult body, int flags) throws LiteCoreException {
-        return new C4Document(C4Document.create2(handle, docID, body != null ? body.getHandle() : 0, flags));
+        return new C4Document(C4Document.create2(handle, docID, body != null ? body.getHandle() : 0, flags), false);
     }
 
     ////////////////////////////////////////////////////////////////

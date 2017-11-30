@@ -9,151 +9,160 @@ public class C4Document implements C4Constants {
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
-    private long handle = 0L; // hold pointer to C4Document
+    private long _handle = 0L; // hold pointer to C4Document
+    private boolean _managed = false; // true -> not release native object, false -> release by free()
 
     //-------------------------------------------------------------------------
     // Constructor
     //-------------------------------------------------------------------------
 
     C4Document(long db, String docID, boolean mustExist) throws LiteCoreException {
-        handle = get(db, docID, mustExist);
+        this(get(db, docID, mustExist), false);
     }
 
     C4Document(long db, long sequence) throws LiteCoreException {
-        handle = getBySequence(db, sequence);
+        this(getBySequence(db, sequence), false);
     }
 
-    C4Document(long handle) {
+    C4Document(C4Document rawDoc) {
+        this(rawDoc._handle, true);
+    }
+
+    C4Document(long handle, boolean managed) {
         if (handle == 0)
             throw new IllegalArgumentException("handle is 0");
-        this.handle = handle;
+        this._handle = handle;
+        this._managed = managed;
     }
 
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
+    public static C4Document document(C4Document rawDoc) {
+        return new C4Document(rawDoc);
+    }
+
+    public void free() {
+        if (_handle != 0L && !_managed) {
+            free(_handle);
+            _handle = 0L;
+        }
+    }
 
     // - C4Document
     public int getFlags() {
-        return getFlags(handle);
+        return getFlags(_handle);
     }
 
     public String getDocID() {
-        return getDocID(handle);
+        return getDocID(_handle);
     }
 
     public String getRevID() {
-        return getRevID(handle);
+        return getRevID(_handle);
     }
 
     public long getSequence() {
-        return getSequence(handle);
+        return getSequence(_handle);
     }
 
     // - C4Revision
 
     public String getSelectedRevID() {
-        return getSelectedRevID(handle);
+        return getSelectedRevID(_handle);
     }
 
     public int getSelectedFlags() {
-        return getSelectedFlags(handle);
+        return getSelectedFlags(_handle);
     }
 
     public long getSelectedSequence() {
-        return getSelectedSequence(handle);
+        return getSelectedSequence(_handle);
     }
 
     public byte[] getSelectedBody() {
-        return getSelectedBody(handle);
+        return getSelectedBody(_handle);
     }
 
     public FLDict getSelectedBody2() {
-        long value = getSelectedBody2(handle);
+        long value = getSelectedBody2(_handle);
         return value == 0 ? null : new FLDict(value);
     }
 
     // - Lifecycle
 
     public void save(int maxRevTreeDepth) throws LiteCoreException {
-        save(handle, maxRevTreeDepth);
-    }
-
-    public void free() {
-        if (handle != 0L) {
-            free(handle);
-            handle = 0L;
-        }
+        save(_handle, maxRevTreeDepth);
     }
 
     // - Revisions
 
     public void selectRevision(String revID, boolean withBody) throws LiteCoreException {
-        selectRevision(handle, revID, withBody);
+        selectRevision(_handle, revID, withBody);
     }
 
     public boolean selectCurrentRevision() {
-        return selectCurrentRevision(handle);
+        return selectCurrentRevision(_handle);
     }
 
     public void loadRevisionBody() throws LiteCoreException {
-        loadRevisionBody(handle);
+        loadRevisionBody(_handle);
     }
 
     public String detachRevisionBody() {
-        return detachRevisionBody(handle);
+        return detachRevisionBody(_handle);
     }
 
     public boolean hasRevisionBody() {
-        return hasRevisionBody(handle);
+        return hasRevisionBody(_handle);
     }
 
     public boolean selectParentRevision() {
-        return selectParentRevision(handle);
+        return selectParentRevision(_handle);
     }
 
     public boolean selectNextRevision() {
-        return selectNextRevision(handle);
+        return selectNextRevision(_handle);
     }
 
     public void selectNextLeafRevision(boolean includeDeleted, boolean withBody)
             throws LiteCoreException {
-        selectNextLeafRevision(handle, includeDeleted, withBody);
+        selectNextLeafRevision(_handle, includeDeleted, withBody);
     }
 
     public boolean selectFirstPossibleAncestorOf(String revID) throws LiteCoreException {
-        return selectFirstPossibleAncestorOf(handle, revID);
+        return selectFirstPossibleAncestorOf(_handle, revID);
     }
 
     public boolean selectNextPossibleAncestorOf(String revID) {
-        return selectNextPossibleAncestorOf(handle, revID);
+        return selectNextPossibleAncestorOf(_handle, revID);
     }
 
     public boolean selectCommonAncestorRevision(String revID1, String revID2) {
-        return selectCommonAncestorRevision(handle, revID1, revID2);
+        return selectCommonAncestorRevision(_handle, revID1, revID2);
     }
 
     public boolean removeRevisionBody() {
-        return removeRevisionBody(handle);
+        return removeRevisionBody(_handle);
     }
 
     public int purgeRevision(String revID) throws LiteCoreException {
-        return purgeRevision(handle, revID);
+        return purgeRevision(_handle, revID);
     }
 
     public void resolveConflict(String winningRevID, String losingRevID, byte[] mergeBody)
             throws LiteCoreException {
-        resolveConflict(handle, winningRevID, losingRevID, mergeBody);
+        resolveConflict(_handle, winningRevID, losingRevID, mergeBody);
     }
 
     // - Creating and Updating Documents
 
     public C4Document update(byte[] body, int flags) throws LiteCoreException {
-        return new C4Document(update(handle, body, flags));
+        return new C4Document(update(_handle, body, flags), false);
     }
 
     public C4Document update(FLSliceResult body, int flags) throws LiteCoreException {
-        return new C4Document(update2(handle, body != null ? body.getHandle() : 0, flags));
+        return new C4Document(update2(_handle, body != null ? body.getHandle() : 0, flags), false);
     }
 
     //-------------------------------------------------------------------------
@@ -178,7 +187,7 @@ public class C4Document implements C4Constants {
     }
 
     private boolean isFlags(int flag) {
-        return (getFlags(handle) & flag) == flag;
+        return (getFlags(_handle) & flag) == flag;
     }
 
     // helper methods for Revision
@@ -199,7 +208,7 @@ public class C4Document implements C4Constants {
     }
 
     private boolean isSelectedRevFlags(int flag) {
-        return (getSelectedFlags(handle) & flag) == flag;
+        return (getSelectedFlags(_handle) & flag) == flag;
     }
 
     //-------------------------------------------------------------------------
@@ -225,7 +234,7 @@ public class C4Document implements C4Constants {
     }
 
     public String bodyAsJSON(boolean canonical) throws LiteCoreException {
-        return bodyAsJSON(handle, canonical);
+        return bodyAsJSON(_handle, canonical);
     }
 
     // doc -> pointer to C4Document
