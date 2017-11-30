@@ -27,6 +27,14 @@ public class LiteCoreException extends Exception {
         throw new LiteCoreException(domain, code, msg);
     }
 
+    public int getDomain() {
+        return domain;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
     @Override
     public String toString() {
         return "LiteCoreException{" +
