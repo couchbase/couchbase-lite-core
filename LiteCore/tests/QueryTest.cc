@@ -689,7 +689,11 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query tonumber", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
     "{'WHAT': [['TONUMBER()', ['.value']]]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    unique_ptr<QueryEnumerator> e;
+    {
+        ExpectingExceptions x;      // tonumber() will internally throw/catch an exception while indexing
+        e.reset(query->createEnumerator());
+    }
     REQUIRE(e->getRowCount() == 5);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == 0.0);

@@ -44,7 +44,16 @@ namespace fleece {
 }
 
 
+// The lambda must throw a litecore::error with the given domain and code, or the test fails.
 void ExpectException(litecore::error::Domain, int code, std::function<void()> lambda);
+
+extern "C" std::atomic_int gC4ExpectExceptions;
+
+// While in scope, suppresses warnings about errors, and debugger exception breakpoints (in Xcode)
+struct ExpectingExceptions {
+    ExpectingExceptions()    {++gC4ExpectExceptions; litecore::error::sWarnOnError = false;}
+    ~ExpectingExceptions()   {--gC4ExpectExceptions; litecore::error::sWarnOnError = true;}
+};
 
 
 #include "CatchHelper.hh"
