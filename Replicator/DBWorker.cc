@@ -33,8 +33,6 @@ namespace litecore { namespace repl {
 
     static constexpr auto kInsertionDelay = chrono::milliseconds(50);
 
-    static constexpr size_t kMinBodySizeToCompress = 500;
-    
 
     static bool isNotFoundError(C4Error err) {
         return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
@@ -431,6 +429,7 @@ namespace litecore { namespace repl {
         }
 
         MessageBuilder response(req);
+        response.compressed = true;
         response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
         response["blobs"_sl] = "true"_sl;
         vector<bool> whichRequested(changes.count());
@@ -635,7 +634,7 @@ namespace litecore { namespace repl {
         // Now send the BLIP message:
         MessageBuilder msg("rev"_sl);
         msg.noreply = !onProgress;
-        msg.compressed = (revisionBody.size >= kMinBodySizeToCompress);
+        msg.compressed = true;
         msg["id"_sl] = request.docID;
         msg["rev"_sl] = request.revID;
         msg["sequence"_sl] = request.sequence;
