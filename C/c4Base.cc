@@ -339,6 +339,10 @@ void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, va_list arg
 }
 
 void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
+    if(msg.buf == nullptr) {
+        return;
+    }
+    
     c4log(c4Domain, level, "%.*s", SPLAT(msg));
 }
 
