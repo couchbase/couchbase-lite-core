@@ -112,6 +112,8 @@ namespace litecore { namespace blip {
             _rawBytesReceived += frame.size;
             acknowledge(frame.size);
 
+            slice checksumPos = frame.read(4);     // Skip past checksum at start
+
             bool justFinishedProperties = false;
             if (!_in) {
                 // First frame!
@@ -152,8 +154,16 @@ namespace litecore { namespace blip {
             }
             if (justFinishedProperties) {
                 // Finished reading properties:
-                if (_propertiesSize > 0 && _properties[_properties.size - 1] != 0)
+                if (_propertiesSize > 0 && _properties[_propertiesSize - 1] != 0)
                     throw std::runtime_error("message properties not null-terminated");
+#if DEBUG
+                int nulls = 0;
+                for (size_t i = 0; i < _propertiesSize; ++i)
+                    if (_properties[i] == 0)
+                        ++nulls;
+                assert((nulls & 1) == 0);
+#endif
+
                 if (!isError())
                     state = kBeginning;
             }
@@ -162,6 +172,9 @@ namespace litecore { namespace blip {
                 // Read/decompress the frame into _in:
                 readFrame(codec, frame, frameFlags);
             }
+
+            codec.readAndVerifyChecksum(checksumPos);
+
             bodyBytesReceived = _in->bytesWritten();
 
             if (!(frameFlags & kMoreComing)) {
@@ -208,19 +221,13 @@ namespace litecore { namespace blip {
     }
 
 
-    void MessageIn::readFrame(Codec &codec, slice frame, bool finalFrame) {
-//        LogTo(Zip, "Decompressing %ld bytes%s",
-//              frame.size, (finalFrame ? " (finished)" : ""));
-        uint8_t outBuf[4096];
+    void MessageIn::readFrame(Codec &codec, slice &frame, bool finalFrame) {
+        uint8_t buffer[4096];
         while (frame.size > 0) {
-            slice output {outBuf, sizeof(outBuf)};
+            slice output {buffer, sizeof(buffer)};
             codec.write(frame, output);
-
-            // Write output to JSONEncoder:
-            if (output.buf > outBuf) {
-//                LogToAt(Zip, Verbose, "    decompressed: %.*s", (int)(_z.next_out - outBuf), outBuf);
-                _in->writeRaw(slice(outBuf, output.buf));
-            }
+            if (output.buf > buffer)
+                _in->writeRaw(slice(buffer, output.buf));
         }
     }
 

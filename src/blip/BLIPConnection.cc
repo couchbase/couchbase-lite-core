@@ -96,7 +96,7 @@ namespace litecore { namespace blip {
         MessageNo               _numRequestsReceived {0};
         Deflater                _outputCodec;
         Inflater                _inputCodec;
-        Nullflater              _nullCodec;
+        Noflater                _nullInputCodec, _nullOutputCodec;
         unique_ptr<uint8_t[]>   _frameBuf;
         RequestHandlers         _requestHandlers;
         size_t                  _maxOutboxDepth {0}, _totalOutboxDepth {0}, _countOutboxDepth {0};
@@ -305,7 +305,7 @@ namespace litecore { namespace blip {
                         maxSize = kBigFrameSize;
 
                     if (!_frameBuf)
-                        _frameBuf.reset(new uint8_t[2*kMaxVarintLen64 + kBigFrameSize]);
+                        _frameBuf.reset(new uint8_t[kMaxVarintLen64 + 1 + 4 + kBigFrameSize]);
                     slice out(_frameBuf.get(), maxSize);
                     WriteUVarInt(&out, msg->_number);
                     auto flagsPos = (FrameFlags*)out.buf;
@@ -350,13 +350,18 @@ namespace litecore { namespace blip {
         }
 
 
-        Codec& codecForMessage(const Message *msg) {
-            if (!msg->hasFlag(kCompressed))
-                return _nullCodec;
-            else if (msg->isIncoming())
+        inline Codec& codecForMessage(const MessageOut *msg) {
+            if (msg->hasFlag(kCompressed))
+                return _outputCodec;
+            else
+                return _nullOutputCodec;
+        }
+
+        inline Codec& codecForMessage(const MessageIn *msg, FrameFlags flags) {
+            if (flags & kCompressed)
                 return _inputCodec;
             else
-                return _outputCodec;
+                return _nullInputCodec;
         }
 
 
@@ -408,7 +413,7 @@ namespace litecore { namespace blip {
 
                 // Append the frame to the message:
                 if (msg) {
-                    auto state = msg->receivedFrame(codecForMessage(msg), payload, flags);
+                    auto state = msg->receivedFrame(codecForMessage(msg, flags), payload, flags);
 
                     if (state == MessageIn::kEnd) {
                         if (BLIPMessagesLog.willLog(LogLevel::Info)) {
@@ -452,6 +457,7 @@ namespace litecore { namespace blip {
                 frozen = true;
             }
 
+            // Acks have no checksum and don't go through the codec; just read the byte count:
             uint32_t byteCount;
             if (!ReadUVarInt32(&body, &byteCount)) {
                 warn("Couldn't parse body of ACK");

@@ -1,5 +1,5 @@
 //
-//  Flater.hh
+//  Codec.hh
 //  blip_cpp
 //
 //  Created by Jens Alfke on 11/16/17.
@@ -9,14 +9,16 @@
 #pragma once
 #include "slice.hh"
 #include "FleeceCpp.hh"
+#include "Logging.hh"
 #include <zlib.h>
 
 namespace litecore { namespace blip {
 
 
     /** Abstract encoder/decoder class; base class of Inflater and Deflater. */
-    class Codec {
+    class Codec : protected Logging {
     public:
+        Codec();
         virtual ~Codec() { }
 
         // See https://zlib.net/manual.html#Basic for info about modes
@@ -39,14 +41,24 @@ namespace litecore { namespace blip {
                            fleece::slice &output,
                            Mode =Mode::SyncFlush) =0;
 
+        void writeChecksum(fleece::slice &output);
+        void readAndVerifyChecksum(fleece::slice &input);
+
+    protected:
+        uint32_t _checksum {0};
+    };
+
+
+    /** Abstract base class of Zlib-based codecs Deflater and Inflater */
+    class ZlibCodec : public Codec {
     protected:
         using FlateFunc = int (*)(z_stream*, int);
 
-        Codec(FlateFunc flate)
+        ZlibCodec(FlateFunc flate)
         :_flate(flate)
         { }
 
-        int _write(const char *operation, fleece::slice &input, fleece::slice &output,
+        void _write(const char *operation, fleece::slice &input, fleece::slice &output,
                    Mode, size_t maxInput);
         void check(int) const;
 
@@ -56,7 +68,7 @@ namespace litecore { namespace blip {
 
 
     /** Compressing codec that performs a zlib/gzip "deflate". */
-    class Deflater : public Codec {
+    class Deflater : public ZlibCodec {
     public:
         Deflater(int level =Z_DEFAULT_COMPRESSION);
         ~Deflater();
@@ -68,24 +80,19 @@ namespace litecore { namespace blip {
 
 
     /** Decompressing codec that performs a zlib/gzip "inflate". */
-    class Inflater : public Codec {
+    class Inflater : public ZlibCodec {
     public:
         Inflater();
         ~Inflater();
 
         bool write(fleece::slice &input, fleece::slice &output, Mode =Mode::SyncFlush) override;
-
-        bool eof() const    {return _eof;}
-
-    private:
-        bool _eof {false};
     };
 
 
     /** No-op codec that just copies without compressing. */
-    class Nullflater : public Codec {
+    class Noflater : public Codec {
     public:
-        Nullflater() :Codec(nullptr) { }
+        Noflater();
         bool write(fleece::slice &input, fleece::slice &output, Mode =Mode::SyncFlush) override;
     };
 

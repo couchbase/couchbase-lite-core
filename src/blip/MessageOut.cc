@@ -36,8 +36,19 @@ namespace litecore { namespace blip {
 
 
     void MessageOut::nextFrameToSend(Codec &codec, slice &dst, FrameFlags &outFlags) {
+        outFlags = flags();
+        if (isAck()) {
+            // Acks have no checksum and don't go through the codec
+            dst.writeFrom(_unsentPayload);
+            _bytesSent += _unsentPayload.size;
+            return;
+        }
+
         slice frame;
         size_t frameSize = dst.size;
+
+        auto checksumPos = dst.read(4);     // Leave 4 bytes for checksum at start
+
         bool allWritten, moreComing;
         if (_unsentPayload.size > 0) {
             // Send data from my payload:
@@ -58,11 +69,12 @@ namespace litecore { namespace blip {
         if (!allWritten)
             throw runtime_error("Compression buffer overflow");
 
-        frameSize -= dst.size;  // compute the compressed frame size
+        codec.writeChecksum(checksumPos);   // Fill in the checksum
+
+        frameSize -= dst.size;              // Compute the compressed frame size
         _bytesSent += frameSize;
         _unackedBytes += frameSize;
         
-        outFlags = flags();
         MessageProgress::State state;
         if (moreComing) {
             outFlags = (FrameFlags)(outFlags | kMoreComing);
