@@ -24,6 +24,12 @@ namespace litecore {
     #define CONCAT(EXPR)   (std::stringstream() << EXPR).str()
 #endif
 
+    /** Writes a slice to a stream with the usual "<<" syntax */
+    static inline std::ostream& operator<< (std::ostream& o, fleece::slice s) {
+        o.write((const char*)s.buf, s.size);
+        return o;
+    }
+
     /** Like sprintf(), but returns a std::string */
     std::string format(const char *fmt NONNULL, ...) __printflike(1, 2);
 

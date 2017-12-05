@@ -27,11 +27,6 @@ static inline C4Slice c4str(const string &s) {
     return {s.data(), s.size()};
 }
 
-static inline std::ostream& operator<< (std::ostream& o, slice s) {
-    o.write((const char*)s.buf, s.size);
-    return o;
-}
-
 
 class Tool {
 public:

@@ -50,12 +50,9 @@ void JSONEndpoint::copyTo(Endpoint *dst, uint64_t limit) {
 // As destination:
 void JSONEndpoint::writeJSON(slice docID, slice json) {
     if (docID) {
-        *_out << "{\"" << to_string(_docIDProperty) << "\":\"";
-        _out->write((char*)docID.buf, docID.size);
-        *_out << "\",";
+        *_out << "{\"" << _docIDProperty << "\":\"" << docID << "\",";
         json.moveStart(1);
     }
-    _out->write((char*)json.buf, json.size);
-    *_out << '\n';
+    *_out << json << '\n';
     logDocument(docID);
 }

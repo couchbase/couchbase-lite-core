@@ -84,7 +84,7 @@ namespace litecore {
             out << "^";
         else
             out << v.gen() << "@";
-        out.write((const char*)v.author().buf, v.author().size);
+        out << v.author();
         return out;
     }
 

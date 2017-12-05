@@ -9,6 +9,7 @@
 #include "LogEncoder.hh"
 #include "LogDecoder.hh"
 #include "Endian.hh"
+#include "StringUtil.hh"
 #include "varint.hh"
 #include <exception>
 #include <iostream>
@@ -277,7 +278,7 @@ namespace litecore {
             return;
 
         for (slice s : _writer.output())
-            _out.write((const char*)s.buf, s.size);
+            _out << s;
         _writer.reset();
         _out.flush();
         _lastSaved = _lastElapsed;

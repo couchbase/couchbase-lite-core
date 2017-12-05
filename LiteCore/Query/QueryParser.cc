@@ -104,12 +104,6 @@ namespace litecore {
     }
 
 
-    static inline std::ostream& operator<< (std::ostream& o, slice s) {
-        o.write((const char*)s.buf, s.size);
-        return o;
-    }
-
-
     // Writes a string with SQL quoting (inside apostrophes, doubling contained apostrophes.)
     /*static*/ void QueryParser::writeSQLString(std::ostream &out, slice str) {
         out << "'";
@@ -121,7 +115,7 @@ namespace litecore {
             }
         }
         if (simple) {
-            out.write((const char*)str.buf, str.size);
+            out << str;
         } else {
             for (unsigned i = 0; i < str.size; i++) {
                 if (str[i] == '\'')

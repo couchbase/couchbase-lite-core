@@ -65,8 +65,7 @@ void DirectoryEndpoint::writeJSON(slice docID, slice json) {
 
     FilePath jsonFile = _dir[docID.asString() + ".json"];
     ofstream out(jsonFile.path(), ios_base::trunc | ios_base::out);
-    out.write((char*)json.buf, json.size);
-    out << '\n';
+    out << json << '\n';
     logDocument(docID);
 }
 
