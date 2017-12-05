@@ -554,7 +554,6 @@ namespace litecore { namespace blip {
     ,_delegate(delegate)
     {
         log("Opening connection...");
-        provider.addProtocol("BLIP");
         setWebSocket(provider.createWebSocket(address, options));
     }
 

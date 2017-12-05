@@ -168,17 +168,10 @@ namespace litecore { namespace websocket {
     /** A nonfunctional WebSocket provider for testing. */
     class MockProvider : public Provider {
     public:
-        virtual void addProtocol(const std::string &protocol) override {
-            _protocols.insert(protocol);
-        }
-
         virtual WebSocket* createWebSocket(const Address &address,
                                            const fleeceapi::AllocedDict &options ={}) override {
             return new MockWebSocket(*this, address);
         }
-
-    protected:
-        std::set<std::string> _protocols;
     };
 
 } }

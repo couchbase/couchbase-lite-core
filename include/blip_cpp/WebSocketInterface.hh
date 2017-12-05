@@ -78,10 +78,11 @@ namespace litecore { namespace websocket {
     class Provider {
     public:
         virtual ~Provider() { }
-        virtual void addProtocol(const std::string &protocol) =0;
         virtual WebSocket* createWebSocket(const Address&,
                                            const fleeceapi::AllocedDict &options ={}) =0;
         virtual void close() { }
+
+        static constexpr const char *kProtocolsOption = "WS-Protocols";
     };
 
 

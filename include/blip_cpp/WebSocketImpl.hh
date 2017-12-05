@@ -92,10 +92,6 @@ namespace litecore { namespace websocket {
     public:
         ProviderImpl() { }
 
-        virtual void addProtocol(const std::string &protocol) override {
-            _protocols.insert(protocol);
-        }
-
     protected:
         friend class WebSocketImpl;
 
@@ -107,8 +103,6 @@ namespace litecore { namespace websocket {
         virtual void receiveComplete(WebSocketImpl*, size_t byteCount) =0;
 
         virtual void requestClose(WebSocketImpl*, int status, fleece::slice message) =0;
-
-        std::set<std::string> _protocols;
     };
 
 } }
