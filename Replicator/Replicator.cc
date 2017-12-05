@@ -32,6 +32,7 @@ namespace litecore { namespace repl {
                                              const websocket::Address &address,
                                              Worker::Options &options)
     {
+        options.setProperty(slice(kC4SocketOptionWSProtocols), Connection::kWSProtocolName);
         if (!options.properties[kC4ReplicatorOptionCookies]) {
             C4Address c4addr {
                 slice(address.scheme),

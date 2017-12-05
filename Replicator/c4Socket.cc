@@ -24,6 +24,9 @@ using namespace litecore;
 using namespace litecore::websocket;
 
 
+const char* const kC4SocketOptionWSProtocols = litecore::websocket::Provider::kProtocolsOption;
+
+
 namespace litecore { namespace websocket {
 
     C4Address c4AddressFrom(const Address &address) {

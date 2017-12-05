@@ -24,8 +24,6 @@ namespace litecore { namespace websocket {
 
         static CivetProvider& instance();
         
-        virtual void addProtocol(const std::string &protocol) override;
-
         /** Creates a client WebSocket to a given address. */
         virtual WebSocket* createWebSocket(const Address&,
                                            const fleeceapi::AllocedDict &options ={}) override;
@@ -40,8 +38,6 @@ namespace litecore { namespace websocket {
 
     private:
         static int connectHandler(const struct mg_connection *roConnection, void *context);
-
-        std::set<std::string> _protocols;
 };
 
 } }

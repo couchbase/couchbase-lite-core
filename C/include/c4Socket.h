@@ -35,6 +35,10 @@ extern "C" {
 
         kWebSocketCloseFirstAvailable   = 4000, // First unregistered code for freeform use
     };
+
+
+    // Socket option dictionary keys:
+    extern const char* const kC4SocketOptionWSProtocols; // Value for Sec-WebSocket-Protocol header
     
     
     /** A simple parsed-URL type */

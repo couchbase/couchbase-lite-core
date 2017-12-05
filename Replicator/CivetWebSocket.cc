@@ -135,12 +135,16 @@ namespace litecore { namespace websocket {
             stringstream extraHeaders;
             for (Dict::iterator header(_options[kC4ReplicatorOptionExtraHeaders].asDict());
                      header; ++header) {
-                extraHeaders << slice(header.keyString()).asString() << ": "
-                             << header.value().asstring() << "\r\n";
+                extraHeaders << slice(header.keyString()) << ": "
+                             << header.value() << "\r\n";
             }
             slice cookies = _options[kC4ReplicatorOptionCookies].asString();
             if (cookies)
-                extraHeaders << "Cookie: " << cookies.asString() << "\r\n";
+                extraHeaders << "Cookie: " << cookies << "\r\n";
+
+            slice protocols = _options[kC4SocketOptionWSProtocols].asString();
+            if (protocols)
+                extraHeaders << "Sec-WS-Protocols: " << protocols << "\r\n";
 
             auto &to = address();
             char errorStr[256];
@@ -376,11 +380,6 @@ namespace litecore { namespace websocket {
     }
 
 
-    void CivetProvider::addProtocol(const string &protocol) {
-        _protocols.insert(protocol);
-    }
-
-
     WebSocket* CivetProvider::createWebSocket(const Address &to,
                                               const AllocedDict &options) {
         return new CivetWebSocket(*this, to, options);
@@ -454,8 +453,10 @@ namespace litecore { namespace websocket {
         }
 
         void send(alloc_slice body, bool binary) {
-            _lastWriteSize += body.size;
-            socket->send(body, binary);
+            if (socket) {
+                _lastWriteSize += body.size;
+                socket->send(body, binary);
+            }
         }
 
         C4Socket *c4socket;
