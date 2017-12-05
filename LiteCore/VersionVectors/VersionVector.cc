@@ -16,6 +16,7 @@
 #include "VersionVector.hh"
 #include "SecureDigest.hh"
 #include "Error.hh"
+#include "StringUtil.hh"
 #include "Fleece.hh"
 #include "varint.hh"
 #include <sstream>
