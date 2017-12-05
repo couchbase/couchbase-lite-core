@@ -11,6 +11,7 @@
 #include "Codec.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include "varint.hh"
 #include <strstream>
 
@@ -121,8 +122,7 @@ namespace litecore { namespace blip {
             uint8_t tokenized[2] = {token, 0};
             out.write((char*)&tokenized, 2);
         } else {
-            out.write((char*)str.buf, str.size);
-            out << '\0';
+            out << str << '\0';
         }
     }
 

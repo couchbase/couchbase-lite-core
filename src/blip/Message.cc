@@ -12,6 +12,7 @@
 #include "BLIPInternal.hh"
 #include "Codec.hh"
 #include "FleeceCpp.hh"
+#include "StringUtil.hh"
 #include "varint.hh"
 #include <algorithm>
 #include <assert.h>
@@ -42,7 +43,9 @@ namespace litecore { namespace blip {
     }
 
 
-    static ostream& operator<< (ostream& o, fleece::slice s) {
+    // Writes a slice to a stream. If it contains non-ASCII characters, it will be written as hex
+    // inside "<<...>>". If empty, it's written as "<<>>".
+    static ostream& dumpSlice(ostream& o, fleece::slice s) {
         if (s.size == 0)
             return o << "<<>>";
         auto buf = (const uint8_t*)s.buf;
@@ -50,7 +53,7 @@ namespace litecore { namespace blip {
             if (buf[i] < 32 || buf[i] > 126)
                 return o << "<<" << s.hexString() << ">>";
         }
-        return o.write((char*)s.buf, s.size);
+        return o << s;
     }
 
 
@@ -72,11 +75,16 @@ namespace litecore { namespace blip {
 
             slice propertyName = MessageBuilder::untokenizeProperty(slice(key, endOfKey));
             slice propertyValue= MessageBuilder::untokenizeProperty(slice(val, endOfVal));
-            out << "\n\t" << propertyName << ": " << propertyValue;
+            out << "\n\t";
+            dumpSlice(out, propertyName);
+            out << ": ";
+            dumpSlice(out, propertyValue);
             key = endOfVal + 1;
         }
-        if (body.size > 0)
-            out << "\n\tBODY: " << body;
+        if (body.size > 0) {
+            out << "\n\tBODY: ";
+            dumpSlice(out, body);
+        }
         out << " }";
     }
 
