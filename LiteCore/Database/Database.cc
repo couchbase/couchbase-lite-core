@@ -18,7 +18,6 @@
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "DataFile.hh"
-#include "CASRevisionStore.hh"
 #include "Record.hh"
 #include "SequenceTracker.hh"
 #include "Fleece.hh"
@@ -109,9 +108,6 @@ namespace c4Internal {
         }
 
         switch (config.versioning) {
-            case kC4VersionVectors:
-                options.fleeceAccessor = VectorDocumentFactory::fleeceAccessor();
-                break;
             case kC4RevisionTrees:
                 options.fleeceAccessor = TreeDocumentFactory::fleeceAccessor();
                 break;

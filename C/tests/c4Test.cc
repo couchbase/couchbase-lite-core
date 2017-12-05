@@ -226,7 +226,7 @@ _versioning(kC4RevisionTrees)
     if (config.flags != sLastConfig.flags || config.versioning != sLastConfig.versioning) {
         fprintf(stderr, "            %s, %s\n",
                 config.storageEngine,
-                (config.versioning==kC4VersionVectors ? "version-vectors" : "rev-trees"));
+                (config.versioning==kC4RevisionTrees ? "rev-trees" : "?unknown versioning?"));
         sLastConfig = config;
     }
 

@@ -135,7 +135,6 @@ public:
     bool isSQLite() const                       {return storageType() == kC4SQLiteStorageEngine;}
     C4DocumentVersioning versioning() const     {return _versioning;}
     bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
-    bool isVersionVectors() const               {return _versioning == kC4VersionVectors;}
 
     void reopenDB();
     void deleteDatabase();

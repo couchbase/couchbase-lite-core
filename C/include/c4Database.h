@@ -39,8 +39,7 @@ extern "C" {
 
     /** Document versioning system (also determines database storage schema) */
     typedef C4_ENUM(uint32_t, C4DocumentVersioning) {
-        kC4RevisionTrees,           ///< CouchDB and Couchbase Mobile 1.x revision trees
-        kC4VersionVectors,          ///< Couchbase Mobile 2.x version vectors
+        kC4RevisionTrees,           ///< Revision trees
     };
 
     /** Encryption algorithms. */

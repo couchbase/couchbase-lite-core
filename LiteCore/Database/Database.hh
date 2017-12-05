@@ -23,7 +23,6 @@ namespace fleece {
     class SharedKeys;
 }
 namespace litecore {
-    class CASRevisionStore;
     class SequenceTracker;
     class BlobStore;
 }
@@ -166,22 +165,6 @@ namespace c4Internal {
         alloc_slice revIDFromVersion(slice version) override;
         bool isFirstGenRevID(slice revID) override;
         static DataFile::FleeceAccessor fleeceAccessor();
-    };
-
-
-    /** DocumentFactory subclass for version-vector (RevisionStore) document schema. */
-    class VectorDocumentFactory : public DocumentFactory {
-    public:
-        VectorDocumentFactory(Database *db);
-        Document* newDocumentInstance(C4Slice docID) override;
-        Document* newDocumentInstance(const Record&) override;
-        alloc_slice revIDFromVersion(slice version) override;
-        static DataFile::FleeceAccessor fleeceAccessor()        {return nullptr;}
-
-        CASRevisionStore& revisionStore();
-
-    private:
-        unique_ptr<CASRevisionStore> _revisionStore;
     };
 
 }

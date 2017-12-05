@@ -490,7 +490,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
-    if (isVersionVectors())
+    if (!isRevTrees())
         return;
 
     const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");

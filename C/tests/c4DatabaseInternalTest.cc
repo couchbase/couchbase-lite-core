@@ -207,7 +207,7 @@ public:
 
 // test01_CRUD
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
-    if(isVersionVectors()) return;
+    if(!isRevTrees()) return;
     
     C4Error c4err;
     C4String body = C4STR("{\"foo\":1, \"bar\":false}");
@@ -430,7 +430,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "EmptyDoc", "[Database][C]") {
     // Test case for issue #44, which is caused by a bug in CBLJSON.
     
-    if(isVersionVectors()) return;
+    if(!isRevTrees()) return;
     
     // Create a document:
     C4Document* doc = putDoc(kC4SliceNull, kC4SliceNull, C4STR("{}"));
@@ -459,7 +459,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "EmptyDoc", "[Database][C]") {
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]") {
     // It's not strictly required that revisions always generate the same revIDs, but it helps
     // prevent false conflicts when two peers make the same change to the same parent revision.
-    if(isVersionVectors()) return;
+    if(!isRevTrees()) return;
     
     // Create a document:
     C4Document* doc = putDoc(C4STR("doc"), kC4SliceNull, C4STR("{\"property\":\"value\"}"));
@@ -491,7 +491,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     // Test that it's possible to delete a document by PUTting a revision with _deleted=true,
     // and that the saved deleted revision will preserve any extra properties.
     
-    if(isVersionVectors()) return;
+    if(!isRevTrees()) return;
     
     // Create a document:
     C4String body1 = C4STR("{\"property\":\"newvalue\"}");
@@ -539,7 +539,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][C]") {
     // Test case for issue #205: Create a doc, delete it, create it again with the same content.
     
-    if(isVersionVectors()) return;
+    if(!isRevTrees()) return;
     
     // Create a document:
     C4String body = C4STR("{\"property\":\"value\"}");
@@ -570,7 +570,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
 
 // test06_RevTree
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
-    if(isVersionVectors()) return;
+    if(!isRevTrees()) return;
     
     // TODO: Observer
     
@@ -723,7 +723,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
 
 // test07_RevTreeConflict
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTreeConflict", "[Database][C]") {
-    if(isVersionVectors()) return;
+    if(!isRevTrees()) return;
     
     // Track the latest database-change notification that's posted:
     
@@ -748,7 +748,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTreeConflict", "[Database][C]
 
 // test08_DeterministicRevIDs
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeterministicRevIDs", "[Database][C]") {
-    if(isVersionVectors()) return;
+    if(!isRevTrees()) return;
     
     C4String docID = C4STR("mydoc");
     C4String body = C4STR("{\"key\":\"value\"}");
@@ -768,7 +768,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeterministicRevIDs", "[Database
 
 // test09_DuplicateRev
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DuplicateRev", "[Database][C]") {
-    if(isVersionVectors()) return;
+    if(!isRevTrees()) return;
     
     // rev1
     C4String docID = C4STR("mydoc");

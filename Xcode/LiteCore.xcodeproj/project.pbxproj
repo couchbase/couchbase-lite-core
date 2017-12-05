@@ -33,7 +33,6 @@
 		2705154E1D8CBE6C00D62D05 /* c4Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4Query.cc */; };
 		270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270515601D91C2AE00D62D05 /* c4PerfTest.cc */; };
-		2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE371CF3A0F10022F721 /* VersionVector.hh */; };
 		2708FE551CF4CCCE0022F721 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		2708FE561CF4CD170022F721 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */; };
@@ -225,9 +224,6 @@
 		2796917C1ED4B5780086565D /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		279691981ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */; };
 		279691991ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */; };
-		279794A11D305EC2001D0F3A /* Revision.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2797949E1D305EC2001D0F3A /* Revision.hh */; };
-		279794A81D307626001D0F3A /* RevisionStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279794A51D307626001D0F3A /* RevisionStore.hh */; };
-		279794B01D3405CD001D0F3A /* CASRevisionStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
@@ -958,9 +954,6 @@
 		2705155E1D909CC700D62D05 /* XcodeWarnings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XcodeWarnings.xcconfig; sourceTree = "<group>"; };
 		2705155F1D90A29F00D62D05 /* Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tests.xcconfig; sourceTree = "<group>"; };
 		270515601D91C2AE00D62D05 /* c4PerfTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4PerfTest.cc; sourceTree = "<group>"; };
-		2708FE361CF3A0F10022F721 /* VersionVector.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVector.cc; sourceTree = "<group>"; };
-		2708FE371CF3A0F10022F721 /* VersionVector.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VersionVector.hh; sourceTree = "<group>"; };
-		2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionVectorTest.cc; sourceTree = "<group>"; };
 		2708FE521CF4CC880022F721 /* LiteCoreCppTests */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LiteCoreCppTests; sourceTree = BUILT_PRODUCTS_DIR; };
 		2708FE591CF4D0450022F721 /* LiteCoreTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LiteCoreTest.hh; sourceTree = "<group>"; };
 		2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LiteCoreTest.cc; sourceTree = "<group>"; };
@@ -974,7 +967,6 @@
 		270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogEncoderTest.cc; sourceTree = "<group>"; };
 		270C6BA11EBA74D800E73415 /* litecorelog */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = litecorelog; sourceTree = BUILT_PRODUCTS_DIR; };
 		270C6BA81EBA754300E73415 /* litecorelog.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = litecorelog.cc; sourceTree = "<group>"; };
-		271057D31D3D70780018247B /* VectorDocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VectorDocument.cc; sourceTree = "<group>"; };
 		271057D61D3D70B10018247B /* Document.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Document.hh; sourceTree = "<group>"; };
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B3018F8E9750021A9A3 /* LiteCore Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LiteCore Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -995,7 +987,6 @@
 		272851281EA46421009CA22F /* Request.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Request.hh; sourceTree = "<group>"; };
 		2728512C1EA46475009CA22F /* Server.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Server.cc; sourceTree = "<group>"; };
 		2728512D1EA46475009CA22F /* Server.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Server.hh; sourceTree = "<group>"; };
-		27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CASRevisionStoreTest.cc; sourceTree = "<group>"; };
 		272AEC3F1F55D87500051F0A /* StringUtil_icu.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtil_icu.cc; sourceTree = "<group>"; };
 		272AEC431F55D87500051F0A /* StringUtil_winapi.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = StringUtil_winapi.cc; sourceTree = "<group>"; };
 		272AEC5B1F560FF600051F0A /* cblite */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cblite; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1155,7 +1146,6 @@
 		276E021A1EA983EE00FEFE8A /* Response.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Response.hh; sourceTree = "<group>"; };
 		27700DFD1FB642B80005D48E /* Increment.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Increment.hh; sourceTree = "<group>"; };
 		277015081D523E2E008BADD7 /* DataFileTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFileTest.cc; sourceTree = "<group>"; };
-		2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = VersionedDocumentTests.cc; sourceTree = "<group>"; };
 		2771B00E1FB23DD800C6B794 /* stopwords_fr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_fr.h; sourceTree = "<group>"; };
 		2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+Indexes.cc"; sourceTree = "<group>"; };
 		2773FCF41E6783A000108780 /* Checkpoint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Checkpoint.cc; sourceTree = "<group>"; };
@@ -1178,14 +1168,6 @@
 		278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseCookies.hh; sourceTree = "<group>"; };
 		279691631ED4B29E0086565D /* libSupport.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libSupport.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "c4Listener+RESTFactory.cc"; sourceTree = "<group>"; };
-		2797949D1D305EC2001D0F3A /* Revision.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Revision.cc; sourceTree = "<group>"; };
-		2797949E1D305EC2001D0F3A /* Revision.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Revision.hh; sourceTree = "<group>"; };
-		279794A41D307626001D0F3A /* RevisionStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionStore.cc; sourceTree = "<group>"; };
-		279794A51D307626001D0F3A /* RevisionStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RevisionStore.hh; sourceTree = "<group>"; };
-		279794AC1D3405CD001D0F3A /* CASRevisionStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CASRevisionStore.cc; sourceTree = "<group>"; };
-		279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CASRevisionStore.hh; sourceTree = "<group>"; };
-		279794B31D34583A001D0F3A /* RevisionTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionTest.cc; sourceTree = "<group>"; };
-		279794B91D355A31001D0F3A /* RevisionStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RevisionStoreTest.cc; sourceTree = "<group>"; };
 		2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4AllDocsPerformanceTest.cc; sourceTree = "<group>"; };
 		279976311E94AAD000B27639 /* IncomingBlob.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IncomingBlob.cc; sourceTree = "<group>"; };
 		279976321E94AAD000B27639 /* IncomingBlob.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingBlob.hh; sourceTree = "<group>"; };
@@ -1628,20 +1610,15 @@
 			isa = PBXGroup;
 			children = (
 				275FF6D11E4947E1005F90DD /* c4BaseTest.cc */,
-				27297A191D36C0EA0006C2F8 /* CASRevisionStoreTest.cc */,
 				277015081D523E2E008BADD7 /* DataFileTest.cc */,
 				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
 				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
 				27E6737C1EC78144008F50C4 /* QueryTest.cc */,
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
 				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
-				279794B91D355A31001D0F3A /* RevisionStoreTest.cc */,
-				279794B31D34583A001D0F3A /* RevisionTest.cc */,
 				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
 				27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */,
 				272850B41E9BE361009CA22F /* UpgraderTest.cc */,
-				2770151B1D5284AA008BADD7 /* VersionedDocumentTests.cc */,
-				2708FE3B1CF4C8630022F721 /* VersionVectorTest.cc */,
 				2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */,
 				2708FE591CF4D0450022F721 /* LiteCoreTest.hh */,
 				274D040A1BA75E1C00FF7C35 /* main.cpp */,
@@ -2044,7 +2021,6 @@
 				277C14701EA8102B0075348F /* Document.cc */,
 				271057D61D3D70B10018247B /* Document.hh */,
 				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
-				271057D31D3D70780018247B /* VectorDocument.cc */,
 				276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */,
 				276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */,
 				272850A91E9AF53B009CA22F /* Upgrader.cc */,
@@ -2095,21 +2071,6 @@
 				276E02101EA9717200FEFE8A /* ListenerTest.cc */,
 			);
 			path = tests;
-			sourceTree = "<group>";
-		};
-		279794A91D3187E8001D0F3A /* VersionVectors */ = {
-			isa = PBXGroup;
-			children = (
-				279794A41D307626001D0F3A /* RevisionStore.cc */,
-				279794AC1D3405CD001D0F3A /* CASRevisionStore.cc */,
-				2797949D1D305EC2001D0F3A /* Revision.cc */,
-				2708FE361CF3A0F10022F721 /* VersionVector.cc */,
-				279794A51D307626001D0F3A /* RevisionStore.hh */,
-				279794AD1D3405CD001D0F3A /* CASRevisionStore.hh */,
-				2797949E1D305EC2001D0F3A /* Revision.hh */,
-				2708FE371CF3A0F10022F721 /* VersionVector.hh */,
-			);
-			path = VersionVectors;
 			sourceTree = "<group>";
 		};
 		27A924951D9B316D00086206 /* LiteCore iOS */ = {
@@ -2290,7 +2251,6 @@
 			children = (
 				276683B31DC7DCBC00E3F187 /* Database */,
 				27D74A5F1D4C063A00D806E0 /* Storage */,
-				279794A91D3187E8001D0F3A /* VersionVectors */,
 				273E9F7C1C518678003115A6 /* Rev-Trees */,
 				276D153D1DFF528B00543B1B /* Query */,
 				276CD4251D77E8F7001346A3 /* Blobs */,
@@ -2593,7 +2553,6 @@
 				2749B94D1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */,
 				27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */,
 				27D74A911D4D3F3400D806E0 /* Column.h in Headers */,
-				279794A11D305EC2001D0F3A /* Revision.hh in Headers */,
 				27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */,
 				273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */,
 				27D74A921D4D3F3400D806E0 /* Database.h in Headers */,
@@ -2611,7 +2570,6 @@
 				272851301EA46475009CA22F /* Server.hh in Headers */,
 				274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */,
 				272851241EA4537A009CA22F /* RESTListener.hh in Headers */,
-				279794A81D307626001D0F3A /* RevisionStore.hh in Headers */,
 				278963641D7A376900493096 /* EncryptedStream.hh in Headers */,
 				27E89BA81D679542002C32B3 /* FilePath.hh in Headers */,
 				72A3AF8D1F425134001E16D4 /* PrebuiltCopier.hh in Headers */,
@@ -2624,11 +2582,9 @@
 				27E3DD391DB450B300F2872D /* Logging.hh in Headers */,
 				2753AFE61EC2363600C12E98 /* CivetWebSocket.hh in Headers */,
 				27D74A971D4D3F3400D806E0 /* VariadicBind.h in Headers */,
-				2708FE3A1CF3A0F10022F721 /* VersionVector.hh in Headers */,
 				278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */,
 				2728512B1EA46421009CA22F /* Request.hh in Headers */,
 				27D74A941D4D3F3400D806E0 /* SQLiteCpp.h in Headers */,
-				279794B01D3405CD001D0F3A /* CASRevisionStore.hh in Headers */,
 				273E9ED91C506DB4003115A6 /* SecureRandomize.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
