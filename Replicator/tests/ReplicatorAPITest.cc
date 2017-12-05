@@ -42,6 +42,18 @@ TEST_CASE("URL Parsing") {
     CHECK(address.path == "/"_sl);
     CHECK(dbName == "dbname"_sl);
 
+    REQUIRE(c4repl_parseURL("blips://localhost/path/to/dbname"_sl, &address, &dbName));
+    REQUIRE(c4repl_parseURL("blips://localhost/path/to/dbname/"_sl, &address, &dbName));
+    CHECK(address.scheme == "blips"_sl);
+    CHECK(address.hostname == "localhost"_sl);
+    CHECK(address.port == 443);
+    CHECK(address.path == "/path/to/"_sl);
+    CHECK(dbName == "dbname"_sl);
+
+    REQUIRE(c4repl_parseURL("blips://localhost/d"_sl, &address, &dbName));
+    REQUIRE(c4repl_parseURL("blips://localhost/p/d/"_sl, &address, &dbName));
+    REQUIRE(c4repl_parseURL("blips://localhost//p//d/"_sl, &address, &dbName));
+
     ExpectingExceptions x;
     REQUIRE(!c4repl_parseURL(""_sl, &address, &dbName));
     REQUIRE(!c4repl_parseURL("blip:"_sl, &address, &dbName));

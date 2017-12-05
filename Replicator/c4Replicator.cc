@@ -54,11 +54,11 @@ bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName) {
     str.moveStart(3);
 
     colon = str.findByteOrEnd(':');
-    auto slash = str.findByteOrEnd('/');
-    if (colon < slash) {
+    auto pathStart = str.findByteOrEnd('/');
+    if (colon < pathStart) {
         int port;
         try {
-            port = stoi(slice(colon+1, slash).asString());
+            port = stoi(slice(colon+1, pathStart).asString());
         } catch (...) {
             return false;
         }
@@ -66,17 +66,21 @@ bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName) {
             return false;
         address->port = (uint16_t)port;
     } else {
-        colon = slash;
+        colon = pathStart;
     }
     address->hostname = slice(str.buf, colon);
-    str.setStart(slash);
-    if (str.size == 0)
+
+    if (pathStart >= str.end())
         return false;
-    address->path = "/"_sl;
-    if (str[0] == '/')
-        str.moveStart(1);
+    str.setStart(pathStart + 1);
+
     if (str.hasSuffix("/"_sl))
         str.setSize(str.size - 1);
+    const uint8_t *slash;
+    while ((slash = str.findByte('/')) != nullptr)
+        str.setStart(slash + 1);
+
+    address->path = slice(pathStart, str.buf);
     *dbName = str;
     return c4repl_isValidDatabaseName(toc4slice(str));
 }

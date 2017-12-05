@@ -44,10 +44,15 @@ namespace litecore { namespace websocket {
 
     
     websocket::Address addressFrom(const C4Address &addr, slice remoteDatabaseName) {
+        stringstream path;
+        path << addr.path;
+        if (!slice(addr.path).hasSuffix("/"_sl))
+            path << '/';
+        path << remoteDatabaseName << "/_blipsync";
         return websocket::Address(asstring(addr.scheme),
                                   asstring(addr.hostname),
                                   addr.port,
-                                  format("/%.*s/_blipsync", SPLAT(remoteDatabaseName)));
+                                  path.str());
     }
 
 
