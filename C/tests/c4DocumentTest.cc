@@ -229,6 +229,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][C]") {
     REQUIRE(c4db_endTransaction(db, true, &err));
     
     REQUIRE(c4db_beginTransaction(db, &err));
+    CHECK(c4doc_purgeRevision(doc, kRev2ID, &err) == 0);
     REQUIRE(c4doc_purgeRevision(doc, kC4SliceNull, &err) == 4);
     REQUIRE(c4doc_save(doc, 20, &err));
     c4doc_free(doc);

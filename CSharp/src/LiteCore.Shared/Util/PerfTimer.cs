@@ -24,6 +24,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+using JetBrains.Annotations;
+
 namespace LiteCore.Util
 {
     /// <summary>
@@ -33,12 +35,18 @@ namespace LiteCore.Util
     {
         #region Constants
 
+        [NotNull]
         private static readonly ConcurrentDictionary<string, LinkedList<PerfEvent>> _EventMap = 
             new ConcurrentDictionary<string, LinkedList<PerfEvent>>();
 
         #endregion
 
         #region Public Methods
+
+        public static void StartRun()
+        {
+            GC.GetTotalMemory(false);
+        }
 
         /// <summary>
         /// Starts a new performance event
@@ -102,13 +110,26 @@ namespace LiteCore.Util
     {
         #region Variables
 
-        private Stopwatch _sw;
+        [NotNull]private readonly Stopwatch _sw = new Stopwatch();
+        private long _startMemory;
+        private long _endMemory;
+        [NotNull]private readonly int[] _startCollections= { 0, 0, 0 };
+        [NotNull]private readonly int[] _endCollections = { 0, 0, 0 };
 
         #endregion
 
         #region Properties
 
         internal TimeSpan Elapsed => _sw.Elapsed;
+
+        internal int[] Collections => new[]
+        {
+            _endCollections[0] - _startCollections[0],
+            _endCollections[1] - _startCollections[1],
+            _endCollections[2] - _startCollections[2]
+        };
+
+        internal long GcHeapDelta => _endMemory - _startMemory;
 
         internal string Name { get; }
 
@@ -127,12 +148,20 @@ namespace LiteCore.Util
 
         internal void StartTiming()
         {
-            _sw = Stopwatch.StartNew();
+            _sw.Start();
+            _startMemory = GC.GetTotalMemory(false);
+            _startCollections[0] = GC.CollectionCount(0);
+            _startCollections[1] = GC.CollectionCount(1);
+            _startCollections[2] = GC.CollectionCount(2);
         }
 
         internal void StopTiming()
         {
             _sw.Stop();
+            _endMemory = GC.GetTotalMemory(false);
+            _endCollections[0] = GC.CollectionCount(0);
+            _endCollections[1] = GC.CollectionCount(1);
+            _endCollections[2] = GC.CollectionCount(2);
         }
 
         #endregion

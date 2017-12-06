@@ -63,7 +63,6 @@ namespace LiteCore.Interop
     enum C4DocumentVersioning : uint
     {
         RevisionTrees,
-        VersionVectors,
     }
 
 #if LITECORE_PACKAGED

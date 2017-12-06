@@ -813,25 +813,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DuplicateRev", "[Database][C]") 
 
 #pragma mark - MISC.:
 
-// test16_ReplicatorSequences
-// test17_LocalDocs
 // test18_FindMissingRevisions
-// test19_Purge
-// test20_PurgeRevs
-// test21_DeleteDatabase
-
-// test22_Manager_Close
-// NOTE: Manager is eliminated from 2.0
-
 // test23_MakeRevisionHistoryDict
-
-// test24_UpgradeDB
-// NOTE: Upgrade from v1.x is not yet implemented
-
 // test25_FileProtection
-// test26_ReAddAfterPurge
 // test27_ChangesSinceSequence
-// test28_enableAutoCompact
 // test29_autoPruneOnPut
 // test29_autoPruneOnForceInsert
 // test30_conflictAfterPrune

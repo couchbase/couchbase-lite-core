@@ -42,13 +42,9 @@ namespace LiteCore.Interop
             internal_info = 0;
         }
 
-        public C4Error(SQLiteStatus code) : this(C4ErrorDomain.SQLiteDomain, (int)code)
-        {
-            
-        }
-
         public C4Error(C4ErrorCode code) : this(C4ErrorDomain.LiteCoreDomain, (int)code)
         {
+
         }
 
         public C4Error(FLError code) : this(C4ErrorDomain.FleeceDomain, (int)code)
@@ -59,6 +55,11 @@ namespace LiteCore.Interop
         public C4Error(C4NetworkErrorCode code) : this(C4ErrorDomain.NetworkDomain, (int) code)
         {
             
+        }
+
+        public C4Error(PosixStatus code) : this(C4ErrorDomain.POSIXDomain, (int) code)
+        {
+
         }
 
         public override int GetHashCode()
