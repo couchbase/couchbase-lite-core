@@ -101,7 +101,7 @@ namespace LiteCore.Tests
         protected override void SetupVariant(int option)
         {
             _objectCount = Native.c4_getObjectCount();
-            Versioning = option > 1 ? C4DocumentVersioning.VersionVectors : C4DocumentVersioning.RevisionTrees;
+            Versioning = C4DocumentVersioning.RevisionTrees;
             Native.c4_shutdown(null);
 
             var config = new C4DatabaseConfig();
