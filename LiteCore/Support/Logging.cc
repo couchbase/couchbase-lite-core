@@ -50,7 +50,7 @@ namespace litecore {
 
     static void defaultCallback(const LogDomain&, LogLevel, const char *message, va_list);
 
-    LogLevel LogDomain::sCallbackMinLevel = LogLevel::Info;
+    LogLevel LogDomain::sCallbackMinLevel = LogLevel::Uninitialized;
     static LogDomain::Callback_t sCallback = defaultCallback;
     static bool sCallbackPreformatted = false;
     LogLevel LogDomain::sFileMinLevel = LogLevel::None;
@@ -59,7 +59,7 @@ namespace litecore {
     static mutex sLogMutex;
 
 
-#pragma mark - INITIALIZATION:
+#pragma mark - GLOBAL SETTINGS:
 
 
     void LogDomain::setCallback(Callback_t callback, bool preformatted, LogLevel atLevel) {
@@ -67,7 +67,7 @@ namespace litecore {
         sCallbackMinLevel = callback ? atLevel : LogLevel::None;
         sCallback = callback;
         sCallbackPreformatted = preformatted;
-        invalidateEffectiveLevels();
+        _invalidateEffectiveLevels();
     }
 
 
@@ -104,54 +104,83 @@ namespace litecore {
                 });
             });
         }
-        invalidateEffectiveLevels();
+        _invalidateEffectiveLevels();
     }
 
 
     void LogDomain::setCallbackLogLevel(LogLevel level) noexcept {
         unique_lock<mutex> lock(sLogMutex);
-        sCallbackMinLevel = level;
-        invalidateEffectiveLevels();
+
+        // Setting "LiteCoreLog" env var forces a minimum level of logging:
+        auto envLevel = kC4Cpp_DefaultLog.levelFromEnvironment();
+        if (envLevel != LogLevel::Uninitialized)
+            level = min(level, envLevel);
+
+        if (level != sCallbackMinLevel) {
+            sCallbackMinLevel = level;
+            _invalidateEffectiveLevels();
+        }
     }
 
     void LogDomain::setFileLogLevel(LogLevel level) noexcept {
         unique_lock<mutex> lock(sLogMutex);
-        sFileMinLevel = level;
-        invalidateEffectiveLevels();
+        if (level != sFileMinLevel) {
+            sFileMinLevel = level;
+            _invalidateEffectiveLevels();
+        }
     }
 
 
-    void LogDomain::invalidateEffectiveLevels() noexcept {
+    // Only call while holding sLogMutex!
+    void LogDomain::_invalidateEffectiveLevels() noexcept {
         for (auto d = sFirstDomain; d; d = d->_next)
             d->_effectiveLevel = LogLevel::Uninitialized;
     }
 
 
-    LogLevel LogDomain::computeLevel() noexcept {
-        if (_effectiveLevel == LogLevel::Uninitialized) {
-            LogLevel level = _level;
-#if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-            // Use the level specified in the environment, if any:
-            char *val = getenv((string("LiteCoreLog") + _name).c_str());
-            if (val) {
+    LogLevel LogDomain::callbackLogLevel() noexcept {
+        unique_lock<mutex> lock(sLogMutex);
+        return _callbackLogLevel();
+    }
+
+    // Only call while holding sLogMutex!
+    LogLevel LogDomain::_callbackLogLevel() noexcept {
+        auto level = sCallbackMinLevel;
+        if (level == LogLevel::Uninitialized) {
+            // Allow 'LiteCoreLog' env var to set initial callback level:
+            level = kC4Cpp_DefaultLog.levelFromEnvironment();
+            if (level == LogLevel::Uninitialized)
                 level = LogLevel::Info;
-                static const char* const kLevelNames[] = {"debug", "verbose", "info",
-                                                          "warning", "error", "none", nullptr};
-                for (int i = 0; kLevelNames[i]; i++) {
-                    if (0 == strcasecmp(val, kLevelNames[i])) {
-                        level = LogLevel(i);
-                        break;
-                    }
-                }
-                // Setting "LiteCoreLog" also sets the callback level to this level:
-                if (this == &kC4Cpp_DefaultLog) {
-                    unique_lock<mutex> lock(sLogMutex);
-                    sCallbackMinLevel = min(sCallbackMinLevel, level);
-                }
-            }
-#endif
-            setLevel(level);
+            sCallbackMinLevel = level;
         }
+        return level;
+    }
+
+
+#pragma mark - INITIALIZATION:
+
+
+    // Returns the LogLevel override set by an environment variable, or Uninitialized if none
+    LogLevel LogDomain::levelFromEnvironment() const noexcept {
+#if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+        char *val = getenv((string("LiteCoreLog") + _name).c_str());
+        if (val) {
+            static const char* const kLevelNames[] = {"debug", "verbose", "info",
+                "warning", "error", "none", nullptr};
+            for (int i = 0; kLevelNames[i]; i++) {
+                if (0 == strcasecmp(val, kLevelNames[i]))
+                    return LogLevel(i);
+            }
+            return LogLevel::Info;
+        }
+#endif
+        return LogLevel::Uninitialized;
+    }
+
+
+    LogLevel LogDomain::computeLevel() noexcept {
+        if (_effectiveLevel == LogLevel::Uninitialized)
+            setLevel(_level);
         return _level;
     }
 
@@ -162,11 +191,17 @@ namespace litecore {
 
 
     void LogDomain::setLevel(litecore::LogLevel level) noexcept {
-        unique_lock<mutex> lock(sLogMutex);     // synchronize access to sCallbackMinLevel
+        unique_lock<mutex> lock(sLogMutex);
+
+        // Setting "LiteCoreLog___" env var forces a minimum level:
+        auto envLevel = levelFromEnvironment();
+        if (envLevel != LogLevel::Uninitialized)
+            level = min(level, envLevel);
+
         _level = level;
         // The effective level is the level at which I will actually trigger because there is
         // a place for my output to go:
-        _effectiveLevel = max((LogLevel)_level, min(sCallbackMinLevel, sFileMinLevel));
+        _effectiveLevel = max((LogLevel)_level, min(_callbackLogLevel(), sFileMinLevel));
     }
 
 
@@ -196,7 +231,7 @@ namespace litecore {
         unique_lock<mutex> lock(sLogMutex);
 
         // Invoke the client callback:
-        if (sCallback && level >= sCallbackMinLevel) {
+        if (sCallback && level >= _callbackLogLevel()) {
             va_list args2;
             va_copy(args2, args);
             if (sCallbackPreformatted) {
@@ -284,7 +319,7 @@ namespace litecore {
         else
             objRef = ++_lastObjRef;
 
-        if (sCallback && level >= sCallbackMinLevel)
+        if (sCallback && level >= _callbackLogLevel())
             invokeCallback(*this, level, "{%u}--> %s", objRef, description.c_str());
         return objRef;
     }

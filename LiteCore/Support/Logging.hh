@@ -96,7 +96,7 @@ public:
                                    LogLevel atLevel,
                                    const std::string &initialMessage);
 
-    static LogLevel callbackLogLevel() noexcept         {return sCallbackMinLevel;}
+    static LogLevel callbackLogLevel() noexcept;
     static LogLevel fileLogLevel() noexcept             {return sFileMinLevel;}
     static void setCallbackLogLevel(LogLevel) noexcept;
     static void setFileLogLevel(LogLevel) noexcept;
@@ -107,8 +107,10 @@ private:
     void vlog(LogLevel level, unsigned obj, const char *fmt, va_list);
 
 private:
+    static LogLevel _callbackLogLevel() noexcept;
     LogLevel computeLevel() noexcept;
-    static void invalidateEffectiveLevels() noexcept;
+    LogLevel levelFromEnvironment() const noexcept;
+    static void _invalidateEffectiveLevels() noexcept;
 
     std::atomic<LogLevel> _effectiveLevel {LogLevel::Uninitialized};
     std::atomic<LogLevel> _level;
