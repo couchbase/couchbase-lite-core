@@ -251,6 +251,7 @@ namespace litecore { namespace repl {
         log("Connection closed with %-s %d: \"%.*s\"",
             status.reasonName(), status.code, SPLAT(status.message));
 
+        bool closedByPeer = (_connectionState != Connection::kClosing);
         _connectionState = state;
 
         _checkpoint.stopAutosave();
@@ -263,15 +264,17 @@ namespace litecore { namespace repl {
         if (_puller)
             _puller->connectionClosed();
 
+        if (status.isNormal() && closedByPeer) {
+            log("I didn't initiate the close; treating this as code 1001 (GoingAway)");
+            status.code = websocket::kCodeGoingAway;
+            status.message = alloc_slice("WebSocket connection closed by peer");
+        }
         _closeStatus = status;
 
         static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain, NetworkDomain};
 
         // If this was an unclean close, set my error property:
-        if (status.reason != websocket::kWebSocketClose
-                || (status.code != websocket::kCodeNormal
-                    && status.code != websocket::kCodeGoingAway))
-        {
+        if (status.reason != websocket::kWebSocketClose || status.code != websocket::kCodeNormal) {
             int code = status.code;
             C4ErrorDomain domain;
             if (status.reason < sizeof(kDomainForReason)/sizeof(C4ErrorDomain))
