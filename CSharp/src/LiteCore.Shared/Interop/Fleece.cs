@@ -184,8 +184,8 @@ namespace LiteCore.Interop
                     if (retVal.Length == 0) {
                         return retVal;
                     }
-
-                    var i = default(FLArrayIterator);
+                    
+                    FLArrayIterator i;
                     Native.FLArrayIterator_Begin(arr, &i);
                     int pos = 0;
                     do {
@@ -207,7 +207,7 @@ namespace LiteCore.Interop
                         return retVal;
                     }
 
-                    var i = default(FLDictIterator);
+                    FLDictIterator i;
                     Native.FLDictIterator_Begin(dict, &i);
                     do {
                         var rawKey = Native.FLDictIterator_GetKey(&i);

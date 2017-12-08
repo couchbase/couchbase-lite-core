@@ -182,7 +182,7 @@ namespace LiteCore.Interop
         {
             Debug.Assert(block != null);
 
-            var err = default(C4Error);
+            C4Error err;
             if(block(&err) || err.code == 0) {
                 Exception = null;
                 return true;
@@ -197,7 +197,7 @@ namespace LiteCore.Interop
         { 
             Debug.Assert(block != null);
 
-            var err = default(C4Error);
+            C4Error err;
             var retVal = block(&err);
             if(retVal != null || err.code == 0) {
                 Exception = null;
@@ -213,7 +213,7 @@ namespace LiteCore.Interop
         {
             Debug.Assert(block != null);
 
-            var err = default(C4Error);
+            C4Error err;
             var retVal = block(&err);
             if(retVal >= 0 || err.code == 0) {
                 Exception = null;
@@ -229,7 +229,7 @@ namespace LiteCore.Interop
         {
             Debug.Assert(block != null);
 
-            var err = default(C4Error);
+            C4Error err;
             var retVal = block(&err);
             if(retVal.buf != null || err.code == 0) {
                 Exception = null;
