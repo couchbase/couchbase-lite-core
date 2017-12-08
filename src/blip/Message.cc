@@ -120,7 +120,22 @@ namespace litecore { namespace blip {
             _rawBytesReceived += frame.size;
             acknowledge(frame.size);
 
-            slice checksumPos = frame.read(4);     // Skip past checksum at start
+            auto mode = (frameFlags & kCompressed) ? Codec::Mode::SyncFlush : Codec::Mode::Raw;
+
+            // Copy and remove the checksum from the end of the frame:
+            uint8_t checksum[Codec::kChecksumSize];
+            auto trailer = (void*)&frame[frame.size - Codec::kChecksumSize];
+            memcpy(checksum, trailer, Codec::kChecksumSize);
+            if (mode == Codec::Mode::SyncFlush) {
+                // Replace checksum with the untransmitted deflate empty-block trailer,
+                // which is conveniently the same size:
+                static_assert(Codec::kChecksumSize == 4,
+                              "Checksum not same size as deflate trailer");
+                memcpy(trailer, "\x00\x00\xFF\xFF", 4);
+            } else {
+                // In uncompressed message, just trim off the checksum:
+                frame.setSize(frame.size - Codec::kChecksumSize);
+            }
 
             bool justFinishedProperties = false;
             if (!_in) {
@@ -136,7 +151,7 @@ namespace litecore { namespace blip {
                 // start of the frame):
                 char buf[kMaxVarintLen32];
                 slice dst(buf, sizeof(buf));
-                codec.write(frame, dst);
+                codec.write(frame, dst, mode);
                 dst = slice(buf, dst.buf);
                 // Decode the properties length:
                 if (!ReadUVarInt32(&dst, &_propertiesSize))
@@ -156,7 +171,7 @@ namespace litecore { namespace blip {
 
             if (_propertiesRemaining.size > 0) {
                 // Read into properties buffer:
-                codec.write(frame, _propertiesRemaining);
+                codec.write(frame, _propertiesRemaining, mode);
                 if (_propertiesRemaining.size == 0)
                     justFinishedProperties = true;
             }
@@ -178,10 +193,11 @@ namespace litecore { namespace blip {
 
             if (_propertiesRemaining.size == 0) {
                 // Read/decompress the frame into _in:
-                readFrame(codec, frame, frameFlags);
+                readFrame(codec, int(mode), frame, frameFlags);
             }
 
-            codec.readAndVerifyChecksum(checksumPos);
+            slice checksumSlice{checksum, Codec::kChecksumSize};
+            codec.readAndVerifyChecksum(checksumSlice);
 
             bodyBytesReceived = _in->bytesWritten();
 
@@ -229,11 +245,11 @@ namespace litecore { namespace blip {
     }
 
 
-    void MessageIn::readFrame(Codec &codec, slice &frame, bool finalFrame) {
+    void MessageIn::readFrame(Codec &codec, int mode, slice &frame, bool finalFrame) {
         uint8_t buffer[4096];
         while (frame.size > 0) {
             slice output {buffer, sizeof(buffer)};
-            codec.write(frame, output);
+            codec.write(frame, output, Codec::Mode(mode));
             if (output.buf > buffer)
                 _in->writeRaw(slice(buffer, output.buf));
         }

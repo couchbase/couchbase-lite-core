@@ -10,6 +10,7 @@
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
 #include "Codec.hh"
+#include "Error.hh"
 #include "varint.hh"
 #include <algorithm>
 
@@ -46,30 +47,38 @@ namespace litecore { namespace blip {
 
         slice frame;
         size_t frameSize = dst.size;
+        dst.setSize(dst.size - Codec::kChecksumSize);          // Reserve room for checksum at end
 
-        auto checksumPos = dst.read(4);     // Leave 4 bytes for checksum at start
-
-        bool allWritten, moreComing;
+        auto mode = hasFlag(kCompressed) ? Codec::Mode::SyncFlush : Codec::Mode::Raw;
+        bool moreComing;
         if (_unsentPayload.size > 0) {
             // Send data from my payload:
-            allWritten = codec.write(_unsentPayload, dst);
+            codec.write(_unsentPayload, dst, mode);
             moreComing = _unsentPayload.size > 0 || _dataSource != nullptr;
         } else {
             // Send data from data-source:
-            allWritten = moreComing = true;
-            while (_dataSourceMoreComing && allWritten && dst.size >= 1024) {
+            moreComing = true;
+            while (_dataSourceMoreComing && dst.size >= 1024) {
                 if (_dataBufferAvail.size == 0) {
                     readFromDataSource();
                     moreComing = _dataSourceMoreComing;
                 }
-                allWritten = codec.write(_dataBufferAvail, dst);
+                codec.write(_dataBufferAvail, dst, mode);
             }
         }
 
-        if (!allWritten)
+        if (codec.unflushedBytes() > 0)
             throw runtime_error("Compression buffer overflow");
 
-        codec.writeChecksum(checksumPos);   // Fill in the checksum
+        if (mode == Codec::Mode::SyncFlush) {
+            // SyncFlush always ends the output with the 4 bytes 00 00 FF FF.
+            // We can remove those, then add them when reading the data back in.
+            Assert(memcmp(&dst[-4], "\x00\x00\xFF\xFF", 4) == 0);
+            dst.moveStart(-4);
+        }
+
+        dst.setSize(dst.size + Codec::kChecksumSize);
+        codec.writeChecksum(dst);
 
         frameSize -= dst.size;              // Compute the compressed frame size
         _bytesSent += frameSize;

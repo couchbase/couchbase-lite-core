@@ -182,7 +182,7 @@ namespace litecore { namespace blip {
         ReceiveState receivedFrame(Codec&, slice frame, FrameFlags);
 
     private:
-        void readFrame(Codec&, slice &frame, bool finalFrame);
+        void readFrame(Codec&, int mode, slice &frame, bool finalFrame);
         void acknowledge(size_t frameSize);
 
         Connection* const _connection;          // The owning BLIP connection

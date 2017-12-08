@@ -96,7 +96,6 @@ namespace litecore { namespace blip {
         MessageNo               _numRequestsReceived {0};
         Deflater                _outputCodec;
         Inflater                _inputCodec;
-        Noflater                _nullInputCodec, _nullOutputCodec;
         unique_ptr<uint8_t[]>   _frameBuf;
         RequestHandlers         _requestHandlers;
         size_t                  _maxOutboxDepth {0}, _totalOutboxDepth {0}, _countOutboxDepth {0};
@@ -313,15 +312,19 @@ namespace litecore { namespace blip {
 
                     // Ask the MessageOut to write data to fill the buffer:
                     auto prevBytesSent = msg->_bytesSent;
-                    msg->nextFrameToSend(codecForMessage(msg), out, frameFlags);
+                    msg->nextFrameToSend(_outputCodec, out, frameFlags);
                     *flagsPos = frameFlags;
                     slice frame(_frameBuf.get(), out.buf);
                     bytesWritten += frame.size;
 
-                    logVerbose("    Sending frame: %s #%llu, flags %02x, bytes %u--%u",
+                    logVerbose("    Sending frame: %s #%llu %c%c%c%c, bytes %u--%u",
                                kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
-                               (frameFlags & ~kTypeMask), prevBytesSent, msg->_bytesSent - 1);
-
+                               (frameFlags & kMoreComing ? 'M' : '-'),
+                               (frameFlags & kUrgent ? 'U' : '-'),
+                               (frameFlags & kNoReply ? 'N' : '-'),
+                               (frameFlags & kCompressed ? 'C' : '-'),
+                               prevBytesSent, msg->_bytesSent - 1);
+                    logVerbose("    %s", frame.hexString().c_str());//TEMP
                     // Write it to the WebSocket:
                     _writeable = _webSocket->send(frame);
                 }
@@ -350,21 +353,6 @@ namespace litecore { namespace blip {
         }
 
 
-        inline Codec& codecForMessage(const MessageOut *msg) {
-            if (msg->hasFlag(kCompressed))
-                return _outputCodec;
-            else
-                return _nullOutputCodec;
-        }
-
-        inline Codec& codecForMessage(const MessageIn *msg, FrameFlags flags) {
-            if (flags & kCompressed)
-                return _inputCodec;
-            else
-                return _nullInputCodec;
-        }
-
-
 #pragma mark INCOMING:
 
         
@@ -385,9 +373,13 @@ namespace litecore { namespace blip {
                 if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt))
                     throw runtime_error("Illegal BLIP frame header");
                 auto flags = (FrameFlags)flagsInt;
-                logVerbose("Received frame: %s #%llu, flags %02x, length %5ld",
-                      kMessageTypeNames[flags & kTypeMask], msgNo,
-                      (flags & ~kTypeMask), (long)payload.size);
+                logVerbose("Received frame: %s #%llu %c%c%c%c, length %5ld",
+                           kMessageTypeNames[flags & kTypeMask], msgNo,
+                           (flags & kMoreComing ? 'M' : '-'),
+                           (flags & kUrgent ? 'U' : '-'),
+                           (flags & kNoReply ? 'N' : '-'),
+                           (flags & kCompressed ? 'C' : '-'),
+                           (long)payload.size);
 
                 // Handle the frame according to its type, and look up the MessageIn:
                 Retained<MessageIn> msg;
@@ -413,7 +405,7 @@ namespace litecore { namespace blip {
 
                 // Append the frame to the message:
                 if (msg) {
-                    auto state = msg->receivedFrame(codecForMessage(msg, flags), payload, flags);
+                    auto state = msg->receivedFrame(_inputCodec, payload, flags);
 
                     if (state == MessageIn::kEnd) {
                         if (BLIPMessagesLog.willLog(LogLevel::Info)) {

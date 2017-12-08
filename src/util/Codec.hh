@@ -15,36 +15,52 @@
 namespace litecore { namespace blip {
 
 
-    /** Abstract encoder/decoder class; base class of Inflater and Deflater. */
+    /** Abstract encoder/decoder class. */
     class Codec : protected Logging {
     public:
+        using slice = fleece::slice;
+
         Codec();
         virtual ~Codec() { }
 
         // See https://zlib.net/manual.html#Basic for info about modes
         enum class Mode : int {
+            Raw = -1,               // not a zlib mode; means copy bytes w/o compression
             NoFlush = 0,
             PartialFlush,
             SyncFlush,
             FullFlush,
             Finish,
             Block,
-            Trees
+            Trees,
+
+            Default = SyncFlush
         };
 
         /** Reads data from `input` and writes transformed data to `output`.
-            Each slice's buf pointer is moved forwards past the consumed data.
-            Returns false if it was unable to avoid leaving data inside the codec's buffer;
-            in this case `write` needs to be called again (with empty input) to complete
-            the write. */
-        virtual bool write(fleece::slice &input,
-                           fleece::slice &output,
-                           Mode =Mode::SyncFlush) =0;
+            Each slice's buf pointer is moved forwards past the consumed data. */
+        virtual void write(slice &input,
+                           slice &output,
+                           Mode =Mode::Default) =0;
 
-        void writeChecksum(fleece::slice &output);
-        void readAndVerifyChecksum(fleece::slice &input);
+        /** Number of bytes buffered in the codec that haven't been written to
+            the output yet for lack of space. */
+        virtual unsigned unflushedBytes() const         {return 0;}
+
+        static constexpr size_t kChecksumSize = 4;
+
+        /** Writes the codec's current checksum to the output slice.
+            This is an Adler32 checksum of all the unencoded data processed so far. */
+        void writeChecksum(slice &output) const;
+
+        /** Reads a checksum from the input slice and compares it with the codec's current one.
+            If they aren't equal, throws an exception. */
+        void readAndVerifyChecksum(slice &input) const;
 
     protected:
+        void addToChecksum(slice data);
+        void _writeRaw(slice &input, slice &output);
+
         uint32_t _checksum {0};
     };
 
@@ -58,7 +74,7 @@ namespace litecore { namespace blip {
         :_flate(flate)
         { }
 
-        void _write(const char *operation, fleece::slice &input, fleece::slice &output,
+        void _write(const char *operation, slice &input, slice &output,
                    Mode, size_t maxInput);
         void check(int) const;
 
@@ -73,9 +89,8 @@ namespace litecore { namespace blip {
         Deflater(int level =Z_DEFAULT_COMPRESSION);
         ~Deflater();
 
-        bool write(fleece::slice &input, fleece::slice &output, Mode =Mode::SyncFlush) override;
-
-        unsigned unflushedBytes() const;
+        void write(slice &input, slice &output, Mode =Mode::Default) override;
+        unsigned unflushedBytes() const override;
     };
 
 
@@ -85,15 +100,7 @@ namespace litecore { namespace blip {
         Inflater();
         ~Inflater();
 
-        bool write(fleece::slice &input, fleece::slice &output, Mode =Mode::SyncFlush) override;
-    };
-
-
-    /** No-op codec that just copies without compressing. */
-    class Noflater : public Codec {
-    public:
-        Noflater();
-        bool write(fleece::slice &input, fleece::slice &output, Mode =Mode::SyncFlush) override;
+        void write(slice &input, slice &output, Mode =Mode::Default) override;
     };
 
 } }
