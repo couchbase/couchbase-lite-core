@@ -50,7 +50,7 @@ namespace litecore { namespace blip {
         static constexpr size_t kChecksumSize = 4;
 
         /** Writes the codec's current checksum to the output slice.
-            This is an Adler32 checksum of all the unencoded data processed so far. */
+            This is a CRC32 checksum of all the unencoded data processed so far. */
         void writeChecksum(slice &output) const;
 
         /** Reads a checksum from the input slice and compares it with the codec's current one.

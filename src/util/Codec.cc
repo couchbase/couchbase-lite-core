@@ -38,12 +38,12 @@ namespace litecore { namespace blip {
 
     Codec::Codec()
     :Logging(Zip)
-    ,_checksum((uint32_t)adler32(0, nullptr, 0))    // the required initial value
+    ,_checksum((uint32_t)crc32(0, nullptr, 0))    // the required initial value
     { }
 
 
     void Codec::addToChecksum(slice data) {
-        _checksum = (uint32_t)adler32(_checksum, (const Bytef*)data.buf, (int)data.size);
+        _checksum = (uint32_t)crc32(_checksum, (const Bytef*)data.buf, (int)data.size);
     }
 
     void Codec::writeChecksum(slice &output) const {
