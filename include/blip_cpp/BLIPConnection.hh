@@ -37,6 +37,10 @@ namespace litecore { namespace blip {
         /** WebSocket 'protocol' name for BLIP; use as value of kProtocolsOption option. */
         static constexpr const char *kWSProtocolName = "BLIP_3a2";
 
+        /** Option to set the 'deflate' compression level. Value must be an integer in the range
+            0 (no compression) to 9 (best compression). */
+        static constexpr const char *kCompressionLevelOption = "BLIPCompressionLevel";
+
         /** Creates a BLIP connection to an address, opening a WebSocket. */
         Connection(const websocket::Address&,
                    websocket::Provider &provider,
@@ -45,6 +49,7 @@ namespace litecore { namespace blip {
 
         /** Creates a BLIP connection on existing incoming WebSocket. */
         Connection(websocket::WebSocket*,
+                   const fleeceapi::AllocedDict &options,
                    ConnectionDelegate&);
 
         const std::string& name() const                         {return _name;}
@@ -68,7 +73,7 @@ namespace litecore { namespace blip {
 
         State state()                                           {return _state;}
 
-        virtual std::string loggingIdentifier() const override {return _name;}
+        virtual std::string loggingIdentifier() const override  {return _name;}
 
         /** Exposed only for testing. */
         websocket::WebSocket* webSocket() const;
@@ -85,12 +90,13 @@ namespace litecore { namespace blip {
         void closed(CloseStatus);
 
     private:
-        void setWebSocket(websocket::WebSocket*);
+        void setWebSocket(websocket::WebSocket*, const fleeceapi::AllocedDict &options);
 
         std::string _name;
         bool const _isServer;
         ConnectionDelegate &_delegate;
         Retained<BLIPIO> _io;
+        int8_t _compressionLevel;
         std::atomic<State> _state {kClosed};
         CloseStatus _closeStatus;
     };

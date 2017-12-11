@@ -35,6 +35,7 @@ namespace litecore { namespace blip {
             _onProgress = std::move(builder.onProgress);
         }
 
+        void dontCompress()                     {_flags = (FrameFlags)(_flags & ~kCompressed);}
         void nextFrameToSend(Codec &codec, slice &dst, FrameFlags &outFlags);
         void receivedAck(uint32_t byteCount);
         bool needsAck()                         {return _unackedBytes >= kMaxUnackedBytes;}

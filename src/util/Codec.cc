@@ -110,10 +110,12 @@ namespace litecore { namespace blip {
 #pragma mark - DEFLATER:
 
 
-    Deflater::Deflater(int level)
+    Deflater::Deflater(CompressionLevel level)
     :ZlibCodec(::deflate)
     {
-        check(::deflateInit2(&_z, level, Z_DEFLATED,
+        check(::deflateInit2(&_z,
+                             level,
+                             Z_DEFLATED,
                              kZlibWindowSize * (kZlibRawDeflate ? -1 : 1),
                              kZlibDeflateMemLevel,
                              Z_DEFAULT_STRATEGY));

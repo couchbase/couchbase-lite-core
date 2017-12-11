@@ -86,7 +86,13 @@ namespace litecore { namespace blip {
     /** Compressing codec that performs a zlib/gzip "deflate". */
     class Deflater : public ZlibCodec {
     public:
-        Deflater(int level =Z_DEFAULT_COMPRESSION);
+        enum CompressionLevel : int8_t {
+            NoCompression       =  0,
+            FastestCompression  =  1,
+            BestCompression     =  9,
+            DefaultCompression  = -1,
+        };
+        Deflater(CompressionLevel = DefaultCompression);
         ~Deflater();
 
         void write(slice &input, slice &output, Mode =Mode::Default) override;

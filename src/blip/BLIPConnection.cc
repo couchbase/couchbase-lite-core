@@ -35,6 +35,8 @@ namespace litecore { namespace blip {
     static const size_t kDefaultFrameSize = 4096;       // Default size of frame
     static const size_t kBigFrameSize = 16384;          // Max size of frame
 
+    static const auto kDefaultCompressionLevel = (Deflater::CompressionLevel)6;
+
     const char* const kMessageTypeNames[8] = {"REQ", "RES", "ERR", "?3?",
                                               "ACKREQ", "AKRES", "?6?", "?7?"};
 
@@ -103,12 +105,13 @@ namespace litecore { namespace blip {
 
     public:
 
-        BLIPIO(Connection *connection, WebSocket *webSocket)
+        BLIPIO(Connection *connection, WebSocket *webSocket, Deflater::CompressionLevel compressionLevel)
         :Actor(string("BLIP[") + connection->name() + "]")
         ,Logging(BLIPLog)
         ,_connection(connection)
         ,_webSocket(webSocket)
         ,_outbox(10)
+        ,_outputCodec(compressionLevel)
         {
             _pendingRequests.reserve(10);
             _pendingResponses.reserve(10);
@@ -573,11 +576,12 @@ namespace litecore { namespace blip {
     ,_delegate(delegate)
     {
         log("Opening connection...");
-        setWebSocket(provider.createWebSocket(address, options));
+        setWebSocket(provider.createWebSocket(address, options), options);
     }
 
 
     Connection::Connection(WebSocket *webSocket,
+                           const fleeceapi::AllocedDict &options,
                            ConnectionDelegate &delegate)
     :Logging(BLIPLog)
     ,_name(string("<-") + (string)webSocket->address())
@@ -585,7 +589,7 @@ namespace litecore { namespace blip {
     ,_delegate(delegate)
     {
         log("Accepted connection");
-        setWebSocket(webSocket);
+        setWebSocket(webSocket, options);
     }
 
 
@@ -595,9 +599,16 @@ namespace litecore { namespace blip {
     }
 
 
-    void Connection::setWebSocket(WebSocket *webSocket) {
+    void Connection::setWebSocket(WebSocket *webSocket, const fleeceapi::AllocedDict &options) {
+        _compressionLevel = kDefaultCompressionLevel;
+        auto levelP = options[kCompressionLevelOption];
+        if (levelP.isInteger())
+            _compressionLevel = (int8_t)levelP.asInt();
+
         webSocket->name = _name;
-        _io = new BLIPIO(this, webSocket);  // will connect the websocket
+        
+        // Now connect the websocket:
+        _io = new BLIPIO(this, webSocket, (Deflater::CompressionLevel)_compressionLevel);
     }
 
 
@@ -618,6 +629,8 @@ namespace litecore { namespace blip {
 
     /** Internal API to send an outgoing message (a request, response, or ACK.) */
     void Connection::send(MessageOut *msg) {
+        if (_compressionLevel == 0)
+            msg->dontCompress();
         if (BLIPMessagesLog.willLog(LogLevel::Info)) {
             stringstream dump;
             bool withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
