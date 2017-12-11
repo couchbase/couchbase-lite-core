@@ -80,9 +80,6 @@ namespace litecore { namespace blip {
         /** Should the message refuse replies? */
         bool noreply        {false};
 
-        static slice untokenizeProperty(slice property);
-        static uint8_t tokenizeProperty(slice property);
-
     protected:
         friend class MessageIn;
         friend class MessageOut;

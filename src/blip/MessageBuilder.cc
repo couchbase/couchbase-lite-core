@@ -20,32 +20,6 @@ using namespace fleece;
 
 namespace litecore { namespace blip {
 
-
-    // Property names/values that are encoded as single bytes (first is Ctrl-A, etc.)
-    // Protocol v2.0. CHANGING THIS ARRAY WILL BREAK BLIP PROTOCOL COMPATIBILITY!!
-    static slice kSpecialProperties[] = {
-        "Profile"_sl,
-        "Error-Code"_sl,
-        "Error-Domain"_sl,
-
-        "Content-Type"_sl,
-        "application/json"_sl,
-        "application/octet-stream"_sl,
-        "text/plain; charset=UTF-8"_sl,
-        "text/xml"_sl,
-
-        "Accept"_sl,
-        "Cache-Control"_sl,
-        "must-revalidate"_sl,
-        "If-Match"_sl,
-        "If-None-Match"_sl,
-        "Location"_sl,
-        nullslice
-    };
-
-    static constexpr auto kNumSpecials = sizeof(kSpecialProperties) / sizeof(slice) - 1;
-
-
 #pragma mark - MESSAGE BUILDER:
 
     
@@ -97,33 +71,10 @@ namespace litecore { namespace blip {
     }
 
 
-    uint8_t MessageBuilder::tokenizeProperty(slice property) {
-        for (uint8_t i = 0; kSpecialProperties[i]; ++i) {
-            if (property == kSpecialProperties[i])
-                return i + 1;
-        }
-        return 0;
-    }
-
-
-    slice MessageBuilder::untokenizeProperty(slice property) {
-        if (property.size == 1 && property[0] > 0 && property[0] <= kNumSpecials)
-            return kSpecialProperties[property[0] - 1];
-        else
-            return property;
-    }
-
     // Abbreviates certain special strings as a single byte
     void MessageBuilder::writeTokenizedString(ostream &out, slice str) {
-        assert(str.findByte('\0') == nullptr);
-        assert(str.size == 0  || str[0] >= 32);
-        uint8_t token = tokenizeProperty(str);
-        if (token) {
-            uint8_t tokenized[2] = {token, 0};
-            out.write((char*)&tokenized, 2);
-        } else {
-            out << str << '\0';
-        }
+        Assert(str.findByte('\0') == nullptr);
+        out << str << '\0';
     }
 
 

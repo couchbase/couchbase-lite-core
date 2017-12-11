@@ -6,7 +6,7 @@
 
 By [Jens Alfke](mailto:jens@mooseyard.com) (December 2017)
 
-v3.0a1: Overhauled compression. Instead of separately compressing each message body (aside from properties), there’s now a separate compression context that’s used to sequentially compress/uncompress all frames with the Compressed flag.
+v3.0a2: Overhauled compression. Instead of separately compressing each message body (aside from properties), there’s now a separate compression context that’s used to sequentially compress/uncompress all frames with the Compressed flag. Also removed property tokenization.
 v2.0.1: No protocol changes; mostly just cleanup and extra details, especially about the WebSocket encoding. (It does add a confession that the "Bye" protocol for closing connections isn't actually implemented or honored by current implementations.)
 v2.0: Major update that bases the protocol on an underlying message transport (usually WebSockets), simplifies the header, and uses varint encodings.
 
@@ -29,7 +29,6 @@ Every request or response message has a set of flags that can be set by the appl
 * **Compressed:** If this flag is set, the message data is compressed; see section 3.7 for details.
 * **Urgent:** The implementation will attempt to expedite delivery of messages with this flag, by allocating them a greater share of the available bandwidth (but not to the extent of completely starving non-urgent messages.)
 * **No-Reply**: This request does not need or expect a response. (This flag has no meaning in a response.)
-* **Meta**: This flag indicates a message intended for internal use by the peer's BLIP implementation, and should not be delivered directly to the client application. (An example is the "bye" request used to negotiate closing the connection.)
 
 ### 1.2. Error Replies
 
@@ -85,7 +84,7 @@ There are currently no greetings or other preliminaries sent when the connection
 * BLIP messages are sent in binary WebSocket messages; text messages are not used, and receiving one is a fatal connection error.
 * Both BLIP and WebSocket use the terminology "messages" and "frames", where messages can be broken into sequences of frames. Try not to get them confused! A BLIP frame corresponds to (is sent as) a WebSocket message.
 
-> **Note:** The subprotocol value is `BLIP_3a` in the current alpha version. It will become `BLIP_3` when version 3.0 is finalized.
+> **Note:** The subprotocol value is `BLIP_3a2` in the current alpha version. It will become `BLIP_3` when version 3.0 is finalized.
 
 ### 3.2. Sending Messages
 
@@ -114,9 +113,7 @@ When the current frame does not have its more-coming flag set, that message is c
 
 A message is encoded into binary data, prior to being broken into frames, as follows:
 
-1. First the properties are encoded.
-  1. The properties are written out in pairs as alternating key and value strings. Each string is in C format: UTF-8 characters ending with a NUL byte. There is no padding.
-  2. Certain common strings are abbreviated using a hardcoded dictionary. The abbreviations are strings consisting of a single control character: the ascii value of the character is the index of the string in the dictionary, starting at 1. (The current dictionary can be found in BLIPProperties.m in the reference implementation.) For example, the string `Profile` is encoded as the single byte `0x01`.
+1. First the properties are encoded to binary, as alternating key and value strings. Each string is in C format: UTF-8 characters ending with a NUL byte. There is no padding.
 2. Then the message is encoded:
   1. The encoded message begins with the length in bytes of the encoded properties, as an unsigned **[varint][VARINT]**. **Important Note:** If there are no properties, the length (zero) still needs to be written!
   2. After that come the encoded properties (if any).
@@ -222,8 +219,9 @@ Frame errors are:
 * Unknown message type (neither request nor response)
 * Request number refers to an already-completed request or response (i.e. a prior frame with this number had its "more-coming" flag set to false)
 * A property string contains invalid UTF-8
-* The property data's length field is longer than the remaining frame data
+* The property data's length field is longer than the message
 * The property data, if non-empty, does not end with a NUL byte
+* The property data contains an odd number of NUL bytes
 
 Note that it is _not_ an error if:
 

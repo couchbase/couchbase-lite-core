@@ -31,7 +31,6 @@ namespace litecore { namespace blip {
         kUrgent     = 0x10,     // Message is given priority delivery
         kNoReply    = 0x20,     // Request only: no response desired
         kMoreComing = 0x40,     // Used only in frames, not in messages
-        kMeta       = 0x80,     // Denotes special message type used internally
     };
 
 

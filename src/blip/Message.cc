@@ -73,12 +73,10 @@ namespace litecore { namespace blip {
                 break;  // illegal: missing value
             auto endOfVal = val + strlen(val);
 
-            slice propertyName = MessageBuilder::untokenizeProperty(slice(key, endOfKey));
-            slice propertyValue= MessageBuilder::untokenizeProperty(slice(val, endOfVal));
             out << "\n\t";
-            dumpSlice(out, propertyName);
+            dumpSlice(out, {key, endOfKey});
             out << ": ";
-            dumpSlice(out, propertyValue);
+            dumpSlice(out, {val, endOfVal});
             key = endOfVal + 1;
         }
         if (body.size > 0) {
@@ -339,10 +337,6 @@ namespace litecore { namespace blip {
 
 
     slice MessageIn::property(slice property) const {
-        uint8_t specbuf[1] = { MessageBuilder::tokenizeProperty(property) };
-        if (specbuf[0])
-            property = slice(&specbuf, 1);
-
         // Note: using strlen here is safe. It can't fall off the end of _properties, because the
         // receivedFrame() method has already verified that _properties ends with a zero byte.
         // OPT: This lookup isn't very efficient. If it turns out to be a hot-spot, we could cache

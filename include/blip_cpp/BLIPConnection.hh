@@ -35,7 +35,7 @@ namespace litecore { namespace blip {
         using CloseStatus = websocket::CloseStatus;
 
         /** WebSocket 'protocol' name for BLIP; use as value of kProtocolsOption option. */
-        static constexpr const char *kWSProtocolName = "BLIP_3a";
+        static constexpr const char *kWSProtocolName = "BLIP_3a2";
 
         /** Creates a BLIP connection to an address, opening a WebSocket. */
         Connection(const websocket::Address&,
