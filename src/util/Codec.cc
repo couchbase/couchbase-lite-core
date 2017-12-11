@@ -140,7 +140,7 @@ namespace litecore { namespace blip {
             // codec might end up with buffered data that hasn't been output yet (even though we
             // told it to flush.) To work around this, write the data gradually and stop before
             // the output fills up.
-            Mode curMode = Mode::NoFlush;
+            Mode curMode = Mode::PartialFlush;
             while (input.size > 0) {
                 if (output.size >= deflateBound(&_z, (unsigned)input.size))
                     curMode = mode;      // It's safe to flush, we know we have room to
