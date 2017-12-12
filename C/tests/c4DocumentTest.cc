@@ -184,10 +184,17 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
         {
             TransactionHelper t(db);
             doc = c4doc_get(db, kDocID, true, &error);
-            int nPurged = c4doc_purgeRevision(doc, kRev3ID, &error);
+            int nPurged = c4doc_purgeRevision(doc, {}, &error);
             REQUIRE(nPurged == 3);
             REQUIRE(c4doc_save(doc, 20, &error));
+            c4doc_free(doc);
         }
+
+        // Make sure it's gone:
+        doc = c4doc_get(db, kDocID, true, &error);
+        CHECK(!doc);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorNotFound);
     }
     c4doc_free(doc);
 }
