@@ -54,6 +54,10 @@ TEST_CASE("URL Parsing") {
     REQUIRE(c4repl_parseURL("blips://localhost/p/d/"_sl, &address, &dbName));
     REQUIRE(c4repl_parseURL("blips://localhost//p//d/"_sl, &address, &dbName));
 
+    REQUIRE(!c4repl_parseURL("blip://example.com/db@name"_sl, &address, &dbName));
+    CHECK(dbName == "db@name"_sl);
+
+    // The following URLs should all be rejected:
     ExpectingExceptions x;
     REQUIRE(!c4repl_parseURL(""_sl, &address, &dbName));
     REQUIRE(!c4repl_parseURL("blip:"_sl, &address, &dbName));
@@ -69,7 +73,12 @@ TEST_CASE("URL Parsing") {
     REQUIRE(!c4repl_parseURL("blip://localhost:/foo"_sl, &address, &dbName));
     REQUIRE(!c4repl_parseURL("blip://localhost"_sl, &address, &dbName));
     REQUIRE(!c4repl_parseURL("blip://localhost/"_sl, &address, &dbName));
-    REQUIRE(!c4repl_parseURL("blip://localhost/B@dn@m*"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://localhost/B^dn^m*"_sl, &address, &dbName));
+
+    REQUIRE(!c4repl_parseURL("blip://snej@example.com/db"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://snej@example.com:8080/db"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://snej:password@example.com/db"_sl, &address, &dbName));
+    REQUIRE(!c4repl_parseURL("blip://snej:password@example.com:8080/db"_sl, &address, &dbName));
 }
 
 

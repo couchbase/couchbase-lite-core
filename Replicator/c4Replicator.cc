@@ -55,6 +55,8 @@ bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName) {
 
     colon = str.findByteOrEnd(':');
     auto pathStart = str.findByteOrEnd('/');
+    if (str.findByteOrEnd('@') < pathStart)
+        return false;                               // No usernames or passwords allowed!
     if (colon < pathStart) {
         int port;
         try {
