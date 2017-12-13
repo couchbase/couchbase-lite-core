@@ -38,7 +38,7 @@ Java_com_couchbase_litecore_C4Database_open(JNIEnv *env, jclass clazz, jstring j
     C4DatabaseConfig config{};
     config.flags = (C4DatabaseFlags) jflags;
     config.storageEngine = kC4SQLiteStorageEngine;
-    config.versioning = versioning == 0 ? kC4RevisionTrees : kC4VersionVectors;
+    config.versioning = kC4RevisionTrees;
     if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &config.encryptionKey))
         return 0;
 
@@ -78,7 +78,7 @@ Java_com_couchbase_litecore_C4Database_copy(JNIEnv *env, jclass clazz,
     C4DatabaseConfig config{};
     config.flags = (C4DatabaseFlags) jflags;
     config.storageEngine = kC4SQLiteStorageEngine;
-    config.versioning = versioning == 0 ? kC4RevisionTrees : kC4VersionVectors;
+    config.versioning = kC4RevisionTrees;
     if (!getEncryptionKey(env, encryptionAlg, encryptionKey, &config.encryptionKey))
         return;
 
