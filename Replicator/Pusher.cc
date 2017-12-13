@@ -361,6 +361,7 @@ namespace litecore { namespace repl {
             log("Sending attachment %.*s", SPLAT(digest));
             increment(_blobsInFlight);
             MessageBuilder reply(req);
+            reply.compressed = req->boolProperty("compress"_sl);
             reply.dataSource = [this,blob](void *buf, size_t capacity) {
                 // Callback to read bytes from the blob into the BLIP message:
                 // For performance reasons this is NOT run on my actor thread, so it can't access

@@ -498,6 +498,11 @@ bool c4doc_dictContainsBlobs(FLDict dict, FLSharedKeys sk) noexcept {
 }
 
 
+bool c4doc_blobIsCompressible(FLDict blobDict, FLSharedKeys sk) {
+    return Document::blobIsCompressible((const Dict*)blobDict, (SharedKeys*)sk);
+}
+
+
 C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]{
         return sliceResult(Document::encodeStrippingOldMetaProperties((const Dict*)doc));

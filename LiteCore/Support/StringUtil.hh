@@ -69,6 +69,11 @@ namespace litecore {
     /** Compares strings, treating ASCII upper/lowercase letters equivalent. Returns -1, 0 or 1. */
     int compareIgnoringCase(const std::string &a, const std::string &b);
 
+    /** Converts an ASCII string to lowercase, in place. */
+    void toLowercase(std::string &);
+
+    //////// UNICODE_AWARE FUNCTIONS:
+
     /** Returns true if the UTF-8 encoded slice contains no characters with code points < 32. */
     bool hasNoControlCharacters(fleece::slice) noexcept;
 

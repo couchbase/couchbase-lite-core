@@ -152,4 +152,80 @@ namespace c4Internal {
             error::_throw(error::BadDocID, "Invalid docID \"%.*s\"", SPLAT(docID));
     }
 
+
+    // Heuristics for deciding whether a MIME type is compressible or not.
+    // See <http://www.iana.org/assignments/media-types/media-types.xhtml>
+
+    // These substrings in a MIME type mean it's definitely not compressible:
+    static const slice kCompressedTypeSubstrings[] = {
+        "zip"_sl,
+        "zlib"_sl,
+        "pkcs"_sl,
+        "mpeg"_sl,
+        "mp4"_sl,
+        "crypt"_sl,
+        ".rar"_sl,
+        "-rar"_sl,
+        {}
+    };
+
+    // These substrings mean it is compressible:
+    static const slice kGoodTypeSubstrings[] = {
+        "json"_sl,
+        "html"_sl,
+        "xml"_sl,
+        "yaml"_sl,
+        {}
+    };
+
+    // These prefixes mean it's not compressible, unless it matches the above good-types list
+    // (like SVG (image/svg+xml), which is compressible.)
+    static const slice kBadTypePrefixes[] = {
+        "image/"_sl,
+        "audio/"_sl,
+        "video/"_sl,
+        {}
+    };
+
+    static bool containsAnyOf(slice type, const slice types[]) {
+        for (const slice *t = &types[0]; *t; ++t)
+            if (type.find(*t))
+                return true;
+        return false;
+    }
+
+
+    static bool startsWithAnyOf(slice type, const slice types[]) {
+        for (const slice *t = &types[0]; *t; ++t)
+            if (type.hasPrefix(*t))
+                return true;
+        return false;
+    }
+
+    bool Document::blobIsCompressible(const Dict *meta, SharedKeys *sk) {
+        // Don't compress an attachment with a compressed encoding:
+        auto encodingProp = meta->get("encoding"_sl, sk);
+        if (encodingProp && containsAnyOf(encodingProp->asString(), kCompressedTypeSubstrings))
+            return false;
+
+        auto typeProp = meta->get("content_type"_sl, sk);
+        if (typeProp) {
+            slice type = typeProp->asString();
+            if (type) {
+                // Check the MIME type:
+                string lc = type.asString();
+                toLowercase(lc);
+                type = lc;
+                if (containsAnyOf(type, kCompressedTypeSubstrings))
+                    return false;
+                else if (type.hasPrefix("text/"_sl) || containsAnyOf(type, kGoodTypeSubstrings))
+                    return true;
+                else if (startsWithAnyOf(type, kBadTypePrefixes))
+                    return false;
+            }
+        }
+        // Default to allowing compression.
+        return true;
+    }
+
 }

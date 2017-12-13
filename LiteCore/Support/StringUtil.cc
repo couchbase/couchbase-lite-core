@@ -88,6 +88,11 @@ namespace litecore {
         return strcasecmp(a.c_str(), b.c_str());
     }
 
+    void toLowercase(std::string &str) {
+        for (char &c : str)
+            c = (char)tolower(c);
+    }
+
     // Based on utf8_check.c by Markus Kuhn, 2005
     // https://www.cl.cam.ac.uk/~mgk25/ucs/utf8_check.c
     bool isValidUTF8(fleece::slice sl) noexcept

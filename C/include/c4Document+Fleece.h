@@ -56,6 +56,12 @@ extern "C" {
 
     bool c4doc_dictContainsBlobs(FLDict dict C4NONNULL, FLSharedKeys sk) C4API;
 
+    /** Given a dictionary that's a reference to a blob, determines whether it's worth trying to
+        compress the blob's data. This is done by examining the "encoding" and "content_type"
+        properties and using heuristics to detect types that are already compressed, like gzip
+        or JPEG. If no warning flags are found it will return true. */
+    bool c4doc_blobIsCompressible(FLDict blobDict C4NONNULL, FLSharedKeys sk);
+
     /** Translates the body of the selected revision from Fleece to JSON. */
     C4StringResult c4doc_bodyAsJSON(C4Document *doc C4NONNULL,
                                     bool canonical,

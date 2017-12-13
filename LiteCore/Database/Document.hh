@@ -171,6 +171,8 @@ namespace c4Internal {
         static void findBlobReferencesAndKeys(const fleece::Dict*, fleece::SharedKeys* sk,
                                               const FindBlobWithKeyCallback&);
 
+        static bool blobIsCompressible(const fleece::Dict *meta, fleece::SharedKeys *sk);
+
     protected:
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;

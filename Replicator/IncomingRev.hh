@@ -32,6 +32,7 @@ namespace litecore { namespace repl {
         static void findBlobReferences(fleeceapi::Dict root,
                                        FLSharedKeys sk,
                                        const FindBlobCallback&);
+        static bool shouldCompress(fleeceapi::Dict meta);
 
     protected:
         ActivityLevel computeActivityLevel() const override;

@@ -118,7 +118,7 @@ namespace litecore { namespace repl {
             if (c4blob_getSize(blobStore, key) < 0) {
                 uint64_t length = dict["length"_sl].asUnsigned();
                 Retained<IncomingBlob> b(new IncomingBlob(this, blobStore));
-                b->start(key, length);
+                b->start(key, length, c4doc_blobIsCompressible(dict, nullptr));
                 increment(_pendingBlobs);
             }
         });
@@ -223,6 +223,7 @@ namespace litecore { namespace repl {
             stack.pop_front();
         }
     }
+
 
 } }
 

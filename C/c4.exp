@@ -99,6 +99,7 @@ _c4doc_isOldMetaProperty
 _c4doc_hasOldMetaProperties
 _c4doc_dictIsBlob
 _c4doc_dictContainsBlobs
+_c4doc_blobIsCompressible
 _c4doc_encodeStrippingOldMetaProperties
 _c4doc_detachRevisionBody
 

@@ -16,12 +16,12 @@ namespace litecore { namespace repl {
     public:
         IncomingBlob(Worker *parent, C4BlobStore*);
 
-        void start(C4BlobKey key, uint64_t size) {
-            enqueue(&IncomingBlob::_start, key, size);
+        void start(C4BlobKey key, uint64_t size, bool compress) {
+            enqueue(&IncomingBlob::_start, key, size, compress);
         }
 
     private:
-        void _start(C4BlobKey, uint64_t);
+        void _start(C4BlobKey, uint64_t, bool compress);
         void writeToBlob(fleece::alloc_slice);
         void finishBlob();
         void closeWriter();

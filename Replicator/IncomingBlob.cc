@@ -21,7 +21,7 @@ namespace litecore { namespace repl {
     { }
 
 
-    void IncomingBlob::_start(C4BlobKey key, uint64_t size) {
+    void IncomingBlob::_start(C4BlobKey key, uint64_t size, bool compress) {
         _key = key;
         _size = size;
         alloc_slice digest = c4blob_keyToString(_key);
@@ -36,6 +36,7 @@ namespace litecore { namespace repl {
 
         MessageBuilder req("getAttachment"_sl);
         req["digest"_sl] = digest;
+        req.compressed = compress;
         sendRequest(req, asynchronize([=](blip::MessageProgress progress) {
             //... After request is sent:
             if (_writer) {
