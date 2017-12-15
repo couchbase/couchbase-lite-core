@@ -58,6 +58,15 @@ namespace c4 {
         T* _obj;
     };
 
+
+    struct sliceResult : public fleece::slice {
+    public:
+        sliceResult(C4SliceResult sr)   :slice(sr.buf, sr.size) { }
+        ~sliceResult()                  {c4slice_free(*(C4SliceResult*)this);}
+        sliceResult(const sliceResult&) =delete;
+        sliceResult& operator= (const sliceResult&) =delete;
+    };
+
     
     class Transaction {
     public:

@@ -58,25 +58,24 @@ public:
         c4db_free(db2);
     }
 
+    // opts1 is the options for _db; opts2 is the options for _db2
     void runReplicators(Replicator::Options opts1, Replicator::Options opts2) {
         _replicatorFinished = false;
         _gotResponse = false;
         _statusChangedCalls = 0;
         _statusReceived = {};
 
-        C4Database *dbServer = db, *dbClient = db2;
+        C4Database *dbClient = db, *dbServer = db2;
         if (opts2.push > kC4Passive || opts2.pull > kC4Passive) {
             // always make opts1 the active (client) side
             swap(dbServer, dbClient);
             swap(opts1, opts2);
         }
 
-        // Client replicator:
-        _replClient = new Replicator(dbServer, _provider, {"ws", "srv"}, *this, opts1);
-
-        // Server (passive) replicator:
-        Address addrB{"ws", "cli"};
-        _replServer = new Replicator(dbClient, _provider.createWebSocket(addrB), *this, opts2);
+        // Create client (active) and server (passive) replicators:
+        Address clientAddress{"ws", "cli"}, serverAddress{"ws", "srv"};
+        _replClient = new Replicator(dbClient, _provider, serverAddress, *this, opts1);
+        _replServer = new Replicator(dbServer, _provider.createWebSocket(clientAddress), *this, opts2);
 
         // Response headers:
         Encoder enc;

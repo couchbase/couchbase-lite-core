@@ -191,13 +191,13 @@ namespace litecore { namespace repl {
         Options _options;
         Retained<Worker> _parent;
         bool _important {true};
+        std::string _loggingID;
 
     private:
         Retained<blip::Connection> _connection;
         int _pendingResponseCount {0};
         Status _status { };
         bool _statusChanged {false};
-        std::string _loggingID;
     };
 
 } }

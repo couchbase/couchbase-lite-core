@@ -65,6 +65,7 @@ namespace litecore { namespace repl {
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_dbActor(new DBWorker(connection, this, db, address, options))
     {
+        _loggingID = string(c4::sliceResult(c4db_getPath(db))) + " " + _loggingID;
         if (options.push != kC4Disabled)
             _pusher = new Pusher(connection, this, _dbActor, _options);
         if (options.pull != kC4Disabled)
