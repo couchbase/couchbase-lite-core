@@ -39,6 +39,7 @@ namespace litecore { namespace repl {
     ,_parent(parent)
     ,_options(options)
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
+    ,_loggingID(connection->name())
     { }
 
 

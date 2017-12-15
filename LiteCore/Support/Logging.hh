@@ -10,6 +10,7 @@
 #include "slice.hh"
 #include "PlatformCompat.hh"
 #include <atomic>
+#include <map>
 #include <string>
 #include <stdarg.h>
 #include <stdint.h>
@@ -103,7 +104,10 @@ public:
 
 private:
     friend class Logging;
-    unsigned registerObject(const std::string &description, LogLevel);
+    unsigned registerObject(const std::string &description,
+                            const std::string &nickname,
+                            LogLevel);
+    void unregisterObject(unsigned obj);
     void vlog(LogLevel level, unsigned obj, const char *fmt, va_list);
 
 private:
@@ -117,6 +121,7 @@ private:
     const char* const _name;
     LogDomain* const _next;
     unsigned _lastObjRef {0};
+    std::map<unsigned,std::string> _objNames;
 
     static LogDomain* sFirstDomain;
     static LogLevel sCallbackMinLevel;
@@ -179,10 +184,11 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         :_domain(domain)
         { }
 
-        virtual ~Logging() { }
+        virtual ~Logging();
 
         /** Override this to return a string identifying this object. */
         virtual std::string loggingIdentifier() const;
+        virtual std::string loggingClassName() const;
 
 #if DEBUG
         // In debug mode, use code that's inefficient but allows use of __printflike, so the

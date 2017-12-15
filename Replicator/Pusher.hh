@@ -26,6 +26,9 @@ namespace litecore { namespace repl {
         void gotChanges(RevList chgs, C4Error err)  {enqueue(&Pusher::_gotChanges, chgs, err);
         }
 
+    protected:
+        virtual std::string loggingClassName() const override {return "Push";}
+
     private:
         Replicator* replicator() const                  {return (Replicator*)_parent.get();}
         void _start(C4SequenceNumber sinceSequence);

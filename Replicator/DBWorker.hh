@@ -64,6 +64,9 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_setCookie, alloc_slice(setCookieHeader));
         }
 
+    protected:
+        virtual std::string loggingClassName() const override {return "DBWorker";}
+
     private:
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);

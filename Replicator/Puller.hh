@@ -31,6 +31,8 @@ namespace litecore { namespace repl {
                            bool complete);
 
     protected:
+        virtual std::string loggingClassName() const override {return "Pull";}
+
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         virtual void _childChangedStatus(Worker *task, Status) override;
         virtual ActivityLevel computeActivityLevel() const override;

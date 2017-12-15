@@ -232,13 +232,20 @@ namespace litecore {
 
         // Invoke the client callback:
         if (sCallback && level >= _callbackLogLevel()) {
+            const char *objName = "?";
+            if (objRef) {
+                auto i = _objNames.find(objRef);
+                if (i != _objNames.end())
+                    objName = i->second.c_str();
+            }
+
             va_list args2;
             va_copy(args2, args);
             if (sCallbackPreformatted) {
                 // Preformatted: Do the formatting myself and pass the resulting string:
                 size_t n = 0;
                 if (objRef)
-                    n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%u} ", objRef);
+                    n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} ", objName, objRef);
                 vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args2);
                 va_list noArgs { };
                 sCallback(*this, level, sFormatBuffer, noArgs);
@@ -246,7 +253,7 @@ namespace litecore {
                 // Not preformatted: pass the format string and va_list to the callback
                 // (prefixing the object ref # if any):
                 if (objRef) {
-                    snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%u} %s", objRef, fmt);
+                    snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} %s", objName, objRef, fmt);
                     sCallback(*this, level, sFormatBuffer, args2);
                 } else {
                     sCallback(*this, level, fmt, args2);
@@ -311,7 +318,10 @@ namespace litecore {
     }
 
 
-    unsigned LogDomain::registerObject(const std::string &description, LogLevel level) {
+    unsigned LogDomain::registerObject(const string &description,
+                                       const string &nickname,
+                                       LogLevel level)
+    {
         unique_lock<mutex> lock(sLogMutex);
         unsigned objRef;
         if (sLogEncoder)
@@ -319,33 +329,57 @@ namespace litecore {
         else
             objRef = ++_lastObjRef;
 
+        _objNames.insert({objRef, nickname});
+
         if (sCallback && level >= _callbackLogLevel())
-            invokeCallback(*this, level, "{%u}--> %s", objRef, description.c_str());
+            invokeCallback(*this, level, "{%s#%u}==> %s",
+                           nickname.c_str(), objRef, description.c_str());
         return objRef;
+    }
+
+
+    void LogDomain::unregisterObject(unsigned objectRef) {
+        _objNames.erase(objectRef);
     }
 
 
 #pragma mark - LOGGING CLASS:
 
 
-    std::string Logging::loggingIdentifier() const {
-		// Get the name of my class, unmangle it, and remove namespaces:
-		const char *name = typeid(*this).name();
+    Logging::~Logging() {
+        if (_objectRef)
+            _domain.unregisterObject(_objectRef);
+    }
+
+
+    static std::string classNameOf(const Logging *obj) {
+        const char *name = typeid(*obj).name();
 #if defined(__clang__) && !defined(__ANDROID__)
+        // Get the name of my class, unmangle it, and remove namespaces:
         size_t unmangledLen;
         int status;
         char *unmangled = abi::__cxa_demangle(name, nullptr, &unmangledLen, &status);
-        if (unmangled) {
-            auto colon = strrchr(unmangled, ':');
-            name = colon ? colon + 1 : unmangled;
-        }
-
-        auto result = format("%s %p", name, this);
+        if (unmangled)
+            name = unmangled;
+        string result(name);
         free(unmangled);
         return result;
 #else
-        return format("%s %p", name, this);
+        return name;
 #endif
+    }
+
+    std::string Logging::loggingClassName() const {
+        string name = classNameOf(this);
+        auto colon = name.find_last_of(':');
+        if (colon != string::npos)
+            name = name.substr(colon+1);
+        return name;
+    }
+
+
+    std::string Logging::loggingIdentifier() const {
+        return format("%p", this);
     }
 
 
@@ -361,8 +395,9 @@ namespace litecore {
             _domain.computeLevel();
             if (!_domain.willLog(level))
                 return;
-            string identifier = loggingIdentifier();
-            const_cast<Logging*>(this)->_objectRef = _domain.registerObject(identifier, level);
+            string nickname = loggingClassName();
+            string identifier = classNameOf(this) + " " + loggingIdentifier();
+            const_cast<Logging*>(this)->_objectRef = _domain.registerObject(identifier, nickname, level);
         }
         _domain.vlog(level, _objectRef, format, args);
     }

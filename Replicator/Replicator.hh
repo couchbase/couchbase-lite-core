@@ -78,6 +78,8 @@ namespace litecore { namespace repl {
         void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
         
     protected:
+        virtual std::string loggingClassName() const override {return "Repl";}
+
         // BLIP ConnectionDelegate API:
         virtual void onHTTPResponse(int status, const fleeceapi::AllocedDict &headers) override
                                         {enqueue(&Replicator::_onHTTPResponse, status, headers);}

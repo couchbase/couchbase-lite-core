@@ -186,9 +186,7 @@ namespace litecore { namespace repl {
 
         virtual void afterEvent() override;
 
-        virtual std::string loggingIdentifier() const override {
-            return actorName();
-        }
+        virtual std::string loggingIdentifier() const override {return _loggingID;}
 
         Options _options;
         Retained<Worker> _parent;
@@ -199,6 +197,7 @@ namespace litecore { namespace repl {
         int _pendingResponseCount {0};
         Status _status { };
         bool _statusChanged {false};
+        std::string _loggingID;
     };
 
 } }
