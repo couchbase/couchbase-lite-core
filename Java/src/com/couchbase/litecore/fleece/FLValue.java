@@ -205,21 +205,25 @@ public class FLValue {
                 return results;
             }
             case kFLDict: {
-                Map<String, Object> results = new HashMap<>();
                 FLDict dict = asFLDict();
-                FLDictIterator itr = new FLDictIterator();
-                try {
-                    itr.begin(dict);
-                    String key;
-                    while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
-                        Object value = itr.getValue().toObject(sharedKeys);
-                        results.put(key, value);
-                        itr.next();
+                if (sharedKeys == null) {
+                    return dict.asDict();
+                } else {
+                    Map<String, Object> results = new HashMap<>();
+                    FLDictIterator itr = new FLDictIterator();
+                    try {
+                        itr.begin(dict);
+                        String key;
+                        while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
+                            Object value = itr.getValue().toObject(sharedKeys);
+                            results.put(key, value);
+                            itr.next();
+                        }
+                    } finally {
+                        itr.free();
                     }
-                } finally {
-                    itr.free();
+                    return results;
                 }
-                return results;
             }
             default:
                 return null; // TODO: Throw Exeption?
