@@ -7,8 +7,10 @@
 //
 
 #pragma once
-#include "ToolUtils.hh"
+#include "Tool.hh"
 #include <memory>
+
+using namespace fleeceapi;
 
 
 /** Abstract base class for a source or target of copying/replication. */
@@ -19,6 +21,7 @@ public:
     { }
 
     static Endpoint* create(const string &str);
+    static Endpoint* create(C4Database*);
     virtual ~Endpoint() { }
 
     virtual bool isDatabase() const {
@@ -26,7 +29,10 @@ public:
     }
 
     virtual void prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
-        _docIDProperty = docIDProperty;
+        if (docIDProperty.size > 0)
+            _docIDProperty = docIDProperty;
+        else
+            _docIDProperty = "_id"_sl;
     }
 
     virtual void copyTo(Endpoint*, uint64_t limit) =0;
@@ -40,17 +46,17 @@ public:
 
     void logDocument(slice docID) {
         ++_docCount;
-        if (gVerbose >= 2)
+        if (Tool::instance->verbose() >= 2)
             cout << to_string(docID) << '\n';
-        else if (gVerbose == 1 && (_docCount % 1000) == 0)
+        else if (Tool::instance->verbose() == 1 && (_docCount % 1000) == 0)
             cout << _docCount << '\n';
     }
 
     void logDocuments(unsigned n) {
         _docCount += n;
-        if (gVerbose >= 2)
+        if (Tool::instance->verbose() >= 2)
             cout << n << " more documents\n";
-        else if (gVerbose == 1 && (_docCount % 1000) < n)
+        else if (Tool::instance->verbose() == 1 && (_docCount % 1000) < n)
             cout << _docCount << '\n';
     }
 
@@ -68,9 +74,9 @@ protected:
         if (docIDProp) {
             docIDBuf = docIDProp.toString();
             if (!docIDBuf)
-                fail(format("Property \"%.*s\" is not a scalar in JSON: %.*s", SPLAT(_docIDProperty), SPLAT(json)));
+                Tool::instance->fail(format("Property \"%.*s\" is not a scalar in JSON: %.*s", SPLAT(_docIDProperty), SPLAT(json)));
         } else {
-            errorOccurred(format("No property \"%.*s\" in JSON: %.*s", SPLAT(_docIDProperty), SPLAT(json)));
+            Tool::instance->errorOccurred(format("No property \"%.*s\" in JSON: %.*s", SPLAT(_docIDProperty), SPLAT(json)));
         }
         return docIDBuf;
     }

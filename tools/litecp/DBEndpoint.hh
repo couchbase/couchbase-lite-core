@@ -20,6 +20,8 @@ public:
     :Endpoint(spec)
     { }
 
+    DbEndpoint(C4Database* db);
+
     virtual bool isDatabase() const override {
         return true;
     }

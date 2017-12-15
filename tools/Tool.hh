@@ -30,8 +30,10 @@ static inline C4Slice c4str(const string &s) {
 
 class Tool {
 public:
-    Tool() { }
+    Tool()                                      {if (!instance) instance = this;}
     virtual ~Tool();
+
+    static Tool* instance;
 
     virtual int main(int argc, const char * argv[]) {
         try {
@@ -53,20 +55,56 @@ public:
 
     virtual void usage() = 0;
 
-protected:
+    int verbose() const                         {return _verbose;}
 
-    typedef void (Tool::*FlagHandler)();
-    struct FlagSpec {const char *flag; FlagHandler handler;};
+#pragma mark - ERRORS / FAILURE:
 
-    /** Returns the specs of the top-level flags to be handled when the tool starts.
-        May return null if there are no such flags. */
-    virtual const FlagSpec* initialFlags() {
-        return nullptr;
+    // A placeholder exception thrown by fail() and caught in run() or a CLI loop
+    class fail_error : public runtime_error {
+    public:
+        fail_error() :runtime_error("fail called") { }
+    };
+
+    void errorOccurred(const string &what, C4Error err ={}) {
+        cerr << "Error";
+        if (!islower(what[0]))
+            cerr << ":";
+        cerr << " " << what;
+        if (err.code) {
+            alloc_slice message = c4error_getMessage(err);
+            if (message.buf)
+                cerr << ": " << to_string(message);
+            cerr << " (" << err.domain << "/" << err.code << ")";
+        }
+        cerr << "\n";
+
+        if (_failOnError)
+            fail();
     }
 
-    /** Top-level action, called after flags are processed.
-        Return value will be returned as the exit status of the process. */
-    virtual int run() =0;
+    [[noreturn]] void fail() {
+        throw fail_error();
+    }
+
+    [[noreturn]] void fail(const string &message) {
+        errorOccurred(message);
+        fail();
+    }
+
+
+    [[noreturn]] void fail(const string &what, C4Error err) {
+        errorOccurred(what, err);
+        fail();
+    }
+
+
+    [[noreturn]] void failMisuse(const string &message) {
+        cerr << "Error: " << message << "\n";
+        usage();
+        fail();
+    }
+
+#pragma mark - I/O:
 
     /** Interactively reads a command from the terminal, preceded by the prompt.
         If it returns true, the command has been parsed into the argument buffer just like the
@@ -97,8 +135,22 @@ protected:
 
     string spaces(int n)                {return string(max(n, 1), ' ');}
 
-    
+protected:
+
+    /** Top-level action, called after flags are processed.
+     Return value will be returned as the exit status of the process. */
+    virtual int run() =0;
+
 #pragma mark - ARGUMENT HANDLING:
+
+    typedef void (Tool::*FlagHandler)();
+    struct FlagSpec {const char *flag; FlagHandler handler;};
+
+    /** Returns the specs of the top-level flags to be handled when the tool starts.
+        May return null if there are no such flags. */
+    virtual const FlagSpec* initialFlags() {
+        return nullptr;
+    }
 
     /** Returns the number of remaining arguments. */
     size_t argCount() {
@@ -167,53 +219,7 @@ protected:
         return false;
     }
 
-#pragma mark - ERRORS / FAILURE:
-
-    // A placeholder exception thrown by fail() and caught in run() or a CLI loop
-    class fail_error : public runtime_error {
-    public:
-        fail_error() :runtime_error("fail called") { }
-    };
-
-
-    void errorOccurred(const string &what, C4Error err ={}) {
-        cerr << "Error";
-        if (!islower(what[0]))
-            cerr << ":";
-        cerr << " " << what;
-        if (err.code) {
-            alloc_slice message = c4error_getMessage(err);
-            if (message.buf)
-                cerr << ": " << to_string(message);
-            cerr << " (" << err.domain << "/" << err.code << ")";
-        }
-        cerr << "\n";
-
-        if (_failOnError)
-            fail();
-    }
-
-    [[noreturn]] void fail() {
-        throw fail_error();
-    }
-
-    [[noreturn]] void fail(const string &message) {
-        errorOccurred(message);
-        fail();
-    }
-
-
-    [[noreturn]] void fail(const string &what, C4Error err) {
-        errorOccurred(what, err);
-        fail();
-    }
-
-
-    [[noreturn]] void failMisuse(const string &message) {
-        cerr << "Error: " << message << "\n";
-        usage();
-        fail();
-    }
+    bool _failOnError {false};
 
 private:
     static const char* promptCallback(struct editline *e);
@@ -223,7 +229,6 @@ private:
     string _toolPath;
     deque<string> _args;
     int _verbose {0};
-    bool _failOnError {false};
     struct editline* _editLine {nullptr};
     struct history* _editHistory {nullptr};
     struct tokenizer* _editTokenizer {nullptr};

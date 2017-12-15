@@ -20,6 +20,9 @@
 static constexpr int kDefaultLineWidth = 100;
 
 
+Tool* Tool::instance;
+
+
 Tool::~Tool() {
     if (_editLine) {
         if (_editHistory)
@@ -28,6 +31,8 @@ Tool::~Tool() {
             tok_end(_editTokenizer);
         el_end(_editLine);
     }
+    if (this == instance)
+        instance = nullptr;
 }
 
 

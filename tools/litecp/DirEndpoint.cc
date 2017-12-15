@@ -13,24 +13,24 @@ void DirectoryEndpoint::prepare(bool isSource, bool mustExist, slice docIDProper
     Endpoint::prepare(isSource, mustExist, docIDProperty, other);
     if (_dir.exists()) {
         if (!_dir.existsAsDir())
-            fail(format("%s is not a directory", _spec.c_str()));
+            Tool::instance->fail(format("%s is not a directory", _spec.c_str()));
     } else {
         if (isSource || mustExist)
-            fail(format("Directory %s doesn't exist", _spec.c_str()));
+            Tool::instance->fail(format("Directory %s doesn't exist", _spec.c_str()));
         else
             _dir.mkdir();
     }
     if (docIDProperty) {
         _docIDPath.reset(new KeyPath(docIDProperty, nullptr, nullptr));
         if (!*_docIDPath)
-            fail("Invalid key-path");
+            Tool::instance->fail("Invalid key-path");
     }
 }
 
 
 // As source:
 void DirectoryEndpoint::copyTo(Endpoint *dst, uint64_t limit) {
-    if (gVerbose)
+    if (Tool::instance->verbose())
         cout << "Importing JSON files...\n";
     alloc_slice buffer(10000);
     _dir.forEachFile([&](const FilePath &file) {
@@ -53,13 +53,13 @@ void DirectoryEndpoint::writeJSON(slice docID, slice json) {
         if (_docIDProperty)
             docID = docIDBuf = docIDFromJSON(json);
         else
-            errorOccurred(format("No doc ID for JSON: %.*s", SPLAT(json)));
+            Tool::instance->errorOccurred(format("No doc ID for JSON: %.*s", SPLAT(json)));
         if (!docID)
             return;
     }
 
     if (docID.size == 0 || docID[0] == '.' || docID.findByte(FilePath::kSeparator[0])) {
-        errorOccurred(format("writing doc \"%.*s\": doc ID cannot be used as a filename", SPLAT(docID)));
+        Tool::instance->errorOccurred(format("writing doc \"%.*s\": doc ID cannot be used as a filename", SPLAT(docID)));
         return;
     }
 
@@ -80,7 +80,7 @@ slice DirectoryEndpoint::readFile(const string &path, alloc_slice &buffer) {
         readBytes += in.gcount();
     } while (in.good());
     if (in.bad()) {
-        errorOccurred(format("reading file %s", path.c_str()));
+        Tool::instance->errorOccurred(format("reading file %s", path.c_str()));
         return nullslice;
     }
     return {buffer.buf, readBytes};

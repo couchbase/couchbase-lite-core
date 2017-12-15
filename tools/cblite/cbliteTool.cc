@@ -20,6 +20,7 @@ void CBLiteTool::usage() {
     ansiBold() << "cblite: Couchbase Lite / LiteCore database multi-tool\n" << ansiReset() <<
     "Usage: cblite help " << it("[SUBCOMMAND]") << "\n"
     "       cblite cat " << it("[FLAGS] DBPATH DOCID [DOCID...]") << "\n"
+    "       cblite cp " << it("[FLAGS] SOURCE DESTINATION") << "\n"
     "       cblite file " << it("DBPATH") << "\n"
     "       cblite ls " << it("[FLAGS] DBPATH [PATTERN]") << "\n"
     "       cblite query " << it("[FLAGS] DBPATH JSONQUERY") << "\n"
@@ -56,12 +57,13 @@ int CBLiteTool::run() {
              << ansiBold() << "cblite " << ansiItalic() << "DBPATH" << ansiReset() << '\n';
         fail();
     }
-    string cmd = nextArg("subcommand");
+    string cmd = nextArg("subcommand or database path");
     if (hasSuffix(cmd, ".cblite2")) {
         endOfArgs();
         openDatabase(cmd);
         runInteractively();
     } else {
+        _currentCommand = cmd;
         if (!processFlag(cmd, kSubcommands))
             failMisuse(format("Unknown subcommand '%s'", cmd.c_str()));
     }
@@ -105,6 +107,7 @@ void CBLiteTool::runInteractively() {
                 return;
             string cmd = nextArg("subcommand");
             clearFlags();
+            _currentCommand = cmd;
             if (!processFlag(cmd, kInteractiveSubcommands))
                 cerr << format("Unknown subcommand '%s'; type 'help' for a list of commands.\n",
                                cmd.c_str());
@@ -123,6 +126,7 @@ void CBLiteTool::helpCommand() {
             cerr << format("Unknown subcommand '%s'\n", cmd.c_str());
     } else {
         catUsage();
+        cpUsage();
         fileUsage();
         listUsage();
         queryUsage();
@@ -152,6 +156,7 @@ void CBLiteTool::quitCommand() {
 
 const Tool::FlagSpec CBLiteTool::kSubcommands[] = {
     {"cat",     (FlagHandler)&CBLiteTool::catDocs},
+    {"cp",      (FlagHandler)&CBLiteTool::copyDatabase},
     {"file",    (FlagHandler)&CBLiteTool::fileInfo},
     {"help",    (FlagHandler)&CBLiteTool::helpCommand},
     {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
@@ -165,6 +170,11 @@ const Tool::FlagSpec CBLiteTool::kSubcommands[] = {
 
 const Tool::FlagSpec CBLiteTool::kInteractiveSubcommands[] = {
     {"cat",     (FlagHandler)&CBLiteTool::catDocs},
+    {"cp",      (FlagHandler)&CBLiteTool::copyDatabase},
+    {"push",    (FlagHandler)&CBLiteTool::copyDatabase},
+    {"export",  (FlagHandler)&CBLiteTool::copyDatabase},
+    {"pull",    (FlagHandler)&CBLiteTool::copyDatabaseReversed},
+    {"import",  (FlagHandler)&CBLiteTool::copyDatabaseReversed},
     {"file",    (FlagHandler)&CBLiteTool::fileInfo},
     {"help",    (FlagHandler)&CBLiteTool::helpCommand},
     {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
@@ -205,6 +215,15 @@ const Tool::FlagSpec CBLiteTool::kCatFlags[] = {
     {"--json5",  (FlagHandler)&CBLiteTool::json5Flag},
     {"--key",    (FlagHandler)&CBLiteTool::keyFlag},
     {"--rev",    (FlagHandler)&CBLiteTool::revIDFlag},
+    {nullptr, nullptr}
+};
+
+const Tool::FlagSpec CBLiteTool::kCpFlags[] = {
+    {"--limit",     (FlagHandler)&CBLiteTool::limitFlag},
+    {"--existing",  (FlagHandler)&CBLiteTool::existingFlag},
+    {"-x",          (FlagHandler)&CBLiteTool::existingFlag},
+    {"--jsonid",    (FlagHandler)&CBLiteTool::jsonIDFlag},
+    {"--careful",   (FlagHandler)&CBLiteTool::carefulFlag},
     {nullptr, nullptr}
 };
 

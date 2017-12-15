@@ -19,22 +19,37 @@ static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) no
     return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
 }
 
+static string pathOfDB(C4Database *db) {
+    C4StringResult path = c4db_getPath(db);
+    string src(slice(path.buf, path.size));
+    c4slice_free(path);
+    return src;
+}
+
+
+DbEndpoint::DbEndpoint(C4Database *db)
+:Endpoint(pathOfDB(db))
+,_db(c4db_retain(db))
+{ }
+
 
 void DbEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
     Endpoint::prepare(isSource, mustExist, docIDProperty, other);
     _otherEndpoint = const_cast<Endpoint*>(other);
-    C4DatabaseConfig config = {kC4DB_SharedKeys | kC4DB_NonObservable};
-    if (isSource) {
-        if (!other->isDatabase())    // need write permission if replicating, even for push
-            config.flags |= kC4DB_ReadOnly;
-    } else {
-        if (!mustExist)
-            config.flags |= kC4DB_Create;
+    if (!_db) {
+        C4DatabaseConfig config = {kC4DB_SharedKeys | kC4DB_NonObservable};
+        if (isSource) {
+            if (!other->isDatabase())    // need write permission if replicating, even for push
+                config.flags |= kC4DB_ReadOnly;
+        } else {
+            if (!mustExist)
+                config.flags |= kC4DB_Create;
+        }
+        C4Error err;
+        _db = c4db_open(c4str(_spec), &config, &err);
+        if (!_db)
+            Tool::instance->fail(format("Couldn't open database %s", _spec.c_str()), err);
     }
-    C4Error err;
-    _db = c4db_open(c4str(_spec), &config, &err);
-    if (!_db)
-        fail(format("Couldn't open database %s", _spec.c_str()), err);
 
     // Only used for writing JSON:
     auto sk = c4db_getFLSharedKeys(_db);
@@ -42,7 +57,7 @@ void DbEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, con
     if (docIDProperty) {
         _docIDPath.reset(new KeyPath(docIDProperty, sk, nullptr));
         if (!*_docIDPath)
-            fail("Invalid key-path");
+            Tool::instance->fail("Invalid key-path");
     }
 }
 
@@ -51,7 +66,7 @@ void DbEndpoint::enterTransaction() {
     if (!_inTransaction) {
         C4Error err;
         if (!c4db_beginTransaction(_db, &err))
-            fail("starting transaction", err);
+            Tool::instance->fail("starting transaction", err);
         _inTransaction = true;
     }
 }
@@ -72,13 +87,13 @@ void DbEndpoint::copyTo(Endpoint *dst, uint64_t limit) {
 
 
 void DbEndpoint::exportTo(Endpoint *dst, uint64_t limit) {
-    if (gVerbose)
+    if (Tool::instance->verbose())
         cout << "Exporting documents...\n";
     C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
     C4Error err;
     c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(_db, &options, &err);
     if (!e)
-        fail("enumerating source db", err);
+        Tool::instance->fail("enumerating source db", err);
     uint64_t line;
     for (line = 0; line < limit; ++line) {
         c4::ref<C4Document> doc = c4enum_nextDocument(e, &err);
@@ -86,13 +101,13 @@ void DbEndpoint::exportTo(Endpoint *dst, uint64_t limit) {
             break;
         alloc_slice json = c4doc_bodyAsJSON(doc, false, &err);
         if (!json) {
-            errorOccurred("reading document body", err);
+            Tool::instance->errorOccurred("reading document body", err);
             continue;
         }
         dst->writeJSON(doc->docID, json);
     }
     if (err.code)
-        errorOccurred("enumerating source db", err);
+        Tool::instance->errorOccurred("enumerating source db", err);
     else if (line == limit)
         cout << "Stopped after " << limit << " documents.\n";
 }
@@ -102,7 +117,7 @@ void DbEndpoint::exportTo(Endpoint *dst, uint64_t limit) {
 void DbEndpoint::writeJSON(slice docID, slice json) {
     _encoder.reset();
     if (!_encoder.convertJSON(json)) {
-        errorOccurred(format("Couldn't parse JSON: %.*s", SPLAT(json)));
+        Tool::instance->errorOccurred(format("Couldn't parse JSON: %.*s", SPLAT(json)));
         return;
     }
     alloc_slice body = _encoder.finish();
@@ -124,9 +139,9 @@ void DbEndpoint::writeJSON(slice docID, slice json) {
         docID = slice(doc->docID);
     } else {
         if (docID)
-            errorOccurred(format("saving document \"%.*s\"", SPLAT(put.docID)), err);
+            Tool::instance->errorOccurred(format("saving document \"%.*s\"", SPLAT(put.docID)), err);
         else
-            errorOccurred("saving document", err);
+            Tool::instance->errorOccurred("saving document", err);
     }
 
     logDocument(docID);
@@ -142,21 +157,21 @@ void DbEndpoint::finish() {
     commit();
     C4Error err;
     if (!c4db_close(_db, &err))
-        errorOccurred("closing database", err);
+        Tool::instance->errorOccurred("closing database", err);
 }
 
 
 void DbEndpoint::commit() {
     if (_inTransaction) {
-        if (gVerbose > 1) {
+        if (Tool::instance->verbose() > 1) {
             cout << "[Committing ... ";
             cout.flush();
         }
         Stopwatch st;
         C4Error err;
         if (!c4db_endTransaction(_db, true, &err))
-            fail("committing transaction", err);
-        if (gVerbose > 1) {
+            Tool::instance->fail("committing transaction", err);
+        if (Tool::instance->verbose() > 1) {
             double time = st.elapsed();
             cout << time << " sec for " << _transactionSize << " docs]\n";
         }
@@ -169,7 +184,7 @@ void DbEndpoint::commit() {
 
 
 void DbEndpoint::replicateWith(RemoteEndpoint &src, C4ReplicatorMode push, C4ReplicatorMode pull) {
-    if (gVerbose) {
+    if (Tool::instance->verbose()) {
         if (push >= kC4OneShot)
             cout << "Pushing to remote database...\n";
         if (pull >= kC4OneShot)
@@ -182,7 +197,7 @@ void DbEndpoint::replicateWith(RemoteEndpoint &src, C4ReplicatorMode push, C4Rep
 
 
 void DbEndpoint::pushToLocal(DbEndpoint &dst) {
-    if (gVerbose)
+    if (Tool::instance->verbose())
         cout << "Pushing to local database...\n";
     C4ReplicatorParameters params = replicatorParameters(kC4OneShot, kC4Disabled);
     C4Error err;
@@ -218,7 +233,7 @@ C4ReplicatorParameters DbEndpoint::replicatorParameters(C4ReplicatorMode push, C
 
 void DbEndpoint::replicate(C4Replicator *repl, C4Error &err) {
     if (!repl)
-        errorOccurred("starting replication", err);
+        Tool::instance->errorOccurred("starting replication", err);
 
     c4::ref<C4Replicator> replicator = repl;
     C4ReplicatorStatus status;
@@ -229,7 +244,7 @@ void DbEndpoint::replicate(C4Replicator *repl, C4Error &err) {
 
 
 void DbEndpoint::onStateChanged(C4ReplicatorStatus status) {
-    if (gVerbose) {
+    if (Tool::instance->verbose()) {
         cout << "\r" << kC4ReplicatorActivityLevelNames[status.level] << " ... ";
         _needNewline = true;
         if (status.progress.documentCount > 0)

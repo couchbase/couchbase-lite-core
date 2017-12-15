@@ -9,6 +9,7 @@ endif()
 set(TOP ${PROJECT_SOURCE_DIR}/../)
 
 include_directories(${PROJECT_SOURCE_DIR}
+                    ${PROJECT_SOURCE_DIR}/litecp
                     ${TOP}C/include/
                     ${TOP}LiteCore/Support/
                     ${TOP}vendor/fleece/Fleece/)
@@ -18,9 +19,11 @@ include_directories(${PROJECT_SOURCE_DIR}
 if (APPLE)   ### TODO: Make this build on other platforms (may require source changes)
 
 aux_source_directory("cblite" CBLITE_SRC)
+aux_source_directory("litecp" LITECP_SRC)
 
 add_executable(cblite
                ${CBLITE_SRC}
+               ${LITECP_SRC}
                Tool.cc)
 
 target_link_libraries(cblite ${LITECORE_LIBRARIES_PRIVATE})
@@ -63,23 +66,3 @@ elseif(UNIX)
     target_link_libraries(litecorelog ${LIBCXX_LIB} ${LIBCXXABI_LIB} pthread)
 endif()
 
-### LITECP
-
-aux_source_directory(litecp LITECP_SRC)
-
-add_executable(litecp
-               ${LITECP_SRC}
-               ToolUtils.cc)
-
-target_link_libraries(litecp ${LITECORE_LIBRARIES_PRIVATE})
-
-if (APPLE)
-    target_link_libraries(litecp
-      z
-      "-framework CoreFoundation"
-      "-framework Security")
-elseif(MSVC)
-    target_link_libraries(litecp Dbghelp.lib zlibstatic)
-else()
-    target_link_libraries(litecp pthread z dl ${ICU4C_COMMON} ${ICU4C_I18N} ${LIBCXX_LIB} ${LIBCXXABI_LIB})
-endif()

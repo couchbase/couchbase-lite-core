@@ -23,6 +23,8 @@
 using namespace std;
 using namespace fleeceapi;
 
+class Endpoint;
+
 
 class CBLiteTool : public Tool {
 public:
@@ -42,30 +44,31 @@ private:
     void openDatabase(string path);
     void openDatabaseFromNextArg();
 
-    // Shell command
-    void shell();
-    void runInteractively();
-    void helpCommand();
-    void quitCommand();
+    // cat command
+    void catUsage();
+    void catDocs();
+    void catDoc(C4Document *doc, bool includeID);
 
-    // Query command
-    void queryUsage();
-    void queryDatabase();
-    alloc_slice convertQuery(slice inputQuery);
+    // cp command
+    void cpUsage();
+    void copyDatabase(bool reversed);
+    void copyDatabase()                                     {copyDatabase(false);}
+    void copyDatabaseReversed()                             {copyDatabase(true);}
+    void copyDatabase(Endpoint *src, Endpoint *dst);
+
+    // file command
+    void fileUsage();
+    void fileInfo();
 
     // ls command
     void listUsage();
     void listDocsCommand();
     void listDocs(string docIDPattern);
 
-    // cat command
-    void catUsage();
-    void catDocs();
-    void catDoc(C4Document *doc, bool includeID);
-
-    // file command
-    void fileUsage();
-    void fileInfo();
+    // query command
+    void queryUsage();
+    void queryDatabase();
+    alloc_slice convertQuery(slice inputQuery);
 
     // revs command
     void revsUsage();
@@ -74,6 +77,12 @@ private:
     // sql command
     void sqlUsage();
     void sqlQuery();
+
+    // shell command
+    void shell();
+    void runInteractively();
+    void helpCommand();
+    void quitCommand();
 
     using RevTree = map<alloc_slice,set<alloc_slice>>; // Maps revID to set of child revIDs
 
@@ -139,15 +148,19 @@ private:
     void json5Flag()     {_json5 = true; _enumFlags |= kC4IncludeBodies;}
     void rawFlag()       {_prettyPrint = false; _enumFlags |= kC4IncludeBodies;}
     void helpFlag()      {_showHelp = true;}
+    void existingFlag()  {_createDst = false;}
+    void carefulFlag()   {_failOnError = true;}
+    void jsonIDFlag()    {_jsonIDProperty = nextArg("JSON-id property");}
 
 
     static const FlagSpec kSubcommands[];
     static const FlagSpec kInteractiveSubcommands[];
-    static const FlagSpec kQueryFlags[];
-    static const FlagSpec kListFlags[];
     static const FlagSpec kCatFlags[];
+    static const FlagSpec kCpFlags[];
+    static const FlagSpec kListFlags[];
+    static const FlagSpec kQueryFlags[];
 
-
+    string _currentCommand;
     C4Database* _db {nullptr};
     bool _interactive {false};
     uint64_t _offset {0};
@@ -161,4 +174,6 @@ private:
     bool _json5 {false};
     bool _showRevID {false};
     bool _showHelp {false};
+    bool _createDst {true};
+    alloc_slice _jsonIDProperty;
 };
