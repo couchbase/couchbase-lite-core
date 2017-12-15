@@ -136,11 +136,11 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push]
 #pragma mark - REAL-REPLICATOR (SYNC GATEWAY) TESTS
 
 
-// The tests below are tagged [.RealReplicator] to keep them from running during normal testing.
+// The tests below are tagged [.SyncServer] to keep them from running during normal testing.
 // Instead, they have to be invoked manually via Catch command-line options.
 // This is because they require that an external replication server is running.
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[Push][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
     replicate(kC4OneShot, kC4Disabled, false);
     CHECK(_callbackStatus.error.domain == WebSocketDomain);
@@ -149,7 +149,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[Push][.RealReplicator]
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API ExtraHeaders", "[Push][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API ExtraHeaders", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
 
     // Use the extra-headers option to add HTTP Basic auth:
@@ -167,18 +167,18 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API ExtraHeaders", "[Push][.RealReplicator]
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty DB", "[Push][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty DB", "[.SyncServer]") {
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Non-Empty DB", "[Push][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Non-Empty DB", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty Doc", "[Push][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty Doc", "[.SyncServer]") {
     Encoder enc;
     enc.beginDict();
     enc.endDict();
@@ -189,41 +189,41 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Empty Doc", "[Push][.RealReplicato
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[Push][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Big DB", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 
 
 #if 0
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[Push][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "en-wikipedia-articles-1000-1.json");
     replicate(kC4OneShot, kC4Disabled);
 }
 #endif
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[Pull][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[.SyncServer]") {
     _remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Push", "[Push][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Push", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     _stopWhenIdle = true;
     replicate(kC4Continuous, kC4Disabled);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[Pull][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Pull", "[.SyncServer]") {
     _remoteDBName = kITunesDBName;
     _stopWhenIdle = true;
     replicate(kC4Disabled, kC4Continuous);
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Deletion", "[Push][Pull][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Deletion", "[.SyncServer]") {
     createRev("doc"_sl, kRevID, kFleeceBody);
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
@@ -246,7 +246,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Deletion", "[Push][Pull][.RealR
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[Push][Pull][ReplBlobs][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[.SyncServer]") {
     vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
     {
@@ -285,7 +285,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Push & Pull Attachments", "[Push][Pull][Rep
 }
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "Prove Attachments", "[Push][ReplBlobs][.RealReplicator]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "Prove Attachments", "[.SyncServer]") {
     vector<string> attachments = {"Hey, this is an attachment!"};
     {
         TransactionHelper t(db);
