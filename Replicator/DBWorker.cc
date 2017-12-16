@@ -215,63 +215,59 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBWorker::getChanges(C4SequenceNumber since, DocIDSet docIDs, unsigned limit,
-                              bool continuous, bool skipDeleted, bool getForeignAncestor,
-                              Pusher *pusher)
+    void DBWorker::getChanges(const GetChangesParams &params, Pusher *pusher)
     {
-        enqueue(&DBWorker::_getChanges, since, docIDs, limit,
-                continuous, skipDeleted, getForeignAncestor,
-                Retained<Pusher>(pusher));
+        enqueue(&DBWorker::_getChanges, params, Retained<Pusher>(pusher));
     }
 
     
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
-    void DBWorker::_getChanges(C4SequenceNumber since, DocIDSet docIDs, unsigned limit,
-                               bool continuous, bool skipDeleted, bool getForeignAncestors,
-                               Retained<Pusher> pusher)
+    void DBWorker::_getChanges(GetChangesParams p, Retained<Pusher> pusher)
     {
         if (!connection())
             return;
-        log("Reading up to %u local changes since #%llu", limit, since);
+        log("Reading up to %u local changes since #%llu", p.limit, p.since);
         if (_firstChangeSequence == 0)
-            _firstChangeSequence = since + 1;
+            _firstChangeSequence = p.since + 1;
 
         // Run a by-sequence enumerator to find the changed docs:
         vector<Rev> changes;
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        if (!getForeignAncestors)
+        if (!p.getForeignAncestors)
             options.flags &= ~kC4IncludeBodies;
-        if (!skipDeleted)
+        if (!p.skipDeleted)
             options.flags |= kC4IncludeDeleted;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, since, &options, &error);
+        c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, p.since, &options, &error);
         if (e) {
-            changes.reserve(limit);
-            while (c4enum_next(e, &error) && limit > 0) {
+            changes.reserve(p.limit);
+            while (c4enum_next(e, &error) && p.limit > 0) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                if (passesDocIDFilter(docIDs, info.docID)) {
-                    alloc_slice foreignAncestor;
-                    if (getForeignAncestors) {
-                        // For proposeChanges, find the nearest foreign ancestor of the current rev:
-                        if (!getForeignAncestor(e, foreignAncestor, &error)) {
-                            if (error.code)
-                                gotDocumentError(info.docID, error, true, false);
-                            continue; // skip to next sequence
-                        }
+                if (!passesDocIDFilter(p.docIDs, info.docID))
+                    continue;       // reject rev: not in filter
+                alloc_slice foreignAncestor;
+                if (p.getForeignAncestors) {
+                    // For proposeChanges, find the nearest foreign ancestor of the current rev:
+                    if (!getForeignAncestor(e, foreignAncestor, &error)) {
+                        gotDocumentError(info.docID, error, true, false);
+                        continue;   // reject rev: error getting doc
+                    } else if (p.skipForeign && foreignAncestor == slice(info.revID)) {
+                        continue;   // reject rev: it's foreign
                     }
-                    changes.emplace_back(info, foreignAncestor);
-                    --limit;
                 }
+                // Add rev to list
+                changes.emplace_back(info, foreignAncestor);
+                --p.limit;
             }
         }
 
         markRevsSynced(changes, nullptr);
 
-        if (continuous && limit > 0 && !_changeObserver) {
+        if (p.continuous && p.limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
             _pusher = pusher;
-            _pushDocIDs = docIDs;
+            _pushDocIDs = p.docIDs;
             _changeObserver = c4dbobs_create(_db,
                                              [](C4DatabaseObserver* observer, void *context) {
                                                  auto self = (DBWorker*)context;
@@ -328,21 +324,19 @@ namespace litecore { namespace repl {
     // For proposeChanges, find the latest ancestor of the current rev that is known to the server.
     // This is a rev that's either marked as foreign (came from the server), or whose sequence is
     // prior to the checkpoint (has already been pushed to the server.)
-    bool DBWorker::getForeignAncestor(C4DocEnumerator *e, alloc_slice &foreignAncestor, C4Error *outError) {
+    bool DBWorker::getForeignAncestor(C4DocEnumerator *e,
+                                      alloc_slice &foreignAncestor,
+                                      C4Error *outError) {
         c4::ref<C4Document> doc = c4enum_getDocument(e, outError);
         if (!doc)
             return false;
-        if (doc->selectedRev.flags & kRevIsForeign) {
-            outError->code = 0;
-            return false;       // skip this, it's not a locally created rev
-        }
-        while (c4doc_selectParentRevision(doc)) {
+        do {
             if ((doc->selectedRev.flags & kRevIsForeign)
                         || doc->selectedRev.sequence < _firstChangeSequence) {
                 foreignAncestor = slice(doc->selectedRev.revID);
                 return true;
             }
-        }
+        } while (c4doc_selectParentRevision(doc));
         foreignAncestor = nullslice;
         return true;
     }

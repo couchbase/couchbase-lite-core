@@ -186,6 +186,20 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
+    runReplicators(Replicator::Options::passive(), Replicator::Options::pulling());
+    compareDatabases();
+    validateCheckpoints(db2, db, "{\"remote\":100}");
+
+    Log("--- Erasing db, now pushing back to db...");
+    deleteAndRecreateDB();
+
+    runReplicators(Replicator::Options::passive(), Replicator::Options::pushing());
+}
+
+
 #pragma mark - CONTINUOUS:
 
 

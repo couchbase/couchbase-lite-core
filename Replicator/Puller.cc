@@ -25,10 +25,9 @@ namespace litecore { namespace repl {
     :Worker(connection, replicator, options, "Pull")
     ,_dbActor(dbActor)
     {
-        registerHandler("changes",&Puller::handleChanges);
-        registerHandler("proposeChanges",&Puller::handleChanges);
-        registerHandler("changes",&Puller::handleChanges);
-        registerHandler("rev",    &Puller::handleRev);
+        registerHandler("changes",          &Puller::handleChanges);
+        registerHandler("proposeChanges",   &Puller::handleChanges);
+        registerHandler("rev",              &Puller::handleRev);
         _spareIncomingRevs.reserve(kMaxSpareIncomingRevs);
         _skipDeleted = _options.skipDeleted();
         if (nonPassive() && options.noConflicts())

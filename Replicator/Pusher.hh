@@ -32,7 +32,7 @@ namespace litecore { namespace repl {
     private:
         Replicator* replicator() const                  {return (Replicator*)_parent.get();}
         void _start(C4SequenceNumber sinceSequence);
-        bool nonPassive() const                         {return _options.push > kC4Passive;}
+        bool passive() const                         {return _options.push <= kC4Passive;}
         virtual ActivityLevel computeActivityLevel() const override;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);

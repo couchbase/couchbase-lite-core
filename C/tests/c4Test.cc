@@ -272,14 +272,16 @@ void C4Test::reopenDB() {
 }
 
 
-void C4Test::deleteAndRecreateDB() {
+void C4Test::deleteAndRecreateDB(C4Database* &db) {
+    C4SliceResult path = c4db_getPath(db);
     auto config = *c4db_getConfig(db);
     C4Error error;
     REQUIRE(c4db_delete(db, &error));
     c4db_free(db);
     db = nullptr;
-    db = c4db_open(databasePath(), &config, &error);
+    db = c4db_open({path.buf, path.size}, &config, &error);
     REQUIRE(db);
+    c4slice_free(path);
 }
 
 
