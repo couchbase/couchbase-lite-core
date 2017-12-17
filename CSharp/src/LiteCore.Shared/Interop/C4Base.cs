@@ -254,15 +254,10 @@ namespace LiteCore.Interop
     public
 #endif
     static partial class Native
-    { 
-		public static unsafe C4LogDomain* c4log_getDomain(string name, bool create)
-		{
-			var bytes = Encoding.UTF8.GetBytes(name);
-			fixed (byte* bytes_ = bytes)
-			{
-				return c4log_getDomain(bytes_, create);
-			}
-		}
+    {
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+        public static extern unsafe C4LogDomain* c4log_getDomain(string name,
+            [MarshalAs(UnmanagedType.U1)] bool create);
     }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
@@ -291,3 +286,4 @@ namespace ObjCRuntime
         #endregion
     }
 }
+

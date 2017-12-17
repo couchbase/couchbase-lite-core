@@ -85,9 +85,6 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4log_setBinaryFileLevel(C4LogLevel level);
 
-        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern C4LogDomain* c4log_getDomain(byte* name, [MarshalAs(UnmanagedType.U1)]bool create);
-
         public static string c4log_getDomainName(C4LogDomain* x)
         {
             var retVal = NativeRaw.c4log_getDomainName(x);

@@ -26,13 +26,12 @@ namespace LiteCore.Tests
     {
 #if __ANDROID__
         public static readonly string TestDir = System.Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-#elif WINDOWS_UWP
+#elif false
         public static readonly string TestDir = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
 #elif __IOS__
         public static readonly string TestDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "..", "tmp");
 #else
-        public static readonly string TestDir = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-            "C:\\tmp\\" : "/tmp/";
+        public static readonly string TestDir = Path.GetTempPath();
 #endif
 
         internal static readonly C4Slice Body = C4Slice.Constant("{\"name\":007}");
