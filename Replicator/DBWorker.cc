@@ -415,7 +415,7 @@ namespace litecore { namespace repl {
                 } else {
                     log("Rejecting proposed change '%.*s' #%.*s (status %d)",
                         SPLAT(docID), SPLAT(revID), status);
-                    while (++itemsWritten < i)
+                    while (itemsWritten++ < i)
                         encoder.writeInt(0);
                     encoder.writeInt(status);
                 }
@@ -427,7 +427,7 @@ namespace litecore { namespace repl {
                     ++requested;
                     whichRequested[i] = true;
 
-                    while (++itemsWritten < i)
+                    while (itemsWritten++ < i)
                         encoder.writeInt(0);
                     encoder.beginArray();
                     for (slice ancestor : ancestors)
