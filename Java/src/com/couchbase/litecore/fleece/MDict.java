@@ -13,92 +13,244 @@
  */
 package com.couchbase.litecore.fleece;
 
-public class MDict extends MCollection {
+import com.couchbase.litecore.SharedKeys;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+public class MDict extends MCollection implements Iterable<String> {
+    private FLDict _dict;
+
+    private Map<String, MValue> _map = new HashMap<String, MValue>();
+
+    private final List<String> _newKey = new ArrayList<String>();
+
+    private long _count = 0;
+
+    /* Constructors */
+
     public MDict() {
-        super(init(), false);
+
+    }
+
+    public MDict(MValue mv, MCollection parent) {
+        initInSlot(mv, parent);
     }
 
     public void initInSlot(MValue mv, MCollection parent) {
-        initInSlot(mv._handle, parent._handle);
-    }
-
-    public void initInSlot(long hMv, long hParent) {
-        initInSlot(_handle, hMv, hParent);
-    }
-
-    public void initAsCopyOf(MDict mDict, boolean isMutable) {
-        initAsCopyOf(mDict._handle, isMutable);
-    }
-
-    public void initAsCopyOf(long hMDict, boolean isMutable) {
-        initAsCopyOf(_handle, hMDict, isMutable);
-    }
-
-    public long count() {
-        return count(_handle);
-    }
-
-    public boolean contains(String key) {
-        return contains(_handle, key);
-    }
-
-    public MValue get(String key) {
-        return new MValue(get(_handle, key));
-    }
-
-    public boolean set(String key, Object val) {
-        return set(key, new MValue(val));
-    }
-
-    public boolean set(String key, MValue val) {
-        return set(_handle, key, val._handle);
-    }
-
-    public boolean remove(String key) {
-        return remove(_handle, key);
-    }
-
-    public boolean clear() {
-        return clear(_handle);
-    }
-
-    public void encodeTo(Encoder enc) {
-        encodeTo(_handle, enc._handle);
+        initInSlot(mv, parent, parent != null ? parent.getMutableChildren() : false);
     }
 
     @Override
-    protected void finalize() throws Throwable {
-        free();
-        super.finalize();
-    }
+    protected void initInSlot(MValue mv, MCollection parent, boolean isMutable) {
+        super.initInSlot(mv, parent, isMutable);
+        if (_dict != null)
+            throw new IllegalStateException("_dict is not null");
 
-    @Override
-    public void free() {
-        if (_handle != 0L && !_managed) {
-            free(_handle);
-            _handle = 0L;
+        FLValue value = mv.getValue();
+        if (value != null) {
+            _dict = value.asFLDict();
+            _count = _dict.count();
+        } else {
+            _dict = null;
+            _count = 0;
         }
     }
 
-    private static native void free(long handle);
+    public void initAsCopyOf(MDict d, boolean isMutable) {
+        super.initAsCopyOf(d, isMutable);
+        _dict = d._dict;
+        _map = new HashMap<>(d._map);
+        _count = d._count;
+    }
 
-    private static native long init();
+    /* Properties */
 
-    private static native void initInSlot(long handle, long mv, long parent);
+    public long count() {
+        return _count;
+    }
 
-    private static native void initAsCopyOf(long handle, long mDict, boolean isMutable);
+    public FLSharedKeys getSharedKeys() {
+        return getContext().getSharedKeys();
+    }
 
-    private static native long count(long handle);
+    /* Public methods */
 
-    private static native boolean contains(long handle, String key);
+    public boolean clear() {
+        if (!isMutable())
+            throw new IllegalStateException("Cannot clear a non-mutable MDict");
 
-    private static native long get(long handle, String key);
+        if (_count == 0)
+            return true;
 
-    private static native boolean set(long handle, String key, long val);
+        mutate();
+        _map.clear();
 
-    private static native boolean remove(long handle, String key);
+        if (_dict != null) {
+            FLDictIterator itr = new FLDictIterator();
+            try {
+                itr.begin(_dict);
+                String key;
+                SharedKeys sk = new SharedKeys(getSharedKeys());
+                while ((key = SharedKeys.getKey(itr, sk)) != null) {
+                    _map.put(key, MValue.EMPTY);
+                    if (!itr.next())
+                        break;
+                }
+            } finally {
+                itr.free();
+            }
+        }
 
-    private static native boolean clear(long handle);
+        _count = 0;
+        return true;
+    }
 
-    private static native void encodeTo(long handle, long encoder);
+    public boolean contains(String key) {
+        if (key == null)
+            throw new IllegalArgumentException("The key cannot be null.");
+
+        MValue v = _map.get(key);
+        if (v != null)
+            return !v.isEmpty();
+        else
+            return _dict != null && _dict.getSharedKey(key, getSharedKeys()) != null;
+    }
+
+    public MValue get(String key) {
+        if (key == null)
+            throw new IllegalArgumentException("The key cannot be null.");
+
+        MValue v = _map.get(key);
+        if (v == null) {
+            FLValue value = _dict != null ? _dict.getSharedKey(key, getSharedKeys()) : null;
+            v = value != null ? setInMap(key, new MValue(value)) : MValue.EMPTY;
+        }
+        return v;
+    }
+
+    public List<String> getKeys() {
+        List<String> keys = new ArrayList<>();
+        for (Map.Entry<String, MValue> entry : _map.entrySet()) {
+            MValue value = entry.getValue();
+            if (!value.isEmpty())
+                keys.add(entry.getKey());
+        }
+
+        if (_dict != null) {
+            FLDictIterator itr = new FLDictIterator();
+            try {
+                itr.begin(_dict);
+                String key;
+                SharedKeys sk = new SharedKeys(getSharedKeys());
+                while ((key = SharedKeys.getKey(itr, sk)) != null) {
+                    if (!_map.containsKey(key))
+                        keys.add(key);
+                    if (!itr.next())
+                        break;
+                }
+            } finally {
+                itr.free();
+            }
+        }
+
+        return keys;
+    }
+
+    public boolean remove(String key) {
+        return set(key, MValue.EMPTY);
+    }
+
+    public boolean set(String key, MValue value) {
+        if (key == null)
+            throw new IllegalArgumentException("The key cannot be null.");
+
+        if (!isMutable())
+            throw new IllegalStateException("Cannot set items in a non-mutable MDict");
+
+        MValue oValue = _map.get(key);
+        if (oValue != null) {
+            // Found in _map; update value:
+            if (value.isEmpty() && oValue.isEmpty())
+                return true; // no-op
+            mutate();
+            _count += (value.isEmpty() ? 0 : 1) - (oValue.isEmpty() ? 0 : 1);
+            _map.put(key, value);
+        } else {
+            // Not found; check _dict:
+            if (_dict != null && _dict.getSharedKey(key, getSharedKeys()) != null) {
+                if (value.isEmpty())
+                    _count--;
+            } else {
+                if (value.isEmpty())
+                    return true; // no-op
+                else
+                    _count++;
+            }
+
+            mutate();
+            setInMap(key, value);
+        }
+        return true;
+    }
+
+    /* Private Methods */
+
+    private MValue setInMap(String key, MValue value) {
+        _newKey.add(key);
+        _map.put(key, value);
+        return value;
+    }
+
+    /* Encodable */
+
+    @Override
+    public void encodeTo(Encoder enc) {
+        if (!isMutated()) {
+            if (_dict == null) {
+                enc.beginDict(0);
+                enc.endDict();
+            } else
+                enc.writeValue(_dict);
+        } else {
+            enc.beginDict(_count);
+            for (Map.Entry<String, MValue> entry : _map.entrySet()) {
+                MValue value = entry.getValue();
+                if (!value.isEmpty()) {
+                    enc.writeKey(entry.getKey());
+                    value.encodeTo(enc);
+                }
+            }
+
+            if (_dict != null) {
+                FLDictIterator itr = new FLDictIterator();
+                try {
+                    itr.begin(_dict);
+                    String key;
+                    SharedKeys sk = new SharedKeys(getSharedKeys());
+                    while ((key = SharedKeys.getKey(itr, sk)) != null) {
+                        if (!_map.containsKey(key)) {
+                            enc.writeKey(key);
+                            enc.writeValue(itr.getValue());
+                        }
+                        if (!itr.next())
+                            break;
+                    }
+                } finally {
+                    itr.free();
+                }
+            }
+            enc.endDict();
+        }
+    }
+
+    /* Iterable */
+
+    @Override
+    public Iterator<String> iterator() {
+        return getKeys().iterator();
+    }
 }

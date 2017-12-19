@@ -112,6 +112,14 @@ public class Encoder {
         return writeValue(_handle, flValue.getHandle());
     }
 
+    public boolean writeValue(FLArray flValue) {
+        return writeValue(_handle, flValue.getHandle());
+    }
+
+    public boolean writeValue(FLDict flValue) {
+        return writeValue(_handle, flValue.getHandle());
+    }
+
     public boolean write(Map map) {
         beginDict(map.size());
         Iterator keys = map.keySet().iterator();
@@ -125,8 +133,9 @@ public class Encoder {
 
     public boolean write(List list) {
         beginArray(list.size());
-        for (Object item : list)
+        for (Object item : list) {
             writeObject(item);
+        }
         return endArray();
     }
 
@@ -177,8 +186,10 @@ public class Encoder {
             return write((Map) value);
 
             // FLEncodable
-        else if (value instanceof FLEncodable)
+        else if (value instanceof FLEncodable) {
             ((FLEncodable) value).encodeTo(getFLEncoder());
+            return true;
+        }
 
         return false;
     }

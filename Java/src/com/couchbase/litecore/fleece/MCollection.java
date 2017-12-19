@@ -13,58 +13,95 @@
  */
 package com.couchbase.litecore.fleece;
 
-public class MCollection {
-    long _handle = 0L;
-    boolean _managed = false;
+public abstract class MCollection implements Encodable {
+    private MValue _slot;
 
-    public MCollection(long handle, boolean managed) {
-        _handle = handle;
-        _managed = managed;
+    private MContext _context;
+
+    private boolean _isMutable;
+
+    private boolean _isMutated;
+
+    private boolean _mutableChildren;
+
+    private MCollection _parent;
+
+    /* Constructors */
+
+    protected MCollection() {
+        this(MContext.NULL, true);
+    }
+
+    protected MCollection(MContext context, boolean isMutable) {
+        _context = context;
+        _isMutable = isMutable;
+        _mutableChildren = isMutable;
+    }
+
+    /* Properties */
+
+    public MContext getContext() {
+        return _context;
     }
 
     public boolean isMutable() {
-        return isMutable(_handle);
+        return _isMutable;
     }
 
     public boolean isMutated() {
-        return isMutated(_handle);
+        return _isMutated;
     }
 
-    public boolean mutableChildren() {
-        return mutableChildren(_handle);
+    /* Public Methods */
+
+    public boolean getMutableChildren() {
+        return _mutableChildren;
     }
 
-    public void setMutableChildren(boolean m) {
-        setMutableChildren(_handle, m);
+    public void initAsCopyOf(MCollection original, boolean isMutable) {
+        if (_context != MContext.NULL)
+            throw new IllegalStateException("Current context is not null.");
+
+        _context = original.getContext();
+        _isMutable = isMutable;
+        _mutableChildren = isMutable;
     }
 
-    public MContext context() {
-        return new MContext(context(_handle), true);
+    /* Protected Methods */
+
+    protected void setSlot(MValue newSlot, MValue oldSlot) {
+        if (_slot.equals(oldSlot)) {
+            _slot = newSlot;
+            if (newSlot == null)
+                _parent = null;
+        }
     }
 
-    public MCollection parent() {
-        return new MCollection(parent(_handle), true);
+    protected void initInSlot(MValue slot, MCollection parent, boolean isMutable) {
+        if (slot == null)
+            throw new IllegalArgumentException("slot cannot be null.");
+        if (_context != MContext.NULL)
+            throw new IllegalStateException("Current context is not MContext.Null");
+
+        _slot = slot;
+        _parent = parent;
+        _isMutable = isMutable;
+        _mutableChildren = isMutable;
+        _isMutated = _slot.isMutated();
+        if (_slot.getValue() != null)
+            _context = parent != null ? parent.getContext() : null;
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        free();
-        super.finalize();
+    protected void mutate() {
+        if (!_isMutable)
+            throw new IllegalStateException("The collection object is not mutable.");
+        if (!_isMutated) {
+            _isMutated = true;
+            if (_slot != null)
+                _slot.mutate();
+            if (_parent != null)
+                _parent.mutate();
+        }
+
     }
-
-    // should be overridden
-    public void free() {
-    }
-
-    private static native boolean isMutable(long handle);
-
-    private static native boolean isMutated(long handle);
-
-    private static native boolean mutableChildren(long handle);
-
-    private static native void setMutableChildren(long handle, boolean m);
-
-    private static native long context(long handle);
-
-    private static native long parent(long handle);
 }

@@ -38,7 +38,8 @@ public class FLDict {
 
     public FLValue getSharedKey(String key, FLSharedKeys sharedKeys) {
         if (key == null) return null;
-        long hValue = getSharedKey(handle, key.getBytes(), sharedKeys.getHandle());
+        long sk = sharedKeys != null ? sharedKeys.handle : 0L;
+        long hValue = getSharedKey(handle, key.getBytes(), sk);
         return hValue != 0L ? new FLValue(hValue) : null;
     }
 

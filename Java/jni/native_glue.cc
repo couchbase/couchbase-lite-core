@@ -32,8 +32,7 @@ JNI_OnLoad(JavaVM *jvm, void *reserved) {
     if (jvm->GetEnv((void **) &env, JNI_VERSION_1_6) == JNI_OK
         && initC4Observer(env)
         && initC4Replicator(env)
-        && initC4Socket(env)
-        && initMValue(env)) {
+        && initC4Socket(env)) {
         assert(gJVM == nullptr);
         gJVM = jvm;
         return JNI_VERSION_1_6;

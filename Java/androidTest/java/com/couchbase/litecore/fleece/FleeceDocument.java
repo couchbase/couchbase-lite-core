@@ -19,7 +19,6 @@ public class FleeceDocument {
     @Override
     protected void finalize() throws Throwable {
         if (_root != null) {
-            _root.free();
             _root = null;
         }
         super.finalize();

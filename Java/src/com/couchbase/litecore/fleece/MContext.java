@@ -14,51 +14,26 @@
 package com.couchbase.litecore.fleece;
 
 public class MContext {
-    protected long _handle;
-    protected boolean _managed;
+    public static final MContext NULL = new MContext();
+
+    private AllocSlice _data;
+
+    private FLSharedKeys _sharedKey;
+
+    public MContext() {
+
+    }
 
     public MContext(AllocSlice data, FLSharedKeys sk) {
-        _handle = init(data._handle, sk.getHandle());
-        _managed = false;
+        _data = data;
+        _sharedKey = sk;
     }
 
-    public MContext(long handle, boolean managed) {
-        _handle = handle;
-        _managed = managed;
+    public FLSharedKeys getSharedKeys() {
+        return _sharedKey;
     }
 
-    public void free() {
-        if (_handle != 0L && !_managed) {
-            free(_handle);
-            _handle = 0L;
-        }
+    public AllocSlice getData() {
+        return _data;
     }
-
-    public FLSharedKeys sharedKeys() {
-        return new FLSharedKeys(sharedKeys(_handle));
-    }
-
-    public void setNative(Object obj) {
-        setNative(_handle, obj);
-    }
-
-    public Object getNative() {
-        return getNative(_handle);
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        free();
-        super.finalize();
-    }
-
-    private static native long init(long data, long sk);
-
-    private static native void free(long handle);
-
-    private static native long sharedKeys(long handle);
-
-    private static native void setNative(long handle, Object obj);
-
-    private static native Object getNative(long handle);
 }

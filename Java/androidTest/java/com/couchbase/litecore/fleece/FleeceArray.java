@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
-public class FleeceArray implements List<Object>, Encodable, FLCollection {
+public class FleeceArray implements List<Object>, Encodable {
     private MArray _array;
 
     private FleeceArray() {
@@ -14,7 +14,7 @@ public class FleeceArray implements List<Object>, Encodable, FLCollection {
     }
 
     // Call from native method
-    FleeceArray(long mv, long parent) {
+    FleeceArray(MValue mv, MCollection parent) {
         this();
         _array.initInSlot(mv, parent);
     }
@@ -55,7 +55,8 @@ public class FleeceArray implements List<Object>, Encodable, FLCollection {
 
     @Override
     public boolean add(Object o) {
-        return _array.append(o);
+        _array.append(o);
+        return true;
     }
 
     @Override
@@ -90,8 +91,7 @@ public class FleeceArray implements List<Object>, Encodable, FLCollection {
 
     @Override
     public void clear() {
-        if (!_array.clear())
-            throw new IllegalStateException();
+        _array.clear();
     }
 
     @Override
@@ -105,28 +105,19 @@ public class FleeceArray implements List<Object>, Encodable, FLCollection {
     @Override
     public Object set(int i, Object o) {
         Object prev = get(i);
-        if (!_array.set(i, o)) {
-            requireMutable();
-            throw new IndexOutOfBoundsException();
-        }
+        _array.set(i, o);
         return prev;
     }
 
     @Override
     public void add(int i, Object o) {
-        if (!_array.insert(i, o)) {
-            requireMutable();
-            throw new IndexOutOfBoundsException();
-        }
+        _array.insert(i, o);
     }
 
     @Override
     public Object remove(int i) {
         Object prev = get(i);
-        if (!_array.remove(i)) {
-            requireMutable();
-            throw new IndexOutOfBoundsException();
-        }
+        _array.remove(i);
         return prev;
     }
 
@@ -166,12 +157,6 @@ public class FleeceArray implements List<Object>, Encodable, FLCollection {
     @Override
     public void encodeTo(Encoder enc) {
         _array.encodeTo(enc);
-    }
-
-    // Implementation of FLCollection
-    @Override
-    public long getFLCollectionHandle() {
-        return _array._handle;
     }
 
     private class Itr implements Iterator<Object> {
@@ -229,5 +214,11 @@ public class FleeceArray implements List<Object>, Encodable, FLCollection {
         public void add(Object e) {
             throw new UnsupportedOperationException();
         }
+    }
+
+    // For MValue
+
+    MCollection toMCollection() {
+        return _array;
     }
 }
