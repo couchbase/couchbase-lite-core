@@ -229,8 +229,5 @@ private:
     string _toolPath;
     deque<string> _args;
     int _verbose {0};
-    struct editline* _editLine {nullptr};
-    struct history* _editHistory {nullptr};
-    struct tokenizer* _editTokenizer {nullptr};
     std::string _editPrompt;
 };

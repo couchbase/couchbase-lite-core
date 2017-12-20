@@ -6,6 +6,7 @@
 //  Copyright © 2017 Couchbase. All rights reserved.
 //
 
-HEADER_SEARCH_PATHS                = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/BLIP-Cpp/src/util
+HEADER_SEARCH_PATHS                = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/BLIP-Cpp/src/util $(SRCROOT)/../vendor/linenoise-ng/include
 PRODUCT_NAME                       = $(TARGET_NAME)
 VALID_ARCHS                        = x86_64
+WARNING_CFLAGS                     = -Wno-shorten-64-to-32 -Wno-documentation -Wno-missing-prototypes -Wno-conversion -Wno-conditional-uninitialized

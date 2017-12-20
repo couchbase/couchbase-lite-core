@@ -8,7 +8,7 @@
 
 #include "Tool.hh"
 #include "Logging.hh"
-#include <histedit.h>           // editline / libedit API
+#include "linenoise.h"
 #include <stdio.h>
 
 #if __APPLE__
@@ -24,13 +24,7 @@ Tool* Tool::instance;
 
 
 Tool::~Tool() {
-    if (_editLine) {
-        if (_editHistory)
-            history_end(_editHistory);
-        if (_editTokenizer)
-            tok_end(_editTokenizer);
-        el_end(_editLine);
-    }
+    linenoiseHistoryFree();
     if (this == instance)
         instance = nullptr;
 }
@@ -49,6 +43,61 @@ static bool outputIsColor() {
             && (strstr(term,"ANSI") || strstr(term,"ansi") || strstr(term,"color"));
     }
     return sColor;
+}
+
+static bool tokenize(const char* input, deque<string> &args)
+{
+    string str(input);
+    int start = 0;
+    for( size_t i=0; i<str.length(); i++){
+        char c = str[i];
+        if( c == ' ' ) {
+            if(i - start > 1) {
+                args.push_back(str.substr(start, i - start));
+            }
+            
+            while(str[i] == ' ') {
+                i++;
+            }
+            
+            start = i;
+            i--;
+        } else if(c == '\"' ) {
+            i++;
+            while( i < str.size() - 1 && str[i] != '\"' ){ i++; }
+            if(str[i] != '\"') {
+                return false;
+            }
+            
+            args.push_back(str.substr(start + 1, i - start - 1));
+            start = i;
+        } else if(c == '\r' || c == '\n') {
+            break;
+        } else if(!isascii(c)) {
+            start = i+1;
+        }
+    }
+    
+    int offset = 0;
+    int carriageReturn = str.find("\r");
+    int lineFeed = str.find("\n");
+    if(carriageReturn > 0) {
+        offset++;
+    }
+    
+    if(lineFeed > 0) {
+        offset++;
+    }
+    
+    if(str[str.length() - offset - 1] == '\"') {
+        offset++;
+    }
+    
+    if(str.length() - start - offset > 1) {
+        args.push_back(str.substr(start, str.length() - start - offset));
+    }
+    
+    return true;
 }
 
 // See <https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_codes>
@@ -74,36 +123,11 @@ int Tool::terminalWidth() {
     return kDefaultLineWidth;
 }
 
-
-const char* Tool::promptCallback(EditLine *e) {
-    Tool *tool;
-    el_get(e, EL_CLIENTDATA, &tool);
-    return tool->_editPrompt.c_str();
-}
-
 bool Tool::readLine(const char *prompt) {
     if (!inputIsTerminal())
         return dumbReadLine(prompt);
 
-    if (!_editLine) {
-        // First-time initialization of editline:
-        _editLine = el_init("cblite", stdin, stdout, stderr);   // FIX: Make name configurable
-        el_set(_editLine, EL_SIGNAL, 1);
-        el_set(_editLine, EL_EDITOR, "emacs");
-        el_set(_editLine, EL_CLIENTDATA, this);
-        el_set(_editLine, EL_PROMPT, &promptCallback);
-
-        _editHistory = history_init();
-        if (_editHistory) {
-            HistEvent ev;
-            history(_editHistory, &ev, H_SETSIZE, 100);        // Set history size
-            el_set(_editLine, EL_HIST, &history, _editHistory);        // Attach history to line editor
-        } else {
-            Warn("command-line history could not be initialized");
-        }
-
-        _editTokenizer = tok_init(nullptr);
-    }
+    linenoiseHistorySetMaxLen(100);
 
     _args.clear();
     _editPrompt = prompt;
@@ -113,34 +137,27 @@ bool Tool::readLine(const char *prompt) {
     }
 
     while (true) {
-        int lineLength;
-        const char *line = el_gets(_editLine, &lineLength);
+        const char* line = linenoise(_editPrompt.c_str());
         // Returned line and lineLength include the trailing newline, unless user typed ^D.
-        if (lineLength < 0) {
-            // Error in editline
-            fail("reading interactive input");
-        } else if (lineLength == 0) {
+        if (linenoiseKeyType() == 2) {
             // EOF on stdin; return false:
             cout << "\n";
             return false;
-        } else if (lineLength > 1) {
+        } else if (line == nullptr) {
+            // Error in linenoise
+            fail("reading interactive input");
+        } else if (linenoiseKeyType() == 0) {
             // Got a command!
             // Add line to history so user can recall it later:
-            HistEvent ev;
-            history(_editHistory, &ev, H_ENTER, line);
+            linenoiseHistoryAdd(line);
 
             // Tokenize the line (break into args):
-            tok_reset(_editTokenizer);
-            int argc;
-            const char **argv;
-            int eol = tok_line(_editTokenizer, el_line(_editLine), &argc, &argv, nullptr, nullptr);
-            if (eol > 0) {
+            bool success = tokenize(line, _args);
+            if (!success) {
                 cout << "Error: Unclosed quote\n";
                 continue;
             }
-            // Convert the args into C++ form:
-            for(int i = 0; i < argc; ++i)
-                _args.emplace_back(argv[i]);
+            
             // Return true unless there are no actual args:
             if (!_args.empty())
                 return true;
@@ -161,17 +178,13 @@ bool Tool::dumbReadLine(const char *prompt) {
             cout << '\n';
             return false;
         }
-        int argc;
-        const char **argv;
-        auto tokenizer = tok_init(nullptr);
-        int eol = tok_str(tokenizer, line, &argc, &argv);
-        if (eol > 0) {
+        
+        bool success = tokenize(line, _args);
+        if (!success) {
             cout << "Error: Unclosed quote\n";
             continue;
         }
-        // Convert the args into C++ form:
-        for(int i = 0; i < argc; ++i)
-            _args.emplace_back(argv[i]);
+
         // Return true unless there are no actual args:
         if (!_args.empty())
             return true;
