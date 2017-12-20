@@ -10,6 +10,7 @@
 #include "WebSocketInterface.hh"
 #include "Actor.hh"
 #include "Logging.hh"
+#include "Error.hh"
 #include <iomanip>
 #include <memory>
 #include <set>
@@ -32,7 +33,7 @@ namespace litecore { namespace websocket {
         }
 
         virtual bool send(fleece::slice msg, bool binary) override {
-            assert(_isOpen);
+            DebugAssert(_isOpen);
             enqueue(&MockWebSocket::_send, fleece::alloc_slice(msg), binary);
             return true; //FIX: Keep track of buffer size
         }
