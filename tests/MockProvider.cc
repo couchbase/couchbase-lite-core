@@ -10,6 +10,6 @@
 
 namespace litecore { namespace websocket {
 
-    LogDomain MockWebSocket::WSMock("WSMock");
+    LogDomain MockWebSocket::WSMock("WSMock", LogLevel::Warning);
 
 } }
