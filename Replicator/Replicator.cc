@@ -266,7 +266,7 @@ namespace litecore { namespace repl {
         if (_puller)
             _puller->connectionClosed();
 
-        if (status.isNormal() && closedByPeer) {
+        if (status.isNormal() && closedByPeer && (_options.push > kC4Passive || _options.pull > kC4Passive)) {
             log("I didn't initiate the close; treating this as code 1001 (GoingAway)");
             status.code = websocket::kCodeGoingAway;
             status.message = alloc_slice("WebSocket connection closed by peer");
