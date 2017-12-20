@@ -21,6 +21,7 @@
 
 namespace c4 {
 
+    // The functions the ref<> template calls to free a reference.
     static inline void freeRef(C4Database* c)          {c4db_free(c);}
     static inline void freeRef(C4RawDocument* c)       {c4raw_free(c);}
     static inline void freeRef(C4Document* c)          {c4doc_free(c);}
@@ -59,15 +60,20 @@ namespace c4 {
     };
 
 
+    /** Manages a C4SliceResult, letting you treat it as a slice and freeing it for you. */
     struct sliceResult : public fleece::slice {
     public:
         sliceResult(C4SliceResult sr)   :slice(sr.buf, sr.size) { }
         ~sliceResult()                  {c4slice_free(*(C4SliceResult*)this);}
+
         sliceResult(const sliceResult&) =delete;
         sliceResult& operator= (const sliceResult&) =delete;
     };
 
-    
+
+    /** Manages a transaction safely. The begin() method calls c4db_beginTransaction, then commit()
+        or abort() end it. If the Transaction object exits scope when it's been begun but not yet
+        ended, it aborts the transaction. */
     class Transaction {
     public:
         Transaction(C4Database *db)
@@ -80,6 +86,7 @@ namespace c4 {
         }
 
         bool begin(C4Error *error) {
+            assert(!_active);
             if (!c4db_beginTransaction(_db, error))
                 return false;
             _active = true;
@@ -99,6 +106,6 @@ namespace c4 {
 
     private:
         C4Database *_db;
-        bool _active;
+        bool _active {false};
     };
 }
