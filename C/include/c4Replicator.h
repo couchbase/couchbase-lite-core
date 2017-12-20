@@ -162,6 +162,7 @@ extern "C" {
     #define kC4ReplicatorOptionSkipDeleted    "skipDeleted" // Don't push/pull tombstones; bool
     #define kC4ReplicatorOptionNoConflicts    "noConflicts" // Puller rejects conflicts; bool
     #define kC4ReplicatorCheckpointInterval   "checkpointInterval" // How often to checkpoint, in seconds; number
+    #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" // Stable ID for remote db with unstable URL; string
 
     // Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           // Auth property; string

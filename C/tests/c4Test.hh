@@ -136,6 +136,10 @@ public:
     C4DocumentVersioning versioning() const     {return _versioning;}
     bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
 
+    // Creates an extra database, with the same path as db plus the suffix.
+    // Caller is responsible for closing & deleting this database when the test finishes.
+    C4Database* createDatabase(const std::string &nameSuffix);
+
     void reopenDB();
     void deleteDatabase();
     void deleteAndRecreateDB()                  {deleteAndRecreateDB(db);}

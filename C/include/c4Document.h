@@ -35,7 +35,6 @@ extern "C" {
         kRevHasAttachments = 0x08, ///< Does this rev's body contain attachments?
         kRevKeepBody       = 0x10, ///< Revision's body should not be discarded when non-leaf
         kRevIsConflict     = 0x20, ///< Unresolved conflicting revision; will never be current
-        kRevIsForeign      = 0x40  ///< Rev comes from replicator, not created locally
     }; // Note: Same as Revision::Flags
 
 
@@ -57,6 +56,10 @@ extern "C" {
 
         C4Revision selectedRev;     ///< Describes the currently-selected revision
     } C4Document;
+
+
+    /** Identifies a remote database being replicated with. */
+    typedef uint32_t C4RemoteID;
 
 
     /** \name Lifecycle
@@ -151,6 +154,10 @@ extern "C" {
     bool c4doc_selectCommonAncestorRevision(C4Document* doc C4NONNULL,
                                             C4String rev1ID,
                                             C4String rev2ID) C4API;
+
+    C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase);
+
+    bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase);
 
     /** Given a revision ID, returns its generation number (the decimal number before
         the hyphen), or zero if it's unparseable. */

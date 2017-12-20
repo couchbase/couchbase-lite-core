@@ -203,6 +203,15 @@ namespace c4Internal {
             return true;
         }
 
+        alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
+            auto rev = _versionedDoc.latestRevisionOnRemote(remote);
+            return rev ? rev->revID.expanded() : alloc_slice();
+        }
+
+        void setRemoteAncestorRevID(C4RemoteID remote) override {
+            _versionedDoc.setLatestRevisionOnRemote(remote, _selectedRev);
+        }
+
         void updateMeta() {
             _versionedDoc.updateMeta();
             flags = (C4DocumentFlags)_versionedDoc.flags() | kDocExists;
@@ -221,16 +230,21 @@ namespace c4Internal {
             if (maxRevTreeDepth == 0)
                 maxRevTreeDepth = _db->maxRevTreeDepth();
             _versionedDoc.prune(maxRevTreeDepth);
-            if (!_versionedDoc.save(_db->transaction()))
-                return false;
-            selectedRev.flags &= ~kRevNew;
-            if (_versionedDoc.sequence() > sequence) {
-                sequence = _versionedDoc.sequence();
-                if (selectedRev.sequence == 0)
-                    selectedRev.sequence = sequence;
-                _db->saved(this);
+            switch (_versionedDoc.save(_db->transaction())) {
+                case litecore::VersionedDocument::kConflict:
+                    return false;
+                case litecore::VersionedDocument::kNoNewSequence:
+                    return true;
+                case litecore::VersionedDocument::kNewSequence:
+                    selectedRev.flags &= ~kRevNew;
+                    if (_versionedDoc.sequence() > sequence) {
+                        sequence = _versionedDoc.sequence();
+                        if (selectedRev.sequence == 0)
+                            selectedRev.sequence = sequence;
+                        _db->saved(this);
+                    }
+                    return true;
             }
-            return true;
         }
 
         int32_t purgeRevision(C4Slice revID) override {

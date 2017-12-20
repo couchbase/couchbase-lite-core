@@ -254,7 +254,9 @@ bool c4_shutdown(C4Error *outError) noexcept {
 // LCOV_EXCL_START
 bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequence) {
     try {
-        return database->defaultKeyStore().setDocumentFlag(docID, sequence, DocumentFlags::kSynced);
+        return database->defaultKeyStore().setDocumentFlag(docID, sequence,
+                                                           DocumentFlags::kSynced,
+                                                           database->transaction());
     } catchError(nullptr)
     return false;
 }

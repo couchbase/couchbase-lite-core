@@ -74,6 +74,8 @@ namespace litecore { namespace repl {
         virtual std::string loggingClassName() const override {return "DBWorker";}
 
     private:
+        std::string remoteDBIDString() const;
+        bool findRemoteDBID(C4Error*);
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
         bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
@@ -110,14 +112,15 @@ namespace litecore { namespace repl {
         c4::ref<C4Database> _db;
         C4BlobStore* _blobStore;
         const websocket::Address _remoteAddress;
-        std::string _remoteCheckpointDocID;
-        c4::ref<C4DatabaseObserver> _changeObserver;
-        Retained<Pusher> _pusher;
-        DocIDSet _pushDocIDs;
-        std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert;
-        std::mutex _revsToInsertMutex;
-        actor::Timer _insertTimer;
-        C4SequenceNumber _firstChangeSequence {0};
+        std::string _remoteCheckpointDocID;                 // docID of checkpoint
+        C4RemoteID _remoteDBID {0};                         // ID # of remote DB in revision store
+        c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
+        Retained<Pusher> _pusher;                           // Pusher to send db changes to
+        DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
+        std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert; // Pending revs to be added to db
+        std::mutex _revsToInsertMutex;                      // For safe access to _revsToInsert
+        actor::Timer _insertTimer;                          // Timer for inserting revs
+        C4SequenceNumber _firstChangeSequence {0};          // First doc sequence to be pushed
     };
 
 } }

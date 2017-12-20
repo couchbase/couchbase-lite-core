@@ -186,17 +186,49 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
+    // Start with "mydoc" in both dbs with the same revs, so it won't be replicated.
+    // But each db has one unique document.
+    createRev(db, kDocID, kRevID, kFleeceBody);
+    createRev(db, kDocID, kRev2ID, kFleeceBody);
+    createRev(db, "onlyInDB1"_sl, kRevID, kFleeceBody);
+    
+    createRev(db2, kDocID, kRevID, kFleeceBody);
+    createRev(db2, kDocID, kRev2ID, kFleeceBody);
+    createRev(db2, "onlyInDB2"_sl, kRevID, kFleeceBody);
+
+    _expectedDocumentCount = 1;
+    SECTION("Pull") {
+        runPullReplication();
+    }
+    SECTION("Push") {
+        runPushReplication();
+    }
+}
+
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
+    auto serverOpts = Replicator::Options::passive();
+    SECTION("Default") {
+    }
+    SECTION("No-conflicts") {
+        serverOpts.setProperty(C4STR(kC4ReplicatorOptionNoConflicts), "true"_sl);
+    }
+
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
-    runReplicators(Replicator::Options::passive(), Replicator::Options::pulling());
+    runReplicators(serverOpts, Replicator::Options::pulling());
     compareDatabases();
     validateCheckpoints(db2, db, "{\"remote\":100}");
 
     Log("--- Erasing db, now pushing back to db...");
     deleteAndRecreateDB();
-
-    runReplicators(Replicator::Options::passive(), Replicator::Options::pushing());
+    // Give the replication a unique ID so it won't know it's pushing to db again
+    auto pushOpts = Replicator::Options::pushing();
+    pushOpts.setProperty(C4STR(kC4ReplicatorOptionRemoteDBUniqueID), "three"_sl);
+    runReplicators(serverOpts, pushOpts);
+    validateCheckpoints(db2, db, "{\"local\":100}");
 }
 
 
@@ -494,4 +526,3 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Pull]
     runReplicators(Replicator::Options::pushing(), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":2}");
 }
-

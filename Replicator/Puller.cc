@@ -121,6 +121,7 @@ namespace litecore { namespace repl {
             // Pass the buck to the DBWorker so it can find the missing revs & request them:
             increment(_pendingCallbacks);
             _dbActor->findOrRequestRevs(req, asynchronize([this,req,changes](vector<bool> which) {
+                // Callback, after revs request sent:
                 decrement(_pendingCallbacks);
                 bool tracksProgress = (nonPassive() && !_options.noConflicts());
                 for (size_t i = 0; i < which.size(); ++i) {

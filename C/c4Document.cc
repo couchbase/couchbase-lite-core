@@ -173,6 +173,21 @@ bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1, C4String
 }
 
 
+C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase) {
+    return tryCatch<C4SliceResult>(nullptr, [&]{
+        return sliceResult(internal(doc)->remoteAncestorRevID(remoteDatabase));
+    });
+}
+
+
+bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase) {
+    return tryCatch<bool>(nullptr, [&]{
+        internal(doc)->setRemoteAncestorRevID(remoteDatabase);
+        return true;
+    });
+}
+
+
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) {
     return Document::currentRevFlagsFromDocFlags(docFlags);
 }
@@ -209,6 +224,7 @@ static bool isNewDocPutRequest(C4Database *database, const C4DocPutRequest *rq) 
 // Tries to fulfil a PutRequest by creating a new Record. Returns null if one already exists.
 static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
 {
+    DebugAssert(rq->save, "putNewDoc optimization works only if rq->save is true");
     Record record(rq->docID);
     if (!rq->docID.buf)
         record.setKey(createDocUUID());
@@ -308,7 +324,7 @@ C4Document* c4doc_put(C4Database *database,
     try {
         database->validateRevisionBody(rq->body);
 
-        if (isNewDocPutRequest(database, rq)) {
+        if (rq->save && isNewDocPutRequest(database, rq)) {
             // As an optimization, write the doc assuming there is no prior record in the db:
             doc = putNewDoc(database, rq);
             // If there's already a record, doc will be null, so we'll continue down regular path.

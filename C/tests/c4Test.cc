@@ -261,6 +261,21 @@ C4Test::~C4Test() {
 }
 
 
+C4Database* C4Test::createDatabase(const string &nameSuffix) {
+    assert(!nameSuffix.empty());
+    string dbPath = fleece::slice(databasePath()).asString() + "_" + nameSuffix;
+    auto dbPathSlice = c4str(dbPath.c_str());
+
+    auto config = c4db_getConfig(db);
+    C4Error error;
+    if (!c4db_deleteAtPath(dbPathSlice, &error))
+        REQUIRE(error.code == 0);
+    auto newDB = c4db_open(dbPathSlice, config, &error);
+    REQUIRE(newDB != nullptr);
+    return newDB;
+}
+
+
 void C4Test::reopenDB() {
     auto config = *c4db_getConfig(db);
     C4Error error;
@@ -541,6 +556,7 @@ void C4Test::deleteDatabase(){
     C4Error error = {};
     c4db_delete(db, &error);
     c4db_free(db);
+    db = nullptr;
 }
 
 

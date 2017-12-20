@@ -34,11 +34,13 @@ namespace litecore {
         bool read(Record &rec, ContentOptions options) const override;
 
         sequence_t set(slice key, slice meta, slice value, DocumentFlags,
-                       Transaction&, const sequence_t *replacingSequence =nullptr) override;
+                       Transaction&,
+                       const sequence_t *replacingSequence =nullptr,
+                       bool newSequence =true) override;
 
         bool del(slice key, Transaction&, sequence_t s) override;
 
-        bool setDocumentFlag(slice key, sequence_t sequence, DocumentFlags) override;
+        bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&) override;
 
         void erase() override;
 
@@ -103,7 +105,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> _recCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;
         std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
-        std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt;
+        std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
         std::unique_ptr<SQLite::Statement> _backupStmt, _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
         std::unique_ptr<SQLite::Statement> _setFlagStmt;
         bool _createdSeqIndex {false};     // Created by-seq index yet?

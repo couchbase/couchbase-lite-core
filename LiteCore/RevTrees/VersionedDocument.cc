@@ -62,7 +62,10 @@ namespace litecore {
         }
     }
 
-    void VersionedDocument::updateMeta() {
+    bool VersionedDocument::updateMeta() {
+        auto oldFlags = _rec.flags();
+        alloc_slice oldRevID = _rec.version();
+
         _rec.setFlags(DocumentFlags::kNone);
         const Rev* curRevision = currentRevision();
         if (curRevision) {
@@ -83,30 +86,37 @@ namespace litecore {
             _rec.setFlag(DocumentFlags::kDeleted);
             _rec.setVersion(nullslice);
         }
+
+        return _rec.flags() != oldFlags || _rec.version() != oldRevID;
     }
 
-    bool VersionedDocument::save(Transaction& transaction) {
+    VersionedDocument::SaveResult VersionedDocument::save(Transaction& transaction) {
         if (!_changed)
-            return true;
+            return kNoNewSequence;
         updateMeta();
         sequence_t seq = _rec.sequence();
+        bool createSequence;
         if (currentRevision()) {
             removeNonLeafBodies();
-            // Don't call _rec.setBody() because it'll invalidate all the pointers from Revisions
-            // into the existing body buffer.
-            seq = _db.set(_rec.key(), _rec.version(), encode(), _rec.flags(),
-                          transaction, &seq);
+            auto newBody = encode();
+            createSequence = seq == 0 || hasNewRevisions();
+            // (Don't call _rec.setBody(), because it'd invalidate all the inner pointers from
+            // Revs into the existing body buffer.)
+            seq = _db.set(_rec.key(), _rec.version(), newBody, _rec.flags(),
+                          transaction, &seq, createSequence);
             if (!seq)
-                return false;               // Conflict
+                return kConflict;               // Conflict
             _rec.updateSequence(seq);
             _rec.setExists();
-            saved(seq);
+            if (createSequence)
+                saved(seq);
         } else {
+            createSequence = false;
             if (seq && !_db.del(_rec.key(), transaction, seq))
-                return false;
+                return kConflict;
         }
         _changed = false;
-        return true;
+        return createSequence ? kNewSequence : kNoNewSequence;
     }
 
 #if DEBUG

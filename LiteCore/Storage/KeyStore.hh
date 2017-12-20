@@ -78,7 +78,8 @@ namespace litecore {
         virtual sequence_t set(slice key, slice version, slice value,
                                DocumentFlags,
                                Transaction&,
-                               const sequence_t *replacingSequence =nullptr) =0;
+                               const sequence_t *replacingSequence =nullptr,
+                               bool newSequence =true) =0;
 
         sequence_t set(slice key, slice value, Transaction &t,
                        const sequence_t *replacingSequence =nullptr) {
@@ -91,7 +92,7 @@ namespace litecore {
         bool del(const Record &rec, Transaction &t)                 {return del(rec.key(), t);}
 
         /** Sets a flag of a record, without having to read/write the Record. */
-        virtual bool setDocumentFlag(slice key, sequence_t sequence, DocumentFlags);
+        virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&);
 
         //////// INDEXING:
 
