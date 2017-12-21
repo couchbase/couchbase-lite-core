@@ -14,6 +14,11 @@
 #if __APPLE__
 #include <unistd.h>
 #include <sys/ioctl.h>
+#elif defined(_MSC_VER)
+#include <io.h>
+#define isatty _isatty
+#define STDIN_FILENO _fileno(stdin)
+#define STDOUT_FILENO _fileno(stdout)
 #endif
 
 

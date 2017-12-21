@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <deque>
+#include <minmax.h>
 
 using namespace std;
 using namespace fleece;
