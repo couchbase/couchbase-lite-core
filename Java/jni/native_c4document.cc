@@ -608,16 +608,20 @@ Java_com_couchbase_litecore_C4Document_update(JNIEnv *env, jclass clazz,
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_update2(JNIEnv *env, jclass clazz,
                                                                        jlong jdoc,
                                                                        jlong jbody, jint flags) {
+    C4Document *doc = (C4Document *) jdoc;
+    if (doc == NULL)
+        throwError(env, {LiteCoreDomain, kC4ErrorAssertionFailed});
+
     C4Slice body;
     if (jbody != 0)
         body = *(C4Slice *) jbody;
     else
         body = kC4SliceNull;
     C4Error error;
-    C4Document *doc = c4doc_update((C4Document *) jdoc, body, flags, &error);
-    if (!doc)
+    C4Document *newDoc = c4doc_update((C4Document *) jdoc, body, flags, &error);
+    if (!newDoc)
         throwError(env, error);
-    return (jlong) doc;
+    return (jlong) newDoc;
 }
 
 /*
