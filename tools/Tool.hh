@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <deque>
+#include <algorithm>
 
 using namespace std;
 using namespace fleece;
