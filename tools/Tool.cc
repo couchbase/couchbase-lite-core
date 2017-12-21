@@ -27,6 +27,13 @@ static constexpr int kDefaultLineWidth = 100;
 
 Tool* Tool::instance;
 
+Tool::Tool() {
+    if(!instance) {
+        instance = this;
+    }
+    
+    linenoiseHistorySetMaxLen(100);
+}
 
 Tool::~Tool() {
     linenoiseHistoryFree();
@@ -132,7 +139,7 @@ bool Tool::readLine(const char *prompt) {
     if (!inputIsTerminal())
         return dumbReadLine(prompt);
 
-    linenoiseHistorySetMaxLen(100);
+    
 
     _args.clear();
     _editPrompt = prompt;
@@ -142,16 +149,9 @@ bool Tool::readLine(const char *prompt) {
     }
 
     while (true) {
-        const char* line = linenoise(_editPrompt.c_str());
+        char* line = linenoise(_editPrompt.c_str());
         // Returned line and lineLength include the trailing newline, unless user typed ^D.
-        if (linenoiseKeyType() == 2) {
-            // EOF on stdin; return false:
-            cout << "\n";
-            return false;
-        } else if (line == nullptr) {
-            // Error in linenoise
-            fail("reading interactive input");
-        } else if (linenoiseKeyType() == 0) {
+        if (line != nullptr) {
             // Got a command!
             // Add line to history so user can recall it later:
             linenoiseHistoryAdd(line);
@@ -166,7 +166,11 @@ bool Tool::readLine(const char *prompt) {
             // Return true unless there are no actual args:
             if (!_args.empty())
                 return true;
+        } else if(linenoiseKeyType() == 2) {
+            cout << endl;
+            return false;
         }
+        
         // No command was entered, so go round again:
         cout << "Please type a command, or Ctrl-D to exit.\n";
     }

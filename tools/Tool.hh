@@ -31,7 +31,7 @@ static inline C4Slice c4str(const string &s) {
 
 class Tool {
 public:
-    Tool()                                      {if (!instance) instance = this;}
+    Tool();
     virtual ~Tool();
 
     static Tool* instance;
