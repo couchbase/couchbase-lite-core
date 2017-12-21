@@ -19,6 +19,7 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "PlatformIO.hh"
+#include <fcntl.h>
 #include <cerrno>
 #include <dirent.h>
 #include <cstdio>
