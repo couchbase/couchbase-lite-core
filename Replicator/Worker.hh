@@ -190,7 +190,7 @@ namespace litecore { namespace repl {
 
         Options _options;
         Retained<Worker> _parent;
-        bool _important {true};
+        uint8_t _important {1};
         std::string _loggingID;
 
     private:

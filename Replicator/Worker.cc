@@ -183,8 +183,13 @@ namespace litecore { namespace repl {
         if (newLevel != _status.level) {
             _status.level = newLevel;
             changed = true;
-            if (_important)
-                log("now %-s", kC4ReplicatorActivityLevelNames[newLevel]);
+            if (_important) {
+                auto name = kC4ReplicatorActivityLevelNames[newLevel];
+                if (_important > 1)
+                    log("now %-s", name);
+                else
+                    logVerbose("now %-s", name);
+            }
         }
         if (changed)
             changedStatus();

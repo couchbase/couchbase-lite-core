@@ -66,6 +66,7 @@ namespace litecore { namespace repl {
     ,_dbActor(new DBWorker(connection, this, db, address, options))
     {
         _loggingID = string(c4::sliceResult(c4db_getPath(db))) + " " + _loggingID;
+        _important = 2;
         if (options.push != kC4Disabled)
             _pusher = new Pusher(connection, this, _dbActor, _options);
         if (options.pull != kC4Disabled)
@@ -310,6 +311,7 @@ namespace litecore { namespace repl {
                                                     alloc_slice data,
                                                     bool dbIsEmpty,
                                                     C4Error err) {
+            // ...after the checkpoint is read:
             if (status().level == kC4Stopped)
                 return;
             
@@ -339,6 +341,7 @@ namespace litecore { namespace repl {
             MessageBuilder msg("getCheckpoint"_sl);
             msg["client"_sl] = checkpointID;
             sendRequest(msg, [this,haveLocalCheckpoint](MessageProgress progress) {
+                // ...after the checkpoint is received:
                 MessageIn *response = progress.reply;
                 if (!response)
                     return;
@@ -351,14 +354,14 @@ namespace litecore { namespace repl {
                     log("No remote checkpoint");
                     _checkpointRevID.reset();
                 } else {
-                    log("Received remote checkpoint: '%.*s'", SPLAT(response->body()));
                     remoteCheckpoint.decodeFrom(response->body());
                     _checkpointRevID = response->property("rev"_sl);
+                    if (willLog()) {
+                        auto gotcp = remoteCheckpoint.sequences();
+                        log("Received remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
+                            gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
+                    }
                 }
-
-                auto gotcp = remoteCheckpoint.sequences();
-                log("...got remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
-                    gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
 
                 if (haveLocalCheckpoint) {
                     // Compare checkpoints, reset if mismatched:
