@@ -690,5 +690,60 @@ namespace LiteCore.Tests
                  }
             });
         }
+
+        [Fact]
+        public void TestLegacyProperties()
+        {
+            RunTestVariants(() =>
+            {
+                Native.c4doc_isOldMetaProperty("_attachments").Should().BeTrue();
+                Native.c4doc_isOldMetaProperty("@type").Should().BeFalse();
+
+                var enc = Native.c4db_getSharedFleeceEncoder(Db);
+                LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
+                try {
+                    Native.FLEncoder_BeginDict(enc, 2);
+                    Native.FLEncoder_WriteKey(enc, "@type");
+                    Native.FLEncoder_WriteString(enc, "blob");
+                    Native.FLEncoder_WriteKey(enc, "digest");
+                    Native.FLEncoder_WriteString(enc, String.Empty);
+                    Native.FLEncoder_EndDict(enc);
+                } finally {
+                    LiteCoreBridge.Check(err => Native.c4db_endTransaction(Db, true, err));
+                }
+
+                var result = NativeRaw.FLEncoder_Finish(enc, null);
+                ((long) result.buf).Should().NotBe(0);
+                try {
+                    var val = NativeRaw.FLValue_FromTrustedData((FLSlice) result);
+                    var d = Native.FLValue_AsDict(val);
+                    ((long) d).Should().NotBe(0);
+
+                    var key = Native.c4db_initFLDictKey(Db, "@type");
+                    var testVal = Native.FLDict_GetWithKey(d, &key);
+
+                    Native.FLValue_AsString(testVal).Should().Be("blob");
+                    Native.c4doc_dictContainsBlobs(d, Native.c4db_getFLSharedKeys(Db)).Should().BeTrue();
+
+                } finally {
+                    Native.FLSliceResult_Free(result);
+                }
+
+                enc = Native.c4db_getSharedFleeceEncoder(Db);
+                Native.FLEncoder_BeginDict(enc, 0);
+                Native.FLEncoder_EndDict(enc);
+                result = NativeRaw.FLEncoder_Finish(enc, null);
+                ((long) result.buf).Should().NotBe(0);
+                try {
+                    var val = NativeRaw.FLValue_FromTrustedData((FLSlice) result);
+                    var d = Native.FLValue_AsDict(val);
+                    ((long) d).Should().NotBe(0);
+
+                    Native.c4doc_dictContainsBlobs(d, Native.c4db_getFLSharedKeys(Db)).Should().BeFalse();
+                } finally {
+                    Native.FLSliceResult_Free(result);
+                }
+            });
+        }
     }
 }

@@ -19,6 +19,8 @@ namespace LiteCore.Tests
     {
         internal C4Query *_query;
 
+        internal delegate T CollectingDelegate<out T>(C4QueryEnumerator *e);
+
         protected abstract string JsonPath
         {
             get;
@@ -31,11 +33,10 @@ namespace LiteCore.Tests
         }
 #endif
 
-        protected IList<string> Run(string bindings = null)
+        internal IList<T> RunCollecting<T>(string bindings, CollectingDelegate<T> callback)
         {
             ((long)_query).Should().NotBe(0, "because otherwise what are we testing?");
-            var docIDs = new List<string>();
-            
+            var returnList = new List<T>();
             var e = (C4QueryEnumerator*)LiteCoreBridge.Check(err => {
                 var options = C4QueryOptions.Default;
                 return Native.c4query_run(_query, &options, bindings, err);
@@ -44,12 +45,35 @@ namespace LiteCore.Tests
             C4Error error;
             while(Native.c4queryenum_next(e, &error)) {
                 Native.FLArrayIterator_GetCount(&e->columns).Should().BeGreaterThan(0);
-                docIDs.Add(Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0)));
+                returnList.Add(callback(e));
             }
 
             error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
             Native.c4queryenum_free(e);
-            return docIDs;
+            return returnList;
+        }
+
+        protected IList<string> Run(string bindings = null)
+        {
+            return RunCollecting(bindings, e =>
+            {
+                Native.FLArrayIterator_GetCount(&e->columns).Should().BeGreaterThan(0);
+                var docID = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0U));
+                return docID;
+            });
+        }
+
+        internal IList<C4FullTextMatch[]> RunFTS(string bindings = null)
+        {
+            return RunCollecting(bindings, e =>
+            {
+                var retVal = new C4FullTextMatch[e->fullTextMatchCount];
+                for (var i = 0; i < e->fullTextMatchCount; i++) {
+                    retVal[i] = e->fullTextMatches[i];
+                }
+
+                return retVal;
+            });
         }
 
         protected string Json5(string input)

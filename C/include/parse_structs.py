@@ -9,7 +9,7 @@ type_map = {"uint32_t":"uint","size_t":"UIntPtr","int32_t":"int","uint8_t":"byte
 bridge_types = ["UIntPtr","string","bool"]
 reverse_bridge_map = {"string":"IntPtr","bool":"byte"}
 skip_types = ["C4FullTextTerm","C4SocketFactory","C4ReplicatorParameters"]
-partials = ["C4Error","C4Slice","C4BlobKey","C4EncryptionKey","C4DatabaseConfig","C4IndexOptions","C4EnumeratorOptions","C4QueryOptions","C4UUID","FLSlice","FLSliceResult"]
+partials = ["C4Error","C4Slice","C4BlobKey","C4EncryptionKey","C4DatabaseConfig","C4IndexOptions","C4EnumeratorOptions","C4QueryOptions","C4UUID","FLSlice","FLSliceResult","C4FullTextMatch"]
 
 def make_property(name, type):
     tin = open("templates/{}.cs".format(type))

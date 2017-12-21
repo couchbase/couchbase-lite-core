@@ -50,4 +50,24 @@ namespace LiteCore.Interop
     {
         public static readonly C4QueryOptions Default = new C4QueryOptions();
     }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
+        partial struct C4FullTextMatch
+    {
+        public C4FullTextMatch(ulong dataSource, uint property, uint term,
+            uint start, uint length)
+        {
+            this.dataSource = dataSource;
+            this.property = property;
+            this.term = term;
+            this.start = start;
+            this.length = length;
+        }
+    }
 }
+
+

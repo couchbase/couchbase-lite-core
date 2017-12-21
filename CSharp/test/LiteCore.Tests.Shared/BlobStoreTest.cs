@@ -1,10 +1,31 @@
-﻿using System;
+﻿// 
+//  BlobStoreTest.cs
+// 
+//  Author:
+//   Jim Borden  <jim.borden@couchbase.com>
+// 
+//  Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// 
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+// 
+//  http://www.apache.org/licenses/LICENSE-2.0
+// 
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+// 
+
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
+
 using FluentAssertions;
+
 using LiteCore.Interop;
 #if !WINDOWS_UWP
 using Xunit;
@@ -20,66 +41,84 @@ namespace LiteCore.Tests
 #endif
     public unsafe class BlobStoreTest : TestBase
     {
-        protected override int NumberOfOptions
-        {
-            get {
-                return 2;
-            }
-        }
-
-        private bool _encrypted;
-        private C4BlobStore* _store;
-        private C4BlobKey _bogusKey = new C4BlobKey();
-
 #if !WINDOWS_UWP
         public BlobStoreTest(ITestOutputHelper output) : base(output)
         {
 
         }
 #endif
+        protected override int NumberOfOptions => 2;
 
-        [Fact]
-        public void TestParseBlobKeys()
+        private bool _encrypted;
+        private C4BlobStore* _store;
+        private readonly C4BlobKey _bogusKey = new C4BlobKey();
+
+        protected override void SetupVariant(int options)
         {
-            var key1 = new C4BlobKey();
-            for(int i = 0; i < C4BlobKey.Size; i++) {
-                key1.bytes[i] = 0x55;
+            _encrypted = options == 1;
+            C4EncryptionKey crypto = new C4EncryptionKey();
+            C4EncryptionKey *encryption = null;
+            if(_encrypted) {
+                WriteLine("        ...encrypted");
+                crypto.algorithm = C4EncryptionAlgorithm.AES256;
+                for(int i = 0; i < 32; i++) {
+                    crypto.bytes[i] = 0xcc;
+                }
+
+                encryption = &crypto;
             }
 
-            var str = Native.c4blob_keyToString(key1);
-            str.Should().Be("sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=", "because otherwise the parse failed");
-
-            var key2 = new C4BlobKey();
-            Native.c4blob_keyFromString(str, &key2).Should().BeTrue("because the key should survive a round trip");
+            _store = (C4BlobStore *)LiteCoreBridge.Check(err => Native.c4blob_openStore(Path.Combine(
+                Test.TestDir, $"cbl_blob_test{Path.DirectorySeparatorChar}"), C4DatabaseFlags.Create, encryption, err));
+            var bogusKey = _bogusKey;
             for(int i = 0; i < C4BlobKey.Size; i++) {
-                key1.bytes[i].Should().Be(key2.bytes[i], "because the two keys should have equal bytes");
+                bogusKey.bytes[i] = 0x55;
             }
         }
 
-        [Fact]
-        public void TestParseInvalidBlobKeys()
+        protected override void TeardownVariant(int options)
         {
-            NativePrivate.c4log_warnOnErrors(false);
-            C4BlobKey key2;
-            foreach(var invalid in new[] { "", "rot13-xxxx", "sha1-", "sha1-VVVVVVVVVVVVVVVVVVVVVV", "sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU" }) {
-                Native.c4blob_keyFromString(invalid, &key2).Should().BeFalse($"because '{invalid}' is an invalid string");
-            }
-
-            NativePrivate.c4log_warnOnErrors(true);
+            LiteCoreBridge.Check(err => Native.c4blob_deleteStore(_store, err));
         }
 
         [Fact]
-        public void TestMissingBlobs()
+        public void TestCancelWrite()
         {
             RunTestVariants(() => {
-                Native.c4blob_getSize(_store, _bogusKey).Should().Be(-1);
+                // Write the blob:
+                var stream = (C4WriteStream *)LiteCoreBridge.Check(err => Native.c4blob_openWriteStream(_store, err));
+                var buf = Encoding.UTF8.GetBytes("This is line oops\n");
+                LiteCoreBridge.Check(err => Native.c4stream_write(stream, buf, err));
+
+                Native.c4stream_closeWriter(stream);
+            });
+        }
+
+        [Fact]
+        public void TestCreateBlobKeyMismatch()
+        {
+            RunTestVariants(() =>
+            {
+                var blobToStore = C4Slice.Constant("This is a blob to store in the store!");
+                C4BlobKey key, expectedKey = new C4BlobKey();
+                var i = 0;
+                foreach (var b in Enumerable.Repeat<byte>(0x55, sizeof(C4BlobKey))) {
+                    expectedKey.bytes[i++] = b;
+                }
+
                 C4Error error;
-                var data = Native.c4blob_getContents(_store, _bogusKey, &error);
-                data.Should().BeNull("because the attachment doesn't exist");
-                error.code.Should().Be((int)C4ErrorCode.NotFound, "because that is the correct error code for a missing attachment");
-                var path = Native.c4blob_getFilePath(_store, _bogusKey, &error);
-                path.Should().BeNull("because the attachment doesn't exist");
-                error.code.Should().Be((int)C4ErrorCode.NotFound, "because that is the correct error code for a missing attachment");
+                NativePrivate.c4log_warnOnErrors(false);
+                try {
+                    
+                    NativeRaw.c4blob_create(_store, blobToStore, &expectedKey, &key, &error).Should().BeFalse();
+                    error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                    error.code.Should().Be((int) C4ErrorCode.CorruptData);
+                } finally {
+                    NativePrivate.c4log_warnOnErrors(true);
+                }
+
+                Native.c4blob_keyFromString("sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=", &expectedKey);
+                NativeRaw.c4blob_create(_store, blobToStore, &expectedKey, &key, &error).Should().BeTrue();
             });
         }
 
@@ -134,31 +173,83 @@ namespace LiteCore.Tests
         }
 
         [Fact]
-        public void TestCreateBlobKeyMismatch()
+        public void TestDeleteBlobs()
         {
             RunTestVariants(() =>
             {
-                var blobToStore = C4Slice.Constant("This is a blob to store in the store!");
-                C4BlobKey key, expectedKey = new C4BlobKey();
-                var i = 0;
-                foreach (var b in Enumerable.Repeat<byte>(0x55, sizeof(C4BlobKey))) {
-                    expectedKey.bytes[i++] = b;
-                }
+                var blobToStore = Encoding.ASCII.GetBytes("This is a blob to store in the store!");
+
+                var key = new C4BlobKey();
+                LiteCoreBridge.Check(err =>
+                {
+                    C4BlobKey tmp;
+                    var retVal = Native.c4blob_create(_store, blobToStore, null, &tmp, err);
+                    key = tmp;
+                    return retVal;
+                });
+
+                var str = Native.c4blob_keyToString(key);
+                str.Should().Be("sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=");
+
+                LiteCoreBridge.Check(err => Native.c4blob_delete(_store, key, err));
+
+                var blobSize = Native.c4blob_getSize(_store, key);
+                blobSize.Should().Be(-1L, "because the blob was deleted");
+
+                var gotBlob = Native.c4blob_getContents(_store, key, null);
+                gotBlob.Should().BeNull("because the blob was deleted");
 
                 C4Error error;
-                NativePrivate.c4log_warnOnErrors(false);
-                try {
-                    
-                    NativeRaw.c4blob_create(_store, blobToStore, &expectedKey, &key, &error).Should().BeFalse();
-                    error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
-                    error.code.Should().Be((int) C4ErrorCode.CorruptData);
-                } finally {
-                    NativePrivate.c4log_warnOnErrors(true);
-                }
-
-                Native.c4blob_keyFromString("sha1-QneWo5IYIQ0ZrbCG0hXPGC6jy7E=", &expectedKey);
-                NativeRaw.c4blob_create(_store, blobToStore, &expectedKey, &key, &error).Should().BeTrue();
+                var p = Native.c4blob_getFilePath(_store, key, &error);
+                p.Should().BeNull("because the blob was deleted");
+                error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                error.code.Should().Be((int) C4ErrorCode.NotFound);
             });
+        }
+
+        [Fact]
+        public void TestMissingBlobs()
+        {
+            RunTestVariants(() => {
+                Native.c4blob_getSize(_store, _bogusKey).Should().Be(-1);
+                C4Error error;
+                var data = Native.c4blob_getContents(_store, _bogusKey, &error);
+                data.Should().BeNull("because the attachment doesn't exist");
+                error.code.Should().Be((int)C4ErrorCode.NotFound, "because that is the correct error code for a missing attachment");
+                var path = Native.c4blob_getFilePath(_store, _bogusKey, &error);
+                path.Should().BeNull("because the attachment doesn't exist");
+                error.code.Should().Be((int)C4ErrorCode.NotFound, "because that is the correct error code for a missing attachment");
+            });
+        }
+
+        [Fact]
+        public void TestParseBlobKeys()
+        {
+            var key1 = new C4BlobKey();
+            for(int i = 0; i < C4BlobKey.Size; i++) {
+                key1.bytes[i] = 0x55;
+            }
+
+            var str = Native.c4blob_keyToString(key1);
+            str.Should().Be("sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=", "because otherwise the parse failed");
+
+            var key2 = new C4BlobKey();
+            Native.c4blob_keyFromString(str, &key2).Should().BeTrue("because the key should survive a round trip");
+            for(int i = 0; i < C4BlobKey.Size; i++) {
+                key1.bytes[i].Should().Be(key2.bytes[i], "because the two keys should have equal bytes");
+            }
+        }
+
+        [Fact]
+        public void TestParseInvalidBlobKeys()
+        {
+            NativePrivate.c4log_warnOnErrors(false);
+            C4BlobKey key2;
+            foreach(var invalid in new[] { "", "rot13-xxxx", "sha1-", "sha1-VVVVVVVVVVVVVVVVVVVVVV", "sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVU" }) {
+                Native.c4blob_keyFromString(invalid, &key2).Should().BeFalse($"because '{invalid}' is an invalid string");
+            }
+
+            NativePrivate.c4log_warnOnErrors(true);
         }
 
         [Fact]
@@ -281,47 +372,6 @@ namespace LiteCore.Tests
                     }
                 }
             });
-        }
-
-        [Fact]
-        public void TestCancelWrite()
-        {
-            RunTestVariants(() => {
-                // Write the blob:
-                var stream = (C4WriteStream *)LiteCoreBridge.Check(err => Native.c4blob_openWriteStream(_store, err));
-                var buf = Encoding.UTF8.GetBytes("This is line oops\n");
-                LiteCoreBridge.Check(err => Native.c4stream_write(stream, buf, err));
-
-                Native.c4stream_closeWriter(stream);
-            });
-        }
-
-        protected override void SetupVariant(int options)
-        {
-            _encrypted = options == 1;
-            C4EncryptionKey crypto = new C4EncryptionKey();
-            C4EncryptionKey *encryption = null;
-            if(_encrypted) {
-                WriteLine("        ...encrypted");
-                crypto.algorithm = C4EncryptionAlgorithm.AES256;
-                for(int i = 0; i < 32; i++) {
-                    crypto.bytes[i] = 0xcc;
-                }
-
-                encryption = &crypto;
-            }
-
-            _store = (C4BlobStore *)LiteCoreBridge.Check(err => Native.c4blob_openStore(Path.Combine(
-                Test.TestDir, $"cbl_blob_test{Path.DirectorySeparatorChar}"), C4DatabaseFlags.Create, encryption, err));
-            var bogusKey = _bogusKey;
-            for(int i = 0; i < C4BlobKey.Size; i++) {
-                bogusKey.bytes[i] = 0x55;
-            }
-        }
-
-        protected override void TeardownVariant(int options)
-        {
-            LiteCoreBridge.Check(err => Native.c4blob_deleteStore(_store, err));
         }
     }
 }

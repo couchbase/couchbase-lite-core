@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 using LiteCore.Interop;
 using FluentAssertions;
 #if !WINDOWS_UWP
@@ -14,12 +16,7 @@ namespace LiteCore.Tests
 #endif
     public unsafe class QueryTest : QueryTestBase
     {
-        protected override string JsonPath
-        {
-            get {
-                return "C/tests/data/names_100.json";
-            }
-        }
+        protected override string JsonPath => "C/tests/data/names_100.json";
 
 #if !WINDOWS_UWP
         public QueryTest(ITestOutputHelper output) : base(output)
@@ -47,6 +44,21 @@ namespace LiteCore.Tests
                 Run().Should().Equal(new[] { "0000002", "0000014", "0000017", "0000027", "0000031", "0000033", 
                 "0000038", "0000039", "0000045", "0000047", "0000049", "0000056", "0000063", "0000065", "0000075", 
                 "0000082", "0000089", "0000094", "0000097" }, "because otherwise the query returned incorrect results");
+            });
+        }
+
+        [Fact]
+        public void TestQueryDBIn()
+        {
+            RunTestVariants(() =>
+            {
+                // Type 1: RHS is an expression; generates a call to array_contains
+                Compile(Json5("['IN', 'reading', ['.', 'likes']]"));
+                Run().Should().Equal( "0000004", "0000056", "0000064", "0000079", "0000099");
+
+                // Type 2: RHS is an array literal; generates a SQL "IN" expression
+                Compile(Json5("['IN', ['.', 'name', 'first'], ['[]', 'Eddie', 'Verna']]"));
+                Run().Should().Equal("0000091", "0000093");
             });
         }
 
@@ -102,6 +114,19 @@ namespace LiteCore.Tests
         }
 
         [Fact]
+        public void TestDBQueryAnyOfDict()
+        {
+            RunTestVariants(() =>
+            {
+                Compile(Json5("['ANY', 'n', ['.', 'name'], ['=', ['?', 'n'], 'Arturo']]"));
+                Run().Should().Equal("0000090");
+
+                Compile(Json5("['ANY', 'n', ['.', 'name'], ['contains()', ['?', 'n'], 'V']]"));
+                Run().Should().Equal("0000044", "0000048", "0000053", "0000093");
+            });
+        }
+
+        [Fact]
         public void TestDBQueryExpressionIndex()
         {
             RunTestVariants(() => {
@@ -150,12 +175,169 @@ namespace LiteCore.Tests
         [Fact]
         public void TestFullTextQuery()
         {
-            RunTestVariants(() => {
-                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byStreet", "[[\".contact.address.street\"]]", 
-                C4IndexType.FullTextIndex, null, err));
+            RunTestVariants(() =>
+            {
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byStreet", "[[\".contact.address.street\"]]",
+                    C4IndexType.FullTextIndex, null, err));
                 Compile(Json5("['MATCH', 'byStreet', 'Hwy']"));
-                Run().Should().Equal(new[] { "0000013", "0000015", "0000043", "0000044", "0000052" }, 
-                "because otherwise the query returned incorrect results");
+
+                var expected = new[]
+                {
+                    new C4FullTextMatch(13, 0, 0, 10, 3),
+                    new C4FullTextMatch(15, 0, 0, 11, 3),
+                    new C4FullTextMatch(43, 0, 0, 12, 3),
+                    new C4FullTextMatch(44, 0, 0, 12, 3),
+                    new C4FullTextMatch(52, 0, 0, 11, 3)
+                };
+
+                int index = 0;
+                foreach (var result in RunFTS()) {
+                    foreach (var match in result) {
+                        match.Should().Be(expected[index++]);
+                    }
+                }
+            });
+        }
+
+        [Fact]
+        public void TestFullTextMultipleProperties()
+        {
+            RunTestVariants(() =>
+            {
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byAddress", "[[\".contact.address.street\"],[\".contact.address.city\"],[\".contact.address.state\"]]", 
+                    C4IndexType.FullTextIndex, null, err));
+                Compile(Json5("['MATCH', 'byAddress', 'Santa']"));
+                var expected = new[]
+                {
+                    new C4FullTextMatch(15, 1, 0, 0, 5),
+                    new C4FullTextMatch(44, 0, 0, 3, 5),
+                    new C4FullTextMatch(68, 0, 0, 3, 5),
+                    new C4FullTextMatch(72, 1, 0, 0, 5)
+                };
+
+                int index = 0;
+                foreach (var result in RunFTS()) {
+                    foreach (var match in result) {
+                        match.Should().Be(expected[index++]);
+                    }
+                }
+
+                Compile(Json5("['MATCH', 'byAddress', 'contact.address.street:Santa']"));
+                expected = new[]
+                {
+                    new C4FullTextMatch(44, 0, 0, 3, 5),
+                    new C4FullTextMatch(68, 0, 0, 3, 5)
+                };
+
+                index = 0;
+                foreach (var result in RunFTS()) {
+                    foreach (var match in result) {
+                        match.Should().Be(expected[index++]);
+                    }
+                }
+
+                Compile(Json5("['MATCH', 'byAddress', 'contact.address.street:Santa Saint']"));
+                expected = new[]
+                {
+                    new C4FullTextMatch(68, 0, 0, 3, 5),
+                    new C4FullTextMatch(68, 1, 1, 0, 5)
+                };
+
+                index = 0;
+                foreach (var result in RunFTS()) {
+                    foreach (var match in result) {
+                        match.Should().Be(expected[index++]);
+                    }
+                }
+
+                Compile(Json5("['MATCH', 'byAddress', 'contact.address.street:Santa OR Saint']"));
+                expected = new[]
+                {
+                    new C4FullTextMatch(20, 1, 1, 0, 5),
+                    new C4FullTextMatch(44, 0, 0, 3, 5),
+                    new C4FullTextMatch(68, 0, 0, 3, 5),
+                    new C4FullTextMatch(68, 1, 1, 0, 5),
+                    new C4FullTextMatch(77, 1, 1, 0, 5)
+                };
+
+                index = 0;
+                foreach (var result in RunFTS()) {
+                    foreach (var match in result) {
+                        match.Should().Be(expected[index++]);
+                    }
+                }
+            });
+        }
+
+        [Fact]
+        public void TestMultipleFullTextIndexes()
+        {
+            RunTestVariants(() =>
+            {
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byStreet", "[[\".contact.address.street\"]]",
+                    C4IndexType.FullTextIndex, null, err));
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byCity", "[[\".contact.address.city\"]]",
+                    C4IndexType.FullTextIndex, null, err));
+                Compile(Json5("['AND', ['MATCH', 'byStreet', 'Hwy'],['MATCH', 'byCity', 'Santa']]"));
+                var results = RunFTS();
+                results.Count.Should().Be(1);
+                results[0].Should().Equal(new C4FullTextMatch(15, 0, 0, 11, 3));
+            });
+        }
+
+        [Fact]
+        public void TestFullTextQueryInMultipleAnds()
+        {
+            RunTestVariants(() =>
+            {
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byStreet", "[[\".contact.address.street\"]]",
+                    C4IndexType.FullTextIndex, null, err));
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byCity", "[[\".contact.address.city\"]]",
+                    C4IndexType.FullTextIndex, null, err));
+                Compile(Json5(
+                    "['AND', ['AND', ['=', ['.gender'], 'male'],['MATCH', 'byCity', 'Santa']],['=',['.name.first'], 'Cleveland']]"));
+                Run().Should().Equal("0000015");
+                var results = RunFTS();
+                results.Count.Should().Be(1);
+                results[0].Should().Equal(new C4FullTextMatch(15, 0, 0, 0, 5));
+            });
+        }
+
+        [Fact]
+        public void TestMultipleFullTextQueries()
+        {
+            // You can't query the same FTS index multiple times in a query (says SQLite)
+            RunTestVariants(() =>
+            {
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byStreet", "[[\".contact.address.street\"]]",
+                    C4IndexType.FullTextIndex, null, err));
+                C4Error error;
+                _query = Native.c4query_new(Db,
+                    Json5("['AND', ['MATCH', 'byStreet', 'Hwy'], ['MATCH', 'byStreet', 'Blvd']]"), &error);
+                ((long) _query).Should().Be(0, "because this type of query is not allowed");
+                error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                error.code.Should().Be((int) C4ErrorCode.InvalidQuery);
+                Native.c4error_getMessage(error).Should()
+                    .Be("Sorry, multiple MATCHes of the same property are not allowed");
+            });
+        }
+
+        [Fact]
+        public void TestBuriedFullTextQueries()
+        {
+            // You can't put an FTS match inside an expression other than a top-level AND (says SQLite)
+            RunTestVariants(() =>
+            {
+                LiteCoreBridge.Check(err => Native.c4db_createIndex(Db, "byStreet", "[[\".contact.address.street\"]]",
+                    C4IndexType.FullTextIndex, null, err));
+                C4Error error;
+                _query = Native.c4query_new(Db,
+                    Json5("['OR', ['MATCH', 'byStreet', 'Hwy'],['=', ['.', 'contact', 'address', 'state'], 'CA']]"), &error);
+                ((long) _query).Should().Be(0, "because this type of query is not allowed");
+                error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                error.code.Should().Be((int) C4ErrorCode.InvalidQuery);
+                Native.c4error_getMessage(error).Should()
+                    .Be("MATCH can only appear at top-level, or in a top-level AND");
             });
         }
 
@@ -178,6 +360,39 @@ namespace LiteCore.Tests
                });
 
                 int i = 0;
+                C4Error error;
+                while (Native.c4queryenum_next(e, &error)) {
+                    Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0)).Should()
+                        .Be(expectedFirst[i], "because otherwise the query returned incorrect results");
+                    Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 1)).Should().Be(expectedLast[i], "because otherwise the query returned incorrect results");
+                    ++i;
+                }
+
+                error.code.Should().Be(0, "because otherwise an error occurred during enumeration");
+                i.Should().Be(3, "because that is the number of expected rows");
+                Native.c4queryenum_free(e);
+            });
+        }
+
+        [Fact]
+        public void TestDBQueryWhatReturningObject()
+        {
+            RunTestVariants(() =>
+            {
+                var sk = Native.c4db_getFLSharedKeys(Db);
+                var expectedFirst = new[] { "Cleveland", "Georgetta", "Margaretta" };
+                var expectedLast = new[] { "Bejcek", "Kolding", "Ogwynn" };
+                CompileSelect(Json5(
+                    "{WHAT: ['.name'], WHERE: ['>=', ['length()', ['.name.first']], 9], ORDER_BY: [['.name.first']]}"));
+                Native.c4query_columnCount(_query).Should().Be(1);
+
+                var e = (C4QueryEnumerator*) LiteCoreBridge.Check(err =>
+                {
+                    var opts = C4QueryOptions.Default;
+                    return Native.c4query_run(_query, &opts, null, err);
+                });
+
+                var i = 0;
                 C4Error error;
                 while (Native.c4queryenum_next(e, &error)) {
                     Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0)).Should()
@@ -291,6 +506,51 @@ namespace LiteCore.Tests
                 error.code.Should().Be(0);
                 i.Should().Be(3, "because there should be three resulting rows");
                 Native.c4queryenum_free(e);
+            });
+        }
+
+        [Fact]
+        public void TestDBQuerySeek()
+        {
+            RunTestVariants(() =>
+            {
+                Compile(Json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
+                var e = (C4QueryEnumerator*)LiteCoreBridge.Check(err =>
+                {
+                    var opts = C4QueryOptions.Default;
+                    return Native.c4query_run(_query, &opts, null, err);
+                });
+
+                C4Error error;
+                Native.c4queryenum_next(e, &error).Should().BeTrue();
+                Native.FLArrayIterator_GetCount(&e->columns).Should().BeGreaterThan(0);
+                var docID = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0));
+                docID.Should().Be("0000001");
+                Native.c4queryenum_next(e, &error).Should().BeTrue();
+                Native.c4queryenum_seek(e, 0, &error).Should().BeTrue();
+                docID = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0));
+                docID.Should().Be("0000001");
+                Native.c4queryenum_seek(e, 7, &error).Should().BeTrue();
+                docID = Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0));
+                docID.Should().Be("0000073");
+                Native.c4queryenum_seek(e, 100, &error).Should().BeFalse();
+                error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                error.code.Should().Be((int) C4ErrorCode.InvalidParameter);
+                Native.c4queryenum_free(e);
+            });
+        }
+
+        [Fact]
+        public void TestQueryParserErrorMessages()
+        {
+            RunTestVariants(() =>
+            {
+                C4Error error;
+                _query = Native.c4query_new(Db, "[\"=\"]", &error);
+                ((long) _query).Should().Be(0L);
+                error.domain.Should().Be(C4ErrorDomain.LiteCoreDomain);
+                error.code.Should().Be((int) C4ErrorCode.InvalidQuery);
+                Native.c4error_getMessage(error).Should().Be("Wrong number of arguments to =");
             });
         }
     }

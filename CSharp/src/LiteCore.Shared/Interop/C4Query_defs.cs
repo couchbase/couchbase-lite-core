@@ -141,7 +141,7 @@ namespace LiteCore.Interop
 #else
     public
 #endif
-    unsafe struct C4FullTextMatch
+    unsafe partial struct C4FullTextMatch
     {
         public ulong dataSource;
         public uint property;

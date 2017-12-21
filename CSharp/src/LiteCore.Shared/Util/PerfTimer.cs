@@ -43,6 +43,9 @@ namespace LiteCore.Util
 
         #region Public Methods
 
+        /// <summary>
+        /// Starts an overall run (memory measurement)
+        /// </summary>
         public static void StartRun()
         {
             GC.GetTotalMemory(false);
