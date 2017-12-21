@@ -19,11 +19,11 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "PlatformIO.hh"
+#include <cerrno>
 #include <dirent.h>
-#include <errno.h>
-#include <stdio.h>
-#include <fcntl.h>
+#include <cstdio>
 #include <thread>
+#include <algorithm>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -172,7 +172,7 @@ namespace litecore {
             slash = backupSlash;
         }
         else if (backupSlash != string::npos) {
-            slash = max(slash, backupSlash);
+            slash = std::max(slash, backupSlash);
         }
 
         return {path.substr(0, slash+1), path.substr(slash+1)};

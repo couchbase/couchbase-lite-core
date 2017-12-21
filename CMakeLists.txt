@@ -19,7 +19,8 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DNO_CACHING                        # No file caching support in CivetWeb (unneeded)
                 -DUSE_IPV6                          # Enable IPv6 support in CivetWeb
                 -DCMAKE                             # Let the source know this is a CMAKE build
-                -D__STDC_LIMIT_MACROS)              # Ensure the presence of UINT64_MAX, etc
+                -D__STDC_LIMIT_MACROS               # Ensure the presence of UINT64_MAX, etc
+                -DNOMINMAX)                         # Get rid of pesky Windows macros for min and max
 
 if(MSVC)
     if(WINDOWS_STORE)
