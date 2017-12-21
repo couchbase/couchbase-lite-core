@@ -18,6 +18,7 @@ include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}Lite
 
 aux_source_directory(.  TEST_SRC)
 aux_source_directory(${TOP}vendor/fleece/Tests FLEECE_TEST_SRC)
+LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/FleeceTestsMain.cc)
 if(NOT APPLE)
     LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/ObjCTests.mm)
 endif()
