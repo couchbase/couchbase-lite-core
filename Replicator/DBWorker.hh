@@ -75,7 +75,6 @@ namespace litecore { namespace repl {
 
     private:
         std::string remoteDBIDString() const;
-        bool findRemoteDBID(C4Error*);
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
         bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
@@ -106,6 +105,7 @@ namespace litecore { namespace repl {
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
         int findProposedChange(slice docID, slice revID, slice parentRevID);
+        void updateRemoteRev(C4Document* NONNULL);
 
         static const size_t kMaxPossibleAncestors = 10;
 

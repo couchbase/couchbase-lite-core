@@ -63,7 +63,7 @@ namespace c4 {
     /** Manages a C4SliceResult, letting you treat it as a slice and freeing it for you. */
     struct sliceResult : public fleece::slice {
     public:
-        sliceResult(C4SliceResult sr)   :slice(sr.buf, sr.size) { }
+        explicit sliceResult(C4SliceResult sr)   :slice(sr.buf, sr.size) { }
         ~sliceResult()                  {c4slice_free(*(C4SliceResult*)this);}
 
         sliceResult(const sliceResult&) =delete;

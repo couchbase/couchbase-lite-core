@@ -59,6 +59,7 @@ using namespace fleeceapi;
 const std::string& TempDir();
 
 
+// These '<<' functions help Catch log values of custom types in assertion messages:
 std::ostream& operator<< (std::ostream& o, fleece::slice s);
 std::ostream& operator<< (std::ostream& o, fleece::alloc_slice s);
 
@@ -67,6 +68,17 @@ std::ostream& operator<< (std::ostream& o, C4SliceResult s);
 
 std::ostream& operator<< (std::ostream &out, C4Error error);
 
+template <class T>
+std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
+    o << "{";
+    int n = 0;
+    for (const T &thing : things) {
+        if (n++) o << ", ";
+        o << '"' << thing << '"';
+    }
+    o << "}";
+    return o;
+}
 
 
 // Converts a slice to a C++ string

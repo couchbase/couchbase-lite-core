@@ -62,9 +62,6 @@ namespace litecore { namespace repl {
     }
 
 
-    static constexpr slice kRemoteDBURLsDoc("remotes"_sl);
-
-
     // Returns a string that uniquely identifies the remote database; by default its URL,
     // or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.)
     string DBWorker::remoteDBIDString() const {
@@ -72,66 +69,6 @@ namespace litecore { namespace repl {
         if (uniqueID)
             return string(uniqueID);
         return string(_remoteAddress);
-    }
-
-
-    // Looks up the numeric ID identifying this remote database in the local db,
-    // and stores it in _remoteDBID. Returns false on error.
-    bool DBWorker::findRemoteDBID(C4Error *outError) {
-        string key = remoteDBIDString();
-        c4::Transaction t(_db);
-        // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
-        // If the ID isn't found, then do a second pass where we either add the remote URL
-        // or create the doc from scratch, in a transaction.
-        for (int creating = false; creating <= true; ++creating) {
-            if (creating && !t.begin(outError))     // 2nd pass takes place in a transaction
-                break;
-
-            // Look up the doc in the db, and the remote URL in the doc:
-            c4::ref<C4RawDocument> doc = c4raw_get(_db, kC4InfoStore, kRemoteDBURLsDoc, nullptr);
-            Dict remotes;
-            C4RemoteID id = 0;
-            if (doc) {
-                remotes = Value::fromData(doc->body).asDict();
-                id = C4RemoteID(remotes[slice(key)].asUnsigned());
-            }
-
-            if (id > 0) {
-                // Found the remote ID!
-                logVerbose("Remote-DB ID %u found for target <%s>", id, key.c_str());
-                _remoteDBID = id;
-                return true;
-            } else if (creating) {
-                // Update or create the document, adding the key:
-                id = 1;
-                Encoder enc;
-                enc.beginDict();
-                for (Dict::iterator i(remotes); i; ++i) {
-                    auto existingID = i.value().asUnsigned();
-                    if (existingID) {
-                        enc.writeKey(i.keyString());            // Copy existing entry
-                        enc.writeUInt(existingID);
-                        id = max(id, 1 + C4RemoteID(existingID));   // make sure new ID is unique
-                    }
-                }
-                enc.writeKey(slice(key));                       // Add new entry
-                enc.writeUInt(id);
-                enc.endDict();
-                alloc_slice body = enc.finish();
-
-                // Save the doc:
-                if (c4raw_put(_db, kC4InfoStore, kRemoteDBURLsDoc, nullslice, body, outError)
-                        && t.commit(outError)) {
-                    logVerbose("Remote-DB ID %u created for target <%s>", id, key.c_str());
-                    _remoteDBID = id;
-                    return true;
-                }
-            }
-        }
-        // Failed:
-        warn("Couldn't get remote-DB ID for target <%s>: error %d/%d",
-             key.c_str(), outError->domain, outError->code);
-        return false;
     }
 
 
@@ -167,8 +104,15 @@ namespace litecore { namespace repl {
         }
 
         if (_options.pull > kC4Passive || _options.push > kC4Passive) {
-            if (!findRemoteDBID(&err))
+            string key = remoteDBIDString();
+            _remoteDBID = c4db_getRemoteDBID(_db, slice(key), true, &err);
+            if (_remoteDBID) {
+                logVerbose("Remote-DB ID %u found for target <%s>", _remoteDBID, key.c_str());
+            } else {
+                warn("Couldn't get remote-DB ID for target <%s>: error %d/%d",
+                     key.c_str(), err.domain, err.code);
                 body = nullslice;     // Let caller know there's a fatal error
+            }
         }
 
         bool dbIsEmpty = c4db_getLastSequence(_db) == 0;
@@ -532,11 +476,9 @@ namespace litecore { namespace repl {
         if (doc && c4doc_selectRevision(doc, revID, false, &err)) {
             // I already have this revision. Make sure it's marked as current for this remote:
             if (_remoteDBID) {
-                alloc_slice remoteRevID = c4doc_getRemoteAncestor(doc, _remoteDBID);
-                if (remoteRevID != revID) {
-                    log("Need to update remote #%u's rev of %.*s to %.*s",
-                        _remoteDBID, SPLAT(docID), SPLAT(revID));   //TODO
-                }
+                c4::sliceResult remoteRevID(c4doc_getRemoteAncestor(doc, _remoteDBID));
+                if (remoteRevID != revID)
+                    updateRemoteRev(doc);
             }
             return true;
         }
@@ -554,6 +496,23 @@ namespace litecore { namespace repl {
             gotError(err);
         }
         return false;
+    }
+
+
+    // Updates the doc to have the currently-selected rev marked as the remote
+    void DBWorker::updateRemoteRev(C4Document *doc) {
+        slice revID = doc->selectedRev.revID;
+        logVerbose("Updating remote #%u's rev of '%.*s' to %.*s",
+                   _remoteDBID, SPLAT(doc->docID), SPLAT(revID));
+        C4Error error;
+        c4::Transaction t(_db);
+        bool ok = t.begin(&error)
+               && c4doc_setRemoteAncestor(doc, _remoteDBID, &error)
+               && c4doc_save(doc, 0, &error)
+               && t.commit(&error);
+        if (!ok)
+            warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
+                 _remoteDBID, SPLAT(doc->docID), SPLAT(revID), error.domain, error.code);
     }
 
 
@@ -791,17 +750,11 @@ namespace litecore { namespace repl {
                 put.allowConflict = true;
                 put.history = history.data();
                 put.historyCount = history.size();
+                put.remoteDBID = _remoteDBID;
+                put.save = true;
 
                 C4Error docErr;
                 c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &docErr);
-                //FIX: Should set put.save=true to optimize saves, but that will require changing c4doc_put()
-                if (doc) {
-                    if (_remoteDBID)
-                        c4doc_setRemoteAncestor(doc, _remoteDBID);
-                    if (!c4doc_save(doc, 0, &docErr))
-                        doc = nullptr;
-                }
-
                 if (!doc) {
                     warn("Failed to insert '%.*s' #%.*s : error %d/%d",
                          SPLAT(rev->docID), SPLAT(rev->revID), docErr.domain, docErr.code);

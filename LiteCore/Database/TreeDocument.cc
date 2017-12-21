@@ -212,8 +212,7 @@ namespace c4Internal {
             _versionedDoc.setLatestRevisionOnRemote(remote, _selectedRev);
         }
 
-        void updateMeta() {
-            _versionedDoc.updateMeta();
+        void updateFlags() {
             flags = (C4DocumentFlags)_versionedDoc.flags() | kDocExists;
             initRevID();
         }
@@ -254,7 +253,8 @@ namespace c4Internal {
             else
                 total = _versionedDoc.purgeAll();
             if (total > 0) {
-                updateMeta();
+                _versionedDoc.updateMeta();
+                updateFlags();
                 if (_selectedRevIDBuf == revID)
                     selectRevision(_versionedDoc.currentRevision());
             }
@@ -292,12 +292,104 @@ namespace c4Internal {
         }
 
 
-        virtual int32_t putExistingRevision(const C4DocPutRequest&) override;
-        virtual bool putNewRevision(const C4DocPutRequest&) override;
-            
-        public:
-            VersionedDocument _versionedDoc;
-            const Rev *_selectedRev;
+#pragma mark - INSERTING REVISIONS
+
+
+        int32_t putExistingRevision(const C4DocPutRequest &rq) override {
+            Assert(rq.historyCount >= 1);
+            int32_t commonAncestor = -1;
+            loadRevisions();
+            vector<revidBuffer> revIDBuffers(rq.historyCount);
+            for (size_t i = 0; i < rq.historyCount; i++)
+                revIDBuffers[i].parse(rq.history[i]);
+            commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
+                                                         rq.body,
+                                                         (Rev::Flags)rq.revFlags);
+            if (commonAncestor < 0)
+                error::_throw(error::BadRevisionID); // must be invalid revision IDs
+            auto newRev = _versionedDoc[revidBuffer(rq.history[0])];
+            DebugAssert(newRev);
+
+            if (rq.remoteDBID)
+                _versionedDoc.setLatestRevisionOnRemote(rq.remoteDBID, newRev);
+
+            if (!saveNewRev(rq, newRev, (commonAncestor > 0 || rq.remoteDBID)))
+                return -1;
+            return commonAncestor;
+        }
+
+
+        bool putNewRevision(const C4DocPutRequest &rq) override {
+            bool deletion = (rq.revFlags & kRevDeleted) != 0;
+            revidBuffer encodedNewRevID = generateDocRevID(rq.body, selectedRev.revID, deletion);
+            int httpStatus;
+            auto newRev = _versionedDoc.insert(encodedNewRevID,
+                                               rq.body,
+                                               (Rev::Flags)rq.revFlags,
+                                               _selectedRev,
+                                               rq.allowConflict,
+                                               httpStatus);
+            if (newRev) {
+                return saveNewRev(rq, newRev);
+            } else if (httpStatus == 200) {
+                // Revision already exists, so nothing was added. Not an error.
+                selectRevision(toc4slice(encodedNewRevID.expanded()), true);
+                return true;
+            } else if (httpStatus == 400) {
+                error::_throw(error::InvalidParameter);
+            } else if (httpStatus == 409) {
+                error::_throw(error::Conflict);
+            } else {
+                error::_throw(error::UnexpectedError);
+            }
+        }
+
+
+        bool saveNewRev(const C4DocPutRequest &rq, const Rev *newRev NONNULL, bool reallySave =true) {
+            selectRevision(newRev);
+            if (rq.save && reallySave) {
+                if (!save(rq.maxRevTreeDepth))
+                    return false;
+            } else {
+                _versionedDoc.updateMeta();
+            }
+            updateFlags();
+            return true;
+        }
+
+
+        static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
+        #if SECURE_DIGEST_AVAILABLE
+            uint8_t digestBuf[20];
+            slice digest;
+            // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
+            sha1Context ctx;
+            sha1_begin(&ctx);
+            uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
+            sha1_add(&ctx, &revLen, 1);
+            sha1_add(&ctx, parentRevID.buf, revLen);
+            uint8_t delByte = deleted;
+            sha1_add(&ctx, &delByte, 1);
+            sha1_add(&ctx, body.buf, body.size);
+            sha1_end(&ctx, digestBuf);
+            digest = slice(digestBuf, 20);
+
+            // Derive new rev's generation #:
+            unsigned generation = 1;
+            if (parentRevID.buf) {
+                revidBuffer parentID(parentRevID);
+                generation = parentID.generation() + 1;
+            }
+            return revidBuffer(generation, digest, kDigestType);
+        #else
+            error::_throw(error::Unimplemented);
+        #endif
+        }
+
+
+    private:
+        VersionedDocument _versionedDoc;
+        const Rev *_selectedRev;
     };
 
 
@@ -322,91 +414,6 @@ namespace c4Internal {
 
     bool TreeDocumentFactory::isFirstGenRevID(slice revID) {
         return revID.hasPrefix(slice("1-", 2));
-    }
-
-
-
-#pragma mark - INSERTING REVISIONS
-
-
-    int32_t TreeDocument::putExistingRevision(const C4DocPutRequest &rq) {
-        Assert(rq.historyCount >= 1);
-        int32_t commonAncestor = -1;
-        loadRevisions();
-        vector<revidBuffer> revIDBuffers(rq.historyCount);
-        for (size_t i = 0; i < rq.historyCount; i++)
-            revIDBuffers[i].parse(rq.history[i]);
-        commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
-                                                     rq.body,
-                                                     (Rev::Flags)rq.revFlags);
-        if (commonAncestor < 0)
-            error::_throw(error::BadRevisionID); // must be invalid revision IDs
-        updateMeta();
-        selectRevision(_versionedDoc[revidBuffer(rq.history[0])]);
-        if (rq.save && commonAncestor > 0) {
-            if (!save(rq.maxRevTreeDepth))
-                return -1;
-        }
-        return commonAncestor;
-    }
-
-
-    static revidBuffer generateDocRevID(C4Slice body, C4Slice parentRevID, bool deleted) {
-    #if SECURE_DIGEST_AVAILABLE
-        uint8_t digestBuf[20];
-        slice digest;
-        // Get SHA-1 digest of (length-prefixed) parent rev ID, deletion flag, and revision body:
-        sha1Context ctx;
-        sha1_begin(&ctx);
-        uint8_t revLen = (uint8_t)min((unsigned long)parentRevID.size, 255ul);
-        sha1_add(&ctx, &revLen, 1);
-        sha1_add(&ctx, parentRevID.buf, revLen);
-        uint8_t delByte = deleted;
-        sha1_add(&ctx, &delByte, 1);
-        sha1_add(&ctx, body.buf, body.size);
-        sha1_end(&ctx, digestBuf);
-        digest = slice(digestBuf, 20);
-
-        // Derive new rev's generation #:
-        unsigned generation = 1;
-        if (parentRevID.buf) {
-            revidBuffer parentID(parentRevID);
-            generation = parentID.generation() + 1;
-        }
-        return revidBuffer(generation, digest, kDigestType);
-    #else
-        error::_throw(error::Unimplemented);
-    #endif
-    }
-
-
-    bool TreeDocument::putNewRevision(const C4DocPutRequest &rq) {
-        bool deletion = (rq.revFlags & kRevDeleted) != 0;
-        revidBuffer encodedNewRevID = generateDocRevID(rq.body, selectedRev.revID, deletion);
-        int httpStatus;
-        auto newRev = _versionedDoc.insert(encodedNewRevID,
-                                           rq.body,
-                                           (Rev::Flags)rq.revFlags,
-                                           _selectedRev,
-                                           rq.allowConflict,
-                                           httpStatus);
-        if (!newRev) {
-            if (httpStatus == 200) {
-                // Revision already exists, so nothing was added. Not an error.
-                selectRevision(toc4slice(encodedNewRevID.expanded()), true);
-            } else if (httpStatus == 400) {
-                error::_throw(error::InvalidParameter);
-            } else if (httpStatus == 409) {
-                error::_throw(error::Conflict);
-            } else {
-                error::_throw(error::UnexpectedError);
-            }
-        }
-
-        // New revision is legal; update and save:
-        updateMeta();
-        selectRevision(newRev);
-        return !rq.save || save(rq.maxRevTreeDepth);
     }
 
 } // end namespace c4Internal
