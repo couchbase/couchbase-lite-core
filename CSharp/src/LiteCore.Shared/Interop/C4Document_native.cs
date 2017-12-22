@@ -159,9 +159,9 @@ namespace LiteCore.Interop
             }
         }
 
-        public static C4Document* c4doc_put(C4Database *database, 
-                                            C4DocPutRequest *request, 
-                                            ulong* outCommonAncestorIndex, 
+        public static C4Document* c4doc_put(C4Database *database,
+                                            C4DocPutRequest *request,
+                                            ulong* outCommonAncestorIndex,
                                             C4Error *outError)
         {
             var uintptr = new UIntPtr();

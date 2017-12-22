@@ -60,6 +60,10 @@ namespace LiteCore.Interop
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool c4doc_dictContainsBlobs(FLDict* dict, FLSharedKeys* sk);
 
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool c4doc_blobIsCompressible(FLDict* blobDict, FLSharedKeys* sk);
+
         public static string c4doc_bodyAsJSON(C4Document* doc, bool canonical, C4Error* outError)
         {
             using(var retVal = NativeRaw.c4doc_bodyAsJSON(doc, canonical, outError)) {
@@ -85,11 +89,10 @@ namespace LiteCore.Interop
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern FLSharedKeys* c4db_getFLSharedKeys(C4Database* db);
 
-        public static FLDictKey c4db_initFLDictKey(C4Database* db, string @string)
+        // Note: Allocates unmanaged heap memory; should only be used with constants
+        public static FLDictKey c4db_initFLDictKey(C4Database* db, string str)
         {
-            using(var @string_ = new C4String(@string)) {
-                return NativeRaw.c4db_initFLDictKey(db, @string_.AsC4Slice());
-            }
+            return NativeRaw.c4db_initFLDictKey(db, C4Slice.Constant(str));
         }
 
 

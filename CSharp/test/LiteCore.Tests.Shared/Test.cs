@@ -104,7 +104,7 @@ namespace LiteCore.Tests
             Native.c4_shutdown(null);
 
             var config = new C4DatabaseConfig();
-            config.flags = C4DatabaseFlags.Create;
+            config.flags = C4DatabaseFlags.Create | C4DatabaseFlags.SharedKeys;
             config.versioning = Versioning;
 
             var encryptedStr = (option & 1) == 1 ? "encrypted " : String.Empty;

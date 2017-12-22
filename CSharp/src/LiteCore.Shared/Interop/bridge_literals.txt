@@ -35,9 +35,9 @@ c4db_enumerateSomeDocs
 
 
 c4doc_put
-        public static C4Document* c4doc_put(C4Database *database, 
-                                            C4DocPutRequest *request, 
-                                            ulong* outCommonAncestorIndex, 
+        public static C4Document* c4doc_put(C4Database *database,
+                                            C4DocPutRequest *request,
+                                            ulong* outCommonAncestorIndex,
                                             C4Error *outError)
         {
             var uintptr = new UIntPtr();
@@ -75,10 +75,23 @@ FLData_Dump
 
 
 FLDictKey_Init
-				// Note: Allocates unmanaged heap memory; should only be used with constants
+        // Note: Allocates unmanaged heap memory; should only be used with constants
         public static FLDictKey FLDictKey_Init(string str, bool cachePointers)
         {
             return NativeRaw.FLDictKey_Init(FLSlice.Constant(str), cachePointers);
         }
 
+FLDictKey_InitWithSharedKeys
+        // Note: Allocates unmanaged heap memory; should only be used with constants
+        public static FLDictKey FLDictKey_InitWithSharedKeys(string str, FLSharedKeys* sk)
+        {
+            return NativeRaw.FLDictKey_InitWithSharedKeys(FLSlice.Constant(str), sk);
+        }
+
+c4db_initFLDictKey
+        // Note: Allocates unmanaged heap memory; should only be used with constants
+        public static FLDictKey c4db_initFLDictKey(C4Database* db, string str)
+        {
+            return NativeRaw.c4db_initFLDictKey(db, C4Slice.Constant(str));
+        }
 

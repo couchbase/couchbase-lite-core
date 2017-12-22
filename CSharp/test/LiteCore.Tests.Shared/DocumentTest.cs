@@ -720,6 +720,8 @@ namespace LiteCore.Tests
                     ((long) d).Should().NotBe(0);
 
                     var key = Native.c4db_initFLDictKey(Db, "@type");
+                    var keyStr = Native.FLDictKey_GetString(&key);
+                    keyStr.Should().Be("@type");
                     var testVal = Native.FLDict_GetWithKey(d, &key);
 
                     Native.FLValue_AsString(testVal).Should().Be("blob");

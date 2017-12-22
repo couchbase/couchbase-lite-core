@@ -242,18 +242,16 @@ namespace LiteCore.Interop
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool FLDictIterator_Next(FLDictIterator* i);
 
-				// Note: Allocates unmanaged heap memory; should only be used with constants
+        // Note: Allocates unmanaged heap memory; should only be used with constants
         public static FLDictKey FLDictKey_Init(string str, bool cachePointers)
         {
             return NativeRaw.FLDictKey_Init(FLSlice.Constant(str), cachePointers);
         }
 
-
-        public static FLDictKey FLDictKey_InitWithSharedKeys(byte[] @string, FLSharedKeys* sharedKeys)
+        // Note: Allocates unmanaged heap memory; should only be used with constants
+        public static FLDictKey FLDictKey_InitWithSharedKeys(string str, FLSharedKeys* sk)
         {
-            fixed(byte *@string_ = @string) {
-                return NativeRaw.FLDictKey_InitWithSharedKeys(new FLSlice(@string_, (ulong)@string.Length), sharedKeys);
-            }
+            return NativeRaw.FLDictKey_InitWithSharedKeys(FLSlice.Constant(str), sk);
         }
 
         public static string FLDictKey_GetString(FLDictKey* key)

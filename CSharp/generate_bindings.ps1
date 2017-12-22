@@ -1,7 +1,10 @@
-pushd $PSScriptRoot\..\vendor\fleece\Fleece
-cp ..\..\..\C\include\parse_API.py .
-cp ..\..\..\C\include\parse_structs.py .
-cp ..\..\..\C\include\parse_enums.py .
+
+$startdir = [IO.Path]::Combine([string]$PSScriptRoot, '..', 'vendor', 'fleece', 'Fleece')
+pushd $startdir
+
+Copy-Item ..\..\..\C\include\parse_API.py .
+Copy-Item ..\..\..\C\include\parse_structs.py .
+Copy-Item ..\..\..\C\include\parse_enums.py .
 python parse_API.py -c config
 python parse_structs.py
 Move-Item -Force *.template ..\..\..\CSharp\src\LiteCore.Shared\Interop
