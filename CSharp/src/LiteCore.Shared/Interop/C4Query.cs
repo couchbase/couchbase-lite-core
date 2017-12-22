@@ -48,7 +48,10 @@ namespace LiteCore.Interop
 #endif
         partial struct C4QueryOptions
     {
-        public static readonly C4QueryOptions Default = new C4QueryOptions();
+        public static readonly C4QueryOptions Default = new C4QueryOptions
+        {
+            rankFullText = true
+        };
     }
 
 #if LITECORE_PACKAGED

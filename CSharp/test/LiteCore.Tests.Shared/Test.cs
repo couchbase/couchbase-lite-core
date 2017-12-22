@@ -245,13 +245,10 @@ namespace LiteCore.Tests
             uint numDocs = 0;
             LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
             try {
-                var encoder = Native.FLEncoder_New();
                 ReadFileByLines(path, line => {
-                    FLError error;
-                    NativeRaw.FLEncoder_ConvertJSON(encoder, line);
-                    var body = NativeRaw.FLEncoder_Finish(encoder, &error);
+                    C4Error error;
+                    var body = NativeRaw.c4db_encodeJSON(Db, (C4Slice)line, &error);
                     ((long)body.buf).Should().NotBe(0, "because otherwise the encode failed");
-                    Native.FLEncoder_Reset(encoder);
 
                     var docID = (numDocs + 1).ToString("D7");
 
@@ -269,7 +266,7 @@ namespace LiteCore.Tests
                         Native.c4doc_free(doc);
                     }
 
-                    Native.FLSliceResult_Free(body);
+                    Native.c4slice_free(body);
                     ++numDocs;
                     if(numDocs % 1000 == 0 && st.Elapsed >= timeout) {
                         Console.Write($"Stopping JSON import after {st.Elapsed.TotalSeconds:F3} sec ");
@@ -413,8 +410,8 @@ namespace LiteCore.Tests
                 for (Native.FLArrayIterator_Begin(root, &iter);
                     null != (item = Native.FLArrayIterator_GetValue(&iter));
                     Native.FLArrayIterator_Next(&iter)) {
-                    var docID = idPrefix != null ? $"{idPrefix}doc{numDocs + 1:D7}" : $"doc{numDocs + 1:D7}";
-                    var enc = Native.c4db_createFleeceEncoder(Db);
+                    var docID = idPrefix != null ? $"{idPrefix}{numDocs + 1:D7}" : $"doc{numDocs + 1:D7}";
+                    var enc = Native.c4db_getSharedFleeceEncoder(Db);
                     Native.FLEncoder_WriteValue(enc, item);
                     var body = NativeRaw.FLEncoder_Finish(enc, &error);
 
