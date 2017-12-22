@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 
 using LiteCore.Interop;
 using FluentAssertions;
@@ -395,9 +396,14 @@ namespace LiteCore.Tests
                 var i = 0;
                 C4Error error;
                 while (Native.c4queryenum_next(e, &error)) {
-                    Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 0)).Should()
-                        .Be(expectedFirst[i], "because otherwise the query returned incorrect results");
-                    Native.FLValue_AsString(Native.FLArrayIterator_GetValueAt(&e->columns, 1)).Should().Be(expectedLast[i], "because otherwise the query returned incorrect results");
+                    var col = Native.FLArrayIterator_GetValueAt(&e->columns, 0);
+                    Native.FLValue_GetType(col).Should().Be(FLValueType.Dict);
+                    var name = Native.FLValue_AsDict(col);
+                    WriteLine(Native.FLValue_ToJSON(col));
+                    Native.FLValue_AsString(Native.FLDict_GetSharedKey(name, Encoding.UTF8.GetBytes("first"), sk))
+                        .Should().Be(expectedFirst[i]);
+                    Native.FLValue_AsString(Native.FLDict_GetSharedKey(name, Encoding.UTF8.GetBytes("last"), sk))
+                        .Should().Be(expectedLast[i]);
                     ++i;
                 }
 
