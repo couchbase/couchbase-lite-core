@@ -220,6 +220,7 @@ FLValue_AsArray
 FLValue_AsDict
 FLValue_ToString
 FLValue_ToJSON
+FLValue_ToJSONX
 FLValue_ToJSON5
 FLJSON5_ToJSON
 FLArray_Count

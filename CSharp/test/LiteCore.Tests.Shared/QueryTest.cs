@@ -399,7 +399,7 @@ namespace LiteCore.Tests
                     var col = Native.FLArrayIterator_GetValueAt(&e->columns, 0);
                     Native.FLValue_GetType(col).Should().Be(FLValueType.Dict);
                     var name = Native.FLValue_AsDict(col);
-                    WriteLine(Native.FLValue_ToJSON(col));
+                    WriteLine(Native.FLValue_ToJSONX(col, Native.c4db_getFLSharedKeys(Db), false, false));
                     Native.FLValue_AsString(Native.FLDict_GetSharedKey(name, Encoding.UTF8.GetBytes("first"), sk))
                         .Should().Be(expectedFirst[i]);
                     Native.FLValue_AsString(Native.FLDict_GetSharedKey(name, Encoding.UTF8.GetBytes("last"), sk))

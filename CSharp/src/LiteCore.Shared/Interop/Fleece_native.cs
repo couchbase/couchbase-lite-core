@@ -136,17 +136,17 @@ namespace LiteCore.Interop
             }
         }
 
-        public static byte[] FLValue_ToJSON5(FLValue* v)
+        public static string FLValue_ToJSON5(FLValue* v)
         {
             using(var retVal = NativeRaw.FLValue_ToJSON5(v)) {
-                return ((C4Slice)retVal).ToArrayFast();
+                return ((FLSlice)retVal).CreateString();
             }
         }
 
-        public static byte[] FLValue_ToJSONX(FLValue* v, FLSharedKeys* sk, bool json5, bool canonicalForm)
+        public static string FLValue_ToJSONX(FLValue* v, FLSharedKeys* sk, bool json5, bool canonicalForm)
         {
             using(var retVal = NativeRaw.FLValue_ToJSONX(v, sk, json5, canonicalForm)) {
-                return ((C4Slice)retVal).ToArrayFast();
+                return ((FLSlice)retVal).CreateString();
             }
         }
 
