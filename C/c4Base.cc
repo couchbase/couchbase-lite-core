@@ -47,10 +47,11 @@ extern "C" {
     CBL_CORE_API std::atomic_int gC4InstanceCount;
     CBL_CORE_API std::atomic_int gC4ExpectExceptions;
     bool C4ExpectingExceptions();
-    bool C4ExpectingExceptions() { return gC4ExpectExceptions > 0; }
+    bool C4ExpectingExceptions() { return gC4ExpectExceptions > 0; } // LCOV_EXCL_LINE
 }
 
 
+// LCOV_EXCL_START
 static string getBuildInfo() {
 #if LiteCoreOfficial
     return format("build number %s from commit %.8s", LiteCoreBuildNum, GitCommit);
@@ -68,7 +69,7 @@ static string getBuildInfo() {
 C4StringResult c4_getBuildInfo() C4API {
     return sliceResult(getBuildInfo());
 }
-
+// LCOV_EXCL_STOP
 
 #pragma mark - ERRORS:
 
@@ -264,11 +265,11 @@ namespace c4Internal {
 
 #pragma mark - LOGGING:
 
-
+// LCOV_EXCL_START
 void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) noexcept {
     LogDomain::setCallback((LogDomain::Callback_t)callback, preformatted, (LogLevel)level);
 }
-
+// LCOV_EXCL_STOP
 
 bool c4log_writeToBinaryFile(C4LogLevel level, C4String path, C4Error *outError) noexcept {
     return tryCatch(outError, [=] {
@@ -277,10 +278,10 @@ bool c4log_writeToBinaryFile(C4LogLevel level, C4String path, C4Error *outError)
     });
 }
 
-C4LogLevel c4log_callbackLevel() noexcept        {return (C4LogLevel)LogDomain::callbackLogLevel();}
+C4LogLevel c4log_callbackLevel() noexcept        {return (C4LogLevel)LogDomain::callbackLogLevel();} // LCOV_EXCL_LINE
 C4LogLevel c4log_binaryFileLevel() noexcept      {return (C4LogLevel)LogDomain::fileLogLevel();}
 
-void c4log_setCallbackLevel(C4LogLevel level) noexcept   {LogDomain::setCallbackLogLevel((LogLevel)level);}
+void c4log_setCallbackLevel(C4LogLevel level) noexcept   {LogDomain::setCallbackLogLevel((LogLevel)level);} //LCOV_EXCL_LINE
 void c4log_setBinaryFileLevel(C4LogLevel level) noexcept {LogDomain::setFileLogLevel((LogLevel)level);}
 
 
@@ -338,6 +339,7 @@ void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, va_list arg
     } catch (...) { }
 }
 
+// LCOV_EXCL_START
 void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
     if(msg.buf == nullptr) {
         return;
@@ -345,7 +347,7 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
     
     c4log(c4Domain, level, "%.*s", SPLAT(msg));
 }
-
+// LCOV_EXCL_STOP
 
 #pragma mark - INSTANCE COUNTED:
 
@@ -354,7 +356,7 @@ int c4_getObjectCount() noexcept {
     return gC4InstanceCount;
 }
 
-
+// LCOV_EXCL_START
 #if DEBUG
 static mutex sInstancesMutex;
 static set<const C4InstanceCounted*> sInstances;
@@ -389,3 +391,4 @@ void c4_dumpInstances(void) C4API {
 #else
 void c4_dumpInstances(void) C4API { }
 #endif
+// LCOV_EXCL_STOP

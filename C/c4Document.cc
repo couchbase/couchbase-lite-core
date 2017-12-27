@@ -13,7 +13,9 @@
 //  either express or implied. See the License for the specific language governing permissions
 //  and limitations under the License.
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include "c4Internal.hh"
 #include "Database.hh"
 #include "c4.h"
@@ -136,10 +138,13 @@ bool c4doc_selectNextLeafRevision(C4Document* doc,
 
 
 bool c4doc_selectFirstPossibleAncestorOf(C4Document* doc, C4Slice revID) noexcept {
+    // LCOV_EXCL_START
     if (internal(doc)->database()->config.versioning != kC4RevisionTrees) {
         Warn("c4doc_selectFirstPossibleAncestorOf only works with revision trees");
         return false;
     }
+    // LCOV_EXCL_STOP
+
     // Start at first (current) revision; return it if it's a candidate, else go to the next:
     c4doc_selectCurrentRevision(doc);
     auto generation = c4rev_getGeneration(revID);
