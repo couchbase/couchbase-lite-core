@@ -17,6 +17,7 @@
 #include "c4BlobStore.h"
 #include "BlobStore.hh"
 #include "Database.hh"
+#include "c4Private.h"
 #include <libb64/decode.h>
 
 
@@ -61,6 +62,7 @@ C4BlobStore* c4blob_openStore(C4Slice dirPath,
                               C4Error* outError) noexcept
 {
     try {
+        MAYBE_FAIL
         BlobStore::Options options = {};
         options.create = (flags & kC4DB_Create) != 0;
         options.writeable = !(flags & kC4DB_ReadOnly);
@@ -76,6 +78,7 @@ C4BlobStore* c4blob_openStore(C4Slice dirPath,
 
 C4BlobStore* c4db_getBlobStore(C4Database *db, C4Error* outError) noexcept {
     try {
+        MAYBE_FAIL
         return (C4BlobStore*) db->blobStore();
     } catchError(outError)
     return nullptr;
@@ -89,6 +92,7 @@ void c4blob_freeStore(C4BlobStore *store) noexcept {
 
 bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) noexcept {
     try {
+        MAYBE_FAIL
         store->deleteStore();
         delete store;
         return true;
@@ -99,6 +103,7 @@ bool c4blob_deleteStore(C4BlobStore* store, C4Error *outError) noexcept {
 
 int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) noexcept {
     try {
+        MAYBE_FAIL
         return store->get(internal(key)).contentLength();
     } catchExceptions()
     return -1;
@@ -107,6 +112,7 @@ int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) noexcept {
 
 C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
+        MAYBE_FAIL
         return sliceResult(store->get(internal(key)).contents());
     } catchError(outError)
     return {nullptr, 0};
@@ -115,6 +121,7 @@ C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* out
 
 C4StringResult c4blob_getFilePath(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
+        MAYBE_FAIL
         auto path = store->get(internal(key)).path();
         if (!path.exists()) {
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
@@ -141,6 +148,7 @@ bool c4blob_create(C4BlobStore* store,
                    C4Error* outError) noexcept
 {
     try {
+        MAYBE_FAIL
         Blob blob = store->put(contents, internal(expectedKey));
         if (outKey)
             *outKey = external(blob.key());
@@ -152,6 +160,7 @@ bool c4blob_create(C4BlobStore* store,
 
 bool c4blob_delete(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
+        MAYBE_FAIL
         store->get(internal(key)).del();
         return true;
     } catchError(outError)
@@ -164,6 +173,7 @@ bool c4blob_delete(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcep
 
 C4ReadStream* c4blob_openReadStream(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
+        MAYBE_FAIL
         unique_ptr<SeekableReadStream> stream = store->get(internal(key)).read();
         return external(stream.release());
     } catchError(outError)
@@ -173,6 +183,7 @@ C4ReadStream* c4blob_openReadStream(C4BlobStore* store, C4BlobKey key, C4Error* 
 
 size_t c4stream_read(C4ReadStream* stream, void *buffer, size_t maxBytes, C4Error* outError) noexcept {
     try {
+        MAYBE_FAIL
         clearError(outError);
         return internal(stream)->read(buffer, maxBytes);
     } catchError(outError)
@@ -182,6 +193,7 @@ size_t c4stream_read(C4ReadStream* stream, void *buffer, size_t maxBytes, C4Erro
 
 int64_t c4stream_getLength(C4ReadStream* stream, C4Error* outError) noexcept {
     try {
+        MAYBE_FAIL
         return internal(stream)->getLength();
     } catchError(outError)
     return -1;
@@ -190,6 +202,7 @@ int64_t c4stream_getLength(C4ReadStream* stream, C4Error* outError) noexcept {
 
 bool c4stream_seek(C4ReadStream* stream, uint64_t position, C4Error* outError) noexcept {
     try {
+        MAYBE_FAIL
         internal(stream)->seek(position);
         return true;
     } catchError(outError)
@@ -207,6 +220,7 @@ void c4stream_close(C4ReadStream* stream) noexcept {
 
 C4WriteStream* c4blob_openWriteStream(C4BlobStore* store, C4Error* outError) noexcept {
     try {
+        MAYBE_FAIL
         return external(new BlobWriteStream(*store));
     } catchError(outError)
     return nullptr;
@@ -217,6 +231,7 @@ bool c4stream_write(C4WriteStream* stream, const void *bytes, size_t length, C4E
     if (length == 0)
         return true;
     try {
+        MAYBE_FAIL
         internal(stream)->write(slice(bytes, length));
         return true;
     } catchError(outError)
@@ -233,6 +248,7 @@ bool c4stream_install(C4WriteStream* stream,
                       const C4BlobKey *expectedKey,
                       C4Error *outError) noexcept {
     try {
+        MAYBE_FAIL
         internal(stream)->install(internal(expectedKey));
         return true;
     } catchError(outError)

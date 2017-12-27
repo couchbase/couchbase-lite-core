@@ -197,6 +197,7 @@ c4_dumpInstances
 c4_shutdown
 gC4InstanceCount
 gC4ExpectExceptions
+gC4ForceFailure
 
 FLSlice_Equal
 FLSlice_Compare

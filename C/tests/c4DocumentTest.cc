@@ -608,3 +608,52 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {
     CHECK(!c4doc_dictContainsBlobs(d, nullptr));
     FLSliceResult_Free(result);
 }
+
+#if DEBUG
+// Note:  No current way to port this to bindings, but probably not needed
+N_WAY_TEST_CASE_METHOD(C4Test, "Document failure", "[Database][C]") {
+    C4DocPutRequest rq;
+    memset(&rq, 0, sizeof(C4DocPutRequest));
+    rq.body = C4STR("");
+    rq.existingRevision = true;
+
+    C4Error error;
+    CHECK(!c4doc_put(db, &rq, nullptr, &error));
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorNotInTransaction);
+    REQUIRE(c4db_beginTransaction(db, &error));
+
+    CHECK(!c4doc_put(db, &rq, nullptr, &error));
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorInvalidParameter);
+    char buffer[64];
+    CHECK(c4error_getMessageC(error, buffer, 64) == buffer);
+    CHECK(strcmp(buffer, "Missing docID") == 0);
+
+    rq.docID = C4STR("doc");
+    CHECK(!c4doc_put(db, &rq, nullptr, &error));
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorInvalidParameter);
+    CHECK(c4error_getMessageC(error, buffer, 64) == buffer);
+    CHECK(strcmp(buffer, "No history") == 0);
+
+    rq.existingRevision = false;
+    rq.historyCount = 2;
+    CHECK(!c4doc_put(db, &rq, nullptr, &error));
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorInvalidParameter);
+    CHECK(c4error_getMessageC(error, buffer, 64) == buffer);
+    CHECK(strcmp(buffer, "Too much history") == 0);
+
+    {
+        ForceFailures f;
+
+        rq.historyCount = 0;
+        CHECK(!c4doc_put(db, &rq, nullptr, &error));
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);
+    }
+
+    REQUIRE(c4db_endTransaction(db, false, &error));
+}
+#endif

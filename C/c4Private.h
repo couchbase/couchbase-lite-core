@@ -27,9 +27,28 @@ extern "C" {
         ignore the exception. */
     CBL_CORE_API extern std::atomic_int gC4ExpectExceptions;
 
+#if DEBUG
+    /** If > 0, the library will force a failure for every function in the C API that uses a try 
+        catch section */
+    CBL_CORE_API extern std::atomic_int gC4ForceFailure;
+#endif
+
 #else
     CBL_CORE_API extern atomic_int gC4InstanceCount;
     CBL_CORE_API extern atomic_int gC4ExpectExceptions;
+#if DEBUG
+    CBL_CORE_API extern atomic_int gC4ForceFailure;
+#endif
+#endif
+
+#if DEBUG
+#define MAYBE_FAIL if(gC4ForceFailure) litecore::error::_throw(litecore::error::Domain::LiteCore, litecore::error::LiteCoreError::AssertionFailed);
+#define MAYBE_RECORD_ERROR(outErr, retVal) if(gC4ForceFailure) { recordError(LiteCoreDomain, kC4ErrorAssertionFailed, "Test failure", outErr); return retVal; }
+#define MAYBE_FAIL_CALL(call) (gC4ForceFailure && !call) || call
+#else
+#define MAYBE_FAIL
+#define MAYBE_RECORD_ERROR(outErr, retVal)
+#define MAYBE_FAIL_CALL(call) call
 #endif
 
 /** Stores a C4Error in `*outError`. */

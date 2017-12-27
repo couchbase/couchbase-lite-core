@@ -322,3 +322,108 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob and cancel", "[blob][C]") {
 
     c4stream_closeWriter(stream);
 }
+
+#if DEBUG
+// Note:  No current way to port this to bindings, but probably not needed
+N_WAY_TEST_CASE_METHOD(BlobStoreTest, "Simulate c4BlobStore Failures", "[blob][C]") {
+    
+
+    C4DatabaseConfig config;
+    memset(&config, 0, sizeof(C4DatabaseConfig));
+    config.flags = kC4DB_Create;
+    config.storageEngine = "SQLite";
+    config.versioning = kC4RevisionTrees;
+    C4Error error;
+
+    C4Database* goodDb = c4db_open(TEMPDIR("blobstore_db" + kPathSeparator), &config, &error);
+    REQUIRE(goodDb);
+
+    const C4Slice blobContent = C4STR("12345");
+    C4BlobKey key;
+    bool result = c4blob_create(store, blobContent, nullptr, &key, &error);
+    REQUIRE(result);
+
+    C4ReadStream* readStream = c4blob_openReadStream(store, key, &error);
+    REQUIRE(readStream);
+
+    C4WriteStream* writeStream = c4blob_openWriteStream(store, &error);
+    REQUIRE(writeStream);
+
+    {
+        ForceFailures f;
+        C4BlobStore* dead = c4blob_openStore(TEMPDIR("dead_store" + kPathSeparator),
+                                     kC4DB_Create,
+                                     nullptr,
+                                     &error);
+
+        CHECK(!dead);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);
+        error.domain = (C4ErrorDomain)0; error.code = 0;
+        c4blob_freeStore(dead); // NULL, so no-op
+
+        dead = c4db_getBlobStore(goodDb, &error);
+        CHECK(!dead);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);
+        error.domain = (C4ErrorDomain)0; error.code = 0;
+
+        result = c4blob_deleteStore(store, &error);
+        CHECK(!result);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);
+        error.domain = (C4ErrorDomain)0; error.code = 0;
+
+        int result2 = c4blob_getSize(store, key);
+        CHECK(result2 == -1);
+
+        C4StringResult result3 = c4blob_getFilePath(store, key, &error);
+        CHECK(!result3.buf);
+        CHECK(result3.size == 0);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);
+        error.domain = (C4ErrorDomain)0; error.code = 0;
+
+        result = c4blob_delete(store, key, &error);
+        CHECK(!result);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);   
+        error.domain = (C4ErrorDomain)0; error.code = 0;
+
+        fleece::alloc_slice buffer(20);
+        size_t result4 = c4stream_read(readStream, (void *)buffer.buf, 20, &error);
+        CHECK(result4 == 0);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);  
+        error.domain = (C4ErrorDomain)0; error.code = 0;
+
+        int64_t result5 = c4stream_getLength(readStream, &error);
+        CHECK(result5 == -1);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed); 
+        error.domain = (C4ErrorDomain)0; error.code = 0;
+        
+        result = c4stream_seek(readStream, 1, &error);
+        CHECK(!result);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);   
+        error.domain = (C4ErrorDomain)0; error.code = 0;
+
+        C4WriteStream* badWrite = c4blob_openWriteStream(store, &error);
+        CHECK(!badWrite);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);   
+        error.domain = (C4ErrorDomain)0; error.code = 0;
+
+        result = c4stream_install(writeStream, nullptr, &error);
+        CHECK(!result);
+        CHECK(error.domain == LiteCoreDomain);
+        CHECK(error.code == kC4ErrorAssertionFailed);
+    }
+
+    c4db_delete(goodDb, &error);
+    c4db_free(goodDb);
+    c4stream_close(readStream);
+    c4stream_closeWriter(writeStream);
+}
+#endif

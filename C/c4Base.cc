@@ -46,10 +46,12 @@ using namespace litecore;
 extern "C" {
     CBL_CORE_API std::atomic_int gC4InstanceCount;
     CBL_CORE_API std::atomic_int gC4ExpectExceptions;
+#if DEBUG
+    CBL_CORE_API std::atomic_int gC4ForceFailure;
+#endif
     bool C4ExpectingExceptions();
     bool C4ExpectingExceptions() { return gC4ExpectExceptions > 0; } // LCOV_EXCL_LINE
 }
-
 
 // LCOV_EXCL_START
 static string getBuildInfo() {

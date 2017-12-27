@@ -213,6 +213,7 @@ bool c4db_isInTransaction(C4Database* database) noexcept {
 bool c4db_beginTransaction(C4Database* database,
                            C4Error *outError) noexcept
 {
+    MAYBE_RECORD_ERROR(outError, false);
     return tryCatch(outError, bind(&Database::beginTransaction, database));
 }
 
@@ -220,6 +221,7 @@ bool c4db_endTransaction(C4Database* database,
                          bool commit,
                          C4Error *outError) noexcept
 {
+    MAYBE_RECORD_ERROR(outError, false);
     return tryCatch(outError, bind(&Database::endTransaction, database, commit));
 }
 
@@ -236,6 +238,7 @@ void c4db_unlock(C4Database *db) C4API {
 
 bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexcept {
     try {
+        MAYBE_FAIL
         if (database->purgeDocument(docID))
             return true;
         else

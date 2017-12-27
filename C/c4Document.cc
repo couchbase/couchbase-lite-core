@@ -306,6 +306,7 @@ C4Document* c4doc_put(C4Database *database,
     int commonAncestorIndex = 0;
     C4Document *doc = nullptr;
     try {
+        MAYBE_FAIL
         database->validateRevisionBody(rq->body);
 
         if (isNewDocPutRequest(database, rq)) {
@@ -450,7 +451,7 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
     return tryCatch<C4SliceResult>(outError, [&]{
         Encoder &enc = db->sharedEncoder();
         JSONConverter jc(enc);
-        if (!jc.encodeJSON(jsonData)) {
+        if (MAYBE_FAIL_CALL(!jc.encodeJSON(jsonData))) {
             recordError(FleeceDomain, jc.errorCode(), jc.errorMessage(), outError);
             return C4SliceResult{};
         }

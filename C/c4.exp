@@ -204,6 +204,7 @@ _c4_shutdown
 _c4_dumpInstances
 _gC4InstanceCount
 _gC4ExpectExceptions
+_gC4ForceFailure
 
 # Fleece:
 _FLSlice_Equal

@@ -49,12 +49,23 @@ namespace fleece {
 void ExpectException(litecore::error::Domain, int code, std::function<void()> lambda);
 
 extern "C" CBL_CORE_API std::atomic_int gC4ExpectExceptions;
+#if DEBUG
+extern "C" CBL_CORE_API std::atomic_int gC4ForceFailure;
+#endif
 
 // While in scope, suppresses warnings about errors, and debugger exception breakpoints (in Xcode)
 struct ExpectingExceptions {
     ExpectingExceptions()    {++gC4ExpectExceptions; litecore::error::sWarnOnError = false;}
-    ~ExpectingExceptions()   {--gC4ExpectExceptions; litecore::error::sWarnOnError = true;}
+    ~ExpectingExceptions()   {--gC4ExpectExceptions; litecore::error::sWarnOnError = gC4ExpectExceptions <= 0;}
 };
+
+#if DEBUG
+// While in scope, trigger forced failures for C API functions
+struct ForcingFailures {
+    ForcingFailures()       {++gC4ForceFailure; ++gC4ExpectExceptions; litecore::error::sWarnOnError = false;}
+    ~ForcingFailures()      {--gC4ForceFailure; --gC4ExpectExceptions; litecore::error::sWarnOnError = gC4ExpectExceptions <= 0;}
+};
+#endif
 
 
 #include "CatchHelper.hh"

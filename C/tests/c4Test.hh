@@ -107,8 +107,15 @@ class TransactionHelper {
 
 struct ExpectingExceptions {
     ExpectingExceptions()    {++gC4ExpectExceptions; c4log_warnOnErrors(false);}
-    ~ExpectingExceptions()   {--gC4ExpectExceptions; c4log_warnOnErrors(true);}
+    ~ExpectingExceptions()   {--gC4ExpectExceptions; c4log_warnOnErrors(gC4ExpectExceptions <= 0);}
 };
+
+#if DEBUG
+struct ForceFailures {
+    ForceFailures()          {++gC4ForceFailure; ++gC4ExpectExceptions; c4log_warnOnErrors(false);}
+    ~ForceFailures()         {--gC4ForceFailure; --gC4ExpectExceptions; c4log_warnOnErrors(gC4ExpectExceptions <= 0);}
+};
+#endif
 
 
 // Handy base class that creates a new empty C4Database in its setUp method,
