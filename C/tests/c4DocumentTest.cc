@@ -137,6 +137,12 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     REQUIRE(doc->selectedRev.sequence == 1);
     REQUIRE(doc->selectedRev.body == kBody);
     c4doc_free(doc);
+
+    // Get a bogus sequence
+    doc = c4doc_getBySequence(db, 2, &error);
+    CHECK(doc == nullptr);
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorNotFound);
 }
 
 

@@ -736,3 +736,171 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query tostring", "[Query]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "false"_sl);
 }
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query HAVING", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+
+        char docID[6];
+        for(int i = 0; i < 20; i++) {
+            sprintf(docID, "doc%02d", i);
+            fleece::Encoder enc;
+            enc.beginDictionary(1);
+            enc.writeKey("identifier");
+            enc.writeInt(i >= 5 ? i >= 15 ? 3 : 2 : 1);
+            enc.writeKey("index");
+            enc.writeInt(i);
+            enc.endDictionary();
+            alloc_slice body = enc.extractOutput();
+            store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        }
+
+        t.commit();
+    }
+    
+
+    Retained<Query> query{ store->compileQuery(json5(
+        "{'WHAT': ['.identifier', ['COUNT()', ['.index']]], 'GROUP_BY': ['.identifier'], 'HAVING': ['=', ['.identifier'], 1]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 1);
+    CHECK(e->columns()[1]->asInt() == 5);
+
+    query = store->compileQuery(json5(
+        "{'WHAT': ['.identifier', ['COUNT()', ['.index']]], 'GROUP_BY': ['.identifier'], 'HAVING': ['!=', ['.identifier'], 1]}"));
+    e.reset(query->createEnumerator());
+
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 2);
+    CHECK(e->columns()[1]->asInt() == 10);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 3);
+    CHECK(e->columns()[1]->asInt() == 5);
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query Functions", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        writeNumberedDoc(store, 1, nullslice, t);
+
+        t.commit();
+    }
+
+    auto query = store->compileQuery(json5(
+        "{'WHAT': [['e()']]}"));
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == M_E);
+
+    query = store->compileQuery(json5(
+        "{'WHAT': [['pi()']]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asDouble() == M_PI);
+
+    vector<string> what { 
+        "[['atan2()', ['.num'], ['*', ['.num'], 2]]]",
+        "[['acos()', ['.num']]]",
+        "[['asin()', ['.num']]]",
+        "[['atan()', ['.num']]]",
+        "[['cos()', ['.num']]]",
+        "[['degrees()', ['.num']]]",
+        "[['radians()', ['.num']]]",
+        "[['sin()', ['.num']]]",
+        "[['tan()', ['.num']]]"
+    };
+
+    vector<double> results {
+        atan2(2, 1),
+        acos(1),
+        asin(1),
+        atan(1),
+        cos(1),
+        180.0 / M_PI,
+        M_PI / 180.0,
+        sin(1),
+        tan(1),
+    };
+
+    for(int i = 0; i < what.size(); i++) {
+        query = store->compileQuery(json5(
+        "{'WHAT': " + what[i] + "}"));
+        e.reset(query->createEnumerator());
+        REQUIRE(e->getRowCount() == 1);
+        REQUIRE(e->next());
+        CHECK(e->columns()[0]->asDouble() == results[i]);
+    }
+
+    query = store->compileQuery(json5(
+        "{'WHAT': [['sign()', ['.num']]]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 1);
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query unsigned", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        string docID = "rec-001";
+
+        fleece::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("num");
+        enc.writeUInt(1);
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+
+        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+
+        t.commit();
+    }
+
+    auto query = store->compileQuery(json5(
+        "{'WHAT': ['.num']}"));
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asUnsigned() == 1U);
+    CHECK(e->columns()[0]->asInt() == 1);
+
+}
+
+// Failing test below
+#if 0
+TEST_CASE_METHOD(DataFileTestFixture, "Query data type", "[Query]") {
+     {
+        Transaction t(store->dataFile());
+        string docID = "rec-001";
+
+        fleece::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("num");
+        enc.writeData("number one"_sl);
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+
+        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+
+        t.commit();
+    }
+
+    auto query = store->compileQuery(json5(
+        "{'WHAT': ['.num']}"));
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asData() == "number one"_sl);
+
+    query = store->compileQuery(json5(
+        "{'WHAT': [['type()', ['.num']]]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "binary"_sl);
+}
+#endif

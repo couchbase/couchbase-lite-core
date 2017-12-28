@@ -1100,11 +1100,13 @@ namespace litecore {
 #pragma mark - REGISTRATION:
 
 
+    // LCOV_EXCL_START
     // placeholder implementation for unimplemented functions; just returns a SQLite error.
     static void unimplemented(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         Warn("Calling unimplemented N1QL function; query will fail");
         sqlite3_result_error(ctx, "unimplemented N1QL function", -1);
     }
+    // LCOV_EXCL_STOP
 
 
     const SQLiteFunctionSpec kN1QLFunctionsSpec[] = {
