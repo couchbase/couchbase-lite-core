@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class FleeceDict implements Map<String, Object>, Encodable, FLCollection {
+public class FleeceDict implements Map<String, Object>, Encodable {
     private MDict _dict;
 
     private FleeceDict() {
@@ -13,7 +13,7 @@ public class FleeceDict implements Map<String, Object>, Encodable, FLCollection 
     }
 
     // Call from native method
-    FleeceDict(long mv, long parent) {
+    FleeceDict(MValue mv, MCollection parent) {
         this();
         _dict.initInSlot(mv, parent);
     }
@@ -54,8 +54,7 @@ public class FleeceDict implements Map<String, Object>, Encodable, FLCollection 
         Object prev = null;
         if (_dict.contains(key))
             prev = _dict.get(key);
-        if (!_dict.set(key, o))
-            throw new IllegalStateException();
+        _dict.set(key, new MValue(o));
         return prev;
     }
 
@@ -65,8 +64,7 @@ public class FleeceDict implements Map<String, Object>, Encodable, FLCollection 
         Object prev = null;
         if (_dict.contains((String) key))
             prev = get(key);
-        if (!_dict.remove((String) key))
-            throw new IllegalStateException();
+        _dict.remove((String) key);
         return prev;
     }
 
@@ -77,21 +75,12 @@ public class FleeceDict implements Map<String, Object>, Encodable, FLCollection 
 
     @Override
     public void clear() {
-        if (!_dict.clear())
-            throw new IllegalStateException();
+        _dict.clear();
     }
 
     @Override
     public Set<String> keySet() {
-        Set<String> keys = new HashSet<>();
-        MDictIterator itr = new MDictIterator(_dict);
-        String key;
-        while ((key = itr.key()) != null) {
-            keys.add(key);
-            if (!itr.next())
-                break;
-        }
-        return keys;
+        return new HashSet<String>(_dict.getKeys());
     }
 
     @Override
@@ -110,9 +99,9 @@ public class FleeceDict implements Map<String, Object>, Encodable, FLCollection 
         _dict.encodeTo(enc);
     }
 
-    // Implementation of FLCollection
-    @Override
-    public long getFLCollectionHandle() {
-        return _dict._handle;
+    // For MValue
+
+    MCollection toMCollection() {
+        return _dict;
     }
 }

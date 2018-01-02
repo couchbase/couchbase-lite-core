@@ -54,13 +54,7 @@ set(JNI_CLASSES
     com.couchbase.litecore.fleece.FLEncoder
     com.couchbase.litecore.fleece.FLSliceResult
     com.couchbase.litecore.fleece.FLValue
-    com.couchbase.litecore.fleece.MArray
-    com.couchbase.litecore.fleece.MCollection
-    com.couchbase.litecore.fleece.MContext
-    com.couchbase.litecore.fleece.MDict
-    com.couchbase.litecore.fleece.MDictIterator
-    com.couchbase.litecore.fleece.MRoot
-    com.couchbase.litecore.fleece.MValue)
+    )
 
 create_javah(TARGET JNIHeaders
     CLASSES ${JNI_CLASSES}

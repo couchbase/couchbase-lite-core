@@ -7,6 +7,7 @@ import com.couchbase.litecore.fleece.FleeceDict;
 import com.couchbase.litecore.fleece.FleeceDocument;
 import com.couchbase.litecore.fleece.MRoot;
 import com.couchbase.litecore.fleece.MValue;
+import com.couchbase.litecore.fleece.MValueDelegate;
 
 import org.junit.After;
 import org.junit.Before;
@@ -34,12 +35,11 @@ public class C4MutableFleeceTest extends C4BaseTest {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        MValue.loadTestMethods(true);
+        MValue.registerDelegate(new MValueDelegate());
     }
 
     @After
     public void tearDown() throws Exception {
-        MValue.loadTestMethods(false);
         super.tearDown();
     }
 
@@ -86,8 +86,7 @@ public class C4MutableFleeceTest extends C4BaseTest {
     public void testMValue() {
         MValue val = new MValue("hi");
         assertEquals("hi", val.asNative(null));
-        assertNull(val.value());
-        val.free();
+        assertNull(val.getValue());
     }
 
     // TEST_CASE("MDict", "[Mutable]")
