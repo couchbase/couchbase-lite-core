@@ -10,6 +10,7 @@
 #include "Logging.hh"
 #include "linenoise.h"
 #include <stdio.h>
+#include <regex>
 
 #if __APPLE__
 #include <unistd.h>
@@ -59,54 +60,46 @@ static bool outputIsColor() {
 
 static bool tokenize(const char* input, deque<string> &args)
 {
-    string str(input);
-    int start = 0;
-    for( size_t i=0; i<str.length(); i++){
-        char c = str[i];
-        if( c == ' ' ) {
-            if(i - start > 1) {
-                args.push_back(str.substr(start, i - start));
+    if(input == nullptr) {
+        return false;
+    }
+    
+    // " (Matches a " character (ASCII 34)
+    // ( (First capture group)
+    //   (?: (Non capturing group)
+    //     \\"|[^"] (Either an escaped '"', or any character other than '"')
+    //   )
+    // * (Zero or more of the previous group)
+    // )
+    // " (Matches a " character (ASCII 34)
+    //
+    // | (OR, the following)
+    //
+    // ( (Second capture group)
+    //   \S+ One or more non-whitespace characters
+    // )
+    //
+    // This regular expression will split a string into tokens of either quoted items
+    // (that can contain escaped quotation marks) or whitespace delimited entries
+    regex pattern("\"((?:\\\\\"|[^\"])*)\"|(\\S+)");
+    cregex_iterator iter(input, input + strlen(input), pattern);
+    cregex_iterator end;
+    
+    for(; iter != end; iter++) {
+        cmatch const &what = *iter;
+        if(what.str(1).length() > 0) {
+            // Remove the escaped quotes
+            string match = what.str(1);
+            size_t start_pos = 0;
+            while((start_pos = match.find("\\\"", start_pos)) != std::string::npos) {
+                match.replace(start_pos, 2, "\"");
+                start_pos += 1;
             }
             
-            while(str[i] == ' ') {
-                i++;
-            }
-            
-            start = i;
-            i--;
-        } else if(c == '\"' ) {
-            i++;
-            while( i < str.size() - 1 && str[i] != '\"' ){ i++; }
-            if(str[i] != '\"') {
-                return false;
-            }
-            
-            args.push_back(str.substr(start + 1, i - start - 1));
-            start = i;
-        } else if(c == '\r' || c == '\n') {
-            break;
-        } else if(!isascii(c)) {
-            start = i+1;
+            args.push_back(match);
+        } else {
+            args.push_back(what.str(0));
         }
-    }
-    
-    int offset = 0;
-    int carriageReturn = str.find("\r");
-    int lineFeed = str.find("\n");
-    if(carriageReturn > 0) {
-        offset++;
-    }
-    
-    if(lineFeed > 0) {
-        offset++;
-    }
-    
-    if(str[str.length() - offset - 1] == '\"') {
-        offset++;
-    }
-    
-    if(str.length() - start - offset > 1) {
-        args.push_back(str.substr(start, str.length() - start - offset));
     }
     
     return true;
