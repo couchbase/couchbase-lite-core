@@ -311,7 +311,8 @@ namespace litecore {
     // ifnull(...) returns its first non-null argument.
     static void ifnull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         for(int i = 0; i < argc; i++) {
-            if(sqlite3_value_bytes(argv[i]) > 0) {
+            // NOTE: SQLITE_NULL means missing, which is not null
+            if(sqlite3_value_type(argv[i]) == SQLITE_NULL || sqlite3_value_bytes(argv[i]) > 0) {
                 sqlite3_result_value(ctx, argv[i]);
                 return;
             }

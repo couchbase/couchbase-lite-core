@@ -477,11 +477,9 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query missing and null", "[Query]") {
     query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFNULL()', ['.real_value'], ['.atai']], 1]}"));
     e.reset(query->createEnumerator());
-    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
-    REQUIRE(e->next());
-    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
 }
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query regex", "[Query]") {
