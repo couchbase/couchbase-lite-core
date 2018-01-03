@@ -97,6 +97,8 @@ namespace c4Internal {
         virtual bool selectCommonAncestorRevision(slice revID1, slice revID2) {
             error::_throw(error::UnsupportedOperation);
         }
+        virtual alloc_slice remoteAncestorRevID(C4RemoteID) =0;
+        virtual void setRemoteAncestorRevID(C4RemoteID) =0;
 
         virtual bool hasRevisionBody() noexcept =0;
         virtual bool loadSelectedRevBody() =0; // can throw; returns false if compacted away

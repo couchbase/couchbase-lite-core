@@ -37,17 +37,8 @@ public:
     ReplicatorLoopbackTest()
     :C4Test(0)
     ,_provider(kLatency)
-    {
-        auto db2Path = TempDir() + "cbl_core_test2";
-        auto db2PathSlice = c4str(db2Path.c_str());
-
-        auto config = c4db_getConfig(db);
-        C4Error error;
-        if (!c4db_deleteAtPath(db2PathSlice, &error))
-            REQUIRE(error.code == 0);
-        db2 = c4db_open(db2PathSlice, config, &error);
-        REQUIRE(db2 != nullptr);
-    }
+    ,db2(createDatabase("2"))
+    { }
 
     ~ReplicatorLoopbackTest() {
         if (_parallelThread)

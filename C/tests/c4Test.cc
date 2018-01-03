@@ -261,6 +261,21 @@ C4Test::~C4Test() {
 }
 
 
+C4Database* C4Test::createDatabase(const string &nameSuffix) {
+    assert(!nameSuffix.empty());
+    string dbPath = fleece::slice(databasePath()).asString() + "_" + nameSuffix;
+    auto dbPathSlice = c4str(dbPath.c_str());
+
+    auto config = c4db_getConfig(db);
+    C4Error error;
+    if (!c4db_deleteAtPath(dbPathSlice, &error))
+        REQUIRE(error.code == 0);
+    auto newDB = c4db_open(dbPathSlice, config, &error);
+    REQUIRE(newDB != nullptr);
+    return newDB;
+}
+
+
 void C4Test::reopenDB() {
     auto config = *c4db_getConfig(db);
     C4Error error;
@@ -272,14 +287,16 @@ void C4Test::reopenDB() {
 }
 
 
-void C4Test::deleteAndRecreateDB() {
+void C4Test::deleteAndRecreateDB(C4Database* &db) {
+    C4SliceResult path = c4db_getPath(db);
     auto config = *c4db_getConfig(db);
     C4Error error;
     REQUIRE(c4db_delete(db, &error));
     c4db_free(db);
     db = nullptr;
-    db = c4db_open(databasePath(), &config, &error);
+    db = c4db_open({path.buf, path.size}, &config, &error);
     REQUIRE(db);
+    c4slice_free(path);
 }
 
 
@@ -539,6 +556,7 @@ void C4Test::deleteDatabase(){
     C4Error error = {};
     c4db_delete(db, &error);
     c4db_free(db);
+    db = nullptr;
 }
 
 

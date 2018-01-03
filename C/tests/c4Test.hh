@@ -59,6 +59,7 @@ using namespace fleeceapi;
 const std::string& TempDir();
 
 
+// These '<<' functions help Catch log values of custom types in assertion messages:
 std::ostream& operator<< (std::ostream& o, fleece::slice s);
 std::ostream& operator<< (std::ostream& o, fleece::alloc_slice s);
 
@@ -67,6 +68,17 @@ std::ostream& operator<< (std::ostream& o, C4SliceResult s);
 
 std::ostream& operator<< (std::ostream &out, C4Error error);
 
+template <class T>
+std::ostream& operator<< (std::ostream &o, const std::set<T> &things) {
+    o << "{";
+    int n = 0;
+    for (const T &thing : things) {
+        if (n++) o << ", ";
+        o << '"' << thing << '"';
+    }
+    o << "}";
+    return o;
+}
 
 
 // Converts a slice to a C++ string
@@ -136,9 +148,14 @@ public:
     C4DocumentVersioning versioning() const     {return _versioning;}
     bool isRevTrees() const                     {return _versioning == kC4RevisionTrees;}
 
+    // Creates an extra database, with the same path as db plus the suffix.
+    // Caller is responsible for closing & deleting this database when the test finishes.
+    C4Database* createDatabase(const std::string &nameSuffix);
+
     void reopenDB();
     void deleteDatabase();
-    void deleteAndRecreateDB();
+    void deleteAndRecreateDB()                  {deleteAndRecreateDB(db);}
+    static void deleteAndRecreateDB(C4Database*&);
 
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);

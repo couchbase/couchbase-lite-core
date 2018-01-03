@@ -25,10 +25,9 @@ namespace litecore { namespace repl {
     :Worker(connection, replicator, options, "Pull")
     ,_dbActor(dbActor)
     {
-        registerHandler("changes",&Puller::handleChanges);
-        registerHandler("proposeChanges",&Puller::handleChanges);
-        registerHandler("changes",&Puller::handleChanges);
-        registerHandler("rev",    &Puller::handleRev);
+        registerHandler("changes",          &Puller::handleChanges);
+        registerHandler("proposeChanges",   &Puller::handleChanges);
+        registerHandler("rev",              &Puller::handleRev);
         _spareIncomingRevs.reserve(kMaxSpareIncomingRevs);
         _skipDeleted = _options.skipDeleted();
         if (nonPassive() && options.noConflicts())
@@ -122,6 +121,7 @@ namespace litecore { namespace repl {
             // Pass the buck to the DBWorker so it can find the missing revs & request them:
             increment(_pendingCallbacks);
             _dbActor->findOrRequestRevs(req, asynchronize([this,req,changes](vector<bool> which) {
+                // Callback, after revs request sent:
                 decrement(_pendingCallbacks);
                 bool tracksProgress = (nonPassive() && !_options.noConflicts());
                 for (size_t i = 0; i < which.size(); ++i) {

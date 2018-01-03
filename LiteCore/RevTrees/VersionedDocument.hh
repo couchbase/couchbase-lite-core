@@ -49,9 +49,11 @@ namespace litecore {
         const Record& record() const    {return _rec;}
 
         bool changed() const        {return _changed;}
-        bool save(Transaction& transaction);
 
-        void updateMeta();
+        enum SaveResult {kConflict, kNoNewSequence, kNewSequence};
+        SaveResult save(Transaction& transaction);
+
+        bool updateMeta();
 
 #if DEBUG
         void dump()          {RevTree::dump();}

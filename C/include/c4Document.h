@@ -35,7 +35,6 @@ extern "C" {
         kRevHasAttachments = 0x08, ///< Does this rev's body contain attachments?
         kRevKeepBody       = 0x10, ///< Revision's body should not be discarded when non-leaf
         kRevIsConflict     = 0x20, ///< Unresolved conflicting revision; will never be current
-        kRevIsForeign      = 0x40  ///< Rev comes from replicator, not created locally
     }; // Note: Same as Revision::Flags
 
 
@@ -57,6 +56,10 @@ extern "C" {
 
         C4Revision selectedRev;     ///< Describes the currently-selected revision
     } C4Document;
+
+
+    /** Identifies a remote database being replicated with. */
+    typedef uint32_t C4RemoteID;
 
 
     /** \name Lifecycle
@@ -152,6 +155,27 @@ extern "C" {
                                             C4String rev1ID,
                                             C4String rev2ID) C4API;
 
+    /** Looks up or creates a numeric ID identifying a remote database, for use with
+        c4doc_getRemoteAncestor() and c4doc_setRemoteAncestor().
+        @param db  The database.
+        @param remoteAddress  The replication URL of the remote db, or its other unique identifier.
+        @param canCreate  If true, a new identifier will be created if one doesn't exist.
+        @param outError  Error information is stored here.
+        @return  The ID, or 0 on error. */
+    C4RemoteID c4db_getRemoteDBID(C4Database *db C4NONNULL,
+                                  C4String remoteAddress,
+                                  bool canCreate,
+                                  C4Error *outError) C4API;
+
+    /** Returns the revision ID that has been marked as current for the given remote database. */
+    C4SliceResult c4doc_getRemoteAncestor(C4Document *doc C4NONNULL,
+                                          C4RemoteID remoteDatabase) C4API;
+
+    /** Marks the selected revision as current for the given remote database. */
+    bool c4doc_setRemoteAncestor(C4Document *doc C4NONNULL,
+                                 C4RemoteID remoteDatabase,
+                                 C4Error *error) C4API;
+
     /** Given a revision ID, returns its generation number (the decimal number before
         the hyphen), or zero if it's unparseable. */
     unsigned c4rev_getGeneration(C4String revID) C4API;
@@ -245,6 +269,7 @@ extern "C" {
         size_t historyCount;        ///< Size of history[] array
         bool save;                  ///< Save the document after inserting the revision?
         uint32_t maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
+        C4RemoteID remoteDBID;      ///< Identifier of remote db this rev's from (or 0 if local)
     } C4DocPutRequest;
 
     /** A high-level Put operation, to insert a new or downloaded revision.

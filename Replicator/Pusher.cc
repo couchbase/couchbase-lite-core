@@ -29,10 +29,14 @@ namespace litecore { namespace repl {
     ,_continuous(options.push == kC4Continuous)
     ,_skipDeleted(options.skipDeleted())
     {
+        if (passive()) {
+            _proposeChanges = false;
+            _proposeChangesKnown = true;
+        }
         filterByDocIDs(options.docIDs());
-        registerHandler("subChanges",       &Pusher::handleSubChanges);
-        registerHandler("getAttachment",    &Pusher::handleGetAttachment);
-        registerHandler("proveAttachment",  &Pusher::handleProveAttachment);
+        registerHandler("subChanges",      &Pusher::handleSubChanges);
+        registerHandler("getAttachment",   &Pusher::handleGetAttachment);
+        registerHandler("proveAttachment", &Pusher::handleProveAttachment);
     }
 
 
@@ -64,7 +68,7 @@ namespace litecore { namespace repl {
 
     // Handles an incoming "subChanges" message: starts passive push (i.e. the peer is pulling).
     void Pusher::handleSubChanges(Retained<MessageIn> req) {
-        if (nonPassive()) {
+        if (!passive()) {
             warn("Ignoring 'subChanges' request from peer; I'm already pushing");
             req->respondWithError({"LiteCore"_sl, kC4ErrorConflict,
                                    "I'm already pushing"_sl});     //TODO: Proper error code
@@ -106,9 +110,11 @@ namespace litecore { namespace repl {
             _gettingChanges = true;
             increment(_changeListsInFlight); // will be decremented at start of _gotChanges
             log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
-            _dbWorker->getChanges(_lastSequenceRead, _docIDs,
-                                  _changesBatchSize, _continuous, _skipDeleted,
-                                  _proposeChanges || !_proposeChangesKnown,
+            _dbWorker->getChanges({_lastSequenceRead, _docIDs,
+                                   _changesBatchSize, _continuous,
+                                   _proposeChanges || !_proposeChangesKnown,
+                                   _skipDeleted,
+                                   _proposeChanges},
                                   this);
             // response will be to call _gotChanges
         }
@@ -144,7 +150,7 @@ namespace litecore { namespace repl {
             if (!_caughtUp) {
                 log("Caught up, at lastSequence %llu", _lastSequenceRead);
                 _caughtUp = true;
-                if (!changes.empty() && !nonPassive()) {
+                if (!changes.empty() && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
                     // one if we didn't already:
                     sendChanges(RevList());
@@ -166,7 +172,7 @@ namespace litecore { namespace repl {
         auto &enc = req.jsonBody();
         enc.beginArray();
         for (auto &change : changes) {
-            if (nonPassive())
+            if (!passive())
                 _pendingSequences.add(change.sequence);
             // Write the info array for this change:
             enc.beginArray();
@@ -292,7 +298,7 @@ namespace litecore { namespace repl {
     void Pusher::sendRevision(const RevRequest &rev)
     {
         MessageProgressCallback onProgress;
-        if (nonPassive()) {
+        if (!passive()) {
             // Callback for after the peer receives the "rev" message:
             increment(_revisionsInFlight);
             logDebug("Uploading rev %.*s #%.*s (seq %llu)",
@@ -443,7 +449,7 @@ namespace litecore { namespace repl {
 
 
     void Pusher::doneWithRev(const Rev &rev, bool completed) {
-        if (nonPassive()) {
+        if (!passive()) {
             addProgress({rev.bodySize, 0});
 
             if (completed) {

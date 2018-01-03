@@ -220,7 +220,10 @@ namespace litecore {
 
 
     sequence_t SQLiteKeyStore::set(slice key, slice vers, slice body, DocumentFlags flags,
-                                   Transaction&, const sequence_t *replacingSequence) {
+                                   Transaction&,
+                                   const sequence_t *replacingSequence,
+                                   bool newSequence)
+    {
         SQLite::Statement *stmt;
         if (replacingSequence == nullptr) {
             // Default:
@@ -253,16 +256,24 @@ namespace litecore {
 
         sequence_t seq = 0;
         if (_capabilities.sequences) {
-            seq = lastSequence() + 1;
+            if (newSequence) {
+                seq = lastSequence() + 1;
+            } else {
+                Assert(replacingSequence && *replacingSequence > 0);
+                seq = *replacingSequence;
+            }
             stmt->bind(4, (long long)seq);
         } else {
             stmt->bind(4); // null
+            seq = 1;
         }
 
         UsingStatement u(*stmt);
         if (stmt->exec() == 0)
             return 0;               // condition wasn't met
-        setLastSequence(seq);
+
+        if (_capabilities.sequences && newSequence)
+            setLastSequence(seq);
         return seq;
     }
 
@@ -284,12 +295,14 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::setDocumentFlag(slice key, sequence_t sequence, DocumentFlags flags) {
+    bool SQLiteKeyStore::setDocumentFlag(slice key, sequence_t seq, DocumentFlags flags,
+                                         Transaction&)
+    {
         compile(_setFlagStmt, "UPDATE kv_@ SET flags=(flags | ?) WHERE key=? AND sequence=?");
         UsingStatement u(*_setFlagStmt);
         _setFlagStmt->bind      (1, (unsigned)flags);
         _setFlagStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
-        _setFlagStmt->bind      (3, (long long)sequence);
+        _setFlagStmt->bind      (3, (long long)seq);
         return _setFlagStmt->exec() > 0;
     }
 

@@ -62,6 +62,16 @@ namespace litecore { namespace repl {
     }
 
 
+    // Returns a string that uniquely identifies the remote database; by default its URL,
+    // or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.)
+    string DBWorker::remoteDBIDString() const {
+        slice uniqueID = _options.properties[kC4ReplicatorOptionRemoteDBUniqueID].asString();
+        if (uniqueID)
+            return string(uniqueID);
+        return string(_remoteAddress);
+    }
+
+
     void DBWorker::_setCookie(alloc_slice setCookieHeader) {
         C4Error err;
         if (c4db_setCookie(_db, setCookieHeader, slice(_remoteAddress.hostname), &err)) {
@@ -77,10 +87,9 @@ namespace litecore { namespace repl {
 #pragma mark - CHECKPOINTS:
 
 
-    // Implementation of public getCheckpoint(): Reads the local checkpoint & calls the callback
+    // Reads the local checkpoint & calls the callback; called by Replicator::getCheckpoints()
     void DBWorker::_getCheckpoint(CheckpointCallback callback) {
         alloc_slice body;
-        bool dbIsEmpty = false;
         C4Error err;
         alloc_slice checkpointID(effectiveRemoteCheckpointDocID(&err));
         if (checkpointID) {
@@ -93,7 +102,20 @@ namespace litecore { namespace repl {
             else if (isNotFoundError(err))
                 err = {};
         }
-        dbIsEmpty = c4db_getLastSequence(_db) == 0;
+
+        if (_options.pull > kC4Passive || _options.push > kC4Passive) {
+            string key = remoteDBIDString();
+            _remoteDBID = c4db_getRemoteDBID(_db, slice(key), true, &err);
+            if (_remoteDBID) {
+                logVerbose("Remote-DB ID %u found for target <%s>", _remoteDBID, key.c_str());
+            } else {
+                warn("Couldn't get remote-DB ID for target <%s>: error %d/%d",
+                     key.c_str(), err.domain, err.code);
+                body = nullslice;     // Let caller know there's a fatal error
+            }
+        }
+
+        bool dbIsEmpty = c4db_getLastSequence(_db) == 0;
         callback(checkpointID, body, dbIsEmpty, err);
     }
 
@@ -119,7 +141,7 @@ namespace litecore { namespace repl {
             fleeceapi::Encoder enc;
             enc.beginArray();
             enc.writeString({&privateUUID, sizeof(privateUUID)});
-            enc.writeString(_remoteAddress);
+            enc.writeString(remoteDBIDString());
             enc.endArray();
             alloc_slice data = enc.finish();
             SHA1 digest(data);
@@ -215,63 +237,59 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBWorker::getChanges(C4SequenceNumber since, DocIDSet docIDs, unsigned limit,
-                              bool continuous, bool skipDeleted, bool getForeignAncestor,
-                              Pusher *pusher)
+    void DBWorker::getChanges(const GetChangesParams &params, Pusher *pusher)
     {
-        enqueue(&DBWorker::_getChanges, since, docIDs, limit,
-                continuous, skipDeleted, getForeignAncestor,
-                Retained<Pusher>(pusher));
+        enqueue(&DBWorker::_getChanges, params, Retained<Pusher>(pusher));
     }
 
     
     // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
-    void DBWorker::_getChanges(C4SequenceNumber since, DocIDSet docIDs, unsigned limit,
-                               bool continuous, bool skipDeleted, bool getForeignAncestors,
-                               Retained<Pusher> pusher)
+    void DBWorker::_getChanges(GetChangesParams p, Retained<Pusher> pusher)
     {
         if (!connection())
             return;
-        log("Reading up to %u local changes since #%llu", limit, since);
+        log("Reading up to %u local changes since #%llu", p.limit, p.since);
         if (_firstChangeSequence == 0)
-            _firstChangeSequence = since + 1;
+            _firstChangeSequence = p.since + 1;
 
         // Run a by-sequence enumerator to find the changed docs:
         vector<Rev> changes;
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        if (!getForeignAncestors)
+        if (!p.getForeignAncestors)
             options.flags &= ~kC4IncludeBodies;
-        if (!skipDeleted)
+        if (!p.skipDeleted)
             options.flags |= kC4IncludeDeleted;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, since, &options, &error);
+        c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, p.since, &options, &error);
         if (e) {
-            changes.reserve(limit);
-            while (c4enum_next(e, &error) && limit > 0) {
+            changes.reserve(p.limit);
+            while (c4enum_next(e, &error) && p.limit > 0) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                if (passesDocIDFilter(docIDs, info.docID)) {
-                    alloc_slice foreignAncestor;
-                    if (getForeignAncestors) {
-                        // For proposeChanges, find the nearest foreign ancestor of the current rev:
-                        if (!getForeignAncestor(e, foreignAncestor, &error)) {
-                            if (error.code)
-                                gotDocumentError(info.docID, error, true, false);
-                            continue; // skip to next sequence
-                        }
+                if (!passesDocIDFilter(p.docIDs, info.docID))
+                    continue;       // reject rev: not in filter
+                alloc_slice foreignAncestor;
+                if (p.getForeignAncestors) {
+                    // For proposeChanges, find the nearest foreign ancestor of the current rev:
+                    if (!getForeignAncestor(e, foreignAncestor, &error)) {
+                        gotDocumentError(info.docID, error, true, false);
+                        continue;   // reject rev: error getting doc
+                    } else if (p.skipForeign && foreignAncestor == slice(info.revID)) {
+                        continue;   // reject rev: it's foreign
                     }
-                    changes.emplace_back(info, foreignAncestor);
-                    --limit;
                 }
+                // Add rev to list
+                changes.emplace_back(info, foreignAncestor);
+                --p.limit;
             }
         }
 
         markRevsSynced(changes, nullptr);
 
-        if (continuous && limit > 0 && !_changeObserver) {
+        if (p.continuous && p.limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
             _pusher = pusher;
-            _pushDocIDs = docIDs;
+            _pushDocIDs = p.docIDs;
             _changeObserver = c4dbobs_create(_db,
                                              [](C4DatabaseObserver* observer, void *context) {
                                                  auto self = (DBWorker*)context;
@@ -328,22 +346,26 @@ namespace litecore { namespace repl {
     // For proposeChanges, find the latest ancestor of the current rev that is known to the server.
     // This is a rev that's either marked as foreign (came from the server), or whose sequence is
     // prior to the checkpoint (has already been pushed to the server.)
-    bool DBWorker::getForeignAncestor(C4DocEnumerator *e, alloc_slice &foreignAncestor, C4Error *outError) {
-        c4::ref<C4Document> doc = c4enum_getDocument(e, outError);
-        if (!doc)
-            return false;
-        if (doc->selectedRev.flags & kRevIsForeign) {
-            outError->code = 0;
-            return false;       // skip this, it's not a locally created rev
+    bool DBWorker::getForeignAncestor(C4DocEnumerator *e,
+                                      alloc_slice &foreignAncestor,
+                                      C4Error *outError) {
+        Assert(_remoteDBID);
+        if (_remoteDBID) {
+            c4::ref<C4Document> doc = c4enum_getDocument(e, outError);
+            if (!doc)
+                return false;
+
+            foreignAncestor = c4doc_getRemoteAncestor(doc, _remoteDBID);
+            do {
+                slice rev(doc->selectedRev.revID);
+                if (rev == foreignAncestor) {
+                    return true;
+                } else if (doc->selectedRev.sequence < _firstChangeSequence) {
+                    foreignAncestor = rev;
+                    return true;
+                }
+            } while (c4doc_selectParentRevision(doc));
         }
-        while (c4doc_selectParentRevision(doc)) {
-            if ((doc->selectedRev.flags & kRevIsForeign)
-                        || doc->selectedRev.sequence < _firstChangeSequence) {
-                foreignAncestor = slice(doc->selectedRev.revID);
-                return true;
-            }
-        }
-        foreignAncestor = nullslice;
         return true;
     }
 
@@ -452,13 +474,15 @@ namespace litecore { namespace repl {
         C4Error err;
         c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
         if (doc && c4doc_selectRevision(doc, revID, false, &err)) {
-            // I already have this revision. Make sure it's marked as foreign:
-            if (!(doc->selectedRev.flags & kRevIsForeign)) {
-                //TODO: Mark rev as foreign in DB
+            // I already have this revision. Make sure it's marked as current for this remote:
+            if (_remoteDBID) {
+                c4::sliceResult remoteRevID(c4doc_getRemoteAncestor(doc, _remoteDBID));
+                if (remoteRevID != revID)
+                    updateRemoteRev(doc);
             }
             return true;
         }
-
+        
         ancestors.resize(0);
         if (doc) {
             // Revision isn't found, but look for ancestors:
@@ -472,6 +496,23 @@ namespace litecore { namespace repl {
             gotError(err);
         }
         return false;
+    }
+
+
+    // Updates the doc to have the currently-selected rev marked as the remote
+    void DBWorker::updateRemoteRev(C4Document *doc) {
+        slice revID = doc->selectedRev.revID;
+        logVerbose("Updating remote #%u's rev of '%.*s' to %.*s",
+                   _remoteDBID, SPLAT(doc->docID), SPLAT(revID));
+        C4Error error;
+        c4::Transaction t(_db);
+        bool ok = t.begin(&error)
+               && c4doc_setRemoteAncestor(doc, _remoteDBID, &error)
+               && c4doc_save(doc, 0, &error)
+               && t.commit(&error);
+        if (!ok)
+            warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
+                 _remoteDBID, SPLAT(doc->docID), SPLAT(revID), error.domain, error.code);
     }
 
 
@@ -704,11 +745,12 @@ namespace litecore { namespace repl {
                 C4DocPutRequest put = {};
                 put.body = bodyForDB;
                 put.docID = rev->docID;
-                put.revFlags = rev->flags | kRevIsForeign | kRevKeepBody;
+                put.revFlags = rev->flags | kRevKeepBody;
                 put.existingRevision = true;
                 put.allowConflict = true;
                 put.history = history.data();
                 put.historyCount = history.size();
+                put.remoteDBID = _remoteDBID;
                 put.save = true;
 
                 C4Error docErr;

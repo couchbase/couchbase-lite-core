@@ -64,7 +64,7 @@ namespace litecore {
         rec.updateSequence(seq);
     }
 
-    bool KeyStore::setDocumentFlag(slice key, sequence_t sequence, DocumentFlags) {
+    bool KeyStore::setDocumentFlag(slice key, sequence_t sequence, DocumentFlags, Transaction&) {
         error::_throw(error::Unimplemented);
     }
 

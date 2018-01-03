@@ -57,10 +57,14 @@ namespace litecore {
                 rev->parent = _revs[rev->parent->index()];
             rev->owner = this;
         }
+        // Copy _remoteRevs:
+        for (auto &i : other._remoteRevs) {
+            _remoteRevs[i.first] = _revs[i.second->index()];
+        }
     }
 
     void RevTree::decode(litecore::slice raw_tree, sequence_t seq) {
-        _revsStorage = RawRevision::decodeTree(raw_tree, this, seq);
+        _revsStorage = RawRevision::decodeTree(raw_tree, _remoteRevs, this, seq);
         initRevs();
     }
 
@@ -75,7 +79,7 @@ namespace litecore {
 
     alloc_slice RevTree::encode() {
         sort();
-        return RawRevision::encodeTree(_revs);
+        return RawRevision::encodeTree(_revs, _remoteRevs);
     }
 
 #if DEBUG
@@ -188,8 +192,7 @@ namespace litecore {
                           Rev *parentRev,
                           Rev::Flags revFlags)
     {
-        static const auto kNewRevFlagsMask = (Rev::kDeleted | Rev::kHasAttachments
-                                              | Rev::kKeepBody | Rev::kForeign);
+        revFlags = Rev::Flags(revFlags & (Rev::kDeleted | Rev::kHasAttachments | Rev::kKeepBody));
 
         Assert(!_unknown);
         // Allocate copies of the revID and data so they'll stay around:
@@ -206,22 +209,15 @@ namespace litecore {
         newRev->revID = revID;
         newRev->_body = body;
         newRev->sequence = 0; // Sequence is unknown till record is saved
-        newRev->flags = (Rev::Flags)(Rev::kLeaf | Rev::kNew | (revFlags & kNewRevFlagsMask));
+        newRev->flags = Rev::Flags(Rev::kLeaf | Rev::kNew | revFlags);
         newRev->parent = parentRev;
 
         if (parentRev) {
-            bool conflict = (!parentRev->isLeaf() || parentRev->isConflict());
-            if (conflict)
+            if (!parentRev->isLeaf() || parentRev->isConflict())
                 newRev->addFlag(Rev::kIsConflict);      // Creating or extending a branch
             parentRev->clearFlag(Rev::kLeaf);
-            if (revFlags & Rev::kKeepBody) {
-                // Only one rev in the main branch can have the keepBody flag
-                for (auto ancestor = (Rev*)parentRev; ancestor; ancestor = (Rev*)ancestor->parent) {
-                    if (conflict && !ancestor->isConflict())
-                        break;
-                    ancestor->clearFlag(Rev::kKeepBody);
-                }
-            }
+            if (revFlags & Rev::kKeepBody)
+                keepBody(newRev);
         } else {
             // Root revision:
             if (!_revs.empty())
@@ -315,15 +311,28 @@ namespace litecore {
 
         if (i > 0) {
             // Insert all the new revisions in chronological order:
-            auto ancestorFlags = (Rev::Flags)(revFlags & Rev::kForeign);
             while (--i > 0)
-                parent = _insert(history[i], slice(), parent, ancestorFlags);
+                parent = _insert(history[i], slice(), parent, Rev::kNoFlags);
             _insert(history[0], data, parent, revFlags);
         }
         return commonAncestorIndex;
     }
 
 #pragma mark - REMOVAL (prune / purge / compact):
+
+    void RevTree::keepBody(const Rev *rev_in) {
+        auto rev = const_cast<Rev*>(rev_in);
+        rev->addFlag(Rev::kKeepBody);
+
+        // Only one rev in a branch can have the keepBody flag
+        bool conflict = rev->isConflict();
+        for (auto ancestor = rev->parent; ancestor; ancestor = ancestor->parent) {
+            if (conflict && !ancestor->isConflict())
+                break;  // stop at end of a conflict branch
+            const_cast<Rev*>(ancestor)->clearFlag(Rev::kKeepBody);
+        }
+        _changed = true;
+    }
 
     void RevTree::removeBody(const Rev* rev) {
         if (rev->flags & Rev::kKeepBody) {
@@ -453,13 +462,45 @@ namespace litecore {
         }
     }
 
+    bool RevTree::hasNewRevisions() const {
+        for (Rev *rev : _revs) {
+            if (rev->isNew() || rev->sequence == 0)
+                return true;
+        }
+        return false;
+    }
+
     void RevTree::saved(sequence_t newSequence) {
         for (Rev *rev : _revs) {
             rev->clearFlag(Rev::kNew);
-            if (rev->sequence == 0)
+            if (rev->sequence == 0) {
                 rev->sequence = newSequence;
+            }
         }
     }
+
+#pragma mark - ETC.
+
+
+    const Rev* RevTree::latestRevisionOnRemote(RemoteID remote) {
+        Assert(remote != kNoRemoteID);
+        auto i = _remoteRevs.find(remote);
+        if (i == _remoteRevs.end())
+            return nullptr;
+        return i->second;
+    }
+
+
+    void RevTree::setLatestRevisionOnRemote(RemoteID remote, const Rev *rev) {
+        Assert(remote != kNoRemoteID);
+        if (rev) {
+            _remoteRevs[remote] = rev;
+        } else {
+            _remoteRevs.erase(remote);
+        }
+        _changed = true;
+    }
+
 
 #if DEBUG
     void RevTree::dump() {

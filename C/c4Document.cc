@@ -173,6 +173,96 @@ bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1, C4String
 }
 
 
+#pragma mark - REMOTE DATABASE REVISION TRACKING:
+
+
+static const char * kRemoteDBURLsDoc = "remotes";
+
+
+C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCreate,
+                              C4Error *outError) C4API
+{
+    using namespace fleece;
+    bool inTransaction = false;
+    auto remoteID = tryCatch<C4RemoteID>(outError, [&]() {
+        // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
+        // If the ID isn't found, then do a second pass where we either add the remote URL
+        // or create the doc from scratch, in a transaction.
+        for (int creating = false; creating <= true; ++creating) {
+            if (creating) {     // 2nd pass takes place in a transaction
+                db->beginTransaction();
+                inTransaction = true;
+            }
+
+            // Look up the doc in the db, and the remote URL in the doc:
+            Record doc = db->getRawDocument(string(kC4InfoStore), slice(kRemoteDBURLsDoc));
+            const Dict *remotes = nullptr;
+            C4RemoteID remoteID = 0;
+            if (doc.exists()) {
+                auto body = Value::fromData(doc.body());
+                if (body)
+                    remotes = body->asDict();
+                if (remotes) {
+                    auto idObj = remotes->get(remoteAddress);
+                    if (idObj)
+                        remoteID = C4RemoteID(idObj->asUnsigned());
+                }
+            }
+
+            if (remoteID > 0) {
+                // Found the remote ID!
+                return remoteID;
+                
+            } else if (creating && canCreate) {
+                // Update or create the document, adding the identifier:
+                remoteID = 1;
+                Encoder enc;
+                enc.beginDictionary();
+                for (Dict::iterator i(remotes); i; ++i) {
+                    auto existingID = i.value()->asUnsigned();
+                    if (existingID) {
+                        enc.writeKey(i.keyString());            // Copy existing entry
+                        enc.writeUInt(existingID);
+                        remoteID = max(remoteID, 1 + C4RemoteID(existingID));   // make sure new ID is unique
+                    }
+                }
+                enc.writeKey(remoteAddress);                       // Add new entry
+                enc.writeUInt(remoteID);
+                enc.endDictionary();
+                alloc_slice body = enc.extractOutput();
+
+                // Save the doc:
+                db->putRawDocument(string(kC4InfoStore), slice(kRemoteDBURLsDoc), nullslice, body);
+                db->endTransaction(true);
+                inTransaction = false;
+                return remoteID;
+            }
+        }
+        if (outError)
+            *outError = c4error_make(LiteCoreDomain, kC4ErrorNotFound, {});
+        return C4RemoteID(0);
+    });
+    if (inTransaction)
+        c4db_endTransaction(db, false, nullptr);
+    return remoteID;
+}
+
+
+C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase) C4API {
+    return tryCatch<C4SliceResult>(nullptr, [&]{
+        return sliceResult(internal(doc)->remoteAncestorRevID(remoteDatabase));
+    });
+}
+
+
+bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4Error *outError) C4API {
+    return tryCatch<bool>(outError, [&]{
+        internal(doc)->setRemoteAncestorRevID(remoteDatabase);
+        return true;
+    });
+}
+
+
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) {
     return Document::currentRevFlagsFromDocFlags(docFlags);
 }
@@ -209,6 +299,7 @@ static bool isNewDocPutRequest(C4Database *database, const C4DocPutRequest *rq) 
 // Tries to fulfil a PutRequest by creating a new Record. Returns null if one already exists.
 static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
 {
+    DebugAssert(rq->save, "putNewDoc optimization works only if rq->save is true");
     Record record(rq->docID);
     if (!rq->docID.buf)
         record.setKey(createDocUUID());
@@ -308,7 +399,7 @@ C4Document* c4doc_put(C4Database *database,
     try {
         database->validateRevisionBody(rq->body);
 
-        if (isNewDocPutRequest(database, rq)) {
+        if (rq->save && isNewDocPutRequest(database, rq)) {
             // As an optimization, write the doc assuming there is no prior record in the db:
             doc = putNewDoc(database, rq);
             // If there's already a record, doc will be null, so we'll continue down regular path.

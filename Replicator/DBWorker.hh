@@ -44,9 +44,15 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_setCheckpoint, data, onComplete);
         }
 
-        void getChanges(C4SequenceNumber since, DocIDSet, unsigned limit,
-                        bool continuous, bool skipDeleted, bool getForeignAncestor,
-                        Pusher*);
+        struct GetChangesParams {
+            C4SequenceNumber since;
+            DocIDSet docIDs;
+            unsigned limit;
+            bool continuous, getForeignAncestors;
+            bool skipDeleted, skipForeign;
+        };
+
+        void getChanges(const GetChangesParams&, Pusher*);
 
         void findOrRequestRevs(Retained<blip::MessageIn> req,
                                std::function<void(std::vector<bool>)> callback) {
@@ -68,6 +74,7 @@ namespace litecore { namespace repl {
         virtual std::string loggingClassName() const override {return "DBWorker";}
 
     private:
+        std::string remoteDBIDString() const;
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
         bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
@@ -76,9 +83,7 @@ namespace litecore { namespace repl {
         slice effectiveRemoteCheckpointDocID(C4Error*);
         void _getCheckpoint(CheckpointCallback);
         void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
-        void _getChanges(C4SequenceNumber since, DocIDSet, unsigned limit,
-                         bool continuous, bool skipDeleted, bool getForeignAncestor,
-                         Retained<Pusher> pusher);
+        void _getChanges(GetChangesParams, Retained<Pusher> pusher);
         bool getForeignAncestor(C4DocEnumerator *e, alloc_slice &foreignAncestor, C4Error*);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
@@ -100,20 +105,22 @@ namespace litecore { namespace repl {
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
         int findProposedChange(slice docID, slice revID, slice parentRevID);
+        void updateRemoteRev(C4Document* NONNULL);
 
         static const size_t kMaxPossibleAncestors = 10;
 
         c4::ref<C4Database> _db;
         C4BlobStore* _blobStore;
         const websocket::Address _remoteAddress;
-        std::string _remoteCheckpointDocID;
-        c4::ref<C4DatabaseObserver> _changeObserver;
-        Retained<Pusher> _pusher;
-        DocIDSet _pushDocIDs;
-        std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert;
-        std::mutex _revsToInsertMutex;
-        actor::Timer _insertTimer;
-        C4SequenceNumber _firstChangeSequence {0};
+        std::string _remoteCheckpointDocID;                 // docID of checkpoint
+        C4RemoteID _remoteDBID {0};                         // ID # of remote DB in revision store
+        c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
+        Retained<Pusher> _pusher;                           // Pusher to send db changes to
+        DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
+        std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert; // Pending revs to be added to db
+        std::mutex _revsToInsertMutex;                      // For safe access to _revsToInsert
+        actor::Timer _insertTimer;                          // Timer for inserting revs
+        C4SequenceNumber _firstChangeSequence {0};          // First doc sequence to be pushed
     };
 
 } }

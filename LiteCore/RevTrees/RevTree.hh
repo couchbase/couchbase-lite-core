@@ -18,6 +18,7 @@
 #include "slice.hh"
 #include "RevID.hh"
 #include <deque>
+#include <unordered_map>
 #include <vector>
 
 
@@ -41,7 +42,6 @@ namespace litecore {
         bool hasAttachments() const {return (flags & kHasAttachments) != 0;}
         bool isNew() const          {return (flags & kNew) != 0;}
         bool isConflict() const     {return (flags & kIsConflict) != 0;}
-        bool isForeign() const      {return (flags & kForeign) != 0;}
         bool isActive() const       {return isLeaf() && !isDeleted();}
 
         unsigned index() const;
@@ -51,13 +51,13 @@ namespace litecore {
         bool operator< (const Rev& rev) const;
 
         enum Flags : uint8_t {
+            kNoFlags        = 0x00,
             kDeleted        = 0x01, /**< Is this revision a deletion/tombstone? */
             kLeaf           = 0x02, /**< Is this revision a leaf (no children?) */
             kNew            = 0x04, /**< Has this rev been inserted since decoding? */
             kHasAttachments = 0x08, /**< Does this rev's body contain attachments? */
             kKeepBody       = 0x10, /**< Body will not be discarded after I'm a non-leaf */
             kIsConflict     = 0x20, /**< Unresolved conflicting revision; should never be current */
-            kForeign        = 0x40, /**< Rev originated on a remote peer */
             // Keep these flags consistent with C4RevisionFlags, in c4Document.h!
         };
         Flags flags;
@@ -101,6 +101,7 @@ namespace litecore {
         const std::vector<Rev*>& allRevisions() const   {return _revs;}
         const Rev* currentRevision();
         bool hasConflict() const;
+        bool hasNewRevisions() const;
 
         // Adds a new leaf revision, given the parent's revID
         const Rev* insert(revid,
@@ -126,6 +127,7 @@ namespace litecore {
 
         unsigned prune(unsigned maxDepth);
 
+        void keepBody(const Rev* NONNULL);
         void removeBody(const Rev* NONNULL);
 
         void removeNonLeafBodies();
@@ -134,11 +136,17 @@ namespace litecore {
         int purge(revid);
         int purgeAll();
 
-        void markCurrentRevision(Rev::Flags f)    {const_cast<Rev*>(currentRevision())->addFlag(f);}
-
         void sort();
 
         void saved(sequence_t newSequence);
+
+        //////// Remotes:
+
+        using RemoteID = unsigned;
+        static constexpr RemoteID kNoRemoteID = 0;
+
+        const Rev* latestRevisionOnRemote(RemoteID);
+        void setLatestRevisionOnRemote(RemoteID, const Rev*);
 
 #if DEBUG
         void dump();
@@ -151,21 +159,25 @@ namespace litecore {
         virtual void dump(std::ostream&);
 #endif
 
+        bool _changed {false};
+        bool _unknown {false};
+
     private:
         friend class Rev;
+        friend class RawRevision;
         void initRevs();
         Rev* _insert(revid, slice body, Rev *parentRev, Rev::Flags);
         bool confirmLeaf(Rev* testRev NONNULL);
         void compact();
         void checkForResolvedConflict();
 
-        bool                     _sorted {true};         // Are the revs currently sorted?
-        std::vector<Rev*>        _revs;
-        std::vector<alloc_slice> _insertedData;
-    protected:
-        std::deque<Rev> _revsStorage;               // Actual storage of the Rev objects
-        bool _changed {false};
-        bool _unknown {false};
+        using RemoteRevMap = std::unordered_map<RemoteID, const Rev*>;
+
+        bool                     _sorted {true};        // Is _revs currently sorted?
+        std::vector<Rev*>        _revs;                 // Revs in sorted order
+        std::deque<Rev>          _revsStorage;          // Actual storage of the Rev objects
+        std::vector<alloc_slice> _insertedData;         // Storage for new revids
+        RemoteRevMap             _remoteRevs;           // Tracks current rev for a remote DB URL
     };
 
 }
