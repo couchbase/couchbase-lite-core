@@ -127,6 +127,7 @@ namespace litecore {
 
         unsigned prune(unsigned maxDepth);
 
+        void keepBody(const Rev* NONNULL);
         void removeBody(const Rev* NONNULL);
 
         void removeNonLeafBodies();
@@ -134,8 +135,6 @@ namespace litecore {
         /** Removes a leaf revision and any of its ancestors that aren't shared with other leaves. */
         int purge(revid);
         int purgeAll();
-
-        void markCurrentRevision(Rev::Flags f)    {const_cast<Rev*>(currentRevision())->addFlag(f);}
 
         void sort();
 

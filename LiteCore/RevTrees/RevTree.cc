@@ -213,18 +213,11 @@ namespace litecore {
         newRev->parent = parentRev;
 
         if (parentRev) {
-            bool conflict = (!parentRev->isLeaf() || parentRev->isConflict());
-            if (conflict)
+            if (!parentRev->isLeaf() || parentRev->isConflict())
                 newRev->addFlag(Rev::kIsConflict);      // Creating or extending a branch
             parentRev->clearFlag(Rev::kLeaf);
-            if (revFlags & Rev::kKeepBody) {
-                // Only one rev in the main branch can have the keepBody flag
-                for (auto ancestor = (Rev*)parentRev; ancestor; ancestor = (Rev*)ancestor->parent) {
-                    if (conflict && !ancestor->isConflict())
-                        break;
-                    ancestor->clearFlag(Rev::kKeepBody);
-                }
-            }
+            if (revFlags & Rev::kKeepBody)
+                keepBody(newRev);
         } else {
             // Root revision:
             if (!_revs.empty())
@@ -326,6 +319,20 @@ namespace litecore {
     }
 
 #pragma mark - REMOVAL (prune / purge / compact):
+
+    void RevTree::keepBody(const Rev *rev_in) {
+        auto rev = const_cast<Rev*>(rev_in);
+        rev->addFlag(Rev::kKeepBody);
+
+        // Only one rev in a branch can have the keepBody flag
+        bool conflict = rev->isConflict();
+        for (auto ancestor = rev->parent; ancestor; ancestor = ancestor->parent) {
+            if (conflict && !ancestor->isConflict())
+                break;  // stop at end of a conflict branch
+            const_cast<Rev*>(ancestor)->clearFlag(Rev::kKeepBody);
+        }
+        _changed = true;
+    }
 
     void RevTree::removeBody(const Rev* rev) {
         if (rev->flags & Rev::kKeepBody) {
@@ -473,6 +480,7 @@ namespace litecore {
     }
 
 #pragma mark - ETC.
+
 
     const Rev* RevTree::latestRevisionOnRemote(RemoteID remote) {
         Assert(remote != kNoRemoteID);
