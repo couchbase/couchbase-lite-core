@@ -122,7 +122,7 @@ namespace litecore { namespace repl {
 
     void DBWorker::_setCheckpoint(alloc_slice data, std::function<void()> onComplete) {
         C4Error err;
-        alloc_slice checkpointID(effectiveRemoteCheckpointDocID(&err));
+        auto checkpointID = effectiveRemoteCheckpointDocID(&err);
         if (checkpointID && c4raw_put(_db, kLocalCheckpointStore, checkpointID, nullslice, data, &err))
             log("Saved local checkpoint %.*s to db", SPLAT(checkpointID));
         else

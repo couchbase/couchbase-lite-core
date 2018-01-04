@@ -30,10 +30,9 @@ namespace litecore {
     LogDecoder::LogDecoder(std::istream &in)
     :_in(in)
     {
+        _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
         uint8_t header[6];
         _in.read((char*)&header, sizeof(header));
-        if (!_in)
-            throw runtime_error("Error reading");
         if (memcmp(&header, &LogEncoder::kMagicNumber, 4) != 0)
             throw runtime_error("Not a LiteCore log file");
         if (header[4] != LogEncoder::kFormatVersion)

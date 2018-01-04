@@ -351,10 +351,10 @@ namespace litecore { namespace repl {
         digest = req->property("digest"_sl);
         C4BlobKey key;
         if (!c4blob_keyFromString(digest, &key)) {
-            req->respondWithError({"BLIP"_sl, 400, "Missing or invalid 'digest'"_sl});
+            c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Missing or invalid 'digest'"_sl, outError);
             return nullptr;
         }
-        return  c4blob_openReadStream(_dbWorker->blobStore(), key, outError);
+        return c4blob_openReadStream(_dbWorker->blobStore(), key, outError);
     }
 
 
