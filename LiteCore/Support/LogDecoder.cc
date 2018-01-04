@@ -49,8 +49,11 @@ namespace litecore {
         if (!_readMessage)
             readMessage();
         
+        _in.exceptions(istream::badbit | istream::failbit);  // turn off EOF exception temporarily
         if (!_in || _in.peek() < 0)
             return false;
+        _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
+
         _elapsedTicks += readUVarInt();
         _curLevel = (int8_t)_in.get();
         _curDomain = &readStringToken();
