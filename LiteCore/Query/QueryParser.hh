@@ -60,7 +60,8 @@ namespace litecore {
         struct Operation;
         static const Operation kOperationList[];
         static const Operation kOuterOperation, kArgListOperation, kColumnListOperation,
-                               kExpressionListOperation, kHighPrecedenceOperation;
+                               kResultListOperation, kExpressionListOperation,
+                               kHighPrecedenceOperation;
         struct JoinedOperations;
         static const JoinedOperations kJoinedOperationsList[];
 
@@ -90,6 +91,7 @@ namespace litecore {
         void prefixOp(slice, fleece::Array::iterator&);
         void postfixOp(slice, fleece::Array::iterator&);
         void infixOp(slice, fleece::Array::iterator&);
+        void resultOp(slice, fleece::Array::iterator&);
         void arrayLiteralOp(slice, fleece::Array::iterator&);
         void betweenOp(slice, fleece::Array::iterator&);
         void existsOp(slice, fleece::Array::iterator&);

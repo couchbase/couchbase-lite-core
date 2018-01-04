@@ -253,9 +253,11 @@ private:
             case kValueColumn:
                 setResultFromValue(ctx, currentValue());
                 break;
-            case kTypeColumn:
-                setResultFromValueType(ctx, currentValue());
+            case kTypeColumn: {
+                auto value = currentValue();
+                sqlite3_result_int(ctx, (value ? value->type() : -1));
                 break;
+            }
             case kPointerColumn: {
                 auto value = currentValue();
                 sqlite3_result_blob(ctx, &value, sizeof(value), SQLITE_TRANSIENT);

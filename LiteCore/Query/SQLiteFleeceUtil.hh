@@ -14,14 +14,14 @@
 
 namespace litecore {
 
-    // SQLite value subtypes for tagging blobs as Fleece
-    static const int kFleeceDataSubtype     = 0x66;   // Blob contains encoded Fleece data
-    static const int kFleecePointerSubtype  = 0x67;   // Blob contains a raw Value* (4 or 8 bytes)
-    
-    // SQLite value subtypes for extended Fleece type information
-    static const int kFleeceIntBoolean      = 0x68;   // Result is boolean type (expressed as int)
-    static const int kFleeceIntUnsigned     = 0x69;   // Result is an unsigned integer
-
+    // SQLite value subtypes to represent type info that SQL doesn't convey:
+    enum {
+        kFleeceDataSubtype     = 0x66,  // Blob contains encoded Fleece data
+        kFleecePointerSubtype,          // Blob contains a raw Value* (4 or 8 bytes)
+        kFleeceNullSubtype,             // Zero-length blob representing JSON null
+        kFleeceIntBoolean,              // Integer is a boolean (true or false)
+        kFleeceIntUnsigned,             // Integer is unsigned
+    };
 
     // What the user_data of a registered function points to
     struct fleeceFuncContext {
@@ -42,20 +42,40 @@ namespace litecore {
         return slice(blob, sqlite3_value_bytes(arg));
     }
 
+    // Takes 'body' column value from arg, and returns the current revision's body as a Value*.
+    // On error returns nullptr (and sets the SQLite result error.)
+    const fleece::Value* fleeceDocRoot(sqlite3_context* ctx, sqlite3_value *arg) noexcept;
 
+    // Interprets the arg, which must be a blob, as a Fleece value and returns it as a Value*.
+    // On error returns nullptr (and sets the SQLite result error.)
     const fleece::Value* fleeceParam(sqlite3_context*, sqlite3_value *arg) noexcept;
 
+    // Evaluates a path from the current value of *pValue and stores the result back to
+    // *pValue. Returns a SQLite error code, or SQLITE_OK on success.
     int evaluatePath(slice path, fleece::SharedKeys*, const fleece::Value **pValue) noexcept;
-    const fleece::Value* evaluatePath(sqlite3_context *ctx,
-                                      slice path,
-                                      const fleece::Value *val) noexcept;
-    bool evaluatePath(sqlite3_context *ctx, sqlite3_value **argv, const fleece::Value* *outValue);
 
+    // Takes document body from arg 0 and path string from arg 1, and evaluates the path.
+    // Stores result, which may be nullptr if path wasn't found, in *outValue.
+    // Returns true on success, false on error.
+    bool evaluatePathFromArgs(sqlite3_context *ctx, sqlite3_value **argv,
+                            bool isDocBody,
+                            const fleece::Value* *outValue);
+
+    // Sets the function result based on a Value*
     void setResultFromValue(sqlite3_context*, const fleece::Value*) noexcept;
-    void setResultFromValueType(sqlite3_context*, const fleece::Value*) noexcept;
+
+    // Sets the function result to a string, from the given slice.
+    // If the slice is null, sets the function result to SQLite null.
     void setResultTextFromSlice(sqlite3_context*, slice) noexcept;
-    void setResultBlobFromSlice(sqlite3_context*, slice) noexcept;
+
+    // Sets the function result to a Fleece container (a blob with kFleeceDataSubtype)
+    void setResultBlobFromFleeceData(sqlite3_context*, slice) noexcept;
+
+    // Encodes the Value as a Fleece container and sets it as the result
     bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::Value*);
+
+    // Sets the function result to be a Fleece/JSON null (an empty blob with kFleeceNullSubtype)
+    void setResultFleeceNull(sqlite3_context*);
 
     //// Registering SQLite functions:
 

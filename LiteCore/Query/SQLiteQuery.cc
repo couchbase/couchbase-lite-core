@@ -197,8 +197,11 @@ namespace litecore {
                 _first = false;
             else
                 ++_iter;
-            if (!_iter)
+            if (!_iter) {
+                LogVerbose(SQL, "QueryEnum<%p>: END", this);
                 return false;
+            }
+            LogVerbose(SQL, "QueryEnum<%p>: --> %s", this, _iter->asArray()->toJSONString().c_str());
             return true;
         }
 
@@ -342,15 +345,10 @@ namespace litecore {
                 case SQLITE_BLOB: {
                     if (i >= _query->_1stCustomResultColumn) {
                         slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
-                        if (fleeceData.size == 0) {
-                            // An empty SQL blob represents a Fleece/JSON null
-                            enc.writeNull();
-                        } else {
-                            const Value *value = Value::fromData(fleeceData);
-                            if (!value)
-                                error::_throw(error::CorruptData);
-                            enc.writeValue(value);
-                        }
+                        const Value *value = Value::fromData(fleeceData);
+                        if (!value)
+                            error::_throw(error::CorruptData);
+                        enc.writeValue(value);
                         break;
                     }
                     // else fall through:

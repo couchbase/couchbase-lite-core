@@ -480,6 +480,15 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query missing and null", "[Query]") {
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+
+    query =store->compileQuery(json5(
+        "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.real_value'], ['.atai']], 1]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 2);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
 }
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query regex", "[Query]") {
@@ -868,8 +877,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query unsigned", "[Query]") {
 
 }
 
-// Failing test below
-#if 0
+// Test for #341, "kData fleece type unable to be queried"
 TEST_CASE_METHOD(DataFileTestFixture, "Query data type", "[Query]") {
      {
         Transaction t(store->dataFile());
@@ -901,4 +909,4 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query data type", "[Query]") {
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "binary"_sl);
 }
-#endif
+

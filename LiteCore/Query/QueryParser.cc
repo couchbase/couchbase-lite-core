@@ -33,12 +33,15 @@ using namespace fleece;
 namespace litecore {
 
 
-    // Names of the SQLite functions we register for working with Fleece data:
+    // Names of the SQLite functions we register for working with Fleece data,
+    // in SQLiteFleeceFunctions.cc:
     static constexpr slice kValueFnName = "fl_value"_sl;
+    static constexpr slice kNestedValueFnName = "fl_nested_value"_sl;
     static constexpr slice kRootFnName  = "fl_root"_sl;
     static constexpr slice kEachFnName  = "fl_each"_sl;
     static constexpr slice kCountFnName = "fl_count"_sl;
     static constexpr slice kExistsFnName= "fl_exists"_sl;
+    static constexpr slice kResultFnName= "fl_result"_sl;
 
     // Existing SQLite FTS rank function:
     static constexpr slice kRankFnName  = "rank"_sl;
@@ -223,7 +226,7 @@ namespace litecore {
         
         if(!distinctVal) {
             for (auto &col : _baseResultColumns)
-            _sql << (nCol++ ? ", " : "") << defaultTablePrefix << col;
+                _sql << (nCol++ ? ", " : "") << defaultTablePrefix << col;
         }
 
         for (auto ftsTable : _ftsTables) {
@@ -286,7 +289,10 @@ namespace litecore {
         _context.push_back(&kExpressionListOperation); // suppresses parens around arg list
         Array::iterator items(list);
         _aggregatesOK = aggregatesOK;
-        writeColumnList(items);
+        if (key == "WHAT"_sl)
+            handleOperation(&kResultListOperation, kResultListOperation.op, items);
+        else
+            writeColumnList(items);
         _aggregatesOK = false;
         _context.pop_back();
         return count;
@@ -502,7 +508,7 @@ namespace litecore {
     // Handles a node that's a string. It's treated as a string literal, except in the context of
     // a column-list ('FROM', 'ORDER BY', creating index, etc.) where it's a property path.
     void QueryParser::parseStringLiteral(slice str) {
-        if (_context.back() == &kColumnListOperation) {
+        if (_context.back() == &kColumnListOperation || _context.back() == &kResultListOperation) {
             require(str.size > 0 && str[0] == '.',
                     "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
             str.moveStart(1);
@@ -543,6 +549,20 @@ namespace litecore {
                 _sql << op << ' ';
             }
             parseCollatableNode(i.value());
+        }
+    }
+
+
+    // Handles the WHAT clause (list of results)
+    void QueryParser::resultOp(slice op, Array::iterator& operands) {
+        int n = 0;
+        for (auto &i = operands; i; ++i) {
+            // Write the operation/delimiter between arguments
+            if (n++ > 0)
+                _sql << ", ";
+            _sql << kResultFnName << "(";
+            parseCollatableNode(i.value());
+            _sql << ")";
         }
     }
 
@@ -762,7 +782,7 @@ namespace litecore {
         if (property.empty()) {
             _sql << '_' << var << ".value";
         } else {
-            _sql << kValueFnName << "(_" << var << ".pointer, ";
+            _sql << kNestedValueFnName << "(_" << var << ".pointer, ";
             writeSQLString(_sql, slice(property));
             _sql << ")";
         }

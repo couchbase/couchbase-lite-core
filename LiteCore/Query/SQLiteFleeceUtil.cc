@@ -21,33 +21,56 @@ using namespace std;
 namespace litecore {
 
 
-    const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
+    const Value* fleeceDocRoot(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
+        auto type = sqlite3_value_type(arg);
+        if (type == SQLITE_NULL)
+            return Dict::kEmpty;             // No 'body' column; may be deleted doc
+        Assert(type == SQLITE_BLOB);
+        Assert(sqlite3_value_subtype(arg) == 0);
         slice fleece = valueAsSlice(arg);
-        if (sqlite3_value_subtype(arg) == kFleecePointerSubtype) {
-            // Data is just a Value* (4 or 8 bytes), so extract it:
-            if (fleece.size == sizeof(Value*)) {
-                return *(const Value**)fleece.buf;
-            } else {
-                sqlite3_result_error(ctx, "invalid Fleece pointer", -1);
-                sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
-                return nullptr;
-            }
-        } else {
-            if (sqlite3_value_subtype(arg) != kFleeceDataSubtype) {
-                // Pull the Fleece data out of a raw document body:
-                auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-                fleece = funcCtx->accessor(fleece);
-            }
-            if (!fleece)
-                return Dict::kEmpty;             // No body; may be deleted rev
-            const Value *root = Value::fromTrustedData(fleece);
-            if (!root) {
-                Warn("Invalid Fleece data in SQLite table");
-                sqlite3_result_error(ctx, "invalid Fleece data", -1);
-                sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
-            }
-            return root;
+        auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
+        fleece = funcCtx->accessor(fleece);
+        if (!fleece)
+            return Dict::kEmpty;             // No current revision body; may be deleted rev
+        const Value *root = Value::fromTrustedData(fleece);
+        if (!root) {
+            Warn("Invalid Fleece data in SQLite table");
+            sqlite3_result_error(ctx, "invalid Fleece data", -1);
+            sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
         }
+        return root;
+    }
+
+
+    const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
+        DebugAssert(sqlite3_value_type(arg) == SQLITE_BLOB);
+        slice fleece = valueAsSlice(arg);
+        switch (sqlite3_value_subtype(arg)) {
+            case kFleecePointerSubtype:
+                // Data is just a Value* (4 or 8 bytes), so extract it:
+                if (fleece.size == sizeof(Value*)) {
+                    return *(const Value**)fleece.buf;
+                } else {
+                    sqlite3_result_error(ctx, "invalid Fleece pointer", -1);
+                    sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
+                    return nullptr;
+                }
+            case kFleeceDataSubtype: {
+                if (!fleece)
+                    return Dict::kEmpty;             // No body; may be deleted rev
+                const Value *root = Value::fromTrustedData(fleece);
+                if (root)
+                    return root;
+                break;
+            }
+            case kFleeceNullSubtype:
+                return Value::kNullValue;
+            default:
+                break;
+        }
+        sqlite3_result_error(ctx, "invalid Fleece data", -1);
+        sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
+        return nullptr;
     }
 
 
@@ -69,18 +92,8 @@ namespace litecore {
     }
 
 
-    const Value* evaluatePath(sqlite3_context *ctx, slice path, const Value *val) noexcept {
-        auto sharedKeys = ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys;
-        int rc = evaluatePath(path, sharedKeys, &val);
-        if (rc == SQLITE_OK)
-            return val;
-        sqlite3_result_error_code(ctx, rc);
-        return nullptr;
-    }
-
-
-    bool evaluatePath(sqlite3_context *ctx, sqlite3_value **argv, const Value* *outValue) {
-        const Value *val = fleeceParam(ctx, argv[0]);
+    bool evaluatePathFromArgs(sqlite3_context *ctx, sqlite3_value **argv, bool isDocBody, const Value* *outValue) {
+        const Value *val = isDocBody ? fleeceDocRoot(ctx, argv[0]) : fleeceParam(ctx, argv[0]);
         if (!val)
             return false;
 
@@ -107,9 +120,7 @@ namespace litecore {
         } else {
             switch (val->type()) {
                 case kNull:
-                    // Fleece/JSON null isn't the same as a SQL null, which means 'missing value'.
-                    // We can't add new data types to SQLite, but let's use an empty blob for null.
-                    sqlite3_result_zeroblob(ctx, 0);
+                    setResultFleeceNull(ctx);
                     break;
                 case kBoolean:
                     sqlite3_result_int(ctx, val->asBool());
@@ -130,19 +141,12 @@ namespace litecore {
                     setResultTextFromSlice(ctx, val->asString());
                     break;
                 case kData:
-                    setResultBlobFromSlice(ctx, val->asData());
-                    break;
                 case kArray:
                 case kDict:
                     setResultBlobFromEncodedValue(ctx, val);
                     break;
             }
         }
-    }
-
-
-    void setResultFromValueType(sqlite3_context *ctx, const Value *val) noexcept {
-        sqlite3_result_int(ctx, (val ? val->type() : -1));
     }
 
 
@@ -154,11 +158,13 @@ namespace litecore {
     }
 
     
-    void setResultBlobFromSlice(sqlite3_context *ctx, slice blob) noexcept {
-        if (blob)
+    void setResultBlobFromFleeceData(sqlite3_context *ctx, slice blob) noexcept {
+        if (blob) {
             sqlite3_result_blob(ctx, blob.buf, (int)blob.size, SQLITE_TRANSIENT);
-        else
+            sqlite3_result_subtype(ctx, kFleeceDataSubtype);
+        } else {
             sqlite3_result_null(ctx);
+        }
     }
 
 
@@ -166,8 +172,7 @@ namespace litecore {
         try {
             Encoder enc;
             enc.writeValue(val);
-            setResultBlobFromSlice(ctx, enc.extractOutput());
-            sqlite3_result_subtype(ctx, kFleeceDataSubtype);
+            setResultBlobFromFleeceData(ctx, enc.extractOutput());
             return true;
         } catch (const bad_alloc&) {
             sqlite3_result_error_code(ctx, SQLITE_NOMEM);
@@ -175,6 +180,15 @@ namespace litecore {
             sqlite3_result_error_code(ctx, SQLITE_ERROR);
         }
         return false;
+    }
+
+
+    void setResultFleeceNull(sqlite3_context *ctx) {
+        // Fleece/JSON null isn't the same as a SQL null, which means 'missing value'.
+        // We can't add new data types to SQLite, but let's use an empty blob for null
+        // and tag it with a custom subtype.
+        sqlite3_result_zeroblob(ctx, 0);
+        sqlite3_result_subtype(ctx, kFleeceNullSubtype);
     }
 
 

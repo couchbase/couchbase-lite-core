@@ -71,7 +71,7 @@ namespace litecore {
                     sqlite3_result_null(ctx);
                     return;
                 default:
-                    sqlite3_result_zeroblob(ctx, 0);
+                    setResultFleeceNull(ctx);
                     return;
             }
         }
@@ -89,7 +89,7 @@ namespace litecore {
                         return;
 
                     if(root->type() != valueType::kArray) {
-                        sqlite3_result_zeroblob(ctx, 0);
+                        setResultFleeceNull(ctx);
                         return;
                     }
 
@@ -107,7 +107,7 @@ namespace litecore {
                     sqlite3_result_null(ctx);
                     return;
                 default:
-                    sqlite3_result_zeroblob(ctx, 0);
+                    setResultFleeceNull(ctx);
                     return;
             }
         }
@@ -177,7 +177,7 @@ namespace litecore {
         });
 
         if(!foundVal) {
-            sqlite3_result_zeroblob(ctx, 0);
+            setResultFleeceNull(ctx);
         } else {
             setResultFromValue(ctx, foundVal);
         }
@@ -205,7 +205,7 @@ namespace litecore {
         if(nonEmpty) {
             sqlite3_result_double(ctx, max);
         } else {
-            sqlite3_result_zeroblob(ctx, 0);
+            setResultFleeceNull(ctx);
         }
     }
 
@@ -221,7 +221,7 @@ namespace litecore {
         if(nonEmpty) {
             sqlite3_result_double(ctx, max);
         } else {
-            sqlite3_result_zeroblob(ctx, 0);
+            setResultFleeceNull(ctx);
         }
     }
 
@@ -251,16 +251,13 @@ namespace litecore {
                         enc->writeString({sqlite3_value_text(arg),
                                           (size_t)sqlite3_value_bytes(arg)});
                         break;
-                    case SQLITE_BLOB:
-                        if(sqlite3_value_bytes(arg) == 0) {
-                            enc->writeNull();
-                        } else {
-                            const Value *value = fleeceParam(ctx, arg);
-                            if (!value)
-                                return; // error
-                            enc->writeValue(value);
-                        }
+                    case SQLITE_BLOB: {
+                        const Value *value = fleeceParam(ctx, arg);
+                        if (!value)
+                            return; // error
+                        enc->writeValue(value);
                         break;
+                    }
                     case SQLITE_NULL:
                     default:
                         return;
@@ -269,8 +266,7 @@ namespace litecore {
             } else {
                 // On final call, finish encoding and set the result to the encoded data:
                 enc->endArray();
-                setResultBlobFromSlice(ctx,  enc->extractOutput() );
-                sqlite3_result_subtype(ctx, kFleeceDataSubtype);
+                setResultBlobFromFleeceData(ctx,  enc->extractOutput() );
             }
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "array_agg: exception!", -1);
@@ -288,10 +284,21 @@ namespace litecore {
 #pragma mark - CONDITIONAL TESTS (NULL / MISSING / INF / NAN):
 
 
+    // Test for N1QL MISSING value (which is a SQLite NULL)
+    static bool isMissing(sqlite3_value *arg) {
+        return sqlite3_value_type(arg) == SQLITE_NULL;
+    }
+
+    // Test for N1QL NULL value (which is an empty blob tagged with kFleeceNullSubtype)
+    static bool isNull(sqlite3_value *arg) {
+        return sqlite3_value_type(arg) == SQLITE_BLOB
+            && sqlite3_value_subtype(arg) == kFleeceNullSubtype;
+    }
+
     // ifmissing(...) returns its first non-MISSING argument.
     static void ifmissing(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         for(int i = 0; i < argc; i++) {
-            if(sqlite3_value_type(argv[i]) != SQLITE_NULL) {
+            if(!isMissing(argv[i])) {
                 sqlite3_result_value(ctx, argv[i]);
                 return;
             }
@@ -301,18 +308,17 @@ namespace litecore {
     // ifmissingornull(...) returns its first non-MISSING, non-null argument.
     static void ifmissingornull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         for(int i = 0; i < argc; i++) {
-            if(sqlite3_value_type(argv[i]) != SQLITE_NULL && sqlite3_value_bytes(argv[i]) > 0) {
+            if(!isMissing(argv[i]) && !isNull(argv[i])) {
                 sqlite3_result_value(ctx, argv[i]);
                 return;
             }
         }
     }
 
-    // ifnull(...) returns its first non-null argument.
+    // ifnull(...) returns its first non-null argument. I.e. it may return MISSING.
     static void ifnull(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         for(int i = 0; i < argc; i++) {
-            // NOTE: SQLITE_NULL means missing, which is not null
-            if(sqlite3_value_type(argv[i]) == SQLITE_NULL || sqlite3_value_bytes(argv[i]) > 0) {
+            if(!isNull(argv[i])) {
                 sqlite3_result_value(ctx, argv[i]);
                 return;
             }
@@ -330,7 +336,7 @@ namespace litecore {
         if(slice0.compare(slice1) == 0) {
             sqlite3_result_null(ctx);
         } else {
-            setResultBlobFromSlice(ctx, slice0);
+            sqlite3_result_value(ctx, argv[0]);
         }
     }
 
@@ -343,9 +349,9 @@ namespace litecore {
         }
 
         if(slice0.compare(slice1) == 0) {
-            sqlite3_result_zeroblob(ctx, 0);
+            setResultFleeceNull(ctx);
         } else {
-            setResultBlobFromSlice(ctx, slice0);
+            sqlite3_result_value(ctx, argv[0]);
         }
     }
 
@@ -436,7 +442,7 @@ namespace litecore {
         }
 
         if(slice0.compare(slice1) == 0) {
-            sqlite3_result_zeroblob(ctx, 0);
+            setResultFleeceNull(ctx);
         } else {
             sqlite3_result_double(ctx, val);
         }
@@ -790,10 +796,6 @@ namespace litecore {
                 return "missing";
             case SQLITE_BLOB:
             {
-                if(sqlite3_value_bytes(arg) == 0) {
-                    return "null";
-                }
-
                 auto fleece = fleeceParam(ctx, arg);
                 if(fleece == nullptr) {
                     return "null";
@@ -873,58 +875,45 @@ namespace litecore {
     // Booleans, numbers, and strings are themselves.
     // All other values are NULL.
     static void toatom(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        switch(sqlite3_value_type(argv[0])) {
-            case SQLITE_NULL:
-                sqlite3_result_null(ctx);
-                return;
-            case SQLITE_FLOAT:
-            case SQLITE_INTEGER:
-            case SQLITE_TEXT:
-                sqlite3_result_value(ctx, argv[0]);
+        auto arg = argv[0];
+        if (sqlite3_value_type(arg) != SQLITE_BLOB) {
+            // Standard SQLite types map to themselves.
+            sqlite3_result_value(ctx, arg);
+            return;
+        }
+
+        auto fleece = fleeceParam(ctx, arg);
+        if (!fleece)
+            return;
+
+        switch(fleece->type()) {
+            case valueType::kArray:
+            {
+                auto arr = fleece->asArray();
+                if(arr->count() != 1) {
+                    setResultFleeceNull(ctx);
+                    break;
+                }
+
+                setResultFromValue(ctx, arr->get(0));
                 break;
-            case SQLITE_BLOB:
-                if(sqlite3_value_bytes(argv[0]) == 0) {
-                    sqlite3_result_zeroblob(ctx, 0);
+            }
+            case valueType::kDict:
+            {
+                auto dict = fleece->asDict();
+                if(dict->count() != 1) {
+                    setResultFleeceNull(ctx);
                     break;
                 }
 
-                auto fleece = fleeceParam(ctx, argv[0]);
-                if(fleece == nullptr) {
-                    sqlite3_result_zeroblob(ctx, 0);
-                    break;
-                }
-
-                switch(fleece->type()) {
-                    case valueType::kArray:
-                    {
-                        auto arr = fleece->asArray();
-                        if(arr->count() != 1) {
-                            sqlite3_result_zeroblob(ctx, 0);
-                            break;
-                        }
-
-                        setResultFromValue(ctx, arr->get(0));
-                        break;
-                    }
-                    case valueType::kDict:
-                    {
-                        auto dict = fleece->asDict();
-                        if(dict->count() != 1) {
-                            sqlite3_result_zeroblob(ctx, 0);
-                            break;
-                        }
-
-
-                        auto iter = dict->begin();
-                        setResultFromValue(ctx, iter.value());
-                        break;
-                    }
-                    case valueType::kData:
-                    default:                     // Other Fleece types never show up in blobs
-                        sqlite3_result_zeroblob(ctx, 0);
-                        break;
-
-                }
+                auto iter = dict->begin();
+                setResultFromValue(ctx, iter.value());
+                break;
+            }
+            default:
+                // Other Fleece types map to themselves:
+                sqlite3_result_value(ctx, arg);
+                break;
         }
     }
 
@@ -936,6 +925,7 @@ namespace litecore {
     // Empty strings, arrays, and objects are false.
     // All other values are true.
     static void toboolean(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        bool result;
         switch(sqlite3_value_type(argv[0])) {
             case SQLITE_NULL:
                 sqlite3_result_null(ctx);
@@ -944,58 +934,46 @@ namespace litecore {
             case SQLITE_INTEGER:
             {
                 auto val = sqlite3_value_double(argv[0]);
-                if(val == 0.0 || isnan(val)) {
-                    sqlite3_result_int(ctx, 0);
-                } else {
-                    sqlite3_result_int(ctx, 1);
-                }
+                result = (val != 0.0 && !isnan(val));
                 break;
             }
             case SQLITE_TEXT:
             {
                 // Need to call sqlite3_value_text here?
-                auto result = sqlite3_value_bytes(argv[0]) > 0 ? 1 : 0;
-                sqlite3_result_int(ctx, result);
+                result = sqlite3_value_bytes(argv[0]) > 0;
                 break;
             }
             case SQLITE_BLOB:
             {
-                if(sqlite3_value_bytes(argv[0]) == 0) {
-                    sqlite3_result_int(ctx, 0);
-                    break;
-                }
-
                 auto fleece = fleeceParam(ctx, argv[0]);
-                if(fleece == nullptr) {
-                    sqlite3_result_int(ctx, 0);
-                    break;
-                }
-
-                switch(fleece->type()) {
+                if (fleece == nullptr) {
+                    result = false;
+                } else switch(fleece->type()) {
                     case valueType::kArray:
-                    {
-                        auto arr = fleece->asArray();
-                        auto result = arr->count() > 0 ? 1 : 0;
-                        sqlite3_result_int(ctx, result);
+                        result = fleece->asArray()->count() > 0;
                         break;
-                    }
                     case valueType::kData:
-                        sqlite3_result_int(ctx, 1);
+                        result = fleece->asData().size > 0;
                         break;
                     case valueType::kDict:
-                    {
-                        auto dict = fleece->asDict();
-                        auto result = dict->count() > 0 ? 1 : 0;
-                        sqlite3_result_int(ctx, result);
+                        result = fleece->asDict()->count() > 0;
                         break;
-                    }
+                    case valueType::kNull:
+                        sqlite3_result_value(ctx, argv[0]);
+                        return;
                     default:
                         // Other Fleece types never show up in blobs
-                        sqlite3_result_int(ctx, 0);
+                        result = false;
                         break;
                 }
+                break;
             }
+            default:
+                result = true;
+                break;
         }
+        sqlite3_result_int(ctx, result);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
     }
 
     static double tonumber(const string &s) {
@@ -1033,7 +1011,7 @@ namespace litecore {
                 string str(txt, sqlite3_value_bytes(argv[0]));
                 double result = tonumber(str);
                 if(isnan(result)) {
-                    sqlite3_result_zeroblob(ctx, 0);
+                    setResultFleeceNull(ctx);
                 } else {
                     sqlite3_result_double(ctx, result);
                 }
@@ -1042,7 +1020,7 @@ namespace litecore {
             case SQLITE_BLOB:
             {
                 // A blob is a Fleece array, dict, or data; all of which result in NULL.
-                sqlite3_result_zeroblob(ctx, 0);
+                setResultFleeceNull(ctx);
                 break;
             }
 
@@ -1091,7 +1069,7 @@ namespace litecore {
             case SQLITE_BLOB:
             {
                 // A blob is a Fleece array, dict, or data; all of which result in NULL.
-                sqlite3_result_zeroblob(ctx, 0);
+                setResultFleeceNull(ctx);
                 break;
             }
         }
