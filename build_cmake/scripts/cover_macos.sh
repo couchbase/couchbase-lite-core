@@ -7,7 +7,7 @@ mkdir -p macos
 pushd macos
 cmake -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE_ENABLED=ON ../..
 core_count=`getconf _NPROCESSORS_ONLN`
-make -j `expr $core_count + 1` 
+make -j `expr $core_count + 1`
 
 pushd LiteCore/tests
 ./CppTests -r list
@@ -24,7 +24,7 @@ lcov -d CMakeFiles/LiteCoreStatic.dir/ -d vendor/fleece -d vendor/BLIP-Cpp -c -o
 find . -type f -name '*.gcda' -delete
 
 lcov -a CppTests.info -a C4Tests.info -o AllTests.info
-lcov --remove AllTests.info '/usr/include/*' '/System/*' '/Applications/*' '*/vendor/SQLiteCpp/*' '*/vendor/BLIP-Cpp/tests/*' '*/vendor/fleece/ObjC/*' '*/vendor/fleece/vendor/*' '*/vendor/BLIP-Cpp/vendor/*' -o AllTests_Filtered.info
+lcov --remove AllTests.info '/usr/include/*' '/System/*' '/Applications/*' '*/vendor/SQLiteCpp/*' '*/vendor/BLIP-Cpp/tests/*' '*/vendor/fleece/ObjC/*' '*/vendor/fleece/vendor/*' '*/vendor/BLIP-Cpp/vendor/*' '*/C/c4DocEnumerator.cc' -o AllTests_Filtered.info
 
 mkdir -p coverage_reports
 genhtml AllTests_Filtered.info -o coverage_reports

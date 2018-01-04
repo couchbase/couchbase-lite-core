@@ -99,6 +99,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     {
         TransactionHelper t(db);
         C4DocPutRequest rq = {};
+        rq.revFlags = kRevKeepBody;
         rq.existingRevision = true;
         rq.docID = kDocID;
         rq.history = &kRevID;
@@ -109,7 +110,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
         REQUIRE(doc != nullptr);
         REQUIRE(doc->revID == kRevID);
         REQUIRE(doc->selectedRev.revID == kRevID);
-        REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)kRevLeaf);
+        REQUIRE(doc->selectedRev.flags == (kRevKeepBody | kRevLeaf));
         REQUIRE(doc->selectedRev.body == kBody);
         c4doc_free(doc);
     }
@@ -136,6 +137,14 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     REQUIRE(doc->selectedRev.revID == kRevID);
     REQUIRE(doc->selectedRev.sequence == 1);
     REQUIRE(doc->selectedRev.body == kBody);
+    {
+        TransactionHelper t(db);
+        REQUIRE(c4doc_removeRevisionBody(doc));
+        REQUIRE(c4doc_selectCurrentRevision(doc));
+    }
+    
+    REQUIRE(doc->selectedRev.body.buf == nullptr);
+    REQUIRE(doc->selectedRev.body.size == 0);
     c4doc_free(doc);
 
     // Get a bogus sequence

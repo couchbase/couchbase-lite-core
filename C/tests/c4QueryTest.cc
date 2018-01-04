@@ -254,13 +254,19 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C][FTS]") {
     C4Error err;
     REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
     compile(json5("['MATCH', 'byStreet', 'Hwy']"));
-    CHECK(runFTS() == (vector<vector<C4FullTextMatch>>{
+    auto results = runFTS();
+    CHECK(results == (vector<vector<C4FullTextMatch>>{
         {{13, 0, 0, 10, 3}},
         {{15, 0, 0, 11, 3}},
         {{43, 0, 0, 12, 3}},
         {{44, 0, 0, 12, 3}},
         {{52, 0, 0, 11, 3}}
     }));
+    
+    C4SliceResult matched = c4query_fullTextMatched(query, &results[0][0], &err);
+    REQUIRE(matched.buf != nullptr);
+    CHECK(toString((C4Slice)matched) == "7 Wyoming Hwy");
+    c4slice_free(matched);
 }
 
 
@@ -546,6 +552,93 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query parser error messages", "[Query][C][!th
     CheckError(error, LiteCoreDomain, kC4ErrorInvalidQuery, "Wrong number of arguments to =");
 }
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
+    compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
+    C4Error error;
+    
+    C4SliceResult explanation = c4query_explain(query);
+    string explanationString = toString((C4Slice)explanation);
+    c4slice_free(explanation);
+    CHECK(explanationString.substr(0, 101) == "SELECT key FROM kv_default WHERE (fl_value(body, 'contact.address.state') = 'CA') AND (flags & 1) = 0");
+    
+    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    REQUIRE(e);
+    auto refreshed = c4queryenum_refresh(e, &error);
+    REQUIRE(!refreshed);
+    
+    {
+        TransactionHelper t(db);
+    
+        C4Error c4err;
+        FLEncoder enc = c4db_getSharedFleeceEncoder(db);
+        FLEncoder_BeginDict(enc, 2);
+        FLEncoder_WriteKey(enc, FLSTR("custom"));
+        FLEncoder_WriteBool(enc, true);
+        FLEncoder_WriteKey(enc, FLSTR("contact"));
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_WriteKey(enc, FLSTR("address"));
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_WriteKey(enc, FLSTR("state"));
+        FLEncoder_WriteString(enc, FLSTR("CA"));
+        FLEncoder_EndDict(enc);
+        FLEncoder_EndDict(enc);
+        FLEncoder_EndDict(enc);
+        
+        FLSliceResult body = FLEncoder_Finish(enc, nullptr);
+        REQUIRE(body.buf);
+        
+        // Save document:
+        C4DocPutRequest rq = {};
+        rq.docID = C4STR("added_later");
+        rq.body = (C4Slice)body;
+        rq.save = true;
+        C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
+        REQUIRE(doc != nullptr);
+        c4doc_free(doc);
+        FLSliceResult_Free(body);
+    }
+    
+    refreshed = c4queryenum_refresh(e, &error);
+    REQUIRE(refreshed);
+    c4queryenum_close(e);
+    auto count = c4queryenum_getRowCount(refreshed, &error);
+    REQUIRE(c4queryenum_seek(refreshed, count - 1, &error));
+    CHECK(FLValue_AsString(FLArrayIterator_GetValueAt(&refreshed->columns, 0)) == "added_later"_sl);
+    
+    c4queryenum_free(e);
+    c4queryenum_free(refreshed);
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
+    C4Error err;
+    C4String names[2] = { C4STR("length"), C4STR("byStreet") };
+    string desc1 = json5("[['length()', ['.name.first']]]");
+    C4String desc[2] = {c4str(desc1.c_str()), C4STR("[[\".contact.address.street\"]]") };
+    C4IndexType types[2] = { kC4ValueIndex, kC4FullTextIndex };
+    
+    for(int i = 0; i < 2; i++) {
+        REQUIRE(c4db_createIndex(db, names[i], desc[i], types[i], nullptr, &err));
+        C4SliceResult indexes = c4db_getIndexes(db, &err);
+        FLValue val = FLValue_FromTrustedData((FLSlice)indexes);
+        REQUIRE(FLValue_GetType(val) == kFLArray);
+        FLArray indexArray = FLValue_AsArray(val);
+        FLArrayIterator iter;
+        FLArrayIterator_Begin(indexArray, &iter);
+        REQUIRE(FLArrayIterator_GetCount(&iter) == 1);
+        FLString indexName = FLValue_AsString(FLArrayIterator_GetValueAt(&iter, 0));
+        CHECK(indexName == names[i]);
+        c4slice_free(indexes);
+        
+        REQUIRE(c4db_deleteIndex(db, names[i], &err));
+        indexes = c4db_getIndexes(db, &err);
+        val = FLValue_FromTrustedData((FLSlice)indexes);
+        REQUIRE(FLValue_GetType(val) == kFLArray);
+        indexArray = FLValue_AsArray(val);
+        FLArrayIterator_Begin(indexArray, &iter);
+        REQUIRE(FLArrayIterator_GetCount(&iter) == 0);
+        c4slice_free(indexes);
+    }
+}
 
 #pragma mark - COLLATION:
 
