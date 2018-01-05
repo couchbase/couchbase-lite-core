@@ -5,7 +5,7 @@
 This is the C++ implementation of the BLIP network messaging protocol.
 Unfortunately it's not turn-key yet; see the [Building/Using](#building-using) section below.
 
-There are also implementations for [Go][BLIP_GO] and [Objective-C][BLIP_COCOA].
+There are also implementations for [Go][BLIP_GO] and [Objective-C][BLIP_COCOA] (but the latter only supports the older protocol version.)
 
 ## "What's BLIP?"
 
@@ -26,6 +26,8 @@ API documentation for the C++ implementation isn't available yet, although many 
 
 ## Building / Using
 
+The `master` branch is the latest, and implements the current version 3 protocol. If for some reason you need to use the older version 2, check out the `blip2` branch.
+
 The Xcode project's `blip_cpp` target builds a static library. There's a CMake file too.
 
 BLIP is dependent on a WebSocket implementation. This is abstracted as some interface-like classes in the [WebSocketInterfacel.hh](include/blip_cpp/WebSocketInterface.hh) header. There are two ways to provide a WebSocket implementation:
@@ -43,7 +45,9 @@ In 2013 BLIP was redesigned and reimplemented as a layer atop WebSockets. This s
 
 From 2013 to 2015 BLIP was used experimentally as the substrate for a new replication protocol in Couchbase Mobile, but this didn't appear as a feature in a release. In the process, the protocol was updated slightly to resolve some issues with flow-control.
 
-In 2017 the BLIP-based replication protocol is being used in Couchbase Lite 2.0 and Sync Gateway 1.5, both scheduled to be released late in the year.
+In 2017 the BLIP-based replication protocol is being used in Couchbase Lite 2.0 and Sync Gateway 1.5.
+
+In January 2018 the protocol was updated to version 3, which is (unfortunately) incompatible with version 2. This implementation and the Go one have both been updated to version 3.
 
 
 [WEBSOCKET]: http://www.websocket.org
