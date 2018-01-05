@@ -247,6 +247,27 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query][C]") {
+    const char *query = nullptr;
+    uint64_t expectedMissing = 0;
+    SECTION("None missing1") {
+        query = "['SELECT', {'WHAT': [['.name'], ['.gender']], 'LIMIT': 1}]";
+        expectedMissing = 0x0;
+    }
+    SECTION("Some missing2") {
+        query = "['SELECT', {'WHAT': [['.XX'], ['.name'], ['.YY'], ['.gender'], ['.ZZ']], 'LIMIT': 1}]";
+        expectedMissing = 0x15;       // binary 10101, i.e. cols 0, 2, 4 are missing
+    }
+    if (query) {
+        compileSelect(json5(query));
+        auto results = runCollecting<uint64_t>(nullptr, [=](C4QueryEnumerator *e) {
+            return e->missingColumns;
+        });
+        CHECK(results == vector<uint64_t>{expectedMissing});
+    }
+}
+
+
 #pragma mark - FTS:
 
 

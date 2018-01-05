@@ -910,3 +910,40 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query data type", "[Query]") {
     CHECK(e->columns()[0]->asString() == "binary"_sl);
 }
 
+
+TEST_CASE_METHOD(DataFileTestFixture, "Missing columns", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        string docID = "rec-001";
+
+        fleece::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("num");
+        enc.writeInt(1234);
+        enc.writeKey("string");
+        enc.writeString("FOO");
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+
+        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+
+        t.commit();
+    }
+
+    auto query = store->compileQuery(json5(
+        "{'WHAT': ['.num', '.string']}"));
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    CHECK(e->missingColumns() == 0);
+    CHECK(e->columns()[0]->toJSONString() == "1234");
+    CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
+
+    query = store->compileQuery(json5(
+        "{'WHAT': ['.bogus', '.num', '.nope', '.string', '.gone']}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->next());
+    CHECK(e->missingColumns() == 0x15);       // binary 10101, i.e. cols 0, 2, 4 are missing
+    CHECK(e->columns()[1]->toJSONString() == "1234");
+    CHECK(e->columns()[3]->toJSONString() == "\"FOO\"");
+}
+

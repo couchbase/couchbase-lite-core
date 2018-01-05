@@ -66,7 +66,8 @@ namespace litecore {
         virtual bool next() =0;
 
         virtual fleece::Array::iterator columns() const noexcept =0;
-
+        virtual uint64_t missingColumns() const noexcept =0;
+        
         /** Random access to rows. May not be supported by all implementations, but does work with
             the current SQLite query implementation. */
         virtual int64_t getRowCount() const         {return -1;}

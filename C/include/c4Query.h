@@ -85,6 +85,11 @@ extern "C" {
         /** The columns of this result, in the same order as in the query's `WHAT` clause. */
         FLArrayIterator columns;
 
+        /** A bitmap where a 1 bit represents a column whose value is MISSING.
+            This is how you tell a missing property value from a value that's JSON 'null',
+            since the value in the `columns` array will be a Fleece `null` either way. */
+        uint64_t missingColumns;
+
         /** The number of full-text matches (i.e. the number of items in `fullTextMatches`) */
         uint32_t fullTextMatchCount;
 

@@ -181,10 +181,11 @@ namespace litecore {
         }
 
         virtual int64_t getRowCount() const override {
-            return _rows->count();
+            return _rows->count() / 2;  // (every other row is a column bitmap)
         }
 
         virtual void seek(uint64_t rowIndex) override {
+            rowIndex *= 2;
             if (rowIndex >= _rows->count())
                 error::_throw(error::InvalidParameter);
             _iter = Array::iterator(_rows);
@@ -196,7 +197,7 @@ namespace litecore {
             if (_first)
                 _first = false;
             else
-                ++_iter;
+                _iter += 2;
             if (!_iter) {
                 LogVerbose(SQL, "QueryEnum<%p>: END", this);
                 return false;
@@ -206,9 +207,13 @@ namespace litecore {
         }
 
         Array::iterator columns() const noexcept override {
-            Array::iterator i(_iter->asArray());
+            Array::iterator i(_iter[0u]->asArray());
             i += _query->_1stCustomResultColumn;
             return i;
+        }
+
+        uint64_t missingColumns() const noexcept override {
+            return _iter[1u]->asUnsigned();
         }
 
 
@@ -330,12 +335,12 @@ namespace litecore {
             }
         }
 
-        void encodeColumn(Encoder &enc, int i) {
+        bool encodeColumn(Encoder &enc, int i) {
             SQLite::Column col = _statement->getColumn(i);
             switch (col.getType()) {
                 case SQLITE_NULL:
                     enc.writeNull();
-                    break;
+                    return false;   // this column value is missing
                 case SQLITE_INTEGER:
                     enc.writeInt(col.getInt64());
                     break;
@@ -357,6 +362,7 @@ namespace litecore {
                     break;
                 }
             }
+            return true;
         }
 
         // Collects all the (remaining) rows into a Fleece array of arrays,
@@ -368,10 +374,15 @@ namespace litecore {
             Encoder enc;
             enc.beginArray();
             while (_statement->executeStep()) {
+                uint64_t missingCols = 0;
                 enc.beginArray(nCols);
-                for (int i = 0; i < nCols; ++i)
-                    encodeColumn(enc, i);
+                for (int i = 0; i < nCols; ++i) {
+                    if (!encodeColumn(enc, i) && i < 64)
+                        missingCols |= (1 << i);
+                }
                 enc.endArray();
+                // Add an integer containing a bit-map of which columns are missing/undefined:
+                enc.writeUInt(missingCols);
                 ++rowCount;
             }
             enc.endArray();

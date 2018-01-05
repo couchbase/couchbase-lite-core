@@ -94,6 +94,7 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
         static_assert(sizeof(C4FullTextMatch) == sizeof(Query::FullTextTerm),
                       "C4FullTextMatch does not match Query::FullTextTerm");
         (fleece::Array::iterator&)columns = _enum->columns();
+        missingColumns = _enum->missingColumns();
         if (_hasFullText) {
             auto &ft = _enum->fullTextTerms();
             fullTextMatches = (const C4FullTextMatch*)ft.data();
