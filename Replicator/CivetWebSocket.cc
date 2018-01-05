@@ -135,8 +135,7 @@ namespace litecore { namespace websocket {
             stringstream extraHeaders;
             for (Dict::iterator header(_options[kC4ReplicatorOptionExtraHeaders].asDict());
                      header; ++header) {
-                extraHeaders << slice(header.keyString()) << ": "
-                             << header.value() << "\r\n";
+                extraHeaders << header.keyString() << ": " << header.value().asString() << "\r\n";
             }
             slice cookies = _options[kC4ReplicatorOptionCookies].asString();
             if (cookies)
@@ -459,6 +458,15 @@ namespace litecore { namespace websocket {
             }
         }
 
+        void completedReceive(size_t byteCount) {
+            // TODO: flow control (I don't think CivetWeb supports it...)
+        }
+
+        void requestClose(int status, C4String message) {
+            if (socket)
+                socket->close(status, slice(message));
+        }
+
         C4Socket *c4socket;
         WebSocket* socket;
         atomic<size_t> _lastWriteSize {0};
@@ -476,17 +484,19 @@ namespace litecore { namespace websocket {
 
 
     static void sock_write(C4Socket *sock, C4SliceResult allocatedData) {
-        internal(sock)->send(alloc_slice(move(allocatedData)), true);
+        if (internal(sock))
+            internal(sock)->send(alloc_slice(move(allocatedData)), true);
     }
 
     static void sock_completedReceive(C4Socket *sock, size_t byteCount) {
-        //TODO internal(sock)->socket->
+        if (internal(sock))
+            internal(sock)->completedReceive(byteCount);
     }
 
 
     static void sock_requestClose(C4Socket *sock, int status, C4String message) {
-        if (internal(sock)->socket)
-            internal(sock)->socket->close(status, slice(message));
+        if (internal(sock))
+            internal(sock)->requestClose(status, message);
     }
 
 
