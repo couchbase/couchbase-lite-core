@@ -559,7 +559,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
     C4SliceResult explanation = c4query_explain(query);
     string explanationString = toString((C4Slice)explanation);
     c4slice_free(explanation);
-    CHECK(explanationString.substr(0, 101) == "SELECT key FROM kv_default WHERE (fl_value(body, 'contact.address.state') = 'CA') AND (flags & 1) = 0");
+    CHECK(explanationString.substr(0, 112) == "SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'contact.address.state') = 'CA') AND (flags & 1) = 0");
     
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
     REQUIRE(e);
