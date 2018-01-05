@@ -212,21 +212,21 @@ set(ALL_SRC_FILES
   ${VERSIONVECTORS_SRC}
   ${C_SRC}
   ${SQLITECPP_SRC}
-  ${REPLICATOR_SRC}) 
+  ${REPLICATOR_SRC})
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
-	set(ALL_SRC_FILES ${ALL_SRC_FILES} 
+	set(ALL_SRC_FILES ${ALL_SRC_FILES}
     MSVC/asprintf.c
-    vendor/fleece/MSVC/memmem.cc 
-    MSVC/mkstemp.cc 
-    MSVC/mkdtemp.cc 
+    vendor/fleece/MSVC/memmem.cc
+    MSVC/mkstemp.cc
+    MSVC/mkdtemp.cc
     MSVC/strlcat.c
-    MSVC/vasprintf-msvc.c 
-    MSVC/arc4random.cc 
+    MSVC/vasprintf-msvc.c
+    MSVC/arc4random.cc
     MSVC/strptime.cc)
 elseif(ANDROID)
-    set(ALL_SRC_FILES ${ALL_SRC_FILES} 
+    set(ALL_SRC_FILES ${ALL_SRC_FILES}
     LiteCore/Unix/strlcat.c
     LiteCore/Unix/arc4random.cc
     LiteCore/Android/unicode/ndk_icu.c)
@@ -332,29 +332,17 @@ elseif(ANDROID)
     target_link_libraries(LiteCoreREST PRIVATE "atomic" "log")
 endif()
 
-### LITECORESERV:
+### SUPPORT LIB:
 
-#add_executable(LiteCoreServ REST/LiteCoreServ.cc)
-#target_link_libraries(LiteCoreServ PRIVATE LiteCoreREST_Static)
-#target_link_libraries(LiteCoreServ PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
-#target_link_libraries(LiteCoreServ PUBLIC  ${LITECORE_LIBRARIES_PUBLIC})
-#if(APPLE)
-#  target_link_libraries(LiteCoreServ PRIVATE "-framework Foundation"
-#                                             "-framework CFNetwork"
-#                                             "-framework Security"
-#                                             z)
-#else()
-#  if(ANDROID)
-#    target_link_libraries(LiteCoreServ PRIVATE log z)
-#  elseif(MSVC)
-#    set_target_properties(LiteCoreServ PROPERTIES LINK_FLAGS
-#              "/ignore:4099")
-#    target_link_libraries(LiteCoreServ PRIVATE zlibstatic)
-#  elseif(UNIX)
-#    target_link_libraries(LiteCoreServ PRIVATE pthread z atomic dl c++abi)
-#  endif()
-#endif()
-
+add_library(Support STATIC
+    C/c4ExceptionUtils.cc
+    LiteCore/Support/LibC++Debug.cc
+    LiteCore/Support/Error.cc
+    LiteCore/Support/FilePath.cc
+    LiteCore/Support/Logging_Stub.cc
+    LiteCore/Support/RefCounted.cc
+    LiteCore/Support/StringUtil.cc
+)
 
 ### TOOLS:
 

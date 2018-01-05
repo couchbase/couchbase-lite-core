@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// Copyright (c) 2018 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,7 +56,6 @@ namespace LiteCore.Interop
         HasAttachments = 0x08,
         KeepBody       = 0x10,
         IsConflict     = 0x20,
-        IsForeign      = 0x40
     }
 
 #if LITECORE_PACKAGED
@@ -88,6 +87,7 @@ namespace LiteCore.Interop
         private UIntPtr _historyCount;
         private byte _save;
         public uint maxRevTreeDepth;
+        public uint remoteDBID;
 
         public bool existingRevision
         {

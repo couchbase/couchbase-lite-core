@@ -3,7 +3,7 @@
 """
 parse_API.py
 
-This file is meant to parse C++ headers into a syntax that is parseable 
+This file is meant to parse C++ headers into a syntax that is parseable
 into other things like C# bindings and export symbol lists.  It is customizable
 via an external config file (--config) which has the following properties:
 
@@ -27,7 +27,7 @@ import importlib
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Parses C++ headers into an abstract representation for processing")
-    
+
     parser.add_argument("-o", "--output-dir", help="The directory to store the output files in (default current directory)")
     parser.add_argument("-c", "--config", help="A configuration file with data to help customize the parsing")
     args = parser.parse_args()
@@ -35,17 +35,17 @@ if __name__ == "__main__":
     config_module = {}
     if args.config is not None:
         config_module = importlib.import_module(args.config)
-    
+
     skip_files = []
     if hasattr(config_module, "skip_files"):
         skip_files = getattr(config_module, "skip_files")
-                 
+
     for file in glob.iglob("./*.h"):
         skip = False
         for skipFile in skip_files:
-            if ".\\{}".format(skipFile) == file:
+            if file.endswith(skipFile):
                 skip = True
-    
+
         if skip:
             print("Skipping {}".format(file))
             continue
@@ -55,7 +55,7 @@ if __name__ == "__main__":
         file_contents = fin.read().replace("C4NONNULL", "")
         file_contents = re.sub("typedef.*", "", file_contents)
         fin.close()
-        
+
         lines = []
         cppHeader = CppHeaderParser.CppHeader(file_contents, "string")
 
@@ -68,56 +68,56 @@ if __name__ == "__main__":
             locals()[variable] = {}
             if hasattr(config_module, variable):
                  locals()[variable] = getattr(config_module, variable)
-            
+
         for function in cppHeader.functions:
             fn_name = function["name"]
             if fn_name in excluded:
                 continue
-                
+
             if fn_name in literals:
                 lines.append(literals[fn_name])
                 continue
-                
+
             return_type = function["rtnType"].replace(" ","").replace("struct_","").replace("struct","").replace("const","")
             if return_type in type_map:
                 return_type = type_map[return_type]
-                
+
             bridge_def = [".nobridge", ".{}".format(return_type), fn_name]
             if return_type in return_bridge_types:
                 bridge_def[0] = ".bridge"
-                
+
             for param in function["parameters"]:
                 type = param["type"].replace("const","").replace(" ","")
                 if param["array"]:
                     type += "[]"
-                    
+
                 if type == "void":
                     continue
-                    
+
                 if type in param_bridge_types:
                     bridge_def[0] = ".bridge"
-                    
+
                 name = param["name"]
                 if len(name) == 0:
-                    name = default_param_name[type] if type in default_param_name else "x"    
-                    
+                    name = default_param_name[type] if type in default_param_name else "x"
+
                 if type in type_map:
-                    type = type_map[type] 
-                    
+                    type = type_map[type]
+
                 if name in reserved:
                     name = "@{}".format(name)
-                    
+
                 bridge_def.append("{}:{}".format(type, name))
-            
+
             if fn_name in force_no_bridge:
                 bridge_def[0] = ".nobridge"
-                
+
             line = " ".join(bridge_def)
             lines.append(line)
-        
+
         if len(lines) == 0:
             continue
-            
+
         fout = open(output_dir + file[2].upper() + file[3:-2] + "_native.cs.template", "w")
         fout.write('\n'.join(lines))
         fout.close()
