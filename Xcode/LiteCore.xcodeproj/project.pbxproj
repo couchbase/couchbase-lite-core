@@ -190,8 +190,6 @@
 		277C14711EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
 		277C14721EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
 		277C147A1EA826790075348F /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
-		277C1B1F1F58770400031200 /* Tool.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C1B1E1F58770400031200 /* Tool.cc */; };
-		277C1B241F58794100031200 /* libreadline.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 277C1B231F58794100031200 /* libreadline.tbd */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		2787EB271F4C91B000DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
@@ -435,12 +433,19 @@
 		720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487291923F24D007D8940 /* VersionedDocument.cc */; };
 		720EA4131BA8D834002B8416 /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
 		720EA4141BA8D834002B8416 /* RevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E487211922A64F007D8940 /* RevTree.cc */; };
+		722AA64B20005E3500261887 /* ArgumentTokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 722AA64A20005E3500261887 /* ArgumentTokenizer.cc */; };
+		722AA64C20005E3500261887 /* ArgumentTokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 722AA64A20005E3500261887 /* ArgumentTokenizer.cc */; };
+		722AA64D20005E5A00261887 /* Tool.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C1B1E1F58770400031200 /* Tool.cc */; };
+		722AA64F20005F6900261887 /* TokenizerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 722AA64E20005F6900261887 /* TokenizerTest.cc */; };
 		726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
 		726F2B911EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */ = {isa = PBXBuildFile; fileRef = 726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */; };
 		7280F7F11E3AC9A600E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
 		728EC54E1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
+		729E1C901FEB190A00AAC625 /* wcwidth.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 729E1C8C1FEB190900AAC625 /* wcwidth.cpp */; };
+		729E1C911FEB190A00AAC625 /* ConvertUTF.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 729E1C8D1FEB190900AAC625 /* ConvertUTF.cpp */; };
+		729E1C921FEB190A00AAC625 /* linenoise.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 729E1C8F1FEB190900AAC625 /* linenoise.cpp */; };
 		72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */; };
 		72A3AF8D1F425134001E16D4 /* PrebuiltCopier.hh in Headers */ = {isa = PBXBuildFile; fileRef = 72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */; };
 		72A3AF8E1F425140001E16D4 /* PrebuiltCopier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */; };
@@ -1348,9 +1353,16 @@
 		27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFunctionsTest.cc; sourceTree = "<group>"; };
 		27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib_Release.xcconfig"; sourceTree = "<group>"; };
 		720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCore.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		722AA64920005E3500261887 /* ArgumentTokenizer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ArgumentTokenizer.hh; sourceTree = "<group>"; };
+		722AA64A20005E3500261887 /* ArgumentTokenizer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ArgumentTokenizer.cc; sourceTree = "<group>"; };
+		722AA64E20005F6900261887 /* TokenizerTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TokenizerTest.cc; sourceTree = "<group>"; };
 		726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DefaultLogger.cc; sourceTree = "<group>"; };
 		7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libLiteCore.dylib; path = ../build_cmake/libLiteCore.dylib; sourceTree = "<group>"; };
 		728EC54C1EC14611002C9A73 /* c4Listener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Listener.h; sourceTree = "<group>"; };
+		729E1C8C1FEB190900AAC625 /* wcwidth.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wcwidth.cpp; path = "../linenoise-ng/src/wcwidth.cpp"; sourceTree = "<group>"; };
+		729E1C8D1FEB190900AAC625 /* ConvertUTF.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvertUTF.cpp; path = "../linenoise-ng/src/ConvertUTF.cpp"; sourceTree = "<group>"; };
+		729E1C8E1FEB190900AAC625 /* ConvertUTF.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvertUTF.h; path = "../linenoise-ng/src/ConvertUTF.h"; sourceTree = "<group>"; };
+		729E1C8F1FEB190900AAC625 /* linenoise.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = linenoise.cpp; path = "../linenoise-ng/src/linenoise.cpp"; sourceTree = "<group>"; };
 		72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrebuiltCopier.cc; sourceTree = "<group>"; };
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
 		72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocExpiration.cc; sourceTree = "<group>"; };
@@ -1415,7 +1427,6 @@
 				272AEC611F56194A00051F0A /* Security.framework in Frameworks */,
 				272AEC551F560FF600051F0A /* CoreFoundation.framework in Frameworks */,
 				275BF35D1F5F3F920051374A /* libz.tbd in Frameworks */,
-				277C1B241F58794100031200 /* libreadline.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1580,6 +1591,7 @@
 				2708FE591CF4D0450022F721 /* LiteCoreTest.hh */,
 				274D040A1BA75E1C00FF7C35 /* main.cpp */,
 				2750735A1F4B5ECC003D2CCE /* CMakeLists.txt */,
+				722AA64E20005F6900261887 /* TokenizerTest.cc */,
 			);
 			name = "C++ Tests";
 			path = tests;
@@ -1726,6 +1738,8 @@
 				275073481F490324003D2CCE /* litecp */,
 				270C6BA81EBA754300E73415 /* litecorelog.cc */,
 				2750735E1F4B5F6B003D2CCE /* CMakeLists.txt */,
+				722AA64920005E3500261887 /* ArgumentTokenizer.hh */,
+				722AA64A20005E3500261887 /* ArgumentTokenizer.cc */,
 			);
 			name = Tools;
 			path = ../tools;
@@ -2155,6 +2169,7 @@
 		27D74A721D4D3EC000D806E0 /* vendor */ = {
 			isa = PBXGroup;
 			children = (
+				729E1C871FEB18EE00AAC625 /* linenoise-ng */,
 				27DF7D561F422FD70022F3DF /* SQLCipher */,
 				27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */,
 				277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */,
@@ -2376,6 +2391,18 @@
 				27FA09C01D70ADE8005888AA /* fleece */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		729E1C871FEB18EE00AAC625 /* linenoise-ng */ = {
+			isa = PBXGroup;
+			children = (
+				729E1C8D1FEB190900AAC625 /* ConvertUTF.cpp */,
+				729E1C8E1FEB190900AAC625 /* ConvertUTF.h */,
+				729E1C8F1FEB190900AAC625 /* linenoise.cpp */,
+				729E1C8C1FEB190900AAC625 /* wcwidth.cpp */,
+			);
+			name = "linenoise-ng";
+			path = "New Group";
 			sourceTree = "<group>";
 		};
 		93FA3F491EE21A4D00D15CF5 /* LiteCoreServ iOS */ = {
@@ -3137,6 +3164,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				722AA64B20005E3500261887 /* ArgumentTokenizer.cc in Sources */,
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
@@ -3152,6 +3180,7 @@
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
+				722AA64F20005F6900261887 /* TokenizerTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3189,6 +3218,8 @@
 			files = (
 				27D416E91FE31F7D00008197 /* DBEndpoint.cc in Sources */,
 				275BF3A01F6328B70051374A /* cbliteTool+revs.cc in Sources */,
+				722AA64C20005E3500261887 /* ArgumentTokenizer.cc in Sources */,
+				722AA64D20005E5A00261887 /* Tool.cc in Sources */,
 				27D416EA1FE31F7D00008197 /* RemoteEndpoint.cc in Sources */,
 				275BF3A41F632C110051374A /* cbliteTool+sql.cc in Sources */,
 				275BF3991F6326910051374A /* cbliteTool+query.cc in Sources */,
@@ -3198,9 +3229,11 @@
 				275BF39E1F6328050051374A /* cbliteTool+cat.cc in Sources */,
 				272AEC5D1F56115400051F0A /* cbliteTool.cc in Sources */,
 				27D416EC1FE31F7D00008197 /* JSONEndpoint.cc in Sources */,
-				277C1B1F1F58770400031200 /* Tool.cc in Sources */,
 				27D416E81FE31F7D00008197 /* Endpoint.cc in Sources */,
 				275BF39C1F6327270051374A /* cbliteTool+ls.cc in Sources */,
+				729E1C911FEB190A00AAC625 /* ConvertUTF.cpp in Sources */,
+				729E1C921FEB190A00AAC625 /* linenoise.cpp in Sources */,
+				729E1C901FEB190A00AAC625 /* wcwidth.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

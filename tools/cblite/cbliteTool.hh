@@ -12,7 +12,6 @@
 #include "FilePath.hh"
 #include "StringUtil.hh"
 #include <exception>
-#include <fnmatch.h>        // POSIX (?)
 #include <fstream>
 #include <iomanip>
 #include <map>

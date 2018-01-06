@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <deque>
+#include <algorithm>
 
 using namespace std;
 using namespace fleece;
@@ -30,7 +31,7 @@ static inline C4Slice c4str(const string &s) {
 
 class Tool {
 public:
-    Tool()                                      {if (!instance) instance = this;}
+    Tool();
     virtual ~Tool();
 
     static Tool* instance;
@@ -229,8 +230,5 @@ private:
     string _toolPath;
     deque<string> _args;
     int _verbose {0};
-    struct editline* _editLine {nullptr};
-    struct history* _editHistory {nullptr};
-    struct tokenizer* _editTokenizer {nullptr};
     std::string _editPrompt;
 };

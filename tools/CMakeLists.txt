@@ -12,35 +12,34 @@ include_directories(${PROJECT_SOURCE_DIR}
                     ${PROJECT_SOURCE_DIR}/litecp
                     ${TOP}C/include/
                     ${TOP}LiteCore/Support/
-                    ${TOP}vendor/fleece/Fleece/)
+                    ${TOP}vendor/fleece/Fleece/
+                    ${TOP}vendor/linenoise-ng/include/)
 
 ### CBLITE
 
-if (APPLE)   ### TODO: Make this build on other platforms (may require source changes)
-
 aux_source_directory("cblite" CBLITE_SRC)
 aux_source_directory("litecp" LITECP_SRC)
+aux_source_directory("../vendor/linenoise-ng/src" LINENOISE_SRC)
 
 add_executable(cblite
                ${CBLITE_SRC}
                ${LITECP_SRC}
+               ${LINENOISE_SRC}
                Tool.cc)
 
 target_link_libraries(cblite ${LITECORE_LIBRARIES_PRIVATE})
 
 if (APPLE)
     target_link_libraries(cblite
-      z readline
+      z
       "-framework CoreFoundation"
       "-framework Security")
 elseif(MSVC)
-    target_link_libraries(cblite Dbghelp.lib)
+    target_link_libraries(cblite Dbghelp.lib zlibstatic)
 else()
-    target_link_libraries(cblite pthread z dl readline
+    target_link_libraries(cblite pthread z dl
                           ${ICU4C_COMMON} ${ICU4C_I18N} ${LIBCXX_LIB} ${LIBCXXABI_LIB})
 endif()
-
-endif() # APPLE
 
 
 ### LITECORELOG

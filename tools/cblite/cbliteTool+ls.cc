@@ -8,6 +8,14 @@
 
 #include "cbliteTool.hh"
 
+#ifdef _MSC_VER
+#include <Shlwapi.h>
+#define fnmatch(pattern, input, unused) PathMatchSpecA(input, pattern)
+#pragma comment(lib, "shlwapi.lib")
+#else
+#include <fnmatch.h>        // POSIX (?)
+#endif
+
 
 static constexpr int kListColumnWidth = 16;
 

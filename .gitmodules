@@ -20,3 +20,6 @@
 	path = vendor/sqlcipher
 	url = https://github.com/couchbaselabs/couchbase-lite-libsqlcipher
 	branch = feature/mbedtls
+[submodule "vendor/linenoise-ng"]
+	path = vendor/linenoise-ng
+	url = https://github.com/arangodb/linenoise-ng

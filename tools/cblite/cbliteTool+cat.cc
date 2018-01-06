@@ -7,6 +7,7 @@
 //
 
 #include "cbliteTool.hh"
+#include <algorithm>
 
 
 void CBLiteTool::catUsage() {
