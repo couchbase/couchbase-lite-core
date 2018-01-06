@@ -300,7 +300,7 @@ else()
     endif()
     set_target_properties(LiteCore PROPERTIES LINK_FLAGS
 			  "/def:${PROJECT_SOURCE_DIR}/C/c4.def")
-    target_link_libraries(LiteCore PRIVATE zlibstatic Ws2_32 Dbghelp.lib)
+    target_link_libraries(LiteCore PRIVATE zlibstatic Ws2_32)
 endif()
 
 ### JNI:
@@ -325,7 +325,7 @@ if (APPLE)
     set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
                           "-exported_symbols_list ${PROJECT_SOURCE_DIR}/REST/c4REST.exp")
 elseif(MSVC)
-    target_link_libraries(LiteCoreREST PUBLIC Dbghelp.lib)
+    target_link_libraries(LiteCoreREST PUBLIC)
     set_target_properties(LiteCoreREST PROPERTIES LINK_FLAGS
               "/def:${PROJECT_SOURCE_DIR}/REST/c4REST.def")
 elseif(ANDROID)

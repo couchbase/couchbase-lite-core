@@ -35,7 +35,7 @@ if (APPLE)
       "-framework CoreFoundation"
       "-framework Security")
 elseif(MSVC)
-    target_link_libraries(cblite Dbghelp.lib zlibstatic)
+    target_link_libraries(cblite zlibstatic)
 else()
     target_link_libraries(cblite pthread z dl
                           ${ICU4C_COMMON} ${ICU4C_I18N} ${LIBCXX_LIB} ${LIBCXXABI_LIB})

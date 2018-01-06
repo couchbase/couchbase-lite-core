@@ -7,6 +7,7 @@
 //
 
 #ifdef _MSC_VER
+#pragma comment(lib, "Dbghelp.lib")
 #include <Windows.h>
 #include <Dbghelp.h>
 #include "Error.hh"

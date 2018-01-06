@@ -58,7 +58,7 @@ else()
         target_link_libraries(CppTests "atomic" "log" "z")
     else()
         set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
-        target_link_libraries(CppTests ws2_32 zlibstatic Dbghelp.lib)
+        target_link_libraries(CppTests ws2_32 zlibstatic)
     endif()
 endif()
 
