@@ -19,10 +19,6 @@
 #include <sstream>
 #include <vector>
 
-#ifndef _MSC_VER
-#include <fnmatch.h>        // POSIX (?)
-#endif
-
 using namespace std;
 using namespace fleeceapi;
 

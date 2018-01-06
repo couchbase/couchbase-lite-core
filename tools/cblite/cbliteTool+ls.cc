@@ -12,6 +12,8 @@
 #include <Shlwapi.h>
 #define fnmatch(pattern, input, unused) PathMatchSpecA(input, pattern)
 #pragma comment(lib, "shlwapi.lib")
+#else
+#include <fnmatch.h>        // POSIX (?)
 #endif
 
 
