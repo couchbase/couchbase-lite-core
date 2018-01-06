@@ -716,7 +716,6 @@ namespace litecore { namespace repl {
         logVerbose("Inserting %zu revs:", revs->size());
         Stopwatch st;
 
-        vector<RevToInsert*> conflicts;
         C4Error transactionErr;
         c4::Transaction transaction(_db);
         if (transaction.begin(&transactionErr)) {
@@ -763,10 +762,10 @@ namespace litecore { namespace repl {
                         rev->onInserted(docErr);
                     rev = nullptr;
                 } else if (hasConflict(doc)) {
-                    // Notify that rev was inserted but caused a conflict:
+                    // Note that rev was inserted but caused a conflict:
                     log("Created conflict with '%.*s' #%.*s",
                         SPLAT(rev->docID), SPLAT(rev->revID));
-                    conflicts.push_back(rev);
+                    rev->flags |= kRevIsConflict;
                 }
             }
         }
@@ -786,10 +785,6 @@ namespace litecore { namespace repl {
         if (transactionErr.code) {
             gotError(transactionErr);
         } else {
-            // Post conflicts:
-            for (auto rev : conflicts)
-                gotDocumentError(rev->docID, {LiteCoreDomain, kC4ErrorConflict}, false, true);
-
             double t = st.elapsed();
             log("Inserted %zu revs in %.2fms (%.0f/sec)", revs->size(), t*1000, revs->size()/t);
         }
