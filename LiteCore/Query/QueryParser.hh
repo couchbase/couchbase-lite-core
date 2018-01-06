@@ -14,7 +14,6 @@
 #include <set>
 #include <sstream>
 #include <vector>
-#include <unordered_map>
 #include <unordered_set>
 
 namespace fleece {
