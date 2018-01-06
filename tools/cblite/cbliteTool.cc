@@ -111,7 +111,7 @@ void CBLiteTool::runInteractively() {
             if (!processFlag(cmd, kInteractiveSubcommands))
                 cerr << format("Unknown subcommand '%s'; type 'help' for a list of commands.\n",
                                cmd.c_str());
-        } catch (const fail_error &x) {
+        } catch (const fail_error &) {
             // subcommand failed (error message was already printed); continue
         }
     }

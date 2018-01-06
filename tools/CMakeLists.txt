@@ -25,7 +25,8 @@ add_executable(cblite
                ${CBLITE_SRC}
                ${LITECP_SRC}
                ${LINENOISE_SRC}
-               Tool.cc)
+               Tool.cc
+               ArgumentTokenizer.cc)
 
 target_link_libraries(cblite ${LITECORE_LIBRARIES_PRIVATE})
 

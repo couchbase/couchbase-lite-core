@@ -9,8 +9,7 @@
 #include "Tool.hh"
 #include "Logging.hh"
 #include "linenoise.h"
-#include "argumentTokenizer.hh"
-#include <stdio.h>
+#include <cstdio>
 #include <regex>
 
 #if __APPLE__
@@ -102,7 +101,7 @@ bool Tool::readLine(const char *prompt) {
             linenoiseHistoryAdd(line);
 
             // Tokenize the line (break into args):
-            bool success = tokenize(line, _args);
+            bool success = _argTokenizer.tokenize(line, _args);
             if (!success) {
                 cout << "Error: Unclosed quote or incomplete escape" << endl;
                 continue;
@@ -133,7 +132,7 @@ bool Tool::dumbReadLine(const char *prompt) {
             return false;
         }
         
-        bool success = tokenize(line, _args);
+        bool success = _argTokenizer.tokenize(line, _args);
         if (!success) {
             cout << "Error: Unclosed quote or incomplete escape" << endl;
             continue;

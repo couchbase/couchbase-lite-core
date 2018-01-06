@@ -10,6 +10,7 @@
 #include "c4.hh"
 #include "FleeceCpp.hh"
 #include "StringUtil.hh"
+#include "ArgumentTokenizer.hh"
 #include <iostream>
 #include <string>
 #include <deque>
@@ -43,7 +44,7 @@ public:
                 _args.emplace_back(argv[i]);
             processFlags(initialFlags());
             return run();
-        } catch (const fail_error &x) {
+        } catch (const fail_error &) {
             return 1;
         } catch (const std::exception &x) {
             errorOccurred(format("Uncaught C++ exception: %s", x.what()));
@@ -231,4 +232,5 @@ private:
     deque<string> _args;
     int _verbose {0};
     std::string _editPrompt;
+    ArgumentTokenizer _argTokenizer;
 };

@@ -8,6 +8,7 @@ add_definitions(-DLITECORE_CPP_TESTS=1 -D_USE_MATH_DEFINES)
 include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}LiteCore/RevTrees/
                     ${TOP}LiteCore/Storage/ ${TOP}LiteCore/Support/ ${TOP}LiteCore/VersionVectors/
                     ${TOP}LiteCore/ ${TOP}REST/
+                    ${TOP}tools/
                     ${TOP}vendor/fleece/Fleece/
                     ${TOP}vendor/fleece/vendor/catch/
                     ${TOP}vendor/fleece/vendor/jsonsl/
@@ -22,7 +23,7 @@ LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/FleeceTestsMain.cc)
 if(NOT APPLE)
     LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/ObjCTests.mm)
 endif()
-set(TEST_SRC ${TEST_SRC} ${FLEECE_TEST_SRC})
+set(TEST_SRC ${TEST_SRC} ${FLEECE_TEST_SRC} ${TOP}/tools/ArgumentTokenizer.cc)
 if(MSVC)
 	set(TEST_SRC ${TEST_SRC} ../../MSVC/arc4random.cc)
 elseif(UNIX AND NOT APPLE)
