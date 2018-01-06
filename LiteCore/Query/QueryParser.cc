@@ -142,6 +142,7 @@ namespace litecore {
         _context.clear();
         _context.push_back(&kOuterOperation);
         _parameters.clear();
+        _limitOrOffsetParameters.clear();
         _variables.clear();
         _ftsTables.clear();
         _1stCustomResultCol = 0;
@@ -343,7 +344,8 @@ namespace litecore {
         auto value = getCaseInsensitive(operands, jsonKey);
         if (value) {
             _sql << " " << sqlKeyword << " ";
-            parseNode(value);
+            _nextParamLimitOrOffset = true;
+            parseNode(value, true);
         }
     }
 
@@ -415,15 +417,21 @@ namespace litecore {
 
 #pragma mark - PARSING THE "WHERE" CLAUSE:
     
-    
-    void QueryParser::parseNode(const Value *node) {
+    void QueryParser::parseNode(const Value *node, bool disallowNegative) {
         switch (node->type()) {
             case kNull:
                 _sql << "x''";        // Represent a Fleece/JSON/N1QL null as an empty blob (?)
                 break;
             case kNumber:
-                _sql << node->toString();
+            {
+                auto str = node->toString();
+                if(disallowNegative && str.size >= 1 && str[0] == '-') {
+                    str = "0"_sl;
+                }
+
+                _sql << str;
                 break;
+            }
             case kBoolean:
                 _sql << (node->asBool() ? '1' : '0');    // SQL doesn't have true/false
                 break;
@@ -749,6 +757,11 @@ namespace litecore {
         require(isAlphanumericOrUnderscore(parameter),
                 "Invalid query parameter name '%.*s'", SPLAT(parameter));
         _parameters.insert(paramStr);
+        if(_nextParamLimitOrOffset) {
+            _limitOrOffsetParameters.insert(paramStr);
+            _nextParamLimitOrOffset = false;
+        }
+
         _sql << "$_" << paramStr;
     }
 
