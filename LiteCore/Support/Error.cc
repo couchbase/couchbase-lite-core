@@ -19,8 +19,9 @@
 #include "PlatformIO.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
-#include <errno.h>
+#include <cerrno>
 #include <string>
+#include <sstream>
 
 #if __ANDROID__
 #include <android/log.h>
@@ -85,6 +86,14 @@ namespace litecore {
         return false;
     }
 
+    static int getPrimaryCode(const error::Domain &domain, const int& code)
+    {
+        if(domain != error::Domain::SQLite) {
+            return code;
+        }
+
+        return code & 0xff;
+    }
 
     // Indexed by Domain
     static const char* kDomainNames[] = {"0",
@@ -223,7 +232,6 @@ namespace litecore {
     }
 #endif // LITECORE_IMPL
 
-
     string error::_what(error::Domain domain, int code) noexcept {
 #ifdef LITECORE_IMPL
         switch (domain) {
@@ -232,7 +240,16 @@ namespace litecore {
             case POSIX:
                 return strerror(code);
             case SQLite:
-                return sqlite3_errstr(code);
+            {
+                const int primary = code & 0xFF;
+                if(code == primary) {
+                    return sqlite3_errstr(code);
+                }
+
+                stringstream ss;
+                ss << sqlite3_errstr(primary) << "(" << code << ")";
+                return ss.str();
+            }
             case Fleece:
                 return fleece_errstr((fleece::ErrorCode)code);
             case Network:
@@ -265,8 +282,10 @@ namespace litecore {
     error::error(error::Domain d, int c, const std::string &what)
     :runtime_error(what),
     domain(d),
-    code(c)
-    { }
+    code(getPrimaryCode(d, c))
+    {
+        
+    }
 
 
     error error::standardized() const {
@@ -306,7 +325,7 @@ namespace litecore {
             return *e;
         auto se = dynamic_cast<const SQLite::Exception*>(&re);
         if (se)
-            return error(SQLite, se->getErrorCode());
+            return error(SQLite, se->getExtendedErrorCode());
         auto fe = dynamic_cast<const fleece::FleeceException*>(&re);
         if (fe)
             return error(Fleece, fe->code);
