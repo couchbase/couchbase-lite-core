@@ -7,7 +7,7 @@
 //
 
 #include "LiteCoreTest.hh"
-#include "argumentTokenizer.hh"
+#include "ArgumentTokenizer.hh"
 #include <deque>
 using namespace std;
 

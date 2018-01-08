@@ -12,10 +12,10 @@
 #include <cstdio>
 #include <regex>
 
-#if __APPLE__
+#if !defined(_MSC_VER)
 #include <unistd.h>
 #include <sys/ioctl.h>
-#elif defined(_MSC_VER)
+#else
 #include <io.h>
 #define isatty _isatty
 #define STDIN_FILENO _fileno(stdin)

@@ -6,7 +6,7 @@
 //  Copyright © 2018 Couchbase. All rights reserved.
 //
 
-#include "argumentTokenizer.hh"
+#include "ArgumentTokenizer.hh"
 using namespace std;
 
 bool ArgumentTokenizer::tokenize(const char* input, deque<string> &args)
