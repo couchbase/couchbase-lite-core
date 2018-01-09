@@ -45,19 +45,30 @@ namespace litecore { namespace blip {
         void dump(std::ostream& out, bool withBody);
 
     private:
-        void readFromDataSource();
-
         static const uint32_t kMaxUnackedBytes = 128000;
 
-        Connection* const _connection;      // My BLIP connection
-        alloc_slice _payload;               // Message data (uncompressed)
-        slice _unsentPayload;               // Unsent subrange of _payload
-        MessageDataSource _dataSource;      // Callback that produces more data to send
-        alloc_slice _dataBuffer;            // Data read from _dataSource
-        slice _dataBufferAvail;
-        bool _dataSourceMoreComing {true};
-        uint32_t _bytesSent {0};            // Number of bytes transmitted (after compression)
-        uint32_t _unackedBytes {0};         // Bytes transmitted but no ack received
+        /** Manages the data (properties, body, data source) of a MessageOut. */
+        class Contents {
+        public:
+            Contents(alloc_slice payload, MessageDataSource dataSource);
+            slice& dataToSend();
+            bool hasMoreDataToSend() const;
+            void getPropsAndBody(slice &props, slice &body) const;
+        private:
+            void readFromDataSource();
+
+            alloc_slice _payload;               // Message data (uncompressed)
+            slice _unsentPayload;               // Unsent subrange of _payload
+            MessageDataSource _dataSource;      // Callback that produces more data to send
+            alloc_slice _dataBuffer;            // Data read from _dataSource
+            slice _unsentDataBuffer;            // Unsent subrange of _dataBuffer
+        };
+
+        Connection* const _connection;          // My BLIP connection
+        Contents _contents;                     // Message data
+        uint32_t _uncompressedBytesSent {0};    // Number of bytes of the data sent so far
+        uint32_t _bytesSent {0};                // Number of bytes transmitted (after compression)
+        uint32_t _unackedBytes {0};             // Bytes transmitted for which no ack received yet
     };
 
 } }
