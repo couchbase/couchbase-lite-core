@@ -342,8 +342,9 @@ namespace litecore {
                                               const char *sqlKeyword) {
         auto value = getCaseInsensitive(operands, jsonKey);
         if (value) {
-            _sql << " " << sqlKeyword << " ";
+            _sql << " " << sqlKeyword << " MAX(0, ";
             parseNode(value);
+            _sql << ")";
         }
     }
 

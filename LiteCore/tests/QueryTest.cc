@@ -947,3 +947,51 @@ TEST_CASE_METHOD(DataFileTestFixture, "Missing columns", "[Query]") {
     CHECK(e->columns()[3]->toJSONString() == "\"FOO\"");
 }
 
+TEST_CASE_METHOD(DataFileTestFixture, "Negative Limit / Offset", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        string docID = "rec-001";
+
+        fleece::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("num");
+        enc.writeInt(1234);
+        enc.writeKey("string");
+        enc.writeString("FOO");
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+
+        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+
+        t.commit();
+    }
+
+    auto query = store->compileQuery(json5(
+        "{'WHAT': ['.num', '.string'], 'LIMIT': -1}"));
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    CHECK(e->getRowCount() == 0);
+
+    query = store->compileQuery(json5(
+        "{'WHAT': ['.num', '.string'], 'LIMIT': 100, 'OFFSET': -1}"));
+    e.reset(query->createEnumerator());
+    CHECK(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->toJSONString() == "1234");
+    CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
+
+    Query::Options opts;
+    opts.paramBindings = R"({"lim": -1})"_sl;
+    query = store->compileQuery(json5(
+        "{'WHAT': ['.num', '.string'], 'LIMIT': ['$lim']}"));
+    e.reset(query->createEnumerator(&opts));
+    CHECK(e->getRowCount() == 0);
+
+    opts.paramBindings = R"({"lim": 100, "skip": -1})"_sl;
+    query = store->compileQuery(json5(
+        "{'WHAT': ['.num', '.string'], 'LIMIT': ['$lim'], 'OFFSET': ['$skip']}"));
+    e.reset(query->createEnumerator(&opts));
+    CHECK(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->toJSONString() == "1234");
+    CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
+}
