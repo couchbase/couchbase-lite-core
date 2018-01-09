@@ -66,10 +66,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]"
     REQUIRE(buf[0] == '\0');
 
     assertMessage(SQLiteDomain, SQLITE_CORRUPT, "database disk image is malformed");
+    assertMessage(SQLiteDomain, SQLITE_IOERR_ACCESS, "disk I/O error (3338)");
+    assertMessage(SQLiteDomain, SQLITE_IOERR, "disk I/O error");
     assertMessage(LiteCoreDomain, 15, "invalid parameter");
     assertMessage(POSIXDomain, ENOENT, "No such file or directory");
     assertMessage(LiteCoreDomain, kC4ErrorIndexBusy, "index busy; can't close view");
-    assertMessage(SQLiteDomain, -1234, "unknown error");
+    assertMessage(SQLiteDomain, -1234, "unknown error (-1234)");
     assertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
 }
 

@@ -247,7 +247,7 @@ namespace litecore {
                 }
 
                 stringstream ss;
-                ss << sqlite3_errstr(primary) << "(" << code << ")";
+                ss << sqlite3_errstr(primary) << " (" << code << ")";
                 return ss.str();
             }
             case Fleece:
