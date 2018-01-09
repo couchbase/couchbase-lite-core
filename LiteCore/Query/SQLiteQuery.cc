@@ -46,6 +46,7 @@ namespace litecore {
             QueryParser qp(keyStore.tableName());
             qp.parseJSON(selectorExpression);
 
+            _limitOrOffsetParameters = qp.limitOrOffsetParameters();
             _parameters = qp.parameters();
             for (auto p = _parameters.begin(); p != _parameters.end();) {
                 if (hasPrefix(*p, "opt_"))
@@ -127,7 +128,7 @@ namespace litecore {
         unsigned _1stCustomResultColumn;
         bool _isAggregate;
 
-        shared_ptr<SQLite::Statement> statement() {return _statement;}
+        shared_ptr<SQLite::Statement> statement() const {return _statement;}
 
     protected:
         ~SQLiteQuery() =default;
@@ -135,6 +136,7 @@ namespace litecore {
     private:
         shared_ptr<SQLite::Statement> _statement;
         unique_ptr<SQLite::Statement> _matchedTextStatement;
+        unordered_set<string> _limitOrOffsetParameters;
     };
 
 
@@ -267,14 +269,14 @@ namespace litecore {
     // which is then used as the data source of a SQLiteQueryEnum.
     class SQLiteQueryRunner : public SQLiteQueryEnumBase {
     public:
-        SQLiteQueryRunner(SQLiteQuery *query, const Query::Options *options, sequence_t lastSequence)
+        SQLiteQueryRunner(SQLiteQuery *query, const Query::Options *options, sequence_t lastSequence, const unordered_set<string>& limitOrOffsetParameters)
         :SQLiteQueryEnumBase(query, options, lastSequence)
         ,_statement(query->statement())
         {
             _statement->clearBindings();
             _unboundParameters = _query->_parameters;
             if (options && options->paramBindings.buf)
-                bindParameters(options->paramBindings);
+                bindParameters(options->paramBindings, limitOrOffsetParameters);
             if (!_unboundParameters.empty()) {
                 stringstream msg;
                 for (const string &param : _unboundParameters)
@@ -292,7 +294,7 @@ namespace litecore {
             } catch (...) { }
         }
 
-        void bindParameters(slice json) {
+        void bindParameters(slice json, const unordered_set<string>& limitOrOffsetParameters) {
             alloc_slice fleeceData;
             fleeceData = JSONConverter::convertJSON(json);
             const Dict *root = Value::fromData(fleeceData)->asDict();
@@ -300,6 +302,7 @@ namespace litecore {
                 error::_throw(error::InvalidParameter);
             for (Dict::iterator it(root); it; ++it) {
                 auto key = (string)it.key()->asString();
+                bool disallowNegative = limitOrOffsetParameters.find(key) != limitOrOffsetParameters.end();
                 _unboundParameters.erase(key);
                 auto sqlKey = string("$_") + key;
                 const Value *val = it.value();
@@ -309,10 +312,16 @@ namespace litecore {
                             break;
                         case kBoolean:
                         case kNumber:
-                            if (val->isInteger() && !val->isUnsigned())
-                                _statement->bind(sqlKey, (long long)val->asInt());
-                            else
+                            if (val->isInteger() && !val->isUnsigned()) {
+                                auto numericVal = (long long)val->asInt();
+                                if(disallowNegative && numericVal < 0) {
+                                    numericVal = max(numericVal, 0LL);
+                                }
+
+                                _statement->bind(sqlKey, numericVal);
+                            } else {
                                 _statement->bind(sqlKey, val->asDouble());
+                            }
                             break;
                         case kString:
                             _statement->bind(sqlKey, (string)val->asString());
@@ -417,7 +426,8 @@ namespace litecore {
         sequence_t curSeq = lastSequence();
         if (lastSeq > 0 && lastSeq == curSeq)
             return nullptr;
-        SQLiteQueryRunner recorder(this, options, curSeq);
+
+        SQLiteQueryRunner recorder(this, options, curSeq, _limitOrOffsetParameters);
         return recorder.fastForward();
     }
 

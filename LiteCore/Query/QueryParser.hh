@@ -14,6 +14,7 @@
 #include <set>
 #include <sstream>
 #include <vector>
+#include <unordered_set>
 
 namespace fleece {
     class Value;
@@ -51,6 +52,8 @@ namespace litecore {
 
         bool isAggregateQuery() const                               {return _isAggregateQuery;}
 
+        std::unordered_set<std::string> limitOrOffsetParameters()             {return _limitOrOffsetParameters;}
+
         static std::string expressionSQL(const fleece::Value*, const char *bodyColumnName = "body");
         std::string FTSTableName(const fleece::Value *key) const;
         std::string FTSTableName(const std::string &property) const;
@@ -69,7 +72,7 @@ namespace litecore {
         QueryParser& operator=(const QueryParser&) =delete;
 
         void reset();
-        void parseNode(const fleece::Value*);
+        void parseNode(const fleece::Value*, bool disallowNegative = false);
         void parseOpNode(const fleece::Array*);
         void handleOperation(const Operation*, slice actualOperator, fleece::Array::iterator& operands);
         void parseStringLiteral(slice str);
@@ -138,6 +141,8 @@ namespace litecore {
         static constexpr bool _includeDeleted {false};  // In future add an accessor to set this
         Collation _collation;
         bool _collationUsed {true};
+        std::unordered_set<std::string> _limitOrOffsetParameters;
+        bool _nextParamLimitOrOffset;
     };
 
 }
