@@ -103,8 +103,12 @@ namespace c4Internal {
 
         options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
         if (options.encryptionAlgorithm != kNoEncryption) {
+#if COUCHBASE_ENTERPRISE
             options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
                                                 sizeof(config.encryptionKey.bytes));
+#else
+            error::_throw(error::UnsupportedOperation);
+#endif
         }
 
         switch (config.versioning) {

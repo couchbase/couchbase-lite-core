@@ -16,10 +16,9 @@
 [submodule "wiki"]
 	path = wiki
 	url = https://github.com/couchbase/couchbase-lite-core.wiki.git
-[submodule "vendor/sqlcipher"]
-	path = vendor/sqlcipher
-	url = https://github.com/couchbaselabs/couchbase-lite-libsqlcipher
-	branch = feature/mbedtls
 [submodule "vendor/linenoise-ng"]
 	path = vendor/linenoise-ng
 	url = https://github.com/arangodb/linenoise-ng
+[submodule "vendor/mbedtls"]
+	path = vendor/mbedtls
+	url = https://github.com/ARMmbed/mbedtls/

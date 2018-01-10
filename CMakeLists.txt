@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 option(CODE_COVERAGE_ENABLED "Set whether or not code coverage information should be generated" OFF)
+option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 
 add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
@@ -21,6 +22,10 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DCMAKE                             # Let the source know this is a CMAKE build
                 -D__STDC_LIMIT_MACROS               # Ensure the presence of UINT64_MAX, etc
                 -DNOMINMAX)                         # Get rid of pesky Windows macros for min and max
+                
+if(BUILD_ENTERPRISE)
+    add_definitions(-DCOUCHBASE_ENTERPRISE)
+endif()
 
 if(MSVC)
     if(WINDOWS_STORE)
@@ -120,12 +125,17 @@ endif()
 include_directories("vendor/fleece/Fleece"
                     "vendor/fleece/vendor"
                     "vendor/SQLiteCpp/include"
-                    "vendor/sqlcipher/src/headers"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
                     "vendor/BLIP-Cpp/src/util"
                     "vendor/civetweb/include"
-                    "vendor/sqlcipher/vendor/mbedtls/include")
+                    "vendor/mbedtls/include")
+                    
+if(BUILD_ENTERPRISE)
+    include_directories("vendor/sqlcipher/src/headers")
+else()
+    include_directories("vendor/SQLiteCpp/sqlite3")
+endif()
 
 if(WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
@@ -273,8 +283,13 @@ set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 SQLite3_UnicodeSN
                                 BLIPStatic
                                 CivetWeb
-                                sqlcipher
                                 mbedcrypto)
+                                
+if(BUILD_ENTERPRISE)
+    set(LITECORE_LIBRARIES_PRIVATE ${LITECORE_LIBRARIES_PRIVATE} sqlcipher)
+else()
+    set(LITECORE_LIBRARIES_PRIVATE ${LITECORE_LIBRARIES_PRIVATE} sqlite)
+endif()
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 

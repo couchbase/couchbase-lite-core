@@ -136,6 +136,7 @@ namespace litecore {
 
 
     bool SQLiteDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {
+#if COUCHBASE_ENTERPRISE
         static int sEncryptionEnabled = -1;
         static once_flag once;
         call_once(once, []() {
@@ -152,6 +153,10 @@ namespace litecore {
             }
         });
         return sEncryptionEnabled > 0 && (alg == kNoEncryption || alg == kAES256);
+#else
+        return false;
+#endif
+
     }
 
 
@@ -278,6 +283,7 @@ path.path().c_str());
     bool SQLiteDataFile::decrypt() {
         auto alg = options().encryptionAlgorithm;
         if (alg != kNoEncryption) {
+#if COUCHBASE_ENTERPRISE
             if (!factory().encryptionEnabled(alg))
                 return false;
 
@@ -286,6 +292,9 @@ path.path().c_str());
             if(key.buf == nullptr || key.size != 32)
                 error::_throw(error::InvalidParameter);
             _exec(string("PRAGMA key = \"x'") + key.hexString() + "'\"");
+#else
+            error::_throw(error::UnsupportedOperation);
+#endif
         }
 
         // Verify that encryption key is correct (or db is unencrypted, if no key given):
