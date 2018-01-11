@@ -81,7 +81,10 @@ extern "C" {
     FLSharedKeys c4db_getFLSharedKeys(C4Database *db C4NONNULL) C4API;
 
     /** Returns an initialized FLDictKey for the given key string, taking into account the shared
-        keys of the given database. */
+        keys of the given database.
+
+        Warning: the input string's memory MUST remain valid for as long as the FLDictKey is in
+        use! (The FLDictKey stores a pointer to the string, but does not copy it.) */
     FLDictKey c4db_initFLDictKey(C4Database *db C4NONNULL, C4String string) C4API;
 
     /** @} */
