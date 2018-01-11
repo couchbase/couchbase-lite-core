@@ -110,11 +110,13 @@ namespace litecore { namespace repl {
             _gettingChanges = true;
             increment(_changeListsInFlight); // will be decremented at start of _gotChanges
             log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
-            _dbWorker->getChanges({_lastSequenceRead, _docIDs,
-                                   _changesBatchSize, _continuous,
-                                   _proposeChanges || !_proposeChangesKnown,
-                                   _skipDeleted,
-                                   _proposeChanges},
+            _dbWorker->getChanges({_lastSequenceRead,
+                                   _docIDs,
+                                   _changesBatchSize,
+                                   _continuous,
+                                   _proposeChanges || !_proposeChangesKnown,  // getForeignAncestors
+                                   _skipDeleted,                              // skipDeleted
+                                   _proposeChanges},                          // skipForeign
                                   this);
             // response will be to call _gotChanges
         }

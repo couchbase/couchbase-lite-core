@@ -62,6 +62,13 @@ namespace litecore { namespace repl {
     }
 
 
+    void DBWorker::_connectionClosed() {
+        Worker::_connectionClosed();
+        _pusher = nullptr;                      // breaks ref-cycle
+        _changeObserver = nullptr;
+    }
+
+
     // Returns a string that uniquely identifies the remote database; by default its URL,
     // or the 'remoteUniqueID' option if that's present (for P2P dbs without stable URLs.)
     string DBWorker::remoteDBIDString() const {
@@ -249,8 +256,11 @@ namespace litecore { namespace repl {
         if (!connection())
             return;
         log("Reading up to %u local changes since #%llu", p.limit, p.since);
-        if (_firstChangeSequence == 0)
-            _firstChangeSequence = p.since + 1;
+        _getForeignAncestors = p.getForeignAncestors;
+        _skipForeignChanges = p.skipForeign;
+        if (_maxPushedSequence == 0)
+            _maxPushedSequence = p.since;
+        C4SequenceNumber latestChangeSequence = _maxPushedSequence;
 
         // Run a by-sequence enumerator to find the changed docs:
         vector<Rev> changes;
@@ -266,25 +276,27 @@ namespace litecore { namespace repl {
             while (c4enum_next(e, &error) && p.limit > 0) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
+                // (There's very similar code below in dbChanged; keep them in sync)
+                latestChangeSequence = info.sequence;
                 if (!passesDocIDFilter(p.docIDs, info.docID))
                     continue;       // reject rev: not in filter
-                alloc_slice foreignAncestor;
-                if (p.getForeignAncestors) {
-                    // For proposeChanges, find the nearest foreign ancestor of the current rev:
-                    if (!getForeignAncestor(e, foreignAncestor, &error)) {
+
+                c4::ref<C4Document> doc;
+                if (_getForeignAncestors) {
+                    doc = c4enum_getDocument(e, &error);
+                    if (!doc) {
                         gotDocumentError(info.docID, error, true, false);
                         continue;   // reject rev: error getting doc
-                    } else if (p.skipForeign && foreignAncestor == slice(info.revID)) {
-                        continue;   // reject rev: it's foreign
                     }
                 }
-                // Add rev to list
-                changes.emplace_back(info, foreignAncestor);
-                --p.limit;
+                if (addChangeToList(info, doc, changes))
+                    --p.limit;
             }
         }
+        _maxPushedSequence = latestChangeSequence;
 
         markRevsSynced(changes, nullptr);
+        pusher->gotChanges(changes, error);
 
         if (p.continuous && p.limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
@@ -298,8 +310,6 @@ namespace litecore { namespace repl {
                                              this);
             logDebug("Started DB observer");
         }
-
-        pusher->gotChanges(changes, error);
     }
 
 
@@ -316,17 +326,34 @@ namespace litecore { namespace repl {
                 break;
             log("Notified of %u db changes #%llu ... #%llu",
                 nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
+            C4SequenceNumber latestChangeSequence = _maxPushedSequence;
             changes.clear();
             C4DatabaseChange *c4change = c4changes;
             for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
-                if (passesDocIDFilter(_pushDocIDs, c4change->docID)) {
-                    changes.emplace_back(c4change->docID, c4change->revID,
-                                         c4change->sequence, c4change->bodySize);
+                C4DocumentInfo info {0, c4change->docID, c4change->revID,
+                                     c4change->sequence, c4change->bodySize};
+                // (There's very similar code above in _getChanges; keep them in sync)
+                latestChangeSequence = info.sequence;
+                if (!passesDocIDFilter(_pushDocIDs, info.docID))
+                    continue;
+
+                c4::ref<C4Document> doc;
+                if (_getForeignAncestors) {
+                    C4Error error;
+                    doc = c4doc_get(_db, info.docID, true, &error);
+                    if (!doc) {
+                        gotDocumentError(info.docID, error, true, false);
+                        continue;   // reject rev: error getting doc
+                    }
+                    if (slice(doc->revID) != slice(info.revID))
+                        continue;   // ignore rev: there's a newer one already
                 }
+                addChangeToList(info, doc, changes);
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
             }
+            _maxPushedSequence = latestChangeSequence;
 
             if (!changes.empty()) {
                 markRevsSynced(changes, nullptr);
@@ -336,37 +363,35 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBWorker::_connectionClosed() {
-        Worker::_connectionClosed();
-        _pusher = nullptr;                      // breaks ref-cycle
-        _changeObserver = nullptr;
+    // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
+    bool DBWorker::addChangeToList(const C4DocumentInfo &info, C4Document *doc, vector<Rev> &changes) {
+        alloc_slice remoteRevID;
+        if (_getForeignAncestors) {
+            // For proposeChanges, find the nearest foreign ancestor of the current rev:
+            remoteRevID = getRemoteRevID(doc);
+            if (_skipForeignChanges && remoteRevID == slice(info.revID))
+                return false;   // reject rev: it's foreign
+        }
+        changes.emplace_back(info, remoteRevID);
+        return true;
     }
 
 
     // For proposeChanges, find the latest ancestor of the current rev that is known to the server.
     // This is a rev that's either marked as foreign (came from the server), or whose sequence is
-    // prior to the checkpoint (has already been pushed to the server.)
-    bool DBWorker::getForeignAncestor(C4DocEnumerator *e,
-                                      alloc_slice &foreignAncestor,
-                                      C4Error *outError) {
+    // in the range that's already been pushed to the server.
+    alloc_slice DBWorker::getRemoteRevID(C4Document* doc) {
         Assert(_remoteDBID);
-        if (_remoteDBID) {
-            c4::ref<C4Document> doc = c4enum_getDocument(e, outError);
-            if (!doc)
-                return false;
-
-            foreignAncestor = c4doc_getRemoteAncestor(doc, _remoteDBID);
-            do {
-                slice rev(doc->selectedRev.revID);
-                if (rev == foreignAncestor) {
-                    return true;
-                } else if (doc->selectedRev.sequence < _firstChangeSequence) {
-                    foreignAncestor = rev;
-                    return true;
-                }
-            } while (c4doc_selectParentRevision(doc));
-        }
-        return true;
+        c4::sliceResult foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
+        do {
+            slice rev(doc->selectedRev.revID);
+            if (rev == foreignAncestor) {
+                return alloc_slice(foreignAncestor);
+            } else if (doc->selectedRev.sequence <= _maxPushedSequence) {
+                return alloc_slice(rev);
+            }
+        } while (c4doc_selectParentRevision(doc));
+        return alloc_slice();
     }
 
 
@@ -435,8 +460,8 @@ namespace litecore { namespace repl {
                     ++requested;
                     whichRequested[i] = true;
                 } else {
-                    log("Rejecting proposed change '%.*s' #%.*s (status %d)",
-                        SPLAT(docID), SPLAT(revID), status);
+                    log("Rejecting proposed change '%.*s' #%.*s, parent #%.*s (status %d)",
+                        SPLAT(docID), SPLAT(revID), SPLAT(parentRevID), status);
                     while (itemsWritten++ < i)
                         encoder.writeInt(0);
                     encoder.writeInt(status);

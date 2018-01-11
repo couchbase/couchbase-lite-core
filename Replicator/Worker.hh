@@ -70,7 +70,7 @@ namespace litecore { namespace repl {
                                       {return properties[kC4ReplicatorOptionFilterParams].asDict();}
             bool skipDeleted() const  {return properties[kC4ReplicatorOptionSkipDeleted].asBool();}
             bool noConflicts() const  {return properties[kC4ReplicatorOptionNoConflicts].asBool();}
-            
+
             fleeceapi::Array arrayProperty(const char *name) const {
                 return properties[name].asArray();
             }
@@ -82,7 +82,7 @@ namespace litecore { namespace repl {
                 Warning: This rewrites the backing store of the properties, invalidating any
                 Fleece value pointers or slices previously accessed from it. */
             template <class T>
-            void setProperty(fleece::slice name, T value) {
+            Options& setProperty(fleece::slice name, T value) {
                 fleeceapi::Encoder enc;
                 enc.beginDict();
                 if (value) {
@@ -98,8 +98,12 @@ namespace litecore { namespace repl {
                 }
                 enc.endDict();
                 properties = fleeceapi::AllocedDict(enc.finish());
+                return *this;
             }
 
+            Options& setNoConflicts() {
+                return setProperty(C4STR(kC4ReplicatorOptionNoConflicts), true);
+            }
         };
 
         

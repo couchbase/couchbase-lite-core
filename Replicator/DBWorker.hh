@@ -84,7 +84,8 @@ namespace litecore { namespace repl {
         void _getCheckpoint(CheckpointCallback);
         void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
         void _getChanges(GetChangesParams, Retained<Pusher> pusher);
-        bool getForeignAncestor(C4DocEnumerator *e, alloc_slice &foreignAncestor, C4Error*);
+        bool addChangeToList(const C4DocumentInfo &info, C4Document *doc, std::vector<Rev> &changes);
+        alloc_slice getRemoteRevID(C4Document*);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
         void _sendRevision(RevRequest request,
@@ -117,10 +118,12 @@ namespace litecore { namespace repl {
         c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
         Retained<Pusher> _pusher;                           // Pusher to send db changes to
         DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
+        bool _getForeignAncestors {false};
+        bool _skipForeignChanges {false};
         std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert; // Pending revs to be added to db
         std::mutex _revsToInsertMutex;                      // For safe access to _revsToInsert
         actor::Timer _insertTimer;                          // Timer for inserting revs
-        C4SequenceNumber _firstChangeSequence {0};          // First doc sequence to be pushed
+        C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
     };
 
 } }

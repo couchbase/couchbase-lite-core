@@ -77,7 +77,15 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     runPushReplication();
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":102}", "2-cc");
+}
 
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
+    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
+    _expectedDocumentCount = 12189;
+    runPushReplication();
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":12189}");
 }
 
 
@@ -213,7 +221,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
     SECTION("Default") {
     }
     SECTION("No-conflicts") {
-        serverOpts.setProperty(C4STR(kC4ReplicatorOptionNoConflicts), "true"_sl);
+        serverOpts.setNoConflicts();
     }
 
     importJSONLines(sFixturesDir + "names_100.json");
@@ -262,6 +270,19 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Starting Empty", "[Push][Continuous]") {
     addDocsInParallel(chrono::milliseconds(1500), 6);
     runPushReplication(kC4Continuous);
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Empty", "[Push][Continuous]") {
+    auto serverOpts = Replicator::Options::passive();
+    SECTION("Default") {
+    }
+    SECTION("No-conflicts") {
+        serverOpts.setNoConflicts();
+    }
+    addRevsInParallel(chrono::milliseconds(1000), alloc_slice("docko"), 1, 3);
+    _expectedDocumentCount = 3; // only 1 doc, but we get notified about it 3 times...
+    runReplicators(Replicator::Options::pushing(kC4Continuous), serverOpts);
 }
 
 
@@ -462,8 +483,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][Push][NoConflicts]") {
-    auto serverOpts = Replicator::Options::passive();
-    serverOpts.setProperty(C4STR(kC4ReplicatorOptionNoConflicts), "true"_sl);
+    auto serverOpts = Replicator::Options::passive().setNoConflicts();
 
     createRev(kDocID, kRevID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody);
@@ -508,9 +528,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Pull][NoConflicts]") {
-    auto serverOpts = Replicator::Options::passive();
-    serverOpts.setProperty(C4STR(kC4ReplicatorOptionNoConflicts), "true"_sl);
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push][NoConflicts]") {
+    auto serverOpts = Replicator::Options::passive().setNoConflicts();
 
     createRev(kDocID, kRevID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody);
