@@ -135,11 +135,20 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile(json5("['IS', ['.', 'contact', 'phone', [0]], ['MISSING']]"), "", true);
     CHECK(run("{\"offset\":0,\"limit\":4}") == (vector<string>{"0000004", "0000006", "0000008", "0000015"}));
 
-    // ...wherease null is a JSON null value
+    // ...whereas null is a JSON null value
     compile(json5("['IS', ['.', 'contact', 'phone', [0]], null]"), "", true);
     CHECK(run("{\"offset\":0,\"limit\":4}") == (vector<string>{}));
 }
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query LIKE", "[Query][C]") {
+    compile(json5("['LIKE', ['.name.first'], '%j%']"));
+    CHECK(run() == (vector<string>{ "0000085" }));
+    compile(json5("['LIKE', ['.name.first'], '%J%']"));
+    CHECK(run() == (vector<string>{ "0000002", "0000004", "0000008", "0000017", "0000028", "0000030", "0000045", "0000052", "0000067", "0000071",
+        "0000088", "0000094" }));
+    compile(json5("['LIKE', ['.name.first'], 'Jen%']"));
+    CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+}
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query IN", "[Query][C]") {
     // Type 1: RHS is an expression; generates a call to array_contains
@@ -180,7 +189,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
     compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'taxes']]"));
     CHECK(run() == (vector<string>{}));
 
-    // Look for people where every like contains an L:
+    // Look for people where everything they like contains an L:
     compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['LIKE', ['?', 'like'], '%l%']]"));
     CHECK(run() == (vector<string>{ "0000017", "0000027", "0000060", "0000068" }));
 }

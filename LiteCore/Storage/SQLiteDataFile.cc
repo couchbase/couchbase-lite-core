@@ -228,7 +228,8 @@ path.path().c_str());
         _exec(format("PRAGMA cache_size=%d; "            // Memory cache
                      "PRAGMA mmap_size=%d; "             // Memory-mapped reads
                      "PRAGMA synchronous=normal; "       // Speeds up commits
-                     "PRAGMA journal_size_limit=%lld",   // Limit WAL disk usage
+                     "PRAGMA journal_size_limit=%lld; "  // Limit WAL disk usage
+                     "PRAGMA case_sensitive_like=true",  // Case sensitive LIKE, for N1QL compat
                      -(int)kCacheSize/1024, kMMapSize, (long long)kJournalSize));
 
 #if DEBUG
