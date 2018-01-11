@@ -339,6 +339,7 @@ namespace litecore {
 
 
     void LogDomain::unregisterObject(unsigned objectRef) {
+        unique_lock<mutex> lock(sLogMutex);
         _objNames.erase(objectRef);
     }
 
