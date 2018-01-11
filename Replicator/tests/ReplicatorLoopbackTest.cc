@@ -80,6 +80,26 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]") {
+    auto serverOpts = Replicator::Options::passive();
+
+    importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
+    runReplicators(Replicator::Options(kC4OneShot, kC4OneShot), serverOpts);
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
+
+    Log("-------- Second Replication --------");
+    createRev("0000001"_sl, kRev2ID, kFleeceBody);
+    createRev("0000002"_sl, kRev2ID, kFleeceBody);
+    _expectedDocumentCount = 2;
+
+    runReplicators(Replicator::Options(kC4OneShot, kC4OneShot), serverOpts);
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":102,\"remote\":100}", "2-cc");
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     _expectedDocumentCount = 12189;

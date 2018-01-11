@@ -123,25 +123,28 @@ namespace litecore { namespace repl {
             _dbActor->findOrRequestRevs(req, asynchronize([this,req,changes](vector<bool> which) {
                 // Callback, after revs request sent:
                 decrement(_pendingCallbacks);
-                bool tracksProgress = (nonPassive() && !_options.noConflicts());
                 for (size_t i = 0; i < which.size(); ++i) {
-                    if (which[i]) {
+                    bool requesting = (which[i]);
+                    if (nonPassive()) {
+                        // Add sequence to _missingSequences:
+                        auto change = changes[(unsigned)i].asArray();
+                        alloc_slice sequence(change[0].toString()); //FIX: Should quote strings
+                        uint64_t bodySize = requesting ? max(change[4].asUnsigned(), (uint64_t)1) : 0;
+                        if (sequence)
+                            _missingSequences.add(sequence, bodySize);
+                        else
+                            warn("Empty/invalid sequence in 'changes' message");
+                        addProgress({0, bodySize});
+                        if (!requesting)
+                            completedSequence(sequence); // Not requesting, just update checkpoint
+                    }
+                    if (requesting) {
                         increment(_pendingRevMessages);
-                        if (tracksProgress) {
-                            // Keep track of which remote sequences I just requested:
-                            auto change = changes[(unsigned)i].asArray();
-                            uint64_t bodySize = max(change[4].asUnsigned(), (uint64_t)1);
-                            alloc_slice sequence(change[0].toString()); //FIX: Should quote strings
-                            if (sequence)
-                                _missingSequences.add(sequence, bodySize);
-                            else
-                                warn("Empty/invalid sequence in 'changes' message");
-                            addProgress({0, bodySize});
-                        }
                         // now awaiting a handleRev call...
                     }
+
                 }
-                if (tracksProgress) {
+                if (nonPassive()) {
                     logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
                                _pendingRevMessages, _missingSequences.size());
                 }
@@ -170,33 +173,43 @@ namespace litecore { namespace repl {
     void Puller::revWasHandled(IncomingRev *inc,
                                const alloc_slice &docID,
                                slice sequence,
-                               bool complete)
+                               bool successful)
     {
-        enqueue(&Puller::_revWasHandled, retained(inc), docID, alloc_slice(sequence), complete);
+        enqueue(&Puller::_revWasHandled, retained(inc), docID, alloc_slice(sequence), successful);
+    }
+
+
+    // Callback from an IncomingRev when it finishes
+    void Puller::_revWasHandled(Retained<IncomingRev> inc,
+                                alloc_slice docID,
+                                alloc_slice sequence,
+                                bool successful)
+    {
+        decrement(_pendingCallbacks);
+        if (successful && nonPassive()) {
+            completedSequence(sequence);
+            finishedDocument(docID, false);
+        }
+
+        if (inc && _spareIncomingRevs.size() < kMaxSpareIncomingRevs) {
+            logDebug("Recycling IncomingRev<%p>", inc.get());
+            _spareIncomingRevs.push_back(inc);
+        }
     }
 
 
     // Records that a sequence has been successfully pulled.
-    void Puller::_revWasHandled(Retained<IncomingRev> inc, alloc_slice docID, alloc_slice sequence, bool complete) {
-        decrement(_pendingCallbacks);
-        if (complete && nonPassive()) {
-            bool wasEarliest;
-            uint64_t bodySize;
-            _missingSequences.remove(sequence, wasEarliest, bodySize);
-            if (wasEarliest) {
-                _lastSequence = _missingSequences.since();
-                logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
-                if (replicator())
-                    replicator()->updatePullCheckpoint(_lastSequence);
-            }
-            addProgress({bodySize, 0});
-            finishedDocument(docID, false);
+    void Puller::completedSequence(alloc_slice sequence) {
+        bool wasEarliest;
+        uint64_t bodySize;
+        _missingSequences.remove(sequence, wasEarliest, bodySize);
+        if (wasEarliest) {
+            _lastSequence = _missingSequences.since();
+            logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
+            if (replicator())
+                replicator()->updatePullCheckpoint(_lastSequence);
         }
-
-        if (_spareIncomingRevs.size() < kMaxSpareIncomingRevs) {
-            logDebug("Recycling IncomingRev<%p>", inc.get());
-            _spareIncomingRevs.push_back(inc);
-        }
+        addProgress({bodySize, 0});
     }
 
 

@@ -45,6 +45,7 @@ namespace litecore { namespace repl {
         void handleRev(Retained<MessageIn>);
         void _revWasHandled(Retained<IncomingRev>, alloc_slice docID, alloc_slice sequence,
                             bool complete);
+        void completedSequence(alloc_slice sequence);
 
         void _setSkipDeleted()                  {_skipDeleted = true;}
 
