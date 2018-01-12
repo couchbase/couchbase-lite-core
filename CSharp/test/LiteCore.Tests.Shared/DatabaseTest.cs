@@ -354,7 +354,7 @@ namespace LiteCore.Tests
             AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)C4ErrorCode.InvalidParameter, "invalid parameter");
             AssertMessage(C4ErrorDomain.POSIXDomain, (int)PosixStatus.NOENT, "No such file or directory");
             AssertMessage(C4ErrorDomain.LiteCoreDomain, (int)C4ErrorCode.IndexBusy, "index busy; can't close view");
-            AssertMessage(C4ErrorDomain.SQLiteDomain, -1234, "unknown error");
+            AssertMessage(C4ErrorDomain.SQLiteDomain, -1234, "unknown error (-1234)");
             AssertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
         }
 
