@@ -87,7 +87,6 @@ namespace LiteCore.Interop
 
         private Action<LiteCoreException> _exceptionHandler;
 
-        [NotNull]
         private readonly List<C4Error> _allowedErrors = new List<C4Error>();
 
         #endregion
