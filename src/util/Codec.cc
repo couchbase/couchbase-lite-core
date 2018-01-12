@@ -97,8 +97,8 @@ namespace litecore { namespace blip {
         int result = _flate(&_z, (int)mode);
         log("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes",
             operation, inSize, outSize, mode, result,
-            (_z.next_in - (uint8_t*)input.buf),
-            (_z.next_out - (uint8_t*)output.buf));
+            (long)(_z.next_in - (uint8_t*)input.buf),
+            (long)(_z.next_out - (uint8_t*)output.buf));
         if (!kZlibRawDeflate)
             _checksum = (uint32_t)_z.adler;
         input.setStart(_z.next_in);
@@ -200,8 +200,8 @@ namespace litecore { namespace blip {
         if (kZlibRawDeflate)
             addToChecksum({outStart, output.buf});
 
-        logVerbose("    decompressed %zu bytes: %.*s",
-                   ((uint8_t*)output.buf - outStart),
+        logVerbose("    decompressed %ld bytes: %.*s",
+                   (long)((uint8_t*)output.buf - outStart),
                    (int)((uint8_t*)output.buf - outStart), outStart);
     }
 
