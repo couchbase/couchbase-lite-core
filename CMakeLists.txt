@@ -30,7 +30,9 @@ if(MSVC)
                         -DINCL_EXTRA_HTON_FUNCTIONS)# Make sure htonll is defined for WebSocketProtocol.hh
     endif()
 elseif(ANDROID)
-    add_definitions(-DLITECORE_USES_ICU=1)
+     # See: https://github.com/android-ndk/ndk/issues/477
+     # The issue is also applicable for other areas like fseeko
+     add_definitions(-DLITECORE_USES_ICU=1 -D_FILE_OFFSET_BITS=32)
 endif()
 
 set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
