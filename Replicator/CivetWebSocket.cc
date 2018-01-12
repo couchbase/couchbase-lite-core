@@ -143,7 +143,7 @@ namespace litecore { namespace websocket {
 
             slice protocols = _options[kC4SocketOptionWSProtocols].asString();
             if (protocols)
-                extraHeaders << "Sec-WS-Protocols: " << protocols << "\r\n";
+                extraHeaders << "Sec-WebSocket-Protocol: " << protocols << "\r\n";
 
             auto &to = address();
             char errorStr[256];
