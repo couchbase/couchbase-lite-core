@@ -36,6 +36,7 @@ public:
     constexpr static const C4String kITunesDBName = C4STR("itunes");
     constexpr static const C4String kWikipedia1kDBName = C4STR("wikipedia1k");
     constexpr static const C4String kProtectedDBName = C4STR("seekrit");
+    constexpr static const C4String kImagesDBName = C4STR("images");
 
     ReplicatorAPITest()
     :C4Test(0)

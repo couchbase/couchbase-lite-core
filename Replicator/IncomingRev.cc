@@ -14,6 +14,7 @@
 #include "c4Document+Fleece.h"
 #include "BLIP.hh"
 #include <deque>
+#include <set>
 
 using namespace std;
 using namespace fleece;
@@ -204,6 +205,7 @@ namespace litecore { namespace repl {
 
     // Finds blob references anywhere in a Fleece value
     void IncomingRev::findBlobReferences(Dict root, FLSharedKeys sk, const FindBlobCallback &callback) {
+        set<string> found;
         Value val = root;
         deque<Value> stack;
         while(true) {
@@ -211,7 +213,8 @@ namespace litecore { namespace repl {
             if (dict) {
                 C4BlobKey blobKey;
                 if (c4doc_dictIsBlob(dict, sk, &blobKey)) {
-                    callback(dict, blobKey);
+                    if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second)
+                        callback(dict, blobKey);
                 } else {
                     for (Dict::iterator i(dict); i; ++i)
                         pushIfDictOrArray(i.value(), stack);
@@ -226,6 +229,22 @@ namespace litecore { namespace repl {
                 break;
             val = stack.front();
             stack.pop_front();
+        }
+
+        // Now look for old-style _attachments:
+        auto attachments = root.get(C4STR(kC4LegacyAttachmentsProperty), sk).asDict();
+        for (Dict::iterator i(attachments); i; ++i) {
+            auto att = i.value().asDict();
+            if (att) {
+                slice digest = att.get("digest"_sl, sk).asString();
+                if (digest) {
+                    C4BlobKey blobKey;
+                    if (c4blob_keyFromString(digest, &blobKey)) {
+                        if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second)
+                            callback(att, blobKey);
+                    }
+                }
+            }
         }
     }
 

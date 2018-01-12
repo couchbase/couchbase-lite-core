@@ -9,12 +9,15 @@
 #include "ReplicatorAPITest.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
+#include "FleeceCpp.hh"
 
+using namespace fleeceapi;
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
 constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
                          ReplicatorAPITest::kWikipedia1kDBName,
-                         ReplicatorAPITest::kProtectedDBName;
+                         ReplicatorAPITest::kProtectedDBName,
+                         ReplicatorAPITest::kImagesDBName;
 
 
 TEST_CASE("URL Parsing") {
@@ -306,3 +309,25 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Prove Attachments", "[.SyncServer]") {
     // instead of requesting the attachment itself, since it already has the attachment.
     replicate(kC4OneShot, kC4Disabled);
 }
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Pull Big Attachments", "[.SyncServer]") {
+    _remoteDBName = kImagesDBName;
+    replicate(kC4Disabled, kC4OneShot);
+
+    C4Error error;
+    c4::ref<C4Document> doc = c4doc_get(db, "Abstract"_sl, true, &error);
+    REQUIRE(doc);
+    auto root = Value::fromData(doc->selectedRev.body).asDict();
+    auto sk = c4db_getFLSharedKeys(db);
+    auto attach = root.get("_attachments"_sl, sk).asDict().get("Abstract.jpg"_sl, sk).asDict();
+    REQUIRE(attach);
+    CHECK(attach.get("content_type",sk).asString() == "image/jpeg"_sl);
+    slice digest = attach.get("digest",sk).asString();
+    CHECK(digest == "sha1-9g3HeOewh8//ctPcZkh03o+A+PQ="_sl);
+    C4BlobKey blobKey;
+    c4blob_keyFromString(digest, &blobKey);
+    auto size = c4blob_getSize(c4db_getBlobStore(db, nullptr), blobKey);
+    CHECK(size == 15198281);
+}
+
