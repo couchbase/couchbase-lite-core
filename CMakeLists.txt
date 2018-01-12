@@ -35,7 +35,7 @@ set(ALL_SRC_FILES ${BLIP_SRC} ${UTIL_SRC} ${WEBSOCKET_SRC} ${ZLIBCOMPLETE_SRC} t
 ### LIBRARY:
 
 add_library(BLIPStatic STATIC ${ALL_SRC_FILES})
-if(WIN32)
+if(WIN32 OR ANDROID)
     add_subdirectory("vendor/zlib")
     include_directories("vendor/zlib")
     include_directories("${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib")
