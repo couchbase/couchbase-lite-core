@@ -80,7 +80,7 @@ namespace LiteCore.Tests
             }
         }
 
-#if NETCOREAPP1_0
+#if NETCOREAPP2_0
         [System.Runtime.InteropServices.DllImport("kernel32", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
         private static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
 
