@@ -56,7 +56,7 @@ namespace LiteCore.Tests
 
         static Test()
         {
-            #if NETCOREAPP2_0
+            #if NETCOREAPP1_0
             LoadDLL();
             #endif
             var enc = Native.FLEncoder_New();
