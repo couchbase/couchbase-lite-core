@@ -30,10 +30,11 @@ using namespace litecore::jni;
  */
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_next(JNIEnv *env, jclass clazz, jlong handle) {
-    if (!handle)
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
         return false;
     C4Error error = {};
-    jboolean result = c4queryenum_next((C4QueryEnumerator *) handle, &error);
+    jboolean result = c4queryenum_next(e, &error);
     if (!result) {
 // NOTE: Please keep folowing line of code for a while.
 // At end of iteration, proactively free the enumerator:
@@ -51,8 +52,11 @@ Java_com_couchbase_litecore_C4QueryEnumerator_next(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_getRowCount(JNIEnv *env, jclass clazz, jlong handle) {
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
+        return 0L;
     C4Error error = {};
-    int64_t res = c4queryenum_getRowCount((C4QueryEnumerator *) handle, &error);
+    int64_t res = c4queryenum_getRowCount(e, &error);
     if (res == -1)
         throwError(env, error);
     return (jlong) res;
@@ -66,10 +70,11 @@ Java_com_couchbase_litecore_C4QueryEnumerator_getRowCount(JNIEnv *env, jclass cl
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_seek(JNIEnv *env, jclass clazz, jlong handle,
                                                    jlong rowIndex) {
-    if (!handle)
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
         return false;
     C4Error error = {};
-    jboolean result = c4queryenum_seek((C4QueryEnumerator *) handle, (uint64_t) rowIndex, &error);
+    jboolean result = c4queryenum_seek(e, (uint64_t) rowIndex, &error);
     if (!result)
         throwError(env, error);
     return result;
@@ -82,9 +87,12 @@ Java_com_couchbase_litecore_C4QueryEnumerator_seek(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_refresh(JNIEnv *env, jclass clazz, jlong handle) {
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
+        return 0L;
     C4Error error = {.code=0};
-    C4QueryEnumerator *result = c4queryenum_refresh((C4QueryEnumerator *) handle, &error);
-// NOTE: if result is null, it indicates no update. it is not error.
+    C4QueryEnumerator *result = c4queryenum_refresh(e, &error);
+    // NOTE: if result is null, it indicates no update. it is not error.
     if (error.code != 0)
         throwError(env, error);
     return (jlong) result;
@@ -97,9 +105,10 @@ Java_com_couchbase_litecore_C4QueryEnumerator_refresh(JNIEnv *env, jclass clazz,
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_close(JNIEnv *env, jclass clazz, jlong handle) {
-    if (!handle)
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
         return;
-    c4queryenum_close((C4QueryEnumerator *) handle);
+    c4queryenum_close(e);
 }
 
 /*
@@ -109,9 +118,10 @@ Java_com_couchbase_litecore_C4QueryEnumerator_close(JNIEnv *env, jclass clazz, j
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_free(JNIEnv *env, jclass clazz, jlong handle) {
-    if (!handle)
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
         return;
-    c4queryenum_free((C4QueryEnumerator *) handle);
+    c4queryenum_free(e);
 }
 
 /*
@@ -121,9 +131,24 @@ Java_com_couchbase_litecore_C4QueryEnumerator_free(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_getColumns(JNIEnv *env, jclass clazz, jlong handle) {
-    if (!handle)
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
         return 0L;
-    return (jlong) &((C4QueryEnumerator *) handle)->columns;
+    return (jlong) &(e->columns);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4QueryEnumerator
+ * Method:    getMissingColumns
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4QueryEnumerator_getMissingColumns(JNIEnv *env, jclass clazz,
+                                                                jlong handle) {
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
+        return 0L;
+    return (jlong) e->missingColumns;
 }
 
 /*
@@ -134,9 +159,10 @@ Java_com_couchbase_litecore_C4QueryEnumerator_getColumns(JNIEnv *env, jclass cla
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextMatchCount
         (JNIEnv *env, jclass clazz, jlong handle) {
-    if (!handle)
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
         return 0L;
-    return (jlong) ((C4QueryEnumerator *) handle)->fullTextMatchCount;
+    return (jlong) e->fullTextMatchCount;
 }
 /*
  * Class:     com_couchbase_litecore_C4QueryEnumerator
@@ -146,9 +172,9 @@ Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextMatchCount
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4QueryEnumerator_getFullTextMatch
         (JNIEnv *env, jclass clazz, jlong handle, jint jidx) {
-    if (!handle)
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
         return 0L;
-    return (jlong) &(((C4QueryEnumerator *) handle)->fullTextMatches[(int) jidx]);
+    return (jlong) &(e->fullTextMatches[(int) jidx]);
 }
-
 

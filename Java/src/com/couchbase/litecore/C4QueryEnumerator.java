@@ -81,6 +81,10 @@ public class C4QueryEnumerator {
         return new FLArrayIterator(getColumns(_handle));
     }
 
+    public long getMissingColumns() {
+        return getMissingColumns(_handle);
+    }
+
     public long getFullTextMatchCount() {
         return getFullTextMatchCount(_handle);
     }
@@ -115,13 +119,27 @@ public class C4QueryEnumerator {
     static native void free(long handle);
 
     // -- Accessor methods to C4QueryEnumerator --
+    // C4QueryEnumerator
+    // A query result enumerator
+    // Created by c4db_query. Must be freed with c4queryenum_free.
+    // The fields of this struct represent the current matched index row, and are valid until the
+    // next call to c4queryenum_next or c4queryenum_free.
 
-    // C4QueryEnumerator.columns
+    // FLArrayIterator columns
+    // The columns of this result, in the same order as in the query's `WHAT` clause.
     static native long getColumns(long handle);
 
-    // C4QueryEnumerator.fullTextMatchCount
+    // uint64_t missingColumns
+    // A bitmap where a 1 bit represents a column whose value is MISSING.
+    // This is how you tell a missing property value from a value that's JSON 'null',
+    // since the value in the `columns` array will be a Fleece `null` either way.
+    static native long getMissingColumns(long handle);
+
+    // uint32_t fullTextMatchCount
+    // The number of full-text matches (i.e. the number of items in `fullTextMatches`)
     static native long getFullTextMatchCount(long handle);
 
-    // C4QueryEnumerator.fullTextMatches
+    // const C4FullTextMatch *fullTextMatches
+    // Array with details of each full-text match
     static native long getFullTextMatch(long handle, int idx);
 }
