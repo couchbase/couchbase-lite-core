@@ -118,7 +118,7 @@ else()
                             mbedcrypto
                             "atomic"
                         	"log"
-                            z)
+                            zlibstatic)
     if (REST)
         target_link_libraries(LiteCoreJNI 
                             LiteCoreREST_Static)
