@@ -334,14 +334,16 @@ C4LogLevel c4log_binaryFileLevel(void) C4API;
 void c4log_setBinaryFileLevel(C4LogLevel level) C4API;
 
 /** Looks up a named log domain.
-    If `create` is true, the domain will be created if it doesn't exist. */
-C4LogDomain c4log_getDomain(const char *name C4NONNULL, bool create) C4API;
+    @param name  The name of the domain, or NULL for the default domain.
+    @param create  If true, the domain will be created if it doesn't exist.
+    @return  The domain object, or NULL if not found. */
+C4LogDomain c4log_getDomain(const char *name, bool create) C4API;
 
 /** Returns the name of a log domain. (The default domain's name is an empty string.) */
-const char* c4log_getDomainName(C4LogDomain) C4API;
+const char* c4log_getDomainName(C4LogDomain C4NONNULL) C4API;
 
 /** Returns the current log level of a domain, the minimum level of message it will log. */
-C4LogLevel c4log_getLevel(C4LogDomain) C4API;
+C4LogLevel c4log_getLevel(C4LogDomain C4NONNULL) C4API;
 
 /** Changes the level of the given log domain.
     This setting is global to the entire process.
@@ -349,7 +351,7 @@ C4LogLevel c4log_getLevel(C4LogDomain) C4API;
     For example, if you set the Foo domain's level to Verbose, and the current log callback is
     at level Warning while the binary file is at Verbose, then verbose Foo log messages will be
     written to the file but not to the callback. */
-void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
+void c4log_setLevel(C4LogDomain c4Domain C4NONNULL, C4LogLevel level) C4API;
 
 /** Logs a message/warning/error to a specific domain, if its current level is less than
     or equal to the given level. This message will then be written to the current callback and/or
@@ -358,13 +360,13 @@ void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) C4API;
     @param level  The level of the message. If the domain's level is greater than this,
                     nothing will be logged.
     @param fmt  printf-style format string, followed by arguments (if any). */
-void c4log(C4LogDomain domain, C4LogLevel level, const char *fmt C4NONNULL, ...) C4API __printflike(3,4);
+void c4log(C4LogDomain domain C4NONNULL, C4LogLevel level, const char *fmt C4NONNULL, ...) C4API __printflike(3,4);
 
 /** Same as c4log, for use in calling functions that already take variable args. */
-void c4vlog(C4LogDomain domain, C4LogLevel level, const char *fmt C4NONNULL, va_list args) C4API;
+void c4vlog(C4LogDomain domain C4NONNULL, C4LogLevel level, const char *fmt C4NONNULL, va_list args) C4API;
 
 /** Same as c4log, except it accepts preformatted messages as C4Slices */
-void c4slog(C4LogDomain domain, C4LogLevel level, C4String msg) C4API;
+void c4slog(C4LogDomain domain C4NONNULL, C4LogLevel level, C4String msg) C4API;
 
 // Convenient aliases for c4log:
 #define C4LogToAt(DOMAIN, LEVEL, FMT, ...)        \
