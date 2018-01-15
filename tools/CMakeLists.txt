@@ -28,7 +28,7 @@ add_executable(cblite
                Tool.cc
                ArgumentTokenizer.cc)
 
-target_link_libraries(cblite ${LITECORE_LIBRARIES_PRIVATE})
+target_link_libraries(cblite ${LITECORE_LIBRARIES_PRIVATE} LiteCoreREST_Static)
 
 if (APPLE)
     target_link_libraries(cblite

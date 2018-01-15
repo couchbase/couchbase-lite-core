@@ -131,6 +131,7 @@ public:
     string ansiBold()                   {return ansi("1");}
     string ansiDim()                    {return ansi("2");}
     string ansiItalic()                 {return ansi("3");}
+    string ansiUnderline()              {return ansi("4");}
     string ansiReset()                  {return ansi("0");}
 
     string it(const char *str)          {return ansiItalic() + str + ansiReset();}

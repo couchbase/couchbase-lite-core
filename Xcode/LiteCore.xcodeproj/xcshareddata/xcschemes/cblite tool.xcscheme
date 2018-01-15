@@ -83,6 +83,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "serve"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "--body"
             isEnabled = "NO">
          </CommandLineArgument>

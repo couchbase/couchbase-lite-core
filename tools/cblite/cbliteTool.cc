@@ -26,6 +26,7 @@ void CBLiteTool::usage() {
     "       cblite query " << it("[FLAGS] DBPATH JSONQUERY") << "\n"
     "       cblite revs " << it("DBPATH DOCID") << "\n"
     "       cblite sql " << it("DBPATH QUERY") << "\n"
+    "       cblite serve " << it("DBPATH") << "\n"
     "       cblite " << it("DBPATH") << "   (interactive shell)\n"
     "           The shell accepts the same commands listed above, but without the\n"
     "           'cblite' and DBPATH parameters. For example, 'ls -l'.\n"
@@ -51,7 +52,9 @@ int CBLiteTool::run() {
     c4log_setCallbackLevel(kC4LogWarning);
     clearFlags();
     if (argCount() == 0) {
-        cerr << "Missing subcommand or database path.\n"
+        cerr << ansiBold()
+             << "cblite: Couchbase Lite / LiteCore database multi-tool\n" << ansiReset() 
+             << "Missing subcommand or database path.\n"
              << "For a list of subcommands, run " << ansiBold() << "cblite help" << ansiReset() << ".\n"
              << "To start the interactive mode, run "
              << ansiBold() << "cblite " << ansiItalic() << "DBPATH" << ansiReset() << '\n';
@@ -72,7 +75,7 @@ int CBLiteTool::run() {
 
 
 void CBLiteTool::openDatabase(string path) {
-    C4DatabaseConfig config = {kC4DB_SharedKeys | kC4DB_NonObservable | kC4DB_ReadOnly};
+    C4DatabaseConfig config = {_dbFlags};
     C4Error err;
     _db = c4db_open(c4str(path), &config, &err);
     if (!_db)
@@ -162,6 +165,7 @@ const Tool::FlagSpec CBLiteTool::kSubcommands[] = {
     {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
     {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
     {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
+    {"serve",   (FlagHandler)&CBLiteTool::serve},
     {"sql",     (FlagHandler)&CBLiteTool::sqlQuery},
 
     {"shell",   (FlagHandler)&CBLiteTool::shell},
@@ -224,6 +228,15 @@ const Tool::FlagSpec CBLiteTool::kCpFlags[] = {
     {"-x",          (FlagHandler)&CBLiteTool::existingFlag},
     {"--jsonid",    (FlagHandler)&CBLiteTool::jsonIDFlag},
     {"--careful",   (FlagHandler)&CBLiteTool::carefulFlag},
+    {nullptr, nullptr}
+};
+
+const Tool::FlagSpec CBLiteTool::kServeFlags[] = {
+    {"--replicate", (FlagHandler)&CBLiteTool::replicateFlag},
+    {"--readonly",  (FlagHandler)&CBLiteTool::readonlyFlag},
+    {"--port",      (FlagHandler)&CBLiteTool::portFlag},
+    {"--verbose",   (FlagHandler)&CBLiteTool::verboseFlag},
+    {"-v",          (FlagHandler)&CBLiteTool::verboseFlag},
     {nullptr, nullptr}
 };
 

@@ -246,6 +246,8 @@
 		27ADA78B1F2AB6C800D9DE25 /* UnicodeCollator.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27ADA7881F2AB6C800D9DE25 /* UnicodeCollator.hh */; };
 		27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */; };
 		27ADA79C1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */; };
+		27B321B72009615B00C40AD5 /* cbliteTool+serve.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B321B62009615B00C40AD5 /* cbliteTool+serve.cc */; };
+		27B321BE20096E1600C40AD5 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
@@ -695,6 +697,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "LiteCore dylib";
+		};
+		27B321BC20096E1000C40AD5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27FC81E71EAAB0D90028E38E;
+			remoteInfo = "LiteCoreREST static";
 		};
 		27BF02421FB620E5003D5BB8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1173,6 +1182,7 @@
 		27ADA7871F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_Apple.cc; sourceTree = "<group>"; };
 		27ADA7881F2AB6C800D9DE25 /* UnicodeCollator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = UnicodeCollator.hh; sourceTree = "<group>"; };
 		27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator.cc; sourceTree = "<group>"; };
+		27B321B62009615B00C40AD5 /* cbliteTool+serve.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+serve.cc"; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
 		27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteN1QLFunctions.cc; sourceTree = "<group>"; };
@@ -1424,6 +1434,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				272AEC561F560FF600051F0A /* libLiteCore-static.a in Frameworks */,
+				27B321BE20096E1600C40AD5 /* libLiteCoreREST-static.a in Frameworks */,
 				272AEC611F56194A00051F0A /* Security.framework in Frameworks */,
 				272AEC551F560FF600051F0A /* CoreFoundation.framework in Frameworks */,
 				275BF35D1F5F3F920051374A /* libz.tbd in Frameworks */,
@@ -1657,6 +1668,7 @@
 				275BF39B1F6327270051374A /* cbliteTool+ls.cc */,
 				275BF3981F6326910051374A /* cbliteTool+query.cc */,
 				275BF39F1F6328B70051374A /* cbliteTool+revs.cc */,
+				27B321B62009615B00C40AD5 /* cbliteTool+serve.cc */,
 				275BF3A31F632C110051374A /* cbliteTool+sql.cc */,
 			);
 			path = cblite;
@@ -2639,6 +2651,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				27B321BD20096E1000C40AD5 /* PBXTargetDependency */,
 				272AEC4B1F560FF600051F0A /* PBXTargetDependency */,
 			);
 			name = cblite;
@@ -3217,6 +3230,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27D416E91FE31F7D00008197 /* DBEndpoint.cc in Sources */,
+				27B321B72009615B00C40AD5 /* cbliteTool+serve.cc in Sources */,
 				275BF3A01F6328B70051374A /* cbliteTool+revs.cc in Sources */,
 				722AA64C20005E3500261887 /* ArgumentTokenizer.cc in Sources */,
 				722AA64D20005E5A00261887 /* Tool.cc in Sources */,
@@ -3727,6 +3741,11 @@
 			isa = PBXTargetDependency;
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 279D41211EA557DB00D8DD9D /* PBXContainerItemProxy */;
+		};
+		27B321BD20096E1000C40AD5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27FC81E71EAAB0D90028E38E /* LiteCoreREST static */;
+			targetProxy = 27B321BC20096E1000C40AD5 /* PBXContainerItemProxy */;
 		};
 		27BF02431FB620E5003D5BB8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

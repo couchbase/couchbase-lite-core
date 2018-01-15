@@ -73,6 +73,13 @@ private:
     void revsUsage();
     void revsInfo();
 
+    // serve command
+    void serveUsage();
+    void serve();
+    void startListener();
+    void shareDatabase(const char *path, string name);
+    void shareDatabaseDir(const char *dirPath);
+
     // sql command
     void sqlUsage();
     void sqlQuery();
@@ -150,7 +157,10 @@ private:
     void existingFlag()  {_createDst = false;}
     void carefulFlag()   {_failOnError = true;}
     void jsonIDFlag()    {_jsonIDProperty = nextArg("JSON-id property");}
-
+    void replicateFlag() {_listenerConfig.apis |= kC4SyncAPI;}
+    void readonlyFlag()  {_dbFlags = (_dbFlags | kC4DB_ReadOnly) & ~kC4DB_Create;}
+    void portFlag()      {_listenerConfig.port = stoul(nextArg("port"));}
+    void verboseFlag()   {_verbose++;}
 
     static const FlagSpec kSubcommands[];
     static const FlagSpec kInteractiveSubcommands[];
@@ -158,10 +168,13 @@ private:
     static const FlagSpec kCpFlags[];
     static const FlagSpec kListFlags[];
     static const FlagSpec kQueryFlags[];
+    static const FlagSpec kServeFlags[];
 
     string _currentCommand;
+    C4DatabaseFlags _dbFlags {kC4DB_SharedKeys | kC4DB_NonObservable | kC4DB_ReadOnly};
     C4Database* _db {nullptr};
     bool _interactive {false};
+    int _verbose {0};
     uint64_t _offset {0};
     int64_t _limit {-1};
     alloc_slice _startKey, _endKey;
@@ -175,4 +188,7 @@ private:
     bool _showHelp {false};
     bool _createDst {true};
     alloc_slice _jsonIDProperty;
+
+    C4Listener* _listener {nullptr};
+    C4ListenerConfig _listenerConfig {};  // all false/0
 };
