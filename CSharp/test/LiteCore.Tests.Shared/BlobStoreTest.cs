@@ -168,7 +168,10 @@ namespace LiteCore.Tests
                 LiteCoreBridge.Check(err => {
                     return Native.c4blob_create(_store, blobToStore, null, localKey, err);
                 });
-                key.Equals(key2).Should().BeTrue("because the two keys are for the same attachment");
+
+                for (int i = 0; i < C4BlobKey.Size; i++) {
+                    key.bytes[i].Should().Be(key2.bytes[i]);
+                }
             });
         }
 

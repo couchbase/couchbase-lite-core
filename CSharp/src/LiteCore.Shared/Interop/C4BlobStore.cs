@@ -34,7 +34,8 @@ namespace LiteCore.Interop
         private const int _Size = 20;
         // ReSharper restore InconsistentNaming
         
-        public override int GetHashCode()
+        // NOTE: The below produces IL that is not understandable by Mono
+        /*public override int GetHashCode()
         {
             var hasher = Hasher.Start;
             fixed (byte* b = bytes) {
@@ -62,7 +63,7 @@ namespace LiteCore.Interop
             }
 
             return true;
-        }
+        }*/
     }
 
 #if LITECORE_PACKAGED

@@ -308,19 +308,23 @@ namespace LiteCore.Tests
                 Native.c4db_getLastSequence(Db).Should().Be(0, "because the database is empty");
                 var publicID = new C4UUID();
                 var privateID = new C4UUID();
-                LiteCoreBridge.Check(err => {
-                    var publicID_ = publicID;
-                    var privateID_ = privateID;
-                    var retVal = Native.c4db_getUUIDs(Db, &publicID_, &privateID_, err);
-                    publicID = publicID_;
-                    privateID = privateID_;
-                    return retVal;
-                });
-
-                // Odd quirk of C# means we need an additional copy
+                C4Error err;
+                var uuidSuccess = Native.c4db_getUUIDs(Db, &publicID, &privateID, &err);
+                if (!uuidSuccess) {
+                    throw new LiteCoreException(err);
+                }
+                
                 var p1 = publicID;
                 var p2 = privateID;
-                publicID.Should().NotBe(privateID, "because public UUID and private UUID should differ");
+                var match = true;
+                for (int i = 0; i < C4UUID.Size; i++) {
+                    if (publicID.bytes[i] != privateID.bytes[i]) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                match.Should().BeFalse("because public UUID and private UUID should differ");
                 (p1.bytes[6] & 0xF0).Should().Be(0x40, "because otherwise the UUID is non-conformant");
                 (p1.bytes[8] & 0xC0).Should().Be(0x80, "because otherwise the UUID is non-conformant");
                 (p2.bytes[6] & 0xF0).Should().Be(0x40, "because otherwise the UUID is non-conformant");
@@ -330,17 +334,15 @@ namespace LiteCore.Tests
                 ReopenDB();
                 var publicID2 = new C4UUID();
                 var privateID2 = new C4UUID();
-                LiteCoreBridge.Check(err => {
-                    var publicID_ = publicID2;
-                    var privateID_ = privateID2;
-                    var retVal = Native.c4db_getUUIDs(Db, &publicID_, &privateID_, err);
-                    publicID2 = publicID_;
-                    privateID2 = privateID_;
-                    return retVal;
-                });
+                uuidSuccess = Native.c4db_getUUIDs(Db, &publicID2, &privateID2, &err);
+                if (!uuidSuccess) {
+                    throw new LiteCoreException(err);
+                }
 
-                publicID2.Should().Be(publicID, "because the public UUID should persist");
-                privateID2.Should().Be(privateID, "because the private UUID should persist");
+                for (int i = 0; i < C4UUID.Size; i++) {
+                    publicID2.bytes[i].Should().Be(publicID.bytes[i]);
+                    privateID2.bytes[i].Should().Be(privateID.bytes[i]);
+                }
             });
         }
 
