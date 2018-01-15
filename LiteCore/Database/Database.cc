@@ -159,9 +159,12 @@ namespace c4Internal {
             if (doc.bodyAsUInt() != (uint64_t)config.versioning)
                 error::_throw(error::WrongFormat);
         } else if (config.flags & kC4DB_Create) {
+            // First-time initialization:
             doc.setBodyAsUInt((uint64_t)config.versioning);
             Transaction t(*_db);
             info.write(doc, t);
+            (void)generateUUID(kPublicUUIDKey, t);
+            (void)generateUUID(kPrivateUUIDKey, t);
             t.commit();
         } else if (config.versioning != kC4RevisionTrees) {
             error::_throw(error::WrongFormat);
@@ -374,51 +377,54 @@ namespace c4Internal {
     }
 
 
+#pragma mark - UUIDS:
 
-    Database::UUID Database::getUUID(slice key) {
+
+    bool Database::getUUIDIfExists(slice key, UUID &uuid) {
         auto &store = getKeyStore((string)kC4InfoStore);
         Record r = store.get(key);
-        if (r.exists())
-            return *(UUID*)r.body().buf;
+        if (!r.exists() || r.body().size < sizeof(UUID))
+            return false;
+        uuid = *(UUID*)r.body().buf;
+        return true;
+    }
 
+    // must be called within a transaction
+    Database::UUID Database::generateUUID(slice key, Transaction &t, bool overwrite) {
         UUID uuid;
-        beginTransaction();
-        try {
-            Record r2 = store.get(key);
-            if (r2.exists()) {
-                uuid = *(UUID*)r2.body().buf;
-            } else {
-                // Create the UUIDs:
-                if (config.flags & kC4DB_ReadOnly)
-                    error::_throw(error::NotWriteable,
-                                  "DB has no UUIDs yet, and can't add them while opened read-only");
-                slice uuidSlice{&uuid, sizeof(uuid)};
-                GenerateUUID(uuidSlice);
-                store.set(key, uuidSlice, transaction());
-            }
-        } catch (...) {
-            endTransaction(false);
-            throw;
+        if (overwrite || !getUUIDIfExists(key, uuid)) {
+            auto &store = getKeyStore((string)kC4InfoStore);
+            slice uuidSlice{&uuid, sizeof(uuid)};
+            GenerateUUID(uuidSlice);
+            store.set(key, uuidSlice, t);
         }
-        endTransaction(true);
+        return uuid;
+    }
+
+    Database::UUID Database::getUUID(slice key) {
+        UUID uuid;
+        if (!getUUIDIfExists(key, uuid)) {
+            beginTransaction();
+            try {
+                uuid = generateUUID(key, transaction());
+            } catch (...) {
+                endTransaction(false);
+                throw;
+            }
+            endTransaction(true);
+        }
         return uuid;
     }
     
     void Database::resetUUIDs() {
-        auto &store = getKeyStore((string)kC4InfoStore);
         beginTransaction();
         try {
-            UUID uuid;
-            slice uuidSlice{&uuid, sizeof(uuid)};
-            GenerateUUID(uuidSlice);
-            store.set(kPublicUUIDKey, uuidSlice, transaction());
-            GenerateUUID(uuidSlice);
-            store.set(kPrivateUUIDKey, uuidSlice, transaction());
+            generateUUID(kPublicUUIDKey, transaction(), true);
+            generateUUID(kPrivateUUIDKey, transaction(), true);
         } catch (...) {
             endTransaction(false);
             throw;
         }
-        
         endTransaction(true);
     }
     

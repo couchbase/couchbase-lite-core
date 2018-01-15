@@ -99,7 +99,7 @@
 
 namespace litecore {
 
-    static const size_t SizeOfUUID = 32;
+    static const size_t SizeOfUUID = 16;
     void GenerateUUID(fleece::slice);
 
 }

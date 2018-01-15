@@ -163,7 +163,7 @@ extern "C" {
     void c4db_setMaxRevTreeDepth(C4Database *database C4NONNULL, uint32_t maxRevTreeDepth) C4API;
 
     typedef struct {
-        uint8_t bytes[32];
+        uint8_t bytes[16];
     } C4UUID;
 
     /** Returns the database's public and/or private UUIDs. (Pass NULL for ones you don't want.) */

@@ -153,6 +153,7 @@ public:
     C4Database* createDatabase(const std::string &nameSuffix);
 
     void reopenDB();
+    void reopenDBReadOnly();
     void deleteDatabase();
     void deleteAndRecreateDB()                  {deleteAndRecreateDB(db);}
     static void deleteAndRecreateDB(C4Database*&);

@@ -98,6 +98,15 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Info", "[Database][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Read-Only UUIDs", "[Database][C]") {
+    // Make sure UUIDs are available even if the db is opened read-only when they're first accessed.
+    reopenDBReadOnly();
+    C4Error err;
+    C4UUID publicUUID, privateUUID;
+    REQUIRE(c4db_getUUIDs(db, &publicUUID, &privateUUID, &err));
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database OpenBundle", "[Database][C][!throws]") {
     auto config = *c4db_getConfig(db);
 

@@ -70,6 +70,8 @@ namespace c4 {
         sliceResult& operator= (const sliceResult&) =delete;
     };
 
+    using stringResult = sliceResult;
+
 
     /** Manages a transaction safely. The begin() method calls c4db_beginTransaction, then commit()
         or abort() end it. If the Transaction object exits scope when it's been begun but not yet

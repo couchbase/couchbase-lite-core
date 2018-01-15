@@ -51,7 +51,7 @@ namespace c4Internal {
         void setMaxRevTreeDepth(uint32_t depth);
 
         struct UUID {
-            uint8_t bytes[32];
+            uint8_t bytes[16];
         };
         static const slice kPublicUUIDKey;
         static const slice kPrivateUUIDKey;
@@ -119,7 +119,9 @@ namespace c4Internal {
                                            C4StorageEngine &outStorageEngine);
         static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
         void _cleanupTransaction(bool committed);
-        
+        bool getUUIDIfExists(slice key, UUID&);
+        UUID generateUUID(slice key, Transaction&, bool overwrite =false);
+
         std::unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey);
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);

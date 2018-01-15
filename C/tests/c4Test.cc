@@ -287,6 +287,18 @@ void C4Test::reopenDB() {
 }
 
 
+void C4Test::reopenDBReadOnly() {
+    auto config = *c4db_getConfig(db);
+    C4Error error;
+    REQUIRE(c4db_close(db, &error));
+    c4db_free(db);
+    db = nullptr;
+    config.flags = (config.flags & ~kC4DB_Create) | kC4DB_ReadOnly;
+    db = c4db_open(databasePath(), &config, &error);
+    REQUIRE(db);
+}
+
+
 void C4Test::deleteAndRecreateDB(C4Database* &db) {
     C4SliceResult path = c4db_getPath(db);
     auto config = *c4db_getConfig(db);
