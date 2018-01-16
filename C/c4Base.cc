@@ -353,7 +353,7 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
 
 
 int c4_getObjectCount() noexcept {
-    return gC4InstanceCount;
+    return gC4InstanceCount + websocket::WebSocket::gInstanceCount;
 }
 
 // LCOV_EXCL_START

@@ -78,7 +78,11 @@ extern "C" {
 
         // Only called if providesWebSockets is true:
         void (*requestClose)(C4Socket* C4NONNULL, int status, C4String message);
-    } C4SocketFactory;
+
+        /** Called to tell the client to dispose any state associated with the `nativeHandle`.
+            Set this to NULL if you don't need the call. */
+        void (*dispose)(C4Socket* C4NONNULL);
+} C4SocketFactory;
 
 
     /** One-time registration of socket callbacks. Must be called before using any socket-based

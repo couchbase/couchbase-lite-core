@@ -81,6 +81,11 @@ namespace litecore { namespace websocket {
             nativeHandle = nativeHandle_;
         }
 
+        ~C4SocketImpl() {
+            if (factory.dispose)
+                factory.dispose(this);
+        }
+
 
         void connect() override {    // called by base class's connect(Address)
             if (!nativeHandle)
@@ -232,7 +237,6 @@ void c4socket_closed(C4Socket *socket, C4Error error) C4API {
     else if (error.domain == NetworkDomain)
         status.reason = kNetworkError;
 
-    socket->nativeHandle = nullptr;
     internal(socket)->onClose(status);
 }
 
