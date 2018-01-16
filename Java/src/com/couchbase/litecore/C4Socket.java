@@ -34,6 +34,7 @@ public abstract class C4Socket {
     public static final String kC4ReplicatorOptionFilterParams = "filterParams";  // Filter params; Dict[string]
     public static final String kC4ReplicatorOptionSkipDeleted = "skipDeleted"; // Don't push/pull tombstones; bool
     public static final String kC4ReplicatorOptionNoConflicts = "noConflicts"; // Puller rejects conflicts; bool
+    public static final String kC4SocketOptionWSProtocols = "WS-Protocols"; // litecore::websocket::Provider::kProtocolsOption
 
     // Auth dictionary keys:
     public static final String kC4ReplicatorAuthType = "type";// Auth property; string
