@@ -88,7 +88,7 @@ namespace litecore { namespace blip {
         using RequestHandlers = map<HandlerKey, Connection::RequestHandler>;
 
         Retained<Connection>    _connection;
-        WebSocket*              _webSocket;
+        Retained<WebSocket>     _webSocket;
         bool                    _closingWithError {false};
         MessageQueue            _outbox;
         MessageQueue            _icebox;

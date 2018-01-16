@@ -9,7 +9,9 @@
 #pragma once
 #include "Address.hh"
 #include "FleeceCpp.hh"
+#include "RefCounted.hh"
 #include <assert.h>
+#include <atomic>
 #include <map>
 #include <string>
 
@@ -87,10 +89,8 @@ namespace litecore { namespace websocket {
 
 
     /** Abstract class representing a WebSocket connection. */
-    class WebSocket {
+    class WebSocket : public RefCounted {
     public:
-        virtual ~WebSocket() { }
-
         Provider& provider() const                  {return _provider;}
         const Address& address() const              {return _address;}
         Delegate& delegate() const                  {assert(_delegate); return *_delegate;}
@@ -108,10 +108,14 @@ namespace litecore { namespace websocket {
         /** Closes the WebSocket. Callable from any thread. */
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) =0;
 
+        /** The number of WebSocket instances in memory; for leak checking */
+        static std::atomic_int gInstanceCount;
+
     protected:
         friend class Provider;
 
         WebSocket(Provider&, const Address&);
+        virtual ~WebSocket();
 
         /** Called by the public connect(Delegate*) method. This should open the WebSocket. */
         virtual void connect() =0;
@@ -151,7 +155,13 @@ namespace litecore { namespace websocket {
     inline WebSocket::WebSocket(Provider &p, const Address &a)
     :_address(a)
     ,_provider(p)
-    { }
+    {
+        ++gInstanceCount;
+    }
+
+    inline WebSocket::~WebSocket() {
+        --gInstanceCount;
+    }
 
     inline void WebSocket::connect(Delegate *delegate) {
         assert(!_delegate);

@@ -32,7 +32,6 @@ namespace litecore { namespace websocket {
     public:
         WebSocketImpl(ProviderImpl&, const Address&,
                       const fleeceapi::AllocedDict &options, bool framing);
-        virtual ~WebSocketImpl();
 
         virtual bool send(fleece::slice message, bool binary =true) override;
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) override;
@@ -49,6 +48,7 @@ namespace litecore { namespace websocket {
         const fleeceapi::AllocedDict& options() const   {return _options;}
 
     protected:
+        virtual ~WebSocketImpl();
         virtual std::string loggingIdentifier() const override;
         virtual void connect() override;
 

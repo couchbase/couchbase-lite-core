@@ -75,6 +75,10 @@ namespace litecore { namespace websocket {
 
     LogDomain WSLogDomain("WS");
 
+#if DEBUG
+    std::atomic_int WebSocket::gInstanceCount;
+#endif
+
 
     WebSocketImpl::WebSocketImpl(ProviderImpl &provider, const Address &address,
                                  const fleeceapi::AllocedDict &options, bool framing)

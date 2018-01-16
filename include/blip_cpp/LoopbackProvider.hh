@@ -20,87 +20,115 @@ namespace litecore { namespace websocket {
 
     /** A WebSocket connection that relays messages to another instance of LoopbackWebSocket. */
     class LoopbackWebSocket : public MockWebSocket {
+    protected:
+        class Driver;
+        actor::delay_t _latency;
+
     public:
+        LoopbackWebSocket(Provider &provider, const Address &address, actor::delay_t latency)
+        :MockWebSocket(provider, address)
+        ,_latency(latency)
+        { }
+
+        virtual MockWebSocket::Driver* createDriver() override {
+            return new Driver(this, _latency);
+        }
+
+        LoopbackWebSocket::Driver* driver() const {
+            return (Driver*)_driver.get();
+        }
+
+        void bind(LoopbackWebSocket *peer, const fleeceapi::AllocedDict &responseHeaders) {
+            Assert(!_driver);
+            _driver = createDriver();
+            driver()->bind(peer, responseHeaders);
+        }
+
         virtual void connect() override {
-            assert(_peer);
+            assert(driver()->_peer);
             MockWebSocket::connect();
         }
 
         virtual bool send(fleece::slice msg, bool binary) override {
-            auto newValue = (_bufferedBytes += msg.size);
+            auto newValue = (driver()->_bufferedBytes += msg.size);
             MockWebSocket::send(msg, binary);
             return newValue <= kSendBufferSize;
         }
 
         virtual void ack(size_t msgSize) {
-            enqueue(&LoopbackWebSocket::_ack, msgSize);
+            driver()->enqueue(&Driver::_ack, msgSize);
         }
 
     protected:
-        friend class LoopbackProvider;
 
-        LoopbackWebSocket(MockProvider &provider, const Address &address, actor::delay_t latency)
-        :MockWebSocket(provider, address)
-        ,_latency(latency)
-        { }
+        class Driver : public MockWebSocket::Driver {
+        public:
 
-        void bind(LoopbackWebSocket *peer, const fleeceapi::AllocedDict &responseHeaders) {
-            // Called by LoopbackProvider::bind, which is called before my connect() method,
-            // so it's safe to set the member variables directly instead of on the actor queue.
-            _peer = peer;
-            _responseHeaders = responseHeaders;
-        }
+            Driver(LoopbackWebSocket *ws, actor::delay_t latency)
+            :MockWebSocket::Driver(ws)
+            ,_latency(latency)
+            { }
 
-        virtual void _connect() override {
-            _simulateHTTPResponse(200, _responseHeaders);
-            MockWebSocket::_connect();
-        }
-
-        virtual void _send(fleece::alloc_slice msg, bool binary) override {
-            if (_peer) {
-                LogDebug(WSMock, "%s SEND: %s", name.c_str(), formatMsg(msg, binary).c_str());
-                _peer->simulateReceived(msg, binary, _latency);
-            } else {
-                LogTo(WSMock, "%s SEND: Failed, socket is closed", name.c_str());
+            void bind(LoopbackWebSocket *peer, const fleeceapi::AllocedDict &responseHeaders) {
+                // Called by LoopbackProvider::bind, which is called before my connect() method,
+                // so it's safe to set the member variables directly instead of on the actor queue.
+                _peer = peer;
+                _responseHeaders = responseHeaders;
             }
-        }
 
-        virtual void _simulateReceived(fleece::alloc_slice msg, bool binary) override {
-            if (!connected())
-                return;
-            MockWebSocket::_simulateReceived(msg, binary);
-            _peer->ack(msg.size);
-        }
-
-        virtual void _ack(size_t msgSize) {
-            if (!connected())
-                return;
-            auto newValue = (_bufferedBytes -= msgSize);
-            if (newValue <= kSendBufferSize && newValue + msgSize > kSendBufferSize) {
-                LogVerbose(WSMock, "%s WRITEABLE", name.c_str());
-                delegate().onWebSocketWriteable();
+            virtual void _connect() override {
+                _simulateHTTPResponse(200, _responseHeaders);
+                MockWebSocket::Driver::_connect();
             }
-        }
 
-        virtual void _close(int status, fleece::alloc_slice message) override {
-            std::string messageStr(message);
-            LogTo(WSMock, "%s CLOSE; status=%d", name.c_str(), status);
-            if (_peer)
-                _peer->simulateClosed(kWebSocketClose, status, messageStr.c_str(), _latency);
-            MockWebSocket::_close(status, message);
-        }
+            virtual void _send(fleece::alloc_slice msg, bool binary) override {
+                if (_peer) {
+                    LogDebug(WSMock, "%s SEND: %s", name().c_str(), formatMsg(msg, binary).c_str());
+                    _peer->simulateReceived(msg, binary, _latency);
+                } else {
+                    LogTo(WSMock, "%s SEND: Failed, socket is closed", name().c_str());
+                }
+            }
 
-        virtual void _closed() override {
-            LogTo(WSMock, "%s _closed()", name.c_str());
-            _peer = nullptr;
-            MockWebSocket::_closed();
-        }
+            virtual void _simulateReceived(fleece::alloc_slice msg, bool binary) override {
+                if (!connected())
+                    return;
+                MockWebSocket::Driver::_simulateReceived(msg, binary);
+                _peer->ack(msg.size);
+            }
 
-    private:
-        actor::delay_t _latency {0.0};
-        Retained<LoopbackWebSocket> _peer;
-        fleeceapi::AllocedDict _responseHeaders;
-        std::atomic<size_t> _bufferedBytes {0};
+            virtual void _ack(size_t msgSize) {
+                if (!connected())
+                    return;
+                auto newValue = (_bufferedBytes -= msgSize);
+                if (newValue <= kSendBufferSize && newValue + msgSize > kSendBufferSize) {
+                    LogVerbose(WSMock, "%s WRITEABLE", name().c_str());
+                    _webSocket->delegate().onWebSocketWriteable();
+                }
+            }
+
+            virtual void _close(int status, fleece::alloc_slice message) override {
+                std::string messageStr(message);
+                LogTo(WSMock, "%s CLOSE; status=%d", name().c_str(), status);
+                if (_peer)
+                    _peer->simulateClosed(kWebSocketClose, status, messageStr.c_str(), _latency);
+                MockWebSocket::Driver::_close(status, message);
+            }
+
+            virtual void _closed() override {
+                LogTo(WSMock, "%s _closed()", name().c_str());
+                _peer = nullptr;
+                MockWebSocket::Driver::_closed();
+            }
+
+        private:
+            friend class LoopbackWebSocket;
+
+            actor::delay_t _latency {0.0};
+            Retained<LoopbackWebSocket> _peer;
+            fleeceapi::AllocedDict _responseHeaders;
+            std::atomic<size_t> _bufferedBytes {0};
+        };
     };
 
 
