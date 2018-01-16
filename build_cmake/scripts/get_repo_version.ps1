@@ -9,9 +9,9 @@ Param(
 $Official="false"
 if((Test-Path env:BLD_NUM) -And (Test-Path env:VERSION)) {
   $GitBranch=""
-  $GitCommit=$VERSION
+  $GitCommit=$env:VERSION
   $GitDirty=""
-  $BuildNum=$BLD_NUM
+  $BuildNum=$env:BLD_NUM
   $Official="true"
 } else {
   $GitBranch = Invoke-Expression '& $gitPath rev-parse --symbolic-full-name HEAD | ForEach-Object { $_ -replace "refs/heads/","" }'
