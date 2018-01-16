@@ -21,4 +21,4 @@
 	url = https://github.com/arangodb/linenoise-ng
 [submodule "vendor/mbedtls"]
 	path = vendor/mbedtls
-	url = https://github.com/ARMmbed/mbedtls/
+	url = https://github.com/ARMmbed/mbedtls.git
