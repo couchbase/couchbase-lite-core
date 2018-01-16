@@ -631,7 +631,7 @@ namespace litecore { namespace blip {
     void Connection::send(MessageOut *msg) {
         if (_compressionLevel == 0)
             msg->dontCompress();
-        if (BLIPMessagesLog.willLog(LogLevel::Info)) {
+        if (BLIPMessagesLog.effectiveLevel() <= LogLevel::Info) {
             stringstream dump;
             bool withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
             msg->dump(dump, withBody);

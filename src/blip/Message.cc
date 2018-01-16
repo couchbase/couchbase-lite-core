@@ -62,28 +62,30 @@ namespace litecore { namespace blip {
         if (_flags & kUrgent)  out << 'U';
         if (_flags & kNoReply)  out << 'N';
         if (_flags & kCompressed)  out << 'Z';
-        out << " {";
 
-        auto key = (const char*)payload.buf;
-        auto end = (const char*)payload.end();
-        while (key < end) {
-            auto endOfKey = key + strlen(key);
-            auto val = endOfKey + 1;
-            if (val >= end)
-                break;  // illegal: missing value
-            auto endOfVal = val + strlen(val);
+        if (type() != kAckRequestType && type() != kAckResponseType) {
+            out << " {";
+            auto key = (const char*)payload.buf;
+            auto end = (const char*)payload.end();
+            while (key < end) {
+                auto endOfKey = key + strlen(key);
+                auto val = endOfKey + 1;
+                if (val >= end)
+                    break;  // illegal: missing value
+                auto endOfVal = val + strlen(val);
 
-            out << "\n\t";
-            dumpSlice(out, {key, endOfKey});
-            out << ": ";
-            dumpSlice(out, {val, endOfVal});
-            key = endOfVal + 1;
+                out << "\n\t";
+                dumpSlice(out, {key, endOfKey});
+                out << ": ";
+                dumpSlice(out, {val, endOfVal});
+                key = endOfVal + 1;
+            }
+            if (body.size > 0) {
+                out << "\n\tBODY: ";
+                dumpSlice(out, body);
+            }
+            out << " }";
         }
-        if (body.size > 0) {
-            out << "\n\tBODY: ";
-            dumpSlice(out, body);
-        }
-        out << " }";
     }
 
 
