@@ -368,10 +368,11 @@ namespace litecore { namespace repl {
         C4Error err;
         auto blob = readBlobFromRequest(req, digest, &err);
         if (blob) {
-            log("Sending attachment %.*s", SPLAT(digest));
             increment(_blobsInFlight);
             MessageBuilder reply(req);
             reply.compressed = req->boolProperty("compress"_sl);
+            log("Sending attachment %.*s (length=%lld, compress=%d)",
+                SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
             reply.dataSource = [this,blob](void *buf, size_t capacity) {
                 // Callback to read bytes from the blob into the BLIP message:
                 // For performance reasons this is NOT run on my actor thread, so it can't access

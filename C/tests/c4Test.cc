@@ -393,7 +393,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     json << "{attached: [";
     for (string &attachment : attachments) {
         C4BlobKey key;
-        REQUIRE(c4blob_create(c4db_getBlobStore(db, nullptr), c4str(attachment.c_str()),
+        REQUIRE(c4blob_create(c4db_getBlobStore(db, nullptr), fleece::slice(attachment),
                               nullptr, &key,  &c4err));
         keys.push_back(key);
         C4SliceResult keyStr = c4blob_keyToString(key);
@@ -430,7 +430,7 @@ void C4Test::checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expect
 
 void C4Test::checkAttachments(C4Database *inDB, vector<C4BlobKey> blobKeys, vector<string> expectedData) {
     for (unsigned i = 0; i < blobKeys.size(); ++i)
-        checkAttachment(inDB, blobKeys[i], c4str(expectedData[i].c_str()));
+        checkAttachment(inDB, blobKeys[i], fleece::slice(expectedData[i]));
 }
 
 #pragma mark - FILE IMPORT:

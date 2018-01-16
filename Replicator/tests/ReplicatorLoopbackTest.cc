@@ -405,6 +405,25 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blob]") {
+    // Test case for issue #354
+    slice image = readFile(sFixturesDir + "for#354.jpg");
+    vector<string> attachments = {string((const char*)image.buf, image.size)};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        // Use type text/plain so the replicator will try to compress the attachment
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        _expectedDocumentCount = 1;
+    }
+    runPushReplication();
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":1}");
+
+    checkAttachments(db2, blobKeys, attachments);
+}
+
+
 #pragma mark - FILTERS & VALIDATION:
 
 
