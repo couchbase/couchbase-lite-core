@@ -132,7 +132,7 @@ include_directories("vendor/fleece/Fleece"
                     "vendor/mbedtls/include")
                     
 if(BUILD_ENTERPRISE)
-    include_directories("vendor/sqlcipher/src/headers")
+    include_directories("vendor/sqlcipher/libs/include")
 else()
     include_directories("vendor/SQLiteCpp/sqlite3")
 endif()
@@ -152,7 +152,13 @@ add_subdirectory(REST)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/BLIP-Cpp            EXCLUDE_FROM_ALL)
-add_subdirectory(vendor/sqlcipher           EXCLUDE_FROM_ALL)
+
+if(BUILD_ENTERPRISE)
+    add_subdirectory(vendor/sqlcipher           EXCLUDE_FROM_ALL)
+else()
+    add_subdirectory(vendor/SQLiteCpp/sqlite3   EXCLUDE_FROM_ALL)
+    add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
+endif()
 
 ### MORE BUILD SETTINGS:
 
@@ -288,7 +294,7 @@ set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
 if(BUILD_ENTERPRISE)
     set(LITECORE_LIBRARIES_PRIVATE ${LITECORE_LIBRARIES_PRIVATE} sqlcipher)
 else()
-    set(LITECORE_LIBRARIES_PRIVATE ${LITECORE_LIBRARIES_PRIVATE} sqlite)
+    set(LITECORE_LIBRARIES_PRIVATE ${LITECORE_LIBRARIES_PRIVATE} sqlite3)
 endif()
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
