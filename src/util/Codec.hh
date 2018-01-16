@@ -75,7 +75,7 @@ namespace litecore { namespace blip {
         { }
 
         void _write(const char *operation, slice &input, slice &output,
-                   Mode, size_t maxInput);
+                   Mode, size_t maxInput =SIZE_MAX);
         void check(int) const;
 
         ::z_stream _z { };
@@ -97,6 +97,9 @@ namespace litecore { namespace blip {
 
         void write(slice &input, slice &output, Mode =Mode::Default) override;
         unsigned unflushedBytes() const override;
+
+    private:
+        void _writeAndFlush(slice &input, slice &output);
     };
 
 

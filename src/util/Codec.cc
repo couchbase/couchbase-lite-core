@@ -135,27 +135,10 @@ namespace litecore { namespace blip {
         size_t origOutputSize = output.size;
         log("Compressing %zu bytes into %zu-byte buf", input.size, origOutputSize);
 
-        if (mode == Mode::NoFlush) {
-            _write("deflate", input, output, mode, input.size);
-        } else {
-            // If we try to write all of the input, and there isn't room in the output, the zlib
-            // codec might end up with buffered data that hasn't been output yet (even though we
-            // told it to flush.) To work around this, write the data gradually and stop before
-            // the output fills up.
-            Mode curMode = Mode::PartialFlush;
-            while (input.size > 0) {
-                if (output.size >= deflateBound(&_z, (unsigned)input.size))
-                    curMode = mode;      // It's safe to flush, we know we have room to
-                _write("deflate", input, output, curMode,
-                       output.size);     // limit max amount of input to consume
-                if (output.size < 1024)
-                    break;
-            }
-
-            if (curMode != mode && output.size > 0) {
-                // Flush if we haven't yet:
-                _write("deflate", input, output, mode, 0);
-            }
+        switch (mode) {
+            case Mode::NoFlush:     _write("deflate", input, output, mode); break;
+            case Mode::SyncFlush:   _writeAndFlush(input, output); break;
+            default:                error::_throw(error::InvalidParameter);
         }
 
         if (kZlibRawDeflate)
@@ -163,7 +146,39 @@ namespace litecore { namespace blip {
 
         log("    compressed %zu bytes to %zu (%.0f%%), %u unflushed",
             (origInput.size-input.size), (origOutputSize-output.size),
-            (origOutputSize-output.size) * 100.0 / (origInput.size-input.size), unflushedBytes());
+            (origOutputSize-output.size) * 100.0 / (origInput.size-input.size),
+            unflushedBytes());
+    }
+
+
+    void Deflater::_writeAndFlush(slice &input, slice &output) {
+        // If we try to write all of the input, and there isn't room in the output, the zlib
+        // codec might end up with buffered data that hasn't been output yet (even though we
+        // told it to flush.) To work around this, write the data gradually and stop before
+        // the output fills up.
+        static constexpr size_t kHeadroomForFlush = 11;
+        static constexpr size_t kStopAtOutputSize = 100;
+
+        Mode curMode = Mode::PartialFlush;
+        while (input.size > 0) {
+            if (output.size >= deflateBound(&_z, (unsigned)input.size)) {
+                // Entire input is guaranteed to fit, so write it & flush:
+                curMode = Mode::SyncFlush;
+                _write("deflate", input, output, Mode::SyncFlush);
+            } else {
+                // Limit input size to what we know can be compressed into output.
+                // Don't flush, because we may try to write again if there's still room.
+                _write("deflate", input, output, curMode, output.size - kHeadroomForFlush);
+            }
+            if (output.size <= kStopAtOutputSize)
+                break;
+        }
+
+        if (curMode != Mode::SyncFlush || unflushedBytes()) {
+            assert(curMode!=Mode::SyncFlush);//TEMP
+            // Flush if we haven't yet (consuming no input):
+            _write("deflate", input, output, Mode::SyncFlush, 0);
+        }
     }
 
 
@@ -196,11 +211,11 @@ namespace litecore { namespace blip {
 
         log("Decompressing %zu bytes into %zu-byte buf", input.size, output.size);
         auto outStart = (uint8_t*)output.buf;
-        _write("inflate", input, output, mode, input.size);
+        _write("inflate", input, output, mode);
         if (kZlibRawDeflate)
             addToChecksum({outStart, output.buf});
 
-        logVerbose("    decompressed %ld bytes: %.*s",
+        logDebug("    decompressed %ld bytes: %.*s",
                    (long)((uint8_t*)output.buf - outStart),
                    (int)((uint8_t*)output.buf - outStart), outStart);
     }

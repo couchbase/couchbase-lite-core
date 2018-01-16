@@ -19,7 +19,7 @@ using namespace fleece;
 
 namespace litecore { namespace blip {
 
-    static const size_t kDataBufferSize = 4096;
+    static const size_t kDataBufferSize = 16384;
 
     MessageOut::MessageOut(Connection *connection,
                            FrameFlags flags,
@@ -88,7 +88,6 @@ namespace litecore { namespace blip {
         } else {
             state = MessageProgress::kAwaitingReply;
         }
-        LogVerbose(BLIPLog, "   Compressed %u bytes", (unsigned)_uncompressedBytesSent);//TEMP
         sendProgress(state, _uncompressedBytesSent, 0, nullptr);
     }
 
@@ -139,16 +138,17 @@ namespace litecore { namespace blip {
 
     // Returns the next message-body data to send (as a slice _reference_)
     slice& MessageOut::Contents::dataToSend() {
-        if (_unsentPayload.size == 0 && _dataSource) {
+        if (_unsentPayload.size > 0) {
+            return _unsentPayload;
+        } else {
             _payload.reset();
-            if (_unsentDataBuffer.size == 0) {
+            if (_unsentDataBuffer.size == 0 && _dataSource) {
                 readFromDataSource();
                 if (_unsentDataBuffer.size == 0)
                     _dataBuffer.reset();
             }
             return _unsentDataBuffer;
         }
-        return _unsentPayload;
     }
 
 

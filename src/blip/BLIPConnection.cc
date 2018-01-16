@@ -327,7 +327,7 @@ namespace litecore { namespace blip {
                                (frameFlags & kNoReply ? 'N' : '-'),
                                (frameFlags & kCompressed ? 'C' : '-'),
                                prevBytesSent, msg->_bytesSent - 1);
-                    logVerbose("    %s", frame.hexString().c_str());//TEMP
+                    //logVerbose("    %s", frame.hexString().c_str());
                     // Write it to the WebSocket:
                     _writeable = _webSocket->send(frame);
                 }
