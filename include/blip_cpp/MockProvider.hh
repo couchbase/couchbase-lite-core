@@ -125,7 +125,7 @@ namespace litecore { namespace websocket {
 
             virtual void _closed() {
                 _webSocket->clearDelegate();
-                _webSocket = nil;  // breaks cycle
+                _webSocket = nullptr;  // breaks cycle
             }
 
             virtual void _simulateHTTPResponse(int status, fleeceapi::AllocedDict headers) {
