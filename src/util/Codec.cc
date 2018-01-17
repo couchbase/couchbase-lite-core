@@ -156,7 +156,7 @@ namespace litecore { namespace blip {
         // codec might end up with buffered data that hasn't been output yet (even though we
         // told it to flush.) To work around this, write the data gradually and stop before
         // the output fills up.
-        static constexpr size_t kHeadroomForFlush = 11;
+        static constexpr size_t kHeadroomForFlush = 12;
         static constexpr size_t kStopAtOutputSize = 100;
 
         Mode curMode = Mode::PartialFlush;
