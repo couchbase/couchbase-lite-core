@@ -82,8 +82,9 @@ public class FLDict {
         FLDictIterator itr = new FLDictIterator();
         try {
             itr.begin(this);
-            String key;
-            while ((key = itr.getKey().asString()) != null) {
+            FLValue flKey;
+            while ((flKey = itr.getKey()) != null) {
+                String key = flKey.asString();
                 Object value = itr.getValue().asObject();
                 results.put(key, value);
                 if (!itr.next())
