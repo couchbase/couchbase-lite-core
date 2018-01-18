@@ -73,7 +73,7 @@ namespace litecore { namespace websocket {
 
     using namespace uWS;
 
-    LogDomain WSLogDomain("WS");
+    LogDomain WSLogDomain("WS", LogLevel::Warning);
 
     std::atomic_int WebSocket::gInstanceCount;
 

@@ -23,8 +23,6 @@ namespace uWS {
 namespace litecore { namespace websocket {
     class ProviderImpl;
 
-    extern LogDomain WSLogDomain;
-
     /** Transport-agnostic implementation of WebSocket protocol.
         It doesn't transfer data or run the handshake; it just knows how to encode and decode
         messages. */

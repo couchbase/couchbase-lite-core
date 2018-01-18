@@ -9,6 +9,7 @@
 #pragma once
 #include "Address.hh"
 #include "FleeceCpp.hh"
+#include "Logging.hh"
 #include "RefCounted.hh"
 #include <assert.h>
 #include <atomic>
@@ -74,6 +75,10 @@ namespace litecore { namespace websocket {
             return kReasonNames[reason];
         }
     };
+
+
+    /** "WS" log domain for WebSocket operations */
+    extern LogDomain WSLogDomain;
 
 
     /** Abstract class that can create WebSockets. */

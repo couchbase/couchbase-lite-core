@@ -69,6 +69,10 @@ namespace litecore { namespace websocket {
             ,_latency(latency)
             { }
 
+            virtual std::string loggingClassName() const override {
+                return "LoopbackWS";
+            }
+
             void bind(LoopbackWebSocket *peer, const fleeceapi::AllocedDict &responseHeaders) {
                 // Called by LoopbackProvider::bind, which is called before my connect() method,
                 // so it's safe to set the member variables directly instead of on the actor queue.
@@ -83,10 +87,10 @@ namespace litecore { namespace websocket {
 
             virtual void _send(fleece::alloc_slice msg, bool binary) override {
                 if (_peer) {
-                    LogDebug(WSMock, "%s SEND: %s", name().c_str(), formatMsg(msg, binary).c_str());
+                    logDebug("SEND: %s", formatMsg(msg, binary).c_str());
                     _peer->simulateReceived(msg, binary, _latency);
                 } else {
-                    LogTo(WSMock, "%s SEND: Failed, socket is closed", name().c_str());
+                    log("SEND: Failed, socket is closed");
                 }
             }
 
@@ -102,21 +106,21 @@ namespace litecore { namespace websocket {
                     return;
                 auto newValue = (_bufferedBytes -= msgSize);
                 if (newValue <= kSendBufferSize && newValue + msgSize > kSendBufferSize) {
-                    LogVerbose(WSMock, "%s WRITEABLE", name().c_str());
+                    logVerbose("WRITEABLE");
                     _webSocket->delegate().onWebSocketWriteable();
                 }
             }
 
             virtual void _close(int status, fleece::alloc_slice message) override {
                 std::string messageStr(message);
-                LogTo(WSMock, "%s CLOSE; status=%d", name().c_str(), status);
+                log("CLOSE; status=%d", status);
                 if (_peer)
                     _peer->simulateClosed(kWebSocketClose, status, messageStr.c_str(), _latency);
                 MockWebSocket::Driver::_close(status, message);
             }
 
             virtual void _closed() override {
-                LogTo(WSMock, "%s _closed()", name().c_str());
+                log("_closed()");
                 _peer = nullptr;
                 MockWebSocket::Driver::_closed();
             }

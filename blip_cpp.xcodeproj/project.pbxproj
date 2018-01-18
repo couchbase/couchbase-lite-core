@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		272850731E95BCCF009CA22F /* MessageOut.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850711E95BCCF009CA22F /* MessageOut.cc */; };
 		272850741E95BCCF009CA22F /* MessageOut.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850721E95BCCF009CA22F /* MessageOut.hh */; };
-		272850F01E9D4DC7009CA22F /* MockProvider.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850EF1E9D4DC7009CA22F /* MockProvider.cc */; };
 		272850F81EA022B5009CA22F /* GCDMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850F61EA022B5009CA22F /* GCDMailbox.cc */; };
 		272850F91EA022B5009CA22F /* GCDMailbox.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850F71EA022B5009CA22F /* GCDMailbox.hh */; };
 		272850FC1EA02B49009CA22F /* ThreadedMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850FA1EA02B49009CA22F /* ThreadedMailbox.cc */; };
@@ -94,7 +93,6 @@
 /* Begin PBXFileReference section */
 		272850711E95BCCF009CA22F /* MessageOut.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MessageOut.cc; sourceTree = "<group>"; };
 		272850721E95BCCF009CA22F /* MessageOut.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageOut.hh; sourceTree = "<group>"; };
-		272850EF1E9D4DC7009CA22F /* MockProvider.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MockProvider.cc; sourceTree = "<group>"; };
 		272850F61EA022B5009CA22F /* GCDMailbox.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GCDMailbox.cc; sourceTree = "<group>"; };
 		272850F71EA022B5009CA22F /* GCDMailbox.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GCDMailbox.hh; sourceTree = "<group>"; };
 		272850FA1EA02B49009CA22F /* ThreadedMailbox.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ThreadedMailbox.cc; sourceTree = "<group>"; };
@@ -313,7 +311,6 @@
 			children = (
 				27EF69D71E28260D004748DF /* BLIPTest.cc */,
 				275CE0DE1E579F8D0084E014 /* MockProvider.hh */,
-				272850EF1E9D4DC7009CA22F /* MockProvider.cc */,
 				275CE0EF1E590B190084E014 /* LoopbackProvider.hh */,
 				27EF69EF1E28268A004748DF /* WebSocketEcho.cc */,
 				27EF69F01E28268A004748DF /* WebSocketEcho.hh */,
@@ -520,7 +517,6 @@
 				27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */,
 				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
 				27EF6A561E2857F7004748DF /* Writer.cc in Sources */,
-				272850F01E9D4DC7009CA22F /* MockProvider.cc in Sources */,
 				27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */,
 				27EF6A601E28587A004748DF /* cencode.c in Sources */,
 				27EF6A5E1E28587A004748DF /* cdecode.c in Sources */,

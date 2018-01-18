@@ -9,8 +9,8 @@
 #pragma once
 #include "WebSocketInterface.hh"
 #include "Actor.hh"
-#include "Logging.hh"
 #include "Error.hh"
+#include "Logging.hh"
 #include <iomanip>
 #include <memory>
 #include <set>
@@ -24,8 +24,6 @@ namespace litecore { namespace websocket {
     class MockWebSocket : public WebSocket {
     public:
         class Driver;
-
-        static LogDomain WSMock;
 
         MockWebSocket(Provider &provider, const Address &address)
         :WebSocket(provider, address)
@@ -86,15 +84,24 @@ namespace litecore { namespace websocket {
         Driver* driver() const    {return _driver;}
 
 
-        class Driver : public actor::Actor {
+        class Driver : public actor::Actor, protected Logging {
         public:
 
             Driver(MockWebSocket *ws)
-            :_webSocket(ws)
+            :Logging(WSLogDomain)
+            ,_webSocket(ws)
             { }
 
             const std::string& name() const {
                 return _webSocket->name;
+            }
+
+            virtual std::string loggingIdentifier() const override {
+                return name();
+            }
+
+            virtual std::string loggingClassName() const override {
+                return "MockWS";
             }
 
         protected:
@@ -120,7 +127,7 @@ namespace litecore { namespace websocket {
             virtual void _send(fleece::alloc_slice msg, bool binary) {
                 if (!_isOpen)
                     return;
-                LogDebug(WSMock, "%s SEND: %s", name().c_str(), formatMsg(msg, binary).c_str());
+                logDebug("SEND: %s", formatMsg(msg, binary).c_str());
                 _webSocket->delegate().onWebSocketWriteable();
             }
 
@@ -130,13 +137,13 @@ namespace litecore { namespace websocket {
             }
 
             virtual void _simulateHTTPResponse(int status, fleeceapi::AllocedDict headers) {
-                LogTo(WSMock, "%s GOT RESPONSE (%d)", name().c_str(), status);
+                logVerbose("GOT RESPONSE (%d)", status);
                 DebugAssert(!_isOpen);
                 _webSocket->delegate().onWebSocketGotHTTPResponse(status, headers);
             }
 
             virtual void _simulateConnected() {
-                LogTo(WSMock, "%s CONNECTED", name().c_str());
+                logVerbose("CONNECTED");
                 DebugAssert(!_isOpen);
                 _isOpen = true;
                 _webSocket->delegate().onWebSocketConnect();
@@ -145,15 +152,15 @@ namespace litecore { namespace websocket {
             virtual void _simulateReceived(fleece::alloc_slice msg, bool binary) {
                 if (!_isOpen)
                     return;
-                LogDebug(WSMock, "%s RECEIVED: %s", name().c_str(), formatMsg(msg, binary).c_str());
+                logDebug("RECEIVED: %s", formatMsg(msg, binary).c_str());
                 _webSocket->delegate().onWebSocketMessage(msg, binary);
             }
 
             virtual void _simulateClosed(CloseStatus status) {
                 if (!_isOpen)
                     return;
-                LogTo(WSMock, "%s Closing with %-s %d: %.*s",
-                      name().c_str(), status.reasonName(), status.code,
+                log("Closing with %-s %d: %.*s",
+                      status.reasonName(), status.code,
                       (int)status.message.size, status.message.buf);
                 _isOpen = false;
                 _webSocket->delegate().onWebSocketClose(status);
