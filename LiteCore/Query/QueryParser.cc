@@ -374,21 +374,33 @@ namespace litecore {
                     require(!on, "first FROM item cannot have an ON clause");
                     _sql << " AS \"" << _aliases[i] << "\"";
                 } else {
-                    require(on, "FROM item needs an ON clause to be a join");
                     if (i > 1)
                         _sql << ",";
                     auto joinType = getCaseInsensitive(entry, "JOIN"_sl);
+                    string typeStr;
                     if (joinType) {
-                        auto typeStr = requiredString(joinType, "JOIN value").asString();
+                        typeStr = requiredString(joinType, "JOIN value").asString();
                         require(isValidJoinType(typeStr), "Unknown JOIN type '%s'", typeStr.c_str());
                         _sql << " " << typeStr;
                     }
+
+                    if(typeStr != "CROSS") {
+                        require(on, "FROM item needs an ON clause to be a join");
+                    } else {
+                        require(!on, "CROSS JOIN cannot accept an ON clause");
+                    }
+
                     _sql << " JOIN " << _tableName << " AS \"" << _aliases[i] << "\" ON ";
-                    if (!_includeDeleted)
-                        _sql << "(";
-                    parseNode(on);
-                    if (!_includeDeleted) {
-                        _sql << ") AND ";
+                    if(typeStr != "CROSS") {
+                        if (!_includeDeleted)
+                            _sql << "(";
+                        parseNode(on);
+                        if (!_includeDeleted) {
+                            _sql << ") AND ";
+                        }
+                    }
+
+                    if(!_includeDeleted) {
                         writeNotDeletedTest(i);
                     }
                 }

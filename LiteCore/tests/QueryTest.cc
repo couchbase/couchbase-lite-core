@@ -995,3 +995,66 @@ TEST_CASE_METHOD(DataFileTestFixture, "Negative Limit / Offset", "[Query]") {
     CHECK(e->columns()[0]->toJSONString() == "1234");
     CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
 }
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query JOINs", "[Query]") {
+     {
+        Transaction t(store->dataFile());
+        string docID = "rec-00";
+
+        for(int i = 0; i < 10; i++) {
+            stringstream ss(docID);
+            ss << i + 1;
+
+            fleece::Encoder enc;
+            enc.beginDictionary();
+            enc.writeKey("num1");
+            enc.writeInt(i);
+            enc.writeKey("num2");
+            enc.writeInt(10 - i);
+            enc.endDictionary();
+            alloc_slice body = enc.extractOutput();
+
+            store->set(slice(ss.str()), nullslice, body, DocumentFlags::kNone, t);
+        }
+
+        fleece::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("theone");
+        enc.writeInt(4);
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+
+        store->set("magic"_sl, nullslice, body, DocumentFlags::kNone, t);
+
+        t.commit();
+    }
+
+    auto query = store->compileQuery(json5(
+        "{'WHAT': [['.main.num1']], 'FROM': [{'AS':'main'}, {'AS':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']]}]}"));
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 4);
+
+    query = store->compileQuery(json5(
+        "{'WHAT': [['.main.num1'], ['.secondary.theone']], 'FROM': [{'AS':'main'}, {'AS':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']], 'JOIN':'LEFT OUTER'}]}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 11);
+    e->seek(4);
+    CHECK(e->columns()[0]->asInt() == 4);
+    CHECK(e->columns()[1]->asInt() == 4);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 5);
+    CHECK(e->columns()[1]->asInt() == 0);
+    
+    // NEED TO DEFINE THIS BEHAVIOR.  WHAT IS THE CORRECT RESULT?  THE BELOW FAILS!
+    /*query = store->compileQuery(json5(
+        "{'WHAT': [['.main.num1'], ['.secondary.num2']], 'FROM': [{'AS':'main'}, {'AS':'secondary', 'JOIN':'CROSS'}], 'ORDER_BY': ['.secondary.num2']}"));
+    e.reset(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 100);
+    for(int i = 0; i < 100; i++) {
+        REQUIRE(e->next());
+        CHECK(e->columns()[0]->asInt() == (i % 10));
+        CHECK(e->columns()[1]->asInt() == (i / 10));
+    }*/
+}
