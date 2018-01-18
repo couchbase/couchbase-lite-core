@@ -1,33 +1,43 @@
 {
-	"log": ["HTTP+"],
+	"log": ["HTTP+", "Sync"],
+    
+    "adminInterface": ":4985",
+    
 	"databases": {
 		"itunes": {
 			"server": "walrus:walrus_data",
 			"users": {
 				"GUEST": {"disabled": false, "admin_channels": ["*"] }
 			},
-            "unsupported": {"replicator_2": true}
+            "unsupported": {"allow_conflicts": false}
 		},
 		"beer": {
 			"server": "walrus:walrus_data",
 			"users": {
 				"GUEST": {"disabled": false, "admin_channels": ["*"] }
 			},
-            "unsupported": {"replicator_2": true}
+            "unsupported": {"allow_conflicts": false}
+		},
+		"images": {
+			"server": "walrus:walrus_data",
+			"users": {
+				"GUEST": {"disabled": false, "admin_channels": ["*"] }
+			},
+            "unsupported": {"allow_conflicts": false}
 		},
 		"scratch": {
 			"server": "walrus:",
 			"users": {
 				"GUEST": {"disabled": false, "admin_channels": ["*"] }
 			},
-            "unsupported": {"replicator_2": true}
+            "unsupported": {"allow_conflicts": false}
 		},
 		"seekrit": {
 			"server": "walrus:",
 			"users": {
 				"pupshaw": {"password": "frank", "admin_channels": ["*"] }
 			},
-            "unsupported": {"replicator_2": true}
+            "unsupported": {"allow_conflicts": false}
 		}
 	}
 }
