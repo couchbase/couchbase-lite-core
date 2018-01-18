@@ -48,7 +48,6 @@ namespace litecore { namespace websocket {
         }
 
         virtual bool send(fleece::slice msg, bool binary) override {
-            DebugAssert(_driver && _driver->_isOpen);
             _driver->enqueue(&Driver::_send, fleece::alloc_slice(msg), binary);
             return true; //FIX: Keep track of buffer size
         }
@@ -101,7 +100,7 @@ namespace litecore { namespace websocket {
         protected:
 
             ~Driver() {
-                assert(!_isOpen);
+                DebugAssert(!_isOpen);
             }
 
             // These can be overridden to change the mock's behavior:
@@ -119,6 +118,8 @@ namespace litecore { namespace websocket {
             }
 
             virtual void _send(fleece::alloc_slice msg, bool binary) {
+                if (!_isOpen)
+                    return;
                 LogDebug(WSMock, "%s SEND: %s", name().c_str(), formatMsg(msg, binary).c_str());
                 _webSocket->delegate().onWebSocketWriteable();
             }
@@ -130,20 +131,21 @@ namespace litecore { namespace websocket {
 
             virtual void _simulateHTTPResponse(int status, fleeceapi::AllocedDict headers) {
                 LogTo(WSMock, "%s GOT RESPONSE (%d)", name().c_str(), status);
-                assert(!_isOpen);
+                DebugAssert(!_isOpen);
                 _webSocket->delegate().onWebSocketGotHTTPResponse(status, headers);
             }
 
             virtual void _simulateConnected() {
                 LogTo(WSMock, "%s CONNECTED", name().c_str());
-                assert(!_isOpen);
+                DebugAssert(!_isOpen);
                 _isOpen = true;
                 _webSocket->delegate().onWebSocketConnect();
             }
 
             virtual void _simulateReceived(fleece::alloc_slice msg, bool binary) {
+                if (!_isOpen)
+                    return;
                 LogDebug(WSMock, "%s RECEIVED: %s", name().c_str(), formatMsg(msg, binary).c_str());
-                assert(_isOpen);
                 _webSocket->delegate().onWebSocketMessage(msg, binary);
             }
 

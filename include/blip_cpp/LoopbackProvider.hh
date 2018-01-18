@@ -45,7 +45,7 @@ namespace litecore { namespace websocket {
         }
 
         virtual void connect() override {
-            assert(driver()->_peer);
+            Assert(driver()->_peer);
             MockWebSocket::connect();
         }
 
