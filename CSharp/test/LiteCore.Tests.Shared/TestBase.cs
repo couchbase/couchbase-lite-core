@@ -49,12 +49,18 @@ namespace LiteCore.Tests
 
         protected void WriteLine(string line = "")
         {
-            _output.WriteLine($"{_sb.ToString()}{line}");
+            // StringBuilder is not threadsafe
+            lock (_sb) {
+                _output.WriteLine($"{_sb}{line}");
+            }
         }
 
         protected void Write(string str)
         { 
-            _sb.Append(str);
+            // StringBuilder is not threadsafe
+            lock (_sb) {
+                _sb.Append(str);
+            }
         }
 
         protected void RunTestVariants(Action a, [CallerMemberName]string caller = null)
