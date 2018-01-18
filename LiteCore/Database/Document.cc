@@ -208,24 +208,26 @@ namespace c4Internal {
         if (encodingProp && containsAnyOf(encodingProp->asString(), kCompressedTypeSubstrings))
             return false;
 
+        // Don't compress attachments with unknown MIME type:
         auto typeProp = meta->get("content_type"_sl, sk);
-        if (typeProp) {
-            slice type = typeProp->asString();
-            if (type) {
-                // Check the MIME type:
-                string lc = type.asString();
-                toLowercase(lc);
-                type = lc;
-                if (containsAnyOf(type, kCompressedTypeSubstrings))
-                    return false;
-                else if (type.hasPrefix("text/"_sl) || containsAnyOf(type, kGoodTypeSubstrings))
-                    return true;
-                else if (startsWithAnyOf(type, kBadTypePrefixes))
-                    return false;
-            }
-        }
-        // Default to allowing compression.
-        return true;
+        if (!typeProp)
+            return false;
+        slice type = typeProp->asString();
+        if (!type)
+            return false;
+
+        // Check the MIME type:
+        string lc = type.asString();
+        toLowercase(lc);
+        type = lc;
+        if (containsAnyOf(type, kCompressedTypeSubstrings))
+            return false;
+        else if (type.hasPrefix("text/"_sl) || containsAnyOf(type, kGoodTypeSubstrings))
+            return true;
+        else if (startsWithAnyOf(type, kBadTypePrefixes))
+            return false;
+        else
+            return true;
     }
 
 }
