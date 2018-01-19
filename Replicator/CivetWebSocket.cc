@@ -198,7 +198,6 @@ namespace litecore { namespace websocket {
                                                           &connectHandler, &dataHandler, &closeHandler,
                                                           this);
                 if (_connection) {
-                    Debug("CivetWebSocket Connected!");
                     retain(this);
                     mg_set_user_connection_data(_connection, this);
                     delegate().onWebSocketConnect();
@@ -283,7 +282,6 @@ namespace litecore { namespace websocket {
 
             void _sendFrame(int opcode, alloc_slice body) {
                 if (!_connection) return;
-                Debug("CivetWebSocket sending a %d frame", opcode);
                 auto write = _isServer ? mg_websocket_write : mg_websocket_client_write;
                 int ok = write(_connection, opcode, (const char*)body.buf, body.size);
                 if (ok <= 0) {
@@ -299,7 +297,6 @@ namespace litecore { namespace websocket {
                 // Collect the response status & headers:
                 auto ri = mg_get_request_info(connection);
                 int status = stoi(string(ri->request_uri));
-                Debug("CivetWebSocket got HTTP response %d, with %d headers", status, ri->num_headers);
 
                 // Headers can appear more than once, so collect them into an array-valued map:
                 unordered_map<string, vector<string>> headerMap;
@@ -329,13 +326,11 @@ namespace litecore { namespace websocket {
 
 
             void onReady() {
-                Debug("CivetWebSocket connected");
                 delegate().onWebSocketStart();
             }
 
 
             void onMessage(int headerByte, slice message) {
-                Debug("CivetWebSocket received a %d frame", (headerByte & 0x0F));
                 bool binary = false;
                 switch (headerByte & 0x0F) {
                     case WEBSOCKET_OPCODE_BINARY:
@@ -359,7 +354,6 @@ namespace litecore { namespace websocket {
             void _onClosed() {
                 if (!_connection)
                     return;
-                Debug("CivetWebSocket closed");
                 _connection = nullptr;
                 if (!_rcvdCloseFrame) {
                     _closeStatus.reason = kUnknownError;
