@@ -374,8 +374,6 @@ namespace litecore {
                     require(!on, "first FROM item cannot have an ON clause");
                     _sql << " AS \"" << _aliases[i] << "\"";
                 } else {
-                    if (i > 1)
-                        _sql << ",";
                     auto joinType = getCaseInsensitive(entry, "JOIN"_sl);
                     string typeStr;
                     if (joinType) {
