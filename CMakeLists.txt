@@ -30,7 +30,7 @@ if(NOT APPLE)
     list(REMOVE_ITEM UTIL_SRC src/util/GCDMailbox.cc)
 endif()
 
-set(ALL_SRC_FILES ${BLIP_SRC} ${UTIL_SRC} ${WEBSOCKET_SRC} ${ZLIBCOMPLETE_SRC} tests/MockProvider.cc)
+set(ALL_SRC_FILES ${BLIP_SRC} ${UTIL_SRC} ${WEBSOCKET_SRC} ${ZLIBCOMPLETE_SRC})
 
 ### LIBRARY:
 
