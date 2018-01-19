@@ -385,6 +385,9 @@ void c4slog(C4LogDomain domain C4NONNULL, C4LogLevel level, C4String msg) C4API;
     commit, in the form "Built from master branch, commit 0bc68f0d". */
 C4StringResult c4_getBuildInfo(void) C4API;
 
+/** A short version string. */
+C4StringResult c4_getVersion(void) C4API;
+
 
 /** Returns the number of objects that have been created but not yet freed.
     This can be used as a debugging/testing tool to detect leaks. */

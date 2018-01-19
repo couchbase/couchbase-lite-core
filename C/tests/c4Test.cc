@@ -166,8 +166,9 @@ _versioning(kC4RevisionTrees)
 {
     static once_flag once;
     call_once(once, [] {
-        fleece::alloc_slice version = c4_getBuildInfo();
-        C4Log("This is LiteCore %.*s", SPLAT(version));
+        fleece::alloc_slice buildInfo = c4_getBuildInfo();
+        fleece::alloc_slice version = c4_getVersion();
+        C4Log("This is LiteCore %.*s ... short version %.*s", SPLAT(buildInfo), SPLAT(version));
 
         if (c4log_binaryFileLevel() == kC4LogNone) {
             string path = TempDir() + "LiteCoreAPITests.c4log";

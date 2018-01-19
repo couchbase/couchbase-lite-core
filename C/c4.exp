@@ -8,6 +8,7 @@ _kC4SQLiteStorageEngine
 _kC4DatabaseFilenameExtension
 
 _c4_getBuildInfo
+_c4_getVersion
 
 _kC4Cpp_DefaultLog
 _kC4DefaultLog

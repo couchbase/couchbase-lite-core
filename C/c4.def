@@ -3,6 +3,7 @@ kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension
 
 c4_getBuildInfo
+c4_getVersion
 
 kC4Cpp_DefaultLog
 kC4DefaultLog
