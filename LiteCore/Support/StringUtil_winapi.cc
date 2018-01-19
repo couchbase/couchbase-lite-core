@@ -28,7 +28,7 @@ namespace litecore {
             return{};
         }
 
-        StackArray(wstr, wchar_t, length);
+		StackMemory(wstr, wchar_t, length);
         MultiByteToWideChar(CP_UTF8, 0, (const char *)str.buf, str.size, wstr, length);
 
         DWORD flags = toUppercase ? LCMAP_UPPERCASE : LCMAP_LOWERCASE;
@@ -37,7 +37,7 @@ namespace litecore {
             return{};
         }
 
-        StackArray(mapped, wchar_t, resultLength);
+		StackMemory(mapped, wchar_t, resultLength);
         LCMapStringEx(LOCALE_NAME_USER_DEFAULT, flags, wstr, length, mapped, resultLength, nullptr, nullptr, 0);
 
         int finalLength = WideCharToMultiByte(CP_UTF8, 0, mapped, resultLength, nullptr, 0, nullptr, nullptr);
