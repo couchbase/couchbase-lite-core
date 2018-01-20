@@ -196,6 +196,7 @@ _c4db_getCookies
 _c4db_clearCookies
 
 _kC4ReplicatorActivityLevelNames
+_kC4SocketOptionWSProtocols
 
 # Private API:
 _c4error_return

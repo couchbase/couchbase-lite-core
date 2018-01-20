@@ -190,6 +190,7 @@ c4db_getCookies
 c4db_clearCookies
 
 kC4ReplicatorActivityLevelNames
+kC4SocketOptionWSProtocols
 
 c4error_return
 c4doc_getForPut
