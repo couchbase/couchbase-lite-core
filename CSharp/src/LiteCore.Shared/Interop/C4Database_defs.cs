@@ -4,7 +4,7 @@
 // Author:
 // 	Jim Borden  <jim.borden@couchbase.com>
 //
-// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// Copyright (c) 2018 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ namespace LiteCore.Interop
 #endif
     unsafe partial struct C4UUID
     {
-        public fixed byte bytes[32];
+        public fixed byte bytes[16];
     }
 
 #if LITECORE_PACKAGED
