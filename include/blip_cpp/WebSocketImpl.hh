@@ -20,6 +20,10 @@ namespace uWS {
     template <const bool isServer> class WebSocketProtocol;
 }
 
+namespace litecore { namespace actor {
+    class Timer;
+}}
+
 namespace litecore { namespace websocket {
     class ProviderImpl;
 
@@ -59,7 +63,7 @@ namespace litecore { namespace websocket {
 
         using ClientProtocol = uWS::WebSocketProtocol<false>;
 
-        bool sendOp(fleece::slice, int opcode);
+        bool _sendOp(fleece::slice, int opcode);
         bool handleFragment(char *data,
                             size_t length,
                             unsigned int remainingBytes,
@@ -67,6 +71,10 @@ namespace litecore { namespace websocket {
                             bool fin);
         bool receivedMessage(int opCode, fleece::alloc_slice message);
         bool receivedClose(fleece::slice);
+        int heartbeatInterval() const;
+        void schedulePing();
+        void sendPing();
+        void receivedPong();
 
         fleeceapi::AllocedDict _options;
         bool _framing;                              // true if I should implement WebSocket framing
@@ -78,6 +86,7 @@ namespace litecore { namespace websocket {
         size_t _bufferedBytes {0};                  // # bytes written but not yet completed
         bool _closeSent {false}, _closeReceived {false};    // Close message sent or received?
         fleece::alloc_slice _closeMessage;                  // The encoded close request message
+        std::unique_ptr<actor::Timer> _pingTimer;
 
         // Connection diagnostics, logged on close:
         fleece::Stopwatch _timeConnected {false};           // Time since socket opened

@@ -89,7 +89,8 @@ namespace litecore { namespace websocket {
                                            const fleeceapi::AllocedDict &options ={}) =0;
         virtual void close() { }
 
-        static constexpr const char *kProtocolsOption = "WS-Protocols";
+        static constexpr const char *kProtocolsOption = "WS-Protocols";     // string
+        static constexpr const char *kHeartbeatOption = "heartbeat";        // seconds
     };
 
 
