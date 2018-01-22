@@ -13,7 +13,9 @@
 void CBLiteTool::sqlUsage() {
     writeUsageCommand("sql", false, "QUERY");
     cerr <<
-    "  Runs a raw SQL query on the database file.\n"
+    "  Runs a raw SQL query on the database file. This is NOT a way to query your documents!\n"
+    "  Rather, it's a very low-level diagnostic tool that will not be useful unless you know the\n"
+    "  underlying SQLite schema used by LiteCore.\n"
     "    NOTE: Query must be a single (quoted) argument. Sorry.\n"
     ;
 }
