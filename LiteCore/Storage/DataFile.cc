@@ -200,6 +200,7 @@ namespace litecore {
 
         ~Shared() {
             LogToAt(DBLog, Debug, "File %p: destructing", this);
+            unique_lock<mutex> lock(sFileMapMutex);
             sFileMap.erase(path.path());
         }
 
