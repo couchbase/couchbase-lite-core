@@ -54,7 +54,7 @@ namespace LiteCore.Interop
 #endif
          unsafe partial struct C4UUID
     {
-        public static readonly int Size = 32;
+        public static readonly int Size = 16;
 
         // NOTE: The below produces IL that is not understandable by Mono
         /*public override int GetHashCode()
