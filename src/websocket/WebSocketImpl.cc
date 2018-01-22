@@ -130,30 +130,32 @@ namespace litecore { namespace websocket {
 
 
     bool WebSocketImpl::send(fleece::slice message, bool binary) {
-        lock_guard<mutex> lock(_mutex);
-        return _sendOp(message, binary ? uWS::BINARY : uWS::TEXT);
+        return sendOp(message, binary ? uWS::BINARY : uWS::TEXT);
     }
 
 
-    // Must be called with the _mutex locked
-    bool WebSocketImpl::_sendOp(fleece::slice message, int opcode) {
+    bool WebSocketImpl::sendOp(fleece::slice message, int opcode) {
         alloc_slice frame;
         bool writeable;
-        if (_closeSent && opcode != CLOSE)
-            return false;
-        if (_framing) {
-            frame.resize(message.size + 10); // maximum space needed
-            frame.shorten(ClientProtocol::formatMessage((char*)frame.buf,
-                                                        (const char*)message.buf, message.size,
-                                                        (uWS::OpCode)opcode, message.size,
-                                                        false));
-        } else {
-            assert(opcode == uWS::BINARY);
-            frame = message;
+        {
+            lock_guard<std::mutex> lock(_mutex);
+            if (_closeSent && opcode != CLOSE)
+                return false;
+            if (_framing) {
+                frame.resize(message.size + 10); // maximum space needed
+                frame.shorten(ClientProtocol::formatMessage((char*)frame.buf,
+                                                            (const char*)message.buf, message.size,
+                                                            (uWS::OpCode)opcode, message.size,
+                                                            false));
+            } else {
+                assert(opcode == uWS::BINARY);
+                frame = message;
+            }
+            _bufferedBytes += frame.size;
+            writeable = (_bufferedBytes <= kSendBufferSize);
         }
-        _bufferedBytes += frame.size;
-        writeable = (_bufferedBytes <= kSendBufferSize);
-
+        // Release the lock before calling sendBytes, because that's an abstract method, and some
+        // implementation of it might call back into me and deadlock.
         provider().sendBytes(this, frame);
         return writeable;
     }
@@ -183,24 +185,32 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::onReceive(slice data) {
+        alloc_slice pingReceived;
         {
             // Lock the mutex; this protects all methods (below) involved in receiving,
             // since they're called from this one.
             lock_guard<mutex> lock(_mutex);
-            
+
             _bytesReceived += data.size;
             if (_framing) {
                 _protocol->consume((char*)data.buf, (unsigned)data.size, this);
                 // ... this will call handleFragment(), below
-            } else {
-                delegate().onWebSocketMessage(data, true);
+                pingReceived = move(_pingReceived);
             }
         }
+        if (!_framing)
+            delegate().onWebSocketMessage(data, true);
+
         provider().receiveComplete(this, data.size);
+
+        // Reply to an incoming PING, now that the mutex is not locked:
+        if (pingReceived)
+            sendOp(pingReceived, PONG);
+
     }
 
 
-    // Called from inside _protocol->consume()
+    // Called from inside _protocol->consume(), with the _mutex locked
     bool WebSocketImpl::handleFragment(char *data,
                                        size_t length,
                                        unsigned int remainingBytes,
@@ -230,11 +240,11 @@ namespace litecore { namespace websocket {
     }
 
 
+    // Called from handleFragment, with the mutex locked
     bool WebSocketImpl::receivedMessage(int opCode, alloc_slice message) {
         switch (opCode) {
             case TEXT:
-                if (!ClientProtocol::isValidUtf8((unsigned char*)message.buf,
-                                                            message.size))
+                if (!ClientProtocol::isValidUtf8((unsigned char*)message.buf, message.size))
                     return false;
                 // fall through:
             case BINARY:
@@ -243,7 +253,7 @@ namespace litecore { namespace websocket {
             case CLOSE:
                 return receivedClose(message);
             case PING:
-                _sendOp(message, PONG);
+                _pingReceived = message ? message : alloc_slice(size_t(0));
                 return true;
             case PONG:
                 receivedPong();
@@ -258,6 +268,8 @@ namespace litecore { namespace websocket {
 
 
     int WebSocketImpl::heartbeatInterval() const {
+        if (!_framing)
+            return 0;
         fleeceapi::Value heartbeat = options()[Provider::kHeartbeatOption];
         if (heartbeat.type() == kFLNumber)
             return (int)heartbeat.asInt();
@@ -273,12 +285,16 @@ namespace litecore { namespace websocket {
 
     // timer callback
     void WebSocketImpl::sendPing() {
-        lock_guard<mutex> lock(_mutex);
-        if (_pingTimer) {
+        {
+            lock_guard<mutex> lock(_mutex);
+            if (!_pingTimer)
+                return;
             log("Sending PING");
-            _sendOp(nullslice, PING);
             schedulePing();
+            // exit scope to release the lock -- this is needed before calling sendOp,
+            // which acquires the lock itself
         }
+        sendOp(nullslice, PING);
     }
 
 
@@ -297,16 +313,18 @@ namespace litecore { namespace websocket {
     void WebSocketImpl::close(int status, fleece::slice message) {
         log("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
         if (_framing) {
-            lock_guard<mutex> lock(_mutex);
-            if (_closeSent || _closeReceived)
-                return;
-            _closeSent = true;
-            _closeMessage = alloc_slice(2 + message.size);
-            auto size = ClientProtocol::formatClosePayload((char*)_closeMessage.buf,
-                                                           (uint16_t)status,
-                                                           (char*)message.buf, message.size);
-            _closeMessage.shorten(size);
-            _sendOp(_closeMessage, uWS::CLOSE);
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+                if (_closeSent || _closeReceived)
+                    return;
+                _closeSent = true;
+                _closeMessage = alloc_slice(2 + message.size);
+                auto size = ClientProtocol::formatClosePayload((char*)_closeMessage.buf,
+                                                               (uint16_t)status,
+                                                               (char*)message.buf, message.size);
+                _closeMessage.shorten(size);
+            }
+            sendOp(_closeMessage, uWS::CLOSE);
         } else {
             provider().requestClose(this, status, message);
         }
@@ -330,7 +348,7 @@ namespace litecore { namespace websocket {
                     close.code, (int)close.length, close.message);
             }
             _closeMessage = message;
-            _sendOp(message, uWS::CLOSE);
+            sendOp(message, uWS::CLOSE);
         }
         _pingTimer.reset();
         return true;

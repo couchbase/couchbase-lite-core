@@ -63,7 +63,7 @@ namespace litecore { namespace websocket {
 
         using ClientProtocol = uWS::WebSocketProtocol<false>;
 
-        bool _sendOp(fleece::slice, int opcode);
+        bool sendOp(fleece::slice, int opcode);
         bool handleFragment(char *data,
                             size_t length,
                             unsigned int remainingBytes,
@@ -87,6 +87,7 @@ namespace litecore { namespace websocket {
         bool _closeSent {false}, _closeReceived {false};    // Close message sent or received?
         fleece::alloc_slice _closeMessage;                  // The encoded close request message
         std::unique_ptr<actor::Timer> _pingTimer;
+        fleece::alloc_slice _pingReceived;
 
         // Connection diagnostics, logged on close:
         fleece::Stopwatch _timeConnected {false};           // Time since socket opened
