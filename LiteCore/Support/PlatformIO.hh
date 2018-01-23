@@ -22,6 +22,8 @@
     #define strcasecmp  _stricmp
     #define fdclose ::_close
 
+    struct stat;
+
     namespace litecore {
         int mkdir_u8(const char* const path, int mode);
         int stat_u8(const char* const filename, struct stat* const s);
