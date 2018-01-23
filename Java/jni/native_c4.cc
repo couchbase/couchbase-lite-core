@@ -47,6 +47,30 @@ Java_com_couchbase_litecore_C4_getenv(JNIEnv *env, jclass clazz, jstring jname) 
     return env->NewStringUTF(getenv(((slice) name).cString()));
 }
 
+/*
+ * Class:     com_couchbase_litecore_C4
+ * Method:    getBuildInfo
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_C4_getBuildInfo(JNIEnv *env, jclass clazz) {
+    C4StringResult result = c4_getBuildInfo();
+    jstring jstr = toJString(env, result);
+    c4slice_free(result);
+    return jstr;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4
+ * Method:    getVersion
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_C4_getVersion(JNIEnv *env, jclass clazz) {
+    C4StringResult result = c4_getVersion();
+    jstring jstr = toJString(env, result);
+    c4slice_free(result);
+    return jstr;
+}
+
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4Log
 // ----------------------------------------------------------------------------

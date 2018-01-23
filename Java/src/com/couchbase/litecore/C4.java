@@ -8,4 +8,8 @@ public class C4 {
     public static native void setenv(String name, String value, int overwrite);
 
     public static native String getenv(String name);
+
+    public static native String getBuildInfo();
+
+    public static native String getVersion();
 }
