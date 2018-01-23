@@ -89,6 +89,18 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
 }
 
 
+TEST_CASE_METHOD(FTSTest, "Query Full-Text English_US", "[Query][FTS]") {
+    // Check that language+country code is allowed:
+    createIndex({"en_US", true});
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
+                        WHAT: [['.sentence']]}]",
+              {1, 2, 0, 4},
+              {3, 3, 1, 1});
+}
+
+
 TEST_CASE_METHOD(FTSTest, "Query Full-Text Unsupported Language", "[Query][FTS]") {
     createIndex({"elbonian", true});
     testQuery(

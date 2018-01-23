@@ -112,19 +112,27 @@ namespace litecore {
         // See https://www.sqlite.org/fts3.html#tokenizer . 'unicodesn' is our custom tokenizer.
         sql << "tokenize=unicodesn";
         if (options) {
+            // Get the language code (options->language might have a country too, like "en_US")
+            string languageCode;
+            if (options->language) {
+                languageCode = options->language;
+                auto u = languageCode.find('_');
+                if (u != string::npos)
+                    languageCode.resize(u);
+            }
             if (options->stopWords) {
                 string arg(options->stopWords);
                 replace(arg, '"', ' ');
                 replace(arg, ',', ' ');
                 sql << " \"stopwordlist=" << arg << "\"";
+            } else if (options->language) {
+                sql << " \"stopwords=" << languageCode << "\"";
             }
-            if (options->language) {
-                if (unicodesn_isSupportedStemmer(options->language)) {
-                    sql << " \"stemmer=" << options->language << "\"";
-                    if (!options->stopWords)
-                        sql << " \"stopwords=" << options->language << "\"";
+            if (options->language && !options->disableStemming) {
+                if (unicodesn_isSupportedStemmer(languageCode.c_str())) {
+                    sql << " \"stemmer=" << languageCode << "\"";
                 } else {
-                    Warn("FTS does not support language code '%s'; ignoring it",
+                    Warn("FTS does not support stemming for language code '%s'; ignoring it",
                          options->language);
                 }
             }
