@@ -12,6 +12,7 @@
 #include "Logging.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "StringUtil.hh"
+#include "TempArray.hh"
 #include <sqlite3.h>
 #include <algorithm>
 
@@ -74,11 +75,11 @@ namespace litecore {
         LPWSTR locale = ctx.localeName;
         DWORD winFlags = ctx.flags;
 
-        StackArray(wchars1, WCHAR, len1);
+        TempArray(wchars1, WCHAR, len1);
         int size1 = MultiByteToWideChar(CP_UTF8, 0, (char *)chars1, len1, wchars1, len1);
         wchars1[size1++] = 0;
 
-        StackArray(wchars2, WCHAR, len2);
+        TempArray(wchars2, WCHAR, len2);
         int size2 = MultiByteToWideChar(CP_UTF8, 0, (char *)chars2, len2, wchars2, len2);
         wchars2[size2++] = 0;
 
