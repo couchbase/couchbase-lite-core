@@ -282,7 +282,7 @@ path.path().c_str());
             slice key = options().encryptionKey;
             if(key.buf == nullptr || key.size != 32)
                 error::_throw(error::InvalidParameter);
-            sqlite3_key_v2(_sqlDb->getHandle(), NULL, key.buf, key.size);
+            sqlite3_key_v2(_sqlDb->getHandle(), nullptr, key.buf, key.size);
 #else
             error::_throw(error::UnsupportedOperation);
 #endif
