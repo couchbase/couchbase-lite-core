@@ -120,8 +120,6 @@ public class C4Replicator {
     //-------------------------------------------------------------------------
 
     private static void statusChangedCallback(long handle, C4ReplicatorStatus status) {
-        Log.e(TAG, "statusChangedCallback() handle -> " + handle + ", status -> " + status);
-
         C4Replicator repl = reverseLookupTable.get(handle);
         if (repl != null && repl.listener != null)
             repl.listener.statusChanged(repl, status, repl.context);
