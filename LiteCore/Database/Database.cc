@@ -103,7 +103,7 @@ namespace c4Internal {
 
         options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
         if (options.encryptionAlgorithm != kNoEncryption) {
-#if COUCHBASE_ENTERPRISE
+#ifdef COUCHBASE_ENTERPRISE
             options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
                                                 sizeof(config.encryptionKey.bytes));
 #else

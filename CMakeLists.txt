@@ -21,8 +21,25 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_IPV6                          # Enable IPv6 support in CivetWeb
                 -DCMAKE                             # Let the source know this is a CMAKE build
                 -D__STDC_LIMIT_MACROS               # Ensure the presence of UINT64_MAX, etc
-                -DNOMINMAX)                         # Get rid of pesky Windows macros for min and max
-                
+                -DNOMINMAX                          # Get rid of pesky Windows macros for min and max
+                -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1
+                -DSQLITE_LIKE_DOESNT_MATCH_BLOBS
+                -DSQLITE_OMIT_SHARED_CACHE
+                -DSQLITE_OMIT_DECLTYPE
+                -DSQLITE_OMIT_DATETIME_FUNCS
+                -DSQLITE_ENABLE_EXPLAIN_COMMENTS
+                -DSQLITE_DISABLE_FTS3_UNICODE
+                -DSQLITE_ENABLE_MEMORY_MANAGEMENT
+                -DSQLITE_ENABLE_STAT4
+                -DSQLITE_HAVE_ISNAN
+                -DHAVE_LOCALTIME_R
+                -DHAVE_USLEEP
+                -DHAVE_UTIME
+                -DSQLITE_OMIT_LOAD_EXTENSION
+                -DSQLITE_ENABLE_FTS4
+                -DDSQLITE_ENABLE_FTS3_PARENTHESIS
+                -DSQLITE_ENABLE_FTS3_TOKENIZER)
+
 if(BUILD_ENTERPRISE)
     add_definitions(-DCOUCHBASE_ENTERPRISE)
 endif()
@@ -125,17 +142,12 @@ endif()
 include_directories("vendor/fleece/Fleece"
                     "vendor/fleece/vendor"
                     "vendor/SQLiteCpp/include"
+                    "vendor/SQLiteCpp/sqlite3"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
                     "vendor/BLIP-Cpp/src/util"
                     "vendor/civetweb/include"
                     "vendor/mbedtls/include")
-                    
-if(BUILD_ENTERPRISE)
-    include_directories("vendor/sqlcipher/libs/include")
-else()
-    include_directories("vendor/SQLiteCpp/sqlite3")
-endif()
 
 if(WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
@@ -152,13 +164,7 @@ add_subdirectory(REST)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/BLIP-Cpp            EXCLUDE_FROM_ALL)
-
-if(BUILD_ENTERPRISE)
-    add_subdirectory(vendor/sqlcipher           EXCLUDE_FROM_ALL)
-else()
-    add_subdirectory(vendor/SQLiteCpp/sqlite3   EXCLUDE_FROM_ALL)
-    add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
-endif()
+add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
 ### MORE BUILD SETTINGS:
 
@@ -263,15 +269,18 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     link_directories (${LIBCXX_LIBDIR})
 endif()
 
-add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
+if(NOT SQLITE_SRC)
+    set(SQLITE_SRC vendor/SQLiteCpp/sqlite3/sqlite3.c)
+endif()
+add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES} ${SQLITE_SRC})
 target_compile_definitions(LiteCoreStatic PRIVATE -DLITECORE_IMPL)
+
 if(WIN32)
     add_library(LiteCore SHARED MSVC/SQLiteTempDirectory.cc) #No-op for non-UWP
 else()
     file(WRITE empty.cpp)
     add_library(LiteCore SHARED empty.cpp)
 endif()
-
 
 install (TARGETS LiteCore
          RUNTIME DESTINATION bin
@@ -290,12 +299,6 @@ set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 BLIPStatic
                                 CivetWeb
                                 mbedcrypto)
-                                
-if(BUILD_ENTERPRISE)
-    set(LITECORE_LIBRARIES_PRIVATE ${LITECORE_LIBRARIES_PRIVATE} sqlcipher)
-else()
-    set(LITECORE_LIBRARIES_PRIVATE ${LITECORE_LIBRARIES_PRIVATE} sqlite3)
-endif()
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
 
