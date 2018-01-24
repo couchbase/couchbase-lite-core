@@ -84,8 +84,9 @@ JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jdomain,
                                            jint jlevel) {
     jstringSlice domain(env, jdomain);
-    C4LogDomain logDomain = c4log_getDomain(((slice) domain).cString(), true);
-    c4log_setLevel(logDomain, (C4LogLevel) jlevel);
+    C4LogDomain logDomain = c4log_getDomain(((slice) domain).cString(), false);
+    if (logDomain)
+        c4log_setLevel(logDomain, (C4LogLevel) jlevel);
 }
 
 // ----------------------------------------------------------------------------
