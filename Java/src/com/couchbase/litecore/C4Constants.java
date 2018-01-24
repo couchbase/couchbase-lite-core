@@ -15,13 +15,11 @@ public interface C4Constants {
     }
 
     interface C4LogDomain {
-        String DB = "DB";
-        String Enum = "Enum";
-        String Blob = "Blob";
-        String SQL = "SQL";
+        String Database = "DB";
+        String Query = "Query";
+        String Sync = "Sync";
+        String WebSocket = "WS";
         String BLIP = "BLIP";
-        String BLIPMessages = "BLIPMessages";
-        String ACTOR = "ACTOR";
     }
 
     ////////////////////////////////////
