@@ -671,9 +671,10 @@ namespace litecore {
                 out = iter->format(out, repl);
                 last_iter = iter;
             }
+
+			out = copy(last_iter->suffix().first, last_iter->suffix().second, out);
         }
 
-        out = copy(last_iter->suffix().first, last_iter->suffix().second, out);
         sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
     }
 

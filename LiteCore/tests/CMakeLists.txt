@@ -24,11 +24,6 @@ if(NOT APPLE)
     LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/ObjCTests.mm)
 endif()
 set(TEST_SRC ${TEST_SRC} ${FLEECE_TEST_SRC} ${TOP}/tools/ArgumentTokenizer.cc)
-if(MSVC)
-	set(TEST_SRC ${TEST_SRC} ../../MSVC/arc4random.cc)
-elseif(UNIX AND NOT APPLE)
-  set(TEST_SRC ${TEST_SRC} ../Unix/arc4random.cc)
-endif()
 
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
 file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
@@ -41,11 +36,11 @@ add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTes
 
 target_link_libraries(CppTests  LiteCoreStatic
                                 FleeceStatic
-                                sqlcipher
                                 mbedcrypto
                                 SQLite3_UnicodeSN
                                 BLIPStatic
-                                CivetWeb)
+                                CivetWeb
+                                Support)
 
 if(APPLE)
     target_link_libraries(CppTests  "-framework Foundation"

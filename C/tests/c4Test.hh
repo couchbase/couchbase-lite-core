@@ -129,8 +129,10 @@ class C4Test {
 public:
 #if ENABLE_VERSION_VECTORS
     static const int numberOfOptions = 3;       // rev-tree, rev-tree encrypted, version vector
-#else
+#elif defined(COUCHBASE_ENTERPRISE)
     static const int numberOfOptions = 2;       // rev-tree, rev-tree encrypted
+#else
+    static const int numberOfOptions = 1;       // rev-tree
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
