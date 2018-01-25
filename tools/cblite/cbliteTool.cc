@@ -61,7 +61,7 @@ int CBLiteTool::run() {
         fail();
     }
     string cmd = nextArg("subcommand or database path");
-    if (hasSuffix(cmd, ".cblite2")) {
+    if (hasSuffix(cmd, kC4DatabaseFilenameExtension)) {
         endOfArgs();
         openDatabase(cmd);
         runInteractively();
