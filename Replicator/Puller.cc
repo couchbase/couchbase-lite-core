@@ -128,7 +128,7 @@ namespace litecore { namespace repl {
                     if (nonPassive()) {
                         // Add sequence to _missingSequences:
                         auto change = changes[(unsigned)i].asArray();
-                        alloc_slice sequence(change[0].toString()); //FIX: Should quote strings
+                        alloc_slice sequence(change[0].toJSON());
                         uint64_t bodySize = requesting ? max(change[4].asUnsigned(), (uint64_t)1) : 0;
                         if (sequence)
                             _missingSequences.add(sequence, bodySize);
