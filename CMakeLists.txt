@@ -240,15 +240,6 @@ set(ALL_SRC_FILES
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
-	set(ALL_SRC_FILES ${ALL_SRC_FILES}
-    MSVC/asprintf.c
-    vendor/fleece/MSVC/memmem.cc
-    MSVC/mkstemp.cc
-    MSVC/mkdtemp.cc
-    MSVC/strlcat.c
-    MSVC/vasprintf-msvc.c
-    MSVC/arc4random.cc
-    MSVC/strptime.cc)
 elseif(ANDROID)
     set(ALL_SRC_FILES ${ALL_SRC_FILES}
     LiteCore/Unix/strlcat.c
@@ -295,6 +286,7 @@ set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 LiteCoreStatic
                                 FleeceStatic
                                 ${NO_WHOLE_LIBRARY_FLAG}
+                                Support
                                 SQLite3_UnicodeSN
                                 BLIPStatic
                                 CivetWeb
@@ -359,14 +351,38 @@ endif()
 
 ### SUPPORT LIB:
 
+if(MSVC)
+    set(PLATFORM_SRC 
+    MSVC/asprintf.c
+    vendor/fleece/MSVC/memmem.cc
+    MSVC/mkstemp.cc
+    MSVC/mkdtemp.cc
+    MSVC/strlcat.c
+    MSVC/vasprintf-msvc.c
+    MSVC/arc4random.cc
+    MSVC/strptime.cc
+    LiteCore/Support/PlatformIO.cc)
+elseif(ANDROID)
+    set(PLATFORM_SRC 
+    Unix/strlcat.c
+    Unix/arc4random.cc)
+elseif(UNIX AND NOT APPLE)
+    set(PLATFORM_SRC 
+    Unix/strlcat.c
+    Unix/arc4random.cc)
+endif()
+
 add_library(Support STATIC
     C/c4ExceptionUtils.cc
     LiteCore/Support/LibC++Debug.cc
     LiteCore/Support/Error.cc
+    LiteCore/Support/Error_windows.cc
+    LiteCore/Support/Error_android.cc
     LiteCore/Support/FilePath.cc
     LiteCore/Support/Logging_Stub.cc
     LiteCore/Support/RefCounted.cc
     LiteCore/Support/StringUtil.cc
+    ${PLATFORM_SRC}
 )
 
 ### TOOLS:
