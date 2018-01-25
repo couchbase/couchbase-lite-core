@@ -384,8 +384,8 @@ namespace litecore { namespace repl {
     void Replicator::_saveCheckpoint(alloc_slice json) {
         if (!connection())
             return;
-        log("Saving remote checkpoint %.*s with rev='%.*s' ...",
-            SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
+        log("Saving remote checkpoint %.*s with rev='%.*s': %.*s ...",
+            SPLAT(_checkpointDocID), SPLAT(_checkpointRevID), SPLAT(json));
         MessageBuilder msg("setCheckpoint"_sl);
         msg["client"_sl] = _checkpointDocID;
         msg["rev"_sl] = _checkpointRevID;
@@ -396,6 +396,10 @@ namespace litecore { namespace repl {
                 return;
             if (response->isError()) {
                 gotError(response);
+                warn("Failed to save checkpoint!");
+                // If the checkpoint didn't save, something's wrong; but if we don't mark it as
+                // saved, the replicator will stay busy (see computeActivityLevel, line 169).
+                _checkpoint.saved();
                 // TODO: On 409 error, reload remote checkpoint
             } else {
                 // Remote checkpoint saved, so update local one:
