@@ -217,7 +217,8 @@ namespace litecore {
                     external = i->external;
                 else if (i->external != external)
                     break;
-                changes[n++] = {i->docID, i->revID, i->sequence, i->bodySize};
+                Change change = {i->docID, i->revID, i->sequence, i->bodySize};
+                changes[n++] = change;
             }
             ++i;
         }
