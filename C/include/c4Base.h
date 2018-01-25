@@ -240,7 +240,7 @@ static C4INLINE C4Slice c4str(const char *str) {
 
 #if !defined(kC4SliceNull)
 #ifdef _MSC_VER
-const C4Slice kC4SliceNull = { NULL, 0 };
+static const C4Slice kC4SliceNull = { NULL, 0 };
 #else
 #define kC4SliceNull ((C4Slice){NULL, 0})
 #endif
