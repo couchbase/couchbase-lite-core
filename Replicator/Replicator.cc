@@ -67,6 +67,9 @@ namespace litecore { namespace repl {
     {
         _loggingID = string(c4::sliceResult(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
+
+        log("%s", string(options).c_str());
+
         if (options.push != kC4Disabled)
             _pusher = new Pusher(connection, this, _dbActor, _options);
         if (options.pull != kC4Disabled)

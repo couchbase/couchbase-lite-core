@@ -13,6 +13,7 @@
 #include "StringUtil.hh"
 #include "PlatformCompat.hh"
 #include "BLIP.hh"
+#include <sstream>
 
 #if defined(__clang__) && !defined(__ANDROID__)
 #include <cxxabi.h>
@@ -28,6 +29,24 @@ namespace litecore {
 }
 
 namespace litecore { namespace repl {
+
+    Worker::Options::operator string() const {
+        static const char* kModeNames[] = {"disabled", "passive", "one-shot", "continuous"};
+        stringstream s;
+        if (push != kC4Disabled)
+            s << "Push=" << kModeNames[push] << ", ";
+        if (pull != kC4Disabled)
+            s << "Pull=" << kModeNames[pull] << ", ";
+        s << "Options=";
+        if (properties.empty()) {
+            s << "{}";
+        } else {
+            c4::stringResult props(properties.toJSON5());
+            s << props;
+        }
+        return s.str();
+    }
+
 
     Worker::Worker(blip::Connection *connection,
                          Worker *parent,

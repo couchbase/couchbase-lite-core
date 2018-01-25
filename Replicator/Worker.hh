@@ -104,6 +104,8 @@ namespace litecore { namespace repl {
             Options& setNoConflicts() {
                 return setProperty(C4STR(kC4ReplicatorOptionNoConflicts), true);
             }
+
+            explicit operator std::string() const;
         };
 
         
