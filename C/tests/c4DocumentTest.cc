@@ -537,6 +537,18 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     auto doc = c4doc_put(db, &rq, nullptr, &err);
     REQUIRE(doc);
 
+    // Check that the pulled revision is treated as a conflict:
+    CHECK(doc->selectedRev.revID == C4STR("4-dddd"));
+    CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict));
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK((int)doc->selectedRev.flags == kRevIsConflict);
+
+    // Check that the local revision is still current:
+    CHECK(doc->revID == C4STR("3-aaaaaa"));
+    REQUIRE(c4doc_selectCurrentRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("3-aaaaaa"));
+    CHECK((int)doc->selectedRev.flags == kRevLeaf);
+
     // Now check the common ancestor algorithm:
     REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-aaaaaa"), C4STR("4-dddd")));
     CHECK(doc->selectedRev.revID == kRev2ID);
@@ -563,8 +575,13 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
         c4doc_selectCurrentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99"));
         CHECK(doc->selectedRev.body == C4STR("{\"merged\":true}"));
+        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
         c4doc_selectParentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("4-dddd"));
+        CHECK((int)doc->selectedRev.flags == 0);
+        c4doc_selectParentRevision(doc);
+        CHECK(doc->selectedRev.revID == C4STR("3-ababab"));
+        CHECK((int)doc->selectedRev.flags == 0);
     }
 
     SECTION("Merge, 3 wins") {
@@ -573,8 +590,10 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
         c4doc_selectCurrentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("4-333ee0677b5f1e1e5064b050d417a31d2455dc30"));
         CHECK(doc->selectedRev.body == C4STR("{\"merged\":true}"));
+        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
         c4doc_selectParentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("3-aaaaaa"));
+        CHECK((int)doc->selectedRev.flags == 0);
     }
 
     c4doc_free(doc);
