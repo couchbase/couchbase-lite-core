@@ -1,0 +1,496 @@
+[[couchbase-mobile-2.0-replication-protocol]]
+Couchbase Mobile 2.0 Replication Protocol
+-----------------------------------------
+
+Jens Alfke — June 2017
+
+Protocol version 1.2
+
+This document specifies the new replication protocol in development for
+Couchbase Mobile 2.0. It supersedes the REST-based protocol inherited
+from CouchDB.
+
+Benefits of the new protocol are:
+
+* Faster and uses less bandwidth
+* Consumes fewer TCP ports on the server (a limited resource)
+* Opens a single TCP connection on the client instead of 4+ -- this
+prevents problems with the limited number of sockets the client HTTP
+library will open, which has led to deadlocks and performance problems
+* Cleaner error handling, because socket-level connectivity errors only
+happen on one socket instead of intermittently affecting some fraction
+of requests
+* Fully IANA compliant sparkly pony hooves (just checking to see if
+anyone is reading this)
+* Can be adapted to run over alternate transports like Bluetooth, or
+anything else we can send framed messages over
+* Less code (about 40% less in the iOS implementation)
+* Cleaner implementation, with the generic messaging layer separated
+from the replication-specific logic
+* Protocol is inherently symmetric between client/server, which means
+the two roles share a lot of common code
+* Supports “conflict-free” servers, which require clients to resolve
+conflicts before pushing changes.
+
+[[contents]]
+Contents
+~~~~~~~~
+
+1.  link:#1-architecture[Architecture]
+2.  link:#2-connecting[Connecting]
+3.  link:#3-message-types[Message Types]
+
+* link:#getcheckpoint[getCheckpoint]
+* link:#setcheckpoint[setCheckpoint]
+* link:#subchanges[subChanges]
+* link:#changes[changes]
+* link:#proposechanges[proposeChanges]
+* link:#rev[rev]
+* link:#getattachment[getAttachment]
+* link:#proveattachment[proveAttachment]
+
+1.  link:#4-algorithm[Algorithm]
+
+[[architecture]]
+1. Architecture
+~~~~~~~~~~~~~~~
+
+The new replication protocol is built on the multiplexed
+https://github.com/couchbaselabs/BLIP-Cocoa/blob/master/Docs/BLIP%20Protocol.md[BLIP
+messaging protocol], which itself is layered on WebSockets. The relevant
+aspects of the transport are:
+
+* Communication runs over a single socket.
+* Both client and server can send *messages*. The protocol is
+symmetrical.
+* Message delivery is reliable and ordered.
+* Messages are multiplexed -- any number can be in flight at once, and a
+large message does not block the ones behind it.
+* A message is similar to an HTTP request in that it contains an
+unlimited-size binary body plus a set of key/value properties.
+* An unsolicited message is called a *request*.
+* A request can be responded to (unless marked as no-reply) and the
+*response* message can contain either properties and a body, or an
+error.
+
+Other transport protocols could be used under the hood in some
+circumstances, for example Bluetooth, as long as the message semantics
+are preserved.
+
+[[connecting]]
+2. Connecting
+~~~~~~~~~~~~~
+
+The client opens a WebSocket connection to the server at path
+`/`__dbname__`/_blipsync` (where _dbname_ is the name of the database.)
+This begins as an HTTP GET request, and goes through authentication as
+usual, then upgrades to WebSocket protocol.
+
+The WebSocket sub-protocol name "BLIP" (as sent in the
+`Sec-WebSocket-Protocol` header) is used to ensure that both client and
+server understand BLIP.
+
+[[message-types]]
+3. Message Types
+~~~~~~~~~~~~~~~~
+
+A request's type is identified by its `Profile` property. The following
+subsections are named after the `Profile` value of the request. Each
+section begins by listing other defined properties and any meaning
+assigned to the message body.
+
+Any response properties and/or body data are listed too. However, many
+messages don't require any data in the response, just a success/failure
+indication.
+
+Most of these messages are sent by both client and server. Their usage
+in the replication algorithm is described in the *Algorithm* section
+below.
+
+[[getcheckpoint]]
+getCheckpoint
+^^^^^^^^^^^^^
+
+`client`: Unique ID of client checkpoint to retrieve
+
+Retrieves a checkpoint stored on the receiver. The checkpoint is a JSON
+object that's stored as the value of the key given by the `client`
+property.
+
+Response:
+
+`rev`: The MVCC revision ID of the checkpoint +
+Body: JSON data of the checkpoint
+
+[[setcheckpoint]]
+setCheckpoint
+^^^^^^^^^^^^^
+
+`client`: Unique ID of client checkpoint to store +
+`rev`: Last known MVCC revision ID of the checkpoint _(omitted if this
+is a new checkpoint)_ +
+Body: JSON data of checkpoint
+
+Stores a checkpoint on the receiver. The JSON object in the request body
+is associated with the key given in the `client` property. If the `rev`
+value does not match the checkpoint's current MVCC revision ID, the
+request fails. On success, a new revision ID is generated and returned
+in the response for use in the next request.
+
+Response:
+
+`rev`: New MVCC revision ID of the checkpoint
+
+[[subchanges]]
+subChanges
+^^^^^^^^^^
+
+`since`: Latest sequence ID already known to the requestor, JSON-encoded
+_(optional)_ +
+`continuous`: Set to `true` if the requestor wants change notifications
+to be sent indefinitely _(optional)_ +
+`filter`: The name of a filter function known to the recipient
+_(optional)_ +
+`batch`: Maximum number of changes to send in a single `change` message
+_(optional)_ +
+_other properties_: Named parameters for the filter function
+_(optional)_ +
+Body: JSON dictionary _(optional)_
+
+Asks the recipient to begin sending change messages starting from the
+sequence just after the one given by the `since` property, or from the
+beginning if no `since` is given.
+
+Note: A sequence ID can be any type of JSON value, so the `since`
+property MUST be JSON-encoded. In particular, if the sequence ID is a
+string, it MUST have quotes and any necessary escape characters added.
+
+The changes are _not_ sent as a response to this request, rather as a
+series of `changes` messages, each containing information about zero or
+more changes. These are sent in chronological order.
+
+Once all the existing changes have been sent, the end is signaled via an
+empty `changes` message. Ordinarily, that will be the last message sent.
+However, if the `continuous` property was set in the `subChanges`
+request, the recipient will continue to send `changes` messages as new
+changes are made to its database, until the connection is closed.
+
+The optional `filter` parameter names a filter function known to the
+recipient that limits which changes are sent. If this is present, any
+other properties to the request will be passed as parameters to the
+filter function. The Sync Gateway only recognizes the filter
+`sync_gateway/bychannel`, which requires the parameter `channels` whose
+value is a comma-delimited set of channel names.
+
+If a request body is present, it MUST be a JSON dictionary/object. In
+this dictionary the key `docIDs` MAY appear; its value MUST be an array
+of strings. If present, the recipient MUST only send changes to
+documents with IDs appearing in that array. Other unrecognized keys in
+the dictionary MUST be ignored.
+
+[[changes]]
+changes
+^^^^^^^
+
+Body: JSON array
+
+Notifies the recipient of a series of changes made to the sender's
+database. A passive replicator (like Sync Gateway) is triggered to send
+these by a prior `subChanges` request sent by the client. An active
+replicator (Couchbase Lite) will send them spontaneously as part of a
+push replication.
+
+The changes are encoded in the message body as a JSON array with one
+item per change. There can be zero or more changes; a messages with zero
+changes signifies that delivery has "caught up" and all existing
+sequences have been sent. This may be followed by more changes as they
+occur, if the replication is continuous.
+
+Each change in the array is encoded as a nested array of the form
+`[sequence, docID, revID, deleted]`, i.e. sequence ID followed by
+document ID followed by revision ID followed by the deletion state
+(which can be omitted if it's `false`.)
+
+The sequence IDs MUST be in forward chronological order but are
+otherwise opaque (and may be any JSON data type.)
+
+The document body size (in bytes) MAY be appended to the array as a
+fifth item if it's known. This is understood to be approximate, since
+the sender's database may not store the body in exactly the same form
+that will be transmitted.
+
+The sender SHOULD break up its change history into multiple `changes`
+messages instead of sending them in one big message. (It SHOULD honor
+the optional `batch` parameter in the `subChanges` request it received
+from the peer.) It SHOULD use flow control by limiting the number of
+`changes` messages that it's sent but not received replies to yet.
+
+A peer in conflict-free mode SHOULD reject a received `changes` message
+by returning a BLIP/409 error. This informs the sender that it should
+use `proposeChanges` instead.
+
+Response:
+
+`maxHistory`: Max length of revision history to send _(optional)_ +
+Body: JSON array (see below)
+
+The response message indicates which revisions the recipient wants to
+receive (as `rev` messages). Its body is also a JSON array; each item
+corresponds to the revision at the same index in the request. The item
+is either:
+
+* an array of strings, where each string is the revision ID of an
+already-known ancestor. (This may be empty if no ancestors are known.)
+This is used to shorten the revision history to be sent with the
+document, and may in the future be used to enable delta compression.
+* or a `0` (zero) or `null` value, indicating that the corresponding
+revision isn't of interest.
+
+Trailing zeros or nulls can be omitted from the response array, so in
+the simplest case the response can be an empty array `[]` if the
+recipient isn't interested in any of the revisions.
+
+The `maxHistory` response property, if present, indicates the maximum
+length of the `history` array to be sent in `rev` messages (see below.)
+It should be set to the maximum revision-tree depth of the database. If
+it's missing, the history length is unlimited.
+
+[[proposechanges]]
+proposeChanges
+^^^^^^^^^^^^^^
+
+Body: JSON array
+
+Sends proposed changes to a server that’s in conflict-free mode. This is
+much like `changes` except that the items in the body array are
+different; they look like `[docID, revID, serverRevID]`. Each still
+represents an updated document, but the information sent is the
+documentID, the current revisionID, and the revisionID of the last known
+server revision (if any). If there is no known server revision, the
+`serverRevID` SHOULD be omitted, or otherwise MUST be an empty string.
+(As with `changes`, the estimated body size MAY be appended, if the
+`serverRevID` is present.)
+
+The recipient SHOULD then look through each document in its database. If
+the document exists, but the given serverRevID is not known or not
+current, the proposed document SHOULD be rejected with a 409 status (see
+below.) Or if the document exists and the revID is current, the server
+already has the document and SHOULD reject it with a 304 status. The
+recipient MAY also detect other problems, such as an illegal document
+ID, or a lack of write access to the document, and send back an
+appropriate status code as described below.
+
+A peer not in conflict-free mode MUST reject a received `proposeChanges`
+message by returning a BLIP/404 error. This informs the sender that it
+should use `changes` instead.
+
+Response:
+
+Body: JSON array
+
+The response message indicates which of the proposed changes are allowed
+and which are out of date. It consists of an array of numbers, generally
+with the same meanings as HTTP status codes, with the following specific
+meanings: * 0: The change is allowed and the peer should send the
+revision * 304: The server already has this revision, so the peer
+doesn't need to send it * 409: This change would cause a conflict, so
+the server needs to resolve it and retry later
+
+As with `changes`, trailing zeros can be omitted, but the interpretation
+is different since a zero means “send it” instead of “don’t send it”. So
+the common case of an empty array response tells the sender to _send_
+all of the proposed revisions.
+
+[[rev]]
+rev
+^^^
+
+`id`: Document ID _(optional)_ +
+`rev`: Revision ID _(optional)_ +
+`deleted`: true if the revision is a tombstone _(optional)_ +
+`sequence`: Sequence ID, JSON-encoded _(optional unless unsolicited,
+q.v.)_ +
+`history`: Revision history (comma-delimited list of revision IDs) +
+Body: Document JSON
+
+Sends one document revision. The `id`, `rev`, `deleted` properties are
+optional if corresponding `_id`, `_rev`, `_deleted` properties exist in
+the JSON body (and vice versa.) The `sequence` property is optional
+unless this message was unsolicited.
+
+A recipient in conflict-free mode will check whether the `history` array
+contains the current local revision ID, or if the `history` array is
+empty and the document does not exist locally. If not, it MUST reject
+the revision by returning a 409 status.
+
+Ordinarily a `rev` message is triggered by a prior response to a
+`changes` message. However, it MAY be sent unsolicited, _instead_ of in
+a `changes` message, if all of the following are true:
+
+* This revision's metadata hasn't yet been sent in a `changes` message;
+* this revision's sequence is the first one that hasn't yet been sent in
+a `changes` message;
+* the revision's JSON body is small;
+* and the sender believes it's very likely that the recipient will want
+this revision (doesn't have it yet and is not filtering it out.)
+
+In practice this is most likely to occur for brand new changes being
+sent in a continuous replication in response to a local database update
+notification.
+
+The recipient MUST send a response unless the request was sent
+'noreply'. It MUST not send a success response until it has durably
+added the revision to its database, or has failed to add it. On success
+the response can be empty; on failure it MUST be an error.
+
+Note: The recipient may need to send one or more `getattach` messages
+while processing the `rev` message, in which case it MUST NOT send the
+`rev`'s response until it's received responses to the `getattach`
+message(s) and durably added the attachments, as well as the document,
+to its database.
+
+[[getattachment]]
+getAttachment
+^^^^^^^^^^^^^
+
+`digest`: Attachment digest (as found in document `_attachments`
+metadata.)
+
+Requests the body of an attachment, given its digest. This is called by
+the recipient of a `rev` message if it determines that the revision
+contains an attachment whose contents it does not know.
+
+If the server's database has per-document access control, where
+documents may be readable by some but not all users, it MUST check that
+an attachment with this digest appears in at least one document that the
+client has access to. Otherwise a client could violate access control by
+getting the body of any attachment it can learn the digest of (probably
+"leaked" by another user who does have access to it.) The simplest way
+to enforce this is for the server to keep track of which `rev` messages
+it's sent to the client but not yet received responses to; these are the
+ones that the client will be requesting attachments of, to complete its
+downloads.
+
+(This request is problematic -- it assumes that the recipient indexes
+attachments by digest, which is true of Couchbase Mobile but not
+necessarily of other implementations. Adding the document and revision
+ID to the properties would help.)
+
+Response:
+
+Body: raw contents of attachment
+
+[[proveattachment]]
+proveAttachment
+^^^^^^^^^^^^^^^
+
+`digest`: Attachment digest (as found in document `_attachments`
+metadata.) +
+Body: A _nonce_: 16 to 255 bytes of random binary data
+
+Asks the recipient to prove that it has the body of the attachment with
+the given digest, without making it actually send the data. This is
+another security precaution that SHOULD used by servers with
+per-document access control, i.e. where documents may be readable by
+some but not all users. If this weren't in place, a user who knew the
+digest (but not the contents) of an an attachment could upload a
+document containing the metadata of an attachment with the same digest,
+and then immediately download the document and the attachment.
+
+Such a server SHOULD send this request when it receives a `rev` message
+containing an attachment digest that matches an attachment it already
+has. The server first generates some cryptographically-random bytes (20
+is a reasonable number) as a `nonce`, and sends the nonce along with the
+attachment's digest in a `proveattach` request to the client.
+
+The recipient (the client, the one trying to push the revision) computes
+a SHA-1 digest of the concatenation of the following:
+
+1.  The length of the nonce (a single byte)
+2.  The nonce itself
+3.  The entire body of the attachment
+
+It then sends a response containing the resulting digest, in the same
+encoding used for attachment digests: "sha1-" followed by lowercase hex
+digits.
+
+(Meanwhile, the paranoid server performs the same computation using its
+own copy of the attachment. It then verifies that the digest received
+from the client matches the digest it computed. If it doesn't match, the
+server can assume the client doesn't really have the attachment, and can
+reject the `rev` message with the revision containing it.)
+
+[[algorithm]]
+4. Algorithm
+~~~~~~~~~~~~
+
+Here are informal descriptions of the flow of control of both push and
+pull replication. Note the symmetry: a lot of the steps are the same in
+both lists but with "client" and "server" swapped.
+
+[[push]]
+Push:
+^^^^^
+
+1.  Client opens connection to server and authenticates
+2.  Client sends `getCheckpoint` to verify checkpoint status
+3.  Client sends one or more `changes` messages containing revisions
+added since the checkpointed local sequence
+* If response is a BLIP/409 or HTTP/409 error, client infers that the
+server is in "no conflicts" mode, and switches to sending
+`proposeChanges` messages, including resending the failed one.
+* Client keeps track of how many `changes` messages have been sent but
+not yet responded to
+* If that count exceeds a reasonable limit, the client waits to send the
+next message until a response is received.
+4.  Server replies to each `changes` message indicating which revisions
+it wants and which ancestors it already has
+* If server is in "no conflicts" mode, it will reject `changes` messages
+with a BLIP/409 or HTTP/409 error, and instead accept `proposeChanges`
+messages.
+5.  For each requested revision:
+1.  Client sends document body in a `rev` message
+2.  Server looks at each newly-added attachment digest in each revision
+and
+* sends a `getAttachment` for each attachment it doesn't have; client
+sends data
+* sends a `proveAttachment` for each attachment it already has; client
+sends proof
+3.  Server adds revision & attachments to database, and sends success
+response to the client's `rev` message.
+6.  Client periodically sends `setCheckpoint` as progress updates
+7.  When all revisions and attachments have been sent, client either
+disconnects (non-continuous mode) or stays connected and watches for
+local doc changes, returning to step 3 when changes occur
+
+[[pull]]
+Pull:
+^^^^^
+
+1.  Client opens connection to server and authenticates
+2.  Client sends `getCheckpoint` to verify checkpoint status
+3.  Client sends a `subChanges` message with the latest remote sequence
+ID it's received in the past, and a `continuous` property if it wants to
+pull continuously
+4.  Server sends one or more `changes` messages containing revisions
+added since the checkpointed remote sequence
+* Server keeps track of how many `changes` messages have been sent but
+not yet responded to
+* If that count exceeds a reasonable limit, the server waits to send the
+next message until a response is received.
+5.  Client replies to each `changes` message indicating which revisions
+it wants and which ancestors it already has
+6.  For each requested revision:
+1.  Server sends document body in a `rev` message
+2.  Client looks at each newly-added attachment digest in each revision
+and sends a `getAttachment` for each attachment it doesn't have; server
+sends data
+3.  Client adds revision & attachments to database, and sends success
+response to the server's `rev` message.
+7.  Client periodically sends `setCheckpoint` as progress updates
+8.  When there are no more changes, server sends a `changes` message
+with an empty list
+9.  Client in non-continuous mode disconnects now that it's caught up;
+client in continuous mode keeps listening
+10. Server in continuous mode watches for local doc changes, returning
+to step 4 when changes occur
