@@ -1,3 +1,6 @@
+:toc:
+:toc-placement!:
+
 [[couchbase-mobile-2.0-replication-protocol]]
 Couchbase Mobile 2.0 Replication Protocol
 -----------------------------------------
@@ -32,24 +35,13 @@ the two roles share a lot of common code
 * Supports “conflict-free” servers, which require clients to resolve
 conflicts before pushing changes.
 
+== Table of Contents
+
+toc::[]
+
 [[contents]]
 Contents
 ~~~~~~~~
-
-1.  link:#1-architecture[Architecture]
-2.  link:#2-connecting[Connecting]
-3.  link:#3-message-types[Message Types]
-
-* link:#getcheckpoint[getCheckpoint]
-* link:#setcheckpoint[setCheckpoint]
-* link:#subchanges[subChanges]
-* link:#changes[changes]
-* link:#proposechanges[proposeChanges]
-* link:#rev[rev]
-* link:#getattachment[getAttachment]
-* link:#proveattachment[proveAttachment]
-
-1.  link:#4-algorithm[Algorithm]
 
 [[architecture]]
 1. Architecture
