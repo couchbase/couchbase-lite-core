@@ -201,6 +201,11 @@ private:
 
         // Parse the Fleece data:
         _fleeceData = valueAsSlice(argv[0]);
+        if (!_fleeceData) {
+            // Weird not to get a document; have to return early to avoid a crash.
+            // Treat this as an empty doc. (See issue #379)
+            return SQLITE_OK;
+        }
         slice data = _vtab->context.accessor(_fleeceData);
         _container = Value::fromTrustedData(data);
         if (!_container) {
