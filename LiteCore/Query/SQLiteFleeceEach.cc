@@ -204,6 +204,7 @@ private:
         if (!_fleeceData) {
             // Weird not to get a document; have to return early to avoid a crash.
             // Treat this as an empty doc. (See issue #379)
+            Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
             return SQLITE_OK;
         }
         slice data = _vtab->context.accessor(_fleeceData);
