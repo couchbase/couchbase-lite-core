@@ -74,13 +74,11 @@ namespace litecore {
         LPWSTR locale = ctx.localeName;
         DWORD winFlags = ctx.flags;
 
-        StackArray(wchars1, WCHAR, len1);
+		StackMemory(wchars1, WCHAR, len1);
         int size1 = MultiByteToWideChar(CP_UTF8, 0, (char *)chars1, len1, wchars1, len1);
-        wchars1[size1++] = 0;
 
-        StackArray(wchars2, WCHAR, len2);
+        StackMemory(wchars2, WCHAR, len2);
         int size2 = MultiByteToWideChar(CP_UTF8, 0, (char *)chars2, len2, wchars2, len2);
-        wchars2[size2++] = 0;
 
         int result = CompareStringEx(locale, winFlags, wchars1, size1, wchars2, size2, nullptr, nullptr, 0);
         if (result == 0) {
