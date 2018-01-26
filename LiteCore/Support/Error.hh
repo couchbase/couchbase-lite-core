@@ -123,7 +123,7 @@ namespace litecore {
                                                  const char *expr,
                                                  const char *message =nullptr);
 
-        static void logBacktrace(unsigned skipFrames =0);
+        static std::string backtrace(unsigned skipFrames =0);
 
         static bool sWarnOnError;
     };
