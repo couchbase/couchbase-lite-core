@@ -281,6 +281,12 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][C]") {
             rq.history = &doc->revID;
             rq.historyCount = 1;
             rq.body = kBody;
+            if (i == 0) {
+                // Pretend the 1st revision has a remote origin (see issue #376)
+                rq.remoteDBID = 1;
+                rq.existingRevision = true;
+                rq.history = &kRevID;
+            }
             rq.save = true;
             auto savedDoc = c4doc_put(db, &rq, nullptr, &error);
             REQUIRE(savedDoc != nullptr);
@@ -288,7 +294,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][C]") {
             doc = savedDoc;
         }
     }
-    C4Log("Created %u revisions in %.3f ms", kNumRevs, st.elapsed());
+    C4Log("Created %u revisions in %.3f sec", kNumRevs, st.elapsed());
 
     // Check rev tree depth:
     unsigned nRevs = 0;
