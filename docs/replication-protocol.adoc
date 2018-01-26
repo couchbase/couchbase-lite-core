@@ -1,5 +1,6 @@
-:toc:
-:toc-placement!:
+[%hardbreaks]
+:toc: left
+:toclevels: 3
 
 [[couchbase-mobile-2.0-replication-protocol]]
 Couchbase Mobile 2.0 Replication Protocol
