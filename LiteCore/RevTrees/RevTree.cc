@@ -421,6 +421,14 @@ namespace litecore {
             }
         }
         _revs.resize(dst - _revs.begin());
+
+        // Remove purged revs from _remoteRevs:
+        auto tempRemoteRevs = _remoteRevs;
+        for (auto &e : tempRemoteRevs) {
+            if (e.second->isMarkedForPurge())
+                _remoteRevs.erase(e.first);
+        }
+
         _changed = true;
     }
 
@@ -512,6 +520,12 @@ namespace litecore {
         for (Rev *rev : _revs) {
             out << "\t" << (++i) << ": ";
             rev->dump(out);
+
+            for (auto &e : _remoteRevs) {
+                if (e.second == rev)
+                    out << " <--remote#" << e.first;
+            }
+
             out << "\n";
         }
     }
