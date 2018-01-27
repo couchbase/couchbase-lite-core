@@ -422,8 +422,8 @@ pull replication. Note the symmetry: a lot of the steps are the same in
 both lists but with "client" and "server" swapped.
 
 [[push]]
-Push:
-^^^^^
+Push
+^^^^
 
 1.  Client opens connection to server and authenticates
 2.  Client sends `getCheckpoint` to verify checkpoint status
@@ -457,8 +457,8 @@ disconnects (non-continuous mode) or stays connected and watches for
 local doc changes, returning to step 3 when changes occur
 
 [[pull]]
-Pull:
-^^^^^
+Pull
+^^^^
 
 1.  Client opens connection to server and authenticates
 2.  Client sends `getCheckpoint` to verify checkpoint status
@@ -487,3 +487,55 @@ with an empty list
 client in continuous mode keeps listening
 10. Server in continuous mode watches for local doc changes, returning
 to step 4 when changes occur
+
+Pull interaction digram
+
+```
+┌────────────┐                                                                         ┌────────────────┐
+│   Puller   │                                                                         │      Peer      │
+└────────────┘                                                                         └────────────────┘
+       │                                                                                        │        
+       ├─────────────────────────subChanges RQ [since, continuous]──────────────────────────────▶        
+       │                                                                                        │        
+       │                                                                                        │        
+       ◀ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ subChanges RSP: NoReply ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─│        
+       │                                                                                        │        
+       │                                                                                        │        
+       │                                                                                        │        
+       ◀─────────────────────────change RQ [{docId, revId, ..}, {..}]───────────────────────────┤        
+       │                                                                                        │        
+       │                                                                                        │        
+       ├─────────────────────────────changes RSP [rev1, rev2, ..]───────────────────────────────▶        
+       │                                                                                        │        
+       │                                                                                        │        
+       ◀─────────────────────────change RQ [{docId, revId, ..}, {..}]───────────────────────────┤        
+       │                                                                                        │        
+       │                                                                                        │        
+       ├─────────────────────────────changes RSP [rev5, rev6, ..]───────────────────────────────▶        
+       │                                                                                        │        
+       │                                                                                        │        
+       ◀─────────────────────────changes RQ [] (empty indicates finished)───────────────────────┤        
+       │                                                                                        │        
+       │                                                                                        │        
+       ├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ changes RSP: NoReply─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─▶        
+       │                                                                                        │        
+       │                                                                                        │        
+       ◀──────────────────────────────rev RQ [{docId, rev1, body}]──────────────────────────────┤        
+       │                                                                                        │        
+       │                                     getAttach RQ                                       │        
+       ├───────────────────────────────────────[digest]─────────────────────────────────────────▶        
+       │                                                                                        │        
+       │                                                                                        │        
+       ◀──────────────────────────────────getAttach RSP [body]──────────────────────────────────┤        
+       │                                                                                        │        
+       │                                                                                        │        
+       ├──────────────────────────────────getAttach RQ [digest]─────────────────────────────────▶        
+       │                                                                                        │        
+       │                                                                                        │        
+       ◀───────────────────────────────────getAttach RSP [body]─────────────────────────────────┤        
+       │                                                                                        │        
+       │                                                                                        │        
+       ├───────────────────────────────────────rev RSP []───────────────────────────────────────▶        
+       │                                                                                        │        
+       ▼                                                                                        ▼        
+```
