@@ -52,7 +52,6 @@ namespace litecore {
 
 
         const FilePath path;                            // The filesystem path
-        atomic<bool> isCompacting {false};              // Is the database compacting?
 
 
         Transaction* transaction() {
@@ -61,6 +60,7 @@ namespace litecore {
 
         void addDataFile(DataFile *dataFile) {
             unique_lock<mutex> lock(_mutex);
+            mustNotBeCondemned();
             if (find(_dataFiles.begin(), _dataFiles.end(), dataFile) == _dataFiles.end())
                 _dataFiles.push_back(dataFile);
         }
@@ -87,6 +87,18 @@ namespace litecore {
         size_t openCount() {
             unique_lock<mutex> lock(_mutex);
             return _dataFiles.size();
+        }
+
+
+        // Marks the database file as about to be deleted, preventing any other thread from
+        // opening (or deleting!) it.
+        void condemn(bool condemn) {
+            unique_lock<mutex> lock(_mutex);
+            if (condemn) {
+                mustNotBeCondemned();
+                LogVerbose(DBLog, "Preparing to delete DataFile %s", path.path().c_str());
+            }
+            _condemned = condemn;
         }
 
 
@@ -134,6 +146,11 @@ namespace litecore {
             sFileMap.erase(path.path());
         }
 
+        void mustNotBeCondemned() {
+            if (_condemned)
+                error::_throw(error::Busy, "Database file is being deleted");
+        }
+
 
     private:
         mutex              _transactionMutex;       // Mutex for transactions
@@ -141,7 +158,8 @@ namespace litecore {
         Transaction*       _transaction {nullptr};  // Currently active Transaction object
         vector<DataFile*>  _dataFiles;              // Open DataFiles on this File
         unordered_map<string, Retained<RefCounted>> _sharedObjects;
-        mutex              _mutex;                  // Mutex for _dataFiles and _sharedObjects
+        bool               _condemned {false};      // Prevents db from being opened or deleted
+        mutex              _mutex;                  // Mutex for non-transaction state
 
         static unordered_map<string, Shared*> sFileMap;
         static mutex sFileMapMutex;

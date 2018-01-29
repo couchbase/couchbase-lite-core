@@ -81,10 +81,6 @@ namespace litecore {
     // open the database and grab the write lock.
     static const unsigned kBusyTimeoutSecs = 10;
 
-    // How long deleteDataFile() should wait for other threads to close their connections
-    static const unsigned kOtherDBCloseTimeoutSecs = 3;
-
-
     LogDomain SQL("SQL");
 
     void LogStatement(const SQLite::Statement &st) {
@@ -119,7 +115,7 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile::Factory& SQLiteDataFile::factory() {
+    SQLiteDataFile::Factory& SQLiteDataFile::sqliteFactory() {
         static SQLiteDataFile::Factory s;
         return s;
     }
@@ -160,8 +156,8 @@ namespace litecore {
         auto count = (unsigned) openCount(path);
         if (count > 0)
             error::_throw(error::Busy, "Still %u open connection(s) to %s",
-                          count,
-path.path().c_str());
+                          count, path.path().c_str());
+        LogTo(DBLog, "Deleting database file %s (with -wal and -shm)", path.path().c_str());
         return path.del() | path.appendingToName("-shm").del() | path.appendingToName("-wal").del();
         // Note the non-short-circuiting 'or'! All 3 paths will be deleted.
     }
@@ -456,21 +452,6 @@ path.path().c_str());
         _setLastSeqStmt->bindNoCopy(1, store.name());
         _setLastSeqStmt->bind(2, (long long)seq);
         _setLastSeqStmt->exec();
-    }
-
-
-    void SQLiteDataFile::deleteDataFile() {
-        // Wait for other connections to close -- in multithreaded setups there may be races where
-        // another thread takes a bit longer to close its connection.
-        fleece::Stopwatch st;
-        while (factory().openCount(filePath()) > 1) {
-            if (st.elapsed() > kOtherDBCloseTimeoutSecs)
-                error::_throw(error::Busy);
-            else
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-        close();
-        factory().deleteFile(filePath());
     }
 
 

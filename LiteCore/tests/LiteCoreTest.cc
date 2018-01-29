@@ -126,7 +126,7 @@ void ExpectException(litecore::error::Domain domain, int code, std::function<voi
 
 
 DataFile::Factory& DataFileTestFixture::factory() {
-    return SQLiteDataFile::factory();
+    return SQLiteDataFile::sqliteFactory();
 }
 
 

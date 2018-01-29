@@ -23,9 +23,11 @@
 #include "RefCounted.hh"
 #include "c4Private.h"
 #include "PlatformIO.hh"
+#include "Stopwatch.hh"
 #include <errno.h>
 #include <dirent.h>
 #include <algorithm>
+#include <thread>
 
 #include "SQLiteDataFile.hh"
 
@@ -33,6 +35,10 @@ using namespace std;
 
 
 namespace litecore {
+
+    // How long deleteDataFile() should wait for other threads to close their connections
+    static const unsigned kOtherDBCloseTimeoutSecs = 3;
+
 
     LogDomain DBLog("DB");
 
@@ -57,7 +63,7 @@ namespace litecore {
 
 
     std::vector<DataFile::Factory*> DataFile::factories() {
-        return {&SQLiteDataFile::factory()};
+        return {&SQLiteDataFile::sqliteFactory()};
     }
 
 
@@ -139,6 +145,28 @@ namespace litecore {
     void DataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
         if (alg != kNoEncryption)
             error::_throw(error::UnsupportedEncryption);
+    }
+
+
+    void DataFile::deleteDataFile() {
+        _shared->condemn(true);
+        try {
+            // Wait for other connections to close -- in multithreaded setups there may be races where
+            // another thread takes a bit longer to close its connection.
+            fleece::Stopwatch st;
+            while (_shared->openCount() > 1) {
+                if (st.elapsed() > kOtherDBCloseTimeoutSecs)
+                    error::_throw(error::Busy);
+                else
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            close();
+            factory().deleteFile(filePath());
+            _shared->condemn(false);
+        } catch (...) {
+            _shared->condemn(false);
+            throw;
+        }
     }
 
 

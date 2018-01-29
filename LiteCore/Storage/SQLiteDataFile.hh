@@ -32,7 +32,6 @@ namespace litecore {
 
         bool isOpen() const noexcept override;
         void close() override;
-        void deleteDataFile() override;
         void compact() override;
 
         static void shutdown() { }
@@ -57,7 +56,8 @@ namespace litecore {
             virtual bool deleteFile(const FilePath &path, const Options* =nullptr) override;
         };
 
-        static Factory& factory();
+        static Factory& sqliteFactory();
+        virtual Factory& factory() const override   {return SQLiteDataFile::sqliteFactory();};
 
     protected:
         void reopen() override;

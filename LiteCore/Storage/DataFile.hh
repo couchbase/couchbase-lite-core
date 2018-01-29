@@ -72,7 +72,7 @@ namespace litecore {
         virtual void close();
 
         /** Closes the database and deletes its file. */
-        virtual void deleteDataFile() =0;
+        void deleteDataFile();
 
         virtual void compact() =0;
 
@@ -184,6 +184,8 @@ namespace litecore {
         void setOptions(const Options &o)               {_options = o;}
 
         void forOpenKeyStores(function_ref<void(KeyStore&)> fn);
+
+        virtual Factory& factory() const =0;
 
     private:
         class Shared;
