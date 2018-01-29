@@ -1155,6 +1155,7 @@
 		279D41421EA5918200D8DD9D /* LiteCoreServ */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LiteCoreServ; sourceTree = BUILT_PRODUCTS_DIR; };
 		279D414C1EA591C900D8DD9D /* LiteCoreServ.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LiteCoreServ.cc; sourceTree = "<group>"; };
 		279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreServ.xcconfig; sourceTree = "<group>"; };
+		27A16314201FC2A500C18D9C /* DataFile+Shared.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "DataFile+Shared.hh"; sourceTree = "<group>"; };
 		27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
 		27A924941D9B316D00086206 /* LiteCore-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LiteCore-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A924971D9B316D00086206 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -2137,6 +2138,7 @@
 				27C319EC1A143F5D00A89EDC /* KeyStore.cc */,
 				27C319ED1A143F5D00A89EDC /* KeyStore.hh */,
 				27E48711192171EA007D8940 /* DataFile.cc */,
+				27A16314201FC2A500C18D9C /* DataFile+Shared.hh */,
 				27E48712192171EA007D8940 /* DataFile.hh */,
 				27E0CAA21DBEC3440089A9C0 /* DocumentKeys.hh */,
 				27DF46C21A12CF46007BB4A4 /* Record.cc */,
