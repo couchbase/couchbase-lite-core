@@ -154,8 +154,9 @@ namespace litecore { namespace repl {
         else if (_pushStatus.error.code)
             onError(_pushStatus.error);
 
-        // Save a checkpoint immediately when push or pull finishes:
-        if (taskStatus.level == kC4Stopped)
+        // Save a checkpoint immediately when push or pull finishes or goes idle:
+        if ((taskStatus.level == kC4Stopped || taskStatus.level == kC4Idle)
+                && (task == _pusher || task == _puller))
             _checkpoint.save();
     }
 
@@ -410,7 +411,6 @@ namespace litecore { namespace repl {
                     _checkpoint.saved();
                 }));
             }
-            // Tell the checkpoint the save is finished, so it will call me again
         });
     }
 

@@ -31,7 +31,6 @@ using namespace litecore::websocket;
 class ReplicatorLoopbackTest : public C4Test, Replicator::Delegate {
 public:
     static constexpr duration kLatency              = chrono::milliseconds(5);
-    static constexpr duration kCheckpointSaveDelay  = chrono::milliseconds(500);
 
 
     ReplicatorLoopbackTest()

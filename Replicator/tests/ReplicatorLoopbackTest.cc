@@ -13,7 +13,6 @@
 using namespace litecore::actor;
 
 constexpr duration ReplicatorLoopbackTest::kLatency;
-constexpr duration ReplicatorLoopbackTest::kCheckpointSaveDelay;
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull]") {
     int counter = 0;
@@ -301,7 +300,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][C
 
     _stopOnIdle = true;
     auto pushOpt = Replicator::Options::pushing(kC4Continuous);
-    pushOpt.setProperty(slice(kC4ReplicatorCheckpointInterval), 1);
     runReplicators(pushOpt, Replicator::Options::passive());
 }
 
@@ -313,7 +311,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
 
     _stopOnIdle = true;
     auto pullOpt = Replicator::Options::pulling(kC4Continuous);
-    pullOpt.setProperty(slice(kC4ReplicatorCheckpointInterval), 1);
     runReplicators(Replicator::Options::passive(), pullOpt);
 }
 
