@@ -8,6 +8,11 @@ pushd unix
 core_count=`getconf _NPROCESSORS_ONLN`
 CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLITECORE_BUILD_SQLITE=1 ../..
 make -j `expr $core_count + 1`
-../scripts/strip.sh `pwd`
+if [ -d "couchbase-lite-core" ]; then
+    # Enterprise Edition
+    ../scripts/strip.sh `pwd`/couchbase-lite-core
+else
+    ../scripts/strip.sh `pwd`
+fi
 popd
 popd
