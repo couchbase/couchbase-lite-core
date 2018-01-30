@@ -53,7 +53,8 @@ namespace litecore {
             virtual std::string filenameExtension() override {return ".sqlite3";}
             virtual bool encryptionEnabled(EncryptionAlgorithm) override;
             virtual SQLiteDataFile* openFile(const FilePath &, const Options* =nullptr) override;
-            virtual bool deleteFile(const FilePath &path, const Options* =nullptr) override;
+        protected:
+            virtual bool _deleteFile(const FilePath &path, const Options* =nullptr) override;
         };
 
         static Factory& sqliteFactory();

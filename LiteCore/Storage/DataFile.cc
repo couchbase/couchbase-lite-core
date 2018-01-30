@@ -148,28 +148,6 @@ namespace litecore {
     }
 
 
-    void DataFile::deleteDataFile() {
-        _shared->condemn(true);
-        try {
-            // Wait for other connections to close -- in multithreaded setups there may be races where
-            // another thread takes a bit longer to close its connection.
-            fleece::Stopwatch st;
-            while (_shared->openCount() > 1) {
-                if (st.elapsed() > kOtherDBCloseTimeoutSecs)
-                    error::_throw(error::Busy);
-                else
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            }
-            close();
-            factory().deleteFile(filePath());
-            _shared->condemn(false);
-        } catch (...) {
-            _shared->condemn(false);
-            throw;
-        }
-    }
-
-
     void DataFile::forOtherDataFiles(function_ref<void(DataFile*)> fn) {
         _shared->forOpenDataFiles(this, fn);
     }
@@ -182,6 +160,44 @@ namespace litecore {
 
     Retained<RefCounted>  DataFile::addSharedObject(const string &key, Retained<RefCounted> object) {
         return _shared->addSharedObject(key, object);
+    }
+
+
+#pragma mark - DELETION:
+
+
+    void DataFile::deleteDataFile() {
+        deleteDataFile(this, nullptr, _shared, factory());
+    }
+
+    bool DataFile::Factory::deleteFile(const FilePath &path, const Options *options) {
+        Retained<Shared> shared = Shared::forPath(path, nullptr);
+        return DataFile::deleteDataFile(nullptr, options, shared, *this);
+    }
+
+    bool DataFile::deleteDataFile(DataFile *file, const Options *options,
+                                  Shared *shared, Factory &factory)
+    {
+        shared->condemn(true);
+        try {
+            // Wait for other connections to close -- in multithreaded setups there may be races where
+            // another thread takes a bit longer to close its connection.
+            fleece::Stopwatch st;
+            while (shared->openCount() > (file ? 1 : 0)) {
+                if (st.elapsed() > kOtherDBCloseTimeoutSecs)
+                    error::_throw(error::Busy);
+                else
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+            if (file)
+                file->close();
+            bool result = factory._deleteFile(shared->path, options);
+            shared->condemn(false);
+            return result;
+        } catch (...) {
+            shared->condemn(false);
+            throw;
+        }
     }
 
 

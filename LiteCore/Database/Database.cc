@@ -237,8 +237,6 @@ namespace c4Internal {
                 Warn("c4db_deleteAtPath: unknown storage engine '%s'", storageEngine);
         } else {
             factory = DataFile::factoryForFile(path);
-            if (!factory)
-                factory = DataFile::factories()[0];
         }
         if (!factory)
             error::_throw(error::WrongFormat);

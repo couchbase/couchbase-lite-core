@@ -38,7 +38,8 @@ namespace litecore {
             }
             lock.unlock();
 
-            file->addDataFile(dataFile);
+            if (dataFile)
+                file->addDataFile(dataFile);
             return file;
         }
 

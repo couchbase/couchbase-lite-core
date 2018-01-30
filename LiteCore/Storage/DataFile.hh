@@ -137,7 +137,7 @@ namespace litecore {
             virtual DataFile* openFile(const FilePath &path, const Options* =nullptr) =0;
 
             /** Deletes a non-open file. Returns false if it doesn't exist. */
-            virtual bool deleteFile(const FilePath &path, const Options* =nullptr) =0;
+            bool deleteFile(const FilePath &path, const Options* =nullptr);
 
             /** Moves a non-open file. */
             virtual void moveFile(const FilePath &fromPath, const FilePath &toPath);
@@ -146,7 +146,11 @@ namespace litecore {
             virtual bool fileExists(const FilePath &path);
             
         protected:
+            /** Deletes a non-open file. Returns false if it doesn't exist. */
+            virtual bool _deleteFile(const FilePath &path, const Options* =nullptr) =0;
+
             virtual ~Factory() { }
+            friend class DataFile;
         };
 
         static std::vector<Factory*> factories();
@@ -194,6 +198,9 @@ namespace litecore {
         friend class ReadOnlyTransaction;
         friend class DocumentKeys;
 
+        static bool deleteDataFile(DataFile *file, const Options *options,
+                                   Shared *shared, Factory &factory);
+        
         KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
         void beginTransactionScope(Transaction*);
         void transactionBegan(Transaction*);
