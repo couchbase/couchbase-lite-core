@@ -26,13 +26,13 @@ namespace litecore {
     public:
 
         static Shared* forPath(const FilePath &path, DataFile *dataFile) {
+            string pathStr = path.canonicalPath();
             unique_lock<mutex> lock(sFileMapMutex);
-            auto pathStr = path.path();
             Shared* file = sFileMap[pathStr];
             if (!file) {
-                file = new Shared(path);
+                file = new Shared(pathStr);
                 sFileMap[pathStr] = file;
-                LogToAt(DBLog, Debug, "File %p: created for DataFile %p at %s", file, dataFile, path.path().c_str());
+                LogToAt(DBLog, Debug, "File %p: created for DataFile %p at %s", file, dataFile, pathStr.c_str());
             } else {
                 LogToAt(DBLog, Debug, "File %p: adding DataFile %p", file, dataFile);
             }
@@ -45,14 +45,15 @@ namespace litecore {
 
 
         static size_t openCountOnPath(const FilePath &path) {
+            string pathStr = path.canonicalPath();
+
             unique_lock<mutex> lock(sFileMapMutex);
-            auto pathStr = path.path();
             Shared* file = sFileMap[pathStr];
             return file ? file->openCount() : 0;
         }
 
 
-        const FilePath path;                            // The filesystem path
+        const string path;                              // The filesystem path
 
 
         Transaction* transaction() {
@@ -97,7 +98,7 @@ namespace litecore {
             unique_lock<mutex> lock(_mutex);
             if (condemn) {
                 mustNotBeCondemned();
-                LogVerbose(DBLog, "Preparing to delete DataFile %s", path.path().c_str());
+                LogVerbose(DBLog, "Preparing to delete DataFile %s", path.c_str());
             }
             _condemned = condemn;
         }
@@ -137,14 +138,14 @@ namespace litecore {
 
 
     protected:
-        Shared(const FilePath &p)
+        Shared(const string &p)
         :path(p)
         { }
 
         ~Shared() {
             LogToAt(DBLog, Debug, "File %p: destructing", this);
             unique_lock<mutex> lock(sFileMapMutex);
-            sFileMap.erase(path.path());
+            sFileMap.erase(path);
         }
 
         void mustNotBeCondemned() {

@@ -47,6 +47,8 @@
 		270C6BAA1EBA764B00E73415 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		270C6BAB1EBA765E00E73415 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		270C6BAC1EBA767300E73415 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
+		270C7D4D2022914C00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
+		270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		2722504F1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
@@ -1446,6 +1448,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */,
 				279691771ED4B3720086565D /* libSupport.a in Frameworks */,
 				276E02131EA9802F00FEFE8A /* libcivetweb.a in Frameworks */,
 				276E02121EA9802A00FEFE8A /* libLiteCoreREST.dylib in Frameworks */,
@@ -1476,6 +1479,7 @@
 				279D41251EA5580A00D8DD9D /* libFleece.a in Frameworks */,
 				279D41241EA557E500D8DD9D /* libcivetweb.a in Frameworks */,
 				279D41231EA557E100D8DD9D /* libLiteCore.dylib in Frameworks */,
+				270C7D4D2022914C00FF86D3 /* CoreFoundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -62,7 +62,7 @@ namespace litecore {
         DataFile(const FilePath &path, const Options* =nullptr);
         virtual ~DataFile();
 
-        const FilePath& filePath() const noexcept;
+        FilePath filePath() const noexcept;
         const Options& options() const noexcept              {return _options;}
 
         virtual bool isOpen() const noexcept =0;
@@ -132,9 +132,6 @@ namespace litecore {
             virtual const char* cname() =0;
             virtual std::string filenameExtension() =0;
             virtual bool encryptionEnabled(EncryptionAlgorithm) =0;
-
-            /** The number of currently open DataFiles on the given path. */
-            size_t openCount(const FilePath &path);
 
             /** Opens a DataFile. */
             virtual DataFile* openFile(const FilePath &path, const Options* =nullptr) =0;

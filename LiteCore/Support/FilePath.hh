@@ -55,6 +55,10 @@ namespace litecore {
         std::string fileOrDirName() const;
         std::string path() const            {return _dir + _file;}
 
+        /** Returns a canonical standard form of the path by resolving symbolic links, normalizing
+            capitalization (in case-insensitive filesystems), etc. */
+        std::string canonicalPath() const;
+
         operator std::string () const       {return path();}
 
         /** Converts a string to a valid filename by escaping invalid characters,

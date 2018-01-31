@@ -93,10 +93,6 @@ namespace litecore {
         return nullptr;
     }
 
-    size_t DataFile::Factory::openCount(const FilePath &path) {
-        return Shared::openCountOnPath(path);
-    }
-
     
 #pragma mark - DATAFILE:
 
@@ -118,8 +114,8 @@ namespace litecore {
         _shared->removeDataFile(this);
     }
 
-    const FilePath& DataFile::filePath() const noexcept {
-        return _shared->path;
+    FilePath DataFile::filePath() const noexcept {
+        return FilePath(_shared->path);
     }
 
 
@@ -184,13 +180,25 @@ namespace litecore {
         try {
             // Wait for other connections to close -- in multithreaded setups there may be races where
             // another thread takes a bit longer to close its connection.
+            int n = 0;
             fleece::Stopwatch st;
-            while (shared->openCount() > (file ? 1 : 0)) {
+            for(;;) {
+                auto otherConnections = (long)shared->openCount();
+                if (file && file->isOpen())
+                    --otherConnections;
+                Assert(otherConnections >= 0);
+                if (otherConnections == 0)
+                    break;
+
+                if (n++ == 0)
+                    LogTo(DBLog, "Waiting for %zu other connection(s) to close before deleting %s",
+                          otherConnections, shared->path.c_str());
                 if (st.elapsed() > kOtherDBCloseTimeoutSecs)
-                    error::_throw(error::Busy);
+                    error::_throw(error::Busy, "Can't delete db file while other connections are open");
                 else
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
+            
             if (file)
                 file->close();
             bool result = factory._deleteFile(shared->path, options);

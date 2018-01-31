@@ -108,6 +108,20 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Info", "[Database][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database deletion lock", "[Database][C]") {
+    ExpectingExceptions x;
+    C4Error err;
+    REQUIRE(!c4db_deleteAtPath(databasePath(), &err));
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorBusy);
+
+    auto equivalentPath = databasePathString() + kPathSeparator;
+    REQUIRE(!c4db_deleteAtPath(fleece::slice(equivalentPath), &err));
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorBusy);
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Read-Only UUIDs", "[Database][C]") {
     // Make sure UUIDs are available even if the db is opened read-only when they're first accessed.
     reopenDBReadOnly();

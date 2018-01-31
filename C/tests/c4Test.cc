@@ -20,6 +20,7 @@
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "slice.hh"
+#include "FilePath.hh"
 #include "StringUtil.hh"
 #include "Benchmark.hh"
 #include <iostream>
@@ -37,18 +38,9 @@ const std::string& TempDir() {
 
     static once_flag f;
     call_once(f, [=] {
-        const char* tmpDir = getenv("TMPDIR");
-        if (tmpDir == nullptr) {
-#ifdef _MSC_VER
-            tmpDir = "C:\\tmp";
-#else
-            tmpDir = "/tmp";
-#endif
-        }
-        string path = string(tmpDir) + kPathSeparator + "LiteCore_C_Tests" + kPathSeparator;
-
-        litecore::mkdir_u8(path.c_str(), 0700);
-        kTempDir = path;
+        auto temp = litecore::FilePath::tempDirectory()["Litecore_C_Tests/"];
+        temp.mkdir();
+        kTempDir = temp.canonicalPath();
     });
 
     return kTempDir;
