@@ -54,9 +54,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                                  mkopts(params)),
                   nullptr,
                   params)
-    {
-        _replicator->start();
-    }
+    { }
 
     // Constructor for replication with local database
     C4Replicator(C4Database* db,
@@ -72,8 +70,6 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     {
         loopbackProvider().bind(_replicator->webSocket(), _otherReplicator->webSocket());
         _otherLevel = _otherReplicator->status().level;
-        _otherReplicator->start();
-        _replicator->start();
     }
 
     // Constructor for already-open socket
@@ -83,7 +79,13 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     :C4Replicator(new Replicator(db, WebSocketFrom(openSocket), *this, mkopts(params)),
                   nullptr,
                   params)
-    {
+    { }
+
+    void start() {
+        DebugAssert(!_selfRetain);
+        if (_otherReplicator)
+            _otherReplicator->start();
+        _selfRetain = this; // keep myself alive till Replicator stops
         _replicator->start();
     }
 
@@ -116,7 +118,6 @@ private:
     ,_otherReplicator(otherReplicator)
     ,_params(params)
     ,_status(_replicator->status())
-    ,_selfRetain(this) // keep myself alive till replicator closes
     { }
 
     virtual ~C4Replicator() =default;

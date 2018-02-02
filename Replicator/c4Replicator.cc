@@ -114,7 +114,7 @@ C4Replicator* c4repl_new(C4Database* db,
         if (!dbCopy)
             return nullptr;
 
-        C4Replicator *replicator;
+        Retained<C4Replicator> replicator;
         if (otherLocalDB) {
             if (!checkParam(otherLocalDB != db, "Can't replicate a database to itself", outError))
                 return nullptr;
@@ -130,7 +130,8 @@ C4Replicator* c4repl_new(C4Database* db,
                 return nullptr;
             replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
         }
-        return retain(replicator);
+        replicator->start();
+        return retain((C4Replicator*)replicator);   // to be balanced by release in c4repl_free()
     } catchError(outError);
     return nullptr;
 }
