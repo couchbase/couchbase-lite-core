@@ -52,5 +52,5 @@ In January 2018 the protocol was updated to version 3, which is (unfortunately) 
 
 [WEBSOCKET]: http://www.websocket.org
 [BLIPDOCS]: docs/BLIP%20Protocol.md
-[BLIP_GO]: https://github.com/snej/go-blip
+[BLIP_GO]: https://github.com/couchbase/go-blip
 [BLIP_COCOA]: https://github.com/couchbaselabs/BLIP-Cocoa
