@@ -40,7 +40,7 @@ const std::string& TempDir() {
     call_once(f, [=] {
         auto temp = litecore::FilePath::tempDirectory()["Litecore_C_Tests/"];
         temp.mkdir();
-        kTempDir = temp.canonicalPath();
+        kTempDir = temp.path();
     });
 
     return kTempDir;

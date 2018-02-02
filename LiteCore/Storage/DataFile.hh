@@ -62,8 +62,8 @@ namespace litecore {
         DataFile(const FilePath &path, const Options* =nullptr);
         virtual ~DataFile();
 
-        FilePath filePath() const noexcept;
-        const Options& options() const noexcept              {return _options;}
+        FilePath filePath() const noexcept                  {return _path;}
+        const Options& options() const noexcept             {return _options;}
 
         virtual bool isOpen() const noexcept =0;
 
@@ -212,6 +212,7 @@ namespace litecore {
         DataFile& operator=(const DataFile&) = delete;
 
         Retained<Shared>        _shared;                        // Shared state of file (lock)
+        FilePath const          _path;                          // Path as given (non-canonical)
         Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores

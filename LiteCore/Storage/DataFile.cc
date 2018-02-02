@@ -104,8 +104,9 @@ namespace litecore {
 
 
     DataFile::DataFile(const FilePath &path, const DataFile::Options *options)
-    :_shared(Shared::forPath(path, this)),
-     _options(options ? *options : Options::defaults)
+    :_shared(Shared::forPath(path, this))
+    ,_path(path)
+    ,_options(options ? *options : Options::defaults)
     { }
 
     DataFile::~DataFile() {
@@ -113,11 +114,6 @@ namespace litecore {
         Assert(!_inTransaction);
         _shared->removeDataFile(this);
     }
-
-    FilePath DataFile::filePath() const noexcept {
-        return FilePath(_shared->path);
-    }
-
 
     void DataFile::close() {
         for (auto& i : _keyStores) {
