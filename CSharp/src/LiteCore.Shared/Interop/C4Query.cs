@@ -1,8 +1,5 @@
 ﻿//
-// C4DBQuery.cs
-//
-// Author:
-// 	Jim Borden  <jim.borden@couchbase.com>
+// C4Query.cs
 //
 // Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //

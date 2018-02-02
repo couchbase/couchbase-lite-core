@@ -47,7 +47,7 @@ namespace LiteCore
 #else
     public
 #endif
-         LiteCoreException(C4Error err) : base($"LiteCoreException ({err.code}): {Native.c4error_getMessage(err)}")
+         LiteCoreException(C4Error err) : base($"LiteCoreException ({err.domain} / {err.code}): {Native.c4error_getMessage(err)}")
         {
             Error = err;
         }

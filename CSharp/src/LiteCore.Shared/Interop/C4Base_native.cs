@@ -1,8 +1,5 @@
 //
-// Base_native.cs
-//
-// Author:
-// 	Jim Borden  <jim.borden@couchbase.com>
+// C4Base_native.cs
 //
 // Copyright (c) 2018 Couchbase, Inc All rights reserved.
 //

@@ -1,8 +1,5 @@
 ﻿//
-// RetryHandler.cs
-//
-// Author:
-//  Jim Borden  <jim.borden@couchbase.com>
+// NativeHandler.cs
 //
 // Copyright (c) 2015 Couchbase, Inc All rights reserved.
 //

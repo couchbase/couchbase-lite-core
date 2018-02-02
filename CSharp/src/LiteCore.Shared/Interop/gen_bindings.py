@@ -6,9 +6,6 @@ from datetime import date
 TEMPLATE = """//
 // %(filename)s
 //
-// Author:
-// 	Jim Borden  <jim.borden@couchbase.com>
-//
 // Copyright (c) %(year)d Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -240,7 +237,7 @@ for filename in glob.iglob("*.template"):
         else:
             insert_raw(native, pieces[1:])
 
-    output = TEMPLATE % {"filename":out_filename[2:], "year":date.today().year, "native": ''.join(native), "native_raw": ''.join(native_raw)}
+    output = TEMPLATE % {"filename":out_filename, "year":date.today().year, "native": ''.join(native), "native_raw": ''.join(native_raw)}
     outs.write(output)
     outs.close()
     
