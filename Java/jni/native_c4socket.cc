@@ -1,16 +1,20 @@
-/**
- * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
- */
+//
+// native_c4socket.cc
+//
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 #include <c4.h>
 #include <c4Socket.h>
 #include "com_couchbase_litecore_C4Socket.h"
@@ -83,7 +87,7 @@ bool litecore::jni::initC4Socket(JNIEnv *env) {
 static void doOpen(C4Socket *s, const C4Address *addr, C4Slice optionsFleece) {
     //LOGI("doOpen() s -> 0x%x", s);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket,
                                   m_C4Socket_open,
@@ -117,7 +121,7 @@ static void doOpen(C4Socket *s, const C4Address *addr, C4Slice optionsFleece) {
 static void doWrite(C4Socket *s, C4SliceResult allocatedData) {
     //LOGI("doWrite() s -> 0x%x data.size -> %d", s, allocatedData.size);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket,
                                   m_C4Socket_write,
@@ -143,7 +147,7 @@ static void doWrite(C4Socket *s, C4SliceResult allocatedData) {
 static void doCompletedReceive(C4Socket *s, size_t byteCount) {
     //LOGI("doCompletedReceive() s -> 0x%x byteCount -> %ld", s, byteCount);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket,
                                   m_C4Socket_completedReceive,
@@ -169,7 +173,7 @@ static void doCompletedReceive(C4Socket *s, size_t byteCount) {
 static void doClose(C4Socket *s) {
     ////LOGI("doClose() s -> 0x%x", s);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket, m_C4Socket_close, (jlong) s);
     } else if (getEnvStat == JNI_EDETACHED) {
@@ -189,7 +193,7 @@ static void doClose(C4Socket *s) {
 static void doRequestClose(C4Socket *s, int status, C4String message) {
     //LOGI("doRequestClose() s -> 0x%x status -> %d", s, status);
     JNIEnv *env = NULL;
-    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
         env->CallStaticVoidMethod(cls_C4Socket,
                                   m_C4Socket_requestClose,
