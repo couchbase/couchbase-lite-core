@@ -1,16 +1,20 @@
-/**
- * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
- */
+//
+// native_c4document.cc
+//
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 #include <c4Document.h>
 #include <c4.h>
 #include <c4Document+Fleece.h>
@@ -117,13 +121,14 @@ Java_com_couchbase_litecore_C4Document_getSelectedBody(JNIEnv *env, jclass clazz
  * Method:    getSelectedBody2
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_getSelectedBody2(JNIEnv *env, jclass clazz, jlong jdoc){
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4Document_getSelectedBody2(JNIEnv *env, jclass clazz, jlong jdoc) {
     C4Document *doc = (C4Document *) jdoc;
     FLDict root = NULL;
     C4Slice body = doc->selectedRev.body;
     if (body.size > 0)
         root = FLValue_AsDict(FLValue_FromTrustedData({body.buf, body.size}));
-    return (jlong)root;
+    return (jlong) root;
 }
 
 /*

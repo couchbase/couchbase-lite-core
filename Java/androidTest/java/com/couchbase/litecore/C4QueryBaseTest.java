@@ -1,16 +1,20 @@
-/**
- * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
- */
+//
+// C4QueryBaseTest.java
+//
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 package com.couchbase.litecore;
 
 import android.util.Log;
@@ -21,7 +25,6 @@ import java.util.List;
 import static org.junit.Assert.assertNotNull;
 
 public class C4QueryBaseTest extends C4BaseTest {
-    public static final String LOG_TAG = C4QueryBaseTest.class.getSimpleName();
 
     //-------------------------------------------------------------------------
     // protected variables
@@ -33,7 +36,7 @@ public class C4QueryBaseTest extends C4BaseTest {
     //-------------------------------------------------------------------------
 
     protected C4Query compileSelect(String queryStr) throws LiteCoreException {
-        Log.i(LOG_TAG, "Query -> " + queryStr);
+        Log.i(TAG, "Query -> " + queryStr);
 
         if (query != null) {
             query.free();
@@ -42,7 +45,7 @@ public class C4QueryBaseTest extends C4BaseTest {
         query = db.createQuery(queryStr);
         assertNotNull(query);
 
-        Log.i(LOG_TAG, "query.explain() -> " + query.explain());
+        Log.i(TAG, "query.explain() -> " + query.explain());
 
         return query;
     }
@@ -56,7 +59,7 @@ public class C4QueryBaseTest extends C4BaseTest {
     }
 
     protected C4Query compile(String whereExpr, String sortExpr, boolean addOffsetLimit) throws LiteCoreException {
-        Log.i(LOG_TAG, "whereExpr -> " + whereExpr + ", sortExpr -> " + sortExpr + ", addOffsetLimit -> " + addOffsetLimit);
+        Log.i(TAG, "whereExpr -> " + whereExpr + ", sortExpr -> " + sortExpr + ", addOffsetLimit -> " + addOffsetLimit);
 
         StringBuffer json = new StringBuffer();
         json.append("[\"SELECT\", {\"WHERE\": ");
@@ -70,7 +73,7 @@ public class C4QueryBaseTest extends C4BaseTest {
         }
         json.append("}]");
 
-        Log.i(LOG_TAG, "Query = " + json.toString());
+        Log.i(TAG, "Query = " + json.toString());
 
         if (query != null) {
             query.free();
@@ -79,7 +82,7 @@ public class C4QueryBaseTest extends C4BaseTest {
         query = db.createQuery(json.toString());
         assertNotNull(query);
 
-        Log.i(LOG_TAG, "query.explain() -> " + query.explain());
+        Log.i(TAG, "query.explain() -> " + query.explain());
 
         return query;
     }
