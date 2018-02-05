@@ -199,7 +199,7 @@ public:
     C4Slice kRevID;    // "1-abcdef"
     C4Slice kRev2ID;   // "2-d00d3333"
     C4Slice kRev3ID;
-    static const C4Slice kBody;     // "{\"name\":007}"
+    static const C4Slice kBody;     // "{\"name\":7}"
     static C4Slice kFleeceBody;
     static C4Slice kEmptyFleeceBody;
 

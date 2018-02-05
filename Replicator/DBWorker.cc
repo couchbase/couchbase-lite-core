@@ -146,21 +146,45 @@ namespace litecore { namespace repl {
     }
 
 
+    // Writes a Value to an Encoder, substituting null if the value is an empty array.
+    static void writeValueOrNull(Encoder &enc, Value val) {
+        auto a = val.asArray();
+        if (!val || (a && a.empty()))
+            enc.writeNull();
+        else
+            enc.writeValue(val);
+    }
+
+
     // Computes the ID of the checkpoint document.
     slice DBWorker::effectiveRemoteCheckpointDocID(C4Error *err) {
         if (_remoteCheckpointDocID.empty()) {
-            // Simplistic default value derived from db UUID and remote URL:
+            // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
             C4UUID privateUUID;
             if (!c4db_getUUIDs(_db, nullptr, &privateUUID, err))
                 return nullslice;
+            Array channels = _options.channels();
+            Value filter = _options.properties[kC4ReplicatorOptionFilter];
+            Value filterParams = _options.properties[kC4ReplicatorOptionFilterParams];
+            Array docIDs = _options.docIDs();
+
+            // Compute the ID by writing the values to a Fleece array, then taking a SHA1 digest:
             fleeceapi::Encoder enc;
             enc.beginArray();
             enc.writeString({&privateUUID, sizeof(privateUUID)});
             enc.writeString(remoteDBIDString());
+            if (!channels.empty() || !docIDs.empty() || filter) {
+                // Optional stuff:
+                writeValueOrNull(enc, channels);
+                writeValueOrNull(enc, filter);
+                writeValueOrNull(enc, filterParams);
+                writeValueOrNull(enc, docIDs);
+            }
             enc.endArray();
             alloc_slice data = enc.finish();
             SHA1 digest(data);
             _remoteCheckpointDocID = string("cp-") + slice(&digest, sizeof(digest)).base64String();
+            logVerbose("Checkpoint doc ID = %s", _remoteCheckpointDocID.c_str());
         }
         return slice(_remoteCheckpointDocID);
     }

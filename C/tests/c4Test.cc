@@ -352,6 +352,7 @@ void C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Sli
     Encoder enc;
     enc.convertJSON(json);
     fleece::alloc_slice fleeceBody = enc.finish();
+    INFO("Encoder error " << enc.error());
     REQUIRE(fleeceBody);
     createRev(db, docID, revID, fleeceBody, flags);
 }
@@ -576,5 +577,5 @@ void C4Test::deleteDatabase(){
 
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
-const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
+const C4Slice C4Test::kBody  = C4STR("{\"name\":7}");
 C4Slice C4Test::kFleeceBody, C4Test::kEmptyFleeceBody;
