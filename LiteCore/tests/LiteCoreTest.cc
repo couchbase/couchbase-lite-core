@@ -170,13 +170,27 @@ void DataFileTestFixture::reopenDatabase(const DataFile::Options *newOptions) {
 }
 
 
+static atomic_uint sWarningsLogged;
 
 
-DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options *options) {
+static void logCallback(const LogDomain &domain, LogLevel level,
+                        const char *fmt, va_list args)
+{
+    LogDomain::defaultCallback(domain, level, fmt, args);
+    if (level >= LogLevel::Warning)
+        ++sWarningsLogged;
+}
+
+
+DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options *options)
+:_warningsAlreadyLogged(sWarningsLogged)
+{
     static once_flag once;
     call_once(once, [] {
         C4StringResult version = c4_getBuildInfo();
         Log("This is LiteCore %.*s", SPLAT(version));
+
+        LogDomain::setCallback(&logCallback, false, LogLevel::Info);
         if (LogDomain::fileLogLevel() == LogLevel::None) {
             auto path = FilePath::tempDirectory()["LiteCoreC++Tests.c4log"];
             Log("Beginning logging to %s", path.path().c_str());
@@ -202,3 +216,9 @@ DataFileTestFixture::~DataFileTestFixture() {
         delete db;
     }
 }
+
+
+unsigned DataFileTestFixture::warningsLogged() noexcept {
+    return sWarningsLogged - _warningsAlreadyLogged;
+}
+

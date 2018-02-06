@@ -92,6 +92,8 @@ public:
 
     using Callback_t = void(*)(const LogDomain&, LogLevel, const char *format, va_list);
 
+    static void defaultCallback(const LogDomain&, LogLevel, const char *format, va_list);
+
     /** Registers (or unregisters) a callback to be passed log messages.
         @param callback  The callback function, or NULL to unregister.
         @param preformatted  If true, callback will be passed already-formatted log messages to be

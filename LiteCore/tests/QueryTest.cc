@@ -1068,3 +1068,21 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query JOINs", "[Query]") {
         CHECK(e->columns()[1]->asInt() == (i / 10));
     }*/
 }
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query finalized after db deleted", "[Query]") {
+    Retained<Query> query{ store->compileQuery(json5(
+          "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    e->next();
+    query = nullptr;
+
+    db->deleteDataFile();
+    db = nullptr;
+
+    // Now free the query enum, which will free the sqlite_stmt, triggering a SQLite warning
+    // callback about the database file being unlinked:
+    e.reset();
+
+    // Assert that the callback did not log a warning:
+    CHECK(warningsLogged() == 0);
+}

@@ -96,7 +96,10 @@ public:
     DataFile* newDatabase(const FilePath &path, const DataFile::Options* =nullptr);
     void reopenDatabase(const DataFile::Options *newOptions =nullptr);
 
+    unsigned warningsLogged() noexcept;
 
+private:
+    unsigned const _warningsAlreadyLogged;
 };
 
 

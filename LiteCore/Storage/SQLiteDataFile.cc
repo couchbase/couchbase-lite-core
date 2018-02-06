@@ -96,6 +96,9 @@ namespace litecore {
         int baseCode = errCode & 0xFF;
         if (baseCode == SQLITE_SCHEMA)
             return;     // ignore harmless "statement aborts ... database schema has changed" warning
+        if (errCode == SQLITE_WARNING && strncmp(msg, "file unlinked while open:", 25) == 0)
+            return;     // ignore warning closing zombie db that's been deleted (#381)
+
         if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY) {
             Log("SQLite message: %s", msg);
         } else {
