@@ -263,6 +263,16 @@ namespace litecore {
         _setLastSeqStmt.reset();
         if (_sqlDb) {
             optimizeAndVacuum();
+            if (DBLog.willLog(LogLevel::Verbose)) {
+                // Log if there are still statements open. This does happen in real use sometimes in
+                // CBL-Java due to Query finalizers being delayed.
+                if (!_sqlDb->closeUnlessStatementsOpen()) {
+                    _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
+                        LogVerbose(DBLog, "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
+                                   _sqlDb.get(), (busy ? "busy" : "open"), sql);
+                    });
+                }
+            }
             _sqlDb.reset();
         }
         _collationContexts.clear();
