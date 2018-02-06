@@ -418,7 +418,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     auto doc = c4doc_put(db, &rq, nullptr, &error);
     REQUIRE(doc != nullptr);
     REQUIRE(doc->docID == kDocID);
-    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab")
+    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-9a57afaa2e551a0bc470548763a5660a19d579f4")
                                           : C4STR("1@*");
     REQUIRE(doc->revID == kExpectedRevID);
     REQUIRE(doc->flags == kDocExists);
@@ -433,7 +433,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
     REQUIRE(doc != nullptr);
     REQUIRE((unsigned long)commonAncestorIndex == 0ul);
-    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b")
+    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("2-559298a253c7bfb7edc0ce1dc93c8e8ebf504065")
                                            : C4STR("2@*");
     REQUIRE(doc->revID == kExpectedRev2ID);
     REQUIRE(doc->flags == kDocExists);
@@ -476,7 +476,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
         REQUIRE(doc);
     }
     C4Log("After save");
-    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab")
+    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-9a57afaa2e551a0bc470548763a5660a19d579f4")
                                           : C4STR("1@*");
     REQUIRE(doc->revID == kExpectedRevID);
     REQUIRE(doc->flags == kDocExists);
@@ -500,7 +500,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
         doc = updatedDoc;
     }
     C4Log("After multiple updates");
-    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("5-a8fb5b9d05ee3a3b4f37ed6c06eeb2f64aaa1348")
+    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("5-b0a49dc580ffd380050fe54d26d380d270ad275f")
                                            : C4STR("5@*");
     REQUIRE(doc->revID == kExpectedRev2ID);
     REQUIRE(doc->selectedRev.revID == kExpectedRev2ID);
