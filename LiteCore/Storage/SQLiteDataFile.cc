@@ -273,8 +273,11 @@ namespace litecore {
             }
             
             // https://github.com/couchbase/couchbase-lite-core/issues/381
-            int noCheckpointResult = sqlite3_db_config(_sqlDb->getHandle(), SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, 1, nullptr);
-            Assert(noCheckpointResult == SQLITE_OK, "Failed to set SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE");
+            if (_sqlDb->getHandle() != NULL) {
+                // Database::getHandle() is NULL if database is already closed.
+                int noCheckpointResult = sqlite3_db_config(_sqlDb->getHandle(), SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, 1, nullptr);
+                Assert(noCheckpointResult == SQLITE_OK, "Failed to set SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE");
+            }
             _sqlDb.reset();
         }
         _collationContexts.clear();
