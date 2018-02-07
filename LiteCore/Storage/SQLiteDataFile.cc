@@ -263,16 +263,18 @@ namespace litecore {
         _setLastSeqStmt.reset();
         if (_sqlDb) {
             optimizeAndVacuum();
-            if (DBLog.willLog(LogLevel::Verbose)) {
-                // Log if there are still statements open. This does happen in real use sometimes in
-                // CBL-Java due to Query finalizers being delayed.
-                if (!_sqlDb->closeUnlessStatementsOpen()) {
-                    _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
-                        LogVerbose(DBLog, "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
-                                   _sqlDb.get(), (busy ? "busy" : "open"), sql);
-                    });
-                }
+            // Log if there are still statements open. This does happen in real use sometimes in
+            // CBL-Java due to Query finalizers being delayed.
+            if (!_sqlDb->closeUnlessStatementsOpen()) {
+                _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
+                    LogVerbose(DBLog, "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
+                               _sqlDb.get(), (busy ? "busy" : "open"), sql);
+                });
             }
+            
+            // https://github.com/couchbase/couchbase-lite-core/issues/381
+            int noCheckpointResult = sqlite3_db_config(_sqlDb->getHandle(), SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, 1, nullptr);
+            Assert(noCheckpointResult == SQLITE_OK, "Failed to set SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE");
             _sqlDb.reset();
         }
         _collationContexts.clear();
