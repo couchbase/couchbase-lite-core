@@ -44,7 +44,7 @@ DbEndpoint::DbEndpoint(C4Database *db)
 
 
 void DbEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
-    Endpoint::prepare(isSource, mustExist, docIDProperty, other);
+    _docIDProperty = docIDProperty;
     _otherEndpoint = const_cast<Endpoint*>(other);
     if (!_db) {
         C4DatabaseConfig config = {kC4DB_SharedKeys | kC4DB_NonObservable};
@@ -125,6 +125,8 @@ void DbEndpoint::exportTo(Endpoint *dst, uint64_t limit) {
 
 // As destination of JSON file(s):
 void DbEndpoint::writeJSON(slice docID, slice json) {
+    enterTransaction();
+
     _encoder.reset();
     if (!_encoder.convertJSON(json)) {
         Tool::instance->errorOccurred(format("Couldn't parse JSON: %.*s", SPLAT(json)));
@@ -136,8 +138,6 @@ void DbEndpoint::writeJSON(slice docID, slice json) {
     alloc_slice docIDBuf;
     if (!docID && _docIDProperty)
         docID = docIDBuf = docIDFromFleece(body, json);
-
-    enterTransaction();
 
     C4DocPutRequest put { };
     put.docID = docID;
