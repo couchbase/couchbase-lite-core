@@ -44,7 +44,7 @@ void CBLiteTool::cpUsage() {
     "    Modes:\n"
     "        *.cblite2 <--> *.cblite2 :  Local replication\n"
     "        *.cblite2 <--> blip://*  :  Networked replication\n"
-    "        *.cblite2 <--> *.json    :  Imports/exports JSON file\n"
+    "        *.cblite2 <--> *.json    :  Imports/exports JSON file (one doc per line)\n"
     "        *.cblite2 <--> */        :  Imports/exports directory of JSON files (one per doc)\n";
     if (_interactive) {
         cerr <<
