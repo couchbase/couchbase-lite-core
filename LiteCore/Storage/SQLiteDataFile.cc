@@ -263,21 +263,24 @@ namespace litecore {
         _setLastSeqStmt.reset();
         if (_sqlDb) {
             optimizeAndVacuum();
-            // Log if there are still statements open. This does happen in real use sometimes in
-            // CBL-Java due to Query finalizers being delayed.
+            // Close the SQLite database:
             if (!_sqlDb->closeUnlessStatementsOpen()) {
+                // There are still SQLite statements (queries) open, probably in QueryEnumerators
+                // that haven't been deleted yet -- this can happen if the client code has garbage-
+                // collected objects owning those enumerators, which won't release them until their
+                // finalizers run. (Couchbase Lite Java has this issue.)
+                // We'll log info about the statements so this situation can be detected from logs.
                 _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
                     LogVerbose(DBLog, "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
                                _sqlDb.get(), (busy ? "busy" : "open"), sql);
                 });
-            }
-            
-            // https://github.com/couchbase/couchbase-lite-core/issues/381
-            if (_sqlDb->getHandle() != NULL) {
-                // Database::getHandle() is NULL if database is already closed.
+                // Also, tell SQLite not to checkpoint the WAL when it eventually closes the db
+                // (after the last statement is freed), as that can have disastrous effects if the
+                // db has since been deleted and re-created: see issue #381 for gory details.
                 int noCheckpointResult = sqlite3_db_config(_sqlDb->getHandle(), SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, 1, nullptr);
                 Assert(noCheckpointResult == SQLITE_OK, "Failed to set SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE");
             }
+            // Finally, delete the SQLite::Database instance:
             _sqlDb.reset();
         }
         _collationContexts.clear();
