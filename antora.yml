@@ -1,0 +1,6 @@
+name: couchbase-lite-core
+title: Couchbase Lite Core
+version: 'master'
+start_page: docs:replication-protocol.adoc
+nav:
+- modules/docs/nav.adoc
