@@ -290,7 +290,7 @@ doesn't need to send it * 409: This change would cause a conflict, so
 the server needs to resolve it and retry later
 
 As with `changes`, trailing zeros can be omitted, but the interpretation
-is different since a zero means “send it” instead of “don’t send it”. So
+is different since a zero means "send it" instead of "don’t send it". So
 the common case of an empty array response tells the sender to _send_
 all of the proposed revisions.
 
