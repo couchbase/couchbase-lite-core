@@ -118,6 +118,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_stop() {
         if (connection()) {
+            log("Told to stop!");
             connection()->close();
             _connectionState = Connection::kClosing;
         }
@@ -257,15 +258,17 @@ namespace litecore { namespace repl {
 
     void Replicator::_onConnect() {
         log("BLIP Connected");
-        _connectionState = Connection::kConnected;
-        if (_options.push > kC4Passive || _options.pull > kC4Passive)
-            getCheckpoints();
+        if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
+            _connectionState = Connection::kConnected;
+            if (_options.push > kC4Passive || _options.pull > kC4Passive)
+                getCheckpoints();
+        }
     }
 
 
     void Replicator::_onClose(Connection::CloseStatus status, Connection::State state) {
-        log("Connection closed with %-s %d: \"%.*s\"",
-            status.reasonName(), status.code, SPLAT(status.message));
+        log("Connection closed with %-s %d: \"%.*s\" (state=%d)",
+            status.reasonName(), status.code, SPLAT(status.message), _connectionState);
 
         bool closedByPeer = (_connectionState != Connection::kClosing);
         _connectionState = state;
