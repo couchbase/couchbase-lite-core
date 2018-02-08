@@ -331,3 +331,53 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull Big Attachments", "[.SyncServer]")
     CHECK(size == 15198281);
 }
 
+
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    replicate(kC4OneShot, kC4Disabled);
+
+    sendRemoteRequest("PUT", "0000013", "{\"_rev\":\"1-3cb9cfb09f3f0b5142e618553966ab73539b8888\","
+                                          "\"serverSideUpdate\":true}"_sl);
+
+    createRev("0000013"_sl, "2-f000"_sl, kFleeceBody);
+
+    c4::ref<C4Document> doc = c4doc_get(db, C4STR("0000013"), true, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->selectedRev.revID == C4STR("2-f000"));
+    CHECK(doc->selectedRev.body.size > 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("1-3cb9cfb09f3f0b5142e618553966ab73539b8888"));
+    CHECK(doc->selectedRev.body.size > 0);
+    CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+
+    C4Log("-------- Pushing Again (conflict) --------");
+    _expectedDocPushErrors = {"0000013"};
+    replicate(kC4OneShot, kC4Disabled);
+
+    C4Log("-------- Pulling --------");
+    _expectedDocPushErrors = { };
+    _expectedDocPullErrors = {"0000013"};
+    replicate(kC4Disabled, kC4OneShot);
+
+    C4Log("-------- Checking Conflict --------");
+    doc = c4doc_get(db, C4STR("0000013"), true, nullptr);
+    REQUIRE(doc);
+    CHECK((doc->flags & kDocConflicted) != 0);
+    CHECK(doc->selectedRev.revID == C4STR("2-f000"));
+    CHECK(doc->selectedRev.body.size > 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("1-3cb9cfb09f3f0b5142e618553966ab73539b8888"));
+#if 0 // FIX: These checks fail due to issue #402; re-enable when fixing that bug
+    CHECK(doc->selectedRev.body.size > 0);
+    CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+#endif
+    REQUIRE(c4doc_selectCurrentRevision(doc));
+    REQUIRE(c4doc_selectNextRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("2-883a2dacc15171a466f76b9d2c39669b"));
+    CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
+    CHECK(doc->selectedRev.body.size > 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("1-3cb9cfb09f3f0b5142e618553966ab73539b8888"));
+}
+
+

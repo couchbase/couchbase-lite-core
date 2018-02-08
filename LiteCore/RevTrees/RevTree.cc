@@ -338,7 +338,7 @@ namespace litecore {
     }
 
     void RevTree::removeBody(const Rev* rev) {
-        if (rev->flags & Rev::kKeepBody) {
+        if (rev->body()) {
             const_cast<Rev*>(rev)->removeBody();
             _changed = true;
         }

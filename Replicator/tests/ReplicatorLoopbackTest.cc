@@ -118,7 +118,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database no-conflicts", "[Push][NoConflicts]") {
-    auto serverOpts = Replicator::Options::passive().setNoConflicts();
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
 
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     _expectedDocumentCount = 12189;
@@ -129,7 +129,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large database no-conflicts", "[P
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull large database no-conflicts", "[Pull][NoConflicts]") {
-    auto serverOpts = Replicator::Options::passive().setNoConflicts();
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
 
     importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     _expectedDocumentCount = 12189;
@@ -271,7 +271,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
     SECTION("Default") {
     }
     SECTION("No-conflicts") {
-        serverOpts.setNoConflicts();
+        serverOpts.setNoIncomingConflicts();
     }
 
     importJSONLines(sFixturesDir + "names_100.json");
@@ -367,7 +367,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Revisions Starting Emp
     SECTION("Default") {
     }
     SECTION("No-conflicts") {
-        serverOpts.setNoConflicts();
+        serverOpts.setNoIncomingConflicts();
     }
     addRevsInParallel(chrono::milliseconds(1000), alloc_slice("docko"), 1, 3);
     _expectedDocumentCount = 3; // only 1 doc, but we get notified about it 3 times...
@@ -543,7 +543,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
 #pragma mark - CONFLICTS:
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull]") {
     createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
     _expectedDocumentCount = 1;
     
@@ -590,8 +590,90 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict", "[Push][NoConflicts]") {
+    // In the default no-outgoing-conflicts mode, make sure a local conflict isn't pushed to server:
+    auto serverOpts = Replicator::Options::passive();
+    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    _expectedDocumentCount = 1;
+
+    // Push db to db2, so both will have the doc:
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":1}");
+
+    // Update the doc differently in each db:
+    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+    REQUIRE(c4db_getLastSequence(db2) == 2);
+
+    // Push db to db2 again:
+    _expectedDocumentCount = 0;
+    _expectedDocPushErrors = {"conflict"};
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":2}");
+
+    // Verify db2 didn't change:
+    REQUIRE(c4db_getLastSequence(db2) == 2);
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "[Push][NoConflicts]") {
+    // Put server in no-conflicts mode and verify that a conflict can't be pushed to it.
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    _expectedDocumentCount = 1;
+
+    // Push db to db2, so both will have the doc:
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":1}");
+
+    // Update the doc differently in each db:
+    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+    REQUIRE(c4db_getLastSequence(db2) == 2);
+
+    // Push db to db2 again:
+    _expectedDocumentCount = 0;
+    _expectedDocPushErrors = {"conflict"};
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":2}");
+
+    // Verify db2 didn't change:
+    REQUIRE(c4db_getLastSequence(db2) == 2);
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, OutgoingConflicts", "[Push][NoConflicts]") {
+    // Enable outgoing conflicts; verify that a conflict gets pushed to the server.
+    auto pushOpts = Replicator::Options::pushing().setProperty(slice(kC4ReplicatorOptionOutgoingConflicts), true);
+    auto serverOpts = Replicator::Options::passive();
+    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    _expectedDocumentCount = 1;
+
+    // Push db to db2, so both will have the doc:
+    runReplicators(pushOpts, serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":1}");
+
+    // Update the doc differently in each db:
+    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+    REQUIRE(c4db_getLastSequence(db2) == 2);
+
+    // Push db to db2 again:
+    _expectedDocPullErrors = {"conflict"};
+    runReplicators(pushOpts, serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":2}");
+
+    // Verify conflict was pushed to db2:
+    c4::ref<C4Document> doc = c4doc_get(db2, C4STR("conflict"), true, nullptr);
+    REQUIRE(doc);
+    CHECK((doc->flags & kDocConflicted) != 0);
+    CHECK(doc->selectedRev.revID == C4STR("2-2b2b2b2b"));
+    CHECK(c4doc_selectRevision(doc, C4STR("2-2a2a2a2a"), true, nullptr));
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][Push][NoConflicts]") {
-    auto serverOpts = Replicator::Options::passive().setNoConflicts();
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
 
     createRev(kDocID, kRevID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody);
@@ -637,7 +719,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push][NoConflicts]") {
-    auto serverOpts = Replicator::Options::passive().setNoConflicts();
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
 
     createRev(kDocID, kRevID, kFleeceBody);
     createRev(kDocID, kRev2ID, kFleeceBody);

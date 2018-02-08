@@ -40,8 +40,8 @@ namespace litecore { namespace repl {
         registerHandler("rev",              &Puller::handleRev);
         _spareIncomingRevs.reserve(kMaxSpareIncomingRevs);
         _skipDeleted = _options.skipDeleted();
-        if (nonPassive() && options.noConflicts())
-            warn("noConflicts mode is not compatible with active pull replications!");
+        if (nonPassive() && options.noIncomingConflicts())
+            warn("noIncomingConflicts mode is not compatible with active pull replications!");
     }
 
 
@@ -124,7 +124,7 @@ namespace litecore { namespace repl {
             req->respond();
         } else if (req->noReply()) {
             warn("Got pointless noreply 'changes' message");
-        } else if (_options.noConflicts() && !proposed) {
+        } else if (_options.noIncomingConflicts() && !proposed) {
             // In conflict-free mode the protocol requires the pusher send "proposeChanges" instead
             req->respondWithError({"BLIP"_sl, 409});
         } else {

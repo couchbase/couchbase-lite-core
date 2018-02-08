@@ -144,6 +144,11 @@ public:
 
 
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
+        _callbackStatus = { };
+        _numCallbacks = 0;
+        memset(_numCallbacksWithLevel, 0, sizeof(_numCallbacksWithLevel));
+        _docPushErrors = _docPullErrors = { };
+
         if (push > kC4Passive && _remoteDBName == kScratchDBName && !db2 && !_flushedScratch) {
             flushScratchDatabase();
             _flushedScratch = true;
@@ -173,27 +178,40 @@ public:
         if (expectSuccess) {
             CHECK(status.error.code == 0);
             CHECK(_numCallbacksWithLevel[kC4Busy] > 0);
-            //CHECK(_gotHeaders);   //FIX: Enable this when civetweb can return HTTP headers
+            if (!db2)
+                CHECK(_headers != (FLDict)nullptr);
         }
         CHECK(_numCallbacksWithLevel[kC4Stopped] > 0);
         CHECK(_callbackStatus.level == status.level);
         CHECK(_callbackStatus.error.domain == status.error.domain);
         CHECK(_callbackStatus.error.code == status.error.code);
-        CHECK(_docPullErrors.empty());
-        CHECK(_docPushErrors.empty());
+        CHECK(_docPullErrors == _expectedDocPullErrors);
+        CHECK(_docPushErrors == _expectedDocPushErrors);
+    }
+
+
+    void sendRemoteRequest(const string &method,
+                           string path,
+                           slice body =nullslice,
+                           bool admin =false)
+    {
+        C4Log("*** Server command: %s %s", method.c_str(), path.c_str());
+        auto r = make_unique<REST::Response>(method,
+                             (string)(slice)_address.hostname,
+                             (uint16_t)(_address.port + !!admin),
+                             string("/") + (string)(slice)kScratchDBName + "/" + path,
+                             map<string,string>{{"Content-Type", "application/json"}},
+                             body);
+        REQUIRE(r);
+        INFO("Status: " << (int)r->status() << " " << r->statusMessage());
+        REQUIRE(r->status() <= REST::HTTPStatus::Created);
     }
 
 
     void flushScratchDatabase() {
-        C4Log("*** Erasing scratch database");
-        auto r = make_unique<REST::Response>("POST",
-                                             (string)(slice)_address.hostname,
-                                             (uint16_t)(_address.port + 1),     // assume this is the admin port
-                                             string("/") + (string)(slice)kScratchDBName + "/_flush");
-        REQUIRE(r);
-        INFO("Status: " << (int)r->status() << " " << r->statusMessage());
-        REQUIRE(r->status() == REST::HTTPStatus::OK);
+        sendRemoteRequest("POST", "_flush", nullslice, true);
     }
+
 
     c4::ref<C4Database> db2;
     C4Address _address {kDefaultAddress};
@@ -207,5 +225,6 @@ public:
     AllocedDict _headers;
     bool _stopWhenIdle {false};
     set<string> _docPushErrors, _docPullErrors;
+    set<string> _expectedDocPushErrors, _expectedDocPullErrors;
 };
 

@@ -170,7 +170,8 @@ extern "C" {
     #define kC4ReplicatorOptionFilter         "filter"   // Filter name; string
     #define kC4ReplicatorOptionFilterParams   "filterParams"  // Filter params; Dict[string]
     #define kC4ReplicatorOptionSkipDeleted    "skipDeleted" // Don't push/pull tombstones; bool
-    #define kC4ReplicatorOptionNoConflicts    "noConflicts" // Puller rejects conflicts; bool
+    #define kC4ReplicatorOptionNoIncomingConflicts "noIncomingConflicts" // Reject incoming conflicts; bool
+    #define kC4ReplicatorOptionOutgoingConflicts "outgoingConflicts" // Allow creating conflicts on remote; bool
     #define kC4ReplicatorCheckpointInterval   "checkpointInterval" // How often to checkpoint, in seconds; number
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" // Stable ID for remote db with unstable URL; string
     #define kC4ReplicatorHeartbeatInterval    "heartbeat" // Interval in secs to send a keepalive ping

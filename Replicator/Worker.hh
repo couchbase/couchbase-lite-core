@@ -79,7 +79,8 @@ namespace litecore { namespace repl {
             fleeceapi::Dict filterParams() const
                                       {return properties[kC4ReplicatorOptionFilterParams].asDict();}
             bool skipDeleted() const  {return properties[kC4ReplicatorOptionSkipDeleted].asBool();}
-            bool noConflicts() const  {return properties[kC4ReplicatorOptionNoConflicts].asBool();}
+            bool noIncomingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
+            bool noOutgoingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
 
             fleeceapi::Array arrayProperty(const char *name) const {
                 return properties[name].asArray();
@@ -111,8 +112,8 @@ namespace litecore { namespace repl {
                 return *this;
             }
 
-            Options& setNoConflicts() {
-                return setProperty(C4STR(kC4ReplicatorOptionNoConflicts), true);
+            Options& setNoIncomingConflicts() {
+                return setProperty(C4STR(kC4ReplicatorOptionNoIncomingConflicts), true);
             }
 
             explicit operator std::string() const;

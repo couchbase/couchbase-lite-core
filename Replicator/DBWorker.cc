@@ -672,6 +672,8 @@ namespace litecore { namespace repl {
         msg["id"_sl] = request.docID;
         msg["rev"_sl] = request.revID;
         msg["sequence"_sl] = request.sequence;
+        if (request.noConflicts)
+            msg["noconflicts"_sl] = true;
         if (revisionFlags & kRevDeleted)
             msg["deleted"_sl] = "1"_sl;
         if (!history.empty())
@@ -805,7 +807,7 @@ namespace litecore { namespace repl {
                 put.docID = rev->docID;
                 put.revFlags = rev->flags | kRevKeepBody;
                 put.existingRevision = true;
-                put.allowConflict = true;
+                put.allowConflict = !rev->noConflicts;
                 put.history = history.data();
                 put.historyCount = history.size();
                 put.remoteDBID = _remoteDBID;

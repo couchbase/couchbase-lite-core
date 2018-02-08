@@ -63,6 +63,8 @@ namespace litecore { namespace repl {
         if (_revMessage->property("deleted"_sl))
             _rev.flags |= kRevDeleted;
         _rev.historyBuf = _revMessage->property("history"_sl);
+        _rev.noConflicts = _revMessage->boolProperty("noconflicts"_sl)
+                            || _options.noIncomingConflicts();
         slice sequence(_revMessage->property("sequence"_sl));
 
         _peerError = (int)_revMessage->intProperty("error"_sl);

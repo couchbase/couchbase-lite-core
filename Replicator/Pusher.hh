@@ -72,8 +72,8 @@ namespace litecore { namespace repl {
         DocIDSet _docIDs;
         bool _continuous;
         bool _skipDeleted;
-        bool _proposeChanges {false};
-        bool _proposeChangesKnown {false};
+        bool _proposeChanges;
+        bool _proposeChangesKnown;
 
         C4SequenceNumber _lastSequence {0};       // Checkpointed last-sequence
         bool _gettingChanges {false};             // Waiting for _gotChanges() call?

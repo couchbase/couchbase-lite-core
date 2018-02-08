@@ -61,6 +61,7 @@ namespace litecore { namespace repl {
         C4SequenceNumber sequence;
         uint64_t bodySize;
         C4RevisionFlags flags {0};
+        bool noConflicts {false};
 
         Rev() { }
 
@@ -95,7 +96,7 @@ namespace litecore { namespace repl {
     };
 
 
-    /** A revision I want from the peer; includes the opaque remote revision ID. */
+    /** A revision I want from the peer; includes the opaque remote sequence ID. */
     struct RequestedRev : public Rev {
         alloc_slice remoteSequence;
 

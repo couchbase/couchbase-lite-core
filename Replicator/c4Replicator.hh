@@ -65,7 +65,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                   new Replicator(otherDB,
                                  loopbackProvider().createWebSocket(addressFrom(db)),
                                  *this,
-                                 Replicator::Options(kC4Passive, kC4Passive).setNoConflicts()),
+                                 Replicator::Options(kC4Passive, kC4Passive).setNoIncomingConflicts()),
                   params)
     {
         loopbackProvider().bind(_replicator->webSocket(), _otherReplicator->webSocket());

@@ -40,7 +40,16 @@ namespace litecore { namespace repl {
     ,_skipDeleted(options.skipDeleted())
     {
         if (passive()) {
+            // Passive replicator always sends "changes"
             _proposeChanges = false;
+            _proposeChangesKnown = true;
+        } else if (_options.properties[kC4ReplicatorOptionOutgoingConflicts].asBool()) {
+            // Outgoing conflicts allowed: try "changes" 1st, but server may force "proposeChanges"
+            _proposeChanges = false;
+            _proposeChangesKnown = false;
+        } else {
+            // Default: always send "proposeChanges"
+            _proposeChanges = true;
             _proposeChangesKnown = true;
         }
         filterByDocIDs(options.docIDs());
@@ -69,7 +78,7 @@ namespace litecore { namespace repl {
     // Begins active push, starting from the next sequence after sinceSequence
     void Pusher::_start(C4SequenceNumber sinceSequence) {
         log("Starting %spush from local seq %llu",
-            (_continuous ? "continuous " : ""), _lastSequence+1);
+            (_continuous ? "continuous " : ""), sinceSequence+1);
         _started = true;
         _pendingSequences.clear(sinceSequence);
         startSending(sinceSequence);
@@ -255,6 +264,7 @@ namespace litecore { namespace repl {
                     if (status == 0) {
                         auto request = _revsToSend.emplace(_revsToSend.end(), change,
                                                            maxHistory, legacyAttachments);
+                        request->noConflicts = true;
                         request->ancestorRevIDs.emplace_back(change.remoteAncestorRevID);
                         queued = true;
                     } else if (status != 304) {     // 304 means server has my rev already
@@ -308,7 +318,7 @@ namespace litecore { namespace repl {
     }
 
     
-    // Subroutine of _gotChanges that sends a "rev" message containing a revision body.
+    // Tells the DBWorker to send a "rev" message containing a revision body.
     void Pusher::sendRevision(const RevRequest &rev)
     {
         MessageProgressCallback onProgress;
