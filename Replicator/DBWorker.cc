@@ -1,9 +1,19 @@
 //
-//  DBWorker.cc
-//  LiteCore
+// DBWorker.cc
 //
-//  Created by Jens Alfke on 2/21/17.
-//  Copyright © 2017 Couchbase. All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #include "DBWorker.hh"
@@ -136,21 +146,45 @@ namespace litecore { namespace repl {
     }
 
 
+    // Writes a Value to an Encoder, substituting null if the value is an empty array.
+    static void writeValueOrNull(Encoder &enc, Value val) {
+        auto a = val.asArray();
+        if (!val || (a && a.empty()))
+            enc.writeNull();
+        else
+            enc.writeValue(val);
+    }
+
+
     // Computes the ID of the checkpoint document.
     slice DBWorker::effectiveRemoteCheckpointDocID(C4Error *err) {
         if (_remoteCheckpointDocID.empty()) {
-            // Simplistic default value derived from db UUID and remote URL:
+            // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
             C4UUID privateUUID;
             if (!c4db_getUUIDs(_db, nullptr, &privateUUID, err))
                 return nullslice;
+            Array channels = _options.channels();
+            Value filter = _options.properties[kC4ReplicatorOptionFilter];
+            Value filterParams = _options.properties[kC4ReplicatorOptionFilterParams];
+            Array docIDs = _options.docIDs();
+
+            // Compute the ID by writing the values to a Fleece array, then taking a SHA1 digest:
             fleeceapi::Encoder enc;
             enc.beginArray();
             enc.writeString({&privateUUID, sizeof(privateUUID)});
             enc.writeString(remoteDBIDString());
+            if (!channels.empty() || !docIDs.empty() || filter) {
+                // Optional stuff:
+                writeValueOrNull(enc, channels);
+                writeValueOrNull(enc, filter);
+                writeValueOrNull(enc, filterParams);
+                writeValueOrNull(enc, docIDs);
+            }
             enc.endArray();
             alloc_slice data = enc.finish();
             SHA1 digest(data);
             _remoteCheckpointDocID = string("cp-") + slice(&digest, sizeof(digest)).base64String();
+            logVerbose("Checkpoint doc ID = %s", _remoteCheckpointDocID.c_str());
         }
         return slice(_remoteCheckpointDocID);
     }

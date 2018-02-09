@@ -1,15 +1,26 @@
 //
-//  c4Test.cc
-//  Couchbase Lite Core
+// c4Test.cc
 //
-//  Created by Jens Alfke on 9/16/15.
-//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
+// Copyright (c) 2015 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #include "c4Test.hh"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "slice.hh"
+#include "FilePath.hh"
 #include "StringUtil.hh"
 #include "Benchmark.hh"
 #include <iostream>
@@ -27,18 +38,9 @@ const std::string& TempDir() {
 
     static once_flag f;
     call_once(f, [=] {
-        const char* tmpDir = getenv("TMPDIR");
-        if (tmpDir == nullptr) {
-#ifdef _MSC_VER
-            tmpDir = "C:\\tmp";
-#else
-            tmpDir = "/tmp";
-#endif
-        }
-        string path = string(tmpDir) + kPathSeparator + "LiteCore_C_Tests" + kPathSeparator;
-
-        litecore::mkdir_u8(path.c_str(), 0700);
-        kTempDir = path;
+        auto temp = litecore::FilePath::tempDirectory()["Litecore_C_Tests/"];
+        temp.mkdir();
+        kTempDir = temp.path();
     });
 
     return kTempDir;
@@ -350,6 +352,7 @@ void C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Sli
     Encoder enc;
     enc.convertJSON(json);
     fleece::alloc_slice fleeceBody = enc.finish();
+    INFO("Encoder error " << enc.error());
     REQUIRE(fleeceBody);
     createRev(db, docID, revID, fleeceBody, flags);
 }
@@ -574,5 +577,5 @@ void C4Test::deleteDatabase(){
 
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
-const C4Slice C4Test::kBody  = C4STR("{\"name\":007}");
+const C4Slice C4Test::kBody  = C4STR("{\"name\":7}");
 C4Slice C4Test::kFleeceBody, C4Test::kEmptyFleeceBody;

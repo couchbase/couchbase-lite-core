@@ -1,9 +1,19 @@
 //
-//  c4Test.hh
-//  Couchbase Lite Core
+// c4Test.hh
 //
-//  Created by Jens Alfke on 9/16/15.
-//  Copyright (c) 2015-2016 Couchbase. All rights reserved.
+// Copyright (c) 2015 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #pragma once
@@ -129,8 +139,10 @@ class C4Test {
 public:
 #if ENABLE_VERSION_VECTORS
     static const int numberOfOptions = 3;       // rev-tree, rev-tree encrypted, version vector
-#else
+#elif defined(COUCHBASE_ENTERPRISE)
     static const int numberOfOptions = 2;       // rev-tree, rev-tree encrypted
+#else
+    static const int numberOfOptions = 1;       // rev-tree
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
@@ -187,7 +199,7 @@ public:
     C4Slice kRevID;    // "1-abcdef"
     C4Slice kRev2ID;   // "2-d00d3333"
     C4Slice kRev3ID;
-    static const C4Slice kBody;     // "{\"name\":007}"
+    static const C4Slice kBody;     // "{\"name\":7}"
     static C4Slice kFleeceBody;
     static C4Slice kEmptyFleeceBody;
 

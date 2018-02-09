@@ -1,9 +1,19 @@
 //
-//  SQLiteN1QLFunctions.cc
-//  LiteCore
+// SQLiteN1QLFunctions.cc
 //
-//  Created by Jens Alfke on 7/25/17.
-//  Copyright © 2017 Couchbase. All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 // Implementations of N1QL functions (except for a few that are built into SQLite.)
 
@@ -671,9 +681,10 @@ namespace litecore {
                 out = iter->format(out, repl);
                 last_iter = iter;
             }
+
+			out = copy(last_iter->suffix().first, last_iter->suffix().second, out);
         }
 
-        out = copy(last_iter->suffix().first, last_iter->suffix().second, out);
         sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
     }
 

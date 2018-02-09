@@ -1,9 +1,19 @@
 //
-//  c4Replicator.cc
-//  LiteCore
+// c4Replicator.cc
 //
-//  Created by Jens Alfke on 2/17/17.
-//  Copyright © 2017 Couchbase. All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #include "Database.hh"
@@ -104,7 +114,7 @@ C4Replicator* c4repl_new(C4Database* db,
         if (!dbCopy)
             return nullptr;
 
-        C4Replicator *replicator;
+        Retained<C4Replicator> replicator;
         if (otherLocalDB) {
             if (!checkParam(otherLocalDB != db, "Can't replicate a database to itself", outError))
                 return nullptr;
@@ -120,7 +130,8 @@ C4Replicator* c4repl_new(C4Database* db,
                 return nullptr;
             replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
         }
-        return retain(replicator);
+        replicator->start();
+        return retain((C4Replicator*)replicator);   // to be balanced by release in c4repl_free()
     } catchError(outError);
     return nullptr;
 }

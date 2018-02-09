@@ -1,9 +1,19 @@
 //
-//  FTSTest.cc
-//  LiteCore
+// FTSTest.cc
 //
-//  Created by Jens Alfke on 11/6/17.
-//Copyright © 2017 Couchbase. All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #include "DataFile.hh"
@@ -80,6 +90,18 @@ constexpr const char* const FTSTest::kStrings[5];
 
 TEST_CASE_METHOD(FTSTest, "Query Full-Text English", "[Query][FTS]") {
     createIndex({"english", true});
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
+                        WHAT: [['.sentence']]}]",
+              {1, 2, 0, 4},
+              {3, 3, 1, 1});
+}
+
+
+TEST_CASE_METHOD(FTSTest, "Query Full-Text English_US", "[Query][FTS]") {
+    // Check that language+country code is allowed:
+    createIndex({"en_US", true});
     testQuery(
         "['SELECT', {'WHERE': ['MATCH', 'sentence', 'search'],\
                     ORDER_BY: [['DESC', ['rank()', 'sentence']]],\

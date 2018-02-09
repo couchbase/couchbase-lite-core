@@ -25,20 +25,9 @@ set(TEST_SRC ${TEST_SRC}
              ${TOP}/LiteCore/Support/Logging_Stub.cc
              ${TOP}/REST/Response.cc)
 
-if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-  # I give up trying to explain why Linux is the way it is...
-  set(TEST_SRC ${TEST_SRC}
-    ${TOP}/LiteCore/Support/Error.cc
-    ${TOP}/LiteCore/Support/Error_android.cc
-    ${TOP}/LiteCore/Support/Error_windows.cc)
-endif()
-if(MSVC)
-	set(TEST_SRC ${TEST_SRC} ${TOP}/MSVC/vasprintf-msvc.c ${TOP}/LiteCore/Support/PlatformIO.cc ${TOP}/MSVC/strlcat.c ${TOP}/MSVC/mkdtemp.cc ${TOP}/MSVC/mkstemp.cc)
-endif()
-
 add_executable(C4Tests ${TEST_SRC} )
 
-target_link_libraries(C4Tests  LiteCore LiteCoreREST CivetWeb FleeceStatic)
+target_link_libraries(C4Tests  LiteCore LiteCoreREST CivetWeb FleeceStatic Support)
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 file(COPY ../../LiteCore/tests/data/replacedb/ios120/iosdb.cblite2 
   DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests/data/replacedb/ios120)

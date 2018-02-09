@@ -1,9 +1,20 @@
 //
-//  SQLiteFleeceEach.cc
-//  LiteCore
+// SQLiteFleeceEach.cc
 //
-//  Created by Jens Alfke on 10/7/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 //
 //  (Heavily) adapted from ext/misc/json1.c and ext/misc/series.c in the SQLite source code:
 //  http://www.sqlite.org/src/artifact?ci=trunk&filename=ext/misc/series.c
@@ -201,6 +212,12 @@ private:
 
         // Parse the Fleece data:
         _fleeceData = valueAsSlice(argv[0]);
+        if (!_fleeceData) {
+            // Weird not to get a document; have to return early to avoid a crash.
+            // Treat this as an empty doc. (See issue #379)
+            Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
+            return SQLITE_OK;
+        }
         slice data = _vtab->context.accessor(_fleeceData);
         _container = Value::fromTrustedData(data);
         if (!_container) {

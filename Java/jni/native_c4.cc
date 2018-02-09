@@ -1,16 +1,20 @@
-/**
- * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
- */
+//
+// native_c4.cc
+//
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 #include "com_couchbase_litecore_C4.h"
 #include "com_couchbase_litecore_C4Log.h"
 #include "com_couchbase_litecore_C4Key.h"
@@ -47,6 +51,30 @@ Java_com_couchbase_litecore_C4_getenv(JNIEnv *env, jclass clazz, jstring jname) 
     return env->NewStringUTF(getenv(((slice) name).cString()));
 }
 
+/*
+ * Class:     com_couchbase_litecore_C4
+ * Method:    getBuildInfo
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_C4_getBuildInfo(JNIEnv *env, jclass clazz) {
+    C4StringResult result = c4_getBuildInfo();
+    jstring jstr = toJString(env, result);
+    c4slice_free(result);
+    return jstr;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4
+ * Method:    getVersion
+ * Signature: ()Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_com_couchbase_litecore_C4_getVersion(JNIEnv *env, jclass clazz) {
+    C4StringResult result = c4_getVersion();
+    jstring jstr = toJString(env, result);
+    c4slice_free(result);
+    return jstr;
+}
+
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4Log
 // ----------------------------------------------------------------------------
@@ -60,8 +88,9 @@ JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jdomain,
                                            jint jlevel) {
     jstringSlice domain(env, jdomain);
-    C4LogDomain logDomain = c4log_getDomain(((slice) domain).cString(), true);
-    c4log_setLevel(logDomain, (C4LogLevel) jlevel);
+    C4LogDomain logDomain = c4log_getDomain(((slice) domain).cString(), false);
+    if (logDomain)
+        c4log_setLevel(logDomain, (C4LogLevel) jlevel);
 }
 
 // ----------------------------------------------------------------------------

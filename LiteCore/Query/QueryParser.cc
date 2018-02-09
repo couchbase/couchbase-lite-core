@@ -1,17 +1,20 @@
 //
-//  QueryParser.cc
-//  LiteCore
+// QueryParser.cc
 //
-//  Created by Jens Alfke on 10/3/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+// Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //
-//  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
-//  except in compliance with the License. You may obtain a copy of the License at
-//    http://www.apache.org/licenses/LICENSE-2.0
-//  Unless required by applicable law or agreed to in writing, software distributed under the
-//  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-//  either express or implied. See the License for the specific language governing permissions
-//  and limitations under the License.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 // https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
 
@@ -374,32 +377,39 @@ namespace litecore {
                     require(!on, "first FROM item cannot have an ON clause");
                     _sql << " AS \"" << _aliases[i] << "\"";
                 } else {
-                    auto joinType = getCaseInsensitive(entry, "JOIN"_sl);
-                    string typeStr;
-                    if (joinType) {
-                        typeStr = requiredString(joinType, "JOIN value").asString();
-                        require(isValidJoinType(typeStr), "Unknown JOIN type '%s'", typeStr.c_str());
-                        _sql << " " << typeStr;
+                    JoinType joinType = kInner;
+                    const Value* joinTypeVal = getCaseInsensitive(entry, "JOIN"_sl);
+                    if (joinTypeVal) {
+                        slice joinTypeStr = requiredString(joinTypeVal, "JOIN value");
+                        joinType = JoinType(parseJoinType(joinTypeStr));
+                        require(joinType != kInvalidJoin, "Unknown JOIN type '%.*s'",
+                                SPLAT(joinTypeStr));
                     }
 
-                    if(typeStr != "CROSS") {
-                        require(on, "FROM item needs an ON clause to be a join");
-                    } else {
+                    if (joinType == kCross) {
                         require(!on, "CROSS JOIN cannot accept an ON clause");
+                    } else {
+                        require(on, "FROM item needs an ON clause to be a join");
                     }
 
-                    _sql << " JOIN " << _tableName << " AS \"" << _aliases[i] << "\" ON ";
-                    if(typeStr != "CROSS") {
-                        if (!_includeDeleted)
-                            _sql << "(";
-                        parseNode(on);
-                        if (!_includeDeleted) {
-                            _sql << ") AND ";
+                    // Substitute CROSS for INNER join to work around SQLite loop-ordering (#379)
+                    _sql << " " << kJoinTypeNames[ (joinType == kInner) ? kCross : joinType ];
+                    
+                    _sql << " JOIN " << _tableName << " AS \"" << _aliases[i] << "\"";
+
+                    if (on || !_includeDeleted) {
+                        _sql << " ON ";
+                        if (on) {
+                            if (!_includeDeleted)
+                                _sql << "(";
+                            parseNode(on);
+                            if (!_includeDeleted) {
+                                _sql << ") AND ";
+                            }
                         }
-                    }
-
-                    if(!_includeDeleted) {
-                        writeNotDeletedTest(i);
+                        if(!_includeDeleted) {
+                            writeNotDeletedTest(i);
+                        }
                     }
                 }
             }
@@ -415,12 +425,12 @@ namespace litecore {
     }
 
 
-    bool QueryParser::isValidJoinType(const string &str) {
-        for (int i = 0; i < sizeof(kJoinTypes) / sizeof(kJoinTypes[0]); ++i) {
-            if (strcasecmp(kJoinTypes[i], str.c_str()) == 0)
-                return true;
+    int /*JoinType*/ QueryParser::parseJoinType(slice str) {
+        for (int i = 0; kJoinTypeNames[i]; ++i) {
+            if (str.caseEquivalent(slice(kJoinTypeNames[i])))
+                return i;  // really returns JoinType
         }
-        return false;
+        return kInvalidJoin;
     }
 
 

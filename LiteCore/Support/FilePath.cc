@@ -1,17 +1,20 @@
 //
-//  FilePath.cc
-//  Couchbase Lite Core
+// FilePath.cc
 //
-//  Created by Jens Alfke on 8/19/16.
-//  Copyright (c) 2016 Couchbase. All rights reserved.
+// Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //
-//  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
-//  except in compliance with the License. You may obtain a copy of the License at
-//    http://www.apache.org/licenses/LICENSE-2.0
-//  Unless required by applicable law or agreed to in writing, software distributed under the
-//  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-//  either express or implied. See the License for the specific language governing permissions
-//  and limitations under the License.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "FilePath.hh"
 #include "Base.hh"
@@ -31,6 +34,7 @@
 #include <sys/stat.h>
 #if __APPLE__
 #include <copyfile.h>
+#include <CoreFoundation/CoreFoundation.h>
 #elif defined(__linux__)
 #include "strlcat.h"
 #include <sys/sendfile.h>
@@ -299,6 +303,61 @@ namespace litecore {
 #endif
         }
         return FilePath(tmpDir, "");
+    }
+
+
+#if __APPLE__
+    template <class T>
+    class autoreleasing {
+    public:
+        autoreleasing()         :_ref(nullptr) {}
+        autoreleasing(T t)      :_ref(t) {}
+        ~autoreleasing()        {if (_ref) CFRelease(_ref);}
+        operator T () const     {return _ref;}
+        T* operator& ()         {assert(!_ref); return &_ref;}
+    private:
+        T _ref;
+    };
+
+    static string _canonicalPath(CFURLRef url, CFErrorRef *outError) {
+        autoreleasing<CFStringRef> cfCanonPath;
+        if (!CFURLCopyResourcePropertyForKey(url, kCFURLCanonicalPathKey, &cfCanonPath, outError))
+            return string();
+        nsstring_slice canonSlice(cfCanonPath);
+        string canon = canonSlice.asString();
+        if (CFURLHasDirectoryPath(url))
+            canon += kSeparatorChar;
+        return canon;
+    }
+#endif
+
+
+    string FilePath::canonicalPath() const {
+#if __APPLE__
+        autoreleasing<CFStringRef> cfpath = slice(path()).createCFString();
+        autoreleasing<CFURLRef> url = CFURLCreateWithFileSystemPath(nullptr, cfpath, kCFURLPOSIXPathStyle, isDir());
+
+        CFErrorRef error = nullptr;
+        string canonPath = _canonicalPath(url, &error);
+        if (!canonPath.empty())
+            return canonPath;
+
+        if (CFEqual(CFErrorGetDomain(error), kCFErrorDomainCocoa) && CFErrorGetCode(error) == 260) {
+            // File doesn't exist, so get canonical path of parent directory:
+            autoreleasing<CFURLRef> cfParentURL = CFURLCreateCopyDeletingLastPathComponent(nullptr, url);
+            canonPath = _canonicalPath(cfParentURL, &error);
+            if (!canonPath.empty()) {
+                Assert(hasSuffix(canonPath, kSeparator));
+                return canonPath + fileOrDirName();
+            }
+        }
+
+        // Failure:
+        Warn("canonicalPath(\"%s\") failed: CFError domain %s, code %ld",
+             path().c_str(),
+             alloc_slice(CFErrorGetDomain(error)).asString().c_str(), CFErrorGetCode(error));
+#endif
+        return path();
     }
 
 

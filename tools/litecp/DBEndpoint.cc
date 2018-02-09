@@ -1,9 +1,19 @@
 //
-//  DBEndpoint.cc
-//  LiteCore
+// DBEndpoint.cc
 //
-//  Created by Jens Alfke on 8/19/17.
-//  Copyright © 2017 Couchbase. All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #include "DBEndpoint.hh"
@@ -34,7 +44,7 @@ DbEndpoint::DbEndpoint(C4Database *db)
 
 
 void DbEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
-    Endpoint::prepare(isSource, mustExist, docIDProperty, other);
+    _docIDProperty = docIDProperty;
     _otherEndpoint = const_cast<Endpoint*>(other);
     if (!_db) {
         C4DatabaseConfig config = {kC4DB_SharedKeys | kC4DB_NonObservable};
@@ -115,6 +125,8 @@ void DbEndpoint::exportTo(Endpoint *dst, uint64_t limit) {
 
 // As destination of JSON file(s):
 void DbEndpoint::writeJSON(slice docID, slice json) {
+    enterTransaction();
+
     _encoder.reset();
     if (!_encoder.convertJSON(json)) {
         Tool::instance->errorOccurred(format("Couldn't parse JSON: %.*s", SPLAT(json)));
@@ -126,8 +138,6 @@ void DbEndpoint::writeJSON(slice docID, slice json) {
     alloc_slice docIDBuf;
     if (!docID && _docIDProperty)
         docID = docIDBuf = docIDFromFleece(body, json);
-
-    enterTransaction();
 
     C4DocPutRequest put { };
     put.docID = docID;

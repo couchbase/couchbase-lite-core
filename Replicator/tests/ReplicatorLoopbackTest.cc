@@ -13,7 +13,6 @@
 using namespace litecore::actor;
 
 constexpr duration ReplicatorLoopbackTest::kLatency;
-constexpr duration ReplicatorLoopbackTest::kCheckpointSaveDelay;
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull]") {
     int counter = 0;
@@ -291,6 +290,47 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
 }
 
 
+static Replicator::Options pushOptionsWithProperty(const char *property, vector<string> array) {
+    fleeceapi::Encoder enc;
+    enc.beginDict();
+    enc.writeKey(slice(property));
+    enc.beginArray();
+    for (const string &item : array)
+        enc << item;
+    enc.endArray();
+    enc.endDict();
+    auto opts = Replicator::Options::pushing();
+    opts.properties = AllocedDict(enc.finish());
+    return opts;
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
+    // Test that replicators with different channel or docIDs options use different checkpoints
+    // (#386)
+    createFleeceRev(db, "doc"_sl, kRevID, kBody);
+    _expectedDocumentCount = 1;
+
+    runPushReplication();
+    validateCheckpoints(db, db2, "{\"local\":1}");
+    alloc_slice chk1 = _checkpointID;
+
+    _expectedDocumentCount = 0;     // because db2 already has the doc
+    runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionChannels, {"ABC", "CBS", "NBC"}),
+                   Replicator::Options::passive());
+    validateCheckpoints(db, db2, "{\"local\":1}");
+    alloc_slice chk2 = _checkpointID;
+    CHECK(chk1 != chk2);
+
+    runReplicators(pushOptionsWithProperty(kC4ReplicatorOptionDocIDs, {"wot's", "up", "doc"}),
+                   Replicator::Options::passive());
+    validateCheckpoints(db, db2, "{\"local\":1}");
+    alloc_slice chk3 = _checkpointID;
+    CHECK(chk3 != chk2);
+    CHECK(chk3 != chk1);
+}
+
+
 #pragma mark - CONTINUOUS:
 
 
@@ -301,7 +341,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][C
 
     _stopOnIdle = true;
     auto pushOpt = Replicator::Options::pushing(kC4Continuous);
-    pushOpt.setProperty(slice(kC4ReplicatorCheckpointInterval), 1);
     runReplicators(pushOpt, Replicator::Options::passive());
 }
 
@@ -313,7 +352,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
 
     _stopOnIdle = true;
     auto pullOpt = Replicator::Options::pulling(kC4Continuous);
-    pullOpt.setProperty(slice(kC4ReplicatorCheckpointInterval), 1);
     runReplicators(Replicator::Options::passive(), pullOpt);
 }
 

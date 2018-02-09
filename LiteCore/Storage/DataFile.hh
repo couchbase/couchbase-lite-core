@@ -1,17 +1,20 @@
 //
-//  DataFile.hh
-//  Couchbase Lite Core
+// DataFile.hh
 //
-//  Created by Jens Alfke on 5/12/14.
-//  Copyright (c) 2014-2016 Couchbase. All rights reserved.
+// Copyright (c) 2014 Couchbase, Inc All rights reserved.
 //
-//  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
-//  except in compliance with the License. You may obtain a copy of the License at
-//    http://www.apache.org/licenses/LICENSE-2.0
-//  Unless required by applicable law or agreed to in writing, software distributed under the
-//  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-//  either express or implied. See the License for the specific language governing permissions
-//  and limitations under the License.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #pragma once
 #include "KeyStore.hh"
@@ -59,8 +62,8 @@ namespace litecore {
         DataFile(const FilePath &path, const Options* =nullptr);
         virtual ~DataFile();
 
-        const FilePath& filePath() const noexcept;
-        const Options& options() const noexcept              {return _options;}
+        FilePath filePath() const noexcept                  {return _path;}
+        const Options& options() const noexcept             {return _options;}
 
         virtual bool isOpen() const noexcept =0;
 
@@ -72,7 +75,7 @@ namespace litecore {
         virtual void close();
 
         /** Closes the database and deletes its file. */
-        virtual void deleteDataFile() =0;
+        void deleteDataFile();
 
         virtual void compact() =0;
 
@@ -130,14 +133,11 @@ namespace litecore {
             virtual std::string filenameExtension() =0;
             virtual bool encryptionEnabled(EncryptionAlgorithm) =0;
 
-            /** The number of currently open DataFiles on the given path. */
-            size_t openCount(const FilePath &path);
-
             /** Opens a DataFile. */
             virtual DataFile* openFile(const FilePath &path, const Options* =nullptr) =0;
 
             /** Deletes a non-open file. Returns false if it doesn't exist. */
-            virtual bool deleteFile(const FilePath &path, const Options* =nullptr) =0;
+            bool deleteFile(const FilePath &path, const Options* =nullptr);
 
             /** Moves a non-open file. */
             virtual void moveFile(const FilePath &fromPath, const FilePath &toPath);
@@ -146,7 +146,11 @@ namespace litecore {
             virtual bool fileExists(const FilePath &path);
             
         protected:
+            /** Deletes a non-open file. Returns false if it doesn't exist. */
+            virtual bool _deleteFile(const FilePath &path, const Options* =nullptr) =0;
+
             virtual ~Factory() { }
+            friend class DataFile;
         };
 
         static std::vector<Factory*> factories();
@@ -185,6 +189,8 @@ namespace litecore {
 
         void forOpenKeyStores(function_ref<void(KeyStore&)> fn);
 
+        virtual Factory& factory() const =0;
+
     private:
         class Shared;
         friend class KeyStore;
@@ -192,6 +198,9 @@ namespace litecore {
         friend class ReadOnlyTransaction;
         friend class DocumentKeys;
 
+        static bool deleteDataFile(DataFile *file, const Options *options,
+                                   Shared *shared, Factory &factory);
+        
         KeyStore& addKeyStore(const std::string &name, KeyStore::Capabilities);
         void beginTransactionScope(Transaction*);
         void transactionBegan(Transaction*);
@@ -203,6 +212,7 @@ namespace litecore {
         DataFile& operator=(const DataFile&) = delete;
 
         Retained<Shared>        _shared;                        // Shared state of file (lock)
+        FilePath const          _path;                          // Path as given (non-canonical)
         Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores

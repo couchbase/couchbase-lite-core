@@ -1,17 +1,20 @@
 //
-//  Error.cc
-//  Couchbase Lite Core
+// Error.cc
 //
-//  Created by Jens Alfke on 3/4/16.
-//  Copyright (c) 2016 Couchbase. All rights reserved.
+// Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //
-//  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
-//  except in compliance with the License. You may obtain a copy of the License at
-//    http://www.apache.org/licenses/LICENSE-2.0
-//  Unless required by applicable law or agreed to in writing, software distributed under the
-//  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-//  either express or implied. See the License for the specific language governing permissions
-//  and limitations under the License.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "Error.hh"
 #include "Logging.hh"
@@ -358,10 +361,8 @@ namespace litecore {
         if (sWarnOnError && !isUnremarkable()) {
             static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) ==
                           error::NumDomainsPlus1, "Incomplete domain name table");
-            WarnError("LiteCore throwing %s error %d: %s",
-                      kDomainNames[domain], code, what());
-            if (WillLog(LogLevel::Error))
-                logBacktrace(1);
+            WarnError("LiteCore throwing %s error %d: %s%s",
+                      kDomainNames[domain], code, what(), backtrace(1).c_str());
         }
         throw *this;
     }
@@ -401,25 +402,27 @@ namespace litecore {
             message = expr;
         if (!WillLog(LogLevel::Error))
             fprintf(stderr, "Assertion failed: %s (%s:%u, in %s)", message, file, line, fn);
-        WarnError("Assertion failed: %s (%s:%u, in %s)", message, file, line, fn);
-        if (WillLog(LogLevel::Error))
-            logBacktrace(1);
+        WarnError("Assertion failed: %s (%s:%u, in %s)%s",
+                  message, file, line, fn, backtrace(1).c_str());
         throw error(error::AssertionFailed);
     }
 
 #if !defined(__ANDROID__) && !defined(_MSC_VER)
-    /*static*/ void error::logBacktrace(unsigned skip) {
+    /*static*/ string error::backtrace(unsigned skip) {
 #ifdef __clang__
         ++skip;     // skip the logBacktrace frame itself
         void* addrs[50];
-        int n = backtrace(addrs, 50) - skip;
+        int n = ::backtrace(addrs, 50) - skip;
         if (n <= 0)
-            return;
+            return "";
         char** lines = backtrace_symbols(&addrs[skip], n);
         char* unmangled = nullptr;
         size_t unmangledLen = 0;
 
+        stringstream out;
+
         for (int i = 0; i < n; ++i) {
+            out << "\n\t";
             char library[101], functionBuf[201];
             size_t pc;
             int offset;
@@ -432,13 +435,19 @@ namespace litecore {
                 unmangled = abi::__cxa_demangle(function, unmangled, &unmangledLen, &status);
                 if (unmangled && status == 0)
                     function = unmangled;
-                WarnError("%2d  %-25s %s + %d", i, library, function, offset);
+                char *cstr = nullptr;
+                asprintf(&cstr, "%2d  %-25s %s + %d", i, library, function, offset);
+                out << cstr;
+                free(cstr);
             } else {
-                WarnError("%s", lines[i]);
+                out << lines[i];
             }
         }
         free(unmangled);
         free(lines);
+        return out.str();
+#else
+        return " (no backtrace available)";
 #endif
     }
 #endif

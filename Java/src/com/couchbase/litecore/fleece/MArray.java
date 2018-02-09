@@ -1,16 +1,20 @@
-/**
- * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
- * <p>
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
- */
+//
+// MArray.java
+//
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 package com.couchbase.litecore.fleece;
 
 import java.util.ArrayList;
@@ -43,7 +47,7 @@ public class MArray extends MCollection {
 
         FLValue value = mv.getValue();
         if (value != null) {
-            _baseArray  = value.asFLArray();
+            _baseArray = value.asFLArray();
             resize(_baseArray.count());
         } else {
             _baseArray = null;
@@ -70,13 +74,15 @@ public class MArray extends MCollection {
 
     /* Public Methods */
 
-    /** Returns a reference to the MValue of the item at the given index.
-     If the index is out of range, returns an empty MValue. */
+    /**
+     * Returns a reference to the MValue of the item at the given index.
+     * If the index is out of range, returns an empty MValue.
+     */
     public MValue get(long index) {
         if (index < 0 || index >= _values.size())
             return MValue.EMPTY;
 
-        MValue value = _values.get((int)index);
+        MValue value = _values.get((int) index);
         if (value.isEmpty()) {
             if (_baseArray != null) {
                 value = new MValue(_baseArray.get(index));
@@ -94,7 +100,7 @@ public class MArray extends MCollection {
             return false;
 
         mutate();
-        _values.set((int)index, new MValue(value));
+        _values.set((int) index, new MValue(value));
         return true;
     }
 
@@ -133,7 +139,7 @@ public class MArray extends MCollection {
             populateValues();
 
         mutate();
-        _values.subList((int)start, (int)end).clear();
+        _values.subList((int) start, (int) end).clear();
         return true;
     }
 
@@ -158,7 +164,7 @@ public class MArray extends MCollection {
     void resize(long newSize) {
         int count = _values.size();
         if (newSize < count)
-            _values.subList((int)newSize, count).clear();
+            _values.subList((int) newSize, count).clear();
         else if (newSize > count) {
             for (int i = 0; i < newSize - count; i++)
                 _values.add(MValue.EMPTY);

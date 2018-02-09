@@ -1,3 +1,20 @@
+//
+// C4Socket.java
+//
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 package com.couchbase.litecore;
 
 import android.util.Log;
@@ -85,13 +102,9 @@ public abstract class C4Socket {
     //-------------------------------------------------------------------------
 
     private static void open(long socket, String scheme, String hostname, int port, String path, byte[] optionsFleece) {
-        Log.e(TAG, "C4Socket.callback.open() socket -> 0x" + Long.toHexString(socket) + ", scheme -> " + scheme + ", hostname -> " + hostname + ", port -> " + port + ", path -> " + path);
-        Log.e(TAG, "optionsFleece: " + (optionsFleece != null ? "not null" : "null"));
-
         Map<String, Object> options = null;
         if (optionsFleece != null) {
             options = FLValue.fromData(optionsFleece).asDict();
-            Log.e(TAG, "options = " + options);
         }
 
         // NOTE: OkHttp can not understand blip/blips
@@ -128,28 +141,20 @@ public abstract class C4Socket {
             return;
         }
 
-        Log.e(TAG, "C4Socket.callback.write() handle -> 0x" + Long.toHexString(handle) + ", allocatedData.length -> " + allocatedData.length);
-
         C4Socket socket = reverseLookupTable.get(handle);
         if (socket != null)
             socket.send(allocatedData);
     }
 
     private static void completedReceive(long handle, long byteCount) {
-        Log.e(TAG, "C4Socket.callback.completedReceive() socket -> 0x" + Long.toHexString(handle) + ", byteCount -> " + byteCount);
-
         // NOTE: No further action is not required?
     }
 
     private static void close(long handle) {
-        Log.e(TAG, "C4Socket.callback.close() socket -> 0x" + Long.toHexString(handle));
-
         // NOTE: close(long) method should not be called.
     }
 
     private static void requestClose(long handle, int status, String message) {
-        Log.e(TAG, "C4Socket.callback.requestClose() socket -> 0x" + Long.toHexString(handle) + ", status -> " + status + ", message -> " + message);
-
         C4Socket socket = reverseLookupTable.get(handle);
         if (socket != null)
             socket.requestClose(status, message);

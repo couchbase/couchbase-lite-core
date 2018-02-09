@@ -1,16 +1,20 @@
-/**
- * Copyright (c) 2017 Couchbase, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
- * except in compliance with the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the
- * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. See the License for the specific language governing permissions
- * and limitations under the License.
- */
+//
+// native_encoder.cc
+//
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "native_glue.hh"
 #include "com_couchbase_litecore_fleece_Encoder.h"
@@ -40,7 +44,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_Encoder_init(JNIEnv *
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_Encoder_initWithFLEncoder(JNIEnv *env, jclass clazz,
                                                              jlong jflenc) {
-    return (jlong) new Encoder((FLEncoder)jflenc);
+    return (jlong) new Encoder((FLEncoder) jflenc);
 }
 
 
@@ -81,10 +85,11 @@ Java_com_couchbase_litecore_fleece_Encoder_setSharedKeys(JNIEnv *env, jclass cla
  * Method:    getFLEncoder
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_Encoder_getFLEncoder(JNIEnv *env, jclass clazz, jlong jenc){
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_fleece_Encoder_getFLEncoder(JNIEnv *env, jclass clazz, jlong jenc) {
     Encoder *enc = (Encoder *) jenc;
-    FLEncoder flenc = (FLEncoder)*enc;
-    return (jlong)flenc;
+    FLEncoder flenc = (FLEncoder) *enc;
+    return (jlong) flenc;
 }
 /*
  * Class:     com_couchbase_litecore_fleece_Encoder

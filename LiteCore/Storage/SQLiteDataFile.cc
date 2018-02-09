@@ -1,17 +1,20 @@
 //
-//  SQLiteDataFile.cc
-//  Couchbase Lite Core
+// SQLiteDataFile.cc
 //
-//  Created by Jens Alfke on 7/21/16.
-//  Copyright (c) 2016 Couchbase. All rights reserved.
+// Copyright (c) 2016 Couchbase, Inc All rights reserved.
 //
-//  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
-//  except in compliance with the License. You may obtain a copy of the License at
-//    http://www.apache.org/licenses/LICENSE-2.0
-//  Unless required by applicable law or agreed to in writing, software distributed under the
-//  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-//  either express or implied. See the License for the specific language governing permissions
-//  and limitations under the License.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 
 #include "SQLiteDataFile.hh"
 #include "SQLiteKeyStore.hh"
@@ -81,10 +84,6 @@ namespace litecore {
     // open the database and grab the write lock.
     static const unsigned kBusyTimeoutSecs = 10;
 
-    // How long deleteDataFile() should wait for other threads to close their connections
-    static const unsigned kOtherDBCloseTimeoutSecs = 3;
-
-
     LogDomain SQL("SQL");
 
     void LogStatement(const SQLite::Statement &st) {
@@ -97,6 +96,9 @@ namespace litecore {
         int baseCode = errCode & 0xFF;
         if (baseCode == SQLITE_SCHEMA)
             return;     // ignore harmless "statement aborts ... database schema has changed" warning
+        if (errCode == SQLITE_WARNING && strncmp(msg, "file unlinked while open:", 25) == 0)
+            return;     // ignore warning closing zombie db that's been deleted (#381)
+
         if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY) {
             Log("SQLite message: %s", msg);
         } else {
@@ -119,7 +121,7 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile::Factory& SQLiteDataFile::factory() {
+    SQLiteDataFile::Factory& SQLiteDataFile::sqliteFactory() {
         static SQLiteDataFile::Factory s;
         return s;
     }
@@ -136,22 +138,18 @@ namespace litecore {
 
 
     bool SQLiteDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {
+#ifdef COUCHBASE_ENTERPRISE
         static int sEncryptionEnabled = -1;
         static once_flag once;
         call_once(once, []() {
             // Check whether encryption is available:
-            if (sqlite3_compileoption_used("SQLITE_HAS_CODEC") == 0) {
-                sEncryptionEnabled = false;
-            } else {
-                // Determine whether we're using SQLCipher or the SQLite Encryption Extension,
-                // by calling a SQLCipher-specific pragma that returns a number:
-                SQLite::Database sqlDb(":memory:", SQLite::OPEN_READWRITE | SQLite::OPEN_CREATE);
-                SQLite::Statement s(sqlDb, "PRAGMA cipher_default_kdf_iter");
-                LogStatement(s);
-                sEncryptionEnabled = s.executeStep();
-            }
+            sEncryptionEnabled = sqlite3_compileoption_used("SQLITE_HAS_CODEC");
         });
         return sEncryptionEnabled > 0 && (alg == kNoEncryption || alg == kAES256);
+#else
+        return false;
+#endif
+
     }
 
 
@@ -160,12 +158,8 @@ namespace litecore {
     }
 
 
-    bool SQLiteDataFile::Factory::deleteFile(const FilePath &path, const Options*) {
-        auto count = (unsigned) openCount(path);
-        if (count > 0)
-            error::_throw(error::Busy, "Still %u open connection(s) to %s",
-                          count,
-path.path().c_str());
+    bool SQLiteDataFile::Factory::_deleteFile(const FilePath &path, const Options*) {
+        LogTo(DBLog, "Deleting database file %s (with -wal and -shm)", path.path().c_str());
         return path.del() | path.appendingToName("-shm").del() | path.appendingToName("-wal").del();
         // Note the non-short-circuiting 'or'! All 3 paths will be deleted.
     }
@@ -269,6 +263,24 @@ path.path().c_str());
         _setLastSeqStmt.reset();
         if (_sqlDb) {
             optimizeAndVacuum();
+            // Close the SQLite database:
+            if (!_sqlDb->closeUnlessStatementsOpen()) {
+                // There are still SQLite statements (queries) open, probably in QueryEnumerators
+                // that haven't been deleted yet -- this can happen if the client code has garbage-
+                // collected objects owning those enumerators, which won't release them until their
+                // finalizers run. (Couchbase Lite Java has this issue.)
+                // We'll log info about the statements so this situation can be detected from logs.
+                _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
+                    LogVerbose(DBLog, "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
+                               _sqlDb.get(), (busy ? "busy" : "open"), sql);
+                });
+                // Also, tell SQLite not to checkpoint the WAL when it eventually closes the db
+                // (after the last statement is freed), as that can have disastrous effects if the
+                // db has since been deleted and re-created: see issue #381 for gory details.
+                int noCheckpointResult = sqlite3_db_config(_sqlDb->getHandle(), SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, 1, nullptr);
+                Assert(noCheckpointResult == SQLITE_OK, "Failed to set SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE");
+            }
+            // Finally, delete the SQLite::Database instance:
             _sqlDb.reset();
         }
         _collationContexts.clear();
@@ -278,6 +290,7 @@ path.path().c_str());
     bool SQLiteDataFile::decrypt() {
         auto alg = options().encryptionAlgorithm;
         if (alg != kNoEncryption) {
+#ifdef COUCHBASE_ENTERPRISE
             if (!factory().encryptionEnabled(alg))
                 return false;
 
@@ -285,7 +298,10 @@ path.path().c_str());
             slice key = options().encryptionKey;
             if(key.buf == nullptr || key.size != 32)
                 error::_throw(error::InvalidParameter);
-            _exec(string("PRAGMA key = \"x'") + key.hexString() + "'\"");
+            sqlite3_key_v2(_sqlDb->getHandle(), nullptr, key.buf, key.size);
+#else
+            error::_throw(error::UnsupportedOperation);
+#endif
         }
 
         // Verify that encryption key is correct (or db is unencrypted, if no key given):
@@ -295,6 +311,7 @@ path.path().c_str());
 
 
     void SQLiteDataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
+#ifdef COUCHBASE_ENTERPRISE
         bool currentlyEncrypted = (options().encryptionAlgorithm != kNoEncryption);
         switch (alg) {
             case kNoEncryption:
@@ -320,56 +337,15 @@ path.path().c_str());
         if (!factory().encryptionEnabled(alg))
             error::_throw(error::UnsupportedEncryption);
 
-        // Get the userVersion of the db:
-        int64_t userVersion = intQuery("PRAGMA user_version");
-
-        // Make a path for a temporary database file:
-        const FilePath &realPath = filePath();
-        FilePath tempPath(realPath.dirName(), "_rekey_temp.sqlite3");
-        factory().deleteFile(tempPath);
-
-        // Create & attach a temporary database encrypted with the new key:
-        {
-            string sql = "ATTACH DATABASE ? AS rekeyed_db KEY ";
-            if (alg == kNoEncryption)
-                sql += "''";
-            else
-                sql += "\"x'" + newKey.hexString() + "'\"";
-            SQLite::Statement attach(*_sqlDb, sql);
-            attach.bind(1, tempPath);
-            LogStatement(attach);
-            attach.executeStep();
+        int rekeyResult = 0;
+        if(alg == kNoEncryption) {
+            rekeyResult = sqlite3_rekey_v2(_sqlDb->getHandle(), nullptr, nullptr, 0);
+        } else {
+            rekeyResult = sqlite3_rekey_v2(_sqlDb->getHandle(), nullptr, newKey.buf, newKey.size);
         }
-
-        try {
-
-            // Export the current database's contents to the new one:
-            // <https://www.zetetic.net/sqlcipher/sqlcipher-api/#sqlcipher_export>
-            {
-                _exec("SELECT sqlcipher_export('rekeyed_db')");
-
-                stringstream sql;
-                sql << "PRAGMA rekeyed_db.user_version = " << userVersion;
-                _exec(sql.str());
-            }
-
-            // Close the old database:
-            close();
-
-            // Replace it with the new one:
-            try {
-                factory().deleteFile(realPath);
-            } catch (const error &) {
-                // ignore errors deleting old files
-            }
-            factory().moveFile(tempPath, realPath);
-
-        } catch (const exception &) {
-            // Back out and rethrow:
-            close();
-            factory().deleteFile(tempPath);
-            reopen();
-            throw;
+        
+        if(rekeyResult != SQLITE_OK) {
+            error::_throw(litecore::error::SQLite, rekeyResult);
         }
 
         // Update encryption key:
@@ -380,6 +356,9 @@ path.path().c_str());
 
         // Finally reopen:
         reopen();
+#else
+        error::_throw(litecore::error::UnsupportedOperation);
+#endif
     }
 
 
@@ -493,21 +472,6 @@ path.path().c_str());
         _setLastSeqStmt->bindNoCopy(1, store.name());
         _setLastSeqStmt->bind(2, (long long)seq);
         _setLastSeqStmt->exec();
-    }
-
-
-    void SQLiteDataFile::deleteDataFile() {
-        // Wait for other connections to close -- in multithreaded setups there may be races where
-        // another thread takes a bit longer to close its connection.
-        fleece::Stopwatch st;
-        while (factory().openCount(filePath()) > 1) {
-            if (st.elapsed() > kOtherDBCloseTimeoutSecs)
-                error::_throw(error::Busy);
-            else
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-        close();
-        factory().deleteFile(filePath());
     }
 
 

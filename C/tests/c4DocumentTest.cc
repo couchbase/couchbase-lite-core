@@ -1,9 +1,19 @@
 //
-//  c4DocumentTest.cc
-//  LiteCore
+// c4DocumentTest.cc
 //
-//  Created by Jens Alfke on 10/24/16.
-//  Copyright © 2016 Couchbase. All rights reserved.
+// Copyright (c) 2016 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #include "c4Test.hh"
@@ -408,7 +418,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     auto doc = c4doc_put(db, &rq, nullptr, &error);
     REQUIRE(doc != nullptr);
     REQUIRE(doc->docID == kDocID);
-    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab")
+    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-9a57afaa2e551a0bc470548763a5660a19d579f4")
                                           : C4STR("1@*");
     REQUIRE(doc->revID == kExpectedRevID);
     REQUIRE(doc->flags == kDocExists);
@@ -423,7 +433,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
     REQUIRE(doc != nullptr);
     REQUIRE((unsigned long)commonAncestorIndex == 0ul);
-    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("2-32c711b29ea3297e27f3c28c8b066a68e1bb3f7b")
+    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("2-559298a253c7bfb7edc0ce1dc93c8e8ebf504065")
                                            : C4STR("2@*");
     REQUIRE(doc->revID == kExpectedRev2ID);
     REQUIRE(doc->flags == kDocExists);
@@ -466,7 +476,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
         REQUIRE(doc);
     }
     C4Log("After save");
-    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-c10c25442d9fe14fa3ca0db4322d7f1e43140fab")
+    C4Slice kExpectedRevID = isRevTrees() ? C4STR("1-9a57afaa2e551a0bc470548763a5660a19d579f4")
                                           : C4STR("1@*");
     REQUIRE(doc->revID == kExpectedRevID);
     REQUIRE(doc->flags == kDocExists);
@@ -490,7 +500,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
         doc = updatedDoc;
     }
     C4Log("After multiple updates");
-    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("5-a8fb5b9d05ee3a3b4f37ed6c06eeb2f64aaa1348")
+    C4Slice kExpectedRev2ID = isRevTrees() ? C4STR("5-b0a49dc580ffd380050fe54d26d380d270ad275f")
                                            : C4STR("5@*");
     REQUIRE(doc->revID == kExpectedRev2ID);
     REQUIRE(doc->selectedRev.revID == kExpectedRev2ID);
@@ -543,6 +553,18 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     auto doc = c4doc_put(db, &rq, nullptr, &err);
     REQUIRE(doc);
 
+    // Check that the pulled revision is treated as a conflict:
+    CHECK(doc->selectedRev.revID == C4STR("4-dddd"));
+    CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevIsConflict));
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK((int)doc->selectedRev.flags == kRevIsConflict);
+
+    // Check that the local revision is still current:
+    CHECK(doc->revID == C4STR("3-aaaaaa"));
+    REQUIRE(c4doc_selectCurrentRevision(doc));
+    CHECK(doc->selectedRev.revID == C4STR("3-aaaaaa"));
+    CHECK((int)doc->selectedRev.flags == kRevLeaf);
+
     // Now check the common ancestor algorithm:
     REQUIRE(c4doc_selectCommonAncestorRevision(doc, C4STR("3-aaaaaa"), C4STR("4-dddd")));
     CHECK(doc->selectedRev.revID == kRev2ID);
@@ -569,8 +591,13 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
         c4doc_selectCurrentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99"));
         CHECK(doc->selectedRev.body == C4STR("{\"merged\":true}"));
+        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
         c4doc_selectParentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("4-dddd"));
+        CHECK((int)doc->selectedRev.flags == 0);
+        c4doc_selectParentRevision(doc);
+        CHECK(doc->selectedRev.revID == C4STR("3-ababab"));
+        CHECK((int)doc->selectedRev.flags == 0);
     }
 
     SECTION("Merge, 3 wins") {
@@ -579,8 +606,10 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
         c4doc_selectCurrentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("4-333ee0677b5f1e1e5064b050d417a31d2455dc30"));
         CHECK(doc->selectedRev.body == C4STR("{\"merged\":true}"));
+        CHECK((int)doc->selectedRev.flags == (kRevLeaf | kRevNew));
         c4doc_selectParentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("3-aaaaaa"));
+        CHECK((int)doc->selectedRev.flags == 0);
     }
 
     c4doc_free(doc);

@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 option(CODE_COVERAGE_ENABLED "Set whether or not code coverage information should be generated" OFF)
+option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 
 add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
@@ -20,7 +21,28 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_IPV6                          # Enable IPv6 support in CivetWeb
                 -DCMAKE                             # Let the source know this is a CMAKE build
                 -D__STDC_LIMIT_MACROS               # Ensure the presence of UINT64_MAX, etc
-                -DNOMINMAX)                         # Get rid of pesky Windows macros for min and max
+                -DNOMINMAX                          # Get rid of pesky Windows macros for min and max
+                -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1
+                -DSQLITE_LIKE_DOESNT_MATCH_BLOBS
+                -DSQLITE_OMIT_SHARED_CACHE
+                -DSQLITE_OMIT_DECLTYPE
+                -DSQLITE_OMIT_DATETIME_FUNCS
+                -DSQLITE_ENABLE_EXPLAIN_COMMENTS
+                -DSQLITE_DISABLE_FTS3_UNICODE
+                -DSQLITE_ENABLE_MEMORY_MANAGEMENT
+                -DSQLITE_ENABLE_STAT4
+                -DSQLITE_HAVE_ISNAN
+                -DHAVE_LOCALTIME_R
+                -DHAVE_USLEEP
+                -DHAVE_UTIME
+                -DSQLITE_OMIT_LOAD_EXTENSION
+                -DSQLITE_ENABLE_FTS4
+                -DDSQLITE_ENABLE_FTS3_PARENTHESIS
+                -DSQLITE_ENABLE_FTS3_TOKENIZER)
+
+if(BUILD_ENTERPRISE)
+    add_definitions(-DCOUCHBASE_ENTERPRISE)
+endif()
 
 if(MSVC)
     if(WINDOWS_STORE)
@@ -120,12 +142,12 @@ endif()
 include_directories("vendor/fleece/Fleece"
                     "vendor/fleece/vendor"
                     "vendor/SQLiteCpp/include"
-                    "vendor/sqlcipher/src/headers"
+                    "vendor/SQLiteCpp/sqlite3"
                     "vendor/sqlite3-unicodesn"
                     "vendor/BLIP-Cpp/include/blip_cpp"
                     "vendor/BLIP-Cpp/src/util"
                     "vendor/civetweb/include"
-                    "vendor/sqlcipher/vendor/mbedtls/include")
+                    "vendor/mbedtls/include")
 
 if(WIN32)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
@@ -142,7 +164,7 @@ add_subdirectory(REST)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/BLIP-Cpp            EXCLUDE_FROM_ALL)
-add_subdirectory(vendor/sqlcipher           EXCLUDE_FROM_ALL)
+add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 
 ### MORE BUILD SETTINGS:
 
@@ -218,15 +240,6 @@ set(ALL_SRC_FILES
 
 if(MSVC)
 	include_directories("vendor/fleece/MSVC")
-	set(ALL_SRC_FILES ${ALL_SRC_FILES}
-    MSVC/asprintf.c
-    vendor/fleece/MSVC/memmem.cc
-    MSVC/mkstemp.cc
-    MSVC/mkdtemp.cc
-    MSVC/strlcat.c
-    MSVC/vasprintf-msvc.c
-    MSVC/arc4random.cc
-    MSVC/strptime.cc)
 elseif(ANDROID)
     set(ALL_SRC_FILES ${ALL_SRC_FILES}
     LiteCore/Unix/strlcat.c
@@ -247,15 +260,18 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     link_directories (${LIBCXX_LIBDIR})
 endif()
 
-add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
+if(NOT SQLITE_SRC)
+    set(SQLITE_SRC vendor/SQLiteCpp/sqlite3/sqlite3.c)
+endif()
+add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES} ${SQLITE_SRC})
 target_compile_definitions(LiteCoreStatic PRIVATE -DLITECORE_IMPL)
+
 if(WIN32)
     add_library(LiteCore SHARED MSVC/SQLiteTempDirectory.cc) #No-op for non-UWP
 else()
     file(WRITE empty.cpp)
     add_library(LiteCore SHARED empty.cpp)
 endif()
-
 
 install (TARGETS LiteCore
          RUNTIME DESTINATION bin
@@ -270,10 +286,10 @@ set(LITECORE_LIBRARIES_PRIVATE  ${WHOLE_LIBRARY_FLAG}
                                 LiteCoreStatic
                                 FleeceStatic
                                 ${NO_WHOLE_LIBRARY_FLAG}
+                                Support
                                 SQLite3_UnicodeSN
                                 BLIPStatic
                                 CivetWeb
-                                sqlcipher
                                 mbedcrypto)
 
 target_link_libraries(LiteCore PRIVATE ${LITECORE_LIBRARIES_PRIVATE})
@@ -335,14 +351,38 @@ endif()
 
 ### SUPPORT LIB:
 
+if(MSVC)
+    set(PLATFORM_SRC 
+    MSVC/asprintf.c
+    vendor/fleece/MSVC/memmem.cc
+    MSVC/mkstemp.cc
+    MSVC/mkdtemp.cc
+    MSVC/strlcat.c
+    MSVC/vasprintf-msvc.c
+    MSVC/arc4random.cc
+    MSVC/strptime.cc
+    LiteCore/Support/PlatformIO.cc)
+elseif(ANDROID)
+    set(PLATFORM_SRC 
+    LiteCore/Unix/strlcat.c
+    LiteCore/Unix/arc4random.cc)
+elseif(UNIX AND NOT APPLE)
+    set(PLATFORM_SRC 
+    Unix/strlcat.c
+    Unix/arc4random.cc)
+endif()
+
 add_library(Support STATIC
     C/c4ExceptionUtils.cc
     LiteCore/Support/LibC++Debug.cc
     LiteCore/Support/Error.cc
+    LiteCore/Support/Error_windows.cc
+    LiteCore/Support/Error_android.cc
     LiteCore/Support/FilePath.cc
     LiteCore/Support/Logging_Stub.cc
     LiteCore/Support/RefCounted.cc
     LiteCore/Support/StringUtil.cc
+    ${PLATFORM_SRC}
 )
 
 ### TOOLS:

@@ -1,9 +1,19 @@
 //
-//  QueryTest.cc
-//  LiteCore
+// QueryTest.cc
 //
-//  Created by Jens Alfke on 5/13/17.
-//  Copyright © 2017 Couchbase. All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #include "DataFile.hh"
@@ -1057,4 +1067,22 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query JOINs", "[Query]") {
         CHECK(e->columns()[0]->asInt() == (i % 10));
         CHECK(e->columns()[1]->asInt() == (i / 10));
     }*/
+}
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query finalized after db deleted", "[Query]") {
+    Retained<Query> query{ store->compileQuery(json5(
+          "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    e->next();
+    query = nullptr;
+
+    db->deleteDataFile();
+    db = nullptr;
+
+    // Now free the query enum, which will free the sqlite_stmt, triggering a SQLite warning
+    // callback about the database file being unlinked:
+    e.reset();
+
+    // Assert that the callback did not log a warning:
+    CHECK(warningsLogged() == 0);
 }
