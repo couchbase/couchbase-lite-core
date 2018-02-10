@@ -59,6 +59,8 @@ namespace litecore {
         SymCleanup(process);
 
 		return out.str();
+		#else
+		return "(stack trace unavailable on Windows Store)";
         #endif
     }
 }

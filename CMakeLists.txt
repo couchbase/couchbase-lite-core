@@ -46,7 +46,9 @@ endif()
 
 if(MSVC)
     if(WINDOWS_STORE)
-        add_definitions(-D_WIN32_WINNT=0x0602)      # Support back to Windows 8 for Windows Store
+        add_definitions(-DSQLITE_OS_WINRT 
+                        -DMBEDTLS_NO_PLATFORM_ENTROPY
+                        -D_WIN32_WINNT=0x0602)      # Support back to Windows 8 for Windows Store
     else()
         add_definitions(-D_WIN32_WINNT=0x0601       # Support back to Windows 7 for Windows desktop
                         -DINCL_EXTRA_HTON_FUNCTIONS)# Make sure htonll is defined for WebSocketProtocol.hh
