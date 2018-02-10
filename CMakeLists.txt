@@ -368,8 +368,8 @@ elseif(ANDROID)
     LiteCore/Unix/arc4random.cc)
 elseif(UNIX AND NOT APPLE)
     set(PLATFORM_SRC 
-    Unix/strlcat.c
-    Unix/arc4random.cc)
+    LiteCore/Unix/strlcat.c
+    LiteCore/Unix/arc4random.cc)
 endif()
 
 add_library(Support STATIC
