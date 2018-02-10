@@ -1069,6 +1069,10 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query JOINs", "[Query]") {
     }*/
 }
 
+// NOTE: This test cannot be reproduced in this way on Windows, and it is likely a Unix specific
+// problem.  Leaving an enumerator open in this way will cause a permission denied error when
+// trying to delete the database via db->deleteDataFile()
+#ifndef _MSC_VER
 TEST_CASE_METHOD(DataFileTestFixture, "Query finalized after db deleted", "[Query]") {
     Retained<Query> query{ store->compileQuery(json5(
           "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
@@ -1086,3 +1090,4 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query finalized after db deleted", "[Quer
     // Assert that the callback did not log a warning:
     CHECK(warningsLogged() == 0);
 }
+#endif
