@@ -122,7 +122,7 @@ extern "C" {
 
     /** Closes the database. Does not free the handle, although any operation other than
         c4db_free() will fail with an error. */
-    bool c4db_close(C4Database* database C4NONNULL, C4Error *outError) C4API;
+    bool c4db_close(C4Database* database, C4Error *outError) C4API;
 
     /** Closes the database and deletes the file/bundle. Does not free the handle, although any
         operation other than c4db_free() will fail with an error. */

@@ -55,7 +55,7 @@ extern "C" {
     bool c4exp_purgeExpired(C4ExpiryEnumerator *e C4NONNULL, C4Error *outError) C4API;
 
     /** Closes the enumerator and disallows further use */
-    void c4exp_close(C4ExpiryEnumerator *e C4NONNULL) C4API;
+    void c4exp_close(C4ExpiryEnumerator *e) C4API;
     
     /** Frees a C4ExpiryEnumerator handle */
     void c4exp_free(C4ExpiryEnumerator *e) C4API;

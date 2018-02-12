@@ -70,7 +70,7 @@ extern "C" {
 
     /** Closes an enumeration. This is optional, but can be used to free up resources if the
         enumeration has not reached its end, but will not be freed for a while. */
-    void c4enum_close(C4DocEnumerator *e C4NONNULL) C4API;
+    void c4enum_close(C4DocEnumerator *e) C4API;
 
     /** Frees a C4DocEnumerator handle. */
     void c4enum_free(C4DocEnumerator *e) C4API;
