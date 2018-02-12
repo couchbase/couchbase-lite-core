@@ -31,7 +31,7 @@ file(COPY ../../vendor/fleece/Tests/1000people.json DESTINATION ${CMAKE_CURRENT_
 file(COPY ../../vendor/fleece/Tests/1person.fleece DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Tests)
 file(COPY ../../vendor/fleece/Tests/1000people.json DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Tests)
 add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTest.cc
-  ../../C/tests/c4Test.cc ../../Replicator/tests/ReplicatorAPITest.cc ../../Replicator/tests/CookieStoreTest.cc
+  ../../C/tests/c4Test.cc ../../Replicator/tests/CookieStoreTest.cc
   ../../REST/Response.cc)
 
 target_link_libraries(CppTests  LiteCoreStatic

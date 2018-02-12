@@ -19,6 +19,7 @@ aux_source_directory(${TOP}/REST/tests  REST_TEST_SRC)
 
 set(TEST_SRC ${TEST_SRC} 
              ${REST_TEST_SRC}
+             ${TOP}/Replicator/tests/ReplicatorAPITest.cc
              ${TOP}/LiteCore/tests/main.cpp
              ${TOP}/LiteCore/Support/StringUtil.cc
              ${TOP}/LiteCore/Support/FilePath.cc
