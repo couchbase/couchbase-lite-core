@@ -93,7 +93,7 @@ extern "C" {
 
     /** Opens a database. */
     C4Database* c4db_open(C4String path,
-                          const C4DatabaseConfig *config,
+                          const C4DatabaseConfig *config C4NONNULL,
                           C4Error *outError) C4API;
 
     /** Opens a new handle to the same database file as `db`.
@@ -107,7 +107,7 @@ extern "C" {
         happened */
     bool c4db_copy(C4String sourcePath,
                    C4String destinationPath,
-                   const C4DatabaseConfig* config,
+                   const C4DatabaseConfig* config C4NONNULL,
                    C4Error* error) C4API;
 
     /** Increments the reference count of the database handle. The next call to
