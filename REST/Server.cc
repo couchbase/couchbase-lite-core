@@ -31,6 +31,12 @@ namespace litecore { namespace REST {
     Server::Server(const char **options, void *owner)
     :_owner(owner)
     {
+		static once_flag f;
+		call_once(f, [=] {
+			// Initialize the library (otherwise Windows crashes)
+			mg_init_library(0);
+		});
+
         mg_callbacks cb { };
         cb.log_message = [](const struct mg_connection *, const char *message) {
             c4log(RESTLog, kC4LogInfo, "%s", message);
