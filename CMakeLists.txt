@@ -262,10 +262,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     link_directories (${LIBCXX_LIBDIR})
 endif()
 
-if(NOT SQLITE_SRC)
-    set(SQLITE_SRC vendor/SQLiteCpp/sqlite3/sqlite3.c)
-endif()
-add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES} ${SQLITE_SRC})
+add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
 target_compile_definitions(LiteCoreStatic PRIVATE -DLITECORE_IMPL)
 
 if(WIN32)
