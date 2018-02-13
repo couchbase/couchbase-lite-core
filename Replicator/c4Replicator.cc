@@ -25,7 +25,7 @@
 #include <errno.h>
 
 
-const char* const kC4ReplicatorActivityLevelNames[5] = {
+CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[5] = {
     "stopped", "offline", "connecting", "idle", "busy"
 };
 

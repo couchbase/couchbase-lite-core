@@ -47,7 +47,7 @@ extern "C" {
         kC4Busy
     };
 
-    extern const char* const kC4ReplicatorActivityLevelNames[5];
+    CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[5];
 
 
     typedef struct {
