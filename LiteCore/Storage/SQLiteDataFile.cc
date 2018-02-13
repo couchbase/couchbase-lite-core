@@ -298,7 +298,7 @@ namespace litecore {
             slice key = options().encryptionKey;
             if(key.buf == nullptr || key.size != 32)
                 error::_throw(error::InvalidParameter);
-            sqlite3_key_v2(_sqlDb->getHandle(), nullptr, key.buf, key.size);
+            sqlite3_key_v2(_sqlDb->getHandle(), nullptr, key.buf, (int)key.size);
 #else
             error::_throw(error::UnsupportedOperation);
 #endif
@@ -341,7 +341,7 @@ namespace litecore {
         if(alg == kNoEncryption) {
             rekeyResult = sqlite3_rekey_v2(_sqlDb->getHandle(), nullptr, nullptr, 0);
         } else {
-            rekeyResult = sqlite3_rekey_v2(_sqlDb->getHandle(), nullptr, newKey.buf, newKey.size);
+            rekeyResult = sqlite3_rekey_v2(_sqlDb->getHandle(), nullptr, newKey.buf, (int)newKey.size);
         }
         
         if(rekeyResult != SQLITE_OK) {

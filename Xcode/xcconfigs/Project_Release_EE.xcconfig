@@ -1,0 +1,13 @@
+//
+//  Project_Release_EE.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 2/12/18.
+//  Copyright © 2018 Couchbase. All rights reserved.
+//
+
+#include "Project_Release.xcconfig"
+
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COUCHBASE_ENTERPRISE SQLITE_HAS_CODEC NDEBUG=1 _CRYPTO_CC
+// Overwrites the definition in Project_Release.xcconfig.
+// If that one changes, update the above line accordingly!

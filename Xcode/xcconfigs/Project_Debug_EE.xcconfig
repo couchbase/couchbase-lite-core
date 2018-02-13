@@ -1,0 +1,13 @@
+//
+//  Project_Debug_EE.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 2/12/18.
+//  Copyright © 2018 Couchbase. All rights reserved.
+//
+
+#include "Project_Debug.xcconfig"
+
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COUCHBASE_ENTERPRISE SQLITE_HAS_CODEC DEBUG=1 _LIBCPP_DEBUG=0 _CRYPTO_CC
+// Overwrites the definition in Project_Debug.xcconfig.
+// If that one changes, update the above line accordingly!
