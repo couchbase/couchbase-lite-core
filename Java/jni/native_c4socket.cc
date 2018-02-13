@@ -266,15 +266,18 @@ Java_com_couchbase_litecore_C4Socket_opened(JNIEnv *env, jclass clazz, jlong soc
 /*
  * Class:     com_couchbase_litecore_C4Socket
  * Method:    closed
- * Signature: (JII)V
+ * Signature: (JIILjava/lang/String;)V
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Socket_closed(JNIEnv *env, jclass clazz,
                                             jlong socket,
                                             jint domain,
-                                            jint code) {
+                                            jint code,
+                                            jstring message) {
     //LOGI("[NATIVE] closed() socket -> 0x%x", socket);
-    c4socket_closed((C4Socket *) socket, {(C4ErrorDomain) domain, code, 0});
+    jstringSlice sliceMessage(env, message);
+    C4Error error = c4error_make((C4ErrorDomain) domain, code, sliceMessage);
+    c4socket_closed((C4Socket *) socket, error);
 }
 
 /*
