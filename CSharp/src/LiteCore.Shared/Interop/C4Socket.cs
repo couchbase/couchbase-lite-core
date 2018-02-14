@@ -193,7 +193,7 @@ namespace LiteCore.Interop
             }
         }
 
-        [MonoPInvokeCallback(typeof(SocketCompletedReceiveDelegate))]
+        [MonoPInvokeCallback(typeof(SocketDisposeDelegate))]
         private static void SocketDisposed(C4Socket* socket)
         {
             try {
