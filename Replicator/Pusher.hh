@@ -21,7 +21,7 @@
 #include "DBWorker.hh"
 #include "Actor.hh"
 #include "SequenceSet.hh"
-#include <queue>
+#include <deque>
 
 namespace litecore { namespace repl {
 
@@ -59,12 +59,14 @@ namespace litecore { namespace repl {
         C4ReadStream* readBlobFromRequest(MessageIn *req, slice &digest, C4Error *outError);
         void filterByDocIDs(fleeceapi::Array docIDs);
 
-        static const unsigned kMaxPossibleAncestorsToSend = 20;
+        static const bool kChangeMessagesAreUrgent = false;   // Are change msgs high priority?
+
         static const unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
-        static const unsigned kMaxChangeListsInFlight = 4;    // How many changes messages can be active at once
-        static const bool kChangeMessagesAreUrgent = true;    // Are change msgs high priority?
+        static const unsigned kMaxChangeListsInFlight = 3;    // How many changes messages can be active at once
+        static const unsigned kMaxRevsQueued = 300;           // Max number of revs waiting to be sent
         static const unsigned kMaxRevsInFlight = 5;           // max # revs to be transmitting at once
         static const unsigned kMaxRevBytesAwaitingReply = 2*1024*1024;     // max bytes of revs sent but not replied
+
         static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one
 
         Retained<DBWorker> _dbWorker;

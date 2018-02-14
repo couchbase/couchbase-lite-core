@@ -125,10 +125,13 @@ namespace litecore { namespace repl {
 
     // Request another batch of changes from the db, if there aren't too many in progress
     void Pusher::maybeGetMoreChanges() {
-        if (!_gettingChanges && _changeListsInFlight < kMaxChangeListsInFlight && !_caughtUp ) {
+        if (!_gettingChanges && !_caughtUp
+                             && _changeListsInFlight < kMaxChangeListsInFlight
+                             && _revsToSend.size() < kMaxRevsQueued) {
             _gettingChanges = true;
             increment(_changeListsInFlight); // will be decremented at start of _gotChanges
-            log("Reading %u changes since sequence %llu ...", _changesBatchSize, _lastSequenceRead);
+            log("Asking DB for %u changes since sequence %llu ...",
+                _changesBatchSize, _lastSequenceRead);
             _dbWorker->getChanges({_lastSequenceRead,
                                    _docIDs,
                                    _changesBatchSize,
@@ -155,7 +158,7 @@ namespace litecore { namespace repl {
             return gotError(err);
         if (!changes.empty()) {
             _lastSequenceRead = changes.back().sequence;
-            log("Read %zu changes: Pusher sending '%s' with sequences %llu - %llu",
+            log("Found %zu changes: Pusher sending '%s' with sequences %llu - %llu",
                 changes.size(),
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 changes[0].sequence, _lastSequenceRead);
@@ -290,8 +293,9 @@ namespace litecore { namespace repl {
                 }
 
                 if (queued) {
-                    logVerbose("Queueing rev '%.*s' #%.*s (seq %llu)",
-                               SPLAT(change.docID), SPLAT(change.revID), change.sequence);
+                    logVerbose("Queueing rev '%.*s' #%.*s (seq %llu) [%zu queued]",
+                               SPLAT(change.docID), SPLAT(change.revID), change.sequence,
+                               _revsToSend.size());
                 } else {
                     doneWithRev(change, true);  // unqueued, so we're done with it
                 }
@@ -311,6 +315,8 @@ namespace litecore { namespace repl {
                    && !_revsToSend.empty()) {
             sendRevision(_revsToSend.front());
             _revsToSend.pop_front();
+            if (_revsToSend.size() == kMaxRevsQueued - 1)
+                maybeGetMoreChanges();          // I may now be eligible to send more changes
         }
 //        if (!_revsToSend.empty())
 //            log("Throttling sending revs; _revisionsInFlight=%u, _revisionBytesAwaitingReply=%u",
@@ -325,8 +331,9 @@ namespace litecore { namespace repl {
         if (!passive()) {
             // Callback for after the peer receives the "rev" message:
             increment(_revisionsInFlight);
-            logDebug("Uploading rev %.*s #%.*s (seq %llu)",
-                SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
+            logVerbose("Uploading rev %.*s #%.*s (seq %llu) [%d/%d]",
+                       SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence,
+                       _revisionsInFlight, kMaxRevsInFlight);
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
                     doneWithRev(rev, false);
