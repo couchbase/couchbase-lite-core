@@ -36,6 +36,8 @@ the two roles share a lot of common code
 * Supports “conflict-free” servers, which require clients to resolve
 conflicts before pushing changes.
 
+There is also a related https://blog.couchbase.com/data-replication-couchbase-mobile:[blog post] that is targeted towards end users.
+
 == Table of Contents
 
 toc::[]
