@@ -169,7 +169,7 @@ public abstract class C4Socket {
 
     protected static native void opened(long socket);
 
-    protected static native void closed(long socket, int errorDomain, int errorCode);
+    protected static native void closed(long socket, int errorDomain, int errorCode, String message);
 
     protected static native void closeRequested(long socket, int status, String message);
 
