@@ -19,6 +19,7 @@
 #pragma once
 #include "Endpoint.hh"
 #include "c4Replicator.h"
+#include "Stopwatch.hh"
 
 class JSONEndpoint;
 class RemoteEndpoint;
@@ -69,6 +70,9 @@ private:
 
     // Replication mode only:
     Endpoint* _otherEndpoint;
+    Stopwatch _stopwatch;
+    double _lastElapsed {0};
+    uint64_t _lastDocCount {0};
     bool _needNewline {false};
 
     static constexpr unsigned kMaxTransactionSize = 1000;

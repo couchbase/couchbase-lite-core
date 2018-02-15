@@ -210,6 +210,8 @@ protected:
                 if (flag == "--help") {
                     usage();
                     exit(0);
+                } else if (flag == "--verbose" || flag == "-v") {
+                    ++_verbose;
                 } else if (flag == "--color") {
                     _colorMode = true;
                 } else {
@@ -230,6 +232,10 @@ protected:
             }
         }
         return false;
+    }
+
+    void verboseFlag() {
+        ++_verbose;
     }
 
     bool _failOnError {false};

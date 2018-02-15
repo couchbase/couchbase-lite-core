@@ -238,6 +238,8 @@ const Tool::FlagSpec CBLiteTool::kCpFlags[] = {
     {"-x",          (FlagHandler)&CBLiteTool::existingFlag},
     {"--jsonid",    (FlagHandler)&CBLiteTool::jsonIDFlag},
     {"--careful",   (FlagHandler)&CBLiteTool::carefulFlag},
+    {"--verbose",   (FlagHandler)&CBLiteTool::verboseFlag},
+    {"-v",          (FlagHandler)&CBLiteTool::verboseFlag},
     {nullptr, nullptr}
 };
 

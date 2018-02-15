@@ -39,6 +39,7 @@ void CBLiteTool::cpUsage() {
     "           value is the docID. (If omitted, defaults to \"_id\".)\n"
     "    --limit <n>: Stop after <n> documents. (Replicator ignores this)\n"
     "    --careful: Abort on any error.\n"
+    "    --verbose or -v : Display progress; repeat flag for more verbosity.\n"
     "    " << it(_interactive ? "DESTINATION" : "SOURCE, DESTINATION")
            << " : Database path, replication URL, or JSON file path\n"
     "    Modes:\n"

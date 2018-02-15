@@ -170,7 +170,6 @@ private:
     void replicateFlag() {_listenerConfig.apis |= kC4SyncAPI;}
     void readonlyFlag()  {_dbFlags = (_dbFlags | kC4DB_ReadOnly) & ~kC4DB_Create;}
     void portFlag()      {_listenerConfig.port = stoul(nextArg("port"));}
-    void verboseFlag()   {_verbose++;}
 
     static const FlagSpec kSubcommands[];
     static const FlagSpec kInteractiveSubcommands[];
@@ -184,7 +183,6 @@ private:
     C4DatabaseFlags _dbFlags {kC4DB_SharedKeys | kC4DB_NonObservable | kC4DB_ReadOnly};
     C4Database* _db {nullptr};
     bool _interactive {false};
-    int _verbose {0};
     uint64_t _offset {0};
     int64_t _limit {-1};
     alloc_slice _startKey, _endKey;

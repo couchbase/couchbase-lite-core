@@ -32,6 +32,7 @@ void CBLiteTool::serveUsage() {
     "  Runs a REST API server\n"
     "    --port N : Sets TCP port number (default "<<kDefaultPort<<")\n"
     "    --readonly : Prevents REST calls from altering the database\n"
+    "    --verbose or -v : Log requests; repeat flag for more verbosity.\n"
     "  Note: Only a subset of the Couchbase Lite REST API is implemented so far.\n"
     "        See <github.com/couchbase/couchbase-lite-core/wiki/REST-API>\n"
     ;
@@ -81,7 +82,7 @@ void CBLiteTool::serve() {
 
     c4log_setCallbackLevel(kC4LogInfo);
     auto restLog = c4log_getDomain("REST", true);
-    c4log_setLevel(restLog, max(kC4LogDebug, C4LogLevel(kC4LogInfo - _verbose)));
+    c4log_setLevel(restLog, max(kC4LogDebug, C4LogLevel(kC4LogInfo - verbose())));
 
     startListener();
     
