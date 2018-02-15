@@ -38,7 +38,7 @@ namespace litecore { namespace repl {
         registerHandler("changes",          &Puller::handleChanges);
         registerHandler("proposeChanges",   &Puller::handleChanges);
         registerHandler("rev",              &Puller::handleRev);
-        _spareIncomingRevs.reserve(kMaxSpareIncomingRevs);
+        _spareIncomingRevs.reserve(kMaxActiveIncomingRevs);
         _skipDeleted = _options.skipDeleted();
         if (nonPassive() && options.noIncomingConflicts())
             warn("noIncomingConflicts mode is not compatible with active pull replications!");
@@ -103,11 +103,34 @@ namespace litecore { namespace repl {
     }
 
 
-    // Handles an incoming "changes" or "proposeChanges" message
+#pragma mark - INCOMING CHANGE LISTS:
+
+
+    // Receiving an incoming "changes" (or "proposeChanges") message
     void Puller::handleChanges(Retained<MessageIn> req) {
+        logVerbose("Received '%.*s' message %p (%u pending revs)",
+                   SPLAT(req->property("Profile"_sl)), req.get(), _pendingRevMessages);
+        _waitingChangesMessages.push_back(move(req));
+        handleMoreChanges();
+    }
+
+
+    // Process waiting "changes" messages if not throttled:
+    void Puller::handleMoreChanges() {
+        while (!_waitingChangesMessages.empty() && !_waitingForChangesCallback
+               && _pendingRevMessages + kChangesBatchSize <= kMaxActiveIncomingRevs) {
+            auto req = _waitingChangesMessages.front();
+            _waitingChangesMessages.pop_front();
+            handleChangesNow(req);
+        }
+    }
+
+
+    // Actually handle a "changes" message:
+    void Puller::handleChangesNow(Retained<MessageIn> req) {
         slice reqType = req->property("Profile"_sl);
         bool proposed = (reqType == "proposeChanges"_sl);
-        logVerbose("Handling '%.*s' message", SPLAT(reqType));
+        logVerbose("Handling '%.*s' message %p", SPLAT(reqType), req.get());
 
         auto changes = req->JSONBody().asArray();
         if (!changes && req->body() != "null"_sl) {
@@ -129,10 +152,11 @@ namespace litecore { namespace repl {
             req->respondWithError({"BLIP"_sl, 409});
         } else {
             // Pass the buck to the DBWorker so it can find the missing revs & request them:
-            increment(_pendingCallbacks);
+            DebugAssert(!_waitingForChangesCallback);
+            _waitingForChangesCallback = true;
             _dbActor->findOrRequestRevs(req, asynchronize([this,req,changes](vector<bool> which) {
-                // Callback, after revs request sent:
-                decrement(_pendingCallbacks);
+                // Callback, after response message sent:
+                _waitingForChangesCallback = false;
                 for (size_t i = 0; i < which.size(); ++i) {
                     bool requesting = (which[i]);
                     if (nonPassive()) {
@@ -152,31 +176,45 @@ namespace litecore { namespace repl {
                         increment(_pendingRevMessages);
                         // now awaiting a handleRev call...
                     }
-
                 }
                 if (nonPassive()) {
-                    logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
+                    log/*Verbose*/("Now waiting for %u 'rev' messages; %zu known sequences pending",
                                _pendingRevMessages, _missingSequences.size());
                 }
+                handleMoreChanges();  // because _waitingForChangesCallback changed
             }));
         }
     }
 
 
-    // Handles an incoming "rev" message, which contains a revision body to insert
+#pragma mark - INCOMING REVS:
+
+
+    // Received an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
+        if (_activeIncomingRevs < kMaxActiveIncomingRevs) {
+            startIncomingRev(msg);
+        } else {
+            log("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
+                SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);//TEMP
+            _waitingRevMessages.push_back(move(msg));
+        }
+    }
+
+
+    // Actually process an incoming "rev" now:
+    void Puller::startIncomingRev(MessageIn *msg) {
         decrement(_pendingRevMessages);
+        increment(_activeIncomingRevs);
         Retained<IncomingRev> inc;
         if (_spareIncomingRevs.empty()) {
             inc = new IncomingRev(this, _dbActor);
-            logDebug("Created IncomingRev<%p>", inc.get());
         } else {
             inc = _spareIncomingRevs.back();
             _spareIncomingRevs.pop_back();
-            logDebug("Re-using IncomingRev<%p>", inc.get());
         }
-        inc->handleRev(msg);
-        increment(_pendingCallbacks);
+        inc->handleRev(msg);  // ... will call _revWasHandled when it's finished
+        handleMoreChanges();
     }
 
 
@@ -189,21 +227,26 @@ namespace litecore { namespace repl {
     }
 
 
-    // Callback from an IncomingRev when it finishes
+    // Callback from an IncomingRev when it's finished (either added to db, or failed)
     void Puller::_revWasHandled(Retained<IncomingRev> inc,
                                 alloc_slice docID,
                                 alloc_slice sequence,
                                 bool successful)
     {
-        decrement(_pendingCallbacks);
         if (successful && nonPassive()) {
             completedSequence(sequence);
             finishedDocument(docID, false);
         }
 
-        if (inc && _spareIncomingRevs.size() < kMaxSpareIncomingRevs) {
-            logDebug("Recycling IncomingRev<%p>", inc.get());
-            _spareIncomingRevs.push_back(inc);
+        _spareIncomingRevs.push_back(inc);
+
+        decrement(_activeIncomingRevs);
+        if (_activeIncomingRevs < kMaxActiveIncomingRevs && !_waitingRevMessages.empty()) {
+            auto msg = _waitingRevMessages.front();
+            _waitingRevMessages.pop_front();
+            startIncomingRev(msg);
+        } else {
+            handleMoreChanges();
         }
     }
 
@@ -223,6 +266,9 @@ namespace litecore { namespace repl {
     }
 
 
+#pragma mark - STATUS / PROGRESS:
+
+
     void Puller::_childChangedStatus(Worker *task, Status status) {
         // Combine the IncomingRev's progress into mine:
         addProgress(status.progressDelta);
@@ -230,14 +276,16 @@ namespace litecore { namespace repl {
 
     
     Worker::ActivityLevel Puller::computeActivityLevel() const {
-        logDebug("Puller activity: level=%d, _caughtUp=%d, _pendingRevMessages=%u, _pendingCallbacks=%u",
-                 Worker::computeActivityLevel(), _caughtUp, _pendingRevMessages, _pendingCallbacks);
+        logDebug("Puller activity: level=%d, _caughtUp=%d, _waitingForChangesCallback=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
+                 Worker::computeActivityLevel(), _caughtUp, _waitingForChangesCallback,
+                 _pendingRevMessages, _activeIncomingRevs);
         if (_fatalError) {
             return kC4Stopped;
         } else if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
+                || _waitingForChangesCallback
                 || _pendingRevMessages > 0
-                || _pendingCallbacks > 0) {
+                || _activeIncomingRevs > 0) {
             return kC4Busy;
         } else if (_options.pull == kC4Continuous || isOpenServer()) {
             const_cast<Puller*>(this)->_spareIncomingRevs.clear();
