@@ -584,6 +584,48 @@
 			};
 			name = Release;
 		};
+		27FA820F2036B94B0081DB2B /* Debug-EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F31E84716E00BD7112 /* Project_Debug.xcconfig */;
+			buildSettings = {
+			};
+			name = "Debug-EE";
+		};
+		27FA82102036B94B0081DB2B /* Debug-EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F61E84724E00BD7112 /* blip.xcconfig */;
+			buildSettings = {
+			};
+			name = "Debug-EE";
+		};
+		27FA82112036B94B0081DB2B /* Debug-EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Debug-EE";
+		};
+		27FA82122036B9530081DB2B /* Release-EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F41E84716E00BD7112 /* Project_Release.xcconfig */;
+			buildSettings = {
+			};
+			name = "Release-EE";
+		};
+		27FA82132036B9530081DB2B /* Release-EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F61E84724E00BD7112 /* blip.xcconfig */;
+			buildSettings = {
+			};
+			name = "Release-EE";
+		};
+		27FA82142036B9530081DB2B /* Release-EE */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Release-EE";
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -591,7 +633,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27EF69C01E282549004748DF /* Debug */,
+				27FA820F2036B94B0081DB2B /* Debug-EE */,
 				27EF69C11E282549004748DF /* Release */,
+				27FA82122036B9530081DB2B /* Release-EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -600,7 +644,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27EF69C31E282549004748DF /* Debug */,
+				27FA82102036B94B0081DB2B /* Debug-EE */,
 				27EF69C41E282549004748DF /* Release */,
+				27FA82132036B9530081DB2B /* Release-EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -609,7 +655,9 @@
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27EF6AA31E2B0CE9004748DF /* Debug */,
+				27FA82112036B94B0081DB2B /* Debug-EE */,
 				27EF6AA41E2B0CE9004748DF /* Release */,
+				27FA82142036B9530081DB2B /* Release-EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
