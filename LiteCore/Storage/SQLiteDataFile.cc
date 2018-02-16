@@ -304,7 +304,9 @@ namespace litecore {
         _exec("SELECT count(*) FROM sqlite_master");
         return true;
 #else
-        error::_throw(error::UnsupportedOperation);
+        if (alg != kNoEncryption) {
+            error::_throw(error::UnsupportedOperation);
+        }
 #endif
     }
 
