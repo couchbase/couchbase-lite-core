@@ -302,12 +302,8 @@ namespace litecore {
 
         // Verify that encryption key is correct (or db is unencrypted, if no key given):
         _exec("SELECT count(*) FROM sqlite_master");
-        return true;
-#else
-        if (alg != kNoEncryption) {
-            error::_throw(error::UnsupportedOperation);
-        }
 #endif
+        return true;
     }
 
 
