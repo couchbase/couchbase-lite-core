@@ -13,10 +13,9 @@
         public IntPtr completedReceive;
         public IntPtr close;
         private IntPtr requestClose; // unused in .NET
-        public IntPtr dispose;
+        private IntPtr dispose; // unused in .NET
 
-        public C4SocketFactory(SocketOpenDelegate open, SocketCloseDelegate close, SocketWriteDelegate write, SocketCompletedReceiveDelegate completedReceive,
-            SocketDisposeDelegate dispose)
+        public C4SocketFactory(SocketOpenDelegate open, SocketCloseDelegate close, SocketWriteDelegate write, SocketCompletedReceiveDelegate completedReceive)
         {
             this.open = Marshal.GetFunctionPointerForDelegate(open);
             this.write = Marshal.GetFunctionPointerForDelegate(write);
@@ -24,6 +23,6 @@
             this.close = Marshal.GetFunctionPointerForDelegate(close);
             this.requestClose = IntPtr.Zero;
             this.providesWebSockets = 0;
-            this.dispose = Marshal.GetFunctionPointerForDelegate(dispose);
+            this.dispose = IntPtr.Zero;
         }
     }

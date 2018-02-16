@@ -96,13 +96,6 @@ namespace LiteCore.Interop
     internal
 #else
     public
-#endif 
-        unsafe delegate void SocketDisposeDelegate(C4Socket* socket);
-
-#if LITECORE_PACKAGED
-    internal
-#else
-    public
 #endif
         unsafe static class SocketFactory
     {
@@ -110,14 +103,12 @@ namespace LiteCore.Interop
         private static readonly SocketCloseDelegate _close;
         private static readonly SocketWriteDelegate _write;
         private static readonly SocketCompletedReceiveDelegate _completedReceive;
-        private static readonly SocketDisposeDelegate _dispose;
 
         private static SocketOpenDelegate _externalOpen;
         private static SocketCloseDelegate _externalClose;
         private static SocketWriteDelegateManaged _externalWrite;
         private static SocketCompletedReceiveDelegateManaged _externalCompletedReceive;
         private static SocketErrorDelegate _error;
-        private static SocketDisposeDelegate _externalDispose;
 
         private static C4SocketFactory InternalFactory { get; }
 
@@ -127,20 +118,17 @@ namespace LiteCore.Interop
             _close = SocketClose;
             _write = SocketWrittenTo;
             _completedReceive = SocketCompletedReceive;
-            _dispose = SocketDisposed;
-            InternalFactory = new C4SocketFactory(_open, _close, _write, _completedReceive, _dispose);
+            InternalFactory = new C4SocketFactory(_open, _close, _write, _completedReceive);
             Native.c4socket_registerFactory(InternalFactory);
         }
 
         public static void RegisterFactory(SocketOpenDelegate doOpen, SocketCloseDelegate doClose, 
-            SocketWriteDelegateManaged doWrite, SocketCompletedReceiveDelegateManaged doCompleteReceive,
-            SocketDisposeDelegate dispose)
+            SocketWriteDelegateManaged doWrite, SocketCompletedReceiveDelegateManaged doCompleteReceive)
         {
             _externalOpen = doOpen;
             _externalClose = doClose;
             _externalWrite = doWrite;
             _externalCompletedReceive = doCompleteReceive;
-            _externalDispose = dispose;
         }
 
         public static void SetErrorHandler(SocketErrorDelegate doError)
@@ -190,16 +178,6 @@ namespace LiteCore.Interop
             } catch (Exception e) {
                 _error?.Invoke(socket, new Exception("Error completing receive for socket", e));
                 Native.c4socket_closed(socket, new C4Error(C4ErrorCode.UnexpectedError));
-            }
-        }
-
-        [MonoPInvokeCallback(typeof(SocketDisposeDelegate))]
-        private static void SocketDisposed(C4Socket* socket)
-        {
-            try {
-                _externalDispose?.Invoke(socket);
-            } catch (Exception e) {
-                _error?.Invoke(socket, new Exception("Error disposing socket", e));
             }
         }
     }
