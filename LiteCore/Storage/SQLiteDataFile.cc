@@ -36,7 +36,7 @@
 #include <thread>
 
 extern "C" {
-#include "sqlite3_unicodesn_tokenizer.h"
+    #include "sqlite3_unicodesn_tokenizer.h"
 }
 
 #if __APPLE__
@@ -139,17 +139,10 @@ namespace litecore {
 
     bool SQLiteDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {
 #ifdef COUCHBASE_ENTERPRISE
-        static int sEncryptionEnabled = -1;
-        static once_flag once;
-        call_once(once, []() {
-            // Check whether encryption is available:
-            sEncryptionEnabled = sqlite3_compileoption_used("SQLITE_HAS_CODEC");
-        });
-        return sEncryptionEnabled > 0 && (alg == kNoEncryption || alg == kAES256);
+        return (alg == kNoEncryption || alg == kAES256);
 #else
-        return false;
+        return (alg == kNoEncryption);
 #endif
-
     }
 
 
@@ -289,24 +282,30 @@ namespace litecore {
 
     bool SQLiteDataFile::decrypt() {
         auto alg = options().encryptionAlgorithm;
-        if (alg != kNoEncryption) {
+        if (!factory().encryptionEnabled(alg))
+            return false;
 #ifdef COUCHBASE_ENTERPRISE
-            if (!factory().encryptionEnabled(alg))
-                return false;
-
-            // Set the encryption key in SQLite:
-            slice key = options().encryptionKey;
-            if(key.buf == nullptr || key.size != 32)
+        // Set the encryption key in SQLite:
+        slice key;
+        if (alg != kNoEncryption) {
+            key = options().encryptionKey;
+            if (key.buf == nullptr || key.size != 32)
                 error::_throw(error::InvalidParameter);
-            sqlite3_key_v2(_sqlDb->getHandle(), nullptr, key.buf, (int)key.size);
-#else
-            error::_throw(error::UnsupportedOperation);
-#endif
+        }
+        // Calling sqlite3_key_v2 even with a null key (no encryption) reserves space in the db
+        // header for a nonce, which will enable secure rekeying in the future.
+        int rc = sqlite3_key_v2(_sqlDb->getHandle(), nullptr, key.buf, (int)key.size);
+        if (rc != SQLITE_OK) {
+            error::_throw(error::UnsupportedEncryption,
+                          "Unable to set encryption key (SQLite error %d)", rc);
         }
 
         // Verify that encryption key is correct (or db is unencrypted, if no key given):
         _exec("SELECT count(*) FROM sqlite_master");
         return true;
+#else
+        error::_throw(error::UnsupportedOperation);
+#endif
     }
 
 

@@ -417,7 +417,24 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][!throws]") {
+#pragma mark - ENCRYPTION:
+
+
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Open Unencrypted With Key", "[DataFile][Encryption][!throws]") {
+    if (!factory().encryptionEnabled(kAES256)) {
+        cerr << "Skipping encryption test; not enabled for " << factory().cname() << "\n";
+        return;
+    }
+
+    DataFile::Options options = db->options();
+    options.encryptionAlgorithm = kAES256;
+    options.encryptionKey = "12345678901234567890123456789012"_sl;
+    ExpectException(error::LiteCore, error::NotADatabaseFile, [&]{
+        reopenDatabase(&options);
+    });
+}
+
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][Encryption][!throws]") {
     if (!factory().encryptionEnabled(kAES256)) {
         cerr << "Skipping encryption test; not enabled for " << factory().cname() << "\n";
         return;
@@ -456,7 +473,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
 }
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile]") {
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encryption]") {
     if (!factory().encryptionEnabled(kAES256)) {
         cerr << "Skipping rekeying test; encryption not enabled for " << factory().cname() << "\n";
         return;
