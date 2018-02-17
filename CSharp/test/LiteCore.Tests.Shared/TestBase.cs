@@ -141,13 +141,7 @@ namespace LiteCore.Tests
 
         internal static string LoadFromAppContext()
         {
-            var codeBase = AppContext.BaseDirectory;
-            if (!codeBase.EndsWith("\\")) {
-                codeBase = codeBase + "\\";
-            }
-
-            UriBuilder uri = new UriBuilder(codeBase);
-            var directory = System.IO.Path.GetDirectoryName(Uri.UnescapeDataString(uri.Path));
+            var directory = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             System.Diagnostics.Debug.Assert(System.IO.Path.IsPathRooted(directory), "directory is not rooted.");
             var architecture = IntPtr.Size == 4
