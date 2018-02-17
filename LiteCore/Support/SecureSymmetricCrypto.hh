@@ -29,7 +29,7 @@ namespace litecore {
 // AES128() and AES256() may not be available on all platforms.
 // Callers can use "#if AES256_AVAILABLE" to conditionalize code based on availability.
 
-#if defined(_CRYPTO_CC)     // TODO: Implement AES128 for OpenSSL and MbedTLS
+#if defined(_CRYPTO_CC) || defined(_CRYPTO_MBEDTLS)
 
     #define AES128_AVAILABLE 1
 
@@ -45,7 +45,7 @@ namespace litecore {
 #endif
 
 
-#if defined(_CRYPTO_CC) || defined(_CRYPTO_OPENSSL) || defined(_CRYPTO_MBEDTLS)
+#if defined(_CRYPTO_CC) || defined(_CRYPTO_MBEDTLS)
 
     #define AES256_AVAILABLE 1
 

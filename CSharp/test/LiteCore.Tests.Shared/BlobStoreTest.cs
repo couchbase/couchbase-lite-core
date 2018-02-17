@@ -62,7 +62,7 @@ namespace LiteCore.Tests
             C4EncryptionKey *encryption = null;
             if(_encrypted) {
                 WriteLine("        ...encrypted");
-                crypto.algorithm = C4EncryptionAlgorithm.AES256;
+                crypto.algorithm = C4EncryptionAlgorithm.AES128;
                 for(int i = 0; i < 32; i++) {
                     crypto.bytes[i] = 0xcc;
                 }

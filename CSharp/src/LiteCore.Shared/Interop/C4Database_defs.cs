@@ -49,7 +49,8 @@ namespace LiteCore.Interop
     enum C4EncryptionAlgorithm : uint
     {
         None = 0,
-        AES256 = 1
+        AES128,
+        AES256,
     }
 
 #if LITECORE_PACKAGED
