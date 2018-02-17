@@ -25,7 +25,8 @@ namespace litecore {
     /** Abstract base class of EncryptedReadStream and EncryptedWriteStream. */
     class EncryptedStream {
     public:
-        static const unsigned kFileSizeOverhead = 32;
+        static constexpr size_t kKeySize = kEncryptionKeySize[kAES128];
+        static const unsigned kFileSizeOverhead = kKeySize;
         static const unsigned kFileBlockSize = 4096;
 
     protected:
@@ -35,8 +36,9 @@ namespace litecore {
                            slice nonce);
         virtual ~EncryptedStream();
 
-        uint8_t _key[32];
-        uint8_t _nonce[32];
+        EncryptionAlgorithm _alg;
+        uint8_t _key[kKeySize];
+        uint8_t _nonce[kKeySize];
         uint8_t _buffer[kFileBlockSize];    // stores partially read/written blocks across calls
         size_t _bufferPos {0};        // Indicates how much of buffer is used
         uint64_t _blockID   {0};        // Next block ID to be encrypted/decrypted (counter)

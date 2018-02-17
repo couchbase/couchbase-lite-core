@@ -15,178 +15,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-//
-//  Based on crypto_primitives.h from ForestDB
 
 #pragma once
 #include "Base.hh"
-#ifdef _CRYPTO_OPENSSL
-#include <openssl/conf.h>
-#include <openssl/evp.h>
-#include <openssl/err.h>
-#include <string.h>
-#endif
 
 namespace litecore {
 
-    static const size_t kAESKeySize = 32; // 256 bits
-    static const size_t kAESBlockSize = 16; // 128 bits
+    static const size_t kAES128KeySize = kEncryptionKeySize[kAES128]; // 128 bits
+    static const size_t kAES256KeySize = kEncryptionKeySize[kAES256]; // 256 bits
+    static const size_t kAESBlockSize  = 16; // 128 bits (regardless of key size)
     static const size_t kAESIVSize = kAESBlockSize;
 
-// Defines inline functions sha256 and aes256 if implementations are available.
-// Callers can use #if SHA256_AVAILABLE" or "#if AES256_AVAILABLE" to conditionalize code based on
-// availability.
+// AES128() and AES256() may not be available on all platforms.
+// Callers can use "#if AES256_AVAILABLE" to conditionalize code based on availability.
 
-#if defined(_CRYPTO_CC)
+#if defined(_CRYPTO_CC)     // TODO: Implement AES128 for OpenSSL and MbedTLS
 
-    // iOS and Mac OS implementation based on system-level CommonCrypto library:
-    #include <CommonCrypto/CommonCryptor.h>
-    #include <assert.h>
+    #define AES128_AVAILABLE 1
 
-
-
-    static size_t AES256(bool encrypt,      // true=encrypt, false=decrypt
-                       slice key,           // pointer to 32-byte key
-                       slice iv,            // pointer to 32-byte iv
-                       bool padding,        // true=PKCS7 padding, false=no padding
-                       slice dst,           // output buffer & capacity
-                       slice src)           // input data
-    {
-        DebugAssert(key.size == kCCKeySizeAES256);
-        DebugAssert(iv.buf == nullptr || iv.size == kCCBlockSizeAES128, "IV is wrong size");
-        size_t outSize;
-        CCCryptorStatus status = CCCrypt((encrypt ? kCCEncrypt : kCCDecrypt),
-                                         kCCAlgorithmAES128,
-                                         (padding ? kCCOptionPKCS7Padding : 0),
-                                         key.buf, key.size,
-                                         iv.buf,
-                                         src.buf, src.size,
-                                         (void*)dst.buf, dst.size,
-                                         &outSize);
-        if (status != kCCSuccess) {
-            Assert(status != kCCParamError && status != kCCBufferTooSmall &&
-                      status != kCCUnimplemented);
-            error::_throw(error::CryptoError);
-        }
-        return outSize;
-    }
-
-    #define AES256_AVAILABLE 1
-
-#elif defined(_CRYPTO_OPENSSL)
-
-    static const unsigned int KEY_SIZE = 32;
-    static const unsigned int BLOCK_SIZE = 16;
-
-    typedef unsigned char byte;
-    using EVP_CIPHER_CTX_free_ptr = std::unique_ptr<EVP_CIPHER_CTX, decltype(&::EVP_CIPHER_CTX_free)>;
-
-    static bool _IsSetup;
-    static void _Init()
-    {
-        if (!_IsSetup) {
-            EVP_add_cipher(EVP_aes_256_cbc());
-        }
-
-        _IsSetup = true;
-    }
-
-    static void check(int rc)
-    {
-        if (rc != 1) {
-            error::_throw(error::CryptoError);
-        }
-    }
-
-    static size_t AES256(bool encrypt,      // true=encrypt, false=decrypt
-        slice key,           // pointer to 32-byte key
-        slice iv,            // pointer to 32-byte iv
-        bool padding,        // true=PKCS7 padding, false=no padding
-        slice dst,           // output buffer & capacity
-        slice src)           // input data
-    {
-        DebugAssert(key.size == KEY_SIZE);
-        DebugAssert(iv.buf == nullptr || iv.size == BLOCK_SIZE, "IV is wrong size");
-
-        auto init = EVP_EncryptInit_ex;
-        auto update = EVP_EncryptUpdate;
-        auto final = EVP_EncryptFinal_ex;
-        if (!encrypt) {
-            init = EVP_DecryptInit_ex;
-            update = EVP_DecryptUpdate;
-            final = EVP_DecryptFinal_ex;
-        }
-
-        EVP_CIPHER_CTX_free_ptr ctx(EVP_CIPHER_CTX_new(), ::EVP_CIPHER_CTX_free);
-        check(init(ctx.get(), EVP_aes_256_cbc(), nullptr, (const byte *)key.buf, (const byte *)iv.buf));
-
-        if (!padding)
-            EVP_CIPHER_CTX_set_padding(ctx.get(), 0);
-
-        int outSize;
-        check(update(ctx.get(), (byte*)dst.buf, &outSize, (const byte*)src.buf, (int)src.size));
-        
-        int outSize2 = (int)dst.size - outSize;
-        int finalResult = final(ctx.get(), (byte*)dst.buf + outSize, &outSize2);
-        if (encrypt) {
-            check(finalResult);
-        } else if (finalResult <= 0) {
-            throw error::CryptoError;
-        }
-
-        return outSize + outSize2;
-    }
-
-    #define AES256_AVAILABLE 1
-    
-#elif defined(_CRYPTO_MBEDTLS)
-
-    static const unsigned int KEY_SIZE = 32;
-    static const unsigned int BLOCK_SIZE = 16;
-    
-    #include <mbedtls/cipher.h>
-
-    static size_t AES256(bool encrypt,      // true=encrypt, false=decrypt
-        slice key,           // pointer to 32-byte key
-        slice iv,            // pointer to 32-byte iv
-        bool padding,        // true=PKCS7 padding, false=no padding
-        slice dst,           // output buffer & capacity
-        slice src)           // input data
-    {
-        DebugAssert(key.size == KEY_SIZE);
-        DebugAssert(iv.buf == nullptr || iv.size == BLOCK_SIZE, "IV is wrong size");
-        mbedtls_cipher_context_t cipher_ctx;
-        const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type( MBEDTLS_CIPHER_AES_256_CBC );
-        if(cipher_info == NULL) {
-            Warn("mbedtls_cipher_info_from_type failed");
-            litecore::error::_throw(litecore::error::CryptoError);
-        }
-        
-        mbedtls_cipher_init(&cipher_ctx);
-        mbedtls_cipher_setup(&cipher_ctx, cipher_info);
-        if (padding) {
-            mbedtls_cipher_set_padding_mode(&cipher_ctx, MBEDTLS_PADDING_PKCS7);
-        }
-        else {
-            mbedtls_cipher_set_padding_mode(&cipher_ctx, MBEDTLS_PADDING_NONE);
-        }
-        
-        size_t out_len = dst.size;
-        mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char*)key.buf, 256, encrypt ? MBEDTLS_ENCRYPT : MBEDTLS_DECRYPT);
-        mbedtls_cipher_crypt(&cipher_ctx, (const unsigned char*)iv.buf, iv.size, (const unsigned char*)src.buf, src.size,
-                             (unsigned char*)dst.buf, &out_len);
-
-        mbedtls_cipher_free(&cipher_ctx);
-        return out_len;
-    }
-    
-    #define AES256_AVAILABLE 1
-
+    size_t AES128(bool encrypt,        // true=encrypt, false=decrypt
+                  slice key,           // pointer to 16-byte key
+                  slice iv,            // pointer to 16-byte initialization vector
+                  bool padding,        // true=PKCS7 padding, false=no padding
+                  slice dst,           // output buffer & capacity
+                  slice src);          // input data
 
 #else
+#define AES128_AVAILABLE 0
+#endif
 
-    #define AES256_AVAILABLE 0
 
+#if defined(_CRYPTO_CC) || defined(_CRYPTO_OPENSSL) || defined(_CRYPTO_MBEDTLS)
+
+    #define AES256_AVAILABLE 1
+
+    size_t AES256(bool encrypt,        // true=encrypt, false=decrypt
+                  slice key,           // pointer to 32-byte key
+                  slice iv,            // pointer to 16-byte initialization vector
+                  bool padding,        // true=PKCS7 padding, false=no padding
+                  slice dst,           // output buffer & capacity
+                  slice src);          // input data
+
+    // TODO: Combine these into a single Encrypt() function that takes an algorithm parameter.
+
+#else
+#define AES256_AVAILABLE 0
 #endif
 
 }

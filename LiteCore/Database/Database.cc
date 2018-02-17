@@ -108,9 +108,9 @@ namespace c4Internal {
         if (options.encryptionAlgorithm != kNoEncryption) {
 #ifdef COUCHBASE_ENTERPRISE
             options.encryptionKey = alloc_slice(config.encryptionKey.bytes,
-                                                sizeof(config.encryptionKey.bytes));
+                                                kEncryptionKeySize[options.encryptionAlgorithm]);
 #else
-            error::_throw(error::UnsupportedOperation);
+            error::_throw(error::UnsupportedEncryption);
 #endif
         }
 
@@ -298,7 +298,7 @@ namespace c4Internal {
 
             // Rekey the database itself:
             dataFile()->rekey((EncryptionAlgorithm)newKey->algorithm,
-                              slice(newKey->bytes, 32));
+                              slice(newKey->bytes, kEncryptionKeySize[newKey->algorithm]));
         } catch (...) {
             newStore->deleteStore();
             throw;

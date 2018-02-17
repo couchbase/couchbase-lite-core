@@ -219,7 +219,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]")
 }
 
 #ifdef COUCHBASE_ENTERPRISE
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][blob][C]") {
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][Encryption][blob][C]") {
     createNumberedDocs(99);
 
     // Add blob to the store:
@@ -237,7 +237,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][blob][C]") 
     // If we're on the unencrypted pass, encrypt the db. Otherwise decrypt it:
     C4EncryptionKey newKey = {kC4EncryptionNone, {}};
     if (c4db_getConfig(db)->encryptionKey.algorithm == kC4EncryptionNone) {
-        newKey.algorithm = kC4EncryptionAES256;
+        newKey.algorithm = kC4EncryptionAES128;
         memcpy(newKey.bytes, "a different key than default....", 32);
         REQUIRE(c4db_rekey(db, &newKey, &error));
     } else {

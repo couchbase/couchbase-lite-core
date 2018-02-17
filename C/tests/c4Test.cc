@@ -221,8 +221,8 @@ _versioning(kC4RevisionTrees)
     }
 
     if (testOption & 1) {
-        config.encryptionKey.algorithm = kC4EncryptionAES256;
-        memcpy(config.encryptionKey.bytes, "this is not a random key at all.", 32);
+        config.encryptionKey.algorithm = kC4EncryptionAES128;
+        memcpy(config.encryptionKey.bytes, "this is not a random key at all.", 16);
     }
 
     static C4DatabaseConfig sLastConfig = { };
@@ -239,6 +239,7 @@ _versioning(kC4RevisionTrees)
     if (!c4db_deleteAtPath(databasePath(), &error))
         REQUIRE(error.code == 0);
     db = c4db_open(databasePath(), &config, &error);
+    INFO("Error " << error.domain << "/" << error.code);
     REQUIRE(db != nullptr);
 }
 

@@ -420,28 +420,37 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
 #pragma mark - ENCRYPTION:
 
 
-N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Open Unencrypted With Key", "[DataFile][Encryption][!throws]") {
-    if (!factory().encryptionEnabled(kAES256)) {
-        cerr << "Skipping encryption test; not enabled for " << factory().cname() << "\n";
-        return;
-    }
+#ifdef COUCHBASE_ENTERPRISE
 
+
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Unsupported Encryption", "[DataFile][Encryption][!throws]") {
+    REQUIRE(factory().encryptionEnabled(kNoEncryption));
+    REQUIRE(!factory().encryptionEnabled(kAES256));
     DataFile::Options options = db->options();
     options.encryptionAlgorithm = kAES256;
     options.encryptionKey = "12345678901234567890123456789012"_sl;
+    ExpectException(error::LiteCore, error::UnsupportedEncryption, [&]{
+        reopenDatabase(&options);
+    });
+}
+
+
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Open Unencrypted With Key", "[DataFile][Encryption][!throws]") {
+    REQUIRE(factory().encryptionEnabled(kNoEncryption));
+    DataFile::Options options = db->options();
+    options.encryptionAlgorithm = kAES128;
+    options.encryptionKey = "1234567890123456"_sl;
     ExpectException(error::LiteCore, error::NotADatabaseFile, [&]{
         reopenDatabase(&options);
     });
 }
 
+
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][Encryption][!throws]") {
-    if (!factory().encryptionEnabled(kAES256)) {
-        cerr << "Skipping encryption test; not enabled for " << factory().cname() << "\n";
-        return;
-    }
+    REQUIRE(factory().encryptionEnabled(kAES128));
     DataFile::Options options = db->options();
-    options.encryptionAlgorithm = kAES256;
-    options.encryptionKey = "12345678901234567890123456789012"_sl;
+    options.encryptionAlgorithm = kAES128;
+    options.encryptionKey = "1234567890123456"_sl;
     auto dbPath = databasePath("encrypted");
     deleteDatabase(dbPath);
     try {
@@ -474,17 +483,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encryption]") {
-    if (!factory().encryptionEnabled(kAES256)) {
-        cerr << "Skipping rekeying test; encryption not enabled for " << factory().cname() << "\n";
-        return;
-    }
-
+    REQUIRE(factory().encryptionEnabled(kAES128));
     auto dbPath = db->filePath();
     auto options = db->options();
     createNumberedDocs(store);
 
-    options.encryptionAlgorithm = kAES256;
-    options.encryptionKey = alloc_slice(32);
+    options.encryptionAlgorithm = kAES128;
+    options.encryptionKey = alloc_slice(kEncryptionKeySize[kAES128]);
     randomBytes(options.encryptionKey);
 
     db->rekey(options.encryptionAlgorithm, options.encryptionKey);
@@ -521,3 +526,24 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
     Record rec4 = store->get((slice)"rec-001");
     REQUIRE(rec4.exists());
 }
+
+
+#else //!COUCHBASE_ENTERPRISE
+
+
+N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Verify Encryption Unsupported", "[DataFile][Encryption][!throws]") {
+    REQUIRE(factory().encryptionEnabled(kNoEncryption));
+    REQUIRE(!factory().encryptionEnabled(kAES128));
+    REQUIRE(!factory().encryptionEnabled(kAES256));
+
+    DataFile::Options options = db->options();
+    options.encryptionAlgorithm = kAES128;
+    options.encryptionKey = "1234567890123456"_sl;
+    ExpectException(error::LiteCore, error::UnsupportedEncryption, [&]{
+        reopenDatabase(&options);
+    });
+}
+
+
+#endif // COUCHBASE_ENTERPRISE
+

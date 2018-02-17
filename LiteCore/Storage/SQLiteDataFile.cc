@@ -139,7 +139,7 @@ namespace litecore {
 
     bool SQLiteDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {
 #ifdef COUCHBASE_ENTERPRISE
-        return (alg == kNoEncryption || alg == kAES256);
+        return (alg == kNoEncryption || alg == kAES128);
 #else
         return (alg == kNoEncryption);
 #endif
@@ -289,7 +289,7 @@ namespace litecore {
         slice key;
         if (alg != kNoEncryption) {
             key = options().encryptionKey;
-            if (key.buf == nullptr || key.size != 32)
+            if (key.buf == nullptr || key.size != kEncryptionKeySize[alg])
                 error::_throw(error::InvalidParameter);
         }
         // Calling sqlite3_key_v2 even with a null key (no encryption) reserves space in the db
@@ -309,31 +309,25 @@ namespace litecore {
 
     void SQLiteDataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
 #ifdef COUCHBASE_ENTERPRISE
-        bool currentlyEncrypted = (options().encryptionAlgorithm != kNoEncryption);
-        switch (alg) {
-            case kNoEncryption:
-                if (!currentlyEncrypted)
-                    return;
-                LogTo(DBLog, "Decrypting DataFile");
-                break;
-            case kAES256:
-                if (currentlyEncrypted) {
-                    LogTo(DBLog, "Changing DataFile encryption key");
-                }
-                else {
-                    LogTo(DBLog, "Encrypting DataFile");
-                }
-
-                if(newKey.buf == nullptr || newKey.size != 32)
-                    error::_throw(error::InvalidParameter);
-                break;
-            default:
-                error::_throw(error::InvalidParameter);
-        }
-
         if (!factory().encryptionEnabled(alg))
             error::_throw(error::UnsupportedEncryption);
 
+        bool currentlyEncrypted = (options().encryptionAlgorithm != kNoEncryption);
+        if (alg == kNoEncryption) {
+            if (!currentlyEncrypted)
+                return;
+            LogTo(DBLog, "Decrypting DataFile");
+        } else {
+            if (currentlyEncrypted) {
+                LogTo(DBLog, "Changing DataFile encryption key");
+            }
+            else {
+                LogTo(DBLog, "Encrypting DataFile");
+            }
+        }
+        
+        if (newKey.size != kEncryptionKeySize[alg])
+            error::_throw(error::InvalidParameter);
         int rekeyResult = 0;
         if(alg == kNoEncryption) {
             rekeyResult = sqlite3_rekey_v2(_sqlDb->getHandle(), nullptr, nullptr, 0);
@@ -354,7 +348,7 @@ namespace litecore {
         // Finally reopen:
         reopen();
 #else
-        error::_throw(litecore::error::UnsupportedOperation);
+        error::_throw(litecore::error::UnsupportedEncryption);
 #endif
     }
 
