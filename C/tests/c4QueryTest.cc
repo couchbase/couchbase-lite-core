@@ -682,8 +682,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
 
 #pragma mark - COLLATION:
 
-
-#if __APPLE__ || LITECORE_USES_ICU //FIXME: collator isn't available on all platforms yet
 class CollatedQueryTest : public QueryTest {
 public:
     CollatedQueryTest(int which)
@@ -740,4 +738,3 @@ N_WAY_TEST_CASE_METHOD(CollatedQueryTest, "DB Query aggregate collated", "[Query
     CHECK(artists[2083] == "Zoë Keating");
     CHECK(artists[2084] == "Zola Jesus");
 }
-#endif // __APPLE__ || LITECORE_USES_ICU

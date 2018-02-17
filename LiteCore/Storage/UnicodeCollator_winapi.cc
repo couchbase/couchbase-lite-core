@@ -85,15 +85,20 @@ namespace litecore {
         LPWSTR locale = ctx.localeName;
         DWORD winFlags = ctx.flags;
 
-        TempArray(wchars1, WCHAR, len1);
-        int size1 = MultiByteToWideChar(CP_UTF8, 0, (char *)chars1, len1, wchars1, len1);
-        wchars1[size1++] = 0;
+		// +1 these just in case they end up being the same length to not overrun the buffer
+        TempArray(wchars1, WCHAR, len1 + 1); 
+        int size1 = MultiByteToWideChar(CP_UTF8, 0, (char *)chars1, len1, wchars1, len1 + 1);
+		while(size1 < len1 + 1) {
+			wchars1[size1++] = 0;
+		}
 
-        TempArray(wchars2, WCHAR, len2);
-        int size2 = MultiByteToWideChar(CP_UTF8, 0, (char *)chars2, len2, wchars2, len2);
-        wchars2[size2++] = 0;
+        TempArray(wchars2, WCHAR, len2 + 1);
+        int size2 = MultiByteToWideChar(CP_UTF8, 0, (char *)chars2, len2, wchars2, len2 + 1);
+        while(size2 < len2 + 1) {
+	        wchars2[size2++] = 0;
+        }
 
-        int result = CompareStringEx(locale, winFlags, wchars1, size1, wchars2, size2, nullptr, nullptr, 0);
+        int result = CompareStringEx(locale, winFlags, wchars1, -1, wchars2, -1, nullptr, nullptr, 0);
         if (result == 0) {
             DWORD err = GetLastError();
             Warn("Failed to compare strings (Error %d), arbitrarily returning equal", err);
