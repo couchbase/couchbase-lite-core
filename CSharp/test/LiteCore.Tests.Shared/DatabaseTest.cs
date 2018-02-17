@@ -603,6 +603,8 @@ namespace LiteCore.Tests
             });
         }
 
+        #if COUCHBASE_ENTERPRISE
+
         [Fact]
         public void TestDatabaseRekey()
         {
@@ -658,5 +660,7 @@ namespace LiteCore.Tests
                 ReopenDB();
             });
         }
+
+    #endif
     }
 }

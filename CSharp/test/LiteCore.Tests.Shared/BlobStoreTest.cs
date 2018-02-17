@@ -44,7 +44,12 @@ namespace LiteCore.Tests
 
         }
 #endif
+
+        #if COUCHBASE_ENTERPRISE
         protected override int NumberOfOptions => 2;
+        #else
+        protected override int NumberOfOptions => 1;
+        #endif
 
         private bool _encrypted;
         private C4BlobStore* _store;
