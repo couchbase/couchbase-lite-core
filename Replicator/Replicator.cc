@@ -35,6 +35,8 @@ using namespace fleeceapi;
 
 namespace litecore { namespace repl {
 
+    static const char *kReplicatorProtocolName = "+CBMobile_2";
+
 
     // Subroutine of constructor that looks up HTTP cookies for the request, adds them to
     // options.properties' cookies, and returns the properties dict.
@@ -42,7 +44,8 @@ namespace litecore { namespace repl {
                                              const websocket::Address &address,
                                              Worker::Options &options)
     {
-        options.setProperty(slice(kC4SocketOptionWSProtocols), Connection::kWSProtocolName);
+        options.setProperty(slice(kC4SocketOptionWSProtocols),
+                            (string(Connection::kWSProtocolName) + kReplicatorProtocolName).c_str());
         if (!options.properties[kC4ReplicatorOptionCookies]) {
             C4Address c4addr {
                 slice(address.scheme),
