@@ -322,10 +322,9 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
         CHECK(countD == 1);
     }
 }
-#define FOO(x) 
 
 
-TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges", "[notification]") {
+TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Ignores ExternalChanges", "[notification]") {
     // Add some docs:
     tracker.beginTransaction();
     tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
@@ -342,9 +341,41 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges
     tracker.addExternalTransaction(track2);
     track2.endTransaction(true);
 
-    CHECK_IF_DEBUG(tracker.dump() == "[A@1, C@3, B@4', Z@5']");
+    // tracker ignored the changes because it has no observers:
+    CHECK_IF_DEBUG(tracker.dump() == "[A@1, B@2, C@3]");
+}
 
-    DatabaseChangeNotifier cn(tracker, nullptr, 0);
+
+TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges", "[notification]") {
+    // Add a change notifier:
+    int count1 = 0;
+    DatabaseChangeNotifier cn(tracker, [&](DatabaseChangeNotifier&) {++count1;}, 0);
+
+    // Add some docs:
+    tracker.beginTransaction();
+    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
+    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
+    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, 3333);
+    tracker.endTransaction(true);
+
+    // notifier was notified:
+    CHECK(count1 == 1);
+
+    SequenceTracker track2;
+    track2.beginTransaction();
+    track2.documentChanged("B"_asl, "2-bb"_asl, ++seq, 4444);
+    track2.documentChanged("Z"_asl, "1-ff"_asl, ++seq, 5555);
+
+    // Notify tracker about the transaction from track2:
+    tracker.addExternalTransaction(track2);
+    track2.endTransaction(true);
+
+    // tracker added the changes because it has an observer:
+    CHECK_IF_DEBUG(tracker.dump() == "[*, A@1, C@3, B@4', Z@5']");
+
+    // notifier wasn't up to date before the transaction, so its callback didn't get called again:
+    CHECK(count1 == 1);
+
     SequenceTracker::Change changes[10];
     bool external;
     size_t numChanges = cn.readChanges(changes, 10, external);

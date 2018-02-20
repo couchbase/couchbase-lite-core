@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Base.hh"
+#include "Logging.hh"
 #include <list>
 #include <mutex>
 #include <unordered_map>
@@ -32,14 +33,16 @@ namespace litecore {
     class DatabaseChangeNotifier;
     class DocChangeNotifier;
 
+    extern LogDomain ChangesLog; // "Changes"
+    
 
     /** Tracks database & document changes, and notifies listeners.
         It's intended that this be a singleton per database _file_. */
-    class SequenceTracker {
+    class SequenceTracker : public Logging {
     public:
         struct Entry;
 
-        SequenceTracker() { }
+        SequenceTracker();
 
         /** Multithreaded clients can use this to synchronize access to the tracker. */
         std::mutex& mutex()                     {return _mutex;}
@@ -142,6 +145,7 @@ namespace litecore {
         std::unordered_map<slice, iterator, fleece::sliceHash> _byDocID;
         sequence_t                              _lastSequence {0};
         size_t                                  _numPlaceholders {0};
+        size_t                                  _numDocObservers {0};
         std::unique_ptr<DatabaseChangeNotifier> _transaction;
         sequence_t                              _preTransactionLastSequence;
         std::mutex                              _mutex;
@@ -181,7 +185,7 @@ namespace litecore {
 
 
     /** Tracks changes to a database and calls a client callback. */
-    class DatabaseChangeNotifier {
+    class DatabaseChangeNotifier : public Logging {
     public:
         /** A callback that will be invoked _once_ when new changes arrive. After that, calling
             `changes` will reset the state so the callback can be called again. */
@@ -189,9 +193,7 @@ namespace litecore {
 
         DatabaseChangeNotifier(SequenceTracker&, Callback, sequence_t afterSeq =UINT64_MAX);
 
-        ~DatabaseChangeNotifier() {
-            tracker.removePlaceholder(_placeholder);
-        }
+        ~DatabaseChangeNotifier();
 
         SequenceTracker &tracker;
         Callback const callback;
@@ -203,12 +205,10 @@ namespace litecore {
 
         /** Returns changes that have occurred since the last call to `changes` (or since
             construction.) Resets the callback state so it can be called again. */
-        size_t readChanges(SequenceTracker::Change changes[], size_t maxChanges, bool &external) {
-            return tracker.readChanges(_placeholder, changes, maxChanges, external);
-        }
+        size_t readChanges(SequenceTracker::Change changes[], size_t maxChanges, bool &external);
 
     protected:
-        void notify() {if (callback) callback(*this);}
+        void notify();
 
     private:
         friend class SequenceTracker;
