@@ -63,9 +63,10 @@ namespace litecore {
 #pragma mark - GLOBAL SETTINGS:
 
 
-    void LogDomain::setCallback(Callback_t callback, bool preformatted, LogLevel atLevel) {
+    void LogDomain::setCallback(Callback_t callback, bool preformatted) {
         unique_lock<mutex> lock(sLogMutex);
-        sCallbackMinLevel = callback ? atLevel : LogLevel::None;
+        if (!callback)
+            sCallbackMinLevel = LogLevel::None;
         sCallback = callback;
         sCallbackPreformatted = preformatted;
         _invalidateEffectiveLevels();

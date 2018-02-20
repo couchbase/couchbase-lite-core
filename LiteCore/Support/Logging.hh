@@ -97,9 +97,8 @@ public:
     /** Registers (or unregisters) a callback to be passed log messages.
         @param callback  The callback function, or NULL to unregister.
         @param preformatted  If true, callback will be passed already-formatted log messages to be
-            displayed verbatim (and the `va_list` parameter will be NULL.)
-        @param atLevel  Only log messages at this or a higher level will be sent. */
-    static void setCallback(Callback_t callback, bool preformatted, LogLevel atLevel);
+            displayed verbatim (and the `va_list` parameter will be NULL.) */
+    static void setCallback(Callback_t callback, bool preformatted);
 
     /** Registers (or unregisters) a file to which log messages will be written in binary format.
         @param filePath  The file to write to, or an empty string to stop writing.

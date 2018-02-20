@@ -284,7 +284,8 @@ namespace c4Internal {
 
 // LCOV_EXCL_START
 void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool preformatted) noexcept {
-    LogDomain::setCallback((LogDomain::Callback_t)callback, preformatted, (LogLevel)level);
+    LogDomain::setCallback((LogDomain::Callback_t)callback, preformatted);
+    LogDomain::setCallbackLogLevel((LogLevel)level);
 }
 // LCOV_EXCL_STOP
 
