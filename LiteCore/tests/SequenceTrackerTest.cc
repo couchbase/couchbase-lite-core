@@ -325,13 +325,6 @@ TEST_CASE("SequenceTracker Transaction", "[notification]") {
 
 
 TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Ignores ExternalChanges", "[notification]") {
-    // Add some docs:
-    tracker.beginTransaction();
-    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
-    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
-    tracker.documentChanged("C"_asl, "1-cc"_asl, ++seq, 3333);
-    tracker.endTransaction(true);
-
     SequenceTracker track2;
     track2.beginTransaction();
     track2.documentChanged("B"_asl, "2-bb"_asl, ++seq, 4444);
@@ -342,7 +335,7 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Ignores Externa
     track2.endTransaction(true);
 
     // tracker ignored the changes because it has no observers:
-    CHECK_IF_DEBUG(tracker.dump() == "[A@1, B@2, C@3]");
+    CHECK_IF_DEBUG(tracker.dump() == "[]");
 }
 
 
