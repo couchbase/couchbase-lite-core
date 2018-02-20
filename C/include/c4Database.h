@@ -57,6 +57,12 @@ extern "C" {
         kC4EncryptionAES256,        ///< AES with 256-bit key
     };
 
+    /** Encryption key sizes (in bytes). */
+    typedef C4_ENUM(size_t, C4EncryptionKeySize) {
+        kC4EncryptionKeySizeAES128 = 16,
+        kC4EncryptionKeySizeAES256 = 32,
+    };
+
     /** Encryption key specified in a C4DatabaseConfig. */
     typedef struct C4EncryptionKey {
         C4EncryptionAlgorithm algorithm;
