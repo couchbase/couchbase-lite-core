@@ -22,6 +22,8 @@ extern "C" {
 
     void arc4random_buf(void *buffer, int size);
 
+	uint32_t arc4random_uniform(uint32_t upperBound);
+
     uint32_t arc4random();
 
 #ifdef __cplusplus

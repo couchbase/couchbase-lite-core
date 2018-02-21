@@ -34,6 +34,12 @@ extern "C" {
 		return e();
 	}
 
+	uint32_t arc4random_uniform(uint32_t upperBound)
+	{
+		const std::uniform_int_distribution<uint32_t> uniform(0, upperBound - 1);
+		return uniform(e);
+	}
+
 	void arc4random_buf(void *buffer, int size)
 	{
 		unsigned char* buf = (unsigned char *)buffer;

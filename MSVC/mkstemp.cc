@@ -18,11 +18,12 @@
 
 
 #include <cstring>
-#include <ctime>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <io.h>
 #include <atlbase.h>
+#include "TempArray.hh"
+#include "arc4random.h"
+#include <Error.hh>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -32,25 +33,15 @@
 
 #ifndef HAVE_MKSTEMP
 
+const char letter_choices[63] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
 static char* mktemp_internal(char* templ)
 {
-    srand(time(nullptr));
     char* start = strchr(templ, '\0');
     while(*(--start) == 'X') {
-        int r = rand();
-        while(r < 0 || r > 61) {
-            r = rand();
-        }
-
-        if(r < 26) {
-            *start = r + 'a';
-        } else if(r < 52) {
-            r -= 26;
-            *start = r + 'A';
-        } else {
-            r -= 52;
-            *start = r + '0';
-        }
+	    const uint32_t r = arc4random_uniform(62);
+		Assert(r < 62);
+		*start = letter_choices[r];
     }
 
     return templ;
@@ -58,18 +49,23 @@ static char* mktemp_internal(char* templ)
 
 int mkstemp(char *tmp)
 {
-    mktemp_internal(tmp);
-    CA2WEX<256> wpath(tmp, CP_UTF8);
-	struct _stat64i32 buf;
-    if(_wstat64i32(wpath, &buf) == 0) {
-        errno = EEXIST;
-        return -1;
-    }
+	const size_t len = strnlen_s(tmp, MAX_PATH + 1) + 1;
+	TempArray(cp, char, len);
+	strcpy_s(cp, len, tmp);
+    
+	struct _stat64i32 buf{};
+	for(int i = 0; i < INT32_MAX; i++) {
+		mktemp_internal(tmp);
+		const CA2WEX<256> wpath(tmp, CP_UTF8);
+		if(_wstat64i32(wpath, &buf) != 0) {
+			const int fd = _wopen(wpath, O_RDWR | O_CREAT | O_EXCL | O_BINARY, _S_IREAD | _S_IWRITE);
+			if (fd >= 0 || errno != EEXIST) {
+				return fd;
+			}
+		} 
 
-    int fd = _wopen(wpath, O_RDWR | O_CREAT | O_EXCL | O_BINARY, _S_IREAD | _S_IWRITE);
-    if (fd >= 0 || errno != EEXIST) {
-        return fd;
-    }
+		strcpy_s(tmp, len, cp);
+	}
 
     errno = EEXIST;
     return -1;
