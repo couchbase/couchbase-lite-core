@@ -54,7 +54,7 @@ namespace litecore {
     void FileReadStream::close() {
         auto file = _file;
         _file = nullptr;
-        if (fclose(file) != 0)
+        if (file && fclose(file) != 0)
             error::_throwErrno();
     }
 
