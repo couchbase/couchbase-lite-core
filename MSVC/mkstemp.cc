@@ -19,7 +19,6 @@
 
 #include <cstring>
 #include <ctime>
-#include <Windows.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <io.h>
@@ -39,17 +38,17 @@ static char* mktemp_internal(char* templ)
     char* start = strchr(templ, '\0');
     while(*(--start) == 'X') {
         int r = rand();
-        while(r < 0 || r >= 62) {
+        while(r < 0 || r > 61) {
             r = rand();
         }
 
-        if(r <= 26) {
+        if(r < 26) {
             *start = r + 'a';
-        } else if(r <= 52) {
-            r -= 27;
+        } else if(r < 52) {
+            r -= 26;
             *start = r + 'A';
         } else {
-            r -= 53;
+            r -= 52;
             *start = r + '0';
         }
     }
@@ -61,7 +60,8 @@ int mkstemp(char *tmp)
 {
     mktemp_internal(tmp);
     CA2WEX<256> wpath(tmp, CP_UTF8);
-    if(PathFileExistsW(wpath)) {
+	struct _stat64i32 buf;
+    if(_wstat64i32(wpath, &buf) == 0) {
         errno = EEXIST;
         return -1;
     }
