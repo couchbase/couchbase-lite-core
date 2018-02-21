@@ -178,7 +178,7 @@ namespace litecore { namespace repl {
                     }
                 }
                 if (nonPassive()) {
-                    log/*Verbose*/("Now waiting for %u 'rev' messages; %zu known sequences pending",
+                    logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
                                _pendingRevMessages, _missingSequences.size());
                 }
                 handleMoreChanges();  // because _waitingForChangesCallback changed
@@ -195,8 +195,8 @@ namespace litecore { namespace repl {
         if (_activeIncomingRevs < kMaxActiveIncomingRevs) {
             startIncomingRev(msg);
         } else {
-            log("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
-                SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);//TEMP
+            logVerbose("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
+                       SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);//TEMP
             _waitingRevMessages.push_back(move(msg));
         }
     }

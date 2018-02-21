@@ -489,7 +489,7 @@ namespace litecore { namespace repl {
                 auto firstPending = _pendingSequences.first();
                 auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
                 if (lastSeq > _lastSequence) {
-                    if (lastSeq / 100 > _lastSequence / 100)
+                    if (lastSeq / 1000 > _lastSequence / 1000)
                         log("Checkpoint now at %llu", lastSeq);
                     else
                         logVerbose("Checkpoint now at %llu", lastSeq);
