@@ -23,7 +23,8 @@
 #include <string>
 #include <thread>
 
-#define ACTORS_TRACK_STATS  DEBUG
+// Set to 1 to have Actor object report performance statistics in their destructors
+#define ACTORS_TRACK_STATS  0
 
 namespace litecore { namespace actor {
     class Scheduler;
