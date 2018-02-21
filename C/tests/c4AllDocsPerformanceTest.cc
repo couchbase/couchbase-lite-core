@@ -18,6 +18,7 @@
 
 #include "c4Test.hh"
 #include "Benchmark.hh"
+#include <arc4random.h>
 #ifdef _MSC_VER
 #include <chrono>
 #endif
@@ -46,7 +47,7 @@ public:
 
         for (unsigned i = 0; i < kNumDocuments; i++) {
             char docID[50];
-            sprintf(docID, "doc-%08lx-%08lx-%08lx-%04x", random(), random(), random(), i);
+            sprintf(docID, "doc-%08x-%08x-%08x-%04x", arc4random(), arc4random(), arc4random(), i);
             char revID[50];
             sprintf(revID, "1-deadbeefcafebabe80081e50");
             char json[kSizeOfDocument+100];

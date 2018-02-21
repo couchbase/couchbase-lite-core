@@ -26,6 +26,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <arc4random.h>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -137,7 +138,7 @@ public:
         Benchmark b;
         for (size_t readNo = 0; readNo < numDocsToRead; ++readNo) {
             char docID[30];
-            sprintf(docID, "%07zu", ((unsigned)random() % numDocs) + 1);
+            sprintf(docID, "%07zu", ((unsigned)arc4random() % numDocs) + 1);
             INFO("Reading doc " << docID);
             b.start();
             C4Error error;

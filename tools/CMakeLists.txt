@@ -51,15 +51,10 @@ set(LITECORELOG_SRC  litecorelog.cc
                ${TOP}LiteCore/Support/LogEncoder.cc
 			   ${TOP}/vendor/BLIP-Cpp/src/util/Timer.cc)
 
-if(MSVC)
-    aux_source_directory(${TOP}MSVC MSVC_SOURCE)
-    set(LITECORELOG_SRC ${LITECORELOG_SRC} ${MSVC_SOURCE})
-endif()
-
 add_executable(litecorelog
                ${LITECORELOG_SRC})
 
-target_link_libraries(litecorelog  FleeceStatic)
+target_link_libraries(litecorelog  FleeceStatic Support)
 if (APPLE)
     target_link_libraries(litecorelog "-framework CoreFoundation")
 elseif(UNIX)

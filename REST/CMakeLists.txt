@@ -33,14 +33,8 @@ aux_source_directory("." REST_SRC)
 list(REMOVE_ITEM REST_SRC ./LiteCoreServ.cc)
 
 set(ALL_SRC_FILES ${REST_SRC})
-if(MSVC)
-	include_directories("../vendor/fleece/MSVC")
-	set(ALL_SRC_FILES ${ALL_SRC_FILES} ../MSVC/asprintf.c
-    ../vendor/fleece/MSVC/memmem.cc ../MSVC/mkstemp.cc ../MSVC/mkdtemp.cc ../MSVC/strlcat.c
-			     ../MSVC/vasprintf-msvc.c ../MSVC/arc4random.cc ../LiteCore/Support/PlatformIO.cc)
-endif()
 
 ### STATIC LIBRARY:
 
 add_library(LiteCoreREST_Static STATIC ${ALL_SRC_FILES})
-target_link_libraries(LiteCoreREST_Static PRIVATE CivetWeb)
+target_link_libraries(LiteCoreREST_Static PRIVATE CivetWeb Support)
