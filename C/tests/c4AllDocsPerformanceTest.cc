@@ -18,9 +18,10 @@
 
 #include "c4Test.hh"
 #include "Benchmark.hh"
-#include <arc4random.h>
-#ifdef _MSC_VER
 #include <chrono>
+
+#ifndef __APPLE__
+#include "arc4random.h"
 #endif
 
 static const size_t kSizeOfDocument = 1000;

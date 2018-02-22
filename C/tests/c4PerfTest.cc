@@ -26,9 +26,12 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
-#include <arc4random.h>
 #ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
+#ifndef __APPLE__
+#include "arc4random.h"
 #endif
 
 using namespace fleece;
