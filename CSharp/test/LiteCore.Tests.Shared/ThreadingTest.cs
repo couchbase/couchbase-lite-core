@@ -82,32 +82,36 @@ namespace LiteCore.Tests
             var database = OpenDB();
             var observer = Native.c4dbobs_create(database, ObsCallback, this);
             var lastSequence = 0UL;
-            do {
-                lock (_observerMutex) {
-                    if (!_changesToObserve) {
-                        continue;
+
+            try {
+                do {
+                    lock (_observerMutex) {
+                        if (!_changesToObserve) {
+                            continue;
+                        }
+
+                        Write("8");
+                        _changesToObserve = false;
                     }
 
-                    Write("8");
-                    _changesToObserve = false;
-                }
-
-                var changes = new C4DatabaseChange[10];
-                uint nDocs;
-                bool external;
-                while (0 < (nDocs = Native.c4dbobs_getChanges(observer.Observer, changes, 10U, &external))) {
-                    external.Should().BeTrue("because all changes will be external in this test");
-                    for (int i = 0; i < nDocs; ++i) {
-                        changes[i].docID.CreateString().Should().StartWith("doc-", "because otherwise the document ID is not what we created");
-                        lastSequence = changes[i].sequence;
+                    var changes = new C4DatabaseChange[10];
+                    uint nDocs;
+                    bool external;
+                    while (0 < (nDocs = Native.c4dbobs_getChanges(observer.Observer, changes, 10U, &external))) {
+                        external.Should().BeTrue("because all changes will be external in this test");
+                        for (int i = 0; i < nDocs; ++i) {
+                            changes[i].docID.CreateString().Should().StartWith("doc-",
+                                "because otherwise the document ID is not what we created");
+                            lastSequence = changes[i].sequence;
+                        }
                     }
-                }
 
-                Task.Delay(TimeSpan.FromMilliseconds(100)).Wait();
-            } while (lastSequence < NumDocs);
-
-            observer.Dispose();
-            CloseDB(database);
+                    Task.Delay(TimeSpan.FromMilliseconds(100)).Wait();
+                } while (lastSequence < NumDocs);
+            } finally {
+                observer.Dispose();
+                CloseDB(database);
+            }
         }
 
         private static void ObsCallback(C4DatabaseObserver* observer, object context)

@@ -68,6 +68,17 @@ namespace LiteCore.Interop
 #else
     public
 #endif
+    enum C4EncryptionKeySize : ulong
+    {
+        KeySizeAES128 = 16,
+        KeySizeAES256 = 32,
+    }
+
+#if LITECORE_PACKAGED
+    internal
+#else
+    public
+#endif
     unsafe partial struct C4DatabaseConfig
     {
         public C4DatabaseFlags flags;

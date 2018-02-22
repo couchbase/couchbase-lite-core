@@ -58,7 +58,7 @@ extern "C" {
     };
 
     /** Encryption key sizes (in bytes). */
-    typedef C4_ENUM(size_t, C4EncryptionKeySize) {
+    typedef C4_ENUM(uint64_t, C4EncryptionKeySize) {
         kC4EncryptionKeySizeAES128 = 16,
         kC4EncryptionKeySizeAES256 = 32,
     };
