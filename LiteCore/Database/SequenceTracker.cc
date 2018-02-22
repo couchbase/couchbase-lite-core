@@ -187,7 +187,10 @@ namespace litecore {
                 _lastSequence = e->sequence;
                 _documentChanged(e->docID, e->revID, e->sequence, e->bodySize);
             }
-            removeObsoleteEntries();
+            
+            // See https://github.com/couchbase/couchbase-lite-core/issues/418
+            // Evaluate if this is needed here
+            //removeObsoleteEntries();
         }
     }
 
