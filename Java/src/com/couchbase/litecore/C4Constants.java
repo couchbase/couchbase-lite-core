@@ -61,7 +61,14 @@ public interface C4Constants {
     // Encryption algorithms.
     interface C4EncryptionAlgorithm {
         int kC4EncryptionNone = 0;      ///< No encryption (default)
-        int kC4EncryptionAES256 = 1;    ///< AES with 256-bit key
+        int kC4EncryptionAES128 = 1;    ///< AES with 128-bit key
+        int kC4EncryptionAES256 = 2;    ///< AES with 256-bit key
+    }
+
+    // Encryption key sizes (in bytes).
+    interface C4EncryptionKeySize {
+        int kC4EncryptionKeySizeAES128 = 16;
+        int kC4EncryptionKeySizeAES256 = 32;
     }
 
     ////////////////////////////////////
