@@ -100,10 +100,15 @@ Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jd
 /*
  * Class:     com_couchbase_litecore_C4Key
  * Method:    derivePBKDF2SHA256Key
- * Signature: (Ljava/lang/String;[BI)[B
+ * Signature: (Ljava/lang/String;[BII)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Key_derivePBKDF2SHA256Key
-        (JNIEnv *env, jclass clazz, jstring jpassword, jbyteArray jsalt, jint jrounds) {
+        (JNIEnv *env, jclass clazz, jstring jpassword, jbyteArray jsalt, jint jiteration, jint jkeyLen) {
+
+    // algorithm: PBKDF2
+    // hash: SHA256
+    // iteration: ??? (64000)
+    // key length: ??? (16 or 32)
 
     if (jpassword == NULL || jsalt == NULL)
         return NULL;
@@ -118,16 +123,16 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Key_derivePBKDF2SHA25
     env->GetByteArrayRegion(jsalt, 0, saltSize, reinterpret_cast<jbyte *>(salt));
 
     // Rounds
-    int rounds = jrounds;
+    const int iteration = (const int)jiteration;
 
     // PKCS5 PBKDF2 HMAC SHA256
-    const int KEY_SIZE = 32; // 32 bytes (256 bit)
-    unsigned char key[KEY_SIZE];
+    const int keyLen = (const int)jkeyLen;
+    unsigned char key[keyLen];
 
     mbedtls_md_context_t ctx;
     mbedtls_md_init(&ctx);
 
-    const mbedtls_md_info_t *info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA512);
+    const mbedtls_md_info_t *info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
     if (info == NULL) {
         // error
         mbedtls_md_free(&ctx);
@@ -139,7 +144,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Key_derivePBKDF2SHA25
     int status = 0;
     if ((status = mbedtls_md_setup(&ctx, info, 1)) == 0)
         status = mbedtls_pkcs5_pbkdf2_hmac(&ctx, (const unsigned char *) password, passwordSize,
-                                           salt, saltSize, rounds, KEY_SIZE, key);
+                                           salt, saltSize, iteration, keyLen, key);
 
     mbedtls_md_free(&ctx);
 
@@ -152,7 +157,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Key_derivePBKDF2SHA25
         return NULL;
 
     // Return result:
-    jbyteArray result = env->NewByteArray(KEY_SIZE);
-    env->SetByteArrayRegion(result, 0, KEY_SIZE, (jbyte *) key);
+    jbyteArray result = env->NewByteArray(keyLen);
+    env->SetByteArrayRegion(result, 0, keyLen, (jbyte *) key);
     return result;
 }
