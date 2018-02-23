@@ -87,8 +87,8 @@ namespace litecore {
         };
 
         struct Change {
-            slice docID;
-            slice revID;
+            alloc_slice docID;
+            alloc_slice revID;
             sequence_t sequence;
             uint32_t bodySize;
         };

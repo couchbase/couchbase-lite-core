@@ -57,6 +57,7 @@ class C4ObserverTest : public C4Test {
             i++;
         }
         CHECK(external == expectedExternal);
+        c4dbobs_releaseChanges(changes, changeCount);
     }
 
     C4DatabaseObserver* dbObserver {nullptr};

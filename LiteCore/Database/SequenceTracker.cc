@@ -187,10 +187,7 @@ namespace litecore {
                 _lastSequence = e->sequence;
                 _documentChanged(e->docID, e->revID, e->sequence, e->bodySize);
             }
-            
-            // See https://github.com/couchbase/couchbase-lite-core/issues/418
-            // Evaluate if this is needed here
-            //removeObsoleteEntries();
+            removeObsoleteEntries();
         }
     }
 
@@ -245,15 +242,13 @@ namespace litecore {
                     external = i->external;
                 else if (i->external != external)
                     break;
-                Change change = {i->docID, i->revID, i->sequence, i->bodySize};
-                changes[n++] = change;
+                changes[n++] = Change{i->docID, i->revID, i->sequence, i->bodySize};
             }
             ++i;
         }
         if (n > 0) {
             _changes.splice(i, _changes, placeholder);
-            // (It would be nice to call removeObsoleteEntries now, but it could free the entries
-            // that own the docID slices I'm about to return.)
+            removeObsoleteEntries();
         }
         return n;
    }
@@ -264,7 +259,7 @@ namespace litecore {
             return;
         // Any changes before the first placeholder aren't going to be seen, so remove them:
         size_t nRemoved = 0;
-        while (_changes.size() - _numPlaceholders > kMinChangesToKeep
+        while (_changes.size() > kMinChangesToKeep + _numPlaceholders
                     && !_changes.front().isPlaceholder()) {
             _byDocID.erase(_changes.front().docID);
             _changes.erase(_changes.begin());

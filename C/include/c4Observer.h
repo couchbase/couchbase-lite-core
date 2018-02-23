@@ -59,18 +59,30 @@ extern "C" {
         since the observer was created. This function effectively "reads" changes from a stream,
         in whatever quantity the caller desires. Once all of the changes have been read, the
         observer is reset and ready to notify again.
+
+        IMPORTANT: After calling this function, you must call `c4dbobs_releaseChanges` to release
+        memory that's being referenced by the `C4DatabaseChange`s.
+
         @param observer  The observer.
         @param outChanges  A caller-provided buffer of structs into which changes will be
                             written.
         @param maxChanges  The maximum number of changes to return, i.e. the size of the caller's
                             outChanges buffer.
         @param outExternal  Will be set to true if the changes were made by a different C4Database.
-        @return  The number of changes written to `outDocIDs`. If this is less than `maxChanges`,
+        @return  The number of changes written to `outChanges`. If this is less than `maxChanges`,
                             the end has been reached and the observer is reset. */
     uint32_t c4dbobs_getChanges(C4DatabaseObserver *observer C4NONNULL,
                                 C4DatabaseChange outChanges[] C4NONNULL,
                                 uint32_t maxChanges,
                                 bool *outExternal C4NONNULL) C4API;
+
+    /** Releases the memory used by the C4DatabaseChange structs (to hold the docID and revID
+        strings.) This must be called after `c4dbobs_getChanges().
+        @param changes  The same array of changes that was passed to `c4dbobs_getChanges`.
+        @param numChanges  The number of changes returned by `c4dbobs_getChanges`, i.e. the number
+                            of valid items in `changes`. */
+    void c4dbobs_releaseChanges(C4DatabaseChange changes[],
+                                uint32_t numChanges) C4API;
 
     /** Stops an observer and frees the resources it's using.
         It is safe to pass NULL to this call. */

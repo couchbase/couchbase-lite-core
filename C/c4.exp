@@ -168,6 +168,7 @@ _c4stream_closeWriter
 
 _c4dbobs_create
 _c4dbobs_getChanges
+_c4dbobs_releaseChanges
 _c4dbobs_free
 _c4docobs_create
 _c4docobs_free
