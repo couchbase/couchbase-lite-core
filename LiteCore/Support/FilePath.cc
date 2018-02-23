@@ -475,10 +475,16 @@ namespace litecore {
         int fd = mkstemp(pathBuf);
         if (fd < 0)
             error::_throwErrno();
-        if (outHandle)
-            *outHandle = fdopen(fd, "w");
-        else
+        if (outHandle) {
+            *outHandle = fdopen(fd, "wb+");
+			if(*outHandle == nullptr) {
+				fdclose(fd);
+				error::_throwErrno();
+			}
+		} else {
             fdclose(fd);
+		}
+
         return FilePath(pathBuf);
     }
 

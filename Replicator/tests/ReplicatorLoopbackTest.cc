@@ -384,6 +384,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pul
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continuous]") {
     addDocsInParallel(chrono::milliseconds(100), 5000);
     runPushReplication(kC4Continuous);
+
+	CHECK(c4db_getDocumentCount(db) == c4db_getDocumentCount(db2));
     //FIX: Stop this when bg thread stops adding docs
 }
 
