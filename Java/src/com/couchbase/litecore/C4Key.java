@@ -18,5 +18,5 @@
 package com.couchbase.litecore;
 
 public class C4Key {
-    public static native byte[] derivePBKDF2SHA256Key(String password, byte[] salt, int rounds, int keysize);
+    public static native byte[] pbkdf2(String password, byte[] salt, int rounds, int keysize);
 }

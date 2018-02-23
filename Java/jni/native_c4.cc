@@ -99,16 +99,21 @@ Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jd
 
 /*
  * Class:     com_couchbase_litecore_C4Key
- * Method:    derivePBKDF2SHA256Key
+ * Method:    pbkdf2
  * Signature: (Ljava/lang/String;[BII)[B
  */
-JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Key_derivePBKDF2SHA256Key
-        (JNIEnv *env, jclass clazz, jstring jpassword, jbyteArray jsalt, jint jiteration, jint jkeyLen) {
+JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Key_pbkdf2
+        (JNIEnv *env, jclass clazz, jstring jpassword, jbyteArray jsalt, jint jiteration,
+         jint jkeyLen) {
 
+    // PBKDF2 (Password-Based Key Derivation Function 2)
+    // https://en.wikipedia.org/wiki/PBKDF2
+    // https://www.ietf.org/rfc/rfc2898.txt
+    //
     // algorithm: PBKDF2
-    // hash: SHA256
-    // iteration: ??? (64000)
-    // key length: ??? (16 or 32)
+    // hash: SHA1
+    // iteration: ? (64000)
+    // key length: ? (16)
 
     if (jpassword == NULL || jsalt == NULL)
         return NULL;
@@ -123,16 +128,16 @@ JNIEXPORT jbyteArray JNICALL Java_com_couchbase_litecore_C4Key_derivePBKDF2SHA25
     env->GetByteArrayRegion(jsalt, 0, saltSize, reinterpret_cast<jbyte *>(salt));
 
     // Rounds
-    const int iteration = (const int)jiteration;
+    const int iteration = (const int) jiteration;
 
     // PKCS5 PBKDF2 HMAC SHA256
-    const int keyLen = (const int)jkeyLen;
+    const int keyLen = (const int) jkeyLen;
     unsigned char key[keyLen];
 
     mbedtls_md_context_t ctx;
     mbedtls_md_init(&ctx);
 
-    const mbedtls_md_info_t *info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+    const mbedtls_md_info_t *info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA1);
     if (info == NULL) {
         // error
         mbedtls_md_free(&ctx);
