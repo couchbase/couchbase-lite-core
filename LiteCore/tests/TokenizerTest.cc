@@ -42,10 +42,38 @@ TEST_CASE_METHOD(TokenizerTestFixture, "Tokenizer Test", "[cblite][Tokenizer]") 
         CHECK(args.size() == 2);
         CHECK(args[0] == "sql");
         CHECK(args[1] == "SELECT * FROM sqlite_master");
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("sql 'SELECT * FROM sqlite_master'", args));
+        CHECK(args.size() == 2);
+        CHECK(args[0] == "sql");
+        CHECK(args[1] == "SELECT * FROM sqlite_master");
     }
     
     SECTION("Input with quoted argument and escaped quotes inside") {
         REQUIRE(_tokenizer.tokenize("sql \"SELECT * FROM sqlite_master WHERE type = \\\"table\\\"\"", args));
+        CHECK(args.size() == 2);
+        CHECK(args[0] == "sql");
+        CHECK(args[1] == "SELECT * FROM sqlite_master WHERE type = \"table\"");
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("sql 'SELECT * FROM sqlite_master WHERE type = \\'table\\''", args));
+        CHECK(args.size() == 2);
+        CHECK(args[0] == "sql");
+        CHECK(args[1] == "SELECT * FROM sqlite_master WHERE type = 'table'");
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("sql \"SELECT * FROM sqlite_master WHERE type = 'table'\"", args));
+        CHECK(args.size() == 2);
+        CHECK(args[0] == "sql");
+        CHECK(args[1] == "SELECT * FROM sqlite_master WHERE type = 'table'");
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("sql 'SELECT * FROM sqlite_master WHERE type = \"table\"'", args));
         CHECK(args.size() == 2);
         CHECK(args[0] == "sql");
         CHECK(args[1] == "SELECT * FROM sqlite_master WHERE type = \"table\"");
@@ -57,10 +85,23 @@ TEST_CASE_METHOD(TokenizerTestFixture, "Tokenizer Test", "[cblite][Tokenizer]") 
         CHECK(args[0] == "fetch");
         CHECK(args[1] == "\"with");
         CHECK(args[2] == "quotes\"");
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("fetch \\'with quotes\\'", args));
+        CHECK(args.size() == 3);
+        CHECK(args[0] == "fetch");
+        CHECK(args[1] == "'with");
+        CHECK(args[2] == "quotes'");
     }
     
     SECTION("Empty Input") {
         REQUIRE(_tokenizer.tokenize("\"\"", args));
+        CHECK(args.size() == 0);
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("''", args));
         CHECK(args.size() == 0);
     }
     
@@ -69,6 +110,13 @@ TEST_CASE_METHOD(TokenizerTestFixture, "Tokenizer Test", "[cblite][Tokenizer]") 
         CHECK(args.size() == 2);
         CHECK(args[0] == "\"");
         CHECK(args[1] == "weird");
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("\\' 'weird'", args));
+        CHECK(args.size() == 2);
+        CHECK(args[0] == "'");
+        CHECK(args[1] == "weird");
     }
     
     SECTION("Just escaped quotes") {
@@ -76,16 +124,35 @@ TEST_CASE_METHOD(TokenizerTestFixture, "Tokenizer Test", "[cblite][Tokenizer]") 
         CHECK(args.size() == 2);
         CHECK(args[0] == "\"");
         CHECK(args[1] == "\"");
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("\\' \\'", args));
+        CHECK(args.size() == 2);
+        CHECK(args[0] == "'");
+        CHECK(args[1] == "'");
     }
     
     SECTION("Just whitespace") {
         REQUIRE(_tokenizer.tokenize("\" \"", args));
         CHECK(args.size() == 1);
         CHECK(args[0] == " ");
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("' '", args));
+        CHECK(args.size() == 1);
+        CHECK(args[0] == " ");
     }
     
     SECTION("Quotes concatenating arguments") {
         REQUIRE(_tokenizer.tokenize("connect\" \"me", args));
+        CHECK(args.size() == 1);
+        CHECK(args[0] == "connect me");
+        
+        args.clear();
+        
+        REQUIRE(_tokenizer.tokenize("connect' 'me", args));
         CHECK(args.size() == 1);
         CHECK(args[0] == "connect me");
     }
@@ -101,6 +168,7 @@ TEST_CASE_METHOD(TokenizerTestFixture, "Tokenizer Test", "[cblite][Tokenizer]") 
     
     SECTION("Unclosed quote") {
         REQUIRE(!_tokenizer.tokenize("\"I am incorrect!", args));
+        REQUIRE(!_tokenizer.tokenize("'I am incorrect!", args));
     }
     
     SECTION("Unterminated escape") {

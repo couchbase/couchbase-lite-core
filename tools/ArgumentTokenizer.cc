@@ -27,6 +27,7 @@ bool ArgumentTokenizer::tokenize(const char* input, deque<string> &args)
     
     const char* start = input;
     const char* current = start;
+    char quoteChar = 0;
     bool inQuote = false;
     bool forceAppend = false;
     string nextArg;
@@ -41,9 +42,16 @@ bool ArgumentTokenizer::tokenize(const char* input, deque<string> &args)
             if(c == '\\') {
                 forceAppend = true;
                 continue;
-            } else if(c == '"') {
-                inQuote = !inQuote;
-                continue;
+            } else if(c == '"' || c == '\'') {
+                if(quoteChar != 0 && c == quoteChar) {
+                    inQuote = false;
+                    quoteChar = 0;
+                    continue;
+                } else if(quoteChar == 0) {
+                    inQuote = true;
+                    quoteChar = c;
+                    continue;
+                }
             } else if(c == ' ' && !inQuote) {
                 args.push_back(nextArg);
                 nextArg.clear();
