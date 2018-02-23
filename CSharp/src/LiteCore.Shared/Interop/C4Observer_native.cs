@@ -38,6 +38,9 @@ namespace LiteCore.Interop
         public static extern uint c4dbobs_getChanges(C4DatabaseObserver* observer, [Out]C4DatabaseChange[] outChanges, uint maxChanges, bool* outExternal);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void c4dbobs_releaseChanges(C4DatabaseChange[] changes, uint numChanges);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void c4dbobs_free(C4DatabaseObserver* observer);
 
         public static C4DocumentObserver* c4docobs_create(C4Database* database, string docID, C4DocumentObserverCallback callback, void* context)

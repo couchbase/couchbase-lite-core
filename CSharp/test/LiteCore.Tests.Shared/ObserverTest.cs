@@ -140,6 +140,7 @@ namespace LiteCore.Tests
                 changes[i].revID.CreateString().Should().Be(expectedRevIDs[i], "because otherwise we have an invalid document revision ID");
             }
 
+            Native.c4dbobs_releaseChanges(changes, changeCount);
             external.Should().Be(expectedExternal, "because otherwise the external parameter was wrong");
         }
 
