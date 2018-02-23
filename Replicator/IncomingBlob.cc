@@ -69,6 +69,10 @@ namespace litecore { namespace repl {
 
     void IncomingBlob::writeToBlob(alloc_slice data) {
         C4Error err;
+		if(_writer == nullptr) {
+			return; // already closed
+		}
+
         if (!c4stream_write(_writer, data.buf, data.size, &err))
             return gotError(err);
         addProgress({data.size, 0});

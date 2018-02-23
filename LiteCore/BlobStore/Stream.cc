@@ -69,6 +69,10 @@ namespace litecore {
 
 
     uint64_t FileReadStream::getLength() const {
+		if(!_file) {
+			return 0;
+		}
+
         uint64_t curPos = ftello(_file);
         fseeko(_file, 0, SEEK_END);
         uint64_t fileSize = ftello(_file);
@@ -79,12 +83,20 @@ namespace litecore {
 
 
     void FileReadStream::seek(uint64_t pos) {
+		if(!_file) {
+			return;
+		}
+
         fseeko(_file, pos, SEEK_SET);
         checkErr(_file);
     }
 
 
     size_t FileReadStream::read(void *dst, size_t count) {
+		if(!_file) {
+			return 0;
+		}
+
         size_t bytesRead = fread(dst, 1, count, _file);
         checkErr(_file);
         return bytesRead;
@@ -93,8 +105,10 @@ namespace litecore {
 
 
     void FileWriteStream::write(slice data) {
-        if (fwrite(data.buf, 1, data.size, _file) < data.size)
-            checkErr(_file);
+		if(_file) {
+			if (fwrite(data.buf, 1, data.size, _file) < data.size)
+				checkErr(_file);
+		}
     }
 
 }

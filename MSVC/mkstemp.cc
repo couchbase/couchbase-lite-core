@@ -24,6 +24,7 @@
 #include "TempArray.hh"
 #include "arc4random.h"
 #include <Error.hh>
+#include <corecrt_io.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -57,12 +58,13 @@ int mkstemp(char *tmp)
 	for(int i = 0; i < INT32_MAX; i++) {
 		mktemp_internal(tmp);
 		const CA2WEX<256> wpath(tmp, CP_UTF8);
-		if(_wstat64i32(wpath, &buf) != 0) {
-			const int fd = _wopen(wpath, O_RDWR | O_CREAT | O_EXCL | O_BINARY, _S_IREAD | _S_IWRITE);
-			if (fd >= 0 || errno != EEXIST) {
-				return fd;
-			}
-		} 
+		// Without doing this dance, the library seems prone to opening unremovable files...
+		HANDLE handle = CreateFileW(wpath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_WRITE | FILE_SHARE_READ, 
+			nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if(handle != INVALID_HANDLE_VALUE || GetLastError() != ERROR_FILE_EXISTS) {
+			// Let this function set errno
+			return _open_osfhandle((intptr_t)handle, O_RDWR | O_CREAT | O_EXCL | O_BINARY);
+		}
 
 		strcpy_s(tmp, len, cp);
 	}
