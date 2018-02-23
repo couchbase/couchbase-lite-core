@@ -391,6 +391,8 @@ namespace litecore { namespace repl {
                 markRevsSynced(changes, nullptr);
                 _pusher->gotChanges(changes, {});
             }
+
+            c4dbobs_releaseChanges(c4changes, nChanges);
         }
     }
 

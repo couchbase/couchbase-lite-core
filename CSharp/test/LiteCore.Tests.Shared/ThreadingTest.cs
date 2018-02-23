@@ -98,11 +98,17 @@ namespace LiteCore.Tests
                     uint nDocs;
                     bool external;
                     while (0 < (nDocs = Native.c4dbobs_getChanges(observer.Observer, changes, 10U, &external))) {
-                        external.Should().BeTrue("because all changes will be external in this test");
-                        for (int i = 0; i < nDocs; ++i) {
-                            changes[i].docID.CreateString().Should().StartWith("doc-",
-                                "because otherwise the document ID is not what we created");
-                            lastSequence = changes[i].sequence;
+                        try
+                        {
+                            external.Should().BeTrue("because all changes will be external in this test");
+                            for (int i = 0; i < nDocs; ++i)
+                            {
+                                changes[i].docID.CreateString().Should().StartWith("doc-",
+                                    "because otherwise the document ID is not what we created");
+                                lastSequence = changes[i].sequence;
+                            }
+                        } finally {
+                            Native.c4dbobs_releaseChanges(changes, nDocs);
                         }
                     }
 

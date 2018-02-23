@@ -162,6 +162,7 @@ public:
                     lastSequence = changes[i].sequence;
                 }
             }
+            c4dbobs_releaseChanges(changes, nDocs);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         } while (lastSequence < kNumDocs);
