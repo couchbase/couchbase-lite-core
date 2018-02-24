@@ -19,11 +19,17 @@
 #include "IncomingBlob.hh"
 #include "StringUtil.hh"
 #include "MessageBuilder.hh"
+#include <atomic>
 
 using namespace fleece;
 using namespace litecore::blip;
 
 namespace litecore { namespace repl {
+
+#if DEBUG
+    static std::atomic_int sNumOpenWriters {0};
+    static std::atomic_int sMaxOpenWriters {0};
+#endif
 
     IncomingBlob::IncomingBlob(Worker *parent, C4BlobStore *blobStore)
     :Worker(parent, "blob")
@@ -32,15 +38,11 @@ namespace litecore { namespace repl {
 
 
     void IncomingBlob::_start(C4BlobKey key, uint64_t size, bool compress) {
+        Assert(!_writer);
         _key = key;
         _size = size;
         alloc_slice digest = c4blob_keyToString(_key);
-        logVerbose("Requesting blob %.*s (%llu bytes, compress=%d)",
-                   SPLAT(digest), _size, compress);
-        C4Error err;
-        _writer = c4blob_openWriteStream(_blobStore, &err);
-        if (!_writer)
-            return gotError(err);
+        log("Requesting blob %.*s (%llu bytes, compress=%d)", SPLAT(digest), _size, compress);
 
         addProgress({0, _size});
 
@@ -50,7 +52,7 @@ namespace litecore { namespace repl {
             req["compress"_sl] = "true"_sl;
         sendRequest(req, asynchronize([=](blip::MessageProgress progress) {
             //... After request is sent:
-            if (_writer) {
+            if (_busy) {
                 if (progress.state == MessageProgress::kDisconnected) {
                     closeWriter();
                 } else if (progress.reply) {
@@ -64,15 +66,25 @@ namespace litecore { namespace repl {
                 }
             }
         }));
+        _busy = true;
     }
 
 
     void IncomingBlob::writeToBlob(alloc_slice data) {
         C4Error err;
 		if(_writer == nullptr) {
-			return; // already closed
+            _writer = c4blob_openWriteStream(_blobStore, &err);
+            if (!_writer)
+                return gotError(err);
+#if DEBUG
+            int n = ++sNumOpenWriters;
+            if (n > sMaxOpenWriters) {
+                sMaxOpenWriters = n;
+                log("There are now %d blob writers open", n);
+            }
+            logVerbose("Opened writer  [%d open; max %d]", n, (int)sMaxOpenWriters);
+#endif
 		}
-
         if (!c4stream_write(_writer, data.buf, data.size, &err))
             return gotError(err);
         addProgress({data.size, 0});
@@ -92,6 +104,11 @@ namespace litecore { namespace repl {
     void IncomingBlob::closeWriter() {
         c4stream_closeWriter(_writer);
         _writer = nullptr;
+        _busy = false;
+#if DEBUG
+        int n = --sNumOpenWriters;
+        logVerbose("Closing;  [%d open]", n);
+#endif
     }
 
 
@@ -104,10 +121,10 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel IncomingBlob::computeActivityLevel() const {
-        if (Worker::computeActivityLevel() == kC4Busy || _writer != nullptr)
+        if (Worker::computeActivityLevel() == kC4Busy || _busy)
             return kC4Busy;
         else
-            return kC4Stopped;
+            return kC4Idle;
     }
 
 } }

@@ -20,9 +20,11 @@
 #include "Worker.hh"
 #include "ReplicatorTypes.hh"
 #include "function_ref.hh"
+#include <vector>
 
 namespace litecore { namespace repl {
     class DBWorker;
+    class IncomingBlob;
     class Puller;
 
 
@@ -49,6 +51,7 @@ namespace litecore { namespace repl {
 
     private:
         void _handleRev(Retained<blip::MessageIn>);
+        bool fetchNextBlob();
         void insertRevision();
         void finish();
         void clear();
@@ -56,13 +59,20 @@ namespace litecore { namespace repl {
 
         slice remoteSequence() const            {return _revMessage->property(slice("sequence"));}
 
+        struct PendingBlob {
+            C4BlobKey key;
+            uint64_t length;
+            bool compressible;
+        };
+
         C4BlobStore *_blobStore;
         Puller* _puller;
         DBWorker* _dbWorker;
         Retained<blip::MessageIn> _revMessage;
         RevToInsert _rev;
         unsigned _pendingCallbacks {0};
-        unsigned _pendingBlobs {0};
+        std::vector<PendingBlob> _pendingBlobs;
+        Retained<IncomingBlob> _currentBlob;
         C4Error _error {};
         int _peerError {0};
     };

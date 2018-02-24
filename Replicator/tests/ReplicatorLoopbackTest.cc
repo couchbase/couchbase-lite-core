@@ -445,6 +445,34 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blob]") {
+    static const int kNumDocs = 1000, kNumBlobsPerDoc = 5;
+    Log("Creating %d docs, with %d blobs each ...", kNumDocs, kNumBlobsPerDoc);
+    {
+        // Create 10 docs, each with 1000 blobs:
+        TransactionHelper t(db);
+        char docid[100], body[100];
+        for (int iDoc = 0; iDoc < kNumDocs; ++iDoc) {
+            //Log("Creating doc %3d ...", iDoc);
+            vector<string> attachments;
+            attachments.reserve(1000);
+            for (int iAtt = 0; iAtt < kNumBlobsPerDoc; iAtt++) {
+                sprintf(body, "doc#%d attachment #%d", iDoc, iAtt);
+                attachments.push_back(body);
+            }
+            sprintf(docid, "doc%03d", iDoc);
+            addDocWithAttachments(c4str(docid), attachments, "text/plain");
+            ++_expectedDocumentCount;
+        }
+    }
+
+    runPullReplication();
+    compareDatabases();
+
+    validateCheckpoints(db2, db, format("{\"remote\":%d}", kNumDocs).c_str());
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blob]") {
     // Test case for issue #354
     slice image = readFile(sFixturesDir + "for#354.jpg");

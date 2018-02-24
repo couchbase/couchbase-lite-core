@@ -45,10 +45,12 @@ namespace litecore { namespace repl {
 
     // Resets the object so it can be reused for another revision.
     void IncomingRev::clear() {
-        Assert(_pendingCallbacks == 0 && _pendingBlobs == 0);
+        Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
         _revMessage = nullptr;
         _rev.clear();
         _error = {};
+        _currentBlob = nullptr;
+        _pendingBlobs.clear();
     }
 
     
@@ -125,29 +127,43 @@ namespace litecore { namespace repl {
             }
         }
 
-        // Check for blobs, and request any I don't have yet:
-        auto blobStore = _dbWorker->blobStore();
+        // Check for blobs, and queue up requests for any I don't have yet:
         findBlobReferences(root, nullptr, [=](Dict dict, const C4BlobKey &key) {
-            if (c4blob_getSize(blobStore, key) < 0) {
-                uint64_t length = dict["length"_sl].asUnsigned();
-                Retained<IncomingBlob> b(new IncomingBlob(this, blobStore));
-                b->start(key, length, c4doc_blobIsCompressible(dict, nullptr));
-                increment(_pendingBlobs);
-            }
-        });
-        if (_pendingBlobs > 0)
             _rev.flags |= kRevHasAttachments;
-        else
+            _pendingBlobs.push_back({key,
+                                     dict["length"_sl].asUnsigned(),
+                                     c4doc_blobIsCompressible(dict, nullptr)});
+        });
+
+        // Request the first blob, or if there are none, finish:
+        if (!fetchNextBlob())
             insertRevision();
+    }
+
+
+    bool IncomingRev::fetchNextBlob() {
+        auto blobStore = _dbWorker->blobStore();
+        while (!_pendingBlobs.empty()) {
+            PendingBlob first = _pendingBlobs.front();
+            _pendingBlobs.erase(_pendingBlobs.begin());
+            if (c4blob_getSize(blobStore, first.key) < 0) {
+                if (!_currentBlob)
+                    _currentBlob = new IncomingBlob(this, blobStore);
+                _currentBlob->start(first.key, first.length, first.compressible);
+                return true;
+            }
+        }
+        _currentBlob = nullptr;
+        return false;
     }
 
 
     void IncomingRev::_childChangedStatus(Worker *task, Status status) {
         addProgress(status.progressDelta);
-        if (status.level == kC4Stopped) {
+        if (status.level == kC4Idle) {
             if (status.error.code && !_error.code)
                 _error = status.error;
-            if (decrement(_pendingBlobs) == 0) {
+            if (!fetchNextBlob()) {
                 // All blobs completed, now finish:
                 if (_error.code == 0) {
                     logVerbose("All blobs received, now inserting revision");
@@ -162,6 +178,7 @@ namespace litecore { namespace repl {
 
     // Asks the DBAgent to insert the revision, then sends the reply and notifies the Puller.
     void IncomingRev::insertRevision() {
+        Assert(_pendingBlobs.empty() && !_currentBlob);
         increment(_pendingCallbacks);
         _rev.onInserted = asynchronize([this](C4Error err) {
             // Callback that will run _after_ insertRevision() completes:
@@ -196,8 +213,7 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel IncomingRev::computeActivityLevel() const {
-        if (Worker::computeActivityLevel() == kC4Busy
-                || _pendingCallbacks > 0 || _pendingBlobs > 0) {
+        if (Worker::computeActivityLevel() == kC4Busy || _pendingCallbacks > 0 || _currentBlob) {
             return kC4Busy;
         } else {
             return kC4Stopped;
