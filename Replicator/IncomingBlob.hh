@@ -42,5 +42,6 @@ namespace litecore { namespace repl {
         C4BlobKey _key;
         uint64_t _size;
         C4WriteStream* _writer {nullptr};
+        bool _busy {false};
     };
 } }
