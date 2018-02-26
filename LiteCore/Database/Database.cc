@@ -20,6 +20,7 @@
 #include "Document.hh"
 #include "c4Internal.hh"
 #include "c4Document.h"
+#include "c4Document+Fleece.h"
 #include "DataFile.hh"
 #include "Record.hh"
 #include "SequenceTracker.hh"
@@ -260,11 +261,28 @@ namespace c4Internal {
                 }
                 
                 const Dict* body = Value::fromTrustedData(doc->selectedRev.body)->asDict();
-                auto keys = _db->documentKeys();
-                Document::findBlobReferencesAndKeys(body, keys,
+                auto sk = _db->documentKeys();
+
+                // Iterate over blobs:
+                Document::findBlobReferencesAndKeys(body, sk,
                                                  [&usedDigests](const blobKey& key, uint64_t size) {
                     usedDigests.insert(key.filename());
                 });
+
+                // Now look for old-style _attachments:
+                auto attachments = body->get(slice(kC4LegacyAttachmentsProperty), sk);
+                if (attachments) {
+                    blobKey key;
+                    for (Dict::iterator i(attachments->asDict()); i; ++i) {
+                        auto att = i.value()->asDict();
+                        if (att) {
+                            const Value* digest = att->get("digest"_sl, sk);
+                            if (digest && key.readFromBase64(digest->asString())) {
+                                usedDigests.insert(key.filename());
+                            }
+                        }
+                    }
+                }
             } while(doc->selectNextRevision());
             
             delete doc;

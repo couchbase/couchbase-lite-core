@@ -179,7 +179,8 @@ public:
 
     std::vector<C4BlobKey> addDocWithAttachments(C4Slice docID,
                                                  std::vector<std::string> attachments,
-                                                 const char *contentType);
+                                                 const char *contentType,
+                                                 bool legacy =false);
     void checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData);
     void checkAttachments(C4Database *inDB, std::vector<C4BlobKey> blobKeys,
                           std::vector<std::string> expectedData);
