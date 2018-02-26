@@ -104,16 +104,21 @@ namespace litecore {
 
 
     DataFile::DataFile(const FilePath &path, const DataFile::Options *options)
-    :_shared(Shared::forPath(path, this))
-    ,_path(path)
+    :_path(path)
     ,_options(options ? *options : Options::defaults)
-    { }
+    {
+        // Do this last so I'm fully constructed before other threads can see me (#425)
+        _shared = Shared::forPath(path, this);
+    }
+
 
     DataFile::~DataFile() {
         LogToAt(DBLog, Debug, "DataFile: destructing (~DataFile)");
         Assert(!_inTransaction);
-        _shared->removeDataFile(this);
+        if (_shared)
+            _shared->removeDataFile(this);
     }
+
 
     void DataFile::close() {
         for (auto& i : _keyStores) {
