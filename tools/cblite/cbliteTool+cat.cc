@@ -75,8 +75,9 @@ c4::ref<C4Document> CBLiteTool::readDoc(string docID) {
 
 void CBLiteTool::catDoc(C4Document *doc, bool includeID) {
     Value body = Value::fromData(doc->selectedRev.body);
-    slice docID = (includeID ? slice(doc->docID) : nullslice);
-    slice revID;
+    slice docID, revID;
+    if (includeID || _showRevID)
+        docID = slice(doc->docID);
     if (_showRevID)
         revID = (slice)doc->selectedRev.revID;
     if (_prettyPrint)
@@ -123,10 +124,10 @@ void CBLiteTool::prettyPrint(Value value,
             auto sk = c4db_getFLSharedKeys(_db);
             string subIndent = indent + "  ";
             int n = 0;
-            cout << "{\n";
+            cout << "{";
             if (docID) {
                 n++;
-                cout << subIndent << ansiDim() << ansiItalic();
+                cout << '\n' << subIndent << ansiDim() << ansiItalic();
                 cout << (_json5 ? "_id" : "\"_id\"");
                 cout << ansiReset() << ansiDim() << ": \"" << docID << "\"";
                 if (revID) {
