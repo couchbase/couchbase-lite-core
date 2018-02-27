@@ -237,8 +237,9 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::gotDocumentError(slice docID, C4Error error, bool pushing, bool transient) {
-        _delegate->replicatorDocumentError(this, pushing, docID, error, transient);
+    void Replicator::_gotDocumentError(alloc_slice docID, C4Error error, bool pushing, bool transient) {
+        if (_delegate)
+            _delegate->replicatorDocumentError(this, pushing, docID, error, transient);
     }
 
 
@@ -260,7 +261,8 @@ namespace litecore { namespace repl {
         } else if (setCookie) {
             _dbActor->setCookie(setCookie.asString());
         }
-        _delegate->replicatorGotHTTPResponse(this, status, headers);
+        if (_delegate)
+            _delegate->replicatorGotHTTPResponse(this, status, headers);
     }
 
 

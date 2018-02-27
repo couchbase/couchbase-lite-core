@@ -101,7 +101,9 @@ namespace litecore { namespace repl {
                                         {enqueue(&Replicator::_onRequestReceived, retained(msg));}
         virtual void changedStatus() override;
 
-        void gotDocumentError(slice docID, C4Error, bool pushing, bool transient) override;
+        virtual void gotDocumentError(slice docID, C4Error error, bool pushing, bool transient) override {
+            enqueue(&Replicator::_gotDocumentError, alloc_slice(docID), error, pushing, transient);
+        }
 
     private:
         // How long to wait between delegate calls when only the progress % has changed
@@ -126,6 +128,7 @@ namespace litecore { namespace repl {
         void _saveCheckpoint(alloc_slice json);
 
         virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
+        void _gotDocumentError(alloc_slice docID, C4Error, bool pushing, bool transient);
 
         const websocket::Address _remoteAddress;
         CloseStatus _closeStatus;
