@@ -135,18 +135,6 @@ Java_com_couchbase_litecore_fleece_FLDict_count(JNIEnv *env, jclass clazz, jlong
 
 /*
  * Class:     com_couchbase_litecore_fleece_FLDict
- * Method:    get
- * Signature: (J[B)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_fleece_FLDict_get(JNIEnv *env, jclass clazz, jlong jdict,
-                                              jbyteArray jkeystring) {
-    jbyteArraySlice key(env, jkeystring, true);
-    return (jlong) FLDict_Get((FLDict) jdict, {((slice) key).buf, ((slice) key).size});
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLDict
  * Method:    getSharedKey
  * Signature: (J[BJ)J
  */

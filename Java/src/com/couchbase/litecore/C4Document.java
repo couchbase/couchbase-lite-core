@@ -242,12 +242,16 @@ public class C4Document implements C4Constants {
 
     // returns blobKey if the given dictionary is a [reference to a] blob; otherwise null (0)
     public static C4BlobKey dictIsBlob(FLDict dict, FLSharedKeys sk) {
-        long handle = dictIsBlob(dict.getHandle(), sk.getHandle());
-        return handle != 0 ? new C4BlobKey(handle) : null;
+        synchronized (sk.getLock()) {
+            long handle = dictIsBlob(dict.getHandle(), sk.getHandle());
+            return handle != 0 ? new C4BlobKey(handle) : null;
+        }
     }
 
     public static boolean dictContainsBlobs(FLSliceResult dict, FLSharedKeys sk) {
-        return dictContainsBlobs2(dict.getHandle(), sk.getHandle());
+        synchronized (sk.getLock()) {
+            return dictContainsBlobs2(dict.getHandle(), sk.getHandle());
+        }
     }
 
     public String bodyAsJSON(boolean canonical) throws LiteCoreException {

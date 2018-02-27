@@ -230,7 +230,7 @@ public class FLValue {
                 }
             }
             default:
-                return null; // TODO: Throw Exeption?
+                return null; // TODO: Throw Exception?
         }
     }
 
