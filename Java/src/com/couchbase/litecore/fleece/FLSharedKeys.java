@@ -19,6 +19,7 @@ package com.couchbase.litecore.fleece;
 
 public class FLSharedKeys {
     final long handle; // hold pointer to FLSharedKeys
+    final Object lock; // lock for thread safety
 
     //-------------------------------------------------------------------------
     // public methods
@@ -26,6 +27,7 @@ public class FLSharedKeys {
     public FLSharedKeys(long handle) {
         if (handle == 0L) throw new IllegalStateException();
         this.handle = handle;
+        this.lock = new Object();
     }
 
     //-------------------------------------------------------------------------
@@ -33,5 +35,9 @@ public class FLSharedKeys {
     //-------------------------------------------------------------------------
     public long getHandle() {
         return handle;
+    }
+
+    public Object getLock() {
+        return lock;
     }
 }

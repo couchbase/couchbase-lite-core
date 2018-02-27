@@ -19,10 +19,7 @@ package com.couchbase.litecore.fleece;
 
 import com.couchbase.litecore.SharedKeys;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 public class FLDict {
@@ -36,49 +33,25 @@ public class FLDict {
         this.handle = handle;
     }
 
-    public FLValue get(String key) {
-        return new FLValue(get(handle, key == null ? null : key.getBytes()));
-    }
-
     public FLValue getSharedKey(String key, FLSharedKeys sharedKeys) {
         if (key == null) return null;
-        long sk = sharedKeys != null ? sharedKeys.handle : 0L;
-        long hValue = getSharedKey(handle, key.getBytes(), sk);
+        long hValue;
+        if (sharedKeys == null)
+            hValue = getSharedKey(handle, key.getBytes(), 0L);
+        else
+            synchronized (sharedKeys.getLock()) {
+                hValue = getSharedKey(handle, key.getBytes(), sharedKeys.handle);
+            }
         return hValue != 0L ? new FLValue(hValue) : null;
     }
 
     public static String getKeyString(FLSharedKeys sharedKeys, int keyCode) {
-        return getKeyString(sharedKeys.getHandle(), keyCode);
-    }
-
-    public FLValue getUnsorted(String key) {
-        long hValue = getUnsorted(handle, key == null ? null : key.getBytes());
-        return hValue != 0L ? new FLValue(hValue) : null;
-    }
-
-    /**
-     * Return List of keys as Iterator
-     * <p>
-     * NOTE: If the approach of coping all keys does not work with large dataset,
-     * need to concern the approach of binding to FLDictIterator.
-     * However, Iterator does not have free() method. So need to wait to release FLDictIterator
-     * till Iterator is garbage collected.
-     */
-    public Iterator<String> iterator(SharedKeys sharedKeys) {
-        List<String> keys = new ArrayList<>();
-        FLDictIterator itr = new FLDictIterator();
-        try {
-            itr.begin(this);
-            String key;
-            while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
-                keys.add(key);
-                if (!itr.next())
-                    break;
+         if (sharedKeys == null)
+            return getKeyString(0L, keyCode);
+        else
+            synchronized (sharedKeys.getLock()) {
+                return getKeyString(sharedKeys.getHandle(), keyCode);
             }
-        } finally {
-            itr.free();
-        }
-        return keys.iterator();
     }
 
     public Map<String, Object> asDict() {
@@ -147,15 +120,6 @@ public class FLDict {
     static native long count(long dict);
 
     /**
-     * Looks up a key in a _sorted_ dictionary, returning its value.
-     *
-     * @param dict      FLDict
-     * @param keyString FLSlice
-     * @return FLValue
-     */
-    static native long get(long dict, byte[] keyString);
-
-    /**
      * Looks up a key in a _sorted_ dictionary, using a shared-keys mapping.
      *
      * @param dict       FLDict
@@ -166,6 +130,4 @@ public class FLDict {
     static native long getSharedKey(long dict, byte[] keyString, long sharedKeys);
 
     static native String getKeyString(long sharedKeys, int keyCode);
-
-    static native long getUnsorted(long dict, byte[] keyString);
 }
