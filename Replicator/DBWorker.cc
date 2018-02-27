@@ -345,8 +345,11 @@ namespace litecore { namespace repl {
     }
 
 
-    // Callback from the C4DatabaseObserver when the database has changed
+    // (Async) callback from the C4DatabaseObserver when the database has changed
     void DBWorker::dbChanged() {
+        if (!_changeObserver)
+            return; // if replication has stopped already by the time this async call occurs
+
         static const uint32_t kMaxChanges = 100;
         C4DatabaseChange c4changes[kMaxChanges];
         bool external;
