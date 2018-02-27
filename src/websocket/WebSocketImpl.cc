@@ -131,7 +131,8 @@ namespace litecore { namespace websocket {
         _timeConnected.start();
         delegate().onWebSocketConnect();
 
-        // Initialize ping timer:
+        // Initialize ping timer. (This is the first time it's accessed, and this method is only
+        // called once, so no locking is needed.)
         if (heartbeatInterval() > 0) {
             _pingTimer.reset(new actor::Timer(bind(&WebSocketImpl::sendPing, this)));
             schedulePing();
@@ -203,8 +204,8 @@ namespace litecore { namespace websocket {
 
             _bytesReceived += data.size;
             if (_framing) {
+                // this next line will call handleFragment(), below --
                 _protocol->consume((char*)data.buf, (unsigned)data.size, this);
-                // ... this will call handleFragment(), below
                 pingReceived = move(_pingReceived);
             }
         }
@@ -341,7 +342,7 @@ namespace litecore { namespace websocket {
     }
 
 
-    // Handles a close message received from the peer.
+    // Handles a close message received from the peer. (Mutex is locked!)
     bool WebSocketImpl::receivedClose(slice message) {
         if (_closeReceived)
             return false;
@@ -381,46 +382,49 @@ namespace litecore { namespace websocket {
 
     // Called when the underlying socket closes.
     void WebSocketImpl::onClose(CloseStatus status) {
-        _pingTimer.reset();
-        if (_framing) {
+        {
             lock_guard<mutex> lock(_mutex);
-            bool clean = (status.code == 0
-                          || (status.reason == kWebSocketClose && status.code == kCodeNormal));
-            bool expected = (_closeSent && _closeReceived);
-            if (expected && clean)
-                log("Socket disconnected cleanly");
-            else
-                warn("Unexpected or unclean socket disconnect! (reason=%-s, code=%d)",
-                    status.reasonName(), status.code);
 
-            if (clean) {
-                status.reason = kWebSocketClose;
-                if (!expected)
-                    status.code = kCodeAbnormal;
-                else if (!_closeMessage)
-                    status.code = kCodeNormal;
-                else {
-                    auto msg = ClientProtocol::parseClosePayload((char*)_closeMessage.buf,
-                                                                 _closeMessage.size);
-                    status.code = msg.code ? msg.code : kCodeStatusCodeExpected;
-                    status.message = slice(msg.message, msg.length);
+            _pingTimer.reset();
+            if (_framing) {
+                bool clean = (status.code == 0
+                              || (status.reason == kWebSocketClose && status.code == kCodeNormal));
+                bool expected = (_closeSent && _closeReceived);
+                if (expected && clean)
+                    log("Socket disconnected cleanly");
+                else
+                    warn("Unexpected or unclean socket disconnect! (reason=%-s, code=%d)",
+                        status.reasonName(), status.code);
+
+                if (clean) {
+                    status.reason = kWebSocketClose;
+                    if (!expected)
+                        status.code = kCodeAbnormal;
+                    else if (!_closeMessage)
+                        status.code = kCodeNormal;
+                    else {
+                        auto msg = ClientProtocol::parseClosePayload((char*)_closeMessage.buf,
+                                                                     _closeMessage.size);
+                        status.code = msg.code ? msg.code : kCodeStatusCodeExpected;
+                        status.message = slice(msg.message, msg.length);
+                    }
+                }
+                _closeMessage = nullslice;
+            } else {
+                if (status.reason == kWebSocketClose) {
+                    if (status.code != kCodeNormal && status.code != kCodeGoingAway)
+                        warn("WebSocket closed abnormally with status %d", status.code);
+                } else if (status.code != 0) {
+                    log("Socket disconnected! (reason=%d, code=%d)", status.reason, status.code);
                 }
             }
-            _closeMessage = nullslice;
-        } else {
-            if (status.reason == kWebSocketClose) {
-                if (status.code != kCodeNormal && status.code != kCodeGoingAway)
-                    warn("WebSocket closed abnormally with status %d", status.code);
-            } else if (status.code != 0) {
-                log("Socket disconnected! (reason=%d, code=%d)", status.reason, status.code);
-            }
-        }
 
-        _timeConnected.stop();
-        double t = _timeConnected.elapsed();
-        log("sent %llu bytes, rcvd %llu, in %.3f sec (%.0f/sec, %.0f/sec)",
-            _bytesSent, _bytesReceived, t,
-            _bytesSent/t, _bytesReceived/t);
+            _timeConnected.stop();
+            double t = _timeConnected.elapsed();
+            log("sent %llu bytes, rcvd %llu, in %.3f sec (%.0f/sec, %.0f/sec)",
+                _bytesSent, _bytesReceived, t,
+                _bytesSent/t, _bytesReceived/t);
+        }
 
         delegate().onWebSocketClose(status);
     }

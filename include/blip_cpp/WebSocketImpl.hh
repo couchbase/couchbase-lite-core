@@ -102,7 +102,7 @@ namespace litecore { namespace websocket {
         // Connection diagnostics, logged on close:
         fleece::Stopwatch _timeConnected {false};           // Time since socket opened
         uint64_t _bytesSent {0}, _bytesReceived {0};// Total byte count sent/received
-};
+    };
 
 
     /** Provider implementation that creates WebSocketImpls. */
