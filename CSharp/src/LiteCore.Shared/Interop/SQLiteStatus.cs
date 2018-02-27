@@ -17,12 +17,7 @@
 // 
 namespace LiteCore.Interop
 {
-#if LITECORE_PACKAGED
-    internal
-#else
-    public
-#endif
-         enum SQLiteStatus
+    public enum SQLiteStatus
     {
         Ok,  /* Successful result */
         Error,  /* SQL error or missing database */

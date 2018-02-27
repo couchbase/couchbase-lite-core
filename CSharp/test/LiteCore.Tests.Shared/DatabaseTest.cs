@@ -21,6 +21,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+
+using Couchbase.Lite;
+
 using FluentAssertions;
 using LiteCore.Interop;
 #if !WINDOWS_UWP
@@ -308,7 +311,7 @@ namespace LiteCore.Tests
                 C4Error err;
                 var uuidSuccess = Native.c4db_getUUIDs(Db, &publicID, &privateID, &err);
                 if (!uuidSuccess) {
-                    throw new LiteCoreException(err);
+                    throw CouchbaseException.Create(err);
                 }
                 
                 var p1 = publicID;
@@ -333,7 +336,7 @@ namespace LiteCore.Tests
                 var privateID2 = new C4UUID();
                 uuidSuccess = Native.c4db_getUUIDs(Db, &publicID2, &privateID2, &err);
                 if (!uuidSuccess) {
-                    throw new LiteCoreException(err);
+                    throw CouchbaseException.Create(err);
                 }
 
                 for (int i = 0; i < C4UUID.Size; i++) {
@@ -552,7 +555,8 @@ namespace LiteCore.Tests
                     var localConfig = config;
                     return Native.c4db_copy(srcPath, destPath, &localConfig, err);
                 });
-                a.ShouldThrow<LiteCoreException>().Which.Error.Should().Be(new C4Error(C4ErrorCode.NotFound));
+                a.ShouldThrow<CouchbaseLiteException>().Where(e =>
+                    e.Error == CouchbaseLiteError.NotFound && e.Domain == CouchbaseLiteErrorType.CouchbaseLite);
 
                 nudb = (C4Database*)LiteCoreBridge.Check(err =>
                 {
@@ -570,7 +574,8 @@ namespace LiteCore.Tests
                 var originalSrc = srcPath;
                 srcPath = $"{srcPath}bogus{Path.DirectorySeparatorChar}";
                 destPath = originalDest;
-                a.ShouldThrow<LiteCoreException>().Which.Error.Should().Be(new C4Error(C4ErrorCode.NotFound));
+                a.ShouldThrow<CouchbaseLiteException>().Where(e =>
+                    e.Error == CouchbaseLiteError.NotFound && e.Domain == CouchbaseLiteErrorType.CouchbaseLite);
 
                 nudb = (C4Database*)LiteCoreBridge.Check(err =>
                 {
@@ -586,7 +591,8 @@ namespace LiteCore.Tests
                 }
 
                 srcPath = originalSrc;
-                a.ShouldThrow<LiteCoreException>().Which.Error.Should().Be(new C4Error(C4ErrorDomain.POSIXDomain, (int)PosixStatus.EXIST));
+                a.ShouldThrow<CouchbasePosixException>().Where(e =>
+                    e.Error == PosixStatus.EXIST && e.Domain == CouchbaseLiteErrorType.POSIX);
                 nudb = (C4Database*)LiteCoreBridge.Check(err =>
                 {
                     var localConfig = config;

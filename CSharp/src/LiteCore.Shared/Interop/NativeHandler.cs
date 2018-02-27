@@ -20,6 +20,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+using Couchbase.Lite;
+
 namespace LiteCore.Interop
 {
 
@@ -82,7 +84,7 @@ namespace LiteCore.Interop
 
         #region Variables
 
-        private Action<LiteCoreException> _exceptionHandler;
+        private Action<CouchbaseException> _exceptionHandler;
 
         private readonly List<C4Error> _allowedErrors = new List<C4Error>();
 
@@ -93,7 +95,7 @@ namespace LiteCore.Interop
         /// <summary>
         /// Gets the exception thrown during the operation, if any
         /// </summary>
-        public LiteCoreException Exception { get; private set; }
+        public CouchbaseException Exception { get; private set; }
 
         #endregion
 
@@ -165,7 +167,7 @@ namespace LiteCore.Interop
         /// </summary>
         /// <returns>The current object for further fluent operations</returns>
         /// <param name="exceptionHandler">The logic for handling exceptions</param>
-        public NativeHandler HandleExceptions(Action<LiteCoreException> exceptionHandler)
+        public NativeHandler HandleExceptions(Action<CouchbaseException> exceptionHandler)
         {
             _exceptionHandler = exceptionHandler;
             return this;
@@ -181,7 +183,7 @@ namespace LiteCore.Interop
                 return true;
             }
 
-            Exception = new LiteCoreException(err);
+            Exception = CouchbaseException.Create(err);
             ThrowOrHandle();
             return false;
         }
@@ -197,7 +199,7 @@ namespace LiteCore.Interop
                 return retVal;
             }
 
-            Exception = new LiteCoreException(err);
+            Exception = CouchbaseException.Create(err);
             ThrowOrHandle();
             return null;
         }
@@ -213,7 +215,7 @@ namespace LiteCore.Interop
                 return retVal;
             }
 
-            Exception = new LiteCoreException(err);
+            Exception = CouchbaseException.Create(err);
             ThrowOrHandle();
             return retVal;
         }
@@ -229,7 +231,7 @@ namespace LiteCore.Interop
                 return retVal;
             }
 
-            Exception = new LiteCoreException(err);
+            Exception = CouchbaseException.Create(err);
             ThrowOrHandle();
             return retVal;
         }
@@ -245,8 +247,8 @@ namespace LiteCore.Interop
             }
 
             foreach(var error in _allowedErrors) {
-                if(error.Equals(Exception.Error) || (error.domain == 0 &&
-                    error.code.Equals(Exception.Error.code))) {
+                if(error.Equals(Exception.LiteCoreError) || (error.domain == 0 &&
+                    error.code.Equals(Exception.LiteCoreError.code))) {
                     return;
                 }
             }

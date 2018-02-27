@@ -15,14 +15,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 // 
-namespace LiteCore.Interop
+namespace Couchbase.Lite
 {
-#if LITECORE_PACKAGED
-    internal
-#else
-    public
-#endif
-         enum PosixStatus
+    public enum PosixStatus
     {
         PERM = 1,       /* Operation not permitted */
         NOENT = 2,       /* No such file or directory */

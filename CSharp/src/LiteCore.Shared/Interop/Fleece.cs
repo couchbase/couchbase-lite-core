@@ -22,6 +22,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+
+using Couchbase.Lite;
+
 using LiteCore.Util;
 
 namespace LiteCore.Interop
@@ -247,7 +250,7 @@ namespace LiteCore.Interop
                 FLError err;
                 var retVal = NativeRaw.FLEncoder_Finish(enc, &err);
                 if (retVal.buf == null) {
-                    throw new LiteCoreException(new C4Error(C4ErrorDomain.FleeceDomain, (int) err));
+                    throw new CouchbaseFleeceException(err);
                 }
 
                 return retVal;
