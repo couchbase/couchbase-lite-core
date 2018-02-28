@@ -75,6 +75,10 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_sendRevision, request, onProgress);
         }
 
+        void markRevSynced(const Rev &rev) {
+            enqueue(&DBWorker::_markRevSynced, rev);
+        }
+
         void insertRevision(RevToInsert *rev);
 
         void setCookie(slice setCookieHeader) {
@@ -109,6 +113,7 @@ namespace litecore { namespace repl {
         void _connectionClosed() override;
 
         void dbChanged();
+        void _markRevSynced(Rev);
         bool markRevsSynced(const std::vector<Rev> changes, C4Error *outError);
 
         fleeceapi::Dict getRevToSend(C4Document*, const RevRequest&, C4Error *outError);

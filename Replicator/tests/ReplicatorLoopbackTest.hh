@@ -95,8 +95,8 @@ public:
         CHECK(_statusReceived.error.code == _expectedError.code);
         if (_expectedError.code)
             CHECK(_statusReceived.error.domain == _expectedError.domain);
-        CHECK(_docPullErrors == _expectedDocPullErrors);
-        CHECK(_docPushErrors == _expectedDocPushErrors);
+        CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
+        CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
     }
 
     void runPushReplication(C4ReplicatorMode mode =kC4OneShot) {
@@ -296,6 +296,13 @@ public:
                            (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
                            _checkpointID,
                            kC4SliceNull, kC4SliceNull, &err) );
+    }
+
+    static vector<string> asVector(const set<string> strings) {
+        vector<string> out;
+        for (const string &s : strings)
+            out.push_back(s);
+        return out;
     }
 
     LoopbackProvider _provider;

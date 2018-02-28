@@ -327,7 +327,7 @@ namespace litecore { namespace repl {
         }
         _maxPushedSequence = latestChangeSequence;
 
-        markRevsSynced(changes, nullptr);
+//        markRevsSynced(changes, nullptr);
         pusher->gotChanges(changes, error);
 
         if (p.continuous && p.limit > 0 && !_changeObserver) {
@@ -391,7 +391,7 @@ namespace litecore { namespace repl {
             _maxPushedSequence = latestChangeSequence;
 
             if (!changes.empty()) {
-                markRevsSynced(changes, nullptr);
+//                markRevsSynced(changes, nullptr);
                 _pusher->gotChanges(changes, {});
             }
 
@@ -429,6 +429,17 @@ namespace litecore { namespace repl {
             }
         } while (c4doc_selectParentRevision(doc));
         return alloc_slice();
+    }
+
+
+    void DBWorker::_markRevSynced(Rev rev) {
+        c4::Transaction t(_db);
+        if (!t.begin(nullptr))
+            return;
+        if (!c4db_markSynced(_db, rev.docID, rev.sequence)) {
+
+        }
+        return t.commit(nullptr);
     }
 
 
@@ -498,7 +509,7 @@ namespace litecore { namespace repl {
                     ++requested;
                     whichRequested[i] = true;
                 } else {
-                    log("Rejecting proposed change '%.*s' #%.*s, parent #%.*s (status %d)",
+                    log("Rejecting proposed change '%.*s' #%.*s with parent #%.*s (status %d)",
                         SPLAT(docID), SPLAT(revID), SPLAT(parentRevID), status);
                     while (itemsWritten++ < i)
                         encoder.writeInt(0);
