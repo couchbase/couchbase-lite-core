@@ -613,92 +613,99 @@ namespace litecore { namespace repl {
 
 
     // Sends a document revision in a "rev" request.
-    void DBWorker::_sendRevision(RevRequest request,
-                                MessageProgressCallback onProgress)
-    {
+    void DBWorker::_sendRevision(RevRequest request, MessageProgressCallback onProgress) {
         if (!connection())
             return;
         logVerbose("Sending revision '%.*s' #%.*s",
                    SPLAT(request.docID), SPLAT(request.revID));
-        C4Error c4err;
-        slice revisionBody;
-        C4RevisionFlags revisionFlags = 0;
-        string history;
-        Dict root;
-        int blipError = 0;
-        c4::ref<C4Document> doc = c4doc_get(_db, request.docID, true, &c4err);
-        if (doc && c4doc_selectRevision(doc, request.revID, true, &c4err)) {
-            revisionBody = slice(doc->selectedRev.body);
-            if (revisionBody) {
-                root = Value::fromTrustedData(revisionBody).asDict();
-                if (!root) {
-                    blipError = 500;
-                    c4err = c4error_make(LiteCoreDomain, kC4ErrorCorruptData,
-                                         "Unparseable revision body"_sl);
-                } else if (root.count() == 0) {
-                    root = Dict(); // no sense encoding an empty body later
-                }
-            }
-            revisionFlags = doc->selectedRev.flags;
 
-            // Generate the revision history string:
-            set<pure_slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
-            stringstream historyStream;
-            for (int n = 0; n < request.maxHistory; ++n) {
-                if (!c4doc_selectParentRevision(doc))
-                    break;
-                slice revID = doc->selectedRev.revID;
-                if (n > 0)
-                    historyStream << ',';
-                historyStream << fleeceapi::asstring(revID);
-                if (ancestors.find(revID) != ancestors.end())
-                    break;
+        // Get the document & revision:
+        C4Error c4err;
+        Dict root;
+        c4::ref<C4Document> doc = c4doc_get(_db, request.docID, true, &c4err);
+        if (doc)
+            root = getRevToSend(doc, request, &c4err);
+
+        // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
+        // "norev" and include the error code:
+        MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
+        msg.noreply = !onProgress;
+        msg.compressed = true;
+        msg["id"_sl] = request.docID;
+        msg["rev"_sl] = request.revID;
+        msg["sequence"_sl] = request.sequence;
+        if (root) {
+            if (request.noConflicts)
+                msg["noconflicts"_sl] = true;
+            auto revisionFlags = doc->selectedRev.flags;
+            if (revisionFlags & kRevDeleted)
+                msg["deleted"_sl] = "1"_sl;
+            string history = revHistoryString(doc, request);
+            if (!history.empty())
+                msg["history"_sl] = history;
+
+            // Write doc body as JSON:
+            if (root.empty()) {
+                msg.write("{}"_sl);
+            } else {
+                auto &bodyEncoder = msg.jsonBody();
+                auto sk = c4db_getFLSharedKeys(_db);
+                bodyEncoder.setSharedKeys(sk);
+                if (request.legacyAttachments && (revisionFlags & kRevHasAttachments))
+                    writeRevWithLegacyAttachments(bodyEncoder, root, sk);
+                else
+                    bodyEncoder.writeValue(root);
             }
-            history = historyStream.str();
         } else {
-            // Well, this is a pickle. I'm supposed to send a revision that I can't read.
-            // I need to send a "rev" message, and I can't use a BLIP error response (because this
-            // is a request not a response) so I'll add an "error" property to it instead of body.
-            warn("sendRevision: Couldn't get '%.*s'/%.*s from db: %d/%d",
+            // Send an error if we couldn't get the revision:
+            warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %d/%d",
                  SPLAT(request.docID), SPLAT(request.revID), c4err.domain, c4err.code);
-            doc = nullptr;
+            int blipError;
             if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
                 blipError = 404;
             else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorDeleted)
                 blipError = 410;
             else
                 blipError = 500;
-        }
-
-        // Now send the BLIP message:
-        MessageBuilder msg("rev"_sl);
-        msg.noreply = !onProgress;
-        msg.compressed = true;
-        msg["id"_sl] = request.docID;
-        msg["rev"_sl] = request.revID;
-        msg["sequence"_sl] = request.sequence;
-        if (request.noConflicts)
-            msg["noconflicts"_sl] = true;
-        if (revisionFlags & kRevDeleted)
-            msg["deleted"_sl] = "1"_sl;
-        if (!history.empty())
-            msg["history"_sl] = history;
-        if (blipError)
             msg["error"_sl] = blipError;
-
-        // Write doc body as JSON:
-        if (root) {
-            auto &bodyEncoder = msg.jsonBody();
-            auto sk = c4db_getFLSharedKeys(_db);
-            bodyEncoder.setSharedKeys(sk);
-            if (request.legacyAttachments && (revisionFlags & kRevHasAttachments))
-                writeRevWithLegacyAttachments(bodyEncoder, root, sk);
-            else
-                bodyEncoder.writeValue(root);
-        } else {
-            msg.write("{}"_sl);
         }
         sendRequest(msg, onProgress);
+    }
+
+
+    Dict DBWorker::getRevToSend(C4Document* doc, const RevRequest &request, C4Error *c4err) {
+        if (!c4doc_selectRevision(doc, request.revID, true, c4err))
+            return nullptr;
+
+        slice revisionBody(doc->selectedRev.body);
+        if (!revisionBody) {
+            logVerbose("Revision '%.*s' #%.*s is obsolete; not sending it",
+                       SPLAT(request.docID), SPLAT(request.revID));
+            *c4err = {LiteCoreDomain, kC4ErrorNotFound};
+            return nullptr;
+        }
+
+        Dict root = Value::fromTrustedData(revisionBody).asDict();
+        if (!root)
+            *c4err = {LiteCoreDomain, kC4ErrorCorruptData};
+        return root;
+    }
+
+
+    string DBWorker::revHistoryString(C4Document *doc, const RevRequest &request) {
+        set<pure_slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
+        stringstream historyStream;
+        for (int n = 0; n < request.maxHistory; ++n) {
+            if (!c4doc_selectParentRevision(doc))
+                break;
+            slice revID = doc->selectedRev.revID;
+            if (n > 0)
+                historyStream << ',';
+            historyStream << fleeceapi::asstring(revID);
+            if (ancestors.find(revID) != ancestors.end())
+                break;
+        }
+        return historyStream.str();
     }
 
 

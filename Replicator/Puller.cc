@@ -38,6 +38,7 @@ namespace litecore { namespace repl {
         registerHandler("changes",          &Puller::handleChanges);
         registerHandler("proposeChanges",   &Puller::handleChanges);
         registerHandler("rev",              &Puller::handleRev);
+        registerHandler("norev",            &Puller::handleNoRev);
         _spareIncomingRevs.reserve(kMaxActiveIncomingRevs);
         _skipDeleted = _options.skipDeleted();
         if (nonPassive() && options.noIncomingConflicts())
@@ -198,6 +199,15 @@ namespace litecore { namespace repl {
             logVerbose("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
                        SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);//TEMP
             _waitingRevMessages.push_back(move(msg));
+        }
+    }
+
+
+    void Puller::handleNoRev(Retained<MessageIn> msg) {
+        decrement(_pendingRevMessages);
+        if (!msg->noReply()) {
+            MessageBuilder response(msg);
+            msg->respond(response);
         }
     }
 

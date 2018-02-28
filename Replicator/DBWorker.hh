@@ -20,6 +20,7 @@
 #include "ReplicatorTypes.hh"
 #include "Worker.hh"
 #include "c4BlobStore.h"
+#include "FleeceCpp.hh"
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -110,6 +111,8 @@ namespace litecore { namespace repl {
         void dbChanged();
         bool markRevsSynced(const std::vector<Rev> changes, C4Error *outError);
 
+        fleeceapi::Dict getRevToSend(C4Document*, const RevRequest&, C4Error *outError);
+        static std::string revHistoryString(C4Document*, const RevRequest&);
         void writeRevWithLegacyAttachments(fleeceapi::Encoder&,
                                            fleeceapi::Dict rev,
                                            FLSharedKeys sk);

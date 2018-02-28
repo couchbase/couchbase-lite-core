@@ -56,6 +56,7 @@ namespace litecore { namespace repl {
         void handleMoreChanges();
         void handleChangesNow(Retained<MessageIn> req);
         void handleRev(Retained<MessageIn>);
+        void handleNoRev(Retained<MessageIn>);
         void startIncomingRev(MessageIn*);
         void _revWasHandled(Retained<IncomingRev>, alloc_slice docID, alloc_slice sequence,
                             bool complete);
