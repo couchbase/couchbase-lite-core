@@ -125,9 +125,14 @@ Java_com_couchbase_litecore_C4Query_createIndex(JNIEnv *env, jclass clazz, jlong
     jstringSlice name(env, jname);
     jstringSlice expressionsJSON(env, jexpressionsJSON);
     jstringSlice language(env, jlanguage);
+    C4IndexOptions options = {};
+    slice sLang = (slice)language;
+    if(sLang.buf != NULL)
+        options.language = (const char *)sLang.buf;
+    options.ignoreDiacritics = (bool)ignoreDiacritics;
     C4Error error = {};
     bool res = c4db_createIndex((C4Database *) jdb, name, (C4Slice) expressionsJSON,
-                                (C4IndexType) indexType, nullptr, &error);
+                                (C4IndexType) indexType, &options, &error);
     if (!res)
         throwError(env, error);
     return res;
