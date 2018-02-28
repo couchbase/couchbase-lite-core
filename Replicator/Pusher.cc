@@ -166,12 +166,26 @@ namespace litecore { namespace repl {
                 changes.size(), lastSequence,
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 changes[0].sequence, _lastSequenceRead);
-        }
 
-        uint64_t bodySize = 0;
-        for (auto &change : changes)
-            bodySize += change.bodySize;
-        addProgress({0, bodySize});
+            uint64_t bodySize = 0;
+            for (auto i = changes.begin(); i != changes.end();) {
+                auto delayedRev = _activeDocs.find(i->docID);
+                if (delayedRev == _activeDocs.end()) {
+                    _activeDocs.insert({i->docID, Rev()});
+                    bodySize += i->bodySize;
+                    ++i;
+                } else {
+                    // This doc already has a revision being sent; wait till that one is done
+                    log("*** Holding off on change '%.*s' %.*s", SPLAT(i->docID), SPLAT(i->revID));//TEMP
+                    delayedRev->second = *i;
+                    i = changes.erase(i);
+                }
+            }
+            if (changes.empty())
+                return;
+
+            addProgress({0, bodySize});
+        }
 
         // Send the "changes" request, and asynchronously handle the response:
         sendChanges(changes);
@@ -502,6 +516,24 @@ namespace litecore { namespace repl {
             if (completed) {
                 _pendingSequences.remove(rev.sequence);
                 updateCheckpoint();
+            }
+        }
+
+        auto i = _activeDocs.find(rev.docID);
+        if (i != _activeDocs.end()) {
+            auto newRev = i->second;
+            if (newRev.docID) {
+                i->second.docID = i->second.revID = nullslice;
+                if (completed)
+                    newRev.remoteAncestorRevID = rev.revID;
+                log("*** Now that '%.*s' %.*s is done, propose %.*s (parent %.*s) ...",   //TEMP
+                    SPLAT(rev.docID), SPLAT(rev.revID), SPLAT(newRev.revID),
+                    SPLAT(newRev.remoteAncestorRevID));
+                addProgress({0, newRev.bodySize});
+                sendChanges({newRev});
+            } else {
+                _activeDocs.erase(i);
+                log("*** '%.*s' %.*s is done", SPLAT(rev.docID), SPLAT(rev.revID)); //TEMP
             }
         }
     }

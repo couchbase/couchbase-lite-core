@@ -21,7 +21,9 @@
 #include "DBWorker.hh"
 #include "Actor.hh"
 #include "SequenceSet.hh"
+#include "slice.hh"
 #include <deque>
+#include <unordered_map>
 
 namespace litecore { namespace repl {
 
@@ -95,6 +97,7 @@ namespace litecore { namespace repl {
         MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
         unsigned _blobsInFlight {0};              // # of blobs being sent
         std::deque<RevRequest> _revsToSend;       // Revs to send to peer but not sent yet
+        std::unordered_map<alloc_slice, Rev, fleece::sliceHash> _activeDocs;
     };
     
     
