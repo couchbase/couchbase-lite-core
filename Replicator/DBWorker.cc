@@ -439,25 +439,6 @@ namespace litecore { namespace repl {
     }
 
 
-#if 0
-    // Mark all of these revs as synced, which flags them as kRevKeepBody if they're still current.
-    // This is actually premature because those revs haven't been pushed yet; but if we
-    // wait until after the push, the doc may have been updated again and the body of the
-    // pushed revision lost. By doing it early we err on the side of correctness and may
-    // save some revision bodies unnecessarily, which isn't that bad.
-    bool DBWorker::markRevsSynced(const vector<Rev> changes, C4Error *outError) {
-        if (changes.empty())
-            return true;
-        c4::Transaction t(_db);
-        if (!t.begin(outError))
-            return false;
-        for (auto i = changes.begin(); i != changes.end(); ++i)
-            c4db_markSynced(_db, i->docID, i->sequence, _remoteDBID, outError);
-        return t.commit(outError);
-    }
-#endif
-
-
     // Called by the Puller; handles a "changes" or "proposeChanges" message by checking which of
     // the changes don't exist locally, and returning a bit-vector indicating them.
     void DBWorker::_findOrRequestRevs(Retained<MessageIn> req,
