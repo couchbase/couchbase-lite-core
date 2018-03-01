@@ -278,47 +278,55 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][C]") {
         CHECK(c4db_getMaxRevTreeDepth(db) == 30);
     }
 
-    static const unsigned kNumRevs = 10000;
-    fleece::Stopwatch st;
-    C4Error error;
-    auto doc = c4doc_get(db, kDocID, false, &error);
-    {
-        TransactionHelper t(db);
-        REQUIRE(doc != nullptr);
-        for (unsigned i = 0; i < kNumRevs; i++) {
-            C4DocPutRequest rq = {};
-            rq.docID = doc->docID;
-            rq.history = &doc->revID;
-            rq.historyCount = 1;
-            rq.body = kBody;
-            if (i == 0) {
-                // Pretend the 1st revision has a remote origin (see issue #376)
-                rq.remoteDBID = 1;
-                rq.existingRevision = true;
-                rq.history = &kRevID;
+    for (int setRemoteOrigin = 0; setRemoteOrigin <= 1; ++setRemoteOrigin) {
+        C4Log("-------- setRemoteOrigin = %d", setRemoteOrigin);
+        static const unsigned kNumRevs = 10000;
+        fleece::Stopwatch st;
+        C4Error error;
+        C4String docID = setRemoteOrigin ? C4STR("doc_noRemote") : C4STR("doc_withRemote");
+        auto doc = c4doc_get(db, docID, false, &error);
+        {
+            TransactionHelper t(db);
+            REQUIRE(doc != nullptr);
+            for (unsigned i = 0; i < kNumRevs; i++) {
+                C4DocPutRequest rq = {};
+                rq.docID = doc->docID;
+                rq.history = &doc->revID;
+                rq.historyCount = 1;
+                rq.body = kBody;
+                if (setRemoteOrigin && i == 0) {
+                    // Pretend the 1st revision has a remote origin (see issue #376)
+                    rq.remoteDBID = 1;
+                    rq.existingRevision = true;
+                    rq.history = &kRevID;
+                }
+                rq.save = true;
+                auto savedDoc = c4doc_put(db, &rq, nullptr, &error);
+                REQUIRE(savedDoc != nullptr);
+                c4doc_free(doc);
+                doc = savedDoc;
             }
-            rq.save = true;
-            auto savedDoc = c4doc_put(db, &rq, nullptr, &error);
-            REQUIRE(savedDoc != nullptr);
-            c4doc_free(doc);
-            doc = savedDoc;
         }
-    }
-    C4Log("Created %u revisions in %.3f sec", kNumRevs, st.elapsed());
+        C4Log("Created %u revisions in %.3f sec", kNumRevs, st.elapsed());
 
-    // Check rev tree depth:
-    unsigned nRevs = 0;
-    c4doc_selectCurrentRevision(doc);
-    do {
+        // Check rev tree depth:
+        unsigned nRevs = 0;
+        c4doc_selectCurrentRevision(doc);
+        do {
+            if (isRevTrees()) {
+                unsigned expectedGen = kNumRevs - nRevs;
+                if (setRemoteOrigin && nRevs == 30)
+                    expectedGen = 1; // the remote-origin rev is pinned
+                CHECK(c4rev_getGeneration(doc->selectedRev.revID) == expectedGen);
+            }
+            ++nRevs;
+        } while (c4doc_selectParentRevision(doc));
+        C4Log("Document rev tree depth is %u", nRevs);
         if (isRevTrees())
-            CHECK(c4rev_getGeneration(doc->selectedRev.revID) == kNumRevs - nRevs);
-        ++nRevs;
-    } while (c4doc_selectParentRevision(doc));
-    C4Log("Document rev tree depth is %u", nRevs);
-    if (isRevTrees())
-        REQUIRE(nRevs == 30);
+            REQUIRE(nRevs == (setRemoteOrigin ? 31 : 30));
 
-    c4doc_free(doc);
+        c4doc_free(doc);
+    }
 }
 
 

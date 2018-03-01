@@ -27,6 +27,7 @@
 
 #include "Document.hh"
 #include "Database.hh"
+#include "RevTree.hh"   // only for kDefaultRemoteID
 #include "SecureRandomize.hh"
 #include "Fleece.hh"
 #include "Fleece.h"
@@ -268,6 +269,41 @@ bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4Error
 
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) {
     return Document::currentRevFlagsFromDocFlags(docFlags);
+}
+
+
+// LCOV_EXCL_START
+bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequence,
+                     C4RemoteID remoteID,
+                     C4Error *outError) noexcept
+{
+    bool result = false;
+    try {
+        if (remoteID == RevTree::kDefaultRemoteID) {
+            // Shortcut: can set kSynced flag on the record to mark that the current revision is
+            // synced to remote #1. But the call will return false if the sequence no longer
+            // matches, i.e this revision is no longer current. Then have to take the slow approach.
+            if (database->defaultKeyStore().setDocumentFlag(docID, sequence,
+                                                            DocumentFlags::kSynced,
+                                                            database->transaction())) {
+                return true;
+            }
+        }
+
+        // Slow path: Load the doc and update the remote-ancestor info in the rev tree:
+        unique_ptr<Document> doc(internal(c4doc_get(database, docID, true, outError)));
+        if (!doc)
+            return false;
+        bool found = false;
+        do {
+            found = (doc->selectedRev.sequence == sequence);
+        } while (!found && doc->selectNextRevision());
+        if (found) {
+            doc->setRemoteAncestorRevID(remoteID);
+            result = c4doc_save(doc.get(), 9999, outError);       // don't prune anything
+        }
+    } catchError(outError)
+    return result;
 }
 
 

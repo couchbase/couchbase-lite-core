@@ -62,6 +62,7 @@ namespace litecore {
             kKeepBody       = 0x10, /**< Body will not be discarded after I'm a non-leaf */
             kIsConflict     = 0x20, /**< Unresolved conflicting revision; should never be current */
             // Keep these flags consistent with C4RevisionFlags, in c4Document.h!
+            kPurge          = 0x80, /**< (Internal: Rev is marked for purging/pruning) */
         };
         Flags flags;
 
@@ -72,8 +73,7 @@ namespace litecore {
         void clearFlag(Flags f)         {flags = (Flags)(flags & ~f);}
         void removeBody()               {clearFlag((Flags)(kKeepBody | kHasAttachments));
                                          _body = nullslice;}
-        void markForPurge()             {revID.setSize(0);}
-        bool isMarkedForPurge() const   {return revID.size == 0;}
+        bool isMarkedForPurge() const   {return (flags & kPurge) != 0;}
 #if DEBUG
         void dump(std::ostream&);
 #endif
@@ -147,6 +147,7 @@ namespace litecore {
 
         using RemoteID = unsigned;
         static constexpr RemoteID kNoRemoteID = 0;
+        static constexpr RemoteID kDefaultRemoteID = 1;     // 1st (& usually only) remote server
 
         const Rev* latestRevisionOnRemote(RemoteID);
         void setLatestRevisionOnRemote(RemoteID, const Rev*);

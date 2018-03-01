@@ -331,6 +331,30 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
+    // For #436
+    createRev("doc"_sl, kRevID, kFleeceBody);
+    _expectedDocumentCount = 1;
+
+    runPushReplication();
+
+    c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
+    c4::sliceResult remote(c4doc_getRemoteAncestor(doc, 1));
+    CHECK(slice(remote) == kRevID);
+
+    for (int gen = 2; gen <= 50; gen++) {
+        char revID[32];
+        sprintf(revID, "%d-0000", gen);
+        createRev("doc"_sl, slice(revID), kFleeceBody);
+    }
+
+    runPushReplication();
+
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":50}");
+}
+
+
 #pragma mark - CONTINUOUS:
 
 
