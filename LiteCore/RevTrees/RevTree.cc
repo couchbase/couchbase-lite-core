@@ -368,7 +368,7 @@ namespace litecore {
                 for (Rev* anc = rev; anc; anc = (Rev*)anc->parent) {
                     if (++depth > maxDepth) {
                         // Mark revs that are too far away:
-                        anc->markForPurge();
+                        anc->addFlag(Rev::kPurge);
                         numPruned++;
                     }
                 }
@@ -380,10 +380,24 @@ namespace litecore {
         if (numPruned == 0)
             return 0;
 
+        // Don't prune current remote revisions:
+        for (auto &r : _remoteRevs) {
+            if (r.second->isMarkedForPurge()) {
+                const_cast<Rev*>(r.second)->clearFlag(Rev::kPurge);
+                --numPruned;
+            }
+        }
+
+        if (numPruned == 0)
+            return 0;
+
         // Clear parent links that point to revisions being pruned:
-        for (auto &rev : _revs)
-            if (rev->parent && rev->parent->isMarkedForPurge())
-                rev->parent = nullptr;
+        for (auto &rev : _revs) {
+            if (!rev->isMarkedForPurge()) {
+                while (rev->parent && rev->parent->isMarkedForPurge())
+                    rev->parent = rev->parent->parent;
+            }
+        }
         compact();
         return numPruned;
     }
@@ -395,7 +409,7 @@ namespace litecore {
             return 0;
         do {
             nPurged++;
-            rev->markForPurge();
+            rev->addFlag(Rev::kPurge);
             const Rev* parent = (Rev*)rev->parent;
             rev->parent = nullptr;                      // unlink from parent
             rev = (Rev*)parent;

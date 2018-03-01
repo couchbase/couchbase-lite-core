@@ -444,7 +444,7 @@ namespace litecore { namespace repl {
         if (!t.begin(outError))
             return false;
         for (auto i = changes.begin(); i != changes.end(); ++i)
-            c4db_markSynced(_db, i->docID, i->sequence);
+            c4db_markSynced(_db, i->docID, i->sequence, _remoteDBID, outError);
         return t.commit(outError);
     }
 
@@ -695,11 +695,25 @@ namespace litecore { namespace repl {
     string DBWorker::revHistoryString(C4Document *doc, const RevRequest &request) {
         set<pure_slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
         stringstream historyStream;
+        int nWritten = 0;
+        unsigned lastGen = 0;
         for (int n = 0; n < request.maxHistory; ++n) {
             if (!c4doc_selectParentRevision(doc))
                 break;
             slice revID = doc->selectedRev.revID;
-            if (n > 0)
+            unsigned gen = c4rev_getGeneration(revID);
+            if (lastGen == 0) {
+                lastGen = gen;
+            } else {
+                while (gen < --lastGen) {
+                    char fakeID[50];
+                    sprintf(fakeID, "%u-FADED000%.08x%.08x", lastGen, arc4random(), arc4random());
+                    if (nWritten++ > 0)
+                        historyStream << ',';
+                    historyStream << fakeID;
+                }
+            }
+            if (nWritten++ > 0)
                 historyStream << ',';
             historyStream << fleeceapi::asstring(revID);
             if (ancestors.find(revID) != ancestors.end())
