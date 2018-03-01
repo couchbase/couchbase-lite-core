@@ -423,6 +423,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continu
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][Continuous]") {
+    // Hits the race conditions in #385
     alloc_slice docID("dock");
     createRev(db, docID, "1-aaaa"_sl, kFleeceBody);
     _expectedDocumentCount = 1;

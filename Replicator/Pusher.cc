@@ -158,11 +158,6 @@ namespace litecore { namespace repl {
             return gotError(err);
         if (!changes.empty()) {
             _lastSequenceRead = changes.back().sequence;
-            log("Found %zu changes: Pusher sending '%s' with sequences %llu - %llu",
-                changes.size(),
-                (_proposeChanges ? "proposeChanges" : "changes"),
-                changes[0].sequence, _lastSequenceRead);
-
             uint64_t bodySize = 0;
             for (auto i = changes.begin(); i != changes.end();) {
                 auto delayedRev = _activeDocs.find(i->docID);
@@ -238,6 +233,11 @@ namespace litecore { namespace repl {
             return;
         }
 
+        log("Found %zu changes: Pusher sending '%s' with sequences %llu - %llu",
+            changes.size(),
+            (_proposeChanges ? "proposeChanges" : "changes"),
+            changes.front().sequence, changes.back().sequence);
+
         bool proposedChanges = _proposeChanges;
 
         increment(_changeListsInFlight);
@@ -248,6 +248,7 @@ namespace litecore { namespace repl {
                 return;
 
             // Got reply to the "changes" or "proposeChanges":
+            logVerbose("Got reply to changes message");
             decrement(_changeListsInFlight);
             _proposeChangesKnown = true;
             if (!proposedChanges && reply->isError()) {
@@ -350,6 +351,7 @@ namespace litecore { namespace repl {
                        _revisionsInFlight, kMaxRevsInFlight);
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
+                    decrement(_revisionsInFlight);
                     doneWithRev(rev, false);
                     return;
                 }
@@ -515,15 +517,22 @@ namespace litecore { namespace repl {
             }
         }
 
+        // If there's a newer revision of this doc, send it now
         auto i = _activeDocs.find(rev.docID);
         if (i != _activeDocs.end()) {
             auto newRev = i->second;
-            _activeDocs.erase(i);
             if (newRev.docID) {
-                log("*** Now that '%.*s' %.*s is pushed, propose %.*s ...",
-                    SPLAT(rev.docID), SPLAT(rev.revID), SPLAT(newRev.revID));
+                log("*** Now that '%.*s' %.*s is %s, propose %.*s (#%llu) ...",
+                    SPLAT(rev.docID), SPLAT(rev.revID),
+                    (completed ? "pushed" : "skipped"),
+                    SPLAT(newRev.revID), newRev.sequence);
                 addProgress({0, newRev.bodySize});
+                if (completed)
+                    newRev.remoteAncestorRevID = rev.revID;
+                i->second = Rev();
                 sendChanges({newRev});
+            } else {
+                _activeDocs.erase(i);
             }
         }
     }

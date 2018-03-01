@@ -114,6 +114,7 @@ namespace litecore { namespace repl {
 
         void dbChanged();
         void _markRevSynced(Rev);
+        bool markRevSynced(const Rev&, C4Error *outError);
         bool markRevsSynced(const std::vector<Rev> changes, C4Error *outError);
 
         fleeceapi::Dict getRevToSend(C4Document*, const RevRequest&, C4Error *outError);
@@ -123,7 +124,8 @@ namespace litecore { namespace repl {
                                            FLSharedKeys sk);
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
-        int findProposedChange(slice docID, slice revID, slice parentRevID);
+        int findProposedChange(slice docID, slice revID, slice parentRevID,
+                               alloc_slice &outCurrentRevID);
         void updateRemoteRev(C4Document* NONNULL);
 
         static const size_t kMaxPossibleAncestors = 10;
