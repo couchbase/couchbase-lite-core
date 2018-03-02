@@ -437,17 +437,17 @@ namespace Couchbase.Lite
         {
             switch (err.domain) {
                 case C4ErrorDomain.FleeceDomain:
-                    return new CouchbaseFleeceException((FLError)err.code);
+                    return new CouchbaseFleeceException(err);
                 case C4ErrorDomain.LiteCoreDomain:
-                    return new CouchbaseLiteException((C4ErrorCode)err.code);
+                    return new CouchbaseLiteException(err);
                 case C4ErrorDomain.NetworkDomain:
-                    return new CouchbaseNetworkException((C4NetworkErrorCode)err.code);
+                    return new CouchbaseNetworkException(err);
                 case C4ErrorDomain.POSIXDomain:
-                    return new CouchbasePosixException(err.code);
+                    return new CouchbasePosixException(err);
                 case C4ErrorDomain.SQLiteDomain:
-                    return new CouchbaseSQLiteException(err.code);
+                    return new CouchbaseSQLiteException(err);
                 case C4ErrorDomain.WebSocketDomain:
-                    return new CouchbaseWebsocketException(err.code);
+                    return new CouchbaseWebsocketException(err);
                 default:
                     return new CouchbaseLiteException(C4ErrorCode.UnexpectedError);
             }
@@ -538,6 +538,11 @@ namespace Couchbase.Lite
 
         #region Constructors
 
+        internal CouchbaseLiteException(C4Error err) : base(err)
+        {
+
+        }
+
         internal CouchbaseLiteException(C4ErrorCode errCode) : base(new C4Error(errCode))
         {
 
@@ -554,6 +559,11 @@ namespace Couchbase.Lite
     public sealed class CouchbaseFleeceException : CouchbaseException
     {
         #region Constructors
+
+        internal CouchbaseFleeceException(C4Error err) : base(err)
+        {
+
+        }
 
         internal CouchbaseFleeceException(FLError errCode) : base(new C4Error(errCode))
         {
@@ -578,6 +588,11 @@ namespace Couchbase.Lite
 
         #region Constructors
 
+        internal CouchbaseSQLiteException(C4Error err) : base(err)
+        {
+
+        }
+
         internal CouchbaseSQLiteException(int errCode) : base(new C4Error(C4ErrorDomain.SQLiteDomain, errCode))
         {
 
@@ -600,6 +615,11 @@ namespace Couchbase.Lite
         #endregion
 
         #region Constructors
+
+        internal CouchbaseWebsocketException(C4Error err) : base(err)
+        {
+
+        }
 
         internal CouchbaseWebsocketException(int errCode) : base(new C4Error(C4ErrorDomain.WebSocketDomain, errCode))
         {
@@ -624,6 +644,11 @@ namespace Couchbase.Lite
 
         #region Constructors
 
+        internal CouchbaseNetworkException(C4Error err) : base(err)
+        {
+
+        }
+
         internal CouchbaseNetworkException(C4NetworkErrorCode errCode) : base(new C4Error(errCode))
         {
 
@@ -646,6 +671,11 @@ namespace Couchbase.Lite
         #endregion
 
         #region Constructors
+
+        internal CouchbasePosixException(C4Error err) : base(err)
+        {
+
+        }
 
         internal CouchbasePosixException(int errCode) : base(new C4Error(C4ErrorDomain.POSIXDomain, errCode))
         {
