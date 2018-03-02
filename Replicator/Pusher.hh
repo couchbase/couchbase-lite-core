@@ -37,6 +37,10 @@ namespace litecore { namespace repl {
             enqueue(&Pusher::_gotChanges, chgs, lastSequence, err);
         }
 
+        void couldntSendRevision(const RevRequest& req) {
+            enqueue(&Pusher::_couldntSendRevision, req);
+        }
+
     protected:
         virtual std::string loggingClassName() const override {return "Push";}
 
@@ -53,6 +57,7 @@ namespace litecore { namespace repl {
         void sendChangeList(RevList);
         void maybeSendMoreRevs();
         void sendRevision(const RevRequest&);
+        void _couldntSendRevision(RevRequest);
         void doneWithRev(const Rev&, bool successful);
         void updateCheckpoint();
         void handleGetAttachment(Retained<MessageIn>);

@@ -330,11 +330,11 @@ namespace litecore { namespace repl {
         }
         _maxPushedSequence = latestChangeSequence;
 
+        _pusher = pusher;
         pusher->gotChanges(changes, latestChangeSequence, error);
 
         if (p.continuous && p.limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
-            _pusher = pusher;
             _pushDocIDs = p.docIDs;
             _changeObserver = c4dbobs_create(_db,
                                              [](C4DatabaseObserver* observer, void *context) {
@@ -667,7 +667,7 @@ namespace litecore { namespace repl {
             // invoke the progress callback with a fake disconnect so the Pusher will know the
             // rev failed to send:
             if (onProgress)
-                onProgress({MessageProgress::kDisconnected, 0, 0, nullptr});
+                _pusher->couldntSendRevision(request);
         }
     }
 

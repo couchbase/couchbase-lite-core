@@ -340,7 +340,6 @@ namespace litecore { namespace repl {
                        _revisionsInFlight, kMaxRevsInFlight);
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
-                    decrement(_revisionsInFlight);
                     doneWithRev(rev, false);
                     return;
                 }
@@ -378,6 +377,12 @@ namespace litecore { namespace repl {
         }
         // Tell the DBAgent to actually read from the DB and send the message:
         _dbWorker->sendRevision(rev, onProgress);
+    }
+
+
+    void Pusher::_couldntSendRevision(RevRequest rev) {
+        decrement(_revisionsInFlight);
+        doneWithRev(rev, false);
     }
 
 
