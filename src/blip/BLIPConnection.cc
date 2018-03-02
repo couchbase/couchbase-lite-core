@@ -99,7 +99,7 @@ namespace litecore { namespace blip {
 
         Retained<Connection>    _connection;
         Retained<WebSocket>     _webSocket;
-        bool                    _closingWithError {false};
+        unique_ptr<error>       _closingWithError;
         MessageQueue            _outbox;
         MessageQueue            _icebox;
         bool                    _writeable {true};
@@ -195,10 +195,11 @@ namespace litecore { namespace blip {
             }
         }
 
-        void _closeWithError(const char *msg) {
+        void _closeWithError(const error &x) {
             if (_webSocket && !_closingWithError) {
-                _webSocket->close(kCodeAbnormal, slice(msg));
-                _closingWithError = true;
+                string message = format("Unexpected exception: %s", x.what());
+                _webSocket->close(kCodeUnexpectedCondition, slice(message));
+                _closingWithError.reset(new error(x));
             }
         }
 
@@ -206,6 +207,11 @@ namespace litecore { namespace blip {
             _webSocket = nullptr;
             if (_connection) {
                 Retained<BLIPIO> holdOn (this);
+                if (_closingWithError) {
+                    status.reason = kException;
+                    status.code = _closingWithError->code;
+                    status.message = alloc_slice(_closingWithError->what());
+                }
                 _connection->closed(status);
                 _connection = nullptr;
                 cancelAll(_outbox);
@@ -439,10 +445,7 @@ namespace litecore { namespace blip {
 
             } catch (const std::exception &x) {
                 logError("Caught exception handling incoming BLIP message: %s", x.what());
-                _closeWithError(x.what());
-            } catch (...) {
-                logError("Caught unknown exception handling incoming BLIP message");
-                _closeWithError("Unknown exception handling incoming BLIP message");
+                _closeWithError(error::convertException(x));
             }
         }
 

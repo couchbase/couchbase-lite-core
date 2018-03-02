@@ -36,6 +36,7 @@ namespace litecore { namespace websocket {
         kWebSocketClose,        // Closed by WebSocket protocol
         kPOSIXError,            // Closed due to IP socket error (see <errno.h>)
         kNetworkError,          // Closed due to other network error (see NetworkError below)
+        kException,             // Closed due to an exception being thrown
         kUnknownError
     };
 
@@ -45,8 +46,8 @@ namespace litecore { namespace websocket {
         kCodeGoingAway,
         kCodeProtocolError,
         kCodeUnsupportedData,
-        kCodeStatusCodeExpected = 1005,
-        kCodeAbnormal,
+        kCodeStatusCodeExpected = 1005,     // Never sent
+        kCodeAbnormal,                      // Never sent
         kCodeInconsistentData,
         kCodePolicyViolation,
         kCodeMessageTooBig,
@@ -80,8 +81,8 @@ namespace litecore { namespace websocket {
 
         const char* reasonName() const  {
             static const char* kReasonNames[] = {"WebSocket status", "errno",
-                                                 "Network error", "Unknown error"};
-            assert(reason < CloseReason(4));
+                                                 "Network error", "Exception", "Unknown error"};
+            assert(reason < CloseReason(5));
             return kReasonNames[reason];
         }
     };
