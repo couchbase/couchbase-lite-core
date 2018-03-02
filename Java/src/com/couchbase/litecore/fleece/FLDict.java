@@ -35,23 +35,12 @@ public class FLDict {
 
     public FLValue getSharedKey(String key, FLSharedKeys sharedKeys) {
         if (key == null) return null;
-        long hValue;
-        if (sharedKeys == null)
-            hValue = getSharedKey(handle, key.getBytes(), 0L);
-        else
-            synchronized (sharedKeys.getLock()) {
-                hValue = getSharedKey(handle, key.getBytes(), sharedKeys.handle);
-            }
+        long hValue = getSharedKey(handle, key.getBytes(), sharedKeys == null ? 0L : sharedKeys.getHandle());
         return hValue != 0L ? new FLValue(hValue) : null;
     }
 
     public static String getKeyString(FLSharedKeys sharedKeys, int keyCode) {
-         if (sharedKeys == null)
-            return getKeyString(0L, keyCode);
-        else
-            synchronized (sharedKeys.getLock()) {
-                return getKeyString(sharedKeys.getHandle(), keyCode);
-            }
+        return getKeyString(sharedKeys == null ? 0L : sharedKeys.getHandle(), keyCode);
     }
 
     public Map<String, Object> asDict() {

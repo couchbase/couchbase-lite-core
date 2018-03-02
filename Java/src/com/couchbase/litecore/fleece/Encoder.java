@@ -56,8 +56,8 @@ public class Encoder {
         }
     }
 
-    public void setSharedKeys(FLSharedKeys flSharedKeys) {
-        setSharedKeys(_handle, flSharedKeys.getHandle());
+    public void setSharedKeys(FLSharedKeys sk) {
+        setSharedKeys(_handle, sk == null ? 0L : sk.getHandle());
     }
 
     public FLEncoder getFLEncoder() {

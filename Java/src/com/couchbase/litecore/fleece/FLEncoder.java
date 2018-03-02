@@ -57,8 +57,8 @@ public class FLEncoder {
         return String.format("FLEncoder{_handle: 0x%x}", _handle);
     }
 
-    public void setSharedKeys(FLSharedKeys flSharedKeys) {
-        setSharedKeys(_handle, flSharedKeys.getHandle());
+    public void setSharedKeys(FLSharedKeys sk) {
+        setSharedKeys(_handle, sk == null ? 0L : sk.getHandle());
     }
 
     public boolean writeNull() {
@@ -113,8 +113,8 @@ public class FLEncoder {
         return writeValue(_handle, flValue.getHandle());
     }
 
-    public boolean writeValueWithSharedKeys(FLValue flValue, FLSharedKeys flSharedKeys) {
-        return writeValueWithSharedKeys(_handle, flValue.getHandle(), flSharedKeys.getHandle());
+    public boolean writeValueWithSharedKeys(FLValue flValue, FLSharedKeys sk) {
+        return writeValueWithSharedKeys(_handle, flValue.getHandle(), sk == null ? 0L : sk.getHandle());
     }
 
     // C/Fleece+CoreFoundation.mm
