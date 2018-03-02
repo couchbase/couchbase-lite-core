@@ -121,7 +121,8 @@ namespace litecore { namespace repl {
                                            FLSharedKeys sk);
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
-        int findProposedChange(slice docID, slice revID, slice parentRevID);
+        int findProposedChange(slice docID, slice revID, slice parentRevID,
+                               alloc_slice &outCurrentRevID);
         void updateRemoteRev(C4Document* NONNULL);
 
         static const size_t kMaxPossibleAncestors = 10;

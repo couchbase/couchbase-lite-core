@@ -473,13 +473,14 @@ namespace litecore { namespace repl {
                 slice parentRevID = change[2].asString();
                 if (parentRevID.size == 0)
                     parentRevID = nullslice;
-                int status = findProposedChange(docID, revID, parentRevID);
+                alloc_slice currentRevID;
+                int status = findProposedChange(docID, revID, parentRevID, currentRevID);
                 if (status == 0) {
                     ++requested;
                     whichRequested[i] = true;
                 } else {
-                    log("Rejecting proposed change '%.*s' #%.*s, parent #%.*s (status %d)",
-                        SPLAT(docID), SPLAT(revID), SPLAT(parentRevID), status);
+                    log("Rejecting proposed change '%.*s' %.*s with parent %.*s (status %d; current rev is %.*s)",
+                        SPLAT(docID), SPLAT(revID), SPLAT(parentRevID), status, SPLAT(currentRevID));
                     while (itemsWritten++ < i)
                         encoder.writeInt(0);
                     encoder.writeInt(status);
@@ -561,7 +562,9 @@ namespace litecore { namespace repl {
 
     // Checks whether the revID (if any) is really current for the given doc.
     // Returns an HTTP-ish status code: 0=OK, 409=conflict, 500=internal error
-    int DBWorker::findProposedChange(slice docID, slice revID, slice parentRevID) {
+    int DBWorker::findProposedChange(slice docID, slice revID, slice parentRevID,
+                                     alloc_slice &outCurrentRevID)
+    {
         C4Error err;
         //OPT: We don't need the document body, just its metadata, but there's no way to say that
         c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
@@ -573,19 +576,24 @@ namespace litecore { namespace repl {
                 gotError(err);
                 return 500;
             }
-        } else if (slice(doc->revID) == revID) {
+        }
+        int status;
+        if (slice(doc->revID) == revID) {
             // I already have this revision:
-            return 304;
+            status = 304;
         } else if (!parentRevID) {
             // Peer is creating new doc; that's OK if doc is currently deleted:
-            return (doc->flags & kDocDeleted) ? 0 : 409;
+            status = (doc->flags & kDocDeleted) ? 0 : 409;
         } else if (slice(doc->revID) != parentRevID) {
             // Peer's revID isn't current, so this is a conflict:
-            return 409;
+            status = 409;
         } else {
             // I don't have this revision and it's not a conflict, so I want it!
-            return 0;
+            status = 0;
         }
+        if (status > 0)
+            outCurrentRevID = slice(doc->revID);
+        return status;
     }
 
 
