@@ -424,7 +424,19 @@ namespace litecore { namespace blip {
 
                 // Append the frame to the message:
                 if (msg) {
-                    auto state = msg->receivedFrame(_inputCodec, payload, flags);
+                    MessageIn::ReceiveState state;
+                    try {
+                        state = msg->receivedFrame(_inputCodec, payload, flags);
+                    } catch (...) {
+                        // If this is the final frame, then msg may not be in either pending list
+                        // anymore. But on an exception we need to call its progress handler to
+                        // disconnect it, so make sure to re-add it:
+                        if (type == kRequestType)
+                            _pendingRequests.emplace(msgNo, msg);
+                        else if (type == kResponseType)
+                            _pendingResponses.emplace(msgNo, msg);
+                        throw;
+                    }
 
                     if (state == MessageIn::kEnd) {
                         if (BLIPMessagesLog.willLog(LogLevel::Info)) {
