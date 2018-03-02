@@ -340,6 +340,7 @@ namespace litecore { namespace repl {
                        _revisionsInFlight, kMaxRevsInFlight);
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
+                    decrement(_revisionsInFlight);
                     doneWithRev(rev, false);
                     return;
                 }
@@ -512,9 +513,9 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
-        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
-                 _caughtUp, _changeListsInFlight, _revisionsInFlight, _revisionBytesAwaitingReply,
-                 _revsToSend.size(), _pendingSequences.size());
+        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
+                 _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
+                 _revisionBytesAwaitingReply, _revsToSend.size(), _pendingSequences.size());
         if (Worker::computeActivityLevel() == kC4Busy
                 || (_started && !_caughtUp)
                 || _changeListsInFlight > 0

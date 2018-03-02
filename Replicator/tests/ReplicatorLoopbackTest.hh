@@ -91,12 +91,13 @@ public:
         CHECK(_statusChangedCalls > 0);
         CHECK(_statusReceived.level == kC4Stopped);
         CHECK(_statusReceived.progress.unitsCompleted == _statusReceived.progress.unitsTotal);
-        CHECK(_statusReceived.progress.documentCount == _expectedDocumentCount);
+        if (_expectedDocumentCount >= 0)
+            CHECK(_statusReceived.progress.documentCount == uint64_t(_expectedDocumentCount));
         CHECK(_statusReceived.error.code == _expectedError.code);
         if (_expectedError.code)
             CHECK(_statusReceived.error.domain == _expectedError.domain);
-        CHECK(_docPullErrors == _expectedDocPullErrors);
-        CHECK(_docPushErrors == _expectedDocPushErrors);
+        CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
+        CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
     }
 
     void runPushReplication(C4ReplicatorMode mode =kC4OneShot) {
@@ -298,6 +299,13 @@ public:
                            kC4SliceNull, kC4SliceNull, &err) );
     }
 
+    static vector<string> asVector(const set<string> strings) {
+        vector<string> out;
+        for (const string &s : strings)
+            out.push_back(s);
+        return out;
+    }
+
     LoopbackProvider _provider;
     C4Database* db2 {nullptr};
     Retained<Replicator> _replClient, _replServer;
@@ -308,7 +316,7 @@ public:
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };
     unsigned _statusChangedCalls {0};
-    uint64_t _expectedDocumentCount {0};
+    int64_t _expectedDocumentCount {0};
     C4Error _expectedError {};
     set<string> _docPushErrors, _docPullErrors;
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;

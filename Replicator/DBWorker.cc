@@ -617,12 +617,12 @@ namespace litecore { namespace repl {
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
         MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
-        msg.noreply = !onProgress;
         msg.compressed = true;
         msg["id"_sl] = request.docID;
         msg["rev"_sl] = request.revID;
         msg["sequence"_sl] = request.sequence;
         if (root) {
+            msg.noreply = !onProgress;
             if (request.noConflicts)
                 msg["noconflicts"_sl] = true;
             auto revisionFlags = doc->selectedRev.flags;
@@ -644,20 +644,28 @@ namespace litecore { namespace repl {
                 else
                     bodyEncoder.writeValue(root);
             }
+            sendRequest(msg, onProgress);
+
         } else {
             // Send an error if we couldn't get the revision:
-            warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %d/%d",
-                 SPLAT(request.docID), SPLAT(request.revID), c4err.domain, c4err.code);
             int blipError;
             if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
                 blipError = 404;
             else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorDeleted)
                 blipError = 410;
-            else
+            else {
+                warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %d/%d",
+                     SPLAT(request.docID), SPLAT(request.revID), c4err.domain, c4err.code);
                 blipError = 500;
+            }
             msg["error"_sl] = blipError;
+            msg.noreply = true;
+            sendRequest(msg);
+            // invoke the progress callback with a fake disconnect so the Pusher will know the
+            // rev failed to send:
+            if (onProgress)
+                onProgress({MessageProgress::kDisconnected, 0, 0, nullptr});
         }
-        sendRequest(msg, onProgress);
     }
 
 
@@ -667,9 +675,9 @@ namespace litecore { namespace repl {
 
         slice revisionBody(doc->selectedRev.body);
         if (!revisionBody) {
-            logVerbose("Revision '%.*s' #%.*s is obsolete; not sending it",
-                       SPLAT(request.docID), SPLAT(request.revID));
-            *c4err = {LiteCoreDomain, kC4ErrorNotFound};
+            log("Revision '%.*s' #%.*s is obsolete; not sending it",
+                SPLAT(request.docID), SPLAT(request.revID));
+            *c4err = {LiteCoreDomain, kC4ErrorDeleted};
             return nullptr;
         }
 
