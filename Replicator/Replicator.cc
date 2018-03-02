@@ -300,7 +300,8 @@ namespace litecore { namespace repl {
         }
         _closeStatus = status;
 
-        static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain, NetworkDomain};
+        static const C4ErrorDomain kDomainForReason[] = {WebSocketDomain, POSIXDomain,
+                                                         NetworkDomain, LiteCoreDomain};
 
         // If this was an unclean close, set my error property:
         if (status.reason != websocket::kWebSocketClose || status.code != websocket::kCodeNormal) {
