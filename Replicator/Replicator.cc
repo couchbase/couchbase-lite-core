@@ -343,6 +343,7 @@ namespace litecore { namespace repl {
                 return;
             
             _checkpointDocID = checkpointID;
+            _checkpointReceived = false;
             bool haveLocalCheckpoint = false;
 
             if (data) {
@@ -389,6 +390,7 @@ namespace litecore { namespace repl {
                             gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
                     }
                 }
+                _checkpointReceived = true;
 
                 if (haveLocalCheckpoint) {
                     // Compare checkpoints, reset if mismatched:
@@ -397,6 +399,9 @@ namespace litecore { namespace repl {
                     // Now we have the checkpoints! Time to start replicating:
                     startReplicating();
                 }
+
+                if (_checkpointJSONToSave)
+                    saveCheckpointNow();    // _saveCheckpoint() was waiting for _checkpointRevID
             });
 
             if (!haveLocalCheckpoint)
@@ -408,8 +413,21 @@ namespace litecore { namespace repl {
     void Replicator::_saveCheckpoint(alloc_slice json) {
         if (!connection())
             return;
+        _checkpointJSONToSave = move(json);
+        if (_checkpointReceived)
+            saveCheckpointNow();
+        // ...else wait until checkpoint received (see above), which will call saveCheckpointNow().
+    }
+
+
+    void Replicator::saveCheckpointNow() {
+        alloc_slice json = move(_checkpointJSONToSave);
+
         log("Saving remote checkpoint %.*s with rev='%.*s': %.*s ...",
             SPLAT(_checkpointDocID), SPLAT(_checkpointRevID), SPLAT(json));
+        Assert(_checkpointReceived);
+        Assert(json);
+
         MessageBuilder msg("setCheckpoint"_sl);
         msg["client"_sl] = _checkpointDocID;
         msg["rev"_sl] = _checkpointRevID;

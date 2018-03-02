@@ -126,6 +126,7 @@ namespace litecore { namespace repl {
         void updateCheckpoint();
         void saveCheckpoint(alloc_slice json)       {enqueue(&Replicator::_saveCheckpoint, json);}
         void _saveCheckpoint(alloc_slice json);
+        void saveCheckpointNow();
 
         virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
         void _gotDocumentError(alloc_slice docID, C4Error, bool pushing, bool transient);
@@ -145,6 +146,8 @@ namespace litecore { namespace repl {
         Checkpoint _checkpoint;
         alloc_slice _checkpointDocID;
         alloc_slice _checkpointRevID;
+        bool _checkpointReceived {false};
+        alloc_slice _checkpointJSONToSave;
     };
 
 } }
