@@ -77,7 +77,7 @@ namespace litecore { namespace repl {
 
     // Begins active push, starting from the next sequence after sinceSequence
     void Pusher::_start(C4SequenceNumber sinceSequence) {
-        log("Starting %spush from local seq %llu",
+        log("Starting %spush from local seq #%llu",
             (_continuous ? "continuous " : ""), sinceSequence+1);
         _started = true;
         _pendingSequences.clear(sinceSequence);
@@ -96,7 +96,7 @@ namespace litecore { namespace repl {
         auto since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
         _skipDeleted = req->boolProperty("activeOnly"_sl);
-        log("Peer is pulling %schanges from seq %llu",
+        log("Peer is pulling %schanges from seq #%llu",
             (_continuous ? "continuous " : ""), _lastSequence);
 
         auto filter = req->property("filter"_sl);
@@ -130,7 +130,7 @@ namespace litecore { namespace repl {
                              && _revsToSend.size() < kMaxRevsQueued) {
             _gettingChanges = true;
             increment(_changeListsInFlight); // will be decremented at start of _gotChanges
-            log("Asking DB for %u changes since sequence %llu ...",
+            log("Asking DB for %u changes since sequence #%llu ...",
                 _changesBatchSize, _lastSequenceRead);
             _dbWorker->getChanges({_lastSequenceRead,
                                    _docIDs,
@@ -178,7 +178,7 @@ namespace litecore { namespace repl {
 
         if (changes.size() < _changesBatchSize) {
             if (!_caughtUp) {
-                log("Caught up, at lastSequence %llu", _lastSequenceRead);
+                log("Caught up, at lastSequence #%llu", _lastSequenceRead);
                 _caughtUp = true;
                 if (!changes.empty() && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
@@ -297,7 +297,7 @@ namespace litecore { namespace repl {
                 }
 
                 if (queued) {
-                    logVerbose("Queueing rev '%.*s' #%.*s (seq %llu) [%zu queued]",
+                    logVerbose("Queueing rev '%.*s' #%.*s (seq #%llu) [%zu queued]",
                                SPLAT(change.docID), SPLAT(change.revID), change.sequence,
                                _revsToSend.size());
                 } else {
@@ -335,7 +335,7 @@ namespace litecore { namespace repl {
         if (!passive()) {
             // Callback for after the peer receives the "rev" message:
             increment(_revisionsInFlight);
-            logVerbose("Uploading rev %.*s #%.*s (seq %llu) [%d/%d]",
+            logVerbose("Uploading rev %.*s %.*s (seq #%llu) [%d/%d]",
                        SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence,
                        _revisionsInFlight, kMaxRevsInFlight);
             onProgress = asynchronize([=](MessageProgress progress) {
@@ -344,7 +344,7 @@ namespace litecore { namespace repl {
                     return;
                 }
                 if (progress.state == MessageProgress::kAwaitingReply) {
-                    logDebug("Uploaded rev %.*s #%.*s (seq %llu)",
+                    logDebug("Uploaded rev %.*s #%.*s (seq #%llu)",
                              SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
                     decrement(_revisionsInFlight);
                     increment(_revisionBytesAwaitingReply, progress.bytesSent);
@@ -354,7 +354,7 @@ namespace litecore { namespace repl {
                     decrement(_revisionBytesAwaitingReply, progress.bytesSent);
                     bool completed = !progress.reply->isError();
                     if (completed) {
-                        logVerbose("Completed rev %.*s #%.*s (seq %llu)",
+                        logVerbose("Completed rev %.*s #%.*s (seq #%llu)",
                                    SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
                         _dbWorker->markRevSynced(rev);
                         finishedDocument(rev.docID, true);
@@ -362,7 +362,7 @@ namespace litecore { namespace repl {
                         auto err = progress.reply->getError();
                         auto c4err = blipToC4Error(err);
                         bool transient = c4error_mayBeTransient(c4err);
-                        logError("Got error response to rev %.*s #%.*s (seq %llu): %.*s %d '%.*s'",
+                        logError("Got error response to rev %.*s %.*s (seq #%llu): %.*s %d '%.*s'",
                                  SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence,
                                  SPLAT(err.domain), err.code, SPLAT(err.message));
                         gotDocumentError(rev.docID, c4err, true, transient);
@@ -497,18 +497,18 @@ namespace litecore { namespace repl {
 
 
     void Pusher::updateCheckpoint() {
-                auto firstPending = _pendingSequences.first();
-                auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
-                if (lastSeq > _lastSequence) {
-                    if (lastSeq / 1000 > _lastSequence / 1000)
+        auto firstPending = _pendingSequences.first();
+        auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
+        if (lastSeq > _lastSequence) {
+            if (lastSeq / 1000 > _lastSequence / 1000)
                 log("Checkpoint now at #%llu", lastSeq);
-                    else
+            else
                 logVerbose("Checkpoint now at #%llu", lastSeq);
-                    _lastSequence = lastSeq;
-                    if (replicator())
-                        replicator()->updatePushCheckpoint(_lastSequence);
-                }
-            }
+            _lastSequence = lastSeq;
+            if (replicator())
+                replicator()->updatePushCheckpoint(_lastSequence);
+        }
+    }
 
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
