@@ -518,9 +518,7 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
-        logDebug("caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
-                 _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
-                 _revisionBytesAwaitingReply, _revsToSend.size(), _pendingSequences.size());
+        ActivityLevel level;
         if (Worker::computeActivityLevel() == kC4Busy
                 || (_started && !_caughtUp)
                 || _changeListsInFlight > 0
@@ -528,12 +526,19 @@ namespace litecore { namespace repl {
                 || _blobsInFlight > 0
                 || !_revsToSend.empty()
                 || _revisionBytesAwaitingReply > 0) {
-            return kC4Busy;
+            level = kC4Busy;
         } else if (_options.push == kC4Continuous || isOpenServer()) {
-            return kC4Idle;
+            level = kC4Idle;
         } else {
-            return kC4Stopped;
+            level = kC4Stopped;
         }
+        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+            log("activityLevel=%-s: caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
+                kC4ReplicatorActivityLevelNames[level],
+                _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
+                _revisionBytesAwaitingReply, _revsToSend.size(), _pendingSequences.size());
+        }
+        return level;
     }
 
 } }

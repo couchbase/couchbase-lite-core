@@ -287,23 +287,28 @@ namespace litecore { namespace repl {
 
     
     Worker::ActivityLevel Puller::computeActivityLevel() const {
-        logDebug("Puller activity: level=%d, _caughtUp=%d, _waitingForChangesCallback=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
-                 Worker::computeActivityLevel(), _caughtUp, _waitingForChangesCallback,
-                 _pendingRevMessages, _activeIncomingRevs);
+        ActivityLevel level;
         if (_fatalError) {
-            return kC4Stopped;
+            level = kC4Stopped;
         } else if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
                 || _waitingForChangesCallback
                 || _pendingRevMessages > 0
                 || _activeIncomingRevs > 0) {
-            return kC4Busy;
+            level = kC4Busy;
         } else if (_options.pull == kC4Continuous || isOpenServer()) {
             const_cast<Puller*>(this)->_spareIncomingRevs.clear();
-            return kC4Idle;
+            level = kC4Idle;
         } else {
-            return kC4Stopped;
+            level = kC4Stopped;
         }
+        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+            log("activityLevel=%-s: super=%d, _caughtUp=%d, _waitingForChangesCallback=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
+                kC4ReplicatorActivityLevelNames[level],
+                Worker::computeActivityLevel(), _caughtUp, _waitingForChangesCallback,
+                _pendingRevMessages, _activeIncomingRevs);
+        }
+        return level;
     }
 
 

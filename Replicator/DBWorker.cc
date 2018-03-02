@@ -875,4 +875,14 @@ namespace litecore { namespace repl {
         }
     }
 
+
+    Worker::ActivityLevel DBWorker::computeActivityLevel() const {
+        ActivityLevel level = Worker::computeActivityLevel();
+        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+            log("activityLevel=%-s: pendingResponseCount=%d, eventCount=%d",
+                kC4ReplicatorActivityLevelNames[level], pendingResponseCount(), eventCount());
+        }
+        return level;
+    }
+
 } }

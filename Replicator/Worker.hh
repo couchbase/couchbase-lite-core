@@ -37,6 +37,8 @@ namespace litecore { namespace repl {
     using duration = std::chrono::nanoseconds;
 
 
+    extern LogDomain SyncBusyLog;
+
     /** Abstract base class of Actors used by the replicator */
     class Worker : public actor::Actor, C4InstanceCounted, protected Logging {
     public:
@@ -204,6 +206,7 @@ namespace litecore { namespace repl {
         virtual void afterEvent() override;
 
         virtual std::string loggingIdentifier() const override {return _loggingID;}
+        int pendingResponseCount() const        {return _pendingResponseCount;}
 
         Options _options;
         Retained<Worker> _parent;

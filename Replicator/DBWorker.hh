@@ -124,6 +124,7 @@ namespace litecore { namespace repl {
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
         void updateRemoteRev(C4Document* NONNULL);
+        ActivityLevel computeActivityLevel() const override;
 
         static const size_t kMaxPossibleAncestors = 10;
 

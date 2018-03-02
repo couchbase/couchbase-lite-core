@@ -157,11 +157,13 @@ namespace litecore { namespace repl {
 
         setProgress(_pushStatus.progress + _pullStatus.progress);
 
-        logDebug("pushStatus=%-s, pullStatus=%-s, dbStatus=%-s, progress=%llu/%llu",
-                 kC4ReplicatorActivityLevelNames[_pushStatus.level],
-                 kC4ReplicatorActivityLevelNames[_pullStatus.level],
-                 kC4ReplicatorActivityLevelNames[_dbStatus.level],
-                 status().progress.unitsCompleted, status().progress.unitsTotal);
+        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+            log("pushStatus=%-s, pullStatus=%-s, dbStatus=%-s, progress=%llu/%llu",
+                kC4ReplicatorActivityLevelNames[_pushStatus.level],
+                kC4ReplicatorActivityLevelNames[_pullStatus.level],
+                kC4ReplicatorActivityLevelNames[_dbStatus.level],
+                status().progress.unitsCompleted, status().progress.unitsTotal);
+        }
 
         if (_pullStatus.error.code)
             onError(_pullStatus.error);
@@ -176,11 +178,12 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel Replicator::computeActivityLevel() const {
+        ActivityLevel level;
         switch (_connectionState) {
             case Connection::kConnecting:
-                return kC4Connecting;
+                level = kC4Connecting;
+                break;
             case Connection::kConnected: {
-                ActivityLevel level;
                 if (_checkpoint.isUnsaved())
                     level = kC4Busy;
                 else
@@ -193,16 +196,23 @@ namespace litecore { namespace repl {
                     level = kC4Busy;
                 }
                 assert(level > kC4Stopped);
-                return level;
+                break;
             }
             case Connection::kClosing:
                 // Remain active while I wait for the connection to finish closing:
-                return kC4Busy;
+                level = kC4Busy;
+                break;
             case Connection::kDisconnected:
             case Connection::kClosed:
                 // After connection closes, remain active while I wait for db to finish writes:
-                return (_dbStatus.level == kC4Busy) ? kC4Busy : kC4Stopped;
+                level = (_dbStatus.level == kC4Busy) ? kC4Busy : kC4Stopped;
+                break;
         }
+        if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
+            log("activityLevel=%-s: connectionState=%d",
+                kC4ReplicatorActivityLevelNames[level], _connectionState);
+        }
+        return level;
     }
 
 

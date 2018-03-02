@@ -40,6 +40,8 @@ namespace litecore {
 
 namespace litecore { namespace repl {
 
+    LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
+
     Worker::Options::operator string() const {
         static const char* kModeNames[] = {"disabled", "passive", "one-shot", "continuous"};
         stringstream s;
