@@ -77,6 +77,10 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert *rev);
 
+        void markRevSynced(const Rev &rev) {
+            enqueue(&DBWorker::_markRevSynced, rev);
+        }
+
         void setCookie(slice setCookieHeader) {
             enqueue(&DBWorker::_setCookie, alloc_slice(setCookieHeader));
         }
@@ -96,7 +100,6 @@ namespace litecore { namespace repl {
         void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
         void _getChanges(GetChangesParams, Retained<Pusher> pusher);
         bool addChangeToList(const C4DocumentInfo &info, C4Document *doc, std::vector<Rev> &changes);
-        alloc_slice getRemoteRevID(C4Document*);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
         void _sendRevision(RevRequest request,
@@ -109,7 +112,7 @@ namespace litecore { namespace repl {
         void _connectionClosed() override;
 
         void dbChanged();
-        bool markRevsSynced(const std::vector<Rev> changes, C4Error *outError);
+        void _markRevSynced(Rev);
 
         fleeceapi::Dict getRevToSend(C4Document*, const RevRequest&, C4Error *outError);
         static std::string revHistoryString(C4Document*, const RevRequest&);

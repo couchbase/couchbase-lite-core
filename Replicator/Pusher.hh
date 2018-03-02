@@ -33,7 +33,8 @@ namespace litecore { namespace repl {
         void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}
 
         // Sent by Replicator in response to dbGetChanges
-        void gotChanges(RevList chgs, C4Error err)  {enqueue(&Pusher::_gotChanges, chgs, err);
+        void gotChanges(RevList chgs, C4SequenceNumber lastSequence, C4Error err) {
+            enqueue(&Pusher::_gotChanges, chgs, lastSequence, err);
         }
 
     protected:
@@ -46,13 +47,14 @@ namespace litecore { namespace repl {
         virtual ActivityLevel computeActivityLevel() const override;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
-        void _gotChanges(RevList changes, C4Error err);
+        void _gotChanges(RevList changes, C4SequenceNumber lastSequence, C4Error err);
         void sendChanges(RevList);
         void maybeGetMoreChanges();
         void sendChangeList(RevList);
         void maybeSendMoreRevs();
         void sendRevision(const RevRequest&);
         void doneWithRev(const Rev&, bool successful);
+        void updateCheckpoint();
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);
         void _attachmentSent();

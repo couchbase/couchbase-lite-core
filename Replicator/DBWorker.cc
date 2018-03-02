@@ -327,8 +327,7 @@ namespace litecore { namespace repl {
         }
         _maxPushedSequence = latestChangeSequence;
 
-        markRevsSynced(changes, nullptr);
-        pusher->gotChanges(changes, error);
+        pusher->gotChanges(changes, latestChangeSequence, error);
 
         if (p.continuous && p.limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
@@ -391,8 +390,7 @@ namespace litecore { namespace repl {
             _maxPushedSequence = latestChangeSequence;
 
             if (!changes.empty()) {
-                markRevsSynced(changes, nullptr);
-                _pusher->gotChanges(changes, {});
+                _pusher->gotChanges(changes, latestChangeSequence, {});
             }
 
             c4dbobs_releaseChanges(c4changes, nChanges);
@@ -405,47 +403,29 @@ namespace litecore { namespace repl {
         alloc_slice remoteRevID;
         if (_getForeignAncestors) {
             // For proposeChanges, find the nearest foreign ancestor of the current rev:
-            remoteRevID = getRemoteRevID(doc);
-            if (_skipForeignChanges && remoteRevID == slice(info.revID))
-                return false;   // reject rev: it's foreign
+            Assert(_remoteDBID);
+            c4::sliceResult foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
+            logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(remoteRevID));
+            if (_skipForeignChanges && foreignAncestor == slice(info.revID))
+                return false;   // skip this rev: it's already on the peer
+            remoteRevID = alloc_slice(foreignAncestor);
         }
         changes.emplace_back(info, remoteRevID);
         return true;
     }
 
 
-    // For proposeChanges, find the latest ancestor of the current rev that is known to the server.
-    // This is a rev that's either marked as foreign (came from the server), or whose sequence is
-    // in the range that's already been pushed to the server.
-    alloc_slice DBWorker::getRemoteRevID(C4Document* doc) {
-        Assert(_remoteDBID);
-        c4::sliceResult foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
-        do {
-            slice rev(doc->selectedRev.revID);
-            if (rev == foreignAncestor) {
-                return alloc_slice(foreignAncestor);
-            } else if (doc->selectedRev.sequence <= _maxPushedSequence) {
-                return alloc_slice(rev);
-            }
-        } while (c4doc_selectParentRevision(doc));
-        return alloc_slice();
-    }
-
-
-    // Mark all of these revs as synced, which flags them as kRevKeepBody if they're still current.
-    // This is actually premature because those revs haven't been pushed yet; but if we
-    // wait until after the push, the doc may have been updated again and the body of the
-    // pushed revision lost. By doing it early we err on the side of correctness and may
-    // save some revision bodies unnecessarily, which isn't that bad.
-    bool DBWorker::markRevsSynced(const vector<Rev> changes, C4Error *outError) {
-        if (changes.empty())
-            return true;
+    void DBWorker::_markRevSynced(Rev rev) {
+        logDebug("Marking rev '%.*s' %.*s (#%llu) as current for remote db %u",
+                 SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence, _remoteDBID);
+        C4Error error;
         c4::Transaction t(_db);
-        if (!t.begin(outError))
-            return false;
-        for (auto i = changes.begin(); i != changes.end(); ++i)
-            c4db_markSynced(_db, i->docID, i->sequence, _remoteDBID, outError);
-        return t.commit(outError);
+        if (!t.begin(&error)
+            || !c4db_markSynced(_db, rev.docID, rev.sequence, _remoteDBID, &error)
+            || !t.commit(&error)) {
+            warn("Unable to mark '%.*s' %.*s (#%llu) as synced; error %d/%d",
+                 SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence, error.domain, error.code);
+        }
     }
 
 

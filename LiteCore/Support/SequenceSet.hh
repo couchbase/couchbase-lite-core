@@ -50,6 +50,9 @@ namespace litecore {
         void remove(sequence s)                 {_sequences.erase(s);}
         void set(sequence s, bool present)      {present ? add(s) : remove(s);}
 
+        /** Marks a sequence as seen but not in the set; equivalent to add() then remove(). */
+        void seen(sequence s)                   {_max = std::max(_max, s);}
+
         reference operator[] (sequence s)               {return reference(*this, s);}
         const reference operator[] (sequence s) const   {return reference(*(SequenceSet*)this, s);}
 

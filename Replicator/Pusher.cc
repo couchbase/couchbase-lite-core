@@ -146,7 +146,7 @@ namespace litecore { namespace repl {
 
 
     // Received a list of changes from the database [initiated in maybeGetMoreChanges]
-    void Pusher::_gotChanges(RevList changes, C4Error err) {
+    void Pusher::_gotChanges(RevList changes, C4SequenceNumber lastSequence, C4Error err) {
         if (_gettingChanges) {
             _gettingChanges = false;
             decrement(_changeListsInFlight);
@@ -156,10 +156,14 @@ namespace litecore { namespace repl {
             return;
         if (err.code)
             return gotError(err);
-        if (!changes.empty()) {
-            _lastSequenceRead = changes.back().sequence;
-            log("Found %zu changes: Pusher sending '%s' with sequences %llu - %llu",
-                changes.size(),
+        _lastSequenceRead = lastSequence;
+        _pendingSequences.seen(lastSequence);
+        if (changes.empty()) {
+            log("Found 0 changes up to #%llu", lastSequence);
+            updateCheckpoint();
+        } else {
+            log("Found %zu changes up to #%llu: Pusher sending '%s' with sequences #%llu - #%llu",
+                changes.size(), lastSequence,
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 changes[0].sequence, _lastSequenceRead);
         }
@@ -352,6 +356,7 @@ namespace litecore { namespace repl {
                     if (completed) {
                         logVerbose("Completed rev %.*s #%.*s (seq %llu)",
                                    SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
+                        _dbWorker->markRevSynced(rev);
                         finishedDocument(rev.docID, true);
                     } else {
                         auto err = progress.reply->getError();
@@ -483,23 +488,27 @@ namespace litecore { namespace repl {
     void Pusher::doneWithRev(const Rev &rev, bool completed) {
         if (!passive()) {
             addProgress({rev.bodySize, 0});
-
             if (completed) {
                 _pendingSequences.remove(rev.sequence);
+                updateCheckpoint();
+            }
+        }
+    }
+
+
+    void Pusher::updateCheckpoint() {
                 auto firstPending = _pendingSequences.first();
                 auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
                 if (lastSeq > _lastSequence) {
                     if (lastSeq / 1000 > _lastSequence / 1000)
-                        log("Checkpoint now at %llu", lastSeq);
+                log("Checkpoint now at #%llu", lastSeq);
                     else
-                        logVerbose("Checkpoint now at %llu", lastSeq);
+                logVerbose("Checkpoint now at #%llu", lastSeq);
                     _lastSequence = lastSeq;
                     if (replicator())
                         replicator()->updatePushCheckpoint(_lastSequence);
                 }
             }
-        }
-    }
 
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
