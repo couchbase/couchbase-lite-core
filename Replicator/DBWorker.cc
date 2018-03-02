@@ -30,6 +30,9 @@
 #include "c4Private.h"
 #include "BLIP.hh"
 #include <chrono>
+#ifndef __APPLE__
+#include "arc4random.h"
+#endif
 
 using namespace std;
 using namespace fleece;
