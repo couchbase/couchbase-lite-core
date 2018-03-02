@@ -94,13 +94,13 @@ namespace litecore { namespace repl {
             enc.endDict();
         }
         
-        sendRequest(msg, asynchronize([=](blip::MessageProgress progress) {
+        sendRequest(msg, [=](blip::MessageProgress progress) {
             //... After request is sent:
             if (progress.reply && progress.reply->isError()) {
                 gotError(progress.reply);
                 _fatalError = true;
             }
-        }));
+        });
     }
 
 

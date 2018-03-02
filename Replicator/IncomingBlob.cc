@@ -50,7 +50,7 @@ namespace litecore { namespace repl {
         req["digest"_sl] = digest;
         if (compress)
             req["compress"_sl] = "true"_sl;
-        sendRequest(req, asynchronize([=](blip::MessageProgress progress) {
+        sendRequest(req, [=](blip::MessageProgress progress) {
             //... After request is sent:
             if (_busy) {
                 if (progress.state == MessageProgress::kDisconnected) {
@@ -65,7 +65,7 @@ namespace litecore { namespace repl {
                     }
                 }
             }
-        }));
+        });
         _busy = true;
     }
 
