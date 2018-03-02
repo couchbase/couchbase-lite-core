@@ -561,6 +561,14 @@ namespace litecore {
     
     // Handles infix operators
     void QueryParser::infixOp(slice op, Array::iterator& operands) {
+        if (operands.count() >= 2 && operands[1]->type() == kNull) {
+            // Ugly special case where SQLite's semantics for 'IS [NOT]' don't match N1QL's (#410)
+            if (op.caseEquivalent("IS"_sl))
+                op = "="_sl;
+            else if (op.caseEquivalent("IS NOT"_sl))
+                op = "!="_sl;
+        }
+
         int n = 0;
         for (auto &i = operands; i; ++i) {
             // Write the operation/delimiter between arguments
