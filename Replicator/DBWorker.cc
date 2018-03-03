@@ -51,12 +51,6 @@ namespace litecore { namespace repl {
         return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
     }
 
-    static bool hasConflict(C4Document *doc) {
-        return c4doc_selectCurrentRevision(doc)
-            && c4doc_selectNextLeafRevision(doc, false, false, nullptr);
-    }
-
-
     DBWorker::DBWorker(Connection *connection,
                      Replicator *replicator,
                      C4Database *db,
@@ -846,7 +840,7 @@ namespace litecore { namespace repl {
                     if (rev->onInserted)
                         rev->onInserted(docErr);
                     rev = nullptr;
-                } else if (hasConflict(doc)) {
+                } else if (doc->selectedRev.flags & kRevIsConflict) {
                     // Note that rev was inserted but caused a conflict:
                     log("Created conflict with '%.*s' #%.*s",
                         SPLAT(rev->docID), SPLAT(rev->revID));
