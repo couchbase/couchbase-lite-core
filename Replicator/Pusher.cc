@@ -233,13 +233,13 @@ namespace litecore { namespace repl {
         increment(_changeListsInFlight);
         sendRequest(req, [=](MessageProgress progress) {
             // Progress callback follows:
-            MessageIn *reply = progress.reply;
-            if (!reply)
+            if (progress.state != MessageProgress::kComplete)
                 return;
 
             // Got reply to the "changes" or "proposeChanges":
             decrement(_changeListsInFlight);
             _proposeChangesKnown = true;
+            MessageIn *reply = progress.reply;
             if (!proposedChanges && reply->isError()) {
                 auto err = progress.reply->getError();
                 if (err.code == 409 && (err.domain == "BLIP"_sl || err.domain == "HTTP"_sl)) {
@@ -350,7 +350,7 @@ namespace litecore { namespace repl {
                     increment(_revisionBytesAwaitingReply, progress.bytesSent);
                     maybeSendMoreRevs();
                 }
-                if (progress.reply) {
+                if (progress.state == MessageProgress::kComplete) {
                     decrement(_revisionBytesAwaitingReply, progress.bytesSent);
                     bool completed = !progress.reply->isError();
                     if (completed) {

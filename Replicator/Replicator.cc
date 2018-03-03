@@ -381,9 +381,9 @@ namespace litecore { namespace repl {
             msg["client"_sl] = checkpointID;
             sendRequest(msg, [this,haveLocalCheckpoint](MessageProgress progress) {
                 // ...after the checkpoint is received:
-                MessageIn *response = progress.reply;
-                if (!response)
+                if (progress.state != MessageProgress::kComplete)
                     return;
+                MessageIn *response = progress.reply;
                 Checkpoint remoteCheckpoint;
 
                 if (response->isError()) {
@@ -444,9 +444,9 @@ namespace litecore { namespace repl {
         msg["rev"_sl] = _checkpointRevID;
         msg << json;
         sendRequest(msg, [=](MessageProgress progress) {
-            MessageIn *response = progress.reply;
-            if (!response)
+            if (progress.state != MessageProgress::kComplete)
                 return;
+            MessageIn *response = progress.reply;
             if (response->isError()) {
                 gotError(response);
                 warn("Failed to save checkpoint!");
