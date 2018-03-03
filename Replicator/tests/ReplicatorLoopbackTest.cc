@@ -70,6 +70,20 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push large docs", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push deletion", "[Push]") {
+    createRev("dok"_sl, kRevID, kFleeceBody);
+    _expectedDocumentCount = 1;
+    runPushReplication();
+
+    createNewRev(db, "dok"_sl, nullslice, kRevDeleted);
+    Log("-------- Second Replication --------");
+    runPushReplication();
+
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":2}");
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
@@ -203,7 +217,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push/Pull Active Only", "[Pull]") {
     }
 
     runReplicators(pushOpt, pullOpt);
-    compareDatabases();
+    compareDatabases(false, false);
 
     if (pull)
         validateCheckpoints(db2, db, "{\"remote\":100}");

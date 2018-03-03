@@ -246,11 +246,14 @@ public:
         CHECK(json1 == json2);
     }
 
-    void compareDatabases(bool db2MayHaveMoreDocs =false) {
+    void compareDatabases(bool db2MayHaveMoreDocs =false, bool compareDeletedDocs =true) {
+        C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+        if (compareDeletedDocs)
+            options.flags |= kC4IncludeDeleted;
         C4Error error;
-        c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, nullptr,  &error);
+        c4::ref<C4DocEnumerator> e1 = c4db_enumerateAllDocs(db, &options, &error);
         REQUIRE(e1);
-        c4::ref<C4DocEnumerator> e2 = c4db_enumerateAllDocs(db2, nullptr,  &error);
+        c4::ref<C4DocEnumerator> e2 = c4db_enumerateAllDocs(db2, &options, &error);
         REQUIRE(e2);
 
         unsigned i = 0;

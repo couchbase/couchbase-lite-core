@@ -347,6 +347,34 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
 }
 
 
+string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4RevisionFlags flags) {
+    TransactionHelper t(db);
+    C4Error error;
+    auto curDoc = c4doc_get(db, docID, false, &error);
+    REQUIRE(curDoc != nullptr);
+
+    C4Slice history[2] = {curDoc->revID};
+
+    C4DocPutRequest rq = {};
+    rq.docID = docID;
+    rq.history = history;
+    rq.historyCount = (curDoc->revID.buf != nullptr);
+    rq.body = body;
+    rq.revFlags = flags;
+    rq.save = true;
+    auto doc = c4doc_put(db, &rq, nullptr, &error);
+    if (!doc) {
+        char buf[256];
+        INFO("Error: " << c4error_getMessageC(error, buf, sizeof(buf)));
+    }
+    REQUIRE(doc != nullptr);
+    string revID((char*)doc->revID.buf, doc->revID.size);
+    c4doc_free(doc);
+    c4doc_free(curDoc);
+    return revID;
+}
+
+
 void C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice json,
                              C4RevisionFlags flags)
 {

@@ -309,7 +309,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     REQUIRE(doc->revID == revID3);
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.revID == revID3);
-    REQUIRE(doc->selectedRev.body == kC4SliceNull);
+    REQUIRE(doc->selectedRev.body != kC4SliceNull);  // valid revision should not have null body
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
     c4doc_free(doc);
     
@@ -564,7 +564,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "2-") == 0);
     REQUIRE(doc->flags == (C4DocumentFlags)(kDocExists | kDocDeleted));
     REQUIRE(doc->selectedRev.flags == (C4RevisionFlags)(kRevLeaf|kRevDeleted));
-    REQUIRE(doc->selectedRev.body == kC4SliceNull);
+    REQUIRE(doc->selectedRev.body != kC4SliceNull);  // valid revision should not have null body
     C4String revID2 = copy(doc->revID);
     c4doc_free(doc);
     

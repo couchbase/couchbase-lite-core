@@ -25,6 +25,7 @@
 #include "VersionedDocument.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
+#include "Fleece.hh"
 #include "varint.hh"
 #include <ctime>
 #include <algorithm>
@@ -325,9 +326,12 @@ namespace c4Internal {
         bool putNewRevision(const C4DocPutRequest &rq) override {
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
             revidBuffer encodedNewRevID = generateDocRevID(rq.body, selectedRev.revID, deletion);
+            slice body = rq.body;
+            if (!body)
+                body = slice{fleece::Dict::kEmpty, 2};
             int httpStatus;
             auto newRev = _versionedDoc.insert(encodedNewRevID,
-                                               rq.body,
+                                               body,
                                                (Rev::Flags)rq.revFlags,
                                                _selectedRev,
                                                rq.allowConflict,
