@@ -33,7 +33,7 @@ protected:
     Retained<Database> db;
 
     void upgrade(string oldPath) {
-        FilePath newPath = FilePath::tempDirectory()["upgraded.cblite3/"];
+        FilePath newPath = FilePath::tempDirectory()["upgraded.cblite2/"];
         newPath.delRecursive();
 
         C4DatabaseConfig config { };
@@ -76,10 +76,10 @@ protected:
         int i = 0;
         for (slice revID : revIDs) {
             if (i++ > 0)
-                CHECK(doc1->selectParentRevision());
+                CHECK(doc1->selectNextRevision());
             CHECK(slice(doc1->selectedRev.revID) == revID);
         }
-        CHECK(!doc1->selectParentRevision());
+        CHECK(!doc1->selectNextRevision());
     }
 
     void verifyAttachment(string digest) {
