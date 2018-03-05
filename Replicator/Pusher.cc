@@ -534,8 +534,9 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            log("activityLevel=%-s: caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
+            log("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
                 kC4ReplicatorActivityLevelNames[level],
+                pendingResponseCount(),
                 _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
                 _revisionBytesAwaitingReply, _revsToSend.size(), _pendingSequences.size());
         }
