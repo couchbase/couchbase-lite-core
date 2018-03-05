@@ -143,7 +143,7 @@ public:
             }
             _statusReceived = status;
 
-            if (_stopOnIdle && status.level == kC4Idle) {
+            if (_stopOnIdle && status.level == kC4Idle && (_expectedDocumentCount <= 0 || status.progress.documentCount == _expectedDocumentCount)) {
                 Log(">>    Stopping idle replicator...");
                 repl->stop();
             }
