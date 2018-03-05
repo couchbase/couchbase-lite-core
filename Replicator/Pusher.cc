@@ -383,6 +383,7 @@ namespace litecore { namespace repl {
     void Pusher::_couldntSendRevision(RevRequest rev) {
         decrement(_revisionsInFlight);
         doneWithRev(rev, false);
+        maybeSendMoreRevs();
     }
 
 
