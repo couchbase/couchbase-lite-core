@@ -176,6 +176,7 @@ Java_com_couchbase_litecore_C4DatabaseObserver_getChanges(JNIEnv *env,
         env->SetBooleanField(obj, f_C4DBChange_external, external);
         env->SetObjectArrayElement(array, i, obj);
     }
+    c4dbobs_releaseChanges(c4changes, nChanges);
     return array;
 }
 
