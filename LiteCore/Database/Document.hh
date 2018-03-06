@@ -137,7 +137,8 @@ namespace c4Internal {
 
         virtual void resolveConflict(C4String winningRevID,
                                      C4String losingRevID,
-                                     C4Slice mergedBody) {
+                                     C4Slice mergedBody,
+                                     C4RevisionFlags mergedFlags) {
             error::_throw(error::UnsupportedOperation);
         }
 

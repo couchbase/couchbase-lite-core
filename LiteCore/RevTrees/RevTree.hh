@@ -128,6 +128,9 @@ namespace litecore {
                           slice body,
                           Rev::Flags);
 
+        // Sets/clears the kIsConflict flag for a Rev and its ancestors.
+        void markBranchAsConflict(const Rev*, bool);
+
         unsigned prune(unsigned maxDepth);
 
         void keepBody(const Rev* NONNULL);

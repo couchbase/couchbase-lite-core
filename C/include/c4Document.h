@@ -219,12 +219,14 @@ extern "C" {
         @param winningRevID  The conflicting revision to be kept (and optionally updated.)
         @param losingRevID  The conflicting revision to be deleted.
         @param mergedBody  The body of the merged revision, or NULL if none.
+        @param mergedFlags  Flags for the merged revision.
         @param error  Error information is stored here.
         @return  True on success, false on failure. */
     bool c4doc_resolveConflict(C4Document *doc C4NONNULL,
                                C4String winningRevID,
                                C4String losingRevID,
                                C4Slice mergedBody,
+                               C4RevisionFlags mergedFlags,
                                C4Error *error) C4API;
 
     /** @} */

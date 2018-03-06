@@ -265,7 +265,9 @@ namespace c4Internal {
             return total;
         }
 
-        void resolveConflict(C4String winningRevID, C4String losingRevID, C4Slice mergedBody) override {
+        void resolveConflict(C4String winningRevID, C4String losingRevID,
+                             C4Slice mergedBody, C4RevisionFlags mergedFlags) override
+        {
             // Validate the revIDs:
             auto winningRev = _versionedDoc[revidBuffer(winningRevID)];
             auto losingRev = _versionedDoc[revidBuffer(losingRevID)];
@@ -275,6 +277,9 @@ namespace c4Internal {
                 error::_throw(error::Conflict);
             if (winningRev == losingRev)
                 error::_throw(error::InvalidParameter);
+
+            _versionedDoc.markBranchAsConflict(losingRev, true);
+            _versionedDoc.markBranchAsConflict(winningRev, false);
 
             // Add a tombstone as a child of losingRev:
             selectRevision(losingRev);
@@ -288,7 +293,7 @@ namespace c4Internal {
             if (mergedBody.buf) {
                 // Then add the new merged rev as a child of winningRev:
                 selectRevision(winningRev);
-                rq.revFlags = 0;
+                rq.revFlags = mergedFlags & kRevDeleted;
                 rq.body = mergedBody;
                 rq.history = &winningRevID;
                 putNewRevision(rq);

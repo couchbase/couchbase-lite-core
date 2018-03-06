@@ -595,7 +595,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
 
     SECTION("Merge, 4 wins") {
         REQUIRE(c4doc_resolveConflict(doc, C4STR("4-dddd"), C4STR("3-aaaaaa"),
-                                      C4STR("{\"merged\":true}"), &err));
+                                      C4STR("{\"merged\":true}"), 0, &err));
         c4doc_selectCurrentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99"));
         CHECK(doc->selectedRev.body == C4STR("{\"merged\":true}"));
@@ -610,7 +610,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
 
     SECTION("Merge, 3 wins") {
         REQUIRE(c4doc_resolveConflict(doc, C4STR("3-aaaaaa"), C4STR("4-dddd"),
-                                      C4STR("{\"merged\":true}"), &err));
+                                      C4STR("{\"merged\":true}"), 0, &err));
         c4doc_selectCurrentRevision(doc);
         CHECK(doc->selectedRev.revID == C4STR("4-333ee0677b5f1e1e5064b050d417a31d2455dc30"));
         CHECK(doc->selectedRev.body == C4STR("{\"merged\":true}"));

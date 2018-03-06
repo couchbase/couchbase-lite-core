@@ -321,6 +321,18 @@ namespace litecore {
         return commonAncestorIndex;
     }
 
+    void RevTree::markBranchAsConflict(const Rev *rev, bool conflict) {
+        for (; rev; rev = (Rev*)rev->parent) {
+            if (rev->isConflict() == conflict)
+                break;
+            if (conflict)
+                const_cast<Rev*>(rev)->addFlag(Rev::kIsConflict);
+            else
+                const_cast<Rev*>(rev)->clearFlag(Rev::kIsConflict);
+            _changed = true;
+        }
+    }
+
 #pragma mark - REMOVAL (prune / purge / compact):
 
     void RevTree::keepBody(const Rev *rev_in) {
@@ -459,12 +471,12 @@ namespace litecore {
         int delta = rev2->isLeaf() - rev1->isLeaf();
         if (delta)
             return delta < 0;
-        // Live revs go before deletions.
-        delta = rev1->isDeleted() - rev2->isDeleted();
-        if (delta)
-            return delta < 0;
         // Conflicting revs never go first.
         delta = rev1->isConflict() - rev2->isConflict();
+        if (delta)
+            return delta < 0;
+        // Live revs go before deletions.
+        delta = rev1->isDeleted() - rev2->isDeleted();
         if (delta)
             return delta < 0;
         // Otherwise compare rev IDs, with higher rev ID going first:
@@ -481,10 +493,8 @@ namespace litecore {
 
     // If there are no non-conflict leaves, remove the conflict marker from the 1st:
     void RevTree::checkForResolvedConflict() {
-        if (_sorted && !_revs.empty() && _revs[0]->isConflict()) {
-            for (auto rev = _revs[0]; rev; rev = (Rev*)rev->parent)
-                rev->clearFlag(Rev::kIsConflict);
-        }
+        if (_sorted && !_revs.empty() && _revs[0]->isConflict())
+            markBranchAsConflict(_revs[0], false);
     }
 
     bool RevTree::hasNewRevisions() const {

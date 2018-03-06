@@ -547,12 +547,13 @@ bool c4doc_resolveConflict(C4Document *doc,
                            C4String winningRevID,
                            C4String losingRevID,
                            C4Slice mergedBody,
+                           C4RevisionFlags mergedFlags,
                            C4Error *outError) noexcept
 {
     if (!internal(doc)->mustBeInTransaction(outError))
         return false;
     return tryCatch<bool>(outError, [=]{
-        internal(doc)->resolveConflict(winningRevID, losingRevID, mergedBody);
+        internal(doc)->resolveConflict(winningRevID, losingRevID, mergedBody, mergedFlags);
         return true;
     });
 }
