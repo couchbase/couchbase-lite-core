@@ -278,24 +278,27 @@ namespace c4Internal {
             if (winningRev == losingRev)
                 error::_throw(error::InvalidParameter);
 
-            _versionedDoc.markBranchAsConflict(losingRev, true);
             _versionedDoc.markBranchAsConflict(winningRev, false);
+            _versionedDoc.markBranchAsConflict(losingRev, false);
 
             // Add a tombstone as a child of losingRev:
-            selectRevision(losingRev);
-            C4DocPutRequest rq = { };
-            rq.revFlags = kRevDeleted;
-            rq.history = &losingRevID;
-            rq.historyCount = 1;
-            rq.allowConflict = true;
-            putNewRevision(rq);
+            if (!losingRev->isDeleted()) {
+                selectRevision(losingRev);
+                C4DocPutRequest rq = { };
+                rq.revFlags = kRevDeleted;
+                rq.history = &losingRevID;
+                rq.historyCount = 1;
+                putNewRevision(rq);
+            }
 
             if (mergedBody.buf) {
                 // Then add the new merged rev as a child of winningRev:
                 selectRevision(winningRev);
+                C4DocPutRequest rq = { };
                 rq.revFlags = mergedFlags & kRevDeleted;
                 rq.body = mergedBody;
                 rq.history = &winningRevID;
+                rq.historyCount = 1;
                 putNewRevision(rq);
             }
         }
