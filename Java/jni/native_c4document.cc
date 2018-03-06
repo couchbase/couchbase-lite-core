@@ -362,19 +362,21 @@ Java_com_couchbase_litecore_C4Document_purgeRevision(JNIEnv *env, jclass clazz,
 /*
  * Class:     com_couchbase_litecore_C4Document
  * Method:    resolveConflict
- * Signature: (JLjava/lang/String;Ljava/lang/String;[B)V
+ * Signature: (JLjava/lang/String;Ljava/lang/String;[BI)V
  */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4Document_resolveConflict(JNIEnv *env, jclass clazz, jlong jdoc,
-                                                       jstring jWinningRevID,
-                                                       jstring jLosingRevID,
-                                                       jbyteArray jMergedBody) {
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_C4Document_resolveConflict
+        (JNIEnv *env, jclass clazz, jlong jdoc,
+         jstring jWinningRevID,
+         jstring jLosingRevID,
+         jbyteArray jMergedBody, jint jMergedFlags) {
 
     jstringSlice winningRevID(env, jWinningRevID);
     jstringSlice losingRevID(env, jLosingRevID);
     jbyteArraySlice mergedBody(env, jMergedBody, false);
+    C4RevisionFlags revisionFlag = (C4RevisionFlags)jMergedFlags;
     C4Error error = {};
-    if (!c4doc_resolveConflict((C4Document *) jdoc, winningRevID, losingRevID, mergedBody, &error))
+    if (!c4doc_resolveConflict((C4Document *) jdoc, winningRevID, losingRevID, mergedBody, revisionFlag,
+                               &error))
         throwError(env, error);
 }
 

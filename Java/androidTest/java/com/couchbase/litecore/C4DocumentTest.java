@@ -459,7 +459,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
         _testDocumentConflict(new Verification() {
             @Override
             public void verify(C4Document doc) throws LiteCoreException {
-                doc.resolveConflict("4-dddd", "3-aaaaaa", "{\"merged\":true}".getBytes());
+                doc.resolveConflict("4-dddd", "3-aaaaaa", "{\"merged\":true}".getBytes(),0);
                 assertTrue(doc.selectCurrentRevision());
                 assertEquals("5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99", doc.getSelectedRevID());
                 assertTrue(Arrays.equals("{\"merged\":true}".getBytes(), doc.getSelectedBody()));
@@ -474,7 +474,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
         _testDocumentConflict(new Verification() {
             @Override
             public void verify(C4Document doc) throws LiteCoreException {
-                doc.resolveConflict("3-aaaaaa", "4-dddd", "{\"merged\":true}".getBytes());
+                doc.resolveConflict("3-aaaaaa", "4-dddd", "{\"merged\":true}".getBytes(),0);
                 assertTrue(doc.selectCurrentRevision());
                 assertEquals("4-333ee0677b5f1e1e5064b050d417a31d2455dc30", doc.getSelectedRevID());
                 assertTrue(Arrays.equals("{\"merged\":true}".getBytes(), doc.getSelectedBody()));
