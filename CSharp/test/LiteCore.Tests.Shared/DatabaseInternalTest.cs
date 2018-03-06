@@ -297,7 +297,7 @@ namespace LiteCore.Tests
                 doc->revID.CreateString().Should().Be(revID3);
                 doc->flags.Should().Be(C4DocumentFlags.DocExists | C4DocumentFlags.DocDeleted);
                 doc->selectedRev.revID.CreateString().Should().Be(revID3);
-                doc->selectedRev.body.CreateString().Should().BeNull();
+                doc->selectedRev.body.CreateString().Should().NotBeNull("because a valid revision should have a valid body");
                 doc->selectedRev.flags.Should().Be(C4RevisionFlags.Leaf | C4RevisionFlags.Deleted);
                 Native.c4doc_free(doc);
 
@@ -519,7 +519,7 @@ namespace LiteCore.Tests
                 var revID2 = doc->revID.CreateString();
                 revID2.Should().StartWith("2-", "because otherwise the generation is incorrect");
                 doc->selectedRev.flags.Should().Be(C4RevisionFlags.Leaf | C4RevisionFlags.Deleted);
-                doc->selectedRev.body.CreateString().Should().BeNull();
+                doc->selectedRev.body.CreateString().Should().NotBeNull("because a valid revision should not have a null body");
                 Native.c4doc_free(doc);
 
                 doc = PutDoc("dock", revID2, body);
