@@ -76,7 +76,7 @@ namespace litecore {
 
         void parseNew(slice s);
 
-        bool tryParse(slice ascii, bool allowClock);
+        bool tryParse(slice ascii, bool allowClock =false);
 
     private:
         uint8_t _buffer[42];

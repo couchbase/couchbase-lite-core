@@ -88,6 +88,10 @@ namespace litecore {
         return dst + 2;
     }
 
+    static inline bool islowerxdigit(char c) {
+        return isxdigit(c) && !isupper(c);
+    }
+
 
 #pragma mark - API:
 
@@ -269,7 +273,7 @@ namespace litecore {
             if (genSize + suffix.size/2 > sizeof(_buffer) || (suffix.size & 1))
                 return false; // rev ID is too long to fit in my buffer
             for (unsigned i=0; i<suffix.size; i+=2) {
-                if (!isxdigit(suffix[i]) || !isxdigit(suffix[i+1]))
+                if (!islowerxdigit(suffix[i]) || !islowerxdigit(suffix[i+1]))
                     return false; // digest is not hex
                 *dst++ = (uint8_t)(16*digittoint(suffix[i]) + digittoint(suffix[i+1]));
             }

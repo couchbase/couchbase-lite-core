@@ -700,7 +700,7 @@ namespace litecore { namespace repl {
             } else {
                 while (gen < --lastGen) {
                     char fakeID[50];
-                    sprintf(fakeID, "%u-FADED000%.08x%.08x", lastGen, arc4random(), arc4random());
+                    sprintf(fakeID, "%u-faded000%.08x%.08x", lastGen, arc4random(), arc4random());
                     if (nWritten++ > 0)
                         historyStream << ',';
                     historyStream << fakeID;
