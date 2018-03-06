@@ -144,12 +144,12 @@ namespace LiteCore.Interop
             }
         }
 
-        public static bool c4doc_resolveConflict(C4Document* doc, string winningRevID, string losingRevID, byte[] mergedBody, C4Error* error)
+        public static bool c4doc_resolveConflict(C4Document* doc, string winningRevID, string losingRevID, byte[] mergedBody, C4RevisionFlags mergedFlags, C4Error* error)
         {
             using(var winningRevID_ = new C4String(winningRevID))
             using(var losingRevID_ = new C4String(losingRevID))
             fixed(byte *mergedBody_ = mergedBody) {
-                return NativeRaw.c4doc_resolveConflict(doc, winningRevID_.AsC4Slice(), losingRevID_.AsC4Slice(), new C4Slice(mergedBody_, mergedBody == null ? 0 : (ulong)mergedBody.Length), error);
+                return NativeRaw.c4doc_resolveConflict(doc, winningRevID_.AsC4Slice(), losingRevID_.AsC4Slice(), new C4Slice(mergedBody_, mergedBody == null ? 0 : (ulong)mergedBody.Length), mergedFlags, error);
             }
         }
 
@@ -250,7 +250,7 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
-        public static extern bool c4doc_resolveConflict(C4Document* doc, C4Slice winningRevID, C4Slice losingRevID, C4Slice mergedBody, C4Error* error);
+        public static extern bool c4doc_resolveConflict(C4Document* doc, C4Slice winningRevID, C4Slice losingRevID, C4Slice mergedBody, C4RevisionFlags mergedFlags, C4Error* error);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.U1)]
