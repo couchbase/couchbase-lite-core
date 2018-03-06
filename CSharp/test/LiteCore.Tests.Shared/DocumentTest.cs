@@ -683,7 +683,7 @@ namespace LiteCore.Tests
                 LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
                 try {
                      var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, DocID.CreateString(), true, err));
-                     LiteCoreBridge.Check(err => Native.c4doc_resolveConflict(doc, "4-dddd", "3-aaaaaa", Encoding.UTF8.GetBytes("{\"merged\":true}"), err));
+                     LiteCoreBridge.Check(err => Native.c4doc_resolveConflict(doc, "4-dddd", "3-aaaaaa", Encoding.UTF8.GetBytes("{\"merged\":true}"), 0, err));
                      Native.c4doc_selectCurrentRevision(doc);
                      doc->selectedRev.revID.CreateString().Should().Be("5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99");
                      doc->selectedRev.body.CreateString().Should().Be("{\"merged\":true}");
@@ -696,7 +696,7 @@ namespace LiteCore.Tests
                  LiteCoreBridge.Check(err => Native.c4db_beginTransaction(Db, err));
                  try {
                      var doc = (C4Document *)LiteCoreBridge.Check(err => Native.c4doc_get(Db, DocID.CreateString(), true, err));
-                     LiteCoreBridge.Check(err => Native.c4doc_resolveConflict(doc, "3-aaaaaa", "4-dddd", Encoding.UTF8.GetBytes("{\"merged\":true}"), err));
+                     LiteCoreBridge.Check(err => Native.c4doc_resolveConflict(doc, "3-aaaaaa", "4-dddd", Encoding.UTF8.GetBytes("{\"merged\":true}"), 0, err));
                      Native.c4doc_selectCurrentRevision(doc);
                      doc->selectedRev.revID.CreateString().Should().Be("4-333ee0677b5f1e1e5064b050d417a31d2455dc30");
                      doc->selectedRev.body.CreateString().Should().Be("{\"merged\":true}");
