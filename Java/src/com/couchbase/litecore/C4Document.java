@@ -167,9 +167,9 @@ public class C4Document implements C4Constants {
         return purgeRevision(_handle, revID);
     }
 
-    public void resolveConflict(String winningRevID, String losingRevID, byte[] mergeBody)
+    public void resolveConflict(String winningRevID, String losingRevID, byte[] mergeBody, int mergedFlags)
             throws LiteCoreException {
-        resolveConflict(_handle, winningRevID, losingRevID, mergeBody);
+        resolveConflict(_handle, winningRevID, losingRevID, mergeBody, mergedFlags);
     }
 
     // - Creating and Updating Documents
@@ -352,7 +352,7 @@ public class C4Document implements C4Constants {
 
     static native void resolveConflict(long doc,
                                        String winningRevID, String losingRevID,
-                                       byte[] mergeBody)
+                                       byte[] mergeBody, int mergedFlags)
             throws LiteCoreException;
 
     // - Purging and Expiration

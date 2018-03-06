@@ -92,8 +92,7 @@ public interface C4Constants {
         int kRevNew = 0x04;            // Has this rev been inserted since decoding?
         int kRevHasAttachments = 0x08; // Does this rev's body contain attachments?
         int kRevKeepBody = 0x10;       // Revision's body should not be discarded when non-leaf
-        int kRevIsConflict = 0x20; ///< Unresolved conflicting revision; will never be current
-        int kRevIsForeign = 0x40; ///< Rev comes from replicator, not created locally
+        int kRevIsConflict = 0x20;     // Unresolved conflicting revision; will never be current
     }
 
     ////////////////////////////////////
