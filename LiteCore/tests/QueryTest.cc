@@ -1069,6 +1069,57 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query JOINs", "[Query]") {
     }*/
 }
 
+TEST_CASE_METHOD(DataFileTestFixture, "Query NULL check", "[Query]")
+{
+	{
+        Transaction t(store->dataFile());
+        string docID = "rec-00";
+
+        for(int i = 0; i < 3; i++) {
+            stringstream ss(docID);
+            ss << i + 1;
+
+            fleece::Encoder enc;
+            enc.beginDictionary();
+			if(i > 0) {
+				enc.writeKey("callsign");
+				if(i == 1) {
+					enc.writeNull();
+				} else {
+					enc.writeString("ANA");
+				}
+			}
+            enc.endDictionary();
+            alloc_slice body = enc.extractOutput();
+
+            store->set(slice(ss.str()), nullslice, body, DocumentFlags::kNone, t);
+        }
+
+        t.commit();
+    }
+
+	auto query = store->compileQuery(json5(
+        "{'WHAT': [['COUNT()','.'], ['.callsign']], 'WHERE':['IS NOT', ['.callsign'], null]}"));
+	unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 1);
+	CHECK(e->columns()[1]->asString() == "ANA"_sl);
+
+	query = store->compileQuery(json5(
+        "{'WHAT': [['COUNT()','.'], ['.callsign']], 'WHERE':['IS', ['.callsign'], null]}"));
+	e.reset(query->createEnumerator());
+	REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asInt() == 1);
+	CHECK(e->columns()[1]->asString().buf == nullptr);
+
+	query = store->compileQuery(json5(
+        "{'WHAT': [['.callsign']]}"));
+	e.reset(query->createEnumerator());
+	CHECK(e->getRowCount() == 3); // Make sure there are actually three docs!
+}
+
 // NOTE: This test cannot be reproduced in this way on Windows, and it is likely a Unix specific
 // problem.  Leaving an enumerator open in this way will cause a permission denied error when
 // trying to delete the database via db->deleteDataFile()
