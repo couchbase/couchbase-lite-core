@@ -182,6 +182,20 @@ public class C4Document implements C4Constants {
         return new C4Document(update2(_handle, body != null ? body.getHandle() : 0, flags), false);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof C4Document)) return false;
+
+        C4Document that = (C4Document) o;
+
+        return _handle == that._handle;
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) (_handle ^ (_handle >>> 32));
+    }
     //-------------------------------------------------------------------------
     // helper methods
     //-------------------------------------------------------------------------
