@@ -381,3 +381,38 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "Update Once-Conflicted Doc", "[.SyncServer]") {
+    // For issue #448.
+    // Create a conflicted doc on SG, and resolve the conflict:
+    _remoteDBName = "scratch_allows_conflicts"_sl;
+    flushScratchDatabase();
+    sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_rev\":\"1-aaaa\",\"foo\":1}"_sl);
+    sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"bbbb\",\"aaaa\"]},\"foo\":2.1}"_sl);
+    sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":2,\"ids\":[\"cccc\",\"aaaa\"]},\"foo\":2.2}"_sl);
+    sendRemoteRequest("PUT", "doc?new_edits=false", "{\"_revisions\":{\"start\":3,\"ids\":[\"dddd\",\"cccc\"]},\"_deleted\":true}"_sl);
+
+    // Pull doc into CBL:
+    C4Log("-------- Pulling");
+    replicate(kC4OneShot, kC4OneShot);
+
+    // Verify doc:
+    c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->revID == C4STR("2-bbbb"));
+    CHECK((doc->flags & kDocDeleted) == 0);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    CHECK(doc->selectedRev.revID == "1-aaaa"_sl);
+
+    // Update doc:
+    createRev("doc"_sl, "3-ffff"_sl, kFleeceBody);
+
+    // Push change back to SG:
+    C4Log("-------- Pushing");
+    replicate(kC4OneShot, kC4OneShot);
+
+    // Verify doc is updated on SG:
+    auto body = sendRemoteRequest("GET", "doc");
+    CHECK(C4Slice(body) == C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"answer\":42}"));
+}
+
+

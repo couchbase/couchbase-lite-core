@@ -149,9 +149,9 @@ public:
         memset(_numCallbacksWithLevel, 0, sizeof(_numCallbacksWithLevel));
         _docPushErrors = _docPullErrors = { };
 
-        if (push > kC4Passive && _remoteDBName == kScratchDBName && !db2 && !_flushedScratch) {
+        if (push > kC4Passive && (slice(_remoteDBName).hasPrefix("scratch"_sl))
+                && !db2 && !_flushedScratch) {
             flushScratchDatabase();
-            _flushedScratch = true;
         }
 
         C4ReplicatorParameters params = {};
@@ -185,31 +185,47 @@ public:
         CHECK(_callbackStatus.level == status.level);
         CHECK(_callbackStatus.error.domain == status.error.domain);
         CHECK(_callbackStatus.error.code == status.error.code);
-        CHECK(_docPullErrors == _expectedDocPullErrors);
-        CHECK(_docPushErrors == _expectedDocPushErrors);
+        CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
+        CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
     }
 
 
-    void sendRemoteRequest(const string &method,
-                           string path,
-                           slice body =nullslice,
-                           bool admin =false)
+    alloc_slice sendRemoteRequest(const string &method,
+                                  string path,
+                                  slice body =nullslice,
+                                  bool admin =false)
     {
-        C4Log("*** Server command: %s %s", method.c_str(), path.c_str());
+        REQUIRE(slice(_remoteDBName).hasPrefix("scratch"_sl));
+
+        auto port = uint16_t(_address.port + !!admin);
+        path = string("/") + (string)(slice)_remoteDBName + "/" + path;
+        C4Log("*** Server command: %s %.*s:%d/%s",
+              method.c_str(), SPLAT(_address.hostname), port, path.c_str());
         auto r = make_unique<REST::Response>(method,
                              (string)(slice)_address.hostname,
-                             (uint16_t)(_address.port + !!admin),
-                             string("/") + (string)(slice)kScratchDBName + "/" + path,
+                             port,
+                             path,
                              map<string,string>{{"Content-Type", "application/json"}},
                              body);
         REQUIRE(r);
         INFO("Status: " << (int)r->status() << " " << r->statusMessage());
+        REQUIRE(r->status() >= REST::HTTPStatus::OK);
         REQUIRE(r->status() <= REST::HTTPStatus::Created);
+        return r->body();
     }
 
 
     void flushScratchDatabase() {
         sendRemoteRequest("POST", "_flush", nullslice, true);
+        _flushedScratch = true;
+    }
+
+
+    static vector<string> asVector(const set<string> strings) {
+        vector<string> out;
+        for (const string &s : strings)
+            out.push_back(s);
+        return out;
     }
 
 

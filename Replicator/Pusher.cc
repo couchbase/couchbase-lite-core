@@ -275,9 +275,10 @@ namespace litecore { namespace repl {
                         request->ancestorRevIDs.emplace_back(change.remoteAncestorRevID);
                         queued = true;
                     } else if (status != 304) {     // 304 means server has my rev already
-                        logError("Proposed rev '%.*s' #%.*s rejected with status %d",
-                                 SPLAT(change.docID), SPLAT(change.revID), status);
-                        auto err = c4error_make(WebSocketDomain, status, "rejected by proposeChanges"_sl);
+                        logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
+                                 SPLAT(change.docID), SPLAT(change.revID),
+                                 SPLAT(change.remoteAncestorRevID), status);
+                        auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
                         gotDocumentError(change.docID, err, true, false);
                     }
                 } else {

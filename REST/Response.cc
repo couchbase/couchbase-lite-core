@@ -163,8 +163,10 @@ namespace litecore { namespace REST {
     std::string Response::statusMessage() const {
         if (_conn)
             return string(mg_get_request_info(_conn)->http_version);
-        else
+        else if (!_errorMessage.empty())
             return _errorMessage;
+        else 
+            return format("%s (errno %d)", strerror(_errorCode), _errorCode);
     }
 
 
