@@ -39,6 +39,7 @@ void CBLiteTool::cpUsage() {
     "           When DESTINATION is JSON, this is a property name that will be added to the JSON, whose\n"
     "           value is the docID. (If omitted, defaults to \"_id\".)\n"
     "    --bidi : Bidirectional (push+pull) replication.\n"
+    "    --continuous : Continuous replication.\n"
     "    --limit <n>: Stop after <n> documents. (Replicator ignores this)\n"
     "    --careful: Abort on any error.\n"
     "    --verbose or -v : Display progress; repeat flag for more verbosity.\n"
@@ -91,11 +92,15 @@ void CBLiteTool::copyDatabase(bool reversed) {
         if (!replicating)
             fail("--bidi flag only applies to replication");
         auto srcDb = dynamic_cast<DbEndpoint*>(src.get());
-        if (srcDb)
+        if (srcDb) {
             srcDb->setBidirectional(_bidi);
+            srcDb->setContinuous(_continuous);
+        }
         auto dstDb = dynamic_cast<DbEndpoint*>(src.get());
-        if (dstDb)
+        if (dstDb) {
             dstDb->setBidirectional(_bidi);
+            dstDb->setContinuous(_continuous);
+        }
     }
 
     if (_currentCommand == "push" || _currentCommand == "pull") {

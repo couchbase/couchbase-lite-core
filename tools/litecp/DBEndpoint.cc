@@ -90,7 +90,7 @@ void DbEndpoint::copyTo(Endpoint *dst, uint64_t limit) {
         return pushToLocal(*dstDB);
     auto remoteDB = dynamic_cast<RemoteEndpoint*>(dst);
     if (remoteDB)
-        return replicateWith(*remoteDB, kC4OneShot, (_bidirectional ? kC4OneShot : kC4Disabled));
+        return replicateWith(*remoteDB);
     // Normal case, copying docs (to JSON, presumably):
     exportTo(dst, limit);
 }
@@ -203,19 +203,30 @@ static const char* nameOfMode(C4ReplicatorMode push, C4ReplicatorMode pull) {
 }
 
 
-void DbEndpoint::replicateWith(RemoteEndpoint &src, C4ReplicatorMode push, C4ReplicatorMode pull) {
+void DbEndpoint::replicateWith(RemoteEndpoint &remote, bool pushing) {
+    auto pushMode = (_continuous ? kC4Continuous : kC4OneShot);
+    auto pullMode = (_bidirectional ? pushMode : kC4Disabled);
+    if (!pushing)
+        swap(pushMode, pullMode);
     if (Tool::instance->verbose())
-        cout << nameOfMode(push, pull) << " remote database...\n";
-    C4ReplicatorParameters params = replicatorParameters(push, pull);
+        cout << nameOfMode(pushMode, pullMode) << " remote database";
+    if (_continuous)
+        cout << ", continuously";
+    cout << "...\n";
+    C4ReplicatorParameters params = replicatorParameters(pushMode, pullMode);
     C4Error err;
-    replicate(c4repl_new(_db, src.address(), src.databaseName(), nullptr, params, &err), err);
+    replicate(c4repl_new(_db, remote.address(), remote.databaseName(), nullptr, params, &err), err);
 }
 
 
 void DbEndpoint::pushToLocal(DbEndpoint &dst) {
-    auto pullMode = (_bidirectional ? kC4OneShot : kC4Disabled);
+    auto pushMode = (_continuous ? kC4Continuous : kC4OneShot);
+    auto pullMode = (_bidirectional ? pushMode : kC4Disabled);
     if (Tool::instance->verbose())
-        cout << nameOfMode(kC4OneShot, pullMode)  << " local database...\n";
+        cout << nameOfMode(kC4OneShot, pullMode)  << " local database";
+    if (_continuous)
+        cout << ", continuously";
+    cout << "...\n";
     C4ReplicatorParameters params = replicatorParameters(kC4OneShot, pullMode);
     C4Error err;
     replicate(c4repl_new(_db, {}, nullslice, dst._db, params, &err), err);

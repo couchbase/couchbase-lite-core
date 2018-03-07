@@ -238,6 +238,7 @@ const Tool::FlagSpec CBLiteTool::kCatFlags[] = {
 
 const Tool::FlagSpec CBLiteTool::kCpFlags[] = {
     {"--bidi",      (FlagHandler)&CBLiteTool::bidiFlag},
+    {"--continuous",(FlagHandler)&CBLiteTool::continuousFlag},
     {"--limit",     (FlagHandler)&CBLiteTool::limitFlag},
     {"--existing",  (FlagHandler)&CBLiteTool::existingFlag},
     {"-x",          (FlagHandler)&CBLiteTool::existingFlag},

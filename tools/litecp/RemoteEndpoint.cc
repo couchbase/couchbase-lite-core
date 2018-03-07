@@ -32,7 +32,7 @@ void RemoteEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty,
 void RemoteEndpoint::copyTo(Endpoint *dst, uint64_t limit) {
     auto dstDB = dynamic_cast<DbEndpoint*>(dst);
     if (dstDB)
-        dstDB->replicateWith(*this, kC4Disabled, kC4OneShot);
+        dstDB->replicateWith(*this, false);
     else
         Tool::instance->fail("Sorry, this mode isn't supported.");
 }

@@ -39,12 +39,13 @@ public:
 
     virtual void prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint*) override;
     void setBidirectional(bool bidi)                {_bidirectional = bidi;}
+    void setContinuous(bool cont)                   {_continuous = cont;}
     virtual void copyTo(Endpoint *dst, uint64_t limit) override;
     virtual void writeJSON(slice docID, slice json) override;
     virtual void finish() override;
 
     void pushToLocal(DbEndpoint&);
-    void replicateWith(RemoteEndpoint&, C4ReplicatorMode push, C4ReplicatorMode pull);
+    void replicateWith(RemoteEndpoint&, bool pushing =true);
 
     void exportTo(JSONEndpoint*);
     void importFrom(JSONEndpoint*);
@@ -70,6 +71,7 @@ private:
 
     // Replication mode only:
     bool _bidirectional {false};
+    bool _continuous {false};
     Endpoint* _otherEndpoint;
     Stopwatch _stopwatch;
     double _lastElapsed {0};
