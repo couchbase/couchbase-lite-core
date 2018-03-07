@@ -81,9 +81,7 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert *rev);
 
-        void markRevSynced(const Rev &rev) {
-            enqueue(&DBWorker::_markRevSynced, rev);
-        }
+        void markRevSynced(const Rev &rev);
 
         void setCookie(slice setCookieHeader) {
             enqueue(&DBWorker::_setCookie, alloc_slice(setCookieHeader));
@@ -112,7 +110,7 @@ namespace litecore { namespace repl {
         void _insertRevision(RevToInsert *rev);
         void _setCookie(alloc_slice setCookieHeader);
 
-        void insertRevisionsNow()   {enqueue(&DBWorker::_insertRevisionsNow);}
+        void _markRevsSyncedNow();
         void _insertRevisionsNow();
         void _connectionClosed() override;
 
@@ -131,6 +129,13 @@ namespace litecore { namespace repl {
         void updateRemoteRev(C4Document* NONNULL);
         ActivityLevel computeActivityLevel() const override;
 
+        template <class REV>
+        using Queue = std::unique_ptr<std::vector<REV>>;
+        template <class REV>
+        void scheduleRevision(REV, Queue<REV>&);
+        template <class REV>
+        Queue<REV> popScheduledRevisions(Queue<REV>&);
+
         static const size_t kMaxPossibleAncestors = 10;
 
         c4::ref<C4Database> _db;
@@ -142,12 +147,14 @@ namespace litecore { namespace repl {
         c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
         Retained<Pusher> _pusher;                           // Pusher to send db changes to
         DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
+        C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
         bool _getForeignAncestors {false};
         bool _skipForeignChanges {false};
-        std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert; // Pending revs to be added to db
-        std::mutex _revsToInsertMutex;                      // For safe access to _revsToInsert
-        actor::Timer _insertTimer;                          // Timer for inserting revs
-        C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
+        
+        Queue<RevToInsert*> _revsToInsert; // Pending revs to be added to db
+        Queue<Rev> _revsToMarkSynced; // Pending revs to be marked as synced
+        bool _insertionScheduled {false};                   // True if call to insert/sync pending
+        std::mutex _insertionQueueMutex;                    // For safe access to the above
     };
 
 } }

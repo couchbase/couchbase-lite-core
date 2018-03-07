@@ -60,7 +60,6 @@ namespace litecore { namespace repl {
     ,_db(c4db_retain(db))
     ,_blobStore(c4db_getBlobStore(db, nullptr))
     ,_remoteAddress(remoteAddress)
-    ,_insertTimer(bind(&DBWorker::insertRevisionsNow, this))
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
@@ -296,6 +295,9 @@ namespace litecore { namespace repl {
             _maxPushedSequence = p.since;
         C4SequenceNumber latestChangeSequence = _maxPushedSequence;
 
+        if (_getForeignAncestors)
+            _markRevsSyncedNow();   // make sure foreign ancestors are up to date
+
         // Run a by-sequence enumerator to find the changed docs:
         vector<Rev> changes;
         C4Error error = {};
@@ -350,6 +352,9 @@ namespace litecore { namespace repl {
     void DBWorker::dbChanged() {
         if (!_changeObserver)
             return; // if replication has stopped already by the time this async call occurs
+
+        if (_getForeignAncestors)
+            _markRevsSyncedNow();   // make sure foreign ancestors are up to date
 
         static const uint32_t kMaxChanges = 100;
         C4DatabaseChange c4changes[kMaxChanges];
@@ -417,20 +422,6 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBWorker::_markRevSynced(Rev rev) {
-        logDebug("Marking rev '%.*s' %.*s (#%llu) as current for remote db %u",
-                 SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence, _remoteDBID);
-        C4Error error;
-        c4::Transaction t(_db);
-        if (!t.begin(&error)
-            || !c4db_markSynced(_db, rev.docID, rev.sequence, _remoteDBID, &error)
-            || !t.commit(&error)) {
-            warn("Unable to mark '%.*s' %.*s (#%llu) as synced; error %d/%d",
-                 SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence, error.domain, error.code);
-        }
-    }
-
-
     // Called by the Puller; handles a "changes" or "proposeChanges" message by checking which of
     // the changes don't exist locally, and returning a bit-vector indicating them.
     void DBWorker::_findOrRequestRevs(Retained<MessageIn> req,
@@ -448,6 +439,9 @@ namespace litecore { namespace repl {
                     changes.count(), SPLAT(firstSeq), SPLAT(lastSeq));
             }
         }
+
+        if (!proposed)
+            _markRevsSyncedNow();   // make sure foreign ancestors are up to date
 
         MessageBuilder response(req);
         response.compressed = true;
@@ -548,7 +542,7 @@ namespace litecore { namespace repl {
     // Updates the doc to have the currently-selected rev marked as the remote
     void DBWorker::updateRemoteRev(C4Document *doc) {
         slice revID = doc->selectedRev.revID;
-        logVerbose("Updating remote #%u's rev of '%.*s' to %.*s",
+        log("Updating remote #%u's rev of '%.*s' to %.*s",
                    _remoteDBID, SPLAT(doc->docID), SPLAT(revID));
         C4Error error;
         c4::Transaction t(_db);
@@ -771,26 +765,48 @@ namespace litecore { namespace repl {
     }
 
 
-#pragma mark - INSERTING REVISIONS:
+#pragma mark - INSERTING & SYNCING REVISIONS:
 
 
-    void DBWorker::insertRevision(RevToInsert *rev) {
-        lock_guard<mutex> lock(_revsToInsertMutex);
-        if (!_revsToInsert) {
-            _revsToInsert.reset(new vector<RevToInsert*>);
-            _revsToInsert->reserve(500);
-            enqueueAfter(kInsertionDelay, &DBWorker::_insertRevisionsNow);
+    // Add a revision to a queue, and schedule a call to _insertRevisionsNow (thread-safe)
+    template <class REV>
+    void DBWorker::scheduleRevision(REV rev, Queue<REV> &queue) {
+        lock_guard<mutex> lock(_insertionQueueMutex);
+
+        if (!queue) {
+            queue.reset(new vector<REV>);
+            queue->reserve(200);
         }
-        _revsToInsert->push_back(rev);
+        queue->push_back(rev);
+
+        if (!_insertionScheduled) {
+            enqueueAfter(kInsertionDelay, &DBWorker::_insertRevisionsNow);
+            _insertionScheduled = true;
+        }
     }
 
 
+    // Clear the queue, returning its prior contents (thread-safe)
+    template <class REV>
+    DBWorker::Queue<REV> DBWorker::popScheduledRevisions(Queue<REV> &queue) {
+        lock_guard<mutex> lock(_insertionQueueMutex);
+        _insertionScheduled = false;
+        return move(queue);
+    }
+
+
+    void DBWorker::insertRevision(RevToInsert *rev) {
+        scheduleRevision(rev, _revsToInsert);
+    }
+
+
+    // Insert all the revisions queued for insertion, and sync the ones queued for syncing.
     void DBWorker::_insertRevisionsNow() {
-        __typeof(_revsToInsert) revs;
-        {
-            lock_guard<mutex> lock(_revsToInsertMutex);
-            revs = move(_revsToInsert);
-            _revsToInsert.reset();
+        auto revs = popScheduledRevisions(_revsToInsert);
+        if (!revs) {
+            // No insertions scheduled, only syncs, so just do those:
+            _markRevsSyncedNow();
+            return;
         }
 
         logVerbose("Inserting %zu revs:", revs->size());
@@ -801,7 +817,7 @@ namespace litecore { namespace repl {
         if (transaction.begin(&transactionErr)) {
             SharedEncoder enc(c4db_getSharedFleeceEncoder(_db));
             
-            for (auto &rev : *revs) {
+            for (auto rev : *revs) {
                 // Add a revision:
                 logVerbose("    {'%.*s' #%.*s}", SPLAT(rev->docID), SPLAT(rev->revID));
                 vector<C4String> history;
@@ -838,9 +854,10 @@ namespace litecore { namespace repl {
                 if (!doc) {
                     warn("Failed to insert '%.*s' #%.*s : error %d/%d",
                          SPLAT(rev->docID), SPLAT(rev->revID), docErr.domain, docErr.code);
-                    if (rev->onInserted)
+                    if (rev->onInserted) {
                         rev->onInserted(docErr);
-                    rev = nullptr;
+                        rev->onInserted = nullptr;
+                    }
                 } else if (doc->selectedRev.flags & kRevIsConflict) {
                     // Note that rev was inserted but caused a conflict:
                     log("Created conflict with '%.*s' #%.*s",
@@ -848,6 +865,9 @@ namespace litecore { namespace repl {
                     rev->flags |= kRevIsConflict;
                 }
             }
+
+            // Also mark revs as synced, if any, while still in the transaction:
+            _markRevsSyncedNow();
         }
 
         // Commit transaction:
@@ -858,7 +878,7 @@ namespace litecore { namespace repl {
 
         // Notify all revs (that didn't already fail):
         for (auto rev : *revs) {
-            if (rev && rev->onInserted)
+            if (rev->onInserted)
                 rev->onInserted(transactionErr);
         }
 
@@ -869,6 +889,47 @@ namespace litecore { namespace repl {
             log("Inserted %zu revs in %.2fms (%.0f/sec)", revs->size(), t*1000, revs->size()/t);
         }
     }
+
+
+    // Mark this revision as synced (i.e. the server's current revision) soon.
+    // NOTE: While this is queued, calls to c4doc_getRemoteAncestor() for this document won't
+    // return the correct answer, because the change hasn't been made in the database yet.
+    // For that reason, this class ensures that _markRevsSyncedNow() is called before any call
+    // to c4doc_getRemoteAncestor().
+    void DBWorker::markRevSynced(const Rev &rev) {
+        scheduleRevision(rev, _revsToMarkSynced);
+    }
+
+
+    // Mark all the queued revisions as synced to the server.
+    void DBWorker::_markRevsSyncedNow() {
+        auto revs = popScheduledRevisions(_revsToMarkSynced);
+        if (!revs)
+            return;
+
+        Stopwatch st;
+        C4Error error;
+        c4::Transaction transaction(_db);
+        if (transaction.begin(&error)) {
+            for (auto &rev : *revs) {
+                logDebug("Marking rev '%.*s' %.*s (#%llu) as synced to remote db %u",
+                         SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence, _remoteDBID);
+                if (!c4db_markSynced(_db, rev.docID, rev.sequence, _remoteDBID, &error))
+                    warn("Unable to mark '%.*s' %.*s (#%llu) as synced; error %d/%d",
+                         SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence, error.domain, error.code);
+            }
+            if (transaction.commit(&error)) {
+                double t = st.elapsed();
+                log("Marked %zu revs as synced-to-server in %.2fms (%.0f/sec)",
+                    revs->size(), t*1000, revs->size()/t);
+                return;
+            }
+        }
+        warn("Error marking %zu revs as synced: %d/%d", revs->size(), error.domain, error.code);
+    }
+
+
+#pragma mark - PROGRESS / ACTIVITY LEVEL:
 
 
     Worker::ActivityLevel DBWorker::computeActivityLevel() const {
