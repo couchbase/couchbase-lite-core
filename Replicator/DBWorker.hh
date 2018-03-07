@@ -55,6 +55,10 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_setCheckpoint, data, onComplete);
         }
 
+        void checkpointIsInvalid() {
+            enqueue(&DBWorker::_checkpointIsInvalid);
+        }
+
         struct GetChangesParams {
             C4SequenceNumber since;
             DocIDSet docIDs;
@@ -92,6 +96,7 @@ namespace litecore { namespace repl {
         std::string remoteDBIDString() const;
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
+        void _checkpointIsInvalid();
         bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
                                   fleece::slice &checkpointID, c4::ref<C4RawDocument> &doc);
 
@@ -133,6 +138,7 @@ namespace litecore { namespace repl {
         const websocket::Address _remoteAddress;
         std::string _remoteCheckpointDocID;                 // docID of checkpoint
         C4RemoteID _remoteDBID {0};                         // ID # of remote DB in revision store
+        bool _checkpointValid {true};
         c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
         Retained<Pusher> _pusher;                           // Pusher to send db changes to
         DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push

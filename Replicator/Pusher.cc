@@ -274,7 +274,10 @@ namespace litecore { namespace repl {
                         request->noConflicts = true;
                         request->ancestorRevIDs.emplace_back(change.remoteAncestorRevID);
                         queued = true;
-                    } else if (status != 304) {     // 304 means server has my rev already
+                    } else if (status == 304) {
+                        // 304 means server has my rev already
+                        _dbWorker->markRevSynced(change);
+                    } else {
                         logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
                                  SPLAT(change.docID), SPLAT(change.revID),
                                  SPLAT(change.remoteAncestorRevID), status);

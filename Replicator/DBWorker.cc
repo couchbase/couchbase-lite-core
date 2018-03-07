@@ -265,6 +265,11 @@ namespace litecore { namespace repl {
     }
 
 
+    void DBWorker::_checkpointIsInvalid() {
+        _checkpointValid = false;
+    }
+
+
 #pragma mark - CHANGES:
 
 
@@ -398,7 +403,7 @@ namespace litecore { namespace repl {
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
     bool DBWorker::addChangeToList(const C4DocumentInfo &info, C4Document *doc, vector<Rev> &changes) {
         alloc_slice remoteRevID;
-        if (_getForeignAncestors) {
+        if (_getForeignAncestors && _checkpointValid) {
             // For proposeChanges, find the nearest foreign ancestor of the current rev:
             Assert(_remoteDBID);
             c4::sliceResult foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );

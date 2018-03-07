@@ -405,7 +405,9 @@ namespace litecore { namespace repl {
 
                 if (haveLocalCheckpoint) {
                     // Compare checkpoints, reset if mismatched:
-                    _checkpoint.validateWith(remoteCheckpoint);
+                    bool valid = _checkpoint.validateWith(remoteCheckpoint);
+                    if (!valid)
+                        _dbActor->checkpointIsInvalid();
 
                     // Now we have the checkpoints! Time to start replicating:
                     startReplicating();

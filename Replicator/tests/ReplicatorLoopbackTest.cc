@@ -279,6 +279,20 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]") {
+    // Push; erase destination; push again. For #453
+    importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
+    runPushReplication();
+
+    Log("--- Erasing db2, now pushing back to db...");
+    deleteAndRecreateDB(db2);
+
+    runPushReplication();
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
+}
+
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
     auto serverOpts = Replicator::Options::passive();
