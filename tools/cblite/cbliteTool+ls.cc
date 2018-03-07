@@ -27,7 +27,7 @@
 #endif
 
 
-static constexpr int kListColumnWidth = 16;
+static constexpr int kListColumnWidth = 24;
 
 
 void CBLiteTool::listUsage() {
@@ -119,7 +119,7 @@ void CBLiteTool::listDocs(string docIDPattern) {
         } else if (_longListing) {
             // Long form:
             if (nDocs == 1) {
-                cout << ansi("4") << "Document ID     Rev ID     Flags   Seq     Size" << ansiReset() << "\n";
+                cout << ansi("4") << "Document ID             Rev ID     Flags   Seq     Size" << ansiReset() << "\n";
             } else {
                 cout << "\n";
             }

@@ -37,8 +37,8 @@ public:
         return true;
     }
 
-
     virtual void prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint*) override;
+    void setBidirectional(bool bidi)                {_bidirectional = bidi;}
     virtual void copyTo(Endpoint *dst, uint64_t limit) override;
     virtual void writeJSON(slice docID, slice json) override;
     virtual void finish() override;
@@ -69,6 +69,7 @@ private:
     bool _inTransaction {false};
 
     // Replication mode only:
+    bool _bidirectional {false};
     Endpoint* _otherEndpoint;
     Stopwatch _stopwatch;
     double _lastElapsed {0};

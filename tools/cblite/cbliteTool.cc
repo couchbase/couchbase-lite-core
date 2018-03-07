@@ -170,6 +170,10 @@ void CBLiteTool::quitCommand() {
 const Tool::FlagSpec CBLiteTool::kSubcommands[] = {
     {"cat",     (FlagHandler)&CBLiteTool::catDocs},
     {"cp",      (FlagHandler)&CBLiteTool::copyDatabase},
+    {"push",    (FlagHandler)&CBLiteTool::copyDatabase},
+    {"export",  (FlagHandler)&CBLiteTool::copyDatabase},
+    {"pull",    (FlagHandler)&CBLiteTool::copyDatabaseReversed},
+    {"import",  (FlagHandler)&CBLiteTool::copyDatabaseReversed},
     {"file",    (FlagHandler)&CBLiteTool::fileInfo},
     {"help",    (FlagHandler)&CBLiteTool::helpCommand},
     {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
@@ -233,6 +237,7 @@ const Tool::FlagSpec CBLiteTool::kCatFlags[] = {
 };
 
 const Tool::FlagSpec CBLiteTool::kCpFlags[] = {
+    {"--bidi",      (FlagHandler)&CBLiteTool::bidiFlag},
     {"--limit",     (FlagHandler)&CBLiteTool::limitFlag},
     {"--existing",  (FlagHandler)&CBLiteTool::existingFlag},
     {"-x",          (FlagHandler)&CBLiteTool::existingFlag},

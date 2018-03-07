@@ -90,7 +90,7 @@ void DbEndpoint::copyTo(Endpoint *dst, uint64_t limit) {
         return pushToLocal(*dstDB);
     auto remoteDB = dynamic_cast<RemoteEndpoint*>(dst);
     if (remoteDB)
-        return replicateWith(*remoteDB, kC4OneShot, kC4Disabled);
+        return replicateWith(*remoteDB, kC4OneShot, (_bidirectional ? kC4OneShot : kC4Disabled));
     // Normal case, copying docs (to JSON, presumably):
     exportTo(dst, limit);
 }
@@ -193,13 +193,19 @@ void DbEndpoint::commit() {
 #pragma mark - REPLICATION:
 
 
+static const char* nameOfMode(C4ReplicatorMode push, C4ReplicatorMode pull) {
+    if (push >= kC4OneShot && pull >= kC4OneShot)
+        return "Pushing/pulling with";
+    if (push >= kC4OneShot)
+        return "Pushing to";
+    else
+        return "Pulling from";
+}
+
+
 void DbEndpoint::replicateWith(RemoteEndpoint &src, C4ReplicatorMode push, C4ReplicatorMode pull) {
-    if (Tool::instance->verbose()) {
-        if (push >= kC4OneShot)
-            cout << "Pushing to remote database...\n";
-        if (pull >= kC4OneShot)
-            cout << "Pulling from remote database...\n";
-    }
+    if (Tool::instance->verbose())
+        cout << nameOfMode(push, pull) << " remote database...\n";
     C4ReplicatorParameters params = replicatorParameters(push, pull);
     C4Error err;
     replicate(c4repl_new(_db, src.address(), src.databaseName(), nullptr, params, &err), err);
@@ -207,9 +213,10 @@ void DbEndpoint::replicateWith(RemoteEndpoint &src, C4ReplicatorMode push, C4Rep
 
 
 void DbEndpoint::pushToLocal(DbEndpoint &dst) {
+    auto pullMode = (_bidirectional ? kC4OneShot : kC4Disabled);
     if (Tool::instance->verbose())
-        cout << "Pushing to local database...\n";
-    C4ReplicatorParameters params = replicatorParameters(kC4OneShot, kC4Disabled);
+        cout << nameOfMode(kC4OneShot, pullMode)  << " local database...\n";
+    C4ReplicatorParameters params = replicatorParameters(kC4OneShot, pullMode);
     C4Error err;
     replicate(c4repl_new(_db, {}, nullslice, dst._db, params, &err), err);
 }

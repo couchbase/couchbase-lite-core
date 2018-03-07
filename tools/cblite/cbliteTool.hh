@@ -169,6 +169,7 @@ private:
     void jsonIDFlag()    {_jsonIDProperty = nextArg("JSON-id property");}
     void replicateFlag() {_listenerConfig.apis |= kC4SyncAPI;}
     void readonlyFlag()  {_dbFlags = (_dbFlags | kC4DB_ReadOnly) & ~kC4DB_Create;}
+    void bidiFlag()      {_bidi = true;}
     void portFlag()      {_listenerConfig.port = stoul(nextArg("port"));}
 
     static const FlagSpec kSubcommands[];
@@ -195,6 +196,7 @@ private:
     bool _showRevID {false};
     bool _showHelp {false};
     bool _createDst {true};
+    bool _bidi {false};
     alloc_slice _jsonIDProperty;
 
     C4Listener* _listener {nullptr};

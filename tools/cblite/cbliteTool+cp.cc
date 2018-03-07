@@ -18,6 +18,7 @@
 
 #include "cbliteTool.hh"
 #include "Endpoint.hh"
+#include "DBEndpoint.hh"
 #include "Stopwatch.hh"
 
 
@@ -37,6 +38,7 @@ void CBLiteTool::cpUsage() {
     "           be used as the docID. (If omitted, documents are given UUIDs.)\n"
     "           When DESTINATION is JSON, this is a property name that will be added to the JSON, whose\n"
     "           value is the docID. (If omitted, defaults to \"_id\".)\n"
+    "    --bidi : Bidirectional (push+pull) replication.\n"
     "    --limit <n>: Stop after <n> documents. (Replicator ignores this)\n"
     "    --careful: Abort on any error.\n"
     "    --verbose or -v : Display progress; repeat flag for more verbosity.\n"
@@ -63,6 +65,13 @@ void CBLiteTool::copyDatabase(bool reversed) {
         return;
     }
 
+    if (verbose() >= 2) {
+        c4log_setCallbackLevel(kC4LogInfo);
+        auto syncLog = c4log_getDomain("Sync", true);
+        c4log_setLevel(syncLog, max(kC4LogDebug, C4LogLevel(kC4LogInfo - verbose() + 2)));
+    }
+
+
     const char *firstArgName = "source path/URL", *secondArgName = "destination path/URL";
     if (reversed)
         swap(firstArgName, secondArgName);
@@ -76,11 +85,24 @@ void CBLiteTool::copyDatabase(bool reversed) {
     if (reversed)
         swap(src, dst);
 
+    bool replicating = (src->isDatabase() && dst->isDatabase());
+
+    if (_bidi) {
+        if (!replicating)
+            fail("--bidi flag only applies to replication");
+        auto srcDb = dynamic_cast<DbEndpoint*>(src.get());
+        if (srcDb)
+            srcDb->setBidirectional(_bidi);
+        auto dstDb = dynamic_cast<DbEndpoint*>(src.get());
+        if (dstDb)
+            dstDb->setBidirectional(_bidi);
+    }
+
     if (_currentCommand == "push" || _currentCommand == "pull") {
-        if (!src->isDatabase() || !dst->isDatabase())
+        if (!replicating)
             fail("Push/pull must be between databases, not JSON");
     } else if (_currentCommand == "import" || _currentCommand == "export") {
-        if (src->isDatabase() && dst->isDatabase())
+        if (replicating)
             fail("Import/export must specify a JSON file/directory");
     }
 
@@ -90,7 +112,7 @@ void CBLiteTool::copyDatabase(bool reversed) {
 
 void CBLiteTool::copyDatabase(Endpoint *src, Endpoint *dst) {
     src->prepare(true, true, _jsonIDProperty, dst);
-    dst->prepare(false,!_createDst, _jsonIDProperty, src);
+    dst->prepare(false, !_createDst, _jsonIDProperty, src);
 
     Stopwatch timer;
     src->copyTo(dst, _limit);
