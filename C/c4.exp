@@ -65,6 +65,9 @@ _c4db_initFLDictKey
 _c4db_getFLSharedKeys
 _c4db_lock
 _c4db_unlock
+_c4db_getRemoteDBAddress
+_c4db_getRemoteDBID
+_c4db_getRemoteDBAddress
 
 _c4raw_free
 _c4raw_get
@@ -103,6 +106,8 @@ _c4doc_dictContainsBlobs
 _c4doc_blobIsCompressible
 _c4doc_encodeStrippingOldMetaProperties
 _c4doc_detachRevisionBody
+_c4doc_getRemoteAncestor
+_c4doc_setRemoteAncestor
 
 _c4rev_getGeneration
 _c4rev_flagsFromDocFlags

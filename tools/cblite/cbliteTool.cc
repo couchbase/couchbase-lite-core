@@ -249,6 +249,10 @@ const Tool::FlagSpec CBLiteTool::kCpFlags[] = {
     {nullptr, nullptr}
 };
 
+const Tool::FlagSpec CBLiteTool::kRevsFlags[] = {
+    {"--remotes",   (FlagHandler)&CBLiteTool::remotesFlag},
+};
+
 const Tool::FlagSpec CBLiteTool::kServeFlags[] = {
     {"--replicate", (FlagHandler)&CBLiteTool::replicateFlag},
     {"--readonly",  (FlagHandler)&CBLiteTool::readonlyFlag},

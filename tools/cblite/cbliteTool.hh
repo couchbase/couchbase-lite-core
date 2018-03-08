@@ -101,13 +101,16 @@ private:
     void quitCommand();
 
     using RevTree = map<alloc_slice,set<alloc_slice>>; // Maps revID to set of child revIDs
+    using RemoteMap = vector<alloc_slice>;
 
     void writeRevisionTree(C4Document *doc,
                            RevTree &tree,
+                           RemoteMap &remotes,
                            alloc_slice root,
                            const string &indent);
     void writeRevisionChildren(C4Document *doc,
                                RevTree &tree,
+                               RemoteMap &remotes,
                                alloc_slice root,
                                const string &indent);
 
@@ -172,6 +175,7 @@ private:
     void bidiFlag()      {_bidi = true;}
     void continuousFlag(){_continuous = true;}
     void portFlag()      {_listenerConfig.port = stoul(nextArg("port"));}
+    void remotesFlag()   {_showRemotes = true;}
 
     static const FlagSpec kSubcommands[];
     static const FlagSpec kInteractiveSubcommands[];
@@ -179,6 +183,7 @@ private:
     static const FlagSpec kCpFlags[];
     static const FlagSpec kListFlags[];
     static const FlagSpec kQueryFlags[];
+    static const FlagSpec kRevsFlags[];
     static const FlagSpec kServeFlags[];
 
     string _currentCommand;
@@ -195,6 +200,7 @@ private:
     bool _prettyPrint {true};
     bool _json5 {false};
     bool _showRevID {false};
+    bool _showRemotes {false};
     bool _showHelp {false};
     bool _createDst {true};
     bool _bidi {false};

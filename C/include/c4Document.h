@@ -178,6 +178,13 @@ extern "C" {
                                   bool canCreate,
                                   C4Error *outError) C4API;
 
+    /** Given a remote database ID, returns its replication URL / unique identifier.
+        @param db  The database.
+        @param remoteID  The ID assigned to the remote database.
+        @return  The URL/identifier, or a null slice if not found. */
+    C4SliceResult c4db_getRemoteDBAddress(C4Database *db,
+                                          C4RemoteID remoteID) C4API;
+
     /** Returns the revision ID that has been marked as current for the given remote database. */
     C4SliceResult c4doc_getRemoteAncestor(C4Document *doc C4NONNULL,
                                           C4RemoteID remoteDatabase) C4API;

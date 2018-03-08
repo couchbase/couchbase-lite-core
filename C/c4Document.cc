@@ -253,6 +253,24 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
 }
 
 
+C4SliceResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API {
+    using namespace fleece;
+    return tryCatch<C4SliceResult>(nullptr, [&]{
+        Record doc = db->getRawDocument(string(kC4InfoStore), slice(kRemoteDBURLsDoc));
+        if (doc.exists()) {
+            auto body = Value::fromData(doc.body());
+            if (body) {
+                for (Dict::iterator i(body->asDict()); i; ++i) {
+                    if (i.value()->asInt() == remoteID)
+                        return sliceResult(i.keyString());
+                }
+            }
+        }
+        return C4SliceResult{};
+    });
+}
+
+
 C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase) C4API {
     return tryCatch<C4SliceResult>(nullptr, [&]{
         return sliceResult(internal(doc)->remoteAncestorRevID(remoteDatabase));

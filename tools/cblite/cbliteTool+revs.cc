@@ -23,13 +23,14 @@ void CBLiteTool::revsUsage() {
     writeUsageCommand("revs", false, "DOCID");
     cerr <<
     "  Shows a document's revision history\n"
+    "    --remotes : Shows which revisions are known current on remote databases\n"
     ;
 }
 
 
 void CBLiteTool::revsInfo() {
     // Read params:
-    processFlags(nullptr);
+    processFlags(kRevsFlags);
     if (_showHelp) {
         revsUsage();
         return;
@@ -42,9 +43,7 @@ void CBLiteTool::revsInfo() {
     if (!doc)
         return;
 
-    cout << "Document \"" << ansiBold() << doc->docID << ansiReset()
-         << "\", current revID " << ansiBold() << doc->revID << ansiReset()
-         << ", sequence #" << doc->sequence;
+    cout << "Document \"" << ansiBold() << doc->docID << ansiReset() << "\"";
     if (doc->flags & kDocDeleted)
         cout << ", Deleted";
     if (doc->flags & kDocConflicted)
@@ -52,6 +51,17 @@ void CBLiteTool::revsInfo() {
     if (doc->flags & kDocHasAttachments)
         cout << ", Has Attachments";
     cout << "\n";
+
+    // Collect remote status:
+    RemoteMap remotes;
+    if (_showRemotes) {
+        for (C4RemoteID remoteID = 1; true; ++remoteID) {
+            c4::stringResult revID(c4doc_getRemoteAncestor(doc, remoteID));
+            if (!revID)
+                break;
+            remotes.emplace_back(revID);
+        }
+    }
 
     // Collect revision tree info:
     RevTree tree;
@@ -69,44 +79,64 @@ void CBLiteTool::revsInfo() {
         c4doc_selectRevision(doc, leafRevID, false, nullptr);
     } while (c4doc_selectNextLeafRevision(doc, true, true, nullptr));
 
-    writeRevisionChildren(doc, tree, root, "");
+    writeRevisionChildren(doc, tree, remotes, root, "  ");
+
+    for (C4RemoteID i = 1; i <= remotes.size(); ++i) {
+        c4::stringResult addr(c4db_getRemoteDBAddress(_db, i));
+        if (!addr)
+            break;
+        cout << "[REMOTE#" << i << "] = " << addr << "\n";
+    }
 }
 
 
 void CBLiteTool::writeRevisionTree(C4Document *doc,
-                       RevTree &tree,
-                       alloc_slice root,
-                       const string &indent)
+                                   RevTree &tree,
+                                   RemoteMap &remotes,
+                                   alloc_slice root,
+                                   const string &indent)
 {
-    static const char* const kRevFlagName[7] = {
-        "Deleted", "Leaf", "New", "Attach", "KeepBody", "Conflict", "Foreign"
+    static const char* const kRevFlagName[8] = {
+        "Deleted", "Leaf", "New", "Attach", "KeepBody", "Conflict", "Closed", "0x80"
     };
     C4Error error;
     if (!c4doc_selectRevision(doc, root, true, &error))
         fail("accessing revision", error);
     auto &rev = doc->selectedRev;
     cout << indent << "* ";
-    if (rev.flags & kRevLeaf)
+    if ((rev.flags & kRevLeaf) && !(rev.flags & kRevClosed))
         cout << ansiBold();
     cout << rev.revID << ansiReset() << " (#" << rev.sequence << ")";
     if (rev.body.buf)
         cout << ", " << rev.body.size << " bytes";
-    for (int bit = 0; bit < 7; bit++) {
+    for (int bit = 0; bit < 8; bit++) {
         if (rev.flags & (1 << bit))
             cout << ", " << kRevFlagName[bit];
     }
+
+    if (root == doc->revID)
+        cout << ansiBold() << " [CURRENT]" << ansiReset();
+
+    C4RemoteID i = 1;
+    for (alloc_slice &remote : remotes) {
+        if (remote == root)
+            cout << " [REMOTE#" << i << "]";
+        ++i;
+    }
+
     cout << "\n";
-    writeRevisionChildren(doc, tree, root, indent + "  ");
+    writeRevisionChildren(doc, tree, remotes, root, indent + "  ");
 }
 
 void CBLiteTool::writeRevisionChildren(C4Document *doc,
                            RevTree &tree,
+                                       RemoteMap &remotes,
                            alloc_slice root,
                            const string &indent)
 {
     auto &children = tree[root];
     for (auto i = children.rbegin(); i != children.rend(); ++i) {
-        writeRevisionTree(doc, tree, *i, indent);
+        writeRevisionTree(doc, tree, remotes, *i, indent);
     }
 }
 
