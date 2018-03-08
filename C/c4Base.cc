@@ -200,8 +200,15 @@ static bool errorIsInSet(C4Error err, ErrorSet set) {
 
 
 bool c4error_mayBeTransient(C4Error err) C4API {
+#ifndef _MSC_VER
     static CodeList kTransientPOSIX = {
         ENETRESET, ECONNABORTED, ECONNRESET, ETIMEDOUT, ECONNREFUSED, 0};
+#else
+	// Windows has the same POSIX codes, but they are all different values...
+	// magic number time
+	static CodeList kTransientPOSIX = {
+        52, 53, 54, 60, 61, 0};
+#endif
     static CodeList kTransientNetwork = {
         kC4NetErrDNSFailure,
         0};
@@ -227,8 +234,16 @@ bool c4error_mayBeTransient(C4Error err) C4API {
 }
 
 bool c4error_mayBeNetworkDependent(C4Error err) C4API {
+#ifndef _MSC_VER
     static CodeList kUnreachablePOSIX = {
         ENETDOWN, ENETUNREACH, ENOTCONN, ETIMEDOUT, EHOSTDOWN, EHOSTUNREACH,EADDRNOTAVAIL, 0};
+#else
+    // Windows has the same POSIX codes, but they are all different values...
+	// magic number time
+    static CodeList kUnreachablePOSIX = {
+        50, 51, 57, 60, 64, 65, 49, 0};
+#endif
+
     static CodeList kUnreachableNetwork = {
         kC4NetErrDNSFailure,
         kC4NetErrUnknownHost,   // Result may change if user logs into VPN or moves to intranet
