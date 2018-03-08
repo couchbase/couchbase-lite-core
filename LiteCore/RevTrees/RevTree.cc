@@ -193,7 +193,8 @@ namespace litecore {
     Rev* RevTree::_insert(revid unownedRevID,
                           slice body,
                           Rev *parentRev,
-                          Rev::Flags revFlags)
+                          Rev::Flags revFlags,
+                          bool markConflict)
     {
         revFlags = Rev::Flags(revFlags & (Rev::kDeleted | Rev::kClosed | Rev::kHasAttachments | Rev::kKeepBody));
         Assert(!((revFlags & Rev::kClosed) && !(revFlags & Rev::kDeleted)));
@@ -217,14 +218,14 @@ namespace litecore {
         newRev->parent = parentRev;
 
         if (parentRev) {
-            if (!parentRev->isLeaf() || parentRev->isConflict())
+            if (markConflict && (!parentRev->isLeaf() || parentRev->isConflict()))
                 newRev->addFlag(Rev::kIsConflict);      // Creating or extending a branch
             parentRev->clearFlag(Rev::kLeaf);
             if (revFlags & Rev::kKeepBody)
                 keepBody(newRev);
         } else {
             // Root revision:
-            if (!_revs.empty())
+            if (markConflict && !_revs.empty())
                 newRev->addFlag(Rev::kIsConflict);      // Creating a 2nd root
         }
 
@@ -236,7 +237,7 @@ namespace litecore {
     }
 
     const Rev* RevTree::insert(revid revID, slice data, Rev::Flags revFlags,
-                               const Rev* parent, bool allowConflict,
+                               const Rev* parent, bool allowConflict, bool markConflict,
                                int &httpStatus)
     {
         // Make sure the given revID is valid:
@@ -275,11 +276,11 @@ namespace litecore {
         
         // Finally, insert:
         httpStatus = (revFlags & Rev::kDeleted) ? 200 : 201;
-        return _insert(revID, data, (Rev*)parent, revFlags);
+        return _insert(revID, data, (Rev*)parent, revFlags, markConflict);
     }
 
     const Rev* RevTree::insert(revid revID, slice body, Rev::Flags revFlags,
-                               revid parentRevID, bool allowConflict,
+                               revid parentRevID, bool allowConflict, bool markConflict,
                                int &httpStatus)
     {
         const Rev* parent = nullptr;
@@ -290,11 +291,13 @@ namespace litecore {
                 return nullptr; // parent doesn't exist
             }
         }
-        return insert(revID, body, revFlags, parent, allowConflict, httpStatus);
+        return insert(revID, body, revFlags, parent, allowConflict, markConflict, httpStatus);
     }
 
-    int RevTree::insertHistory(const std::vector<revidBuffer> history, slice data,
-                               Rev::Flags revFlags) {
+    int RevTree::insertHistory(const std::vector<revidBuffer> history,
+                               slice data,
+                               Rev::Flags revFlags,
+                               bool markConflict) {
         Assert(history.size() > 0);
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
         int i;
@@ -316,8 +319,8 @@ namespace litecore {
         if (i > 0) {
             // Insert all the new revisions in chronological order:
             while (--i > 0)
-                parent = _insert(history[i], slice(), parent, Rev::kNoFlags);
-            _insert(history[0], data, parent, revFlags);
+                parent = _insert(history[i], slice(), parent, Rev::kNoFlags, markConflict);
+            _insert(history[0], data, parent, revFlags, markConflict);
         }
         return commonAncestorIndex;
     }

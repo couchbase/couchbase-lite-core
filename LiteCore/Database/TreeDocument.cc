@@ -316,7 +316,8 @@ namespace c4Internal {
                 revIDBuffers[i].parse(rq.history[i]);
             commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
                                                          rq.body,
-                                                         (Rev::Flags)rq.revFlags);
+                                                         (Rev::Flags)rq.revFlags,
+                                                         (rq.remoteDBID != 0));
             if (commonAncestor < 0)
                 error::_throw(error::BadRevisionID); // must be invalid revision IDs
             auto newRev = _versionedDoc[revidBuffer(rq.history[0])];
@@ -332,6 +333,8 @@ namespace c4Internal {
 
 
         bool putNewRevision(const C4DocPutRequest &rq) override {
+            if (rq.remoteDBID != 0)
+                error::_throw(error::InvalidParameter, "remoteDBID cannot be used when existing=false");
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
             revidBuffer encodedNewRevID = generateDocRevID(rq.body, selectedRev.revID, deletion);
             slice body = rq.body;
@@ -343,6 +346,7 @@ namespace c4Internal {
                                                (Rev::Flags)rq.revFlags,
                                                _selectedRev,
                                                rq.allowConflict,
+                                               false,
                                                httpStatus);
             if (newRev) {
                 return saveNewRev(rq, newRev);

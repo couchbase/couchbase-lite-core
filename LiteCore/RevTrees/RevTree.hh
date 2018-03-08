@@ -114,6 +114,7 @@ namespace litecore {
                           Rev::Flags,
                           revid parentRevID,
                           bool allowConflict,
+                          bool markConflict,
                           int &httpStatus);
 
         // Adds a new leaf revision, given a pointer to the parent Rev
@@ -122,13 +123,15 @@ namespace litecore {
                           Rev::Flags,
                           const Rev* parent,
                           bool allowConflict,
+                          bool markConflict,
                           int &httpStatus);
 
         // Adds a new leaf revision along with any new ancestor revs in its history.
         // (history[0] is the new rev's ID, history[1] is its parent's, etc.)
         int insertHistory(const std::vector<revidBuffer> history,
                           slice body,
-                          Rev::Flags);
+                          Rev::Flags,
+                          bool markConflict);
 
         // Sets/clears the kIsConflict flag for a Rev and its ancestors.
         void markBranchAsConflict(const Rev*, bool);
@@ -175,7 +178,7 @@ namespace litecore {
         friend class Rev;
         friend class RawRevision;
         void initRevs();
-        Rev* _insert(revid, slice body, Rev *parentRev, Rev::Flags);
+        Rev* _insert(revid, slice body, Rev *parentRev, Rev::Flags, bool markConflicts);
         bool confirmLeaf(Rev* testRev NONNULL);
         void compact();
         void checkForResolvedConflict();
