@@ -829,22 +829,24 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push]
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]") {
-    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    auto docID = C4STR("Khan");
+
+    createFleeceRev(db,  docID, C4STR("1-11111111"), C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
     runPushReplication();
 
     // Update doc in db, delete it in db2
-    createFleeceRev(db,  C4STR("Khan"), C4STR("2-88888888"), C4STR("{\"db\":1}"));
-    createFleeceRev(db2, C4STR("Khan"), C4STR("2-dddddddd"), C4STR("{}"), kRevDeleted);
+    createFleeceRev(db,  docID, C4STR("2-88888888"), C4STR("{\"db\":1}"));
+    createFleeceRev(db2, docID, C4STR("2-dddddddd"), C4STR("{}"), kRevDeleted);
 
     // Now pull to db from db2, creating a conflict:
     C4Log("-------- Pull db <- db2 --------");
     _expectedDocPullErrors = set<string>{"Khan"};
     runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
 
-    c4::ref<C4Document> doc = c4doc_get(db, C4STR("Khan"), true, nullptr);
+    c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == C4STR("2-88888888"));
     CHECK(doc->selectedRev.body.size > 0);
@@ -852,26 +854,48 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
     CHECK(doc->selectedRev.revID == C4STR("2-dddddddd"));
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
+
+    // Resolve the conflict in favor of the remote revision:
+    {
+        c4::Transaction t(db);
+        REQUIRE(t.begin(nullptr));
+        C4Error error;
+        CHECK(c4doc_resolveConflict(doc, C4STR("2-dddddddd"), C4STR("2-88888888"),
+                                    kC4SliceNull, kRevDeleted, &error));
+        CHECK(c4doc_save(doc, 0, &error));
+        REQUIRE(t.commit(nullptr));
+    }
+    
+    doc = c4doc_get(db, docID, true, nullptr);
+    CHECK(doc->revID == C4STR("2-dddddddd"));
+
+    // Update the doc and push it to db2:
+    createRev(db, docID, "3-cafebabe"_sl, kFleeceBody);
+    runPushReplication();
+
+    compareDatabases();
 }
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conflict]") {
-    createFleeceRev(db,  C4STR("Khan"), C4STR("1-11111111"), C4STR("{}"));
+    auto docID = C4STR("Khan");
+
+    createFleeceRev(db,  docID, C4STR("1-11111111"), C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
     runPushReplication();
 
     // Delete doc in db, update it in db2
-    createFleeceRev(db,  C4STR("Khan"), C4STR("2-dddddddd"), C4STR("{}"), kRevDeleted);
-    createFleeceRev(db2, C4STR("Khan"), C4STR("2-88888888"), C4STR("{\"db\":1}"));
+    createFleeceRev(db,  docID, C4STR("2-dddddddd"), C4STR("{}"), kRevDeleted);
+    createFleeceRev(db2, docID, C4STR("2-88888888"), C4STR("{\"db\":1}"));
 
     // Now pull to db from db2, creating a conflict:
     C4Log("-------- Pull db <- db2 --------");
     _expectedDocPullErrors = set<string>{"Khan"};
     runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
 
-    c4::ref<C4Document> doc = c4doc_get(db, C4STR("Khan"), true, nullptr);
+    c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
     CHECK(doc->selectedRev.revID == C4STR("2-dddddddd"));
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
@@ -879,4 +903,24 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     CHECK(doc->selectedRev.revID == C4STR("2-88888888"));
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
+
+    // Resolve the conflict in favor of the remote revision:
+    {
+        c4::Transaction t(db);
+        REQUIRE(t.begin(nullptr));
+        C4Error error;
+        CHECK(c4doc_resolveConflict(doc, C4STR("2-88888888"), C4STR("2-dddddddd"),
+                                    kC4SliceNull, kRevDeleted, &error));
+        CHECK(c4doc_save(doc, 0, &error));
+        REQUIRE(t.commit(nullptr));
+    }
+
+    doc = c4doc_get(db, docID, true, nullptr);
+    CHECK(doc->revID == C4STR("2-88888888"));
+
+    // Update the doc and push it to db2:
+    createRev(db, docID, "3-cafebabe"_sl, kFleeceBody);
+    runPushReplication();
+
+    compareDatabases();
 }

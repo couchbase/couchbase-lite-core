@@ -55,7 +55,7 @@ public:
 
     // Create an empty database db2 and make it the target of the replication
     void createDB2() {
-        auto db2Path = TempDir() + "cbl_core_test2";
+        auto db2Path = TempDir() + "cbl_core_test2.cblite2";
         auto db2PathSlice = c4str(db2Path.c_str());
 
         auto config = c4db_getConfig(db);

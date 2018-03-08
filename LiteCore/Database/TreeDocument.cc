@@ -282,10 +282,10 @@ namespace c4Internal {
             _versionedDoc.markBranchAsConflict(losingRev, false);
 
             // Add a tombstone as a child of losingRev:
-            if (!losingRev->isDeleted()) {
+            if (!losingRev->isClosed()) {
                 selectRevision(losingRev);
                 C4DocPutRequest rq = { };
-                rq.revFlags = kRevDeleted;
+                rq.revFlags = kRevDeleted | kRevClosed;
                 rq.history = &losingRevID;
                 rq.historyCount = 1;
                 putNewRevision(rq);

@@ -45,6 +45,7 @@ namespace litecore {
         bool hasAttachments() const {return (flags & kHasAttachments) != 0;}
         bool isNew() const          {return (flags & kNew) != 0;}
         bool isConflict() const     {return (flags & kIsConflict) != 0;}
+        bool isClosed() const       {return (flags & kClosed) != 0;}
         bool isActive() const       {return isLeaf() && !isDeleted();}
 
         unsigned index() const;
@@ -61,6 +62,7 @@ namespace litecore {
             kHasAttachments = 0x08, /**< Does this rev's body contain attachments? */
             kKeepBody       = 0x10, /**< Body will not be discarded after I'm a non-leaf */
             kIsConflict     = 0x20, /**< Unresolved conflicting revision; should never be current */
+            kClosed         = 0x40, /**< Rev is the end of a closed conflicting branch */
             // Keep these flags consistent with C4RevisionFlags, in c4Document.h!
             kPurge          = 0x80, /**< (Internal: Rev is marked for purging/pruning) */
         };

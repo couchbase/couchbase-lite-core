@@ -45,6 +45,7 @@ extern "C" {
         kRevHasAttachments = 0x08, ///< Does this rev's body contain attachments?
         kRevKeepBody       = 0x10, ///< Revision's body should not be discarded when non-leaf
         kRevIsConflict     = 0x20, ///< Unresolved conflicting revision; will never be current
+        kRevClosed         = 0x40, ///< Rev is the (deleted) end of a closed conflicting branch
     }; // Note: Same as Revision::Flags
 
 

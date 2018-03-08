@@ -233,7 +233,7 @@ _versioning(kC4RevisionTrees)
         sLastConfig = config;
     }
 
-    _dbPath = TempDir() + "cbl_core_test";
+    _dbPath = TempDir() + "cbl_core_test.cblite2";
 
     C4Error error;
     if (!c4db_deleteAtPath(databasePath(), &error))

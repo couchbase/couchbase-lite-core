@@ -195,7 +195,8 @@ namespace litecore {
                           Rev *parentRev,
                           Rev::Flags revFlags)
     {
-        revFlags = Rev::Flags(revFlags & (Rev::kDeleted | Rev::kHasAttachments | Rev::kKeepBody));
+        revFlags = Rev::Flags(revFlags & (Rev::kDeleted | Rev::kClosed | Rev::kHasAttachments | Rev::kKeepBody));
+        Assert(!((revFlags & Rev::kClosed) && !(revFlags & Rev::kDeleted)));
 
         Assert(!_unknown);
         // Allocate copies of the revID and data so they'll stay around:
@@ -477,6 +478,10 @@ namespace litecore {
             return delta < 0;
         // Live revs go before deletions.
         delta = rev1->isDeleted() - rev2->isDeleted();
+        if (delta)
+            return delta < 0;
+        // Closed revs come after even deletions
+        delta = rev1->isClosed() - rev2->isClosed();
         if (delta)
             return delta < 0;
         // Otherwise compare rev IDs, with higher rev ID going first:
