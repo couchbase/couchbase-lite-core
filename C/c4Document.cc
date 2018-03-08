@@ -216,8 +216,9 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
             if (remoteID > 0) {
                 // Found the remote ID!
                 return remoteID;
-                
-            } else if (creating && canCreate) {
+            } else if (!canCreate) {
+                break;
+            } else if (creating) {
                 // Update or create the document, adding the identifier:
                 remoteID = 1;
                 Encoder enc;
