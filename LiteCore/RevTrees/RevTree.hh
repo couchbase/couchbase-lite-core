@@ -51,6 +51,7 @@ namespace litecore {
         unsigned index() const;
         const Rev* next() const;       // next by order in array, i.e. descending priority
         std::vector<const Rev*> history() const;
+        bool isAncestorOf(const Rev* NONNULL) const;
 
         bool operator< (const Rev& rev) const;
 

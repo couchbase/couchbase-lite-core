@@ -267,7 +267,9 @@ C4Test::~C4Test() {
 
 C4Database* C4Test::createDatabase(const string &nameSuffix) {
     assert(!nameSuffix.empty());
-    string dbPath = fleece::slice(databasePath()).asString() + "_" + nameSuffix;
+    string dbPath = fleece::slice(databasePath()).asString();
+    Assert(litecore::hasSuffix(dbPath, ".cblite2"));
+    dbPath.replace(dbPath.size()-8, 8, "_" + nameSuffix + ".cblite2");
     auto dbPathSlice = c4str(dbPath.c_str());
 
     auto config = c4db_getConfig(db);
@@ -325,25 +327,33 @@ void C4Test::createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice bod
     C4Error error;
     auto curDoc = c4doc_get(db, docID, false, &error);
     REQUIRE(curDoc != nullptr);
+    createConflictingRev(db, docID, curDoc->revID, revID, body, flags);
+    c4doc_free(curDoc);
+}
 
-    C4Slice history[2] = {revID, curDoc->revID};
-
+void C4Test::createConflictingRev(C4Database *db,
+                                  C4Slice docID,
+                                  C4Slice parentRevID,
+                                  C4Slice newRevID,
+                                  C4Slice body,
+                                  C4RevisionFlags flags)
+{
+    C4Slice history[2] = {newRevID, parentRevID};
     C4DocPutRequest rq = {};
     rq.existingRevision = true;
+    rq.allowConflict = true;
     rq.docID = docID;
     rq.history = history;
-    rq.historyCount = 1 + (curDoc->revID.buf != nullptr);
+    rq.historyCount = 1 + (parentRevID.buf != nullptr);
     rq.body = body;
     rq.revFlags = flags;
     rq.save = true;
+    C4Error error;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
-    if (!doc) {
-        char buf[256];
-        INFO("Error: " << c4error_getMessageC(error, buf, sizeof(buf)));
-    }
+    char buf[256];
+    INFO("Error: " << c4error_getMessageC(error, buf, sizeof(buf)));
     REQUIRE(doc != nullptr);
     c4doc_free(doc);
-    c4doc_free(curDoc);
 }
 
 

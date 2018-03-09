@@ -733,7 +733,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, NoIncomingConflicts", "
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, OutgoingConflicts", "[Push][Conflict][NoConflicts]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict OutgoingConflicts", "[Push][Conflict][NoConflicts]") {
     // Enable outgoing conflicts; verify that a conflict gets pushed to the server.
     auto pushOpts = Replicator::Options::pushing().setProperty(slice(kC4ReplicatorOptionOutgoingConflicts), true);
     auto serverOpts = Replicator::Options::passive();
@@ -750,7 +750,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict, OutgoingConflicts", "[P
     REQUIRE(c4db_getLastSequence(db2) == 2);
 
     // Push db to db2 again:
-    _expectedDocPullErrors = {"conflict"};
     runReplicators(pushOpts, serverOpts);
     validateCheckpoints(db, db2, "{\"local\":2}");
 
@@ -923,4 +922,85 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     runPushReplication();
 
     compareDatabases();
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull][Conflict]") {
+    // For https://github.com/couchbase/sync_gateway/issues/3359
+    auto docID = C4STR("Khan");
+
+    {
+        TransactionHelper t(db);
+        createRev(db,  docID, C4STR("1-11111111"), kFleeceBody);
+        createConflictingRev(db, docID, C4STR("1-11111111"), C4STR("2-22222222"));
+        createConflictingRev(db, docID, C4STR("1-11111111"), C4STR("2-ffffffff"));
+        createConflictingRev(db, docID, C4STR("2-22222222"), C4STR("3-33333333"));
+    }
+    _expectedDocumentCount = 1;
+    runPullReplication();
+
+    c4::ref<C4Document> doc = c4doc_get(db2, docID, true, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->selectedRev.revID == C4STR("3-33333333"));
+    CHECK((doc->flags & kDocConflicted) == 0);  // locally in db there is no conflict
+
+    {
+        TransactionHelper t(db);
+        createConflictingRev(db, docID, C4STR("3-33333333"), C4STR("4-dddddddd"), kFleeceBody, kRevDeleted);
+    }
+
+    doc = c4doc_get(db, docID, true, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->revID == C4STR("2-ffffffff"));
+    CHECK(doc->selectedRev.revID == C4STR("2-ffffffff"));
+
+    SECTION("Unmodified") {
+        Log("-------- Second pull --------");
+        runPullReplication();
+
+        doc = c4doc_get(db2, docID, true, nullptr);
+        REQUIRE(doc);
+        CHECK(doc->selectedRev.revID == C4STR("2-ffffffff"));
+        CHECK((doc->flags & kDocConflicted) == 0);
+    }
+
+    SECTION("Modify before 2nd pull") {
+        {
+            TransactionHelper t(db2);
+            createRev(db2, docID, C4STR("4-4444"), kC4SliceNull);
+            _expectedDocPullErrors = {"Khan"};
+        }
+
+        Log("-------- Second pull --------");
+        runPullReplication();
+
+        doc = c4doc_get(db2, docID, true, nullptr);
+        REQUIRE(doc);
+        CHECK((doc->flags & kDocConflicted) != 0);
+        CHECK(doc->selectedRev.revID == C4STR("4-4444"));
+        CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
+        CHECK(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
+        CHECK(doc->selectedRev.revID == C4STR("2-ffffffff"));
+        CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
+
+        {
+            TransactionHelper t(db2);
+            C4Error error;
+            CHECK(c4doc_resolveConflict(doc, C4STR("4-4444"), C4STR("2-ffffffff"), kC4SliceNull, 0, &error));
+            CHECK(c4doc_save(doc, 0, &error));
+        }
+
+        doc = c4doc_get(db2, docID, true, nullptr);
+        REQUIRE(doc);
+        CHECK((doc->flags & kDocConflicted) == 0);
+        CHECK(doc->selectedRev.revID == C4STR("4-4444"));
+        CHECK(!c4doc_selectNextLeafRevision(doc, false, false, nullptr));
+        CHECK(c4doc_selectParentRevision(doc));
+        CHECK(doc->selectedRev.revID == C4STR("3-33333333"));
+        CHECK(c4doc_selectParentRevision(doc));
+        CHECK(doc->selectedRev.revID == C4STR("2-22222222"));
+        CHECK(c4doc_selectParentRevision(doc));
+        CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
+        CHECK(!c4doc_selectParentRevision(doc));
+    }
 }

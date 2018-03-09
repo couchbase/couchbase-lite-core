@@ -23,12 +23,18 @@
 #include "Record.hh"
 #include "RawRevTree.hh"
 #include "VersionedDocument.hh"
+#include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include "Fleece.hh"
 #include "varint.hh"
 #include <ctime>
 #include <algorithm>
+
+
+namespace litecore {
+    extern LogDomain SyncLog;   // Defined in Worker.cc
+}
 
 
 namespace c4Internal {
@@ -314,17 +320,42 @@ namespace c4Internal {
             vector<revidBuffer> revIDBuffers(rq.historyCount);
             for (size_t i = 0; i < rq.historyCount; i++)
                 revIDBuffers[i].parse(rq.history[i]);
+
+            auto priorCurrentRev = _versionedDoc.currentRevision();
             commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
                                                          rq.body,
                                                          (Rev::Flags)rq.revFlags,
                                                          (rq.remoteDBID != 0));
             if (commonAncestor < 0)
-                error::_throw(error::BadRevisionID); // must be invalid revision IDs
+                error::_throw(error::BadRevisionID); // Bad revision history (non-consecutive)
             auto newRev = _versionedDoc[revidBuffer(rq.history[0])];
             DebugAssert(newRev);
 
-            if (rq.remoteDBID)
+            if (rq.remoteDBID) {
+                auto oldRev = _versionedDoc.latestRevisionOnRemote(rq.remoteDBID);
+                if (oldRev && !oldRev->isAncestorOf(newRev)) {
+                    // Server has "switched branches": its current revision is now on a different
+                    // branch than it used to be, either due to revs added to this branch, or
+                    // deletion of the old branch. In either case this is not a conflict.
+                    Assert(newRev->isConflict());
+                    const char *effect;
+                    if (oldRev->isConflict()) {
+                        _versionedDoc.purge(oldRev->revID);
+                        effect = "purging old branch";
+                    } else if (oldRev == priorCurrentRev) {
+                        _versionedDoc.markBranchAsConflict(newRev, false);
+                        _versionedDoc.purge(oldRev->revID);
+                        effect = "making new branch main & purging old";
+                        Assert(_versionedDoc.currentRevision() == newRev);
+                    } else {
+                        effect = "doing nothing";
+                    }
+                    LogTo(SyncLog, "c4doc_put detected server-side branch-switch: \"%.*s\" %.*s to %.*s; %s",
+                          SPLAT(docID), SPLAT(oldRev->revID.expanded()),
+                          SPLAT(newRev->revID.expanded()), effect);
+                }
                 _versionedDoc.setLatestRevisionOnRemote(rq.remoteDBID, newRev);
+            }
 
             if (!saveNewRev(rq, newRev, (commonAncestor > 0 || rq.remoteDBID)))
                 return -1;

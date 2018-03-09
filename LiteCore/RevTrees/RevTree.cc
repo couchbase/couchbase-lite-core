@@ -168,6 +168,15 @@ namespace litecore {
         return h;
     }
 
+    bool Rev::isAncestorOf(const Rev *rev) const {
+        do {
+            if (rev == this)
+                return true;
+            rev = rev->parent;
+        } while (rev);
+        return false;
+    }
+
     bool RevTree::isBodyOfRevisionAvailable(const Rev* rev) const {
         return rev->_body.buf != nullptr; // VersionedDocument overrides this
     }
