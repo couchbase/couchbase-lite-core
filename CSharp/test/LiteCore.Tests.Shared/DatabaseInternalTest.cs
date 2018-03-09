@@ -37,6 +37,8 @@ namespace LiteCore.Tests
 #endif
     public unsafe class DatabaseInternalTest : Test
     {
+        private uint _remoteDocID;
+
 #if !WINDOWS_UWP
         public DatabaseInternalTest(ITestOutputHelper output) : base(output)
         {
@@ -67,6 +69,7 @@ namespace LiteCore.Tests
                             historyCount = revID == null ? 0UL : 1UL,
                             body = body_.AsC4Slice(),
                             revFlags = flags,
+                            remoteDBID = _remoteDocID,
                             save = true
                         };
 
@@ -138,6 +141,7 @@ namespace LiteCore.Tests
                             historyCount = (ulong)history.Length,
                             body = body_.AsC4Slice(),
                             revFlags = flags,
+                            remoteDBID = _remoteDocID,
                             save = true
                         };
 
@@ -555,9 +559,11 @@ namespace LiteCore.Tests
                 ForceInsert(docID, history, body);
                 Native.c4db_getLastSequence(Db).Should().Be(lastSeq, "because the last operation should have been a no-op");
 
+                _remoteDocID = 1;
                 var conflictHistory = new[] { "5-5555", "4-4545", "3-3030", "2-2222", "1-1111" };
                 var conflictBody = "{\"message\":\"yo\"}";
                 ForceInsert(docID, conflictHistory, conflictBody);
+                _remoteDocID = 0;
 
                 // Conflicts are a bit different than CBL 1.x here.  A conflicted revision is marked with the Conflict flag,
                 // and such revisions can never be current.  So in other words, the oldest revision always wins the conflict;

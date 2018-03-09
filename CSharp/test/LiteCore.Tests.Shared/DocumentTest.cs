@@ -518,6 +518,7 @@ namespace LiteCore.Tests
                     // Insert existing rev that conflicts:
                     rq.body = C4Slice.Constant("{\"from\":\"elsewhere\"}");
                     rq.existingRevision = true;
+                    rq.remoteDBID = 1;
                     var conflictRevID = IsRevTrees() ? C4Slice.Constant("2-deadbeef") : C4Slice.Constant("1@binky");
                     tmp = new[] { conflictRevID, expectedRevID };
                     rq.historyCount = 2;
