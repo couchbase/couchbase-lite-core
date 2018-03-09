@@ -69,6 +69,10 @@ private:
     void fileUsage();
     void fileInfo();
 
+    // logcat command
+    void logcatUsage();
+    void logcat();
+
     // ls command
     void listUsage();
     void listDocsCommand();
@@ -107,15 +111,24 @@ private:
                            RevTree &tree,
                            RemoteMap &remotes,
                            alloc_slice root,
-                           const string &indent);
+                           int indent);
     void writeRevisionChildren(C4Document *doc,
                                RevTree &tree,
                                RemoteMap &remotes,
                                alloc_slice root,
-                               const string &indent);
+                               int indent);
 
 #pragma mark - UTILITIES:
 
+
+    [[noreturn]] virtual void failMisuse(const string &message) override {
+        cerr << "Error: " << message << "\n";
+        if (_currentCommand.empty())
+            cerr << "Please run `cblite help` for usage information.\n";
+        else
+            cerr << "Please run `cblite help " << _currentCommand << "` for usage information.\n";
+        fail();
+    }
 
     static void writeSize(uint64_t n);
 

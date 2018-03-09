@@ -24,6 +24,8 @@ void CBLiteTool::revsUsage() {
     cerr <<
     "  Shows a document's revision history\n"
     "    --remotes : Shows which revisions are known current on remote databases\n"
+    "  Revision flags are denoted by dashes or the letters:\n"
+    "    [D]eleted  [X]Closed  [C]onflict  [A]ttachments  [K]eep body  [L]eaf"
     ;
 }
 
@@ -79,7 +81,7 @@ void CBLiteTool::revsInfo() {
         c4doc_selectRevision(doc, leafRevID, false, nullptr);
     } while (c4doc_selectNextLeafRevision(doc, true, true, nullptr));
 
-    writeRevisionChildren(doc, tree, remotes, root, "  ");
+    writeRevisionChildren(doc, tree, remotes, root, 1);
 
     for (C4RemoteID i = 1; i <= remotes.size(); ++i) {
         c4::stringResult addr(c4db_getRemoteDBAddress(_db, i));
@@ -94,45 +96,56 @@ void CBLiteTool::writeRevisionTree(C4Document *doc,
                                    RevTree &tree,
                                    RemoteMap &remotes,
                                    alloc_slice root,
-                                   const string &indent)
+                                   int indent)
 {
-    static const char* const kRevFlagName[8] = {
-        "Deleted", "Leaf", "New", "Attach", "KeepBody", "Conflict", "Closed", "0x80"
-    };
     C4Error error;
     if (!c4doc_selectRevision(doc, root, true, &error))
         fail("accessing revision", error);
     auto &rev = doc->selectedRev;
-    cout << indent << "* ";
+    cout << string(indent, ' ');
+    cout << "* ";
     if ((rev.flags & kRevLeaf) && !(rev.flags & kRevClosed))
         cout << ansiBold();
-    cout << rev.revID << ansiReset() << " (#" << rev.sequence << ")";
-    if (rev.body.buf)
-        cout << ", " << rev.body.size << " bytes";
-    for (int bit = 0; bit < 8; bit++) {
-        if (rev.flags & (1 << bit))
-            cout << ", " << kRevFlagName[bit];
+    cout << rev.revID << ansiReset();
+
+    int pad = max(0, 50 - int(indent + 2 + rev.revID.size));
+    cout << string(pad, ' ');
+
+    if (rev.flags & kRevClosed)
+        cout << 'X';
+    else
+        cout << ((rev.flags & kRevDeleted)    ? 'D' : '-');
+    cout << ((rev.flags & kRevIsConflict)     ? 'C' : '-');
+    cout << ((rev.flags & kRevClosed)         ? 'X' : '-');
+    cout << ((rev.flags & kRevHasAttachments) ? 'A' : '-');
+    cout << ((rev.flags & kRevKeepBody)       ? 'K' : '-');
+    cout << ((rev.flags & kRevLeaf)           ? 'L' : '-');
+
+    cout << " #" << rev.sequence;
+    if (rev.body.buf) {
+        cout << ", ";
+        writeSize(rev.body.size);
     }
 
     if (root == doc->revID)
-        cout << ansiBold() << " [CURRENT]" << ansiReset();
+        cout << ansiBold() << "  [CURRENT]" << ansiReset();
 
     C4RemoteID i = 1;
     for (alloc_slice &remote : remotes) {
         if (remote == root)
-            cout << " [REMOTE#" << i << "]";
+            cout << "  [REMOTE#" << i << "]";
         ++i;
     }
 
     cout << "\n";
-    writeRevisionChildren(doc, tree, remotes, root, indent + "  ");
+    writeRevisionChildren(doc, tree, remotes, root, indent+2);
 }
 
 void CBLiteTool::writeRevisionChildren(C4Document *doc,
                            RevTree &tree,
                                        RemoteMap &remotes,
                            alloc_slice root,
-                           const string &indent)
+                           int indent)
 {
     auto &children = tree[root];
     for (auto i = children.rbegin(); i != children.rend(); ++i) {

@@ -110,7 +110,7 @@ public:
     }
 
 
-    [[noreturn]] void failMisuse(const string &message) {
+    [[noreturn]] virtual void failMisuse(const string &message) {
         cerr << "Error: " << message << "\n";
         usage();
         fail();
@@ -142,6 +142,7 @@ public:
     string ansiDim()                    {return ansi("2");}
     string ansiItalic()                 {return ansi("3");}
     string ansiUnderline()              {return ansi("4");}
+    string ansiRed()                    {return ansi("31");}
     string ansiReset()                  {return ansi("0");}
 
     string it(const char *str)          {return ansiItalic() + str + ansiReset();}

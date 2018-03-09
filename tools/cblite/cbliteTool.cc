@@ -32,6 +32,7 @@ void CBLiteTool::usage() {
     "       cblite cat " << it("[FLAGS] DBPATH DOCID [DOCID...]") << "\n"
     "       cblite cp " << it("[FLAGS] SOURCE DESTINATION") << "\n"
     "       cblite file " << it("DBPATH") << "\n"
+    "       cblite logcat " << it("LOGPATH") << "\n"
     "       cblite ls " << it("[FLAGS] DBPATH [PATTERN]") << "\n"
     "       cblite query " << it("[FLAGS] DBPATH JSONQUERY") << "\n"
     "       cblite revs " << it("DBPATH DOCID") << "\n"
@@ -77,8 +78,10 @@ int CBLiteTool::run() {
         runInteractively();
     } else {
         _currentCommand = cmd;
-        if (!processFlag(cmd, kSubcommands))
+        if (!processFlag(cmd, kSubcommands)) {
+            _currentCommand = "";
             failMisuse(format("Unknown subcommand '%s'", cmd.c_str()));
+        }
     }
     return 0;
 }
@@ -142,6 +145,7 @@ void CBLiteTool::helpCommand() {
         cpUsage();
         fileUsage();
         listUsage();
+        logcatUsage();
         queryUsage();
         revsUsage();
         sqlUsage();
@@ -176,6 +180,7 @@ const Tool::FlagSpec CBLiteTool::kSubcommands[] = {
     {"import",  (FlagHandler)&CBLiteTool::copyDatabaseReversed},
     {"file",    (FlagHandler)&CBLiteTool::fileInfo},
     {"help",    (FlagHandler)&CBLiteTool::helpCommand},
+    {"logcat",  (FlagHandler)&CBLiteTool::logcat},
     {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
     {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
     {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
@@ -195,6 +200,7 @@ const Tool::FlagSpec CBLiteTool::kInteractiveSubcommands[] = {
     {"import",  (FlagHandler)&CBLiteTool::copyDatabaseReversed},
     {"file",    (FlagHandler)&CBLiteTool::fileInfo},
     {"help",    (FlagHandler)&CBLiteTool::helpCommand},
+    {"logcat",  (FlagHandler)&CBLiteTool::logcat},
     {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
     {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
     {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
