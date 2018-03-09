@@ -53,6 +53,8 @@ static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) no
 ////////////////////////////////////////////////////////////////////////////////
 class C4DatabaseInternalTest : public C4Test {
 public:
+    C4RemoteID _remoteID {0};
+
     
     C4DatabaseInternalTest(int testOption) :C4Test(testOption) { }
 
@@ -108,6 +110,7 @@ public:
         rq.body = body;
         rq.revFlags = flags;
         rq.save = true;
+        rq.remoteDBID = _remoteID;
         return c4doc_put(db, &rq, nullptr, error);
     }
     
@@ -144,6 +147,7 @@ public:
         rq.body = body;
         rq.revFlags = flags;
         rq.save = true;
+        rq.remoteDBID = _remoteID;
         size_t commonAncestorIndex;
         return c4doc_put(db, &rq, &commonAncestorIndex, error);
     }
@@ -581,7 +585,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
 // test06_RevTree
 N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     if(!isRevTrees()) return;
-    
+
     // TODO: Observer
     
     C4String docID = C4STR("MyDocID");
@@ -601,13 +605,16 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     C4SequenceNumber lastSeq = c4db_getLastSequence(db);
     forceInsert(docID, history, historyCount, body);
     REQUIRE(c4db_getLastSequence(db) == lastSeq);
-    
+
+    // Insert a conflict:
+    _remoteID = 1;  // Treat insertions as coming from a remote db by the replicator
     const size_t conflictHistoryCount = 5;
     const C4String conflictHistory[conflictHistoryCount] =
     {C4STR("5-5555"), C4STR("4-4545"), C4STR("3-3030"),
         C4STR("2-2222"), C4STR("1-1111")};
     C4String conflictBody = C4STR("{\"message\":\"yo\"}");
     forceInsert(docID, conflictHistory, conflictHistoryCount, conflictBody);
+    _remoteID = 0;
 
     // We handle conflicts somewhat differently now than in CBL 1. When a conflict is created the
     // new revision(s) are marked with kRevConflict, and such revisions can never be current. So

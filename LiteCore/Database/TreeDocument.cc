@@ -32,11 +32,6 @@
 #include <algorithm>
 
 
-namespace litecore {
-    extern LogDomain SyncLog;   // Defined in Worker.cc
-}
-
-
 namespace c4Internal {
 
     static const uint32_t kDefaultMaxRevTreeDepth = 20;
@@ -350,7 +345,7 @@ namespace c4Internal {
                     } else {
                         effect = "doing nothing";
                     }
-                    LogTo(SyncLog, "c4doc_put detected server-side branch-switch: \"%.*s\" %.*s to %.*s; %s",
+                    LogTo(DBLog, "c4doc_put detected server-side branch-switch: \"%.*s\" %.*s to %.*s; %s",
                           SPLAT(docID), SPLAT(oldRev->revID.expanded()),
                           SPLAT(newRev->revID.expanded()), effect);
                 }

@@ -451,6 +451,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     // Insert existing rev that conflicts:
     rq.body = C4STR("{\"from\":\"elsewhere\"}");
     rq.existingRevision = true;
+    rq.remoteDBID = 1;
     C4Slice kConflictRevID = isRevTrees() ? C4STR("2-deadbeef")
                                           : C4STR("1@binky");
     C4Slice history[2] = {kConflictRevID, kExpectedRevID};
