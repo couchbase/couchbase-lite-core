@@ -557,6 +557,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     rq.historyCount = 3;
     rq.body = kBody3;
     rq.save = true;
+    rq.remoteDBID = 1;
     C4Error err;
     auto doc = c4doc_put(db, &rq, nullptr, &err);
     REQUIRE(doc);
