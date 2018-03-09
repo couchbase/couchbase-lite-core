@@ -102,7 +102,7 @@ namespace litecore {
                 return false;
         }
         _deleteIndex(liteCoreName);
-        db().exec(sql, LogLevel::Info);
+        db().exec(sql);
         return true;
     }
 
@@ -209,12 +209,12 @@ namespace litecore {
         // Delete any expression index:
         validateIndexName(name);
         string indexName = (string)name;
-        db().exec(CONCAT("DROP INDEX IF EXISTS \"" << indexName << "\""), LogLevel::Info);
+        db().exec(CONCAT("DROP INDEX IF EXISTS \"" << indexName << "\""));
 
         // Delete any FTS index:
         QueryParser qp(tableName());
         auto ftsTableName = qp.FTSTableName(indexName);
-        db().exec(CONCAT("DROP TABLE IF EXISTS \"" << ftsTableName << "\""), LogLevel::Info);
+        db().exec(CONCAT("DROP TABLE IF EXISTS \"" << ftsTableName << "\""));
         dropTrigger(ftsTableName, "ins");
         dropTrigger(ftsTableName, "upd");
         dropTrigger(ftsTableName, "del");

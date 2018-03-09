@@ -72,6 +72,7 @@ namespace litecore {
             }
 
             string sql = qp.SQL();
+            log("Compiled as %s", sql.c_str());
             LogTo(SQL, "Compiled {Query#%u}: %s", _objectRef, sql.c_str());
             _statement.reset(keyStore.compile(sql));
             

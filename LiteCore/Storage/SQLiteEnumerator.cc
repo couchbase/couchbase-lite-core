@@ -39,7 +39,7 @@ namespace litecore {
         :_stmt(stmt),
          _content(content)
         {
-            LogVerbose(SQL, "Enumerator: %s", _stmt->getQuery().c_str());
+            LogTo(SQL, "Enumerator: %s", _stmt->getQuery().c_str());
         }
 
         virtual bool next() override {

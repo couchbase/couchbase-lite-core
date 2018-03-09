@@ -87,7 +87,7 @@ namespace litecore {
 
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,
                                    const char *sql) const;
-        int exec(const std::string &sql, LogLevel =LogLevel::Verbose);
+        int exec(const std::string &sql);
         int execWithLock(const std::string &sql);
         int64_t intQuery(const char *query);
         void optimizeAndVacuum();
@@ -96,7 +96,7 @@ namespace litecore {
         friend class SQLiteKeyStore;
 
         bool decrypt();
-        int _exec(const std::string &sql, LogLevel =LogLevel::Verbose);
+        int _exec(const std::string &sql);
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;

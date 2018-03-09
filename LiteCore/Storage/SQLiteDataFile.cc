@@ -84,10 +84,10 @@ namespace litecore {
     // open the database and grab the write lock.
     static const unsigned kBusyTimeoutSecs = 10;
 
-    LogDomain SQL("SQL");
+    LogDomain SQL("SQL", LogLevel::Warning);
 
     void LogStatement(const SQLite::Statement &st) {
-        LogVerbose(SQL, "... %s", st.getQuery().c_str());
+        LogTo(SQL, "... %s", st.getQuery().c_str());
     }
 
     static void sqlite3_log_callback(void *pArg, int errCode, const char *msg) {
@@ -389,15 +389,14 @@ namespace litecore {
     }
 
 
-    int SQLiteDataFile::_exec(const string &sql, LogLevel logLevel) {
-        if (_usuallyFalse(SQL.willLog(logLevel)))
-            SQL.log(logLevel, "%s", sql.c_str());
+    int SQLiteDataFile::_exec(const string &sql) {
+        LogTo(SQL, "%s", sql.c_str());
         return _sqlDb->exec(sql);
     }
 
-    int SQLiteDataFile::exec(const string &sql, LogLevel logLevel) {
+    int SQLiteDataFile::exec(const string &sql) {
         Assert(inTransaction());
-        return _exec(sql, logLevel);
+        return _exec(sql);
     }
 
     int SQLiteDataFile::execWithLock(const string &sql) {
