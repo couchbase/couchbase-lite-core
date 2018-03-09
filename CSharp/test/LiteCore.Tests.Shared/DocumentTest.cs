@@ -651,7 +651,8 @@ namespace LiteCore.Tests
                             history = history_,
                             historyCount = 3,
                             body = body3,
-                            save = true
+                            save = true,
+                            remoteDBID = 1
                         };
 
                         C4Error error;
