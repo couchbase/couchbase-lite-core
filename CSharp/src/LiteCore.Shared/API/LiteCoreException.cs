@@ -35,157 +35,154 @@ namespace Couchbase.Lite
         /// <summary>
         /// Internal assertion failure
         /// </summary>
-        AssertionFailed = 1,    
+        AssertionFailed = C4ErrorCode.AssertionFailed,    
 
         /// <summary>
         /// An unimplemented API call
         /// </summary>
-        Unimplemented,
+        Unimplemented = C4ErrorCode.Unimplemented,
 
         /// <summary>
         /// Unsupported encryption algorithm
         /// </summary>
-        UnsupportedEncryption = 4,
+        UnsupportedEncryption = C4ErrorCode.UnsupportedEncryption,
 
         /// <summary>
-        /// Function must be called within a transaction
+        /// An invalid revision ID was attempted to be used to insert a document
+        /// (usually because of an invalid revision ID written directly into
+        /// Sync Gateway via the REST API)
         /// </summary>
-        NoTransaction,
+        BadRevisionID = C4ErrorCode.BadRevisionID,
 
         /// <summary>
         /// Revision contains corrupted/unreadable data
         /// </summary>
-        CorruptRevisionData = 8,
+        CorruptRevisionData = C4ErrorCode.CorruptRevisionData,
 
         /// <summary>
         /// Database/KeyStore is not open
         /// </summary>
-        NotOpen = 11,
+        NotOpen = C4ErrorCode.NotOpen,
 
         /// <summary>
         /// Document not found
         /// </summary>
-        NotFound,
+        NotFound = C4ErrorCode.NotFound,
 
         /// <summary>
         /// Document update conflict
         /// </summary>
-        Conflict = 14,
+        Conflict = C4ErrorCode.Conflict,
 
         /// <summary>
         /// Invalid function parameter or struct value
         /// </summary>
-        InvalidParameter,
+        InvalidParameter = C4ErrorCode.InvalidParameter,
 
         /// <summary>
         /// Internal unexpected C++ exception
         /// </summary>
-        UnexpectedError = 17,
+        UnexpectedError = C4ErrorCode.UnexpectedError,
 
         /// <summary>
         /// Database file can't be opened; may not exist
         /// </summary>
-        CantOpenFile,
+        CantOpenFile = C4ErrorCode.CantOpenFile,
 
         /// <summary>
         /// File I/O error
         /// </summary>
-        IOError,
+        IOError = C4ErrorCode.IOError,
 
         /// <summary>
         /// Memory allocation failed (out of memory?)
         /// </summary>
-        MemoryError = 21,
+        MemoryError = C4ErrorCode.MemoryError,
 
         /// <summary>
         /// File is not writeable
         /// </summary>
-        NotWriteable,
+        NotWriteable = C4ErrorCode.NotWriteable,
 
         /// <summary>
         /// Data is corrupted
         /// </summary>
-        CorruptData,
+        CorruptData = C4ErrorCode.CorruptData,
 
         /// <summary>
         /// Database is busy / locked
         /// </summary>
-        Busy,
+        Busy = C4ErrorCode.Busy,
 
         /// <summary>
         /// Function cannot be called while in a transaction
         /// </summary>
-        NotInTransaction,
+        NotInTransaction = C4ErrorCode.NotInTransaction,
 
         /// <summary>
         /// Database can't be closed while a transaction is open
         /// </summary>
-        TransactionNotClosed,
-
-        ///// <summary>
-        ///// (Unused)
-        ///// </summary>
-        //IndexBusy,
+        TransactionNotClosed = C4ErrorCode.TransactionNotClosed,
 
         /// <summary>
         /// Operation not supported on this database
         /// </summary>
-        Unsupported = 28,
+        Unsupported = C4ErrorCode.Unsupported,
 
         /// <summary>
         /// File is not a database or encryption key is wrong
         /// </summary>
-        UnreadableDatabase,
+        UnreadableDatabase = C4ErrorCode.NotADatabaseFile,
 
         /// <summary>
         /// Database exists but not in the format/storage requested
         /// </summary>
-        WrongFormat,
+        WrongFormat = C4ErrorCode.WrongFormat,
 
         /// <summary>
         /// Encryption / Decryption error
         /// </summary>
-        Crypto,
+        Crypto = C4ErrorCode.Crypto,
 
         /// <summary>
         /// Invalid query
         /// </summary>
-        InvalidQuery,
+        InvalidQuery = C4ErrorCode.InvalidQuery,
 
         /// <summary>
         /// No such index, or query requires a nonexistent index
         /// </summary>
-        MissingIndex,
+        MissingIndex = C4ErrorCode.MissingIndex,
 
         /// <summary>
         /// Unknown query param name, or param number out of range
         /// </summary>
-        InvalidQueryParam,
+        InvalidQueryParam = C4ErrorCode.InvalidQueryParam,
 
         /// <summary>
         /// Unknown error from remote server
         /// </summary>
-        RemoteError,
+        RemoteError = C4ErrorCode.RemoteError,
 
         /// <summary>
         /// Database file format is older than what I can open
         /// </summary>
-        DatabaseTooOld,
+        DatabaseTooOld = C4ErrorCode.DatabaseTooOld,
 
         /// <summary>
         /// Database file format is newer than what I can open
         /// </summary>
-        DatabaseTooNew,
+        DatabaseTooNew = C4ErrorCode.DatabaseTooNew,
 
         /// <summary>
         /// Invalid document ID
         /// </summary>
-        BadDocID,
+        BadDocID = C4ErrorCode.BadDocID,
 
         /// <summary>
         /// Database can't be upgraded (might be unsupported dev version)
         /// </summary>
-        CantUpgradeDatabase,
+        CantUpgradeDatabase = C4ErrorCode.CantUpgradeDatabase,
 
         /// <summary>
         /// Not an actual error, but serves as the lower bound for network related
@@ -196,62 +193,62 @@ namespace Couchbase.Lite
         /// <summary>
         /// DNS Lookup failed
         /// </summary>
-        DNSFailure,
+        DNSFailure = C4NetworkErrorCode.DNSFailure + NetworkBase,
 
         /// <summary>
         /// DNS server doesn't know the hostname
         /// </summary>
-        UnknownHost,
+        UnknownHost = C4NetworkErrorCode.UnknownHost + NetworkBase,
 
         /// <summary>
         /// Socket timeout during an operation
         /// </summary>
-        Timeout,
+        Timeout = C4NetworkErrorCode.Timeout + NetworkBase,
 
         /// <summary>
         /// The provided URL is not valid
         /// </summary>
-        InvalidUrl,
+        InvalidUrl = C4NetworkErrorCode.InvalidURL + NetworkBase,
 
         /// <summary>
         /// Too many HTTP redirects for the HTTP client to handle
         /// </summary>
-        TooManyRedirects,
+        TooManyRedirects = C4NetworkErrorCode.TooManyRedirects + NetworkBase,
 
         /// <summary>
         /// Failure during TLS handshake process
         /// </summary>
-        TLSHandshakeFailed,
+        TLSHandshakeFailed = C4NetworkErrorCode.TLSHandshakeFailed + NetworkBase,
 
         /// <summary>
         /// The provided TLS certificate has expired
         /// </summary>
-        TLSCertExpired,
+        TLSCertExpired = C4NetworkErrorCode.TLSCertExpired + NetworkBase,
 
         /// <summary>
         /// Cert isn't trusted for other reason
         /// </summary>
-        TLSCertUntrusted,
+        TLSCertUntrusted = C4NetworkErrorCode.TLSCertUntrusted + NetworkBase,
 
         /// <summary>
         /// A required client certificate was not provided
         /// </summary>
-        TLSClientCertRequired,
+        TLSClientCertRequired = C4NetworkErrorCode.TLSClientCertRequired + NetworkBase,
 
         /// <summary>
         /// Client certificate was rejected by the server
         /// </summary>
-        TLSClientCertRejected,
+        TLSClientCertRejected = C4NetworkErrorCode.TLSClientCertRejected + NetworkBase,
 
         /// <summary>
         /// Self-signed cert, or unknow anchor cert
         /// </summary>
-        TLSCertUnknownRoot,
+        TLSCertUnknownRoot = C4NetworkErrorCode.TLSCertUnknownRoot + NetworkBase,
 
         /// <summary>
         /// The client was redirected to an invalid location by the server
         /// </summary>
-        InvalidRedirect,
+        InvalidRedirect = C4NetworkErrorCode.InvalidRedirect + NetworkBase,
 
         /// <summary>
         /// Not an actual error, but serves as the lower bound for HTTP related
@@ -313,47 +310,47 @@ namespace Couchbase.Lite
         /// <summary>
         /// Peer has to close, e.g. because host app is quitting
         /// </summary>
-        WebSocketGoingAway = 11001,
+        WebSocketGoingAway = C4WebSocketCloseCode.WebSocketCloseGoingAway + HTTPBase,
 
         /// <summary>
         /// Protocol violation: invalid framing data
         /// </summary>
-        WebSocketProtocolError = 11002,
+        WebSocketProtocolError = C4WebSocketCloseCode.WebSocketCloseProtocolError + HTTPBase,
 
         /// <summary>
         /// Message payload cannot be handled
         /// </summary>
-        WebSocketDataError = 11003,
+        WebSocketDataError = C4WebSocketCloseCode.WebSocketCloseDataError + HTTPBase,
 
         /// <summary>
         /// TCP socket closed unexpectedly
         /// </summary>
-        WebSocketAbnormalClose = 11006,
+        WebSocketAbnormalClose = C4WebSocketCloseCode.WebSocketCloseAbnormal + HTTPBase,
 
         /// <summary>
         /// Unparseable WebSocket message
         /// </summary>
-        WebSocketBadMessageFormat = 11007,
+        WebSocketBadMessageFormat = C4WebSocketCloseCode.WebSocketCloseBadMessageFormat + HTTPBase,
 
         /// <summary>
         /// Message violated unspecified policy
         /// </summary>
-        WebSocketPolicyError = 11008,
+        WebSocketPolicyError = C4WebSocketCloseCode.WebSocketClosePolicyError + HTTPBase,
 
         /// <summary>
         /// Message is too large for peer to handle
         /// </summary>
-        WebSocketMessageTooBig = 11009,
+        WebSocketMessageTooBig = C4WebSocketCloseCode.WebSocketCloseMessageTooBig + HTTPBase,
 
         /// <summary>
         /// Peer doesn't provide a necessary extension
         /// </summary>
-        WebSocketMissingExtension = 11010,
+        WebSocketMissingExtension = C4WebSocketCloseCode.WebSocketCloseMissingExtension + HTTPBase,
 
         /// <summary>
         /// Can't fulfill request due to "unexpected condition"
         /// </summary>
-        WebSocketCantFulfill = 11011
+        WebSocketCantFulfill = C4WebSocketCloseCode.WebSocketCloseCantFulfill + HTTPBase
     }
 
     public enum CouchbaseLiteErrorType
