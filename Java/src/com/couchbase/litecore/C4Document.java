@@ -114,20 +114,12 @@ public class C4Document implements C4Constants {
 
     // - Revisions
 
-    public void selectRevision(String revID, boolean withBody) throws LiteCoreException {
-        selectRevision(_handle, revID, withBody);
-    }
-
     public boolean selectCurrentRevision() {
         return selectCurrentRevision(_handle);
     }
 
     public void loadRevisionBody() throws LiteCoreException {
         loadRevisionBody(_handle);
-    }
-
-    public String detachRevisionBody() {
-        return detachRevisionBody(_handle);
     }
 
     public boolean hasRevisionBody() {
@@ -157,10 +149,6 @@ public class C4Document implements C4Constants {
 
     public boolean selectCommonAncestorRevision(String revID1, String revID2) {
         return selectCommonAncestorRevision(_handle, revID1, revID2);
-    }
-
-    public boolean removeRevisionBody() {
-        return removeRevisionBody(_handle);
     }
 
     public int purgeRevision(String revID) throws LiteCoreException {
@@ -209,10 +197,6 @@ public class C4Document implements C4Constants {
         return isFlags(C4DocumentFlags.kDocConflicted);
     }
 
-    public boolean hasAttachments() {
-        return isFlags(C4DocumentFlags.kDocHasAttachments);
-    }
-
     public boolean exists() {
         return isFlags(C4DocumentFlags.kDocExists);
     }
@@ -221,44 +205,13 @@ public class C4Document implements C4Constants {
         return (getFlags(_handle) & flag) == flag;
     }
 
-    // helper methods for Revision
-    public boolean selectedRevDeleted() {
-        return isSelectedRevFlags(C4RevisionFlags.kRevDeleted);
-    }
-
-    public boolean selectedRevLeaf() {
-        return isSelectedRevFlags(C4RevisionFlags.kRevLeaf);
-    }
-
-    public boolean selectedRevNew() {
-        return isSelectedRevFlags(C4RevisionFlags.kRevNew);
-    }
-
-    public boolean selectedRevHasAttachments() {
-        return isSelectedRevFlags(C4RevisionFlags.kRevHasAttachments);
-    }
-
-    private boolean isSelectedRevFlags(int flag) {
+    public boolean isSelectedRevFlags(int flag) {
         return (getSelectedFlags(_handle) & flag) == flag;
     }
 
     //-------------------------------------------------------------------------
     // Fleece-related
     //-------------------------------------------------------------------------
-
-    public static boolean hasOldMetaProperties(FLDict doc) {
-        return hasOldMetaProperties(doc.getHandle());
-    }
-
-    public static byte[] encodeStrippingOldMetaProperties(FLDict doc) {
-        return encodeStrippingOldMetaProperties(doc.getHandle());
-    }
-
-    // returns blobKey if the given dictionary is a [reference to a] blob; otherwise null (0)
-    public static C4BlobKey dictIsBlob(FLDict dict, FLSharedKeys sk) {
-        long handle = dictIsBlob(dict.getHandle(), sk == null ? 0L : sk.getHandle());
-        return handle != 0 ? new C4BlobKey(handle) : null;
-    }
 
     public static boolean dictContainsBlobs(FLSliceResult dict, FLSharedKeys sk) {
         return dictContainsBlobs2(dict.getHandle(), sk == null ? 0L : sk.getHandle());
@@ -267,8 +220,6 @@ public class C4Document implements C4Constants {
     public String bodyAsJSON(boolean canonical) throws LiteCoreException {
         return bodyAsJSON(_handle, canonical);
     }
-
-    // doc -> pointer to C4Document
 
     //-------------------------------------------------------------------------
     // protected methods
