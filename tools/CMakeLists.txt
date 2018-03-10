@@ -41,23 +41,3 @@ else()
     target_link_libraries(cblite pthread z dl
                           ${ICU4C_COMMON} ${ICU4C_I18N} ${LIBCXX_LIB} ${LIBCXXABI_LIB})
 endif()
-
-
-### LITECORELOG
-
-set(LITECORELOG_SRC  litecorelog.cc
-               ${TOP}LiteCore/Support/StringUtil.cc
-               ${TOP}LiteCore/Support/LogDecoder.cc
-               ${TOP}LiteCore/Support/LogEncoder.cc
-			   ${TOP}/vendor/BLIP-Cpp/src/util/Timer.cc)
-
-add_executable(litecorelog
-               ${LITECORELOG_SRC})
-
-target_link_libraries(litecorelog  FleeceStatic Support)
-if (APPLE)
-    target_link_libraries(litecorelog "-framework CoreFoundation")
-elseif(UNIX)
-    target_link_libraries(litecorelog ${LIBCXX_LIB} ${LIBCXXABI_LIB} pthread)
-endif()
-
