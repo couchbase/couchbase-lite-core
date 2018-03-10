@@ -227,7 +227,6 @@ bool c4error_mayBeTransient(C4Error err) C4API {
         kTransientPOSIX,
         nullptr,
         nullptr,
-        nullptr,
         kTransientNetwork,
         kTransientWebSocket};
     return errorIsInSet(err, kTransient);
@@ -252,7 +251,6 @@ bool c4error_mayBeNetworkDependent(C4Error err) C4API {
         nullptr,
         nullptr,
         kUnreachablePOSIX,
-        nullptr,
         nullptr,
         nullptr,
         kUnreachableNetwork,

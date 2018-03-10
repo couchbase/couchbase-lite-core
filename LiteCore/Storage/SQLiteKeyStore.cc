@@ -210,8 +210,7 @@ namespace litecore {
 
     Record SQLiteKeyStore::get(sequence_t seq /*, ContentOptions options*/) const {
         constexpr ContentOptions options = kDefaultContent;  // this used to be a param but not used
-        if (!_capabilities.sequences)
-            error::_throw(error::NoSequences);
+        Assert(_capabilities.sequences);
         Record rec;
         auto &stmt = (options & kMetaOnly)
             ? compile(_getMetaBySeqStmt,

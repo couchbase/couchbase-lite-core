@@ -32,7 +32,6 @@ namespace litecore {
         enum Domain {
             LiteCore = 1,       // See LiteCoreError enum, below
             POSIX,              // See <errno.h>
-            ForestDB,           // unused
             SQLite,             // See <sqlite3.h>
             Fleece,             // See FleeceException.h
             Network,            // See NetworkError enum in WebSocketInterface.hh
@@ -48,34 +47,25 @@ namespace litecore {
         enum LiteCoreError {
             AssertionFailed = 1,
             Unimplemented,
-            NoSequences,
             UnsupportedEncryption,
-            NoTransaction,
             BadRevisionID,
-            BadVersionVector,
             CorruptRevisionData,
-            CorruptIndexData,
-            TokenizerError, // can't create text tokenizer for FTS
             NotOpen,
             NotFound,
-            Deleted,
             Conflict,
             InvalidParameter,
-            DatabaseError,
             UnexpectedError,
             CantOpenFile,
             IOError,
-            CommitFailed,
             MemoryError,
             NotWriteable,
             CorruptData,
             Busy,
             NotInTransaction,
             TransactionNotClosed,
-            IndexBusy,
             UnsupportedOperation,
             NotADatabaseFile,
-            WrongFormat,                // data exists but not in format requested, or data given is in unusable format
+            WrongFormat,
             CryptoError,
             InvalidQuery,
             NoSuchIndex,

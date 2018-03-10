@@ -384,7 +384,7 @@ namespace litecore {
                         slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
                         const Value *value = Value::fromData(fleeceData);
                         if (!value)
-                            error::_throw(error::CorruptData);
+                            error::_throw(error::CorruptRevisionData);
                         enc.writeValue(value);
                         break;
                     }
