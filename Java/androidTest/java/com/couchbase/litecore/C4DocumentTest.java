@@ -72,7 +72,8 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
     private void _testInvalidDocID(String docID) throws LiteCoreException {
         db.beginTransaction();
         try {
-            db.put(kBody.getBytes(), docID, 0, false, false, new String[0], true, 0);
+            db.put(kBody.getBytes(), docID, 0, false, false,
+                    new String[0], true, 0, 0);
             fail();
         } catch (LiteCoreException e) {
             assertEquals(LiteCoreDomain, e.domain);
@@ -143,7 +144,9 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
         boolean commit = false;
         db.beginTransaction();
         try {
-            doc = db.put(kBody.getBytes(), kDocID, 0, true, false, new String[]{kRevID}, true, 0);
+            doc = db.put(kBody.getBytes(), kDocID, 0, true,
+                    false, new String[]{kRevID}, true,
+                    0, 0);
             assertNotNull(doc);
             assertEquals(kRevID, doc.getRevID());
             assertEquals(kRevID, doc.getSelectedRevID());
@@ -258,8 +261,9 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
         try {
             for (int i = 0; i < kNumRevs; i++) {
                 String[] history = {doc.getRevID()};
-                C4Document savedDoc = db.put(kBody.getBytes(), doc.getDocID(), 0, false, false,
-                        history, true, 30);
+                C4Document savedDoc = db.put(kBody.getBytes(), doc.getDocID(), 0,
+                        false, false,
+                        history, true, 30, 0);
                 assertNotNull(savedDoc);
                 doc.free();
                 doc = savedDoc;
@@ -327,8 +331,9 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
         db.beginTransaction();
         try {
             // Creating doc given ID:
-            C4Document doc = db.put(kBody.getBytes(), kDocID, 0, false, false,
-                    new String[0], true, 0);
+            C4Document doc = db.put(kBody.getBytes(), kDocID, 0,
+                    false, false,
+                    new String[0], true, 0, 0);
             assertNotNull(doc);
             assertEquals(kDocID, doc.getDocID());
             String kExpectedRevID = isRevTrees() ?
@@ -341,7 +346,9 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
 
             // Update doc:
             String[] history = {kExpectedRevID};
-            doc = db.put("{\"ok\":\"go\"}".getBytes(), kDocID, 0, false, false, history, true, 0);
+            doc = db.put("{\"ok\":\"go\"}".getBytes(), kDocID, 0,
+                    false, false, history, true,
+                    0, 0);
             assertNotNull(doc);
             // NOTE: With current JNI binding, unable to check commonAncestorIndex value
             String kExpectedRevID2 = isRevTrees() ?
@@ -357,8 +364,9 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
                     "2-deadbeef" :
                     "1@binky";
             String[] history2 = {kConflictRevID, kExpectedRevID};
-            doc = db.put("{\"from\":\"elsewhere\"}".getBytes(), kDocID, 0, true, false,
-                    history2, true, 0);
+            doc = db.put("{\"from\":\"elsewhere\"}".getBytes(), kDocID, 0,
+                    true, false,
+                    history2, true, 0, 1);
             assertNotNull(doc);
             // NOTE: With current JNI binding, unable to check commonAncestorIndex value
             assertEquals(kExpectedRevID2, doc.getRevID());
@@ -459,7 +467,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
         _testDocumentConflict(new Verification() {
             @Override
             public void verify(C4Document doc) throws LiteCoreException {
-                doc.resolveConflict("4-dddd", "3-aaaaaa", "{\"merged\":true}".getBytes(),0);
+                doc.resolveConflict("4-dddd", "3-aaaaaa", "{\"merged\":true}".getBytes(), 0);
                 assertTrue(doc.selectCurrentRevision());
                 assertEquals("5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99", doc.getSelectedRevID());
                 assertTrue(Arrays.equals("{\"merged\":true}".getBytes(), doc.getSelectedBody()));
@@ -474,7 +482,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
         _testDocumentConflict(new Verification() {
             @Override
             public void verify(C4Document doc) throws LiteCoreException {
-                doc.resolveConflict("3-aaaaaa", "4-dddd", "{\"merged\":true}".getBytes(),0);
+                doc.resolveConflict("3-aaaaaa", "4-dddd", "{\"merged\":true}".getBytes(), 0);
                 assertTrue(doc.selectCurrentRevision());
                 assertEquals("4-333ee0677b5f1e1e5064b050d417a31d2455dc30", doc.getSelectedRevID());
                 assertTrue(Arrays.equals("{\"merged\":true}".getBytes(), doc.getSelectedBody()));
@@ -499,7 +507,8 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
         try {
             // "Pull" a conflicting revision:
             String[] history = {"4-dddd", "3-ababab", kRev2ID};
-            C4Document doc = db.put(kBody3.getBytes(), kDocID, 0, true, false, history, true, 0);
+            C4Document doc = db.put(kBody3.getBytes(), kDocID, 0, true,
+                    false, history, true, 0, 0);
             assertNotNull(doc);
 
             // Now check the common ancestor algorithm:

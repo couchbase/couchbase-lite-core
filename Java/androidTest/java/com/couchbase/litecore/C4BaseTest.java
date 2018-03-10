@@ -173,7 +173,9 @@ public class C4BaseTest implements C4Constants {
             if (curDoc.getRevID() != null)
                 revIDs.add(curDoc.getRevID());
             String[] history = revIDs.toArray(new String[revIDs.size()]);
-            C4Document doc = db.put(body != null ? body.getBytes() : null, docID, flags, true, false, history, true, 0);
+            C4Document doc = db.put(body != null ? body.getBytes() : null, docID, flags,
+                    true, false, history, true,
+                    0, 0);
             assertNotNull(doc);
             doc.free();
             curDoc.free();
@@ -213,8 +215,9 @@ public class C4BaseTest implements C4Constants {
                     try {
                         String docID = String.format(Locale.ENGLISH, "%07d", numDocs + 1);
 
-                        C4Document doc = db.put(body, docID, 0, false, false,
-                                new String[0], true, 0);
+                        C4Document doc = db.put(body, docID, 0,
+                                false, false,
+                                new String[0], true, 0, 0);
                         try {
                             assertNotNull(doc);
                         } finally {
