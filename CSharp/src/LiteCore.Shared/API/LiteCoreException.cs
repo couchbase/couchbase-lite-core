@@ -378,7 +378,6 @@ namespace Couchbase.Lite
             (int)C4ErrorCode.Unimplemented,
             (int)C4ErrorCode.Unsupported,
             (int)C4ErrorCode.UnsupportedEncryption,
-            (int)C4ErrorCode.NoTransaction,
             (int)C4ErrorCode.BadRevisionID,
             (int)C4ErrorCode.UnexpectedError
         };
