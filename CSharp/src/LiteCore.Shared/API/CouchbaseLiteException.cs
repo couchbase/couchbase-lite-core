@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 
 using JetBrains.Annotations;
 
@@ -639,6 +640,11 @@ namespace Couchbase.Lite
         #endregion
 
         #region Constructors
+
+        internal CouchbaseNetworkException(HttpStatusCode httpCode) : base(new C4Error(C4ErrorDomain.WebSocketDomain, (int)httpCode))
+        {
+
+        }
 
         internal CouchbaseNetworkException(C4Error err) : base(err)
         {
