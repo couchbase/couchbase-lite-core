@@ -68,6 +68,7 @@ namespace litecore { namespace websocket {
         kNetErrTLSClientCertRequired,
         kNetErrTLSClientCertRejected, // 10
         kNetErrTLSCertUnknownRoot,
+        kNetErrInvalidRedirect,
     };
 
     struct CloseStatus {
