@@ -374,7 +374,8 @@ public class C4Document implements C4Constants {
                            boolean allowConflict,
                            String[] history,
                            boolean save,
-                           int maxRevTreeDepth)
+                           int maxRevTreeDepth,
+                           int remoteDBID)
             throws LiteCoreException;
 
     static native long put2(long db,
@@ -385,7 +386,8 @@ public class C4Document implements C4Constants {
                             boolean allowConflict,
                             String[] history,
                             boolean save,
-                            int maxRevTreeDepth)
+                            int maxRevTreeDepth,
+                            int remoteDBID)
             throws LiteCoreException;
 
     static native long create(long db, String docID, byte[] body, int flags) throws LiteCoreException;

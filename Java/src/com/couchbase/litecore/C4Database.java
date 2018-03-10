@@ -211,11 +211,12 @@ public class C4Database implements C4Constants {
             boolean allowConflict,
             String[] history,
             boolean save,
-            int maxRevTreeDepth)
+            int maxRevTreeDepth,
+            int remoteDBID)
             throws LiteCoreException {
         return new C4Document(C4Document.put(handle,
                 body, docID, revFlags, existingRevision, allowConflict,
-                history, save, maxRevTreeDepth), false);
+                history, save, maxRevTreeDepth, remoteDBID), false);
     }
 
     public C4Document put(
@@ -226,11 +227,12 @@ public class C4Database implements C4Constants {
             boolean allowConflict,
             String[] history,
             boolean save,
-            int maxRevTreeDepth)
+            int maxRevTreeDepth,
+            int remoteDBID)
             throws LiteCoreException {
         return new C4Document(C4Document.put2(handle,
                 body.getHandle(), docID, revFlags, existingRevision, allowConflict,
-                history, save, maxRevTreeDepth), false);
+                history, save, maxRevTreeDepth, remoteDBID), false);
     }
 
     public C4Document create(String docID, byte[] body, int revisionFlags)

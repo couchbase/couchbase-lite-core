@@ -424,7 +424,7 @@ Java_com_couchbase_litecore_C4Document_getExpiration(JNIEnv *env, jclass clazz,
 /*
  * Class:     com_couchbase_litecore_C4Document
  * Method:    put
- * Signature: (J[BLjava/lang/String;IZZ[Ljava/lang/String;ZI)J
+ * Signature: (J[BLjava/lang/String;IZZ[Ljava/lang/String;ZII)J
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4Document_put(JNIEnv *env, jclass clazz,
@@ -436,12 +436,12 @@ Java_com_couchbase_litecore_C4Document_put(JNIEnv *env, jclass clazz,
                                            jboolean allowConflict,
                                            jobjectArray jhistory,
                                            jboolean save,
-                                           jint maxRevTreeDepth) {
+                                           jint maxRevTreeDepth,
+                                           jint remoteDBID) {
 
     C4Database *db = (C4Database *) jdb;
     jstringSlice docID(env, jdocID);
     jbyteArraySlice body(env, jbody, false);
-
 
     C4DocPutRequest rq = {};
     rq.body = body;                         ///< Revision's body
@@ -452,7 +452,8 @@ Java_com_couchbase_litecore_C4Document_put(JNIEnv *env, jclass clazz,
     rq.history = nullptr;                   ///< Array of ancestor revision IDs
     rq.historyCount = 0;                    ///< Size of history[] array
     rq.save = save;                         ///< Save the document after inserting the revision?
-    rq.maxRevTreeDepth = maxRevTreeDepth;    ///< Max depth of revision tree to save (or 0 for default)
+    rq.maxRevTreeDepth = maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
+    rq.remoteDBID = (C4RemoteID)remoteDBID; ///< Identifier of remote db this rev's from (or 0 if local)
 
     // history
     // Convert jhistory, a Java String[], to a C array of C4Slice:
@@ -489,7 +490,7 @@ Java_com_couchbase_litecore_C4Document_put(JNIEnv *env, jclass clazz,
 /*
  * Class:     com_couchbase_litecore_C4Document
  * Method:    put2
- * Signature: (JJLjava/lang/String;IZZ[Ljava/lang/String;ZI)J
+ * Signature: (JJLjava/lang/String;IZZ[Ljava/lang/String;ZII)J
  */
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_put2(JNIEnv *env, jclass clazz,
                                                                     jlong jdb,
@@ -500,7 +501,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_put2(JNIEnv *env,
                                                                     jboolean allowConflict,
                                                                     jobjectArray jhistory,
                                                                     jboolean save,
-                                                                    jint maxRevTreeDepth) {
+                                                                    jint maxRevTreeDepth,
+                                                                    jint remoteDBID) {
     C4Database *db = (C4Database *) jdb;
     C4Slice *pBody = (C4Slice *) jbody;
     jstringSlice docID(env, jdocID);
@@ -516,6 +518,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_put2(JNIEnv *env,
     rq.historyCount = 0;                    ///< Size of history[] array
     rq.save = save;                         ///< Save the document after inserting the revision?
     rq.maxRevTreeDepth = maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
+    rq.remoteDBID = (C4RemoteID)remoteDBID; ///< Identifier of remote db this rev's from (or 0 if local)
 
     // history
     // Convert jhistory, a Java String[], to a C array of C4Slice:

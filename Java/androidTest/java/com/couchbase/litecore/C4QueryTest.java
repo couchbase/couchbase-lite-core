@@ -153,7 +153,9 @@ public class C4QueryTest extends C4QueryBaseTest {
                 C4Document doc = db.get("0000015", true);
                 assertNotNull(doc);
                 String[] history = {doc.getRevID()};
-                C4Document updatedDoc = db.put((byte[]) null, doc.getDocID(), C4RevisionFlags.kRevDeleted, false, false, history, true, 0);
+                C4Document updatedDoc = db.put((byte[]) null, doc.getDocID(),
+                        C4RevisionFlags.kRevDeleted, false,
+                        false, history, true, 0, 0);
                 assertNotNull(updatedDoc);
                 doc.free();
                 updatedDoc.free();
