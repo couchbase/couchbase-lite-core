@@ -55,7 +55,7 @@ public class C4DocEnumerator implements C4Constants {
 
     public C4Document getDocument() throws LiteCoreException {
         long doc = getDocument(handle);
-        return doc != 0 ? new C4Document(doc, false) : null;
+        return doc != 0 ? new C4Document(doc) : null;
     }
 
     //-------------------------------------------------------------------------

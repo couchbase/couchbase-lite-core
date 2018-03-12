@@ -27,40 +27,32 @@ public class C4Document implements C4Constants {
     // Member Variables
     //-------------------------------------------------------------------------
     private long _handle = 0L; // hold pointer to C4Document
-    private boolean _managed = false; // true -> not release native object, false -> release by free()
 
     //-------------------------------------------------------------------------
     // Constructor
     //-------------------------------------------------------------------------
 
     C4Document(long db, String docID, boolean mustExist) throws LiteCoreException {
-        this(get(db, docID, mustExist), false);
+        this(get(db, docID, mustExist));
     }
 
     C4Document(long db, long sequence) throws LiteCoreException {
-        this(getBySequence(db, sequence), false);
+        this(getBySequence(db, sequence));
     }
 
-    C4Document(C4Document rawDoc) {
-        this(rawDoc._handle, true);
-    }
-
-    C4Document(long handle, boolean managed) {
+    C4Document(long handle) {
         if (handle == 0)
             throw new IllegalArgumentException("handle is 0");
         this._handle = handle;
-        this._managed = managed;
     }
+
 
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
-    public static C4Document document(C4Document rawDoc) {
-        return new C4Document(rawDoc);
-    }
 
     public void free() {
-        if (_handle != 0L && !_managed) {
+        if (_handle != 0L) {
             free(_handle);
             _handle = 0L;
         }
@@ -163,11 +155,11 @@ public class C4Document implements C4Constants {
     // - Creating and Updating Documents
 
     public C4Document update(byte[] body, int flags) throws LiteCoreException {
-        return new C4Document(update(_handle, body, flags), false);
+        return new C4Document(update(_handle, body, flags));
     }
 
     public C4Document update(FLSliceResult body, int flags) throws LiteCoreException {
-        return new C4Document(update2(_handle, body != null ? body.getHandle() : 0, flags), false);
+        return new C4Document(update2(_handle, body != null ? body.getHandle() : 0, flags));
     }
 
     @Override
