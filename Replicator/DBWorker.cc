@@ -829,7 +829,7 @@ namespace litecore { namespace repl {
                 C4DocPutRequest put = {};
                 put.body = bodyForDB;
                 put.docID = rev->docID;
-                put.revFlags = rev->flags | kRevKeepBody;
+                put.revFlags = rev->flags;
                 put.existingRevision = true;
                 put.allowConflict = !rev->noConflicts;
                 put.history = history.data();
