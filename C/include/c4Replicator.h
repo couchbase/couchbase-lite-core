@@ -175,6 +175,7 @@ extern "C" {
     #define kC4ReplicatorCheckpointInterval   "checkpointInterval" // How often to checkpoint, in seconds; number
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" // Stable ID for remote db with unstable URL; string
     #define kC4ReplicatorHeartbeatInterval    "heartbeat" // Interval in secs to send a keepalive ping
+    #define kC4ReplicatorResetCheckpoint      "reset"     // Start over w/o checkpoint; bool
 
     // Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           // Auth property; string

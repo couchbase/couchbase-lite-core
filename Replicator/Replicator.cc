@@ -357,25 +357,28 @@ namespace litecore { namespace repl {
             
             _checkpointDocID = checkpointID;
 
-            if (data) {
+            if (_options.properties[kC4ReplicatorResetCheckpoint].asBool()) {
+                log("Ignoring local checkpoint ('reset' option is set)");
+            } else if (data) {
                 _checkpoint.decodeFrom(data);
                 auto cp = _checkpoint.sequences();
                 log("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
                     SPLAT(checkpointID), cp.local, SPLAT(cp.remote));
                 _hadLocalCheckpoint = true;
-                getRemoteCheckpoint();
             } else if (err.code == 0) {
                 log("No local checkpoint '%.*s'", SPLAT(checkpointID));
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
                 if (dbIsEmpty && _options.pull > kC4Passive)
                     _puller->setSkipDeleted();
-                getRemoteCheckpoint();
             } else {
                 log("Fatal error getting local checkpoint");
                 gotError(err);
                 stop();
+                return;
             }
+            
+            getRemoteCheckpoint();
         }));
     }
 

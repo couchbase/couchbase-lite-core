@@ -102,6 +102,32 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") {
+    createRev("eenie"_sl, kRevID, kFleeceBody);
+    createRev("meenie"_sl, kRevID, kFleeceBody);
+    createRev("miney"_sl, kRevID, kFleeceBody);
+    createRev("moe"_sl, kRevID, kFleeceBody);
+    _expectedDocumentCount = 4;
+    runPullReplication();
+
+    {
+        TransactionHelper t(db2);
+        REQUIRE(c4db_purgeDoc(db2, "meenie"_sl, nullptr));
+    }
+    
+    _expectedDocumentCount = 0;  // normal replication will not re-pull purged doc
+    runPullReplication();
+
+    auto pullOpts = Replicator::Options::pulling();
+    pullOpts.setProperty(slice(kC4ReplicatorResetCheckpoint), true);
+    _expectedDocumentCount = 1; // resetting checkpoint does re-pull purged doc
+    runReplicators(Replicator::Options::passive(), pullOpts);
+
+    c4::ref<C4Document> doc = c4doc_get(db2, "meenie"_sl, true, nullptr);
+    CHECK(doc != nullptr);
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push-Pull", "[Push][Pull]") {
     auto serverOpts = Replicator::Options::passive();
 
