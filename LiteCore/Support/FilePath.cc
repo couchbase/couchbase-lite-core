@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <thread>
 #include <algorithm>
+#include <TempArray.hh>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -314,7 +315,29 @@ namespace litecore {
 
 
     string FilePath::canonicalPath() const {
+#ifdef _MSC_VER
+		TempArray(wcanon, wchar_t, MAX_PATH);
+		const char* pathVal = path().c_str();
+	    const CA2WEX<256> wpath(pathVal, CP_UTF8);
+	    const DWORD copied = GetFullPathNameW(wpath, MAX_PATH, wcanon, nullptr);
+		char* canon = nullptr;
+		if(copied == 0) {
+			const DWORD err = GetLastError();
+			if(err ==  ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND) {
+				_set_errno(ENOENT);
+			} else {
+				// Arbitrary
+				_set_errno(EBADF);
+			}
+		} else {
+			const CW2AEX<256> converted(wcanon, CP_UTF8);
+			canon = (char *)malloc(MAX_PATH);
+			strcpy_s(canon, copied + 1, converted.m_psz);
+		}
+#else
         char *canon = ::realpath(path().c_str(), nullptr);
+#endif
+
         if (!canon) {
             if (errno == ENOENT && !isDir()) {
                 string canonDir = dir().canonicalPath();
