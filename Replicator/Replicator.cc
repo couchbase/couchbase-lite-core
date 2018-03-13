@@ -257,19 +257,29 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onHTTPResponse(int status, fleeceapi::AllocedDict headers) {
-        if (status == 101 && !headers["Sec-WebSocket-Protocol"]) {
+        if (status == 101 && !headers["Sec-WebSocket-Protocol"_sl]) {
             gotError(c4error_make(WebSocketDomain, kWebSocketCloseProtocolError,
-                                  "Incompatible replication protocol "
+                                  "Server does not support the Couchbase Mobile 2 replication protocol. "
                                   "(missing 'Sec-WebSocket-Accept' response header)"_sl));
-        }
-        auto setCookie = headers["Set-Cookie"_sl];
-        if (setCookie.type() == kFLArray) {
-            // Yes, there can be multiple Set-Cookie headers.
-            for (Array::iterator i(setCookie.asArray()); i; ++i) {
-                _dbActor->setCookie(i.value().asString());
+        } else if (status == 404) {
+            // Kludge to return a more useful error if we know the server is an old version of SG:
+            slice server = headers["Server"_sl].asString();
+            if (server.find("Sync Gateway/1."_sl)) {
+                gotError(c4error_make(WebSocketDomain, 501,
+                                      slice(format("Server does not support the Couchbase Mobile 2"
+                                                   " replication protocol. (\"%.*s\")",
+                                                   SPLAT(server)))));
             }
-        } else if (setCookie) {
-            _dbActor->setCookie(setCookie.asString());
+        } else {
+            auto setCookie = headers["Set-Cookie"_sl];
+            if (setCookie.type() == kFLArray) {
+                // Yes, there can be multiple Set-Cookie headers.
+                for (Array::iterator i(setCookie.asArray()); i; ++i) {
+                    _dbActor->setCookie(i.value().asString());
+                }
+            } else if (setCookie) {
+                _dbActor->setCookie(setCookie.asString());
+            }
         }
         if (_delegate)
             _delegate->replicatorGotHTTPResponse(this, status, headers);
@@ -314,7 +324,8 @@ namespace litecore { namespace repl {
                                                          NetworkDomain, LiteCoreDomain};
 
         // If this was an unclean close, set my error property:
-        if (status.reason != websocket::kWebSocketClose || status.code != websocket::kCodeNormal) {
+        if (!this->status().error.code && (status.reason != websocket::kWebSocketClose ||
+                                           status.code != websocket::kCodeNormal)) {
             int code = status.code;
             C4ErrorDomain domain;
             if (status.reason < sizeof(kDomainForReason)/sizeof(C4ErrorDomain))
