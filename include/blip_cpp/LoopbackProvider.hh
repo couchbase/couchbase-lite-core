@@ -92,7 +92,7 @@ namespace litecore { namespace websocket {
 
             virtual void _connect() override {
                 _simulateHTTPResponse(200, _responseHeaders);
-                MockWebSocket::Driver::_connect();
+                _webSocket->simulateConnected(_latency);
             }
 
             virtual void _send(fleece::alloc_slice msg, bool binary) override {
