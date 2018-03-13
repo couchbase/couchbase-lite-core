@@ -182,7 +182,7 @@ public class C4Document implements C4Constants {
 
     // helper methods for Document
     public boolean deleted() {
-        return isFlags(C4DocumentFlags.kDocDeleted);
+        return isSelectedRevFlags(C4RevisionFlags.kRevDeleted);
     }
 
     public boolean conflicted() {
