@@ -311,8 +311,9 @@ namespace litecore {
     class autoreleasing {
     public:
         autoreleasing()         :_ref(nullptr) {}
-        autoreleasing(T t)      :_ref(t) {}
-        ~autoreleasing()        {if (_ref) CFRelease(_ref);}
+        explicit autoreleasing(T t)      :_ref(t) {}
+        ~autoreleasing()        {reset();}
+        void reset()            {if (_ref) CFRelease(_ref); _ref = nullptr;}
         operator T () const     {return _ref;}
         T* operator& ()         {assert(!_ref); return &_ref;}
     private:
@@ -334,17 +335,17 @@ namespace litecore {
 
     string FilePath::canonicalPath() const {
 #if __APPLE__
-        autoreleasing<CFStringRef> cfpath = slice(path()).createCFString();
-        autoreleasing<CFURLRef> url = CFURLCreateWithFileSystemPath(nullptr, cfpath, kCFURLPOSIXPathStyle, isDir());
-
-        CFErrorRef error = nullptr;
+        autoreleasing<CFStringRef> cfpath(slice(path()).createCFString());
+        autoreleasing<CFURLRef> url(CFURLCreateWithFileSystemPath(nullptr, cfpath, kCFURLPOSIXPathStyle, isDir()));
+        autoreleasing<CFErrorRef> error;
         string canonPath = _canonicalPath(url, &error);
         if (!canonPath.empty())
             return canonPath;
 
         if (CFEqual(CFErrorGetDomain(error), kCFErrorDomainCocoa) && CFErrorGetCode(error) == 260) {
             // File doesn't exist, so get canonical path of parent directory:
-            autoreleasing<CFURLRef> cfParentURL = CFURLCreateCopyDeletingLastPathComponent(nullptr, url);
+            autoreleasing<CFURLRef> cfParentURL(CFURLCreateCopyDeletingLastPathComponent(nullptr, url));
+            error.reset();
             canonPath = _canonicalPath(cfParentURL, &error);
             if (!canonPath.empty()) {
                 Assert(hasSuffix(canonPath, kSeparator));

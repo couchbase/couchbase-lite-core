@@ -485,19 +485,18 @@ void C4Test::checkAttachments(C4Database *inDB, vector<C4BlobKey> blobKeys, vect
 
 
 // Reads a file into memory.
-FLSlice C4Test::readFile(std::string path) {
+fleece::alloc_slice C4Test::readFile(std::string path) {
     INFO("Opening file " << path);
     FILE *fd = fopen(path.c_str(), "rb");
     REQUIRE(fd != nullptr);
     fseeko(fd, 0, SEEK_END);
     auto size = (size_t)ftello(fd);
     fseeko(fd, 0, SEEK_SET);
-    void* data = malloc(size);
-    REQUIRE(data);
-    ssize_t bytesRead = fread((void*)data, 1, size, fd);
+    fleece::alloc_slice result(size);
+    ssize_t bytesRead = fread((void*)result.buf, 1, size, fd);
     REQUIRE(bytesRead == size);
     fclose(fd);
-    return FLSlice{data, size};
+    return result;
 }
 
 
@@ -524,11 +523,9 @@ bool C4Test::readFileByLines(string path, function<bool(FLSlice)> callback) {
 unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bool verbose) {
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
-    auto jsonData = readFile(path);
     FLError error;
-    FLSliceResult fleeceData = FLData_ConvertJSON({jsonData.buf, jsonData.size}, &error);
+    FLSliceResult fleeceData = FLData_ConvertJSON(readFile(path), &error);
     REQUIRE(fleeceData.buf != nullptr);
-    free((void*)jsonData.buf);
     Array root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
     REQUIRE(root);
 

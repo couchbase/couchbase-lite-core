@@ -536,7 +536,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blob]") {
     // Test case for issue #354
-    slice image = readFile(sFixturesDir + "for#354.jpg");
+    alloc_slice image = readFile(sFixturesDir + "for#354.jpg");
     vector<string> attachments = {string((const char*)image.buf, image.size)};
     vector<C4BlobKey> blobKeys;
     {

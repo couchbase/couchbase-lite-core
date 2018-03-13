@@ -277,6 +277,7 @@ namespace litecore {
                 // On final call, finish encoding and set the result to the encoded data:
                 enc->endArray();
                 setResultBlobFromFleeceData(ctx,  enc->extractOutput() );
+                enc->~Encoder();
             }
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "array_agg: exception!", -1);
