@@ -694,22 +694,18 @@ namespace litecore { namespace repl {
         set<pure_slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
         stringstream historyStream;
         int nWritten = 0;
-        unsigned lastGen = 0;
+        unsigned lastGen = c4rev_getGeneration(doc->selectedRev.revID);
         for (int n = 0; n < request.maxHistory; ++n) {
             if (!c4doc_selectParentRevision(doc))
                 break;
             slice revID = doc->selectedRev.revID;
             unsigned gen = c4rev_getGeneration(revID);
-            if (lastGen == 0) {
-                lastGen = gen;
-            } else {
-                while (gen < --lastGen) {
-                    char fakeID[50];
-                    sprintf(fakeID, "%u-faded000%.08x%.08x", lastGen, arc4random(), arc4random());
-                    if (nWritten++ > 0)
-                        historyStream << ',';
-                    historyStream << fakeID;
-                }
+            while (gen < --lastGen) {
+                char fakeID[50];
+                sprintf(fakeID, "%u-faded000%.08x%.08x", lastGen, arc4random(), arc4random());
+                if (nWritten++ > 0)
+                    historyStream << ',';
+                historyStream << fakeID;
             }
             if (nWritten++ > 0)
                 historyStream << ',';
