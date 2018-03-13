@@ -78,17 +78,16 @@ uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
         // C4DatabaseChange contains slices. The result is that the docID and revID memory will be
         // temporarily leaked, since the alloc_slice destructors won't be called.
         // For this purpose we have c4dbobs_releaseChanges(), which does the same sleight of hand
-        // on the array but explicitly clears each alloc_slice, ensuring the backing store's
-        // ref-count goes back to what it was originally.
+        // on the array but explicitly destructs each Change object, ensuring its alloc_slices are
+        // destructed and the backing store's ref-count goes back to what it was originally.
     });
 }
 
 
 void c4dbobs_releaseChanges(C4DatabaseChange changes[], uint32_t numChanges) noexcept {
     for (uint32_t i = 0; i < numChanges; ++i) {
-        auto change = (SequenceTracker::Change&)changes[i];
-        change.docID = nullslice;
-        change.revID = nullslice;
+        auto &change = (SequenceTracker::Change&)changes[i];
+        change.~Change();
     }
 }
 
