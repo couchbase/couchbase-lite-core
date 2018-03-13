@@ -20,6 +20,7 @@
 #include "c4Database.h"
 #include "c4Private.h"
 
+#include "Database.hh"
 #include "Record.hh"
 #include "RawRevTree.hh"
 #include "VersionedDocument.hh"
@@ -33,9 +34,6 @@
 
 
 namespace c4Internal {
-
-    static const uint32_t kDefaultMaxRevTreeDepth = 20;
-
 
     class TreeDocument : public Document {
     public:
@@ -477,7 +475,9 @@ bool c4doc_save(C4Document *doc,
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {
-        ((TreeDocument*)idoc)->save(maxRevTreeDepth ? maxRevTreeDepth : kDefaultMaxRevTreeDepth);
+        if (maxRevTreeDepth == 0)
+            maxRevTreeDepth = internal(doc)->database()->maxRevTreeDepth();
+        ((TreeDocument*)idoc)->save(maxRevTreeDepth);
         return true;
     } catchError(outError)
     return false;
