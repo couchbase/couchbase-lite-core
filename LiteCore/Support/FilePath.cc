@@ -148,6 +148,13 @@ namespace litecore {
 #endif
 
 
+    static string& appendSeparatorTo(string &str) {
+        if (str.empty() || str[str.size()-1] != kSeparatorChar)
+            str += kSeparatorChar;
+        return str;
+    }
+
+
     FilePath::FilePath(const string &dirName, const string &fileName)
     :_dir(dirName), _file(fileName)
     {
@@ -155,8 +162,8 @@ namespace litecore {
             _dir = kCurrentDir;
         else if (_dir[_dir.size() - 1] == kBackupSeparatorChar)
             _dir[_dir.size() - 1] = kSeparatorChar;
-        else if (_dir[_dir.size()-1] != kSeparatorChar)
-            _dir += kSeparatorChar;
+        else
+            appendSeparatorTo(_dir);
     }
 
 
@@ -306,59 +313,19 @@ namespace litecore {
     }
 
 
-#if __APPLE__
-    template <class T>
-    class autoreleasing {
-    public:
-        autoreleasing()         :_ref(nullptr) {}
-        explicit autoreleasing(T t)      :_ref(t) {}
-        ~autoreleasing()        {reset();}
-        void reset()            {if (_ref) CFRelease(_ref); _ref = nullptr;}
-        operator T () const     {return _ref;}
-        T* operator& ()         {assert(!_ref); return &_ref;}
-    private:
-        T _ref;
-    };
-
-    static string _canonicalPath(CFURLRef url, CFErrorRef *outError) {
-        autoreleasing<CFStringRef> cfCanonPath;
-        if (!CFURLCopyResourcePropertyForKey(url, kCFURLCanonicalPathKey, &cfCanonPath, outError))
-            return string();
-        nsstring_slice canonSlice(cfCanonPath);
-        string canon = canonSlice.asString();
-        if (CFURLHasDirectoryPath(url))
-            canon += kSeparatorChar;
-        return canon;
-    }
-#endif
-
-
     string FilePath::canonicalPath() const {
-#if __APPLE__
-        autoreleasing<CFStringRef> cfpath(slice(path()).createCFString());
-        autoreleasing<CFURLRef> url(CFURLCreateWithFileSystemPath(nullptr, cfpath, kCFURLPOSIXPathStyle, isDir()));
-        autoreleasing<CFErrorRef> error;
-        string canonPath = _canonicalPath(url, &error);
-        if (!canonPath.empty())
-            return canonPath;
-
-        if (CFEqual(CFErrorGetDomain(error), kCFErrorDomainCocoa) && CFErrorGetCode(error) == 260) {
-            // File doesn't exist, so get canonical path of parent directory:
-            autoreleasing<CFURLRef> cfParentURL(CFURLCreateCopyDeletingLastPathComponent(nullptr, url));
-            error.reset();
-            canonPath = _canonicalPath(cfParentURL, &error);
-            if (!canonPath.empty()) {
-                Assert(hasSuffix(canonPath, kSeparator));
-                return canonPath + fileOrDirName();
+        char *canon = ::realpath(path().c_str(), nullptr);
+        if (!canon) {
+            if (errno == ENOENT && !isDir()) {
+                string canonDir = dir().canonicalPath();
+                return appendSeparatorTo(canonDir) + _file;
+            } else {
+                error::_throwErrno();
             }
         }
-
-        // Failure:
-        Warn("canonicalPath(\"%s\") failed: CFError domain %s, code %ld",
-             path().c_str(),
-             alloc_slice(CFErrorGetDomain(error)).asString().c_str(), CFErrorGetCode(error));
-#endif
-        return path();
+        string canonStr(canon);
+        free(canon);
+        return canonStr;
     }
 
 
