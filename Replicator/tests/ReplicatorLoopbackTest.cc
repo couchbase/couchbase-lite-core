@@ -383,6 +383,33 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
+    createRev("doc"_sl, kRevID, kFleeceBody);
+    _expectedDocumentCount = 1;
+
+    runPullReplication();
+
+    c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
+
+    for (int gen = 2; gen <= 50; gen++) {
+        char revID[32];
+        sprintf(revID, "%d-0000", gen);
+        createRev("doc"_sl, slice(revID), kFleeceBody);
+    }
+
+    runPullReplication();
+
+    // Check that doc is not conflicted in db2:
+    doc = c4doc_get(db2, "doc"_sl, true, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->revID == "50-0000"_sl);
+    CHECK(!c4doc_selectNextLeafRevision(doc, true, false, nullptr));
+
+    compareDatabases();
+    validateCheckpoints(db2, db, "{\"remote\":50}");
+}
+
+
 #pragma mark - CONTINUOUS:
 
 
