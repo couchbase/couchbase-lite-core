@@ -56,6 +56,14 @@ namespace litecore {
             unsigned microsecs;
         };
 
+        /** A way to interact with the output stream safely (since the encoder may be writing to
+            it on a background thread.) */
+        template <class LAMBDA>
+        void withStream(LAMBDA with) {
+            std::lock_guard<std::mutex> lock(_mutex);
+            with(_out);
+        }
+
     private:
         friend class LogDecoder;
 

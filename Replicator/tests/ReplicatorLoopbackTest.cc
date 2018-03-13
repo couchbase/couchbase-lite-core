@@ -15,7 +15,7 @@ using namespace litecore::actor;
 constexpr duration ReplicatorLoopbackTest::kLatency;
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull]") {
-    int counter = 0;
+    atomic_int counter(0);
     Timer t1([&counter] { 
         counter++; 
     });

@@ -88,6 +88,8 @@ public:
     }
 
     void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
+        lock_guard<mutex> lock(_mutex);
+
         Assert(r == _repl);      // can't call REQUIRE on a background thread
         _callbackStatus = s;
         ++_numCallbacks;
@@ -136,6 +138,7 @@ public:
               SPLAT(docID), message);
 
         auto test = (ReplicatorAPITest*)context;
+        lock_guard<mutex> lock(test->_mutex);
         if (pushing)
             test->_docPushErrors.emplace(slice(docID));
         else
@@ -173,6 +176,8 @@ public:
 
         while ((status = c4repl_getStatus(_repl)).level != kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));
+
+        lock_guard<mutex> lock(_mutex);
 
         CHECK(_numCallbacks > 0);
         if (expectSuccess) {
@@ -235,6 +240,8 @@ public:
     AllocedDict _options;
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;
+
+    mutex _mutex;
     C4ReplicatorStatus _callbackStatus {};
     int _numCallbacks {0};
     int _numCallbacksWithLevel[5] {0};

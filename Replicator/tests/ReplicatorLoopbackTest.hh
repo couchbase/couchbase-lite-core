@@ -51,10 +51,10 @@ public:
 
     // opts1 is the options for _db; opts2 is the options for _db2
     void runReplicators(Replicator::Options opts1, Replicator::Options opts2) {
-        _replicatorFinished = false;
         _gotResponse = false;
         _statusChangedCalls = 0;
         _statusReceived = {};
+        _replicatorClientFinished = _replicatorServerFinished = false;
 
         C4Database *dbClient = db, *dbServer = db2;
         if (opts2.push > kC4Passive || opts2.pull > kC4Passive) {
@@ -81,9 +81,12 @@ public:
         _replClient->start();
         _replServer->start();
 
-        Log("Waiting for replication to complete...");
-        while (!_replicatorFinished)
-            this_thread::sleep_for(chrono::milliseconds(100));
+        {
+            Log("Waiting for replication to complete...");
+            unique_lock<mutex> lock(_mutex);
+            while (!_replicatorClientFinished || !_replicatorServerFinished)
+                _cond.wait(lock);
+        }
         
         Log(">>> Replication complete <<<");
         _checkpointID = _replClient->checkpointID();
@@ -149,8 +152,15 @@ public:
             }
         }
 
-        if (_replClient->status().level == kC4Stopped && _replServer->status().level == kC4Stopped)
-            _replicatorFinished = true;
+        if (status.level == kC4Stopped) {
+            unique_lock<mutex> lock(_mutex);
+            if (repl == _replClient)
+                _replicatorClientFinished = true;
+            else
+                _replicatorServerFinished = true;
+            if (_replicatorClientFinished && _replicatorServerFinished)
+                _cond.notify_all();
+        }
     }
 
     virtual void replicatorDocumentError(Replicator *repl,
@@ -315,7 +325,9 @@ public:
     alloc_slice _checkpointID;
     unique_ptr<thread> _parallelThread;
     atomic<bool> _stopOnIdle {0};
-    atomic<bool> _replicatorFinished {0};
+    mutex _mutex;
+    condition_variable _cond;
+    bool _replicatorClientFinished {false}, _replicatorServerFinished {false};
     bool _gotResponse {false};
     Replicator::Status _statusReceived { };
     unsigned _statusChangedCalls {0};
