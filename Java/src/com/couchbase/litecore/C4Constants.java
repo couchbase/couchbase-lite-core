@@ -129,57 +129,49 @@ public interface C4Constants {
     interface C4ErrorDomain {
         int LiteCoreDomain = 1;     // code is a Couchbase Lite Core error code (see below)
         int POSIXDomain = 2;        // code is an errno (errno.h)
-        /*int ForestDBDomain = 3;*/ // domain 3 is unused
-        int SQLiteDomain = 4;       // code is a SQLite error (sqlite3.h)
-        int FleeceDomain = 5;       // code is a Fleece error
-        int NetworkDomain = 6;      // code is a network error code from the enum below
-        int WebSocketDomain = 7;    // code is a WebSocket close code (1000...1015) or HTTP error (400..599)
-        int kC4MaxErrorDomainPlus1 = 8;
+        int SQLiteDomain = 3;       // code is a SQLite error; see "sqlite3.h">"
+        int FleeceDomain = 4;       // code is a Fleece error; see "FleeceException.h"
+        int NetworkDomain = 5;      // code is a network error; see enum C4NetworkErrorCode, below
+        int WebSocketDomain = 6;    // code is a WebSocket close code (1000...1015) or HTTP error (300..599)
+        int kC4MaxErrorDomainPlus1 = 7;
     }
 
     // LiteCoreDomain error codes:
     interface LiteCoreError {
         int kC4ErrorAssertionFailed = 1;        // Internal assertion failure
         int kC4ErrorUnimplemented = 2;          // Oops, an unimplemented API call
-        int kC4ErrorNoSequences = 3;            // This KeyStore does not support sequences
-        int kC4ErrorUnsupportedEncryption = 4;  // Unsupported encryption algorithm
-        int kC4ErrorNoTransaction = 5;          // Function must be called within a transaction
-        int kC4ErrorBadRevisionID = 6;          // Invalid revision ID syntax
-        int kC4ErrorBadVersionVector = 7;       // Invalid version vector syntax
-        int kC4ErrorCorruptRevisionData = 8;    // Revision contains corrupted/unreadable data
-        int kC4ErrorCorruptIndexData = 9;       // Index contains corrupted/unreadable data
-        int kC4ErrorTokenizerError = 10;        // can't create text tokenizer for FTS
-        int kC4ErrorNotOpen = 11;               // Database/KeyStore/index is not open
-        int kC4ErrorNotFound = 12;              // Document not found
-        int kC4ErrorDeleted = 13;               // Document has been deleted
-        int kC4ErrorConflict = 14;              // Document update conflict
-        int kC4ErrorInvalidParameter = 15;      // Invalid function parameter or struct value
-        int kC4ErrorDatabaseError = 16;         // Lower-level database error (ForestDB or SQLite)
-        int kC4ErrorUnexpectedError = 17;       // Internal unexpected C++ exception
-        int kC4ErrorCantOpenFile = 18;          // Database file can't be opened; may not exist
-        int kC4ErrorIOError = 19;               // File I/O error
-        int kC4ErrorCommitFailed = 20;          // Transaction commit failed
-        int kC4ErrorMemoryError = 21;           // Memory allocation failed (out of memory?)
-        int kC4ErrorNotWriteable = 22;          // File is not writeable
-        int kC4ErrorCorruptData = 23;           // Data is corrupted
-        int kC4ErrorBusy = 24;                  // Database is busy/locked
-        int kC4ErrorNotInTransaction = 25;      // Function cannot be called while in a transaction
-        int kC4ErrorTransactionNotClosed = 26;  // Database can't be closed while a transaction is open
-        int kC4ErrorIndexBusy = 27;             // View can't be closed while index is enumerating
-        int kC4ErrorUnsupported = 28;           // Operation not supported in this database
-        int kC4ErrorNotADatabaseFile = 29;      // File is not a database, or encryption key is wrong
-        int kC4ErrorWrongFormat = 30;           // Database exists but not in the format/storage requested
-        int kC4ErrorCrypto = 31;                // Encryption/decryption error
-        int kC4ErrorInvalidQuery = 32;          // Invalid query
-        int kC4ErrorMissingIndex = 33;          // No such index, or query requires a nonexistent index
-        int kC4ErrorInvalidQueryParam = 34;     // Unknown query param name, or param number out of range
-        int kC4ErrorRemoteError = 35;           // Unknown error from remote server
-        int kC4ErrorDatabaseTooOld = 36;        // Database file format is older than what I can open
-        int kC4ErrorDatabaseTooNew = 37;        // Database file format is newer than what I can open
-        int kC4ErrorBadDocID = 38;              // Invalid document ID
-        int kC4ErrorCantUpgradeDatabase = 39;   // Database can't be upgraded (might be unsupported dev version)
+        int kC4ErrorUnsupportedEncryption = 3;  // Unsupported encryption algorithm
+        int kC4ErrorBadRevisionID = 4;          // Invalid revision ID syntax
+        int kC4ErrorCorruptRevisionData = 5;    // Revision contains corrupted/unreadable data
+        int kC4ErrorNotOpen = 6;                // Database/KeyStore/index is not open
+        int kC4ErrorNotFound = 7;               // Document not found
+        int kC4ErrorConflict = 8;               // Document update conflict
+        int kC4ErrorInvalidParameter = 9;       // Invalid function parameter or struct value
+        int kC4ErrorUnexpectedError = 10;       // Internal unexpected C++ exception
 
-        int kC4NumErrorCodesPlus1 = 40;         //
+        int kC4ErrorCantOpenFile = 11;          // Database file can't be opened; may not exist
+        int kC4ErrorIOError = 12;               // File I/O error
+        int kC4ErrorMemoryError = 13;           // Memory allocation failed (out of memory?)
+        int kC4ErrorNotWriteable = 14;          // File is not writeable
+        int kC4ErrorCorruptData = 15;           // Data is corrupted
+        int kC4ErrorBusy = 16;                  // Database is busy/locked
+        int kC4ErrorNotInTransaction = 17;      // Function must be called while in a transaction
+        int kC4ErrorTransactionNotClosed = 18;  // Database can't be closed while a transaction is open
+        int kC4ErrorUnsupported = 19;           // Operation not supported in this database
+        int kC4ErrorNotADatabaseFile = 20;      // File is not a database, or encryption key is wrong
+
+        int kC4ErrorWrongFormat = 21;           // Database exists but not in the format/storage requested
+        int kC4ErrorCrypto = 22;                // Encryption/decryption error
+        int kC4ErrorInvalidQuery = 23;          // Invalid query
+        int kC4ErrorMissingIndex = 24;          // No such index, or query requires a nonexistent index
+        int kC4ErrorInvalidQueryParam = 25;     // Unknown query param name, or param number out of range
+        int kC4ErrorRemoteError = 26;           // Unknown error from remote server
+        int kC4ErrorDatabaseTooOld = 27;        // Database file format is older than what I can open
+        int kC4ErrorDatabaseTooNew = 28;        // Database file format is newer than what I can open
+        int kC4ErrorBadDocID = 29;              // Invalid document ID
+        int kC4ErrorCantUpgradeDatabase = 30;   // Database can't be upgraded (might be unsupported dev version)
+
+        int kC4NumErrorCodesPlus1 = 31;         //
     }
 
     /**
@@ -198,5 +190,6 @@ public interface C4Constants {
         int kC4NetErrTLSClientCertRequired = 9;
         int kC4NetErrTLSClientCertRejected = 10; // 10
         int kC4NetErrTLSCertUnknownRoot = 11;    // Self-signed cert, or unknown anchor cert
+        int kC4NetErrInvalidRedirect = 12;       // Attempted redirect to invalid replication endpoint
     }
 }
