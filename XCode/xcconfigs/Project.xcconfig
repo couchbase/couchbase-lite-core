@@ -44,6 +44,9 @@ CLANG_WARN_INFINITE_RECURSION                      = YES
 CLANG_WARN_SUSPICIOUS_MOVE                         = YES
 CLANG_WARN_UNREACHABLE_CODE                        = YES
 
+// Warn about using newer-than-deployment-target APIs without dynamic checks: (Xcode 9+)
+CLANG_WARN_UNGUARDED_AVAILABILITY                  = YES_AGGRESSIVE
+
 ENABLE_STRICT_OBJC_MSGSEND                         = YES
 
 GCC_C_LANGUAGE_STANDARD                            = c99
