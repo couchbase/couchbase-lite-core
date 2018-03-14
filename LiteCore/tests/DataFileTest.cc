@@ -416,6 +416,30 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
     db->compact();
 }
 
+TEST_CASE("CanonicalPath") {
+#ifdef _MSC_VER
+    const char* startPath = "C:\\folder\\..\\subfolder\\";
+    string endPath = "C:\\subfolder\\";
+#else
+    const char* startPath = "/tmp/folder/../subfolder/";
+    string endPath = "/tmp/subfolder/";
+#endif
+
+    FilePath path(startPath);
+    CHECK(path.canonicalPath() == endPath);
+
+#ifdef _MSC_VER
+    startPath = u8"C:\\日本語\\";
+    endPath = startPath;
+#else
+    startPath = u8"/tmp/日本語/";
+    endPath = startPath;
+#endif
+
+    path = FilePath(startPath);
+    CHECK(path.canonicalPath() == endPath);
+}
+
 
 #pragma mark - ENCRYPTION:
 
