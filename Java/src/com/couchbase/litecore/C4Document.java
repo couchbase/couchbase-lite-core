@@ -17,12 +17,11 @@
 //
 package com.couchbase.litecore;
 
-
 import com.couchbase.litecore.fleece.FLDict;
 import com.couchbase.litecore.fleece.FLSharedKeys;
 import com.couchbase.litecore.fleece.FLSliceResult;
 
-public class C4Document implements C4Constants {
+public class C4Document extends RefCounted implements C4Constants {
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
@@ -50,8 +49,8 @@ public class C4Document implements C4Constants {
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
-
-    public void free() {
+    @Override
+    void free() {
         if (_handle != 0L) {
             free(_handle);
             _handle = 0L;
