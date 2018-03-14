@@ -22,6 +22,9 @@
 #include "FilePath.hh"
 #include "Fleece.hh"
 #include "Benchmark.hh"
+#ifndef _MSC_VER
+#include <sys/stat.h>
+#endif
 
 #include "LiteCoreTest.hh"
 
@@ -421,8 +424,15 @@ TEST_CASE("CanonicalPath") {
     const char* startPath = "C:\\folder\\..\\subfolder\\";
     string endPath = "C:\\subfolder\\";
 #else
-    const char* startPath = "/tmp/folder/../subfolder/";
-    string endPath = "/tmp/subfolder/";
+    auto tmpPath = FilePath::tempDirectory().path();
+    auto startPath = tmpPath + "folder/";
+    ::mkdir(startPath.c_str(), 777);
+    startPath += "../subfolder/";
+    auto endPath = tmpPath + "subfolder";
+    ::mkdir(endPath.c_str(), 777);
+#if __APPLE__
+    endPath = "/private" + endPath;
+#endif
 #endif
 
     FilePath path(startPath);
@@ -432,12 +442,16 @@ TEST_CASE("CanonicalPath") {
     startPath = u8"C:\\日本語\\";
     endPath = startPath;
 #else
-    startPath = u8"/tmp/日本語/";
+    startPath = tmpPath + u8"日本語/";
+    ::mkdir(startPath.c_str(), 777);
     endPath = startPath;
+#if __APPLE__
+    endPath = "/private" + endPath;
+#endif
 #endif
 
     path = FilePath(startPath);
-    CHECK(path.canonicalPath() == endPath);
+    CHECK(path.canonicalPath() == endPath.substr(0, endPath.size() - 1));
 }
 
 
