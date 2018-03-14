@@ -118,7 +118,8 @@ namespace litecore { namespace repl {
 
         void _start();
         void _stop();
-        void getCheckpoints();
+        void getLocalCheckpoint();
+        void getRemoteCheckpoint();
         void startReplicating();
         virtual ActivityLevel computeActivityLevel() const override;
         void reportStatus();
@@ -146,7 +147,9 @@ namespace litecore { namespace repl {
         Checkpoint _checkpoint;
         alloc_slice _checkpointDocID;
         alloc_slice _checkpointRevID;
-        bool _checkpointReceived {false};
+        bool _hadLocalCheckpoint {false};
+        bool _remoteCheckpointRequested {false};
+        bool _remoteCheckpointReceived {false};
         alloc_slice _checkpointJSONToSave;
     };
 
