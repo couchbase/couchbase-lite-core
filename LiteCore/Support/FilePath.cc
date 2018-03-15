@@ -350,7 +350,6 @@ namespace litecore {
             }
         }
         string canonStr(canon);
-        free(wcanon);
         free(canon);
         return canonStr;
     }
