@@ -316,7 +316,7 @@ namespace litecore {
 
     string FilePath::canonicalPath() const {
 #ifdef _MSC_VER
-        TempArray(wcanon, wchar_t, MAX_PATH);
+        TempArray(wcanon, wchar_t, MAX_PATH + 1);
         const char* pathVal = path().c_str();
 	    const CA2WEX<256> wpath(pathVal, CP_UTF8);
         const DWORD copied = GetFullPathNameW(wpath, MAX_PATH, wcanon, nullptr);
@@ -330,8 +330,10 @@ namespace litecore {
             }
         } else {
             const CW2AEX<256> converted(wcanon, CP_UTF8);
-            canon = (char *)malloc(MAX_PATH);
-            strcpy_s(canon, copied + 1, converted.m_psz);            
+
+            // Arbitrarily large to account for unforseen whacky UTF-8 names
+            canon = (char *)malloc(MAX_PATH * 4 + 1);
+            strcpy_s(canon, MAX_PATH * 4 + 1, converted.m_psz);            
         }
 #else
         char *canon = ::realpath(path().c_str(), nullptr);
