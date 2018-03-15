@@ -316,7 +316,7 @@ namespace litecore {
     string FilePath::canonicalPath() const {
 #ifdef _MSC_VER
         // Windows 10 has a new file path length limit of 32,767 chars (optionally)
-        wchar_t wcanon[32768];
+        const auto wcanon = (wchar_t*)malloc(sizeof(wchar_t) * 32768);
         const char* pathVal = path().c_str();
 	    const CA2WEX<256> wpath(pathVal, CP_UTF8);
         const DWORD copied = GetFullPathNameW(wpath, 32768, wcanon, nullptr);
@@ -335,6 +335,8 @@ namespace litecore {
             canon = (char *)malloc(32767 * 4 + 1);
             strcpy_s(canon, 32767 * 4 + 1, converted.m_psz);            
         }
+
+        free(wcanon);
 #else
         char *canon = ::realpath(path().c_str(), nullptr);
 #endif
