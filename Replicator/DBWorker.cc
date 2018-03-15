@@ -23,6 +23,7 @@
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
 #include "Stopwatch.hh"
+#include "Instrumentation.hh"
 #include "c4.hh"
 #include "c4Private.h"
 #include "c4Document+Fleece.h"
@@ -426,6 +427,7 @@ namespace litecore { namespace repl {
     // the changes don't exist locally, and returning a bit-vector indicating them.
     void DBWorker::_findOrRequestRevs(Retained<MessageIn> req,
                                      function<void(vector<bool>)> callback) {
+        Signpost signpost(Signpost::get);
         // Iterate over the array in the message, seeing whether I have each revision:
         bool proposed = (req->property("Profile"_sl) == "proposeChanges"_sl);
         auto changes = req->JSONBody().asArray();

@@ -26,6 +26,7 @@
 #include "Logging.hh"
 #include "SecureDigest.hh"
 #include "BLIP.hh"
+#include "Instrumentation.hh"
 
 using namespace std;
 using namespace std::placeholders;
@@ -113,6 +114,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_start() {
         Assert(_connectionState == Connection::kClosed);
+        Signpost::mark(Signpost::replicatorStart, uint32_t(size_t(this)));
         _connectionState = Connection::kConnecting;
         connection()->start();
         // Now wait for _onConnect or _onClose...
@@ -281,6 +283,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_onConnect() {
         log("BLIP Connected");
+        Signpost::mark(Signpost::replicatorConnect, uint32_t(size_t(this)));
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
             if (_options.push > kC4Passive || _options.pull > kC4Passive)
@@ -292,6 +295,7 @@ namespace litecore { namespace repl {
     void Replicator::_onClose(Connection::CloseStatus status, Connection::State state) {
         log("Connection closed with %-s %d: \"%.*s\" (state=%d)",
             status.reasonName(), status.code, SPLAT(status.message), _connectionState);
+        Signpost::mark(Signpost::replicatorDisconnect, uint32_t(size_t(this)));
 
         bool closedByPeer = (_connectionState != Connection::kClosing);
         _connectionState = state;

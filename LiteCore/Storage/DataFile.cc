@@ -26,6 +26,7 @@
 #include "c4Private.h"
 #include "PlatformIO.hh"
 #include "Stopwatch.hh"
+#include "Instrumentation.hh"
 #include <errno.h>
 #include <dirent.h>
 #include <algorithm>
@@ -338,6 +339,7 @@ namespace litecore {
         _db.beginTransactionScope(this);
         if (active) {
             LogToAt(DBLog, Verbose, "DataFile: begin transaction");
+            Signpost::begin(Signpost::transaction, uint32_t(size_t(this)));
             _db._beginTransaction(this);
             _active = true;
             _db.transactionBegan(this);
@@ -351,6 +353,7 @@ namespace litecore {
         _active = false;
         LogToAt(DBLog, Verbose, "DataFile: commit transaction");
         _db._endTransaction(this, true);
+        Signpost::end(Signpost::transaction, uint32_t(size_t(this)));
     }
 
 
@@ -360,6 +363,7 @@ namespace litecore {
         _active = false;
         LogTo(DBLog, "DataFile: abort transaction");
         _db._endTransaction(this, false);
+        Signpost::end(Signpost::transaction, uint32_t(size_t(this)));
     }
 
 
