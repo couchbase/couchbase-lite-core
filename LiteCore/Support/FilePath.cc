@@ -335,6 +335,8 @@ namespace litecore {
             canon = (char *)malloc(32767 * 4 + 1);
             strcpy_s(canon, 32767 * 4 + 1, converted.m_psz);            
         }
+
+        free(wcanon);
 #else
         char *canon = ::realpath(path().c_str(), nullptr);
 #endif
