@@ -430,7 +430,7 @@ TEST_CASE("CanonicalPath") {
     startPath += "../subfolder/";
     auto endPath = tmpPath + "subfolder";
     ::mkdir(endPath.c_str(), 777);
-#if __APPLE__
+#if __APPLE__ && !TARGET_OS_IPHONE
     endPath = "/private" + endPath;
 #endif
 #endif
@@ -445,7 +445,7 @@ TEST_CASE("CanonicalPath") {
     startPath = tmpPath + u8"日本語/";
     ::mkdir(startPath.c_str(), 777);
     endPath = startPath;
-#if __APPLE__
+#if __APPLE__ && !TARGET_OS_IPHONE
     endPath = "/private" + endPath;
 #endif
 #endif
