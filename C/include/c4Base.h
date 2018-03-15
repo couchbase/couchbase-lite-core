@@ -112,11 +112,10 @@ typedef uint64_t C4SequenceNumber;
 typedef C4_ENUM(uint32_t, C4ErrorDomain) {
     LiteCoreDomain = 1, // code is a Couchbase Lite Core error code (see below)
     POSIXDomain,        // code is an errno
-                        // domain 3 is unused
-    SQLiteDomain = 4,   // code is a SQLite error
-    FleeceDomain,       // code is a Fleece error
-    NetworkDomain,      // code is a network error code from the enum below
-    WebSocketDomain,    // code is a WebSocket close code (1000...1015) or HTTP error (400..599)
+    SQLiteDomain,       // code is a SQLite error; see "sqlite3.h">"
+    FleeceDomain,       // code is a Fleece error; see "FleeceException.h"
+    NetworkDomain,      // code is a network error; see enum C4NetworkErrorCode, below
+    WebSocketDomain,    // code is a WebSocket close code (1000...1015) or HTTP error (300..599)
 
     kC4MaxErrorDomainPlus1
 };
@@ -127,34 +126,25 @@ typedef C4_ENUM(uint32_t, C4ErrorDomain) {
 typedef C4_ENUM(int32_t, C4ErrorCode) {
     kC4ErrorAssertionFailed = 1,    // Internal assertion failure
     kC4ErrorUnimplemented,          // Oops, an unimplemented API call
-    kC4ErrorNoSequences,            // This KeyStore does not support sequences
     kC4ErrorUnsupportedEncryption,  // Unsupported encryption algorithm
-    kC4ErrorNoTransaction,          // Function must be called within a transaction
     kC4ErrorBadRevisionID,          // Invalid revision ID syntax
-    kC4ErrorBadVersionVector,       // Invalid version vector syntax
     kC4ErrorCorruptRevisionData,    // Revision contains corrupted/unreadable data
-    kC4ErrorCorruptIndexData,       // Index contains corrupted/unreadable data
-    kC4ErrorTokenizerError, /*10*/  // can't create text tokenizer for FTS
     kC4ErrorNotOpen,                // Database/KeyStore/index is not open
     kC4ErrorNotFound,               // Document not found
-    kC4ErrorDeleted,                // Document has been deleted
     kC4ErrorConflict,               // Document update conflict
     kC4ErrorInvalidParameter,       // Invalid function parameter or struct value
-    kC4ErrorDatabaseError,          // Lower-level database error (ForestDB or SQLite)
-    kC4ErrorUnexpectedError,        // Internal unexpected C++ exception
+    kC4ErrorUnexpectedError, /*10*/ // Internal unexpected C++ exception
     kC4ErrorCantOpenFile,           // Database file can't be opened; may not exist
     kC4ErrorIOError,                // File I/O error
-    kC4ErrorCommitFailed, /*20*/    // Transaction commit failed
     kC4ErrorMemoryError,            // Memory allocation failed (out of memory?)
     kC4ErrorNotWriteable,           // File is not writeable
     kC4ErrorCorruptData,            // Data is corrupted
     kC4ErrorBusy,                   // Database is busy/locked
-    kC4ErrorNotInTransaction,       // Function cannot be called while in a transaction
+    kC4ErrorNotInTransaction,       // Function must be called while in a transaction
     kC4ErrorTransactionNotClosed,   // Database can't be closed while a transaction is open
-    kC4ErrorIndexBusy,              // (unused)
     kC4ErrorUnsupported,            // Operation not supported in this database
-    kC4ErrorNotADatabaseFile,       // File is not a database, or encryption key is wrong
-    kC4ErrorWrongFormat, /*30*/     // Database exists but not in the format/storage requested
+    kC4ErrorNotADatabaseFile,/*20*/ // File is not a database, or encryption key is wrong
+    kC4ErrorWrongFormat,            // Database exists but not in the format/storage requested
     kC4ErrorCrypto,                 // Encryption/decryption error
     kC4ErrorInvalidQuery,           // Invalid query
     kC4ErrorMissingIndex,           // No such index, or query requires a nonexistent index
@@ -163,7 +153,7 @@ typedef C4_ENUM(int32_t, C4ErrorCode) {
     kC4ErrorDatabaseTooOld,         // Database file format is older than what I can open
     kC4ErrorDatabaseTooNew,         // Database file format is newer than what I can open
     kC4ErrorBadDocID,               // Invalid document ID
-    kC4ErrorCantUpgradeDatabase,    // Database can't be upgraded (might be unsupported dev version)
+    kC4ErrorCantUpgradeDatabase,/*30*/ // DB can't be upgraded (might be unsupported dev version)
 
     kC4NumErrorCodesPlus1
 };
@@ -172,17 +162,18 @@ typedef C4_ENUM(int32_t, C4ErrorCode) {
 /** Network error codes (higher level than POSIX, lower level than HTTP.) */
 // (These are identical to the internal C++ NetworkError enum values in WebSocketInterface.hh.)
 typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
-    kC4NetErrDNSFailure = 1,             // DNS lookup failed
-    kC4NetErrUnknownHost,                // DNS server doesn't know the hostname
+    kC4NetErrDNSFailure = 1,            // DNS lookup failed
+    kC4NetErrUnknownHost,               // DNS server doesn't know the hostname
     kC4NetErrTimeout,
     kC4NetErrInvalidURL,
     kC4NetErrTooManyRedirects,
     kC4NetErrTLSHandshakeFailed,
     kC4NetErrTLSCertExpired,
-    kC4NetErrTLSCertUntrusted,              // Cert isn't trusted for other reason
+    kC4NetErrTLSCertUntrusted,          // Cert isn't trusted for other reason
     kC4NetErrTLSClientCertRequired,
     kC4NetErrTLSClientCertRejected, // 10
-    kC4NetErrTLSCertUnknownRoot,            // Self-signed cert, or unknown anchor cert
+    kC4NetErrTLSCertUnknownRoot,        // Self-signed cert, or unknown anchor cert
+    kC4NetErrInvalidRedirect,           // Attempted redirect to invalid replication endpoint
 };
 
 

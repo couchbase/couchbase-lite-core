@@ -651,10 +651,10 @@ namespace litecore { namespace repl {
         } else {
             // Send an error if we couldn't get the revision:
             int blipError;
-            if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
+            if (c4err.domain == WebSocketDomain)
+                blipError = c4err.code;
+            else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorNotFound)
                 blipError = 404;
-            else if (c4err.domain == LiteCoreDomain && c4err.code == kC4ErrorDeleted)
-                blipError = 410;
             else {
                 warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %d/%d",
                      SPLAT(request.docID), SPLAT(request.revID), c4err.domain, c4err.code);
@@ -679,7 +679,7 @@ namespace litecore { namespace repl {
         if (!revisionBody) {
             log("Revision '%.*s' #%.*s is obsolete; not sending it",
                 SPLAT(request.docID), SPLAT(request.revID));
-            *c4err = {LiteCoreDomain, kC4ErrorDeleted};
+            *c4err = {WebSocketDomain, 410}; // Gone
             return nullptr;
         }
 

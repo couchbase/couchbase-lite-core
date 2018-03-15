@@ -128,7 +128,7 @@ namespace c4Internal {
                 error::_throw(error::NotFound);
             auto root = fleece::Value::fromTrustedData(selectedRev.body);
             if (!root)
-                error::_throw(error::CorruptData);
+                error::_throw(error::CorruptRevisionData);
             return root->toJSON(database()->documentKeys(), canonical);
         }
 

@@ -115,6 +115,13 @@ namespace LiteCore.Interop
             }
         }
 
+        public static byte[] c4db_getRemoteDBAddress(C4Database* db, uint remoteID)
+        {
+            using(var retVal = NativeRaw.c4db_getRemoteDBAddress(db, remoteID)) {
+                return ((C4Slice)retVal).ToArrayFast();
+            }
+        }
+
         public static byte[] c4doc_getRemoteAncestor(C4Document* doc, uint remoteDatabase)
         {
             using(var retVal = NativeRaw.c4doc_getRemoteAncestor(doc, remoteDatabase)) {
@@ -238,6 +245,9 @@ namespace LiteCore.Interop
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern uint c4db_getRemoteDBID(C4Database* db, C4Slice remoteAddress, [MarshalAs(UnmanagedType.U1)]bool canCreate, C4Error* outError);
+
+        [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern C4SliceResult c4db_getRemoteDBAddress(C4Database* db, uint remoteID);
 
         [DllImport(Constants.DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern C4SliceResult c4doc_getRemoteAncestor(C4Document* doc, uint remoteDatabase);
