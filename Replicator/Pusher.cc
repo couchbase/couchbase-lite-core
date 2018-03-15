@@ -130,7 +130,7 @@ namespace litecore { namespace repl {
                              && _revsToSend.size() < kMaxRevsQueued) {
             _gettingChanges = true;
             increment(_changeListsInFlight); // will be decremented at start of _gotChanges
-            log("Asking DB for %u changes since sequence #%llu ...",
+            logVerbose("Asking DB for %u changes since sequence #%llu ...",
                 _changesBatchSize, _lastSequenceRead);
             _dbWorker->getChanges({_lastSequenceRead,
                                    _docIDs,
@@ -162,7 +162,7 @@ namespace litecore { namespace repl {
             log("Found 0 changes up to #%llu", lastSequence);
             updateCheckpoint();
         } else {
-            log("Found %zu changes up to #%llu: Pusher sending '%s' with sequences #%llu - #%llu",
+            log("Read %zu local changes up to #%llu: sending '%-s' with sequences #%llu - #%llu",
                 changes.size(), lastSequence,
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 changes[0].sequence, _lastSequenceRead);
@@ -414,8 +414,8 @@ namespace litecore { namespace repl {
             increment(_blobsInFlight);
             MessageBuilder reply(req);
             reply.compressed = req->boolProperty("compress"_sl);
-            log("Sending blob %.*s (length=%lld, compress=%d)",
-                SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
+            logVerbose("Sending blob %.*s (length=%lld, compress=%d)",
+                       SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
             reply.dataSource = [this,blob](void *buf, size_t capacity) {
                 // Callback to read bytes from the blob into the BLIP message:
                 // For performance reasons this is NOT run on my actor thread, so it can't access

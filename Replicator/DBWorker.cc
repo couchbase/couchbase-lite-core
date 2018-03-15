@@ -289,7 +289,7 @@ namespace litecore { namespace repl {
     {
         if (!connection())
             return;
-        log("Reading up to %u local changes since #%llu", p.limit, p.since);
+        logVerbose("Reading up to %u local changes since #%llu", p.limit, p.since);
         _getForeignAncestors = p.getForeignAncestors;
         _skipForeignChanges = p.skipForeign;
         if (_maxPushedSequence == 0)
@@ -360,8 +360,8 @@ namespace litecore { namespace repl {
             nChanges = c4dbobs_getChanges(_changeObserver, c4changes, kMaxChanges, &external);
             if (nChanges == 0)
                 break;
-            log("Notified of %u db changes #%llu ... #%llu",
-                nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
+            logVerbose("Notified of %u db changes #%llu ... #%llu",
+                       nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
             C4SequenceNumber latestChangeSequence = _maxPushedSequence;
             changes.clear();
             C4DatabaseChange *c4change = c4changes;
@@ -440,11 +440,11 @@ namespace litecore { namespace repl {
         auto changes = req->JSONBody().asArray();
         if (willLog() && !changes.empty()) {
             if (proposed) {
-                log("Looking up %u proposed revisions in the db", changes.count());
+                log("Received %u changes", changes.count());
             } else {
                 alloc_slice firstSeq(changes[0].asArray()[0].toString());
                 alloc_slice lastSeq (changes[changes.count()-1].asArray()[0].toString());
-                log("Looking up %u revisions in the db (seq '%.*s'..'%.*s')",
+                log("Received %u changes (seq '%.*s'..'%.*s')",
                     changes.count(), SPLAT(firstSeq), SPLAT(lastSeq));
             }
         }

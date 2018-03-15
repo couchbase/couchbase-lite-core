@@ -42,7 +42,7 @@ namespace litecore { namespace repl {
         _key = key;
         _size = size;
         alloc_slice digest = c4blob_keyToString(_key);
-        log("Requesting blob %.*s (%llu bytes, compress=%d)", SPLAT(digest), _size, compress);
+        logVerbose("Requesting blob %.*s (%llu bytes, compress=%d)", SPLAT(digest), _size, compress);
 
         addProgress({0, _size});
 
