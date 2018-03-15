@@ -25,11 +25,12 @@
 extern "C" void setSqliteTempDirectory() {
     LPCWSTR zPath = Windows::Storage::ApplicationData::Current->
         TemporaryFolder->Path->Data();
-    char zPathBuf[32767 * 4 + 1];
+    char* zPathBuf = (char *)malloc(32767 * 4 + 1);
     memset(zPathBuf, 0, sizeof(zPathBuf));
     WideCharToMultiByte(CP_UTF8, 0, zPath, -1, zPathBuf, 32767 * 4 + 1,
         NULL, NULL);
     sqlite3_temp_directory = sqlite3_mprintf("%s", zPathBuf);
+    free(zPathBuf);
 }
 
 #endif
