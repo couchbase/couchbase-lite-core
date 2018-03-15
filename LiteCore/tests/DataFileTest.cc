@@ -442,7 +442,7 @@ TEST_CASE("CanonicalPath") {
     startPath = u8"C:\\日本語\\";
     endPath = startPath;
 #else
-    startPath = tmpPath + u8"日本語/";
+    startPath = tmpPath + u8"日本語";
     ::mkdir(startPath.c_str(), 777);
     endPath = startPath;
 #if __APPLE__ && !TARGET_OS_IPHONE
@@ -451,7 +451,7 @@ TEST_CASE("CanonicalPath") {
 #endif
 
     path = FilePath(startPath);
-    CHECK(path.canonicalPath() == endPath.substr(0, endPath.size() - 1));
+    CHECK(path.canonicalPath() == endPath);
 }
 
 
