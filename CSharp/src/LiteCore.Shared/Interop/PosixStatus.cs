@@ -17,12 +17,8 @@
 // 
 
 using System;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-
-using Couchbase.Lite.Logging;
-using Couchbase.Lite.Util;
 
 using JetBrains.Annotations;
 
@@ -198,7 +194,10 @@ namespace Couchbase.Lite
         [ContractAnnotation("name:null => halt")]
         public static int GetCode(string name)
         {
-            var n = CBDebug.MustNotBeNull(Log.To.Couchbase, "Posix", nameof(name), name);
+            if (name == null) {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             Type classType;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 classType = typeof(PosixWindows);
@@ -208,7 +207,7 @@ namespace Couchbase.Lite
                 classType = typeof(PosixLinux);
             }
 
-            var field = classType.GetField(n.ToUpperInvariant(), BindingFlags.Static | BindingFlags.Public);
+            var field = classType.GetField(name.ToUpperInvariant(), BindingFlags.Static | BindingFlags.Public | BindingFlags.FlattenHierarchy);
             return (int?)field?.GetValue(null) ?? 0;
         }
 
