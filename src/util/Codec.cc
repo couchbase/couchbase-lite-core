@@ -25,6 +25,7 @@
 #include "Logging.hh"
 #include "Endian.hh"
 #include <algorithm>
+#include <mutex>
 
 namespace litecore { namespace blip {
     using namespace fleeceapi;
@@ -184,8 +185,7 @@ namespace litecore { namespace blip {
                 break;
         }
 
-        if (curMode != Mode::SyncFlush || unflushedBytes()) {
-            assert(curMode!=Mode::SyncFlush);//TEMP
+        if (curMode != Mode::SyncFlush) {
             // Flush if we haven't yet (consuming no input):
             _write("deflate", input, output, Mode::SyncFlush, 0);
         }
@@ -193,6 +193,12 @@ namespace litecore { namespace blip {
 
 
     unsigned Deflater::unflushedBytes() const {
+#ifdef __APPLE__
+        // zlib's deflatePending() is only available in iOS 10+ / macOS 10.12+,
+        // even though <zlib.h> claims it's available in iOS 8 / macOS 10.10. (#471)
+        if (&deflatePending == nullptr)
+            return 0;
+#endif
         unsigned bytes;
         int bits;
         check(deflatePending(const_cast<z_stream*>(&_z), &bytes, &bits));
