@@ -9,7 +9,7 @@
     <Import_RootNamespace>LiteCore.Shared</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)API\LiteCoreException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)API\CouchbaseLiteException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Base.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\C4Base_defs.cs" />

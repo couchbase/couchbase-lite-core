@@ -257,8 +257,7 @@ namespace litecore {
 
     void SQLiteKeyStore::createSequenceIndex() {
         if (!_createdSeqIndex) {
-            if (!_capabilities.sequences)
-                error::_throw(error::NoSequences);
+            Assert(_capabilities.sequences);
             db().execWithLock(CONCAT("CREATE UNIQUE INDEX IF NOT EXISTS kv_" << name() << "_seqs"
                                      " ON kv_" << name() << " (sequence)"));
             _createdSeqIndex = true;

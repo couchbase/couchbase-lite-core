@@ -282,7 +282,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onConnect() {
-        log("BLIP Connected");
+        log("Connected!");
         Signpost::mark(Signpost::replicatorConnect, uint32_t(size_t(this)));
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
@@ -458,8 +458,8 @@ namespace litecore { namespace repl {
     void Replicator::saveCheckpointNow() {
         alloc_slice json = move(_checkpointJSONToSave);
 
-        log("Saving remote checkpoint %.*s with rev='%.*s': %.*s ...",
-            SPLAT(_checkpointDocID), SPLAT(_checkpointRevID), SPLAT(json));
+        logVerbose("Saving remote checkpoint %.*s with rev='%.*s': %.*s ...",
+                   SPLAT(_checkpointDocID), SPLAT(_checkpointRevID), SPLAT(json));
         Assert(_remoteCheckpointReceived);
         Assert(json);
 
@@ -481,7 +481,7 @@ namespace litecore { namespace repl {
             } else {
                 // Remote checkpoint saved, so update local one:
                 _checkpointRevID = response->property("rev"_sl);
-                log("Successfully saved remote checkpoint %.*s as rev='%.*s'",
+                log("Saved remote checkpoint %.*s as rev='%.*s'",
                     SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
                 _dbActor->setCheckpoint(json, asynchronize([this]{
                     _checkpoint.saved();

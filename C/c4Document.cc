@@ -103,7 +103,7 @@ bool c4doc_loadRevisionBody(C4Document* doc, C4Error *outError) noexcept {
     return tryCatch<bool>(outError, [&]{
         if (internal(doc)->loadSelectedRevBody())
             return true;
-        recordError(LiteCoreDomain, kC4ErrorDeleted, outError);
+        recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         return false;
     });
 }

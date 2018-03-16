@@ -192,7 +192,7 @@ namespace litecore {
             Encoder &enc = _newDB->sharedEncoder();
             JSONConverter converter(enc);
             if (!converter.encodeJSON(json))
-                error::_throw(error::CorruptData, "invalid JSON data in database being upgraded");
+                error::_throw(error::CorruptRevisionData, "invalid JSON data in database being upgraded");
             return enc.extractOutput();
         }
 

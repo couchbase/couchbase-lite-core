@@ -28,7 +28,6 @@
 #include <cstdio>
 #include <thread>
 #include <algorithm>
-#include <TempArray.hh>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -316,10 +315,11 @@ namespace litecore {
 
     string FilePath::canonicalPath() const {
 #ifdef _MSC_VER
-        TempArray(wcanon, wchar_t, MAX_PATH);
+        // Windows 10 has a new file path length limit of 32,767 chars (optionally)
+        wchar_t wcanon[32768];
         const char* pathVal = path().c_str();
 	    const CA2WEX<256> wpath(pathVal, CP_UTF8);
-        const DWORD copied = GetFullPathNameW(wpath, MAX_PATH, wcanon, nullptr);
+        const DWORD copied = GetFullPathNameW(wpath, 32768, wcanon, nullptr);
         char* canon = nullptr;
         if(copied == 0) {
             const DWORD err = GetLastError();
@@ -330,8 +330,10 @@ namespace litecore {
             }
         } else {
             const CW2AEX<256> converted(wcanon, CP_UTF8);
-            canon = (char *)malloc(MAX_PATH);
-            strcpy_s(canon, copied + 1, converted.m_psz);            
+
+            // Arbitrarily large to account for unforseen whacky UTF-8 names (4 bytes per wide char)
+            canon = (char *)malloc(32767 * 4 + 1);
+            strcpy_s(canon, 32767 * 4 + 1, converted.m_psz);            
         }
 #else
         char *canon = ::realpath(path().c_str(), nullptr);

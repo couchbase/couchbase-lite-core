@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 
 using JetBrains.Annotations;
 
@@ -30,162 +31,163 @@ using LiteCore.Interop;
 
 namespace Couchbase.Lite
 {
+    /// <summary>
+    /// This set of error codes applies to <see cref="CouchbaseLiteException" />,
+    /// <see cref="CouchbaseNetworkException"/> and <see cref="CouchbaseWebsocketException"/>
+    /// </summary>
     public enum CouchbaseLiteError
     {
         /// <summary>
         /// Internal assertion failure
         /// </summary>
-        AssertionFailed = 1,    
+        AssertionFailed = C4ErrorCode.AssertionFailed,    
 
         /// <summary>
         /// An unimplemented API call
         /// </summary>
-        Unimplemented,
+        Unimplemented = C4ErrorCode.Unimplemented,
 
         /// <summary>
         /// Unsupported encryption algorithm
         /// </summary>
-        UnsupportedEncryption = 4,
+        UnsupportedEncryption = C4ErrorCode.UnsupportedEncryption,
 
         /// <summary>
-        /// Function must be called within a transaction
+        /// An invalid revision ID was attempted to be used to insert a document
+        /// (usually because of an invalid revision ID written directly into
+        /// Sync Gateway via the REST API)
         /// </summary>
-        NoTransaction,
+        BadRevisionID = C4ErrorCode.BadRevisionID,
 
         /// <summary>
         /// Revision contains corrupted/unreadable data
         /// </summary>
-        CorruptRevisionData = 8,
+        CorruptRevisionData = C4ErrorCode.CorruptRevisionData,
 
         /// <summary>
         /// Database/KeyStore is not open
         /// </summary>
-        NotOpen = 11,
+        NotOpen = C4ErrorCode.NotOpen,
 
         /// <summary>
         /// Document not found
         /// </summary>
-        NotFound,
+        NotFound = C4ErrorCode.NotFound,
 
         /// <summary>
         /// Document update conflict
         /// </summary>
-        Conflict = 14,
+        Conflict = C4ErrorCode.Conflict,
 
         /// <summary>
         /// Invalid function parameter or struct value
         /// </summary>
-        InvalidParameter,
+        InvalidParameter = C4ErrorCode.InvalidParameter,
 
         /// <summary>
         /// Internal unexpected C++ exception
         /// </summary>
-        UnexpectedError = 17,
+        UnexpectedError = C4ErrorCode.UnexpectedError,
 
         /// <summary>
         /// Database file can't be opened; may not exist
         /// </summary>
-        CantOpenFile,
+        CantOpenFile = C4ErrorCode.CantOpenFile,
 
         /// <summary>
         /// File I/O error
         /// </summary>
-        IOError,
+        IOError = C4ErrorCode.IOError,
 
         /// <summary>
         /// Memory allocation failed (out of memory?)
         /// </summary>
-        MemoryError = 21,
+        MemoryError = C4ErrorCode.MemoryError,
 
         /// <summary>
         /// File is not writeable
         /// </summary>
-        NotWriteable,
+        NotWriteable = C4ErrorCode.NotWriteable,
 
         /// <summary>
         /// Data is corrupted
         /// </summary>
-        CorruptData,
+        CorruptData = C4ErrorCode.CorruptData,
 
         /// <summary>
         /// Database is busy / locked
         /// </summary>
-        Busy,
+        Busy = C4ErrorCode.Busy,
 
         /// <summary>
         /// Function cannot be called while in a transaction
         /// </summary>
-        NotInTransaction,
+        NotInTransaction = C4ErrorCode.NotInTransaction,
 
         /// <summary>
         /// Database can't be closed while a transaction is open
         /// </summary>
-        TransactionNotClosed,
-
-        ///// <summary>
-        ///// (Unused)
-        ///// </summary>
-        //IndexBusy,
+        TransactionNotClosed = C4ErrorCode.TransactionNotClosed,
 
         /// <summary>
         /// Operation not supported on this database
         /// </summary>
-        Unsupported = 28,
+        Unsupported = C4ErrorCode.Unsupported,
 
         /// <summary>
         /// File is not a database or encryption key is wrong
         /// </summary>
-        UnreadableDatabase,
+        UnreadableDatabase = C4ErrorCode.NotADatabaseFile,
 
         /// <summary>
         /// Database exists but not in the format/storage requested
         /// </summary>
-        WrongFormat,
+        WrongFormat = C4ErrorCode.WrongFormat,
 
         /// <summary>
         /// Encryption / Decryption error
         /// </summary>
-        Crypto,
+        Crypto = C4ErrorCode.Crypto,
 
         /// <summary>
         /// Invalid query
         /// </summary>
-        InvalidQuery,
+        InvalidQuery = C4ErrorCode.InvalidQuery,
 
         /// <summary>
         /// No such index, or query requires a nonexistent index
         /// </summary>
-        MissingIndex,
+        MissingIndex = C4ErrorCode.MissingIndex,
 
         /// <summary>
         /// Unknown query param name, or param number out of range
         /// </summary>
-        InvalidQueryParam,
+        InvalidQueryParam = C4ErrorCode.InvalidQueryParam,
 
         /// <summary>
         /// Unknown error from remote server
         /// </summary>
-        RemoteError,
+        RemoteError = C4ErrorCode.RemoteError,
 
         /// <summary>
         /// Database file format is older than what I can open
         /// </summary>
-        DatabaseTooOld,
+        DatabaseTooOld = C4ErrorCode.DatabaseTooOld,
 
         /// <summary>
         /// Database file format is newer than what I can open
         /// </summary>
-        DatabaseTooNew,
+        DatabaseTooNew = C4ErrorCode.DatabaseTooNew,
 
         /// <summary>
         /// Invalid document ID
         /// </summary>
-        BadDocID,
+        BadDocID = C4ErrorCode.BadDocID,
 
         /// <summary>
         /// Database can't be upgraded (might be unsupported dev version)
         /// </summary>
-        CantUpgradeDatabase,
+        CantUpgradeDatabase = C4ErrorCode.CantUpgradeDatabase,
 
         /// <summary>
         /// Not an actual error, but serves as the lower bound for network related
@@ -196,62 +198,62 @@ namespace Couchbase.Lite
         /// <summary>
         /// DNS Lookup failed
         /// </summary>
-        DNSFailure,
+        DNSFailure = C4NetworkErrorCode.DNSFailure + NetworkBase,
 
         /// <summary>
         /// DNS server doesn't know the hostname
         /// </summary>
-        UnknownHost,
+        UnknownHost = C4NetworkErrorCode.UnknownHost + NetworkBase,
 
         /// <summary>
         /// Socket timeout during an operation
         /// </summary>
-        Timeout,
+        Timeout = C4NetworkErrorCode.Timeout + NetworkBase,
 
         /// <summary>
         /// The provided URL is not valid
         /// </summary>
-        InvalidUrl,
+        InvalidUrl = C4NetworkErrorCode.InvalidURL + NetworkBase,
 
         /// <summary>
         /// Too many HTTP redirects for the HTTP client to handle
         /// </summary>
-        TooManyRedirects,
+        TooManyRedirects = C4NetworkErrorCode.TooManyRedirects + NetworkBase,
 
         /// <summary>
         /// Failure during TLS handshake process
         /// </summary>
-        TLSHandshakeFailed,
+        TLSHandshakeFailed = C4NetworkErrorCode.TLSHandshakeFailed + NetworkBase,
 
         /// <summary>
         /// The provided TLS certificate has expired
         /// </summary>
-        TLSCertExpired,
+        TLSCertExpired = C4NetworkErrorCode.TLSCertExpired + NetworkBase,
 
         /// <summary>
         /// Cert isn't trusted for other reason
         /// </summary>
-        TLSCertUntrusted,
+        TLSCertUntrusted = C4NetworkErrorCode.TLSCertUntrusted + NetworkBase,
 
         /// <summary>
         /// A required client certificate was not provided
         /// </summary>
-        TLSClientCertRequired,
+        TLSClientCertRequired = C4NetworkErrorCode.TLSClientCertRequired + NetworkBase,
 
         /// <summary>
         /// Client certificate was rejected by the server
         /// </summary>
-        TLSClientCertRejected,
+        TLSClientCertRejected = C4NetworkErrorCode.TLSClientCertRejected + NetworkBase,
 
         /// <summary>
         /// Self-signed cert, or unknow anchor cert
         /// </summary>
-        TLSCertUnknownRoot,
+        TLSCertUnknownRoot = C4NetworkErrorCode.TLSCertUnknownRoot + NetworkBase,
 
         /// <summary>
         /// The client was redirected to an invalid location by the server
         /// </summary>
-        InvalidRedirect,
+        InvalidRedirect = C4NetworkErrorCode.InvalidRedirect + NetworkBase,
 
         /// <summary>
         /// Not an actual error, but serves as the lower bound for HTTP related
@@ -313,54 +315,77 @@ namespace Couchbase.Lite
         /// <summary>
         /// Peer has to close, e.g. because host app is quitting
         /// </summary>
-        WebSocketGoingAway = 11001,
+        WebSocketGoingAway = C4WebSocketCloseCode.WebSocketCloseGoingAway + HTTPBase,
 
         /// <summary>
         /// Protocol violation: invalid framing data
         /// </summary>
-        WebSocketProtocolError = 11002,
+        WebSocketProtocolError = C4WebSocketCloseCode.WebSocketCloseProtocolError + HTTPBase,
 
         /// <summary>
         /// Message payload cannot be handled
         /// </summary>
-        WebSocketDataError = 11003,
+        WebSocketDataError = C4WebSocketCloseCode.WebSocketCloseDataError + HTTPBase,
 
         /// <summary>
         /// TCP socket closed unexpectedly
         /// </summary>
-        WebSocketAbnormalClose = 11006,
+        WebSocketAbnormalClose = C4WebSocketCloseCode.WebSocketCloseAbnormal + HTTPBase,
 
         /// <summary>
         /// Unparseable WebSocket message
         /// </summary>
-        WebSocketBadMessageFormat = 11007,
+        WebSocketBadMessageFormat = C4WebSocketCloseCode.WebSocketCloseBadMessageFormat + HTTPBase,
 
         /// <summary>
         /// Message violated unspecified policy
         /// </summary>
-        WebSocketPolicyError = 11008,
+        WebSocketPolicyError = C4WebSocketCloseCode.WebSocketClosePolicyError + HTTPBase,
 
         /// <summary>
         /// Message is too large for peer to handle
         /// </summary>
-        WebSocketMessageTooBig = 11009,
+        WebSocketMessageTooBig = C4WebSocketCloseCode.WebSocketCloseMessageTooBig + HTTPBase,
 
         /// <summary>
         /// Peer doesn't provide a necessary extension
         /// </summary>
-        WebSocketMissingExtension = 11010,
+        WebSocketMissingExtension = C4WebSocketCloseCode.WebSocketCloseMissingExtension + HTTPBase,
 
         /// <summary>
         /// Can't fulfill request due to "unexpected condition"
         /// </summary>
-        WebSocketCantFulfill = 11011
+        WebSocketCantFulfill = C4WebSocketCloseCode.WebSocketCloseCantFulfill + HTTPBase
     }
 
+    /// <summary>
+    /// These are the domains into which a <see cref="CouchbaseException"/>
+    /// can fall.  Each domain has one or more corresponding exception subclasses.
+    /// You can trap a <see cref="CouchbaseException"/> and check its <see cref="CouchbaseException.Domain"/>
+    /// to see which kind of subclass you should cast to, if desirable.  Subclasses have a fixed domain.
+    /// </summary>
     public enum CouchbaseLiteErrorType
     {
+        /// <summary>
+        /// This error was generated by LiteCore and involves data verification,
+        /// disk and network I/O, and HTTP / WebSocket statuses
+        /// </summary>
         CouchbaseLite,
+
+        /// <summary>
+        /// A POSIX error code was received during operation.  For Windows this is
+        /// best effort as Win32 API does not set POSIX error codes.
+        /// </summary>
         POSIX,
+
+        /// <summary>
+        /// An error occurred during a SQLite operation and is being bubbled up
+        /// </summary>
         SQLite,
+
+        /// <summary>
+        /// An error occurred during serialization or deserialization of data
+        /// </summary>
         Fleece
     }
 
@@ -378,7 +403,6 @@ namespace Couchbase.Lite
             (int)C4ErrorCode.Unimplemented,
             (int)C4ErrorCode.Unsupported,
             (int)C4ErrorCode.UnsupportedEncryption,
-            (int)C4ErrorCode.NoTransaction,
             (int)C4ErrorCode.BadRevisionID,
             (int)C4ErrorCode.UnexpectedError
         };
@@ -393,8 +417,15 @@ namespace Couchbase.Lite
 
         #region Properties
 
+        /// <summary>
+        /// Gets the domain of the error that happened (which indicates which subclass
+        /// this exception will be)
+        /// </summary>
         public CouchbaseLiteErrorType Domain { get; }
 
+        /// <summary>
+        /// Gets the raw error code as an integer
+        /// </summary>
         public int Error { get; }
 
 #if LITECORE_PACKAGED
@@ -528,10 +559,18 @@ namespace Couchbase.Lite
         #endregion
     }
 
+    /// <summary>
+    /// An exception that is thrown when a <see cref="CouchbaseLiteError"/> is detected.
+    /// This class will always have the <see cref="CouchbaseLiteErrorType.CouchbaseLite"/>
+    /// domain set.
+    /// </summary>
     public sealed class CouchbaseLiteException : CouchbaseException
     {
         #region Properties
 
+        /// <summary>
+        /// Gets the error code as a <see cref="CouchbaseLiteError"/>
+        /// </summary>
         public new CouchbaseLiteError Error => (CouchbaseLiteError) base.Error;
 
         #endregion
@@ -556,6 +595,12 @@ namespace Couchbase.Lite
         #endregion
     }
 
+    /// <summary>
+    /// An exception that is thrown when a Fleece error is detected.  Fleece is the
+    /// library used to serialize and deserialize data.  Any error of this type is not
+    /// reactable by the user and so the error codes are not enumerated.  This type of
+    /// exception should be reported.  This class has a domain type of <see cref="CouchbaseLiteErrorType.Fleece"/>
+    /// </summary>
     public sealed class CouchbaseFleeceException : CouchbaseException
     {
         #region Constructors
@@ -578,10 +623,17 @@ namespace Couchbase.Lite
         #endregion
     }
 
+    /// <summary>
+    /// An exception used to indicate a SQLite operation error.  The possible errors are enumerated as
+    /// <see cref="SQLiteStatus"/> for convenience.  This class has a domain type of <see cref="CouchbaseLiteErrorType.SQLite"/>
+    /// </summary>
     public sealed class CouchbaseSQLiteException : CouchbaseException
     {
         #region Properties
 
+        /// <summary>
+        /// Gets the error as a <see cref="SQLiteStatus"/>
+        /// </summary>
         public SQLiteStatus BaseError => (SQLiteStatus) (Error & 0xFF);
 
         #endregion
@@ -606,10 +658,17 @@ namespace Couchbase.Lite
         #endregion
     }
 
+    /// <summary>
+    /// An exception that is thrown when there is an abnormal websocket condition detected.
+    /// This exception has a domain of <see cref="CouchbaseLiteErrorType.CouchbaseLite"/>.
+    /// </summary>
     public sealed class CouchbaseWebsocketException : CouchbaseException
     {
         #region Properties
 
+        /// <summary>
+        /// Gets the error as a <see cref="CouchbaseLiteError"/>
+        /// </summary>
         public new CouchbaseLiteError Error => (CouchbaseLiteError) base.Error;
 
         #endregion
@@ -634,15 +693,27 @@ namespace Couchbase.Lite
         #endregion
     }
 
+    /// <summary>
+    /// An exception that is thrown when there is an abnormal network condition detected.
+    /// This exception has a domain of <see cref="CouchbaseLiteErrorType.CouchbaseLite"/>
+    /// </summary>
     public sealed class CouchbaseNetworkException : CouchbaseException
     {
         #region Properties
 
+        /// <summary>
+        /// Gets the error as a <see cref="CouchbaseLiteError"/>
+        /// </summary>
         public new CouchbaseLiteError Error => (CouchbaseLiteError) base.Error;
 
         #endregion
 
         #region Constructors
+
+        internal CouchbaseNetworkException(HttpStatusCode httpCode) : base(new C4Error(C4ErrorDomain.WebSocketDomain, (int)httpCode))
+        {
+
+        }
 
         internal CouchbaseNetworkException(C4Error err) : base(err)
         {
@@ -662,14 +733,14 @@ namespace Couchbase.Lite
         #endregion
     }
 
+    /// <summary>
+    /// An exception that is thrown when a POSIX error code is received during operation.
+    /// This exception has a domain of <see cref="CouchbaseLiteErrorType.POSIX"/>.  The <see cref="CouchbaseException.Error"/>
+    /// values are dependent on the OS being run on.  They are defined in <see cref="PosixWindows"/>,
+    /// <see cref="PosixMac"/> and <see cref="PosixLinux"/>
+    /// </summary>
     public sealed class CouchbasePosixException : CouchbaseException
     {
-        #region Properties
-
-        public new PosixStatus Error => (PosixStatus) base.Error;
-
-        #endregion
-
         #region Constructors
 
         internal CouchbasePosixException(C4Error err) : base(err)

@@ -36,7 +36,6 @@
 
 #ifdef _MSC_VER
 #include <winerror.h>
-#define EHOSTDOWN 64
 #endif
 
 #if defined(__clang__) // For __cxa_demangle
@@ -200,15 +199,9 @@ static bool errorIsInSet(C4Error err, ErrorSet set) {
 
 
 bool c4error_mayBeTransient(C4Error err) C4API {
-#ifndef _MSC_VER
     static CodeList kTransientPOSIX = {
         ENETRESET, ECONNABORTED, ECONNRESET, ETIMEDOUT, ECONNREFUSED, 0};
-#else
-	// Windows has the same POSIX codes, but they are all different values...
-	// magic number time
-	static CodeList kTransientPOSIX = {
-        52, 53, 54, 60, 61, 0};
-#endif
+
     static CodeList kTransientNetwork = {
         kC4NetErrDNSFailure,
         0};
@@ -227,22 +220,18 @@ bool c4error_mayBeTransient(C4Error err) C4API {
         kTransientPOSIX,
         nullptr,
         nullptr,
-        nullptr,
         kTransientNetwork,
         kTransientWebSocket};
     return errorIsInSet(err, kTransient);
 }
 
 bool c4error_mayBeNetworkDependent(C4Error err) C4API {
+    static CodeList kUnreachablePOSIX = {
+        ENETDOWN, ENETUNREACH, ENOTCONN, ETIMEDOUT, 
 #ifndef _MSC_VER
-    static CodeList kUnreachablePOSIX = {
-        ENETDOWN, ENETUNREACH, ENOTCONN, ETIMEDOUT, EHOSTDOWN, EHOSTUNREACH,EADDRNOTAVAIL, 0};
-#else
-    // Windows has the same POSIX codes, but they are all different values...
-	// magic number time
-    static CodeList kUnreachablePOSIX = {
-        50, 51, 57, 60, 64, 65, 49, 0};
+        EHOSTDOWN, // Doesn't exist on Windows
 #endif
+        EHOSTUNREACH,EADDRNOTAVAIL, 0};
 
     static CodeList kUnreachableNetwork = {
         kC4NetErrDNSFailure,
@@ -252,7 +241,6 @@ bool c4error_mayBeNetworkDependent(C4Error err) C4API {
         nullptr,
         nullptr,
         kUnreachablePOSIX,
-        nullptr,
         nullptr,
         nullptr,
         kUnreachableNetwork,

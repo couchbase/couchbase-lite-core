@@ -100,7 +100,7 @@ namespace litecore {
 
     // Indexed by Domain
     static const char* kDomainNames[] = {"0",
-                                         "LiteCore", "POSIX", "3", "SQLite", "Fleece",
+                                         "LiteCore", "POSIX", "SQLite", "Fleece",
                                          "Network", "WebSocket"};
     static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
                   "Incomplete domain name table");
@@ -112,31 +112,22 @@ namespace litecore {
             "no error", // 0
             "assertion failed",
             "unimplemented function called",
-            "database doesn't support sequences",
             "unsupported encryption algorithm",
-            "call must be made in a transaction",
             "bad revision ID",
-            "bad version vector",
             "corrupt revision data",
-            "corrupt index",
-            "text tokenizer error", // 10
             "database not open",
             "not found",
-            "deleted",
             "conflict",
             "invalid parameter",
-            "database error",
             "unexpected exception",
             "can't open file",
             "file I/O error",
-            "commit failed", // 20
             "memory allocation failed",
             "not writeable",
-            "file data is corrupted",
+            "data is corrupted",
             "database busy/locked",
             "must be called during a transaction",
             "transaction not closed",
-            "index busy; can't close view",
             "unsupported operation for this database type",
             "file is not a database (or encryption key is invalid/missing)",
             "file/data is not in the requested format", // 30
@@ -198,6 +189,7 @@ namespace litecore {
             "server requires a TLS client certificate",
             "server rejected the TLS client certificate",
             "server TLS certificate is self-signed or has unknown root cert",
+            "invalid HTTP redirect, or redirect loop",
         };
         const char *str = nullptr;
         if (code < sizeof(kNetworkMessages)/sizeof(char*))
@@ -348,7 +340,7 @@ namespace litecore {
             return true;
         switch (domain) {
             case LiteCore:
-                return code == NotFound || code == Deleted || code == DatabaseTooOld;
+                return code == NotFound || code == DatabaseTooOld;
             case POSIX:
                 return code == ENOENT;
             default:

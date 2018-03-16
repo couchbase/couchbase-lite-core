@@ -176,7 +176,6 @@ namespace litecore { namespace REST {
                     case kC4ErrorNotWriteable:
                         status = HTTPStatus::Forbidden; break;
                     case kC4ErrorNotFound:
-                    case kC4ErrorDeleted:
                         status = HTTPStatus::NotFound; break;
                     case kC4ErrorConflict:
                         status = HTTPStatus::Conflict; break;

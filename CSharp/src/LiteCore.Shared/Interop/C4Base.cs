@@ -56,11 +56,6 @@ namespace LiteCore.Interop
             
         }
 
-        public C4Error(PosixStatus code) : this(C4ErrorDomain.POSIXDomain, (int) code)
-        {
-
-        }
-
         public override int GetHashCode()
         {
             return Hasher.Start

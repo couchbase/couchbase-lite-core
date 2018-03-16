@@ -53,6 +53,7 @@ namespace LiteCore.Interop
         HasAttachments = 0x08,
         KeepBody       = 0x10,
         IsConflict     = 0x20,
+        Closed         = 0x40,
     }
 
 #if LITECORE_PACKAGED
