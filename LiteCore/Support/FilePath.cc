@@ -544,8 +544,16 @@ namespace litecore {
 
     void FilePath::copyTo(const string &to) const {
 #if __APPLE__
-        copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
-        check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+        // The COPYFILE_CLONE mode enables super-fast file cloning on APFS.
+        // Unfortunately there seems to be a bug in the iOS 9 simulator where, if this flag is
+        // used, the resulting files have zero length. (See #473)
+        if (__builtin_available(iOS 10, macOS 10.12, tvos 10, *)) {
+            copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
+            check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+        } else {
+            copyfile_flags_t flags = COPYFILE_ALL | COPYFILE_RECURSIVE;
+            check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+        }
 #else
         if (isDir()) {
             FilePath toPath(to);
