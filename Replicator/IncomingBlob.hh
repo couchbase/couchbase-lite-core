@@ -19,6 +19,7 @@
 #pragma once
 #include "Worker.hh"
 #include "ReplicatorTypes.hh"
+#include "c4.hh"
 
 namespace litecore { namespace repl {
 
@@ -41,7 +42,7 @@ namespace litecore { namespace repl {
         C4BlobStore* const _blobStore;
         C4BlobKey _key;
         uint64_t _size;
-        C4WriteStream* _writer {nullptr};
+        c4::ref<C4WriteStream> _writer;
         bool _busy {false};
     };
 } }

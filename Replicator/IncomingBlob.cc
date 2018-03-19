@@ -102,7 +102,6 @@ namespace litecore { namespace repl {
 
 
     void IncomingBlob::closeWriter() {
-        c4stream_closeWriter(_writer);
         _writer = nullptr;
         _busy = false;
 #if DEBUG
