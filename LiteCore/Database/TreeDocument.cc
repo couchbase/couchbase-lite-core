@@ -38,7 +38,7 @@ namespace c4Internal {
     class TreeDocument : public Document {
     public:
         TreeDocument(Database* database, C4Slice docID)
-        :Document(database, docID),
+        :Document(database),
          _versionedDoc(database->defaultKeyStore(), docID),
          _selectedRev(nullptr)
         {
@@ -47,7 +47,7 @@ namespace c4Internal {
 
 
         TreeDocument(Database *database, const Record &doc)
-        :Document(database, move(doc)),
+        :Document(database),
          _versionedDoc(database->defaultKeyStore(), doc),
          _selectedRev(nullptr)
         {

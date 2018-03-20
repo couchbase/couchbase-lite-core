@@ -47,11 +47,7 @@ namespace c4Internal {
         alloc_slice _selectedRevIDBuf;
         alloc_slice _loadedBody;
 
-        Document(Database* database, C4Slice docID)
-        :_db(database)
-        { }
-
-        Document(Database *database, const Record &doc)
+        Document(Database *database)
         :_db(database)
         { }
 
