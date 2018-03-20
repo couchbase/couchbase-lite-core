@@ -52,7 +52,8 @@ namespace litecore { namespace websocket {
     websocket::Address addressFrom(const C4Address &addr) {
         return websocket::Address(asstring(addr.scheme),
                                   asstring(addr.hostname),
-                                  addr.port);
+                                  addr.port,
+                                  asstring(addr.path));
     }
 
     

@@ -26,6 +26,7 @@
 #include "Logging.hh"
 #include "SecureDigest.hh"
 #include "BLIP.hh"
+#include "c4Socket+Internal.hh"
 
 using namespace std;
 using namespace std::placeholders;
@@ -47,14 +48,8 @@ namespace litecore { namespace repl {
         options.setProperty(slice(kC4SocketOptionWSProtocols),
                             (string(Connection::kWSProtocolName) + kReplicatorProtocolName).c_str());
         if (!options.properties[kC4ReplicatorOptionCookies]) {
-            C4Address c4addr {
-                slice(address.scheme),
-                slice(address.hostname),
-                address.port,
-                slice(address.path)
-            };
             C4Error err;
-            alloc_slice cookies = c4db_getCookies(db, c4addr, &err);
+            alloc_slice cookies = c4db_getCookies(db, c4AddressFrom(address), &err);
             if (cookies)
                 options.setProperty(slice(kC4ReplicatorOptionCookies), cookies);
             else if (err.code)

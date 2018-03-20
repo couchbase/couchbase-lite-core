@@ -236,17 +236,21 @@ N_WAY_TEST_CASE_METHOD(C4Test, "c4 Cookie API", "[Cookies]") {
         CHECK(error.code == 0);
         CHECK(c4db_setCookie(db, "e=mc^2; Domain=WWW.Example.Com; Max-Age=30"_sl, request.hostname, &error));
         CHECK(c4db_setCookie(db, "name=value"_sl, request.hostname, &error));
+        CHECK(c4db_setCookie(db, "foo=bar; Path=/db"_sl, request.hostname, &error));
+        CHECK(c4db_setCookie(db, "frob=baz; Path=/db/"_sl, request.hostname, &error));
+        CHECK(c4db_setCookie(db, "eenie=meenie; Path=/db/xox"_sl, request.hostname, &error));
+        CHECK(c4db_setCookie(db, "minie=moe; Path=/someotherdb"_sl, request.hostname, &error));
     }
     {
         // Get the cookies, in the same C4Database instance:
         alloc_slice cookies = c4db_getCookies(db, request, &error);
-        CHECK(cookies == "e=mc^2; name=value"_sl);
+        CHECK(cookies == "e=mc^2; name=value; foo=bar; frob=baz"_sl);
     }
     {
         // Get the cookies, in a different C4Database instance while the 1st one is open:
         c4::ref<C4Database> db2 = c4db_openAgain(db, nullptr);
         alloc_slice cookies = c4db_getCookies(db2, request, &error);
-        CHECK(cookies == "e=mc^2; name=value"_sl);
+        CHECK(cookies == "e=mc^2; name=value; foo=bar; frob=baz"_sl);
     }
 
     reopenDB();
