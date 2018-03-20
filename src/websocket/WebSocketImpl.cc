@@ -324,18 +324,20 @@ namespace litecore { namespace websocket {
     void WebSocketImpl::close(int status, fleece::slice message) {
         log("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
         if (_framing) {
+            alloc_slice closeMsg;
             {
                 std::lock_guard<std::mutex> lock(_mutex);
                 if (_closeSent || _closeReceived)
                     return;
-                _closeSent = true;
-                _closeMessage = alloc_slice(2 + message.size);
-                auto size = ClientProtocol::formatClosePayload((char*)_closeMessage.buf,
+                closeMsg = alloc_slice(2 + message.size);
+                auto size = ClientProtocol::formatClosePayload((char*)closeMsg.buf,
                                                                (uint16_t)status,
                                                                (char*)message.buf, message.size);
-                _closeMessage.shorten(size);
+                closeMsg.shorten(size);
+                _closeSent = true;
+                _closeMessage = closeMsg;
             }
-            sendOp(_closeMessage, uWS::CLOSE);
+            sendOp(closeMsg, uWS::CLOSE);
         } else {
             provider().requestClose(this, status, message);
         }
