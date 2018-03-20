@@ -718,6 +718,5 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
     c4doc_free(curDocAfterMarkSync);
     c4doc_free(updatedDoc);
     c4doc_free(updatedDocRefreshed);
-
-
 }
+
