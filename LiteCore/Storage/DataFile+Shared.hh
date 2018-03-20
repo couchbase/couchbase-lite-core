@@ -74,6 +74,8 @@ namespace litecore {
             if (pos == _dataFiles.end())
                 return false;
             _dataFiles.erase(pos);
+            if (_dataFiles.empty())
+                _sharedObjects.clear();
             return true;
         }
 
