@@ -209,6 +209,7 @@ _c4error_return
 _c4doc_getForPut
 _c4_getObjectCount
 _c4_shutdown
+_c4db_markSynced
 _c4_dumpInstances
 _gC4InstanceCount
 _gC4ExpectExceptions
