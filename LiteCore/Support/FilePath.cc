@@ -318,7 +318,7 @@ namespace litecore {
         // Windows 10 has a new file path length limit of 32,767 chars (optionally)
         const auto wcanon = (wchar_t*)malloc(sizeof(wchar_t) * 32768);
         auto pathVal = path();
-	    const CA2WEX<256> wpath(pathVal.c_str(), CP_UTF8);
+        const CA2WEX<256> wpath(pathVal.c_str(), CP_UTF8);
         const DWORD copied = GetFullPathNameW(wpath, 32768, wcanon, nullptr);
         wcanon[copied] = 0;
         char* canon = nullptr;
