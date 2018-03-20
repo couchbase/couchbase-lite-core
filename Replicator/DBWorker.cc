@@ -86,7 +86,8 @@ namespace litecore { namespace repl {
 
     void DBWorker::_setCookie(alloc_slice setCookieHeader) {
         C4Error err;
-        if (c4db_setCookie(_db, setCookieHeader, slice(_remoteAddress.hostname), &err)) {
+        if (c4db_setCookie(_db, setCookieHeader,
+                           slice(_remoteAddress.hostname), slice(_remoteAddress.path), &err)) {
             logVerbose("Set cookie: `%.*s`", SPLAT(setCookieHeader));
         } else {
             alloc_slice message = c4error_getMessage(err);

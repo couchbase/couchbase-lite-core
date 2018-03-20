@@ -199,12 +199,14 @@ C4StringResult c4db_getCookies(C4Database *db,
 bool c4db_setCookie(C4Database *db,
                     C4String setCookieHeader,
                     C4String fromHost,
+                    C4String fromPath,
                     C4Error *outError) C4API
 {
     return tryCatch<bool>(outError, [=]() {
         DatabaseCookies cookies(db);
         bool ok = cookies.setCookie(slice(setCookieHeader).asString(),
-                                    slice(fromHost).asString());
+                                    slice(fromHost).asString(),
+                                    slice(fromPath).asString());
         if (ok)
             cookies.saveChanges();
         else
