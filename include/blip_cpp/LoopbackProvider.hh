@@ -17,9 +17,15 @@
 //
 
 #pragma once
-#include "MockProvider.hh"
+#include "WebSocketInterface.hh"
+#include "Actor.hh"
+#include "Error.hh"
+#include "Logging.hh"
 #include <atomic>
 #include <chrono>
+#include <iomanip>
+#include <memory>
+#include <sstream>
 
 
 namespace litecore { namespace websocket {
@@ -29,55 +35,94 @@ namespace litecore { namespace websocket {
 
 
     /** A WebSocket connection that relays messages to another instance of LoopbackWebSocket. */
-    class LoopbackWebSocket : public MockWebSocket {
+    class LoopbackWebSocket : public WebSocket {
     protected:
         class Driver;
+    private:
+        Retained<Driver> _driver;
         actor::delay_t _latency;
 
     public:
+
         LoopbackWebSocket(Provider &provider, const Address &address, actor::delay_t latency)
-        :MockWebSocket(provider, address)
+        :WebSocket(provider, address)
         ,_latency(latency)
         { }
-
-        virtual MockWebSocket::Driver* createDriver() override {
-            return new Driver(this, _latency);
-        }
-
-        LoopbackWebSocket::Driver* driver() const {
-            return (Driver*)_driver.get();
-        }
 
         void bind(LoopbackWebSocket *peer, const fleeceapi::AllocedDict &responseHeaders) {
             Assert(!_driver);
             _driver = createDriver();
-            driver()->bind(peer, responseHeaders);
+            _driver->bind(peer, responseHeaders);
         }
 
         virtual void connect() override {
-            Assert(driver()->_peer);
-            MockWebSocket::connect();
+            Assert(_driver && _driver->_peer);
+            _driver->enqueue(&Driver::_connect);
         }
 
         virtual bool send(fleece::slice msg, bool binary) override {
-            auto newValue = (driver()->_bufferedBytes += msg.size);
-            MockWebSocket::send(msg, binary);
+            auto newValue = (_driver->_bufferedBytes += msg.size);
+            _driver->enqueue(&Driver::_send, fleece::alloc_slice(msg), binary);
             return newValue <= kSendBufferSize;
         }
 
-        virtual void ack(size_t msgSize) {
-            driver()->enqueue(&Driver::_ack, msgSize);
+        virtual void close(int status =1000, fleece::slice message =fleece::nullslice) override {
+            _driver->enqueue(&Driver::_close, status, fleece::alloc_slice(message));
         }
+
 
     protected:
 
-        class Driver : public MockWebSocket::Driver {
+        virtual Driver* createDriver() {
+            return new Driver(this, _latency);
+        }
+
+        Driver* driver() const    {return _driver;}
+
+        void peerIsConnecting(actor::delay_t latency = actor::delay_t::zero()) {
+            _driver->enqueueAfter(latency, &Driver::_peerIsConnecting);
+        }
+
+        virtual void ack(size_t msgSize) {
+            _driver->enqueue(&Driver::_ack, msgSize);
+        }
+
+        void received(fleece::slice message,
+                              bool binary =true,
+                              actor::delay_t latency = actor::delay_t::zero())
+        {
+            _driver->enqueueAfter(latency, &Driver::_received,
+                                  fleece::alloc_slice(message), binary);
+        }
+
+        void closed(CloseReason reason =kWebSocketClose,
+                    int status =1000,
+                    const char *message =nullptr,
+                    actor::delay_t latency = actor::delay_t::zero())
+        {
+            _driver->enqueueAfter(latency,
+                                  &Driver::_closed,
+                                  {reason, status, fleece::alloc_slice(message)});
+        }
+
+
+        // The internal Actor that does the real work
+        class Driver : public actor::Actor, protected Logging {
         public:
 
             Driver(LoopbackWebSocket *ws, actor::delay_t latency)
-            :MockWebSocket::Driver(ws)
+            :Logging(WSLogDomain)
+            ,_webSocket(ws)
             ,_latency(latency)
             { }
+
+            const std::string& name() const {
+                return _webSocket->name;
+            }
+
+            virtual std::string loggingIdentifier() const override {
+                return name();
+            }
 
             virtual std::string loggingClassName() const override {
                 return "LoopbackWS";
@@ -90,24 +135,76 @@ namespace litecore { namespace websocket {
                 _responseHeaders = responseHeaders;
             }
 
-            virtual void _connect() override {
-                _simulateHTTPResponse(200, _responseHeaders);
-                _webSocket->simulateConnected(_latency);
+            bool connected() const {
+                return _state == State::connected;
             }
 
-            virtual void _send(fleece::alloc_slice msg, bool binary) override {
+        protected:
+
+            enum class State {
+                unconnected,
+                peerConnecting,
+                connecting,
+                connected,
+                closed
+            };
+
+            ~Driver() {
+                DebugAssert(!connected());
+            }
+
+            virtual void _connect() {
+                // Connecting uses a handshake, to ensure both sides have notified their delegates
+                // they're connected before either side sends a message. In other words, to
+                // prevent one side from receiving a message from the peer before it's ready.
+                logVerbose("Connecting to peer...");
+                Assert(_state < State::connecting);
+                _peer->peerIsConnecting(_latency);
+                if (_state == State::peerConnecting)
+                    connectCompleted();
+                else
+                    _state = State::connecting;
+            }
+
+            void _peerIsConnecting() {
+                logVerbose("(Peer is connecting...)");
+                switch (_state) {
+                    case State::unconnected:
+                        _state = State::peerConnecting;
+                        break;
+                    case State::connecting:
+                        connectCompleted();
+                        break;
+                    case State::closed:
+                        // ignore in this state
+                        break;
+                    default:
+                        Assert(false, "illegal state");
+                        break;
+                }
+            }
+
+            void connectCompleted() {
+                log("CONNECTED");
+                _state = State::connected;
+                _webSocket->delegate().onWebSocketGotHTTPResponse(200, _responseHeaders);
+                _webSocket->delegate().onWebSocketConnect();
+            }
+
+            virtual void _send(fleece::alloc_slice msg, bool binary) {
                 if (_peer) {
+                    Assert(_state == State::connected);
                     logDebug("SEND: %s", formatMsg(msg, binary).c_str());
-                    _peer->simulateReceived(msg, binary, _latency);
+                    _peer->received(msg, binary, _latency);
                 } else {
                     log("SEND: Failed, socket is closed");
                 }
             }
 
-            virtual void _simulateReceived(fleece::alloc_slice msg, bool binary) override {
-                if (!connected())
-                    return;
-                MockWebSocket::Driver::_simulateReceived(msg, binary);
+            virtual void _received(fleece::alloc_slice msg, bool binary) {
+                Assert(_state == State::connected);
+                logDebug("RECEIVED: %s", formatMsg(msg, binary).c_str());
+                _webSocket->delegate().onWebSocketMessage(msg, binary);
                 _peer->ack(msg.size);
             }
 
@@ -116,38 +213,77 @@ namespace litecore { namespace websocket {
                     return;
                 auto newValue = (_bufferedBytes -= msgSize);
                 if (newValue <= kSendBufferSize && newValue + msgSize > kSendBufferSize) {
-                    logVerbose("WRITEABLE");
+                    logDebug("WRITEABLE");
                     _webSocket->delegate().onWebSocketWriteable();
                 }
             }
 
-            virtual void _close(int status, fleece::alloc_slice message) override {
-                std::string messageStr(message);
+            virtual void _close(int status, fleece::alloc_slice message) {
+                Assert(_state == State::connecting || _state == State::connected);
                 log("CLOSE; status=%d", status);
-                if (_peer)
-                    _peer->simulateClosed(kWebSocketClose, status, messageStr.c_str(), _latency);
-                MockWebSocket::Driver::_close(status, message);
+                std::string messageStr(message);
+                _peer->closed(kWebSocketClose, status, messageStr.c_str(), _latency);
+                _closed({kWebSocketClose, status, message});
             }
 
-            virtual void _closed() override {
-                log("_closed()");
+            virtual void _closed(CloseStatus status) {
+                if (_state == State::closed)
+                    return;
+                if (_state >= State::connecting) {
+                    log("CLOSED with %-s %d: %.*s",
+                        status.reasonName(), status.code,
+                        (int)status.message.size, status.message.buf);
+                    _webSocket->delegate().onWebSocketClose(status);
+                } else {
+                    log("CLOSED");
+                }
+                _state = State::closed;
                 _peer = nullptr;
-                MockWebSocket::Driver::_closed();
+                _webSocket->clearDelegate();
+                _webSocket = nullptr;  // breaks cycle
+            }
+
+
+            static std::string formatMsg(fleece::slice msg, bool binary, size_t maxBytes = 64) {
+                std::stringstream desc;
+                size_t size = std::min(msg.size, maxBytes);
+
+                if (binary) {
+                    desc << std::hex;
+                    for (size_t i = 0; i < size; i++) {
+                        if (i > 0) {
+                            if ((i % 32) == 0)
+                                desc << "\n\t\t";
+                            else if ((i % 4) == 0)
+                                desc << ' ';
+                        }
+                        desc << std::setw(2) << std::setfill('0') << (unsigned)msg[i];
+                    }
+                    desc << std::dec;
+                } else {
+                    desc.write((char*)msg.buf, size);
+                }
+
+                if (size < msg.size)
+                    desc << "... [" << msg.size << "]";
+                return desc.str();
             }
 
         private:
             friend class LoopbackWebSocket;
 
+            Retained<LoopbackWebSocket> _webSocket;
             actor::delay_t _latency {0.0};
             Retained<LoopbackWebSocket> _peer;
             fleeceapi::AllocedDict _responseHeaders;
             std::atomic<size_t> _bufferedBytes {0};
+            State _state {State::unconnected};
         };
     };
 
 
     /** A WebSocketProvider that creates pairs of WebSocket objects that talk to each other. */
-    class LoopbackProvider : public MockProvider {
+    class LoopbackProvider : public Provider {
     public:
 
         /** Constructs a WebSocketProvider. A latency time can be provided, which is the delay
