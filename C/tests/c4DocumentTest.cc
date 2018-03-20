@@ -668,3 +668,56 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {
     CHECK(!c4doc_dictContainsBlobs(d, nullptr));
     FLSliceResult_Free(result);
 }
+
+
+// Repro case for https://github.com/couchbase/couchbase-lite-core/issues/478
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
+
+    if (!isRevTrees())
+        return;
+
+    TransactionHelper t(db);
+
+    // Write doc to db
+    createRev(kDocID, kRevID, kBody);
+
+    // Use default remote id
+    C4RemoteID testRemoteId = 1;
+
+    // Read doc from db and keep in memory
+    C4Error error;
+    auto curDoc = c4doc_get(db, kDocID, false, &error);
+    REQUIRE(curDoc != nullptr);
+
+    // Call MarkRevSynced which will set the flag
+    bool markSynced = c4db_markSynced(db, kDocID, curDoc->sequence, testRemoteId, &error);
+    REQUIRE(markSynced);
+
+    // Get the latest version of the doc
+    auto curDocAfterMarkSync = c4doc_get(db, kDocID, false, &error);
+    REQUIRE(curDocAfterMarkSync != nullptr);
+
+    // Get the remote ancesor rev, and make sure it matches up with the latest rev of the doc
+    FLSliceResult remoteRevID = c4doc_getRemoteAncestor(curDocAfterMarkSync, testRemoteId);
+    REQUIRE(remoteRevID == curDocAfterMarkSync->revID);
+
+    // Update doc -- before the bugfix, this was clobbering the remote ancestor rev
+    auto updatedDoc = c4doc_update(curDoc, C4STR("{\"ok\":\"go\"}"), 0, &error);
+    REQUIRE(updatedDoc);
+
+    // Re-read the doc from the db just to be sure getting accurate version
+    auto updatedDocRefreshed = c4doc_get(db, kDocID, false, &error);
+
+    // Check the remote ancestor rev of the updated doc and make sure it has not been clobbered.
+    // Before the bug fix for LiteCore #478, this was returning an empty value.
+    FLSliceResult remoteRevIDAfterupdate = c4doc_getRemoteAncestor(updatedDocRefreshed, testRemoteId);
+    REQUIRE(remoteRevIDAfterupdate == curDocAfterMarkSync->revID);
+
+    // Cleanup
+    c4doc_free(curDoc);
+    c4doc_free(curDocAfterMarkSync);
+    c4doc_free(updatedDoc);
+    c4doc_free(updatedDocRefreshed);
+
+
+}
