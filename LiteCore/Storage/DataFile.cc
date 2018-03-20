@@ -113,7 +113,7 @@ namespace litecore {
 
 
     DataFile::~DataFile() {
-        LogToAt(DBLog, Debug, "DataFile: destructing (~DataFile)");
+        LogToAt(DBLog, Debug, "DataFile: destructing (~DataFile) %p", this);
         Assert(!_inTransaction);
         if (_shared)
             _shared->removeDataFile(this);
@@ -125,12 +125,12 @@ namespace litecore {
             i.second->close();
         }
         if (_shared->removeDataFile(this))
-            LogTo(DBLog, "Closing DataFile");
+            LogTo(DBLog, "Closing database %s", _path.path().c_str());
     }
 
 
     void DataFile::reopen() {
-        LogTo(DBLog, "Opening DataFile %s", filePath().path().c_str());
+        LogTo(DBLog, "Opening database %s", filePath().path().c_str());
         _shared->addDataFile(this);
     }
 

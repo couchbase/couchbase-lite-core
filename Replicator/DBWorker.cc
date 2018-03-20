@@ -407,7 +407,7 @@ namespace litecore { namespace repl {
             // For proposeChanges, find the nearest foreign ancestor of the current rev:
             Assert(_remoteDBID);
             c4::sliceResult foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
-            logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(remoteRevID));
+            logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
             if (_skipForeignChanges && foreignAncestor == slice(info.revID))
                 return false;   // skip this rev: it's already on the peer
             remoteRevID = alloc_slice(foreignAncestor);
