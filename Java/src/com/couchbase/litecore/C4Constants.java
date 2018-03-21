@@ -36,6 +36,7 @@ public interface C4Constants {
         String Sync = "Sync";
         String WebSocket = "WS";
         String BLIP = "BLIP";
+        String SyncBusy = "SyncBusy";
     }
 
     ////////////////////////////////////
