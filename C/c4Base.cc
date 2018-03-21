@@ -204,6 +204,7 @@ bool c4error_mayBeTransient(C4Error err) C4API {
 
     static CodeList kTransientNetwork = {
         kC4NetErrDNSFailure,
+        kC4NetErrTimeout,
         0};
     static CodeList kTransientWebSocket = {
         408, /* Request Timeout */
