@@ -176,7 +176,7 @@ namespace litecore { namespace repl {
                     ++i;
                 } else {
                     // This doc already has a revision being sent; wait till that one is done
-                    log("*** Holding off on change '%.*s' %.*s", SPLAT(i->docID), SPLAT(i->revID));//TEMP
+                    logDebug("Holding off on change '%.*s' %.*s", SPLAT(i->docID), SPLAT(i->revID));
                     delayedRev->second = *i;
                     i = changes.erase(i);
                 }
@@ -526,14 +526,14 @@ namespace litecore { namespace repl {
                 i->second.docID = i->second.revID = nullslice;
                 if (completed)
                     newRev.remoteAncestorRevID = rev.revID;
-                log("*** Now that '%.*s' %.*s is done, propose %.*s (parent %.*s) ...",   //TEMP
+                logDebug("Now that '%.*s' %.*s is done, propose %.*s (parent %.*s) ...",
                     SPLAT(rev.docID), SPLAT(rev.revID), SPLAT(newRev.revID),
                     SPLAT(newRev.remoteAncestorRevID));
                 addProgress({0, newRev.bodySize});
                 sendChanges({newRev});
             } else {
                 _activeDocs.erase(i);
-                log("*** '%.*s' %.*s is done", SPLAT(rev.docID), SPLAT(rev.revID)); //TEMP
+                logDebug("'%.*s' %.*s is done", SPLAT(rev.docID), SPLAT(rev.revID));
             }
         }
     }
