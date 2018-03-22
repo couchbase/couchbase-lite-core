@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
         // will return false from valid().
 
         Cookie() =default;
-        Cookie(const std::string &header, const std::string &fromHost);
+        Cookie(const std::string &header, const std::string &fromHost, const std::string &fromPath);
         Cookie(fleeceapi::Dict);
 
         explicit operator bool() const  {return valid();}
@@ -74,7 +74,9 @@ namespace litecore { namespace repl {
         std::string cookiesForRequest(const websocket::Address&) const;
 
         // Adds a cookie from a Set-Cookie: header value. Returns false if cookie is invalid.
-        bool setCookie(const std::string &headerValue, const std::string &fromHost);
+        bool setCookie(const std::string &headerValue,
+                       const std::string &fromHost,
+                       const std::string &fromPath);
         
         void clearCookies();
 

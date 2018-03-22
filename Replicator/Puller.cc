@@ -119,7 +119,7 @@ namespace litecore { namespace repl {
     // Process waiting "changes" messages if not throttled:
     void Puller::handleMoreChanges() {
         while (!_waitingChangesMessages.empty() && !_waitingForChangesCallback
-               && _pendingRevMessages + kChangesBatchSize <= kMaxActiveIncomingRevs) {
+               && _pendingRevMessages == 0) {
             auto req = _waitingChangesMessages.front();
             _waitingChangesMessages.pop_front();
             handleChangesNow(req);

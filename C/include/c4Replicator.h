@@ -138,13 +138,15 @@ extern "C" {
 #pragma mark - COOKIES:
 
 
-    /** Takes the value of a "Set-Cookie:" header, received from the given host, and saves the
-        cookie into the database's cookie store. (Persistent cookies are saved as metadata in the
-        database file until they expire. Session cookies are kept in memory, until the last
-        C4Database handle to the given database is closed.) */
-    bool c4db_setCookie(C4Database *db C4NONNULL,
+    /** Takes the value of a "Set-Cookie:" header, received from the given host, from an HTTP
+        request with the given path, and saves the cookie into the database's cookie store.
+        (Persistent cookies are saved as metadata in the database file until they expire.
+        Session cookies are kept in memory, until the last C4Database handle to the given database
+        is closed.) */
+    bool c4db_setCookie(C4Database *db,
                         C4String setCookieHeader,
                         C4String fromHost,
+                        C4String fromPath,
                         C4Error *outError) C4API;
 
     /** Locates any saved HTTP cookies relevant to the given request, and returns them as a string

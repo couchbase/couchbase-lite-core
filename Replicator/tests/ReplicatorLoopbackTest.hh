@@ -45,7 +45,7 @@ public:
         _replClient = _replServer = nullptr;
         CHECK(WebSocket::gInstanceCount == 0);
         C4Error error;
-        c4db_delete(db2, &error);
+        REQUIRE(c4db_delete(db2, &error));
         c4db_free(db2);
     }
 

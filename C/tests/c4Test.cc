@@ -305,6 +305,16 @@ void C4Test::reopenDBReadOnly() {
 }
 
 
+void C4Test::deleteDatabase(){
+    C4Error error = {};
+    bool deletedDb = c4db_delete(db, &error);
+    INFO("Error " << error.domain << "/" << error.code);
+    REQUIRE(deletedDb);
+    c4db_free(db);
+    db = nullptr;
+}
+
+
 void C4Test::deleteAndRecreateDB(C4Database* &db) {
     C4SliceResult path = c4db_getPath(db);
     auto config = *c4db_getConfig(db);
@@ -606,14 +616,6 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
     }
     if (verbose) st.printReport("Importing", numDocs, "doc");
     return numDocs;
-}
-
-void C4Test::deleteDatabase(){
-    // delete database
-    C4Error error = {};
-    c4db_delete(db, &error);
-    c4db_free(db);
-    db = nullptr;
 }
 
 

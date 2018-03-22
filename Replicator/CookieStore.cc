@@ -74,10 +74,15 @@ namespace litecore { namespace repl {
 #pragma mark - COOKIE:
 
 
-    Cookie::Cookie(const string &header, const string &fromHost)
+    Cookie::Cookie(const string &header, const string &fromHost, const string &fromPath)
     :domain(fromHost)
     ,created(time(nullptr))
     {
+        // Default path is the request path minus its last component:
+        auto slash = fromPath.rfind('/');
+        if (slash != string::npos && slash > 0)
+            path = fromPath.substr(0, slash);
+
         // <https://tools.ietf.org/html/rfc6265#section-4.1.1>
         static const regex sCookieRE("\\s*([^;=]+)=([^;=]*)");
         sregex_iterator match(header.begin(), header.end(), sCookieRE);
@@ -250,8 +255,11 @@ namespace litecore { namespace repl {
     }
 
 
-    bool CookieStore::setCookie(const string &headerValue, const string &fromHost) {
-        auto newCookie = make_unique<const Cookie>(headerValue, fromHost);
+    bool CookieStore::setCookie(const string &headerValue,
+                                const string &fromHost,
+                                const string &path)
+    {
+        auto newCookie = make_unique<const Cookie>(headerValue, fromHost, path);
         if (!newCookie->valid())
             return false;
         lock_guard<mutex> lock(const_cast<mutex&>(_mutex));

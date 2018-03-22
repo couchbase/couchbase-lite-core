@@ -64,8 +64,8 @@ namespace litecore { namespace repl {
 
         void _setSkipDeleted()                  {_skipDeleted = true;}
 
-        static const unsigned kChangesBatchSize = 500;      // Number of changes in one response
-        static const unsigned kMaxActiveIncomingRevs = 500;
+        static const unsigned kChangesBatchSize = 200;      // Number of changes in one response
+        static const unsigned kMaxActiveIncomingRevs = 50;  // Max # of IncomingRev workers running
 
         Retained<DBWorker> _dbActor;
         alloc_slice _lastSequence;          // Checkpointed sequence

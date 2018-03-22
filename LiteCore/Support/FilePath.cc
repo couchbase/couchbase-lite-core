@@ -316,10 +316,11 @@ namespace litecore {
     string FilePath::canonicalPath() const {
 #ifdef _MSC_VER
         // Windows 10 has a new file path length limit of 32,767 chars (optionally)
-        wchar_t wcanon[32768];
-        const char* pathVal = path().c_str();
-	    const CA2WEX<256> wpath(pathVal, CP_UTF8);
+        const auto wcanon = (wchar_t*)malloc(sizeof(wchar_t) * 32768);
+        auto pathVal = path();
+        const CA2WEX<256> wpath(pathVal.c_str(), CP_UTF8);
         const DWORD copied = GetFullPathNameW(wpath, 32768, wcanon, nullptr);
+        wcanon[copied] = 0;
         char* canon = nullptr;
         if(copied == 0) {
             const DWORD err = GetLastError();
@@ -335,6 +336,8 @@ namespace litecore {
             canon = (char *)malloc(32767 * 4 + 1);
             strcpy_s(canon, 32767 * 4 + 1, converted.m_psz);            
         }
+
+        free(wcanon);
 #else
         char *canon = ::realpath(path().c_str(), nullptr);
 #endif
@@ -541,8 +544,16 @@ namespace litecore {
 
     void FilePath::copyTo(const string &to) const {
 #if __APPLE__
-        copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
-        check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+        // The COPYFILE_CLONE mode enables super-fast file cloning on APFS.
+        // Unfortunately there seems to be a bug in the iOS 9 simulator where, if this flag is
+        // used, the resulting files have zero length. (See #473)
+        if (__builtin_available(iOS 10, macOS 10.12, tvos 10, *)) {
+            copyfile_flags_t flags = COPYFILE_CLONE | COPYFILE_RECURSIVE;
+            check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+        } else {
+            copyfile_flags_t flags = COPYFILE_ALL | COPYFILE_RECURSIVE;
+            check(copyfile(path().c_str(), to.c_str(), nullptr, flags));
+        }
 #else
         if (isDir()) {
             FilePath toPath(to);

@@ -203,6 +203,7 @@ c4doc_getForPut
 c4_getObjectCount
 c4_dumpInstances
 c4_shutdown
+c4db_markSynced
 gC4InstanceCount
 gC4ExpectExceptions
 

@@ -310,7 +310,7 @@ namespace litecore {
         while (isalpha(*name)) ++name;
         while (isdigit(*name)) ++name;
         Warn("Caught unexpected C++ %s(\"%s\")", name, x.what());
-        return error(error::LiteCore, error::UnexpectedError);
+        return error(error::LiteCore, error::UnexpectedError, x.what());
     }
 
 

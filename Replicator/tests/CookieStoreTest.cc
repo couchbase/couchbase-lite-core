@@ -20,7 +20,7 @@ using namespace std;
 
 TEST_CASE("Cookie Parser", "[cookies]") {
     SECTION("Minimal") {
-        Cookie c("name=", "example.com");
+        Cookie c("name=", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "name");
         CHECK(c.value == "");
@@ -31,7 +31,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(!c.expired());
     }
     SECTION("Basic") {
-        Cookie c("name=value", "example.com");
+        Cookie c("name=value", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "name");
         CHECK(c.value == "value");
@@ -42,38 +42,48 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(!c.expired());
     }
     SECTION("Quoted value") {
-        Cookie c("size=\"XXL\"", "example.com");
+        Cookie c("size=\"XXL\"", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "size");
         CHECK(c.value == "XXL");
     }
     SECTION("Domain") {
-        Cookie c("x=y; Domain=example.com", "example.com");
+        Cookie c("x=y; Domain=example.com", "example.com", "/");
         CHECK(c);
         CHECK(c.domain == "example.com");
     }
     SECTION("Subdomain") {
-        Cookie c("x=y; Domain=www.example.com", "example.com");
+        Cookie c("x=y; Domain=www.example.com", "example.com", "/");
         CHECK(c);
         CHECK(c.domain == "www.example.com");
     }
     SECTION("Subdomain Case-Insensitive") {
-        Cookie c("x=y; Domain=WWW.Example.Com", "example.com");
+        Cookie c("x=y; Domain=WWW.Example.Com", "example.com", "/");
         CHECK(c);
         CHECK(c.domain == "WWW.Example.Com");
     }
+    SECTION("Implicit Path") {
+        Cookie c("x=y", "example.com", "/db/_blipsync");
+        CHECK(c);
+        CHECK(c.path == "/db");
+    }
+    SECTION("Implicit Path 2") {
+        Cookie c("x=y", "example.com", "/db/");
+        CHECK(c);
+        CHECK(c.path == "/db");
+    }
     SECTION("Path") {
-        Cookie c("x=y; Path=/foo/bar", "example.com");
+        Cookie c("x=y; Path=/foo/bar", "example.com", "/db/");
         CHECK(c);
         CHECK(c.path == "/foo/bar");
     }
     SECTION("Secure") {
-        Cookie c("x=y; Path=/foo/bar; Secure=", "example.com");
+        Cookie c("x=y; Path=/foo/bar; Secure=", "example.com", "/");
         CHECK(c);
         CHECK(c.secure);
     }
     SECTION("Expires") {
-        Cookie c("x=y; lang=en-US; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "example.com");
+        Cookie c("x=y; lang=en-US; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
@@ -84,7 +94,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(!c.expired());        // This check will fail starting in 2099...
     }
     SECTION("Expired") {
-        Cookie c("x=y; lang=en-US; Expires=Wed, 09 Jun 1999 10:18:14 GMT", "example.com");
+        Cookie c("x=y; lang=en-US; Expires=Wed, 09 Jun 1999 10:18:14 GMT", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
@@ -95,7 +105,7 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(c.expired());
     }
     SECTION("Max-Age") {
-        Cookie c("x=y; lang=en-US; Max-Age=30", "example.com");
+        Cookie c("x=y; lang=en-US; Max-Age=30", "example.com", "/");
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
@@ -124,7 +134,7 @@ TEST_CASE("Cookie Parser Failure", "[cookies]") {
     };
     for (int i = 0; i < sizeof(badCookies)/sizeof(badCookies[0]); ++i) {
         INFO("Checking " << badCookies[i]);
-        Cookie c(badCookies[i], "example.com");
+        Cookie c(badCookies[i], "example.com", "/");
         CHECK(!c);
     }
 }
@@ -142,13 +152,13 @@ TEST_CASE("CookieStore", "[Cookies]") {
     CHECK(!store->changed());
     CHECK(store->cookiesForRequest(kRequest).empty());
 
-    CHECK(store->setCookie("x=y; Domain=Example.Com", "example.com"));
+    CHECK(store->setCookie("x=y; Domain=Example.Com", "example.com", "/"));
     CHECK(!store->cookies().empty());
     CHECK(!store->changed());    // it's non-persistent
-    CHECK(store->setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", "www.example.com"));
-    CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk"));
+    CHECK(store->setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", "www.example.com", "/"));
+    CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk", "/"));
     CHECK(store->changed());
-    CHECK(store->setCookie("jens=awesome; Domain=snej.example.com", "example.com"));
+    CHECK(store->setCookie("jens=awesome; Domain=snej.example.com", "example.com", "/"));
     CHECK(store->cookiesForRequest(kRequest) == "x=y; e=mc^2");
     CHECK(store->cookiesForRequest(kOtherPathRequest) == "x=y; e=mc^2");
     CHECK(store->cookiesForRequest(kSecureRequest) == "x=y; e=mc^2");
@@ -156,26 +166,26 @@ TEST_CASE("CookieStore", "[Cookies]") {
 
     SECTION("Replace Cookie") {
         store->clearChanged();
-        CHECK(store->setCookie("e=something else; Domain=WWW.Example.Com", "www.example.com"));
+        CHECK(store->setCookie("e=something else; Domain=WWW.Example.Com", "www.example.com", "/"));
         CHECK(store->changed());     // a persistent cookie got removed
         CHECK(store->cookiesForRequest(kRequest) == "x=y; e=something else");
     }
     SECTION("No-Op Replace Cookie") {
         store->clearChanged();
-        CHECK(store->setCookie("x=y; Domain=Example.Com", "example.com"));
-        CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk"));
+        CHECK(store->setCookie("x=y; Domain=Example.Com", "example.com", "/"));
+        CHECK(store->setCookie("f=ma; Domain=www.ox.ac.uk; Expires=Wed, 09 Jun 2099 10:18:14 GMT", "www.ox.ac.uk", "/"));
         CHECK(!store->changed());
     }
     SECTION("Secure Cookie") {
-        CHECK(store->setCookie("password=123456; Domain=WWW.Example.Com; Secure=true", "www.example.com"));
+        CHECK(store->setCookie("password=123456; Domain=WWW.Example.Com; Secure=true", "www.example.com", "/"));
         CHECK(store->cookiesForRequest(kRequest) == "x=y; e=mc^2");
         CHECK(store->cookiesForRequest(kSecureRequest) == "x=y; e=mc^2; password=123456");
     }
     SECTION("Paths") {
-        CHECK(store->setCookie("path=qat; Domain=example.com; Path=/qat", "example.com"));
-        CHECK(store->setCookie("path=Qat; Domain=example.com; Path=/Qat", "example.com"));
-        CHECK(store->setCookie("path=qaternion; Domain=example.com; Path=/qaternion", "example.com"));
-        CHECK(store->setCookie("x=z; Domain=Example.com; Path=/elsewhere", "example.com"));
+        CHECK(store->setCookie("path=qat; Domain=example.com; Path=/qat", "example.com", "/"));
+        CHECK(store->setCookie("path=Qat; Domain=example.com; Path=/Qat", "example.com", "/"));
+        CHECK(store->setCookie("path=qaternion; Domain=example.com; Path=/qaternion", "example.com", "/"));
+        CHECK(store->setCookie("x=z; Domain=Example.com; Path=/elsewhere", "example.com", "/"));
         CHECK(store->cookiesForRequest(kRequest) == "x=y; e=mc^2");
         CHECK(store->cookiesForRequest(kOtherPathRequest) == "x=y; e=mc^2; path=qat");
     }
@@ -195,8 +205,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "DatabaseCookies", "[Cookies]") {
         // Set cookies:
         DatabaseCookies cookies(db);
         CHECK(cookies.cookiesForRequest(kRequest) == "");
-        CHECK(cookies.setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", kRequest.hostname));
-        CHECK(cookies.setCookie("name=value", kRequest.hostname));
+        CHECK(cookies.setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", kRequest.hostname, kRequest.path));
+        CHECK(cookies.setCookie("name=value", kRequest.hostname, kRequest.path));
         cookies.saveChanges();
     }
     {
@@ -234,19 +244,23 @@ N_WAY_TEST_CASE_METHOD(C4Test, "c4 Cookie API", "[Cookies]") {
         alloc_slice cookies = c4db_getCookies(db, request, &error);
         CHECK(!cookies);
         CHECK(error.code == 0);
-        CHECK(c4db_setCookie(db, "e=mc^2; Domain=WWW.Example.Com; Max-Age=30"_sl, request.hostname, &error));
-        CHECK(c4db_setCookie(db, "name=value"_sl, request.hostname, &error));
+        CHECK(c4db_setCookie(db, "e=mc^2; Domain=WWW.Example.Com; Max-Age=30"_sl, request.hostname, request.path, &error));
+        CHECK(c4db_setCookie(db, "name=value"_sl, request.hostname, request.path, &error));
+        CHECK(c4db_setCookie(db, "foo=bar; Path=/db"_sl, request.hostname, request.path, &error));
+        CHECK(c4db_setCookie(db, "frob=baz; Path=/db/"_sl, request.hostname, request.path, &error));
+        CHECK(c4db_setCookie(db, "eenie=meenie; Path=/db/xox"_sl, request.hostname, request.path, &error));
+        CHECK(c4db_setCookie(db, "minie=moe; Path=/someotherdb"_sl, request.hostname, request.path, &error));
     }
     {
         // Get the cookies, in the same C4Database instance:
         alloc_slice cookies = c4db_getCookies(db, request, &error);
-        CHECK(cookies == "e=mc^2; name=value"_sl);
+        CHECK(cookies == "e=mc^2; name=value; foo=bar; frob=baz"_sl);
     }
     {
         // Get the cookies, in a different C4Database instance while the 1st one is open:
         c4::ref<C4Database> db2 = c4db_openAgain(db, nullptr);
         alloc_slice cookies = c4db_getCookies(db2, request, &error);
-        CHECK(cookies == "e=mc^2; name=value"_sl);
+        CHECK(cookies == "e=mc^2; name=value; foo=bar; frob=baz"_sl);
     }
 
     reopenDB();

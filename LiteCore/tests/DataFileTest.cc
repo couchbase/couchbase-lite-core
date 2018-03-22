@@ -22,6 +22,9 @@
 #include "FilePath.hh"
 #include "Fleece.hh"
 #include "Benchmark.hh"
+#ifndef _MSC_VER
+#include <sys/stat.h>
+#endif
 
 #include "LiteCoreTest.hh"
 
@@ -414,6 +417,41 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
     }
 
     db->compact();
+}
+
+TEST_CASE("CanonicalPath") {
+#ifdef _MSC_VER
+    const char* startPath = "C:\\folder\\..\\subfolder\\";
+    string endPath = "C:\\subfolder\\";
+#else
+    auto tmpPath = FilePath::tempDirectory().path();
+    auto startPath = tmpPath + "folder/";
+    ::mkdir(startPath.c_str(), 777);
+    startPath += "../subfolder/";
+    auto endPath = tmpPath + "subfolder";
+    ::mkdir(endPath.c_str(), 777);
+#if __APPLE__ && !TARGET_OS_IPHONE
+    endPath = "/private" + endPath;
+#endif
+#endif
+
+    FilePath path(startPath);
+    CHECK(path.canonicalPath() == endPath);
+
+#ifdef _MSC_VER
+    startPath = u8"C:\\日本語\\";
+    endPath = startPath;
+#else
+    startPath = tmpPath + u8"日本語";
+    ::mkdir(startPath.c_str(), 777);
+    endPath = startPath;
+#if __APPLE__ && !TARGET_OS_IPHONE
+    endPath = "/private" + endPath;
+#endif
+#endif
+
+    path = FilePath(startPath);
+    CHECK(path.canonicalPath() == endPath);
 }
 
 

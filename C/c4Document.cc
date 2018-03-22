@@ -517,6 +517,28 @@ C4Document* c4doc_update(C4Document *doc,
                          C4RevisionFlags revFlags,
                          C4Error *outError) noexcept
 {
+#if 1
+    // Disable the optimized path, because it overwrites the doc in the db using the sequence
+    // as MVCC. Unfortunately, the kSynced flag and the remote-rev properties are updated by the
+    // push replicator without changing the sequence, so they can be overwritten that way. (#478)
+    // Instead, for 2.0.0 we're going back to the safe path of read-modify-write used by c4doc_put.
+    C4String history[1] = {doc->selectedRev.revID};
+    C4DocPutRequest rq = {};
+    rq.body = revBody;
+    rq.docID = doc->docID;
+    rq.revFlags = revFlags;
+    rq.allowConflict = false;
+    rq.history = history;
+    rq.historyCount = 1;
+    rq.save = true;
+
+    doc = c4doc_put(external(internal(doc)->database()), &rq, nullptr, outError);
+    if (!doc) {
+        if (outError && outError->domain == LiteCoreDomain && outError->code == kC4ErrorNotFound)
+            outError->code = kC4ErrorConflict;  // This is what the logic below returns
+    }
+    return doc;
+#else
     auto idoc = internal(doc);
     if (!idoc->mustBeInTransaction(outError))
         return nullptr;
@@ -538,6 +560,7 @@ C4Document* c4doc_update(C4Document *doc,
         c4error_return(LiteCoreDomain, kC4ErrorConflict, C4STR("C4Document is out of date"), outError);
     } catchError(outError)
     return nullptr;
+#endif
 }
 
 

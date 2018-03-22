@@ -454,7 +454,17 @@ namespace Couchbase.Lite
 #else
     public
 #endif
-            CouchbaseException(C4Error err, string message) : base(message)
+            CouchbaseException(C4Error err, string message) 
+            : this(err, message, null)
+        {
+        }
+
+#if LITECORE_PACKAGED
+        internal
+#else
+    public
+#endif
+            CouchbaseException(C4Error err, string message, Exception innerException) : base(message, innerException)
         {
             LiteCoreError = err;
             Error = MapError(err);
@@ -588,6 +598,11 @@ namespace Couchbase.Lite
         }
 
         internal CouchbaseLiteException(C4ErrorCode errCode, string message) : base(new C4Error(errCode), message)
+        {
+
+        }
+
+        internal CouchbaseLiteException(C4ErrorCode errCode, string message, Exception innerException) : base(new C4Error(errCode), message)
         {
 
         }
