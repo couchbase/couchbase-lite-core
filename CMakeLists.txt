@@ -41,7 +41,8 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DSQLITE_ENABLE_FTS3_TOKENIZER)
 
 if(BUILD_ENTERPRISE)
-    add_definitions(-DCOUCHBASE_ENTERPRISE)
+    add_definitions(-DCOUCHBASE_ENTERPRISE
+                    -DSQLITE_HAS_CODEC)
 endif()
 
 if(MSVC)
