@@ -39,8 +39,6 @@
 		2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE5D1CF6197D0022F721 /* RawRevTree.hh */; };
 		270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
 		270BEE2420647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
-		270BEE2620647E8A005E8BE8 /* SyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */; };
-		270BEE2720647E8A005E8BE8 /* SyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */; };
 		270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */; };
 		270C6B6A1EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */; };
 		270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B891EBA2CD600E73415 /* LogEncoder.cc */; };
@@ -126,6 +124,8 @@
 		274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDF51DA30B43003AD158 /* QueryParser.hh */; };
 		274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
+		275313392065844800463E74 /* RESTSyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */; };
+		2753133E2065844900463E74 /* RESTSyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */; };
 		2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2753AF761EBD190700C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
@@ -3259,12 +3259,12 @@
 			files = (
 				275A74D71ED3AA11008CB57B /* c4Listener.cc in Sources */,
 				275A74D21ED3A4E1008CB57B /* Listener.cc in Sources */,
+				2753133E2065844900463E74 /* RESTSyncListener_stub.cc in Sources */,
 				279D411B1EA557A800D8DD9D /* RESTListener.cc in Sources */,
 				279691991ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */,
 				270BEE2420647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */,
 				270C6B6A1EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */,
 				2749B9881EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */,
-				270BEE2720647E8A005E8BE8 /* SyncListener_stub.cc in Sources */,
 				279D411C1EA557A800D8DD9D /* Server.cc in Sources */,
 				279D411D1EA557A800D8DD9D /* Request.cc in Sources */,
 				276E021C1EA9875E00FEFE8A /* Response.cc in Sources */,
@@ -3452,12 +3452,12 @@
 			files = (
 				275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */,
 				275A74D11ED3A4E1008CB57B /* Listener.cc in Sources */,
+				275313392065844800463E74 /* RESTSyncListener_stub.cc in Sources */,
 				27FC81F61EAAB7C60028E38E /* RESTListener.cc in Sources */,
 				279691981ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */,
 				270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */,
 				270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */,
 				2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */,
-				270BEE2620647E8A005E8BE8 /* SyncListener_stub.cc in Sources */,
 				27FC81F71EAAB7C60028E38E /* Server.cc in Sources */,
 				27FC81F91EAAB7C60028E38E /* Request.cc in Sources */,
 				27FC81F81EAAB7C60028E38E /* Response.cc in Sources */,
