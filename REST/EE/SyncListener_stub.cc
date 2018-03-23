@@ -1,7 +1,7 @@
 //
-// c4Listener+Factory.cc
+// SyncListener_stub.cc
 //
-// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// Copyright (c) 2018 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,22 +16,9 @@
 // limitations under the License.
 //
 
-#include "c4ListenerInternal.hh"
-#include "RESTListener.hh"
-
-#ifndef COUCHBASE_ENTERPRISE
-
-namespace litecore { namespace REST {
-
-    const C4ListenerAPIs kListenerAPIs = kC4RESTAPI;
-
-    Listener* NewListener(const C4ListenerConfig *config) {
-        if (config->apis == kC4RESTAPI)
-            return new RESTListener(*config);
-        else
-            return nullptr;
-    }
-
-} }
-
+#ifdef COUCHBASE_ENTERPRISE
+// NOTE: SyncListener.cc is not in this repo, and is not open source.
+// It is part of Couchbase Lite Enterprise Edition (EE), which can be licensed in binary form
+// from Couchbase.
+#include "../../../couchbase-lite-core-EE/Listener/SyncListener.cc"
 #endif

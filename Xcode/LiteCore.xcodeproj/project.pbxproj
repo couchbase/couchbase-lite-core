@@ -37,6 +37,10 @@
 		2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE5D1CF6197D0022F721 /* RawRevTree.hh */; };
+		270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
+		270BEE2420647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
+		270BEE2620647E8A005E8BE8 /* SyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */; };
+		270BEE2720647E8A005E8BE8 /* SyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */; };
 		270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */; };
 		270C6B6A1EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */; };
 		270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B891EBA2CD600E73415 /* LogEncoder.cc */; };
@@ -920,6 +924,10 @@
 		2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LiteCoreTest.cc; sourceTree = "<group>"; };
 		2708FE5C1CF6197D0022F721 /* RawRevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RawRevTree.cc; sourceTree = "<group>"; };
 		2708FE5D1CF6197D0022F721 /* RawRevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RawRevTree.hh; sourceTree = "<group>"; };
+		270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTSyncListener_stub.cc; sourceTree = "<group>"; };
+		270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CivetC4Socket_stub.cc; sourceTree = "<group>"; };
+		270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListener_stub.cc; sourceTree = "<group>"; };
+		270BEE29206483C0005E8BE8 /* Listener */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Listener; path = "../../../couchbase-lite-core-EE/Listener"; sourceTree = "<group>"; };
 		270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "RESTListener+Replicate.cc"; sourceTree = "<group>"; };
 		270C6B871EBA2CD600E73415 /* LogDecoder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogDecoder.cc; sourceTree = "<group>"; };
 		270C6B881EBA2CD600E73415 /* LogDecoder.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LogDecoder.hh; sourceTree = "<group>"; };
@@ -1549,6 +1557,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		270BEE1C20647E8A005E8BE8 /* EE */ = {
+			isa = PBXGroup;
+			children = (
+				270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */,
+				270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */,
+				270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */,
+				270BEE29206483C0005E8BE8 /* Listener */,
+			);
+			path = EE;
+			sourceTree = "<group>";
+		};
 		271057C21D3997230018247B /* C++ Tests */ = {
 			isa = PBXGroup;
 			children = (
@@ -1604,6 +1623,7 @@
 				275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */,
 				279D41281EA55A8D00D8DD9D /* c4REST.exp */,
 				279D414C1EA591C900D8DD9D /* LiteCoreServ.cc */,
+				270BEE1C20647E8A005E8BE8 /* EE */,
 				276E020F1EA9712700FEFE8A /* tests */,
 				2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */,
 			);
@@ -3241,8 +3261,10 @@
 				275A74D21ED3A4E1008CB57B /* Listener.cc in Sources */,
 				279D411B1EA557A800D8DD9D /* RESTListener.cc in Sources */,
 				279691991ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */,
+				270BEE2420647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */,
 				270C6B6A1EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */,
 				2749B9881EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */,
+				270BEE2720647E8A005E8BE8 /* SyncListener_stub.cc in Sources */,
 				279D411C1EA557A800D8DD9D /* Server.cc in Sources */,
 				279D411D1EA557A800D8DD9D /* Request.cc in Sources */,
 				276E021C1EA9875E00FEFE8A /* Response.cc in Sources */,
@@ -3432,8 +3454,10 @@
 				275A74D11ED3A4E1008CB57B /* Listener.cc in Sources */,
 				27FC81F61EAAB7C60028E38E /* RESTListener.cc in Sources */,
 				279691981ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */,
+				270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */,
 				270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */,
 				2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */,
+				270BEE2620647E8A005E8BE8 /* SyncListener_stub.cc in Sources */,
 				27FC81F71EAAB7C60028E38E /* Server.cc in Sources */,
 				27FC81F91EAAB7C60028E38E /* Request.cc in Sources */,
 				27FC81F81EAAB7C60028E38E /* Response.cc in Sources */,

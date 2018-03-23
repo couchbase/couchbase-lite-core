@@ -58,7 +58,7 @@ void CBLiteTool::startListener() {
 void CBLiteTool::serve() {
     // Default configuration (everything else is false/zero):
     _listenerConfig.port = kDefaultPort;
-    _listenerConfig.apis = kC4RESTAPI;
+    _listenerConfig.apis = c4listener_availableAPIs();
     _listenerConfig.allowPush = true;
 
     // Unlike other subcommands, this one opens the db read/write, unless --readonly is specified
@@ -88,8 +88,19 @@ void CBLiteTool::serve() {
     
     c4listener_shareDB(_listener, name, _db);
 
-    cout << "LiteCore REST server is now listening at " << ansiBold() << ansiUnderline()
-         << "http://localhost:" << _listenerConfig.port << "/" << name << "/" << ansiReset() << "\n";
+    cout << "LiteCore ";
+    if (_listenerConfig.apis & kC4SyncAPI) {
+        cout << "sync";
+        if (_listenerConfig.apis & kC4RESTAPI)
+            cout << "/";
+    }
+    if (_listenerConfig.apis & kC4RESTAPI)
+        cout << "REST";
+    cout << " server is now listening at " << ansiBold() << ansiUnderline()
+    << "http://localhost:" << _listenerConfig.port << "/" << name << "/";
+    if (_listenerConfig.apis == kC4SyncAPI)
+        cout << "_blipsync";
+    cout << ansiReset() << "\n";
 
 #ifndef _MSC_VER
     // Run until the process receives SIGINT (^C) or SIGHUP:
