@@ -112,6 +112,7 @@ namespace litecore { namespace websocket {
         Provider& provider() const                  {return _provider;}
         const Address& address() const              {return _address;}
         Delegate& delegate() const                  {assert(_delegate); return *_delegate;}
+        bool hasDelegate() const                    {return _delegate != nullptr;}
 
         std::string name;
 
