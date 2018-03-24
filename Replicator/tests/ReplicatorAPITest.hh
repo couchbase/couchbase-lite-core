@@ -167,7 +167,9 @@ public:
         params.callbackContext = this;
 
         C4Error err;
-        _repl = c4repl_new(db, _address, _remoteDBName, db2, params, &err);
+        _repl = c4repl_new(db, _address, _remoteDBName,
+                           (_remoteDBName.buf ? nullptr : (C4Database*)db2),
+                           params, &err);
         REQUIRE(_repl);
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
         logState(status);

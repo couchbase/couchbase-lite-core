@@ -107,6 +107,13 @@ namespace litecore { namespace repl {
     { }
 
 
+    void Replicator::start(bool synchronous) {
+        if (synchronous)
+            _start();
+        else
+            enqueue(&Replicator::_start);
+    }
+
     void Replicator::_start() {
         Assert(_connectionState == Connection::kClosed);
         Signpost::mark(Signpost::replicatorStart, uint32_t(size_t(this)));

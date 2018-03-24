@@ -62,7 +62,7 @@ public:
         listener = c4listener_start(&config, &err);
         REQUIRE(listener);
 
-        c4listener_shareDB(listener, C4STR("db"), db);
+        REQUIRE(c4listener_shareDB(listener, C4STR("db"), db));
     }
 
 

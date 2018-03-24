@@ -146,8 +146,11 @@ C4Replicator* c4repl_newWithSocket(C4Database* db,
         c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
         if (!dbCopy)
             return nullptr;
-        C4Replicator *replicator = new C4Replicator(dbCopy, openSocket, params);
-        return retain(replicator);
+        Retained<C4Replicator> replicator = new C4Replicator(dbCopy, openSocket, params);
+        replicator->start(true);
+        Assert(WebSocketFrom(openSocket)->hasDelegate());
+        Assert(replicator->refCount() > 1);
+        return replicator;  // Replicator is retained by the socket, will be released on close
     } catchError(outError);
     return nullptr;
 }

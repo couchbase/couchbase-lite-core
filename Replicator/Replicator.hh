@@ -75,7 +75,7 @@ namespace litecore { namespace repl {
 
         Status status() const                   {return Worker::status();}   //FIX: Needs to be thread-safe
 
-        void start()                            {enqueue(&Replicator::_start);}
+        void start(bool synchronous =false); 
         void stop()                             {enqueue(&Replicator::_stop);}
 
 

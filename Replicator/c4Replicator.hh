@@ -81,12 +81,12 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                   params)
     { }
 
-    void start() {
+    void start(bool synchronous =false) {
         DebugAssert(!_selfRetain);
         if (_otherReplicator)
-            _otherReplicator->start();
+            _otherReplicator->start(synchronous);
         _selfRetain = this; // keep myself alive till Replicator stops
-        _replicator->start();
+        _replicator->start(synchronous);
     }
 
     const AllocedDict& responseHeaders() {

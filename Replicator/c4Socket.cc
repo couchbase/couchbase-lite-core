@@ -138,9 +138,9 @@ namespace litecore { namespace websocket {
     }
 
     C4Socket* C4Provider::createWebSocket(const C4SocketFactory &factory,
-                                  void *nativeHandle,
-                                  const Address &address,
-                                  const AllocedDict &options) {
+                                          void *nativeHandle,
+                                          const Address &address,
+                                          const AllocedDict &options) {
         validateFactory(factory);
         return new C4SocketImpl(*this, address, options, factory, nativeHandle);
     }
