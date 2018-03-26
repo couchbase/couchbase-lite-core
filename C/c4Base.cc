@@ -76,12 +76,12 @@ C4StringResult c4_getBuildInfo() C4API {
 C4StringResult c4_getVersion() C4API {
     string vers;
 #if LiteCoreOfficial
-    vers = LiteCoreBuildNum;
+    vers = format("%s (%s)", LiteCoreVersion, LiteCoreBuildNum);
 #else
     if (strcmp(GitBranch, "master") == (0) || strcmp(GitBranch, "HEAD") == (0))
-        vers = format("%.8s%.1s", GitCommit, GitDirty);
+        vers = format("%s (%.8s%.1s)", LiteCoreVersion, GitCommit, GitDirty);
     else
-        vers = format("%s:%.8s%.1s", GitBranch, GitCommit, GitDirty);
+        vers = format("%s (%s:%.8s%.1s)", LiteCoreVersion, GitBranch, GitCommit, GitDirty);
 #endif
     return sliceResult(vers);
 }

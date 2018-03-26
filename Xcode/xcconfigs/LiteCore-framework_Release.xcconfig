@@ -1,0 +1,15 @@
+//
+//  LiteCore-framework_Release.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 3/26/18.
+//  Copyright © 2018 Couchbase. All rights reserved.
+//
+
+
+#include "LiteCore-framework.xcconfig"
+
+DEPLOYMENT_POSTPROCESSING   = YES                   // Enable symbol stripping
+STRIP_STYLE                 = non-global            // Leave only exported symbols
+STRIP_INSTALLED_PRODUCT     = YES                   // Strip debug symbols
+LD_GENERATE_MAP_FILE        = YES                   // Generate link map, to analyze code size

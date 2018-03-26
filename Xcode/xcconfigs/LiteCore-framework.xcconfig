@@ -1,0 +1,15 @@
+//
+//  LiteCore-framework.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 3/26/18.
+//  Copyright © 2018 Couchbase. All rights reserved.
+//
+
+#include "LiteCore-dylib.xcconfig"
+
+DEFINES_MODULE              = YES
+EXECUTABLE_PREFIX           =
+INFOPLIST_FILE              = LiteCore/Info.plist
+PRODUCT_BUNDLE_IDENTIFIER   = com.couchbase.LiteCore
+PRODUCT_NAME                = LiteCore
