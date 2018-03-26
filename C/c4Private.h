@@ -80,18 +80,6 @@ bool c4db_markSynced(C4Database *database,
                      C4RemoteID remoteID,
                      C4Error *outError) C4API;
 
-/** Constructs a C4Socket from a "native handle", whose interpretation is up to the registered
-    C4SocketFactory. */
-C4Socket* c4socket_fromNative(C4SocketFactory factory,
-                              void *nativeHandle C4NONNULL,
-                              const C4Address *address C4NONNULL) C4API;
-
-/** Creates a replicator from an already-open C4Socket. Called by the P2P listener. */
-C4Replicator* c4repl_newWithSocket(C4Database* db C4NONNULL,
-                                   C4Socket *openSocket C4NONNULL,
-                                   C4ReplicatorParameters params,
-                                   C4Error *outError) C4API;
-
 #ifdef __cplusplus
 }
 
