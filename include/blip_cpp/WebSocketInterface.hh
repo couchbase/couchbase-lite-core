@@ -117,7 +117,7 @@ namespace litecore { namespace websocket {
         std::string name;
 
         /** Assigns the Delegate and opens the WebSocket. */
-        inline void connect(Delegate *delegate);
+        void connect(Delegate *delegate);
 
         /** Sends a message. Callable from any thread.
             Returns false if the amount of buffered data is growing too large; the caller should
@@ -168,28 +168,5 @@ namespace litecore { namespace websocket {
         /** The socket has room to send more messages. */
         virtual void onWebSocketWriteable() { }
     };
-
-
-
-    inline WebSocket::WebSocket(Provider &p, const Address &a)
-    :_address(a)
-    ,_provider(p)
-    {
-        ++gInstanceCount;
-    }
-
-    inline WebSocket::~WebSocket() {
-        --gInstanceCount;
-    }
-
-    inline void WebSocket::connect(Delegate *delegate) {
-        assert(!_delegate);
-        assert(delegate);
-        _delegate = delegate;
-        if (name.empty())
-            name = (std::string)_address;
-        connect();
-    }
-
 
 } }

@@ -81,10 +81,9 @@ namespace uWS {
 }
 
 
-#pragma mark - WEBSOCKETIMPL:
+#pragma mark - WEBSOCKET:
 
 
-// Implementation of WebSocketImpl:
 namespace litecore { namespace websocket {
 
     using namespace uWS;
@@ -92,6 +91,29 @@ namespace litecore { namespace websocket {
     LogDomain WSLogDomain("WS", LogLevel::Warning);
 
     atomic_int WebSocket::gInstanceCount;
+
+    WebSocket::WebSocket(Provider &p, const Address &a)
+    :_address(a)
+    ,_provider(p)
+    {
+        ++gInstanceCount;
+    }
+
+    WebSocket::~WebSocket() {
+        --gInstanceCount;
+    }
+
+    void WebSocket::connect(Delegate *delegate) {
+        assert(!_delegate);
+        assert(delegate);
+        _delegate = delegate;
+        if (name.empty())
+            name = (std::string)_address;
+        connect();
+    }
+
+
+#pragma mark - WEBSOCKETIMPL:
 
 
     WebSocketImpl::WebSocketImpl(ProviderImpl &provider, const Address &address,
