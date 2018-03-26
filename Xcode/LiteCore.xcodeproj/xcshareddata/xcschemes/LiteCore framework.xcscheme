@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0920"
+   LastUpgradeVersion = "0930"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
-               BuildableName = "libLiteCore.dylib"
-               BlueprintName = "LiteCore dylib"
+               BlueprintIdentifier = "27B64933206971FB00FC12F7"
+               BuildableName = "LiteCore.framework"
+               BlueprintName = "LiteCore framework"
                ReferencedContainer = "container:LiteCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -45,9 +45,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
-            BuildableName = "libLiteCore.dylib"
-            BlueprintName = "LiteCore dylib"
+            BlueprintIdentifier = "27B64933206971FB00FC12F7"
+            BuildableName = "LiteCore.framework"
+            BlueprintName = "LiteCore framework"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -63,9 +63,9 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "720EA3DB1BA7EAD9002B8416"
-            BuildableName = "libLiteCore.dylib"
-            BlueprintName = "LiteCore dylib"
+            BlueprintIdentifier = "27B64933206971FB00FC12F7"
+            BuildableName = "LiteCore.framework"
+            BlueprintName = "LiteCore framework"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

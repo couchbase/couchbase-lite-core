@@ -250,6 +250,28 @@
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
+		27B64938206971FC00FC12F7 /* LiteCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B64936206971FC00FC12F7 /* LiteCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B6493B206971FC00FC12F7 /* LiteCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B64934206971FB00FC12F7 /* LiteCore.framework */; };
+		27B6493C206971FC00FC12F7 /* LiteCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 27B64934206971FB00FC12F7 /* LiteCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		27B649472069721F00FC12F7 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
+		27B6494A2069723900FC12F7 /* c4.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9F7D1C518793003115A6 /* c4.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B6494B2069723900FC12F7 /* c4.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B8425B1E5BC8380094903E /* c4.hh */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B6494C2069723900FC12F7 /* c4Base.h in Headers */ = {isa = PBXBuildFile; fileRef = 2757DE591B9FC3F1002EE261 /* c4Base.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B6494D2069723900FC12F7 /* c4BlobStore.h in Headers */ = {isa = PBXBuildFile; fileRef = 2722504A1D7884110006D5A5 /* c4BlobStore.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B6494E2069723900FC12F7 /* c4Database.h in Headers */ = {isa = PBXBuildFile; fileRef = 2757DE571B9FC3C9002EE261 /* c4Database.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B6494F2069723900FC12F7 /* c4Document.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A69881BED288D00D16D37 /* c4Document.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B649502069723900FC12F7 /* c4Document+Fleece.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F370821DC02C3D0096F717 /* c4Document+Fleece.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B649512069723900FC12F7 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B649522069723900FC12F7 /* c4ExpiryEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B649532069723900FC12F7 /* c4Observer.h in Headers */ = {isa = PBXBuildFile; fileRef = 276943881DCD4AAD00DB2555 /* c4Observer.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B649542069723900FC12F7 /* c4Query.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E6DFE81DA5A6C8008EB681 /* c4Query.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B649552069723900FC12F7 /* c4Replicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 275CE0E21E57B7E70084E014 /* c4Replicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B649562069723900FC12F7 /* c4Socket.h in Headers */ = {isa = PBXBuildFile; fileRef = 27491C9A1E7B1001001DC54B /* c4Socket.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		27B6495A2069757D00FC12F7 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
+		27B6495B2069758300FC12F7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
+		27B6495C2069758800FC12F7 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		27B6495D2069758F00FC12F7 /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
+		27B64960206975F900FC12F7 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
 		27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */; };
 		27B699DC1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */; };
 		27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */; };
@@ -697,6 +719,20 @@
 			remoteGlobalIDString = 27FC81E71EAAB0D90028E38E;
 			remoteInfo = "LiteCoreREST static";
 		};
+		27B64939206971FC00FC12F7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27B64933206971FB00FC12F7;
+			remoteInfo = LiteCore;
+		};
+		27B649482069722500FC12F7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
+			remoteInfo = "LiteCore static";
+		};
 		27BF02421FB620E5003D5BB8 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -898,6 +934,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		27B64946206971FC00FC12F7 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				27B6493C206971FC00FC12F7 /* LiteCore.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		27EF810E1917EEC600A327B9 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -957,6 +1004,7 @@
 		272B1BEA1FB1513100F56620 /* FTSTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FTSTest.cc; sourceTree = "<group>"; };
 		273407211DEE116600EA5532 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
 		273407221DEE116600EA5532 /* PlatformIO.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PlatformIO.hh; sourceTree = "<group>"; };
+		2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-framework_Release.xcconfig"; sourceTree = "<group>"; };
 		273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorLoopbackTest.hh; sourceTree = "<group>"; };
 		273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorAPITest.hh; sourceTree = "<group>"; };
 		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
@@ -1154,6 +1202,10 @@
 		27B321B62009615B00C40AD5 /* cbliteTool+serve.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+serve.cc"; sourceTree = "<group>"; };
 		27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceFunctions.cc; sourceTree = "<group>"; };
 		27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLite_Internal.hh; sourceTree = "<group>"; };
+		27B64934206971FB00FC12F7 /* LiteCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = LiteCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		27B64936206971FC00FC12F7 /* LiteCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = LiteCore.h; path = ../../Xcode/LiteCore/LiteCore.h; sourceTree = "<group>"; };
+		27B64937206971FC00FC12F7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../Xcode/LiteCore/Info.plist; sourceTree = "<group>"; };
+		27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-framework.xcconfig"; sourceTree = "<group>"; };
 		27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteN1QLFunctions.cc; sourceTree = "<group>"; };
 		27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceUtil.cc; sourceTree = "<group>"; };
 		27B8425B1E5BC8380094903E /* c4.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4.hh; sourceTree = "<group>"; };
@@ -1470,6 +1522,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7280F7F11E3AC9A600E3F097 /* libLiteCore.dylib in Frameworks */,
+				27B6493B206971FC00FC12F7 /* LiteCore.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1482,6 +1535,19 @@
 				273E55631F79B3A7000182F1 /* libcivetweb.a in Frameworks */,
 				272850F21E9D4FB1009CA22F /* libFleece.a in Frameworks */,
 				7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27B64930206971FB00FC12F7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27B649472069721F00FC12F7 /* libLiteCore-static.a in Frameworks */,
+				27B64960206975F900FC12F7 /* libc++.tbd in Frameworks */,
+				27B6495D2069758F00FC12F7 /* libz.tbd in Frameworks */,
+				27B6495A2069757D00FC12F7 /* CoreFoundation.framework in Frameworks */,
+				27B6495B2069758300FC12F7 /* Foundation.framework in Frameworks */,
+				27B6495C2069758800FC12F7 /* Security.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1668,6 +1734,8 @@
 				273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */,
 				273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */,
 				27FDF1A21DAD79450087B4E6 /* LiteCore-dylib_Release.xcconfig */,
+				27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */,
+				2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */,
 				273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */,
 				27FC81F41EAAB4D30028E38E /* REST.xcconfig */,
 				279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */,
@@ -1802,6 +1870,7 @@
 				93FA3F481EE21A4D00D15CF5 /* LiteCoreServ-iOS.app */,
 				27DF7D631F4236500022F3DF /* libSQLite.a */,
 				272AEC5B1F560FF600051F0A /* cblite */,
+				27B64934206971FB00FC12F7 /* LiteCore.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1927,6 +1996,7 @@
 				27ECCB011D89DCDB00FA8C4A /* Doxyfile */,
 				274D04231BA8932800FF7C35 /* c4.exp */,
 				273E9EC61C506C70003115A6 /* c4.def */,
+				27B64937206971FC00FC12F7 /* Info.plist */,
 				274D03FF1BA7554700FF7C35 /* tests */,
 			);
 			name = "C API";
@@ -2341,6 +2411,7 @@
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
+				27B64936206971FC00FC12F7 /* LiteCore.h */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -2430,6 +2501,27 @@
 				2749B94F1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */,
 				728EC54E1EC14611002C9A73 /* c4Listener.h in Headers */,
 				275A74D41ED3A4E1008CB57B /* Listener.hh in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27B64931206971FB00FC12F7 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27B64938206971FC00FC12F7 /* LiteCore.h in Headers */,
+				27B6494A2069723900FC12F7 /* c4.h in Headers */,
+				27B6494B2069723900FC12F7 /* c4.hh in Headers */,
+				27B6494C2069723900FC12F7 /* c4Base.h in Headers */,
+				27B6494D2069723900FC12F7 /* c4BlobStore.h in Headers */,
+				27B6494E2069723900FC12F7 /* c4Database.h in Headers */,
+				27B6494F2069723900FC12F7 /* c4Document.h in Headers */,
+				27B649502069723900FC12F7 /* c4Document+Fleece.h in Headers */,
+				27B649512069723900FC12F7 /* c4DocEnumerator.h in Headers */,
+				27B649522069723900FC12F7 /* c4ExpiryEnumerator.h in Headers */,
+				27B649532069723900FC12F7 /* c4Observer.h in Headers */,
+				27B649542069723900FC12F7 /* c4Query.h in Headers */,
+				27B649552069723900FC12F7 /* c4Replicator.h in Headers */,
+				27B649562069723900FC12F7 /* c4Socket.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2714,11 +2806,13 @@
 				27A924911D9B316D00086206 /* Frameworks */,
 				27A924921D9B316D00086206 /* Resources */,
 				27A924BC1D9B355900086206 /* CopyFiles */,
+				27B64946206971FC00FC12F7 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				2779CC581E848BBC00F0D251 /* PBXTargetDependency */,
+				27B6493A206971FC00FC12F7 /* PBXTargetDependency */,
 			);
 			name = "LiteCore-iOS";
 			productName = "LiteCore Shell";
@@ -2746,6 +2840,25 @@
 			productName = "LiteCore ShellTests";
 			productReference = 27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		27B64933206971FB00FC12F7 /* LiteCore framework */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 27B64945206971FC00FC12F7 /* Build configuration list for PBXNativeTarget "LiteCore framework" */;
+			buildPhases = (
+				27B6492F206971FB00FC12F7 /* Sources */,
+				27B64930206971FB00FC12F7 /* Frameworks */,
+				27B64931206971FB00FC12F7 /* Headers */,
+				27B64932206971FB00FC12F7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				27B649492069722500FC12F7 /* PBXTargetDependency */,
+			);
+			name = "LiteCore framework";
+			productName = LiteCore;
+			productReference = 27B64934206971FB00FC12F7 /* LiteCore.framework */;
+			productType = "com.apple.product-type.framework";
 		};
 		27DF7D621F4236500022F3DF /* SQLite */ = {
 			isa = PBXNativeTarget;
@@ -2913,6 +3026,9 @@
 						ProvisioningStyle = Automatic;
 						TestTargetID = 27A924931D9B316D00086206;
 					};
+					27B64933206971FB00FC12F7 = {
+						CreatedOnToolsVersion = 9.3;
+					};
 					27DF7D621F4236500022F3DF = {
 						CreatedOnToolsVersion = 9.0;
 						DevelopmentTeam = N2Q372V7W2;
@@ -2953,6 +3069,7 @@
 			targets = (
 				27EF80F91917EEC600A327B9 /* LiteCore static */,
 				720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */,
+				27B64933206971FB00FC12F7 /* LiteCore framework */,
 				27FC81E71EAAB0D90028E38E /* LiteCoreREST static */,
 				279D410D1EA5558100D8DD9D /* LiteCoreREST dylib */,
 				279691621ED4B29E0086565D /* Support */,
@@ -3033,6 +3150,13 @@
 				27A924A61D9B316D00086206 /* LaunchScreen.storyboard in Resources */,
 				27A924A31D9B316D00086206 /* Assets.xcassets in Resources */,
 				27A924A11D9B316D00086206 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27B64932206971FB00FC12F7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3286,6 +3410,13 @@
 				273E555F1F79B364000182F1 /* Response.cc in Sources */,
 				273E55661F79B535000182F1 /* Logging_Stub.cc in Sources */,
 				27A924C91D9B374500086206 /* Catch_Tests.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		27B6492F206971FB00FC12F7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3662,6 +3793,16 @@
 			target = 27FC81E71EAAB0D90028E38E /* LiteCoreREST static */;
 			targetProxy = 27B321BC20096E1000C40AD5 /* PBXContainerItemProxy */;
 		};
+		27B6493A206971FC00FC12F7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27B64933206971FB00FC12F7 /* LiteCore framework */;
+			targetProxy = 27B64939206971FC00FC12F7 /* PBXContainerItemProxy */;
+		};
+		27B649492069722500FC12F7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
+			targetProxy = 27B649482069722500FC12F7 /* PBXContainerItemProxy */;
+		};
 		27BF02431FB620E5003D5BB8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 272AEC4A1F560FF600051F0A /* cblite */;
@@ -4001,6 +4142,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = N2Q372V7W2;
@@ -4242,6 +4384,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = N2Q372V7W2;
@@ -4419,6 +4562,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = N2Q372V7W2;
@@ -4438,6 +4582,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = N2Q372V7W2;
@@ -4551,6 +4696,46 @@
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
+		};
+		27B6493D206971FC00FC12F7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Debug;
+		};
+		27B6493E206971FC00FC12F7 /* Debug-EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 27B649592069731B00FC12F7 /* LiteCore-framework.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = "Debug-EE";
+		};
+		27B6493F206971FC00FC12F7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = Release;
+		};
+		27B64940206971FC00FC12F7 /* Release-EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				VERSIONING_SYSTEM = "apple-generic";
+				VERSION_INFO_PREFIX = "";
+			};
+			name = "Release-EE";
 		};
 		27B7E0F318F8FB4800044EBA /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -4869,6 +5054,17 @@
 				2791EA2D2032745700BD813C /* Debug-EE */,
 				27A924B81D9B316D00086206 /* Release */,
 				2791EA412032746700BD813C /* Release-EE */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		27B64945206971FC00FC12F7 /* Build configuration list for PBXNativeTarget "LiteCore framework" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27B6493D206971FC00FC12F7 /* Debug */,
+				27B6493E206971FC00FC12F7 /* Debug-EE */,
+				27B6493F206971FC00FC12F7 /* Release */,
+				27B64940206971FC00FC12F7 /* Release-EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

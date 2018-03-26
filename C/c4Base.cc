@@ -81,17 +81,17 @@ C4StringResult c4_getBuildInfo() C4API {
 C4StringResult c4_getVersion() C4API {
     string vers;
 #if LiteCoreOfficial
-    vers = LiteCoreBuildNum;
+    vers = format("%s (%s)", LiteCoreVersion, LiteCoreBuildNum);
 #else
     #ifdef COUCHBASE_ENTERPRISE
-    static const char *ee = "EE:";
+    static const char *ee = "-EE";
     #else
         static const char *ee = "";
     #endif
     if (strcmp(GitBranch, "master") == (0) || strcmp(GitBranch, "HEAD") == (0))
-        vers = format("%s%.8s%.1s", ee, GitCommit, GitDirty);
+        vers = format("%s%s (%.8s%.1s)", LiteCoreVersion, ee, GitCommit, GitDirty);
     else
-        vers = format("%s%s:%.8s%.1s", ee, GitBranch, GitCommit, GitDirty);
+        vers = format("%s%s (%s:%.8s%.1s)", LiteCoreVersion, ee, GitBranch, GitCommit, GitDirty);
 #endif
     return sliceResult(vers);
 }
