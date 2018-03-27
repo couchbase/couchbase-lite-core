@@ -29,6 +29,7 @@ $outContent = @"
 #define GitCommit `"$GitCommit`"
 #define GitBranch `"$GitBranch`"
 #define GitDirty  `"$GitDirty`"
+#define LiteCoreVersion `"$env:LITECORE_VERSION_STRING`"
 #define LiteCoreBuildNum `"$BuildNum`"
 #define LiteCoreOfficial $Official
 "@
