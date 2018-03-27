@@ -208,7 +208,7 @@ namespace litecore { namespace repl {
     string DBWorker::effectiveRemoteCheckpointDocID(const C4UUID *localUUID, C4Error *err) {
         // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
         Array channels = _options.channels();
-        Value filter = _options.properties[kC4ReplicatorOptionFilter];
+            Value filter = _options.properties[kC4ReplicatorOptionFilter];
         const Value filterParams = _options.properties[kC4ReplicatorOptionFilterParams];
         Array docIDs = _options.docIDs();
 

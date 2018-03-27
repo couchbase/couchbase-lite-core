@@ -214,14 +214,52 @@ namespace litecore {
 
     // Stub implementation for when case conversion is unavailable
     alloc_slice UTF8ChangeCase(slice str, bool toUppercase) {
-        auto f = toUppercase ? toupper : tolower;
         auto size = str.size;
         alloc_slice result(size);
         for (size_t i = 0; i < size; i++)
-            (uint8_t&)(result[i]) = (uint8_t) f(str[i]);
+            (uint8_t&)(result[i]) = (uint8_t) toUppercase ? toupper((char)str[i],locale()):tolower((char)str[i],locale());
         return result;
     }
 
 #endif
 
 }
+
+#if defined __ANDROID__ && !defined __clang__
+namespace std  {
+    std::string to_string(const double &n) {
+            std::ostringstream s;
+            s << n;
+            return s.str();
+    }
+    std::string to_string(const long long &n) {
+            std::ostringstream s;
+            s << n;
+            return s.str();
+    }
+    std::string to_string(const unsigned long long &n) {
+            std::ostringstream s;
+            s << n;
+            return s.str();
+    }
+    std::string to_string(const uint16_t &n) {
+            std::ostringstream s;
+            s << n;
+            return s.str();
+    }
+    std::string to_string(const size_t &n) {
+            std::ostringstream s;
+            s << n;
+            return s.str();
+    }
+    double stod(std::string s) {
+        return strtod(s.c_str(),0);
+    }
+    int stoi(std::string s) {
+        return strtol(s.c_str(),nullptr,10);
+    }
+    long long stoll(std::string s) {
+        return strtoll(s.c_str(),nullptr,10);
+    }
+}
+#endif

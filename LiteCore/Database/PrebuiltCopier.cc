@@ -32,7 +32,7 @@ namespace litecore {
                              const C4DatabaseConfig *config) {
         if(!from.exists()) {
             Warn("No database exists at %s, cannot copy!", from.path().c_str());
-            error::_throw(error::Domain::LiteCore, C4ErrorCode::kC4ErrorNotFound);
+            error::_throw(error::Domain::LiteCore, kC4ErrorNotFound);
         }
 
         if (to.exists()) {

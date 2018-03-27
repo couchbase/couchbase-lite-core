@@ -258,8 +258,8 @@ public:
 
 
     c4::ref<C4Database> db2;
-    C4Address _address {kDefaultAddress};
-    C4String _remoteDBName {kScratchDBName};
+    C4Address _address = kDefaultAddress;
+    C4String _remoteDBName = kScratchDBName;
     AllocedDict _options;
     C4ReplicatorValidationFunction _pushFilter {nullptr};
     C4SocketFactory* _socketFactory {nullptr};

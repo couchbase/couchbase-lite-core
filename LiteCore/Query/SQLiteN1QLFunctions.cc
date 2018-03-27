@@ -996,7 +996,7 @@ namespace litecore {
             case SQLITE_INTEGER:
             {
                 auto val = sqlite3_value_double(argv[0]);
-                result = (val != 0.0 && !isnan(val));
+                result = (val != 0.0 && !std::isnan(val));
                 break;
             }
             case SQLITE_TEXT:
@@ -1072,7 +1072,7 @@ namespace litecore {
                 auto txt = (const char *)sqlite3_value_text(argv[0]);
                 string str(txt, sqlite3_value_bytes(argv[0]));
                 double result = tonumber(str);
-                if(isnan(result)) {
+                if(std::isnan(result)) {
                     setResultFleeceNull(ctx);
                 } else {
                     sqlite3_result_double(ctx, result);

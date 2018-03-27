@@ -34,6 +34,7 @@ using namespace fleece;
 
 namespace litecore { namespace REST {
 
+    static constexpr uint16_t kDefaultPort = 4984;
     static constexpr const char* kKeepAliveTimeoutMS = "1000";
     static constexpr const char* kMaxConnections = "8";
 

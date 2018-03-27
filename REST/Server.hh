@@ -21,6 +21,7 @@
 #include <array>
 #include <map>
 #include <mutex>
+#include <functional>
 
 struct mg_context;
 struct mg_connection;

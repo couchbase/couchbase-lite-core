@@ -155,7 +155,7 @@ namespace litecore {
         if (!buf)
             return alloc_slice();
         alloc_slice resultBuf(expandedSize());
-        slice result = resultBuf;
+        slice result(resultBuf);
         _expandInto(result);
         resultBuf.shorten(result.size);
         return resultBuf;
