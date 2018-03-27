@@ -195,7 +195,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_agg", "[Query]") {
     REQUIRE(array);
     // Note: Ordering is "arbitrary" according to SQLite docs, so it isn't required to be in the
     // order in this CHECK, though in practice it is.
-    CHECK((slice)array->toJSON() == expectedJSON);
+    CHECK(array->toJSON() == expectedJSON);
     CHECK(!st.executeStep());
 }
 

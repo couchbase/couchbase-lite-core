@@ -23,12 +23,26 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#if defined __ANDROID__ && !defined __clang__
+// gcc for android is not fully c++11 compliant, so we define the missing functions here
+namespace std  {
+    std::string to_string(const double &n);
+    std::string to_string(const long long &n);
+    std::string to_string(const unsigned long long &n);
+    std::string to_string(const uint16_t &n);
+    std::string to_string(const size_t &n);
+
+    double stod(std::string s);
+    int stoi(std::string s);
+    long long stoll(std::string s);
+}
+#endif
 
 namespace litecore {
 
     // Adds EXPR to a stringstream and returns the resulting string.
     // Example: CONCAT("2+2=" << 4 << "!") --> "2+2=4!"
-#ifdef _MSC_VER
+#ifndef __clang__
     #define CONCAT(EXPR)   (static_cast<std::stringstream&>(std::stringstream() << EXPR)).str()
 #else
     #define CONCAT(EXPR)   (std::stringstream() << EXPR).str()

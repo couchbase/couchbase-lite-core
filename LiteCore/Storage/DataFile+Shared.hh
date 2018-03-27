@@ -13,7 +13,7 @@
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
 #include <unordered_map>
-
+#include <algorithm>
 
 namespace litecore {
 

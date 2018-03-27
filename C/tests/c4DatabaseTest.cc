@@ -586,7 +586,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
         ExpectingExceptions x; // call to c4db_copy will internally throw an exception
         REQUIRE(!c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
         CHECK(error.domain == LiteCoreDomain);
-        CHECK(error.code == C4ErrorCode::kC4ErrorNotFound);
+        CHECK(error.code == kC4ErrorNotFound);
     }
 
     nudb = c4db_open(c4str(originalDest.c_str()), &config, &error);
@@ -601,7 +601,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
         ExpectingExceptions x; // call to c4db_copy will internally throw an exception
         REQUIRE(!c4db_copy(c4str(srcPathStr.c_str()), c4str(nuPath.c_str()), &config, &error));
         CHECK(error.domain == LiteCoreDomain);
-        CHECK(error.code == C4ErrorCode::kC4ErrorNotFound);
+        CHECK(error.code == kC4ErrorNotFound);
     }
     
     nudb = c4db_open(c4str(originalDest.c_str()), &config, &error);

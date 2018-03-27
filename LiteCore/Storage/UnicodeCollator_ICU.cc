@@ -25,7 +25,9 @@
 #include <sqlite3.h>
 
 #include <string>
+#if !defined __ANDROID__ || defined __clang__
 #include <codecvt>
+#endif
 #include <locale>
 #include <iostream>
 

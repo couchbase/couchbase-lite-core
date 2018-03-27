@@ -60,7 +60,6 @@ namespace litecore { namespace REST {
         std::vector<std::string> databaseNames();
 
     protected:
-        static constexpr uint16_t kDefaultPort = 4984;
 
         Listener();
 

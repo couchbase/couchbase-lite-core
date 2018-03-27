@@ -166,7 +166,7 @@ namespace litecore { namespace websocket {
             Log("CivetWebSocket connecting to <%.*s>...", SPLAT(_address.url()));
 
             stringstream extraHeaders;
-            for (Dict::iterator header(_options[kC4ReplicatorOptionExtraHeaders].asDict());
+                for (Dict::iterator header(_options[kC4ReplicatorOptionExtraHeaders].asDict());
                      header; ++header) {
                 extraHeaders << header.keyString() << ": " << header.value().asString() << "\r\n";
             }
@@ -186,11 +186,11 @@ namespace litecore { namespace websocket {
                 }
             }
 
-            slice cookies = _options[kC4ReplicatorOptionCookies].asString();
+                slice cookies = _options[kC4ReplicatorOptionCookies].asString();
             if (cookies)
                 extraHeaders << "Cookie: " << cookies << "\r\n";
 
-            slice protocols = _options[kC4SocketOptionWSProtocols].asString();
+                slice protocols = _options[kC4SocketOptionWSProtocols].asString();
             if (protocols)
                 extraHeaders << "Sec-WebSocket-Protocol: " << protocols << "\r\n";
 
