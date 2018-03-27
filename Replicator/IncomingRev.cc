@@ -47,7 +47,7 @@ namespace litecore { namespace repl {
     void IncomingRev::clear() {
         Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
         _revMessage = nullptr;
-        _rev.clear();
+        _rev = nullptr;
         _error = {};
         _currentBlob = nullptr;
         _pendingBlobs.clear();
@@ -60,28 +60,27 @@ namespace litecore { namespace repl {
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
 
         _revMessage = msg;
-        _rev.docID = _revMessage->property("id"_sl);
-        _rev.revID = _revMessage->property("rev"_sl);
-        if (_revMessage->property("deleted"_sl))
-            _rev.flags |= kRevDeleted;
-        _rev.historyBuf = _revMessage->property("history"_sl);
-        _rev.noConflicts = _revMessage->boolProperty("noconflicts"_sl)
-                            || _options.noIncomingConflicts();
+        _rev = new RevToInsert(_revMessage->property("id"_sl),
+                               _revMessage->property("rev"_sl),
+                               _revMessage->property("history"_sl),
+                               _revMessage->boolProperty("deleted"_sl),
+                               _revMessage->boolProperty("noconflicts"_sl)
+                                   || _options.noIncomingConflicts());
         slice sequence(_revMessage->property("sequence"_sl));
 
         _peerError = (int)_revMessage->intProperty("error"_sl);
         if (_peerError) {
             // The sender had a last-minute failure getting the promised revision. Give up.
             warn("Peer was unable to send '%.*s'/%.*s: error %d",
-                 SPLAT(_rev.docID), SPLAT(_rev.revID), _peerError);
+                 SPLAT(_rev->docID), SPLAT(_rev->revID), _peerError);
             finish();
             return;
         }
 
         // Validate the revID and sequence:
         logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')",
-                   SPLAT(_rev.docID), SPLAT(_rev.revID), SPLAT(sequence));
-        if (_rev.docID.size == 0 || _rev.revID.size == 0) {
+                   SPLAT(_rev->docID), SPLAT(_rev->revID), SPLAT(sequence));
+        if (_rev->docID.size == 0 || _rev->revID.size == 0) {
             warn("Got invalid revision");
             _error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
             finish();
@@ -115,11 +114,11 @@ namespace litecore { namespace repl {
         }
 
         // Populate the RevToInsert's body:
-        _rev.body = fleeceBody;
+        _rev->body = fleeceBody;
 
         // Call the custom validation function if any:
         if (_options.pullValidator) {
-            if (!_options.pullValidator(_rev.docID, root, _options.pullValidatorContext)) {
+            if (!_options.pullValidator(_rev->docID, root, _options.pullValidatorContext)) {
                 log("Rejected by pull validator function");
                 _error = c4error_make(WebSocketDomain, 403, "rejected by validation function"_sl);
                 finish();
@@ -129,7 +128,7 @@ namespace litecore { namespace repl {
 
         // Check for blobs, and queue up requests for any I don't have yet:
         findBlobReferences(root, nullptr, [=](Dict dict, const C4BlobKey &key) {
-            _rev.flags |= kRevHasAttachments;
+            _rev->flags |= kRevHasAttachments;
             _pendingBlobs.push_back({key,
                                      dict["length"_sl].asUnsigned(),
                                      c4doc_blobIsCompressible(dict, nullptr)});
@@ -180,14 +179,14 @@ namespace litecore { namespace repl {
     void IncomingRev::insertRevision() {
         Assert(_pendingBlobs.empty() && !_currentBlob);
         increment(_pendingCallbacks);
-        _rev.onInserted = asynchronize([this](C4Error err) {
+        _rev->onInserted = asynchronize([this](C4Error err) {
             // Callback that will run _after_ insertRevision() completes:
             decrement(_pendingCallbacks);
             _error = err;
             finish();
         });
 
-        _dbWorker->insertRevision(&_rev);
+        _dbWorker->insertRevision(_rev);
     }
 
 
@@ -201,13 +200,13 @@ namespace litecore { namespace repl {
         if (_error.code == 0 && _peerError)
             _error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
         if (_error.code) {
-            gotDocumentError(_rev.docID, _error, false, false);
-        } else if (_rev.flags & kRevIsConflict) {
+            gotDocumentError(_rev->docID, _error, false, false);
+        } else if (_rev->flags & kRevIsConflict) {
             // DBWorker::_insertRevision set this flag to indicate that the rev caused a conflict
             // (though it did get inserted), so notify the delegate of the conflict:
-            gotDocumentError(_rev.docID, {LiteCoreDomain, kC4ErrorConflict}, false, true);
+            gotDocumentError(_rev->docID, {LiteCoreDomain, kC4ErrorConflict}, false, true);
         }
-        _puller->revWasHandled(this, _rev.docID, remoteSequence(), (_error.code == 0));
+        _puller->revWasHandled(this, _rev->docID, remoteSequence(), (_error.code == 0));
         clear();
     }
 

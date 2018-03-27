@@ -301,7 +301,7 @@ namespace litecore { namespace repl {
             _markRevsSyncedNow();   // make sure foreign ancestors are up to date
 
         // Run a by-sequence enumerator to find the changed docs:
-        vector<Rev> changes;
+        auto changes = make_shared<RevToSendList>();
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         if (!p.getForeignAncestors)
@@ -310,7 +310,7 @@ namespace litecore { namespace repl {
             options.flags |= kC4IncludeDeleted;
         c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, p.since, &options, &error);
         if (e) {
-            changes.reserve(p.limit);
+            changes->reserve(p.limit);
             while (c4enum_next(e, &error) && p.limit > 0) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
@@ -334,7 +334,7 @@ namespace litecore { namespace repl {
         _maxPushedSequence = latestChangeSequence;
 
         _pusher = pusher;
-        pusher->gotChanges(changes, latestChangeSequence, error);
+        pusher->gotChanges(move(changes), latestChangeSequence, error);
 
         if (p.continuous && p.limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
@@ -362,15 +362,16 @@ namespace litecore { namespace repl {
         C4DatabaseChange c4changes[kMaxChanges];
         bool external;
         uint32_t nChanges;
-        vector<Rev> changes;
         while (true) {
             nChanges = c4dbobs_getChanges(_changeObserver, c4changes, kMaxChanges, &external);
             if (nChanges == 0)
                 break;
             logVerbose("Notified of %u db changes #%llu ... #%llu",
                        nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
+            // Copy the changes into a vector of RevToSend:
+            auto changes = make_shared<RevToSendList>();
+            changes->reserve(nChanges);
             C4SequenceNumber latestChangeSequence = _maxPushedSequence;
-            changes.clear();
             C4DatabaseChange *c4change = c4changes;
             for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
                 C4DocumentInfo info {0, c4change->docID, c4change->revID,
@@ -398,9 +399,8 @@ namespace litecore { namespace repl {
             }
             _maxPushedSequence = latestChangeSequence;
 
-            if (!changes.empty()) {
-                _pusher->gotChanges(changes, latestChangeSequence, {});
-            }
+            if (!changes->empty())
+                _pusher->gotChanges(move(changes), latestChangeSequence, {});
 
             c4dbobs_releaseChanges(c4changes, nChanges);
         }
@@ -408,7 +408,9 @@ namespace litecore { namespace repl {
 
 
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
-    bool DBWorker::addChangeToList(const C4DocumentInfo &info, C4Document *doc, vector<Rev> &changes) {
+    bool DBWorker::addChangeToList(const C4DocumentInfo &info, C4Document *doc,
+                                   shared_ptr<RevToSendList> &changes)
+    {
         alloc_slice remoteRevID;
         if (_getForeignAncestors && _checkpointValid) {
             // For proposeChanges, find the nearest foreign ancestor of the current rev:
@@ -419,7 +421,7 @@ namespace litecore { namespace repl {
                 return false;   // skip this rev: it's already on the peer
             remoteRevID = alloc_slice(foreignAncestor);
         }
-        changes.emplace_back(info, remoteRevID);
+        changes->push_back(new RevToSend(info, remoteRevID));
         return true;
     }
 
@@ -600,34 +602,34 @@ namespace litecore { namespace repl {
 
 
     // Sends a document revision in a "rev" request.
-    void DBWorker::_sendRevision(RevRequest request, MessageProgressCallback onProgress) {
+    void DBWorker::_sendRevision(Retained<RevToSend> request, MessageProgressCallback onProgress) {
         if (!connection())
             return;
         logVerbose("Sending revision '%.*s' #%.*s",
-                   SPLAT(request.docID), SPLAT(request.revID));
+                   SPLAT(request->docID), SPLAT(request->revID));
 
         // Get the document & revision:
         C4Error c4err;
         Dict root;
-        c4::ref<C4Document> doc = c4doc_get(_db, request.docID, true, &c4err);
+        c4::ref<C4Document> doc = c4doc_get(_db, request->docID, true, &c4err);
         if (doc)
-            root = getRevToSend(doc, request, &c4err);
+            root = getRevToSend(doc, *request, &c4err);
 
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
         MessageBuilder msg(root ? "rev"_sl : "norev"_sl);
         msg.compressed = true;
-        msg["id"_sl] = request.docID;
-        msg["rev"_sl] = request.revID;
-        msg["sequence"_sl] = request.sequence;
+        msg["id"_sl] = request->docID;
+        msg["rev"_sl] = request->revID;
+        msg["sequence"_sl] = request->sequence;
         if (root) {
             msg.noreply = !onProgress;
-            if (request.noConflicts)
+            if (request->noConflicts)
                 msg["noconflicts"_sl] = true;
             auto revisionFlags = doc->selectedRev.flags;
             if (revisionFlags & kRevDeleted)
                 msg["deleted"_sl] = "1"_sl;
-            string history = revHistoryString(doc, request);
+            string history = revHistoryString(doc, *request);
             if (!history.empty())
                 msg["history"_sl] = history;
 
@@ -638,7 +640,7 @@ namespace litecore { namespace repl {
                 auto &bodyEncoder = msg.jsonBody();
                 auto sk = c4db_getFLSharedKeys(_db);
                 bodyEncoder.setSharedKeys(sk);
-                if (request.legacyAttachments && (revisionFlags & kRevHasAttachments))
+                if (request->legacyAttachments && (revisionFlags & kRevHasAttachments))
                     writeRevWithLegacyAttachments(bodyEncoder, root, sk);
                 else
                     bodyEncoder.writeValue(root);
@@ -654,7 +656,7 @@ namespace litecore { namespace repl {
                 blipError = 404;
             else {
                 warn("sendRevision: Couldn't get rev '%.*s' %.*s from db: %d/%d",
-                     SPLAT(request.docID), SPLAT(request.revID), c4err.domain, c4err.code);
+                     SPLAT(request->docID), SPLAT(request->revID), c4err.domain, c4err.code);
                 blipError = 500;
             }
             msg["error"_sl] = blipError;
@@ -668,7 +670,7 @@ namespace litecore { namespace repl {
     }
 
 
-    Dict DBWorker::getRevToSend(C4Document* doc, const RevRequest &request, C4Error *c4err) {
+    Dict DBWorker::getRevToSend(C4Document* doc, const RevToSend &request, C4Error *c4err) {
         if (!c4doc_selectRevision(doc, request.revID, true, c4err))
             return nullptr;
 
@@ -687,8 +689,7 @@ namespace litecore { namespace repl {
     }
 
 
-    string DBWorker::revHistoryString(C4Document *doc, const RevRequest &request) {
-        set<pure_slice> ancestors(request.ancestorRevIDs.begin(), request.ancestorRevIDs.end());
+    string DBWorker::revHistoryString(C4Document *doc, const RevToSend &request) {
         stringstream historyStream;
         int nWritten = 0;
         unsigned lastGen = c4rev_getGeneration(doc->selectedRev.revID);
@@ -707,7 +708,7 @@ namespace litecore { namespace repl {
             if (nWritten++ > 0)
                 historyStream << ',';
             historyStream << fleeceapi::asstring(revID);
-            if (ancestors.find(revID) != ancestors.end())
+            if (request.hasRemoteAncestor(revID))
                 break;
         }
         return historyStream.str();
@@ -773,11 +774,11 @@ namespace litecore { namespace repl {
 
     // Add a revision to a queue, and schedule a call to _insertRevisionsNow (thread-safe)
     template <class REV>
-    void DBWorker::scheduleRevision(REV rev, Queue<REV> &queue) {
+    void DBWorker::scheduleRevision(REV *rev, Queue<REV> &queue) {
         lock_guard<mutex> lock(_insertionQueueMutex);
 
         if (!queue) {
-            queue.reset(new vector<REV>);
+            queue.reset(new vector<Retained<REV>>);
             queue->reserve(200);
         }
         queue->push_back(rev);
@@ -820,7 +821,7 @@ namespace litecore { namespace repl {
         if (transaction.begin(&transactionErr)) {
             SharedEncoder enc(c4db_getSharedFleeceEncoder(_db));
             
-            for (auto rev : *revs) {
+            for (RevToInsert *rev : *revs) {
                 // Add a revision:
                 logVerbose("    {'%.*s' #%.*s}", SPLAT(rev->docID), SPLAT(rev->revID));
                 vector<C4String> history;
@@ -899,7 +900,7 @@ namespace litecore { namespace repl {
     // return the correct answer, because the change hasn't been made in the database yet.
     // For that reason, this class ensures that _markRevsSyncedNow() is called before any call
     // to c4doc_getRemoteAncestor().
-    void DBWorker::markRevSynced(const Rev &rev) {
+    void DBWorker::markRevSynced(Rev *rev) {
         scheduleRevision(rev, _revsToMarkSynced);
     }
 
@@ -914,12 +915,12 @@ namespace litecore { namespace repl {
         C4Error error;
         c4::Transaction transaction(_db);
         if (transaction.begin(&error)) {
-            for (auto &rev : *revs) {
+            for (Rev *rev : *revs) {
                 logDebug("Marking rev '%.*s' %.*s (#%llu) as synced to remote db %u",
-                         SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence, _remoteDBID);
-                if (!c4db_markSynced(_db, rev.docID, rev.sequence, _remoteDBID, &error))
+                         SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, _remoteDBID);
+                if (!c4db_markSynced(_db, rev->docID, rev->sequence, _remoteDBID, &error))
                     warn("Unable to mark '%.*s' %.*s (#%llu) as synced; error %d/%d",
-                         SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence, error.domain, error.code);
+                         SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, error.domain, error.code);
             }
             if (transaction.commit(&error)) {
                 double t = st.elapsed();
