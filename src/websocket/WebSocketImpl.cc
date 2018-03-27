@@ -303,7 +303,7 @@ namespace litecore { namespace websocket {
     int WebSocketImpl::heartbeatInterval() const {
         if (!_framing)
             return 0;
-        fleeceapi::Value heartbeat = options()[Provider::kHeartbeatOption];
+        fleeceapi::Value heartbeat = options().get(Provider::kHeartbeatOption);
         if (heartbeat.type() == kFLNumber)
             return (int)heartbeat.asInt();
         else
