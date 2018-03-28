@@ -11,11 +11,16 @@
 #include "Error.hh"
 #include "FilePath.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include "StringUtil.hh"
 #include "PlatformCompat.hh"
 
 using namespace std;
 
 namespace litecore {
+
+    static inline slice asSlice(const SQLite::Column &col) {
+        return slice(col.getBlob(), col.getBytes());
+    }
 
     static inline alloc_slice asAllocSlice(const SQLite::Column &col) {
         return alloc_slice(col.getBlob(), col.getBytes());
@@ -26,10 +31,11 @@ namespace litecore {
         _exec("BEGIN; "
               "CREATE TABLE remotes (remote_id INTEGER PRIMARY KEY, "
                                     "address TEXT UNIQUE);"
-              "CREATE TABLE remote_revs (remote_id INTEGER FOREIGN KEY REFERENCES remotes, "
+              "CREATE TABLE remote_revs (remote_id INTEGER REFERENCES remotes, "
                                         "docID TEXT, "
-                                        "version BLOB NOT NULL);"
-              "PRAGMA user_version=201; "
+                                        "version BLOB NOT NULL, "
+                                        "PRIMARY KEY (remote_id, docID));"
+              "PRAGMA user_version=202; "
               "END;");
     }
 
@@ -43,7 +49,8 @@ namespace litecore {
         if (!canCreate)
             return kNoRemoteID;
 
-        SQLite::Statement insertStmt(*_sqlDb, "INSERT INTO remotes (address) VALUES (?)");
+        SQLite::Statement insertStmt(*_sqlDb,
+                                     "INSERT INTO remotes (address) VALUES (?)");
         insertStmt.bindNoCopy(1, (const char*)address.buf, (int)address.size);
         insertStmt.exec();
         return RemoteID(_sqlDb->getLastInsertRowid());
@@ -74,6 +81,8 @@ namespace litecore {
 
     void SQLiteDataFile::setLatestRevisionOnRemote(RemoteID remote, slice docID, slice revID)
     {
+        LogDebug(kC4Cpp_DefaultLog, "$$$$$ remote=%d, docid='%.*s' <-- revid=0x%s",
+            remote, SPLAT(docID), revID.hexString().c_str());
         auto &stmt = compile(_setLatestRevOnRemoteStmt,
                              "INSERT OR REPLACE INTO remote_revs (remote_id, docID, version) "
                              "VALUES (?, ?, ?)");
@@ -82,6 +91,16 @@ namespace litecore {
         stmt.bind(3, (const char*)revID.buf, (int)revID.size);
         UsingStatement u(stmt);
         stmt.exec();
+    }
+
+
+    void SQLiteDataFile::withLatestRevisionsOnRemotes(slice docID, RemoteRevisionCallback cb) {
+        auto &stmt = compile(_latestRevsOnRemotesStmt,
+                             "SELECT remote_id, version FROM remote_revs WHERE docID=?");
+        stmt.bindNoCopy(1, (char*)docID.buf, (int)docID.size);
+        UsingStatement u(stmt);
+        while (stmt.executeStep())
+            cb(stmt.getColumn(0), asSlice(stmt.getColumn(1)));
     }
 
 }

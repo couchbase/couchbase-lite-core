@@ -180,149 +180,54 @@ bool c4doc_selectCommonAncestorRevision(C4Document* doc, C4String rev1, C4String
 #pragma mark - REMOTE DATABASE REVISION TRACKING:
 
 
-static const char * kRemoteDBURLsDoc = "remotes";
-
-
 C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCreate,
                               C4Error *outError) C4API
 {
-    using namespace fleece;
-    bool inTransaction = false;
-    auto remoteID = tryCatch<C4RemoteID>(outError, [&]() {
-        // Make two passes: In the first, just look up the "remotes" doc and look for an ID.
-        // If the ID isn't found, then do a second pass where we either add the remote URL
-        // or create the doc from scratch, in a transaction.
-        for (int creating = false; creating <= true; ++creating) {
-            if (creating) {     // 2nd pass takes place in a transaction
-                db->beginTransaction();
-                inTransaction = true;
-            }
-
-            // Look up the doc in the db, and the remote URL in the doc:
-            Record doc = db->getRawDocument(string(kC4InfoStore), slice(kRemoteDBURLsDoc));
-            const Dict *remotes = nullptr;
-            C4RemoteID remoteID = 0;
-            if (doc.exists()) {
-                auto body = Value::fromData(doc.body());
-                if (body)
-                    remotes = body->asDict();
-                if (remotes) {
-                    auto idObj = remotes->get(remoteAddress);
-                    if (idObj)
-                        remoteID = C4RemoteID(idObj->asUnsigned());
-                }
-            }
-
-            if (remoteID > 0) {
-                // Found the remote ID!
-                return remoteID;
-            } else if (!canCreate) {
-                break;
-            } else if (creating) {
-                // Update or create the document, adding the identifier:
-                remoteID = 1;
-                Encoder enc;
-                enc.beginDictionary();
-                for (Dict::iterator i(remotes); i; ++i) {
-                    auto existingID = i.value()->asUnsigned();
-                    if (existingID) {
-                        enc.writeKey(i.keyString());            // Copy existing entry
-                        enc.writeUInt(existingID);
-                        remoteID = max(remoteID, 1 + C4RemoteID(existingID));   // make sure new ID is unique
-                    }
-                }
-                enc.writeKey(remoteAddress);                       // Add new entry
-                enc.writeUInt(remoteID);
-                enc.endDictionary();
-                alloc_slice body = enc.extractOutput();
-
-                // Save the doc:
-                db->putRawDocument(string(kC4InfoStore), slice(kRemoteDBURLsDoc), nullslice, body);
-                db->endTransaction(true);
-                inTransaction = false;
-                return remoteID;
-            }
-        }
-        if (outError)
-            *outError = c4error_make(LiteCoreDomain, kC4ErrorNotFound, {});
-        return C4RemoteID(0);
+    return tryCatch<C4RemoteID>(outError, [=]{
+        return db->dataFile()->getRemote(remoteAddress, canCreate);
     });
-    if (inTransaction)
-        c4db_endTransaction(db, false, nullptr);
-    return remoteID;
 }
 
 
 C4SliceResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API {
     using namespace fleece;
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        Record doc = db->getRawDocument(string(kC4InfoStore), slice(kRemoteDBURLsDoc));
-        if (doc.exists()) {
-            auto body = Value::fromData(doc.body());
-            if (body) {
-                for (Dict::iterator i(body->asDict()); i; ++i) {
-                    if (i.value()->asInt() == remoteID)
-                        return sliceResult(i.keyString());
-                }
-            }
-        }
-        return C4SliceResult{};
+        return sliceResult( db->dataFile()->getRemoteAddress(remoteID) );
     });
 }
 
 
-C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase) C4API {
+C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteID) C4API {
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        return sliceResult(internal(doc)->remoteAncestorRevID(remoteDatabase));
+        auto db = internal(doc)->database();
+        alloc_slice binaryRevID = db->dataFile()->latestRevisionOnRemote(remoteID, doc->docID);
+        return sliceResult( revid(binaryRevID).expanded() );
     });
 }
 
 
-bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase, C4Error *outError) C4API {
-    return tryCatch<bool>(outError, [&]{
-        internal(doc)->setRemoteAncestorRevID(remoteDatabase);
-        return true;
+bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteID, C4Error *outError) C4API {
+    C4Database *db = external(internal(doc)->database());
+    return c4db_markSynced(db, doc->docID, doc->selectedRev.revID, remoteID, outError);
+}
+
+
+bool c4db_markSynced(C4Database *database,
+                     C4String docID, C4String revID,
+                     C4RemoteID remoteID,
+                     C4Error *outError) noexcept
+{
+    if (!database->mustBeInTransaction(outError))
+        return false;
+    return tryCatch(outError, [&]{
+        revidBuffer binaryRevID(revID);
+        database->dataFile()->setLatestRevisionOnRemote(remoteID, docID, binaryRevID);
     });
 }
 
 
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags) {
     return Document::currentRevFlagsFromDocFlags(docFlags);
-}
-
-
-// LCOV_EXCL_START
-bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequence,
-                     C4RemoteID remoteID,
-                     C4Error *outError) noexcept
-{
-    bool result = false;
-    try {
-        if (remoteID == RevTree::kDefaultRemoteID) {
-            // Shortcut: can set kSynced flag on the record to mark that the current revision is
-            // synced to remote #1. But the call will return false if the sequence no longer
-            // matches, i.e this revision is no longer current. Then have to take the slow approach.
-            if (database->defaultKeyStore().setDocumentFlag(docID, sequence,
-                                                            DocumentFlags::kSynced,
-                                                            database->transaction())) {
-                return true;
-            }
-        }
-
-        // Slow path: Load the doc and update the remote-ancestor info in the rev tree:
-        unique_ptr<Document> doc(internal(c4doc_get(database, docID, true, outError)));
-        if (!doc)
-            return false;
-        bool found = false;
-        do {
-            found = (doc->selectedRev.sequence == sequence);
-        } while (!found && doc->selectNextRevision());
-        if (found) {
-            doc->setRemoteAncestorRevID(remoteID);
-            result = c4doc_save(doc.get(), 9999, outError);       // don't prune anything
-        }
-    } catchError(outError)
-    return result;
 }
 
 
@@ -364,7 +269,7 @@ static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
     Document *idoc = internal(database->documentFactory().newDocumentInstance(record));
     bool ok;
     if (rq->existingRevision)
-        ok = (idoc->putExistingRevision(*rq) >= 0);
+        ok = (idoc->putExistingRevision(*rq, true) >= 0);
     else
         ok = idoc->putNewRevision(*rq);
     if (!ok) {
@@ -468,7 +373,7 @@ C4Document* c4doc_put(C4Database *database,
                 doc = c4doc_get(database, rq->docID, false, outError);
                 if (!doc)
                     return nullptr;
-                commonAncestorIndex = internal(doc)->putExistingRevision(*rq);
+                commonAncestorIndex = internal(doc)->putExistingRevision(*rq, false);
 
             } else {
                 // Create new revision:

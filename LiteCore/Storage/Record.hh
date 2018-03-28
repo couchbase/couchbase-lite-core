@@ -27,7 +27,6 @@ namespace litecore {
         kDeleted        = 0x01, ///< Document's current revision is deleted (a tombstone)
         kConflicted     = 0x02, ///< Document is in conflict (multiple leaf revisions)
         kHasAttachments = 0x04, ///< Document has one or more revisions with attachments/blobs
-        kSynced         = 0x08, ///< Document's current revision has been pushed to server
     };
 
     static inline bool operator& (DocumentFlags a, DocumentFlags b) {

@@ -60,14 +60,10 @@ namespace litecore {
                 rev->parent = _revs[rev->parent->index()];
             rev->owner = this;
         }
-        // Copy _remoteRevs:
-        for (auto &i : other._remoteRevs) {
-            _remoteRevs[i.first] = _revs[i.second->index()];
-        }
     }
 
     void RevTree::decode(litecore::slice raw_tree, sequence_t seq) {
-        _revsStorage = RawRevision::decodeTree(raw_tree, _remoteRevs, this, seq);
+        _revsStorage = RawRevision::decodeTree(raw_tree, this, seq);
         initRevs();
     }
 
@@ -82,7 +78,7 @@ namespace litecore {
 
     alloc_slice RevTree::encode() {
         sort();
-        return RawRevision::encodeTree(_revs, _remoteRevs);
+        return RawRevision::encodeTree(_revs);
     }
 
 #if DEBUG
@@ -379,14 +375,14 @@ namespace litecore {
         }
     }
 
-    unsigned RevTree::prune(unsigned maxDepth) {
+    unsigned RevTree::markForPrune(unsigned maxDepth) {
         Assert(maxDepth > 0);
         if (_revs.size() <= maxDepth)
             return 0;
 
         // First find all the leaves, and walk from each one down to its root:
         int numPruned = 0;
-        for (auto &rev : _revs) {
+        for (auto rev : _revs) {
             if (rev->isLeaf()) {
                 // Starting from a leaf rev, trace its ancestry to find its depth:
                 unsigned depth = 0;
@@ -401,30 +397,26 @@ namespace litecore {
                 break;
             }
         }
+        return numPruned;
+    }
 
-        if (numPruned == 0)
-            return 0;
+    void RevTree::unmarkAll() {
+        for (Rev *rev : _revs)
+            rev->markForPurge(false);
+    }
 
-        // Don't prune current remote revisions:
-        for (auto &r : _remoteRevs) {
-            if (r.second->isMarkedForPurge()) {
-                const_cast<Rev*>(r.second)->clearFlag(Rev::kPurge);
-                --numPruned;
-            }
-        }
-
-        if (numPruned == 0)
-            return 0;
-
+    void RevTree::purgeMarkedRevs() {
         // Clear parent links that point to revisions being pruned:
-        for (auto &rev : _revs) {
+        bool purged = false;
+        for (auto rev : _revs) {
             if (!rev->isMarkedForPurge()) {
+                purged = true;
                 while (rev->parent && rev->parent->isMarkedForPurge())
                     rev->parent = rev->parent->parent;
             }
         }
-        compact();
-        return numPruned;
+        if (purged)
+            compact();
     }
 
     int RevTree::purge(revid leafID) {
@@ -463,14 +455,6 @@ namespace litecore {
             }
         }
         _revs.resize(dst - _revs.begin());
-
-        // Remove purged revs from _remoteRevs:
-        auto tempRemoteRevs = _remoteRevs;
-        for (auto &e : tempRemoteRevs) {
-            if (e.second->isMarkedForPurge())
-                _remoteRevs.erase(e.first);
-        }
-
         _changed = true;
     }
 
@@ -534,26 +518,6 @@ namespace litecore {
 #pragma mark - ETC.
 
 
-    const Rev* RevTree::latestRevisionOnRemote(RemoteID remote) {
-        Assert(remote != kNoRemoteID);
-        auto i = _remoteRevs.find(remote);
-        if (i == _remoteRevs.end())
-            return nullptr;
-        return i->second;
-    }
-
-
-    void RevTree::setLatestRevisionOnRemote(RemoteID remote, const Rev *rev) {
-        Assert(remote != kNoRemoteID);
-        if (rev) {
-            _remoteRevs[remote] = rev;
-        } else {
-            _remoteRevs.erase(remote);
-        }
-        _changed = true;
-    }
-
-
 #if DEBUG
     void RevTree::dump() {
         dump(std::cerr);
@@ -564,12 +528,6 @@ namespace litecore {
         for (Rev *rev : _revs) {
             out << "\t" << (++i) << ": ";
             rev->dump(out);
-
-            for (auto &e : _remoteRevs) {
-                if (e.second == rev)
-                    out << " <--remote#" << e.first;
-            }
-
             out << "\n";
         }
     }

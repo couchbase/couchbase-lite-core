@@ -48,6 +48,12 @@ namespace litecore {
         bool isClosed() const       {return (flags & kClosed) != 0;}
         bool isActive() const       {return isLeaf() && !isDeleted();}
 
+        bool isMarkedForPurge() const   {return (flags & kPurge) != 0;}
+        void markForPurge(bool mark) const {
+            auto rev = const_cast<Rev*>(this);
+            mark ? rev->addFlag(kPurge) : rev->clearFlag(kPurge);
+        }
+
         unsigned index() const;
         const Rev* next() const;       // next by order in array, i.e. descending priority
         std::vector<const Rev*> history() const;
@@ -76,7 +82,6 @@ namespace litecore {
         void clearFlag(Flags f)         {flags = (Flags)(flags & ~f);}
         void removeBody()               {clearFlag((Flags)(kKeepBody | kHasAttachments));
                                          _body = nullslice;}
-        bool isMarkedForPurge() const   {return (flags & kPurge) != 0;}
 #if DEBUG
         void dump(std::ostream&);
 #endif
@@ -137,8 +142,6 @@ namespace litecore {
         // Sets/clears the kIsConflict flag for a Rev and its ancestors.
         void markBranchAsConflict(const Rev*, bool);
 
-        unsigned prune(unsigned maxDepth);
-
         void keepBody(const Rev* NONNULL);
         void removeBody(const Rev* NONNULL);
 
@@ -148,21 +151,16 @@ namespace litecore {
         int purge(revid);
         int purgeAll();
 
+        unsigned markForPrune(unsigned maxDepth);
+        void unmarkAll();
+        void purgeMarkedRevs();
+
         void sort();
 
         void saved(sequence_t newSequence);
 
-        //////// Remotes:
-
-        using RemoteID = unsigned;
-        static constexpr RemoteID kNoRemoteID = 0;
-        static constexpr RemoteID kDefaultRemoteID = 1;     // 1st (& usually only) remote server
-
-        const Rev* latestRevisionOnRemote(RemoteID);
-        void setLatestRevisionOnRemote(RemoteID, const Rev*);
-
 #if DEBUG
-        void dump();
+        virtual void dump();
 #endif
 
     protected:
@@ -184,13 +182,10 @@ namespace litecore {
         void compact();
         void checkForResolvedConflict();
 
-        using RemoteRevMap = std::unordered_map<RemoteID, const Rev*>;
-
         bool                     _sorted {true};        // Is _revs currently sorted?
         std::vector<Rev*>        _revs;                 // Revs in sorted order
         std::deque<Rev>          _revsStorage;          // Actual storage of the Rev objects
         std::vector<alloc_slice> _insertedData;         // Storage for new revids
-        RemoteRevMap             _remoteRevs;           // Tracks current rev for a remote DB URL
     };
 
 }

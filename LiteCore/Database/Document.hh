@@ -82,8 +82,6 @@ namespace c4Internal {
                     revFlags |= kRevDeleted;
                 if (docFlags & kDocHasAttachments)
                     revFlags |= kRevHasAttachments;
-                if (docFlags & (C4DocumentFlags)DocumentFlags::kSynced)
-                    revFlags |= kRevKeepBody;
             }
             return revFlags;
         }
@@ -103,8 +101,6 @@ namespace c4Internal {
         virtual bool selectCommonAncestorRevision(slice revID1, slice revID2) {
             error::_throw(error::UnsupportedOperation);
         }
-        virtual alloc_slice remoteAncestorRevID(C4RemoteID) =0;
-        virtual void setRemoteAncestorRevID(C4RemoteID) =0;
 
         virtual bool hasRevisionBody() noexcept =0;
         virtual bool loadSelectedRevBody() =0; // can throw; returns false if compacted away
@@ -128,7 +124,7 @@ namespace c4Internal {
             return root->toJSON(database()->documentKeys(), canonical);
         }
 
-        virtual int32_t putExistingRevision(const C4DocPutRequest&) =0;
+        virtual int32_t putExistingRevision(const C4DocPutRequest&, bool isNewDoc) =0;
         virtual bool putNewRevision(const C4DocPutRequest&) =0;
 
         virtual void resolveConflict(C4String winningRevID,

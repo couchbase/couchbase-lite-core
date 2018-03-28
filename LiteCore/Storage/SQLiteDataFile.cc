@@ -260,6 +260,10 @@ namespace litecore {
         DataFile::close(); // closes all the KeyStores
         _getLastSeqStmt.reset();
         _setLastSeqStmt.reset();
+        _getRemoteStmt.reset();
+        _latestRevOnRemoteStmt.reset();
+        _latestRevsOnRemotesStmt.reset();
+        _setLatestRevOnRemoteStmt.reset();
         if (_sqlDb) {
             optimizeAndVacuum();
             // Close the SQLite database:
@@ -269,10 +273,12 @@ namespace litecore {
                 // collected objects owning those enumerators, which won't release them until their
                 // finalizers run. (Couchbase Lite Java has this issue.)
                 // We'll log info about the statements so this situation can be detected from logs.
-                _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
-                    LogVerbose(DBLog, "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
-                               _sqlDb.get(), (busy ? "busy" : "open"), sql);
-                });
+                if (DBLog.willLog(LogLevel::Info)) {
+                    _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
+                        LogTo(DBLog, "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
+                                   _sqlDb.get(), (busy ? "busy" : "open"), sql);
+                    });
+                }
                 // Also, tell SQLite not to checkpoint the WAL when it eventually closes the db
                 // (after the last statement is freed), as that can have disastrous effects if the
                 // db has since been deleted and re-created: see issue #381 for gory details.

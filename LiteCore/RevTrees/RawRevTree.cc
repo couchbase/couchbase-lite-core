@@ -27,19 +27,7 @@ using namespace fleece;
 
 namespace litecore {
 
-#pragma pack(1)
-    struct RemoteEntry {
-        uint16_t remoteDBID_BE;
-        uint16_t revIndex_BE;
-    };
-#pragma pack()
-
-
-    std::deque<Rev> RawRevision::decodeTree(slice raw_tree,
-                                            RevTree::RemoteRevMap &remoteMap,
-                                            RevTree* owner,
-                                            sequence_t curSeq)
-    {
+    std::deque<Rev> RawRevision::decodeTree(slice raw_tree, RevTree* owner, sequence_t curSeq) {
         const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;
         unsigned count = rawRev->count();
         if (count > UINT16_MAX)
@@ -53,32 +41,18 @@ namespace litecore {
             rev->owner = owner;
             rev++;
         }
-
-        auto entry = (const RemoteEntry*)offsetby(rawRev, sizeof(uint32_t));
-        while (entry < raw_tree.end()) {
-            RevTree::RemoteID remoteID = _dec16(entry->remoteDBID_BE);
-            auto revIndex = _dec16(entry->revIndex_BE);
-            if (remoteID == 0 || revIndex >= count)
-                error::_throw(error::CorruptRevisionData);
-            remoteMap[remoteID] = &revs[revIndex];
-            ++entry;
-        }
-
-        if ((uint8_t*)entry != (uint8_t*)raw_tree.end()) {
+        if ((uint8_t*)rawRev != (uint8_t*)raw_tree.end() - sizeof(uint32_t)) {
             error::_throw(error::CorruptRevisionData);
         }
         return revs;
     }
 
 
-    alloc_slice RawRevision::encodeTree(const vector<Rev*> &revs,
-                                        const RevTree::RemoteRevMap &remoteMap)
-    {
+    alloc_slice RawRevision::encodeTree(const vector<Rev*> &revs) {
         // Allocate output buffer:
         size_t totalSize = sizeof(uint32_t);  // start with space for trailing 0 size
         for (Rev *rev : revs)
             totalSize += sizeToWrite(*rev);
-        totalSize += remoteMap.size() * sizeof(RemoteEntry);
 
         alloc_slice result(totalSize);
 
@@ -88,15 +62,7 @@ namespace litecore {
             dst = dst->copyFrom(*src);
         }
         dst->size_BE = _enc32(0);   // write trailing 0 size marker
-
-        auto entry = (RemoteEntry*)offsetby(dst, sizeof(uint32_t));
-        for (auto remote : remoteMap) {
-            entry->remoteDBID_BE = (uint16_t)_enc16(remote.first);
-            entry->revIndex_BE = (uint16_t)_enc16(remote.second->index());
-            ++entry;
-        }
-
-        Assert(entry == result.end());
+        Assert((&dst->size_BE + 1) == result.end());
         return result;
     }
 

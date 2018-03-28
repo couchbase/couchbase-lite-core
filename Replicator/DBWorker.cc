@@ -693,9 +693,9 @@ namespace litecore { namespace repl {
         stringstream historyStream;
         int nWritten = 0;
         unsigned lastGen = c4rev_getGeneration(doc->selectedRev.revID);
-        for (int n = 0; n < request.maxHistory; ++n) {
-            if (!c4doc_selectParentRevision(doc))
-                break;
+        unsigned depth = 0;
+        string trimmedResult;
+        while (c4doc_selectParentRevision(doc)) {
             slice revID = doc->selectedRev.revID;
             unsigned gen = c4rev_getGeneration(revID);
             while (gen < --lastGen) {
@@ -708,10 +708,14 @@ namespace litecore { namespace repl {
             if (nWritten++ > 0)
                 historyStream << ',';
             historyStream << fleeceapi::asstring(revID);
-            if (request.hasRemoteAncestor(revID))
-                break;
+            if (request.hasRemoteAncestor(revID)) {
+                // Common ancestor found; return history all the way back to it
+                return historyStream.str();
+            } else if (++depth == request.maxHistory)
+                trimmedResult = historyStream.str();
         }
-        return historyStream.str();
+        // No common ancestor found; return only `maxHistory` revisions
+        return trimmedResult.empty() ? historyStream.str() : trimmedResult;
     }
 
 
@@ -918,7 +922,7 @@ namespace litecore { namespace repl {
             for (Rev *rev : *revs) {
                 logDebug("Marking rev '%.*s' %.*s (#%llu) as synced to remote db %u",
                          SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, _remoteDBID);
-                if (!c4db_markSynced(_db, rev->docID, rev->sequence, _remoteDBID, &error))
+                if (!c4db_markSynced(_db, rev->docID, rev->revID, _remoteDBID, &error))
                     warn("Unable to mark '%.*s' %.*s (#%llu) as synced; error %d/%d",
                          SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, error.domain, error.code);
             }

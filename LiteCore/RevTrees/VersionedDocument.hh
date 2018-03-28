@@ -53,13 +53,15 @@ namespace litecore {
 
         bool changed() const        {return _changed;}
 
+        void prune(unsigned maxDepth);
+
         enum SaveResult {kConflict, kNoNewSequence, kNewSequence};
         SaveResult save(Transaction& transaction);
 
         bool updateMeta();
 
 #if DEBUG
-        void dump()          {RevTree::dump();}
+        void dump() override          {RevTree::dump();}
 #endif
     protected:
 #if DEBUG

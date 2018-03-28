@@ -18,13 +18,18 @@
 
 #include "VersionedDocument.hh"
 #include "Record.hh"
+#include "DataFile.hh"
 #include "KeyStore.hh"
 #include "Error.hh"
+#include "StringUtil.hh"
 #include "varint.hh"
 #include <ostream>
 
 namespace litecore {
     using namespace fleece;
+
+    static constexpr unsigned kMinRevsToPrune = 10;
+    
 
     VersionedDocument::VersionedDocument(KeyStore& db, slice docID)
     :_db(db), _rec(docID)
@@ -53,16 +58,6 @@ namespace litecore {
         _unknown = false;
         if (_rec.body().buf) {
             RevTree::decode(_rec.body(), _rec.sequence());
-            // The kSynced flag is set when the document's current revision is pushed to a server.
-            // This is done instead of updating the doc body, for reasons of speed. So when loading
-            // the document, detect that flag and belatedly update the current revision's flags.
-            // Since the revision is now likely stored on the server, it may be the base of a merge
-            // in the future, so preserve its body:
-            if (_rec.flags() & DocumentFlags::kSynced) {
-                setLatestRevisionOnRemote(kDefaultRemoteID, currentRevision());
-                keepBody(currentRevision());
-                _changed = false;
-            }
         } else if (_rec.bodySize() > 0) {
             _unknown = true;        // i.e. rec was read as meta-only
         }
@@ -94,6 +89,30 @@ namespace litecore {
         }
 
         return _rec.flags() != oldFlags || _rec.version() != oldRevID;
+    }
+
+    void VersionedDocument::prune(unsigned maxDepth) {
+        auto numMarked = markForPrune(maxDepth);
+        if (numMarked >= kMinRevsToPrune) {
+            _db.dataFile().withLatestRevisionsOnRemotes(docID(),
+                                        [this](DataFile::RemoteID remote, slice revSlice)
+            {
+                auto rev = get(revid(revSlice));
+                if (rev) {
+                    if (rev->isMarkedForPurge()) {
+                        rev->markForPurge(false);
+                        Log("$$$$$ Saved rev '%.*s' %.*s from purge due to remote #%u",
+                            SPLAT(docID()), SPLAT(revid(revSlice).expanded()), remote);
+                    }
+                } else {
+                    Warn("VersionedDocument::prune: Rev '%.*s' %.*s is current on remote #%u but isn't in rev tree",
+                         SPLAT(docID()), SPLAT(revid(revSlice).expanded()), remote);
+                }
+            });
+            purgeMarkedRevs();
+        } else if (numMarked > 0) {
+            unmarkAll();
+        }
     }
 
     VersionedDocument::SaveResult VersionedDocument::save(Transaction& transaction) {

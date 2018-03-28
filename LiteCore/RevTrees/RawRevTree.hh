@@ -32,17 +32,13 @@ namespace litecore {
     // Layout of a single revision in encoded form. Rev tree is stored as a sequence of these
     // followed by a 32-bit zero.
     // Revs are stored in decending priority, with the current leaf rev(s) coming first.
-    // Following the revs is a series of (remote DB ID, revision index) pairs that mark which
-    // revision is the current one for every remote database.
     class RawRevision {
     public:
         static std::deque<Rev> decodeTree(slice raw_tree,
-                                          RevTree::RemoteRevMap &remoteMap,
-                                          RevTree *owner NONNULL,
-                                          sequence_t curSeq);
+                                                RevTree *owner NONNULL,
+                                                sequence_t curSeq);
 
-        static alloc_slice encodeTree(const std::vector<Rev*> &revs,
-                                      const RevTree::RemoteRevMap &remoteMap);
+        static alloc_slice encodeTree(const std::vector<Rev*> &revs);
 
         static inline slice getCurrentRevBody(slice raw_tree) noexcept {
             const RawRevision *rawRev = (const RawRevision*)raw_tree.buf;

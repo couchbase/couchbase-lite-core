@@ -127,6 +127,9 @@ namespace litecore {
         virtual alloc_slice latestRevisionOnRemote(RemoteID, slice docID) =0;
         virtual void setLatestRevisionOnRemote(RemoteID, slice docID, slice revID) =0;
 
+        using RemoteRevisionCallback = function_ref<void(RemoteID,slice revID)>;
+        virtual void withLatestRevisionsOnRemotes(slice docID, RemoteRevisionCallback) =0;
+
         //////// SHARED OBJECTS:
 
         Retained<RefCounted> sharedObject(const std::string &key);

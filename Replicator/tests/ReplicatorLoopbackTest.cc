@@ -706,8 +706,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
     CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
+#if 0 // we're not requiring 3-way merges yet
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+#endif
 
     // Now pull to db from db2, creating a conflict:
     C4Log("-------- Pull db <- db2 --------");
@@ -722,8 +724,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
     CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
+#if 0 // We're not requiring 3-way merges yet
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
+#endif
     REQUIRE(c4doc_selectCurrentRevision(doc));
     REQUIRE(c4doc_selectNextRevision(doc));
     CHECK(doc->selectedRev.revID == C4STR("2-2b2b2b2b"));
@@ -998,6 +1002,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
     CHECK((doc->flags & kDocConflicted) == 0);  // locally in db there is no conflict
 
     {
+        // Delete rev 3-33333333, leaving 2-ffffffff as the current rev:
         TransactionHelper t(db);
         createConflictingRev(db, docID, C4STR("3-33333333"), C4STR("4-dddddddd"), kFleeceBody, kRevDeleted);
     }

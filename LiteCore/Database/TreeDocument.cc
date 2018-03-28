@@ -206,15 +206,6 @@ namespace c4Internal {
             return true;
         }
 
-        alloc_slice remoteAncestorRevID(C4RemoteID remote) override {
-            auto rev = _versionedDoc.latestRevisionOnRemote(remote);
-            return rev ? rev->revID.expanded() : alloc_slice();
-        }
-
-        void setRemoteAncestorRevID(C4RemoteID remote) override {
-            _versionedDoc.setLatestRevisionOnRemote(remote, _selectedRev);
-        }
-
         void updateFlags() {
             flags = (C4DocumentFlags)_versionedDoc.flags() | kDocExists;
             initRevID();
@@ -306,7 +297,7 @@ namespace c4Internal {
 #pragma mark - INSERTING REVISIONS
 
 
-        int32_t putExistingRevision(const C4DocPutRequest &rq) override {
+        int32_t putExistingRevision(const C4DocPutRequest &rq, bool isNewDoc) override {
             Assert(rq.historyCount >= 1);
             int32_t commonAncestor = -1;
             loadRevisions();
@@ -324,8 +315,9 @@ namespace c4Internal {
             auto newRev = _versionedDoc[revidBuffer(rq.history[0])];
             DebugAssert(newRev);
 
-            if (rq.remoteDBID) {
-                auto oldRev = _versionedDoc.latestRevisionOnRemote(rq.remoteDBID);
+            if (rq.remoteDBID && !isNewDoc) {
+                alloc_slice oldRevID = database()->dataFile()->latestRevisionOnRemote(rq.remoteDBID, docID);
+                const Rev *oldRev = oldRevID ? _versionedDoc.get(revid(oldRevID)) : nullptr;
                 if (oldRev && !oldRev->isAncestorOf(newRev)) {
                     // Server has "switched branches": its current revision is now on a different
                     // branch than it used to be, either due to revs added to this branch, or
@@ -347,11 +339,13 @@ namespace c4Internal {
                           SPLAT(docID), SPLAT(oldRev->revID.expanded()),
                           SPLAT(newRev->revID.expanded()), effect);
                 }
-                _versionedDoc.setLatestRevisionOnRemote(rq.remoteDBID, newRev);
             }
 
             if (!saveNewRev(rq, newRev, (commonAncestor > 0 || rq.remoteDBID)))
                 return -1;
+            
+            if (rq.remoteDBID)
+                database()->dataFile()->setLatestRevisionOnRemote(rq.remoteDBID, docID, newRev->revID);
             return commonAncestor;
         }
 

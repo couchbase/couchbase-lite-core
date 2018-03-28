@@ -61,6 +61,7 @@ namespace litecore {
 
         virtual alloc_slice latestRevisionOnRemote(RemoteID, slice docID) override;
         virtual void setLatestRevisionOnRemote(RemoteID, slice docID, slice revID) override;
+        virtual void withLatestRevisionsOnRemotes(slice docID, RemoteRevisionCallback) override;
 
         class Factory : public DataFile::Factory {
         public:
@@ -107,7 +108,8 @@ namespace litecore {
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt,
-                            _getRemoteStmt, _latestRevOnRemoteStmt, _setLatestRevOnRemoteStmt;
+                            _getRemoteStmt, _latestRevOnRemoteStmt, _latestRevsOnRemotesStmt,
+                            _setLatestRevOnRemoteStmt;
         CollationContextVector _collationContexts;
     };
 
