@@ -117,18 +117,19 @@ public:
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
                                            const AllocedDict &headers) override {
+        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         if (repl == _replClient) {
-            CHECK(!_gotResponse);
+            Assert(!_gotResponse);
             _gotResponse = true;
-            CHECK(status == 200);
-            CHECK(headers["Set-Cookie"].asString() == "flavor=chocolate-chip"_sl);
+            Assert(status == 200);
+            Assert(headers["Set-Cookie"].asString() == "flavor=chocolate-chip"_sl);
         }
     }
 
     virtual void replicatorStatusChanged(Replicator* repl,
                                          const Replicator::Status &status) override
     {
-        // Note: Can't use Catch on a background thread
+        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         if (repl == _replClient) {
             Assert(_gotResponse);
             ++_statusChangedCalls;
@@ -169,6 +170,7 @@ public:
                                          C4Error error,
                                          bool transient) override
     {
+        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         char message[256];
         c4error_getMessageC(error, message, sizeof(message));
         Log(">> Replicator %serror %s '%.*s': %s",
@@ -182,6 +184,7 @@ public:
     }
 
     virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {
+        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         if (repl == _replClient) {
             Log(">> Replicator closed with code=%d/%d, message=%.*s",
                 status.reason, status.code, SPLAT(status.message));
@@ -202,6 +205,7 @@ public:
 
     void addDocsInParallel(duration interval, int total) {
         runInParallel([=](C4Database *bgdb) {
+            // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
             int docNo = 1;
             for (int i = 1; docNo <= total; i++) {
                 this_thread::sleep_for(interval);
@@ -225,6 +229,7 @@ public:
     void addRevsInParallel(duration interval, alloc_slice docID, int firstRev, int totalRevs) {
         runInParallel([=](C4Database *bgdb) {
             for (int i = 0; i < totalRevs; i++) {
+                // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
                 int revNo = firstRev + i;
                 this_thread::sleep_for(interval);
                 Log("-------- Creating rev %.*s # %d --------", SPLAT(docID), revNo);
