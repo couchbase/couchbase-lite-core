@@ -56,6 +56,12 @@ namespace litecore {
 
         fleece::alloc_slice rawQuery(const std::string &query) override;
 
+        virtual RemoteID getRemote(slice address, bool canCreate =true) override;
+        virtual alloc_slice getRemoteAddress(RemoteID) override;
+
+        virtual alloc_slice latestRevisionOnRemote(RemoteID, slice docID) override;
+        virtual void setLatestRevisionOnRemote(RemoteID, slice docID, slice revID) override;
+
         class Factory : public DataFile::Factory {
         public:
             Factory();
@@ -95,11 +101,13 @@ namespace litecore {
     private:
         friend class SQLiteKeyStore;
 
+        void createRemotesTables();
         bool decrypt();
         int _exec(const std::string &sql);
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
-        std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;
+        std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt,
+                            _getRemoteStmt, _latestRevOnRemoteStmt, _setLatestRevOnRemoteStmt;
         CollationContextVector _collationContexts;
     };
 

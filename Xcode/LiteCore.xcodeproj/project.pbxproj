@@ -74,6 +74,8 @@
 		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
 		2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F619206ABEB000C982FF /* ReplicatorTypes.cc */; };
 		2734F61B206ABEB000C982FF /* ReplicatorTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F619206ABEB000C982FF /* ReplicatorTypes.cc */; };
+		2734F62D206AE67B00C982FF /* SQLiteDataFile+Remote.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F62C206AE67B00C982FF /* SQLiteDataFile+Remote.cc */; };
+		2734F62E206AE67B00C982FF /* SQLiteDataFile+Remote.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F62C206AE67B00C982FF /* SQLiteDataFile+Remote.cc */; };
 		27393A871C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		27393A881C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		273E555F1F79B364000182F1 /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
@@ -1008,6 +1010,7 @@
 		273407221DEE116600EA5532 /* PlatformIO.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PlatformIO.hh; sourceTree = "<group>"; };
 		2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-framework_Release.xcconfig"; sourceTree = "<group>"; };
 		2734F619206ABEB000C982FF /* ReplicatorTypes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorTypes.cc; sourceTree = "<group>"; };
+		2734F62C206AE67B00C982FF /* SQLiteDataFile+Remote.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteDataFile+Remote.cc"; sourceTree = "<group>"; };
 		273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorLoopbackTest.hh; sourceTree = "<group>"; };
 		273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorAPITest.hh; sourceTree = "<group>"; };
 		27393A861C8A353A00829C9B /* Error.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Error.cc; sourceTree = "<group>"; };
@@ -2200,6 +2203,7 @@
 				27E609A41951E53F00202B72 /* RecordEnumerator.hh */,
 				27D74A6D1D4D3DF500D806E0 /* SQLiteDataFile.cc */,
 				27D74A6E1D4D3DF500D806E0 /* SQLiteDataFile.hh */,
+				2734F62C206AE67B00C982FF /* SQLiteDataFile+Remote.cc */,
 				274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */,
 				274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */,
 				276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */,
@@ -3556,6 +3560,7 @@
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
 				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
 				277C14711EA8102B0075348F /* Document.cc in Sources */,
+				2734F62D206AE67B00C982FF /* SQLiteDataFile+Remote.cc in Sources */,
 				276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3655,6 +3660,7 @@
 				274D5BA51DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
 				27D74A851D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				277C14721EA8102B0075348F /* Document.cc in Sources */,
+				2734F62E206AE67B00C982FF /* SQLiteDataFile+Remote.cc in Sources */,
 				276D15421DFF54B800543B1B /* SQLiteEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

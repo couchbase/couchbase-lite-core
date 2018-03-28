@@ -205,10 +205,16 @@ namespace litecore {
                 (void)defaultKeyStore();
                 _exec("PRAGMA user_version=201; "
                       "END;");
+                userVersion = 201;
             } else if (userVersion < kMinUserVersion) {
                 error::_throw(error::DatabaseTooOld);
             } else if (userVersion > kMaxUserVersion) {
                 error::_throw(error::DatabaseTooNew);
+            }
+
+            if (userVersion < 202) {
+                createRemotesTables();
+                userVersion = 202;
             }
         });
 

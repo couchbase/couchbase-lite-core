@@ -116,6 +116,16 @@ namespace litecore {
         virtual void deleteKeyStore(const std::string &name) =0;
 #endif
 
+        //////// REMOTES:
+
+        using RemoteID = unsigned;
+        static constexpr RemoteID kNoRemoteID = 0;
+
+        virtual RemoteID getRemote(slice address, bool canCreate =true) =0;
+        virtual alloc_slice getRemoteAddress(RemoteID) =0;
+
+        virtual alloc_slice latestRevisionOnRemote(RemoteID, slice docID) =0;
+        virtual void setLatestRevisionOnRemote(RemoteID, slice docID, slice revID) =0;
 
         //////// SHARED OBJECTS:
 
