@@ -167,7 +167,7 @@ extern "C" {
                                             C4String rev2ID) C4API;
 
     /** Looks up or creates a numeric ID identifying a remote database, for use with
-        c4doc_getRemoteAncestor() and c4doc_setRemoteAncestor().
+        c4db_getRemoteAncestor() and c4db_setRemoteAncestor().
         @param db  The database.
         @param remoteAddress  The replication URL of the remote db, or its other unique identifier.
         @param canCreate  If true, a new identifier will be created if one doesn't exist.
@@ -182,17 +182,20 @@ extern "C" {
         @param db  The database.
         @param remoteID  The ID assigned to the remote database.
         @return  The URL/identifier, or a null slice if not found. */
-    C4SliceResult c4db_getRemoteDBAddress(C4Database *db,
+    C4SliceResult c4db_getRemoteDBAddress(C4Database *db C4NONNULL,
                                           C4RemoteID remoteID) C4API;
 
     /** Returns the revision ID that has been marked as current for the given remote database. */
-    C4SliceResult c4doc_getRemoteAncestor(C4Document *doc C4NONNULL,
-                                          C4RemoteID remoteDatabase) C4API;
+    C4SliceResult c4db_getRemoteAncestor(C4Database *db C4NONNULL,
+                                         C4String docID,
+                                         C4RemoteID remoteDatabase) C4API;
 
     /** Marks the selected revision as current for the given remote database. */
-    bool c4doc_setRemoteAncestor(C4Document *doc C4NONNULL,
-                                 C4RemoteID remoteDatabase,
-                                 C4Error *error) C4API;
+    bool c4db_setRemoteAncestor(C4Database *db C4NONNULL,
+                                C4String docID,
+                                C4String revID,
+                                C4RemoteID remoteDatabase,
+                                C4Error *error) C4API;
 
     /** Given a revision ID, returns its generation number (the decimal number before
         the hyphen), or zero if it's unparseable. */

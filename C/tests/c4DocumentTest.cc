@@ -690,7 +690,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
     REQUIRE(curDoc != nullptr);
 
     // Call MarkRevSynced which will set the flag
-    bool markSynced = c4db_markSynced(db, kDocID, curDoc->sequence, testRemoteId, &error);
+    bool markSynced = c4db_setRemoteAncestor(db, kDocID, curDoc->sequence, testRemoteId, &error);
     REQUIRE(markSynced);
 
     // Get the latest version of the doc
@@ -698,7 +698,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
     REQUIRE(curDocAfterMarkSync != nullptr);
 
     // Get the remote ancesor rev, and make sure it matches up with the latest rev of the doc
-    FLSliceResult remoteRevID = c4doc_getRemoteAncestor(curDocAfterMarkSync, testRemoteId);
+    FLSliceResult remoteRevID = c4db_getRemoteAncestor(curDocAfterMarkSync, testRemoteId);
     REQUIRE(remoteRevID == curDocAfterMarkSync->revID);
 
     // Update doc -- before the bugfix, this was clobbering the remote ancestor rev
@@ -710,7 +710,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
 
     // Check the remote ancestor rev of the updated doc and make sure it has not been clobbered.
     // Before the bug fix for LiteCore #478, this was returning an empty value.
-    FLSliceResult remoteRevIDAfterupdate = c4doc_getRemoteAncestor(updatedDocRefreshed, testRemoteId);
+    FLSliceResult remoteRevIDAfterupdate = c4db_getRemoteAncestor(updatedDocRefreshed, testRemoteId);
     REQUIRE(remoteRevIDAfterupdate == curDocAfterMarkSync->revID);
 
     // Cleanup

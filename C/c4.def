@@ -63,6 +63,8 @@ c4db_unlock
 c4db_getRemoteDBAddress
 c4db_getRemoteDBID
 c4db_getRemoteDBAddress
+c4db_getRemoteAncestor
+c4db_setRemoteAncestor
 
 c4raw_free
 c4raw_get
@@ -101,8 +103,6 @@ c4doc_dictContainsBlobs
 c4doc_blobIsCompressible
 c4doc_encodeStrippingOldMetaProperties
 c4doc_detachRevisionBody
-c4doc_getRemoteAncestor
-c4doc_setRemoteAncestor
 
 c4rev_getGeneration
 c4rev_flagsFromDocFlags
@@ -203,7 +203,6 @@ c4doc_getForPut
 c4_getObjectCount
 c4_dumpInstances
 c4_shutdown
-c4db_markSynced
 gC4InstanceCount
 gC4ExpectExceptions
 

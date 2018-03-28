@@ -197,25 +197,19 @@ C4SliceResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API
 }
 
 
-C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteID) C4API {
+C4SliceResult c4db_getRemoteAncestor(C4Database *db, C4String docID, C4RemoteID remoteID) C4API {
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        auto db = internal(doc)->database();
-        alloc_slice binaryRevID = db->dataFile()->latestRevisionOnRemote(remoteID, doc->docID);
+        alloc_slice binaryRevID = db->dataFile()->latestRevisionOnRemote(remoteID, docID);
         return sliceResult( revid(binaryRevID).expanded() );
     });
 }
 
 
-bool c4doc_setRemoteAncestor(C4Document *doc, C4RemoteID remoteID, C4Error *outError) C4API {
-    C4Database *db = external(internal(doc)->database());
-    return c4db_markSynced(db, doc->docID, doc->selectedRev.revID, remoteID, outError);
-}
-
-
-bool c4db_markSynced(C4Database *database,
-                     C4String docID, C4String revID,
-                     C4RemoteID remoteID,
-                     C4Error *outError) noexcept
+bool c4db_setRemoteAncestor(C4Database *database NONNULL,
+                            C4String docID,
+                            C4String revID,
+                            C4RemoteID remoteID,
+                            C4Error *outError) C4API
 {
     if (!database->mustBeInTransaction(outError))
         return false;

@@ -73,12 +73,6 @@ C4Document* c4doc_getForPut(C4Database *database C4NONNULL,
 /** Converts C4DocumentFlags to the equivalent C4RevisionFlags. */
 C4RevisionFlags c4rev_flagsFromDocFlags(C4DocumentFlags docFlags);
 
-/** Sets the document flag kSynced. Used by the replicator to track synced documents. */
-bool c4db_markSynced(C4Database *database,
-                     C4String docID,
-                     C4String revID,
-                     C4RemoteID remoteID,
-                     C4Error *outError) C4API;
 
 #ifdef __cplusplus
 }

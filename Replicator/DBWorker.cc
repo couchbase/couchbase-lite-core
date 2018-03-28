@@ -318,16 +318,7 @@ namespace litecore { namespace repl {
                 latestChangeSequence = info.sequence;
                 if (!passesDocIDFilter(p.docIDs, info.docID))
                     continue;       // reject rev: not in filter
-
-                c4::ref<C4Document> doc;
-                if (_getForeignAncestors) {
-                    doc = c4enum_getDocument(e, &error);
-                    if (!doc) {
-                        gotDocumentError(info.docID, error, true, false);
-                        continue;   // reject rev: error getting doc
-                    }
-                }
-                if (addChangeToList(info, doc, changes))
+                if (addChangeToList(info, changes))
                     --p.limit;
             }
         }
@@ -380,19 +371,7 @@ namespace litecore { namespace repl {
                 latestChangeSequence = info.sequence;
                 if (!passesDocIDFilter(_pushDocIDs, info.docID))
                     continue;
-
-                c4::ref<C4Document> doc;
-                if (_getForeignAncestors) {
-                    C4Error error;
-                    doc = c4doc_get(_db, info.docID, true, &error);
-                    if (!doc) {
-                        gotDocumentError(info.docID, error, true, false);
-                        continue;   // reject rev: error getting doc
-                    }
-                    if (slice(doc->revID) != slice(info.revID))
-                        continue;   // ignore rev: there's a newer one already
-                }
-                addChangeToList(info, doc, changes);
+                addChangeToList(info, changes);
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
@@ -408,15 +387,15 @@ namespace litecore { namespace repl {
 
 
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
-    bool DBWorker::addChangeToList(const C4DocumentInfo &info, C4Document *doc,
+    bool DBWorker::addChangeToList(const C4DocumentInfo &info,
                                    shared_ptr<RevToSendList> &changes)
     {
         alloc_slice remoteRevID;
         if (_getForeignAncestors && _checkpointValid) {
             // For proposeChanges, find the nearest foreign ancestor of the current rev:
             Assert(_remoteDBID);
-            c4::sliceResult foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
-            logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
+            c4::sliceResult foreignAncestor( c4db_getRemoteAncestor(_db, info.docID, _remoteDBID) );
+            logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(info.docID), SPLAT(foreignAncestor));
             if (_skipForeignChanges && foreignAncestor == slice(info.revID))
                 return false;   // skip this rev: it's already on the peer
             remoteRevID = alloc_slice(foreignAncestor);
@@ -521,9 +500,12 @@ namespace litecore { namespace repl {
         if (doc && c4doc_selectRevision(doc, revID, false, &err)) {
             // I already have this revision. Make sure it's marked as current for this remote:
             if (_remoteDBID) {
-                c4::sliceResult remoteRevID(c4doc_getRemoteAncestor(doc, _remoteDBID));
-                if (remoteRevID != revID)
-                    updateRemoteRev(doc);
+                c4::sliceResult remoteRevID(c4db_getRemoteAncestor(_db, docID, _remoteDBID));
+                if (remoteRevID != revID) {
+                    log("Updating remote #%u's rev of '%.*s' to %.*s",
+                        _remoteDBID, SPLAT(docID), SPLAT(revID));
+                    markRevSynced(new RevToInsert(docID, revID, {}, false, false));
+                }
             }
             return true;
         }
@@ -541,23 +523,6 @@ namespace litecore { namespace repl {
             gotError(err);
         }
         return false;
-    }
-
-
-    // Updates the doc to have the currently-selected rev marked as the remote
-    void DBWorker::updateRemoteRev(C4Document *doc) {
-        slice revID = doc->selectedRev.revID;
-        log("Updating remote #%u's rev of '%.*s' to %.*s",
-                   _remoteDBID, SPLAT(doc->docID), SPLAT(revID));
-        C4Error error;
-        c4::Transaction t(_db);
-        bool ok = t.begin(&error)
-               && c4doc_setRemoteAncestor(doc, _remoteDBID, &error)
-               && c4doc_save(doc, 0, &error)
-               && t.commit(&error);
-        if (!ok)
-            warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
-                 _remoteDBID, SPLAT(doc->docID), SPLAT(revID), error.domain, error.code);
     }
 
 
@@ -900,10 +865,10 @@ namespace litecore { namespace repl {
 
 
     // Mark this revision as synced (i.e. the server's current revision) soon.
-    // NOTE: While this is queued, calls to c4doc_getRemoteAncestor() for this document won't
+    // NOTE: While this is queued, calls to c4db_getRemoteAncestor() for this document won't
     // return the correct answer, because the change hasn't been made in the database yet.
     // For that reason, this class ensures that _markRevsSyncedNow() is called before any call
-    // to c4doc_getRemoteAncestor().
+    // to c4db_getRemoteAncestor().
     void DBWorker::markRevSynced(Rev *rev) {
         scheduleRevision(rev, _revsToMarkSynced);
     }
@@ -922,7 +887,7 @@ namespace litecore { namespace repl {
             for (Rev *rev : *revs) {
                 logDebug("Marking rev '%.*s' %.*s (#%llu) as synced to remote db %u",
                          SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, _remoteDBID);
-                if (!c4db_markSynced(_db, rev->docID, rev->revID, _remoteDBID, &error))
+                if (!c4db_setRemoteAncestor(_db, rev->docID, rev->revID, _remoteDBID, &error))
                     warn("Unable to mark '%.*s' %.*s (#%llu) as synced; error %d/%d",
                          SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, error.domain, error.code);
             }

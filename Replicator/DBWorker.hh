@@ -102,8 +102,7 @@ namespace litecore { namespace repl {
         void _getCheckpoint(CheckpointCallback);
         void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
         void _getChanges(GetChangesParams, Retained<Pusher> pusher);
-        bool addChangeToList(const C4DocumentInfo &info, C4Document *doc,
-                             std::shared_ptr<RevToSendList> &changes);
+        bool addChangeToList(const C4DocumentInfo &info, std::shared_ptr<RevToSendList> &changes);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
         void _sendRevision(Retained<RevToSend> request,
@@ -127,7 +126,6 @@ namespace litecore { namespace repl {
                            std::vector<alloc_slice> &ancestors);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
-        void updateRemoteRev(C4Document* NONNULL);
         ActivityLevel computeActivityLevel() const override;
 
         template <class REV>

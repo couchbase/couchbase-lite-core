@@ -58,7 +58,7 @@ void CBLiteTool::revsInfo() {
     RemoteMap remotes;
     if (_showRemotes) {
         for (C4RemoteID remoteID = 1; true; ++remoteID) {
-            c4::stringResult revID(c4doc_getRemoteAncestor(doc, remoteID));
+            c4::stringResult revID(c4db_getRemoteAncestor(doc, remoteID));
             if (!revID)
                 break;
             remotes.emplace_back(revID);
