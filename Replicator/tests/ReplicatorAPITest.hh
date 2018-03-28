@@ -165,6 +165,7 @@ public:
         params.onStatusChanged = onStateChanged;
         params.onDocumentError = onDocError;
         params.callbackContext = this;
+        params.socketFactory = _socketFactory;
 
         C4Error err;
         _repl = c4repl_new(db, _address, _remoteDBName,
@@ -240,6 +241,7 @@ public:
     C4Address _address {kDefaultAddress};
     C4String _remoteDBName {kScratchDBName};
     AllocedDict _options;
+    C4SocketFactory* _socketFactory {nullptr};
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;
 

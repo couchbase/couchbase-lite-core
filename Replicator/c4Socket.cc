@@ -134,7 +134,7 @@ namespace litecore { namespace websocket {
 
     WebSocketImpl* C4Provider::createWebSocket(const Address &address,
                                            const AllocedDict &options) {
-        return new C4SocketImpl(*this, address, options, registeredFactory());
+        return new C4SocketImpl(*this, address, options, _socketFactory);
     }
 
     C4Socket* C4Provider::createWebSocket(const C4SocketFactory &factory,

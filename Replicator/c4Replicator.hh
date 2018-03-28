@@ -48,12 +48,14 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     C4Replicator(C4Database* db,
                  const C4Address &remoteAddress,
                  C4String remoteDatabaseName,
-                 const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db, C4Provider::instance(),
+                 const C4ReplicatorParameters &params,
+                 C4Provider *provider)
+    :C4Replicator(new Replicator(db, *provider,
                                  addressFrom(remoteAddress, remoteDatabaseName), *this,
                                  mkopts(params)),
                   nullptr,
-                  params)
+                  params,
+                  provider)
     { }
 
     // Constructor for replication with local database
@@ -113,11 +115,13 @@ private:
     // base constructor
     C4Replicator(Replicator *replicator,
                  Replicator *otherReplicator,
-                 const C4ReplicatorParameters &params)
+                 const C4ReplicatorParameters &params,
+                 Provider *provider =nullptr)
     :_replicator(replicator)
     ,_otherReplicator(otherReplicator)
     ,_params(params)
     ,_status(_replicator->status())
+    ,_provider(provider)
     { }
 
     virtual ~C4Replicator() =default;
@@ -188,6 +192,7 @@ private:
     Retained<Replicator> const _replicator;
     Retained<Replicator> const _otherReplicator;
     C4ReplicatorParameters _params;
+    unique_ptr<Provider> _provider;
     AllocedDict _responseHeaders;
     C4ReplicatorStatus _status;
     C4ReplicatorActivityLevel _otherLevel {kC4Stopped};

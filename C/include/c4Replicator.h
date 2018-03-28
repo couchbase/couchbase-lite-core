@@ -112,6 +112,7 @@ extern "C" {
         C4ReplicatorStatusChangedCallback onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
         C4ReplicatorDocumentErrorCallback onDocumentError;   ///< Callback notifying of errors with individual documents
         void*                             callbackContext;   ///< Value to be passed to the callbacks.
+        const C4SocketFactory*            socketFactory;
     } C4ReplicatorParameters;
 
 

@@ -38,6 +38,10 @@ namespace litecore { namespace websocket {
     /** WebSocket provider that uses the registered C4SocketFactory. */
     class C4Provider : public ProviderImpl {
     public:
+        C4Provider(const C4SocketFactory *factory =nullptr)
+        :_socketFactory(factory ? *factory : registeredFactory())
+        { }
+
         static C4Provider &instance();
 
         static void registerFactory(const C4SocketFactory&);
@@ -56,11 +60,12 @@ namespace litecore { namespace websocket {
         virtual void receiveComplete(WebSocketImpl *s, size_t byteCount) override;
 
     private:
-        C4Provider() { }
         static void validateFactory(const C4SocketFactory&);
         static C4SocketFactory& registeredFactory();
 
         static C4SocketFactory *sRegisteredFactory;
+
+        C4SocketFactory _socketFactory;
     };
 
 

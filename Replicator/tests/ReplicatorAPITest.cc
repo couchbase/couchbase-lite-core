@@ -136,6 +136,25 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push]
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[Push][Pull]") {
+    _address.hostname = C4STR("localhost");
+    static bool sFactoryCalled;
+    sFactoryCalled = false;
+    C4SocketFactory factory = {};
+    factory.open = [](C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL, C4Slice options) {
+        sFactoryCalled = true;
+        c4socket_closed(socket, {NetworkDomain, kC4NetErrTooManyRedirects});
+    };
+    _socketFactory = &factory;
+    replicate(kC4Disabled, kC4OneShot, false);
+    REQUIRE(sFactoryCalled);
+    CHECK(_callbackStatus.error.domain == NetworkDomain);
+    CHECK(_callbackStatus.error.code == kC4NetErrTooManyRedirects);
+    CHECK(_callbackStatus.progress.unitsCompleted == 0);
+    CHECK(_callbackStatus.progress.unitsTotal == 0);
+}
+
+
 #pragma mark - REAL-REPLICATOR (SYNC GATEWAY) TESTS
 
 
