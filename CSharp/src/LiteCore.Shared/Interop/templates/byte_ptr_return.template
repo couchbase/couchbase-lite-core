@@ -1,2 +1,0 @@
-{0}var retVal = NativeRaw.{1}{2};
-{0}return Marshal.PtrToStringAnsi((IntPtr)retVal);
