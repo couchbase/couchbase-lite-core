@@ -25,6 +25,8 @@ using namespace fleece;
 using namespace litecore::REST;
 
 
+#ifdef COUCHBASE_ENTERPRISE
+
 class C4SyncListenerTest : public ReplicatorAPITest {
 public:
 
@@ -61,3 +63,5 @@ TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[Push][C]") {
     replicate(kC4OneShot, kC4Disabled);
     CHECK(c4db_getDocumentCount(db2) == 100);
 }
+
+#endif
