@@ -1,7 +1,7 @@
 //
-// %(filename)s
+// LiteCore.h
 //
-// Copyright (c) %(year)d Couchbase, Inc All rights reserved.
+// Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,14 +16,15 @@
 // limitations under the License.
 //
 
-using System;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
 
-using LiteCore.Util;
+//! Project version number for LiteCore.
+FOUNDATION_EXPORT double LiteCoreVersionNumber;
 
-namespace LiteCore.Interop
-{
-%(structs)s
-}
+//! Project version string for LiteCore.
+FOUNDATION_EXPORT const unsigned char LiteCoreVersionString[];
+
+// In this header, you should import all the public headers of your framework using statements like #import <LiteCore/PublicHeader.h>
+
+
+#import <c4.h>
+

@@ -22,6 +22,7 @@
 #include "Actor.hh"
 #include "SequenceSet.hh"
 #include "slice.hh"
+#include "make_unique.h"
 #include <deque>
 #include <unordered_map>
 
@@ -35,12 +36,15 @@ namespace litecore { namespace repl {
         void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}
 
         // Sent by Replicator in response to dbGetChanges
-        void gotChanges(RevList chgs, C4SequenceNumber lastSequence, C4Error err) {
-            enqueue(&Pusher::_gotChanges, chgs, lastSequence, err);
+        void gotChanges(std::shared_ptr<RevToSendList> changes,
+                        C4SequenceNumber lastSequence,
+                        C4Error err)
+        {
+            enqueue(&Pusher::_gotChanges, move(changes), lastSequence, err);
         }
 
-        void couldntSendRevision(const RevRequest& req) {
-            enqueue(&Pusher::_couldntSendRevision, req);
+        void couldntSendRevision(RevToSend* req) {
+            enqueue(&Pusher::_couldntSendRevision, retained(req));
         }
 
     protected:
@@ -53,14 +57,14 @@ namespace litecore { namespace repl {
         virtual ActivityLevel computeActivityLevel() const override;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
-        void _gotChanges(RevList changes, C4SequenceNumber lastSequence, C4Error err);
-        void sendChanges(RevList);
+        void _gotChanges(std::shared_ptr<RevToSendList> changes, C4SequenceNumber lastSequence, C4Error err);
+        void sendChanges(std::shared_ptr<RevToSendList>);
         void maybeGetMoreChanges();
-        void sendChangeList(RevList);
+        void sendChangeList(RevToSendList);
         void maybeSendMoreRevs();
-        void sendRevision(const RevRequest&);
-        void _couldntSendRevision(RevRequest);
-        void doneWithRev(const Rev&, bool successful);
+        void sendRevision(Retained<RevToSend>);
+        void _couldntSendRevision(Retained<RevToSend>);
+        void doneWithRev(const RevToSend*, bool successful);
         void updateCheckpoint();
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);
@@ -96,8 +100,8 @@ namespace litecore { namespace repl {
         unsigned _revisionsInFlight {0};          // # 'rev' messages being sent
         MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
         unsigned _blobsInFlight {0};              // # of blobs being sent
-        std::deque<RevRequest> _revsToSend;       // Revs to send to peer but not sent yet
-        std::unordered_map<alloc_slice, Rev, fleece::sliceHash> _activeDocs;
+        std::deque<Retained<RevToSend>> _revsToSend;  // Revs to send to peer but not sent yet
+        std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash> _activeDocs;
     };
     
     

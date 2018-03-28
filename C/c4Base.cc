@@ -55,15 +55,20 @@ extern "C" {
 
 // LCOV_EXCL_START
 static string getBuildInfo() {
+#ifdef COUCHBASE_ENTERPRISE
+    static const char *ee = "EE ";
+#else
+    static const char *ee = "";
+#endif
 #if LiteCoreOfficial
-    return format("build number %s from commit %.8s", LiteCoreBuildNum, GitCommit);
+    return format("%sbuild number %s from commit %.8s", ee, LiteCoreBuildNum, GitCommit);
 #else
     if (strcmp(GitBranch, "HEAD") == (0))
-        return format("built from commit %.8s%s on %s %s",
-                      GitCommit, GitDirty, __DATE__, __TIME__);
+        return format("%sbuilt from commit %.8s%s on %s %s",
+                      ee, GitCommit, GitDirty, __DATE__, __TIME__);
     else
-        return format("built from %s branch, commit %.8s%s on %s %s",
-                      GitBranch, GitCommit, GitDirty, __DATE__, __TIME__);
+        return format("%sbuilt from %s branch, commit %.8s%s on %s %s",
+                      ee, GitBranch, GitCommit, GitDirty, __DATE__, __TIME__);
 #endif
 }
 
@@ -76,12 +81,17 @@ C4StringResult c4_getBuildInfo() C4API {
 C4StringResult c4_getVersion() C4API {
     string vers;
 #if LiteCoreOfficial
-    vers = LiteCoreBuildNum;
+    vers = format("%s (%s)", LiteCoreVersion, LiteCoreBuildNum);
 #else
+    #ifdef COUCHBASE_ENTERPRISE
+    static const char *ee = "-EE";
+    #else
+        static const char *ee = "";
+    #endif
     if (strcmp(GitBranch, "master") == (0) || strcmp(GitBranch, "HEAD") == (0))
-        vers = format("%.8s%.1s", GitCommit, GitDirty);
+        vers = format("%s%s (%.8s%.1s)", LiteCoreVersion, ee, GitCommit, GitDirty);
     else
-        vers = format("%s:%.8s%.1s", GitBranch, GitCommit, GitDirty);
+        vers = format("%s%s (%s:%.8s%.1s)", LiteCoreVersion, ee, GitBranch, GitCommit, GitDirty);
 #endif
     return sliceResult(vers);
 }

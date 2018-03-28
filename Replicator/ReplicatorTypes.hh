@@ -21,8 +21,10 @@
 #include "slice.hh"
 #include "c4.hh"
 #include "c4Private.h"
+#include "RefCounted.hh"
 #include <chrono>
 #include <functional>
+#include <set>
 #include <vector>
 
 namespace litecore { namespace repl {
@@ -51,71 +53,63 @@ namespace litecore { namespace repl {
 
     
     /** Metadata of a document revision. */
-    struct Rev {
+    class Rev : public RefCounted {
+    public:
         using slice = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
 
-        alloc_slice docID;
-        alloc_slice revID;
-        alloc_slice remoteAncestorRevID;
-        C4SequenceNumber sequence;
-        uint64_t bodySize;
+        const alloc_slice docID;
+        const alloc_slice revID;
+        const C4SequenceNumber sequence;
+        const uint64_t bodySize;
         C4RevisionFlags flags {0};
         bool noConflicts {false};
 
-        Rev() { }
-
-        Rev(slice d, slice r, C4SequenceNumber s, uint64_t size =0)
-        :docID(d), revID(r), sequence(s), bodySize(size)
-        { }
-
-        Rev(const C4DocumentInfo &info, const alloc_slice &remoteAncestor)
-        :Rev(info.docID, info.revID, info.sequence, info.bodySize)
-        {
-            remoteAncestorRevID = remoteAncestor;
-            flags = c4rev_flagsFromDocFlags(info.flags);
-        }
-
         bool deleted() const        {return (flags & kRevDeleted) != 0;}
-    };
 
-    typedef std::vector<Rev> RevList;
+    protected:
+        Rev(slice docID_, slice revID_, C4SequenceNumber sequence_ =0, uint64_t bodySize_ =0);
+        ~Rev() =default;
+    };
 
 
     /** A request by the peer to send a revision. */
-    struct RevRequest : public Rev {
-        std::vector<alloc_slice> ancestorRevIDs;    // Known ancestor revIDs the peer already has
-        unsigned maxHistory;                        // Max depth of rev history to send
-        bool legacyAttachments;                     // Add _attachments property when sending
+    class RevToSend : public Rev {
+    public:
+        alloc_slice remoteAncestorRevID;            // Known ancestor revID (no-conflicts mode)
+        unsigned maxHistory {0};                    // Max depth of rev history to send
+        bool legacyAttachments {false};             // Add _attachments property when sending
 
-        RevRequest(const Rev &rev, unsigned maxHistory_, bool legacyAttachments_)
-        :Rev(rev)
-        ,maxHistory(maxHistory_)
-        ,legacyAttachments(legacyAttachments_)
-        { }
+        RevToSend(const C4DocumentInfo &info,
+                  const alloc_slice &remoteAncestor);
+
+        void addRemoteAncestor(slice revID);
+        bool hasRemoteAncestor(slice revID) const;
+        
+    protected:
+        ~RevToSend() =default;
+
+    private:
+        std::unique_ptr<std::set<alloc_slice>> ancestorRevIDs;    // Known ancestor revIDs the peer already has
     };
 
-
-    /** A revision I want from the peer; includes the opaque remote sequence ID. */
-    struct RequestedRev : public Rev {
-        alloc_slice remoteSequence;
-
-        RequestedRev() { }
-    };
+    typedef std::vector<Retained<RevToSend>> RevToSendList;
 
 
     /** A revision to be added to the database, complete with body. */
-    struct RevToInsert : public Rev {
-        alloc_slice historyBuf;
+    class RevToInsert : public Rev {
+    public:
+        const alloc_slice historyBuf;
         alloc_slice body;
         std::function<void(C4Error)> onInserted;
 
-        void clear() {
-            docID = revID = historyBuf = body = fleece::nullslice;
-            flags = 0;
-            bodySize = 0;
-            onInserted = nullptr;
-        }
+        RevToInsert(slice docID_, slice revID_,
+                    slice historyBuf_,
+                    bool deleted,
+                    bool noConflicts);
+
+    protected:
+        ~RevToInsert() =default;
     };
 
 } }

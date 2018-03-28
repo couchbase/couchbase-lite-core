@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-    /** \defgroup Socket  TCP Socket Provider API
+    /** \defgroup Socket  Replication Socket Provider API
         @{ */
     
     /** Standard WebSocket close status codes, for use in C4Errors with WebSocketDomain.
@@ -48,10 +48,16 @@ extern "C" {
 
 
     // Socket option dictionary keys:
-    extern const char* const kC4SocketOptionWSProtocols; // Value for Sec-WebSocket-Protocol header
+
+    /** A key used in the C4Socket options dictionary; the value is a string naming the
+        replication protocol and its version. This is added to the options dictionary by the
+        replicator, to be used by the socket implementation. For example, the default WebSocket
+        transport sends its value as the value of the "Sec-WebSocket-Protocol" HTTP header in the
+        WebSocket handshake. */
+    extern const char* const kC4SocketOptionWSProtocols;
     
     
-    /** A simple parsed-URL type */
+    /** A simple parsed-URL type. */
     typedef struct {
         C4String scheme;
         C4String hostname;
@@ -60,7 +66,7 @@ extern "C" {
     } C4Address;
 
 
-    /** Represents an open bidirectional byte stream (typically a TCP socket.)
+    /** Represents an open bidirectional stream of bytes or messages (typically a TCP socket.)
         C4Socket is allocated and freed by LiteCore, but the client can associate it with a native
         stream/socket (like a file descriptor or a Java stream reference) by storing a value in its
         `nativeHandle` field. */
@@ -77,21 +83,55 @@ extern "C" {
         The `providesWebSockets` flag indicates whether this factory provides a WebSocket
         implementation or just a raw TCP socket. */
     typedef struct {
+        /** This should be set to `true` if the socket factory acts as a stream of messages,
+            `false` if it's a byte stream. */
         bool providesWebSockets;
 
-        void (*open)(C4Socket* C4NONNULL, const C4Address* C4NONNULL, C4Slice optionsFleece); ///< open the socket
-        void (*write)(C4Socket* C4NONNULL, C4SliceResult allocatedData);  ///< Write bytes; free when done
-        void (*completedReceive)(C4Socket* C4NONNULL, size_t byteCount);  ///< Completion of c4socket_received
+        /** Called to open a socket to a destination address, asynchronously.
+            @param socket  A new C4Socket instance to be opened. Its `nativeHandle` will be NULL;
+                           the implementation of this function will probably store a native socket
+                           reference there. This function should return immediately instead of
+                           waiting for the connection to open. */
+        void (*open)(C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL, C4Slice options);
 
-        // Only called if providesWebSockets is false:
-        void (*close)(C4Socket* C4NONNULL);                               ///< close the socket
+        /** Called to write to the socket. If `providesWebSockets` is true, the data is a complete
+            message, and the socket implementation is responsible for framing it;
+            if `false`, it's just raw bytes to write to the stream, including the necessary framing.
+            @param socket  The socket to write to.
+            @param allocatedData  The data/message to send. As this is a `C4SliceResult`, the
+                implementation of this function is responsible for freeing it when done. */
+        void (*write)(C4Socket* socket C4NONNULL, C4SliceResult allocatedData);
 
-        // Only called if providesWebSockets is true:
-        void (*requestClose)(C4Socket* C4NONNULL, int status, C4String message);
+        /** Called to inform the socket that LiteCore has finished processing the data from a
+            `c4socket_received()` call. This can be used for flow control.
+            @param socket  The socket that whose incoming data was processed.
+            @param byteCount  The number of bytes of data processed (the size of the `data`
+                slice passed to a `c4socket_received()` call.) */
+        void (*completedReceive)(C4Socket* socket C4NONNULL, size_t byteCount);
 
-        /** Called to tell the client to dispose any state associated with the `nativeHandle`.
-            Set this to NULL if you don't need the call. */
-        void (*dispose)(C4Socket* C4NONNULL);
+        /** Called to close the socket.  This is only called if `providesWebSockets` is false, i.e.
+            the socket operates at the byte level. Otherwise it may be left NULL.
+            No more write calls will be made; the socket should process any remaining incoming bytes
+            by calling `c4socket_received()`, then call `c4socket_closed()` when the socket closes.
+            @param socket  The socket to close. */
+        void (*close)(C4Socket* socket C4NONNULL);
+
+        /** Called to close the socket.  This is only called if `providesWebSockets` is true, i.e.
+            the socket operates at the message level.  Otherwise it may be left NULL.
+            The implementation should send a message that tells the remote peer that it's closing
+            the connection, then wait for acknowledgement before closing.
+            No more write calls will be made; the socket should process any remaining incoming
+            messages by calling `c4socket_received()`, then call `c4socket_closed()` when the
+            connection closes.
+            @param socket  The socket to close. */
+        void (*requestClose)(C4Socket* socket C4NONNULL, int status, C4String message);
+
+        /** Called to tell the client that a `C4Socket` object is being disposed/freed after it's
+            closed. The implementation of this function can then dispose any state associated with
+            the `nativeHandle`.
+            Set this to NULL if you don't need the call.
+            @param socket  The socket being disposed.  */
+        void (*dispose)(C4Socket* socket C4NONNULL);
     } C4SocketFactory;
 
 
@@ -101,36 +141,70 @@ extern "C" {
 
     /** Notification that a socket has received an HTTP response, with the given headers (encoded
         as a Fleece dictionary.) This should be called just before c4socket_opened or
-        c4socket_closed. */
+        c4socket_closed.
+        @param socket  The socket being opened.
+        @param httpStatus  The HTTP/WebSocket status code from the peer; expected to be 200 if the
+            connection is successful, else an HTTP status >= 300 or WebSocket status >= 1000.
+        @param responseHeadersFleece  The HTTP response headers, encoded as a Fleece dictionary
+            whose keys are the header names (with normalized case) and values are header values
+            as strings. */
     void c4socket_gotHTTPResponse(C4Socket *socket C4NONNULL,
                                   int httpStatus,
                                   C4Slice responseHeadersFleece) C4API;
 
-    /** Notification that a socket has opened, i.e. a C4SocketFactory.open request has completed
-        successfully. */
+    /** Notifies LiteCore that a socket has opened, i.e. a C4SocketFactory.open request has completed
+        successfully.
+        @param socket  The socket. */
     void c4socket_opened(C4Socket *socket C4NONNULL) C4API;
 
-    /** Notification that a socket has finished closing, or that it disconnected, or failed to open.
-        If this is a normal close in response to a C4SocketFactory.close request, the error
-        parameter should have a code of 0.
-        If it's a socket-level error, set the C4Error appropriately.
-        If it's a WebSocket-level close (when the factory's providesWebSockets is true),
-        set the error domain to WebSocketDomain and the code to the WebSocket status code. */
+    /** Notifies LiteCore that a socket has finished closing, or disconnected, or failed to open.
+        - If this is a normal close in response to a C4SocketFactory.close request, the error
+          parameter should have a code of 0.
+        - If it's a socket-level error, set the C4Error appropriately.
+        - If it's a WebSocket-level close (when the factory's providesWebSockets is true),
+          set the error domain to WebSocketDomain and the code to the WebSocket status code.
+        @param socket  The socket.
+        @param errorIfAny  the status of the close; see description above. */
     void c4socket_closed(C4Socket *socket C4NONNULL, C4Error errorIfAny) C4API;
 
-    /** Notification that the peer has requested to close the socket using the WebSocket protocol.
-        LiteCore will call the factory's requestClose callback in response when it's ready. */
+    /** Notifies LiteCore that the peer has requested to close the socket using the WebSocket protocol.
+        (Should only be called by sockets whose factory's `providesWebSockets` is true.)
+        LiteCore will call the factory's requestClose callback in response when it's ready to
+        acknowledge the close.
+        @param socket  The socket.
+        @param  status  The WebSocket status sent by the peer, typically 1000.
+        @param  message  An optional human-readable message sent by the peer. */
     void c4socket_closeRequested(C4Socket *socket C4NONNULL, int status, C4String message);
 
-    /** Notification that bytes have been written to the socket, in response to a
-        C4SocketFactory.write request. */
+    /** Notifies LiteCore that a C4SocketFactory.write request has been completed, i.e. the bytes
+        have been written to the socket.
+        @param socket  The socket.
+        @param byteCount  The number of bytes that were written. */
     void c4socket_completedWrite(C4Socket *socket C4NONNULL, size_t byteCount) C4API;
 
-    /** Notification that bytes have been read from the socket. LiteCore will acknowledge receiving
-        and processing the data by calling C4SocketFactory.completedReceive.
-        For flow-control purposes, the client should keep track of the number of unacknowledged 
-        bytes, and stop reading from the underlying stream if it grows too large. */
+    /** Notifies LiteCore that data was received from the socket. If the factory's
+        `providesWebSockets' is true, the data must be a single complete message; otherwise it's
+        raw bytes that will be un-framed by LiteCore.
+        LiteCore will acknowledge when it's received and processed the data, by calling
+        C4SocketFactory.completedReceive. For flow-control purposes, the client should keep track
+        of the number of unacknowledged bytes, and stop reading from the underlying stream if that
+        grows too large.
+        @param socket  The socket.
+        @param data  The data received, either a message or raw bytes. */
     void c4socket_received(C4Socket *socket C4NONNULL, C4Slice data) C4API;
+
+
+    /** Constructs a C4Socket from a "native handle", whose interpretation is up to the
+        C4SocketFactory.  This is used by listeners to handle an incoming replication connection.
+        @param factory  The C4SocketFactory that will manage the socket.
+        @param nativeHandle  A value known to the factory that represents the underlying socket,
+            such as a file descriptor or a native object pointer.
+        @param address  The address of the remote peer making the connection.
+        @return  A new C4Socket initialized with the `nativeHandle`. */
+    C4Socket* c4socket_fromNative(C4SocketFactory factory,
+                                  void *nativeHandle C4NONNULL,
+                                  const C4Address *address C4NONNULL) C4API;
+
 
     /** @} */
 

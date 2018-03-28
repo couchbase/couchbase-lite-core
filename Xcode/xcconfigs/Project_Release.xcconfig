@@ -8,6 +8,7 @@
 #include "Project.xcconfig"
 
 ENABLE_NS_ASSERTIONS         = NO
+ENABLE_TESTABILITY           = NO
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) NDEBUG=1 _CRYPTO_CC
 GCC_OPTIMIZATION_LEVEL       = fast
 LLVM_LTO                     = YES

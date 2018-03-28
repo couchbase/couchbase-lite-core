@@ -1,1 +1,0 @@
-new C4Slice({0}_, {0} == null ? 0 : (ulong){0}.Length)

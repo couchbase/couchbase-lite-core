@@ -22,6 +22,7 @@ fi
 echo "#define GitCommit \"$GIT_COMMIT\"" $'\n'\
      "#define GitBranch \"$GIT_BRANCH\"" $'\n'\
      "#define GitDirty  \"$GIT_DIRTY\"" $'\n'\
+     "#define LiteCoreVersion \"$LITECORE_VERSION_STRING\"" $'\n'\
      "#define LiteCoreBuildNum \"$BUILD_NUM\"" $'\n'\
      "#define LiteCoreOfficial $OFFICIAL" $'\n'\
      >"$OUTPUT_FILE".tmp
