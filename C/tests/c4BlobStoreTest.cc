@@ -35,7 +35,7 @@ public:
         if (encrypted) {
             fprintf(stderr, "        ...encrypted\n");
             INFO("(Encrypted)");
-            crypto.algorithm = kC4EncryptionAES128;
+            crypto.algorithm = kC4EncryptionAES256;
             memset(&crypto.bytes, 0xCC, sizeof(crypto.bytes));
             encryption = &crypto;
         }

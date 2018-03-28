@@ -139,7 +139,7 @@ namespace litecore {
 
     bool SQLiteDataFile::Factory::encryptionEnabled(EncryptionAlgorithm alg) {
 #ifdef COUCHBASE_ENTERPRISE
-        return (alg == kNoEncryption || alg == kAES128);
+        return (alg == kNoEncryption || alg == kAES256);
 #else
         return (alg == kNoEncryption);
 #endif

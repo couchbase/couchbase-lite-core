@@ -25,7 +25,7 @@ namespace litecore {
     /** Abstract base class of EncryptedReadStream and EncryptedWriteStream. */
     class EncryptedStream {
     public:
-        static constexpr size_t kKeySize = kEncryptionKeySize[kAES128];
+        static constexpr size_t kKeySize = kEncryptionKeySize[kAES256];
         static const unsigned kFileSizeOverhead = kKeySize;
         static const unsigned kFileBlockSize = 4096;
 

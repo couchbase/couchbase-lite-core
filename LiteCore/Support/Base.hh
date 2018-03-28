@@ -33,11 +33,10 @@ namespace litecore {
 
     enum EncryptionAlgorithm : uint8_t {
         kNoEncryption = 0,      /**< No encryption (default) */
-        kAES128,                /**< AES with 128-bit key */
         kAES256                 /**< AES with 256-bit key */
     };
 
-    constexpr size_t kEncryptionKeySize[3] = {0, 16, 32};
+    constexpr size_t kEncryptionKeySize[2] = {0, 32};
 
 }
 
