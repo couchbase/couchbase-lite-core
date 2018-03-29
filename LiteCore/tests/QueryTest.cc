@@ -28,6 +28,9 @@ using namespace litecore;
 using namespace std;
 
 
+// NOTE: This test does not use RevTree or Database, so it stores plain Fleece in record bodies.
+
+
 static sequence_t writeNumberedDoc(KeyStore *store, int i, slice str, Transaction &t,
                                    DocumentFlags flags =DocumentFlags::kNone) {
     string docID = stringWithFormat("rec-%03d", i);
