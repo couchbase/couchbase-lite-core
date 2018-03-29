@@ -626,7 +626,7 @@ namespace litecore { namespace blip {
 
     void Connection::setWebSocket(WebSocket *webSocket, const fleeceapi::AllocedDict &options) {
         _compressionLevel = kDefaultCompressionLevel;
-        auto levelP = options[kCompressionLevelOption];
+        auto levelP = options.get(kCompressionLevelOption);
         if (levelP.isInteger())
             _compressionLevel = (int8_t)levelP.asInt();
 

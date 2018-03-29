@@ -22,6 +22,7 @@
 #include <atomic>
 #include <string>
 #include <thread>
+#include <functional>
 
 // Set to 1 to have Actor object report performance statistics in their destructors
 #define ACTORS_TRACK_STATS  0
