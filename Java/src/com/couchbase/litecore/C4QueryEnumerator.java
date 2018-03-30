@@ -44,14 +44,6 @@ public class C4QueryEnumerator {
         return ok;
     }
 
-    public long getRowCount() throws LiteCoreException {
-        return getRowCount(_handle);
-    }
-
-    public boolean seek(long rowIndex) throws LiteCoreException {
-        return seek(_handle, rowIndex);
-    }
-
     public C4QueryEnumerator refresh() throws LiteCoreException {
         // handle is closed or reached end.
         if (_handle == 0)
@@ -65,10 +57,6 @@ public class C4QueryEnumerator {
     public void close() {
         if (_handle != 0)
             close(_handle);
-    }
-
-    public boolean isClosed() {
-        return _handle == 0;
     }
 
     public void free() {
@@ -111,10 +99,6 @@ public class C4QueryEnumerator {
     //-------------------------------------------------------------------------
 
     static native boolean next(long handle) throws LiteCoreException;
-
-    static native long getRowCount(long handle) throws LiteCoreException;
-
-    static native boolean seek(long handle, long rowIndex) throws LiteCoreException;
 
     static native long refresh(long handle) throws LiteCoreException;
 

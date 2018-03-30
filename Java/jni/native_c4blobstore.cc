@@ -197,19 +197,6 @@ Java_com_couchbase_litecore_C4BlobStore_create(JNIEnv *env, jclass clazz, jlong 
 
 /*
  * Class:     com_couchbase_litecore_C4BlobStore
- * Method:    delete
- * Signature: (JJ)V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4BlobStore_delete(JNIEnv *env, jclass clazz, jlong jblobstore,
-                                               jlong jblobkey) {
-    C4BlobKey *pBlobKey = (C4BlobKey *) jblobkey;
-    C4Error error = {};
-    if (!c4blob_delete((C4BlobStore *) jblobstore, *pBlobKey, &error))
-        throwError(env, error);
-}
-/*
- * Class:     com_couchbase_litecore_C4BlobStore
  * Method:    openReadStream
  * Signature: (JJ)J
  */
@@ -238,9 +225,11 @@ Java_com_couchbase_litecore_C4BlobStore_openWriteStream(JNIEnv *env, jclass claz
         throwError(env, error);
     return (jlong) stream;
 }
+
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4BlobReadStream
 // ----------------------------------------------------------------------------
+
 /*
  * Class:     com_couchbase_litecore_C4BlobReadStream
  * Method:    read
@@ -295,9 +284,11 @@ JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4BlobReadStream_close(JNIEnv *env, jclass clazz, jlong jstream) {
     c4stream_close((C4ReadStream *) jstream);
 }
+
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4BlobWriteStream
 // ----------------------------------------------------------------------------
+
 /*
  * Class:     com_couchbase_litecore_C4BlobWriteStream
  * Method:    write

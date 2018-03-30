@@ -118,13 +118,6 @@ public class C4BlobStore {
     }
 
     /**
-     * Deletes a blob from the store given its key.
-     */
-    public void delete(C4BlobKey blobKey) throws LiteCoreException {
-        delete(handle, blobKey.getHandle());
-    }
-
-    /**
      * Opens a blob for reading, as a random-access byte stream.
      */
     public C4BlobReadStream openReadStream(C4BlobKey blobKey) throws LiteCoreException {
@@ -167,8 +160,6 @@ public class C4BlobStore {
     static native String getFilePath(long blobStore, long blobKey) throws LiteCoreException;
 
     static native long create(long blobStore, byte[] contents) throws LiteCoreException;
-
-    static native void delete(long blobStore, long blobKey) throws LiteCoreException;
 
     static native long openReadStream(long blobStore, long blobKey) throws LiteCoreException;
 

@@ -31,10 +31,6 @@ public class MArray extends MCollection {
 
     }
 
-    public MArray(MValue mv, MCollection parent) {
-        initInSlot(mv, parent);
-    }
-
     public void initInSlot(MValue mv, MCollection parent) {
         initInSlot(mv, parent, parent != null ? parent.getMutableChildren() : false);
     }

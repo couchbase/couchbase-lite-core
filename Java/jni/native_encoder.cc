@@ -72,16 +72,6 @@ Java_com_couchbase_litecore_fleece_Encoder_release(JNIEnv *env, jclass clazz, jl
 
 /*
  * Class:     com_couchbase_litecore_fleece_Encoder
- * Method:    setSharedKeys
- * Signature: (JJ)V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_fleece_Encoder_setSharedKeys(JNIEnv *env, jclass clazz, jlong jenc,
-                                                         jlong jsharedKeys) {
-    ((Encoder *) jenc)->setSharedKeys((FLSharedKeys) jsharedKeys);
-}
-/*
- * Class:     com_couchbase_litecore_fleece_Encoder
  * Method:    getFLEncoder
  * Signature: (J)J
  */
@@ -233,22 +223,6 @@ Java_com_couchbase_litecore_fleece_Encoder_writeKey(JNIEnv *env, jclass clazz, j
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_Encoder_endDict(JNIEnv *env, jclass clazz, jlong jenc) {
     return ((Encoder *) jenc)->endDict();
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_Encoder
- * Method:    finish
- * Signature: (J)[B
- */
-JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_fleece_Encoder_finishAsBytes(JNIEnv *env, jclass clazz, jlong jenc) {
-    FLError error = kFLNoError;
-    FLSliceResult result = ((Encoder *) jenc)->finish(&error);
-    if (error != kFLNoError)
-        throwError(env, {FleeceDomain, error});
-    jbyteArray res = toJByteArray(env, {result.buf, result.size});
-    FLSliceResult_Free(result);
-    return res;
 }
 
 /*

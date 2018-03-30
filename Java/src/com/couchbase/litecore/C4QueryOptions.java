@@ -29,10 +29,6 @@ public class C4QueryOptions {
     public C4QueryOptions() {
     }
 
-    public C4QueryOptions(boolean rankFullText) {
-        this.rankFullText = rankFullText;
-    }
-
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
