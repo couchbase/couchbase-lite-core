@@ -521,7 +521,7 @@ namespace litecore { namespace websocket {
     }
 
 
-    static void sock_open(C4Socket *sock, const C4Address *c4To, FLSlice optionsFleece) {
+    static void sock_open(C4Socket *sock, const C4Address *c4To, FLSlice optionsFleece, void*) {
         sock->nativeHandle = new civetC4Adapter(sock, c4To, AllocedDict((slice)optionsFleece));
     }
 
@@ -552,6 +552,7 @@ namespace litecore { namespace websocket {
     C4SocketFactory CivetProvider::C4SocketFactory() {
         return {
             true,
+            nullptr,
             &sock_open, &sock_write, &sock_completedReceive,
             nullptr,
             &sock_requestClose,
@@ -562,6 +563,7 @@ namespace litecore { namespace websocket {
     // Declared in c4Socket+Internal.hh
     const C4SocketFactory C4DefaultSocketFactory {
         true,
+        nullptr,
         &sock_open,
         &sock_write,
         &sock_completedReceive,

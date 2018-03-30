@@ -175,7 +175,7 @@ namespace litecore { namespace websocket {
         if (!socket->factory.open)
             error::_throw(error::UnsupportedOperation,
                           "C4SocketFactory does not support 'open'");
-        socket->factory.open(socket, &c4addr, socket->options().data());
+        socket->factory.open(socket, &c4addr, socket->options().data(), socket->factory.context);
     }
 
     void C4Provider::requestClose(WebSocketImpl *s, int status, fleece::slice message) {

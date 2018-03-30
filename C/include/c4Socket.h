@@ -87,12 +87,18 @@ extern "C" {
             `false` if it's a byte stream. */
         bool providesWebSockets;
 
+        /** An arbitrary value that will be passed to the `open` callback. */
+        void* context;
+
         /** Called to open a socket to a destination address, asynchronously.
             @param socket  A new C4Socket instance to be opened. Its `nativeHandle` will be NULL;
                            the implementation of this function will probably store a native socket
                            reference there. This function should return immediately instead of
                            waiting for the connection to open. */
-        void (*open)(C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL, C4Slice options);
+        void (*open)(C4Socket* socket C4NONNULL,
+                     const C4Address* addr C4NONNULL,
+                     C4Slice options,
+                     void *context);
 
         /** Called to write to the socket. If `providesWebSockets` is true, the data is a complete
             message, and the socket implementation is responsible for framing it;
