@@ -64,12 +64,14 @@ namespace litecore { namespace websocket {
         virtual std::string loggingIdentifier() const override;
         virtual void connect() override;
 
+        void receiveComplete(size_t byteCount);
         ProviderImpl& provider()                    {return (ProviderImpl&)WebSocket::provider();}
         void disconnect();
 
     private:
         template <const bool isServer>
         friend class uWS::WebSocketProtocol;
+        friend class MessageImpl;
 
         using ClientProtocol = uWS::WebSocketProtocol<false>;
 
@@ -81,6 +83,7 @@ namespace litecore { namespace websocket {
                             bool fin);
         bool receivedMessage(int opCode, fleece::alloc_slice message);
         bool receivedClose(fleece::slice);
+        void deliverMessageToDelegate(fleece::slice data, bool binary);
         int heartbeatInterval() const;
         void schedulePing();
         void sendPing();
@@ -91,9 +94,10 @@ namespace litecore { namespace websocket {
         std::unique_ptr<ClientProtocol> _protocol;  // 3rd party class that does the framing
         std::mutex _mutex;                          //
         fleece::alloc_slice _curMessage;            // Message being received
-        int _curOpCode;
-        size_t _curMessageLength;
+        int _curOpCode;                             // Opcode of msg in _curMessage
+        size_t _curMessageLength;                   // # of valid bytes in _curMessage
         size_t _bufferedBytes {0};                  // # bytes written but not yet completed
+        size_t _deliveredBytes;                     // Temporary count of bytes sent to delegate
         bool _closeSent {false}, _closeReceived {false};    // Close message sent or received?
         fleece::alloc_slice _closeMessage;                  // The encoded close request message
         std::unique_ptr<actor::Timer> _pingTimer;

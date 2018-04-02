@@ -149,6 +149,16 @@ namespace litecore { namespace websocket {
     };
 
 
+    class Message : public RefCounted {
+    public:
+        Message(fleece::slice d, bool b)        :data(d), binary(b) {}
+        Message(fleece::alloc_slice d, bool b)  :data(d), binary(b) {}
+
+        const fleece::alloc_slice data;
+        const bool binary;
+    };
+
+
     /** Mostly-abstract delegate interface for a WebSocket connection.
         Receives lifecycle events and incoming WebSocket messages.
         These callbacks are made on an undefined thread managed by the WebSocketProvider! */
@@ -163,7 +173,7 @@ namespace litecore { namespace websocket {
         virtual void onWebSocketClose(CloseStatus) =0;
 
         /** A message has arrived. */
-        virtual void onWebSocketMessage(fleece::slice message, bool binary) =0;
+        virtual void onWebSocketMessage(Message*) =0;
 
         /** The socket has room to send more messages. */
         virtual void onWebSocketWriteable() { }

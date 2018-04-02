@@ -31,7 +31,7 @@
 namespace litecore { namespace websocket {
     class LoopbackProvider;
 
-    static constexpr size_t kSendBufferSize = 32 * 1024;
+    static constexpr size_t kSendBufferSize = 256 * 1024;
 
 
     /** A WebSocket connection that relays messages to another instance of LoopbackWebSocket. */
@@ -87,12 +87,10 @@ namespace litecore { namespace websocket {
             _driver->enqueue(&Driver::_ack, msgSize);
         }
 
-        void received(fleece::slice message,
-                              bool binary =true,
-                              actor::delay_t latency = actor::delay_t::zero())
+        void received(Message *message,
+                      actor::delay_t latency = actor::delay_t::zero())
         {
-            _driver->enqueueAfter(latency, &Driver::_received,
-                                  fleece::alloc_slice(message), binary);
+            _driver->enqueueAfter(latency, &Driver::_received, retained(message));
         }
 
         void closed(CloseReason reason =kWebSocketClose,
@@ -104,6 +102,24 @@ namespace litecore { namespace websocket {
                                   &Driver::_closed,
                                   {reason, status, fleece::alloc_slice(message)});
         }
+
+
+        class LoopbackMessage : public Message {
+        public:
+            LoopbackMessage(LoopbackWebSocket *ws, slice data, bool binary)
+            :Message(data, binary)
+            ,_size(data.size)
+            ,_webSocket(ws)
+            { }
+
+            ~LoopbackMessage() {
+                _webSocket->ack(_size);
+            }
+
+        private:
+            size_t _size;
+            Retained<LoopbackWebSocket> _webSocket;
+        };
 
 
         // The internal Actor that does the real work
@@ -195,17 +211,17 @@ namespace litecore { namespace websocket {
                 if (_peer) {
                     Assert(_state == State::connected);
                     logDebug("SEND: %s", formatMsg(msg, binary).c_str());
-                    _peer->received(msg, binary, _latency);
+                    Retained<Message> message(new LoopbackMessage(_webSocket, msg, binary));
+                    _peer->received(message, _latency);
                 } else {
                     log("SEND: Failed, socket is closed");
                 }
             }
 
-            virtual void _received(fleece::alloc_slice msg, bool binary) {
+            virtual void _received(Retained<Message> message) {
                 Assert(_state == State::connected);
-                logDebug("RECEIVED: %s", formatMsg(msg, binary).c_str());
-                _webSocket->delegate().onWebSocketMessage(msg, binary);
-                _peer->ack(msg.size);
+                logDebug("RECEIVED: %s", formatMsg(message->data, message->binary).c_str());
+                _webSocket->delegate().onWebSocketMessage(message);
             }
 
             virtual void _ack(size_t msgSize) {

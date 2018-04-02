@@ -77,7 +77,6 @@ namespace uWS {
     
     //template class WebSocketProtocol<SERVER>;
     template class WebSocketProtocol<CLIENT>;
-    
 }
 
 
@@ -89,6 +88,25 @@ namespace litecore { namespace websocket {
     using namespace uWS;
 
     LogDomain WSLogDomain("WS", LogLevel::Warning);
+
+
+    class MessageImpl : public Message {
+    public:
+        MessageImpl(WebSocketImpl *ws, slice data, bool binary)
+        :Message(data, binary)
+        ,_size(data.size)
+        ,_webSocket(ws)
+        { }
+
+        ~MessageImpl() {
+            _webSocket->receiveComplete(_size);
+        }
+
+    private:
+        size_t _size;
+        WebSocketImpl* _webSocket;
+    };
+
 
     atomic_int WebSocket::gInstanceCount;
 
@@ -218,6 +236,7 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::onReceive(slice data) {
+        ssize_t completedBytes = 0;
         alloc_slice pingReceived;
         {
             // Lock the mutex; this protects all methods (below) involved in receiving,
@@ -226,20 +245,26 @@ namespace litecore { namespace websocket {
 
             _bytesReceived += data.size;
             if (_framing) {
+                _deliveredBytes = 0;
+                size_t prevMessageLength = _curMessageLength;
                 // this next line will call handleFragment(), below --
                 _protocol->consume((char*)data.buf, (unsigned)data.size, this);
                 pingReceived = move(_pingReceived);
+                // Compute # of bytes consumed: just the framing data, not any partial or
+                // delivered messages. (Trust me, the math works.)
+                completedBytes = data.size - _deliveredBytes -
+                                                (_curMessageLength - prevMessageLength);
             }
         }
         if (!_framing)
-            delegate().onWebSocketMessage(data, true);
+            deliverMessageToDelegate(data, true);
 
-        provider().receiveComplete(this, data.size);
+        if (completedBytes > 0)
+            receiveComplete(completedBytes);
 
         // Reply to an incoming PING, now that the mutex is not locked:
         if (pingReceived)
             sendOp(pingReceived, PONG);
-
     }
 
 
@@ -268,6 +293,7 @@ namespace litecore { namespace websocket {
             _curMessage.shorten(_curMessageLength);
             return receivedMessage(_curOpCode, move(_curMessage));
             assert(!_curMessage);
+            _curMessageLength = 0;
         }
         return true;
     }
@@ -281,7 +307,7 @@ namespace litecore { namespace websocket {
                     return false;
                 // fall through:
             case BINARY:
-                delegate().onWebSocketMessage(message, (opCode==BINARY));
+                deliverMessageToDelegate(message, (opCode==BINARY));
                 return true;
             case CLOSE:
                 return receivedClose(message);
@@ -294,6 +320,18 @@ namespace litecore { namespace websocket {
             default:
                 return false;
         }
+    }
+
+
+    void WebSocketImpl::deliverMessageToDelegate(slice data, bool binary) {
+        _deliveredBytes += data.size;
+        Retained<Message> message(new MessageImpl(this, data, true));
+        delegate().onWebSocketMessage(message);
+    }
+
+
+    void WebSocketImpl::receiveComplete(size_t byteCount) {
+        provider().receiveComplete(this, byteCount);
     }
 
 

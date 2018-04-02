@@ -182,8 +182,8 @@ namespace litecore { namespace blip {
             enqueue(&BLIPIO::_onWebSocketWriteable);
         }
 
-        virtual void onWebSocketMessage(slice message, bool binary) override {
-            enqueue(&BLIPIO::_onWebSocketMessage, alloc_slice(message), binary);
+        virtual void onWebSocketMessage(websocket::Message *message) override {
+            enqueue(&BLIPIO::_onWebSocketMessage, retained(message));
         }
 
     private:
@@ -376,18 +376,18 @@ namespace litecore { namespace blip {
 
         
         /** WebSocketDelegate method -- Received a frame: */
-        void _onWebSocketMessage(alloc_slice frame, bool binary) {
+        void _onWebSocketMessage(Retained<websocket::Message> wsMessage) {
             try {
                 if (_closingWithError)
                     return;
-                if (!binary) {
+                if (!wsMessage->binary) {
                     warn("Ignoring non-binary WebSocket message");
                     return;
                 }
-                _totalBytesRead += frame.size;
 
                 // Read the frame header:
-                slice payload = frame;
+                slice payload = wsMessage->data;
+                _totalBytesRead += payload.size;
                 uint64_t msgNo, flagsInt;
                 if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt))
                     throw runtime_error("Illegal BLIP frame header");
