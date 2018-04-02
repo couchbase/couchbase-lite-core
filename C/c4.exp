@@ -17,6 +17,7 @@ _kC4QueryLog
 _kC4SyncLog
 _kC4WebSocketLog
 _c4SliceEqual
+_c4slice_createResult
 _c4slice_free
 _c4log
 _c4vlog

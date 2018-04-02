@@ -84,7 +84,7 @@ namespace c4Internal {
     void recordError(C4ErrorDomain, int code, C4Error* outError) noexcept;
     // SLICES:
 
-    C4SliceResult sliceResult(slice s);
+    static inline C4SliceResult sliceResult(slice s)    {return c4slice_createResult({s.buf,s.size});}
     C4SliceResult sliceResult(alloc_slice s);
     C4SliceResult sliceResult(const char *str);
 
