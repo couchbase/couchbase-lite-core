@@ -96,11 +96,19 @@ extern "C" {
 
     /** A simple URL parser that populates a C4Address from a URL string.
         The fields of the address will point inside the url string.
-        The final parameter of the URL's path is assumed to be the database name; it will not
-        be included in `address.path`, but will be pointed to by `dbName`. */
+        @param url  The URL to be parsed.
+        @param address  On sucess, the fields of the struct this points to will be populated with
+                        the address components. This that are slices will point into the
+                        appropriate substrings of `url`.
+        @param dbName  If non-NULL, then on success this slice will point to the last path
+                        component of `url`; `address->path` will not include this component.
+        @return  True on success, false on failure. */
     bool c4repl_parseURL(C4String url,
                          C4Address *address C4NONNULL,
-                         C4String *dbName C4NONNULL);
+                         C4String *dbName);
+
+    /** Converts a C4Address to a URL. */
+    C4StringResult c4address_toURL(C4Address address);
 
 
     /** Parameters describing a replication, used when creating a C4Replicator. */

@@ -34,8 +34,8 @@ extern "C" {
         kWebSocketCloseGoingAway        = 1001, // Peer has to close, e.g. because host app is quitting
         kWebSocketCloseProtocolError    = 1002, // Protocol violation: invalid framing data
         kWebSocketCloseDataError        = 1003, // Message payload cannot be handled
-        kWebSocketCloseNoCode           = 1005, // Never sent, only received
-        kWebSocketCloseAbnormal         = 1006, // Never sent, only received
+        kWebSocketCloseNoCode           = 1005, // No status code in close frame
+        kWebSocketCloseAbnormal         = 1006, // Peer closed socket unexpectedly w/o a close frame
         kWebSocketCloseBadMessageFormat = 1007, // Unparseable message
         kWebSocketClosePolicyError      = 1008,
         kWebSocketCloseMessageTooBig    = 1009,

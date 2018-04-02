@@ -197,6 +197,8 @@ _c4socket_completedWrite
 _c4socket_received
 _c4socket_gotHTTPResponse
 
+_c4address_toURL
+
 _c4db_setCookie
 _c4db_getCookies
 _c4db_clearCookies

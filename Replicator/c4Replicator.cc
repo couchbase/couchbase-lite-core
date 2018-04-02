@@ -84,17 +84,34 @@ bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName) {
 
     if (pathStart >= str.end())
         return false;
-    str.setStart(pathStart + 1);
 
-    if (str.hasSuffix("/"_sl))
-        str.setSize(str.size - 1);
-    const uint8_t *slash;
-    while ((slash = str.findByte('/')) != nullptr)
-        str.setStart(slash + 1);
+    if (dbName) {
+        str.setStart(pathStart + 1);
 
-    address->path = slice(pathStart, str.buf);
-    *dbName = str;
-    return c4repl_isValidDatabaseName(toc4slice(str));
+        if (str.hasSuffix("/"_sl))
+            str.setSize(str.size - 1);
+        const uint8_t *slash;
+        while ((slash = str.findByte('/')) != nullptr)
+            str.setStart(slash + 1);
+
+        address->path = slice(pathStart, str.buf);
+        *dbName = str;
+        return c4repl_isValidDatabaseName(toc4slice(str));
+    } else {
+        address->path = slice(pathStart, str.end());
+        return true;
+    }
+}
+
+
+C4StringResult c4address_toURL(C4Address address) {
+    stringstream s;
+    s << address.scheme << "://" << address.hostname;
+    if (address.port)
+        s << ':' << address.port;
+    s << address.path;
+    auto str = s.str();
+    return c4slice_createResult({str.data(), str.size()});
 }
 
 
