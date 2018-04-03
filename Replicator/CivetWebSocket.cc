@@ -16,8 +16,9 @@
 // limitations under the License.
 //
 
+#include "Fleece.h"
+#include "slice.hh"
 #include "CivetWebSocket.hh"
-#include "c4Socket+Internal.hh"
 #include "c4Replicator.h"
 #include "Actor.hh"
 #include "Error.hh"
@@ -39,496 +40,350 @@ using namespace fleece;
 using namespace fleeceapi;
 
 
+#define Log(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogInfo, "CivetWebSocket: " MSG, ##__VA_ARGS__)
+#define LogDebug(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogDebug, "CivetWebSocket: " MSG, ##__VA_ARGS__)
+
+
+
 namespace litecore { namespace websocket {
 
+
+    static int connectHandler(const struct mg_connection*, void *userData);
+    static int dataHandler(struct mg_connection*, int header, char *message, size_t len, void*);
+    static void closeHandler(const struct mg_connection *, void*);
+
+
+    static int toErrno(const struct mg_error& error) {
 #ifdef _MSC_VER
-    static void toPOSIX(struct mg_error* error)
-    {
-        switch(error->code) {
-            case WSAECONNREFUSED:
-                error->code = ECONNREFUSED;
-                break;
-            case WSAENETRESET:
-                error->code = ENETRESET;
-                break;
-            case WSAECONNABORTED:
-                error->code = ECONNABORTED;
-                break;
-            case WSAECONNRESET:
-                error->code = ECONNRESET;
-                break;
-            case WSAETIMEDOUT:
-                error->code = ETIMEDOUT;
-                break;
-            case WSAENETDOWN:
-                error->code = ENETDOWN;
-                break;
-            case WSAENETUNREACH:
-                error->code = ENETUNREACH;
-                break;
-            case WSAENOTCONN:
-                error->code = ENOTCONN;
-                break;
-            case WSAEHOSTDOWN:
-                error->code = 64;
-                break;
-            case WSAEHOSTUNREACH:
-                error->code = EHOSTUNREACH;
-                break;
+        switch(error.code) {
+            case WSAECONNREFUSED:   return ECONNREFUSED;
+            case WSAENETRESET:      return ENETRESET;
+            case WSAECONNABORTED:   return ECONNABORTED;
+            case WSAECONNRESET:     return ECONNRESET;
+            case WSAETIMEDOUT:      return ETIMEDOUT;
+            case WSAENETDOWN:       return ENETDOWN;
+            case WSAENETUNREACH:    return ENETUNREACH;
+            case WSAENOTCONN:       return ENOTCONN;
+            case WSAEHOSTDOWN:      return 64;
+            case WSAEHOSTUNREACH:   return EHOSTUNREACH;
         }
-    }
 #endif
-
-    static Address addressOf(struct mg_connection *connection) {
-        auto info = mg_get_request_info(connection);
-        return Address((info->is_ssl ? "blips" : "blip"),
-                       info->remote_addr,
-                       (uint16_t)info->remote_port);
+        return error.code;
     }
 
 
-    static Address c4AddressOf(const C4Address &addr) {
-        return websocket::Address(asstring(addr.scheme),
-                                  asstring(addr.hostname),
-                                  addr.port,
-                                  asstring(addr.path));
+    static C4Error toC4Error(const mg_error &civetErr) {
+        C4ErrorDomain domain;
+        int code;
+        if (civetErr.code >= MG_ERR_HTTP_STATUS_BASE) {
+            domain = WebSocketDomain;
+            code = civetErr.code - MG_ERR_HTTP_STATUS_BASE;
+        } else if (civetErr.code >= MG_ERR_CIVETWEB_BASE) {
+            domain = NetworkDomain;
+            switch (civetErr.code) {
+                case MG_ERR_INVALID_CERT:
+                    code = kC4NetErrTLSClientCertRejected;
+                    break;
+                case MG_ERR_HOST_NOT_FOUND:
+                    code = kC4NetErrUnknownHost;
+                    break;
+                case MG_ERR_DNS_FAILURE:
+                    code = kC4NetErrDNSFailure;
+                    break;
+                default:
+                    C4Warn("CivetWebSocket: No C4Error for CivetWeb status %d", civetErr.code);
+                    domain = LiteCoreDomain;
+                    code = kC4ErrorUnexpectedError;
+                    break;
+            }
+        } else {
+            domain = POSIXDomain;
+            code = toErrno(civetErr);
+        }
+        return c4error_make(domain, code, slice(civetErr.buffer));
     }
-    
-    
+
+
 #pragma mark - WEBSOCKET CLASS
 
 
-    class CivetWebSocket : public WebSocket {
+    class CivetWebSocket : public actor::Actor {
     public:
 
         // Client-side constructor
-        CivetWebSocket(Provider &provider,
-                       const Address &to,
+        CivetWebSocket(C4Socket *socket,
+                       const C4Address &to,
                        const AllocedDict &options)
-        :WebSocket(provider, to)
+        :Actor()
+        ,_c4socket(socket)
+        ,_url(c4address_toURL(to))
         ,_options(options)
-        { }
-
-
-        // Server-side constructor: takes an already-open connection
-        CivetWebSocket(Provider &provider,
-                       struct mg_connection *connection)
-        :WebSocket(provider, addressOf(connection))
-        ,_driver(new Driver(this, connection))
-        { }
-
-
-        virtual void connect() override {
-            Assert(!_driver);
-            _driver = new Driver(this, _options);
-            _driver->enqueue(&Driver::_connect);
+        {
+            mg_init_library(0);
         }
 
-        virtual bool send(fleece::slice message, bool binary) override {
-            auto opcode = (binary ? WEBSOCKET_OPCODE_BINARY : WEBSOCKET_OPCODE_TEXT);
-            _driver->sendFrame(opcode, alloc_slice(message));
+        ~CivetWebSocket() {
+            assert(!_connection);
+            mg_exit_library();
+        }
+
+        void open() {
+            enqueue(&CivetWebSocket::_open);
+        }
+
+        void onConnected(const mg_connection *connection) {
+            c4socket_gotHTTPResponse(_c4socket,
+                                     getConnectStatus(connection),
+                                     getConnectHeaders(connection));
+        }
+
+        void completedReceive(size_t byteCount) {
+            enqueue(&CivetWebSocket::_completedReceive, byteCount);
+        }
+
+        void send(const alloc_slice &message) {
+            enqueue(&CivetWebSocket::_sendMessage, message);
+        }
+
+        void onMessage(int headerByte, const alloc_slice &data) {
+            enqueue(&CivetWebSocket::_onMessage, headerByte, data);
+        }
+
+        void close(int status, const alloc_slice &message) {
+            enqueue(&CivetWebSocket::_close, status, message);
+        }
+
+        void onClosed() {
+            enqueue(&CivetWebSocket::_onClosed);
+        }
+
+    private:
+
+        void _open() {
+            Assert(!_connection);
+            Log("CivetWebSocket connecting to <%.*s>...", SPLAT(_url));
+
+            stringstream extraHeaders;
+            for (Dict::iterator header(_options[kC4ReplicatorOptionExtraHeaders].asDict());
+                     header; ++header) {
+                extraHeaders << header.keyString() << ": " << header.value().asString() << "\r\n";
+            }
+            slice cookies = _options[kC4ReplicatorOptionCookies].asString();
+            if (cookies)
+                extraHeaders << "Cookie: " << cookies << "\r\n";
+
+            slice protocols = _options[kC4SocketOptionWSProtocols].asString();
+            if (protocols)
+                extraHeaders << "Sec-WebSocket-Protocol: " << protocols << "\r\n";
+
+            C4Address to;
+            c4repl_parseURL(_url, &to, nullptr);
+            bool useSSL = to.scheme != "ws"_sl && slice(to.scheme).hasSuffix("s"_sl);
+
+            char errorStr[256];
+            mg_error civetErr {errorStr, sizeof(errorStr), 0};
+            _connection = mg_connect_websocket_client2(slice(to.hostname).cString(),
+                                                       to.port,
+                                                       useSSL,
+                                                       &civetErr,
+                                                       slice(to.path).cString(),
+                                                       extraHeaders.str().c_str(),
+                                                       &connectHandler, &dataHandler, &closeHandler,
+                                                       this);
+            if (_connection) {
+                retain(this);
+                mg_set_user_connection_data(_connection, this);
+                c4socket_opened(_c4socket);
+            } else {
+                c4socket_closed(_c4socket, toC4Error(civetErr));
+            }
+        }
+
+
+        static int getConnectStatus(const mg_connection *connection) {
+            auto ri = mg_get_request_info(connection);
+            return stoi(string(ri->request_uri));
+        }
+
+
+        static alloc_slice getConnectHeaders(const mg_connection *connection) {
+            // Headers can appear more than once, so collect them into an array-valued map:
+            unordered_map<string, vector<string>> headerMap;
+            auto ri = mg_get_request_info(connection);
+            for (int i = 0; i < ri->num_headers; i++)
+                headerMap[ri->http_headers[i].name].emplace_back(ri->http_headers[i].value);
+
+            // Now encode as a Fleece dict, where values are strings or arrays of strings:
+            Encoder enc;
+            enc.beginDict(headerMap.size());
+            for (auto i = headerMap.begin(); i != headerMap.end(); ++i) {
+                enc.writeKey(slice(i->first));
+                if (i->second.size() == 1)
+                    enc.writeString(i->second[0]);
+                else {
+                    enc.beginArray();
+                    for (string &value : i->second)
+                        enc.writeString(value);
+                    enc.endArray();
+                }
+            }
+            enc.endDict();
+            return enc.finish();
+        }
+
+
+        bool _sendFrame(int opcode, alloc_slice body) {
+            if (!_connection) return false;
+            int ok = mg_websocket_client_write(_connection, opcode, (const char*)body.buf, body.size);
+            if (ok < 0) {
+                C4Warn("mg_websocket_write failed");
+                //TODO: What should I do on error?
+                return false;
+            }
             return true;
         }
 
-        virtual void close(int status, fleece::slice message) override {
-            _driver->enqueue(&Driver::_close, status, alloc_slice(message));
+
+        void _sendMessage(alloc_slice message) {
+            _sendFrame(WEBSOCKET_OPCODE_BINARY, message);
+            c4socket_completedWrite(_c4socket, message.size);
         }
 
-        void dispose() {
-            _driver = nullptr;
+
+        void _onMessage(int headerByte, alloc_slice data) {
+            switch (headerByte & 0x0F) {
+                case WEBSOCKET_OPCODE_BINARY:
+                    _pendingBytes += data.size;
+                    LogDebug("RECEIVED:  %6zd bytes  (now %6zd pending)",
+                             data.size, ssize_t(_pendingBytes));
+                    c4socket_received(_c4socket, data);
+                    break;
+                case WEBSOCKET_OPCODE_PING:
+                    _sendFrame(WEBSOCKET_OPCODE_PONG, data);
+                    break;
+                case WEBSOCKET_OPCODE_CONNECTION_CLOSE:
+                    _onCloseRequest(data);
+                    break;
+                default:
+                    break;
+            }
         }
 
 
-    protected:
-        friend class CivetProvider;
-        class Driver;
-
-        AllocedDict _options;
-        Retained<Driver> _driver;
-
-
-        class Driver : public actor::Actor {
-        public:
-            Driver(CivetWebSocket *ws, const AllocedDict &options)
-            :_webSocket(ws)
-            ,_connection(nullptr)
-            ,_isServer(false)
-            ,_options(options)
-            {
-                mg_init_library(0);
-            }
+        void _completedReceive(size_t byteCount) {
+            _pendingBytes -= byteCount;
+            LogDebug("COMPLETED: %6zd bytes  (now %6zd pending)",
+                     byteCount, ssize_t(_pendingBytes));
+            // TODO: flow control (I don't think CivetWeb supports it...)
+        }
 
 
-            Driver(CivetWebSocket *ws, struct mg_connection *connection)
-            :_webSocket(ws)
-            ,_connection(connection)
-            ,_isServer(true)
-            {
-                mg_init_library(0);
-                mg_set_user_connection_data(connection, this);
-            }
+        void _close(int status, alloc_slice message) {
+            if (_sentCloseFrame)
+                return;
+            LogDebug("Closing with WebSocket status %d '%.*s'", status, SPLAT(message));
+            alloc_slice body(2 + message.size);
+            *(uint16_t*)body.buf = htons((uint16_t)status);
+            memcpy((void*)&body[2], message.buf, message.size);
+            _sendCloseFrame(body);
+        }
 
-
-            virtual ~Driver() {
-                if (_connection)
-                    mg_close_connection(_connection);
-                mg_exit_library();
-            }
-
-
-            Delegate& delegate() const {
-                return _webSocket->delegate();
-            }
-
-
-            void _connect() {
-                Assert(!_connection);
-
-                stringstream extraHeaders;
-                for (Dict::iterator header(_options[kC4ReplicatorOptionExtraHeaders].asDict());
-                         header; ++header) {
-                    extraHeaders << header.keyString() << ": " << header.value().asString() << "\r\n";
-                }
-                slice cookies = _options[kC4ReplicatorOptionCookies].asString();
-                if (cookies)
-                    extraHeaders << "Cookie: " << cookies << "\r\n";
-
-                slice protocols = _options[kC4SocketOptionWSProtocols].asString();
-                if (protocols)
-                    extraHeaders << "Sec-WebSocket-Protocol: " << protocols << "\r\n";
-
-                auto &to = _webSocket->address();
-                char errorStr[256];
-                mg_error error {errorStr, sizeof(errorStr), 0};
-                _connection = mg_connect_websocket_client2(to.hostname.c_str(), to.port,
-                                                          to.scheme != "ws" && hasSuffix(to.scheme, "s"),
-                                                          &error,
-                                                          to.path.c_str(),
-                                                          extraHeaders.str().c_str(),
-                                                          &connectHandler, &dataHandler, &closeHandler,
-                                                          this);
-                if (_connection) {
-                    retain(this);
-                    mg_set_user_connection_data(_connection, this);
-                    delegate().onWebSocketConnect();
-                } else {
-                    // Map civetweb error codes to CloseStatus:
-                    if (error.code >= MG_ERR_HTTP_STATUS_BASE) {
-                        _closeStatus = {kWebSocketClose, error.code - MG_ERR_HTTP_STATUS_BASE};
-                    } else if (error.code >= MG_ERR_CIVETWEB_BASE) {
-                        _closeStatus.reason = kNetworkError;
-                        switch (error.code) {
-                            case MG_ERR_INVALID_CERT:
-                                _closeStatus.code = kNetErrTLSClientCertRejected;
-                                break;
-                            case MG_ERR_HOST_NOT_FOUND:
-                                _closeStatus.code = kNetErrUnknownHost;
-                                break;
-                            case MG_ERR_DNS_FAILURE:
-                                _closeStatus.code = kNetErrDNSFailure;
-                                break;
-                            default:
-                                _closeStatus = {kUnknownError, error.code};
-                                break;
-                        }
-                    } else {
-    #ifdef _MSC_VER
-                        toPOSIX(&error);
-    #endif
-                        _closeStatus = {kPOSIXError, error.code};
-                    }
-                    _closeStatus.message = errorStr;
-                    _notifyClosed();
-                }
-            }
-
-
-            void _close(int status, alloc_slice message) {
-                if (_sentCloseFrame)
-                    return;
-                alloc_slice body(2 + message.size);
-                *(uint16_t*)body.buf = htons((uint16_t)status);
-                memcpy((void*)&body[2], message.buf, message.size);
-                _sendFrame(WEBSOCKET_OPCODE_CONNECTION_CLOSE, body);
-                _sentCloseFrame = true;
-            }
-
-        protected:
-            friend class CivetProvider;
-
-
-            static int connectHandler(const struct mg_connection *connection, void *userData) {
-                auto self = (CivetWebSocket::Driver*)userData;
-                return self->onConnected(connection) ? 0 : 1;
-            }
-
-            // civetweb callback: handshake completed (server-side only)
-            static void readyHandler(struct mg_connection *connection, void *) {
-                auto self = (CivetWebSocket::Driver*)mg_get_user_connection_data(connection);
-                self->onReady();
-            }
-
-            // civetweb callback: received a message
-            static int dataHandler(struct mg_connection *connection,
-                                   int header, char *message, size_t messageLen, void*)
-            {
-                auto self = (CivetWebSocket::Driver*)mg_get_user_connection_data(connection);
-                self->onMessage(header & 0x0F, slice(message, messageLen));
-                return 1;
-            }
-
-
-            // civetweb callback: TCP socket closed
-            static void closeHandler(const struct mg_connection *connection, void*) {
-                auto self = (CivetWebSocket::Driver*)mg_get_user_connection_data(connection);
-                self->enqueue(&Driver::_onClosed);
-            }
-
-
-            void sendFrame(int opcode, alloc_slice body) {
-                enqueue(&Driver::_sendFrame, opcode, body);
-            }
-
-
-            void _sendFrame(int opcode, alloc_slice body) {
-                if (!_connection) return;
-                auto write = _isServer ? mg_websocket_write : mg_websocket_client_write;
-                int ok = write(_connection, opcode, (const char*)body.buf, body.size);
-                if (ok <= 0) {
-                    Warn("mg_websocket_write failed");
-                    //TODO: What should I do on error?
-                }
-                if (opcode == WEBSOCKET_OPCODE_TEXT || opcode == WEBSOCKET_OPCODE_BINARY)
-                    delegate().onWebSocketWriteable();
-            }
-
-
-            bool onConnected(const mg_connection *connection) {
-                // Collect the response status & headers:
-                auto ri = mg_get_request_info(connection);
-                int status = stoi(string(ri->request_uri));
-
-                // Headers can appear more than once, so collect them into an array-valued map:
-                unordered_map<string, vector<string>> headerMap;
-                for (int i = 0; i < ri->num_headers; i++)
-                    headerMap[ri->http_headers[i].name].emplace_back(ri->http_headers[i].value);
-
-                // Now encode as a Fleece dict, where values are strings or arrays of strings:
-                Encoder enc;
-                enc.beginDict(headerMap.size());
-                for (auto i = headerMap.begin(); i != headerMap.end(); ++i) {
-                    enc.writeKey(slice(i->first));
-                    if (i->second.size() == 1)
-                        enc.writeString(i->second[0]);
-                    else {
-                        enc.beginArray();
-                        for (string &value : i->second)
-                            enc.writeString(value);
-                        enc.endArray();
-                    }
-                }
-                enc.endDict();
-                AllocedDict headers(enc.finish());
-
-                delegate().onWebSocketGotHTTPResponse(status, headers);
-                return true;
-            }
-
-
-            void onReady() {
-                delegate().onWebSocketStart();
-            }
-
-
-            void onMessage(int headerByte, slice message) {
-                bool binary = false;
-                switch (headerByte & 0x0F) {
-                    case WEBSOCKET_OPCODE_BINARY:
-                        binary = true;
-                        // fall through:
-                    case WEBSOCKET_OPCODE_TEXT:
-                        delegate().onWebSocketMessage(message, binary);
-                        break;
-                    case WEBSOCKET_OPCODE_PING:
-                        sendFrame(WEBSOCKET_OPCODE_PONG, alloc_slice(message));
-                        break;
-                    case WEBSOCKET_OPCODE_CONNECTION_CLOSE:
-                        enqueue(&Driver::_onCloseRequest, alloc_slice(message));
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-
-            void _onClosed() {
-                if (!_connection)
-                    return;
-                _connection = nullptr;
-                if (!_rcvdCloseFrame) {
-                    _closeStatus.reason = kUnknownError;
-                }
-                _notifyClosed();
-            }
-
-
-            void _notifyClosed() {
-                delegate().onWebSocketClose(_closeStatus);
-                _webSocket = nullptr;  // breaks ref cycle
-            }
-
-
-            void _onCloseRequest(alloc_slice body) {
-                // https://tools.ietf.org/html/rfc6455#section-7
-                _rcvdCloseFrame = true;
-                _closeStatus.reason = kWebSocketClose;
+        void _onCloseRequest(alloc_slice body) {
+            // https://tools.ietf.org/html/rfc6455#section-7
+            LogDebug("Received close request");
+            _rcvdCloseFrame = true;
+            if (!_sentCloseFrame) {
+                // Peer initiated close, so get its reason:
                 if (body.size >= 2) {
                     slice in = body;
-                    _closeStatus.code = ntohs(*(uint16_t*)in.read(2).buf);
-                    _closeStatus.message = in;
+                    int status = ntohs(*(uint16_t*)in.read(2).buf);
+                    _closeStatus = c4error_make(WebSocketDomain, status, in);
                 } else {
-                    _closeStatus.code = kCodeStatusCodeExpected;
+                    _closeStatus = c4error_make(WebSocketDomain, kWebSocketCloseNoCode, nullslice);
                 }
-
-                if (!_sentCloseFrame) {
-                    // Peer initiated close, so echo back its reason:
-                    //TODO: Give the delegate a chance to delay this
-                    sendFrame(WEBSOCKET_OPCODE_CONNECTION_CLOSE, body);
-                }
-                mg_close_connection(_connection);
-                _onClosed();
+                // Echo back peer's close request (synchronously):
+                //TODO: Give the delegate a chance to delay this
+                _sendCloseFrame(body);
             }
+            mg_close_connection(_connection);
+            _onClosed();
+        }
 
 
-            friend class CivetWebSocket;
-            friend class CivetProvider;
+        void _sendCloseFrame(alloc_slice body) {
+            if (_sendFrame(WEBSOCKET_OPCODE_CONNECTION_CLOSE, body))
+                _sentCloseFrame = true;
+        }
 
-            Retained<CivetWebSocket> _webSocket;
-            AllocedDict _options;
-            struct mg_connection *_connection;
-            alloc_slice _responseHeaders;
-            CloseStatus _closeStatus;
-            bool _isServer;
-            bool _accepted {false};
-            bool _sentCloseFrame {false};
-            bool _rcvdCloseFrame {false};
-        };
+
+        void _onClosed() {
+            Log("Connection closed");
+            if (!_connection)
+                return;
+            _connection = nullptr;
+            if (!_rcvdCloseFrame) {
+                _closeStatus = c4error_make(WebSocketDomain, kWebSocketCloseAbnormal,
+                                            "Connection closed unexpectedly"_sl);
+            }
+            c4socket_closed(_c4socket, _closeStatus);
+            release(this); // balances retain() in _open()
+        }
+
+
+        alloc_slice _url;
+        C4Socket* _c4socket;
+        AllocedDict _options;
+        struct mg_connection *_connection {nullptr};
+        alloc_slice _responseHeaders;
+        C4Error _closeStatus {};
+        bool _accepted {false};
+        bool _sentCloseFrame {false};
+        bool _rcvdCloseFrame {false};
+        ssize_t _pendingBytes {0};
     };
 
 
-#pragma mark - PROVIDER:
+#pragma mark - CIVETWEB CONNECTION CALLBACKS:
 
 
-    CivetProvider& CivetProvider::instance() {
-        static CivetProvider p;
-        return p;
-    }
-
-
-    WebSocket* CivetProvider::createWebSocket(const Address &to,
-                                              const AllocedDict &options) {
-        return new CivetWebSocket(*this, to, options);
-    }
-
-
-    void CivetProvider::setServerWebSocketHandler(mg_context *context, string uri,
-                                                  ServerWebSocketHandler handler)
-    {
-        auto info = new pair<CivetProvider&,ServerWebSocketHandler>(*this, handler);
-        mg_set_websocket_handler(context, uri.c_str(),
-                                 &connectHandler,
-                                 &CivetWebSocket::Driver::readyHandler,
-                                 &CivetWebSocket::Driver::dataHandler,
-                                 &CivetWebSocket::Driver::closeHandler,
-                                 info);
-    }
-
-
-    int CivetProvider::connectHandler(const mg_connection *roConnection, void *context) {
-        auto info = (pair<CivetProvider&,ServerWebSocketHandler>*)context;
-        auto socket = new CivetWebSocket(info->first, const_cast<mg_connection*>(roConnection));
-        if (!info->second(roConnection, socket)) {
-            delete socket;
-            return 1; // yes, for some reason 1 means failure...
-        }
+    static int connectHandler(const struct mg_connection *connection, void *userData) {
+        ((CivetWebSocket*)userData)->onConnected(connection);
         return 0;
+    }
+
+
+    static int dataHandler(struct mg_connection *connection,
+                           int header, char *message, size_t messageLen, void *userData)
+    {
+        ((CivetWebSocket*)userData)->onMessage(header & 0x0F, alloc_slice(message, messageLen));
+        return 1;
+    }
+
+
+    static void closeHandler(const struct mg_connection *connection, void *userData) {
+        ((CivetWebSocket*)userData)->onClosed();
     }
 
 
 #pragma mark - C4 SOCKET FACTORY:
 
 
-    class civetC4Adapter : Delegate {
-    public:
-        civetC4Adapter(C4Socket *sock, const C4Address *c4To, const AllocedDict &options)
-        :c4socket(sock)
-        ,socket(CivetProvider::instance().createWebSocket(c4AddressOf(*c4To), options))
-        {
-            socket->connect(this);
-        }
-
-        virtual void onWebSocketGotHTTPResponse(int status, const AllocedDict &headers) override {
-            c4socket_gotHTTPResponse(c4socket, status, headers.data());
-        }
-
-        virtual void onWebSocketConnect() override {
-            c4socket_opened(c4socket);
-        }
-
-        virtual void onWebSocketClose(CloseStatus status) override {
-            static const C4ErrorDomain kDomainForReason[] = {
-                WebSocketDomain, POSIXDomain, NetworkDomain, LiteCoreDomain
-            };
-            C4ErrorDomain domain = kDomainForReason[status.reason];
-            if (status.reason == kUnknownError)
-                status.code = kC4ErrorRemoteError;
-            c4socket_closed(c4socket, c4error_make(domain, status.code, status.message));
-        }
-
-        virtual void onWebSocketMessage(fleece::slice message, bool binary) override {
-            if (binary)
-                c4socket_received(c4socket, message);
-        }
-
-        virtual void onWebSocketWriteable() override {
-            c4socket_completedWrite(c4socket, _lastWriteSize.exchange(0));
-        }
-
-        void send(alloc_slice body, bool binary) {
-            if (socket) {
-                _lastWriteSize += body.size;
-                socket->send(body, binary);
-            }
-        }
-
-        void completedReceive(size_t byteCount) {
-            // TODO: flow control (I don't think CivetWeb supports it...)
-        }
-
-        void requestClose(int status, C4String message) {
-            if (socket)
-                socket->close(status, slice(message));
-        }
-
-        C4Socket *c4socket;
-        Retained<WebSocket> socket;
-        atomic<size_t> _lastWriteSize {0};
-    };
-
-
-    static inline civetC4Adapter* internal(C4Socket *sock) {
-        return ((civetC4Adapter*)sock->nativeHandle);
+    static inline CivetWebSocket* internal(C4Socket *sock) {
+        return ((CivetWebSocket*)sock->nativeHandle);
     }
 
 
     static void sock_open(C4Socket *sock, const C4Address *c4To, FLSlice optionsFleece, void*) {
-        sock->nativeHandle = new civetC4Adapter(sock, c4To, AllocedDict((slice)optionsFleece));
+        auto self = new CivetWebSocket(sock, *c4To, AllocedDict((slice)optionsFleece));
+        sock->nativeHandle = self;
+        retain(self);  // Makes nativeHandle a strong ref; balanced by release in sock_dispose
+        self->open();
     }
 
 
     static void sock_write(C4Socket *sock, C4SliceResult allocatedData) {
         if (internal(sock))
-            internal(sock)->send(alloc_slice(move(allocatedData)), true);
+            internal(sock)->send(alloc_slice(move(allocatedData)));
     }
 
     static void sock_completedReceive(C4Socket *sock, size_t byteCount) {
@@ -539,37 +394,29 @@ namespace litecore { namespace websocket {
 
     static void sock_requestClose(C4Socket *sock, int status, C4String message) {
         if (internal(sock))
-            internal(sock)->requestClose(status, message);
+            internal(sock)->close(status, message);
     }
 
 
     static void sock_dispose(C4Socket *sock) {
-        delete internal(sock);
+        release(internal(sock));        // balances retain in sock_open
         sock->nativeHandle = nullptr;
     }
 
 
-    C4SocketFactory CivetProvider::C4SocketFactory() {
-        return {
-            true,
-            nullptr,
-            &sock_open, &sock_write, &sock_completedReceive,
-            nullptr,
-            &sock_requestClose,
-        };
-    }
-
-
-    // Declared in c4Socket+Internal.hh
-    const C4SocketFactory C4DefaultSocketFactory {
-        true,
-        nullptr,
-        &sock_open,
-        &sock_write,
-        &sock_completedReceive,
-        nullptr,
-        &sock_requestClose,
-        &sock_dispose
-    };
-
 } }
+
+using namespace litecore::websocket;
+
+
+// Declared in c4Socket+Internal.hh
+const C4SocketFactory C4CivetWebSocketFactory {
+    true,
+    nullptr,
+    &sock_open,
+    &sock_write,
+    &sock_completedReceive,
+    nullptr,
+    &sock_requestClose,
+    &sock_dispose
+};
