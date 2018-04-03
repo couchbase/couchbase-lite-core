@@ -10,6 +10,7 @@
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.hh"
+#include "CivetWebSocket.hh"
 #include "Response.hh"
 #include "make_unique.h"
 #include <iostream>
@@ -41,6 +42,10 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
+        static std::once_flag once;
+        std::call_once(once, [] {
+            c4socket_registerFactory(C4CivetWebSocketFactory);
+        });
         // Environment variables can also override the default address above:
         const char *hostname = getenv("REMOTE_HOST");
         if (hostname)

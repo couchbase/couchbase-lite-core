@@ -154,7 +154,7 @@ namespace litecore { namespace websocket {
 
     C4SocketFactory& C4Provider::registeredFactory() {
         if (!sRegisteredFactory)
-            registerFactory(C4DefaultSocketFactory);
+            throw std::logic_error("No default C4SocketFactory registered; call c4socket_registerFactory())");
         return *sRegisteredFactory;
     }
 

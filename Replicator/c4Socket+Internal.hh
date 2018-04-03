@@ -68,9 +68,4 @@ namespace litecore { namespace websocket {
         C4SocketFactory _socketFactory;
     };
 
-
-    /** A default C4SocketFactory, which will be registered when the first replication starts,
-        if the app has not registered its own custom factory yet. */
-    extern const C4SocketFactory C4DefaultSocketFactory;
-
 } }
