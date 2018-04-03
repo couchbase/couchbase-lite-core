@@ -1085,7 +1085,6 @@
 		275C4AE61F7D939000F15938 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		275CE0E11E57B7E70084E014 /* c4Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Replicator.cc; sourceTree = "<group>"; };
 		275CE0E21E57B7E70084E014 /* c4Replicator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Replicator.h; sourceTree = "<group>"; };
-		275CE0EE1E57BE7E0084E014 /* Replicator.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = Replicator.exp; sourceTree = "<group>"; };
 		275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorLoopbackTest.cc; sourceTree = "<group>"; };
 		275CE1131E5BAC180084E014 /* Worker.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Worker.cc; sourceTree = "<group>"; };
 		275CE1141E5BAC180084E014 /* Worker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Worker.hh; sourceTree = "<group>"; };
@@ -1193,7 +1192,6 @@
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = blip_cpp.xcodeproj; path = "BLIP-Cpp/blip_cpp.xcodeproj"; sourceTree = "<group>"; };
 		27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = CouchbaseLiteReplicator.h; path = ../Xcode/Replicator/CouchbaseLiteReplicator.h; sourceTree = "<group>"; };
-		27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Replicator-Info.plist"; path = "../Xcode/Replicator/Replicator-Info.plist"; sourceTree = "<group>"; };
 		27CCC7D61E52613C00CE1989 /* Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Replicator.cc; sourceTree = "<group>"; };
 		27CCC7D71E52613C00CE1989 /* Replicator.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Replicator.hh; sourceTree = "<group>"; };
 		27CCC7DE1E526CCC00CE1989 /* Puller.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Puller.cc; sourceTree = "<group>"; };
@@ -2149,8 +2147,6 @@
 				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
 				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
 				27CCC7CB1E525E6D00CE1989 /* CouchbaseLiteReplicator.h */,
-				27CCC7CC1E525E6D00CE1989 /* Replicator-Info.plist */,
-				275CE0EE1E57BE7E0084E014 /* Replicator.exp */,
 				275CE0FC1E5B78570084E014 /* tests */,
 			);
 			name = Replicator;

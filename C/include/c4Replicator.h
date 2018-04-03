@@ -103,7 +103,7 @@ extern "C" {
         @param dbName  If non-NULL, then on success this slice will point to the last path
                         component of `url`; `address->path` will not include this component.
         @return  True on success, false on failure. */
-    bool c4repl_parseURL(C4String url,
+    bool c4address_fromURL(C4String url,
                          C4Address *address C4NONNULL,
                          C4String *dbName);
 

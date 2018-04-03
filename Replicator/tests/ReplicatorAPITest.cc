@@ -25,82 +25,82 @@ TEST_CASE("URL Parsing") {
     C4Address address;
     C4String dbName;
 
-    REQUIRE(c4repl_parseURL("blip://localhost/dbname"_sl, &address, &dbName));
+    REQUIRE(c4address_fromURL("blip://localhost/dbname"_sl, &address, &dbName));
     CHECK(address.scheme == "blip"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 80);
     CHECK(address.path == "/"_sl);
     CHECK(dbName == "dbname"_sl);
 
-    REQUIRE(c4repl_parseURL("blip://localhost/dbname"_sl, &address, NULL));
+    REQUIRE(c4address_fromURL("blip://localhost/dbname"_sl, &address, NULL));
     CHECK(address.scheme == "blip"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 80);
     CHECK(address.path == "/dbname"_sl);
 
-    REQUIRE(c4repl_parseURL("blip://localhost/"_sl, &address, NULL));
+    REQUIRE(c4address_fromURL("blip://localhost/"_sl, &address, NULL));
     CHECK(address.scheme == "blip"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 80);
     CHECK(address.path == "/"_sl);
 
-    REQUIRE(c4repl_parseURL("blips://localhost/dbname"_sl, &address, &dbName));
+    REQUIRE(c4address_fromURL("blips://localhost/dbname"_sl, &address, &dbName));
     CHECK(address.scheme == "blips"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 443);
     CHECK(address.path == "/"_sl);
     CHECK(dbName == "dbname"_sl);
 
-    REQUIRE(c4repl_parseURL("blips://localhost/dbname/"_sl, &address, &dbName));
+    REQUIRE(c4address_fromURL("blips://localhost/dbname/"_sl, &address, &dbName));
     CHECK(address.scheme == "blips"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 443);
     CHECK(address.path == "/"_sl);
     CHECK(dbName == "dbname"_sl);
 
-    REQUIRE(c4repl_parseURL("blips://localhost/path/to/dbname"_sl, &address, &dbName));
-    REQUIRE(c4repl_parseURL("blips://localhost/path/to/dbname/"_sl, &address, &dbName));
+    REQUIRE(c4address_fromURL("blips://localhost/path/to/dbname"_sl, &address, &dbName));
+    REQUIRE(c4address_fromURL("blips://localhost/path/to/dbname/"_sl, &address, &dbName));
     CHECK(address.scheme == "blips"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 443);
     CHECK(address.path == "/path/to/"_sl);
     CHECK(dbName == "dbname"_sl);
 
-    REQUIRE(c4repl_parseURL("blips://localhost/path/to/dbname/"_sl, &address, NULL));
+    REQUIRE(c4address_fromURL("blips://localhost/path/to/dbname/"_sl, &address, NULL));
     CHECK(address.scheme == "blips"_sl);
     CHECK(address.hostname == "localhost"_sl);
     CHECK(address.port == 443);
     CHECK(address.path == "/path/to/dbname/"_sl);
 
-    REQUIRE(c4repl_parseURL("blips://localhost/d"_sl, &address, &dbName));
-    REQUIRE(c4repl_parseURL("blips://localhost/p/d/"_sl, &address, &dbName));
-    REQUIRE(c4repl_parseURL("blips://localhost//p//d/"_sl, &address, &dbName));
+    REQUIRE(c4address_fromURL("blips://localhost/d"_sl, &address, &dbName));
+    REQUIRE(c4address_fromURL("blips://localhost/p/d/"_sl, &address, &dbName));
+    REQUIRE(c4address_fromURL("blips://localhost//p//d/"_sl, &address, &dbName));
 
-    REQUIRE(!c4repl_parseURL("blip://example.com/db@name"_sl, &address, &dbName));
+    REQUIRE(!c4address_fromURL("blip://example.com/db@name"_sl, &address, &dbName));
     CHECK(dbName == "db@name"_sl);
 
     // The following URLs should all be rejected:
     ExpectingExceptions x;
-    CHECK(!c4repl_parseURL(""_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip:"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip:/"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("http://localhost/dbname"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("://localhost/dbname"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("/dev/null"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("/dev/nu:ll"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://localhost:-1/dbname"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://localhost:666666/dbname"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://localhost:x/dbname"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://localhost:/foo"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://localhost"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://localhost/"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://localhost/B^dn^m*"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL(""_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip:"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip:/"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("http://localhost/dbname"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("://localhost/dbname"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("/dev/null"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("/dev/nu:ll"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://localhost:-1/dbname"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://localhost:666666/dbname"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://localhost:x/dbname"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://localhost:/foo"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://localhost"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://localhost/"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://localhost/B^dn^m*"_sl, &address, &dbName));
 
-    CHECK(!c4repl_parseURL("blip://snej@example.com/db"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://snej@example.com:8080/db"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://snej:password@example.com/db"_sl, &address, &dbName));
-    CHECK(!c4repl_parseURL("blip://snej:password@example.com:8080/db"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://snej@example.com/db"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://snej@example.com:8080/db"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://snej:password@example.com/db"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("blip://snej:password@example.com:8080/db"_sl, &address, &dbName));
 }
 
 

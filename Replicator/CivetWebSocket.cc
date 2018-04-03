@@ -177,7 +177,7 @@ namespace litecore { namespace websocket {
                 extraHeaders << "Sec-WebSocket-Protocol: " << protocols << "\r\n";
 
             C4Address to;
-            c4repl_parseURL(_url, &to, nullptr);
+            c4address_fromURL(_url, &to, nullptr);
             bool useSSL = to.scheme != "ws"_sl && slice(to.scheme).hasSuffix("s"_sl);
 
             char errorStr[256];

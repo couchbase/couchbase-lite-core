@@ -48,7 +48,7 @@ bool c4repl_isValidDatabaseName(C4String dbName) {
 }
 
 
-bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName) {
+bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) {
     slice str = url;
 
     auto colon = str.findByteOrEnd(':');
