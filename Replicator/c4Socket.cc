@@ -86,7 +86,7 @@ namespace litecore { namespace websocket {
                      const AllocedDict &options,
                      const C4SocketFactory &factory_,
                      void *nativeHandle_ =nullptr)
-        :WebSocketImpl(provider, address, options, !factory_.providesWebSockets)
+        :WebSocketImpl(provider, address, options, (Framing)factory_.framing)
         ,factory(factory_)
         {
             nativeHandle = nativeHandle_;
@@ -122,7 +122,7 @@ namespace litecore { namespace websocket {
 #if DEBUG
         Assert(f.write != nullptr);
         Assert(f.completedReceive != nullptr);
-        if (f.providesWebSockets) {
+        if (f.framing == kC4NoFraming) {
             Assert(f.close == nullptr);
             Assert(f.requestClose != nullptr);
         } else {

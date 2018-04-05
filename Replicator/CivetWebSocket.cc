@@ -411,7 +411,7 @@ using namespace litecore::websocket;
 
 // Declared in c4Socket+Internal.hh
 const C4SocketFactory C4CivetWebSocketFactory {
-    true,
+    kC4NoFraming,
     nullptr,
     &sock_open,
     &sock_write,

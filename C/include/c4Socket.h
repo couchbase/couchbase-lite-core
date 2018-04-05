@@ -75,6 +75,15 @@ extern "C" {
     } C4Socket;
 
 
+    /** The type of message framing that should be applied to the socket's data (added to outgoing,
+        parsed out of incoming.) */
+    typedef C4_ENUM(uint8_t, C4SocketFraming) {
+        kC4WebSocketClientFraming,  ///< Frame as WebSocket client messages (masked)
+        kC4NoFraming,               ///< No framing; use messages as-is
+        kC4WebSocketServerFraming,  ///< Frame as WebSocket server messages (not masked)
+    };
+
+
     /** A group of callbacks that define the implementation of sockets; the client must fill this
         out and pass it to c4socket_registerFactory() before using any socket-based API.
         These callbacks will be invoked on arbitrary background threads owned by LiteCore.
@@ -85,7 +94,7 @@ extern "C" {
     typedef struct {
         /** This should be set to `true` if the socket factory acts as a stream of messages,
             `false` if it's a byte stream. */
-        bool providesWebSockets;
+        C4SocketFraming framing;
 
         /** An arbitrary value that will be passed to the `open` callback. */
         void* context;
