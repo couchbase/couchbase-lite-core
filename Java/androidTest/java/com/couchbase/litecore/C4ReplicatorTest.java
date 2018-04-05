@@ -65,6 +65,7 @@ public class C4ReplicatorTest extends C4BaseTest {
     String path = null;
     String remoteDB = null;
     byte[] options = null;
+    boolean stopWhenIdle = false;
 
     C4ReplicatorStatus callbackStatus;
     int numCallbacks;
@@ -149,6 +150,8 @@ public class C4ReplicatorTest extends C4BaseTest {
         numCallbacks = 0;
         numCallbacksWithLevel = new int[5];
         headers = null;
+        this.stopWhenIdle = false;
+
     }
 
     @After
@@ -241,6 +244,14 @@ public class C4ReplicatorTest extends C4BaseTest {
         }
     }
 
+    // -- API Loopback Push & Pull Deletion
+    @Test
+    public void testAPILoopbackPushNPullDeletion() throws LiteCoreException, IOException {
+        //TODO
+    }
+
+    // - REAL-REPLICATOR (SYNC GATEWAY) TESTS
+
     // -- API Auth Failure
     @Test
     public void testAPIAuthFailure() throws MalformedURLException, LiteCoreException {
@@ -298,6 +309,12 @@ public class C4ReplicatorTest extends C4BaseTest {
         replicate(kC4OneShot, kC4Disabled, true);
     }
 
+    // -- API Push Empty Doc
+    @Test
+    public void testAPIPushEmptyDoc() {
+        // TODO
+    }
+
     // -- API Push Big DB
     @Test
     public void testAPIPushBigDB() throws IOException, LiteCoreException {
@@ -311,7 +328,7 @@ public class C4ReplicatorTest extends C4BaseTest {
     // -- API Push Large-Docs DB
     //    Download https://github.com/diegoceccarelli/json-wikipedia/blob/master/src/test/resources/misc/en-wikipedia-articles-1000-1.json.gz
     //    and unzip to C/tests/data/ before running this test.
-    @Test
+    //@Test
     public void testAPIPushLargeDocsDB() throws IOException, LiteCoreException {
         if (!config.replicatorTestsEnabled())
             return;
@@ -326,8 +343,18 @@ public class C4ReplicatorTest extends C4BaseTest {
         if (!config.replicatorTestsEnabled())
             return;
 
-        //this.remoteDB = kITunesDBName;
+        this.remoteDB = kITunesDBName;
         replicate(kC4Disabled, kC4OneShot, true);
+    }
+
+    // -- API Continuous Push
+    @Test
+    public void testAPIContinuousPush() throws IOException, LiteCoreException {
+        if (!config.replicatorTestsEnabled())
+            return;
+        importJSONLines("names_100.json");
+        this.stopWhenIdle = true;
+        replicate(kC4Continuous, kC4Disabled, true);
     }
 
     // -- API Continuous Pull
@@ -336,7 +363,46 @@ public class C4ReplicatorTest extends C4BaseTest {
         if (!config.replicatorTestsEnabled())
             return;
 
-        //this.remoteDB = kITunesDBName;
+        this.remoteDB = kITunesDBName;
+        this.stopWhenIdle = true;
         replicate(kC4Disabled, kC4Continuous, true);
     }
+
+    // -- Push & Pull Deletion
+    @Test
+    public void testPushNPullDeletion() {
+        // TODO
+    }
+
+    // -- Push & Pull Attachments
+    @Test
+    public void testPushNPullAttachments() {
+        // TODO
+    }
+
+    // -- Prove Attachments
+    @Test
+    public void testProveAttachments() {
+        // TODO
+    }
+
+    // -- API Pull Big Attachments
+    @Test
+    public void testAPIPullBigAttachments() {
+        // TODO
+    }
+
+    // -- API Push Conflict
+    @Test
+    public void testAPIPushConflict() {
+        // TODO
+    }
+
+    // -- Update Once-Conflicted Doc
+    @Test
+    public void testUpdateOnceConflictedDoc() {
+        // TODO
+    }
+
+
 }

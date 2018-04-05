@@ -18,18 +18,24 @@
 package com.couchbase.litecore;
 
 import com.couchbase.litecore.fleece.FLArrayIterator;
+import com.couchbase.litecore.fleece.FLDict;
+import com.couchbase.litecore.fleece.FLValue;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import static com.couchbase.litecore.C4Constants.C4ErrorDomain.LiteCoreDomain;
 import static com.couchbase.litecore.C4Constants.C4IndexType.kC4FullTextIndex;
 import static com.couchbase.litecore.C4Constants.C4IndexType.kC4ValueIndex;
+import static com.couchbase.litecore.C4Constants.LiteCoreError.kC4ErrorInvalidParameter;
 import static com.couchbase.litecore.C4Constants.LiteCoreError.kC4ErrorInvalidQuery;
+import static com.couchbase.litecore.fleece.FLConstants.FLValueType.kFLDict;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -92,6 +98,31 @@ public class C4QueryTest extends C4QueryBaseTest {
         assertEquals(Arrays.asList(), run("{\"offset\":0,\"limit\":4}"));
     }
 
+    // - DB Query LIKE
+    @Test
+    public void testDBQueryLIKE() throws LiteCoreException {
+        compile(json5("['LIKE', ['.name.first'], '%j%']"));
+        assertEquals(Arrays.asList("0000085"), run());
+
+        compile(json5("['LIKE', ['.name.first'], '%J%']"));
+        assertEquals(Arrays.asList("0000002", "0000004", "0000008", "0000017", "0000028", "0000030", "0000045", "0000052", "0000067", "0000071", "0000088", "0000094"), run());
+
+        compile(json5("['LIKE', ['.name.first'], 'Jen%']"));
+        assertEquals(Arrays.asList("0000008", "0000028"), run());
+    }
+
+    // - DB Query IN
+    @Test
+    public void testDBQueryIN() throws LiteCoreException {
+        // Type 1: RHS is an expression; generates a call to array_contains
+        compile(json5("['IN', 'reading', ['.', 'likes']]"));
+        assertEquals(Arrays.asList("0000004", "0000056", "0000064", "0000079", "0000099"), run());
+
+        // Type 2: RHS is an array literal; generates a SQL "IN" expression
+        compile(json5("['IN', ['.', 'name', 'first'], ['[]', 'Eddie', 'Verna']]"));
+        assertEquals(Arrays.asList("0000091", "0000093"), run());
+    }
+
     // - DB Query sorted
     @Test
     public void testDBQuerySorted() throws LiteCoreException {
@@ -129,6 +160,19 @@ public class C4QueryTest extends C4QueryBaseTest {
         // Look for people where every like contains an L:
         compile(json5("['ANY AND EVERY', 'like', ['.', 'likes'], ['LIKE', ['?', 'like'], '%l%']]"));
         assertEquals(Arrays.asList("0000017", "0000027", "0000060", "0000068"), run());
+    }
+
+    // - DB Query ANY w/paths
+    // NOTE: in C4PathsQueryTest.java
+
+    // - DB Query ANY of dict
+    @Test
+    public void testDBQueryANYofDict() throws LiteCoreException {
+        compile(json5("['ANY', 'n', ['.', 'name'], ['=', ['?', 'n'], 'Arturo']]"));
+        assertEquals(Arrays.asList("0000090"), run());
+
+        compile(json5("['ANY', 'n', ['.', 'name'], ['contains()', ['?', 'n'], 'V']]"));
+        assertEquals(Arrays.asList("0000044", "0000048", "0000053", "0000093"), run());
     }
 
     // - DB Query expression index
@@ -169,6 +213,26 @@ public class C4QueryTest extends C4QueryBaseTest {
         // Now run a query that would have returned the deleted doc, if it weren't deleted:
         compile(json5("['=', ['length()', ['.name.first']], 9]"));
         assertEquals(Arrays.asList("0000099"), run());
+    }
+
+    // - Missing columns
+    @Test
+    public void testMissingColumns() throws LiteCoreException {
+        {
+            compileSelect(json5("['SELECT', {'WHAT': [['.name'], ['.gender']], 'LIMIT': 1}]"));
+            C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
+            while (e.next())
+                assertEquals(0x00, e.getMissingColumns());
+            e.free();
+        }
+
+        {
+            compileSelect(json5("['SELECT', {'WHAT': [['.XX'], ['.name'], ['.YY'], ['.gender'], ['.ZZ']], 'LIMIT': 1}]"));
+            C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
+            while (e.next())
+                assertEquals(0x15, e.getMissingColumns());
+            e.free();
+        }
     }
 
     // ----- FTS:
@@ -309,6 +373,31 @@ public class C4QueryTest extends C4QueryBaseTest {
         assertEquals(3, i);
     }
 
+    // - DB Query WHAT returning object
+    @Test
+    public void testDBQueryWHATReturningObject() throws LiteCoreException {
+        List<String> expectedFirst = Arrays.asList("Cleveland", "Georgetta", "Margaretta");
+        List<String> expectedLast = Arrays.asList("Bejcek", "Kolding", "Ogwynn");
+        compileSelect(json5("{WHAT: ['.name'], WHERE: ['>=', ['length()', ['.name.first']], 9], ORDER_BY: [['.name.first']]}"));
+        assertEquals(1, query.columnCount());
+
+        C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
+        assertNotNull(e);
+        int i = 0;
+        while (e.next()) {
+            FLArrayIterator itr = e.getColumns();
+            FLValue col = itr.getValueAt(0);
+            assertTrue(col.getType() == kFLDict);
+            FLDict name = col.asFLDict();
+            name.getSharedKey("first", db.getFLSharedKeys());
+            assertEquals(expectedFirst.get(i), name.getSharedKey("first", db.getFLSharedKeys()).asString());
+            assertEquals(expectedLast.get(i), name.getSharedKey("last", db.getFLSharedKeys()).asString());
+            i++;
+        }
+        e.free();
+        assertEquals(3, i);
+    }
+
     // - DB Query Aggregate
     @Test
     public void testDBQueryAggregate() throws LiteCoreException {
@@ -355,5 +444,113 @@ public class C4QueryTest extends C4QueryBaseTest {
         }
         e.free();
         assertEquals(expectedRowCount, i);
+    }
+
+    // - DB Query Join
+    @Test
+    public void testDBQueryJoin() throws IOException, LiteCoreException {
+        importJSONLines("states_titlecase_line.json", "state-");
+        List<String> expectedFirst = Arrays.asList("Cleveland", "Georgetta", "Margaretta");
+        List<String> expectedState = Arrays.asList("California", "Ohio", "South Dakota");
+        compileSelect(json5("{WHAT: ['.person.name.first', '.state.name'], FROM: [{as: 'person'}, {as: 'state', on: ['=', ['.state.abbreviation'], ['.person.contact.address.state']]}],WHERE: ['>=', ['length()', ['.person.name.first']], 9],ORDER_BY: [['.person.name.first']]}"));
+        C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
+        assertNotNull(e);
+        int i = 0;
+        while (e.next()) {
+            FLArrayIterator itr = e.getColumns();
+            if (i < expectedState.size()) {
+                assertEquals(itr.getValue().asString(), expectedFirst.get(i));
+                assertTrue(itr.next());
+                assertEquals(itr.getValue().asString(), expectedState.get(i));
+            }
+            i++;
+        }
+        e.free();
+        assertEquals(3, i);
+    }
+
+    // - DB Query Seek
+    @Test
+    public void testDBQuerySeek() throws LiteCoreException {
+        compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
+        C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
+        assertNotNull(e);
+        e.next();
+        String docID = e.getColumns().getValueAt(0).asString();
+        assertEquals("0000001", docID);
+        e.next();
+        e.seek(0);
+        docID = e.getColumns().getValueAt(0).asString();
+        assertEquals("0000001", docID);
+        e.seek(7);
+        docID = e.getColumns().getValueAt(0).asString();
+        assertEquals("0000073", docID);
+        try {
+            e.seek(100);
+        } catch (LiteCoreException ex) {
+            assertEquals(kC4ErrorInvalidParameter, ex.code);
+            assertEquals(LiteCoreDomain, ex.domain);
+        }
+        e.free();
+    }
+
+    // - DB Query ANY nested
+    // NOTE: in C4NestedQueryTest
+
+    // - Query parser error messages
+    @Test
+    public void testQueryParserErrorMessages() throws LiteCoreException {
+        try {
+            query = new C4Query(db.getHandle(), "[\"=\"]");
+            fail();
+        } catch (LiteCoreException ex) {
+            assertEquals(kC4ErrorInvalidQuery, ex.code);
+            assertEquals(LiteCoreDomain, ex.domain);
+        }
+    }
+
+    // - Query refresh
+    @Test
+    public void testQueryRefresh() throws LiteCoreException {
+        compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
+        String explanation = query.explain();
+        // NOTE: Different from LiteCore expected: "SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'contact.address.state') = 'CA') AND (flags & 1) = 0"
+        assertEquals("SELECT key, sequence FROM kv_default WHERE (fl_value(body, 'contact.address.state') = 'CA') AND (flags & 1) = 0", explanation.substring(0, 111));
+
+        C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
+        assertNotNull(e);
+        C4QueryEnumerator refreshed = e.refresh();
+        assertNull(refreshed);
+
+        boolean commit = false;
+        db.beginTransaction();
+        try {
+
+            commit = true;
+        } finally {
+            db.endTransaction(commit);
+        }
+        e.free();
+
+    }
+
+    // - Delete index
+    @Test
+    public void testDeleteIndex() {
+        // TODO
+    }
+
+    // - COLLATION:
+
+    // - DB Query collated
+    @Test
+    public void testDBQueryCollated() {
+        // TODO
+    }
+
+    // - DB Query aggregate collated
+    @Test
+    public void testDBQueryAggregateCollated() {
+        // TODO
     }
 }

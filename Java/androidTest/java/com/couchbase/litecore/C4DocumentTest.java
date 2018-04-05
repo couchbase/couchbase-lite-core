@@ -240,6 +240,12 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
         doc.free();
     }
 
+    // - Document Purge
+    @Test
+    public void testDocumentPurge() {
+        // TODO
+    }
+
     // - "Document maxRevTreeDepth"
     @Test
     public void testMaxRevTreeDepth() throws LiteCoreException {
@@ -541,5 +547,16 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
             db.endTransaction(commit);
         }
     }
-}
 
+    // - Document Legacy Properties
+    @Test
+    public void testDocumentLegacyProperties() throws LiteCoreException {
+        // NOTE: JNI binding does not cover all requires C APIs.
+    }
+
+    // - Document Clobber Remote Rev
+    @Test
+    public void testDocumentClobberRemoteRev() throws LiteCoreException {
+        // NOTE: JNI binding does not cover all requires C APIs.
+    }
+}

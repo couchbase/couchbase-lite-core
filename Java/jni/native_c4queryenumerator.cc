@@ -51,6 +51,41 @@ Java_com_couchbase_litecore_C4QueryEnumerator_next(JNIEnv *env, jclass clazz, jl
 
 /*
  * Class:     com_couchbase_litecore_C4QueryEnumerator
+ * Method:    getRowCount
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4QueryEnumerator_getRowCount(JNIEnv *env, jclass clazz, jlong handle) {
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
+        return 0L;
+    C4Error error = {};
+    int64_t res = c4queryenum_getRowCount(e, &error);
+    if (res == -1)
+        throwError(env, error);
+    return (jlong) res;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4QueryEnumerator
+ * Method:    seek
+ * Signature: (JJ)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4QueryEnumerator_seek(JNIEnv *env, jclass clazz, jlong handle,
+                                                   jlong rowIndex) {
+    C4QueryEnumerator *e = (C4QueryEnumerator *) handle;
+    if (e == NULL)
+        return false;
+    C4Error error = {};
+    jboolean result = c4queryenum_seek(e, (uint64_t) rowIndex, &error);
+    if (!result)
+        throwError(env, error);
+    return result;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4QueryEnumerator
  * Method:    refresh
  * Signature: (J)J
  */

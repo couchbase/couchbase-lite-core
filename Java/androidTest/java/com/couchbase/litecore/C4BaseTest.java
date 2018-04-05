@@ -40,9 +40,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static com.couchbase.lite.utils.Config.EE_TEST_PROPERTIES_FILE;
 import static com.couchbase.litecore.C4Constants.C4DocumentVersioning.kC4RevisionTrees;
 import static com.couchbase.litecore.C4Constants.C4DocumentVersioning.kC4VersionVectors;
-import static com.couchbase.litecore.utils.Config.TEST_PROPERTIES_FILE;
+import static com.couchbase.litecore.C4Constants.C4RevisionFlags.kRevHasAttachments;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -98,10 +99,13 @@ public class C4BaseTest implements C4Constants {
     public void setUp() throws Exception {
         context = InstrumentationRegistry.getTargetContext();
         try {
-            config = new Config(context.getAssets().open(TEST_PROPERTIES_FILE));
+            config = new Config(openTestPropertiesFile());
         } catch (FileNotFoundException e) {
             config = new Config();
         }
+        String tempdir = context.getCacheDir().getAbsolutePath();
+        if (tempdir != null)
+            C4.setenv("TMPDIR", tempdir, 1);
         String dbFilename = "cbl_core_test.sqlite3";
         deleteDatabaseFile(dbFilename);
         dir = new File(context.getFilesDir(), dbFilename);
@@ -130,7 +134,8 @@ public class C4BaseTest implements C4Constants {
             db.free();
             db = null;
         }
-        FileUtils.cleanDirectory(dir);
+        if (dir != null)
+            FileUtils.cleanDirectory(dir);
     }
 
     protected void reopenDB() throws LiteCoreException {
@@ -140,6 +145,18 @@ public class C4BaseTest implements C4Constants {
             db = null;
         }
         db = new C4Database(dir.getPath(), getFlags(), null, getVersioning(),
+                encryptionAlgorithm(), encryptionKey());
+        assertNotNull(db);
+    }
+
+    protected void reopenDBReadOnly() throws LiteCoreException {
+        if (db != null) {
+            db.close();
+            db.free();
+            db = null;
+        }
+        int flag = getFlags() & ~C4DatabaseFlags.kC4DB_Create | C4DatabaseFlags.kC4DB_ReadOnly;
+        db = new C4Database(dir.getPath(), flag, null, getVersioning(),
                 encryptionAlgorithm(), encryptionKey());
         assertNotNull(db);
     }
@@ -192,14 +209,24 @@ public class C4BaseTest implements C4Constants {
     protected long importJSONLines(String name) throws LiteCoreException, IOException {
         return importJSONLines(getAsset(name));
     }
-
+    protected long importJSONLines(String name, String idPrefix) throws LiteCoreException, IOException {
+        return importJSONLines(getAsset(name), idPrefix);
+    }
     protected long importJSONLines(InputStream is) throws LiteCoreException, IOException {
         // Android API 16 arm emulator is slow. This is reason timeout is set 60 sec
         return importJSONLines(is, 120, true);
     }
+    protected long importJSONLines(InputStream is, String idPrefix) throws LiteCoreException, IOException {
+        // Android API 16 arm emulator is slow. This is reason timeout is set 60 sec
+        return importJSONLines(is, idPrefix, 120, true);
+    }
+    // Read a file that contains a JSON document per line. Every line becomes a document.
+    protected long importJSONLines(InputStream is, double timeout, boolean verbose) throws IOException, LiteCoreException {
+        return importJSONLines(is, "", timeout, verbose);
+    }
 
     // Read a file that contains a JSON document per line. Every line becomes a document.
-    protected long importJSONLines(InputStream is, double timeout, boolean verbose)
+    protected long importJSONLines(InputStream is, String idPrefix, double timeout, boolean verbose)
             throws LiteCoreException, IOException {
         Log.i(TAG, String.format("Reading data from input stream ..."));
         StopWatch st = new StopWatch();
@@ -213,7 +240,7 @@ public class C4BaseTest implements C4Constants {
                 while ((line = br.readLine()) != null) {
                     FLSliceResult body = db.encodeJSON(line.getBytes());
                     try {
-                        String docID = String.format(Locale.ENGLISH, "%07d", numDocs + 1);
+                        String docID = String.format(Locale.ENGLISH, "%s%07d", idPrefix, numDocs + 1);
 
                         C4Document doc = db.put(body, docID, 0,
                                 false, false,
@@ -261,5 +288,48 @@ public class C4BaseTest implements C4Constants {
         }
         assertNotNull(json);
         return json;
+    }
+
+    private InputStream openTestPropertiesFile() throws IOException {
+        try {
+            return context.getAssets().open(EE_TEST_PROPERTIES_FILE);
+        } catch (IOException e) {
+            return context.getAssets().open(com.couchbase.lite.utils.Config.TEST_PROPERTIES_FILE);
+        }
+    }
+
+    List<C4BlobKey> addDocWithAttachments(String docID, List<String> attachments, String contentType) throws LiteCoreException {
+        List<C4BlobKey> keys = new ArrayList<>();
+        StringBuilder json = new StringBuilder();
+        int i = 0;
+        json.append("{attached: [");
+        for (String attachment : attachments) {
+            C4BlobStore store = db.getBlobStore();
+            C4BlobKey key = store.create(attachment.getBytes());
+            keys.add(key);
+            String keyStr = key.toString();
+            json.append("{'");
+            json.append("@type");
+            json.append("': '");
+            json.append("blob");
+            json.append("', ");
+            json.append("digest: '");
+            json.append(keyStr);
+            json.append("', length: ");
+            json.append(attachment.length());
+            json.append(", content_type: '");
+            json.append(contentType);
+            json.append("'},");
+        }
+        json.append("]}");
+        String jsonStr = json5(json.toString());
+        FLSliceResult body = db.encodeJSON(jsonStr.getBytes());
+
+        // Save document:
+        C4Document doc = db.put(body, docID, kRevHasAttachments, false, false, new String[0], true, 0, 0);
+        assertNotNull(doc);
+        body.free();
+        doc.free();
+        return keys;
     }
 }

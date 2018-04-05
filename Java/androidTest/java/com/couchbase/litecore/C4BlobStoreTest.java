@@ -21,6 +21,8 @@ import android.util.Log;
 
 import com.couchbase.litecore.fleece.FLSliceResult;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -39,21 +41,24 @@ import static org.junit.Assert.fail;
 
 public class C4BlobStoreTest extends C4BaseTest {
 
+    //
+    // NOTE: JNI binding does not supports `c4blob_openStore()` with `C4EncryptionKey`
+    //
+
     File blobDir;
     C4BlobStore blobStore;
     C4BlobKey bogusKey;
+    boolean encrypted = false;
 
-    @Override
+    @Before
     public void setUp() throws Exception {
         super.setUp();
-
         assertNotNull(blobDir = new File(context.getFilesDir(), "cbl_blob_test" + File.separatorChar));
         assertNotNull(blobStore = C4BlobStore.open(blobDir.getPath(), kC4DB_Create));
-
         bogusKey = new C4BlobKey("sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=");
     }
 
-    @Override
+    @After
     public void tearDown() throws Exception {
         if (blobStore != null)
             blobStore.delete();
@@ -132,6 +137,7 @@ public class C4BlobStoreTest extends C4BaseTest {
         res.free();
 
         String p = blobStore.getFilePath(key);
+        // TODO: Encryption
         assertNotNull(p);
         String filename = "QneWo5IYIQ0ZrbCG0hXPGC6jy7E=.blob";
         assertEquals(p.length() - filename.length(), p.indexOf(filename));
@@ -142,6 +148,46 @@ public class C4BlobStoreTest extends C4BaseTest {
         assertEquals(key.toString(), key2.toString());
 
         key.free();
+    }
+
+    // - delete blobs
+    @Test
+    public void testDeleteBlobs() throws LiteCoreException {
+        String blobToStore = "This is a blob to store in the store!";
+
+        // Add blob to the store:
+        C4BlobKey key = blobStore.create(blobToStore.getBytes());
+        assertNotNull(key);
+
+        // Delete it
+        blobStore.delete(key);
+
+        // Try to read it (should be gone):
+        long blobSize = blobStore.getSize(key);
+        assertEquals(-1, blobSize);
+
+        try {
+            blobStore.getContents(key);
+            fail();
+        } catch (LiteCoreException ex) {
+            assertEquals(C4ErrorDomain.LiteCoreDomain, ex.domain);
+            assertEquals(LiteCoreError.kC4ErrorNotFound, ex.code);
+        }
+
+        try {
+            blobStore.getFilePath(key);
+            fail();
+        } catch (LiteCoreException ex) {
+            assertEquals(C4ErrorDomain.LiteCoreDomain, ex.domain);
+            assertEquals(LiteCoreError.kC4ErrorNotFound, ex.code);
+        }
+    }
+
+    // - create blob, key mismatch
+    @Test
+    public void createBlobKeyMismatch() throws LiteCoreException {
+        // JNI binding does not support
+        // c4blob_create() call with expected key
     }
 
     // - read blob with stream

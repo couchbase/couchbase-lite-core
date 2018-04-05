@@ -197,6 +197,20 @@ Java_com_couchbase_litecore_C4BlobStore_create(JNIEnv *env, jclass clazz, jlong 
 
 /*
  * Class:     com_couchbase_litecore_C4BlobStore
+ * Method:    delete
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_C4BlobStore_delete(JNIEnv *env, jclass clazz, jlong jblobstore,
+                                               jlong jblobkey) {
+    C4BlobKey *pBlobKey = (C4BlobKey *) jblobkey;
+    C4Error error = {};
+    if (!c4blob_delete((C4BlobStore *) jblobstore, *pBlobKey, &error))
+        throwError(env, error);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4BlobStore
  * Method:    openReadStream
  * Signature: (JJ)J
  */
