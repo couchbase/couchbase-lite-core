@@ -37,13 +37,21 @@ namespace litecore { namespace actor {
 namespace litecore { namespace websocket {
     class ProviderImpl;
 
+
+    enum class Framing {
+        Client,  ///< Frame as WebSocket client messages (masked)
+        None,    ///< No framing; use messages as-is
+        Server,  ///< Frame as WebSocket server messages (not masked)
+    };
+
+
     /** Transport-agnostic implementation of WebSocket protocol.
         It doesn't transfer data or run the handshake; it just knows how to encode and decode
         messages. */
     class WebSocketImpl : public WebSocket, Logging {
     public:
         WebSocketImpl(ProviderImpl&, const Address&,
-                      const fleeceapi::AllocedDict &options, bool framing);
+                      const fleeceapi::AllocedDict &options, Framing);
 
         virtual bool send(fleece::slice message, bool binary =true) override;
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) override;
@@ -74,6 +82,7 @@ namespace litecore { namespace websocket {
         friend class MessageImpl;
 
         using ClientProtocol = uWS::WebSocketProtocol<false>;
+        using ServerProtocol = uWS::WebSocketProtocol<true>;
 
         bool sendOp(fleece::slice, int opcode);
         bool handleFragment(char *data,
@@ -90,8 +99,9 @@ namespace litecore { namespace websocket {
         void receivedPong();
 
         fleeceapi::AllocedDict _options;
-        bool _framing;                              // true if I should implement WebSocket framing
-        std::unique_ptr<ClientProtocol> _protocol;  // 3rd party class that does the framing
+        Framing _framing;
+        std::unique_ptr<ClientProtocol> _clientProtocol;  // 3rd party class that does the framing
+        std::unique_ptr<ServerProtocol> _serverProtocol;  // 3rd party class that does the framing
         std::mutex _mutex;                          //
         fleece::alloc_slice _curMessage;            // Message being received
         int _curOpCode;                             // Opcode of msg in _curMessage

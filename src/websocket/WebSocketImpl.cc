@@ -75,7 +75,7 @@ namespace uWS {
 
     // Explicitly generate code for template methods:
     
-    //template class WebSocketProtocol<SERVER>;
+    template class WebSocketProtocol<SERVER>;
     template class WebSocketProtocol<CLIENT>;
 }
 
@@ -135,14 +135,17 @@ namespace litecore { namespace websocket {
 
 
     WebSocketImpl::WebSocketImpl(ProviderImpl &provider, const Address &address,
-                                 const fleeceapi::AllocedDict &options, bool framing)
+                                 const fleeceapi::AllocedDict &options, Framing framing)
     :WebSocket(provider, address)
     ,Logging(WSLogDomain)
     ,_options(options)
     ,_framing(framing)
     {
-        if (_framing)
-            _protocol.reset(new ClientProtocol);
+        switch (_framing) {
+            case Framing::Client:   _clientProtocol.reset(new ClientProtocol); break;
+            case Framing::Server:   _serverProtocol.reset(new ServerProtocol); break;
+            default:                break;
+        }
     }
 
     WebSocketImpl::~WebSocketImpl()
@@ -192,12 +195,21 @@ namespace litecore { namespace websocket {
             lock_guard<std::mutex> lock(_mutex);
             if (_closeSent && opcode != CLOSE)
                 return false;
-            if (_framing) {
+            if (_framing != Framing::None) {
                 frame.resize(message.size + 10); // maximum space needed
-                frame.shorten(ClientProtocol::formatMessage((char*)frame.buf,
-                                                            (const char*)message.buf, message.size,
-                                                            (uWS::OpCode)opcode, message.size,
-                                                            false));
+                size_t newSize;
+                if (_framing == Framing::Client) {
+                    newSize = ClientProtocol::formatMessage((char*)frame.buf,
+                                                                (const char*)message.buf, message.size,
+                                                                (uWS::OpCode)opcode, message.size,
+                                                                false);
+                } else {
+                    newSize = ServerProtocol::formatMessage((char*)frame.buf,
+                                                                (const char*)message.buf, message.size,
+                                                                (uWS::OpCode)opcode, message.size,
+                                                                false);
+                }
+                frame.shorten(newSize);
             } else {
                 assert(opcode == uWS::BINARY);
                 frame = message;
@@ -244,11 +256,14 @@ namespace litecore { namespace websocket {
             lock_guard<mutex> lock(_mutex);
 
             _bytesReceived += data.size;
-            if (_framing) {
+            if (_framing != Framing::None) {
                 _deliveredBytes = 0;
                 size_t prevMessageLength = _curMessageLength;
                 // this next line will call handleFragment(), below --
-                _protocol->consume((char*)data.buf, (unsigned)data.size, this);
+                if (_clientProtocol)
+                    _clientProtocol->consume((char*)data.buf, (unsigned)data.size, this);
+                else
+                    _serverProtocol->consume((char*)data.buf, (unsigned)data.size, this);
                 pingReceived = move(_pingReceived);
                 // Compute # of bytes consumed: just the framing data, not any partial or
                 // delivered messages. (Trust me, the math works.)
@@ -256,7 +271,7 @@ namespace litecore { namespace websocket {
                                                 (_curMessageLength - prevMessageLength);
             }
         }
-        if (!_framing)
+        if (_framing == Framing::None)
             deliverMessageToDelegate(data, true);
 
         if (completedBytes > 0)
@@ -339,7 +354,7 @@ namespace litecore { namespace websocket {
 
 
     int WebSocketImpl::heartbeatInterval() const {
-        if (!_framing)
+        if (_framing == Framing::None)
             return 0;
         fleeceapi::Value heartbeat = options().get(Provider::kHeartbeatOption);
         if (heartbeat.type() == kFLNumber)
@@ -383,7 +398,7 @@ namespace litecore { namespace websocket {
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
         log("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
-        if (_framing) {
+        if (_framing != Framing::None) {
             alloc_slice closeMsg;
             {
                 std::lock_guard<std::mutex> lock(_mutex);
@@ -429,7 +444,7 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::onCloseRequested(int status, fleece::slice message) {
-        assert(!_framing);
+        assert(_framing == Framing::None);
         provider().requestClose(this, status, message);
     }
 
@@ -448,7 +463,7 @@ namespace litecore { namespace websocket {
             lock_guard<mutex> lock(_mutex);
 
             _pingTimer.reset();
-            if (_framing) {
+            if (_framing != Framing::None) {
                 bool clean = (status.code == 0
                               || (status.reason == kWebSocketClose && status.code == kCodeNormal));
                 bool expected = (_closeSent && _closeReceived);
