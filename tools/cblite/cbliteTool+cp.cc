@@ -19,6 +19,7 @@
 #include "cbliteTool.hh"
 #include "Endpoint.hh"
 #include "DBEndpoint.hh"
+#include "CivetWebSocket.hh"
 #include "Stopwatch.hh"
 
 
@@ -72,6 +73,7 @@ void CBLiteTool::copyDatabase(bool reversed) {
         c4log_setLevel(syncLog, max(kC4LogDebug, C4LogLevel(kC4LogInfo - verbose() + 2)));
     }
 
+    c4socket_registerFactory(C4CivetWebSocketFactory);
 
     const char *firstArgName = "source path/URL", *secondArgName = "destination path/URL";
     if (reversed)

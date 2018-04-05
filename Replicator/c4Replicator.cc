@@ -82,10 +82,10 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) {
     }
     address->hostname = slice(str.buf, colon);
 
-    if (pathStart >= str.end())
-        return false;
-
     if (dbName) {
+        if (pathStart >= str.end())
+            return false;
+        
         str.setStart(pathStart + 1);
 
         if (str.hasSuffix("/"_sl))

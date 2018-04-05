@@ -267,7 +267,7 @@ namespace litecore { namespace repl {
         if (status == 101 && !headers["Sec-WebSocket-Protocol"]) {
             gotError(c4error_make(WebSocketDomain, kWebSocketCloseProtocolError,
                                   "Incompatible replication protocol "
-                                  "(missing 'Sec-WebSocket-Accept' response header)"_sl));
+                                  "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
         auto setCookie = headers["Set-Cookie"_sl];
         if (setCookie.type() == kFLArray) {

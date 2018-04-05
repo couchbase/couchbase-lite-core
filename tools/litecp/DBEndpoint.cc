@@ -260,8 +260,10 @@ C4ReplicatorParameters DbEndpoint::replicatorParameters(C4ReplicatorMode push, C
 
 
 void DbEndpoint::replicate(C4Replicator *repl, C4Error &err) {
-    if (!repl)
+    if (!repl) {
         Tool::instance->errorOccurred("starting replication", err);
+        Tool::instance->fail();
+    }
 
     c4::ref<C4Replicator> replicator = repl;
     C4ReplicatorStatus status;
