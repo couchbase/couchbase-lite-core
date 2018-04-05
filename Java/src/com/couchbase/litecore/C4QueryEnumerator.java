@@ -67,10 +67,6 @@ public class C4QueryEnumerator {
             close(_handle);
     }
 
-    public boolean isClosed() {
-        return _handle == 0;
-    }
-
     public void free() {
         if (_handle != 0L) {
             free(_handle);

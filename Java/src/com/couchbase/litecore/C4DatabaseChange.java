@@ -43,15 +43,4 @@ public class C4DatabaseChange {
     public boolean isExternal() {
         return external;
     }
-
-    @Override
-    public String toString() {
-        return "C4DatabaseChange{" +
-                "docID='" + docID + '\'' +
-                ", revID='" + revID + '\'' +
-                ", sequence=" + sequence +
-                ", bodySize=" + bodySize +
-                ", external=" + external +
-                '}';
-    }
 }

@@ -38,25 +38,11 @@ public class C4Database implements C4Constants {
         handle = open(path, flags, storageEngine, versioning, algorithm, encryptionKey);
     }
 
-    private C4Database(long handle) {
-        if (handle == 0)
-            throw new IllegalArgumentException("handle is 0");
-        this.handle = handle;
-    }
-
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
 
     // - Lifecycle
-
-    public C4Database openAgain() throws LiteCoreException {
-        return new C4Database(openAgain(handle));
-    }
-
-    public C4Database retain() {
-        return new C4Database(retain(handle));
-    }
 
     public boolean free() {
         boolean result = true;
@@ -75,10 +61,6 @@ public class C4Database implements C4Constants {
 
     public void rekey(int keyType, byte[] newKey) throws LiteCoreException {
         rekey(handle, keyType, newKey);
-    }
-
-    public static void shutdown() throws LiteCoreException {
-        c4shutdown();
     }
 
     // - Accessors
@@ -187,10 +169,6 @@ public class C4Database implements C4Constants {
     }
 
     // - Purging and Expiration
-
-    public void purgeDoc(String docID) throws LiteCoreException {
-        C4Document.purgeDoc(handle, docID);
-    }
 
     public void setExpiration(String docID, long timestamp)
             throws LiteCoreException {
@@ -332,8 +310,6 @@ public class C4Database implements C4Constants {
                             int algorithm, byte[] encryptionKey)
             throws LiteCoreException;
 
-    static native long openAgain(long db) throws LiteCoreException;
-
     public static native void copy(String sourcePath, String destinationPath,
                                    int flags,
                                    String storageEngine,
@@ -341,8 +317,6 @@ public class C4Database implements C4Constants {
                                    int algorithm,
                                    byte[] encryptionKey)
             throws LiteCoreException;
-
-    static native long retain(long db);
 
     static native boolean free(long db);
 
@@ -353,8 +327,6 @@ public class C4Database implements C4Constants {
     public static native void deleteAtPath(String path) throws LiteCoreException;
 
     static native void rekey(long db, int keyType, byte[] newKey) throws LiteCoreException;
-
-    static native void c4shutdown() throws LiteCoreException;
 
     // - Accessors
 

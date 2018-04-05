@@ -41,10 +41,6 @@ public class FLSliceResult {
         return handle;
     }
 
-    public void setHandle(long handle) {
-        this.handle = handle;
-    }
-
     public byte[] getBuf() {
         return getBuf(handle);
     }
