@@ -35,8 +35,8 @@ namespace litecore { namespace websocket {
     public:
         class Driver;
 
-        MockWebSocket(Provider &provider, const Address &address)
-        :WebSocket(provider, address)
+        MockWebSocket(const Address &address)
+        :WebSocket(address)
         { }
 
         virtual Driver* createDriver() {
@@ -212,16 +212,6 @@ namespace litecore { namespace websocket {
         Retained<Driver> _driver;
 
         friend class MockProvider;
-    };
-
-
-    /** A nonfunctional WebSocket provider for testing. */
-    class MockProvider : public Provider {
-    public:
-        virtual WebSocket* createWebSocket(const Address &address,
-                                           const fleeceapi::AllocedDict &options ={}) override {
-            return new MockWebSocket(*this, address);
-        }
     };
 
 } }

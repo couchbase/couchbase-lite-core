@@ -32,8 +32,8 @@ The Xcode project's `blip_cpp` target builds a static library. There's a CMake f
 
 BLIP is dependent on a WebSocket implementation. This is abstracted as some interface-like classes in the [WebSocketInterfacel.hh](include/blip_cpp/WebSocketInterface.hh) header. There are two ways to provide a WebSocket implementation:
 
-* Find an existing WebSocket implementation, and create subclasses of WebSocket and Provider that use it.
-* Subclass [WebSocketImpl and ProviderImpl](include/blip_cpp/WebSocketImpl.hh), which are abstract subclasses that implement message framing. You'll need to hook these up to a TCP socket, and provide code to run the HTTP handshake.
+* Find an existing WebSocket implementation, and create a subclass of WebSocket that uses it.
+* Subclass [WebSocketImpl](include/blip_cpp/WebSocketImpl.hh), which is an abstract subclass that implements message framing. You'll need to hook this up to a TCP socket, and provide code to run the HTTP handshake.
 
 We would like to provide full implementations, but haven't had time yet to factor the code out of the [couchbase-lite-core repo](https://github.com/couchbase/couchbase-lite-core), which is currently the primary user of BLIP. Moreover, the choice of WebSocket implementation depends greatly on one's target platform(s) and version dependencies.
 

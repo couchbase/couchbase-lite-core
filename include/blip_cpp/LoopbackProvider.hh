@@ -44,15 +44,24 @@ namespace litecore { namespace websocket {
 
     public:
 
-        LoopbackWebSocket(Provider &provider, const Address &address, actor::delay_t latency)
-        :WebSocket(provider, address)
+        LoopbackWebSocket(const Address &address,
+                          Role role,
+                          actor::delay_t latency =actor::delay_t::zero())
+        :WebSocket(address, role)
         ,_latency(latency)
         { }
 
-        void bind(LoopbackWebSocket *peer, const fleeceapi::AllocedDict &responseHeaders) {
-            Assert(!_driver);
-            _driver = createDriver();
-            _driver->bind(peer, responseHeaders);
+        /** Binds two LoopbackWebSocket objects to each other, so after they open, each will
+            receive messages sent by the other. When one closes, the other will receive a close
+            event.
+            MUST be called before the socket objects' connect() methods are called! */
+        static void bind(WebSocket *c1, WebSocket *c2,
+                         const fleeceapi::AllocedDict &responseHeaders ={})
+        {
+            auto lc1 = dynamic_cast<LoopbackWebSocket*>(c1);
+            auto lc2 = dynamic_cast<LoopbackWebSocket*>(c2);
+            lc1->bind(lc2, responseHeaders);
+            lc2->bind(lc1, responseHeaders);
         }
 
         virtual void connect() override {
@@ -72,6 +81,12 @@ namespace litecore { namespace websocket {
 
 
     protected:
+
+        void bind(LoopbackWebSocket *peer, const fleeceapi::AllocedDict &responseHeaders) {
+            Assert(!_driver);
+            _driver = createDriver();
+            _driver->bind(peer, responseHeaders);
+        }
 
         virtual Driver* createDriver() {
             return new Driver(this, _latency);
@@ -296,39 +311,5 @@ namespace litecore { namespace websocket {
             State _state {State::unconnected};
         };
     };
-
-
-    /** A WebSocketProvider that creates pairs of WebSocket objects that talk to each other. */
-    class LoopbackProvider : public Provider {
-    public:
-
-        /** Constructs a WebSocketProvider. A latency time can be provided, which is the delay
-            before a message sent by one connection is received by its peer. */
-        LoopbackProvider(actor::delay_t latency = actor::delay_t::zero())
-        :_latency(latency)
-        { }
-
-        LoopbackWebSocket* createWebSocket(const Address &address,
-                                           const fleeceapi::AllocedDict &options ={}) override {
-            return new LoopbackWebSocket(*this, address, _latency);
-        }
-
-        /** Binds two LoopbackWebSocket objects to each other, so after they open, each will 
-            receive messages sent by the other. When one closes, the other will receive a close
-            event.
-            MUST be called before the socket objects' connect() methods are called! */
-        void bind(WebSocket *c1, WebSocket *c2,
-                  const fleeceapi::AllocedDict &responseHeaders ={})
-        {
-            auto lc1 = dynamic_cast<LoopbackWebSocket*>(c1);
-            auto lc2 = dynamic_cast<LoopbackWebSocket*>(c2);
-            lc1->bind(lc2, responseHeaders);
-            lc2->bind(lc1, responseHeaders);
-        }
-
-    private:
-        actor::delay_t _latency {0.0};
-    };
-
 
 } }

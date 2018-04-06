@@ -71,6 +71,12 @@ namespace litecore { namespace websocket {
         kNetErrInvalidRedirect,
     };
 
+    enum class Role {
+        Client,
+        Server
+    };
+
+
     struct CloseStatus {
         CloseReason reason;
         int code;
@@ -93,24 +99,11 @@ namespace litecore { namespace websocket {
     extern LogDomain WSLogDomain;
 
 
-    /** Abstract class that can create WebSockets. */
-    class Provider {
-    public:
-        virtual ~Provider() { }
-        virtual WebSocket* createWebSocket(const Address&,
-                                           const fleeceapi::AllocedDict &options ={}) =0;
-        virtual void close() { }
-
-        static constexpr const char *kProtocolsOption = "WS-Protocols";     // string
-        static constexpr const char *kHeartbeatOption = "heartbeat";        // seconds
-    };
-
-
     /** Abstract class representing a WebSocket connection. */
     class WebSocket : public RefCounted {
     public:
-        Provider& provider() const                  {return _provider;}
         const Address& address() const              {return _address;}
+        Role role() const                           {return _role;}
         Delegate& delegate() const                  {assert(_delegate); return *_delegate;}
         bool hasDelegate() const                    {return _delegate != nullptr;}
 
@@ -130,10 +123,11 @@ namespace litecore { namespace websocket {
         /** The number of WebSocket instances in memory; for leak checking */
         static std::atomic_int gInstanceCount;
 
-    protected:
-        friend class Provider;
+        static constexpr const char *kProtocolsOption = "WS-Protocols";     // string
+        static constexpr const char *kHeartbeatOption = "heartbeat";        // seconds
 
-        WebSocket(Provider&, const Address&);
+    protected:
+        WebSocket(const Address&, Role role);
         virtual ~WebSocket();
 
         /** Called by the public connect(Delegate*) method. This should open the WebSocket. */
@@ -144,7 +138,7 @@ namespace litecore { namespace websocket {
         
     private:
         const Address _address;
-        Provider &_provider;
+        Role _role;
         Delegate *_delegate {nullptr};
     };
 

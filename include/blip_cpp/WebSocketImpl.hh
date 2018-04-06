@@ -35,23 +35,16 @@ namespace litecore { namespace actor {
 }}
 
 namespace litecore { namespace websocket {
-    class ProviderImpl;
-
-
-    enum class Framing {
-        Client,  ///< Frame as WebSocket client messages (masked)
-        None,    ///< No framing; use messages as-is
-        Server,  ///< Frame as WebSocket server messages (not masked)
-    };
-
 
     /** Transport-agnostic implementation of WebSocket protocol.
         It doesn't transfer data or run the handshake; it just knows how to encode and decode
         messages. */
     class WebSocketImpl : public WebSocket, Logging {
     public:
-        WebSocketImpl(ProviderImpl&, const Address&,
-                      const fleeceapi::AllocedDict &options, Framing);
+        WebSocketImpl(const Address&,
+                      Role role,
+                      const fleeceapi::AllocedDict &options,
+                      bool framing);
 
         virtual bool send(fleece::slice message, bool binary =true) override;
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) override;
@@ -70,11 +63,12 @@ namespace litecore { namespace websocket {
     protected:
         virtual ~WebSocketImpl();
         virtual std::string loggingIdentifier() const override;
-        virtual void connect() override;
 
-        void receiveComplete(size_t byteCount);
-        ProviderImpl& provider()                    {return (ProviderImpl&)WebSocket::provider();}
-        void disconnect();
+        // These methods have to be implemented in subclasses:
+        virtual void closeSocket() =0;
+        virtual void sendBytes(fleece::alloc_slice) =0;
+        virtual void receiveComplete(size_t byteCount) =0;
+        virtual void requestClose(int status, fleece::slice message) =0;
 
     private:
         template <const bool isServer>
@@ -99,7 +93,7 @@ namespace litecore { namespace websocket {
         void receivedPong();
 
         fleeceapi::AllocedDict _options;
-        Framing _framing;
+        bool _framing;
         std::unique_ptr<ClientProtocol> _clientProtocol;  // 3rd party class that does the framing
         std::unique_ptr<ServerProtocol> _serverProtocol;  // 3rd party class that does the framing
         std::mutex _mutex;                          //
@@ -116,25 +110,6 @@ namespace litecore { namespace websocket {
         // Connection diagnostics, logged on close:
         fleece::Stopwatch _timeConnected {false};           // Time since socket opened
         uint64_t _bytesSent {0}, _bytesReceived {0};// Total byte count sent/received
-    };
-
-
-    /** Provider implementation that creates WebSocketImpls. */
-    class ProviderImpl : public Provider {
-    public:
-        ProviderImpl() { }
-
-    protected:
-        friend class WebSocketImpl;
-
-        // These methods have to be implemented in subclasses, to connect to the actual socket:
-
-        virtual void openSocket(WebSocketImpl*) =0;
-        virtual void closeSocket(WebSocketImpl*) =0;
-        virtual void sendBytes(WebSocketImpl*, fleece::alloc_slice) =0;
-        virtual void receiveComplete(WebSocketImpl*, size_t byteCount) =0;
-
-        virtual void requestClose(WebSocketImpl*, int status, fleece::slice message) =0;
     };
 
 } }

@@ -55,7 +55,7 @@ namespace uWS {
 
     template <const bool isServer>
     void WebSocketProtocol<isServer>::forceClose(void *user) {
-        _sock->disconnect();
+        _sock->closeSocket();
     }
 
 
@@ -110,9 +110,9 @@ namespace litecore { namespace websocket {
 
     atomic_int WebSocket::gInstanceCount;
 
-    WebSocket::WebSocket(Provider &p, const Address &a)
+    WebSocket::WebSocket(const Address &a, Role role)
     :_address(a)
-    ,_provider(p)
+    ,_role(role)
     {
         ++gInstanceCount;
     }
@@ -134,17 +134,20 @@ namespace litecore { namespace websocket {
 #pragma mark - WEBSOCKETIMPL:
 
 
-    WebSocketImpl::WebSocketImpl(ProviderImpl &provider, const Address &address,
-                                 const fleeceapi::AllocedDict &options, Framing framing)
-    :WebSocket(provider, address)
+    WebSocketImpl::WebSocketImpl(const Address &address,
+                                 Role role,
+                                 const fleeceapi::AllocedDict &options,
+                                 bool framing)
+    :WebSocket(address, role)
     ,Logging(WSLogDomain)
     ,_options(options)
     ,_framing(framing)
     {
-        switch (_framing) {
-            case Framing::Client:   _clientProtocol.reset(new ClientProtocol); break;
-            case Framing::Server:   _serverProtocol.reset(new ServerProtocol); break;
-            default:                break;
+        if (framing) {
+            if (role == Role::Server)
+                _serverProtocol.reset(new ServerProtocol);
+            else
+                _clientProtocol.reset(new ClientProtocol);
         }
     }
 
@@ -154,15 +157,6 @@ namespace litecore { namespace websocket {
 
     string WebSocketImpl::loggingIdentifier() const {
         return address();
-    }
-
-
-    void WebSocketImpl::connect() {    // called by base class's connect(Address)
-        provider().openSocket(this);
-    }
-
-    void WebSocketImpl::disconnect() {
-        provider().closeSocket(this);
     }
 
 
@@ -195,19 +189,19 @@ namespace litecore { namespace websocket {
             lock_guard<std::mutex> lock(_mutex);
             if (_closeSent && opcode != CLOSE)
                 return false;
-            if (_framing != Framing::None) {
+            if (_framing) {
                 frame.resize(message.size + 10); // maximum space needed
                 size_t newSize;
-                if (_framing == Framing::Client) {
-                    newSize = ClientProtocol::formatMessage((char*)frame.buf,
-                                                                (const char*)message.buf, message.size,
-                                                                (uWS::OpCode)opcode, message.size,
-                                                                false);
-                } else {
+                if (role() == Role::Server) {
                     newSize = ServerProtocol::formatMessage((char*)frame.buf,
-                                                                (const char*)message.buf, message.size,
-                                                                (uWS::OpCode)opcode, message.size,
-                                                                false);
+                                                            (const char*)message.buf, message.size,
+                                                            (uWS::OpCode)opcode, message.size,
+                                                            false);
+                } else {
+                    newSize = ClientProtocol::formatMessage((char*)frame.buf,
+                                                            (const char*)message.buf, message.size,
+                                                            (uWS::OpCode)opcode, message.size,
+                                                            false);
                 }
                 frame.shorten(newSize);
             } else {
@@ -219,7 +213,7 @@ namespace litecore { namespace websocket {
         }
         // Release the lock before calling sendBytes, because that's an abstract method, and some
         // implementation of it might call back into me and deadlock.
-        provider().sendBytes(this, frame);
+        sendBytes(frame);
         return writeable;
     }
 
@@ -240,7 +234,7 @@ namespace litecore { namespace websocket {
         if (disconnect) {
             // My close message has gone through; now I can disconnect:
             log("sent close echo; disconnecting socket now");
-            provider().closeSocket(this);
+            closeSocket();
         } else if (notify) {
             delegate().onWebSocketWriteable();
         }
@@ -256,7 +250,7 @@ namespace litecore { namespace websocket {
             lock_guard<mutex> lock(_mutex);
 
             _bytesReceived += data.size;
-            if (_framing != Framing::None) {
+            if (_framing) {
                 _deliveredBytes = 0;
                 size_t prevMessageLength = _curMessageLength;
                 // this next line will call handleFragment(), below --
@@ -271,7 +265,7 @@ namespace litecore { namespace websocket {
                                                 (_curMessageLength - prevMessageLength);
             }
         }
-        if (_framing == Framing::None)
+        if (!_framing)
             deliverMessageToDelegate(data, true);
 
         if (completedBytes > 0)
@@ -345,18 +339,13 @@ namespace litecore { namespace websocket {
     }
 
 
-    void WebSocketImpl::receiveComplete(size_t byteCount) {
-        provider().receiveComplete(this, byteCount);
-    }
-
-
 #pragma mark - HEARTBEAT:
 
 
     int WebSocketImpl::heartbeatInterval() const {
-        if (_framing == Framing::None)
+        if (!_framing)
             return 0;
-        fleeceapi::Value heartbeat = options().get(Provider::kHeartbeatOption);
+        fleeceapi::Value heartbeat = options().get(kHeartbeatOption);
         if (heartbeat.type() == kFLNumber)
             return (int)heartbeat.asInt();
         else
@@ -398,7 +387,7 @@ namespace litecore { namespace websocket {
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
         log("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
-        if (_framing != Framing::None) {
+        if (_framing) {
             alloc_slice closeMsg;
             {
                 std::lock_guard<std::mutex> lock(_mutex);
@@ -414,7 +403,7 @@ namespace litecore { namespace websocket {
             }
             sendOp(closeMsg, uWS::CLOSE);
         } else {
-            provider().requestClose(this, status, message);
+            requestClose(status, message);
         }
     }
 
@@ -427,7 +416,7 @@ namespace litecore { namespace websocket {
         if (_closeSent) {
             // I initiated the close; the peer has confirmed, so disconnect the socket now:
             log("Close confirmed by peer; disconnecting socket now");
-            provider().closeSocket(this);
+            closeSocket();
         } else {
             // Peer is initiating a close. Save its message and echo it:
             if (willLog()) {
@@ -444,8 +433,8 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::onCloseRequested(int status, fleece::slice message) {
-        assert(_framing == Framing::None);
-        provider().requestClose(this, status, message);
+        assert(!_framing);
+        requestClose(status, message);
     }
 
 
@@ -463,7 +452,7 @@ namespace litecore { namespace websocket {
             lock_guard<mutex> lock(_mutex);
 
             _pingTimer.reset();
-            if (_framing != Framing::None) {
+            if (_framing) {
                 bool clean = (status.code == 0
                               || (status.reason == kWebSocketClose && status.code == kCodeNormal));
                 bool expected = (_closeSent && _closeReceived);

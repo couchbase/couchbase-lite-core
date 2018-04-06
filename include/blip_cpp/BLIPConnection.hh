@@ -51,20 +51,14 @@ namespace litecore { namespace blip {
             0 (no compression) to 9 (best compression). */
         static constexpr const char *kCompressionLevelOption = "BLIPCompressionLevel";
 
-        /** Creates a BLIP connection to an address, opening a WebSocket. */
-        Connection(const websocket::Address&,
-                   websocket::Provider &provider,
-                   const fleeceapi::AllocedDict &options,
-                   ConnectionDelegate&);
-
-        /** Creates a BLIP connection on existing incoming WebSocket. */
+        /** Creates a BLIP connection on a WebSocket. */
         Connection(websocket::WebSocket*,
                    const fleeceapi::AllocedDict &options,
                    ConnectionDelegate&);
 
         const std::string& name() const                         {return _name;}
 
-        bool isServer() const                                   {return _isServer;}
+        websocket::Role role() const                            {return _role;}
 
         ConnectionDelegate& delegate() const                    {return _delegate;}
 
@@ -100,10 +94,8 @@ namespace litecore { namespace blip {
         void closed(CloseStatus);
 
     private:
-        void setWebSocket(websocket::WebSocket*, const fleeceapi::AllocedDict &options);
-
         std::string _name;
-        bool const _isServer;
+        websocket::Role const _role;
         ConnectionDelegate &_delegate;
         Retained<BLIPIO> _io;
         int8_t _compressionLevel;

@@ -591,49 +591,34 @@ namespace litecore { namespace blip {
 #pragma mark - CONNECTION:
 
 
-    Connection::Connection(const Address &address,
-                           Provider &provider,
-                           const fleeceapi::AllocedDict &options,
-                           ConnectionDelegate &delegate)
-    :Logging(BLIPLog)
-    ,_name(string("->") + (string)address)
-    ,_isServer(false)
-    ,_delegate(delegate)
-    {
-        log("Opening connection...");
-        setWebSocket(provider.createWebSocket(address, options), options);
-    }
-
-
     Connection::Connection(WebSocket *webSocket,
                            const fleeceapi::AllocedDict &options,
                            ConnectionDelegate &delegate)
     :Logging(BLIPLog)
-    ,_name(string("<-") + (string)webSocket->address())
-    ,_isServer(true)
+    ,_name(string(webSocket->role() == Role::Server ? "<-" : "->") + (string)webSocket->address())
+    ,_role(webSocket->role())
     ,_delegate(delegate)
     {
-        log("Accepted connection");
-        setWebSocket(webSocket, options);
-    }
+        if (_role == Role::Server)
+            log("Accepted connection");
+        else
+            log("Opening connection...");
 
-
-    Connection::~Connection()
-    {
-        logDebug("~Connection");
-    }
-
-
-    void Connection::setWebSocket(WebSocket *webSocket, const fleeceapi::AllocedDict &options) {
         _compressionLevel = kDefaultCompressionLevel;
         auto levelP = options.get(kCompressionLevelOption);
         if (levelP.isInteger())
             _compressionLevel = (int8_t)levelP.asInt();
 
         webSocket->name = _name;
-        
+
         // Now connect the websocket:
         _io = new BLIPIO(this, webSocket, (Deflater::CompressionLevel)_compressionLevel);
+    }
+
+
+    Connection::~Connection()
+    {
+        logDebug("~Connection");
     }
 
 
