@@ -43,14 +43,15 @@ namespace litecore { namespace repl {
     // Subroutine of constructor that looks up HTTP cookies for the request, adds them to
     // options.properties' cookies, and returns the properties dict.
     static AllocedDict propertiesWithCookies(C4Database *db,
-                                             const websocket::Address &address,
+                                             websocket::WebSocket *webSocket,
                                              Worker::Options &options)
     {
         options.setProperty(slice(kC4SocketOptionWSProtocols),
                             (string(Connection::kWSProtocolName) + kReplicatorProtocolName).c_str());
-        if (!options.properties[kC4ReplicatorOptionCookies]) {
+        if (webSocket->role() == websocket::Role::Client
+                && !options.properties[kC4ReplicatorOptionCookies]) {
             C4Error err;
-            alloc_slice cookies = c4db_getCookies(db, c4AddressFrom(address), &err);
+            alloc_slice cookies = c4db_getCookies(db, c4AddressFrom(webSocket->address()), &err);
             if (cookies)
                 options.setProperty(slice(kC4ReplicatorOptionCookies), cookies);
             else if (err.code)
@@ -60,19 +61,20 @@ namespace litecore { namespace repl {
     }
 
 
-    // The 'designated initializer', in Obj-C terms :)
     Replicator::Replicator(C4Database* db,
-                           const websocket::Address &address,
+                           websocket::WebSocket *webSocket,
                            Delegate &delegate,
-                           const Options &options,
-                           Connection *connection)
-    :Worker(connection, nullptr, options, "Repl")
-    ,_remoteAddress(address)
+                           Options options)
+    :Worker(new Connection(webSocket,
+                           propertiesWithCookies(db, webSocket, options),
+                           *this),
+            nullptr, options, "Repl")
+    ,_remoteAddress(webSocket->address())
     ,_delegate(&delegate)
-    ,_connectionState(connection->state())
+    ,_connectionState(connection()->state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_dbActor(new DBWorker(connection, this, db, address, options))
+    ,_dbActor(new DBWorker(connection(), this, db, webSocket->address(), options))
     {
         _loggingID = string(c4::sliceResult(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
@@ -80,31 +82,12 @@ namespace litecore { namespace repl {
         log("%s", string(options).c_str());
 
         if (options.push != kC4Disabled)
-            _pusher = new Pusher(connection, this, _dbActor, _options);
+            _pusher = new Pusher(connection(), this, _dbActor, _options);
         if (options.pull != kC4Disabled)
-            _puller = new Puller(connection, this, _dbActor, _options);
+            _puller = new Puller(connection(), this, _dbActor, _options);
         _checkpoint.enableAutosave(options.checkpointSaveDelay(),
                                    bind(&Replicator::saveCheckpoint, this, _1));
     }
-
-    Replicator::Replicator(C4Database *db,
-                           websocket::Provider &provider,
-                           const websocket::Address &address,
-                           Delegate &delegate,
-                           Options options)
-    :Replicator(db, address, delegate, options,
-                new Connection(address, provider,
-                               propertiesWithCookies(db, address, options),
-                               *this))
-    { }
-
-    Replicator::Replicator(C4Database *db,
-                           websocket::WebSocket *webSocket,
-                           Delegate &delegate,
-                           Options options)
-    :Replicator(db, webSocket->address(), delegate, options,
-                new Connection(webSocket, options.properties, *this))
-    { }
 
 
     void Replicator::start(bool synchronous) {

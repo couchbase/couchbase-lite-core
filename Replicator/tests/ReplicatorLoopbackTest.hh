@@ -35,7 +35,6 @@ public:
 
     ReplicatorLoopbackTest()
     :C4Test(0)
-    ,_provider(kLatency)
     ,db2(createDatabase("2"))
     { }
 
@@ -65,8 +64,12 @@ public:
 
         // Create client (active) and server (passive) replicators:
         Address clientAddress{"ws", "cli"}, serverAddress{"ws", "srv"};
-        _replClient = new Replicator(dbClient, _provider, serverAddress, *this, opts1);
-        _replServer = new Replicator(dbServer, _provider.createWebSocket(clientAddress), *this, opts2);
+        _replClient = new Replicator(dbClient,
+                                     new LoopbackWebSocket(serverAddress, false, kLatency),
+                                     *this, opts1);
+        _replServer = new Replicator(dbServer,
+                                     new LoopbackWebSocket(clientAddress, true, kLatency),
+                                     *this, opts2);
 
         // Response headers:
         Encoder enc;
@@ -77,7 +80,7 @@ public:
         AllocedDict headers(enc.finish());
 
         // Bind the replicators' WebSockets and start them:
-        _provider.bind(_replClient->webSocket(), _replServer->webSocket(), headers);
+        LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
         _replClient->start();
         _replServer->start();
 
@@ -324,7 +327,6 @@ public:
         return out;
     }
 
-    LoopbackProvider _provider;
     C4Database* db2 {nullptr};
     Retained<Replicator> _replClient, _replServer;
     alloc_slice _checkpointID;

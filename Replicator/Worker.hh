@@ -191,8 +191,8 @@ namespace litecore { namespace repl {
         static blip::ErrorBuf c4ToBLIPError(C4Error);
         static C4Error blipToC4Error(const blip::Error&);
 
-        bool isOpenClient() const               {return _connection && !_connection->isServer();}
-        bool isOpenServer() const               {return _connection &&  _connection->isServer();}
+        bool isOpenClient() const               {return _connection && _connection->role() == websocket::Role::Client;}
+        bool isOpenServer() const               {return _connection && _connection->role() == websocket::Role::Server;}
         bool isContinuous() const               {return _options.push == kC4Continuous
                                                      || _options.pull == kC4Continuous;}
         const Status& status() const            {return _status;}

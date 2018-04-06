@@ -41,18 +41,10 @@ namespace litecore { namespace repl {
         class Delegate;
         using CloseStatus = blip::Connection::CloseStatus;
 
-        /** Constructor for a client connection; will open the Connection itself. */
-        Replicator(C4Database*,
-                   websocket::Provider&,
-                   const websocket::Address&,
-                   Delegate&,
-                   Options);
-
-        /** Constructor for an incoming (server) connection. */
         Replicator(C4Database*,
                    websocket::WebSocket*,
                    Delegate&,
-                   Options = Options::passive());
+                   Options);
 
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {
@@ -109,7 +101,6 @@ namespace litecore { namespace repl {
         // How long to wait between delegate calls when only the progress % has changed
         static constexpr double kMinDelegateCallInterval = 0.2;
 
-        Replicator(C4Database*, const websocket::Address&, Delegate&, const Options&, Connection*);
         void _onHTTPResponse(int status, fleeceapi::AllocedDict headers);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);

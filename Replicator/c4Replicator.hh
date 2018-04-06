@@ -46,31 +46,34 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
 
     // Constructor for replication with remote database
     C4Replicator(C4Database* db,
-                 const C4Address &remoteAddress,
+                 C4Address serverAddress,
                  C4String remoteDatabaseName,
-                 const C4ReplicatorParameters &params,
-                 C4Provider *provider)
-    :C4Replicator(new Replicator(db, *provider,
-                                 addressFrom(remoteAddress, remoteDatabaseName), *this,
-                                 mkopts(params)),
+                 const C4ReplicatorParameters &params)
+    :C4Replicator(new Replicator(db,
+                                 new C4SocketImpl(serverAddress,
+                                                  Role::Client,
+                                                  params.optionsDictFleece,
+                                                  params.socketFactory),
+                                 *this, mkopts(params)),
                   nullptr,
-                  params,
-                  provider)
+                  params)
     { }
 
     // Constructor for replication with local database
     C4Replicator(C4Database* db,
                  C4Database* otherDB,
                  const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db, loopbackProvider(),
-                                 addressFrom(otherDB), *this, mkopts(params)),
+    :C4Replicator(new Replicator(db,
+                                 new LoopbackWebSocket(addressFrom(db), Role::Client),
+                                 *this,
+                                 mkopts(params)),
                   new Replicator(otherDB,
-                                 loopbackProvider().createWebSocket(addressFrom(db)),
+                                 new LoopbackWebSocket(addressFrom(otherDB), Role::Server),
                                  *this,
                                  Replicator::Options(kC4Passive, kC4Passive).setNoIncomingConflicts()),
                   params)
     {
-        loopbackProvider().bind(_replicator->webSocket(), _otherReplicator->webSocket());
+        LoopbackWebSocket::bind(_replicator->webSocket(), _otherReplicator->webSocket());
         _otherLevel = _otherReplicator->status().level;
     }
 
@@ -115,21 +118,15 @@ private:
     // base constructor
     C4Replicator(Replicator *replicator,
                  Replicator *otherReplicator,
-                 const C4ReplicatorParameters &params,
-                 Provider *provider =nullptr)
+                 const C4ReplicatorParameters &params)
     :_replicator(replicator)
     ,_otherReplicator(otherReplicator)
     ,_params(params)
     ,_status(_replicator->status())
-    ,_provider(provider)
     { }
 
     virtual ~C4Replicator() =default;
 
-    static LoopbackProvider& loopbackProvider() {
-        static LoopbackProvider sProvider;
-        return sProvider;
-    }
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
                                            const AllocedDict &headers) override
@@ -192,7 +189,6 @@ private:
     Retained<Replicator> const _replicator;
     Retained<Replicator> const _otherReplicator;
     C4ReplicatorParameters _params;
-    unique_ptr<Provider> _provider;
     AllocedDict _responseHeaders;
     C4ReplicatorStatus _status;
     C4ReplicatorActivityLevel _otherLevel {kC4Stopped};
