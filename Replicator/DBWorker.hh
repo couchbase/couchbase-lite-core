@@ -74,16 +74,14 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_findOrRequestRevs, req, callback);
         }
 
-        void sendRevision(const RevRequest &request,
+        void sendRevision(RevToSend *request,
                           blip::MessageProgressCallback onProgress) {
-            enqueue(&DBWorker::_sendRevision, request, onProgress);
+            enqueue(&DBWorker::_sendRevision, retained(request), onProgress);
         }
 
         void insertRevision(RevToInsert *rev);
 
-        void markRevSynced(const Rev &rev) {
-            enqueue(&DBWorker::_markRevSynced, rev);
-        }
+        void markRevSynced(Rev *rev);
 
         void setCookie(slice setCookieHeader) {
             enqueue(&DBWorker::_setCookie, alloc_slice(setCookieHeader));
@@ -104,23 +102,24 @@ namespace litecore { namespace repl {
         void _getCheckpoint(CheckpointCallback);
         void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
         void _getChanges(GetChangesParams, Retained<Pusher> pusher);
-        bool addChangeToList(const C4DocumentInfo &info, C4Document *doc, std::vector<Rev> &changes);
+        bool addChangeToList(const C4DocumentInfo &info, C4Document *doc,
+                             std::shared_ptr<RevToSendList> &changes);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
-        void _sendRevision(RevRequest request,
+        void _sendRevision(Retained<RevToSend> request,
                            blip::MessageProgressCallback onProgress);
         void _insertRevision(RevToInsert *rev);
         void _setCookie(alloc_slice setCookieHeader);
 
-        void insertRevisionsNow()   {enqueue(&DBWorker::_insertRevisionsNow);}
+        void _markRevsSyncedNow();
         void _insertRevisionsNow();
         void _connectionClosed() override;
 
         void dbChanged();
         void _markRevSynced(Rev);
 
-        fleeceapi::Dict getRevToSend(C4Document*, const RevRequest&, C4Error *outError);
-        static std::string revHistoryString(C4Document*, const RevRequest&);
+        fleeceapi::Dict getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
+        static std::string revHistoryString(C4Document*, const RevToSend&);
         void writeRevWithLegacyAttachments(fleeceapi::Encoder&,
                                            fleeceapi::Dict rev,
                                            FLSharedKeys sk);
@@ -130,6 +129,13 @@ namespace litecore { namespace repl {
                                alloc_slice &outCurrentRevID);
         void updateRemoteRev(C4Document* NONNULL);
         ActivityLevel computeActivityLevel() const override;
+
+        template <class REV>
+        using Queue = std::unique_ptr<std::vector<Retained<REV>>>;
+        template <class REV>
+        void scheduleRevision(REV*, Queue<REV>&);
+        template <class REV>
+        Queue<REV> popScheduledRevisions(Queue<REV>&);
 
         static const size_t kMaxPossibleAncestors = 10;
 
@@ -142,12 +148,14 @@ namespace litecore { namespace repl {
         c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
         Retained<Pusher> _pusher;                           // Pusher to send db changes to
         DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
+        C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
         bool _getForeignAncestors {false};
         bool _skipForeignChanges {false};
-        std::unique_ptr<std::vector<RevToInsert*>> _revsToInsert; // Pending revs to be added to db
-        std::mutex _revsToInsertMutex;                      // For safe access to _revsToInsert
-        actor::Timer _insertTimer;                          // Timer for inserting revs
-        C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
+        
+        Queue<RevToInsert> _revsToInsert; // Pending revs to be added to db
+        Queue<Rev> _revsToMarkSynced; // Pending revs to be marked as synced
+        bool _insertionScheduled {false};                   // True if call to insert/sync pending
+        std::mutex _insertionQueueMutex;                    // For safe access to the above
     };
 
 } }

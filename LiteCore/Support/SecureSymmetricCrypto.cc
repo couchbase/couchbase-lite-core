@@ -33,33 +33,6 @@ namespace litecore {
 
     // iOS and Mac OS implementation based on system-level CommonCrypto library:
 
-    size_t AES128(bool encrypt,
-                  slice key,
-                  slice iv,
-                  bool padding,
-                  slice dst,
-                  slice src)
-    {
-        DebugAssert(key.size == kCCKeySizeAES128);
-        DebugAssert(iv.buf == nullptr || iv.size == kCCBlockSizeAES128, "IV is wrong size");
-        size_t outSize;
-        CCCryptorStatus status = CCCrypt((encrypt ? kCCEncrypt : kCCDecrypt),
-                                         kCCAlgorithmAES,
-                                         (padding ? kCCOptionPKCS7Padding : 0),
-                                         key.buf, key.size,
-                                         iv.buf,
-                                         src.buf, src.size,
-                                         (void*)dst.buf, dst.size,
-                                         &outSize);
-        if (status != kCCSuccess) {
-            Assert(status != kCCParamError && status != kCCBufferTooSmall &&
-                      status != kCCUnimplemented);
-            error::_throw(error::CryptoError);
-        }
-        return outSize;
-    }
-
-
     size_t AES256(bool encrypt,
                   slice key,
                   slice iv,
@@ -122,16 +95,6 @@ namespace litecore {
 
         mbedtls_cipher_free(&cipher_ctx);
         return out_len;
-    }
-
-	size_t AES128(bool encrypt,
-                  slice key,
-                  slice iv,
-                  bool padding,
-                  slice dst,
-                  slice src)
-    {
-        return AES(kAES128KeySize, MBEDTLS_CIPHER_AES_128_CBC, encrypt, key, iv, padding, dst, src);
     }
 
     size_t AES256(bool encrypt,

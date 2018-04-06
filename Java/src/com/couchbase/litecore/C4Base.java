@@ -1,5 +1,5 @@
 //
-// C4QueryOptions.java
+// C4Base.java
 //
 // Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //
@@ -17,26 +17,13 @@
 //
 package com.couchbase.litecore;
 
-public class C4QueryOptions {
-    //-------------------------------------------------------------------------
-    // Member Variables
-    //-------------------------------------------------------------------------
-    boolean rankFullText = true;
 
+public class C4Base {
     //-------------------------------------------------------------------------
-    // Constructor
+    // native methods
     //-------------------------------------------------------------------------
-    public C4QueryOptions() {
-    }
 
-    //-------------------------------------------------------------------------
-    // public methods
-    //-------------------------------------------------------------------------
-    public boolean isRankFullText() {
-        return rankFullText;
-    }
+    //////// ERRORS:
 
-    public void setRankFullText(boolean rankFullText) {
-        this.rankFullText = rankFullText;
-    }
+    public static native String getMessage(int domain, int code, int internalInfo);
 }

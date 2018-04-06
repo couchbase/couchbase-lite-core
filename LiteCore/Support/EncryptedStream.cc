@@ -27,14 +27,14 @@
 /*
     Implementing a random-access encrypted stream is actually kind of tricky.
  
-    First, we generate a random nonce the size of an AES-128 key (16 bytes). The given encryption key
+    First, we generate a random nonce the size of an AES-256 key (32 bytes). The given encryption key
     is XORed with the nonce, giving a new key that's used for the actual encryption. (The nonce
     will be appended to the file after all the data is written, so the reader can recover the key.)
 
     The data is divided into blocks of size kFileBlockSize (4kbytes), which are numbered starting
     at 0.
 
-    Each block is encrypted with AES128 using CBC; the IV is simply the block number (big-endian.)
+    Each block is encrypted with AES256 using CBC; the IV is simply the block number (big-endian.)
     This allows any block to be read and decrypted without having to read the prior blocks.
 
     All blocks except the last are of course full of data, so their size is kFileBlockSize. They
@@ -64,16 +64,16 @@ namespace litecore {
                                         slice nonce)
     {
         bool available = false;
-        if (alg == kAES128) {
-#if AES128_AVAILABLE
+        if (alg == kAES256) {
+#if AES256_AVAILABLE
             available = true;
 #endif
         }
         if (!available)
             error::_throw(error::UnsupportedEncryption);
 
-        memcpy(&_key, encryptionKey.buf, kAES128KeySize);
-        memcpy(&_nonce, nonce.buf, kAES128KeySize);
+        memcpy(&_key, encryptionKey.buf, kAES256KeySize);
+        memcpy(&_nonce, nonce.buf, kAES256KeySize);
     }
 
 
@@ -90,7 +90,7 @@ namespace litecore {
     :_output(output)
     {
         // Derive a random nonce with which to scramble the key, and write it to the file:
-        uint8_t buf[kAES128KeySize];
+        uint8_t buf[kAES256KeySize];
         slice nonce(buf, sizeof(buf));
         SecureRandomize(nonce);
         initEncryptor(alg, encryptionKey, nonce);
@@ -105,13 +105,13 @@ namespace litecore {
 
 
     void EncryptedWriteStream::writeBlock(slice plaintext, bool finalBlock) {
-#if AES128_AVAILABLE
+#if AES256_AVAILABLE
         DebugAssert(plaintext.size <= kFileBlockSize, "Block is too large");
         uint64_t iv[2] = {0, _endian_encode(_blockID)};
         ++_blockID;
         uint8_t cipherBuf[kFileBlockSize + kAESBlockSize];
         slice ciphertext(cipherBuf, sizeof(cipherBuf));
-        ciphertext.shorten(AES128(true,
+        ciphertext.shorten(AES256(true,
                                   slice(&_key, sizeof(_key)), slice(iv, sizeof(iv)),
                                   finalBlock,
                                   ciphertext,
@@ -152,7 +152,7 @@ namespace litecore {
             // Write the final (partial or empty) block with PKCS7 padding:
             writeBlock(slice(_buffer, _bufferPos), true);
             // End with the nonce:
-            _output->write(slice(_nonce, kAES128KeySize));
+            _output->write(slice(_nonce, kAES256KeySize));
             _output->close();
             _output = nullptr;
         }
@@ -171,7 +171,7 @@ namespace litecore {
     {
         // Read the random nonce from the end of the file:
         _input->seek(_input->getLength() - kFileSizeOverhead);
-        uint8_t buf[kAES128KeySize];
+        uint8_t buf[kAES256KeySize];
         if (_input->read(buf, sizeof(buf)) < sizeof(buf))
             error::_throw(error::CorruptData);
         _input->seek(0);
@@ -190,7 +190,7 @@ namespace litecore {
 
     // Reads & decrypts the next block from the file into `output`
     size_t EncryptedReadStream::readBlockFromFile(slice output) {
-#if AES128_AVAILABLE
+#if AES256_AVAILABLE
         if (_blockID > _finalBlockID)
             return 0; // at EOF already
         uint8_t blockBuf[kFileBlockSize + kAESBlockSize];
@@ -202,7 +202,7 @@ namespace litecore {
 
         uint64_t iv[2] = {0, _endian_encode(_blockID)};
         ++_blockID;
-        size_t outputSize = AES128(false,
+        size_t outputSize = AES256(false,
                       slice(_key, sizeof(_key)),
                       slice(iv, sizeof(iv)),
                       finalBlock,

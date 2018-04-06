@@ -196,8 +196,8 @@ namespace litecore { namespace repl {
         if (_activeIncomingRevs < kMaxActiveIncomingRevs) {
             startIncomingRev(msg);
         } else {
-            logVerbose("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
-                       SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);//TEMP
+            logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
+                     SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);
             _waitingRevMessages.push_back(move(msg));
         }
     }

@@ -27,6 +27,7 @@
 #include "SecureDigest.hh"
 #include "BLIP.hh"
 #include "c4Socket+Internal.hh"
+#include "Instrumentation.hh"
 
 using namespace std;
 using namespace std::placeholders;
@@ -108,9 +109,13 @@ namespace litecore { namespace repl {
 
     void Replicator::_start() {
         Assert(_connectionState == Connection::kClosed);
+        Signpost::mark(Signpost::replicatorStart, uint32_t(size_t(this)));
         _connectionState = Connection::kConnecting;
         connection()->start();
         // Now wait for _onConnect or _onClose...
+
+        if (_options.push > kC4Passive || _options.pull > kC4Passive)
+            getLocalCheckpoint();
     }
 
 
@@ -273,10 +278,11 @@ namespace litecore { namespace repl {
 
     void Replicator::_onConnect() {
         log("Connected!");
+        Signpost::mark(Signpost::replicatorConnect, uint32_t(size_t(this)));
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
             if (_options.push > kC4Passive || _options.pull > kC4Passive)
-                getCheckpoints();
+                getRemoteCheckpoint();
         }
     }
 
@@ -284,6 +290,7 @@ namespace litecore { namespace repl {
     void Replicator::_onClose(Connection::CloseStatus status, Connection::State state) {
         log("Connection closed with %-s %d: \"%.*s\" (state=%d)",
             status.reasonName(), status.code, SPLAT(status.message), _connectionState);
+        Signpost::mark(Signpost::replicatorDisconnect, uint32_t(size_t(this)));
 
         bool closedByPeer = (_connectionState != Connection::kClosing);
         _connectionState = state;
@@ -337,9 +344,8 @@ namespace litecore { namespace repl {
 #pragma mark - CHECKPOINT:
 
 
-    // Start off by getting the local & remote checkpoints, if this is an active replicator:
-    void Replicator::getCheckpoints() {
-        // Get the local checkpoint:
+    // Start off by getting the local checkpoint, if this is an active replicator:
+    void Replicator::getLocalCheckpoint() {
         _dbActor->getCheckpoint(asynchronize([this](alloc_slice checkpointID,
                                                     alloc_slice data,
                                                     bool dbIsEmpty,
@@ -349,15 +355,15 @@ namespace litecore { namespace repl {
                 return;
             
             _checkpointDocID = checkpointID;
-            _checkpointReceived = false;
-            bool haveLocalCheckpoint = false;
 
-            if (data) {
+            if (_options.properties[kC4ReplicatorResetCheckpoint].asBool()) {
+                log("Ignoring local checkpoint ('reset' option is set)");
+            } else if (data) {
                 _checkpoint.decodeFrom(data);
                 auto cp = _checkpoint.sequences();
                 log("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
                     SPLAT(checkpointID), cp.local, SPLAT(cp.remote));
-                haveLocalCheckpoint = true;
+                _hadLocalCheckpoint = true;
             } else if (err.code == 0) {
                 log("No local checkpoint '%.*s'", SPLAT(checkpointID));
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
@@ -365,56 +371,72 @@ namespace litecore { namespace repl {
                 if (dbIsEmpty && _options.pull > kC4Passive)
                     _puller->setSkipDeleted();
             } else {
-                log("Fatal error getting checkpoint");
+                log("Fatal error getting local checkpoint");
                 gotError(err);
                 stop();
                 return;
             }
-
-            // Get the remote checkpoint, using the same checkpointID:
-            MessageBuilder msg("getCheckpoint"_sl);
-            msg["client"_sl] = checkpointID;
-            sendRequest(msg, [this,haveLocalCheckpoint](MessageProgress progress) {
-                // ...after the checkpoint is received:
-                if (progress.state != MessageProgress::kComplete)
-                    return;
-                MessageIn *response = progress.reply;
-                Checkpoint remoteCheckpoint;
-
-                if (response->isError()) {
-                    auto err = response->getError();
-                    if (!(err.domain == "HTTP"_sl && err.code == 404))
-                        return gotError(response);
-                    log("No remote checkpoint");
-                    _checkpointRevID.reset();
-                } else {
-                    remoteCheckpoint.decodeFrom(response->body());
-                    _checkpointRevID = response->property("rev"_sl);
-                    if (willLog()) {
-                        auto gotcp = remoteCheckpoint.sequences();
-                        log("Received remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
-                            gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
-                    }
-                }
-                _checkpointReceived = true;
-
-                if (haveLocalCheckpoint) {
-                    // Compare checkpoints, reset if mismatched:
-                    bool valid = _checkpoint.validateWith(remoteCheckpoint);
-                    if (!valid)
-                        _dbActor->checkpointIsInvalid();
-
-                    // Now we have the checkpoints! Time to start replicating:
-                    startReplicating();
-                }
-
-                if (_checkpointJSONToSave)
-                    saveCheckpointNow();    // _saveCheckpoint() was waiting for _checkpointRevID
-            });
-
-            if (!haveLocalCheckpoint)
-                startReplicating();
+            
+            getRemoteCheckpoint();
         }));
+    }
+
+
+    // Get the remote checkpoint, after we've got the local one and the BLIP connection is up.
+    void Replicator::getRemoteCheckpoint() {
+        // Get the remote checkpoint, using the same checkpointID:
+        if (!_checkpointDocID || _connectionState != Connection::kConnected)
+            return;     // not ready yet
+        if (_remoteCheckpointRequested)
+            return;     // already in progress
+
+        logVerbose("Requesting remote checkpoint");
+        MessageBuilder msg("getCheckpoint"_sl);
+        msg["client"_sl] = _checkpointDocID;
+        sendRequest(msg, [this](MessageProgress progress) {
+            // ...after the checkpoint is received:
+            if (progress.state != MessageProgress::kComplete)
+                return;
+            MessageIn *response = progress.reply;
+            Checkpoint remoteCheckpoint;
+
+            if (response->isError()) {
+                auto err = response->getError();
+                if (!(err.domain == "HTTP"_sl && err.code == 404))
+                    return gotError(response);
+                log("No remote checkpoint");
+                _checkpointRevID.reset();
+            } else {
+                remoteCheckpoint.decodeFrom(response->body());
+                _checkpointRevID = response->property("rev"_sl);
+                if (willLog()) {
+                    auto gotcp = remoteCheckpoint.sequences();
+                    log("Received remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
+                        gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
+                }
+            }
+            _remoteCheckpointReceived = true;
+
+            if (_hadLocalCheckpoint) {
+                // Compare checkpoints, reset if mismatched:
+                bool valid = _checkpoint.validateWith(remoteCheckpoint);
+                if (!valid)
+                    _dbActor->checkpointIsInvalid();
+
+                // Now we have the checkpoints! Time to start replicating:
+                startReplicating();
+            }
+
+            if (_checkpointJSONToSave)
+                saveCheckpointNow();    // _saveCheckpoint() was waiting for _checkpointRevID
+        });
+
+        _remoteCheckpointRequested = true;
+
+        // If there's no local checkpoint, we know we're starting from zero and don't need to
+        // wait for the remote one before getting started:
+        if (!_hadLocalCheckpoint)
+            startReplicating();
     }
 
 
@@ -422,7 +444,7 @@ namespace litecore { namespace repl {
         if (!connection())
             return;
         _checkpointJSONToSave = move(json);
-        if (_checkpointReceived)
+        if (_remoteCheckpointReceived)
             saveCheckpointNow();
         // ...else wait until checkpoint received (see above), which will call saveCheckpointNow().
     }
@@ -433,7 +455,7 @@ namespace litecore { namespace repl {
 
         logVerbose("Saving remote checkpoint %.*s with rev='%.*s': %.*s ...",
                    SPLAT(_checkpointDocID), SPLAT(_checkpointRevID), SPLAT(json));
-        Assert(_checkpointReceived);
+        Assert(_remoteCheckpointReceived);
         Assert(json);
 
         MessageBuilder msg("setCheckpoint"_sl);

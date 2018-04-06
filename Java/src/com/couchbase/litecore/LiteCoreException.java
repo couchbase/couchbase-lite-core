@@ -27,6 +27,7 @@ public class LiteCoreException extends Exception {
         this.code = code;
     }
 
+    // NOTE called to throw LiteCoreException from native code to Java
     public static void throwException(int domain, int code, String msg) throws LiteCoreException {
         throw new LiteCoreException(domain, code, msg);
     }

@@ -48,10 +48,6 @@ public class MValue implements Encodable {
 
     /* Constructors */
 
-    public MValue() {
-        this(true);
-    }
-
     public MValue(boolean isEmpty) {
         _isEmpty = isEmpty;
     }
@@ -66,20 +62,12 @@ public class MValue implements Encodable {
 
     /* Properties */
 
-    public boolean hasNative() {
-        return _nativeObject != null;
-    }
-
     public boolean isEmpty() {
         return _isEmpty;
     }
 
     public boolean isMutated() {
         return _value == null;
-    }
-
-    public Object getNativeObject() {
-        return _nativeObject;
     }
 
     public FLValue getValue() {

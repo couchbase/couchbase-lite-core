@@ -53,34 +53,6 @@ public class FLEncoder {
         }
     }
 
-    public String toString() {
-        return String.format("FLEncoder{_handle: 0x%x}", _handle);
-    }
-
-    public void setSharedKeys(FLSharedKeys sk) {
-        setSharedKeys(_handle, sk == null ? 0L : sk.getHandle());
-    }
-
-    public boolean writeNull() {
-        return writeNull(_handle);
-    }
-
-    public boolean writeBool(boolean value) {
-        return writeBool(_handle, value);
-    }
-
-    public boolean writeInt(long value) {
-        return writeInt(_handle, value);
-    }
-
-    public boolean writeFloat(float value) {
-        return writeFloat(_handle, value);
-    }
-
-    public boolean writeDouble(double value) {
-        return writeDouble(_handle, value);
-    }
-
     public boolean writeString(String value) {
         return writeString(_handle, value);
     }
@@ -107,14 +79,6 @@ public class FLEncoder {
 
     public boolean writeKey(String slice) {
         return writeKey(_handle, slice);
-    }
-
-    public boolean writeValue(FLValue flValue) {
-        return writeValue(_handle, flValue.getHandle());
-    }
-
-    public boolean writeValueWithSharedKeys(FLValue flValue, FLSharedKeys sk) {
-        return writeValueWithSharedKeys(_handle, flValue.getHandle(), sk == null ? 0L : sk.getHandle());
     }
 
     // C/Fleece+CoreFoundation.mm
@@ -221,8 +185,6 @@ public class FLEncoder {
 
     static native void free(long encoder);
 
-    static native void setSharedKeys(long encoder, long sharedKeys);
-
     static native boolean writeNull(long encoder);
 
     static native boolean writeBool(long encoder, boolean value);
@@ -246,10 +208,6 @@ public class FLEncoder {
     static native boolean endDict(long encoder);
 
     static native boolean writeKey(long encoder, String slice);
-
-    static native boolean writeValue(long encoder, long value);
-
-    static native boolean writeValueWithSharedKeys(long encoder, long value, long sharedKeys);
 
     static native byte[] finish(long encoder) throws LiteCoreException;
 

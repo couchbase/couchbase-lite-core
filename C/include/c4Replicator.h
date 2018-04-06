@@ -39,24 +39,29 @@ extern "C" {
         kC4Continuous       // Keep replication active until stopped by application
     };
 
+    /** The possible states of a replicator. */
     typedef C4_ENUM(int32_t, C4ReplicatorActivityLevel) {
-        kC4Stopped,
-        kC4Offline,
-        kC4Connecting,
-        kC4Idle,
-        kC4Busy
+        kC4Stopped,     ///< Finished, or got a fatal error.
+        kC4Offline,     ///< Not used by LiteCore; for use by higher-level APIs. */
+        kC4Connecting,  ///< Connection is in progress.
+        kC4Idle,        ///< Continuous replicator has caught up and is waiting for changes.
+        kC4Busy         ///< Connected and actively working.
     };
 
+    /** For convenience, an array of C strings naming the C4ReplicatorActivityLevel values. */
     CBL_CORE_API extern const char* const kC4ReplicatorActivityLevelNames[5];
 
 
+    /** Represents the current progress of a replicator.
+        The `units` fields should not be used directly, but divided (`unitsCompleted`/`unitsTotal`)
+        to give a _very_ approximate progress fraction. */
     typedef struct {
-        uint64_t    unitsCompleted;
-        uint64_t    unitsTotal;
-        uint64_t    documentCount;
+        uint64_t    unitsCompleted;     ///< Abstract number of work units completed so far
+        uint64_t    unitsTotal;         ///< Total number of work units (a very rough approximation)
+        uint64_t    documentCount;      ///< Number of documents transferred so far
     } C4Progress;
 
-    /** Current status of replication. Passed to callback. */
+    /** Current status of replication. Passed to `C4ReplicatorStatusChangedCallback`. */
     typedef struct {
         C4ReplicatorActivityLevel level;
         C4Progress progress;
@@ -90,12 +95,15 @@ extern "C" {
     bool c4repl_isValidDatabaseName(C4String dbName);
 
     /** A simple URL parser that populates a C4Address from a URL string.
-        The fields of the address will point inside the url string. */
+        The fields of the address will point inside the url string.
+        The final parameter of the URL's path is assumed to be the database name; it will not
+        be included in `address.path`, but will be pointed to by `dbName`. */
     bool c4repl_parseURL(C4String url,
                          C4Address *address C4NONNULL,
                          C4String *dbName C4NONNULL);
 
 
+    /** Parameters describing a replication, used when creating a C4Replicator. */
     typedef struct {
         C4ReplicatorMode                  push;              ///< Push mode (from db to remote/other db)
         C4ReplicatorMode                  pull;              ///< Pull mode (from db to remote/other db).
@@ -113,14 +121,27 @@ extern "C" {
         @param remoteDatabaseName  The name of the database at the remote address.
         @param otherLocalDB  The other local database (null if other db is remote.)
         @param params Replication parameters (see above.)
-        @param err  Error, if replication can't be created.
-        @return  The newly created replication, or NULL on error. */
+        @param outError  Error, if replication can't be created.
+        @return  The newly created replicator, or NULL on error. */
     C4Replicator* c4repl_new(C4Database* db C4NONNULL,
                              C4Address remoteAddress,
                              C4String remoteDatabaseName,
                              C4Database* otherLocalDB,
                              C4ReplicatorParameters params,
-                             C4Error *err) C4API;
+                             C4Error *outError) C4API;
+
+    /** Creates a new replicator from an already-open C4Socket. This is for use by listeners
+        that accept incoming connections, wrap them by calling `c4socket_fromNative()`, then
+        start a passive replication to service them.
+        @param db  The local database.
+        @param openSocket  An already-created C4Socket.
+        @param params  Replication parameters. Will usually use kC4Passive modes.
+        @param outError  Error, if replication can't be created.
+        @return  The newly created replicator, or NULL on error. */
+    C4Replicator* c4repl_newWithSocket(C4Database* db C4NONNULL,
+                                       C4Socket *openSocket C4NONNULL,
+                                       C4ReplicatorParameters params,
+                                       C4Error *outError) C4API;
 
     /** Frees a replicator reference. If the replicator is running it will stop. */
     void c4repl_free(C4Replicator* repl) C4API;
@@ -177,6 +198,7 @@ extern "C" {
     #define kC4ReplicatorCheckpointInterval   "checkpointInterval" // How often to checkpoint, in seconds; number
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" // Stable ID for remote db with unstable URL; string
     #define kC4ReplicatorHeartbeatInterval    "heartbeat" // Interval in secs to send a keepalive ping
+    #define kC4ReplicatorResetCheckpoint      "reset"     // Start over w/o checkpoint; bool
 
     // Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           // Auth property; string

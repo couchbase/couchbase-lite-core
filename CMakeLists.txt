@@ -41,7 +41,10 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DSQLITE_ENABLE_FTS3_TOKENIZER)
 
 if(BUILD_ENTERPRISE)
-    add_definitions(-DCOUCHBASE_ENTERPRISE)
+    add_definitions(-DCOUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
+                    -DSQLITE_HAS_CODEC          # Enables SQLite encryption extension (SEE)
+                    -DCCCRYPT256                # Enables AES256 in SEE
+                    -DSQLITE_TEMP_STORE=2)      # Don't write temp files to disk (for security)
 endif()
 
 if(MSVC)
@@ -152,7 +155,8 @@ include_directories("vendor/fleece/Fleece"
                     "vendor/mbedtls/include")
 
 if(WIN32)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099 /ignore:4221")
+  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4221")
   include_directories("MSVC")
 elseif(ANDROID)
   include_directories("LiteCore/Unix")

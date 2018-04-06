@@ -237,8 +237,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][Encryption]
     // If we're on the unencrypted pass, encrypt the db. Otherwise decrypt it:
     C4EncryptionKey newKey = {kC4EncryptionNone, {}};
     if (c4db_getConfig(db)->encryptionKey.algorithm == kC4EncryptionNone) {
-        newKey.algorithm = kC4EncryptionAES128;
-        memcpy(newKey.bytes, "a different key than default....", 32);
+        newKey.algorithm = kC4EncryptionAES256;
+        memcpy(newKey.bytes, "a different key than default....", kC4EncryptionKeySizeAES256);
         REQUIRE(c4db_rekey(db, &newKey, &error));
     } else {
         REQUIRE(c4db_rekey(db, nullptr, &error));

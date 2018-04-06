@@ -69,7 +69,7 @@ namespace litecore { namespace repl {
         Puller* _puller;
         DBWorker* _dbWorker;
         Retained<blip::MessageIn> _revMessage;
-        RevToInsert _rev;
+        Retained<RevToInsert> _rev;
         unsigned _pendingCallbacks {0};
         std::vector<PendingBlob> _pendingBlobs;
         Retained<IncomingBlob> _currentBlob;

@@ -146,7 +146,10 @@ namespace litecore { namespace repl {
 
 
     // Received a list of changes from the database [initiated in maybeGetMoreChanges]
-    void Pusher::_gotChanges(RevList changes, C4SequenceNumber lastSequence, C4Error err) {
+    void Pusher::_gotChanges(std::shared_ptr<RevToSendList> changes,
+                             C4SequenceNumber lastSequence,
+                             C4Error err)
+    {
         if (_gettingChanges) {
             _gettingChanges = false;
             decrement(_changeListsInFlight);
@@ -158,32 +161,48 @@ namespace litecore { namespace repl {
             return gotError(err);
         _lastSequenceRead = lastSequence;
         _pendingSequences.seen(lastSequence);
-        if (changes.empty()) {
+        if (changes->empty()) {
             log("Found 0 changes up to #%llu", lastSequence);
             updateCheckpoint();
         } else {
             log("Read %zu local changes up to #%llu: sending '%-s' with sequences #%llu - #%llu",
-                changes.size(), lastSequence,
+                changes->size(), lastSequence,
                 (_proposeChanges ? "proposeChanges" : "changes"),
-                changes[0].sequence, _lastSequenceRead);
+                changes->at(0)->sequence, _lastSequenceRead);
+
+            uint64_t bodySize = 0;
+            for (auto i = changes->begin(); i != changes->end();) {
+                RevToSend *rev = *i;
+                auto delayedRev = _activeDocs.find(rev->docID);
+                if (delayedRev == _activeDocs.end()) {
+                    _activeDocs.insert({rev->docID, nullptr});
+                    bodySize += rev->bodySize;
+                    ++i;
+                } else {
+                    // This doc already has a revision being sent; wait till that one is done
+                    logDebug("Holding off on change '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
+                    delayedRev->second = rev;
+                    i = changes->erase(i);
+                }
+            }
+            if (changes->empty())
+                return;
+
+            addProgress({0, bodySize});
         }
 
-        uint64_t bodySize = 0;
-        for (auto &change : changes)
-            bodySize += change.bodySize;
-        addProgress({0, bodySize});
-
         // Send the "changes" request, and asynchronously handle the response:
-        sendChanges(changes);
+        auto changeCount = changes->size();
+        sendChanges(move(changes));
 
-        if (changes.size() < _changesBatchSize) {
+        if (changeCount < _changesBatchSize) {
             if (!_caughtUp) {
                 log("Caught up, at lastSequence #%llu", _lastSequenceRead);
                 _caughtUp = true;
-                if (!changes.empty() && passive()) {
+                if (changeCount > 0 && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
                     // one if we didn't already:
-                    sendChanges(RevList());
+                    sendChanges(make_unique<RevToSendList>());
                 }
             }
         } else {
@@ -193,35 +212,35 @@ namespace litecore { namespace repl {
 
 
     // Subroutine of _gotChanges that actually sends a "changes" or "proposeChanges" message:
-    void Pusher::sendChanges(RevList changes) {
+    void Pusher::sendChanges(std::shared_ptr<RevToSendList> changes) {
         MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
         req.urgent = kChangeMessagesAreUrgent;
-        req.compressed = !changes.empty();
+        req.compressed = !changes->empty();
 
         // Generate the JSON array of changes:
         auto &enc = req.jsonBody();
         enc.beginArray();
-        for (auto &change : changes) {
+        for (RevToSend *change : *changes) {
             if (!passive())
-                _pendingSequences.add(change.sequence);
+                _pendingSequences.add(change->sequence);
             // Write the info array for this change:
             enc.beginArray();
             if (_proposeChanges) {
-                enc << change.docID << change.revID;
-                if (change.remoteAncestorRevID || change.bodySize > 0)
-                    enc << change.remoteAncestorRevID;
+                enc << change->docID << change->revID;
+                if (change->remoteAncestorRevID || change->bodySize > 0)
+                    enc << change->remoteAncestorRevID;
             } else {
-                enc << change.sequence << change.docID << change.revID;
-                if (change.deleted() || change.bodySize > 0)
-                    enc << change.deleted();
+                enc << change->sequence << change->docID << change->revID;
+                if (change->deleted() || change->bodySize > 0)
+                    enc << change->deleted();
             }
-            if (change.bodySize > 0)
-                enc << change.bodySize;
+            if (change->bodySize > 0)
+                enc << change->bodySize;
             enc.endArray();
         }
         enc.endArray();
 
-        if (changes.empty()) {
+        if (changes->empty()) {
             // Empty == just announcing 'caught up', so no need to get a reply
             req.noreply = true;
             sendRequest(req);
@@ -246,7 +265,7 @@ namespace litecore { namespace repl {
                     // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
                     log("Server requires 'proposeChanges'; retrying...");
                     _proposeChanges = true;
-                    sendChanges(changes);
+                    sendChanges(move(changes));
                     return;
                 }
             }
@@ -263,46 +282,43 @@ namespace litecore { namespace repl {
             auto requests = reply->JSONBody().asArray();
 
             unsigned index = 0;
-            for (auto &change : changes) {
+            for (RevToSend *change : *changes) {
                 bool queued = false;
                 if (proposedChanges) {
                     // Entry in "proposeChanges" response is a status code, with 0 for OK:
                     int status = (int)requests[index].asInt();
                     if (status == 0) {
-                        auto request = _revsToSend.emplace(_revsToSend.end(), change,
-                                                           maxHistory, legacyAttachments);
-                        request->noConflicts = true;
-                        request->ancestorRevIDs.emplace_back(change.remoteAncestorRevID);
+                        change->maxHistory = maxHistory;
+                        change->legacyAttachments = legacyAttachments;
+                        change->noConflicts = true;
+                        _revsToSend.push_back(change);
                         queued = true;
                     } else if (status == 304) {
                         // 304 means server has my rev already
                         _dbWorker->markRevSynced(change);
                     } else {
                         logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
-                                 SPLAT(change.docID), SPLAT(change.revID),
-                                 SPLAT(change.remoteAncestorRevID), status);
+                                 SPLAT(change->docID), SPLAT(change->revID),
+                                 SPLAT(change->remoteAncestorRevID), status);
                         auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
-                        gotDocumentError(change.docID, err, true, false);
+                        gotDocumentError(change->docID, err, true, false);
                     }
                 } else {
                     // Entry in "changes" response is an array of known ancestors, or null to skip:
                     Array ancestorArray = requests[index].asArray();
                     if (ancestorArray) {
-                        auto request = _revsToSend.emplace(_revsToSend.end(), change,
-                                                           maxHistory, legacyAttachments);
-                        request->ancestorRevIDs.reserve(ancestorArray.count());
-                        for (Value a : ancestorArray) {
-                            slice revid = a.asString();
-                            if (revid)
-                                request->ancestorRevIDs.emplace_back(revid);
-                        }
+                        change->maxHistory = maxHistory;
+                        change->legacyAttachments = legacyAttachments;
+                        for (Value a : ancestorArray)
+                            change->addRemoteAncestor(a.asString());
+                        _revsToSend.push_back(change);
                         queued = true;
                     }
                 }
 
                 if (queued) {
                     logVerbose("Queueing rev '%.*s' #%.*s (seq #%llu) [%zu queued]",
-                               SPLAT(change.docID), SPLAT(change.revID), change.sequence,
+                               SPLAT(change->docID), SPLAT(change->revID), change->sequence,
                                _revsToSend.size());
                 } else {
                     doneWithRev(change, true);  // unqueued, so we're done with it
@@ -321,7 +337,7 @@ namespace litecore { namespace repl {
         while (_revisionsInFlight < kMaxRevsInFlight
                    && _revisionBytesAwaitingReply <= kMaxRevBytesAwaitingReply
                    && !_revsToSend.empty()) {
-            sendRevision(_revsToSend.front());
+            sendRevision(move(_revsToSend.front()));
             _revsToSend.pop_front();
             if (_revsToSend.size() == kMaxRevsQueued - 1)
                 maybeGetMoreChanges();          // I may now be eligible to send more changes
@@ -333,14 +349,13 @@ namespace litecore { namespace repl {
 
     
     // Tells the DBWorker to send a "rev" message containing a revision body.
-    void Pusher::sendRevision(const RevRequest &rev)
-    {
+    void Pusher::sendRevision(Retained<RevToSend> rev) {
         MessageProgressCallback onProgress;
         if (!passive()) {
             // Callback for after the peer receives the "rev" message:
             increment(_revisionsInFlight);
             logVerbose("Uploading rev %.*s %.*s (seq #%llu) [%d/%d]",
-                       SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence,
+                       SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                        _revisionsInFlight, kMaxRevsInFlight);
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
@@ -349,7 +364,7 @@ namespace litecore { namespace repl {
                 }
                 if (progress.state == MessageProgress::kAwaitingReply) {
                     logDebug("Uploaded rev %.*s #%.*s (seq #%llu)",
-                             SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
+                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                     decrement(_revisionsInFlight);
                     increment(_revisionBytesAwaitingReply, progress.bytesSent);
                     maybeSendMoreRevs();
@@ -359,17 +374,17 @@ namespace litecore { namespace repl {
                     bool completed = !progress.reply->isError();
                     if (completed) {
                         logVerbose("Completed rev %.*s #%.*s (seq #%llu)",
-                                   SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence);
+                                   SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                         _dbWorker->markRevSynced(rev);
-                        finishedDocument(rev.docID, true);
+                        finishedDocument(rev->docID, true);
                     } else {
                         auto err = progress.reply->getError();
                         auto c4err = blipToC4Error(err);
                         bool transient = c4error_mayBeTransient(c4err);
                         logError("Got error response to rev %.*s %.*s (seq #%llu): %.*s %d '%.*s'",
-                                 SPLAT(rev.docID), SPLAT(rev.revID), rev.sequence,
+                                 SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                                  SPLAT(err.domain), err.code, SPLAT(err.message));
-                        gotDocumentError(rev.docID, c4err, true, transient);
+                        gotDocumentError(rev->docID, c4err, true, transient);
                         // If this is a permanent failure, like a validation error or conflict,
                         // then I've completed my duty to push it.
                         completed = !transient;
@@ -384,7 +399,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void Pusher::_couldntSendRevision(RevRequest rev) {
+    void Pusher::_couldntSendRevision(Retained<RevToSend> rev) {
         decrement(_revisionsInFlight);
         doneWithRev(rev, false);
         maybeSendMoreRevs();
@@ -496,12 +511,32 @@ namespace litecore { namespace repl {
 #pragma mark - PROGRESS:
 
 
-    void Pusher::doneWithRev(const Rev &rev, bool completed) {
+    void Pusher::doneWithRev(const RevToSend *rev, bool completed) {
         if (!passive()) {
-            addProgress({rev.bodySize, 0});
+            addProgress({rev->bodySize, 0});
             if (completed) {
-                _pendingSequences.remove(rev.sequence);
+                _pendingSequences.remove(rev->sequence);
                 updateCheckpoint();
+            }
+        }
+
+        auto i = _activeDocs.find(rev->docID);
+        if (i != _activeDocs.end()) {
+            Retained<RevToSend> newRev = i->second;
+            if (newRev) {
+                i->second = nullptr;
+                if (completed)
+                    newRev->remoteAncestorRevID = rev->revID;
+                logDebug("Now that '%.*s' %.*s is done, propose %.*s (parent %.*s) ...",
+                    SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
+                    SPLAT(newRev->remoteAncestorRevID));
+                addProgress({0, newRev->bodySize});
+                auto revs = make_unique<RevToSendList>();
+                revs->push_back(newRev);
+                sendChanges(move(revs));
+            } else {
+                _activeDocs.erase(i);
+                logDebug("'%.*s' %.*s is done", SPLAT(rev->docID), SPLAT(rev->revID));
             }
         }
     }

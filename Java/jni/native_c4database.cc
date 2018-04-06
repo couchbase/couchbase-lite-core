@@ -27,6 +27,7 @@ using namespace litecore::jni;
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4Database
 // ----------------------------------------------------------------------------
+
 /*
  * Class:     com_couchbase_litecore_C4Database
  * Method:    open
@@ -55,19 +56,6 @@ Java_com_couchbase_litecore_C4Database_open(JNIEnv *env, jclass clazz, jstring j
 
 /*
  * Class:     com_couchbase_litecore_C4Database
- * Method:    openAgain
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4Database_openAgain(JNIEnv *env, jclass clazz, jlong jdb) {
-    C4Error error;
-    C4Database *db = c4db_openAgain((C4Database *) jdb, &error);
-    if (!db)
-        throwError(env, error);
-    return (jlong) db;
-}
-/*
- * Class:     com_couchbase_litecore_C4Database
  * Method:    copy
  * Signature: (Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;II[B)Z
  */
@@ -89,15 +77,6 @@ Java_com_couchbase_litecore_C4Database_copy(JNIEnv *env, jclass clazz,
     C4Error error;
     if (!c4db_copy(fromPath, toPath, &config, &error))
         throwError(env, error);
-}
-/*
- * Class:     com_couchbase_litecore_C4Database
- * Method:    retain
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4Database_retain(JNIEnv *env, jclass clazz, jlong jdb) {
-    return (jlong) c4db_retain((C4Database *) jdb);
 }
 
 /*
@@ -161,18 +140,6 @@ Java_com_couchbase_litecore_C4Database_rekey(JNIEnv *env, jclass clazz, jlong jd
 
     C4Error error;
     if (!c4db_rekey((C4Database *) jdb, &key, &error))
-        throwError(env, error);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Database
- * Method:    c4shutdown
- * Signature: ()V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4Database_c4shutdown(JNIEnv *env, jclass clazz) {
-    C4Error error;
-    if (!c4_shutdown(&error))
         throwError(env, error);
 }
 
