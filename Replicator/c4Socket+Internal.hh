@@ -23,26 +23,20 @@
 struct c4Database;
 
 
-namespace litecore { namespace websocket {
-
-    // Address conversion utilities:
-    C4Address c4AddressFrom(const Address &address);
-    websocket::Address addressFrom(const C4Address &addr);
-    websocket::Address addressFrom(const C4Address &addr, fleece::slice remoteDatabaseName);
-    websocket::Address addressFrom(c4Database* otherDB);
+namespace litecore { namespace repl {
 
     // Returns the WebSocket object associated with a C4Socket
     websocket::WebSocket* WebSocketFrom(C4Socket *c4sock);
 
 
     /** Implementation of C4Socket */
-    class C4SocketImpl : public WebSocketImpl, public C4Socket {
+    class C4SocketImpl : public websocket::WebSocketImpl, public C4Socket {
     public:
         static void registerFactory(const C4SocketFactory&);
         static const C4SocketFactory& registeredFactory();
 
-        C4SocketImpl(const C4Address &address,
-                     Role role,
+        C4SocketImpl(websocket::URL,
+                     websocket::Role role,
                      fleece::slice options,
                      const C4SocketFactory *factory_,
                      void *nativeHandle_ =nullptr);

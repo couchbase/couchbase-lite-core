@@ -66,6 +66,12 @@ TEST_CASE("URL Parsing") {
     CHECK(address.path == "/path/to/"_sl);
     CHECK(dbName == "dbname"_sl);
 
+    REQUIRE(c4address_fromURL("file:///path/to/dbname/"_sl, &address, nullptr));
+    CHECK(address.scheme == "file"_sl);
+    CHECK(address.hostname == ""_sl);
+    CHECK(address.port == 0);
+    CHECK(address.path == "/path/to/dbname/"_sl);
+
     REQUIRE(c4address_fromURL("blips://localhost/path/to/dbname/"_sl, &address, NULL));
     CHECK(address.scheme == "blips"_sl);
     CHECK(address.hostname == "localhost"_sl);
@@ -85,7 +91,7 @@ TEST_CASE("URL Parsing") {
     CHECK(!c4address_fromURL("blip:"_sl, &address, &dbName));
     CHECK(!c4address_fromURL("blip:/"_sl, &address, &dbName));
     CHECK(!c4address_fromURL("blip://"_sl, &address, &dbName));
-    CHECK(!c4address_fromURL("http://localhost/dbname"_sl, &address, &dbName));
+    CHECK(!c4address_fromURL("*://localhost/dbname"_sl, &address, &dbName));
     CHECK(!c4address_fromURL("://localhost/dbname"_sl, &address, &dbName));
     CHECK(!c4address_fromURL("/dev/null"_sl, &address, &dbName));
     CHECK(!c4address_fromURL("/dev/nu:ll"_sl, &address, &dbName));

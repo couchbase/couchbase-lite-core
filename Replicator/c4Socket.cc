@@ -21,6 +21,7 @@
 #include "c4Private.h"
 #include "c4Socket.h"
 #include "c4Socket+Internal.hh"
+#include "Address.hh"
 #include "Error.hh"
 #include "WebSocketImpl.hh"
 #include "StringUtil.hh"
@@ -31,52 +32,14 @@ using namespace std;
 using namespace fleece;
 using namespace fleeceapi;
 using namespace litecore;
-using namespace litecore::websocket;
-
+using namespace litecore::repl;
 
 const char* const kC4SocketOptionWSProtocols = litecore::websocket::WebSocket::kProtocolsOption;
 
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace repl {
 
-    C4Address c4AddressFrom(const Address &address) {
-        return C4Address {
-            slice(address.scheme),
-            slice(address.hostname),
-            address.port,
-            slice(address.path)
-        };
-    }
-
-
-    websocket::Address addressFrom(const C4Address &addr) {
-        return websocket::Address(asstring(addr.scheme),
-                                  asstring(addr.hostname),
-                                  addr.port,
-                                  asstring(addr.path));
-    }
-
-    
-    websocket::Address addressFrom(const C4Address &addr, slice remoteDatabaseName) {
-        stringstream path;
-        path << addr.path;
-        if (!slice(addr.path).hasSuffix("/"_sl))
-            path << '/';
-        path << remoteDatabaseName << "/_blipsync";
-        return websocket::Address(asstring(addr.scheme),
-                                  asstring(addr.hostname),
-                                  addr.port,
-                                  path.str());
-    }
-
-
-    websocket::Address addressFrom(C4Database* otherDB) {
-        alloc_slice path(c4db_getPath(otherDB));
-        return websocket::Address("file", "", 0, path.asString());
-    }
-
-
-#pragma mark - C4 SOCKET IMPL:
+    using namespace websocket;
 
 
     static const C4SocketFactory& fac(const C4SocketFactory *f) {
@@ -85,12 +48,12 @@ namespace litecore { namespace websocket {
 
 
     /** Implementation of C4Socket */
-    C4SocketImpl::C4SocketImpl(const C4Address &address,
+    C4SocketImpl::C4SocketImpl(websocket::URL url,
                                Role role,
                                slice options,
                                const C4SocketFactory *factory_,
                                void *nativeHandle_)
-    :WebSocketImpl(addressFrom(address),
+    :WebSocketImpl(url,
                    role,
                    AllocedDict(options),
                    fac(factory_).framing != kC4NoFraming)
@@ -144,7 +107,7 @@ namespace litecore { namespace websocket {
         if (!_factory.open)
             error::_throw(error::UnsupportedOperation,
                           "C4SocketFactory does not support 'open'");
-        C4Address c4addr = c4AddressFrom(address());
+        Address c4addr(url());
         _factory.open(this, &c4addr, options().data(), _factory.context);
     }
 
@@ -185,7 +148,7 @@ C4Socket* c4socket_fromNative(C4SocketFactory factory,
                               void *nativeHandle,
                               const C4Address *address) C4API
 {
-    return new C4SocketImpl(*address, Role::Server, {}, &factory, nativeHandle);
+    return new C4SocketImpl(Address(*address).url(), Role::Server, {}, &factory, nativeHandle);
 }
 
 void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) C4API {

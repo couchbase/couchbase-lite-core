@@ -215,7 +215,7 @@ void DbEndpoint::replicateWith(RemoteEndpoint &remote, bool pushing) {
     cout << "...\n";
     C4ReplicatorParameters params = replicatorParameters(pushMode, pullMode);
     C4Error err;
-    replicate(c4repl_new(_db, remote.address(), remote.databaseName(), nullptr, params, &err), err);
+    replicate(c4repl_new(_db, remote.url(), remote.databaseName(), nullptr, params, &err), err);
 }
 
 

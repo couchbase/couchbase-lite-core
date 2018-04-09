@@ -16,13 +16,12 @@
 // limitations under the License.
 //
 
+#include "Database.hh"
 #include "DatabaseCookies.hh"
 #include "CookieStore.hh"
-#include "Database.hh"
 
 using namespace std;
 using namespace fleece;
-using namespace litecore::websocket;
 
 namespace litecore { namespace repl {
 

@@ -63,12 +63,11 @@ public:
         }
 
         // Create client (active) and server (passive) replicators:
-        Address clientAddress{"ws", "cli"}, serverAddress{"ws", "srv"};
         _replClient = new Replicator(dbClient,
-                                     new LoopbackWebSocket(serverAddress, false, kLatency),
+                                     new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
                                      *this, opts1);
         _replServer = new Replicator(dbServer,
-                                     new LoopbackWebSocket(clientAddress, true, kLatency),
+                                     new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
                                      *this, opts2);
 
         // Response headers:
@@ -299,7 +298,7 @@ public:
                                               (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
                                               _checkpointID,
                                               &err) );
-        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << asstring(_checkpointID) << "'; err = " << err.domain << "," << err.code);
+        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID) << "'; err = " << err.domain << "," << err.code);
         REQUIRE(doc);
         CHECK(doc->body == c4str(body));
         if (!local)

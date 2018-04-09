@@ -19,6 +19,7 @@
 #include "DBWorker.hh"
 #include "Pusher.hh"
 #include "IncomingRev.hh"
+#include "Address.hh"
 #include "FleeceCpp.hh"
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
@@ -53,14 +54,14 @@ namespace litecore { namespace repl {
     }
 
     DBWorker::DBWorker(Connection *connection,
-                     Replicator *replicator,
-                     C4Database *db,
-                     const websocket::Address &remoteAddress,
-                     Options options)
+                       Replicator *replicator,
+                       C4Database *db,
+                       const websocket::URL &remoteURL,
+                       Options options)
     :Worker(connection, replicator, options, "DB")
     ,_db(c4db_retain(db))
     ,_blobStore(c4db_getBlobStore(db, nullptr))
-    ,_remoteAddress(remoteAddress)
+    ,_remoteURL(remoteURL)
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
@@ -80,14 +81,15 @@ namespace litecore { namespace repl {
         slice uniqueID = _options.properties[kC4ReplicatorOptionRemoteDBUniqueID].asString();
         if (uniqueID)
             return string(uniqueID);
-        return string(_remoteAddress);
+        return string(_remoteURL);
     }
 
 
     void DBWorker::_setCookie(alloc_slice setCookieHeader) {
+        Address addr(_remoteURL);
         C4Error err;
         if (c4db_setCookie(_db, setCookieHeader,
-                           slice(_remoteAddress.hostname), slice(_remoteAddress.path), &err)) {
+                           addr.hostname, addr.path, &err)) {
             logVerbose("Set cookie: `%.*s`", SPLAT(setCookieHeader));
         } else {
             alloc_slice message = c4error_getMessage(err);

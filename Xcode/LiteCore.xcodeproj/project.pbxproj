@@ -285,6 +285,10 @@
 		27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27BF024C1FB62727003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
+		27CE4CF12077F51000ACA225 /* Address.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CE4CEF2077F51000ACA225 /* Address.hh */; };
+		27CE4CF22077F51000ACA225 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
+		27CE4CF32077F51000ACA225 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
+		27CE4CFB207C1A7E00ACA225 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF02077F51000ACA225 /* Address.cc */; };
 		27D416E31FE31A0C00008197 /* cbliteTool+cp.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D416E21FE31A0C00008197 /* cbliteTool+cp.cc */; };
 		27D416E81FE31F7D00008197 /* Endpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275073491F490398003D2CCE /* Endpoint.cc */; };
 		27D416E91FE31F7D00008197 /* DBEndpoint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2750734F1F4903E5003D2CCE /* DBEndpoint.cc */; };
@@ -1198,6 +1202,8 @@
 		27CCC7DF1E526CCC00CE1989 /* Puller.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Puller.hh; sourceTree = "<group>"; };
 		27CCC7E21E52965200CE1989 /* Pusher.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Pusher.cc; sourceTree = "<group>"; };
 		27CCC7E31E52965200CE1989 /* Pusher.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Pusher.hh; sourceTree = "<group>"; };
+		27CE4CEF2077F51000ACA225 /* Address.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Address.hh; sourceTree = "<group>"; };
+		27CE4CF02077F51000ACA225 /* Address.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Address.cc; sourceTree = "<group>"; };
 		27D416E21FE31A0C00008197 /* cbliteTool+cp.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+cp.cc"; sourceTree = "<group>"; };
 		27D721281F8D411F00AA4458 /* native_c4observer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_c4observer.cc; sourceTree = "<group>"; };
 		27D721291F8D411F00AA4458 /* native_c4rawdocument.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_c4rawdocument.cc; sourceTree = "<group>"; };
@@ -2138,6 +2144,8 @@
 				2773FCF51E6783A000108780 /* Checkpoint.hh */,
 				2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */,
 				2753AFE31EC2363600C12E98 /* CivetWebSocket.hh */,
+				27CE4CEF2077F51000ACA225 /* Address.hh */,
+				27CE4CF02077F51000ACA225 /* Address.cc */,
 				27491C9E1E7B2532001DC54B /* c4Socket.cc */,
 				27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */,
 				275CE0E11E57B7E70084E014 /* c4Replicator.cc */,
@@ -2582,6 +2590,7 @@
 				72A3AF8D1F425134001E16D4 /* PrebuiltCopier.hh in Headers */,
 				2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */,
 				27D74A951D4D3F3400D806E0 /* Statement.h in Headers */,
+				27CE4CF12077F51000ACA225 /* Address.hh in Headers */,
 				276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */,
 				27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */,
 				27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */,
@@ -3292,6 +3301,7 @@
 				27BF024A1FB62647003D5BB8 /* LibC++Debug.cc in Sources */,
 				2796916E1ED4B2D50086565D /* Error.cc in Sources */,
 				2796916F1ED4B2D50086565D /* FilePath.cc in Sources */,
+				27CE4CFB207C1A7E00ACA225 /* Address.cc in Sources */,
 				2796917C1ED4B5780086565D /* Logging_Stub.cc in Sources */,
 				279691701ED4B2D50086565D /* RefCounted.cc in Sources */,
 				279691711ED4B2D50086565D /* StringUtil.cc in Sources */,
@@ -3435,6 +3445,7 @@
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
+				27CE4CF22077F51000ACA225 /* Address.cc in Sources */,
 				2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */,
 				27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */,
 				2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */,
@@ -3574,6 +3585,7 @@
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
 				72DE480C1E9C550A00B60952 /* IncomingRev.cc in Sources */,
+				27CE4CF32077F51000ACA225 /* Address.cc in Sources */,
 				276D15431DFF54BD00543B1B /* SQLiteQuery.cc in Sources */,
 				72DE48091E9C550A00B60952 /* DBWorker.cc in Sources */,
 				276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,

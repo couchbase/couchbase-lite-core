@@ -153,7 +153,7 @@ namespace litecore { namespace repl {
     protected:
         Worker(blip::Connection *connection,
                Worker *parent,
-               Options options,
+               const Options &options,
                const char *namePrefix);
 
         Worker(Worker *parent, const char *namePrefix);

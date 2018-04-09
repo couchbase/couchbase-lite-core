@@ -26,7 +26,7 @@
 #include "Logging.hh"
 #include "SecureDigest.hh"
 #include "BLIP.hh"
-#include "c4Socket+Internal.hh"
+#include "Address.hh"
 #include "Instrumentation.hh"
 
 using namespace std;
@@ -37,44 +37,17 @@ using namespace fleeceapi;
 
 namespace litecore { namespace repl {
 
-    static const char *kReplicatorProtocolName = "+CBMobile_2";
-
-
-    // Subroutine of constructor that looks up HTTP cookies for the request, adds them to
-    // options.properties' cookies, and returns the properties dict.
-    static AllocedDict propertiesWithCookies(C4Database *db,
-                                             websocket::WebSocket *webSocket,
-                                             Worker::Options &options)
-    {
-        options.setProperty(slice(kC4SocketOptionWSProtocols),
-                            (string(Connection::kWSProtocolName) + kReplicatorProtocolName).c_str());
-        if (webSocket->role() == websocket::Role::Client
-                && !options.properties[kC4ReplicatorOptionCookies]) {
-            C4Error err;
-            alloc_slice cookies = c4db_getCookies(db, c4AddressFrom(webSocket->address()), &err);
-            if (cookies)
-                options.setProperty(slice(kC4ReplicatorOptionCookies), cookies);
-            else if (err.code)
-                Warn("Error getting cookies from db: %d/%d", err.domain, err.code);
-        }
-        return options.properties;
-    }
-
-
     Replicator::Replicator(C4Database* db,
                            websocket::WebSocket *webSocket,
                            Delegate &delegate,
                            Options options)
-    :Worker(new Connection(webSocket,
-                           propertiesWithCookies(db, webSocket, options),
-                           *this),
+    :Worker(new Connection(webSocket, options.properties, *this),
             nullptr, options, "Repl")
-    ,_remoteAddress(webSocket->address())
     ,_delegate(&delegate)
     ,_connectionState(connection()->state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_dbActor(new DBWorker(connection(), this, db, webSocket->address(), options))
+    ,_dbActor(new DBWorker(connection(), this, db, webSocket->url(), options))
     {
         _loggingID = string(c4::sliceResult(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;

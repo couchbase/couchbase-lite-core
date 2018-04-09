@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "Database.hh"
+#include "FleeceCpp.hh"
 #include "c4Replicator.hh"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"
@@ -30,12 +30,8 @@ CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[5] = {
 };
 
 
-static bool isValidScheme(C4Slice scheme) {
-    static const slice kValidSchemes[] = {"ws"_sl, "wss"_sl, "blip"_sl, "blips"_sl};
-    for (int i=0; i < sizeof(kValidSchemes)/sizeof(slice); i++)
-        if ((slice)scheme == kValidSchemes[i])
-            return true;
-    return false;
+static bool isValidScheme(slice scheme) {
+    return scheme.size > 0 && isalpha(scheme[0]);
 }
 
 
@@ -81,6 +77,8 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) {
         colon = pathStart;
     }
     address->hostname = slice(str.buf, colon);
+    if (address->hostname.size == 0)
+        address->port = 0;
 
     if (dbName) {
         if (pathStart >= str.end())
@@ -96,7 +94,7 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) {
 
         address->path = slice(pathStart, str.buf);
         *dbName = str;
-        return c4repl_isValidDatabaseName(toc4slice(str));
+        return c4repl_isValidDatabaseName(slice(str));
     } else {
         address->path = slice(pathStart, str.end());
         return true;
@@ -193,11 +191,14 @@ C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
 
 
 C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
-    return toc4slice(repl->responseHeaders().data());
+    return repl->responseHeaders().data();
 }
 
 
 #pragma mark - COOKIES:
+
+#include "c4ExceptionUtils.hh"
+using namespace c4Internal;
 
 
 C4StringResult c4db_getCookies(C4Database *db,
@@ -206,12 +207,12 @@ C4StringResult c4db_getCookies(C4Database *db,
 {
     return tryCatch<C4StringResult>(outError, [=]() {
         DatabaseCookies cookies(db);
-        string result = cookies.cookiesForRequest(addressFrom(request));
+        string result = cookies.cookiesForRequest(request);
         if (result.empty()) {
             clearError(outError);
             return C4StringResult();
         }
-        return sliceResult(result);
+        return FLSliceResult(alloc_slice(result));
     });
 }
 

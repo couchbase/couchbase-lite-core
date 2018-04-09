@@ -20,6 +20,7 @@
 #include "slice.hh"
 #include "CivetWebSocket.hh"
 #include "c4Replicator.h"
+#include "Address.hh"
 #include "Actor.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -116,7 +117,7 @@ namespace litecore { namespace websocket {
                        const AllocedDict &options)
         :Actor()
         ,_c4socket(socket)
-        ,_url(c4address_toURL(to))
+        ,_address(to)
         ,_options(options)
         {
             mg_init_library(0);
@@ -161,7 +162,7 @@ namespace litecore { namespace websocket {
 
         void _open() {
             Assert(!_connection);
-            Log("CivetWebSocket connecting to <%.*s>...", SPLAT(_url));
+            Log("CivetWebSocket connecting to <%.*s>...", SPLAT(_address.url()));
 
             stringstream extraHeaders;
             for (Dict::iterator header(_options[kC4ReplicatorOptionExtraHeaders].asDict());
@@ -176,17 +177,15 @@ namespace litecore { namespace websocket {
             if (protocols)
                 extraHeaders << "Sec-WebSocket-Protocol: " << protocols << "\r\n";
 
-            C4Address to;
-            c4address_fromURL(_url, &to, nullptr);
-            bool useSSL = to.scheme != "ws"_sl && slice(to.scheme).hasSuffix("s"_sl);
+            bool useSSL = _address.isSecure();
 
             char errorStr[256];
             mg_error civetErr {errorStr, sizeof(errorStr), 0};
-            _connection = mg_connect_websocket_client2(slice(to.hostname).cString(),
-                                                       to.port,
+            _connection = mg_connect_websocket_client2(slice(_address.hostname).cString(),
+                                                       _address.port,
                                                        useSSL,
                                                        &civetErr,
-                                                       slice(to.path).cString(),
+                                                       slice(_address.path).cString(),
                                                        extraHeaders.str().c_str(),
                                                        &connectHandler, &dataHandler, &closeHandler,
                                                        this);
@@ -330,7 +329,7 @@ namespace litecore { namespace websocket {
         }
 
 
-        alloc_slice _url;
+        litecore::repl::Address _address;
         C4Socket* _c4socket;
         AllocedDict _options;
         struct mg_connection *_connection {nullptr};
@@ -409,7 +408,6 @@ namespace litecore { namespace websocket {
 using namespace litecore::websocket;
 
 
-// Declared in c4Socket+Internal.hh
 const C4SocketFactory C4CivetWebSocketFactory {
     kC4NoFraming,
     nullptr,

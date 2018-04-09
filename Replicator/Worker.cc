@@ -62,7 +62,7 @@ namespace litecore { namespace repl {
 
     Worker::Worker(blip::Connection *connection,
                          Worker *parent,
-                         Options options,
+                         const Options &options,
                          const char *namePrefix)
     :Actor( string(namePrefix) + connection->name() )
     ,Logging(SyncLog)

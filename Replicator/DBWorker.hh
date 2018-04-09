@@ -36,7 +36,7 @@ namespace litecore { namespace repl {
         DBWorker(blip::Connection *connection,
                 Replicator*,
                 C4Database *db,
-                const websocket::Address &remoteAddress,
+                const fleece::alloc_slice &remoteURL,
                 Options options);
 
         /** The blob store is thread-safe so it can be accessed directly. */
@@ -141,7 +141,7 @@ namespace litecore { namespace repl {
 
         c4::ref<C4Database> _db;
         C4BlobStore* _blobStore;
-        const websocket::Address _remoteAddress;
+        const websocket::URL _remoteURL;
         std::string _remoteCheckpointDocID;                 // docID of checkpoint
         C4RemoteID _remoteDBID {0};                         // ID # of remote DB in revision store
         bool _checkpointValid {true};

@@ -10,11 +10,11 @@
 #include "c4.hh"
 #include "CookieStore.hh"
 #include "DatabaseCookies.hh"
+#include "Address.hh"
 
 using namespace fleece;
 using namespace litecore;
 using namespace litecore::repl;
-using namespace litecore::websocket;
 using namespace std;
 
 
@@ -140,10 +140,10 @@ TEST_CASE("Cookie Parser Failure", "[cookies]") {
 }
 
 
-static const Address kRequest           {"blip", "www.example.com", 4984, "/db/_blipsync"};
-static const Address kSecureRequest     {"blips", "www.example.com", 4984, "/db/_blipsync"};
-static const Address kOtherPathRequest  {"blips", "www.example.com", 4984, "/qat/_blipsync"};
-static const Address kOtherHostRequest  {"blip", "couchbase.com", 4984, "/beer/_blipsync"};
+static const C4Address kRequest           {"blip"_sl, "www.example.com"_sl, 4984, "/db/_blipsync"_sl};
+static const C4Address kSecureRequest     {"blips"_sl, "www.example.com"_sl, 4984, "/db/_blipsync"_sl};
+static const C4Address kOtherPathRequest  {"blips"_sl, "www.example.com"_sl, 4984, "/qat/_blipsync"_sl};
+static const C4Address kOtherHostRequest  {"blip"_sl, "couchbase.com"_sl, 4984, "/beer/_blipsync"_sl};
 
 
 TEST_CASE("CookieStore", "[Cookies]") {
@@ -205,8 +205,10 @@ N_WAY_TEST_CASE_METHOD(C4Test, "DatabaseCookies", "[Cookies]") {
         // Set cookies:
         DatabaseCookies cookies(db);
         CHECK(cookies.cookiesForRequest(kRequest) == "");
-        CHECK(cookies.setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30", kRequest.hostname, kRequest.path));
-        CHECK(cookies.setCookie("name=value", kRequest.hostname, kRequest.path));
+        CHECK(cookies.setCookie("e=mc^2; Domain=WWW.Example.Com; Max-Age=30",
+                                string(slice(kRequest.hostname)), string(slice(kRequest.path))));
+        CHECK(cookies.setCookie("name=value",
+                                string(slice(kRequest.hostname)), string(slice(kRequest.path))));
         cookies.saveChanges();
     }
     {

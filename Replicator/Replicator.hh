@@ -123,7 +123,6 @@ namespace litecore { namespace repl {
         virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
         void _gotDocumentError(alloc_slice docID, C4Error, bool pushing, bool transient);
 
-        const websocket::Address _remoteAddress;
         CloseStatus _closeStatus;
         Delegate* _delegate;
         Retained<DBWorker> _dbActor;
