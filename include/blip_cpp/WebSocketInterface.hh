@@ -17,7 +17,6 @@
 //
 
 #pragma once
-#include "Address.hh"
 #include "FleeceCpp.hh"
 #include "Logging.hh"
 #include "RefCounted.hh"
@@ -99,15 +98,20 @@ namespace litecore { namespace websocket {
     extern LogDomain WSLogDomain;
 
 
+    using URL = fleece::alloc_slice;
+
+
     /** Abstract class representing a WebSocket connection. */
     class WebSocket : public RefCounted {
     public:
-        const Address& address() const              {return _address;}
+        const URL& url() const                      {return _url;}
         Role role() const                           {return _role;}
         Delegate& delegate() const                  {assert(_delegate); return *_delegate;}
         bool hasDelegate() const                    {return _delegate != nullptr;}
 
-        std::string name;
+        virtual std::string name() const {
+            return std::string(role() == Role::Server ? "<-" : "->") + (std::string)url();
+        }
 
         /** Assigns the Delegate and opens the WebSocket. */
         void connect(Delegate *delegate);
@@ -127,7 +131,7 @@ namespace litecore { namespace websocket {
         static constexpr const char *kHeartbeatOption = "heartbeat";        // seconds
 
     protected:
-        WebSocket(const Address&, Role role);
+        WebSocket(const URL &url, Role role);
         virtual ~WebSocket();
 
         /** Called by the public connect(Delegate*) method. This should open the WebSocket. */
@@ -137,8 +141,8 @@ namespace litecore { namespace websocket {
         void clearDelegate()                        {_delegate = nullptr;}
         
     private:
-        const Address _address;
-        Role _role;
+        const URL _url;
+        const Role _role;
         Delegate *_delegate {nullptr};
     };
 

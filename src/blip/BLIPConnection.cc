@@ -595,7 +595,7 @@ namespace litecore { namespace blip {
                            const fleeceapi::AllocedDict &options,
                            ConnectionDelegate &delegate)
     :Logging(BLIPLog)
-    ,_name(string(webSocket->role() == Role::Server ? "<-" : "->") + (string)webSocket->address())
+    ,_name(webSocket->name())
     ,_role(webSocket->role())
     ,_delegate(delegate)
     {
@@ -608,8 +608,6 @@ namespace litecore { namespace blip {
         auto levelP = options.get(kCompressionLevelOption);
         if (levelP.isInteger())
             _compressionLevel = (int8_t)levelP.asInt();
-
-        webSocket->name = _name;
 
         // Now connect the websocket:
         _io = new BLIPIO(this, webSocket, (Deflater::CompressionLevel)_compressionLevel);

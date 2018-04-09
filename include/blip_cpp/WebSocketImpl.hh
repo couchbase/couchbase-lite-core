@@ -41,7 +41,7 @@ namespace litecore { namespace websocket {
         messages. */
     class WebSocketImpl : public WebSocket, Logging {
     public:
-        WebSocketImpl(const Address&,
+        WebSocketImpl(const URL &url,
                       Role role,
                       const fleeceapi::AllocedDict &options,
                       bool framing);

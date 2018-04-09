@@ -25,71 +25,16 @@
 #include <string>
 
 using namespace std;
+using namespace uWS;
 using namespace fleece;
 
-// The rest of the implementation of uWS::WebSocketProtocol, which calls into WebSocket:
-namespace uWS {
-
-    static constexpr size_t kMaxMessageLength = 1<<20;
+namespace litecore { namespace websocket {
 
     static constexpr size_t kSendBufferSize = 64 * 1024;
 
     static constexpr int kDefaultHeartbeatInterval = 5 * 60;
 
-
-    // The `user` parameter points to the owning WebSocketImpl object.
-    #define _sock ((litecore::websocket::WebSocketImpl*)user)
-
-
-    template <const bool isServer>
-    bool WebSocketProtocol<isServer>::setCompressed(void *user) {
-        return false;   //TODO: Implement compression
-    }
-
-
-    template <const bool isServer>
-    bool WebSocketProtocol<isServer>::refusePayloadLength(void *user, int length) {
-        return length > kMaxMessageLength;
-    }
-
-
-    template <const bool isServer>
-    void WebSocketProtocol<isServer>::forceClose(void *user) {
-        _sock->closeSocket();
-    }
-
-
-    template <const bool isServer>
-    bool WebSocketProtocol<isServer>::handleFragment(char *data,
-                                                     size_t length,
-                                                     unsigned int remainingByteCount,
-                                                     int opcode,
-                                                     bool fin,
-                                                     void *user)
-    {
-        // WebSocketProtocol expects this method to return true on error, but this confuses me
-        // so I'm having my code return false on error, hence the `!`. --jpa
-        return ! _sock->handleFragment(data, length, remainingByteCount, opcode, fin);
-    }
-
-
-    // Explicitly generate code for template methods:
     
-    template class WebSocketProtocol<SERVER>;
-    template class WebSocketProtocol<CLIENT>;
-}
-
-
-#pragma mark - WEBSOCKET:
-
-
-namespace litecore { namespace websocket {
-
-    using namespace uWS;
-
-    LogDomain WSLogDomain("WS", LogLevel::Warning);
-
-
     class MessageImpl : public Message {
     public:
         MessageImpl(WebSocketImpl *ws, slice data, bool binary)
@@ -103,42 +48,17 @@ namespace litecore { namespace websocket {
         }
 
     private:
-        size_t _size;
-        WebSocketImpl* _webSocket;
+        size_t const _size;
+        WebSocketImpl* const _webSocket;
     };
 
 
-    atomic_int WebSocket::gInstanceCount;
 
-    WebSocket::WebSocket(const Address &a, Role role)
-    :_address(a)
-    ,_role(role)
-    {
-        ++gInstanceCount;
-    }
-
-    WebSocket::~WebSocket() {
-        --gInstanceCount;
-    }
-
-    void WebSocket::connect(Delegate *delegate) {
-        assert(!_delegate);
-        assert(delegate);
-        _delegate = delegate;
-        if (name.empty())
-            name = (std::string)_address;
-        connect();
-    }
-
-
-#pragma mark - WEBSOCKETIMPL:
-
-
-    WebSocketImpl::WebSocketImpl(const Address &address,
+    WebSocketImpl::WebSocketImpl(const URL &url,
                                  Role role,
                                  const fleeceapi::AllocedDict &options,
                                  bool framing)
-    :WebSocket(address, role)
+    :WebSocket(url, role)
     ,Logging(WSLogDomain)
     ,_options(options)
     ,_framing(framing)
@@ -156,7 +76,7 @@ namespace litecore { namespace websocket {
 
 
     string WebSocketImpl::loggingIdentifier() const {
-        return address();
+        return string(url());
     }
 
 
@@ -496,3 +416,55 @@ namespace litecore { namespace websocket {
     }
 
 } }
+
+
+#pragma mark - WEBSOCKETPROTOCOL
+
+
+// The rest of the implementation of uWS::WebSocketProtocol, which calls into WebSocket:
+namespace uWS {
+
+    static constexpr size_t kMaxMessageLength = 1<<20;
+
+
+    // The `user` parameter points to the owning WebSocketImpl object.
+    #define _sock ((litecore::websocket::WebSocketImpl*)user)
+
+
+    template <const bool isServer>
+    bool WebSocketProtocol<isServer>::setCompressed(void *user) {
+        return false;   //TODO: Implement compression
+    }
+
+
+    template <const bool isServer>
+    bool WebSocketProtocol<isServer>::refusePayloadLength(void *user, int length) {
+        return length > kMaxMessageLength;
+    }
+
+
+    template <const bool isServer>
+    void WebSocketProtocol<isServer>::forceClose(void *user) {
+        _sock->closeSocket();
+    }
+
+
+    template <const bool isServer>
+    bool WebSocketProtocol<isServer>::handleFragment(char *data,
+                                                     size_t length,
+                                                     unsigned int remainingByteCount,
+                                                     int opcode,
+                                                     bool fin,
+                                                     void *user)
+    {
+        // WebSocketProtocol expects this method to return true on error, but this confuses me
+        // so I'm having my code return false on error, hence the `!`. --jpa
+        return ! _sock->handleFragment(data, length, remainingByteCount, opcode, fin);
+    }
+
+
+    // Explicitly generate code for template methods:
+
+    template class WebSocketProtocol<SERVER>;
+    template class WebSocketProtocol<CLIENT>;
+}

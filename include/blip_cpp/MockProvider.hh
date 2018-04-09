@@ -35,8 +35,8 @@ namespace litecore { namespace websocket {
     public:
         class Driver;
 
-        MockWebSocket(const Address &address)
-        :WebSocket(address)
+        MockWebSocket(const fleece::alloc_slice &url)
+        :WebSocket(url)
         { }
 
         virtual Driver* createDriver() {

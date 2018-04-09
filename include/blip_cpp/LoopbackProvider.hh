@@ -44,10 +44,10 @@ namespace litecore { namespace websocket {
 
     public:
 
-        LoopbackWebSocket(const Address &address,
+        LoopbackWebSocket(const fleece::alloc_slice &url,
                           Role role,
                           actor::delay_t latency =actor::delay_t::zero())
-        :WebSocket(address, role)
+        :WebSocket(url, role)
         ,_latency(latency)
         { }
 
@@ -147,12 +147,8 @@ namespace litecore { namespace websocket {
             ,_latency(latency)
             { }
 
-            const std::string& name() const {
-                return _webSocket->name;
-            }
-
             virtual std::string loggingIdentifier() const override {
-                return name();
+                return _webSocket->name();
             }
 
             virtual std::string loggingClassName() const override {

@@ -17,8 +17,6 @@
 		27491C941E7AFCED001DC54B /* WebSocketProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */; };
 		27491CA11E7B417C001DC54B /* WebSocketImpl.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491CA01E7B417C001DC54B /* WebSocketImpl.hh */; };
 		275CE0E01E57A5650084E014 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0DF1E57A5650084E014 /* libFleece.a */; };
-		2761F3FA1EEB2F4D006D4BB8 /* Address.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F81EEB2F4D006D4BB8 /* Address.cc */; };
-		2761F3FB1EEB2F4D006D4BB8 /* Address.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2761F3F91EEB2F4D006D4BB8 /* Address.hh */; };
 		2773FD011E69FD9100108780 /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCFF1E69FD9100108780 /* Timer.cc */; };
 		2773FD021E69FD9100108780 /* Timer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD001E69FD9100108780 /* Timer.hh */; };
 		2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FD031E69FE2000108780 /* ActorProperty.cc */; };
@@ -35,6 +33,7 @@
 		27CCC7B31E5251C900CE1989 /* libevent_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7AD1E524F8000CE1989 /* libevent_core.a */; };
 		27CCC7B41E5251CC00CE1989 /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7B11E524FB500CE1989 /* libevent_pthreads.a */; };
 		27CCC7B51E5251CE00CE1989 /* libevent_extra.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7AF1E524FA200CE1989 /* libevent_extra.a */; };
+		27CE4CF9207BCC7F00ACA225 /* WebSocketInterface.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF8207BCC7F00ACA225 /* WebSocketInterface.cc */; };
 		27EF69DD1E28260D004748DF /* Message.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF69D11E28260D004748DF /* Message.cc */; };
 		27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF69D31E28260D004748DF /* BLIPConnection.cc */; };
 		27EF69E21E28260D004748DF /* BLIPInternal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69D61E28260D004748DF /* BLIPInternal.hh */; };
@@ -110,8 +109,6 @@
 		275CE0DE1E579F8D0084E014 /* MockProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = MockProvider.hh; path = ../include/blip_cpp/MockProvider.hh; sourceTree = "<group>"; };
 		275CE0DF1E57A5650084E014 /* libFleece.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libFleece.a; path = ../../../../build/CouchbaseLite/Build/Products/Debug/libFleece.a; sourceTree = "<group>"; };
 		275CE0EF1E590B190084E014 /* LoopbackProvider.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = LoopbackProvider.hh; path = ../include/blip_cpp/LoopbackProvider.hh; sourceTree = "<group>"; };
-		2761F3F81EEB2F4D006D4BB8 /* Address.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Address.cc; sourceTree = "<group>"; };
-		2761F3F91EEB2F4D006D4BB8 /* Address.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Address.hh; sourceTree = "<group>"; };
 		276301211F38E6D7004A1592 /* BLIP Protocol.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "BLIP Protocol.md"; path = "docs/BLIP Protocol.md"; sourceTree = "<group>"; };
 		276301221F38E6DC004A1592 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		2773FCFF1E69FD9100108780 /* Timer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timer.cc; sourceTree = "<group>"; };
@@ -130,6 +127,7 @@
 		27CCC7AD1E524F8000CE1989 /* libevent_core.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_core.a; path = /usr/local/lib/libevent_core.a; sourceTree = "<absolute>"; };
 		27CCC7AF1E524FA200CE1989 /* libevent_extra.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_extra.a; path = /usr/local/lib/libevent_extra.a; sourceTree = "<absolute>"; };
 		27CCC7B11E524FB500CE1989 /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = /usr/local/lib/libevent_pthreads.a; sourceTree = "<absolute>"; };
+		27CE4CF8207BCC7F00ACA225 /* WebSocketInterface.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketInterface.cc; sourceTree = "<group>"; };
 		27EF69B71E282549004748DF /* libblip_cpp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libblip_cpp.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27EF69D11E28260D004748DF /* Message.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Message.cc; sourceTree = "<group>"; };
 		27EF69D31E28260D004748DF /* BLIPConnection.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BLIPConnection.cc; sourceTree = "<group>"; };
@@ -206,8 +204,8 @@
 		27491C8E1E7AFCBE001DC54B /* websocket */ = {
 			isa = PBXGroup;
 			children = (
-				2761F3F81EEB2F4D006D4BB8 /* Address.cc */,
 				27491C8F1E7AFCED001DC54B /* WebSocketImpl.cc */,
+				27CE4CF8207BCC7F00ACA225 /* WebSocketInterface.cc */,
 				27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */,
 			);
 			path = websocket;
@@ -255,7 +253,6 @@
 				27EF69E71E282662004748DF /* Message.hh */,
 				2799762A1E944B2F00B27639 /* MessageBuilder.hh */,
 				27EF69E81E282662004748DF /* WebSocketInterface.hh */,
-				2761F3F91EEB2F4D006D4BB8 /* Address.hh */,
 				27491CA01E7B417C001DC54B /* WebSocketImpl.hh */,
 			);
 			path = blip_cpp;
@@ -412,7 +409,6 @@
 				272850FD1EA02B49009CA22F /* ThreadedMailbox.hh in Headers */,
 				27491C941E7AFCED001DC54B /* WebSocketProtocol.hh in Headers */,
 				27CCC7AC1E524F0B00CE1989 /* PlatformIO.hh in Headers */,
-				2761F3FB1EEB2F4D006D4BB8 /* Address.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -507,7 +503,6 @@
 				27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */,
 				27EF6A431E28558E004748DF /* RefCounted.cc in Sources */,
 				27EF6AAF1E2B0D9E004748DF /* FleeceException.cc in Sources */,
-				2761F3FA1EEB2F4D006D4BB8 /* Address.cc in Sources */,
 				27491C921E7AFCED001DC54B /* WebSocketImpl.cc in Sources */,
 				27EF6A521E2857F7004748DF /* slice.cc in Sources */,
 				27EF6A541E2857F7004748DF /* varint.cc in Sources */,
@@ -518,6 +513,7 @@
 				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
 				27EF6A561E2857F7004748DF /* Writer.cc in Sources */,
 				27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */,
+				27CE4CF9207BCC7F00ACA225 /* WebSocketInterface.cc in Sources */,
 				27EF6A601E28587A004748DF /* cencode.c in Sources */,
 				27EF6A5E1E28587A004748DF /* cdecode.c in Sources */,
 			);
