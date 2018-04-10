@@ -53,7 +53,7 @@ namespace litecore { namespace repl {
         if (properties.empty()) {
             s << "{}";
         } else {
-            c4::stringResult props(properties.toJSON5());
+            alloc_slice props(properties.toJSON5());
             s << props;
         }
         return s.str();

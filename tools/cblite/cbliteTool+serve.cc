@@ -40,7 +40,7 @@ void CBLiteTool::serveUsage() {
 
 
 static alloc_slice databaseNameFromPath(slice path) {
-    c4::stringResult nameSlice(c4db_URINameFromPath(path));
+    alloc_slice nameSlice(c4db_URINameFromPath(path));
     return alloc_slice(nameSlice);
 }
 
@@ -77,7 +77,7 @@ void CBLiteTool::serve() {
     openDatabaseFromNextArg();
     endOfArgs();
 
-    c4::stringResult dbPath(c4db_getPath(_db));
+    alloc_slice dbPath(c4db_getPath(_db));
     alloc_slice name = databaseNameFromPath(dbPath);
 
     c4log_setCallbackLevel(kC4LogInfo);

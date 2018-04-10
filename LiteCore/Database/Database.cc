@@ -404,7 +404,7 @@ namespace c4Internal {
 
 
     bool Database::getUUIDIfExists(slice key, UUID &uuid) {
-        auto &store = getKeyStore((string)kC4InfoStore);
+        auto &store = getKeyStore(toString(kC4InfoStore));
         Record r = store.get(key);
         if (!r.exists() || r.body().size < sizeof(UUID))
             return false;
@@ -416,7 +416,7 @@ namespace c4Internal {
     Database::UUID Database::generateUUID(slice key, Transaction &t, bool overwrite) {
         UUID uuid;
         if (overwrite || !getUUIDIfExists(key, uuid)) {
-            auto &store = getKeyStore((string)kC4InfoStore);
+            auto &store = getKeyStore(toString(kC4InfoStore));
             slice uuidSlice{&uuid, sizeof(uuid)};
             GenerateUUID(uuidSlice);
             store.set(key, uuidSlice, t);

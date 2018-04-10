@@ -71,7 +71,7 @@ C4BlobStore* c4blob_openStore(C4Slice dirPath,
             options.encryptionAlgorithm = (EncryptionAlgorithm)key->algorithm;
             options.encryptionKey = alloc_slice(key->bytes, sizeof(key->bytes));
         }
-        return new c4BlobStore(FilePath((string)dirPath), &options);
+        return new c4BlobStore(FilePath(toString(dirPath)), &options);
     } catchError(outError)
     return nullptr;
 }
@@ -110,7 +110,7 @@ int64_t c4blob_getSize(C4BlobStore* store, C4BlobKey key) noexcept {
 
 C4SliceResult c4blob_getContents(C4BlobStore* store, C4BlobKey key, C4Error* outError) noexcept {
     try {
-        return sliceResult(store->get(internal(key)).contents());
+        return C4SliceResult(store->get(internal(key)).contents());
     } catchError(outError)
     return {nullptr, 0};
 }

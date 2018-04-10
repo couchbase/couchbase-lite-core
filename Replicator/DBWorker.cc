@@ -417,7 +417,7 @@ namespace litecore { namespace repl {
         if (_getForeignAncestors && _checkpointValid) {
             // For proposeChanges, find the nearest foreign ancestor of the current rev:
             Assert(_remoteDBID);
-            c4::sliceResult foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
+            alloc_slice foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
             logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
             if (_skipForeignChanges && foreignAncestor == slice(info.revID))
                 return false;   // skip this rev: it's already on the peer
@@ -523,7 +523,7 @@ namespace litecore { namespace repl {
         if (doc && c4doc_selectRevision(doc, revID, false, &err)) {
             // I already have this revision. Make sure it's marked as current for this remote:
             if (_remoteDBID) {
-                c4::sliceResult remoteRevID(c4doc_getRemoteAncestor(doc, _remoteDBID));
+                alloc_slice remoteRevID(c4doc_getRemoteAncestor(doc, _remoteDBID));
                 if (remoteRevID != revID)
                     updateRemoteRev(doc);
             }

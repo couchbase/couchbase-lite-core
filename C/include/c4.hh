@@ -54,7 +54,7 @@ namespace c4 {
         ref()                       :_obj(nullptr) { }
         ref(T *t)                   :_obj(t) { }
         ref(ref &&r)                :_obj(r._obj) {r._obj = nullptr;}
-        ~ref()                      {if (_obj) freeRef(_obj);}
+        ~ref()                      {freeRef(_obj);}
 
         operator T* () const        {return _obj;}
         T* operator -> () const     {return _obj;}
@@ -68,19 +68,6 @@ namespace c4 {
 
         T* _obj;
     };
-
-
-    /** Manages a C4SliceResult, letting you treat it as a slice and freeing it for you. */
-    struct sliceResult : public fleece::slice {
-    public:
-        explicit sliceResult(C4SliceResult sr)   :slice(sr.buf, sr.size) { }
-        ~sliceResult()                  {c4slice_free(*(C4SliceResult*)this);}
-
-        sliceResult(const sliceResult&) =delete;
-        sliceResult& operator= (const sliceResult&) =delete;
-    };
-
-    using stringResult = sliceResult;
 
 
     /** Manages a transaction safely. The begin() method calls c4db_beginTransaction, then commit()

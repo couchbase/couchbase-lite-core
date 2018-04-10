@@ -117,7 +117,7 @@ struct c4DocumentObserver : public C4InstanceCounted {
 
 
     void dispatchCallback(DocChangeNotifier&, slice docID, sequence_t sequence) {
-        _callback(this, toc4slice(docID), sequence, _context);
+        _callback(this, docID, sequence, _context);
     }
 
     Retained<Database> _db;

@@ -49,7 +49,7 @@ namespace litecore { namespace repl {
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_dbActor(new DBWorker(connection(), this, db, webSocket->url(), options))
     {
-        _loggingID = string(c4::sliceResult(c4db_getPath(db))) + " " + _loggingID;
+        _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
 
         log("%s", string(options).c_str());

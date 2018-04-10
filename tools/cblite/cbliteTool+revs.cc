@@ -58,7 +58,7 @@ void CBLiteTool::revsInfo() {
     RemoteMap remotes;
     if (_showRemotes) {
         for (C4RemoteID remoteID = 1; true; ++remoteID) {
-            c4::stringResult revID(c4doc_getRemoteAncestor(doc, remoteID));
+            alloc_slice revID(c4doc_getRemoteAncestor(doc, remoteID));
             if (!revID)
                 break;
             remotes.emplace_back(revID);
@@ -84,7 +84,7 @@ void CBLiteTool::revsInfo() {
     writeRevisionChildren(doc, tree, remotes, root, 1);
 
     for (C4RemoteID i = 1; i <= remotes.size(); ++i) {
-        c4::stringResult addr(c4db_getRemoteDBAddress(_db, i));
+        alloc_slice addr(c4db_getRemoteDBAddress(_db, i));
         if (!addr)
             break;
         cout << "[REMOTE#" << i << "] = " << addr << "\n";

@@ -258,7 +258,7 @@ namespace c4Internal {
             if (total > 0) {
                 _versionedDoc.updateMeta();
                 updateFlags();
-                if (_selectedRevIDBuf == revID)
+                if (_selectedRevIDBuf == slice(revID))
                     selectRevision(_versionedDoc.currentRevision());
             }
             return total;
@@ -376,7 +376,7 @@ namespace c4Internal {
                 return saveNewRev(rq, newRev);
             } else if (httpStatus == 200) {
                 // Revision already exists, so nothing was added. Not an error.
-                selectRevision(toc4slice(encodedNewRevID.expanded()), true);
+                selectRevision(encodedNewRevID.expanded(), true);
                 return true;
             } else if (httpStatus == 400) {
                 error::_throw(error::InvalidParameter);

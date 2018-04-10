@@ -40,7 +40,8 @@ using namespace std;
 using namespace fleece;
 using namespace fleeceapi;
 
-
+#undef Log
+#undef LogDebug
 #define Log(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogInfo, "CivetWebSocket: " MSG, ##__VA_ARGS__)
 #define LogDebug(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogDebug, "CivetWebSocket: " MSG, ##__VA_ARGS__)
 
