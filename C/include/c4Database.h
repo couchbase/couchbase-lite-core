@@ -53,13 +53,11 @@ extern "C" {
     /** Encryption algorithms. */
     typedef C4_ENUM(uint32_t, C4EncryptionAlgorithm) {
         kC4EncryptionNone = 0,      ///< No encryption (default)
-        kC4EncryptionAES128,        ///< AES with 128-bit key
         kC4EncryptionAES256,        ///< AES with 256-bit key
     };
 
     /** Encryption key sizes (in bytes). */
     typedef C4_ENUM(uint64_t, C4EncryptionKeySize) {
-        kC4EncryptionKeySizeAES128 = 16,
         kC4EncryptionKeySizeAES256 = 32,
     };
 

@@ -24,10 +24,6 @@ public class MRoot extends MCollection {
 
     /* Constructors */
 
-    public MRoot() {
-
-    }
-
     public MRoot(MContext context, FLValue value, boolean isMutable) {
         super(context, isMutable);
         _slot = new MValue(value);

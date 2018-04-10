@@ -56,40 +56,12 @@ public class Encoder {
         }
     }
 
-    public void setSharedKeys(FLSharedKeys sk) {
-        setSharedKeys(_handle, sk == null ? 0L : sk.getHandle());
-    }
-
     public FLEncoder getFLEncoder() {
         return new FLEncoder(getFLEncoder(_handle), true);
     }
 
     public boolean writeNull() {
         return writeNull(_handle);
-    }
-
-    public boolean writeBool(boolean value) {
-        return writeBool(_handle, value);
-    }
-
-    public boolean writeInt(long value) {
-        return writeInt(_handle, value);
-    }
-
-    public boolean writeFloat(float value) {
-        return writeFloat(_handle, value);
-    }
-
-    public boolean writeDouble(double value) {
-        return writeDouble(_handle, value);
-    }
-
-    public boolean writeString(String value) {
-        return writeString(_handle, value);
-    }
-
-    public boolean writeData(byte[] value) {
-        return writeData(_handle, value);
     }
 
     public boolean beginDict(long reserve) {
@@ -202,10 +174,6 @@ public class Encoder {
         return new AllocSlice(finish(_handle), false);
     }
 
-    public byte[] finishAsBytes() {
-        return finishAsBytes(_handle);
-    }
-
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
@@ -226,8 +194,6 @@ public class Encoder {
     static native void free(long handle);
 
     static native void release(long handle);
-
-    static native void setSharedKeys(long handle, long sharedKeys);
 
     static native long getFLEncoder(long handle);
 
@@ -256,8 +222,6 @@ public class Encoder {
     static native boolean writeKey(long handle, String slice);
 
     static native boolean endDict(long handle);
-
-    static native byte[] finishAsBytes(long handle);
 
     static native long finish(long handle);
 }

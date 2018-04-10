@@ -21,29 +21,12 @@
 
 namespace litecore {
 
-    static const size_t kAES128KeySize = kEncryptionKeySize[kAES128]; // 128 bits
     static const size_t kAES256KeySize = kEncryptionKeySize[kAES256]; // 256 bits
     static const size_t kAESBlockSize  = 16; // 128 bits (regardless of key size)
     static const size_t kAESIVSize = kAESBlockSize;
 
 // AES128() and AES256() may not be available on all platforms.
 // Callers can use "#if AES256_AVAILABLE" to conditionalize code based on availability.
-
-#if defined(_CRYPTO_CC) || defined(_CRYPTO_MBEDTLS)
-
-    #define AES128_AVAILABLE 1
-
-    size_t AES128(bool encrypt,        // true=encrypt, false=decrypt
-                  slice key,           // pointer to 16-byte key
-                  slice iv,            // pointer to 16-byte initialization vector
-                  bool padding,        // true=PKCS7 padding, false=no padding
-                  slice dst,           // output buffer & capacity
-                  slice src);          // input data
-
-#else
-#define AES128_AVAILABLE 0
-#endif
-
 
 #if defined(_CRYPTO_CC) || defined(_CRYPTO_MBEDTLS)
 

@@ -53,7 +53,7 @@ public class C4Query {
     public C4QueryEnumerator run(C4QueryOptions options, String encodedParameters)
             throws LiteCoreException {
         return new C4QueryEnumerator(
-                run(_handle, options.rankFullText, encodedParameters));
+                run(_handle, options.isRankFullText(), encodedParameters));
     }
 
     public byte[] getFullTextMatched(C4FullTextMatch match) throws LiteCoreException {

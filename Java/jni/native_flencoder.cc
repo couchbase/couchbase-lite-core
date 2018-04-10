@@ -49,17 +49,6 @@ Java_com_couchbase_litecore_fleece_FLEncoder_free(JNIEnv *env, jclass clazz, jlo
 
 /*
  * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    setSharedKeys
- * Signature: (JJ)V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_setSharedKeys(JNIEnv *env, jclass clazz, jlong jenc,
-                                                           jlong jsharedKeys) {
-    FLEncoder_SetSharedKeys((FLEncoder) jenc, (FLSharedKeys) jsharedKeys);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
  * Method:    writeNull
  * Signature: (J)Z
  */
@@ -192,30 +181,6 @@ Java_com_couchbase_litecore_fleece_FLEncoder_writeKey(JNIEnv *env, jclass clazz,
     jstringSlice key(env, jkey);
     return (jboolean) FLEncoder_WriteKey((FLEncoder) jenc,
                                          {((slice) key).buf, ((slice) key).size});
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeValue
- * Signature: (JJ)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeValue(JNIEnv *env, jclass clazz, jlong jenc,
-                                                        jlong jvalue) {
-    return (jboolean) FLEncoder_WriteValue((FLEncoder) jenc, (FLValue) jvalue);
-}
-
-/*
- * Class:     com_couchbase_litecore_fleece_FLEncoder
- * Method:    writeValueWithSharedKeys
- * Signature: (JJJ)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_fleece_FLEncoder_writeValueWithSharedKeys(JNIEnv *env, jclass clazz,
-                                                                      jlong jenc, jlong jvalue,
-                                                                      jlong jsharedkeys) {
-    return (jboolean) FLEncoder_WriteValueWithSharedKeys((FLEncoder) jenc, (FLValue) jvalue,
-                                                         (FLSharedKeys) jsharedkeys);
 }
 
 /*

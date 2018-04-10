@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 
 public class Config extends java.util.Properties {
     public static final String TEST_PROPERTIES_FILE = "test.properties";
+    public static final String EE_TEST_PROPERTIES_FILE = "ee_test.properties";
 
     public Config() {
     }
@@ -33,6 +34,10 @@ public class Config extends java.util.Properties {
         } finally {
             in.close();
         }
+    }
+
+    public boolean eeFeaturesTestsEnabled() {
+        return Boolean.parseBoolean(getProperty("eeFeaturesTestsEnabled"));
     }
 
     public boolean replicatorTestsEnabled() {

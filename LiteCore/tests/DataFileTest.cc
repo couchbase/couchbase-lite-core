@@ -463,9 +463,9 @@ TEST_CASE("CanonicalPath") {
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Unsupported Encryption", "[DataFile][Encryption][!throws]") {
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
-    REQUIRE(!factory().encryptionEnabled(kAES256));
+    REQUIRE(!factory().encryptionEnabled((EncryptionAlgorithm)2));
     DataFile::Options options = db->options();
-    options.encryptionAlgorithm = kAES256;
+    options.encryptionAlgorithm = (EncryptionAlgorithm)2;
     options.encryptionKey = "12345678901234567890123456789012"_sl;
     ExpectException(error::LiteCore, error::UnsupportedEncryption, [&]{
         reopenDatabase(&options);
@@ -476,8 +476,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Unsupported Encryption", 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Open Unencrypted With Key", "[DataFile][Encryption][!throws]") {
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
     DataFile::Options options = db->options();
-    options.encryptionAlgorithm = kAES128;
-    options.encryptionKey = "1234567890123456"_sl;
+    options.encryptionAlgorithm = kAES256;
+    options.encryptionKey = "12345678901234567890123456789012"_sl;
     ExpectException(error::LiteCore, error::NotADatabaseFile, [&]{
         reopenDatabase(&options);
     });
@@ -485,10 +485,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Open Unencrypted With Key
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][Encryption][!throws]") {
-    REQUIRE(factory().encryptionEnabled(kAES128));
+    REQUIRE(factory().encryptionEnabled(kAES256));
     DataFile::Options options = db->options();
-    options.encryptionAlgorithm = kAES128;
-    options.encryptionKey = "1234567890123456"_sl;
+    options.encryptionAlgorithm = kAES256;
+    options.encryptionKey = "12345678901234567890123456789012"_sl;
     auto dbPath = databasePath("encrypted");
     deleteDatabase(dbPath);
     try {
@@ -521,13 +521,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encryption]") {
-    REQUIRE(factory().encryptionEnabled(kAES128));
+    REQUIRE(factory().encryptionEnabled(kAES256));
     auto dbPath = db->filePath();
     auto options = db->options();
     createNumberedDocs(store);
 
-    options.encryptionAlgorithm = kAES128;
-    options.encryptionKey = alloc_slice(kEncryptionKeySize[kAES128]);
+    options.encryptionAlgorithm = kAES256;
+    options.encryptionKey = alloc_slice(kEncryptionKeySize[kAES256]);
     randomBytes(options.encryptionKey);
 
     db->rekey(options.encryptionAlgorithm, options.encryptionKey);
@@ -571,11 +571,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Verify Encryption Unsupported", "[DataFile][Encryption][!throws]") {
     REQUIRE(factory().encryptionEnabled(kNoEncryption));
-    REQUIRE(!factory().encryptionEnabled(kAES128));
     REQUIRE(!factory().encryptionEnabled(kAES256));
 
     DataFile::Options options = db->options();
-    options.encryptionAlgorithm = kAES128;
+    options.encryptionAlgorithm = kAES256;
     options.encryptionKey = "1234567890123456"_sl;
     ExpectException(error::LiteCore, error::UnsupportedEncryption, [&]{
         reopenDatabase(&options);

@@ -221,8 +221,8 @@ _versioning(kC4RevisionTrees)
     }
 
     if (testOption & 1) {
-        config.encryptionKey.algorithm = kC4EncryptionAES128;
-        memcpy(config.encryptionKey.bytes, "this is not a random key at all.", 16);
+        config.encryptionKey.algorithm = kC4EncryptionAES256;
+        memcpy(config.encryptionKey.bytes, "this is not a random key at all.", kC4EncryptionKeySizeAES256);
     }
 
     static C4DatabaseConfig sLastConfig = { };

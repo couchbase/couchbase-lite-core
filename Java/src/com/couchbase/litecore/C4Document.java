@@ -45,7 +45,6 @@ public class C4Document extends RefCounted implements C4Constants {
         this._handle = handle;
     }
 
-
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
@@ -161,20 +160,6 @@ public class C4Document extends RefCounted implements C4Constants {
         return new C4Document(update2(_handle, body != null ? body.getHandle() : 0, flags));
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof C4Document)) return false;
-
-        C4Document that = (C4Document) o;
-
-        return _handle == that._handle;
-    }
-
-    @Override
-    public int hashCode() {
-        return (int) (_handle ^ (_handle >>> 32));
-    }
     //-------------------------------------------------------------------------
     // helper methods
     //-------------------------------------------------------------------------
@@ -260,14 +245,9 @@ public class C4Document extends RefCounted implements C4Constants {
 
     // - Revisions
 
-    static native void selectRevision(long doc, String revID, boolean withBody)
-            throws LiteCoreException;
-
     static native boolean selectCurrentRevision(long doc);
 
     static native void loadRevisionBody(long doc) throws LiteCoreException;
-
-    static native String detachRevisionBody(long doc);
 
     static native boolean hasRevisionBody(long doc);
 
@@ -286,10 +266,6 @@ public class C4Document extends RefCounted implements C4Constants {
     static native boolean selectCommonAncestorRevision(long doc,
                                                        String revID1, String revID2);
 
-    static native long getGeneration(String revID);
-
-    static native boolean removeRevisionBody(long doc);
-
     static native int purgeRevision(long doc, String revID) throws LiteCoreException;
 
     static native void resolveConflict(long doc,
@@ -298,8 +274,6 @@ public class C4Document extends RefCounted implements C4Constants {
             throws LiteCoreException;
 
     // - Purging and Expiration
-
-    static native void purgeDoc(long db, String docID) throws LiteCoreException;
 
     static native void setExpiration(long db, String docID, long timestamp)
             throws LiteCoreException;
@@ -345,16 +319,6 @@ public class C4Document extends RefCounted implements C4Constants {
     ////////////////////////////////
 
     // -- Fleece-related
-    static native boolean isOldMetaProperty(String prop);
-
-    static native boolean hasOldMetaProperties(long doc); // doc -> pointer to FLDict
-
-    static native byte[] encodeStrippingOldMetaProperties(long doc); // doc -> pointer to FLDict
-
-    // returns blobKey if the given dictionary is a [reference to a] blob; otherwise null (0)
-    static native long dictIsBlob(long dict, long sk);
-
-    static native boolean dictContainsBlobs(long dict, long sk); // dict -> FLDict
 
     static native boolean dictContainsBlobs2(long dict, long sk); // dict -> FLSliceResult
 

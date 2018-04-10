@@ -28,6 +28,7 @@ using namespace litecore::jni;
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4Document
 // ----------------------------------------------------------------------------
+
 /*
  * Class:     com_couchbase_litecore_C4Document
  * Method:    getFlags
@@ -188,22 +189,6 @@ Java_com_couchbase_litecore_C4Document_free(JNIEnv *env, jclass clazz, jlong jdo
 
 /*
  * Class:     com_couchbase_litecore_C4Document
- * Method:    selectRevision
- * Signature: (JLjava/lang/String;Z)V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4Document_selectRevision(JNIEnv *env, jclass clazz,
-                                                      jlong jdoc,
-                                                      jstring jrevID,
-                                                      jboolean jwithBody) {
-    jstringSlice revID(env, jrevID);
-    C4Error error;
-    if (!c4doc_selectRevision((C4Document *) jdoc, revID, jwithBody, &error))
-        throwError(env, error);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
  * Method:    selectCurrentRevision
  * Signature: (J)Z
  */
@@ -223,19 +208,6 @@ Java_com_couchbase_litecore_C4Document_loadRevisionBody(JNIEnv *env, jclass claz
     C4Error error;
     if (!c4doc_loadRevisionBody((C4Document *) jdoc, &error))
         throwError(env, error);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
- * Method:    detachRevisionBody
- * Signature: (J)Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL
-Java_com_couchbase_litecore_C4Document_detachRevisionBody(JNIEnv *env, jclass clazz, jlong jdoc) {
-    C4StringResult result = c4doc_detachRevisionBody((C4Document *) jdoc);
-    jstring jstr = toJString(env, result);
-    c4slice_free(result);
-    return jstr;
 }
 
 /*
@@ -323,27 +295,6 @@ Java_com_couchbase_litecore_C4Document_selectCommonAncestorRevision(JNIEnv *env,
 
 /*
  * Class:     com_couchbase_litecore_C4Document
- * Method:    getGeneration
- * Signature: (Ljava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4Document_getGeneration(JNIEnv *env, jclass clazz, jstring jrevID) {
-    jstringSlice revID(env, jrevID);
-    return c4rev_getGeneration(revID);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
- * Method:    removeRevisionBody
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_C4Document_removeRevisionBody(JNIEnv *env, jclass clazz, jlong jdoc) {
-    return c4doc_removeRevisionBody((C4Document *) jdoc);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
  * Method:    purgeRevision
  * Signature: (JLjava/lang/String;)I
  */
@@ -377,20 +328,6 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_C4Document_resolveConflict
     C4Error error = {};
     if (!c4doc_resolveConflict((C4Document *) jdoc, winningRevID, losingRevID, mergedBody, revisionFlag,
                                &error))
-        throwError(env, error);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
- * Method:    purgeDoc
- * Signature: (JLjava/lang/String;)V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4Document_purgeDoc(JNIEnv *env, jclass clazz, jlong jdb,
-                                                jstring jdocID) {
-    jstringSlice docID(env, jdocID);
-    C4Error error;
-    if (!c4db_purgeDoc((C4Database *) jdb, docID, &error))
         throwError(env, error);
 }
 
@@ -632,70 +569,6 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_update2(JNIEnv *e
     if (!newDoc)
         throwError(env, error);
     return (jlong) newDoc;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
- * Method:    isOldMetaProperty
- * Signature: (Ljava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_C4Document_isOldMetaProperty(JNIEnv *env, jclass clazz, jstring jprop) {
-    jstringSlice prop(env, jprop);
-    return c4doc_isOldMetaProperty(prop);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
- * Method:    hasOldMetaProperties
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_C4Document_hasOldMetaProperties(JNIEnv *env, jclass clazz,
-                                                            jlong jdict) {
-    return c4doc_hasOldMetaProperties((FLDict) jdict);
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
- * Method:    encodeStrippingOldMetaProperties
- * Signature: (J)[B
- */
-JNIEXPORT jbyteArray JNICALL
-Java_com_couchbase_litecore_C4Document_encodeStrippingOldMetaProperties(JNIEnv *env, jclass clazz,
-                                                                        jlong jdict) {
-    C4SliceResult s = c4doc_encodeStrippingOldMetaProperties((FLDict) jdict);
-    jbyteArray res = toJByteArray(env, {s.buf, s.size});
-    alloc_slice::release({s.buf, s.size});
-    return res;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
- * Method:    dictIsBlob
- * Signature: (JJ)J
- */
-JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4Document_dictIsBlob(JNIEnv *env, jclass clazz, jlong jdict,
-                                                  jlong jsk) {
-    C4BlobKey blobKey;
-    if (c4doc_dictIsBlob((FLDict) jdict, (FLSharedKeys) jsk, &blobKey)) {
-        C4BlobKey *pBlobKey = (C4BlobKey *) ::malloc(sizeof(C4BlobKey));
-        *pBlobKey = blobKey;
-        return (jlong) pBlobKey;
-    }
-    return 0;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
- * Method:    dictContainsBlobs
- * Signature: (JJ)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_C4Document_dictContainsBlobs(JNIEnv *env, jclass clazz,
-                                                         jlong jdict, jlong jsk) {
-    return c4doc_dictContainsBlobs((FLDict) jdict, (FLSharedKeys) jsk);
 }
 
 /*

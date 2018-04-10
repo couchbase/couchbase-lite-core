@@ -155,7 +155,8 @@ include_directories("vendor/fleece/Fleece"
                     "vendor/mbedtls/include")
 
 if(WIN32)
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /ignore:4099 /ignore:4221")
+  set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} /ignore:4221")
   include_directories("MSVC")
 elseif(ANDROID)
   include_directories("LiteCore/Unix")

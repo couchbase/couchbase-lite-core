@@ -25,6 +25,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Utils {
     public static boolean deleteRecursive(File fileOrDirectory) {
@@ -84,5 +86,9 @@ public class Utils {
         while ((read = in.read(buffer)) != -1) {
             out.write(buffer, 0, read);
         }
+    }
+
+    public static String readFile(String path) throws IOException {
+        return new String(Files.readAllBytes(Paths.get(path)));
     }
 }
