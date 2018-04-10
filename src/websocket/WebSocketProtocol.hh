@@ -103,20 +103,22 @@ private:
     static inline bool rsv1(frameFormat &frame) {return frame & 64;}
     static inline bool getMask(frameFormat &frame) {return frame & 32768;}
 
-    static inline void unmaskImprecise(char *dst, char *src, char *mask, unsigned int length)
+    static inline void unmaskPrecise(char *dst, char *src, char *mask, unsigned int length)
     {
-        for (unsigned int n = (length >> 2) + 1; n; n--) {
+        for (; length >= 4; length -= 4) {
             *(dst++) = *(src++) ^ mask[0];
             *(dst++) = *(src++) ^ mask[1];
             *(dst++) = *(src++) ^ mask[2];
             *(dst++) = *(src++) ^ mask[3];
         }
+        while (length-- > 0)
+            *(dst++) = *(src++) ^ *(mask++);
     }
 
-    static inline void unmaskImpreciseCopyMask(char *dst, char *src, char *maskPtr, unsigned int length)
+    static inline void unmaskPreciseCopyMask(char *dst, char *src, char *maskPtr, unsigned int length)
     {
         char mask[4] = {maskPtr[0], maskPtr[1], maskPtr[2], maskPtr[3]};
-        unmaskImprecise(dst, src, mask, length);
+        unmaskPrecise(dst, src, mask, length);
     }
 
     static inline void rotateMask(unsigned int offset, char *mask)
@@ -130,12 +132,15 @@ private:
 
     static inline void unmaskInplace(char *data, char *stop, char *mask)
     {
-        while (data < stop) {
+        char *stop1 = stop - 3;
+        while (data < stop1) {
             *(data++) ^= mask[0];
             *(data++) ^= mask[1];
             *(data++) ^= mask[2];
             *(data++) ^= mask[3];
         }
+        while (data < stop)
+            *(data++) ^= *(mask++);
     }
 
     enum state_t {
@@ -170,7 +175,7 @@ private:
 
         if (int(payLength) <= int(length - MESSAGE_HEADER)) {
             if (isServer) {
-                unmaskImpreciseCopyMask(src, src + MESSAGE_HEADER, src + MESSAGE_HEADER - 4, (unsigned int)payLength);
+                unmaskPreciseCopyMask(src, src + MESSAGE_HEADER, src + MESSAGE_HEADER - 4, (unsigned int)payLength);
                 if (handleFragment(src, (size_t)payLength, 0, opCode[(unsigned char) opStack], isFin(frame), user)) {
                     return true;
                 }
@@ -195,7 +200,7 @@ private:
 
             if (isServer) {
                 memcpy(mask, src + MESSAGE_HEADER - 4, 4);
-                unmaskImprecise(src, src + MESSAGE_HEADER, mask, length);
+                unmaskPrecise(src, src + MESSAGE_HEADER, mask, length - MESSAGE_HEADER);
                 rotateMask(4 - (length - MESSAGE_HEADER) % 4, mask);
             } else {
                 src += MESSAGE_HEADER;
@@ -229,7 +234,7 @@ private:
             return true;
         } else {
             if (isServer) {
-                unmaskInplace(src, src + ((length >> 2) + 1) * 4, mask);
+                unmaskInplace(src, src + length, mask);
             }
 
             remainingBytes -= length;

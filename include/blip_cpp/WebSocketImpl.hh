@@ -99,13 +99,14 @@ namespace litecore { namespace websocket {
         std::mutex _mutex;                          //
         fleece::alloc_slice _curMessage;            // Message being received
         int _curOpCode;                             // Opcode of msg in _curMessage
-        size_t _curMessageLength;                   // # of valid bytes in _curMessage
+        size_t _curMessageLength {0};                   // # of valid bytes in _curMessage
         size_t _bufferedBytes {0};                  // # bytes written but not yet completed
         size_t _deliveredBytes;                     // Temporary count of bytes sent to delegate
         bool _closeSent {false}, _closeReceived {false};    // Close message sent or received?
         fleece::alloc_slice _closeMessage;                  // The encoded close request message
         std::unique_ptr<actor::Timer> _pingTimer;
-        fleece::alloc_slice _pingReceived;
+        int _opToSend;
+        fleece::alloc_slice _msgToSend;
 
         // Connection diagnostics, logged on close:
         fleece::Stopwatch _timeConnected {false};           // Time since socket opened

@@ -163,7 +163,8 @@ namespace litecore { namespace websocket {
 
     void WebSocketImpl::onReceive(slice data) {
         ssize_t completedBytes = 0;
-        alloc_slice pingReceived;
+        int opToSend = 0;
+        alloc_slice msgToSend;
         {
             // Lock the mutex; this protects all methods (below) involved in receiving,
             // since they're called from this one.
@@ -178,7 +179,8 @@ namespace litecore { namespace websocket {
                     _clientProtocol->consume((char*)data.buf, (unsigned)data.size, this);
                 else
                     _serverProtocol->consume((char*)data.buf, (unsigned)data.size, this);
-                pingReceived = move(_pingReceived);
+                opToSend = _opToSend;
+                msgToSend = move(_msgToSend);
                 // Compute # of bytes consumed: just the framing data, not any partial or
                 // delivered messages. (Trust me, the math works.)
                 completedBytes = data.size - _deliveredBytes -
@@ -191,9 +193,9 @@ namespace litecore { namespace websocket {
         if (completedBytes > 0)
             receiveComplete(completedBytes);
 
-        // Reply to an incoming PING, now that the mutex is not locked:
-        if (pingReceived)
-            sendOp(pingReceived, PONG);
+        // Send any message that was generated during the locked block above:
+        if (msgToSend)
+            sendOp(msgToSend, opToSend);
     }
 
 
@@ -220,9 +222,10 @@ namespace litecore { namespace websocket {
         // End:
         if (fin && remainingBytes == 0) {
             _curMessage.shorten(_curMessageLength);
-            return receivedMessage(_curOpCode, move(_curMessage));
+            bool ok = receivedMessage(_curOpCode, move(_curMessage));
             assert(!_curMessage);
             _curMessageLength = 0;
+            return ok;
         }
         return true;
     }
@@ -241,7 +244,8 @@ namespace litecore { namespace websocket {
             case CLOSE:
                 return receivedClose(message);
             case PING:
-                _pingReceived = message ? message : alloc_slice(size_t(0));
+                _opToSend = PONG;
+                _msgToSend = message ? message : alloc_slice(size_t(0));
                 return true;
             case PONG:
                 receivedPong();
@@ -344,8 +348,11 @@ namespace litecore { namespace websocket {
                 log("Client is requesting close (%d '%.*s'); echoing it",
                     close.code, (int)close.length, close.message);
             }
+            _closeSent = true;
             _closeMessage = message;
-            sendOp(message, uWS::CLOSE);
+            // Don't send the message now or I'll deadlock; remember to do it later in onReceive:
+            _msgToSend = message;
+            _opToSend = CLOSE;
         }
         _pingTimer.reset();
         return true;
