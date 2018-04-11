@@ -17,6 +17,7 @@
 //
 
 #include "DBWorker.hh"
+#include "ReplicatorTuning.hh"
 #include "Pusher.hh"
 #include "IncomingRev.hh"
 #include "Address.hh"
@@ -46,9 +47,6 @@ namespace litecore { namespace repl {
     static constexpr slice kLocalCheckpointStore = "checkpoints"_sl;
     static constexpr slice kPeerCheckpointStore  = "peerCheckpoints"_sl;
 
-    static constexpr auto kInsertionDelay = chrono::milliseconds(50);
-
-
     static bool isNotFoundError(C4Error err) {
         return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
     }
@@ -62,8 +60,8 @@ namespace litecore { namespace repl {
     ,_db(c4db_retain(db))
     ,_blobStore(c4db_getBlobStore(db, nullptr))
     ,_remoteURL(remoteURL)
-    ,_revsToInsert(this, &DBWorker::_insertRevisionsNow, kInsertionDelay)
-    ,_revsToMarkSynced(this, &DBWorker::_markRevsSyncedNow, kInsertionDelay)
+    ,_revsToInsert(this, &DBWorker::_insertRevisionsNow, tuning::kInsertionDelay)
+    ,_revsToMarkSynced(this, &DBWorker::_markRevsSyncedNow, tuning::kInsertionDelay)
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);

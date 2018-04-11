@@ -18,6 +18,7 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Replicator.hh"
+#include "ReplicatorTuning.hh"
 #include "DBWorker.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
@@ -188,7 +189,7 @@ namespace litecore { namespace repl {
         }
         if (_delegate) {
             // Notify the delegate of the current status, but not too often:
-            auto waitFor = kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
+            auto waitFor = tuning::kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
             if (waitFor <= 0 || status().level != _lastDelegateCallLevel) {
                 reportStatus();
             } else if (!_waitingToCallDelegate) {

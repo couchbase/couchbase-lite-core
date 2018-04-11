@@ -98,9 +98,6 @@ namespace litecore { namespace repl {
         }
 
     private:
-        // How long to wait between delegate calls when only the progress % has changed
-        static constexpr double kMinDelegateCallInterval = 0.2;
-
         void _onHTTPResponse(int status, fleeceapi::AllocedDict headers);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);

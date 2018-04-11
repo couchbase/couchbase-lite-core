@@ -18,6 +18,7 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Puller.hh"
+#include "ReplicatorTuning.hh"
 #include "DBWorker.hh"
 #include "IncomingRev.hh"
 #include "Error.hh"
@@ -39,7 +40,7 @@ namespace litecore { namespace repl {
         registerHandler("proposeChanges",   &Puller::handleChanges);
         registerHandler("rev",              &Puller::handleRev);
         registerHandler("norev",            &Puller::handleNoRev);
-        _spareIncomingRevs.reserve(kMaxActiveIncomingRevs);
+        _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
         _skipDeleted = _options.skipDeleted();
         if (nonPassive() && options.noIncomingConflicts())
             warn("noIncomingConflicts mode is not compatible with active pull replications!");
@@ -57,7 +58,7 @@ namespace litecore { namespace repl {
             msg["since"_sl] = _lastSequence;
         if (_options.pull == kC4Continuous)
             msg["continuous"_sl] = "true"_sl;
-        msg["batch"_sl] = kChangesBatchSize;
+        msg["batch"_sl] = tuning::kChangesBatchSize;
 
         if (_skipDeleted)
             msg["activeOnly"_sl] = "true"_sl;
@@ -120,7 +121,7 @@ namespace litecore { namespace repl {
     // Process waiting "changes" messages if not throttled:
     void Puller::handleMoreChanges() {
         while (!_waitingChangesMessages.empty() && !_waitingForChangesCallback
-               && _pendingRevMessages == 0) {
+               && _pendingRevMessages < tuning::kMaxPendingRevs) {
             auto req = _waitingChangesMessages.front();
             _waitingChangesMessages.pop_front();
             handleChangesNow(req);
@@ -194,7 +195,7 @@ namespace litecore { namespace repl {
 
     // Received an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
-        if (_activeIncomingRevs < kMaxActiveIncomingRevs) {
+        if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs) {
             startIncomingRev(msg);
         } else {
             logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
@@ -253,7 +254,7 @@ namespace litecore { namespace repl {
         _spareIncomingRevs.push_back(inc);
 
         decrement(_activeIncomingRevs);
-        if (_activeIncomingRevs < kMaxActiveIncomingRevs && !_waitingRevMessages.empty()) {
+        if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs && !_waitingRevMessages.empty()) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
             startIncomingRev(msg);

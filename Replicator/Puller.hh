@@ -64,9 +64,6 @@ namespace litecore { namespace repl {
 
         void _setSkipDeleted()                  {_skipDeleted = true;}
 
-        static const unsigned kChangesBatchSize = 200;      // Number of changes in one response
-        static const unsigned kMaxActiveIncomingRevs = 50;  // Max # of IncomingRev workers running
-
         Retained<DBWorker> _dbActor;
         alloc_slice _lastSequence;          // Checkpointed sequence
         bool _skipDeleted {false};          // Don't pull deleted docs (on 1st pull)

@@ -958,6 +958,7 @@
 		2722504A1D7884110006D5A5 /* c4BlobStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStore.h; sourceTree = "<group>"; };
 		2722504D1D7892610006D5A5 /* c4BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStore.cc; sourceTree = "<group>"; };
 		272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStoreTest.cc; sourceTree = "<group>"; };
+		2726F630207ED137007F2D02 /* ReplicatorTuning.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTuning.hh; sourceTree = "<group>"; };
 		272850A91E9AF53B009CA22F /* Upgrader.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Upgrader.cc; sourceTree = "<group>"; };
 		272850AA1E9AF53B009CA22F /* Upgrader.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Upgrader.hh; sourceTree = "<group>"; };
 		272850B41E9BE361009CA22F /* UpgraderTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UpgraderTest.cc; sourceTree = "<group>"; };
@@ -2125,6 +2126,7 @@
 			isa = PBXGroup;
 			children = (
 				2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */,
+				2726F630207ED137007F2D02 /* ReplicatorTuning.hh */,
 				2734F619206ABEB000C982FF /* ReplicatorTypes.cc */,
 				275CE1131E5BAC180084E014 /* Worker.cc */,
 				275CE1141E5BAC180084E014 /* Worker.hh */,
