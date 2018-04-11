@@ -256,6 +256,10 @@ namespace litecore { namespace repl {
                 return;
 
             // Got reply to the "changes" or "proposeChanges":
+            if (!changes->empty()) {
+                log("Got response for %zu local changes (sequences from %llu)",
+                    changes->size(), changes->front()->sequence);
+            }
             decrement(_changeListsInFlight);
             _proposeChangesKnown = true;
             MessageIn *reply = progress.reply;

@@ -120,8 +120,7 @@ namespace litecore { namespace repl {
     }
 
     void C4SocketImpl::sendBytes(alloc_slice bytes) {
-        bytes.retain();
-        _factory.write(this, {(void*)bytes.buf, bytes.size});
+        _factory.write(this, C4SliceResult(bytes));
     }
 
     void C4SocketImpl::receiveComplete(size_t byteCount) {
