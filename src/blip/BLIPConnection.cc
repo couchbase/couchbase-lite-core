@@ -238,9 +238,9 @@ namespace litecore { namespace blip {
             }
             if (msg->_number == 0)
                 msg->_number = ++_lastMessageNo;
-            if (!msg->isAck() || BLIPLog.willLog(LogLevel::Verbose)) {
-                logVerbose("Sending %s #%llu, flags=%02x",
-                           kMessageTypeNames[msg->type()], msg->_number, msg->flags());
+            if (BLIPLog.willLog(LogLevel::Verbose)) {
+                if (!msg->isAck() || BLIPLog.willLog(LogLevel::Debug))
+                    logVerbose("Sending %s", msg->description().c_str());
             }
             _maxOutboxDepth = max(_maxOutboxDepth, _outbox.size()+1);
             _totalOutboxDepth += _outbox.size()+1;
@@ -355,14 +355,12 @@ namespace litecore { namespace blip {
                     else
                         requeue(msg);
                 } else {
-                    if (!msg->isAck() || BLIPLog.willLog(LogLevel::Verbose)) {
-                        logVerbose("Finished sending %s #%llu, flags=%02x",
-                                   kMessageTypeNames[msg->type()], msg->_number, msg->flags());
+                    if (!msg->isAck()) {
+                        logVerbose("Finished sending %s", msg->description().c_str());
                         // Add its response message to _pendingResponses:
                         MessageIn* response = msg->createResponse();
                         if (response)
                             _pendingResponses.emplace(response->number(), response);
-                        
                     }
                 }
             }

@@ -67,12 +67,25 @@ namespace litecore { namespace blip {
     }
 
 
-    void Message::dump(slice payload, slice body, std::ostream& out) {
-        out << kMessageTypeNames[type()] << " #" << _number << ' ';
+    void Message::dumpHeader(std::ostream& out) {
+        out << kMessageTypeNames[type()];
+        out << " #" << _number << ' ';
         if (_flags & kUrgent)  out << 'U';
         if (_flags & kNoReply)  out << 'N';
         if (_flags & kCompressed)  out << 'Z';
+    }
 
+    void Message::writeDescription(slice payload, std::ostream& out) {
+        if (type() == kRequestType) {
+            const char *profile = findProperty(payload, "Profile");
+            if (profile)
+                out << "'" << profile << "' ";
+        }
+        dumpHeader(out);
+    }
+
+    void Message::dump(slice payload, slice body, std::ostream& out) {
+        dumpHeader(out);
         if (type() != kAckRequestType && type() != kAckResponseType) {
             out << " {";
             auto key = (const char*)payload.buf;
@@ -96,6 +109,22 @@ namespace litecore { namespace blip {
             }
             out << " }";
         }
+    }
+
+
+    const char* Message::findProperty(slice payload, const char *propertyName) {
+        auto key = (const char*)payload.buf;
+        auto end = (const char*)payload.end();
+        while (key < end) {
+            auto endOfKey = key + strlen(key);
+            auto val = endOfKey + 1;
+            if (val >= end)
+                break;  // illegal: missing value
+            if (0 == strcmp(key, propertyName))
+                return val;
+            key = val + strlen(val) + 1;
+        }
+        return nullptr;
     }
 
 
@@ -153,8 +182,6 @@ namespace litecore { namespace blip {
                 // Update my flags and allocate the Writer:
                 assert(_number > 0);
                 _flags = (FrameFlags)(frameFlags & ~kMoreComing);
-                _connection->logVerbose("Receiving %s #%llu, flags=%02x",
-                                 kMessageTypeNames[type()], _number, flags());
                 _in.reset(new fleeceapi::JSONEncoder);
 
                 // Read just a few bytes to get the length of the properties (a varint at the
@@ -196,6 +223,7 @@ namespace litecore { namespace blip {
                         ++nulls;
                 assert((nulls & 1) == 0);
 #endif
+                _connection->logVerbose("Receiving %s", description().c_str());
 
                 if (!isError())
                     state = kBeginning;
@@ -219,8 +247,7 @@ namespace litecore { namespace blip {
                 _in.reset();
                 _complete = true;
 
-                _connection->logVerbose("Finished receiving %s #%llu, flags=%02x",
-                                 kMessageTypeNames[type()], _number, flags());
+                _connection->logVerbose("Finished receiving %s", description().c_str());
                 state = kEnd;
             }
         }
@@ -399,5 +426,13 @@ namespace litecore { namespace blip {
                      (int) intProperty("Error-Code"_sl),
                      body());
     }
+
+
+    string MessageIn::description() {
+        stringstream s;
+        writeDescription(_properties, s);
+        return s.str();
+    }
+
 
 } }

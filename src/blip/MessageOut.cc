@@ -134,6 +134,22 @@ namespace litecore { namespace blip {
     }
 
 
+    const char* MessageOut::findProperty(const char *propertyName) {
+        slice props, body;
+        _contents.getPropsAndBody(props, body);
+        return Message::findProperty(props, propertyName);
+    }
+
+
+    string MessageOut::description() {
+        stringstream s;
+        slice props, body;
+        _contents.getPropsAndBody(props, body);
+        writeDescription(props, s);
+        return s.str();
+    }
+
+
 #pragma mark - DATA:
 
 

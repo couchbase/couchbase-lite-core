@@ -122,6 +122,10 @@ namespace litecore { namespace blip {
         void disconnected();
 
         void dump(slice payload, slice body, std::ostream&);
+        void dumpHeader(std::ostream&);
+        void writeDescription(slice payload, std::ostream&);
+
+        static const char* findProperty(slice payload, const char *propertyName);
 
         FrameFlags _flags;
         MessageNo _number;
@@ -190,6 +194,8 @@ namespace litecore { namespace blip {
         virtual ~MessageIn();
         virtual bool isIncoming() const     {return true;}
         ReceiveState receivedFrame(Codec&, slice frame, FrameFlags);
+
+        std::string description();
 
     private:
         void readFrame(Codec&, int mode, slice &frame, bool finalFrame);

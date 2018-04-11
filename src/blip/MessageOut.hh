@@ -52,7 +52,10 @@ namespace litecore { namespace blip {
         MessageIn* createResponse();
         void disconnected();
 
+        // for debugging/logging:
+        std::string description();
         void dump(std::ostream& out, bool withBody);
+        const char* findProperty(const char *propertyName);
 
     private:
         static const uint32_t kMaxUnackedBytes = 128000;
