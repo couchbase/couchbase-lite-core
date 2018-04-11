@@ -109,8 +109,9 @@ namespace litecore { namespace repl {
 
     // Receiving an incoming "changes" (or "proposeChanges") message
     void Puller::handleChanges(Retained<MessageIn> req) {
-        logVerbose("Received '%.*s' REQ#%llu (%u pending revs)",
-                   SPLAT(req->property("Profile"_sl)), req->number(), _pendingRevMessages);
+        logVerbose("Received '%.*s' REQ#%llu (%zu queued; %u revs pending, %u active)",
+                   SPLAT(req->property("Profile"_sl)), req->number(),
+                   _waitingChangesMessages.size(), _pendingRevMessages, _activeIncomingRevs);
         _waitingChangesMessages.push_back(move(req));
         handleMoreChanges();
     }
@@ -131,7 +132,7 @@ namespace litecore { namespace repl {
     void Puller::handleChangesNow(Retained<MessageIn> req) {
         slice reqType = req->property("Profile"_sl);
         bool proposed = (reqType == "proposeChanges"_sl);
-        logVerbose("Handling '%.*s' message REQ#%llu", SPLAT(reqType), req->number());
+        logVerbose("Handling '%.*s' REQ#%llu", SPLAT(reqType), req->number());
 
         auto changes = req->JSONBody().asArray();
         if (!changes && req->body() != "null"_sl) {

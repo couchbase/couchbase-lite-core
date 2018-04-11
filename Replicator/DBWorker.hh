@@ -19,6 +19,7 @@
 #pragma once
 #include "ReplicatorTypes.hh"
 #include "Worker.hh"
+#include "Batcher.hh"
 #include "c4BlobStore.h"
 #include "FleeceCpp.hh"
 #include <string>
@@ -130,13 +131,6 @@ namespace litecore { namespace repl {
         void updateRemoteRev(C4Document* NONNULL);
         ActivityLevel computeActivityLevel() const override;
 
-        template <class REV>
-        using Queue = std::unique_ptr<std::vector<Retained<REV>>>;
-        template <class REV>
-        void scheduleRevision(REV*, Queue<REV>&);
-        template <class REV>
-        Queue<REV> popScheduledRevisions(Queue<REV>&);
-
         static const size_t kMaxPossibleAncestors = 10;
 
         c4::ref<C4Database> _db;
@@ -152,10 +146,8 @@ namespace litecore { namespace repl {
         bool _getForeignAncestors {false};
         bool _skipForeignChanges {false};
         
-        Queue<RevToInsert> _revsToInsert; // Pending revs to be added to db
-        Queue<Rev> _revsToMarkSynced; // Pending revs to be marked as synced
-        bool _insertionScheduled {false};                   // True if call to insert/sync pending
-        std::mutex _insertionQueueMutex;                    // For safe access to the above
+        actor::Batcher<DBWorker,RevToInsert> _revsToInsert; // Pending revs to be added to db
+        actor::Batcher<DBWorker,Rev> _revsToMarkSynced; // Pending revs to be marked as synced
     };
 
 } }

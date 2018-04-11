@@ -62,6 +62,8 @@ namespace litecore { namespace repl {
     ,_db(c4db_retain(db))
     ,_blobStore(c4db_getBlobStore(db, nullptr))
     ,_remoteURL(remoteURL)
+    ,_revsToInsert(this, &DBWorker::_insertRevisionsNow, kInsertionDelay)
+    ,_revsToMarkSynced(this, &DBWorker::_markRevsSyncedNow, kInsertionDelay)
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
@@ -510,8 +512,9 @@ namespace litecore { namespace repl {
         if (callback)
             callback(whichRequested);
 
-        log("Responding w/request for %u revs", requested);
         req->respond(response);
+        log("Responded to '%.*s' REQ#%llu w/request for %u revs",
+            SPLAT(req->property("Profile"_sl)), req->number(), requested);
     }
 
 
@@ -774,41 +777,14 @@ namespace litecore { namespace repl {
 #pragma mark - INSERTING & SYNCING REVISIONS:
 
 
-    // Add a revision to a queue, and schedule a call to _insertRevisionsNow (thread-safe)
-    template <class REV>
-    void DBWorker::scheduleRevision(REV *rev, Queue<REV> &queue) {
-        lock_guard<mutex> lock(_insertionQueueMutex);
-
-        if (!queue) {
-            queue.reset(new vector<Retained<REV>>);
-            queue->reserve(200);
-        }
-        queue->push_back(rev);
-
-        if (!_insertionScheduled) {
-            enqueueAfter(kInsertionDelay, &DBWorker::_insertRevisionsNow);
-            _insertionScheduled = true;
-        }
-    }
-
-
-    // Clear the queue, returning its prior contents (thread-safe)
-    template <class REV>
-    DBWorker::Queue<REV> DBWorker::popScheduledRevisions(Queue<REV> &queue) {
-        lock_guard<mutex> lock(_insertionQueueMutex);
-        _insertionScheduled = false;
-        return move(queue);
-    }
-
-
     void DBWorker::insertRevision(RevToInsert *rev) {
-        scheduleRevision(rev, _revsToInsert);
+        _revsToInsert.push(rev);
     }
 
 
     // Insert all the revisions queued for insertion, and sync the ones queued for syncing.
     void DBWorker::_insertRevisionsNow() {
-        auto revs = popScheduledRevisions(_revsToInsert);
+        auto revs = _revsToInsert.pop();
         if (!revs) {
             // No insertions scheduled, only syncs, so just do those:
             _markRevsSyncedNow();
@@ -903,13 +879,13 @@ namespace litecore { namespace repl {
     // For that reason, this class ensures that _markRevsSyncedNow() is called before any call
     // to c4doc_getRemoteAncestor().
     void DBWorker::markRevSynced(Rev *rev) {
-        scheduleRevision(rev, _revsToMarkSynced);
+        _revsToMarkSynced.push(rev);
     }
 
 
     // Mark all the queued revisions as synced to the server.
     void DBWorker::_markRevsSyncedNow() {
-        auto revs = popScheduledRevisions(_revsToMarkSynced);
+        auto revs = _revsToMarkSynced.pop();
         if (!revs)
             return;
 
