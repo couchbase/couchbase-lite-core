@@ -127,7 +127,7 @@ void CBLiteTool::writeRevisionTree(C4Document *doc,
         writeSize(rev.body.size);
     }
 
-    if (root == doc->revID)
+    if (root == slice(doc->revID))
         cout << ansiBold() << "  [CURRENT]" << ansiReset();
 
     C4RemoteID i = 1;
