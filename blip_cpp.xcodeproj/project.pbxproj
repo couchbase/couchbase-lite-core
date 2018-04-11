@@ -64,8 +64,6 @@
 		27EF6AA81E2B0D27004748DF /* BLIPTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF69D71E28260D004748DF /* BLIPTest.cc */; };
 		27EF6AAF1E2B0D9E004748DF /* FleeceException.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6AAD1E2B0D9E004748DF /* FleeceException.cc */; };
 		27EF6AB01E2B0D9E004748DF /* FleeceException.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6AAE1E2B0D9E004748DF /* FleeceException.hh */; };
-		27EF6ABC1E2E97B5004748DF /* Future.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6ABA1E2E97B5004748DF /* Future.cc */; };
-		27EF6ABD1E2E97B5004748DF /* Future.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6ABB1E2E97B5004748DF /* Future.hh */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -162,8 +160,6 @@
 		27EF6A9E1E2B0CE9004748DF /* bliptest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bliptest; sourceTree = BUILT_PRODUCTS_DIR; };
 		27EF6AAD1E2B0D9E004748DF /* FleeceException.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FleeceException.cc; path = Fleece/FleeceException.cc; sourceTree = "<group>"; };
 		27EF6AAE1E2B0D9E004748DF /* FleeceException.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = FleeceException.hh; path = Fleece/FleeceException.hh; sourceTree = "<group>"; };
-		27EF6ABA1E2E97B5004748DF /* Future.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Future.cc; sourceTree = "<group>"; };
-		27EF6ABB1E2E97B5004748DF /* Future.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Future.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -294,8 +290,6 @@
 				2773FD031E69FE2000108780 /* ActorProperty.cc */,
 				2773FD041E69FE2000108780 /* ActorProperty.hh */,
 				2726F62D207E9F0B007F2D02 /* Batcher.hh */,
-				27EF6ABA1E2E97B5004748DF /* Future.cc */,
-				27EF6ABB1E2E97B5004748DF /* Future.hh */,
 				27EF6A661E2858E7004748DF /* Channel.cc */,
 				27EF6A671E2858E7004748DF /* Channel.hh */,
 				2773FCFF1E69FD9100108780 /* Timer.cc */,
@@ -386,7 +380,6 @@
 				27AE22BA1FBE559100C40EB9 /* Codec.hh in Headers */,
 				27EF6A6B1E2858E7004748DF /* Channel.hh in Headers */,
 				27EF6A611E28587A004748DF /* cencode.h in Headers */,
-				27EF6ABD1E2E97B5004748DF /* Future.hh in Headers */,
 				27EF6AB01E2B0D9E004748DF /* FleeceException.hh in Headers */,
 				27EF69E21E28260D004748DF /* BLIPInternal.hh in Headers */,
 				27EF69EC1E282662004748DF /* Message.hh in Headers */,
@@ -503,7 +496,6 @@
 				27EF6A6A1E2858E7004748DF /* Channel.cc in Sources */,
 				272850F81EA022B5009CA22F /* GCDMailbox.cc in Sources */,
 				2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */,
-				27EF6ABC1E2E97B5004748DF /* Future.cc in Sources */,
 				27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */,
 				27EF6A431E28558E004748DF /* RefCounted.cc in Sources */,
 				27EF6AAF1E2B0D9E004748DF /* FleeceException.cc in Sources */,

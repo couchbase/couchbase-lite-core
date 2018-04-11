@@ -19,7 +19,6 @@
 #pragma once
 #include "ThreadedMailbox.hh"
 #include "RefCounted.hh"
-#include "Future.hh"
 #include <assert.h>
 #include <chrono>
 #include <functional>
@@ -118,13 +117,6 @@ namespace litecore { namespace actor {
         auto asynchronize(T t) -> decltype(get_fun_type(&T::operator())) {
             decltype(get_fun_type(&T::operator())) fn = t;
             return _asynchronize(fn);
-        }
-
-        /** Convenience function for creating a callback on a Future. */
-        template <class T, class LAMBDA>
-        void onReady(Retained<Future<T>> future, LAMBDA callback) {
-            std::function<void(T)> fn(callback);
-            future->onReady( asynchronize(fn) );
         }
 
         virtual void afterEvent()                    { }
