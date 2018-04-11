@@ -21,6 +21,7 @@
 #include "BLIPInternal.hh"
 #include "WebSocketInterface.hh"
 #include "Actor.hh"
+#include "Batcher.hh"
 #include "Codec.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -100,6 +101,7 @@ namespace litecore { namespace blip {
         Retained<Connection>    _connection;
         Retained<WebSocket>     _webSocket;
         unique_ptr<error>       _closingWithError;
+        actor::Batcher<BLIPIO,websocket::Message> _incomingFrames;
         MessageQueue            _outbox;
         MessageQueue            _icebox;
         bool                    _writeable {true};
@@ -120,6 +122,7 @@ namespace litecore { namespace blip {
         ,Logging(BLIPLog)
         ,_connection(connection)
         ,_webSocket(webSocket)
+        ,_incomingFrames(this, &BLIPIO::_onWebSocketMessages)
         ,_outbox(10)
         ,_outputCodec(compressionLevel)
         {
@@ -160,6 +163,7 @@ namespace litecore { namespace blip {
             log("~BLIPIO: Sent %llu bytes, rcvd %llu. Max outbox depth was %zu, avg %.2f",
                 _totalBytesWritten, _totalBytesRead,
                 _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
+            logStats();
         }
 
         virtual void onWebSocketGotHTTPResponse(int status,
@@ -183,7 +187,10 @@ namespace litecore { namespace blip {
         }
 
         virtual void onWebSocketMessage(websocket::Message *message) override {
-            enqueue(&BLIPIO::_onWebSocketMessage, retained(message));
+            if (message->binary)
+                _incomingFrames.push(message);
+            else
+                warn("Ignoring non-binary WebSocket message");
         }
 
     private:
@@ -204,6 +211,8 @@ namespace litecore { namespace blip {
         }
 
         void _closed(websocket::CloseStatus status) {
+            _onWebSocketMessages(); // process any pending incoming frames
+
             _webSocket = nullptr;
             if (_connection) {
                 Retained<BLIPIO> holdOn (this);
@@ -374,85 +383,87 @@ namespace litecore { namespace blip {
 
         
         /** WebSocketDelegate method -- Received a frame: */
-        void _onWebSocketMessage(Retained<websocket::Message> wsMessage) {
+        void _onWebSocketMessages() {
+            auto messages = _incomingFrames.pop();
+            if (!messages)
+                return;
             try {
-                if (_closingWithError)
-                    return;
-                if (!wsMessage->binary) {
-                    warn("Ignoring non-binary WebSocket message");
-                    return;
-                }
-
-                // Read the frame header:
-                slice payload = wsMessage->data;
-                _totalBytesRead += payload.size;
-                uint64_t msgNo, flagsInt;
-                if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt))
-                    throw runtime_error("Illegal BLIP frame header");
-                auto flags = (FrameFlags)flagsInt;
-                logVerbose("Received frame: %s #%llu %c%c%c%c, length %5ld",
-                           kMessageTypeNames[flags & kTypeMask], msgNo,
-                           (flags & kMoreComing ? 'M' : '-'),
-                           (flags & kUrgent ? 'U' : '-'),
-                           (flags & kNoReply ? 'N' : '-'),
-                           (flags & kCompressed ? 'C' : '-'),
-                           (long)payload.size);
-
-                // Handle the frame according to its type, and look up the MessageIn:
-                Retained<MessageIn> msg;
-                auto type = (MessageType)(flags & kTypeMask);
-                switch (type) {
-                    case kRequestType:
-                        msg = pendingRequest(msgNo, flags);
-                        break;
-                    case kResponseType:
-                    case kErrorType: {
-                        msg = pendingResponse(msgNo, flags);
-                        break;
-                    case kAckRequestType:
-                    case kAckResponseType:
-                        receivedAck(msgNo, (type == kAckResponseType), payload);
-                        break;
-                    default:
-                        warn("  Unknown BLIP frame type received");
-                        // For forward compatibility let's just ignore this instead of closing
-                        break;
-                    }
-                }
-
-                // Append the frame to the message:
-                if (msg) {
-                    MessageIn::ReceiveState state;
-                    try {
-                        state = msg->receivedFrame(_inputCodec, payload, flags);
-                    } catch (...) {
-                        // If this is the final frame, then msg may not be in either pending list
-                        // anymore. But on an exception we need to call its progress handler to
-                        // disconnect it, so make sure to re-add it:
-                        if (type == kRequestType)
-                            _pendingRequests.emplace(msgNo, msg);
-                        else if (type == kResponseType)
-                            _pendingResponses.emplace(msgNo, msg);
-                        throw;
-                    }
-
-                    if (state == MessageIn::kEnd) {
-                        if (BLIPMessagesLog.willLog(LogLevel::Info)) {
-                            stringstream dump;
-                            bool withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
-                            msg->dump(dump, withBody);
-                            BLIPMessagesLog.log(LogLevel::Info, "RECEIVED: %s", dump.str().c_str());
+                for (auto &wsMessage : *messages) {
+                    if (_closingWithError)
+                        return;
+                    // Read the frame header:
+                    slice payload = wsMessage->data;
+                    _totalBytesRead += payload.size;
+                    uint64_t msgNo, flagsInt;
+                    if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt))
+                        throw runtime_error("Illegal BLIP frame header");
+                    auto flags = (FrameFlags)flagsInt;
+                    logVerbose("Received frame: %s #%llu %c%c%c%c, length %5ld",
+                               kMessageTypeNames[flags & kTypeMask], msgNo,
+                               (flags & kMoreComing ? 'M' : '-'),
+                               (flags & kUrgent ? 'U' : '-'),
+                               (flags & kNoReply ? 'N' : '-'),
+                               (flags & kCompressed ? 'C' : '-'),
+                               (long)payload.size);
+                    
+                    // Handle the frame according to its type, and look up the MessageIn:
+                    Retained<MessageIn> msg;
+                    auto type = (MessageType)(flags & kTypeMask);
+                    switch (type) {
+                        case kRequestType:
+                            msg = pendingRequest(msgNo, flags);
+                            break;
+                        case kResponseType:
+                        case kErrorType: {
+                            msg = pendingResponse(msgNo, flags);
+                            break;
+                        case kAckRequestType:
+                        case kAckResponseType:
+                            receivedAck(msgNo, (type == kAckResponseType), payload);
+                            break;
+                        default:
+                            warn("  Unknown BLIP frame type received");
+                            // For forward compatibility let's just ignore this instead of closing
+                            break;
                         }
                     }
-
-                    if (type == kRequestType) {
-                        if (state == MessageIn::kEnd || state == MessageIn::kBeginning) {
-                            // Message complete!
-                            handleRequestReceived(msg, state);
+                    
+                    // Append the frame to the message:
+                    if (msg) {
+                        MessageIn::ReceiveState state;
+                        try {
+                            state = msg->receivedFrame(_inputCodec, payload, flags);
+                        } catch (...) {
+                            // If this is the final frame, then msg may not be in either pending list
+                            // anymore. But on an exception we need to call its progress handler to
+                            // disconnect it, so make sure to re-add it:
+                            if (type == kRequestType)
+                                _pendingRequests.emplace(msgNo, msg);
+                            else if (type == kResponseType)
+                                _pendingResponses.emplace(msgNo, msg);
+                            throw;
+                        }
+                        
+                        if (state == MessageIn::kEnd) {
+                            if (BLIPMessagesLog.willLog(LogLevel::Info)) {
+                                stringstream dump;
+                                bool withBody = BLIPMessagesLog.willLog(LogLevel::Verbose);
+                                msg->dump(dump, withBody);
+                                BLIPMessagesLog.log(LogLevel::Info, "RECEIVED: %s", dump.str().c_str());
+                            }
+                        }
+                        
+                        if (type == kRequestType) {
+                            if (state == MessageIn::kEnd || state == MessageIn::kBeginning) {
+                                // Message complete!
+                                handleRequestReceived(msg, state);
+                            }
                         }
                     }
+                    
+                    wsMessage = nullptr; // free the frame
                 }
-
+                
             } catch (const std::exception &x) {
                 logError("Caught exception handling incoming BLIP message: %s", x.what());
                 _closeWithError(error::convertException(x));

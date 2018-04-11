@@ -137,6 +137,9 @@ namespace litecore { namespace actor {
         friend class ThreadedMailbox;
         friend class GCDMailbox;
 
+        template <class ACTOR, class ITEM>
+        friend class Batcher;
+
         Mailbox _mailbox;
     };
 

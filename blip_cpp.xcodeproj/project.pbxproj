@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2726F62F207E9F0B007F2D02 /* Batcher.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2726F62D207E9F0B007F2D02 /* Batcher.hh */; };
 		272850731E95BCCF009CA22F /* MessageOut.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850711E95BCCF009CA22F /* MessageOut.cc */; };
 		272850741E95BCCF009CA22F /* MessageOut.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850721E95BCCF009CA22F /* MessageOut.hh */; };
 		272850F81EA022B5009CA22F /* GCDMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850F61EA022B5009CA22F /* GCDMailbox.cc */; };
@@ -90,6 +91,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2726F62D207E9F0B007F2D02 /* Batcher.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Batcher.hh; sourceTree = "<group>"; };
 		272850711E95BCCF009CA22F /* MessageOut.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MessageOut.cc; sourceTree = "<group>"; };
 		272850721E95BCCF009CA22F /* MessageOut.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageOut.hh; sourceTree = "<group>"; };
 		272850F61EA022B5009CA22F /* GCDMailbox.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = GCDMailbox.cc; sourceTree = "<group>"; };
@@ -291,6 +293,7 @@
 				272850F71EA022B5009CA22F /* GCDMailbox.hh */,
 				2773FD031E69FE2000108780 /* ActorProperty.cc */,
 				2773FD041E69FE2000108780 /* ActorProperty.hh */,
+				2726F62D207E9F0B007F2D02 /* Batcher.hh */,
 				27EF6ABA1E2E97B5004748DF /* Future.cc */,
 				27EF6ABB1E2E97B5004748DF /* Future.hh */,
 				27EF6A661E2858E7004748DF /* Channel.cc */,
@@ -399,6 +402,7 @@
 				27EF6A531E2857F7004748DF /* slice.hh in Headers */,
 				279976301E94518200B27639 /* BLIP.hh in Headers */,
 				27EF6A691E2858E7004748DF /* Actor.hh in Headers */,
+				2726F62F207E9F0B007F2D02 /* Batcher.hh in Headers */,
 				272850F91EA022B5009CA22F /* GCDMailbox.hh in Headers */,
 				27EF6A571E2857F7004748DF /* Writer.hh in Headers */,
 				2799762C1E944B2F00B27639 /* MessageBuilder.hh in Headers */,
