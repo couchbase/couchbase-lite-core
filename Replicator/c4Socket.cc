@@ -104,11 +104,10 @@ namespace litecore { namespace repl {
 
 
     void C4SocketImpl::connect() {
-        if (!_factory.open)
-            error::_throw(error::UnsupportedOperation,
-                          "C4SocketFactory does not support 'open'");
-        Address c4addr(url());
-        _factory.open(this, &c4addr, options().data(), _factory.context);
+        if (_factory.open) {
+            Address c4addr(url());
+            _factory.open(this, &c4addr, options().data(), _factory.context);
+        }
     }
 
     void C4SocketImpl::requestClose(int status, fleece::slice message) {

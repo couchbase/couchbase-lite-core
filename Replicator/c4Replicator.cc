@@ -179,7 +179,6 @@ void c4repl_stop(C4Replicator* repl) C4API {
 void c4repl_free(C4Replicator* repl) C4API {
     if (!repl)
         return;
-    repl->stop();
     repl->detach();
     release(repl);
 }

@@ -152,7 +152,9 @@ extern "C" {
                                        C4ReplicatorParameters params,
                                        C4Error *outError) C4API;
 
-    /** Frees a replicator reference. If the replicator is running it will stop. */
+    /** Frees a replicator reference.
+        Does not stop the replicator -- if the replicator still has other internal references,
+        it will keep going. If you need the replicator to stop, call `c4repl_stop()` first. */
     void c4repl_free(C4Replicator* repl) C4API;
 
     /** Tells a replicator to stop. */
