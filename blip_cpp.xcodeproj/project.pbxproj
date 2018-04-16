@@ -35,6 +35,7 @@
 		27CCC7B41E5251CC00CE1989 /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7B11E524FB500CE1989 /* libevent_pthreads.a */; };
 		27CCC7B51E5251CE00CE1989 /* libevent_extra.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7AF1E524FA200CE1989 /* libevent_extra.a */; };
 		27CE4CF9207BCC7F00ACA225 /* WebSocketInterface.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF8207BCC7F00ACA225 /* WebSocketInterface.cc */; };
+		27DF27F120851FFD007FD912 /* Actor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF27F020851FFD007FD912 /* Actor.cc */; };
 		27EF69DD1E28260D004748DF /* Message.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF69D11E28260D004748DF /* Message.cc */; };
 		27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF69D31E28260D004748DF /* BLIPConnection.cc */; };
 		27EF69E21E28260D004748DF /* BLIPInternal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69D61E28260D004748DF /* BLIPInternal.hh */; };
@@ -128,6 +129,7 @@
 		27CCC7AF1E524FA200CE1989 /* libevent_extra.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_extra.a; path = /usr/local/lib/libevent_extra.a; sourceTree = "<absolute>"; };
 		27CCC7B11E524FB500CE1989 /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = /usr/local/lib/libevent_pthreads.a; sourceTree = "<absolute>"; };
 		27CE4CF8207BCC7F00ACA225 /* WebSocketInterface.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketInterface.cc; sourceTree = "<group>"; };
+		27DF27F020851FFD007FD912 /* Actor.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Actor.cc; sourceTree = "<group>"; };
 		27EF69B71E282549004748DF /* libblip_cpp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libblip_cpp.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27EF69D11E28260D004748DF /* Message.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Message.cc; sourceTree = "<group>"; };
 		27EF69D31E28260D004748DF /* BLIPConnection.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BLIPConnection.cc; sourceTree = "<group>"; };
@@ -282,6 +284,7 @@
 		27EF69CB1E2825E6004748DF /* util */ = {
 			isa = PBXGroup;
 			children = (
+				27DF27F020851FFD007FD912 /* Actor.cc */,
 				27EF6A651E2858E7004748DF /* Actor.hh */,
 				272850FA1EA02B49009CA22F /* ThreadedMailbox.cc */,
 				272850FB1EA02B49009CA22F /* ThreadedMailbox.hh */,
@@ -506,6 +509,7 @@
 				272850FC1EA02B49009CA22F /* ThreadedMailbox.cc in Sources */,
 				272850731E95BCCF009CA22F /* MessageOut.cc in Sources */,
 				27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */,
+				27DF27F120851FFD007FD912 /* Actor.cc in Sources */,
 				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
 				27EF6A561E2857F7004748DF /* Writer.cc in Sources */,
 				27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */,

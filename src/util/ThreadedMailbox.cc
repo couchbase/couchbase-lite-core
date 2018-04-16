@@ -30,11 +30,6 @@ namespace litecore { namespace actor {
     LogDomain ActorLog("Actor");
 
 
-    void Actor::caughtException(const std::exception &x) {
-        Warn("Caught exception in Actor %s: %s", actorName().c_str(), x.what());
-    }
-
-
 #pragma mark - SCHEDULER:
 
     
