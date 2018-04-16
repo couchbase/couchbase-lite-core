@@ -73,7 +73,8 @@ namespace litecore { namespace blip {
         void setRequestHandler(std::string profile, bool atBeginning, RequestHandler);
 
         /** Closes the connection. */
-        void close();
+        void close(websocket::CloseCode =websocket::kCodeNormal,
+                   fleece::slice message =fleece::nullslice);
 
         State state()                                           {return _state;}
 

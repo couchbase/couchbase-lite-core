@@ -144,8 +144,8 @@ namespace litecore { namespace blip {
             enqueue(&BLIPIO::_setRequestHandler, profile, atBeginning, handler);
         }
 
-        void close() {
-            enqueue(&BLIPIO::_close);
+        void close(CloseCode closeCode = kCodeNormal, slice message =nullslice) {
+            enqueue(&BLIPIO::_close, closeCode, alloc_slice(message));
         }
 
         WebSocket* webSocket() const {
@@ -196,16 +196,15 @@ namespace litecore { namespace blip {
     private:
 
         /** Implementation of public close() method. Closes the WebSocket. */
-        void _close() {
+        void _close(CloseCode closeCode, alloc_slice message) {
             if (_webSocket && !_closingWithError) {
-                _webSocket->close();
+                _webSocket->close(closeCode, message);
             }
         }
 
         void _closeWithError(const error &x) {
             if (_webSocket && !_closingWithError) {
-                string message = format("Unexpected exception: %s", x.what());
-                _webSocket->close(kCodeUnexpectedCondition, slice(message));
+                _webSocket->close(kCodeUnexpectedCondition, "Unexpected exception"_sl);
                 _closingWithError.reset(new error(x));
             }
         }
@@ -676,10 +675,10 @@ namespace litecore { namespace blip {
     }
 
 
-    void Connection::close() {
-        log("Close connection");
+    void Connection::close(CloseCode closeCode, slice errorMessage) {
+        log("Closing with code %d, msg '%.*s'", closeCode, SPLAT(errorMessage));
         _state = kClosing;
-        _io->close();
+        _io->close(closeCode, errorMessage);
     }
 
 
