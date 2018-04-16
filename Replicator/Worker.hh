@@ -204,6 +204,7 @@ namespace litecore { namespace repl {
         virtual void _childChangedStatus(Worker *task, Status) { }
 
         virtual void afterEvent() override;
+        virtual void caughtException(const std::exception &x) override;
 
         virtual std::string loggingIdentifier() const override {return _loggingID;}
         int pendingResponseCount() const        {return _pendingResponseCount;}

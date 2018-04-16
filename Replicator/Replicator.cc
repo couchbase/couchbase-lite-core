@@ -84,9 +84,14 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_stop() {
-        if (connection()) {
-            log("Told to stop!");
-            connection()->close();
+        log("Told to stop!");
+        _disconnect(websocket::kCodeNormal, {});
+    }
+
+    void Replicator::_disconnect(websocket::CloseCode closeCode, slice message) {
+        auto conn = connection();
+        if (conn) {
+            conn->close(closeCode, message);
             _connectionState = Connection::kClosing;
         }
     }
@@ -177,6 +182,17 @@ namespace litecore { namespace repl {
                 kC4ReplicatorActivityLevelNames[level], _connectionState);
         }
         return level;
+    }
+
+
+    void Replicator::onError(C4Error error) {
+        Worker::onError(error);
+        if (error.domain == LiteCoreDomain && error.code == kC4ErrorUnexpectedError) {
+            // Treat an exception as a fatal error for replication:
+            alloc_slice message( c4error_getMessage(error) );
+            logError("Stopping due to fatal error: %.*s", SPLAT(message));
+            _disconnect(websocket::kCodeUnexpectedCondition, "An exception was thrown"_sl);
+        }
     }
 
 

@@ -97,6 +97,8 @@ namespace litecore { namespace repl {
             enqueue(&Replicator::_gotDocumentError, alloc_slice(docID), error, pushing, transient);
         }
 
+        virtual void onError(C4Error error) override;
+
     private:
         void _onHTTPResponse(int status, fleeceapi::AllocedDict headers);
         void _onConnect();
@@ -106,6 +108,7 @@ namespace litecore { namespace repl {
 
         void _start();
         void _stop();
+        void _disconnect(websocket::CloseCode closeCode, slice message);
         void getLocalCheckpoint();
         void getRemoteCheckpoint();
         void startReplicating();
