@@ -76,13 +76,11 @@ namespace litecore { namespace actor {
     }
 
 
-    static void safelyCall(void (^block)()) {
+    void GCDMailbox::safelyCall(void (^block)()) {
         try {
             block();
         } catch (const std::exception &x) {
-            Warn("Caught exception in Actor: %s", x.what());
-        } catch (...) {
-            Warn("Caught unknown exception in Actor");
+            _actor->caughtException(x);
         }
     }
 

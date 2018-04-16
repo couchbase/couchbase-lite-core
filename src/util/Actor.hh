@@ -121,6 +121,8 @@ namespace litecore { namespace actor {
 
         virtual void afterEvent()                    { }
 
+        virtual void caughtException(const std::exception &x);
+
         void logStats() {
             _mailbox.logStats();
         }

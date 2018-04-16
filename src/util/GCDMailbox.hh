@@ -54,6 +54,7 @@ namespace litecore { namespace actor {
     private:
         void runEvent(void (^block)());
         void afterEvent();
+        void safelyCall(void (^block)());
         
         Actor *_actor;
         dispatch_queue_t _queue;
