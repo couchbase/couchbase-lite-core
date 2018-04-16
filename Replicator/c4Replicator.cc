@@ -140,9 +140,6 @@ C4Replicator* c4repl_new(C4Database* db,
             replicator = new C4Replicator(dbCopy, otherDBCopy, params);
         } else {
             // Remote:
-            if (!checkParam(isValidScheme(serverAddress.scheme),
-                            "Unsupported replication URL scheme", outError))
-                return nullptr;
             replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
         }
         replicator->start();
