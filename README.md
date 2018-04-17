@@ -48,7 +48,7 @@ It is written in C++ (using C++11 features) and compiles with Clang and MSVC.
 
 * Active development usually happens on the `master` branch, which may therefore be temporarily broken. We don't currently have a "stable" branch.
 * Most development is done on macOS using Xcode, so the Xcode project should always build, and the code should pass its unit tests on Mac. iOS is pretty likely to work too, since it's so similar to Mac at this level.
-* The CMake build is generally up to date but may fall behind.
+* The CMake build is generally up to date but may fall behind.  CMake can be used to build every variant except for iOS and tvOS.
 
 # Building It
 
@@ -74,7 +74,6 @@ If you want to use Objective-C or Swift APIs, you should use Couchbase Lite inst
 **Important!** LiteCore uses a couple of external libraries, which may or may not be installed in your system already. If not, please install the appropriate development packages via your package manager. You must have the following libraries present:
     
 - libz
-- libatomic (usually comes with libgcc)
 - libicu
 
 You'll need Clang 3.8 or higher. Unfortunately a lot of distros only have 3.5; run `clang --version` to check, and upgrade manually if necessary. You also need a corresponding version of libc++. On Debian-like systems, the apt-get packages you need are `clang`, `libc++1`, `libc++-dev`, `libc++abi-dev`.
@@ -154,7 +153,6 @@ Jens Alfke ([@snej](https://github.com/snej)), Jim Borden ([@borrrden](https://g
 Like all Couchbase open source code, this is released under the Apache 2 [license](LICENSE).
 
 [CBL]: http://www.couchbase.com/nosql-databases/couchbase-mobile
-[CBL_iOS_2]: https://github.com/couchbase/couchbase-lite-ios/tree/feature/2.0
 [N1QL]: https://www.couchbase.com/n1ql
 [FLEECE]: https://github.com/couchbaselabs/fleece
 [BLIP]: https://github.com/couchbaselabs/BLIP-Cpp/blob/master/docs/BLIP%20Protocol.md
