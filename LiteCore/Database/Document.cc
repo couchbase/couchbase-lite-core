@@ -20,6 +20,7 @@
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
 #include "Fleece.hh"
+#include "DeepIterator.hh"
 
 using namespace fleece;
 
@@ -87,68 +88,35 @@ namespace c4Internal {
     }
 
 
-    // Finds blob references in a Fleece value, recursively.
-    // Return value of false means the callback stopped the iteration (by returning false.)
-    bool Document::findBlobReferences(const Value *val, SharedKeys* sk, const FindBlobCallback &callback) {
-        auto d = val->asDict();
-        if (d) {
-            return findBlobReferences(d, sk, callback);
-        }
-        auto a = val->asArray();
-        if (a) {
-            for (Array::iterator i(a); i; ++i)
-                if (!findBlobReferences(i.value(), sk, callback))
-                    return false;
-        }
-        return true;
+    bool Document::getBlobKey(const Dict *dict, blobKey &outKey, SharedKeys* sk) {
+        const Value* digest = ((const Dict*)dict)->get("digest"_sl, sk);
+        return digest && outKey.readFromBase64(digest->asString());
     }
 
 
-    slice Document::dictIsBlob(const Dict *dict, SharedKeys* sk) {
+    bool Document::dictIsBlob(const Dict *dict, SharedKeys* sk) {
         const Value* cbltype= dict->get(C4STR(kC4ObjectTypeProperty), sk);
-        if (!cbltype || cbltype->asString() != slice(kC4ObjectType_Blob))
-            return nullslice;
-        const Value* digest = ((const Dict*)dict)->get("digest"_sl, sk);
-        if (!digest)
-            return nullslice;
-        return digest->asString();
+        return cbltype && cbltype->asString() == slice(kC4ObjectType_Blob);
     }
 
 
     bool Document::dictIsBlob(const Dict *dict, blobKey &outKey, SharedKeys* sk) {
-        slice digest = dictIsBlob(dict, sk);
-        return digest && outKey.readFromBase64(digest);
+        return dictIsBlob(dict, sk) && getBlobKey(dict, outKey, sk);
     }
 
 
     // Finds blob references in a Fleece Dict, recursively.
     bool Document::findBlobReferences(const Dict *dict, SharedKeys* sk, const FindBlobCallback &callback)
     {
-        if (dict->get(C4STR(kC4ObjectTypeProperty), sk)) {
-            if (dictIsBlob(dict, sk))
-                return callback(dict);
-        } else {
-            for (Dict::iterator i(dict); i; ++i) {
-                if (!findBlobReferences(i.value(), sk, callback))
+        for (DeepIterator i(dict, sk); i; ++i) {
+            auto d = i.value()->asDict();
+            if (d && dictIsBlob(d, sk)) {
+                if (!callback(d))
                     return false;
+                i.skipChildren();
             }
         }
         return true;
-    }
-
-
-    void Document::findBlobReferencesAndKeys(const Dict *dict, SharedKeys* sk,
-                                             const FindBlobWithKeyCallback &callback)
-    {
-        findBlobReferences(dict, sk, [=](const Dict *blob) {
-            blobKey key;
-            if (dictIsBlob(blob, key, sk)) {
-                auto lengthVal = blob->get("length"_sl, sk);
-                uint64_t length = lengthVal ? lengthVal->asUnsigned() : 0;
-                callback(key, length);
-            }
-            return true;
-        });
     }
 
 

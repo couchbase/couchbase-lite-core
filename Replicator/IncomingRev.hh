@@ -39,7 +39,8 @@ namespace litecore { namespace repl {
 
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
 
-        using FindBlobCallback = function_ref<void(fleeceapi::Dict,
+        using FindBlobCallback = function_ref<void(FLDeepIterator,
+                                                   fleeceapi::Dict blob,
                                                    const C4BlobKey &key)>;
         static void findBlobReferences(fleeceapi::Dict root,
                                        FLSharedKeys sk,

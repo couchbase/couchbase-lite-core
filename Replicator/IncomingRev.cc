@@ -127,11 +127,11 @@ namespace litecore { namespace repl {
         }
 
         // Check for blobs, and queue up requests for any I don't have yet:
-        findBlobReferences(root, nullptr, [=](Dict dict, const C4BlobKey &key) {
+        findBlobReferences(root, nullptr, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
             _rev->flags |= kRevHasAttachments;
             _pendingBlobs.push_back({key,
-                                     dict["length"_sl].asUnsigned(),
-                                     c4doc_blobIsCompressible(dict, nullptr)});
+                                     blob["length"_sl].asUnsigned(),
+                                     c4doc_blobIsCompressible(blob, nullptr)});
         });
 
         // Request the first blob, or if there are none, finish:
@@ -223,58 +223,31 @@ namespace litecore { namespace repl {
 #pragma mark - UTILITIES:
 
 
-    static inline void pushIfDictOrArray(Value v, deque<Value> &stack) {
-        auto type = v.type();
-        if (type == kFLDict || type == kFLArray)
-            stack.push_front(v);
+    static inline bool isAttachment(FLDeepIterator i, FLSharedKeys sk, C4BlobKey *blobKey) {
+        auto dict = FLValue_AsDict(FLDeepIterator_GetValue(i));
+        return dict != nullptr
+            && (c4doc_dictIsBlob(dict, sk, blobKey)
+                || (FLDeepIterator_GetDepth(i) == 1
+                    && FLSlice_Equal(FLDeepIterator_GetKey(i), FLSTR(kC4LegacyAttachmentsProperty))
+                    && c4doc_getDictBlobKey((FLDict)FLDeepIterator_GetValue(i), sk, blobKey)));
     }
 
 
     // Finds blob references anywhere in a Fleece value
     void IncomingRev::findBlobReferences(Dict root, FLSharedKeys sk, const FindBlobCallback &callback) {
         set<string> found;
-        Value val = root;
-        deque<Value> stack;
-        while(true) {
-            auto dict = val.asDict();
-            if (dict) {
-                C4BlobKey blobKey;
-                if (c4doc_dictIsBlob(dict, sk, &blobKey)) {
-                    if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second)
-                        callback(dict, blobKey);
-                } else {
-                    for (Dict::iterator i(dict); i; ++i)
-                        pushIfDictOrArray(i.value(), stack);
-                }
-            } else {
-                for (Array::iterator i(val.asArray()); i; ++i)
-                    pushIfDictOrArray(i.value(), stack);
-            }
-
-            // Get next value from queue, or stop when we run out:
-            if (stack.empty())
-                break;
-            val = stack.front();
-            stack.pop_front();
-        }
-
-        // Now look for old-style _attachments:
-        auto attachments = root.get(C4STR(kC4LegacyAttachmentsProperty), sk).asDict();
-        for (Dict::iterator i(attachments); i; ++i) {
-            auto att = i.value().asDict();
-            if (att) {
-                slice digest = att.get("digest"_sl, sk).asString();
-                if (digest) {
-                    C4BlobKey blobKey;
-                    if (c4blob_keyFromString(digest, &blobKey)) {
-                        if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second)
-                            callback(att, blobKey);
-                    }
+        FLDeepIterator i = FLDeepIterator_New(root, sk);
+        for (; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i)) {
+            C4BlobKey blobKey;
+            if (isAttachment(i, sk, &blobKey)) {
+                if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second) {
+                    auto blob = Value(FLDeepIterator_GetValue(i)).asDict();
+                    callback(i, blob, blobKey);
                 }
             }
         }
+        FLDeepIterator_Free(i);
     }
-
 
 } }
 

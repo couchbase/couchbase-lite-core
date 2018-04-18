@@ -745,12 +745,12 @@ namespace litecore { namespace repl {
 
         // Then entries for blobs found in the document:
         unsigned n = 0;
-        IncomingRev::findBlobReferences(root, sk, [&](Dict dict, C4BlobKey blobKey) {
+        IncomingRev::findBlobReferences(root, sk, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
             char attName[32];
             sprintf(attName, "blob_%u", ++n);   // TODO: Mnemonic name based on JSON key path
             enc.writeKey(slice(attName));
             enc.beginDict();
-            for (Dict::iterator i(dict, sk); i; ++i) {
+            for (Dict::iterator i(blob, sk); i; ++i) {
                 slice key = i.keyString();
                 if (key != slice(kC4ObjectTypeProperty) && key != "stub"_sl) {
                     enc.writeKey(key);

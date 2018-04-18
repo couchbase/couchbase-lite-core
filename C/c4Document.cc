@@ -660,6 +660,11 @@ bool c4doc_hasOldMetaProperties(FLDict doc) noexcept {
 }
 
 
+bool c4doc_getDictBlobKey(FLDict dict, FLSharedKeys sk, C4BlobKey *outKey) {
+    return Document::getBlobKey((const Dict*)dict, *(blobKey*)outKey, (SharedKeys*)sk);
+}
+
+
 bool c4doc_dictIsBlob(FLDict dict, FLSharedKeys sk, C4BlobKey *outKey) C4API {
     assert(outKey);
     return Document::dictIsBlob((const Dict*)dict, *(blobKey*)outKey, (SharedKeys*)sk);

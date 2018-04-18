@@ -166,19 +166,18 @@ namespace c4Internal {
             appear elsewhere in the dictionary as blobs are preserved. */
         static alloc_slice encodeStrippingOldMetaProperties(const fleece::Dict*);
 
-        /** If the given dictionary is a [reference to a] blob, returns its digest. */
-        static slice dictIsBlob(const fleece::Dict *dict, fleece::SharedKeys* sk);
+        /** Returns true if the given dictionary is a [reference to a] blob. */
+        static bool dictIsBlob(const fleece::Dict *dict, fleece::SharedKeys* sk);
 
         /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key. */
         static bool dictIsBlob(const fleece::Dict *dict, blobKey &outKey, fleece::SharedKeys* sk);
 
+        /** Returns the dict's "digest" property decoded into a blobKey. */
+        static bool getBlobKey(const fleece::Dict*, blobKey &outKey, fleece::SharedKeys*);
+
         using FindBlobCallback = function_ref<bool(const fleece::Dict*)>;
         static bool findBlobReferences(const fleece::Dict*, fleece::SharedKeys* sk,
                                        const FindBlobCallback&);
-
-        using FindBlobWithKeyCallback = function_ref<void(const blobKey &key, uint64_t size)>;
-        static void findBlobReferencesAndKeys(const fleece::Dict*, fleece::SharedKeys* sk,
-                                              const FindBlobWithKeyCallback&);
 
         static bool blobIsCompressible(const fleece::Dict *meta, fleece::SharedKeys *sk);
 
@@ -191,8 +190,6 @@ namespace c4Internal {
             selectedRev.body = kC4SliceNull;
             _loadedBody = nullslice;
         }
-
-        static bool findBlobReferences(const fleece::Value *val, fleece::SharedKeys* sk, const FindBlobCallback &callback);
 
         Retained<Database> _db;
     };

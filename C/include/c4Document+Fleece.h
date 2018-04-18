@@ -57,6 +57,12 @@ extern "C" {
     /** Re-encodes to Fleece, without any 1.x metadata properties. */
     C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc) C4API;
 
+    /** Decodes the dict's "digest" property to a C4BlobKey.
+        Returns false if there is no such property or it's not a valid blob key. */
+    bool c4doc_getDictBlobKey(FLDict dict,
+                              FLSharedKeys sk,
+                              C4BlobKey *outKey);
+
     /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key.
         (This function cannot recognize child dictionaries of "_attachments", because it's not
         possible to look at the parent of a Fleece value.) */

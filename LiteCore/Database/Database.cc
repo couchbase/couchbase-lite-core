@@ -264,9 +264,11 @@ namespace c4Internal {
                 auto sk = _db->documentKeys();
 
                 // Iterate over blobs:
-                Document::findBlobReferencesAndKeys(body, sk,
-                                                 [&usedDigests](const blobKey& key, uint64_t size) {
-                    usedDigests.insert(key.filename());
+                Document::findBlobReferences(body, sk, [&](const Dict *blob) {
+                    blobKey key;
+                    if (Document::dictIsBlob(blob, key, sk))    // get the key
+                        usedDigests.insert(key.filename());
+                    return true;
                 });
 
                 // Now look for old-style _attachments:
