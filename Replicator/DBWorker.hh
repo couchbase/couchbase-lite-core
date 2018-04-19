@@ -21,6 +21,7 @@
 #include "Worker.hh"
 #include "c4BlobStore.h"
 #include "FleeceCpp.hh"
+#include "function_ref.hh"
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -87,6 +88,17 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_setCookie, alloc_slice(setCookieHeader));
         }
 
+        using FindBlobCallback = function_ref<void(FLDeepIterator,
+                                                   fleeceapi::Dict blob,
+                                                   const C4BlobKey &key)>;
+
+        /** Finds blob/attachment references anywhere in a document. */
+        void findBlobReferences(fleeceapi::Dict root,
+                                FLSharedKeys sk,
+                                const FindBlobCallback&);
+
+        bool disableBlobSupport() const     {return _disableBlobSupport;}
+
     protected:
         virtual std::string loggingClassName() const override {return "DBWorker";}
 
@@ -122,7 +134,8 @@ namespace litecore { namespace repl {
         static std::string revHistoryString(C4Document*, const RevToSend&);
         void writeRevWithLegacyAttachments(fleeceapi::Encoder&,
                                            fleeceapi::Dict rev,
-                                           FLSharedKeys sk);
+                                           FLSharedKeys sk,
+                                           unsigned revpos);
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
@@ -156,6 +169,7 @@ namespace litecore { namespace repl {
         Queue<Rev> _revsToMarkSynced; // Pending revs to be marked as synced
         bool _insertionScheduled {false};                   // True if call to insert/sync pending
         std::mutex _insertionQueueMutex;                    // For safe access to the above
+        bool _disableBlobSupport {false};                   // for testing only
     };
 
 } }

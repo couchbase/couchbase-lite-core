@@ -64,6 +64,7 @@ namespace litecore { namespace repl {
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
+        _disableBlobSupport = options.properties["disable_blob_support"_sl].asBool();
     }
 
 
@@ -451,7 +452,8 @@ namespace litecore { namespace repl {
         MessageBuilder response(req);
         response.compressed = true;
         response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
-        response["blobs"_sl] = "true"_sl;
+        if (!_disableBlobSupport)
+            response["blobs"_sl] = "true"_sl;
         vector<bool> whichRequested(changes.count());
         unsigned itemsWritten = 0, requested = 0;
         vector<alloc_slice> ancestors;
@@ -640,8 +642,10 @@ namespace litecore { namespace repl {
                 auto &bodyEncoder = msg.jsonBody();
                 auto sk = c4db_getFLSharedKeys(_db);
                 bodyEncoder.setSharedKeys(sk);
-                if (request->legacyAttachments && (revisionFlags & kRevHasAttachments))
-                    writeRevWithLegacyAttachments(bodyEncoder, root, sk);
+                if (request->legacyAttachments && (revisionFlags & kRevHasAttachments)
+                                               && !_disableBlobSupport)
+                    writeRevWithLegacyAttachments(bodyEncoder, root, sk,
+                                                  c4rev_getGeneration(request->revID));
                 else
                     bodyEncoder.writeValue(root);
             }
@@ -715,7 +719,8 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBWorker::writeRevWithLegacyAttachments(Encoder& enc, Dict root, FLSharedKeys sk) {
+    void DBWorker::writeRevWithLegacyAttachments(Encoder& enc, Dict root, FLSharedKeys sk,
+                                                 unsigned revpos) {
         enc.beginDict();
 
         // Write existing properties except for _attachments:
@@ -744,10 +749,9 @@ namespace litecore { namespace repl {
         }
 
         // Then entries for blobs found in the document:
-        unsigned n = 0;
-        IncomingRev::findBlobReferences(root, sk, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
-            char attName[32];
-            sprintf(attName, "blob_%u", ++n);   // TODO: Mnemonic name based on JSON key path
+        findBlobReferences(root, sk, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
+            alloc_slice path(FLDeepIterator_GetJSONPointer(di));
+            string attName = string("blob_") + string(path);
             enc.writeKey(slice(attName));
             enc.beginDict();
             for (Dict::iterator i(blob, sk); i; ++i) {
@@ -760,12 +764,45 @@ namespace litecore { namespace repl {
             enc.writeKey("stub"_sl);
             enc.writeBool(true);
             enc.writeKey("revpos"_sl);
-            enc.writeInt(1);
+            enc.writeInt(revpos);
             enc.endDict();
         });
         enc.endDict();
 
         enc.endDict();
+    }
+
+
+    static inline bool isAttachment(FLDeepIterator i, FLSharedKeys sk, C4BlobKey *blobKey, bool noBlobs) {
+        auto dict = FLValue_AsDict(FLDeepIterator_GetValue(i));
+        if (!dict)
+            return false;
+        if (!noBlobs && c4doc_dictIsBlob(dict, sk, blobKey))
+            return true;
+        FLPathComponent* path;
+        size_t depth;
+        FLDeepIterator_GetPath(i, &path, &depth);
+        return depth == 2
+            && FLSlice_Equal(path[0].key, FLSTR(kC4LegacyAttachmentsProperty))
+            && c4doc_getDictBlobKey(dict, sk, blobKey);
+    }
+
+
+    void DBWorker::findBlobReferences(Dict root, FLSharedKeys sk, const FindBlobCallback &callback) {
+        set<string> found;
+        FLDeepIterator i = FLDeepIterator_New(root, sk);
+        for (; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i)) {
+            alloc_slice path(FLDeepIterator_GetJSONPointer(i));
+            C4BlobKey blobKey;
+            if (isAttachment(i, sk, &blobKey, _disableBlobSupport)) {
+                if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second) {
+                    auto blob = Value(FLDeepIterator_GetValue(i)).asDict();
+                    callback(i, blob, blobKey);
+                }
+                FLDeepIterator_SkipChildren(i);
+            }
+        }
+        FLDeepIterator_Free(i);
     }
 
 

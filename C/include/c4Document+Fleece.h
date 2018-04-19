@@ -52,10 +52,12 @@ extern "C" {
 
     /** Returns true if the document contains 1.x metadata properties at top level.
         Does NOT return true for "_attachments" because that property isn't obsolete. */
-    bool c4doc_hasOldMetaProperties(FLDict doc C4NONNULL) C4API;
+    bool c4doc_hasOldMetaProperties(FLDict doc C4NONNULL, FLSharedKeys sk) C4API;
 
-    /** Re-encodes to Fleece, without any 1.x metadata properties. */
-    C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc) C4API;
+    /** Re-encodes to Fleece, without any 1.x metadata properties. Old-style attachments that
+        _don't_ refer to blobs will be removed; others are kept. */
+    C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc,
+                                                         FLSharedKeys sk) C4API;
 
     /** Decodes the dict's "digest" property to a C4BlobKey.
         Returns false if there is no such property or it's not a valid blob key. */

@@ -108,8 +108,8 @@ namespace litecore { namespace repl {
 
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
-        if (c4doc_hasOldMetaProperties(root)) {
-            fleeceBody = c4doc_encodeStrippingOldMetaProperties(root);
+        if (c4doc_hasOldMetaProperties(root, nullptr) && !_dbWorker->disableBlobSupport()) {
+            fleeceBody = c4doc_encodeStrippingOldMetaProperties(root, nullptr);
             root = Value::fromTrustedData(fleeceBody).asDict();
         }
 
@@ -127,7 +127,7 @@ namespace litecore { namespace repl {
         }
 
         // Check for blobs, and queue up requests for any I don't have yet:
-        findBlobReferences(root, nullptr, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
+        _dbWorker->findBlobReferences(root, nullptr, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
             _rev->flags |= kRevHasAttachments;
             _pendingBlobs.push_back({key,
                                      blob["length"_sl].asUnsigned(),
@@ -217,36 +217,6 @@ namespace litecore { namespace repl {
         } else {
             return kC4Stopped;
         }
-    }
-
-
-#pragma mark - UTILITIES:
-
-
-    static inline bool isAttachment(FLDeepIterator i, FLSharedKeys sk, C4BlobKey *blobKey) {
-        auto dict = FLValue_AsDict(FLDeepIterator_GetValue(i));
-        return dict != nullptr
-            && (c4doc_dictIsBlob(dict, sk, blobKey)
-                || (FLDeepIterator_GetDepth(i) == 1
-                    && FLSlice_Equal(FLDeepIterator_GetKey(i), FLSTR(kC4LegacyAttachmentsProperty))
-                    && c4doc_getDictBlobKey((FLDict)FLDeepIterator_GetValue(i), sk, blobKey)));
-    }
-
-
-    // Finds blob references anywhere in a Fleece value
-    void IncomingRev::findBlobReferences(Dict root, FLSharedKeys sk, const FindBlobCallback &callback) {
-        set<string> found;
-        FLDeepIterator i = FLDeepIterator_New(root, sk);
-        for (; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i)) {
-            C4BlobKey blobKey;
-            if (isAttachment(i, sk, &blobKey)) {
-                if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second) {
-                    auto blob = Value(FLDeepIterator_GetValue(i)).asDict();
-                    callback(i, blob, blobKey);
-                }
-            }
-        }
-        FLDeepIterator_Free(i);
     }
 
 } }

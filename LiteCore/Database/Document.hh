@@ -155,17 +155,6 @@ namespace c4Internal {
 
         static bool isValidDocID(slice);
 
-        /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", etc.) */
-        static bool isOldMetaProperty(slice key);
-
-        /** Returns true if the document contains 1.x metadata properties (at top level). */
-        static bool hasOldMetaProperties(const fleece::Dict*);
-
-        /** Re-encodes to Fleece, without any 1.x metadata properties.
-            The _attachments property is treated specially, in that any entries in it that don't
-            appear elsewhere in the dictionary as blobs are preserved. */
-        static alloc_slice encodeStrippingOldMetaProperties(const fleece::Dict*);
-
         /** Returns true if the given dictionary is a [reference to a] blob. */
         static bool dictIsBlob(const fleece::Dict *dict, fleece::SharedKeys* sk);
 

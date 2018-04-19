@@ -606,6 +606,48 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blo
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]") {
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        _expectedDocumentCount = 1;
+    }
+
+    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+
+    checkAttachments(db2, blobKeys, attachments);
+
+    string json = getDocJSON(db2, "att1"_sl);
+    replace(json, '"', '\'');
+    CHECK(json ==
+          "{'_attachments':{'blob_/attached/0':{'content_type':'text/plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27,'revpos':1,'stub':true},"
+                           "'blob_/attached/1':{'content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10,'revpos':1,'stub':true},"
+                           "'blob_/attached/2':{'content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0,'revpos':1,'stub':true}},"
+           "'attached':[{'@type':'blob','content_type':'text/plain','digest':'sha1-ERWD9RaGBqLSWOQ+96TZ6Kisjck=','length':27},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-rATs731fnP+PJv2Pm/WXWZsCw48=','length':10},"
+                       "{'@type':'blob','content_type':'text/plain','digest':'sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=','length':0}]}");
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]") {
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain"); //legacy
+        _expectedDocumentCount = 1;
+    }
+
+    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
+    runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
+
+    checkAttachments(db2, blobKeys, attachments);
+}
+
+
 #pragma mark - FILTERS & VALIDATION:
 
 

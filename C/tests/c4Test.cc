@@ -433,27 +433,38 @@ string C4Test::listSharedKeys(string delimiter) {
 }
 
 
+string C4Test::getDocJSON(C4Database* inDB, C4Slice docID) {
+    C4Error error;
+    auto doc = c4doc_get(inDB, docID, true, &error);
+    REQUIRE(doc);
+    fleece::alloc_slice json( c4doc_bodyAsJSON(doc, true, &error) );
+    REQUIRE(json);
+    c4doc_free(doc);
+    return json.asString();
+}
+
+
 #pragma mark - ATTACHMENTS / BLOBS:
 
 
 vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
                                                 vector<string> attachments,
                                                 const char *contentType,
-                                                bool legacy)
+                                                vector<string>* legacyNames)
 {
     vector<C4BlobKey> keys;
     C4Error c4err;
     stringstream json;
     int i = 0;
-    json << (legacy ? "{_attachments: {" : "{attached: [");
+    json << (legacyNames ? "{_attachments: {" : "{attached: [");
     for (string &attachment : attachments) {
         C4BlobKey key;
         REQUIRE(c4blob_create(c4db_getBlobStore(db, nullptr), fleece::slice(attachment),
                               nullptr, &key,  &c4err));
         keys.push_back(key);
         C4SliceResult keyStr = c4blob_keyToString(key);
-        if (legacy)
-            json << "att" << (++i) << ": {";
+        if (legacyNames)
+            json << '"' << (*legacyNames)[i++] << "\": {";
         else
             json << "{'" << kC4ObjectTypeProperty << "': '" << kC4ObjectType_Blob << "', ";
         json << "digest: '" << string((char*)keyStr.buf, keyStr.size)
@@ -461,7 +472,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
              << ", content_type: '" << contentType << "'},";
         c4slice_free(keyStr);
     }
-    json << (legacy ? "}}" : "]}");
+    json << (legacyNames ? "}}" : "]}");
     string jsonStr = json5(json.str());
     C4SliceResult body = c4db_encodeJSON(db, c4str(jsonStr.c_str()), &c4err);
     REQUIRE(body.buf);

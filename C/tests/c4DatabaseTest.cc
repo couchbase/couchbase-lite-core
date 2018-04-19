@@ -514,7 +514,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Compact", "[Database][C]")
 
         atts.clear();
         atts.emplace_back(content3);
-        key3 = addDocWithAttachments(doc3ID, atts, "text/plain", true)[0]; // legacy
+        auto names = vector<string>{"att1.txt","att2.txt","att3.txt"};
+        key3 = addDocWithAttachments(doc3ID, atts, "text/plain", &names)[0]; // legacy
     }
     
     C4BlobStore* store = c4db_getBlobStore(db, &err);

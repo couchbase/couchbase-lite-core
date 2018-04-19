@@ -27,6 +27,7 @@
 
 #include "Document.hh"
 #include "Database.hh"
+#include "LegacyAttachments.hh"
 #include "RevTree.hh"   // only for kDefaultRemoteID
 #include "SecureRandomize.hh"
 #include "Fleece.hh"
@@ -651,12 +652,12 @@ FLSharedKeys c4db_getFLSharedKeys(C4Database *db) noexcept {
 
 
 bool c4doc_isOldMetaProperty(C4String prop) noexcept {
-    return Document::isOldMetaProperty(prop);
+    return legacy_attachments::isOldMetaProperty(prop);
 }
 
 
-bool c4doc_hasOldMetaProperties(FLDict doc) noexcept {
-    return Document::hasOldMetaProperties((Dict*)doc);
+bool c4doc_hasOldMetaProperties(FLDict doc, FLSharedKeys sk) noexcept {
+    return legacy_attachments::hasOldMetaProperties((Dict*)doc, (SharedKeys*)sk);
 }
 
 
@@ -686,8 +687,9 @@ bool c4doc_blobIsCompressible(FLDict blobDict, FLSharedKeys sk) {
 }
 
 
-C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc) noexcept {
+C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc, FLSharedKeys sk) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        return sliceResult(Document::encodeStrippingOldMetaProperties((const Dict*)doc));
+        return sliceResult(legacy_attachments::encodeStrippingOldMetaProperties((const Dict*)doc,
+                                                                                (SharedKeys*)sk));
     });
 }

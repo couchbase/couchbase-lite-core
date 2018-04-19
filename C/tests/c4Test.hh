@@ -188,10 +188,12 @@ public:
     std::vector<C4BlobKey> addDocWithAttachments(C4Slice docID,
                                                  std::vector<std::string> attachments,
                                                  const char *contentType,
-                                                 bool legacy =false);
+                                                 std::vector<std::string>* legacyNames =nullptr);
     void checkAttachment(C4Database *inDB, C4BlobKey blobKey, C4Slice expectedData);
     void checkAttachments(C4Database *inDB, std::vector<C4BlobKey> blobKeys,
                           std::vector<std::string> expectedData);
+
+    static std::string getDocJSON(C4Database* inDB, C4Slice docID);
 
     std::string listSharedKeys(std::string delimiter =", ");
 

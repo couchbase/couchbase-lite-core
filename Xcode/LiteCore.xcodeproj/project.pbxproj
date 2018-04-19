@@ -186,6 +186,9 @@
 		2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */; };
 		2771B01B1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */; };
+		2776AA282087FF6B004ACE85 /* LegacyAttachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */; };
+		2776AA292087FF6B004ACE85 /* LegacyAttachments.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */; };
 		277BE1C9204F4D45008047C9 /* RevTreeTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277BE1C8204F4D45008047C9 /* RevTreeTest.cc */; };
 		277C14711EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
 		277C14721EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
@@ -1148,6 +1151,8 @@
 		2773FCF51E6783A000108780 /* Checkpoint.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Checkpoint.hh; sourceTree = "<group>"; };
 		2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RemoteSequenceSet.hh; sourceTree = "<group>"; };
 		27766E151982DA8E00CAA464 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LegacyAttachments.cc; sourceTree = "<group>"; };
+		2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LegacyAttachments.hh; sourceTree = "<group>"; };
 		2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = static_lib.xcconfig; sourceTree = "<group>"; };
 		2779CC6E1E85E4FC00F0D251 /* ReplicatorTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTypes.hh; sourceTree = "<group>"; };
 		277BE1C8204F4D45008047C9 /* RevTreeTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RevTreeTest.cc; sourceTree = "<group>"; };
@@ -2035,6 +2040,8 @@
 				277C14701EA8102B0075348F /* Document.cc */,
 				271057D61D3D70B10018247B /* Document.hh */,
 				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
+				2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */,
+				2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */,
 				276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */,
 				276683B51DC7DD2E00E3F187 /* SequenceTracker.hh */,
 				272850A91E9AF53B009CA22F /* Upgrader.cc */,
@@ -2614,6 +2621,7 @@
 				72A3AF8D1F425134001E16D4 /* PrebuiltCopier.hh in Headers */,
 				2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */,
 				27D74A951D4D3F3400D806E0 /* Statement.h in Headers */,
+				2776AA292087FF6B004ACE85 /* LegacyAttachments.hh in Headers */,
 				276CD42A1D77E92E001346A3 /* BlobStore.hh in Headers */,
 				27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */,
 				27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */,
@@ -3514,6 +3522,7 @@
 				27E4872B1923F24D007D8940 /* VersionedDocument.cc in Sources */,
 				93CD010F1E933BE100AFB3FA /* Pusher.cc in Sources */,
 				276CD4281D77E92E001346A3 /* BlobStore.cc in Sources */,
+				2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */,
 				27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */,
 				2761F3F01EE9CC58006D4BB8 /* CookieStore.cc in Sources */,
 				93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */,
@@ -3613,6 +3622,7 @@
 				720EA4141BA8D834002B8416 /* RevTree.cc in Sources */,
 				27D74A7F1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				2761F3F11EE9CC58006D4BB8 /* CookieStore.cc in Sources */,
+				2776AA282087FF6B004ACE85 /* LegacyAttachments.cc in Sources */,
 				27D74A7D1D4D3F2300D806E0 /* Column.cpp in Sources */,
 				27FDF13A1DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */,
 				72DE480A1E9C550A00B60952 /* Replicator.cc in Sources */,

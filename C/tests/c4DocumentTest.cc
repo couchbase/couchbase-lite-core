@@ -19,7 +19,27 @@
 #include "c4Test.hh"
 #include "c4Private.h"
 #include "Benchmark.hh"
+#include "FleeceCpp.hh"
 #include "c4Document+Fleece.h"
+
+using namespace fleece;
+
+
+static AllocedDict json2dict(C4Database *db, const char *json) {
+    std::string jsonStr = json5(json);
+    C4Error c4err;
+    AllocedDict dict( alloc_slice( c4db_encodeJSON(db, slice(jsonStr), &c4err) ) );
+    REQUIRE(dict);
+    return dict;
+}
+
+
+static std::string fleece2json(slice fleece, FLSharedKeys sk) {
+    auto value = Value::fromData(fleece);
+    REQUIRE(value);
+    return alloc_slice(value.toJSON(sk, true, false)).asString();
+}
+
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Database][C]") {
     c4log_warnOnErrors(false);
@@ -667,6 +687,45 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {
     
     CHECK(!c4doc_dictContainsBlobs(d, nullptr));
     FLSliceResult_Free(result);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Database][C]") {
+    // Check that old meta properties get removed:
+    TransactionHelper t(db);
+    auto sk = c4db_getFLSharedKeys(db);
+    auto dict = json2dict(db, "{_id:'foo', _rev:'1-2345', x:17}");
+    CHECK(c4doc_hasOldMetaProperties(dict, sk));
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    CHECK(fleece2json(stripped, sk) == "{x:17}");
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Database][C]") {
+    // Check that _attachments isn't removed if there are non-translated attachments in it,
+    // but that the translated-from-blob attachments are removed:
+    TransactionHelper t(db);
+    auto sk = c4db_getFLSharedKeys(db);
+    auto dict = json2dict(db, "{_attachments: {'blob_/foo/1': {'digest': 'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='},"
+                                              "oldie: {'digest': 'sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU='} },"
+                              "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='} ] }");
+    CHECK(c4doc_hasOldMetaProperties(dict, sk));
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    CHECK(fleece2json(stripped, sk) == "{_attachments:{oldie:{digest:\"sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}},foo:[0,{\"@type\":\"blob\",digest:\"sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Database][C]") {
+    // Check that a translated attachment whose digest is different than its blob (i.e. the
+    // attachment was probably modified by a non-blob-aware system) has its digest transferred to
+    // the blob before being deleted. See #507. (Also, the _attachments property should be deleted.)
+    TransactionHelper t(db);
+    auto sk = c4db_getFLSharedKeys(db);
+    auto dict = json2dict(db, "{_attachments: {'blob_/foo/1': {'digest': 'sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
+                              "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
+    CHECK(c4doc_hasOldMetaProperties(dict, sk));
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    CHECK(fleece2json(stripped, sk) == "{foo:[0,{\"@type\":\"blob\",content_type:\"image/png\",digest:\"sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
 }
 
 
