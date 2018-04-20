@@ -1296,7 +1296,6 @@
 		27E89BA51D679542002C32B3 /* FilePath.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FilePath.hh; sourceTree = "<group>"; };
 		27ECCB011D89DCDB00FA8C4A /* Doxyfile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Doxyfile; sourceTree = "<group>"; };
 		27EDA9451FB2B9700023FBB9 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
-		27EF69A41E26E347004748DF /* function_ref.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = function_ref.hh; sourceTree = "<group>"; };
 		27EF7FA51914296D00A327B9 /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
 		27EF7FA61914296D00A327B9 /* fts3_unicode2.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicode2.c; sourceTree = "<group>"; };
 		27EF7FA71914296D00A327B9 /* fts3_unicodesn.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = fts3_unicodesn.c; sourceTree = "<group>"; };
@@ -1908,7 +1907,6 @@
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
-				27EF69A41E26E347004748DF /* function_ref.hh */,
 				27700DFD1FB642B80005D48E /* Increment.hh */,
 				27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */,
 				27BF033C1FB62A87003D5BB8 /* Logging */,

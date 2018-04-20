@@ -138,12 +138,12 @@ namespace litecore {
         void setReadOnly(bool readOnly) const;
 
         /** Calls fn for each file in this FilePath's directory. */
-        void forEachFile(function_ref<void(const FilePath&)> fn) const;
+        void forEachFile(fleece::function_ref<void(const FilePath&)> fn) const;
 
         /** Calls fn for each item in the directory whose name begins with this path's name.
             If this path's name is empty (i.e. the path is a directory), fn is called for every
             item in the directory. */
-        void forEachMatch(function_ref<void(const FilePath&)> fn) const;
+        void forEachMatch(fleece::function_ref<void(const FilePath&)> fn) const;
 
         static std::pair<std::string,std::string> splitPath(const std::string &path);
         static std::pair<std::string,std::string> splitExtension(const std::string &filename);

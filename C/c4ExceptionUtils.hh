@@ -55,7 +55,7 @@ namespace c4Internal {
     // Calls the function, returning its return value. If an exception is thrown, stores the error
     // into `outError`, and returns a default 0/nullptr/false value.
     template <typename RESULT>
-    NOINLINE RESULT tryCatch(C4Error *outError, litecore::function_ref<RESULT()> fn) noexcept {
+    NOINLINE RESULT tryCatch(C4Error *outError, fleece::function_ref<RESULT()> fn) noexcept {
         try {
             return fn();
         } catchError(outError);
@@ -64,6 +64,6 @@ namespace c4Internal {
 
     // Calls the function and returns true. If an exception is thrown, stores the error
     // into `outError`, and returns false.
-    NOINLINE bool tryCatch(C4Error *error, litecore::function_ref<void()> fn) noexcept;
+    NOINLINE bool tryCatch(C4Error *error, fleece::function_ref<void()> fn) noexcept;
 
 }

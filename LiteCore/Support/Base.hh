@@ -21,12 +21,14 @@
 #include "slice.hh"
 #include "PlatformCompat.hh"
 #include "make_unique.h"
+#include "function_ref.hh"
 
 
 namespace litecore {
     using fleece::slice;
     using fleece::alloc_slice;
     using fleece::nullslice;
+    using fleece::function_ref;
 
     // Database sequence number
     typedef uint64_t sequence_t;
