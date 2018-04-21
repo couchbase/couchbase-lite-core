@@ -179,6 +179,5 @@ C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
             clearError(outError);      // end of iteration is not an error
         return c4doc;
     });
-    return nullptr;
 }
 

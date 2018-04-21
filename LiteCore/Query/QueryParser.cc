@@ -458,7 +458,6 @@ namespace litecore {
                 break;
             case kDict:
                 fail("Dictionaries not supported in query");
-                break;
         }
     }
 

@@ -318,7 +318,6 @@ private:
                 Dict::iterator iter(_container->asDict());
                 iter += _rowid;
                 return iter.value();
-                break;
             }
             default:
                 return _container; // only one row, that's the root value
