@@ -8,6 +8,16 @@
 
 #include "XcodeWarnings.xcconfig"
 
+CLANG_WARN_DOCUMENTATION_COMMENTS = NO
+CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO
+GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = NO
+CLANG_WARN_ASSIGN_ENUM = NO
+GCC_WARN_SIGN_COMPARE = NO
+CLANG_WARN__EXIT_TIME_DESTRUCTORS = NO
+CLANG_WARN_OBJC_EXPLICIT_OWNERSHIP_TYPE = NO
+
+GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
+
 IPHONEOS_DEPLOYMENT_TARGET                         =  9.0
 MACOSX_DEPLOYMENT_TARGET                           = 10.11
 TVOS_DEPLOYMENT_TARGET                             =  9.0
@@ -29,41 +39,12 @@ CLANG_CXX_LANGUAGE_STANDARD                        = c++0x
 CLANG_CXX_LIBRARY                                  = libc++
 CLANG_ENABLE_MODULES                               = YES
 CLANG_ENABLE_OBJC_ARC                              = YES
-CLANG_WARN__DUPLICATE_METHOD_MATCH                 = YES
-CLANG_WARN_BOOL_CONVERSION                         = YES
-CLANG_WARN_CONSTANT_CONVERSION                     = YES
-CLANG_WARN_CXX0X_EXTENSIONS                        = YES
-CLANG_WARN_DIRECT_OBJC_ISA_USAGE                   = YES_ERROR
-CLANG_WARN_EMPTY_BODY                              = YES
-CLANG_WARN_ENUM_CONVERSION                         = YES
-CLANG_WARN_INT_CONVERSION                          = YES
-CLANG_WARN_OBJC_MISSING_PROPERTY_SYNTHESIS         = YES
-CLANG_WARN_OBJC_ROOT_CLASS                         = YES_ERROR
-CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION          = YES
-CLANG_WARN_INFINITE_RECURSION                      = YES
-CLANG_WARN_SUSPICIOUS_MOVE                         = YES
-CLANG_WARN_UNREACHABLE_CODE                        = YES
-
-// Warn about using newer-than-deployment-target APIs without dynamic checks: (Xcode 9+)
-CLANG_WARN_UNGUARDED_AVAILABILITY                  = YES_AGGRESSIVE
 
 ENABLE_STRICT_OBJC_MSGSEND                         = YES
 
 GCC_C_LANGUAGE_STANDARD                            = c99
 GCC_ENABLE_OBJC_EXCEPTIONS                         = YES
 GCC_NO_COMMON_BLOCKS                               = YES
-GCC_TREAT_IMPLICIT_FUNCTION_DECLARATIONS_AS_ERRORS = YES
-GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
-GCC_WARN_64_TO_32_BIT_CONVERSION                   = YES
-GCC_WARN_ABOUT_MISSING_PROTOTYPES                  = YES
-GCC_WARN_ABOUT_RETURN_TYPE                         = YES_ERROR
-GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS                  = YES
-GCC_WARN_NON_VIRTUAL_DESTRUCTOR                    = YES
-GCC_WARN_SHADOW                                    = YES
-GCC_WARN_UNDECLARED_SELECTOR                       = YES
-GCC_WARN_UNINITIALIZED_AUTOS                       = YES_AGGRESSIVE
-GCC_WARN_UNUSED_FUNCTION                           = YES
-GCC_WARN_UNUSED_VARIABLE                           = YES
 
 WARNING_CFLAGS                                     = -Woverriding-method-mismatch -Weffc++
 
