@@ -17,8 +17,10 @@
 //
 
 #include "DBWorker.hh"
+#include "ReplicatorTuning.hh"
 #include "Pusher.hh"
 #include "IncomingRev.hh"
+#include "Address.hh"
 #include "FleeceCpp.hh"
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
@@ -45,22 +47,21 @@ namespace litecore { namespace repl {
     static constexpr slice kLocalCheckpointStore = "checkpoints"_sl;
     static constexpr slice kPeerCheckpointStore  = "peerCheckpoints"_sl;
 
-    static constexpr auto kInsertionDelay = chrono::milliseconds(50);
-
-
     static bool isNotFoundError(C4Error err) {
         return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
     }
 
     DBWorker::DBWorker(Connection *connection,
-                     Replicator *replicator,
-                     C4Database *db,
-                     const websocket::Address &remoteAddress,
-                     Options options)
+                       Replicator *replicator,
+                       C4Database *db,
+                       const websocket::URL &remoteURL,
+                       Options options)
     :Worker(connection, replicator, options, "DB")
     ,_db(c4db_retain(db))
     ,_blobStore(c4db_getBlobStore(db, nullptr))
-    ,_remoteAddress(remoteAddress)
+    ,_remoteURL(remoteURL)
+    ,_revsToInsert(this, &DBWorker::_insertRevisionsNow, tuning::kInsertionDelay)
+    ,_revsToMarkSynced(this, &DBWorker::_markRevsSyncedNow, tuning::kInsertionDelay)
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
@@ -81,14 +82,15 @@ namespace litecore { namespace repl {
         slice uniqueID = _options.properties[kC4ReplicatorOptionRemoteDBUniqueID].asString();
         if (uniqueID)
             return string(uniqueID);
-        return string(_remoteAddress);
+        return string(_remoteURL);
     }
 
 
     void DBWorker::_setCookie(alloc_slice setCookieHeader) {
+        Address addr(_remoteURL);
         C4Error err;
         if (c4db_setCookie(_db, setCookieHeader,
-                           slice(_remoteAddress.hostname), slice(_remoteAddress.path), &err)) {
+                           addr.hostname, addr.path, &err)) {
             logVerbose("Set cookie: `%.*s`", SPLAT(setCookieHeader));
         } else {
             alloc_slice message = c4error_getMessage(err);
@@ -416,7 +418,7 @@ namespace litecore { namespace repl {
         if (_getForeignAncestors && _checkpointValid) {
             // For proposeChanges, find the nearest foreign ancestor of the current rev:
             Assert(_remoteDBID);
-            c4::sliceResult foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
+            alloc_slice foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
             logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
             if (_skipForeignChanges && foreignAncestor == slice(info.revID))
                 return false;   // skip this rev: it's already on the peer
@@ -510,8 +512,9 @@ namespace litecore { namespace repl {
         if (callback)
             callback(whichRequested);
 
-        log("Responding w/request for %u revs", requested);
         req->respond(response);
+        log("Responded to '%.*s' REQ#%llu w/request for %u revs",
+            SPLAT(req->property("Profile"_sl)), req->number(), requested);
     }
 
 
@@ -523,7 +526,7 @@ namespace litecore { namespace repl {
         if (doc && c4doc_selectRevision(doc, revID, false, &err)) {
             // I already have this revision. Make sure it's marked as current for this remote:
             if (_remoteDBID) {
-                c4::sliceResult remoteRevID(c4doc_getRemoteAncestor(doc, _remoteDBID));
+                alloc_slice remoteRevID(c4doc_getRemoteAncestor(doc, _remoteDBID));
                 if (remoteRevID != revID)
                     updateRemoteRev(doc);
             }
@@ -809,41 +812,14 @@ namespace litecore { namespace repl {
 #pragma mark - INSERTING & SYNCING REVISIONS:
 
 
-    // Add a revision to a queue, and schedule a call to _insertRevisionsNow (thread-safe)
-    template <class REV>
-    void DBWorker::scheduleRevision(REV *rev, Queue<REV> &queue) {
-        lock_guard<mutex> lock(_insertionQueueMutex);
-
-        if (!queue) {
-            queue.reset(new vector<Retained<REV>>);
-            queue->reserve(200);
-        }
-        queue->push_back(rev);
-
-        if (!_insertionScheduled) {
-            enqueueAfter(kInsertionDelay, &DBWorker::_insertRevisionsNow);
-            _insertionScheduled = true;
-        }
-    }
-
-
-    // Clear the queue, returning its prior contents (thread-safe)
-    template <class REV>
-    DBWorker::Queue<REV> DBWorker::popScheduledRevisions(Queue<REV> &queue) {
-        lock_guard<mutex> lock(_insertionQueueMutex);
-        _insertionScheduled = false;
-        return move(queue);
-    }
-
-
     void DBWorker::insertRevision(RevToInsert *rev) {
-        scheduleRevision(rev, _revsToInsert);
+        _revsToInsert.push(rev);
     }
 
 
     // Insert all the revisions queued for insertion, and sync the ones queued for syncing.
     void DBWorker::_insertRevisionsNow() {
-        auto revs = popScheduledRevisions(_revsToInsert);
+        auto revs = _revsToInsert.pop();
         if (!revs) {
             // No insertions scheduled, only syncs, so just do those:
             _markRevsSyncedNow();
@@ -938,13 +914,13 @@ namespace litecore { namespace repl {
     // For that reason, this class ensures that _markRevsSyncedNow() is called before any call
     // to c4doc_getRemoteAncestor().
     void DBWorker::markRevSynced(Rev *rev) {
-        scheduleRevision(rev, _revsToMarkSynced);
+        _revsToMarkSynced.push(rev);
     }
 
 
     // Mark all the queued revisions as synced to the server.
     void DBWorker::_markRevsSyncedNow() {
-        auto revs = popScheduledRevisions(_revsToMarkSynced);
+        auto revs = _revsToMarkSynced.pop();
         if (!revs)
             return;
 

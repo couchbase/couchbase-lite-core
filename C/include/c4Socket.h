@@ -34,8 +34,8 @@ extern "C" {
         kWebSocketCloseGoingAway        = 1001, // Peer has to close, e.g. because host app is quitting
         kWebSocketCloseProtocolError    = 1002, // Protocol violation: invalid framing data
         kWebSocketCloseDataError        = 1003, // Message payload cannot be handled
-        kWebSocketCloseNoCode           = 1005, // Never sent, only received
-        kWebSocketCloseAbnormal         = 1006, // Never sent, only received
+        kWebSocketCloseNoCode           = 1005, // No status code in close frame
+        kWebSocketCloseAbnormal         = 1006, // Peer closed socket unexpectedly w/o a close frame
         kWebSocketCloseBadMessageFormat = 1007, // Unparseable message
         kWebSocketClosePolicyError      = 1008,
         kWebSocketCloseMessageTooBig    = 1009,
@@ -75,6 +75,15 @@ extern "C" {
     } C4Socket;
 
 
+    /** The type of message framing that should be applied to the socket's data (added to outgoing,
+        parsed out of incoming.) */
+    typedef C4_ENUM(uint8_t, C4SocketFraming) {
+        kC4WebSocketClientFraming,  ///< Frame as WebSocket client messages (masked)
+        kC4NoFraming,               ///< No framing; use messages as-is
+        kC4WebSocketServerFraming,  ///< Frame as WebSocket server messages (not masked)
+    };
+
+
     /** A group of callbacks that define the implementation of sockets; the client must fill this
         out and pass it to c4socket_registerFactory() before using any socket-based API.
         These callbacks will be invoked on arbitrary background threads owned by LiteCore.
@@ -85,14 +94,20 @@ extern "C" {
     typedef struct {
         /** This should be set to `true` if the socket factory acts as a stream of messages,
             `false` if it's a byte stream. */
-        bool providesWebSockets;
+        C4SocketFraming framing;
+
+        /** An arbitrary value that will be passed to the `open` callback. */
+        void* context;
 
         /** Called to open a socket to a destination address, asynchronously.
             @param socket  A new C4Socket instance to be opened. Its `nativeHandle` will be NULL;
                            the implementation of this function will probably store a native socket
                            reference there. This function should return immediately instead of
                            waiting for the connection to open. */
-        void (*open)(C4Socket* socket C4NONNULL, const C4Address* addr C4NONNULL, C4Slice options);
+        void (*open)(C4Socket* socket C4NONNULL,
+                     const C4Address* addr C4NONNULL,
+                     C4Slice options,
+                     void *context);
 
         /** Called to write to the socket. If `providesWebSockets` is true, the data is a complete
             message, and the socket implementation is responsible for framing it;

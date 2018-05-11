@@ -117,7 +117,7 @@ namespace litecore {
 
                 Log("Importing doc '%.*s'", SPLAT(docID));
                 unique_ptr<Document> newDoc(
-                                _newDB->documentFactory().newDocumentInstance(toc4slice(docID)));
+                                _newDB->documentFactory().newDocumentInstance(docID));
                 copyRevisions(docKey, newDoc.get());
             }
         }

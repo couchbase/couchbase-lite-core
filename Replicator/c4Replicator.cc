@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "Database.hh"
+#include "FleeceCpp.hh"
 #include "c4Replicator.hh"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"
@@ -30,12 +30,8 @@ CBL_CORE_API const char* const kC4ReplicatorActivityLevelNames[5] = {
 };
 
 
-static bool isValidScheme(C4Slice scheme) {
-    static const slice kValidSchemes[] = {"ws"_sl, "wss"_sl, "blip"_sl, "blips"_sl};
-    for (int i=0; i < sizeof(kValidSchemes)/sizeof(slice); i++)
-        if ((slice)scheme == kValidSchemes[i])
-            return true;
-    return false;
+static bool isValidScheme(slice scheme) {
+    return scheme.size > 0 && isalpha(scheme[0]);
 }
 
 
@@ -48,7 +44,7 @@ bool c4repl_isValidDatabaseName(C4String dbName) {
 }
 
 
-bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName) {
+bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) {
     slice str = url;
 
     auto colon = str.findByteOrEnd(':');
@@ -81,20 +77,39 @@ bool c4repl_parseURL(C4String url, C4Address *address, C4String *dbName) {
         colon = pathStart;
     }
     address->hostname = slice(str.buf, colon);
+    if (address->hostname.size == 0)
+        address->port = 0;
 
-    if (pathStart >= str.end())
-        return false;
-    str.setStart(pathStart + 1);
+    if (dbName) {
+        if (pathStart >= str.end())
+            return false;
+        
+        str.setStart(pathStart + 1);
 
-    if (str.hasSuffix("/"_sl))
-        str.setSize(str.size - 1);
-    const uint8_t *slash;
-    while ((slash = str.findByte('/')) != nullptr)
-        str.setStart(slash + 1);
+        if (str.hasSuffix("/"_sl))
+            str.setSize(str.size - 1);
+        const uint8_t *slash;
+        while ((slash = str.findByte('/')) != nullptr)
+            str.setStart(slash + 1);
 
-    address->path = slice(pathStart, str.buf);
-    *dbName = str;
-    return c4repl_isValidDatabaseName(toc4slice(str));
+        address->path = slice(pathStart, str.buf);
+        *dbName = str;
+        return c4repl_isValidDatabaseName(slice(str));
+    } else {
+        address->path = slice(pathStart, str.end());
+        return true;
+    }
+}
+
+
+C4StringResult c4address_toURL(C4Address address) {
+    stringstream s;
+    s << address.scheme << "://" << address.hostname;
+    if (address.port)
+        s << ':' << address.port;
+    s << address.path;
+    auto str = s.str();
+    return c4slice_createResult({str.data(), str.size()});
 }
 
 
@@ -125,9 +140,6 @@ C4Replicator* c4repl_new(C4Database* db,
             replicator = new C4Replicator(dbCopy, otherDBCopy, params);
         } else {
             // Remote:
-            if (!checkParam(isValidScheme(serverAddress.scheme),
-                            "Unsupported replication URL scheme", outError))
-                return nullptr;
             replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
         }
         replicator->start();
@@ -146,8 +158,11 @@ C4Replicator* c4repl_newWithSocket(C4Database* db,
         c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
         if (!dbCopy)
             return nullptr;
-        C4Replicator *replicator = new C4Replicator(dbCopy, openSocket, params);
-        return retain(replicator);
+        Retained<C4Replicator> replicator = new C4Replicator(dbCopy, openSocket, params);
+        replicator->start(true);
+        Assert(WebSocketFrom(openSocket)->hasDelegate());
+        Assert(replicator->refCount() > 1);  // Replicator is retained by the socket, will be released on close
+        return retain((C4Replicator*)replicator);   // to be balanced by release in c4repl_free()
     } catchError(outError);
     return nullptr;
 }
@@ -161,7 +176,6 @@ void c4repl_stop(C4Replicator* repl) C4API {
 void c4repl_free(C4Replicator* repl) C4API {
     if (!repl)
         return;
-    repl->stop();
     repl->detach();
     release(repl);
 }
@@ -173,11 +187,14 @@ C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
 
 
 C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
-    return toc4slice(repl->responseHeaders().data());
+    return repl->responseHeaders().data();
 }
 
 
 #pragma mark - COOKIES:
+
+#include "c4ExceptionUtils.hh"
+using namespace c4Internal;
 
 
 C4StringResult c4db_getCookies(C4Database *db,
@@ -186,12 +203,12 @@ C4StringResult c4db_getCookies(C4Database *db,
 {
     return tryCatch<C4StringResult>(outError, [=]() {
         DatabaseCookies cookies(db);
-        string result = cookies.cookiesForRequest(addressFrom(request));
+        string result = cookies.cookiesForRequest(request);
         if (result.empty()) {
             clearError(outError);
             return C4StringResult();
         }
-        return sliceResult(result);
+        return FLSliceResult(alloc_slice(result));
     });
 }
 

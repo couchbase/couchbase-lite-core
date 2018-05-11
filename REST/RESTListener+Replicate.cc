@@ -277,7 +277,7 @@ namespace litecore { namespace REST {
 
         C4Address remoteAddress;
         C4String remoteDbName;
-        if (!c4repl_parseURL(remoteURL, &remoteAddress, &remoteDbName))
+        if (!c4address_fromURL(remoteURL, &remoteAddress, &remoteDbName))
             return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid database URL");
 
         // Start the replication!

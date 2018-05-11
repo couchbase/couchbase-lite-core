@@ -94,7 +94,7 @@ C4Database* c4db_open(C4Slice path,
                       C4Error *outError) noexcept
 {
     return tryCatch<C4Database*>(outError, [=] {
-        return retain(new C4Database((string)path, *configP));
+        return retain(new C4Database(toString(path), *configP));
     });
 }
 
@@ -144,7 +144,7 @@ bool c4db_delete(C4Database* database, C4Error *outError) noexcept {
 bool c4db_deleteAtPath(C4Slice dbPath, C4Error *outError) noexcept {
     if (outError)
         *outError = {};     // deleteDatabaseAtPath may return false w/o throwing an exception
-    return tryCatch<bool>(outError, bind(&Database::deleteDatabaseAtPath, (string)dbPath));
+    return tryCatch<bool>(outError, bind(&Database::deleteDatabaseAtPath, toString(dbPath)));
 }
 
 
@@ -253,7 +253,7 @@ bool c4_shutdown(C4Error *outError) noexcept {
 
 C4SliceResult c4db_rawQuery(C4Database *database, C4String query, C4Error *outError) noexcept {
     try {
-        return sliceResult(database->dataFile()->rawQuery(slice(query).asString()));
+        return C4SliceResult(database->dataFile()->rawQuery(slice(query).asString()));
     } catchError(outError)
     return {};
 }
@@ -278,7 +278,7 @@ C4RawDocument* c4raw_get(C4Database* database,
                          C4Error *outError) noexcept
 {
     return tryCatch<C4RawDocument*>(outError, [&]{
-        Record r = database->getRawDocument((string)storeName, key);
+        Record r = database->getRawDocument(toString(storeName), key);
         if (!r.exists()) {
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
             return (C4RawDocument*)nullptr;
@@ -302,7 +302,7 @@ bool c4raw_put(C4Database* database,
     if (!c4db_beginTransaction(database, outError))
         return false;
     bool commit = tryCatch(outError,
-                                 bind(&Database::putRawDocument, database, (string)storeName,
+                                 bind(&Database::putRawDocument, database, toString(storeName),
                                       key, meta, body));
     c4db_endTransaction(database, commit, outError);
     return commit;

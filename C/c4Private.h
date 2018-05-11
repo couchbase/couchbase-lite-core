@@ -42,6 +42,10 @@ extern "C" {
     CBL_CORE_API extern atomic_int gC4ExpectExceptions;
 #endif
 
+
+/** Allocates a C4SliceResult by copying the memory of a slice. */
+C4SliceResult c4slice_createResult(C4Slice slice);
+
 /** Stores a C4Error in `*outError`. */
 void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) C4API;
 

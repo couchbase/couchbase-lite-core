@@ -126,8 +126,8 @@ namespace litecore { namespace repl {
     // Request another batch of changes from the db, if there aren't too many in progress
     void Pusher::maybeGetMoreChanges() {
         if (!_gettingChanges && !_caughtUp
-                             && _changeListsInFlight < kMaxChangeListsInFlight
-                             && _revsToSend.size() < kMaxRevsQueued) {
+                             && _changeListsInFlight < tuning::kMaxChangeListsInFlight
+                             && _revsToSend.size() < tuning::kMaxRevsQueued) {
             _gettingChanges = true;
             increment(_changeListsInFlight); // will be decremented at start of _gotChanges
             logVerbose("Asking DB for %u changes since sequence #%llu ...",
@@ -214,7 +214,7 @@ namespace litecore { namespace repl {
     // Subroutine of _gotChanges that actually sends a "changes" or "proposeChanges" message:
     void Pusher::sendChanges(std::shared_ptr<RevToSendList> changes) {
         MessageBuilder req(_proposeChanges ? "proposeChanges"_sl : "changes"_sl);
-        req.urgent = kChangeMessagesAreUrgent;
+        req.urgent = tuning::kChangeMessagesAreUrgent;
         req.compressed = !changes->empty();
 
         // Generate the JSON array of changes:
@@ -256,6 +256,10 @@ namespace litecore { namespace repl {
                 return;
 
             // Got reply to the "changes" or "proposeChanges":
+            if (!changes->empty()) {
+                log("Got response for %zu local changes (sequences from %llu)",
+                    changes->size(), changes->front()->sequence);
+            }
             decrement(_changeListsInFlight);
             _proposeChangesKnown = true;
             MessageIn *reply = progress.reply;
@@ -334,12 +338,12 @@ namespace litecore { namespace repl {
 
 
     void Pusher::maybeSendMoreRevs() {
-        while (_revisionsInFlight < kMaxRevsInFlight
-                   && _revisionBytesAwaitingReply <= kMaxRevBytesAwaitingReply
+        while (_revisionsInFlight < tuning::kMaxRevsInFlight
+                   && _revisionBytesAwaitingReply <= tuning::kMaxRevBytesAwaitingReply
                    && !_revsToSend.empty()) {
             sendRevision(move(_revsToSend.front()));
             _revsToSend.pop_front();
-            if (_revsToSend.size() == kMaxRevsQueued - 1)
+            if (_revsToSend.size() == tuning::kMaxRevsQueued - 1)
                 maybeGetMoreChanges();          // I may now be eligible to send more changes
         }
 //        if (!_revsToSend.empty())
@@ -356,7 +360,7 @@ namespace litecore { namespace repl {
             increment(_revisionsInFlight);
             logVerbose("Uploading rev %.*s %.*s (seq #%llu) [%d/%d]",
                        SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
-                       _revisionsInFlight, kMaxRevsInFlight);
+                       _revisionsInFlight, tuning::kMaxRevsInFlight);
             onProgress = asynchronize([=](MessageProgress progress) {
                 if (progress.state == MessageProgress::kDisconnected) {
                     doneWithRev(rev, false);

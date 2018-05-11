@@ -19,6 +19,7 @@
 #pragma once
 #include "ReplicatorTypes.hh"
 #include "Worker.hh"
+#include "Batcher.hh"
 #include "c4BlobStore.h"
 #include "FleeceCpp.hh"
 #include "function_ref.hh"
@@ -37,7 +38,7 @@ namespace litecore { namespace repl {
         DBWorker(blip::Connection *connection,
                 Replicator*,
                 C4Database *db,
-                const websocket::Address &remoteAddress,
+                const fleece::alloc_slice &remoteURL,
                 Options options);
 
         /** The blob store is thread-safe so it can be accessed directly. */
@@ -143,18 +144,11 @@ namespace litecore { namespace repl {
         void updateRemoteRev(C4Document* NONNULL);
         ActivityLevel computeActivityLevel() const override;
 
-        template <class REV>
-        using Queue = std::unique_ptr<std::vector<Retained<REV>>>;
-        template <class REV>
-        void scheduleRevision(REV*, Queue<REV>&);
-        template <class REV>
-        Queue<REV> popScheduledRevisions(Queue<REV>&);
-
         static const size_t kMaxPossibleAncestors = 10;
 
         c4::ref<C4Database> _db;
         C4BlobStore* _blobStore;
-        const websocket::Address _remoteAddress;
+        const websocket::URL _remoteURL;
         std::string _remoteCheckpointDocID;                 // docID of checkpoint
         C4RemoteID _remoteDBID {0};                         // ID # of remote DB in revision store
         bool _checkpointValid {true};
@@ -165,8 +159,8 @@ namespace litecore { namespace repl {
         bool _getForeignAncestors {false};
         bool _skipForeignChanges {false};
         
-        Queue<RevToInsert> _revsToInsert; // Pending revs to be added to db
-        Queue<Rev> _revsToMarkSynced; // Pending revs to be marked as synced
+        actor::Batcher<DBWorker,RevToInsert> _revsToInsert; // Pending revs to be added to db
+        actor::Batcher<DBWorker,Rev> _revsToMarkSynced;     // Pending revs to be marked as synced
         bool _insertionScheduled {false};                   // True if call to insert/sync pending
         std::mutex _insertionQueueMutex;                    // For safe access to the above
         bool _disableBlobSupport {false};                   // for testing only

@@ -23,14 +23,25 @@ add_library(CivetWeb STATIC ${CIVETWEB_SRC})
 
 ### SOURCES:
 
-include_directories("../C/include"
+include_directories("."
+                    "../C/include"
                     "../C"
                     "../vendor/fleece/Fleece"
                     "../LiteCore/Support"
                     "../LiteCore/Storage")
 
+if(BUILD_ENTERPRISE)
+    include_directories("../../vendor/couchbase-lite-core-EE/Listener")
+endif()
+
 aux_source_directory("." REST_SRC)
 list(REMOVE_ITEM REST_SRC ./LiteCoreServ.cc)
+
+if(BUILD_ENTERPRISE)
+    set(REST_SRC ${REST_SRC}
+                 EE/CivetC4Socket_stub.cc
+                 EE/RESTSyncListener_stub.cc)
+endif()
 
 set(ALL_SRC_FILES ${REST_SRC})
 

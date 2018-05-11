@@ -33,7 +33,7 @@ namespace litecore { namespace repl {
     public:
         DatabaseCookies(c4Database*);
 
-        std::string cookiesForRequest(const websocket::Address &addr) {
+        std::string cookiesForRequest(const C4Address &addr) {
             return _store->cookiesForRequest(addr);
         }
 

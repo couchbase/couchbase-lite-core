@@ -35,7 +35,6 @@ public:
 
     ReplicatorLoopbackTest()
     :C4Test(0)
-    ,_provider(kLatency)
     ,db2(createDatabase("2"))
     { }
 
@@ -64,9 +63,12 @@ public:
         }
 
         // Create client (active) and server (passive) replicators:
-        Address clientAddress{"ws", "cli"}, serverAddress{"ws", "srv"};
-        _replClient = new Replicator(dbClient, _provider, serverAddress, *this, opts1);
-        _replServer = new Replicator(dbServer, _provider.createWebSocket(clientAddress), *this, opts2);
+        _replClient = new Replicator(dbClient,
+                                     new LoopbackWebSocket(alloc_slice("ws://srv/"_sl), Role::Client, kLatency),
+                                     *this, opts1);
+        _replServer = new Replicator(dbServer,
+                                     new LoopbackWebSocket(alloc_slice("ws://cli/"_sl), Role::Server, kLatency),
+                                     *this, opts2);
 
         // Response headers:
         Encoder enc;
@@ -77,7 +79,7 @@ public:
         AllocedDict headers(enc.finish());
 
         // Bind the replicators' WebSockets and start them:
-        _provider.bind(_replClient->webSocket(), _replServer->webSocket(), headers);
+        LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
         _replClient->start();
         _replServer->start();
 
@@ -296,7 +298,7 @@ public:
                                               (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
                                               _checkpointID,
                                               &err) );
-        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << asstring(_checkpointID) << "'; err = " << err.domain << "," << err.code);
+        INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID) << "'; err = " << err.domain << "," << err.code);
         REQUIRE(doc);
         CHECK(doc->body == c4str(body));
         if (!local)
@@ -324,7 +326,6 @@ public:
         return out;
     }
 
-    LoopbackProvider _provider;
     C4Database* db2 {nullptr};
     Retained<Replicator> _replClient, _replServer;
     alloc_slice _checkpointID;

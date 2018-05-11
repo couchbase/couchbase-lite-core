@@ -56,11 +56,13 @@ public:
     void start() {
         if (listener)
             return;
+        if ((c4listener_availableAPIs() & kC4RESTAPI) == 0)
+            FAIL("REST API is unavailable in this build");
         C4Error err;
         listener = c4listener_start(&config, &err);
         REQUIRE(listener);
 
-        c4listener_shareDB(listener, C4STR("db"), db);
+        REQUIRE(c4listener_shareDB(listener, C4STR("db"), db));
     }
 
 

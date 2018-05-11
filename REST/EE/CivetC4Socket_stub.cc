@@ -1,7 +1,7 @@
 //
-// CivetWebSocket.hh
+// CivetC4Socket_stub.cc
 //
-// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// Copyright (c) 2018 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 // limitations under the License.
 //
 
-#pragma once
-#include "c4Socket.h"
-
-extern const C4SocketFactory C4CivetWebSocketFactory;
+#ifdef COUCHBASE_ENTERPRISE
+// NOTE: CivetC4Socket.cc is not in this repo, and is not open source.
+// It is part of Couchbase Lite Enterprise Edition (EE), which can be licensed in binary form
+// from Couchbase.
+#include "../../../couchbase-lite-core-EE/Listener/CivetC4Socket.cc"
+#endif

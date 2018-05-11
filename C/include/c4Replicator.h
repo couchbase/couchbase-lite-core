@@ -96,11 +96,19 @@ extern "C" {
 
     /** A simple URL parser that populates a C4Address from a URL string.
         The fields of the address will point inside the url string.
-        The final parameter of the URL's path is assumed to be the database name; it will not
-        be included in `address.path`, but will be pointed to by `dbName`. */
-    bool c4repl_parseURL(C4String url,
+        @param url  The URL to be parsed.
+        @param address  On sucess, the fields of the struct this points to will be populated with
+                        the address components. This that are slices will point into the
+                        appropriate substrings of `url`.
+        @param dbName  If non-NULL, then on success this slice will point to the last path
+                        component of `url`; `address->path` will not include this component.
+        @return  True on success, false on failure. */
+    bool c4address_fromURL(C4String url,
                          C4Address *address C4NONNULL,
-                         C4String *dbName C4NONNULL);
+                         C4String *dbName);
+
+    /** Converts a C4Address to a URL. */
+    C4StringResult c4address_toURL(C4Address address);
 
 
     /** Parameters describing a replication, used when creating a C4Replicator. */
@@ -112,6 +120,7 @@ extern "C" {
         C4ReplicatorStatusChangedCallback onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
         C4ReplicatorDocumentErrorCallback onDocumentError;   ///< Callback notifying of errors with individual documents
         void*                             callbackContext;   ///< Value to be passed to the callbacks.
+        const C4SocketFactory*            socketFactory;     ///< Custom C4SocketFactory, if not NULL
     } C4ReplicatorParameters;
 
 
@@ -143,7 +152,9 @@ extern "C" {
                                        C4ReplicatorParameters params,
                                        C4Error *outError) C4API;
 
-    /** Frees a replicator reference. If the replicator is running it will stop. */
+    /** Frees a replicator reference.
+        Does not stop the replicator -- if the replicator still has other internal references,
+        it will keep going. If you need the replicator to stop, call `c4repl_stop()` first. */
     void c4repl_free(C4Replicator* repl) C4API;
 
     /** Tells a replicator to stop. */

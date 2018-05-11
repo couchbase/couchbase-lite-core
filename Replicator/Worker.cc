@@ -19,6 +19,7 @@
 #include "Worker.hh"
 #include "Replicator.hh"
 #include "ReplicatorTypes.hh"
+#include "c4Private.h"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "PlatformCompat.hh"
@@ -53,7 +54,7 @@ namespace litecore { namespace repl {
         if (properties.empty()) {
             s << "{}";
         } else {
-            c4::stringResult props(properties.toJSON5());
+            alloc_slice props(properties.toJSON5());
             s << props;
         }
         return s.str();
@@ -62,7 +63,7 @@ namespace litecore { namespace repl {
 
     Worker::Worker(blip::Connection *connection,
                          Worker *parent,
-                         Options options,
+                         const Options &options,
                          const char *namePrefix)
     :Actor( string(namePrefix) + connection->name() )
     ,Logging(SyncLog)
@@ -152,6 +153,11 @@ namespace litecore { namespace repl {
         alloc_slice message = c4error_getMessage(err);
         logError("Got LiteCore error: %.*s (%d/%d)", SPLAT(message), err.domain, err.code);
         onError(err);
+    }
+
+    void Worker::caughtException(const std::exception &x) {
+        logError("Threw C++ exception: %s", x.what());
+        onError(c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what())));
     }
 
     void Worker::onError(C4Error err) {

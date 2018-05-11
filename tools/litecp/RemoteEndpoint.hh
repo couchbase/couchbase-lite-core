@@ -35,7 +35,7 @@ public:
     virtual void writeJSON(slice docID, slice json) override;
     virtual void finish() override;
 
-    const C4Address& address() const    {return _address;}
+    const C4Address& url() const    {return _address;}
     C4String databaseName() const       {return _dbName;}
 
 private:

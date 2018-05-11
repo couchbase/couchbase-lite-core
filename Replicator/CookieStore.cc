@@ -17,6 +17,7 @@
 //
 
 #include "CookieStore.hh"
+#include "Address.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -33,7 +34,6 @@
 using namespace std;
 using namespace fleece;
 using namespace fleeceapi;
-using namespace litecore::websocket;
 
 namespace litecore { namespace repl {
 
@@ -157,10 +157,10 @@ namespace litecore { namespace repl {
     }
 
 
-    bool Cookie::matches(const websocket::Address &addr) const {
+    bool Cookie::matches(const C4Address &addr) const {
         return Address::domainContains(domain, addr.hostname)
             && Address::pathContains(path, addr.path)
-            && (!secure || addr.isSecure());
+            && (!secure || Address::isSecure(addr));
     }
 
 
@@ -240,7 +240,7 @@ namespace litecore { namespace repl {
     }
 
 
-    string CookieStore::cookiesForRequest(const websocket::Address &addr) const {
+    string CookieStore::cookiesForRequest(const C4Address &addr) const {
         lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
         stringstream s;
         int n = 0;

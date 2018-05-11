@@ -209,7 +209,7 @@ bool c4exp_next(C4ExpiryEnumerator *e, C4Error *outError) noexcept {
 }
 
 C4SliceResult c4exp_getDocID(const C4ExpiryEnumerator *e) noexcept {
-    return sliceResult(e->docID());
+    return C4SliceResult(e->docID());
 }
 
 bool c4exp_purgeExpired(C4ExpiryEnumerator *e, C4Error *outError) noexcept {

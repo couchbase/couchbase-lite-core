@@ -18,6 +18,7 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Replicator.hh"
+#include "ReplicatorTuning.hh"
 #include "DBWorker.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
@@ -26,7 +27,7 @@
 #include "Logging.hh"
 #include "SecureDigest.hh"
 #include "BLIP.hh"
-#include "c4Socket+Internal.hh"
+#include "Address.hh"
 #include "Instrumentation.hh"
 
 using namespace std;
@@ -37,75 +38,38 @@ using namespace fleeceapi;
 
 namespace litecore { namespace repl {
 
-    static const char *kReplicatorProtocolName = "+CBMobile_2";
-
-
-    // Subroutine of constructor that looks up HTTP cookies for the request, adds them to
-    // options.properties' cookies, and returns the properties dict.
-    static AllocedDict propertiesWithCookies(C4Database *db,
-                                             const websocket::Address &address,
-                                             Worker::Options &options)
-    {
-        options.setProperty(slice(kC4SocketOptionWSProtocols),
-                            (string(Connection::kWSProtocolName) + kReplicatorProtocolName).c_str());
-        if (!options.properties[kC4ReplicatorOptionCookies]) {
-            C4Error err;
-            alloc_slice cookies = c4db_getCookies(db, c4AddressFrom(address), &err);
-            if (cookies)
-                options.setProperty(slice(kC4ReplicatorOptionCookies), cookies);
-            else if (err.code)
-                Warn("Error getting cookies from db: %d/%d", err.domain, err.code);
-        }
-        return options.properties;
-    }
-
-
-    // The 'designated initializer', in Obj-C terms :)
     Replicator::Replicator(C4Database* db,
-                           const websocket::Address &address,
+                           websocket::WebSocket *webSocket,
                            Delegate &delegate,
-                           const Options &options,
-                           Connection *connection)
-    :Worker(connection, nullptr, options, "Repl")
-    ,_remoteAddress(address)
+                           Options options)
+    :Worker(new Connection(webSocket, options.properties, *this),
+            nullptr, options, "Repl")
     ,_delegate(&delegate)
-    ,_connectionState(connection->state())
+    ,_connectionState(connection()->state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_dbActor(new DBWorker(connection, this, db, address, options))
+    ,_dbActor(new DBWorker(connection(), this, db, webSocket->url(), options))
     {
-        _loggingID = string(c4::sliceResult(c4db_getPath(db))) + " " + _loggingID;
+        _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
 
         log("%s", string(options).c_str());
 
         if (options.push != kC4Disabled)
-            _pusher = new Pusher(connection, this, _dbActor, _options);
+            _pusher = new Pusher(connection(), this, _dbActor, _options);
         if (options.pull != kC4Disabled)
-            _puller = new Puller(connection, this, _dbActor, _options);
+            _puller = new Puller(connection(), this, _dbActor, _options);
         _checkpoint.enableAutosave(options.checkpointSaveDelay(),
                                    bind(&Replicator::saveCheckpoint, this, _1));
     }
 
-    Replicator::Replicator(C4Database *db,
-                           websocket::Provider &provider,
-                           const websocket::Address &address,
-                           Delegate &delegate,
-                           Options options)
-    :Replicator(db, address, delegate, options,
-                new Connection(address, provider,
-                               propertiesWithCookies(db, address, options),
-                               *this))
-    { }
 
-    Replicator::Replicator(C4Database *db,
-                           websocket::WebSocket *webSocket,
-                           Delegate &delegate,
-                           Options options)
-    :Replicator(db, webSocket->address(), delegate, options,
-                new Connection(webSocket, options.properties, *this))
-    { }
-
+    void Replicator::start(bool synchronous) {
+        if (synchronous)
+            _start();
+        else
+            enqueue(&Replicator::_start);
+    }
 
     void Replicator::_start() {
         Assert(_connectionState == Connection::kClosed);
@@ -120,9 +84,14 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_stop() {
-        if (connection()) {
-            log("Told to stop!");
-            connection()->close();
+        log("Told to stop!");
+        _disconnect(websocket::kCodeNormal, {});
+    }
+
+    void Replicator::_disconnect(websocket::CloseCode closeCode, slice message) {
+        auto conn = connection();
+        if (conn) {
+            conn->close(closeCode, message);
             _connectionState = Connection::kClosing;
         }
     }
@@ -216,6 +185,17 @@ namespace litecore { namespace repl {
     }
 
 
+    void Replicator::onError(C4Error error) {
+        Worker::onError(error);
+        if (error.domain == LiteCoreDomain && error.code == kC4ErrorUnexpectedError) {
+            // Treat an exception as a fatal error for replication:
+            alloc_slice message( c4error_getMessage(error) );
+            logError("Stopping due to fatal error: %.*s", SPLAT(message));
+            _disconnect(websocket::kCodeUnexpectedCondition, "An exception was thrown"_sl);
+        }
+    }
+
+
     void Replicator::changedStatus() {
         if (status().level == kC4Stopped) {
             assert(!connection());  // must already have gotten _onClose() delegate callback
@@ -225,7 +205,7 @@ namespace litecore { namespace repl {
         }
         if (_delegate) {
             // Notify the delegate of the current status, but not too often:
-            auto waitFor = kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
+            auto waitFor = tuning::kMinDelegateCallInterval - _sinceDelegateCall.elapsed();
             if (waitFor <= 0 || status().level != _lastDelegateCallLevel) {
                 reportStatus();
             } else if (!_waitingToCallDelegate) {
@@ -260,7 +240,7 @@ namespace litecore { namespace repl {
         if (status == 101 && !headers["Sec-WebSocket-Protocol"]) {
             gotError(c4error_make(WebSocketDomain, kWebSocketCloseProtocolError,
                                   "Incompatible replication protocol "
-                                  "(missing 'Sec-WebSocket-Accept' response header)"_sl));
+                                  "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
         auto setCookie = headers["Set-Cookie"_sl];
         if (setCookie.type() == kFLArray) {

@@ -23,7 +23,7 @@
 void RemoteEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
     Endpoint::prepare(isSource, mustExist, docIDProperty, other);
 
-    if (!c4repl_parseURL(slice(_spec), &_address, &_dbName))
+    if (!c4address_fromURL(slice(_spec), &_address, &_dbName))
         Tool::instance->fail("Invalid database URL");
 }
 

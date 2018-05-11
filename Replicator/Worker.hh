@@ -153,7 +153,7 @@ namespace litecore { namespace repl {
     protected:
         Worker(blip::Connection *connection,
                Worker *parent,
-               Options options,
+               const Options &options,
                const char *namePrefix);
 
         Worker(Worker *parent, const char *namePrefix);
@@ -191,8 +191,8 @@ namespace litecore { namespace repl {
         static blip::ErrorBuf c4ToBLIPError(C4Error);
         static C4Error blipToC4Error(const blip::Error&);
 
-        bool isOpenClient() const               {return _connection && !_connection->isServer();}
-        bool isOpenServer() const               {return _connection &&  _connection->isServer();}
+        bool isOpenClient() const               {return _connection && _connection->role() == websocket::Role::Client;}
+        bool isOpenServer() const               {return _connection && _connection->role() == websocket::Role::Server;}
         bool isContinuous() const               {return _options.push == kC4Continuous
                                                      || _options.pull == kC4Continuous;}
         const Status& status() const            {return _status;}
@@ -204,6 +204,7 @@ namespace litecore { namespace repl {
         virtual void _childChangedStatus(Worker *task, Status) { }
 
         virtual void afterEvent() override;
+        virtual void caughtException(const std::exception &x) override;
 
         virtual std::string loggingIdentifier() const override {return _loggingID;}
         int pendingResponseCount() const        {return _pendingResponseCount;}

@@ -151,13 +151,13 @@ namespace c4Internal {
 
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API {
     C4Error error;
-    recordError(domain, code, (string)message, &error);
+    recordError(domain, code, toString(message), &error);
     return error;
 }
 
 
 void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *outError) C4API {
-    recordError(domain, code, (string)message, outError);
+    recordError(domain, code, toString(message), outError);
 }
 
 
@@ -264,7 +264,14 @@ bool c4error_mayBeNetworkDependent(C4Error err) C4API {
 
 
 bool c4SliceEqual(C4Slice a, C4Slice b) noexcept {
-    return a == b;
+    return slice(a) == slice(b);
+}
+
+
+C4SliceResult c4slice_createResult(C4Slice slice) {
+    alloc_slice result(slice);
+    result.retain();
+    return {(void*)result.buf, result.size};
 }
 
 
@@ -275,20 +282,19 @@ void c4slice_free(C4SliceResult slice) noexcept {
 
 namespace c4Internal {
 
-    C4SliceResult sliceResult(alloc_slice s) {
-        s.retain();
-        return {s.buf, s.size};
-    }
-
-    C4SliceResult sliceResult(slice s) {
-        return sliceResult(alloc_slice(s));
-    }
-
     C4SliceResult sliceResult(const char *str) {
         if (str)
-            return sliceResult(slice{str, strlen(str)});
+            return C4SliceResult(slice(str));
         else
             return {nullptr, 0};
+    }
+
+    C4SliceResult sliceResult(const string &str) {
+        return C4SliceResult(alloc_slice(str));
+    }
+
+    string toString(C4Slice s) {
+        return slice(s).asString();
     }
 
 }

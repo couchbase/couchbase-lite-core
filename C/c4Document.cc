@@ -96,7 +96,7 @@ bool c4doc_selectCurrentRevision(C4Document* doc) noexcept
 
 
 C4SliceResult c4doc_detachRevisionBody(C4Document* doc) noexcept {
-    return sliceResult(internal(doc)->detachSelectedRevBody());
+    return C4SliceResult(internal(doc)->detachSelectedRevBody());
 }
 
 
@@ -200,7 +200,7 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
             }
 
             // Look up the doc in the db, and the remote URL in the doc:
-            Record doc = db->getRawDocument(string(kC4InfoStore), slice(kRemoteDBURLsDoc));
+            Record doc = db->getRawDocument(toString(kC4InfoStore), slice(kRemoteDBURLsDoc));
             const Dict *remotes = nullptr;
             C4RemoteID remoteID = 0;
             if (doc.exists()) {
@@ -238,7 +238,7 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
                 alloc_slice body = enc.extractOutput();
 
                 // Save the doc:
-                db->putRawDocument(string(kC4InfoStore), slice(kRemoteDBURLsDoc), nullslice, body);
+                db->putRawDocument(toString(kC4InfoStore), slice(kRemoteDBURLsDoc), nullslice, body);
                 db->endTransaction(true);
                 inTransaction = false;
                 return remoteID;
@@ -257,13 +257,13 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
 C4SliceResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API {
     using namespace fleece;
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        Record doc = db->getRawDocument(string(kC4InfoStore), slice(kRemoteDBURLsDoc));
+        Record doc = db->getRawDocument(toString(kC4InfoStore), slice(kRemoteDBURLsDoc));
         if (doc.exists()) {
             auto body = Value::fromData(doc.body());
             if (body) {
                 for (Dict::iterator i(body->asDict()); i; ++i) {
                     if (i.value()->asInt() == remoteID)
-                        return sliceResult(i.keyString());
+                        return C4SliceResult(i.keyString());
                 }
             }
         }
@@ -274,7 +274,7 @@ C4SliceResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API
 
 C4SliceResult c4doc_getRemoteAncestor(C4Document *doc, C4RemoteID remoteDatabase) C4API {
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        return sliceResult(internal(doc)->remoteAncestorRevID(remoteDatabase));
+        return C4SliceResult(internal(doc)->remoteAncestorRevID(remoteDatabase));
     });
 }
 
@@ -628,14 +628,14 @@ C4SliceResult c4db_encodeJSON(C4Database *db, C4Slice jsonData, C4Error *outErro
             recordError(FleeceDomain, jc.errorCode(), jc.errorMessage(), outError);
             return C4SliceResult{};
         }
-        return sliceResult(enc.extractOutput());
+        return C4SliceResult(enc.extractOutput());
     });
 }
 
 
 C4SliceResult c4doc_bodyAsJSON(C4Document *doc, bool canonical, C4Error *outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
-        return sliceResult(c4Internal::internal(doc)->bodyAsJSON(canonical));
+        return C4SliceResult(c4Internal::internal(doc)->bodyAsJSON(canonical));
     });
 }
 
@@ -689,7 +689,7 @@ bool c4doc_blobIsCompressible(FLDict blobDict, FLSharedKeys sk) {
 
 C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc, FLSharedKeys sk) noexcept {
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        return sliceResult(legacy_attachments::encodeStrippingOldMetaProperties((const Dict*)doc,
-                                                                                (SharedKeys*)sk));
+        return C4SliceResult(legacy_attachments::encodeStrippingOldMetaProperties((const Dict*)doc,
+                                                                                  (SharedKeys*)sk));
     });
 }

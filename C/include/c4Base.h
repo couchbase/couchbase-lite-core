@@ -193,8 +193,6 @@ typedef struct {
 //////// SLICES:
 
 
-#ifndef C4_IMPL
-
 #ifdef FL_SLICE_DEFINED
     typedef FLSlice C4Slice;
     typedef FLSliceResult C4SliceResult;
@@ -214,8 +212,6 @@ typedef struct {
     /** Denotes a slice returned from a function, which needs to have its buf freed by the caller. */
     typedef C4Slice C4SliceResult;
 #endif
-
-#endif // C4_IMPL
     
     
 typedef C4Slice C4String;

@@ -179,7 +179,7 @@ C4SliceResult c4query_fullTextMatched(C4Query *query,
                                       C4Error *outError) noexcept
 {
     return tryCatch<C4SliceResult>(outError, [&]{
-        return sliceResult(query->query()->getMatchedText(*(Query::FullTextTerm*)term));
+        return C4SliceResult(query->query()->getMatchedText(*(Query::FullTextTerm*)term));
     });
 }
 
@@ -255,8 +255,8 @@ bool c4db_createIndex(C4Database *database,
     static_assert(sizeof(C4IndexOptions) == sizeof(KeyStore::IndexOptions),
                   "IndexOptions types must match");
     return tryCatch(outError, [&]{
-        database->defaultKeyStore().createIndex((string)name,
-                                                (string)propertyPath,
+        database->defaultKeyStore().createIndex(toString(name),
+                                                toString(propertyPath),
                                                 (KeyStore::IndexType)indexType,
                                                 (const KeyStore::IndexOptions*)indexOptions);
     });
@@ -268,13 +268,13 @@ bool c4db_deleteIndex(C4Database *database,
                       C4Error *outError) noexcept
 {
     return tryCatch(outError, [&]{
-        database->defaultKeyStore().deleteIndex((string)name);
+        database->defaultKeyStore().deleteIndex(toString(name));
     });
 }
 
 C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept
 {
     return tryCatch<C4SliceResult>(outError, [&]{
-        return sliceResult(database->defaultKeyStore().getIndexes());
+        return C4SliceResult(database->defaultKeyStore().getIndexes());
     });
 }

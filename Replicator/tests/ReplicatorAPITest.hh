@@ -10,6 +10,7 @@
 #include "slice.hh"
 #include "FleeceCpp.hh"
 #include "c4.hh"
+#include "CivetWebSocket.hh"
 #include "Response.hh"
 #include "make_unique.h"
 #include <iostream>
@@ -41,6 +42,10 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
+        static std::once_flag once;
+        std::call_once(once, [] {
+            c4socket_registerFactory(C4CivetWebSocketFactory);
+        });
         // Environment variables can also override the default address above:
         const char *hostname = getenv("REMOTE_HOST");
         if (hostname)
@@ -165,9 +170,12 @@ public:
         params.onStatusChanged = onStateChanged;
         params.onDocumentError = onDocError;
         params.callbackContext = this;
+        params.socketFactory = _socketFactory;
 
         C4Error err;
-        _repl = c4repl_new(db, _address, _remoteDBName, db2, params, &err);
+        _repl = c4repl_new(db, _address, _remoteDBName,
+                           (_remoteDBName.buf ? nullptr : (C4Database*)db2),
+                           params, &err);
         REQUIRE(_repl);
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
         logState(status);
@@ -238,6 +246,7 @@ public:
     C4Address _address {kDefaultAddress};
     C4String _remoteDBName {kScratchDBName};
     AllocedDict _options;
+    C4SocketFactory* _socketFactory {nullptr};
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;
 

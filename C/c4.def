@@ -12,6 +12,7 @@ kC4QueryLog
 kC4SyncLog
 kC4WebSocketLog
 c4SliceEqual
+c4slice_createResult
 c4slice_free
 c4log
 c4vlog
@@ -173,7 +174,6 @@ c4dbobs_free
 c4docobs_create
 c4docobs_free
 
-c4repl_parseURL
 c4repl_isValidDatabaseName
 c4repl_new
 c4repl_newWithSocket
@@ -190,6 +190,9 @@ c4socket_closed
 c4socket_completedWrite
 c4socket_received
 c4socket_gotHTTPResponse
+
+c4address_fromURL
+c4address_toURL
 
 c4db_setCookie
 c4db_getCookies

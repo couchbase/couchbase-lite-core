@@ -19,6 +19,8 @@
 #include "c4ListenerInternal.hh"
 #include "RESTListener.hh"
 
+#ifndef COUCHBASE_ENTERPRISE
+
 namespace litecore { namespace REST {
 
     const C4ListenerAPIs kListenerAPIs = kC4RESTAPI;
@@ -31,3 +33,5 @@ namespace litecore { namespace REST {
     }
 
 } }
+
+#endif

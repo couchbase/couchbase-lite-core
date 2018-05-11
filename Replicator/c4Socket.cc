@@ -21,6 +21,7 @@
 #include "c4Private.h"
 #include "c4Socket.h"
 #include "c4Socket+Internal.hh"
+#include "Address.hh"
 #include "Error.hh"
 #include "WebSocketImpl.hh"
 #include "StringUtil.hh"
@@ -31,83 +32,40 @@ using namespace std;
 using namespace fleece;
 using namespace fleeceapi;
 using namespace litecore;
-using namespace litecore::websocket;
+using namespace litecore::repl;
+
+const char* const kC4SocketOptionWSProtocols = litecore::websocket::WebSocket::kProtocolsOption;
 
 
-const char* const kC4SocketOptionWSProtocols = litecore::websocket::Provider::kProtocolsOption;
+namespace litecore { namespace repl {
+
+    using namespace websocket;
 
 
-namespace litecore { namespace websocket {
-
-    C4Address c4AddressFrom(const Address &address) {
-        return C4Address {
-            slice(address.scheme),
-            slice(address.hostname),
-            address.port,
-            slice(address.path)
-        };
+    static const C4SocketFactory& fac(const C4SocketFactory *f) {
+        return f ? *f : C4SocketImpl::registeredFactory();
     }
-
-
-    websocket::Address addressFrom(const C4Address &addr) {
-        return websocket::Address(asstring(addr.scheme),
-                                  asstring(addr.hostname),
-                                  addr.port,
-                                  asstring(addr.path));
-    }
-
-    
-    websocket::Address addressFrom(const C4Address &addr, slice remoteDatabaseName) {
-        stringstream path;
-        path << addr.path;
-        if (!slice(addr.path).hasSuffix("/"_sl))
-            path << '/';
-        path << remoteDatabaseName << "/_blipsync";
-        return websocket::Address(asstring(addr.scheme),
-                                  asstring(addr.hostname),
-                                  addr.port,
-                                  path.str());
-    }
-
-
-    websocket::Address addressFrom(C4Database* otherDB) {
-        alloc_slice path(c4db_getPath(otherDB));
-        return websocket::Address("file", "", 0, path.asString());
-    }
-
-
-#pragma mark - C4 SOCKET IMPL:
 
 
     /** Implementation of C4Socket */
-    class C4SocketImpl : public WebSocketImpl, public C4Socket {
-    public:
-        C4SocketImpl(ProviderImpl &provider, const Address &address,
-                     const AllocedDict &options,
-                     const C4SocketFactory &factory_,
-                     void *nativeHandle_ =nullptr)
-        :WebSocketImpl(provider, address, options, !factory_.providesWebSockets)
-        ,factory(factory_)
-        {
-            nativeHandle = nativeHandle_;
-        }
+    C4SocketImpl::C4SocketImpl(websocket::URL url,
+                               Role role,
+                               slice options,
+                               const C4SocketFactory *factory_,
+                               void *nativeHandle_)
+    :WebSocketImpl(url,
+                   role,
+                   AllocedDict(options),
+                   fac(factory_).framing != kC4NoFraming)
+    ,_factory(fac(factory_))
+    {
+        nativeHandle = nativeHandle_;
+    }
 
-        ~C4SocketImpl() {
-            if (factory.dispose)
-                factory.dispose(this);
-        }
-
-
-        void connect() override {    // called by base class's connect(Address)
-            if (!nativeHandle)
-                WebSocketImpl::connect();
-        }
-
-    private:
-        friend class C4Provider;
-
-        C4SocketFactory const factory;
-    };
+    C4SocketImpl::~C4SocketImpl() {
+        if (_factory.dispose)
+            _factory.dispose(this);
+    }
 
 
     WebSocket* WebSocketFrom(C4Socket *c4sock) {
@@ -115,14 +73,11 @@ namespace litecore { namespace websocket {
     }
 
 
-#pragma mark - C4 PROVIDER:
-
-
-    void C4Provider::validateFactory(const C4SocketFactory &f) {
+    void C4SocketImpl::validateFactory(const C4SocketFactory &f) {
 #if DEBUG
         Assert(f.write != nullptr);
         Assert(f.completedReceive != nullptr);
-        if (f.providesWebSockets) {
+        if (f.framing == kC4NoFraming) {
             Assert(f.close == nullptr);
             Assert(f.requestClose != nullptr);
         } else {
@@ -132,75 +87,47 @@ namespace litecore { namespace websocket {
 #endif
     }
 
-    WebSocketImpl* C4Provider::createWebSocket(const Address &address,
-                                           const AllocedDict &options) {
-        return new C4SocketImpl(*this, address, options, registeredFactory());
-    }
 
-    C4Socket* C4Provider::createWebSocket(const C4SocketFactory &factory,
-                                  void *nativeHandle,
-                                  const Address &address,
-                                  const AllocedDict &options) {
-        validateFactory(factory);
-        return new C4SocketImpl(*this, address, options, factory, nativeHandle);
-    }
-
-    void C4Provider::registerFactory(const C4SocketFactory &factory) {
+    void C4SocketImpl::registerFactory(const C4SocketFactory &factory) {
         if (sRegisteredFactory)
             throw std::logic_error("c4socket_registerFactory can only be called once");
         validateFactory(factory);
         sRegisteredFactory = new C4SocketFactory(factory);
     }
 
-    C4SocketFactory& C4Provider::registeredFactory() {
+
+    const C4SocketFactory& C4SocketImpl::registeredFactory() {
         if (!sRegisteredFactory)
-            registerFactory(C4DefaultSocketFactory);
+            throw std::logic_error("No default C4SocketFactory registered; call c4socket_registerFactory())");
         return *sRegisteredFactory;
     }
 
-    C4Provider& C4Provider::instance() {
-        static C4Provider* sInstance = new C4Provider();
-        return *sInstance;
+
+    void C4SocketImpl::connect() {
+        if (_factory.open) {
+            Address c4addr(url());
+            _factory.open(this, &c4addr, options().data(), _factory.context);
+        }
     }
 
-    void C4Provider::openSocket(WebSocketImpl *s) {
-        auto socket = (C4SocketImpl*)s;
-        auto &address = socket->address();
-        C4Address c4addr = {
-            slice(address.scheme),
-            slice(address.hostname),
-            address.port,
-            slice(address.path)
-        };
-        if (!socket->factory.open)
-            error::_throw(error::UnsupportedOperation,
-                          "C4SocketFactory does not support 'open'");
-        socket->factory.open(socket, &c4addr, socket->options().data());
+    void C4SocketImpl::requestClose(int status, fleece::slice message) {
+        _factory.requestClose(this, status, message);
     }
 
-    void C4Provider::requestClose(WebSocketImpl *s, int status, fleece::slice message) {
-        auto socket = (C4SocketImpl*)s;
-        socket->factory.requestClose((C4SocketImpl*)s, status, message);
+    void C4SocketImpl::closeSocket() {
+        _factory.close(this);
     }
 
-    void C4Provider::closeSocket(WebSocketImpl *s) {
-        auto socket = (C4SocketImpl*)s;
-        socket->factory.close((C4SocketImpl*)s);
+    void C4SocketImpl::sendBytes(alloc_slice bytes) {
+        _factory.write(this, C4SliceResult(bytes));
     }
 
-    void C4Provider::sendBytes(WebSocketImpl *s, alloc_slice bytes) {
-        auto socket = (C4SocketImpl*)s;
-        bytes.retain();
-        socket->factory.write((C4SocketImpl*)s, {(void*)bytes.buf, bytes.size});
-    }
-
-    void C4Provider::receiveComplete(WebSocketImpl *s, size_t byteCount) {
-        auto socket = (C4SocketImpl*)s;
-        socket->factory.completedReceive((C4SocketImpl*)s, byteCount);
+    void C4SocketImpl::receiveComplete(size_t byteCount) {
+        _factory.completedReceive(this, byteCount);
     }
 
 
-    C4SocketFactory* C4Provider::sRegisteredFactory;
+    C4SocketFactory* C4SocketImpl::sRegisteredFactory;
 
 } }
 
@@ -212,14 +139,14 @@ static C4SocketImpl* internal(C4Socket *s)  {return (C4SocketImpl*)s;}
 
 
 void c4socket_registerFactory(C4SocketFactory factory) C4API {
-    C4Provider::registerFactory(factory);
+    C4SocketImpl::registerFactory(factory);
 }
 
 C4Socket* c4socket_fromNative(C4SocketFactory factory,
                               void *nativeHandle,
                               const C4Address *address) C4API
 {
-    return C4Provider::instance().createWebSocket(factory, nativeHandle, addressFrom(*address));
+    return new C4SocketImpl(Address(*address).url(), Role::Server, {}, &factory, nativeHandle);
 }
 
 void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) C4API {

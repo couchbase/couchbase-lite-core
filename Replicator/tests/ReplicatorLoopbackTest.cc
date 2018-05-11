@@ -393,8 +393,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Overflowed Rev Tree", "[Push]") {
     runPushReplication();
 
     c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
-    c4::sliceResult remote(c4doc_getRemoteAncestor(doc, 1));
-    CHECK(slice(remote) == kRevID);
+    alloc_slice remote(c4doc_getRemoteAncestor(doc, 1));
+    CHECK(remote == slice(kRevID));
 
     for (int gen = 2; gen <= 50; gen++) {
         char revID[32];

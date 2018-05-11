@@ -23,6 +23,7 @@
 #include "c4Private.h"
 #include "c4Replicator.h"
 #include "Replicator.hh"
+#include "Address.hh"
 #include "c4Socket+Internal.hh"
 #include "LoopbackProvider.hh"
 #include "Error.hh"
@@ -35,23 +36,65 @@ using namespace litecore::repl;
 using namespace litecore::websocket;
 
 
+static const char *kReplicatorProtocolName = "+CBMobile_2";
+
+
 struct C4Replicator : public RefCounted, Replicator::Delegate {
 
-    static Replicator::Options mkopts(const C4ReplicatorParameters &params) {
+
+    static Replicator::Options replOpts(const C4ReplicatorParameters &params) {
         Replicator::Options opts(params.push, params.pull, params.optionsDictFleece);
         opts.pullValidator = params.validationFunc;
         opts.pullValidatorContext = params.callbackContext;
         return opts;
     }
 
+
+    static alloc_slice socketOpts(C4Database *db,
+                                  const C4Address &serverAddress,
+                                  const C4ReplicatorParameters &params)
+    {
+        Replicator::Options opts(kC4Disabled, kC4Disabled, params.optionsDictFleece);
+        opts.setProperty(slice(kC4SocketOptionWSProtocols),
+                         (string(Connection::kWSProtocolName) + kReplicatorProtocolName).c_str());
+        if (!opts.properties[kC4ReplicatorOptionCookies]) {
+            C4Error err;
+            alloc_slice cookies( c4db_getCookies(db, serverAddress, &err) );
+            if (cookies)
+                opts.setProperty(slice(kC4ReplicatorOptionCookies), cookies);
+            else if (err.code)
+                Warn("Error getting cookies from db: %d/%d", err.domain, err.code);
+        }
+        return opts.properties.data();
+    }
+
+    static alloc_slice effectiveURL(C4Address address, slice remoteDatabaseName) {
+        // If this is a regular WebSocket URL, append "/_blipsync" for Sync Gateway:
+        slice path = address.path;
+        string newPath = string(path);
+        if (!path.hasSuffix("/"_sl))
+            newPath += "/";
+        newPath += string(remoteDatabaseName);
+        if (slice(address.scheme) == "ws"_sl || slice(address.scheme) == "wss"_sl) {
+            newPath += "/_blipsync";
+        }
+        address.path = slice(newPath);
+        return Address::toURL(address);
+    }
+
+
     // Constructor for replication with remote database
     C4Replicator(C4Database* db,
-                 const C4Address &remoteAddress,
+                 const C4Address &serverAddress,
                  C4String remoteDatabaseName,
                  const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db, C4Provider::instance(),
-                                 addressFrom(remoteAddress, remoteDatabaseName), *this,
-                                 mkopts(params)),
+    :C4Replicator(new Replicator(db,
+                                 new C4SocketImpl(effectiveURL(serverAddress, remoteDatabaseName),
+                                                  Role::Client,
+                                                  socketOpts(db, serverAddress, params),
+                                                  params.socketFactory),
+                                 *this,
+                                 replOpts(params)),
                   nullptr,
                   params)
     { }
@@ -60,15 +103,17 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     C4Replicator(C4Database* db,
                  C4Database* otherDB,
                  const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db, loopbackProvider(),
-                                 addressFrom(otherDB), *this, mkopts(params)),
+    :C4Replicator(new Replicator(db,
+                                 new LoopbackWebSocket(Address(db), Role::Client),
+                                 *this,
+                                 replOpts(params)),
                   new Replicator(otherDB,
-                                 loopbackProvider().createWebSocket(addressFrom(db)),
+                                 new LoopbackWebSocket(Address(otherDB), Role::Server),
                                  *this,
                                  Replicator::Options(kC4Passive, kC4Passive).setNoIncomingConflicts()),
                   params)
     {
-        loopbackProvider().bind(_replicator->webSocket(), _otherReplicator->webSocket());
+        LoopbackWebSocket::bind(_replicator->webSocket(), _otherReplicator->webSocket());
         _otherLevel = _otherReplicator->status().level;
     }
 
@@ -76,17 +121,17 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     C4Replicator(C4Database* db,
                  C4Socket *openSocket,
                  const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db, WebSocketFrom(openSocket), *this, mkopts(params)),
+    :C4Replicator(new Replicator(db, WebSocketFrom(openSocket), *this, replOpts(params)),
                   nullptr,
                   params)
     { }
 
-    void start() {
+    void start(bool synchronous =false) {
         DebugAssert(!_selfRetain);
         if (_otherReplicator)
-            _otherReplicator->start();
+            _otherReplicator->start(synchronous);
         _selfRetain = this; // keep myself alive till Replicator stops
-        _replicator->start();
+        _replicator->start(synchronous);
     }
 
     const AllocedDict& responseHeaders() {
@@ -122,10 +167,6 @@ private:
 
     virtual ~C4Replicator() =default;
 
-    static LoopbackProvider& loopbackProvider() {
-        static LoopbackProvider sProvider;
-        return sProvider;
-    }
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
                                            const AllocedDict &headers) override

@@ -35,6 +35,9 @@ CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 };
 
 
+typedef function<bool(const Record&, uint32_t/*C4DocumentFlags*/ documentFlags)> EnumFilter;
+
+
 struct C4DocEnumerator: C4InstanceCounted {
     C4DocEnumerator(C4Database *database,
                     sequence_t since,
@@ -150,12 +153,6 @@ C4DocEnumerator* c4db_enumerateAllDocs(C4Database *database,
     });
 }
 
-
-namespace c4Internal {
-    void setEnumFilter(C4DocEnumerator *e, EnumFilter f) {
-        e->setFilter(f);
-    }
-}
 
 bool c4enum_next(C4DocEnumerator *e, C4Error *outError) noexcept {
     return tryCatch<bool>(outError, [&]{

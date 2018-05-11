@@ -41,18 +41,10 @@ namespace litecore { namespace repl {
         class Delegate;
         using CloseStatus = blip::Connection::CloseStatus;
 
-        /** Constructor for a client connection; will open the Connection itself. */
-        Replicator(C4Database*,
-                   websocket::Provider&,
-                   const websocket::Address&,
-                   Delegate&,
-                   Options);
-
-        /** Constructor for an incoming (server) connection. */
         Replicator(C4Database*,
                    websocket::WebSocket*,
                    Delegate&,
-                   Options = Options::passive());
+                   Options);
 
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {
@@ -75,7 +67,7 @@ namespace litecore { namespace repl {
 
         Status status() const                   {return Worker::status();}   //FIX: Needs to be thread-safe
 
-        void start()                            {enqueue(&Replicator::_start);}
+        void start(bool synchronous =false); 
         void stop()                             {enqueue(&Replicator::_stop);}
 
 
@@ -105,11 +97,9 @@ namespace litecore { namespace repl {
             enqueue(&Replicator::_gotDocumentError, alloc_slice(docID), error, pushing, transient);
         }
 
-    private:
-        // How long to wait between delegate calls when only the progress % has changed
-        static constexpr double kMinDelegateCallInterval = 0.2;
+        virtual void onError(C4Error error) override;
 
-        Replicator(C4Database*, const websocket::Address&, Delegate&, const Options&, Connection*);
+    private:
         void _onHTTPResponse(int status, fleeceapi::AllocedDict headers);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
@@ -118,6 +108,7 @@ namespace litecore { namespace repl {
 
         void _start();
         void _stop();
+        void _disconnect(websocket::CloseCode closeCode, slice message);
         void getLocalCheckpoint();
         void getRemoteCheckpoint();
         void startReplicating();
@@ -132,7 +123,6 @@ namespace litecore { namespace repl {
         virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
         void _gotDocumentError(alloc_slice docID, C4Error, bool pushing, bool transient);
 
-        const websocket::Address _remoteAddress;
         CloseStatus _closeStatus;
         Delegate* _delegate;
         Retained<DBWorker> _dbActor;

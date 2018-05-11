@@ -18,8 +18,8 @@
 
 #pragma once
 #include "RefCounted.hh"
-#include "Address.hh"
 #include "FleeceCpp.hh"
+#include "c4Replicator.h" // for C4Address
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -43,7 +43,7 @@ namespace litecore { namespace repl {
         bool expired() const            {return expires > 0 && expires < time(NULL);}
 
         bool matches(const Cookie&) const;
-        bool matches(const websocket::Address&) const;
+        bool matches(const C4Address&) const;
         bool sameValueAs(const Cookie&) const;
 
         std::string name;
@@ -71,7 +71,7 @@ namespace litecore { namespace repl {
         fleece::alloc_slice encode();
 
         std::vector<const Cookie*> cookies() const;
-        std::string cookiesForRequest(const websocket::Address&) const;
+        std::string cookiesForRequest(const C4Address&) const;
 
         // Adds a cookie from a Set-Cookie: header value. Returns false if cookie is invalid.
         bool setCookie(const std::string &headerValue,
