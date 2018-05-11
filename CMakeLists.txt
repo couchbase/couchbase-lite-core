@@ -49,7 +49,7 @@ endif()
 
 if(MSVC)
     if(WINDOWS_STORE)
-        add_definitions(-DSQLITE_OS_WINRT 
+        add_definitions(-DSQLITE_OS_WINRT
                         -DMBEDTLS_NO_PLATFORM_ENTROPY
                         -D_WIN32_WINNT=0x0602)      # Support back to Windows 8 for Windows Store
     else()
@@ -355,7 +355,7 @@ endif()
 ### SUPPORT LIB:
 
 if(MSVC)
-    set(PLATFORM_SRC 
+    set(PLATFORM_SRC
     MSVC/asprintf.c
     vendor/fleece/MSVC/memmem.cc
     MSVC/mkstemp.cc
@@ -366,11 +366,11 @@ if(MSVC)
     MSVC/strptime.cc
     LiteCore/Support/PlatformIO.cc)
 elseif(ANDROID)
-    set(PLATFORM_SRC 
+    set(PLATFORM_SRC
     LiteCore/Unix/strlcat.c
     LiteCore/Unix/arc4random.cc)
 elseif(UNIX AND NOT APPLE)
-    set(PLATFORM_SRC 
+    set(PLATFORM_SRC
     LiteCore/Unix/strlcat.c
     LiteCore/Unix/arc4random.cc)
 endif()
@@ -385,6 +385,7 @@ add_library(Support STATIC
     LiteCore/Support/Logging_Stub.cc
     LiteCore/Support/RefCounted.cc
     LiteCore/Support/StringUtil.cc
+    Replicator/Address.cc
     ${PLATFORM_SRC}
 )
 

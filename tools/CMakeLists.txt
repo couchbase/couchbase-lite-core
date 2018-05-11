@@ -12,6 +12,7 @@ include_directories(${PROJECT_SOURCE_DIR}
                     ${PROJECT_SOURCE_DIR}/litecp
                     ${TOP}C/include/
                     ${TOP}LiteCore/Support/
+                    ${TOP}Replicator/
                     ${TOP}vendor/fleece/Fleece/
                     ${TOP}vendor/linenoise-ng/include/)
 
