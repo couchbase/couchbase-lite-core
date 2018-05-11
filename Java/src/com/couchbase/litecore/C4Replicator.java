@@ -17,6 +17,7 @@
 //
 package com.couchbase.litecore;
 
+import android.content.Context;
 import android.util.Log;
 
 import java.util.Collections;
@@ -59,12 +60,34 @@ public class C4Replicator {
                  long otherLocalDB,
                  int push, int pull,
                  byte[] options,
-                 C4ReplicatorListener listener, Object context) throws LiteCoreException {
+                 C4ReplicatorListener listener,
+                 Object replicatorContext,
+                 int socketFactoryContext,
+                 int framing) throws LiteCoreException {
         this.listener = listener;
-        this.context = context;
-        handle = create(db, schema, host, port, path, remoteDatabaseName,
+        this.context = replicatorContext; // replicator context
+        handle = createV2(db, schema, host, port, path, remoteDatabaseName,
                 otherLocalDB,
                 push, pull,
+                replicatorContext.hashCode(),
+                framing,
+                socketFactoryContext,
+                options);
+        reverseLookupTable.put(handle, this);
+    }
+
+    C4Replicator(C4Database db, C4Socket openSocket, int push, int pull, byte[] options, Object replicatorContext) throws LiteCoreException {
+       this(db.getHandle(), openSocket.handle, push, pull, options, replicatorContext);
+    }
+
+    C4Replicator(long db, long openSocket, int push, int pull, byte[] options, Object replicatorContext) throws LiteCoreException {
+        this.context = replicatorContext; // replicator context
+        handle = createWithSocket(
+                db,
+                openSocket,
+                push,
+                pull,
+                hashCode(),
                 options);
         reverseLookupTable.put(handle, this);
     }
@@ -160,6 +183,34 @@ public class C4Replicator {
                               long otherLocalDB,
                               int push, int pull,
                               byte[] options) throws LiteCoreException;
+
+    /**
+     * Creates a new replicator.
+     */
+    static native long createV2(long db,
+                                String schema, String host, int port, String path,
+                                String remoteDatabaseName,
+                                long otherLocalDB,
+                                int push, int pull,
+                                int socketFactoryContext,
+                                int framing,
+                                int replicatorContext,
+                                byte[] options) throws LiteCoreException;
+
+    /**
+     * Creates a new replicator from an already-open C4Socket. This is for use by listeners
+     * that accept incoming connections, wrap them by calling `c4socket_fromNative()`, then
+     * start a passive replication to service them.
+     *
+     * @param db                The local database.
+     * @param openSocket        An already-created C4Socket.
+     * @param push
+     * @param pull
+     * @param replicatorContext
+     * @param options
+     * @return The pointer of the newly created replicator
+     */
+    static native long createWithSocket(long db, long openSocket, int push, int pull, int replicatorContext, byte[] options) throws LiteCoreException;
 
     /**
      * Frees a replicator reference. If the replicator is running it will stop.
