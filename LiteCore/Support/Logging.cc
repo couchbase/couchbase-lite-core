@@ -50,6 +50,8 @@ using namespace std;
 namespace litecore {
 
     LogDomain* LogDomain::sFirstDomain = nullptr;
+    static LogDomain _ActorLog("Actor");
+    LogDomain &ActorLog = _ActorLog;
 
     LogLevel LogDomain::sCallbackMinLevel = LogLevel::Uninitialized;
     static LogDomain::Callback_t sCallback = LogDomain::defaultCallback;

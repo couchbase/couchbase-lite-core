@@ -45,7 +45,7 @@ namespace litecore { namespace repl {
 
     static alloc_slice dbURL(C4Database *db) {
         alloc_slice path(c4db_getPath(db));
-        return alloc_slice(string("file://") + string(path));
+        return alloc_slice(string("file:///") + string(path));
     }
 
 

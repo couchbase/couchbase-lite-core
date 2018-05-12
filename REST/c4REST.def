@@ -1,4 +1,5 @@
 EXPORTS
+c4listener_availableAPIs
 c4listener_start
 c4listener_free
 c4listener_shareDB

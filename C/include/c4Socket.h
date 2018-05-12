@@ -54,7 +54,7 @@ extern "C" {
         replicator, to be used by the socket implementation. For example, the default WebSocket
         transport sends its value as the value of the "Sec-WebSocket-Protocol" HTTP header in the
         WebSocket handshake. */
-    extern const char* const kC4SocketOptionWSProtocols;
+    CBL_CORE_API extern const char* const kC4SocketOptionWSProtocols;
     
     
     /** A simple parsed-URL type. */
