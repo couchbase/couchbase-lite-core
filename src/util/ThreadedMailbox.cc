@@ -26,10 +26,6 @@ using namespace std;
 
 namespace litecore { namespace actor {
 
-
-    LogDomain ActorLog("Actor");
-
-
 #pragma mark - SCHEDULER:
 
     
