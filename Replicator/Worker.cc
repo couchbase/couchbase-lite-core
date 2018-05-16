@@ -42,6 +42,28 @@ namespace litecore { namespace repl {
 
     LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
 
+
+    static void writeRedacted(Dict dict, stringstream &s) {
+        s << "{";
+        int n = 0;
+        for (Dict::iterator i(dict); i; ++i) {
+            if (n++ > 0)
+                s << ", ";
+            slice key = i.keyString();
+            s << key << ":";
+            if (key == slice(C4STR(kC4ReplicatorAuthPassword))) {
+                s << "\"********\"";
+            } else if (i.value().asDict()) {
+                writeRedacted(i.value().asDict(), s);
+            } else {
+                alloc_slice json( i.value().toJSON5() );
+                s << json;
+            }
+        }
+        s << "}";
+    }
+
+
     Worker::Options::operator string() const {
         static const char* kModeNames[] = {"disabled", "passive", "one-shot", "continuous"};
         stringstream s;
@@ -49,13 +71,9 @@ namespace litecore { namespace repl {
             s << "Push=" << kModeNames[push] << ", ";
         if (pull != kC4Disabled)
             s << "Pull=" << kModeNames[pull] << ", ";
-        s << "Options=";
-        if (properties.empty()) {
-            s << "{}";
-        } else {
-            c4::stringResult props(properties.toJSON5());
-            s << props;
-        }
+        s << "Options={";
+        writeRedacted(properties, s);
+        s << "}";
         return s.str();
     }
 

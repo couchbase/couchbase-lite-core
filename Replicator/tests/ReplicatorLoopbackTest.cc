@@ -7,12 +7,36 @@
 //
 
 #include "ReplicatorLoopbackTest.hh"
+#include "Worker.hh"
 #include "Timer.hh"
 #include <chrono>
 
 using namespace litecore::actor;
 
 constexpr duration ReplicatorLoopbackTest::kLatency;
+
+TEST_CASE("Options password logging redaction") {
+    string password("SEEKRIT");
+    Encoder enc;
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+    enc.beginDict();
+    enc.writeKey(C4STR(kC4ReplicatorAuthType));
+    enc.writeString(kC4AuthTypeBasic);
+    enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+    enc.writeString("emilio_lizardo");
+    enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+    enc.writeString(password);
+    enc.endDict();
+    enc.endDict();
+    alloc_slice properties = enc.finish();
+    Worker::Options opts(kC4OneShot, kC4Disabled, properties);
+
+    auto str = string(opts);
+    Log("Options = %s", str.c_str());
+    CHECK(str.find(password) == string::npos);
+}
+
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull]") {
     atomic_int counter(0);
