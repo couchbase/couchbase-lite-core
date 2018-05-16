@@ -354,52 +354,49 @@ namespace litecore { namespace repl {
     
     // Tells the DBWorker to send a "rev" message containing a revision body.
     void Pusher::sendRevision(Retained<RevToSend> rev) {
-        MessageProgressCallback onProgress;
-        if (!passive()) {
-            // Callback for after the peer receives the "rev" message:
-            increment(_revisionsInFlight);
-            logVerbose("Uploading rev %.*s %.*s (seq #%llu) [%d/%d]",
-                       SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
-                       _revisionsInFlight, tuning::kMaxRevsInFlight);
-            onProgress = asynchronize([=](MessageProgress progress) {
-                if (progress.state == MessageProgress::kDisconnected) {
-                    doneWithRev(rev, false);
-                    return;
-                }
-                if (progress.state == MessageProgress::kAwaitingReply) {
-                    logDebug("Uploaded rev %.*s #%.*s (seq #%llu)",
-                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
-                    decrement(_revisionsInFlight);
-                    increment(_revisionBytesAwaitingReply, progress.bytesSent);
-                    maybeSendMoreRevs();
-                }
-                if (progress.state == MessageProgress::kComplete) {
-                    decrement(_revisionBytesAwaitingReply, progress.bytesSent);
-                    bool completed = !progress.reply->isError();
-                    if (completed) {
-                        logVerbose("Completed rev %.*s #%.*s (seq #%llu)",
-                                   SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
+        // Callback for after the peer receives the "rev" message:
+        increment(_revisionsInFlight);
+        logVerbose("Uploading rev %.*s %.*s (seq #%llu) [%d/%d]",
+                   SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
+                   _revisionsInFlight, tuning::kMaxRevsInFlight);
+        _dbWorker->sendRevision(rev, asynchronize([=](MessageProgress progress) {
+            // message progress callback:
+            if (progress.state == MessageProgress::kDisconnected) {
+                doneWithRev(rev, false);
+                return;
+            }
+            if (progress.state == MessageProgress::kAwaitingReply) {
+                logDebug("Uploaded rev %.*s #%.*s (seq #%llu)",
+                         SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
+                decrement(_revisionsInFlight);
+                increment(_revisionBytesAwaitingReply, progress.bytesSent);
+                maybeSendMoreRevs();
+            }
+            if (progress.state == MessageProgress::kComplete) {
+                decrement(_revisionBytesAwaitingReply, progress.bytesSent);
+                bool completed = !progress.reply->isError();
+                if (completed) {
+                    logVerbose("Completed rev %.*s #%.*s (seq #%llu)",
+                               SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
+                    if (!passive())
                         _dbWorker->markRevSynced(rev);
-                        finishedDocument(rev->docID, true);
-                    } else {
-                        auto err = progress.reply->getError();
-                        auto c4err = blipToC4Error(err);
-                        bool transient = c4error_mayBeTransient(c4err);
-                        logError("Got error response to rev %.*s %.*s (seq #%llu): %.*s %d '%.*s'",
-                                 SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
-                                 SPLAT(err.domain), err.code, SPLAT(err.message));
-                        gotDocumentError(rev->docID, c4err, true, transient);
-                        // If this is a permanent failure, like a validation error or conflict,
-                        // then I've completed my duty to push it.
-                        completed = !transient;
-                    }
-                    doneWithRev(rev, completed);
-                    maybeSendMoreRevs();
+                    finishedDocument(rev->docID, true);
+                } else {
+                    auto err = progress.reply->getError();
+                    auto c4err = blipToC4Error(err);
+                    bool transient = c4error_mayBeTransient(c4err);
+                    logError("Got error response to rev %.*s %.*s (seq #%llu): %.*s %d '%.*s'",
+                             SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
+                             SPLAT(err.domain), err.code, SPLAT(err.message));
+                    gotDocumentError(rev->docID, c4err, true, transient);
+                    // If this is a permanent failure, like a validation error or conflict,
+                    // then I've completed my duty to push it.
+                    completed = !transient;
                 }
-            });
-        }
-        // Tell the DBAgent to actually read from the DB and send the message:
-        _dbWorker->sendRevision(rev, onProgress);
+                doneWithRev(rev, completed);
+                maybeSendMoreRevs();
+            }
+        }));
     }
 
 
