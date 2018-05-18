@@ -33,5 +33,6 @@ public interface C4WebSocketCloseCode {
     int kWebSocketCloseCantFulfill = 1011; // Can't fulfill request due to "unexpected condition"
     int kWebSocketCloseTLSFailure = 1015; // Never sent, only received
 
-    int kWebSocketCloseFirstAvailable = 4000; // First unregistered code for freeform use
+    int kWebSocketCloseFirstAvailable = 4000;   // First unregistered code for freeform use
+    int kWebSocketCloseCustomTransient = 4001;  // For user-defined transient error
 }
