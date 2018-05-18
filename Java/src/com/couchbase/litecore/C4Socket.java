@@ -153,9 +153,6 @@ public abstract class C4Socket {
         } catch (InvocationTargetException e) {
             throw new RuntimeException("socket_open() method throws Exception", e);
         }
-
-        // TODO....
-        //reverseLookupTable.put(socket, null);
     }
 
     private static void write(long handle, byte[] allocatedData) {
@@ -210,7 +207,7 @@ public abstract class C4Socket {
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
-    protected static native void registerFactory();
+    protected static native void registerFactory(); /* TODO: Removed as no usage */
 
     protected static native void gotHTTPResponse(long socket, int httpStatus, byte[] responseHeadersFleece);
 

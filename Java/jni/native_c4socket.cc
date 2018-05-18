@@ -276,19 +276,7 @@ const C4SocketFactory socket_factory() {
  * Signature: ()V
  */
 JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4Socket_registerFactory(JNIEnv *env, jclass clazz) {
-    /* TODO
-    //LOGI("[NATIVE] registerFactory()");
-    C4SocketFactory factory = {
-            .framing = kC4WebSocketClientFraming,
-            .open = &doOpen,
-            .close = &doClose,
-            .write = &doWrite,
-            .completedReceive = &doCompletedReceive,
-    };
-    c4socket_registerFactory(factory);
-     */
-}
+Java_com_couchbase_litecore_C4Socket_registerFactory(JNIEnv *env, jclass clazz) { }
 /*
  * Class:     com_couchbase_litecore_C4Socket
  * Method:    gotHTTPResponse
