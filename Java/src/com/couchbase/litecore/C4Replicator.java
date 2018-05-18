@@ -77,10 +77,11 @@ public class C4Replicator {
     }
 
     C4Replicator(C4Database db, C4Socket openSocket, int push, int pull, byte[] options, Object replicatorContext) throws LiteCoreException {
-       this(db.getHandle(), openSocket.handle, push, pull, options, replicatorContext);
+       this(db.getHandle(), openSocket.handle, push, pull, options, null, replicatorContext);
     }
 
-    C4Replicator(long db, long openSocket, int push, int pull, byte[] options, Object replicatorContext) throws LiteCoreException {
+    C4Replicator(long db, long openSocket, int push, int pull, byte[] options, C4ReplicatorListener listener, Object replicatorContext) throws LiteCoreException {
+        this.listener = listener;
         this.context = replicatorContext; // replicator context
         handle = createWithSocket(
                 db,

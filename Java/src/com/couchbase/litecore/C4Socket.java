@@ -181,6 +181,11 @@ public abstract class C4Socket {
     private static void close(long handle) {
         // NOTE: close(long) method should not be called.
         Log.w(TAG, "C4Socket.close() handle -> " + handle);
+        C4Socket socket = reverseLookupTable.get(handle);
+        if (socket != null)
+            socket.close();
+        else
+            Log.w(TAG, "socket is null");
     }
 
     private static void requestClose(long handle, int status, String message) {

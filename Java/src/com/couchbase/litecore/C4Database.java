@@ -292,12 +292,11 @@ public class C4Database implements C4Constants {
     public C4Replicator createReplicator(C4Socket openSocket,
                                          int push, int pull,
                                          byte[] options,
+                                         C4ReplicatorListener listener,
                                          Object replicatorContext)
             throws LiteCoreException {
-        return new C4Replicator(handle, openSocket.handle,
-                push, pull,
-                options,
-                replicatorContext);
+        return new C4Replicator(handle, openSocket.handle, push, pull,
+                options, listener, replicatorContext);
     }
 
     //-------------------------------------------------------------------------
