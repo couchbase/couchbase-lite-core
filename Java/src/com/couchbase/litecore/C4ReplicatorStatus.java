@@ -37,6 +37,17 @@ public class C4ReplicatorStatus {
     private int errorInternalInfo = 0;   // C4Error.internal_info
 
     public C4ReplicatorStatus() {
+
+    }
+
+    public C4ReplicatorStatus(int activityLevel) {
+        this.activityLevel = activityLevel;
+    }
+
+    public C4ReplicatorStatus(int activityLevel, int errorDomain, int errorCode) {
+        this.activityLevel = activityLevel;
+        this.errorDomain = errorDomain;
+        this.errorCode = errorCode;
     }
 
     public C4ReplicatorStatus(int activityLevel, long progressUnitsCompleted,

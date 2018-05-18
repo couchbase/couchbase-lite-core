@@ -18,6 +18,8 @@
 #include <c4.h>
 #include <c4Replicator.h>
 #include <c4Base.h>
+#include <c4Socket.h>
+#include "socket_factory.h"
 #include "com_couchbase_litecore_C4Replicator.h"
 #include "native_glue.hh"
 #include "logging.h"
@@ -141,10 +143,6 @@ static jobject toJavaObject(JNIEnv *env, C4ReplicatorStatus status) {
  * @param ctx
  */
 static void statusChangedCallback(C4Replicator *repl, C4ReplicatorStatus status, void *ctx) {
-
-    LOGI("[NATIVE] C4Replicator.statusChangedCallback() repl -> 0x%p status -> %d", repl,
-         status.level);
-
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -180,9 +178,6 @@ static void documentErrorCallback(C4Replicator *repl, bool pushing, C4String doc
                                   bool transient, void *ctx) {
     char message[256];
     c4error_getMessageC(error, message, sizeof(message));
-    LOGI("[NATIVE] C4Replicator.documentErrorCallback() repl -> 0x%p, %s, %s", repl,
-         (pushing ? "pushing" : "pulling"), message);
-
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -262,9 +257,104 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
         throwError(env, error);
         return 0;
     }
+    return (jlong) repl;
+}
 
-    LOGI("[NATIVE] C4Replicator.create() repl -> 0x%p", repl);
+/*
+ * Class:     com_couchbase_litecore_C4Replicator
+ * Method:    createV2
+ * Signature: (JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;JIIIII[B)J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
+        JNIEnv *env,
+        jclass clazz,
+        jlong jdb,
+        jstring jscheme,
+        jstring jhost,
+        jint jport,
+        jstring jpath,
+        jstring jremoteDBName,
+        jlong jotherLocalDB,
+        jint jpush,
+        jint jpull,
+        jint jSocketFactoryContext,
+        jint jframing,
+        jint jReplicatorContext,
+        jbyteArray joptions) {
+    jstringSlice scheme(env, jscheme);
+    jstringSlice host(env, jhost);
+    jstringSlice path(env, jpath);
+    jstringSlice remoteDBName(env, jremoteDBName);
+    jbyteArraySlice options(env, joptions, false);
+    void *socketFactoryContext = (void *) jSocketFactoryContext;
+    void *replicatorContext = (void *) jReplicatorContext;
 
+    C4Address c4Address = {};
+    c4Address.scheme = scheme;
+    c4Address.hostname = host;
+    c4Address.port = jport;
+    c4Address.path = path;
+
+    C4SocketFactory socketFactory = {};
+    socketFactory = socket_factory();
+    socketFactory.context = socketFactoryContext;
+    socketFactory.framing = (C4SocketFraming)jframing;
+
+    C4ReplicatorParameters params = {};
+    params.push = (C4ReplicatorMode) jpush;
+    params.pull = (C4ReplicatorMode) jpull;
+    params.optionsDictFleece = options;
+    params.onStatusChanged = &statusChangedCallback;
+    params.onDocumentError = &documentErrorCallback;
+    params.callbackContext = replicatorContext;
+    params.socketFactory = &socketFactory;
+
+    C4Error error;
+    C4Replicator *repl = c4repl_new((C4Database *) jdb,
+                                    c4Address,
+                                    remoteDBName,
+                                    (C4Database *) jotherLocalDB,
+                                    params,
+                                    &error);
+    if (!repl) {
+        throwError(env, error);
+        return 0;
+    }
+    return (jlong) repl;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Replicator
+ * Method:    createWithSocket
+ * Signature: (JJIII[B)J
+ */
+JNIEXPORT jlong JNICALL
+Java_com_couchbase_litecore_C4Replicator_createWithSocket(JNIEnv *env,
+                                                          jclass clazz,
+                                                          jlong jdb,
+                                                          jlong jopenSocket,
+                                                          jint jpush,
+                                                          jint jpull,
+                                                          jint jReplicatorContext,
+                                                          jbyteArray joptions) {
+    C4Database *db = (C4Database *) jdb;
+    C4Socket *openSocket = (C4Socket *) jopenSocket;
+    jbyteArraySlice options(env, joptions, false);
+    void *replicatorContext = (void *) jReplicatorContext;
+
+    C4ReplicatorParameters params = {};
+    params.push = (C4ReplicatorMode) jpush;
+    params.pull = (C4ReplicatorMode) jpull;
+    params.optionsDictFleece = options;
+    params.onStatusChanged = &statusChangedCallback;
+    params.callbackContext = replicatorContext;
+
+    C4Error error;
+    C4Replicator *repl = c4repl_newWithSocket(db, openSocket, params, &error);
+    if (!repl) {
+        throwError(env, error);
+        return 0;
+    }
     return (jlong) repl;
 }
 
@@ -275,7 +365,6 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Replicator_free(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.free() repl -> 0x%x", (unsigned int) repl);
     c4repl_free((C4Replicator *) repl);
 }
 
@@ -286,7 +375,6 @@ Java_com_couchbase_litecore_C4Replicator_free(JNIEnv *env, jclass clazz, jlong r
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Replicator_stop(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.stop() repl -> 0x%x", (unsigned int) repl);
     c4repl_stop((C4Replicator *) repl);
 }
 
@@ -297,7 +385,6 @@ Java_com_couchbase_litecore_C4Replicator_stop(JNIEnv *env, jclass clazz, jlong r
  */
 JNIEXPORT jobject JNICALL
 Java_com_couchbase_litecore_C4Replicator_getStatus(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.getStatus() repl -> 0x%x", (unsigned int) repl);
     C4ReplicatorStatus status = c4repl_getStatus((C4Replicator *) repl);
     return toJavaObject(env, status);
 }
@@ -309,7 +396,6 @@ Java_com_couchbase_litecore_C4Replicator_getStatus(JNIEnv *env, jclass clazz, jl
  */
 JNIEXPORT jbyteArray JNICALL
 Java_com_couchbase_litecore_C4Replicator_getResponseHeaders(JNIEnv *env, jclass clazz, jlong repl) {
-    LOGI("[NATIVE] C4Replicator.getResponseHeaders() repl -> 0x%x", (unsigned int) repl);
     C4Slice s = c4repl_getResponseHeaders((C4Replicator *) repl);
     jbyteArray res = toJByteArray(env, s);
     c4slice_free(s);
@@ -339,3 +425,4 @@ Java_com_couchbase_litecore_C4Replicator_mayBeNetworkDependent(JNIEnv *env, jcla
     C4Error c4Error = {.domain = (C4ErrorDomain) domain, .code= code, .internal_info = ii};
     return c4error_mayBeNetworkDependent(c4Error);
 }
+

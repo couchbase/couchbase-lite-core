@@ -268,17 +268,35 @@ public class C4Database implements C4Constants {
     ////////////////////////////////
     // C4Replicator
     ////////////////////////////////
+
     public C4Replicator createReplicator(String schema, String host, int port, String path,
                                          String remoteDatabaseName,
                                          C4Database otherLocalDB,
                                          int push, int pull,
                                          byte[] options,
-                                         C4ReplicatorListener listener, Object context)
+                                         C4ReplicatorListener listener,
+                                         Object replicatorContext,
+                                         int socketFactoryContext,
+                                         int framing)
             throws LiteCoreException {
         return new C4Replicator(handle, schema, host, port, path, remoteDatabaseName,
                 otherLocalDB != null ? otherLocalDB.getHandle() : 0,
                 push, pull,
-                options, listener, context);
+                options,
+                listener,
+                replicatorContext,
+                socketFactoryContext,
+                framing);
+    }
+
+    public C4Replicator createReplicator(C4Socket openSocket,
+                                         int push, int pull,
+                                         byte[] options,
+                                         C4ReplicatorListener listener,
+                                         Object replicatorContext)
+            throws LiteCoreException {
+        return new C4Replicator(handle, openSocket.handle, push, pull,
+                options, listener, replicatorContext);
     }
 
     //-------------------------------------------------------------------------
