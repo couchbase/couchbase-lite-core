@@ -28,6 +28,12 @@ TEST_CASE("Options password logging redaction") {
     enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
     enc.writeString(password);
     enc.endDict();
+    enc.writeKey(C4STR(kC4ReplicatorOptionCookies));
+    enc.writeString("foo=bar;secret=value");
+    enc.writeKey(C4STR(kC4ReplicatorOptionExtraHeaders));
+    enc.beginArray();
+    enc.writeString("Authorization: mysecret");
+    enc.endArray();
     enc.endDict();
     alloc_slice properties = enc.finish();
     Worker::Options opts(kC4OneShot, kC4Disabled, properties);
@@ -35,6 +41,8 @@ TEST_CASE("Options password logging redaction") {
     auto str = string(opts);
     Log("Options = %s", str.c_str());
     CHECK(str.find(password) == string::npos);
+    CHECK(str.find("foo=bar") == string::npos);
+    CHECK(str.find("Authorization") == string::npos);
 }
 
 
