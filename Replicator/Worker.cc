@@ -25,7 +25,6 @@
 #include "PlatformCompat.hh"
 #include "BLIP.hh"
 #include <sstream>
-#include <unordered_set>
 
 #if defined(__clang__) && !defined(__ANDROID__)
 #include <cxxabi.h>
@@ -43,7 +42,6 @@ namespace litecore {
 namespace litecore { namespace repl {
 
     LogDomain SyncBusyLog("SyncBusy", LogLevel::Warning);
-    static unordered_set<string> kRedactionKeys { kC4ReplicatorAuthPassword, kC4ReplicatorOptionCookies, kC4ReplicatorOptionExtraHeaders };
 
 
     static void writeRedacted(Dict dict, stringstream &s) {
@@ -54,7 +52,7 @@ namespace litecore { namespace repl {
                 s << ", ";
             slice key = i.keyString();
             s << key << ":";
-            if (kRedactionKeys.find(key.asString()) != kRedactionKeys.end()) {
+            if (key == slice(C4STR(kC4ReplicatorAuthPassword))) {
                 s << "\"********\"";
             } else if (i.value().asDict()) {
                 writeRedacted(i.value().asDict(), s);
