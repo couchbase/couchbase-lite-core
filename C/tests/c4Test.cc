@@ -252,7 +252,7 @@ C4Test::~C4Test() {
         int leaks;
         int attempt = 0;
         while ((leaks = c4_getObjectCount() - objectCount) > 0 && attempt++ < 10) {
-            this_thread::sleep_for(chrono::microseconds(200000)); // wait up to 2 seconds for bg threads to free objects
+            this_thread::sleep_for(chrono::microseconds(500000)); // wait up to 5 seconds for bg threads to free objects
         }
         if (leaks > 0) {
             fprintf(stderr, "*** LEAKED LITECORE OBJECTS: \n");
