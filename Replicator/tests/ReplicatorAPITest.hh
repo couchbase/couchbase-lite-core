@@ -171,7 +171,7 @@ public:
         REQUIRE(_repl);
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
         logState(status);
-        CHECK(status.level == kC4Connecting);
+        CHECK(status.level == kC4Connecting || status.level == kC4Busy);
         CHECK(status.error.code == 0);
 
         while ((status = c4repl_getStatus(_repl)).level != kC4Stopped)
