@@ -227,7 +227,7 @@ use `proposeChanges` instead.
 LiteCore always uses the `proposeChanges` endpoint rather than `changes`;
 If LiteCore pushed a conflict via the `changes` endpoint, it would end up 
 pulling in the other branch of the conflict soon thereafter, and CBL 
-would resolve it and push the merge
+would resolve it and push the merge.
 
 Response:
 
