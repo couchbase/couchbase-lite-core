@@ -584,3 +584,21 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Verify Encryption Unsupported", "[
 
 #endif // COUCHBASE_ENTERPRISE
 
+
+#pragma mark - MISC.
+
+
+N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "JSON null chars", "[Upgrade]") {
+    // For https://github.com/couchbase/couchbase-lite-core/issues/528
+    Encoder enc;
+    JSONConverter converter(enc);
+    bool ok = converter.encodeJSON("{\"foo\":\"Hello\\u0000There\"}"_sl);
+    INFO("JSONConverter error " << converter.errorCode() << " '" << converter.errorMessage() << "' at pos " << converter.errorPos());
+    REQUIRE(ok);
+    auto data = enc.extractOutput();
+    REQUIRE(data);
+    auto root = Value::fromData(data);
+    REQUIRE(root);
+    CHECK(root->asDict()->get("foo"_sl)->asString() == "Hello\0There"_sl);
+}
+
