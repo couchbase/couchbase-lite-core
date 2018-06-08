@@ -520,7 +520,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     for (int update = 2; update <= 5; ++update) {
         C4Log("Begin save #%d", update);
         TransactionHelper t(db);
-        fleece::alloc_slice oldRevID = doc->revID;
+        fleece::alloc_slice oldRevID(doc->revID);
         auto updatedDoc = c4doc_update(doc, C4STR("{\"ok\":\"go\"}"), 0, &error);
         REQUIRE(updatedDoc);
         REQUIRE(doc->selectedRev.revID == oldRevID);

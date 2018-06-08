@@ -395,7 +395,7 @@ namespace litecore { namespace websocket {
 
     static void sock_requestClose(C4Socket *sock, int status, C4String message) {
         if (internal(sock))
-            internal(sock)->close(status, message);
+            internal(sock)->close(status, alloc_slice(message));
     }
 
 

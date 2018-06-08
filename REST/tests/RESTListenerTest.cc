@@ -219,7 +219,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST CRUD", "[REST][C]") {
     }
 
     CHECK(body["ok"].asBool() == true);
-    alloc_slice revID = body["rev"].asString();
+    alloc_slice revID( body["rev"].asString() );
     CHECK(revID.size > 0);
 
     {
