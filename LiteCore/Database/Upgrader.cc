@@ -78,9 +78,12 @@ namespace litecore {
 #if 0
                 copyLocalDocs();
 #endif
-            } catch (...) {
+            } catch (const std::exception &x) {
                 _newDB->endTransaction(false);
-                throw;
+                error e = error::convertException(x);
+                const char *what = e.what();
+                if (!what) what = "";
+                error::_throw(error::CantUpgradeDatabase, "Error upgrading database: %s", what);
             }
             _newDB->endTransaction(true);
         }
@@ -116,9 +119,18 @@ namespace litecore {
                 slice docID = asSlice(allDocs.getColumn(1));
 
                 Log("Importing doc '%.*s'", SPLAT(docID));
-                unique_ptr<Document> newDoc(
-                                _newDB->documentFactory().newDocumentInstance(docID));
-                copyRevisions(docKey, newDoc.get());
+                try {
+                    unique_ptr<Document> newDoc(
+                                    _newDB->documentFactory().newDocumentInstance(docID));
+                    copyRevisions(docKey, newDoc.get());
+                } catch (const error &x) {
+                    // Add docID to exception message:
+                    const char *what = x.what();
+                    if (!what)
+                        what = "exception";
+                    throw error(x.domain, x.code,
+                                format("%s, converting doc \"%.*s\"", what, SPLAT(docID)).c_str());
+                }
             }
         }
 
@@ -192,7 +204,7 @@ namespace litecore {
             Encoder &enc = _newDB->sharedEncoder();
             JSONConverter converter(enc);
             if (!converter.encodeJSON(json))
-                error::_throw(error::CorruptRevisionData, "invalid JSON data in database being upgraded");
+                error::_throw(error::CorruptRevisionData, "invalid JSON data");
             return enc.extractOutput();
         }
 

@@ -320,10 +320,10 @@ namespace litecore {
             return *e;
         auto se = dynamic_cast<const SQLite::Exception*>(&re);
         if (se)
-            return error(SQLite, se->getExtendedErrorCode());
+            return error(SQLite, se->getExtendedErrorCode(), se->what());
         auto fe = dynamic_cast<const fleece::FleeceException*>(&re);
         if (fe)
-            return error(Fleece, fe->code);
+            return error(Fleece, fe->code, fe->what());
         return unexpectedException(re);
     }
 
