@@ -70,10 +70,10 @@ void CBLiteTool::revsInfo() {
     alloc_slice root; // use empty slice as root of tree
 
     do {
-        alloc_slice leafRevID = doc->selectedRev.revID;
+        alloc_slice leafRevID(doc->selectedRev.revID);
         alloc_slice childID = leafRevID;
         while (c4doc_selectParentRevision(doc)) {
-            alloc_slice parentID = doc->selectedRev.revID;
+            alloc_slice parentID(doc->selectedRev.revID);
             tree[parentID].insert(childID);
             childID = parentID;
         }
