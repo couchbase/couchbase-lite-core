@@ -224,6 +224,11 @@ A peer in conflict-free mode SHOULD reject a received `changes` message
 by returning a BLIP/409 error. This informs the sender that it should
 use `proposeChanges` instead.
 
+LiteCore always uses the `proposeChanges` endpoint rather than `changes`;
+If LiteCore pushed a conflict via the `changes` endpoint, it would end up 
+pulling in the other branch of the conflict soon thereafter, and CBL 
+would resolve it and push the merge.
+
 Response:
 
 `maxHistory`: Max length of revision history to send _(optional)_ +
@@ -274,10 +279,6 @@ already has the document and SHOULD reject it with a 304 status. The
 recipient MAY also detect other problems, such as an illegal document
 ID, or a lack of write access to the document, and send back an
 appropriate status code as described below.
-
-A peer not in conflict-free mode MUST reject a received `proposeChanges`
-message by returning a BLIP/404 error. This informs the sender that it
-should use `changes` instead.
 
 Response:
 
