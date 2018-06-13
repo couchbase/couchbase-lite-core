@@ -76,7 +76,7 @@ If you want to use Objective-C or Swift APIs, you should use Couchbase Lite inst
 - libz
 - libicu
 
-You'll need Clang 3.8 or higher. Unfortunately a lot of distros only have 3.5; run `clang --version` to check, and upgrade manually if necessary. You also need a corresponding version of libc++. On Debian-like systems, the apt-get packages you need are `clang`, `libc++1`, `libc++-dev`, `libc++abi-dev`.
+You'll need **Clang 3.9.1 or higher**. Unfortunately a lot of distros only have 3.5; run `clang --version` to check, and upgrade manually if necessary. You also need a corresponding version of libc++. On Debian-like systems, the apt-get packages you need are `clang`, `libc++1`, `libc++-dev`, `libc++abi-dev`.
 
 ### Actually Building
 
@@ -139,6 +139,8 @@ If this is out of date, or you want a local copy, you can generate your own by r
 The main page is then located at `../docs/C/html/modules.html`.
 
 **The C API is considered unstable** and may change without notice, since it's considered an internal API of Couchbase Lite. In the future we want to provide a stable and supported C/C++ API, but not yet.
+
+**Do not call any C++ APIS** -- these are the underlying implementation beneath the C API. They are even more unstable, expose internal functionality we don't support, and may blow up if used incorrectly. The exception is `c4.hh`, which provides some handy C++ wrappers around the C API and will make your life more pleasant if you code in C++.
 
 ## Internal Implementation
 
