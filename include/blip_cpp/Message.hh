@@ -201,7 +201,7 @@ namespace litecore { namespace blip {
         void readFrame(Codec&, int mode, slice &frame, bool finalFrame);
         void acknowledge(size_t frameSize);
 
-        Connection* const _connection;          // The owning BLIP connection
+        Retained<Connection> _connection;       // The owning BLIP connection     
         std::mutex _receiveMutex;
         MessageSize _rawBytesReceived {0};
         std::unique_ptr<fleeceapi::JSONEncoder> _in; // Accumulates body data (not JSON)

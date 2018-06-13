@@ -131,8 +131,8 @@ namespace litecore { namespace blip {
         }
 
         void start() {
-            _webSocket->connect(this);
             retain(this); // keep myself from being freed while I'm the webSocket's delegate
+            _webSocket->connect(this);
         }
 
         void queueMessage(MessageOut *msg) {
