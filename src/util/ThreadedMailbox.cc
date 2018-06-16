@@ -158,6 +158,8 @@ namespace litecore { namespace actor {
         if (delay <= delay_t::zero())
             return enqueue(f);
 
+        auto actor = _actor;
+        retain(actor);
         Retained<MailboxProxy> proxy;
         {
             std::lock_guard<mutex> lock(_mutex);
@@ -166,7 +168,11 @@ namespace litecore { namespace actor {
                 proxy = _proxy = new MailboxProxy(this);
         }
 
-        auto timer = new Timer([proxy, f]{ proxy->enqueue(f); });
+        auto timer = new Timer([proxy, f, actor]
+        { 
+            proxy->enqueue(f);
+            release(actor);
+        });
         timer->autoDelete();
         timer->fireAfter(chrono::duration_cast<Timer::duration>(delay));
     }
