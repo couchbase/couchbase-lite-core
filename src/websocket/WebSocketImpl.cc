@@ -205,7 +205,7 @@ namespace litecore { namespace websocket {
             _bytesReceived += data.size;
             if (_framing) {
                 // this next line will call handleFragment(), below --
-                _protocol->consume((char*)data.buf, (unsigned)data.size, this);
+                _protocol->consume((const char*)data.buf, (unsigned)data.size, this);
                 pingReceived = move(_pingReceived);
             }
         }
