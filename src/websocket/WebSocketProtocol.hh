@@ -381,7 +381,6 @@ public:
             char buf[LONG_MESSAGE_HEADER];
             unsigned bufLen = std::min(spillLength + length, (unsigned)sizeof(buf));
             unsigned lengthUsed = bufLen - spillLength;
-            fprintf(stderr, "SPILL: spillLen=%u, lengthUsed = %u\n", spillLength, lengthUsed);//TEMP
             memcpy(buf, spill, spillLength);
             memcpy(buf + spillLength, src, lengthUsed);
             spillLength = 0;
