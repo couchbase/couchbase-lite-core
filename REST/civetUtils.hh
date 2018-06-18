@@ -23,7 +23,7 @@
 
 namespace litecore { namespace REST {
 
-    void mg_strlcpy(register char *dst, register const char *src, size_t n);
+    void mg_strlcpy(char *dst, const char *src, size_t n);
     void gmt_time_string(char *buf, size_t buf_len, time_t *t);
     void urlDecode(const char *src,
                    size_t src_len,

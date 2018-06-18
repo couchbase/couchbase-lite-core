@@ -44,7 +44,7 @@ void lc_civet_trace(const char *func, unsigned line, const char *fmt, ...) {
 namespace litecore { namespace REST {
 
 
-    void mg_strlcpy(register char *dst, register const char *src, size_t n)
+    void mg_strlcpy(char *dst, const char *src, size_t n)
     {
         for (; *src != '\0' && n > 1; n--) {
             *dst++ = *src++;
