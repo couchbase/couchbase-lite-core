@@ -195,7 +195,6 @@ namespace litecore { namespace actor {
             _actor->caughtException(x);
         }
         _actor->afterEvent();
-        release(_actor);
         
 #if DEBUG
         assert(--_active == 0);
@@ -203,6 +202,7 @@ namespace litecore { namespace actor {
 
         bool empty;
         popNoWaiting(empty);
+        release(_actor);
         if (!empty)
             reschedule();
     }
