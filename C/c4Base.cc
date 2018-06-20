@@ -242,7 +242,8 @@ bool c4error_mayBeNetworkDependent(C4Error err) C4API {
 #ifndef _MSC_VER
         EHOSTDOWN, // Doesn't exist on Windows
 #endif
-        EHOSTUNREACH,EADDRNOTAVAIL, 0};
+        EHOSTUNREACH,EADDRNOTAVAIL,
+        EPIPE, 0};
 
     static CodeList kUnreachableNetwork = {
         kC4NetErrDNSFailure,
