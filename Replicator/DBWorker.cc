@@ -32,6 +32,7 @@
 #include "c4Replicator.h"
 #include "c4Private.h"
 #include "BLIP.hh"
+#include "RevID.hh"
 #include <chrono>
 #ifndef __APPLE__
 #include "arc4random.h"
@@ -244,8 +245,16 @@ namespace litecore { namespace repl {
         unsigned long generation = 0;
         if (doc) {
             actualRev = (slice)doc->meta;
-            char *end;
-            generation = strtol((const char*)actualRev.buf, &end, 10);  //FIX: can fall off end
+            try {
+                revid parsedRev(actualRev);
+                generation = parsedRev.generation();
+            } catch(error &e) {
+                if(e.domain == error::Domain::LiteCore && e.code == error::LiteCoreError::CorruptRevisionData) {
+                    actualRev = nullslice;
+                } else {
+                    throw;
+                }
+            }
         }
 
         // Check for conflict:
