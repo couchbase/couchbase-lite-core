@@ -245,8 +245,16 @@ namespace litecore { namespace repl {
         unsigned long generation = 0;
         if (doc) {
             actualRev = (slice)doc->meta;
-            revid parsedRev(actualRev);
-            generation = parsedRev.generation();
+            try {
+                revid parsedRev(actualRev);
+                generation = parsedRev.generation();
+            } catch(error &e) {
+                if(e.domain == error::Domain::LiteCore && e.code == error::LiteCoreError::CorruptRevisionData) {
+                    actualRev = nullslice;
+                } else {
+                    throw;
+                }
+            }
         }
 
         // Check for conflict:
