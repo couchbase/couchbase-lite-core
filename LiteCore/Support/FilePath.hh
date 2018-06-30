@@ -102,6 +102,9 @@ namespace litecore {
         /** Returns the size of the file in bytes, or -1 if the file does not exist. */
         int64_t dataSize() const;
 
+        /** Returns the date at which this file was last modified, or -1 if the file does not exist */
+        time_t lastModified() const;
+
         /** Creates a directory at this path. */
         bool mkdir(int mode =0700) const;
 

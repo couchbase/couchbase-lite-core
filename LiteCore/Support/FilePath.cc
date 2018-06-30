@@ -426,6 +426,17 @@ namespace litecore {
         return s.st_size;
     }
 
+    time_t FilePath::lastModified() const {
+        struct stat s;
+        if (stat_u8(path().c_str(), &s) != 0) {
+            if (errno == ENOENT)
+                return -1;
+            error::_throwErrno();
+        }
+        return s.st_mtime;
+    }
+
+
     bool FilePath::exists() const {
         struct stat s;
         return stat_u8(path().c_str(), &s) == 0;

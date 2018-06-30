@@ -23,7 +23,7 @@
 #include "StringUtil.hh"
 #include <regex>
 #include <sstream>
-
+#include <fstream>
 
 #define DATESTAMP "\\w+, \\d{2}/\\d{2}/\\d{2}"
 #define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
@@ -143,3 +143,32 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
     string result = dumpLog(encoded, {});
     CHECK(!result.empty());
 }
+
+TEST_CASE("Logging prune old files", "[Log]") {
+    FilePath tmpLogDir = FilePath::tempDirectory()["Log_Prune/"];
+    tmpLogDir.mkdir();
+    for(int i = 0; i < 11; i++) {
+        stringstream s;
+        s << "log" << 11 - i;
+        FilePath f(tmpLogDir[s.str()]);
+        ofstream fout(tmpLogDir[s.str()].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
+        LogEncoder e(fout);
+        e.log(0, nullptr, LogEncoder::None, "Hi");
+
+        // Need at least *some* of the logs to fall into the next second 
+        // for a realistic modification time test
+        this_thread::sleep_for(chrono::milliseconds(200));
+    }
+
+    LogDomain::writeEncodedLogsTo(tmpLogDir["log_last"].canonicalPath(), LogLevel::Info, "Hello");
+    int count = 0;
+    tmpLogDir.forEachFile([&count](const FilePath& f)
+    {
+        CHECK(f.fileName() != "log10");
+        CHECK(f.fileName() != "log11");
+        count++;
+    });
+
+    CHECK(count == 10);
+    LogDomain::writeEncodedLogsTo(string(), LogLevel::None, string());
+} 
