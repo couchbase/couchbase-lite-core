@@ -128,7 +128,7 @@ namespace litecore { namespace repl {
                     err = {};
                 }
             } else {
-                checkpointID = alloc_slice(_getOldCheckpoint(&err));
+                checkpointID = alloc_slice(oldCheckpointValue);
                 body = alloc_slice(_checkpointFromID(checkpointID, &err));
                 if(body.size == 0) {
                     if(isNotFoundError(err)) {
