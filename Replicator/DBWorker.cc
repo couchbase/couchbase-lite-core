@@ -30,7 +30,6 @@
 #include "c4Private.h"
 #include "c4Document+Fleece.h"
 #include "c4Replicator.h"
-#include "c4Private.h"
 #include "BLIP.hh"
 #include <chrono>
 #ifndef __APPLE__
@@ -44,7 +43,6 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
-    static constexpr slice kLocalCheckpointStore = "checkpoints"_sl;
     static constexpr slice kPeerCheckpointStore  = "peerCheckpoints"_sl;
 
     static bool isNotFoundError(C4Error err) {
@@ -103,20 +101,41 @@ namespace litecore { namespace repl {
 #pragma mark - CHECKPOINTS:
 
 
-    // Reads the local checkpoint & calls the callback; called by Replicator::getCheckpoints()
-    void DBWorker::_getCheckpoint(CheckpointCallback callback) {
+    alloc_slice DBWorker::_checkpointFromID(const slice &checkpointID, C4Error* err)
+    {
         alloc_slice body;
-        C4Error err;
-        alloc_slice checkpointID(effectiveRemoteCheckpointDocID(&err));
         if (checkpointID) {
-            c4::ref<C4RawDocument> doc( c4raw_get(_db,
-                                                  kLocalCheckpointStore,
-                                                  checkpointID,
-                                                  &err) );
+            const c4::ref<C4RawDocument> doc( c4raw_get(_db,
+                                                        constants::kLocalCheckpointStore,
+                                                        checkpointID,
+                                                        err) );
             if (doc)
                 body = alloc_slice(doc->body);
-            else if (isNotFoundError(err))
-                err = {};
+        }
+
+        return body;
+    }
+
+    // Reads the local checkpoint & calls the callback; called by Replicator::getCheckpoints()
+    void DBWorker::_getCheckpoint(CheckpointCallback callback) {
+        C4Error err;
+        alloc_slice checkpointID = alloc_slice(effectiveRemoteCheckpointDocID(&err));
+        alloc_slice body = _checkpointFromID(checkpointID, &err);
+        if(body.size == 0 && isNotFoundError(err)) {
+            string oldCheckpointValue = _getOldCheckpoint(&err);
+            if(oldCheckpointValue.empty()) {
+                if(isNotFoundError(err)) {
+                    err = {};
+                }
+            } else {
+                checkpointID = alloc_slice(_getOldCheckpoint(&err));
+                body = alloc_slice(_checkpointFromID(checkpointID, &err));
+                if(body.size == 0) {
+                    if(isNotFoundError(err)) {
+                        err = {};
+                    }
+                }
+            }
         }
 
         if (_options.pull > kC4Passive || _options.push > kC4Passive) {
@@ -131,24 +150,59 @@ namespace litecore { namespace repl {
             }
         }
 
-        bool dbIsEmpty = c4db_getLastSequence(_db) == 0;
+        const bool dbIsEmpty = c4db_getLastSequence(_db) == 0;
         callback(checkpointID, body, dbIsEmpty, err);
     }
 
 
     void DBWorker::_setCheckpoint(alloc_slice data, std::function<void()> onComplete) {
         C4Error err;
-        auto checkpointID = effectiveRemoteCheckpointDocID(&err);
-        if (checkpointID && c4raw_put(_db, kLocalCheckpointStore, checkpointID, nullslice, data, &err))
+        const auto checkpointID = effectiveRemoteCheckpointDocID(&err);
+        if (checkpointID && c4raw_put(_db, constants::kLocalCheckpointStore, checkpointID, nullslice, data, &err))
             log("Saved local checkpoint %.*s to db", SPLAT(checkpointID));
         else
             gotError(err);
         onComplete();
     }
 
+    string DBWorker::_getOldCheckpoint(C4Error* err)
+    {
+        const c4::ref<C4RawDocument> doc( c4raw_get(_db,
+                                                  constants::kLocalCheckpointStore,
+                                                  constants::kLocalCheckpointDocID,
+                                                  err) );
+        if(!doc) {
+            err->domain = LiteCoreDomain;
+            err->code = kC4ErrorNotFound;
+            return string();
+        }
 
+        Value body = Value::fromTrustedData(doc->body);
+        const Dict dict = body.asDict();
+        const C4Error invalid { LiteCoreDomain, kC4ErrorCorruptData, 0 };
+        if(dict == nullptr) {
+            *err = invalid;
+            return string();
+        }
+
+        Value localUUIDVal = dict[constants::kLocalCheckpointLocalUUID];
+        if(localUUIDVal == nullptr) {
+            *err = invalid;
+            return string();
+        }
+
+        const FLSlice oldData = localUUIDVal.asData();
+        if(oldData.buf == nullptr) {
+            *err = invalid;
+            return string();
+        }
+
+        C4UUID oldUUID = *(C4UUID*)oldData.buf;
+        return effectiveRemoteCheckpointDocID(&oldUUID, err);
+    }
+    
     // Writes a Value to an Encoder, substituting null if the value is an empty array.
-    static void writeValueOrNull(Encoder &enc, Value val) {
+    static void writeValueOrNull(fleeceapi::Encoder &enc, Value val) {
         auto a = val.asArray();
         if (!val || (a && a.empty()))
             enc.writeNull();
@@ -156,43 +210,52 @@ namespace litecore { namespace repl {
             enc.writeValue(val);
     }
 
-
-    // Computes the ID of the checkpoint document.
-    slice DBWorker::effectiveRemoteCheckpointDocID(C4Error *err) {
-        if (_remoteCheckpointDocID.empty()) {
-            // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
-            C4UUID privateUUID;
-            if (!c4db_getUUIDs(_db, nullptr, &privateUUID, err))
+    slice DBWorker::effectiveRemoteCheckpointDocID(C4Error* err)
+    {
+        if(_remoteCheckpointDocID.empty()) {
+            C4UUID privateID;
+            if(!c4db_getUUIDs(_db, nullptr, &privateID, err)) {
                 return nullslice;
-            Array channels = _options.channels();
-            Value filter = _options.properties[kC4ReplicatorOptionFilter];
-            Value filterParams = _options.properties[kC4ReplicatorOptionFilterParams];
-            Array docIDs = _options.docIDs();
-
-            // Compute the ID by writing the values to a Fleece array, then taking a SHA1 digest:
-            fleeceapi::Encoder enc;
-            enc.beginArray();
-            enc.writeString({&privateUUID, sizeof(privateUUID)});
-            enc.writeString(remoteDBIDString());
-            if (!channels.empty() || !docIDs.empty() || filter) {
-                // Optional stuff:
-                writeValueOrNull(enc, channels);
-                writeValueOrNull(enc, filter);
-                writeValueOrNull(enc, filterParams);
-                writeValueOrNull(enc, docIDs);
             }
-            enc.endArray();
-            alloc_slice data = enc.finish();
-            SHA1 digest(data);
-            _remoteCheckpointDocID = string("cp-") + slice(&digest, sizeof(digest)).base64String();
-            logVerbose("Checkpoint doc ID = %s", _remoteCheckpointDocID.c_str());
+
+            _remoteCheckpointDocID = effectiveRemoteCheckpointDocID(&privateID, err);
         }
+
         return slice(_remoteCheckpointDocID);
+    }
+    
+    // Computes the ID of the checkpoint document.
+    string DBWorker::effectiveRemoteCheckpointDocID(const C4UUID *localUUID, C4Error *err) {
+        // Derive docID from from db UUID, remote URL, channels, filter, and docIDs.
+        Array channels = _options.channels();
+        Value filter = _options.properties[kC4ReplicatorOptionFilter];
+        const Value filterParams = _options.properties[kC4ReplicatorOptionFilterParams];
+        Array docIDs = _options.docIDs();
+
+        // Compute the ID by writing the values to a Fleece array, then taking a SHA1 digest:
+        fleeceapi::Encoder enc;
+        enc.beginArray();
+        enc.writeString({localUUID, sizeof(C4UUID)});
+
+        enc.writeString(remoteDBIDString());
+        if (!channels.empty() || !docIDs.empty() || filter) {
+            // Optional stuff:
+            writeValueOrNull(enc, channels);
+            writeValueOrNull(enc, filter);
+            writeValueOrNull(enc, filterParams);
+            writeValueOrNull(enc, docIDs);
+        }
+        enc.endArray();
+        const alloc_slice data = enc.finish();
+        SHA1 digest(data);
+        string finalProduct = string("cp-") + slice(&digest, sizeof(digest)).base64String();
+        logVerbose("Checkpoint doc ID = %s", finalProduct.c_str());
+        return finalProduct;
     }
 
 
     bool DBWorker::getPeerCheckpointDoc(MessageIn* request, bool getting,
-                                       slice &checkpointID, c4::ref<C4RawDocument> &doc) {
+                                       slice &checkpointID, c4::ref<C4RawDocument> &doc) const {
         checkpointID = request->property("client"_sl);
         if (!checkpointID) {
             request->respondWithError({"BLIP"_sl, 400, "missing checkpoint ID"_sl});
@@ -204,7 +267,7 @@ namespace litecore { namespace repl {
         C4Error err;
         doc = c4raw_get(_db, kPeerCheckpointStore, checkpointID, &err);
         if (!doc) {
-            int status = isNotFoundError(err) ? 404 : 502;
+            const int status = isNotFoundError(err) ? 404 : 502;
             if (getting || (status != 404)) {
                 request->respondWithError({"HTTP"_sl, status});
                 return false;
@@ -722,7 +785,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBWorker::writeRevWithLegacyAttachments(Encoder& enc, Dict root, FLSharedKeys sk,
+    void DBWorker::writeRevWithLegacyAttachments(fleeceapi::Encoder& enc, Dict root, FLSharedKeys sk,
                                                  unsigned revpos) {
         enc.beginDict();
 

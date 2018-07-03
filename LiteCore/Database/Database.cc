@@ -27,10 +27,15 @@
 #include "Fleece.hh"
 #include "BlobStore.hh"
 #include "Upgrader.hh"
-#include "forestdb_endian.h"
 #include "SecureRandomize.hh"
 #include "make_unique.h"
 
+namespace litecore { namespace constants
+{
+    const C4Slice kLocalCheckpointDocID = C4STR("localCheckpoint");
+    const C4Slice kLocalCheckpointLocalUUID = C4STR("localUUID");
+    const C4Slice kLocalCheckpointStore = C4STR("checkpoints");
+}}
 
 namespace c4Internal {
     using namespace litecore;

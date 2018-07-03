@@ -9,6 +9,8 @@
 #include "ReplicatorLoopbackTest.hh"
 #include "Worker.hh"
 #include "Timer.hh"
+#include "Database.hh"
+#include "PrebuiltCopier.hh"
 #include <chrono>
 
 using namespace litecore::actor;
@@ -17,7 +19,7 @@ constexpr duration ReplicatorLoopbackTest::kLatency;
 
 TEST_CASE("Options password logging redaction") {
     string password("SEEKRIT");
-    Encoder enc;
+    fleeceapi::Encoder enc;
     enc.beginDict();
     enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
     enc.beginDict();
@@ -37,6 +39,28 @@ TEST_CASE("Options password logging redaction") {
     CHECK(str.find(password) == string::npos);
 }
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
+    fleeceapi::Encoder enc;
+    enc.beginDict();
+    enc.endDict();
+    alloc_slice body = enc.finish();
+    createRev("doc"_sl, kRevID, body);
+    _expectedDocumentCount = 1;
+    runPushReplication();
+
+    // No more progress should be made with the imported DB
+    _expectedUnitsComplete = 0;
+    _expectedDocumentCount = 0;
+
+    FilePath original = db->path();
+    FilePath newPath = FilePath::tempDirectory()["scratch.cblite2/"];
+    string newPathStr = newPath.path();
+    CopyPrebuiltDB(original, newPath, &db->config);
+    C4DatabaseConfig config = db->config;
+    c4db_free(db);
+    db = c4db_open(c4str(newPathStr.c_str()), &config, nullptr);
+    runPushReplication();
+}
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Fire Timer At Same Time", "[Push][Pull]") {
     atomic_int counter(0);
@@ -72,7 +96,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
-    Encoder enc;
+    fleeceapi::Encoder enc;
     enc.beginDict();
     enc.endDict();
     alloc_slice body = enc.finish();
@@ -678,7 +702,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][Pull]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
-    Encoder enc;
+    fleeceapi::Encoder enc;
     enc.beginDict();
     enc.writeKey(C4STR(kC4ReplicatorOptionDocIDs));
     enc.beginArray();
@@ -715,7 +739,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
-    Encoder enc;
+    fleeceapi::Encoder enc;
     enc.beginDict();
     enc.writeKey("filter"_sl);
     enc.writeString("Melitta"_sl);
@@ -896,7 +920,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     Log("-------- Update Doc --------");
     alloc_slice body;
     {
-        Encoder enc(c4db_createFleeceEncoder(db2));
+        fleeceapi::Encoder enc(c4db_createFleeceEncoder(db2));
         enc.beginDict();
         enc.writeKey("answer"_sl);
         enc.writeInt(666);
