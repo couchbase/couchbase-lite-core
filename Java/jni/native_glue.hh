@@ -68,6 +68,8 @@ namespace litecore {
             void copyAndReleaseRef();
 
         private:
+            void fixBrokenModifiedUTF8(const char* input);
+
             slice _slice;
             JNIEnv *_env;
             jstring _jstr;

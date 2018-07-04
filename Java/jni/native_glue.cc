@@ -17,9 +17,11 @@
 //
 
 #include "native_glue.hh"
+#include <queue>
 
 using namespace litecore;
 using namespace litecore::jni;
+using namespace std;
 
 /*
  * Will be called by JNI when the library is loaded
@@ -68,12 +70,15 @@ namespace litecore {
             assert(env != nullptr);
             if (js != nullptr) {
                 jboolean isCopy;
+                _jstr = js;
+                _env = env;
+
                 const char *cstr = env->GetStringUTFChars(js, &isCopy);
                 if (!cstr)
                     return; // Would it be better to throw an exception?
                 _slice = slice(cstr);
-                _jstr = js;
-                _env = env;
+
+                fixBrokenModifiedUTF8(cstr);
             }
         }
 
@@ -82,6 +87,68 @@ namespace litecore {
                 _env->ReleaseStringUTFChars(_jstr, (const char *) _slice.buf);
             else if (_slice.buf)
                 free((void *) _slice.buf);        // detached
+        }
+
+        void jstringSlice::fixBrokenModifiedUTF8(const char *input){
+            // https://github.com/android-ndk/ndk/issues/283
+            size_t len = strlen(input);
+            size_t newLen = len;
+            queue<uint8_t*> modified;
+            const auto unsignedInput = (const uint8_t *)input;
+
+            // Need to figure out the actual length since each
+            // 4-bytes of real UTF-8 is 6 bytes of modified UTF-8
+            // but convert the bytes while we are at it
+            for(size_t i = 0; i < len; i++) {
+                if(unsignedInput[i] >= 0xF0) {
+                    // 0xF0 and above marks 4-byte sequences
+                    newLen += 2;
+                    int unicodePoint = (unsignedInput[i]-240<<18) +
+                            (unsignedInput[i+1]-128<<12) +
+                            (unsignedInput[i+2]-128<<6) +
+                            (unsignedInput[i+3]-128) - 0x10000;
+                    uint16_t surrogates[2] { (uint16_t)0xD800 | (uint16_t)(unicodePoint >> 10),
+                                             (uint16_t)0xDC00 | (uint16_t)(unicodePoint & 0x3FF) };
+
+                    modified.emplace({
+                            surrogates[0]>>12 & 0x0F | 0xE0,
+                            surrogates[0]>>6 & 0x3F | 0x80,
+                            surrogates[0] & 0x3F | 0x80,
+                            surrogates[1]>>12 & 0x0F | 0xE0,
+                            surrogates[1]>>6 & 0x3F | 0x80,
+                            surrogates[1] & 0x3F | 0x80
+                    });
+
+                    // 3 + 1 from next loop iteration = 4 bytes advance
+                    i += 3;
+                }
+            }
+
+            if(len == newLen) {
+                // No modifications necessary
+                return;
+            }
+
+            // Will be freed by destructor
+            char* newBytes = (char *)malloc(newLen);
+            int offset = 0;
+            for(size_t i = 0; i < len; i++) {
+                if(unsignedInput[i] >= 0xF0) {
+                    const auto next = modified.front();
+                    modified.pop();
+                    memcpy(&newBytes[i+offset], next, 6);
+                    i += 3;
+                    offset += 2;
+                } else {
+                    newBytes[i+offset] = unsignedInput[i];
+                }
+            }
+
+            // Detach, as this is not a valid value and needs to be fixed
+            _env->ReleaseStringUTFChars(_jstr, input);
+            _env->DeleteLocalRef(_jstr);
+            _env = nullptr;
+            _slice = slice(newBytes, newLen);
         }
 
         void jstringSlice::copyAndReleaseRef() {
