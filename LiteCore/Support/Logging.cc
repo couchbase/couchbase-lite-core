@@ -65,13 +65,13 @@ namespace litecore {
         FilePath filePathObj(filePath);
         FilePath logDir = filePathObj.dir();
         multimap<time_t, FilePath> logFiles;
-        const int magicNumber = *(int*)LogEncoder::kMagicNumber;
+        const uint32_t magicNumber = *(uint32_t*)LogEncoder::kMagicNumber;
         logDir.forEachFile([&logFiles, &magicNumber](const FilePath& f)
         {
             char magicBuffer[4];
             ifstream fin(f.canonicalPath(), ios::binary);
             fin.read(magicBuffer, 4);
-            const int foundMagic = *(int*)magicBuffer;
+            const int foundMagic = *(uint32_t*)magicBuffer;
             if(foundMagic == magicNumber) {
                 logFiles.insert(make_pair(f.lastModified(), f));
             }
@@ -405,7 +405,7 @@ namespace litecore {
             name = name.substr(colon+1);
         return name;
     }
-
+    
 
     std::string Logging::loggingIdentifier() const {
         return format("%p", this);
