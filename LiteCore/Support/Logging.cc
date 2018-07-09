@@ -20,14 +20,12 @@
 #include "StringUtil.hh"
 #include "LogEncoder.hh"
 #include "LogDecoder.hh"
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+#include "PlatformIO.hh"
+#include "FilePath.hh"
 #include <string>
 #include <fstream>
-#include <sstream>
 #include <mutex>
-#include "PlatformIO.hh"
+
 
 #if __APPLE__
 #include <sys/time.h>
@@ -60,6 +58,31 @@ namespace litecore {
     static ofstream *sFileOut = nullptr;
     static LogEncoder* sLogEncoder = nullptr;
     static mutex sLogMutex;
+    static const int kNumLogFiles = 10;
+
+    static void purgeOldLogs(const string& filePath)
+    {
+        FilePath filePathObj(filePath);
+        FilePath logDir = filePathObj.dir();
+        multimap<time_t, FilePath> logFiles;
+        const uint32_t magicNumber = *(uint32_t*)LogEncoder::kMagicNumber;
+        logDir.forEachFile([&logFiles, &magicNumber](const FilePath& f)
+        {
+            char magicBuffer[4];
+            ifstream fin(f.canonicalPath(), ios::binary);
+            fin.read(magicBuffer, 4);
+            const int foundMagic = *(uint32_t*)magicBuffer;
+            if(foundMagic == magicNumber) {
+                logFiles.insert(make_pair(f.lastModified(), f));
+            }
+        });
+
+        // Delete one too many because we are about to start a new one
+        while(logFiles.size() >= kNumLogFiles) {
+            logFiles.begin()->second.del();
+            logFiles.erase(logFiles.begin());
+        }
+    }
 
 
 #pragma mark - GLOBAL SETTINGS:
@@ -87,6 +110,7 @@ namespace litecore {
             sFileMinLevel = LogLevel::None;
         } else {
             sFileMinLevel = atLevel;
+            purgeOldLogs(filePath);
             sFileOut = new ofstream(filePath, ofstream::out|ofstream::trunc|ofstream::binary);
             sLogEncoder = new LogEncoder(*sFileOut);
             if (!initialMessage.empty())
@@ -381,7 +405,7 @@ namespace litecore {
             name = name.substr(colon+1);
         return name;
     }
-
+    
 
     std::string Logging::loggingIdentifier() const {
         return format("%p", this);
