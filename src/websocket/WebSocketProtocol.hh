@@ -379,7 +379,26 @@ public:
         return messageLength;
     }
 
-    void consume(char *src, unsigned int length, void *user) {
+    void consume(const char *src, unsigned int length, void *user) {
+        while (spillLength > 0) {
+            // Use up any unread bytes, without letting _consume do it, because it will copy them
+            // before `src`, causing memory corruption or crashes. (#531)
+            char buf[LONG_MESSAGE_HEADER];
+            unsigned bufLen = std::min(spillLength + length, (unsigned)sizeof(buf));
+            unsigned lengthUsed = bufLen - spillLength;
+            memcpy(buf, spill, spillLength);
+            memcpy(buf + spillLength, src, lengthUsed);
+            spillLength = 0;
+            src += lengthUsed;
+            length -= lengthUsed;
+            _consume(buf, bufLen, user);
+            if (length == 0)
+                return;
+        }
+        _consume((char*)src, length, user);
+    }
+
+    void _consume(char *src, unsigned int length, void *user) {
         if (spillLength) {
             src -= spillLength;
             length += spillLength;

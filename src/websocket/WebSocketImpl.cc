@@ -176,9 +176,9 @@ namespace litecore { namespace websocket {
                 size_t prevMessageLength = _curMessageLength;
                 // this next line will call handleFragment(), below --
                 if (_clientProtocol)
-                    _clientProtocol->consume((char*)data.buf, (unsigned)data.size, this);
+                    _clientProtocol->consume((const char*)data.buf, (unsigned)data.size, this);
                 else
-                    _serverProtocol->consume((char*)data.buf, (unsigned)data.size, this);
+                    _serverProtocol->consume((const char*)data.buf, (unsigned)data.size, this);
                 opToSend = _opToSend;
                 msgToSend = move(_msgToSend);
                 // Compute # of bytes consumed: just the framing data, not any partial or
