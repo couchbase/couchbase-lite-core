@@ -69,6 +69,7 @@ namespace litecore {
 
         private:
             void fixBrokenModifiedUTF8(const char* input);
+            void UTF8ToModifiedUTF8(const char* input, char* output);
 
             slice _slice;
             JNIEnv *_env;
