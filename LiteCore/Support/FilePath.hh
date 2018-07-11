@@ -21,6 +21,7 @@
 #include "PlatformCompat.hh"
 #include <string>
 #include <tuple> // for std::tie
+#include <ctime>
 #include "function_ref.hh"
 
 namespace litecore {
