@@ -24,6 +24,76 @@ using namespace litecore;
 using namespace litecore::jni;
 using namespace std;
 
+namespace litecore { namespace jni {
+        void UTF8ToModifiedUTF8(const char *input, char *output);
+    }
+}
+
+void litecore::jni::UTF8ToModifiedUTF8(const char *input, char *output) {
+    char c = input[0];
+    char c1 = input[1] & 0x3F;
+    char c2 = input[2] & 0x3F;
+    char c3 = input[3] & 0x3F;
+
+    int unicodePoint = ((c & 0x07) << 18) | (c1 << 12) | (c2 << 6) | c3;
+    unicodePoint -= 0x10000;
+
+    int surrogates[2] { 0xD800 | (unicodePoint >> 10), 0xDC00 | (unicodePoint & 0x3FF) };
+
+    output[0] = surrogates[0]>>12 & 0x0F | 0xE0;
+    output[1] = surrogates[0]>>6 & 0x3F | 0x80;
+    output[2] = surrogates[0] & 0x3F | 0x80;
+    output[3] = surrogates[1]>>12 & 0x0F | 0xE0;
+    output[4] = surrogates[1]>>6 & 0x3F | 0x80;
+    output[5] = surrogates[1] & 0x3F | 0x80;
+}
+
+size_t litecore::jni::UTF8ToModifiedUTF8(const char* input, const char** output, size_t len){
+    // https://github.com/android-ndk/ndk/issues/283
+    size_t extraBytes = 0;
+    const auto unsignedInput = (const uint8_t *)input;
+
+    // Need to figure out the actual length since each
+    // 4-bytes of real UTF-8 is 6 bytes of modified UTF-8
+    // but convert the bytes while we are at it
+    for(size_t i = 0; i < len; i++) {
+        if(unsignedInput[i] >= 0xF0) {
+            // 0xF0 and above marks 4-byte sequences
+            extraBytes += 2;
+
+            // 3 + 1 from next loop iteration = 4 bytes advance
+            i += 3;
+        }
+    }
+
+    if(extraBytes == 0) {
+        // No modifications necessary
+        *output = input;
+        return len;
+    }
+
+    size_t newStrLen = len + extraBytes;
+    char* newBytes = (char *)malloc(newStrLen);
+    if(newBytes == nullptr) {
+        *output = nullptr;
+        return 0;
+    }
+
+    int offset = 0;
+    for(size_t i = 0; i < len; i++) {
+        if(unsignedInput[i] >= 0xF0) {
+            UTF8ToModifiedUTF8(input + i, newBytes + i + offset);
+            i += 3;
+            offset += 2;
+        } else {
+            newBytes[i+offset] = unsignedInput[i];
+        }
+    }
+
+    *output = newBytes;
+    return newStrLen;
+}
+
 /*
  * Will be called by JNI when the library is loaded
  *
@@ -78,10 +148,6 @@ namespace litecore {
                 if (!cstr)
                     return; // Would it be better to throw an exception?
                 _slice = slice(cstr);
-
-#ifdef ANDROID
-                fixBrokenModifiedUTF8(cstr);
-#endif
             }
         }
 
@@ -90,74 +156,6 @@ namespace litecore {
                 _env->ReleaseStringUTFChars(_jstr, (const char *) _slice.buf);
             else if (_slice.buf)
                 free((void *) _slice.buf);        // detached
-        }
-
-        void jstringSlice::UTF8ToModifiedUTF8(const char *input, char *output) {
-            int unicodePoint = (input[0]-240<<18) +
-                               (input[1]-128<<12) +
-                               (input[2]-128<<6) +
-                               (input[3]-128) - 0x10000;
-
-            uint16_t surrogates[2] { (uint16_t)0xD800 | (uint16_t)(unicodePoint >> 10),
-                                     (uint16_t)0xDC00 | (uint16_t)(unicodePoint & 0x3FF) };
-
-            output[0] = surrogates[0]>>12 & 0x0F | 0xE0;
-            output[1] = surrogates[0]>>6 & 0x3F | 0x80;
-            output[2] = surrogates[0] & 0x3F | 0x80;
-            output[3] = surrogates[1]>>12 & 0x0F | 0xE0;
-            output[4] = surrogates[1]>>6 & 0x3F | 0x80;
-            output[5] = surrogates[1] & 0x3F | 0x80
-        }
-
-        void jstringSlice::fixBrokenModifiedUTF8(const char *input){
-            // https://github.com/android-ndk/ndk/issues/283
-            size_t newStrLen = 0;
-            size_t inputByteCount = 0;
-            const auto unsignedInput = (const uint8_t *)input;
-
-            // Need to figure out the actual length since each
-            // 4-bytes of real UTF-8 is 6 bytes of modified UTF-8
-            // but convert the bytes while we are at it
-            for(size_t i = 0; unsignedInput[i] != 0; i++) {
-                if(unsignedInput[i] >= 0xF0) {
-                    // 0xF0 and above marks 4-byte sequences
-                    newStrLen += 2;
-
-                    // 3 + 1 from next loop iteration = 4 bytes advance
-                    i += 3;
-                }
-
-                newStrLen++;
-                inputByteCount++;
-            }
-
-            if(newStrLen == inputByteCount) {
-                // No modifications necessary
-                return;
-            }
-
-            // Will be freed by destructor
-            char* newBytes = (char *)malloc(newStrLen);
-            if(newBytes == nullptr) {
-                throw bad_alloc();
-            }
-
-            int offset = 0;
-            for(size_t i = 0; i < inputByteCount; i++) {
-                if(unsignedInput[i] >= 0xF0) {
-                    UTF8ToModifiedUTF8(input + i, newBytes + i + offset);
-                    i += 3;
-                    offset += 2;
-                } else {
-                    newBytes[i+offset] = unsignedInput[i];
-                }
-            }
-
-            // Detach, as this is not a valid value and needs to be fixed
-            _env->ReleaseStringUTFChars(_jstr, input);
-            _env->DeleteLocalRef(_jstr);
-            _env = nullptr;
-            _slice = slice(newBytes, newStrLen);
         }
 
         void jstringSlice::copyAndReleaseRef() {
