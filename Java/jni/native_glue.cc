@@ -26,6 +26,8 @@ using namespace std;
 
 namespace litecore { namespace jni {
         void UTF8ToModifiedUTF8(const char *input, char *output);
+        void ModifiedUTF8ToUTF8(char* input);
+        void ModifiedUTF8CharToUTF8(char* input);
     }
 }
 
@@ -94,6 +96,48 @@ size_t litecore::jni::UTF8ToModifiedUTF8(const char* input, const char** output,
     return newStrLen;
 }
 
+void litecore::jni::ModifiedUTF8CharToUTF8(char *input) {
+    char c = input[0];
+    char c1 = input[1] & 0x3F;
+    char c2 = input[2] & 0x3F;
+    char d = input[3];
+    char d1 = input[4] & 0x3F;
+    char d2 = input[5] & 0x3F;
+
+    int surrogate[2] = { ((c & 0x0F) << 12) | (c1 << 6) | c2, ((d & 0x0F) << 12) | (d1 << 6) | d2 };
+    int codePoint = ((surrogate[0] - 0xD800) << 10) + (surrogate[1] - 0xDC00) + 0x10000;
+
+    input[0] = 0xF0 | (codePoint >> 18);
+    input[1] = 0x80 | ((codePoint >> 12) & 0x3F);
+    input[2] = 0x80 | ((codePoint >> 6) & 0x3F);
+    input[3] = 0x80 | ((codePoint & 0x3F));
+}
+
+void litecore::jni::ModifiedUTF8ToUTF8(char *input) {
+    size_t len = 0;
+    size_t i = 0;
+    for(i = 0; input[i] != 0; i++) {
+        if(input[i] == '\xed') {
+            ModifiedUTF8CharToUTF8(&input[i]);
+            i += 5;
+        }
+    }
+
+    len = i;
+    size_t j = 0;
+    for(i = 0; input[i] != 0; i++) {
+        if((uint8_t)input[i] >= 0xF0) {
+            i+= 3;
+            size_t j;
+            for(j = i + 1; j < len - 2; j++) {
+                input[j] = input[j+2];
+            }
+
+            input[j] = 0;
+        }
+    }
+}
+
 /*
  * Will be called by JNI when the library is loaded
  *
@@ -144,7 +188,9 @@ namespace litecore {
                 _jstr = js;
                 _env = env;
 
-                const char *cstr = env->GetStringUTFChars(js, &isCopy);
+                // Can we assume that a copy is always made here for Android?  It seems like the case.
+                char *cstr = (char *)env->GetStringUTFChars(js, &isCopy);
+                ModifiedUTF8ToUTF8(cstr);
                 if (!cstr)
                     return; // Would it be better to throw an exception?
                 _slice = slice(cstr);
