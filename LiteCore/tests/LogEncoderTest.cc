@@ -155,9 +155,12 @@ TEST_CASE("Logging prune old files", "[Log]") {
         LogEncoder e(fout);
         e.log(0, nullptr, LogEncoder::None, "Hi");
 
-        // Need at least *some* of the logs to fall into the next second 
-        // for a realistic modification time test
-        this_thread::sleep_for(chrono::milliseconds(200));
+        
+        if(i <= 1) {
+            // Need some of the logs to be later because otherwise it is
+            // impossible to test which logs should disappear
+            this_thread::sleep_for(chrono::seconds(2));
+        }
     }
 
     LogDomain::writeEncodedLogsTo(tmpLogDir["log_last"].canonicalPath(), LogLevel::Info, "Hello");
