@@ -116,11 +116,19 @@ void litecore::jni::ModifiedUTF8CharToUTF8(char *input) {
 void litecore::jni::ModifiedUTF8ToUTF8(char *input) {
     size_t len = 0;
     size_t i = 0;
+    bool needsModify = false;
     for(i = 0; input[i] != 0; i++) {
         if(input[i] == '\xed') {
+            // According to https://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/types.html#wp16542
+            // modified UTF-8 for codepoints > FFFF will always start with 0xED
+            needsModify = true;
             ModifiedUTF8CharToUTF8(&input[i]);
             i += 5;
         }
+    }
+
+    if(!needsModify) {
+        return;
     }
 
     len = i;
