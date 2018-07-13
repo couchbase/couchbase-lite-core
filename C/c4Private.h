@@ -109,9 +109,8 @@ public:
 };
 
 namespace litecore { namespace constants {
-    extern const C4Slice kLocalCheckpointDocID;
-    extern const C4Slice kLocalCheckpointLocalUUID;
-    extern const C4Slice kLocalCheckpointStore;       
+    extern const C4Slice kLocalCheckpointStore;
+    extern const C4Slice kPreviousPrivateUUIDKey;
 }}
 
 #endif

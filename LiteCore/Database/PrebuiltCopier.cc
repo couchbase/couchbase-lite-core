@@ -27,32 +27,6 @@
 
 namespace litecore {
     using namespace std;
-
-    static void createLocalCheckpointDocument(const unique_ptr<C4Database> &db)
-    {
-        C4UUID privateUUID;
-        C4Error err;
-        if(!c4db_getUUIDs(db.get(), nullptr, &privateUUID, &err)) {
-            error::_throw(error::Domain::LiteCore, err.code);
-        }
-
-        fleeceapi::Encoder enc;
-        enc.beginDict(1);
-        enc.writeKey(constants::kLocalCheckpointLocalUUID);
-        enc.writeData({&privateUUID, sizeof(C4UUID)});
-        enc.endDict();
-        FLError flErr;
-        const FLSliceResult body = enc.finish(&flErr);
-        if(body.size == 0) {
-            error::_throw(error::Domain::Fleece, flErr);
-        }
-
-        const bool success = c4raw_put(db.get(), constants::kLocalCheckpointStore, constants::kLocalCheckpointDocID, nullslice, C4Slice(body), &err);
-        FLSliceResult_Free(body);
-        if(!success) {
-            error::_throw(error::Domain::LiteCore, err.code);
-        }
-    }
     
     void CopyPrebuiltDB(const litecore::FilePath &from, const litecore::FilePath &to,
                              const C4DatabaseConfig *config) {
@@ -74,7 +48,6 @@ namespace litecore {
         from.copyTo(temp);
         
         auto db = make_unique<C4Database>(temp.path(), *config);
-        createLocalCheckpointDocument(db);
         db->resetUUIDs();
         db->close();
         

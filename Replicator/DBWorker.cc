@@ -168,8 +168,8 @@ namespace litecore { namespace repl {
     string DBWorker::_getOldCheckpoint(C4Error* err)
     {
         const c4::ref<C4RawDocument> doc( c4raw_get(_db,
-                                                  constants::kLocalCheckpointStore,
-                                                  constants::kLocalCheckpointDocID,
+                                                  kC4InfoStore,
+                                                  constants::kPreviousPrivateUUIDKey,
                                                   err) );
         if(!doc) {
             err->domain = LiteCoreDomain;
@@ -177,27 +177,7 @@ namespace litecore { namespace repl {
             return string();
         }
 
-        Value body = Value::fromTrustedData(doc->body);
-        const Dict dict = body.asDict();
-        const C4Error invalid { LiteCoreDomain, kC4ErrorCorruptData, 0 };
-        if(dict == nullptr) {
-            *err = invalid;
-            return string();
-        }
-
-        Value localUUIDVal = dict[constants::kLocalCheckpointLocalUUID];
-        if(localUUIDVal == nullptr) {
-            *err = invalid;
-            return string();
-        }
-
-        const FLSlice oldData = localUUIDVal.asData();
-        if(oldData.buf == nullptr) {
-            *err = invalid;
-            return string();
-        }
-
-        C4UUID oldUUID = *(C4UUID*)oldData.buf;
+        C4UUID oldUUID = *(C4UUID*)doc->body.buf;
         return effectiveRemoteCheckpointDocID(&oldUUID, err);
     }
     

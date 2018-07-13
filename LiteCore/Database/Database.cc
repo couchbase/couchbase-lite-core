@@ -32,9 +32,8 @@
 
 namespace litecore { namespace constants
 {
-    const C4Slice kLocalCheckpointDocID = C4STR("localCheckpoint");
-    const C4Slice kLocalCheckpointLocalUUID = C4STR("localUUID");
     const C4Slice kLocalCheckpointStore = C4STR("checkpoints");
+    const C4Slice kPreviousPrivateUUIDKey = C4STR("previousPrivateUUID");
 }}
 
 namespace c4Internal {
@@ -449,6 +448,9 @@ namespace c4Internal {
     void Database::resetUUIDs() {
         beginTransaction();
         try {
+            UUID previousPrivate = getUUID(kPrivateUUIDKey);
+            auto &store = getKeyStore(toString(kC4InfoStore));
+            store.set(constants::kPreviousPrivateUUIDKey, {&previousPrivate, sizeof(UUID)}, transaction());
             generateUUID(kPublicUUIDKey, transaction(), true);
             generateUUID(kPrivateUUIDKey, transaction(), true);
         } catch (...) {
