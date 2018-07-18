@@ -89,8 +89,7 @@ namespace litecore { namespace repl {
     void Pusher::handleSubChanges(Retained<MessageIn> req) {
         if (!passive()) {
             warn("Ignoring 'subChanges' request from peer; I'm already pushing");
-            req->respondWithError({"LiteCore"_sl, kC4ErrorConflict,
-                                   "I'm already pushing"_sl});     //TODO: Proper error code
+            req->respondWithError({"LiteCore"_sl, 501, "Not implemented."_sl});
             return;
         }
         auto since = max(req->intProperty("since"_sl), 0l);
