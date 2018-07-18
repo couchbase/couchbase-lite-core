@@ -96,6 +96,8 @@ public:
         CHECK(_statusChangedCalls > 0);
         CHECK(_statusReceived.level == kC4Stopped);
         CHECK(_statusReceived.progress.unitsCompleted == _statusReceived.progress.unitsTotal);
+        if(_expectedUnitsComplete >= 0)
+            CHECK(_expectedUnitsComplete == _statusReceived.progress.unitsCompleted);
         if (_expectedDocumentCount >= 0)
             CHECK(_statusReceived.progress.documentCount == uint64_t(_expectedDocumentCount));
         CHECK(_statusReceived.error.code == _expectedError.code);
@@ -338,6 +340,7 @@ public:
     Replicator::Status _statusReceived { };
     unsigned _statusChangedCalls {0};
     int64_t _expectedDocumentCount {0};
+    int64_t _expectedUnitsComplete {-1};
     C4Error _expectedError {};
     set<string> _docPushErrors, _docPullErrors;
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;

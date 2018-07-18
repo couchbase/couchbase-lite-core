@@ -27,10 +27,14 @@
 #include "Fleece.hh"
 #include "BlobStore.hh"
 #include "Upgrader.hh"
-#include "forestdb_endian.h"
 #include "SecureRandomize.hh"
 #include "make_unique.h"
 
+namespace litecore { namespace constants
+{
+    const C4Slice kLocalCheckpointStore = C4STR("checkpoints");
+    const C4Slice kPreviousPrivateUUIDKey = C4STR("previousPrivateUUID");
+}}
 
 namespace c4Internal {
     using namespace litecore;
@@ -444,6 +448,9 @@ namespace c4Internal {
     void Database::resetUUIDs() {
         beginTransaction();
         try {
+            UUID previousPrivate = getUUID(kPrivateUUIDKey);
+            auto &store = getKeyStore(toString(kC4InfoStore));
+            store.set(constants::kPreviousPrivateUUIDKey, {&previousPrivate, sizeof(UUID)}, transaction());
             generateUUID(kPublicUUIDKey, transaction(), true);
             generateUUID(kPrivateUUIDKey, transaction(), true);
         } catch (...) {

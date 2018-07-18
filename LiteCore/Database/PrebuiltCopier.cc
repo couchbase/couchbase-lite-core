@@ -47,7 +47,7 @@ namespace litecore {
         temp.delRecursive();
         from.copyTo(temp);
         
-        auto db = unique_ptr<C4Database>(new C4Database(temp.path(), *config));
+        auto db = make_unique<C4Database>(temp.path(), *config);
         db->resetUUIDs();
         db->close();
         
