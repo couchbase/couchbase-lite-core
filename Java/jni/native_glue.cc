@@ -25,13 +25,13 @@ using namespace litecore::jni;
 using namespace std;
 
 namespace litecore { namespace jni {
-        void UTF8ToModifiedUTF8(const char *input, char *output);
+        void UTF8CharToModifiedUTF8(const char *input, char *output);
         void ModifiedUTF8ToUTF8(char* input);
         void ModifiedUTF8CharToUTF8(char* input);
     }
 }
 
-void litecore::jni::UTF8ToModifiedUTF8(const char *input, char *output) {
+void litecore::jni::UTF8CharToModifiedUTF8(const char *input, char *output) {
     char c = input[0];
     char c1 = input[1] & 0x3F;
     char c2 = input[2] & 0x3F;
@@ -50,7 +50,7 @@ void litecore::jni::UTF8ToModifiedUTF8(const char *input, char *output) {
     output[5] = surrogates[1] & 0x3F | 0x80;
 }
 
-size_t litecore::jni::UTF8ToModifiedUTF8(const char* input, const char** output, size_t len){
+ssize_t litecore::jni::UTF8ToModifiedUTF8(const char* input, const char** output, size_t len){
     // https://github.com/android-ndk/ndk/issues/283
     size_t extraBytes = 0;
     const auto unsignedInput = (const uint8_t *)input;
@@ -70,7 +70,7 @@ size_t litecore::jni::UTF8ToModifiedUTF8(const char* input, const char** output,
 
     if(extraBytes == 0) {
         // No modifications necessary
-        *output = input;
+        *output = nullptr;
         return len;
     }
 
@@ -78,13 +78,13 @@ size_t litecore::jni::UTF8ToModifiedUTF8(const char* input, const char** output,
     char* newBytes = (char *)malloc(newStrLen);
     if(newBytes == nullptr) {
         *output = nullptr;
-        return 0;
+        return -1;
     }
 
     int offset = 0;
     for(size_t i = 0; i < len; i++) {
         if(unsignedInput[i] >= 0xF0) {
-            UTF8ToModifiedUTF8(input + i, newBytes + i + offset);
+            UTF8CharToModifiedUTF8(input + i, newBytes + i + offset);
             i += 3;
             offset += 2;
         } else {
@@ -196,8 +196,8 @@ namespace litecore {
                 _jstr = js;
                 _env = env;
 
-                // Can we assume that a copy is always made here for Android?  It seems like the case.
                 char *cstr = (char *)env->GetStringUTFChars(js, &isCopy);
+                assert(isCopy);
                 ModifiedUTF8ToUTF8(cstr);
                 if (!cstr)
                     return; // Would it be better to throw an exception?
