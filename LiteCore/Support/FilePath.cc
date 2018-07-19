@@ -304,7 +304,11 @@ namespace litecore {
 
         if(tmpDir == nullptr) {
 #ifdef _MSC_VER
-            tmpDir = "C:\\tmp";
+            WCHAR pathBuffer[MAX_PATH + 1];
+            GetTempPathW(MAX_PATH, pathBuffer);
+            GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
+            CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
+            return FilePath(convertedPath.m_psz, "");
 #else
             tmpDir = "/tmp";
 #endif
