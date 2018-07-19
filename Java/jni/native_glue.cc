@@ -17,9 +17,134 @@
 //
 
 #include "native_glue.hh"
+#include <queue>
+#include <new>
 
 using namespace litecore;
 using namespace litecore::jni;
+using namespace std;
+
+namespace litecore { namespace jni {
+        void UTF8CharToModifiedUTF8(const char *input, char *output);
+        void ModifiedUTF8ToUTF8(char* input);
+        void ModifiedUTF8CharToUTF8(char* input);
+    }
+}
+
+void litecore::jni::UTF8CharToModifiedUTF8(const char *input, char *output) {
+    char c = input[0];
+    char c1 = input[1] & 0x3F;
+    char c2 = input[2] & 0x3F;
+    char c3 = input[3] & 0x3F;
+
+    int unicodePoint = ((c & 0x07) << 18) | (c1 << 12) | (c2 << 6) | c3;
+    unicodePoint -= 0x10000;
+
+    int surrogates[2] { 0xD800 | (unicodePoint >> 10), 0xDC00 | (unicodePoint & 0x3FF) };
+
+    output[0] = surrogates[0]>>12 & 0x0F | 0xE0;
+    output[1] = surrogates[0]>>6 & 0x3F | 0x80;
+    output[2] = surrogates[0] & 0x3F | 0x80;
+    output[3] = surrogates[1]>>12 & 0x0F | 0xE0;
+    output[4] = surrogates[1]>>6 & 0x3F | 0x80;
+    output[5] = surrogates[1] & 0x3F | 0x80;
+}
+
+ssize_t litecore::jni::UTF8ToModifiedUTF8(const char* input, const char** output, size_t len){
+    // https://github.com/android-ndk/ndk/issues/283
+    size_t extraBytes = 0;
+    const auto unsignedInput = (const uint8_t *)input;
+
+    // Need to figure out the actual length since each
+    // 4-bytes of real UTF-8 is 6 bytes of modified UTF-8
+    // but convert the bytes while we are at it
+    for(size_t i = 0; i < len; i++) {
+        if(unsignedInput[i] >= 0xF0) {
+            // 0xF0 and above marks 4-byte sequences
+            extraBytes += 2;
+
+            // 3 + 1 from next loop iteration = 4 bytes advance
+            i += 3;
+        }
+    }
+
+    if(extraBytes == 0) {
+        // No modifications necessary
+        *output = nullptr;
+        return len;
+    }
+
+    size_t newStrLen = len + extraBytes;
+    char* newBytes = (char *)malloc(newStrLen);
+    if(newBytes == nullptr) {
+        *output = nullptr;
+        return -1;
+    }
+
+    int offset = 0;
+    for(size_t i = 0; i < len; i++) {
+        if(unsignedInput[i] >= 0xF0) {
+            UTF8CharToModifiedUTF8(input + i, newBytes + i + offset);
+            i += 3;
+            offset += 2;
+        } else {
+            newBytes[i+offset] = unsignedInput[i];
+        }
+    }
+
+    *output = newBytes;
+    return newStrLen;
+}
+
+void litecore::jni::ModifiedUTF8CharToUTF8(char *input) {
+    char c = input[0];
+    char c1 = input[1] & 0x3F;
+    char c2 = input[2] & 0x3F;
+    char d = input[3];
+    char d1 = input[4] & 0x3F;
+    char d2 = input[5] & 0x3F;
+
+    int surrogate[2] = { ((c & 0x0F) << 12) | (c1 << 6) | c2, ((d & 0x0F) << 12) | (d1 << 6) | d2 };
+    int codePoint = ((surrogate[0] - 0xD800) << 10) + (surrogate[1] - 0xDC00) + 0x10000;
+
+    input[0] = 0xF0 | (codePoint >> 18);
+    input[1] = 0x80 | ((codePoint >> 12) & 0x3F);
+    input[2] = 0x80 | ((codePoint >> 6) & 0x3F);
+    input[3] = 0x80 | ((codePoint & 0x3F));
+}
+
+void litecore::jni::ModifiedUTF8ToUTF8(char *input) {
+    size_t len = 0;
+    size_t i = 0;
+    bool needsModify = false;
+    for(i = 0; input[i] != 0; i++) {
+        if(input[i] == '\xed') {
+            // According to https://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/types.html#wp16542
+            // modified UTF-8 for codepoints > FFFF will always start with 0xED
+            needsModify = true;
+            ModifiedUTF8CharToUTF8(&input[i]);
+            i += 5;
+        }
+    }
+
+    if(!needsModify) {
+        return;
+    }
+
+    len = i;
+    size_t j = 0;
+    for(i = 0; input[i] != 0; i++) {
+        if((uint8_t)input[i] >= 0xF0) {
+            i+= 3;
+            size_t j;
+            for(j = i + 1; j < len - 2; j++) {
+                input[j] = input[j+2];
+            }
+
+            input[j] = 0;
+        }
+    }
+}
 
 /*
  * Will be called by JNI when the library is loaded
@@ -68,12 +193,15 @@ namespace litecore {
             assert(env != nullptr);
             if (js != nullptr) {
                 jboolean isCopy;
-                const char *cstr = env->GetStringUTFChars(js, &isCopy);
+                _jstr = js;
+                _env = env;
+
+                char *cstr = (char *)env->GetStringUTFChars(js, &isCopy);
+                assert(isCopy);
+                ModifiedUTF8ToUTF8(cstr);
                 if (!cstr)
                     return; // Would it be better to throw an exception?
                 _slice = slice(cstr);
-                _jstr = js;
-                _env = env;
             }
         }
 

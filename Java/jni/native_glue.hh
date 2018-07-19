@@ -46,6 +46,8 @@ namespace litecore {
         bool initC4Replicator(JNIEnv *); // Implemented in native_c4replicator.cc
         bool initC4Socket(JNIEnv *);     // Implemented in native_c4socket.cc
 
+        ssize_t UTF8ToModifiedUTF8(const char* input, const char** output, size_t len);
+
         // Creates a temporary slice value from a Java String object
         class jstringSlice {
         public:
@@ -67,7 +69,11 @@ namespace litecore {
             // Copies the string data and releases the JNI local ref.
             void copyAndReleaseRef();
 
+
+
         private:
+            static void UTF8ToModifiedUTF8(const char* input, char* output);
+
             slice _slice;
             JNIEnv *_env;
             jstring _jstr;
