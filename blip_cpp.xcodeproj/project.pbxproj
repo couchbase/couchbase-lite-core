@@ -43,8 +43,6 @@
 		27EF69EA1E282662004748DF /* BLIPProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E51E282662004748DF /* BLIPProtocol.hh */; };
 		27EF69EC1E282662004748DF /* Message.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E71E282662004748DF /* Message.hh */; };
 		27EF69ED1E282662004748DF /* WebSocketInterface.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E81E282662004748DF /* WebSocketInterface.hh */; };
-		27EF6A431E28558E004748DF /* RefCounted.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A3F1E28558E004748DF /* RefCounted.cc */; };
-		27EF6A441E28558E004748DF /* RefCounted.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A401E28558E004748DF /* RefCounted.hh */; };
 		27EF6A521E2857F7004748DF /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A4C1E2857F7004748DF /* slice.cc */; };
 		27EF6A531E2857F7004748DF /* slice.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A4D1E2857F7004748DF /* slice.hh */; };
 		27EF6A541E2857F7004748DF /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A4E1E2857F7004748DF /* varint.cc */; };
@@ -141,14 +139,12 @@
 		27EF69E81E282662004748DF /* WebSocketInterface.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WebSocketInterface.hh; sourceTree = "<group>"; };
 		27EF69EF1E28268A004748DF /* WebSocketEcho.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketEcho.cc; sourceTree = "<group>"; };
 		27EF69F01E28268A004748DF /* WebSocketEcho.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = WebSocketEcho.hh; sourceTree = "<group>"; };
-		27EF6A3F1E28558E004748DF /* RefCounted.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RefCounted.cc; sourceTree = "<group>"; };
-		27EF6A401E28558E004748DF /* RefCounted.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RefCounted.hh; sourceTree = "<group>"; };
-		27EF6A4C1E2857F7004748DF /* slice.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = slice.cc; path = Fleece/slice.cc; sourceTree = "<group>"; };
+		27EF6A4C1E2857F7004748DF /* slice.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = slice.cc; path = Fleece/Support/slice.cc; sourceTree = "<group>"; };
 		27EF6A4D1E2857F7004748DF /* slice.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = slice.hh; path = Fleece/slice.hh; sourceTree = "<group>"; };
-		27EF6A4E1E2857F7004748DF /* varint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = varint.cc; path = Fleece/varint.cc; sourceTree = "<group>"; };
-		27EF6A4F1E2857F7004748DF /* varint.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = varint.hh; path = Fleece/varint.hh; sourceTree = "<group>"; };
-		27EF6A501E2857F7004748DF /* Writer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Writer.cc; path = Fleece/Writer.cc; sourceTree = "<group>"; };
-		27EF6A511E2857F7004748DF /* Writer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Writer.hh; path = Fleece/Writer.hh; sourceTree = "<group>"; };
+		27EF6A4E1E2857F7004748DF /* varint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = varint.cc; path = Fleece/Support/varint.cc; sourceTree = "<group>"; };
+		27EF6A4F1E2857F7004748DF /* varint.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = varint.hh; path = Fleece/Support/varint.hh; sourceTree = "<group>"; };
+		27EF6A501E2857F7004748DF /* Writer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = Writer.cc; path = Fleece/Support/Writer.cc; sourceTree = "<group>"; };
+		27EF6A511E2857F7004748DF /* Writer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = Writer.hh; path = Fleece/Support/Writer.hh; sourceTree = "<group>"; };
 		27EF6A581E28587A004748DF /* cdecode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cdecode.c; path = vendor/libb64/cdecode.c; sourceTree = "<group>"; };
 		27EF6A591E28587A004748DF /* cdecode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = cdecode.h; path = vendor/libb64/cdecode.h; sourceTree = "<group>"; };
 		27EF6A5A1E28587A004748DF /* cencode.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = cencode.c; path = vendor/libb64/cencode.c; sourceTree = "<group>"; };
@@ -160,8 +156,8 @@
 		27EF6A671E2858E7004748DF /* Channel.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Channel.hh; sourceTree = "<group>"; };
 		27EF6A741E28594F004748DF /* PlatformCompat.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = PlatformCompat.hh; path = Fleece/PlatformCompat.hh; sourceTree = "<group>"; };
 		27EF6A9E1E2B0CE9004748DF /* bliptest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = bliptest; sourceTree = BUILT_PRODUCTS_DIR; };
-		27EF6AAD1E2B0D9E004748DF /* FleeceException.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FleeceException.cc; path = Fleece/FleeceException.cc; sourceTree = "<group>"; };
-		27EF6AAE1E2B0D9E004748DF /* FleeceException.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = FleeceException.hh; path = Fleece/FleeceException.hh; sourceTree = "<group>"; };
+		27EF6AAD1E2B0D9E004748DF /* FleeceException.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = FleeceException.cc; path = Fleece/Support/FleeceException.cc; sourceTree = "<group>"; };
+		27EF6AAE1E2B0D9E004748DF /* FleeceException.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = FleeceException.hh; path = Fleece/Support/FleeceException.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -327,8 +323,6 @@
 		27EF6A3E1E2854E1004748DF /* Support */ = {
 			isa = PBXGroup;
 			children = (
-				27EF6A3F1E28558E004748DF /* RefCounted.cc */,
-				27EF6A401E28558E004748DF /* RefCounted.hh */,
 				27CCC7A51E524F0B00CE1989 /* Logging.cc */,
 				27CCC7A61E524F0B00CE1989 /* Logging.hh */,
 				27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */,
@@ -392,7 +386,6 @@
 				27EF6A551E2857F7004748DF /* varint.hh in Headers */,
 				27EF69EA1E282662004748DF /* BLIPProtocol.hh in Headers */,
 				27CCC7AA1E524F0B00CE1989 /* Logging.hh in Headers */,
-				27EF6A441E28558E004748DF /* RefCounted.hh in Headers */,
 				2773FD061E69FE2000108780 /* ActorProperty.hh in Headers */,
 				2773FD021E69FD9100108780 /* Timer.hh in Headers */,
 				27EF6A531E2857F7004748DF /* slice.hh in Headers */,
@@ -500,7 +493,6 @@
 				272850F81EA022B5009CA22F /* GCDMailbox.cc in Sources */,
 				2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */,
 				27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */,
-				27EF6A431E28558E004748DF /* RefCounted.cc in Sources */,
 				27EF6AAF1E2B0D9E004748DF /* FleeceException.cc in Sources */,
 				27491C921E7AFCED001DC54B /* WebSocketImpl.cc in Sources */,
 				27EF6A521E2857F7004748DF /* slice.cc in Sources */,

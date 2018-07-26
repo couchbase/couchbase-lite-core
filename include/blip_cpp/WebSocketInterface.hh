@@ -26,6 +26,8 @@
 #include <string>
 
 namespace litecore { namespace websocket {
+    using fleece::RefCounted;
+    using fleece::Retained;
 
     class WebSocket;
     class Delegate;

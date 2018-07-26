@@ -31,6 +31,8 @@ namespace fleeceapi {
 }
 
 namespace litecore { namespace blip {
+    using fleece::RefCounted;
+    using fleece::Retained;
 
     class Connection;
     class MessageBuilder;

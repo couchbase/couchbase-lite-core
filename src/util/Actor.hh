@@ -18,7 +18,6 @@
 
 #pragma once
 #include "ThreadedMailbox.hh"
-#include "RefCounted.hh"
 #include <assert.h>
 #include <chrono>
 #include <functional>

@@ -28,6 +28,9 @@
 #define ACTORS_TRACK_STATS  0
 
 namespace litecore { namespace actor {
+    using fleece::RefCounted;
+    using fleece::Retained;
+
     class Scheduler;
     class Actor;
     class MailboxProxy;
