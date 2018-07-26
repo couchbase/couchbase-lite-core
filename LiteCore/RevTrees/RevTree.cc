@@ -149,6 +149,17 @@ namespace litecore {
         }
     }
 
+    slice Rev::body() const {
+        slice body = _body;
+        if ((size_t)body.buf & 1) {
+            // Fleece data must be 2-byte-aligned, so we have to copy body to the heap:
+            auto xthis = const_cast<Rev*>(this);
+            auto xowner = const_cast<RevTree*>(owner);
+            body = xthis->_body = xowner->copyBody(_body);
+        }
+        return body;
+    }
+
     unsigned Rev::index() const {
         auto &revs = owner->_revs;
         auto i = find(revs.begin(), revs.end(), this);
@@ -198,6 +209,15 @@ namespace litecore {
 
 #pragma mark - INSERTION:
 
+
+    slice RevTree::copyBody(slice body) {
+        if (body.size == 0)
+            return body;
+        _insertedData.emplace_back(body);
+        return _insertedData.back();
+    }
+
+
     // Lowest-level insert method. Does no sanity checking, always inserts.
     Rev* RevTree::_insert(revid unownedRevID,
                           slice body,
@@ -212,16 +232,12 @@ namespace litecore {
         // Allocate copies of the revID and data so they'll stay around:
         _insertedData.emplace_back(unownedRevID);
         revid revID = revid(_insertedData.back());
-        if (body.size > 0) {
-            _insertedData.emplace_back(body);
-            body = _insertedData.back();
-        }
 
         _revsStorage.emplace_back();
         Rev *newRev = &_revsStorage.back();
         newRev->owner = this;
         newRev->revID = revID;
-        newRev->_body = body;
+        newRev->_body = copyBody(body);
         newRev->sequence = 0; // Sequence is unknown till record is saved
         newRev->flags = Rev::Flags(Rev::kLeaf | Rev::kNew | revFlags);
         newRev->parent = parentRev;

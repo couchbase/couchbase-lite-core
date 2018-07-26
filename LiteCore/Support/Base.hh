@@ -22,6 +22,7 @@
 #include "PlatformCompat.hh"
 #include "make_unique.h"
 #include "function_ref.hh"
+#include "RefCounted.hh"
 
 
 namespace litecore {
@@ -29,6 +30,8 @@ namespace litecore {
     using fleece::alloc_slice;
     using fleece::nullslice;
     using fleece::function_ref;
+    using fleece::RefCounted;
+    using fleece::Retained;
 
     // Database sequence number
     typedef uint64_t sequence_t;

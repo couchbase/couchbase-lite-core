@@ -244,7 +244,6 @@ FLArrayIterator_GetValueAt
 FLArrayIterator_Next
 FLDict_Count
 FLDict_Get
-FLDict_GetUnsorted
 FLDict_GetSharedKey
 FLSharedKey_GetKeyString
 FLDictIterator_Begin
@@ -257,7 +256,6 @@ FLDictKey_Init
 FLDictKey_InitWithSharedKeys
 FLDictKey_GetString
 FLDict_GetWithKey
-FLDict_GetWithKeys
 FLEncoder_GetExtraInfo
 FLEncoder_SetExtraInfo
 FLEncoder_New

@@ -37,7 +37,7 @@ namespace litecore {
         revid           revID;      /**< Revision ID (compressed) */
         sequence_t      sequence;   /**< DB sequence number that this revision has/had */
 
-        slice body() const          {return _body;}
+        slice body() const;
         bool isBodyAvailable() const{return _body.buf != nullptr;}
 
         bool isLeaf() const         {return (flags & kLeaf) != 0;}
@@ -179,6 +179,7 @@ namespace litecore {
         friend class Rev;
         friend class RawRevision;
         void initRevs();
+        slice copyBody(slice body);
         Rev* _insert(revid, slice body, Rev *parentRev, Rev::Flags, bool markConflicts);
         bool confirmLeaf(Rev* testRev NONNULL);
         void compact();

@@ -609,7 +609,7 @@ using namespace fleece;
 
 
 FLEncoder c4db_createFleeceEncoder(C4Database* db) noexcept {
-    FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true, true);
+    FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
     FLEncoder_SetSharedKeys(enc, (FLSharedKeys)db->documentKeys());
     return enc;
 }

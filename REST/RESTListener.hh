@@ -30,6 +30,8 @@
 #include <vector>
 
 namespace litecore { namespace REST {
+    using fleece::RefCounted;
+    using fleece::Retained;
     class RequestResponse;
     class Request;
     class Server;
