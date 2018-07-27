@@ -282,6 +282,7 @@ namespace litecore { namespace repl {
             // The response contains an array that parallels the array I sent, with each item
             int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl, kDefaultMaxHistory));
             bool legacyAttachments = !reply->boolProperty("blobs"_sl);
+            bool deltasOK = reply->boolProperty("deltas"_sl);
             auto requests = reply->JSONBody().asArray();
 
             unsigned index = 0;
@@ -294,6 +295,7 @@ namespace litecore { namespace repl {
                         change->maxHistory = maxHistory;
                         change->legacyAttachments = legacyAttachments;
                         change->noConflicts = true;
+                        change->deltaOK = deltasOK;
                         _revsToSend.push_back(change);
                         queued = true;
                     } else if (status == 304) {

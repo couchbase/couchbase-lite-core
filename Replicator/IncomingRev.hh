@@ -46,6 +46,8 @@ namespace litecore { namespace repl {
 
     private:
         void _handleRev(Retained<blip::MessageIn>);
+        void gotDeltaSrc(alloc_slice deltaSrcBody);
+        void processBody(alloc_slice fleeceBody, C4Error);
         bool fetchNextBlob();
         void insertRevision();
         void finish();
