@@ -38,6 +38,10 @@ namespace litecore { namespace repl {
             kMaxActiveIncomingRevs low. */
         constexpr actor::delay_t kInsertionDelay = std::chrono::milliseconds(25);
 
+        /* Minimum document body size that will be considered for delta compression.
+            (This is the size of the Fleece encoding, which is usually smaller than the JSON.) */
+        extern size_t kMinBodySizeForDelta; // = 200;
+
         //// Puller:
 
         /* Number of revisions the peer should include in a single `changes` / `proposeChanges`

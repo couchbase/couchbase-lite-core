@@ -21,6 +21,10 @@
 
 using namespace std;
 
+namespace litecore { namespace repl { namespace tuning {
+    size_t kMinBodySizeForDelta = 200;
+}}}
+
 namespace litecore { namespace repl {
 
     Rev::Rev(slice docID_, slice revID_, C4SequenceNumber sequence_, uint64_t bodySize_)
