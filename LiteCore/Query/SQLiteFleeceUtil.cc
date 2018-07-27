@@ -113,8 +113,7 @@ namespace litecore {
             *outValue = path->eval(val);
         } else {
             // No cached Path yet, so create one, use it & cache it:
-            auto sharedKeys = ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys;
-            path = new Path(valueAsSlice(argv[1]).asString(), sharedKeys);
+            path = new Path(valueAsSlice(argv[1]).asString(), getSharedKeys(ctx));
             *outValue = path->eval(val);
             sqlite3_set_auxdata(ctx, 1, path, [](void *auxdata) {
                 delete (Path*)auxdata;
@@ -180,8 +179,10 @@ namespace litecore {
 
     bool setResultBlobFromEncodedValue(sqlite3_context *ctx, const Value *val) {
         try {
+            SharedKeys* sk = getSharedKeys(ctx);
             Encoder enc;
-            enc.writeValue(val);
+            enc.setSharedKeys(sk);
+            enc.writeValue(val, sk);
             setResultBlobFromFleeceData(ctx, enc.extractOutput());
             return true;
         } catch (const bad_alloc&) {
