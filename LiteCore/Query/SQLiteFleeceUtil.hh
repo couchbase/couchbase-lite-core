@@ -40,6 +40,10 @@ namespace litecore {
     };
 
 
+    static inline fleece::SharedKeys* getSharedKeys(sqlite3_context *ctx) {
+        return ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys;
+    }
+
     // Returns the data of a SQLite blob value as a slice
     static inline slice valueAsSlice(sqlite3_value *arg) noexcept {
         const void *blob = sqlite3_value_blob(arg); // must be called _before_ sqlite3_value_bytes

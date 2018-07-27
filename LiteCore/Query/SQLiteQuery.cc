@@ -164,6 +164,7 @@ namespace litecore {
                             sequence_t lastSequence)
         :_query(query)
         ,_lastSequence(lastSequence)
+        ,_documentKeys(query->keyStore().dataFile().documentKeys())
         {
             if (options)
                 _options = *options;
@@ -173,6 +174,7 @@ namespace litecore {
         Retained<SQLiteQuery> _query;
         Query::Options _options;
         sequence_t _lastSequence;       // DB's lastSequence at the time the query ran
+        SharedKeys* _documentKeys;
     };
 
 
@@ -228,8 +230,7 @@ namespace litecore {
                 return false;
             }
             if (willLog(LogLevel::Verbose)) {
-                SharedKeys* sharedKeys = _query->keyStore().dataFile().documentKeys();
-                alloc_slice json = _iter->asArray()->toJSON(sharedKeys);
+                alloc_slice json = _iter->asArray()->toJSON(_documentKeys);
                 logVerbose("--> %.*s", SPLAT(json));
             }
             return true;
@@ -385,7 +386,7 @@ namespace litecore {
                         const Value *value = Value::fromData(fleeceData);
                         if (!value)
                             error::_throw(error::CorruptRevisionData);
-                        enc.writeValue(value);
+                        enc.writeValue(value, _documentKeys);
                         break;
                     }
                     // else fall through:
@@ -404,6 +405,7 @@ namespace litecore {
             int nCols = _statement->getColumnCount();
             uint64_t rowCount = 0;
             Encoder enc;
+            enc.setSharedKeys(_documentKeys);
             enc.beginArray();
             while (_statement->executeStep()) {
                 uint64_t missingCols = 0;
