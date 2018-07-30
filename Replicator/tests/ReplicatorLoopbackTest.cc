@@ -1147,3 +1147,67 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         CHECK(!c4doc_selectParentRevision(doc));
     }
 }
+
+
+static void mutateProperty(C4Database *db, fleeceapi::Encoder &enc, slice docID, map<slice,slice> newProps) {
+    TransactionHelper t(db);
+    C4Error error;
+    c4::ref<C4Document> doc = c4doc_get(db, docID, false, &error);
+    REQUIRE(doc);
+    Dict body = Value::fromData(doc->selectedRev.body).asDict();
+    auto sk = c4db_getFLSharedKeys(db);
+
+    enc.reset();
+    enc.beginDict();
+    for (Dict::iterator i(body, sk); i; ++i) {
+        slice keyStr = i.keyString();
+        auto newProp = newProps.find(keyStr);
+        if (newProp == newProps.end()) {
+            enc.writeKey(keyStr);
+            enc.writeValue(i.value(), sk);
+        } else if (newProp->second) {
+            enc.writeKey(keyStr);
+            enc.writeString(newProp->second);
+        }
+    }
+    enc.endDict();
+    alloc_slice newBody = enc.finish();
+
+    C4String history = doc->selectedRev.revID;
+    C4DocPutRequest rq = {};
+    rq.body = newBody;
+    rq.docID = docID;
+    rq.history = &history;
+    rq.historyCount = 1;
+    rq.save = true;
+    doc = c4doc_put(db, &rq, nullptr, &error);
+    CHECK(doc);
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push", "[Push][Pull]") {
+    auto serverOpts = Replicator::Options::passive();
+
+    importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
+    runPushReplication();
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
+
+    Log("-------- Mutate Docs --------");
+    SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
+    for (int i = 1; i <= 100; i += 7) {
+        char docID[20];
+        sprintf(docID, "%07u", i);
+        mutateProperty(db, enc, slice(docID), {
+            {"birthday"_sl, "1964-11-28"_sl}, {"memberSince"_sl, {}}
+        });
+    }
+
+    Log("-------- Second Replication --------");
+    _expectedDocumentCount = (100+6)/7;
+    runPushReplication();
+    compareDatabases();
+}
+
+
