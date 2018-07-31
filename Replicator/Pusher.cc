@@ -304,7 +304,7 @@ namespace litecore { namespace repl {
                                  SPLAT(change->docID), SPLAT(change->revID),
                                  SPLAT(change->remoteAncestorRevID), status);
                         auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
-                        gotDocumentError(change->docID, err, true, false);
+                        endedDocument(change->docID, Dir::kPushing, err, false);
                     }
                 } else {
                     // Entry in "changes" response is an array of known ancestors, or null to skip:
@@ -379,7 +379,7 @@ namespace litecore { namespace repl {
                                SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                     if (!passive())
                         _dbWorker->markRevSynced(rev);
-                    finishedDocument(rev->docID, true);
+                    finishedDocument(rev->docID, Dir::kPushing);
                 } else {
                     auto err = progress.reply->getError();
                     auto c4err = blipToC4Error(err);
@@ -387,7 +387,7 @@ namespace litecore { namespace repl {
                     logError("Got error response to rev %.*s %.*s (seq #%llu): %.*s %d '%.*s'",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
-                    gotDocumentError(rev->docID, c4err, true, transient);
+                    endedDocument(rev->docID, Dir::kPushing, c4err, transient);
                     // If this is a permanent failure, like a validation error or conflict,
                     // then I've completed my duty to push it.
                     completed = !transient;

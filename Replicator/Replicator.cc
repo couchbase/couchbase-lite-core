@@ -227,9 +227,9 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::_gotDocumentError(alloc_slice docID, C4Error error, bool pushing, bool transient) {
+    void Replicator::_endedDocument(alloc_slice docID, Dir dir, C4Error error, bool transient) {
         if (_delegate)
-            _delegate->replicatorDocumentError(this, pushing, docID, error, transient);
+            _delegate->replicatorDocumentEnded(this, dir, docID, error, transient);
     }
 
 

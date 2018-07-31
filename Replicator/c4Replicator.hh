@@ -151,7 +151,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     void detach() {
         lock_guard<mutex> lock(_mutex);
         _params.onStatusChanged = nullptr;
-        _params.onDocumentError = nullptr;
+        _params.onDocumentEnded = nullptr;
     }
 
 private:
@@ -197,21 +197,22 @@ private:
             _selfRetain = nullptr; // balances retain in constructor
     }
 
-    virtual void replicatorDocumentError(Replicator *repl,
-                                         bool pushing,
+    virtual void replicatorDocumentEnded(Replicator *repl,
+                                         Dir dir,
                                          slice docID,
                                          C4Error error,
                                          bool transient) override
     {
         if (repl != _replicator)
             return;
-        C4ReplicatorDocumentErrorCallback onDocError;
+        C4ReplicatorDocumentEndedCallback onDocEnded;
         {
             lock_guard<mutex> lock(_mutex);
-            onDocError = _params.onDocumentError;
+            onDocEnded = _params.onDocumentEnded;
         }
-        if (onDocError)
-            onDocError(this, pushing, {docID.buf, docID.size}, error, transient,
+        if (onDocEnded)
+            onDocEnded(this, (dir == Dir::kPushing),
+                       {docID.buf, docID.size}, error, transient,
                        _params.callbackContext);
     }
 

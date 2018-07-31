@@ -248,7 +248,7 @@ namespace litecore { namespace repl {
     {
         if (successful && nonPassive()) {
             completedSequence(sequence);
-            finishedDocument(docID, false);
+            finishedDocument(docID, Dir::kPulling);
         }
 
         _spareIncomingRevs.push_back(inc);

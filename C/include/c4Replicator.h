@@ -78,12 +78,15 @@ extern "C" {
                                                       C4ReplicatorStatus,
                                                       void *context);
 
-    /** Callback a client can register, to hear about errors replicating individual documents. */
-    typedef void (*C4ReplicatorDocumentErrorCallback)(C4Replicator* C4NONNULL,
+    /** Callback a client can register, to hear about the status of individual documents.
+        By default, only errors will be reported via this callback.
+        To also receive callbacks for successfully completed documents, set the
+        kC4ReplicatorOptionProgressLevel option to a value greater than zero. */
+    typedef void (*C4ReplicatorDocumentEndedCallback)(C4Replicator* C4NONNULL,
                                                       bool pushing,
                                                       C4String docID,
                                                       C4Error error,
-                                                      bool transient,
+                                                      bool errorIsTransient,
                                                       void *context);
 
     /** Callback that can choose to reject an incoming pulled revision by returning false. */
@@ -104,8 +107,8 @@ extern "C" {
                         component of `url`; `address->path` will not include this component.
         @return  True on success, false on failure. */
     bool c4address_fromURL(C4String url,
-                         C4Address *address C4NONNULL,
-                         C4String *dbName);
+                           C4Address *address C4NONNULL,
+                           C4String *dbName);
 
     /** Converts a C4Address to a URL. */
     C4StringResult c4address_toURL(C4Address address);
@@ -118,7 +121,7 @@ extern "C" {
         C4Slice                           optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
         C4ReplicatorValidationFunction    validationFunc;    ///< Callback that can reject incoming revisions
         C4ReplicatorStatusChangedCallback onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
-        C4ReplicatorDocumentErrorCallback onDocumentError;   ///< Callback notifying of errors with individual documents
+        C4ReplicatorDocumentEndedCallback onDocumentEnded;   ///< Callback notifying status of individual documents
         void*                             callbackContext;   ///< Value to be passed to the callbacks.
         const C4SocketFactory*            socketFactory;     ///< Custom C4SocketFactory, if not NULL
     } C4ReplicatorParameters;
@@ -210,6 +213,7 @@ extern "C" {
     #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" // Stable ID for remote db with unstable URL; string
     #define kC4ReplicatorHeartbeatInterval    "heartbeat" // Interval in secs to send a keepalive ping
     #define kC4ReplicatorResetCheckpoint      "reset"     // Start over w/o checkpoint; bool
+    #define kC4ReplicatorOptionProgressLevel  "progress"  // 0=overall, 1=per-document; int
 
     // Auth dictionary keys:
     #define kC4ReplicatorAuthType       "type"           // Auth property; string

@@ -246,7 +246,7 @@ C4ReplicatorParameters DbEndpoint::replicatorParameters(C4ReplicatorMode push, C
         ((DbEndpoint*)context)->onStateChanged(status);
     };
 
-    params.onDocumentError = [](C4Replicator *repl,
+    params.onDocumentEnded = [](C4Replicator *repl,
                                 bool pushing,
                                 C4String docID,
                                 C4Error error,

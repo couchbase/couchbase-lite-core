@@ -128,7 +128,7 @@ public:
         ((ReplicatorAPITest*)context)->stateChanged(replicator, status);
     }
 
-    static void onDocError(C4Replicator *repl,
+    static void onDocEnded(C4Replicator *repl,
                            bool pushing,
                            C4String docID,
                            C4Error error,
@@ -168,7 +168,7 @@ public:
         params.optionsDictFleece = _options.data();
         params.validationFunc = onValidate;
         params.onStatusChanged = onStateChanged;
-        params.onDocumentError = onDocError;
+        params.onDocumentEnded = onDocEnded;
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
 
