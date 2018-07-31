@@ -375,7 +375,7 @@ namespace litecore { namespace repl {
                 if (_getForeignAncestors) {
                     doc = c4enum_getDocument(e, &error);
                     if (!doc) {
-                        gotDocumentError(info.docID, error, true, false);
+                        endedDocument(info.docID, Dir::kPushing, error, false);
                         continue;   // reject rev: error getting doc
                     }
                 }
@@ -438,7 +438,7 @@ namespace litecore { namespace repl {
                     C4Error error;
                     doc = c4doc_get(_db, info.docID, true, &error);
                     if (!doc) {
-                        gotDocumentError(info.docID, error, true, false);
+                        endedDocument(info.docID, Dir::kPushing, error, false);
                         continue;   // reject rev: error getting doc
                     }
                     if (slice(doc->revID) != slice(info.revID))

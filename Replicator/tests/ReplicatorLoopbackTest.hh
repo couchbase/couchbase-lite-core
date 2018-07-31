@@ -104,6 +104,7 @@ public:
             CHECK(_statusReceived.error.domain == _expectedError.domain);
         CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
         CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
+        CHECK(asVector(_docsFinished) == asVector(_expectedDocsFinished));
     }
 
     void runPushReplication(C4ReplicatorMode mode =kC4OneShot) {
@@ -167,23 +168,29 @@ public:
         }
     }
 
-    virtual void replicatorDocumentError(Replicator *repl,
-                                         bool pushing,
+    virtual void replicatorDocumentEnded(Replicator *repl,
+                                         Dir dir,
                                          slice docID,
                                          C4Error error,
                                          bool transient) override
     {
+        if (error.code) {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         char message[256];
         c4error_getDescriptionC(error, message, sizeof(message));
         Log(">> Replicator %serror %s '%.*s': %s",
             (transient ? "transient " : ""),
-            (pushing ? "pushing" : "pulling"),
+                (dir == Dir::kPushing ? "pushing" : "pulling"),
             SPLAT(docID), message);
-        if (pushing)
+            if (dir == Dir::kPushing)
             _docPushErrors.emplace(docID);
         else
             _docPullErrors.emplace(docID);
+        } else {
+            Log(">> Replicator %s '%.*s'",
+                (dir == Dir::kPushing ? "pushed" : "pulled"), SPLAT(docID));
+            _docsFinished.emplace(docID);
+        }
     }
 
     virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {
@@ -333,7 +340,8 @@ public:
                            kC4SliceNull, kC4SliceNull, &err) );
     }
 
-    static vector<string> asVector(const set<string> strings) {
+    template <class SET>
+    static vector<string> asVector(const SET &strings) {
         vector<string> out;
         for (const string &s : strings)
             out.push_back(s);
@@ -356,5 +364,6 @@ public:
     C4Error _expectedError {};
     set<string> _docPushErrors, _docPullErrors;
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;
+    multiset<string> _docsFinished, _expectedDocsFinished;
 };
 

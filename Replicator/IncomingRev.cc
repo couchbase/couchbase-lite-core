@@ -199,11 +199,11 @@ namespace litecore { namespace repl {
         if (_error.code == 0 && _peerError)
             _error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
         if (_error.code) {
-            gotDocumentError(_rev->docID, _error, false, false);
+            endedDocument(_rev->docID, Dir::kPulling, _error, false);
         } else if (_rev->flags & kRevIsConflict) {
             // DBWorker::_insertRevision set this flag to indicate that the rev caused a conflict
             // (though it did get inserted), so notify the delegate of the conflict:
-            gotDocumentError(_rev->docID, {LiteCoreDomain, kC4ErrorConflict}, false, true);
+            endedDocument(_rev->docID, Dir::kPulling, {LiteCoreDomain, kC4ErrorConflict}, true);
         }
         _puller->revWasHandled(this, _rev->docID, remoteSequence(), (_error.code == 0));
         clear();

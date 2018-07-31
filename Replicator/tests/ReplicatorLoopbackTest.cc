@@ -1168,3 +1168,25 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         CHECK(!c4doc_selectParentRevision(doc));
     }
 }
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Doc Notifications", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
+    for (int i = 1; i <= 100; ++i)
+        _expectedDocsFinished.insert(format("%07d", i));
+    auto opts = Replicator::Options::pushing();
+    opts.setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    runReplicators(opts, Replicator::Options::passive());
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
+    for (int i = 1; i <= 100; ++i)
+        _expectedDocsFinished.insert(format("%07d", i));
+    auto opts = Replicator::Options::pulling();
+    opts.setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    runReplicators(Replicator::Options::passive(), opts);
+}

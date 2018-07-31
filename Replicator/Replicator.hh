@@ -58,8 +58,8 @@ namespace litecore { namespace repl {
                                                  const Status&) =0;
             virtual void replicatorConnectionClosed(Replicator*,
                                                     const CloseStatus&)  { }
-            virtual void replicatorDocumentError(Replicator*,
-                                                 bool pushing,
+            virtual void replicatorDocumentEnded(Replicator*,
+                                                 Dir,
                                                  slice docID,
                                                  C4Error error,
                                                  bool transient) =0;
@@ -93,8 +93,8 @@ namespace litecore { namespace repl {
                                         {enqueue(&Replicator::_onRequestReceived, retained(msg));}
         virtual void changedStatus() override;
 
-        virtual void gotDocumentError(slice docID, C4Error error, bool pushing, bool transient) override {
-            enqueue(&Replicator::_gotDocumentError, alloc_slice(docID), error, pushing, transient);
+        virtual void endedDocument(slice docID, Dir dir, C4Error error, bool transient) override {
+            enqueue(&Replicator::_endedDocument, alloc_slice(docID), dir, error, transient);
         }
 
         virtual void onError(C4Error error) override;
@@ -121,7 +121,7 @@ namespace litecore { namespace repl {
         void saveCheckpointNow();
 
         virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
-        void _gotDocumentError(alloc_slice docID, C4Error, bool pushing, bool transient);
+        void _endedDocument(alloc_slice docID, Dir, C4Error, bool transient);
 
         CloseStatus _closeStatus;
         Delegate* _delegate;

@@ -37,6 +37,12 @@ namespace litecore { namespace repl {
     using duration = std::chrono::nanoseconds;
 
 
+    enum class Dir {
+        kPulling = 0,
+        kPushing
+    };
+
+
     extern LogDomain SyncBusyLog;
 
     /** Abstract base class of Actors used by the replicator */
@@ -88,6 +94,7 @@ namespace litecore { namespace repl {
             bool skipDeleted() const  {return properties[kC4ReplicatorOptionSkipDeleted].asBool();}
             bool noIncomingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
             bool noOutgoingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
+            int progressLevel() const  {return (int)properties[kC4ReplicatorOptionProgressLevel].asInt();}
 
             fleece::Array arrayProperty(const char *name) const {
                 return properties[name].asArray();
@@ -193,9 +200,9 @@ namespace litecore { namespace repl {
         virtual void onError(C4Error);         // don't call this, but you can override
 
         /** Report less-serious errors that affect a document but don't stop replication. */
-        virtual void gotDocumentError(slice docID, C4Error, bool pushing, bool transient);
+        virtual void endedDocument(slice docID, Dir, C4Error, bool transientErr);
 
-        void finishedDocument(slice docID, bool pushing);
+        void finishedDocument(slice docID, Dir);
 
         static blip::ErrorBuf c4ToBLIPError(C4Error);
         static C4Error blipToC4Error(const blip::Error&);
@@ -226,6 +233,7 @@ namespace litecore { namespace repl {
     private:
         Retained<blip::Connection> _connection;
         int _pendingResponseCount {0};
+        int _progressLevel;
         Status _status { };
         bool _statusChanged {false};
     };
