@@ -17,6 +17,7 @@
 //
 
 #include "IncomingBlob.hh"
+#include "Replicator.hh"
 #include "StringUtil.hh"
 #include "MessageBuilder.hh"
 #include <atomic>
@@ -37,18 +38,24 @@ namespace litecore { namespace repl {
     { }
 
 
-    void IncomingBlob::_start(C4BlobKey key, uint64_t size, bool compress) {
-        Assert(!_writer);
-        _key = key;
-        _size = size;
-        alloc_slice digest = c4blob_keyToString(_key);
-        logVerbose("Requesting blob %.*s (%llu bytes, compress=%d)", SPLAT(digest), _size, compress);
+    std::string IncomingBlob::loggingIdentifier() const {
+        alloc_slice digest = c4blob_keyToString(_blob.key);
+        return format("for doc '%.*s'%.*s [%.*s]",
+                      SPLAT(_blob.docID), SPLAT(_blob.docProperty), SPLAT(digest));
+    }
+    
 
-        addProgress({0, _size});
+    void IncomingBlob::_start(PendingBlob blob) {
+        Assert(!_writer);
+        _blob = blob;
+        logVerbose("Requesting blob (%llu bytes, compress=%d)", _blob.length, _blob.compressible);
+
+        addProgress({0, _blob.length});
 
         MessageBuilder req("getAttachment"_sl);
+        alloc_slice digest = c4blob_keyToString(_blob.key);
         req["digest"_sl] = digest;
-        if (compress)
+        if (_blob.compressible)
             req["compress"_sl] = "true"_sl;
         sendRequest(req, [=](blip::MessageProgress progress) {
             //... After request is sent:
@@ -58,10 +65,15 @@ namespace litecore { namespace repl {
                 } else if (progress.reply) {
                     if (progress.reply->isError()) {
                         gotError(progress.reply);
+                        notifyProgress(true);
                     } else {
-                        writeToBlob(progress.reply->extractBody());
-                        if (progress.state == MessageProgress::kComplete)
+                        bool complete = progress.state == MessageProgress::kComplete;
+                        auto data = progress.reply->extractBody();
+                        writeToBlob(data);
+                        if (complete)
                             finishBlob();
+                        if (complete || data.size > 0)
+                            notifyProgress(complete);
                     }
                 }
             }
@@ -92,12 +104,28 @@ namespace litecore { namespace repl {
 
 
     void IncomingBlob::finishBlob() {
-        alloc_slice digest = c4blob_keyToString(_key);
-        logVerbose("Finished receiving blob %.*s (%llu bytes)", SPLAT(digest), _size);
+        alloc_slice digest = c4blob_keyToString(_blob.key);
+        logVerbose("Finished receiving blob %.*s (%llu bytes)", SPLAT(digest), _blob.length);
         C4Error err;
-        if (!c4stream_install(_writer, &_key, &err))
+        if (!c4stream_install(_writer, &_blob.key, &err))
             gotError(err);
         closeWriter();
+    }
+
+
+    void IncomingBlob::notifyProgress(bool always) {
+        auto now = actor::Timer::clock::now();
+        if (always || now - _lastNotifyTime > std::chrono::milliseconds(250)) {
+            _lastNotifyTime = now;
+            Replicator::BlobProgress prog {
+                Dir::kPulling,
+                _blob.docID, _blob.docProperty,
+                _blob.key,
+                status().progress.unitsCompleted,
+                status().progress.unitsTotal};
+            logVerbose("progress: %llu / %llu", prog.bytesCompleted, prog.bytesTotal);
+            replicator()->onBlobProgress(prog);
+        }
     }
 
 
@@ -115,7 +143,7 @@ namespace litecore { namespace repl {
         closeWriter();
         Worker::onError(err);
         // Bump progress to 100% so as not to mess up overall progress tracking:
-        setProgress({_size, _size});
+        setProgress({_blob.length, _blob.length});
     }
 
 

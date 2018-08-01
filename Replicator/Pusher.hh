@@ -70,7 +70,10 @@ namespace litecore { namespace repl {
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);
         void _attachmentSent();
-        C4ReadStream* readBlobFromRequest(MessageIn *req, slice &digest, C4Error *outError);
+        C4ReadStream* readBlobFromRequest(MessageIn *req,
+                                          slice &outDigest,
+                                          Replicator::BlobProgress &outProgress,
+                                          C4Error *outError);
         void filterByDocIDs(fleece::Array docIDs);
 
         static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg

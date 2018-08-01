@@ -54,12 +54,6 @@ namespace litecore { namespace repl {
 
         slice remoteSequence() const            {return _revMessage->property(slice("sequence"));}
 
-        struct PendingBlob {
-            C4BlobKey key;
-            uint64_t length;
-            bool compressible;
-        };
-
         C4BlobStore *_blobStore;
         Puller* _puller;
         DBWorker* _dbWorker;

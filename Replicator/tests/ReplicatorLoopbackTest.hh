@@ -193,6 +193,23 @@ public:
         }
     }
 
+    virtual void replicatorBlobProgress(Replicator *repl,
+                                        const Replicator::BlobProgress &p) override
+    {
+        if (p.dir == Dir::kPushing) {
+            ++_blobPushProgressCallbacks;
+            _lastBlobPushProgress = p;
+        } else {
+            ++_blobPullProgressCallbacks;
+            _lastBlobPullProgress = p;
+        }
+        alloc_slice keyString(c4blob_keyToString(p.key));
+        Log(">> Replicator %s blob '%.*s'%.*s [%.*s] (%llu / %llu)",
+            (p.dir == Dir::kPushing ? "pushing" : "pulling"), SPLAT(p.docID),
+            SPLAT(p.docProperty), SPLAT(keyString),
+            p.bytesCompleted, p.bytesTotal);
+    }
+
     virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         if (repl == _replClient) {
@@ -365,5 +382,7 @@ public:
     set<string> _docPushErrors, _docPullErrors;
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;
     multiset<string> _docsFinished, _expectedDocsFinished;
+    unsigned _blobPushProgressCallbacks {0}, _blobPullProgressCallbacks {0};
+    Replicator::BlobProgress _lastBlobPushProgress {}, _lastBlobPullProgress {};
 };
 

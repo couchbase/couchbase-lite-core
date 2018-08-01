@@ -27,22 +27,25 @@ namespace litecore { namespace repl {
     public:
         IncomingBlob(Worker *parent, C4BlobStore*);
 
-        void start(C4BlobKey key, uint64_t size, bool compress) {
-            enqueue(&IncomingBlob::_start, key, size, compress);
+        void start(const PendingBlob &blob) {
+            enqueue(&IncomingBlob::_start, blob);
         }
 
+        virtual std::string loggingIdentifier() const override;
+
     private:
-        void _start(C4BlobKey, uint64_t, bool compress);
+        void _start(PendingBlob);
         void writeToBlob(fleece::alloc_slice);
         void finishBlob();
+        void notifyProgress(bool always);
         void closeWriter();
         virtual void onError(C4Error) override;
         virtual ActivityLevel computeActivityLevel() const override;
 
         C4BlobStore* const _blobStore;
-        C4BlobKey _key;
-        uint64_t _size;
+        PendingBlob _blob;
         c4::ref<C4WriteStream> _writer;
         bool _busy {false};
+        actor::Timer::time _lastNotifyTime;
     };
 } }

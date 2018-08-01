@@ -180,15 +180,24 @@ namespace litecore { namespace repl {
     }
 
 
-    void Worker::endedDocument(slice docID, Dir dir, C4Error error, bool transient) {
-        _parent->endedDocument(docID, dir, error, transient);
+    Replicator* Worker::replicator() const {
+        const Worker *root = this;
+        while (root->_parent)
+            root = root->_parent;
+        Assert(root);
+        return (Replicator*)root;
+    }
+
+
+    void Worker::documentGotError(slice docID, Dir dir, C4Error error, bool transient) {
+        replicator()->endedDocument(docID, dir, error, transient);
     }
 
 
     void Worker::finishedDocument(slice docID, Dir dir) {
         addProgress({0, 0, 1});
         if (_progressLevel >= 1)
-            endedDocument(docID, dir, {}, true);
+            replicator()->endedDocument(docID, dir, {}, true);
     }
 
 

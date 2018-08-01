@@ -146,6 +146,7 @@ namespace litecore { namespace repl {
             C4Progress progressDelta;
         };
 
+        Replicator* replicator() const;
 
         /** Called by the Replicator when the BLIP connection closes. */
         void connectionClosed() {
@@ -200,7 +201,7 @@ namespace litecore { namespace repl {
         virtual void onError(C4Error);         // don't call this, but you can override
 
         /** Report less-serious errors that affect a document but don't stop replication. */
-        virtual void endedDocument(slice docID, Dir, C4Error, bool transientErr);
+        virtual void documentGotError(slice docID, Dir, C4Error, bool transientErr);
 
         void finishedDocument(slice docID, Dir);
 

@@ -303,7 +303,7 @@ namespace litecore { namespace repl {
                                  SPLAT(change->docID), SPLAT(change->revID),
                                  SPLAT(change->remoteAncestorRevID), status);
                         auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
-                        endedDocument(change->docID, Dir::kPushing, err, false);
+                        documentGotError(change->docID, Dir::kPushing, err, false);
                     }
                 } else {
                     // Entry in "changes" response is an array of known ancestors, or null to skip:
@@ -386,7 +386,7 @@ namespace litecore { namespace repl {
                     logError("Got error response to rev %.*s %.*s (seq #%llu): %.*s %d '%.*s'",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
-                    endedDocument(rev->docID, Dir::kPushing, c4err, transient);
+                    documentGotError(rev->docID, Dir::kPushing, c4err, transient);
                     // If this is a permanent failure, like a validation error or conflict,
                     // then I've completed my duty to push it.
                     completed = !transient;
@@ -408,41 +408,66 @@ namespace litecore { namespace repl {
 #pragma mark - SENDING ATTACHMENTS:
 
 
-    C4ReadStream* Pusher::readBlobFromRequest(MessageIn *req, slice &digest, C4Error *outError) {
-        digest = req->property("digest"_sl);
-        C4BlobKey key;
-        if (!c4blob_keyFromString(digest, &key)) {
+    C4ReadStream* Pusher::readBlobFromRequest(MessageIn *req,
+                                              slice &digestStr,
+                                              Replicator::BlobProgress &progress,
+                                              C4Error *outError)
+    {
+        auto blobStore = _dbWorker->blobStore();
+        digestStr = req->property("digest"_sl);
+        progress = {Dir::kPushing};
+        if (!c4blob_keyFromString(digestStr, &progress.key)) {
             c4error_return(LiteCoreDomain, kC4ErrorInvalidParameter, "Missing or invalid 'digest'"_sl, outError);
             return nullptr;
         }
-        return c4blob_openReadStream(_dbWorker->blobStore(), key, outError);
+        int64_t size = c4blob_getSize(blobStore, progress.key);
+        if (size < 0) {
+            c4error_return(LiteCoreDomain, kC4ErrorNotFound, "No such blob"_sl, outError);
+            return nullptr;
+        }
+        progress.bytesTotal = size;
+        return c4blob_openReadStream(blobStore, progress.key, outError);
     }
 
 
     // Incoming request to send an attachment/blob
     void Pusher::handleGetAttachment(Retained<MessageIn> req) {
         slice digest;
+        Replicator::BlobProgress progress;
         C4Error err;
-        auto blob = readBlobFromRequest(req, digest, &err);
+        C4ReadStream* blob = readBlobFromRequest(req, digest, progress, &err);
         if (blob) {
             increment(_blobsInFlight);
             MessageBuilder reply(req);
             reply.compressed = req->boolProperty("compress"_sl);
             logVerbose("Sending blob %.*s (length=%lld, compress=%d)",
                        SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
-            reply.dataSource = [this,blob](void *buf, size_t capacity) {
+            Retained<Replicator> repl = replicator();
+            auto lastNotifyTime = actor::Timer::clock::now();
+            repl->onBlobProgress(progress);
+            reply.dataSource = [=](void *buf, size_t capacity) mutable {
                 // Callback to read bytes from the blob into the BLIP message:
                 // For performance reasons this is NOT run on my actor thread, so it can't access
                 // my state directly; instead it calls _attachmentSent() at the end.
                 C4Error err;
-                auto bytesRead = c4stream_read(blob, buf, capacity, &err);
+                bool done = false;
+                ssize_t bytesRead = c4stream_read(blob, buf, capacity, &err);
+                progress.bytesCompleted += bytesRead;
                 if (bytesRead < capacity) {
                     c4stream_close(blob);
                     this->enqueue(&Pusher::_attachmentSent);
+                    done = true;
                 }
                 if (err.code) {
                     this->warn("Error reading from blob: %d/%d", err.domain, err.code);
-                    return -1;
+                    progress.error = {err.domain, err.code};
+                    bytesRead = -1;
+                    done = true;
+                }
+                auto now = actor::Timer::clock::now();
+                if (done || now - lastNotifyTime > std::chrono::milliseconds(250)) {
+                    lastNotifyTime = now;
+                    repl->onBlobProgress(progress);
                 }
                 return (int)bytesRead;
             };
@@ -461,8 +486,9 @@ namespace litecore { namespace repl {
     // Incoming request to prove I have an attachment that I'm pushing, without sending it:
     void Pusher::handleProveAttachment(Retained<MessageIn> request) {
         slice digest;
+        Replicator::BlobProgress progress;
         C4Error err;
-        c4::ref<C4ReadStream> blob = readBlobFromRequest(request, digest, &err);
+        c4::ref<C4ReadStream> blob = readBlobFromRequest(request, digest, progress, &err);
         if (blob) {
             logVerbose("Sending proof of attachment %.*s", SPLAT(digest));
             sha1Context sha;
