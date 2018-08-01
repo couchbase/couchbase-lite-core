@@ -233,6 +233,12 @@ namespace litecore { namespace repl {
     }
 
 
+    void Replicator::_onBlobProgress(BlobProgress p) {
+        if (_delegate)
+            _delegate->replicatorBlobProgress(this, p);
+    }
+
+
 #pragma mark - BLIP DELEGATE:
 
 

@@ -378,7 +378,7 @@ namespace litecore { namespace repl {
                 if (_getForeignAncestors) {
                     doc = c4enum_getDocument(e, &error);
                     if (!doc) {
-                        endedDocument(info.docID, Dir::kPushing, error, false);
+                        documentGotError(info.docID, Dir::kPushing, error, false);
                         continue;   // reject rev: error getting doc
                     }
                 }
@@ -441,7 +441,7 @@ namespace litecore { namespace repl {
                     C4Error error;
                     doc = c4doc_get(_db, info.docID, true, &error);
                     if (!doc) {
-                        endedDocument(info.docID, Dir::kPushing, error, false);
+                        documentGotError(info.docID, Dir::kPushing, error, false);
                         continue;   // reject rev: error getting doc
                     }
                     if (slice(doc->revID) != slice(info.revID))
@@ -847,7 +847,6 @@ namespace litecore { namespace repl {
         set<string> found;
         FLDeepIterator i = FLDeepIterator_New(root, sk);
         for (; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i)) {
-            alloc_slice path(FLDeepIterator_GetJSONPointer(i));
             C4BlobKey blobKey;
             if (isAttachment(i, sk, &blobKey, _disableBlobSupport)) {
                 if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second) {

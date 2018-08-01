@@ -568,6 +568,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Attachments", "[Push][blob]") {
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     checkAttachments(db2, blobKeys, attachments);
+    CHECK(_blobPushProgressCallbacks >= 2);
+    CHECK(_blobPullProgressCallbacks >= 2);
 }
 
 
@@ -584,6 +586,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
     validateCheckpoints(db2, db, "{\"remote\":1}");
 
     checkAttachments(db2, blobKeys, attachments);
+    CHECK(_blobPushProgressCallbacks >= 2);
+    CHECK(_blobPullProgressCallbacks >= 2);
 }
 
 
@@ -604,6 +608,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Large Attachments", "[Pull][blob]
     validateCheckpoints(db2, db, "{\"remote\":1}");
 
     checkAttachments(db2, blobKeys, attachments);
+    CHECK(_blobPushProgressCallbacks >= 2);
+    CHECK(_blobPullProgressCallbacks >= 2);
 }
 
 
@@ -632,6 +638,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Lots Of Attachments", "[Pull][blo
     compareDatabases();
 
     validateCheckpoints(db2, db, format("{\"remote\":%d}", kNumDocs).c_str());
+    CHECK(_blobPushProgressCallbacks >= kNumDocs*kNumBlobsPerDoc);
+    CHECK(_blobPullProgressCallbacks >= kNumDocs*kNumBlobsPerDoc);
 }
 
 
@@ -651,6 +659,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Uncompressible Blob", "[Push][blo
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     checkAttachments(db2, blobKeys, attachments);
+    CHECK(_blobPullProgressCallbacks >= 2);
 }
 
 
@@ -667,6 +676,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Blobs Legacy Mode", "[Push][blob]
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
 
     checkAttachments(db2, blobKeys, attachments);
+    CHECK(_blobPushProgressCallbacks >= 2);
+    CHECK(_blobPullProgressCallbacks >= 2);
 
     string json = getDocJSON(db2, "att1"_sl);
     replace(json, '"', '\'');
@@ -693,6 +704,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
     runReplicators(serverOpts, Replicator::Options::pulling(kC4OneShot));
 
     checkAttachments(db2, blobKeys, attachments);
+    CHECK(_blobPushProgressCallbacks >= 2);
+    CHECK(_blobPullProgressCallbacks >= 2);
 }
 
 

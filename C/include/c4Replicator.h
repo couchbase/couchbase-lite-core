@@ -19,6 +19,7 @@
 #pragma once
 #include "c4Socket.h"
 #include "c4Database.h"
+#include "c4BlobStore.h"
 #include "Fleece.h"
 
 #ifdef __cplusplus
@@ -89,6 +90,17 @@ extern "C" {
                                                       bool errorIsTransient,
                                                       void *context);
 
+    /** Callback a client can register, to hear about the status of blobs. */
+    typedef void (*C4ReplicatorBlobProgressCallback)(C4Replicator* C4NONNULL,
+                                                     bool pushing,
+                                                     C4String docID,
+                                                     C4String docProperty,
+                                                     C4BlobKey blobKey,
+                                                     uint64_t bytesComplete,
+                                                     uint64_t bytesTotal,
+                                                     C4Error error,
+                                                     void *context);
+
     /** Callback that can choose to reject an incoming pulled revision by returning false. */
     typedef bool (*C4ReplicatorValidationFunction)(C4String docID,
                                                    FLDict body,
@@ -122,6 +134,7 @@ extern "C" {
         C4ReplicatorValidationFunction    validationFunc;    ///< Callback that can reject incoming revisions
         C4ReplicatorStatusChangedCallback onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
         C4ReplicatorDocumentEndedCallback onDocumentEnded;   ///< Callback notifying status of individual documents
+        C4ReplicatorBlobProgressCallback  onBlobProgress;    ///< Callback notifying blob progress
         void*                             callbackContext;   ///< Value to be passed to the callbacks.
         const C4SocketFactory*            socketFactory;     ///< Custom C4SocketFactory, if not NULL
     } C4ReplicatorParameters;

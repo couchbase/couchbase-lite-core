@@ -129,7 +129,9 @@ namespace litecore { namespace repl {
         // Check for blobs, and queue up requests for any I don't have yet:
         _dbWorker->findBlobReferences(root, nullptr, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
             _rev->flags |= kRevHasAttachments;
-            _pendingBlobs.push_back({key,
+            _pendingBlobs.push_back({_rev->docID,
+                                     alloc_slice(FLDeepIterator_GetPathString(i)),
+                                     key,
                                      blob["length"_sl].asUnsigned(),
                                      c4doc_blobIsCompressible(blob, nullptr)});
         });
@@ -143,12 +145,12 @@ namespace litecore { namespace repl {
     bool IncomingRev::fetchNextBlob() {
         auto blobStore = _dbWorker->blobStore();
         while (!_pendingBlobs.empty()) {
-            PendingBlob first = _pendingBlobs.front();
+            PendingBlob firstPending = _pendingBlobs.front();
             _pendingBlobs.erase(_pendingBlobs.begin());
-            if (c4blob_getSize(blobStore, first.key) < 0) {
+            if (c4blob_getSize(blobStore, firstPending.key) < 0) {
                 if (!_currentBlob)
                     _currentBlob = new IncomingBlob(this, blobStore);
-                _currentBlob->start(first.key, first.length, first.compressible);
+                _currentBlob->start(firstPending);
                 return true;
             }
         }
@@ -200,11 +202,11 @@ namespace litecore { namespace repl {
         if (_error.code == 0 && _peerError)
             _error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
         if (_error.code) {
-            endedDocument(_rev->docID, Dir::kPulling, _error, false);
+            documentGotError(_rev->docID, Dir::kPulling, _error, false);
         } else if (_rev->flags & kRevIsConflict) {
             // DBWorker::_insertRevision set this flag to indicate that the rev caused a conflict
             // (though it did get inserted), so notify the delegate of the conflict:
-            endedDocument(_rev->docID, Dir::kPulling, {LiteCoreDomain, kC4ErrorConflict}, true);
+            documentGotError(_rev->docID, Dir::kPulling, {LiteCoreDomain, kC4ErrorConflict}, true);
         }
         _puller->revWasHandled(this, _rev->docID, remoteSequence(), (_error.code == 0));
         clear();

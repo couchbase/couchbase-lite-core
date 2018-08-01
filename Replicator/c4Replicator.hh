@@ -216,6 +216,26 @@ private:
                        _params.callbackContext);
     }
 
+    virtual void replicatorBlobProgress(Replicator *repl,
+                                        const Replicator::BlobProgress &p) override
+    {
+        if (repl != _replicator)
+            return;
+        C4ReplicatorBlobProgressCallback onBlob;
+        {
+            lock_guard<mutex> lock(_mutex);
+            onBlob = _params.onBlobProgress;
+        }
+        if (onBlob)
+            onBlob(this, (p.dir == Dir::kPushing),
+                   {p.docID.buf, p.docID.size},
+                   {p.docProperty.buf, p.docProperty.size},
+                   p.key,
+                   p.bytesCompleted, p.bytesTotal,
+                   p.error,
+                   _params.callbackContext);
+    }
+
     void notifyStateChanged() {
         C4ReplicatorStatusChangedCallback onStatusChanged;
         {
