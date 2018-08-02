@@ -110,6 +110,7 @@ namespace litecore {
             kValueIndex,         ///< Regular index of property value
             kFullTextIndex,      ///< Full-text index
             kGeoIndex,           ///< Geo index of GeoJSON values
+            kArrayIndex,         ///< Index of array values
         };
 
         struct IndexOptions {

@@ -183,6 +183,7 @@ extern "C" {
         kC4ValueIndex,         ///< Regular index of property value
         kC4FullTextIndex,      ///< Full-text index
         kC4GeoIndex,           ///< Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
+        kC4ArrayIndex,         ///< Index of array values (NOT YET IMPLEMENTED)
     };
 
 

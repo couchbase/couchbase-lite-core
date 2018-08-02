@@ -102,15 +102,12 @@ namespace litecore {
                            const char *operation,
                            const std::string &statements);
         void dropTrigger(const std::string &name, const char *suffix);
-        bool _createIndex(IndexType type, const std::string &sqlName,
-                          const std::string &liteCoreName, const std::string &sql);
-        void createValueIndex(std::string indexName,
-                              const fleece::Array *params,
-                              const IndexOptions *options);
-        void createFTSIndex(std::string indexName,
-                            const fleece::Array *params,
-                            const IndexOptions *options);
-        void _deleteIndex(slice name);
+        void createValueIndex(std::string, const fleece::Array *params, const IndexOptions*);
+        void createFTSIndex(std::string, const fleece::Array *params, const IndexOptions*);
+        void createArrayIndex(std::string, const fleece::Array *params, const IndexOptions*);
+        bool _sqlCreateIndex(IndexType type, const std::string &sqlName,
+                             const std::string &liteCoreName, const std::string &sql);
+        void _sqlDeleteIndex(slice name);
 
         std::unique_ptr<SQLite::Statement> _recCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;

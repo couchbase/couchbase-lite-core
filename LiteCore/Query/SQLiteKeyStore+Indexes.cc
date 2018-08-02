@@ -37,34 +37,9 @@ using namespace fleece;
 
 namespace litecore {
 
-    static void validateIndexName(slice name) {
-        if(name.size == 0) {
-            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty");
-        }
-
-        if(name.findByte((uint8_t)'"') != nullptr) {
-            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not contain "
-                          "the double quote (\") character");
-        }
-    }
-
-
-    // Parses the JSON index-spec expression into an Array:
-    static pair<alloc_slice, const Array*> parseIndexExpr(slice expression,
-                                                          KeyStore::IndexType type)
-    {
-        alloc_slice expressionFleece;
-        const Array *params = nullptr;
-        try {
-            expressionFleece = JSONConverter::convertJSON(expression);
-            auto f = Value::fromTrustedData(expressionFleece);
-            if (f)
-                params = f->asArray();
-        } catch (const FleeceException &) { }
-        if (!params || params->count() == 0)
-            error::_throw(error::InvalidQuery);
-        return {expressionFleece, params};
-    }
+    static void validateIndexName(slice name);
+    static pair<alloc_slice, const Array*> parseIndexExpr(slice expression, KeyStore::IndexType);
+    static void writeTokenizerOptions(stringstream &sql, const KeyStore::IndexOptions*);
 
 
     void SQLiteKeyStore::createIndex(slice indexName,
@@ -81,17 +56,63 @@ namespace litecore {
         switch (type) {
             case kValueIndex:    createValueIndex(indexNameStr, params, options); break;
             case kFullTextIndex: createFTSIndex(indexNameStr, params, options); break;
+            case kArrayIndex:    createArrayIndex(indexNameStr, params, options); break;
             default:             error::_throw(error::Unimplemented);
         }
         t.commit();
     }
 
 
+    void SQLiteKeyStore::deleteIndex(slice name) {
+        Transaction t(db());
+        _sqlDeleteIndex(name);
+        t.commit();
+    }
+
+
+    // Creates the special by-sequence index
+    void SQLiteKeyStore::createSequenceIndex() {
+        if (!_createdSeqIndex) {
+            Assert(_capabilities.sequences);
+            db().execWithLock(CONCAT("CREATE UNIQUE INDEX IF NOT EXISTS kv_" << name() << "_seqs"
+                                     " ON kv_" << name() << " (sequence)"));
+            _createdSeqIndex = true;
+        }
+    }
+
+
+    alloc_slice SQLiteKeyStore::getIndexes() const {
+        Encoder enc;
+        enc.beginArray();
+        string tableNameStr = tableName();
+        SQLite::Statement getIndex(db(), "SELECT name FROM sqlite_master WHERE type='index' "
+                                         "AND tbl_name=? "
+                                         "AND sql NOT NULL");
+        getIndex.bind(1, tableNameStr);
+        while(getIndex.executeStep()) {
+            enc.writeString(getIndex.getColumn(0).getString());
+        }
+
+        SQLite::Statement getFTS(db(), "SELECT name FROM sqlite_master WHERE type='table' "
+                                       "AND name like ? || '::%' "
+                                       "AND sql LIKE 'CREATE VIRTUAL TABLE % USING fts%'");
+        getFTS.bind(1, tableNameStr);
+        while(getFTS.executeStep()) {
+            string ftsName = getFTS.getColumn(0).getString();
+            ftsName = ftsName.substr(ftsName.find("::") + 2);
+            enc.writeString(ftsName);
+        }
+
+        enc.endArray();
+        return enc.extractOutput();
+    }
+
+
     // Actually creates a value or FTS index, given the SQL statement to do so.
     // If an identical index with the same name exists, returns false.
     // Otherwise, any index with the same name is replaced.
-    bool SQLiteKeyStore::_createIndex(IndexType type, const string &sqlName,
-                                      const string &liteCoreName, const string &sql) {
+    bool SQLiteKeyStore::_sqlCreateIndex(IndexType type, const string &sqlName,
+                                         const string &liteCoreName, const string &sql) {
         {
             SQLite::Statement check(db(), "SELECT sql FROM sqlite_master "
                                           "WHERE name = ? AND tbl_name = ? AND type = ?");
@@ -101,10 +122,30 @@ namespace litecore {
             if (check.executeStep() && check.getColumn(0).getString() == sql)
                 return false;
         }
-        _deleteIndex(liteCoreName);
+        _sqlDeleteIndex(liteCoreName);
         db().exec(sql);
         return true;
     }
+
+
+    // Actually deletes an index from SQLite.
+    void SQLiteKeyStore::_sqlDeleteIndex(slice name) {
+        // Delete any expression index:
+        validateIndexName(name);
+        string indexName = (string)name;
+        db().exec(CONCAT("DROP INDEX IF EXISTS \"" << indexName << "\""));
+
+        // Delete any FTS index:
+        QueryParser qp(tableName());
+        auto ftsTableName = qp.FTSTableName(indexName);
+        db().exec(CONCAT("DROP TABLE IF EXISTS \"" << ftsTableName << "\""));
+        dropTrigger(ftsTableName, "ins");
+        dropTrigger(ftsTableName, "upd");
+        dropTrigger(ftsTableName, "del");
+    }
+
+
+#pragma mark - VALUE INDEX:
 
 
     // Creates a value index.
@@ -114,10 +155,66 @@ namespace litecore {
     {
         QueryParser qp(tableName());
         qp.writeCreateIndex(indexName, params);
-        _createIndex(kValueIndex, indexName, indexName, qp.SQL());
+        _sqlCreateIndex(kValueIndex, indexName, indexName, qp.SQL());
     }
 
 
+#pragma mark - FTS INDEX:
+
+
+    // Creates a FTS index.
+    void SQLiteKeyStore::createFTSIndex(string indexName,
+                                        const Array *params,
+                                        const IndexOptions *options)
+    {
+        auto ftsTableName = QueryParser(tableName()).FTSTableName(indexName);
+        // Collect the name of each FTS column and the SQL expression that populates it:
+        vector<string> colNames, colExprs;
+        for (Array::iterator i(params); i; ++i) {
+            colNames.push_back(CONCAT('"' << QueryParser::FTSColumnName(i.value()) << '"'));
+            colExprs.push_back(QueryParser::expressionSQL(i.value(), "new.body"));
+        }
+        string columns = join(colNames, ", ");
+        string exprs = join(colExprs, ", ");
+
+        // Build the SQL that creates an FTS table, including the tokenizer options:
+        stringstream sql;
+        sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(" << columns << ", ";
+        writeTokenizerOptions(sql, options);
+        sql << ")";
+
+        // Create the FTS table, but if an identical one already exists, return:
+        if (!_sqlCreateIndex(kFullTextIndex, ftsTableName, indexName, sql.str()))
+            return;
+
+        // Index the existing records:
+        db().exec(CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
+                         "SELECT rowid, " << exprs << " FROM kv_" << name() << " AS new"));
+
+        // Set up triggers to keep the FTS table up to date
+        // ...on insertion:
+        createTrigger(ftsTableName, "ins", "INSERT",
+                      CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
+                             "VALUES (new.rowid, " << exprs << ")"));
+
+        // ...on delete:
+        createTrigger(ftsTableName, "del", "DELETE",
+                      CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid"));
+
+        // ...on update:
+        stringstream upd;
+        upd << "UPDATE \"" << ftsTableName << "\" SET ";
+        for (size_t i = 0; i < colNames.size(); ++i) {
+            if (i > 0)
+                upd << ", ";
+            upd << colNames[i] << " = " << colExprs[i];
+        }
+        upd << " WHERE docid = new.rowid";
+        createTrigger(ftsTableName, "upd", "UPDATE", upd.str());
+    }
+
+
+    // subroutine that generates the option string passed to the FTS tokenizer
     static void writeTokenizerOptions(stringstream &sql, const KeyStore::IndexOptions *options) {
         // See https://www.sqlite.org/fts3.html#tokenizer . 'unicodesn' is our custom tokenizer.
         sql << "tokenize=unicodesn";
@@ -153,115 +250,48 @@ namespace litecore {
     }
 
 
-    // Creates a FTS index.
-    void SQLiteKeyStore::createFTSIndex(string indexName,
-                                        const Array *params,
-                                        const IndexOptions *options)
+#pragma mark - ARRAY INDEX:
+
+
+    void SQLiteKeyStore::createArrayIndex(string indexName,
+                                          const Array *params,
+                                          const IndexOptions *options)
     {
-        auto ftsTableName = QueryParser(tableName()).FTSTableName(indexName);
-        // Collect the name of each FTS column and the SQL expression that populates it:
-        vector<string> colNames, colExprs;
-        for (Array::iterator i(params); i; ++i) {
-            colNames.push_back(CONCAT('"' << QueryParser::FTSColumnName(i.value()) << '"'));
-            colExprs.push_back(QueryParser::expressionSQL(i.value(), "new.body"));
-        }
-        string columns = join(colNames, ", ");
-        string exprs = join(colExprs, ", ");
-
-        // Build the SQL that creates an FTS table, including the tokenizer options:
-        stringstream sql;
-        sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(" << columns << ", ";
-        writeTokenizerOptions(sql, options);
-        sql << ")";
-
-        // Create the FTS table, but if an identical one already exists, return:
-        if (!_createIndex(kFullTextIndex, ftsTableName, indexName, sql.str()))
-            return;
-
-        // Index the existing records:
-        db().exec(CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
-                         "SELECT rowid, " << exprs << " FROM kv_" << name() << " AS new"));
-
-        // Set up triggers to keep the FTS table up to date
-        // ...on insertion:
-        createTrigger(ftsTableName, "ins", "INSERT",
-                      CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
-                             "VALUES (new.rowid, " << exprs << ")"));
-
-        // ...on delete:
-        createTrigger(ftsTableName, "del", "DELETE",
-                      CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid"));
-
-        // ...on update:
-        stringstream upd;
-        upd << "UPDATE \"" << ftsTableName << "\" SET ";
-        for (size_t i = 0; i < colNames.size(); ++i) {
-            if (i > 0)
-                upd << ", ";
-            upd << colNames[i] << " = " << colExprs[i];
-        }
-        upd << " WHERE docid = new.rowid";
-        createTrigger(ftsTableName, "upd", "UPDATE", upd.str());
+        error::_throw(error::Unimplemented);
     }
 
 
-    void SQLiteKeyStore::_deleteIndex(slice name) {
-        // Delete any expression index:
-        validateIndexName(name);
-        string indexName = (string)name;
-        db().exec(CONCAT("DROP INDEX IF EXISTS \"" << indexName << "\""));
 
-        // Delete any FTS index:
-        QueryParser qp(tableName());
-        auto ftsTableName = qp.FTSTableName(indexName);
-        db().exec(CONCAT("DROP TABLE IF EXISTS \"" << ftsTableName << "\""));
-        dropTrigger(ftsTableName, "ins");
-        dropTrigger(ftsTableName, "upd");
-        dropTrigger(ftsTableName, "del");
+#pragma mark - UTILITIES:
+
+
+    static void validateIndexName(slice name) {
+        if(name.size == 0) {
+            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty");
+        }
+
+        if(name.findByte((uint8_t)'"') != nullptr) {
+            error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not contain "
+                          "the double quote (\") character");
+        }
     }
 
 
-    void SQLiteKeyStore::deleteIndex(slice name) {
-        Transaction t(db());
-        _deleteIndex(name);
-        t.commit();
-    }
-
-
-    alloc_slice SQLiteKeyStore::getIndexes() const {
-        Encoder enc;
-        enc.beginArray();
-        string tableNameStr = tableName();
-        SQLite::Statement getIndex(db(), "SELECT name FROM sqlite_master WHERE type='index' "
-                                            "AND tbl_name=? "
-                                            "AND sql NOT NULL");
-        getIndex.bind(1, tableNameStr);
-        while(getIndex.executeStep()) {
-            enc.writeString(getIndex.getColumn(0).getString());
-        }
-
-        SQLite::Statement getFTS(db(), "SELECT name FROM sqlite_master WHERE type='table' "
-                                            "AND name like ? || '::%' "
-                                            "AND sql LIKE 'CREATE VIRTUAL TABLE % USING fts%'");
-        getFTS.bind(1, tableNameStr);
-        while(getFTS.executeStep()) {
-            string ftsName = getFTS.getColumn(0).getString();
-            ftsName = ftsName.substr(ftsName.find("::") + 2);
-            enc.writeString(ftsName);
-        }
-
-        enc.endArray();
-        return enc.extractOutput();
-    }
-
-
-    void SQLiteKeyStore::createSequenceIndex() {
-        if (!_createdSeqIndex) {
-            Assert(_capabilities.sequences);
-            db().execWithLock(CONCAT("CREATE UNIQUE INDEX IF NOT EXISTS kv_" << name() << "_seqs"
-                                     " ON kv_" << name() << " (sequence)"));
-            _createdSeqIndex = true;
-        }
+    // Parses the JSON index-spec expression into an Array:
+    static pair<alloc_slice, const Array*> parseIndexExpr(slice expression,
+                                                          KeyStore::IndexType type)
+    {
+        alloc_slice expressionFleece;
+        const Array *params = nullptr;
+        try {
+            expressionFleece = JSONConverter::convertJSON(expression);
+            auto f = Value::fromTrustedData(expressionFleece);
+            if (f)
+                params = f->asArray();
+        } catch (const FleeceException &) { }
+        if (!params || params->count() == 0)
+            error::_throw(error::InvalidQuery);
+        return {expressionFleece, params};
     }
 
 }
