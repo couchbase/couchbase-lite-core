@@ -29,6 +29,12 @@ namespace litecore {
         setKey(key);
     }
 
+    Record::Record(alloc_slice key)
+    :Record()
+    {
+        setKey(key);
+    }
+
     Record::Record(const Record &d)
     :_key(d._key),
      _version(d._version),

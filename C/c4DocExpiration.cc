@@ -153,7 +153,7 @@ public:
         return true;
     }
     
-    slice docID() const
+    alloc_slice docID() const
     {
         return _current;
     }

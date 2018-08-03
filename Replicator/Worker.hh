@@ -56,8 +56,13 @@ namespace litecore { namespace repl {
 
             Options()
             { }
-            
-            Options(Mode push_, Mode pull_, fleece::slice propertiesFleece =fleece::nullslice)
+
+            Options(Mode push_, Mode pull_)
+            :push(push_), pull(pull_)
+            { }
+
+            template <class SLICE>
+            Options(Mode push_, Mode pull_, SLICE propertiesFleece)
             :push(push_), pull(pull_), properties(propertiesFleece)
             { }
 

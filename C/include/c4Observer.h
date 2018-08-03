@@ -29,8 +29,8 @@ extern "C" {
         @{ */
 
     typedef struct {
-        C4String docID;
-        C4String revID;
+        C4HeapString docID;
+        C4HeapString revID;
         C4SequenceNumber sequence;
         uint32_t bodySize;
     } C4DatabaseChange;

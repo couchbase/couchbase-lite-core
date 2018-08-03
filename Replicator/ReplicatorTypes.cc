@@ -23,11 +23,6 @@ using namespace std;
 
 namespace litecore { namespace repl {
 
-    Rev::Rev(slice docID_, slice revID_, C4SequenceNumber sequence_, uint64_t bodySize_)
-    :docID(docID_), revID(revID_), sequence(sequence_), bodySize(bodySize_)
-    { }
-
-
     RevToSend::RevToSend(const C4DocumentInfo &info, const alloc_slice &remoteAncestor)
     :Rev(info.docID, info.revID, info.sequence, info.bodySize)
     ,remoteAncestorRevID(remoteAncestor)

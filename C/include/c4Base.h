@@ -195,6 +195,7 @@ typedef struct {
 
 #ifdef FL_SLICE_DEFINED
     typedef FLSlice C4Slice;
+    typedef FLHeapSlice C4HeapSlice;
     typedef FLSliceResult C4SliceResult;
 #else
     /** A slice is simply a pointer to a range of bytes, usually interpreted as a UTF-8 string.
@@ -209,12 +210,15 @@ typedef struct {
         size_t size;
     } C4Slice;
 
+    typedef C4Slice C4HeapSlice;
+
     /** Denotes a slice returned from a function, which needs to have its buf freed by the caller. */
     typedef C4Slice C4SliceResult;
 #endif
     
     
 typedef C4Slice C4String;
+typedef C4HeapSlice C4HeapString;
 typedef C4SliceResult C4StringResult;
 
 /** Creates a slice pointing to the contents of a C string. */

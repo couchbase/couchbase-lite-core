@@ -176,7 +176,7 @@ namespace litecore {
             body = convertBody(asSlice(_currentRev->getColumn(4)));
             if (hasAttachments)
                 copyAttachments(body);
-            put.body = body;
+            put.allocedBody = {(void*)body.buf, body.size};
 
             int64_t nextSequence = _currentRev->getColumn(2);
 

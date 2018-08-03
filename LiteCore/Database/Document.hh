@@ -173,7 +173,7 @@ namespace c4Internal {
     protected:
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;
-            selectedRev.revID = kC4SliceNull;
+            selectedRev.revID = {};
             selectedRev.flags = (C4RevisionFlags)0;
             selectedRev.sequence = 0;
             selectedRev.body = kC4SliceNull;

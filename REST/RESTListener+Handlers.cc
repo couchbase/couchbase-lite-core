@@ -292,7 +292,7 @@ namespace litecore { namespace REST {
         // Save the revision:
         C4Slice history[1] = {revID};
         C4DocPutRequest put = {};
-        put.body = encodedBody;
+        put.allocedBody = {(void*)encodedBody.buf, encodedBody.size};
         if (!docID.empty())
             put.docID = slice(docID);
         put.revFlags = (deleting ? kRevDeleted : 0);

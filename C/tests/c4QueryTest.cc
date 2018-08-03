@@ -630,7 +630,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
         // Save document:
         C4DocPutRequest rq = {};
         rq.docID = C4STR("added_later");
-        rq.body = (C4Slice)body;
+        rq.allocedBody = body;
         rq.save = true;
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
