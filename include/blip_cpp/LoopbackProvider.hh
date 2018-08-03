@@ -121,7 +121,8 @@ namespace litecore { namespace websocket {
 
         class LoopbackMessage : public Message {
         public:
-            LoopbackMessage(LoopbackWebSocket *ws, slice data, bool binary)
+            template <class SLICE>
+            LoopbackMessage(LoopbackWebSocket *ws, SLICE data, bool binary)
             :Message(data, binary)
             ,_size(data.size)
             ,_webSocket(ws)
