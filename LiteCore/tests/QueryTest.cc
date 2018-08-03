@@ -21,6 +21,7 @@
 #include "Error.hh"
 #include "Fleece.hh"
 #include "Benchmark.hh"
+#include "StringUtil.hh"
 
 #include "LiteCoreTest.hh"
 
@@ -47,6 +48,30 @@ static sequence_t writeNumberedDoc(KeyStore *store, int i, slice str, Transactio
     alloc_slice body = enc.extractOutput();
 
     return store->set(slice(docID), nullslice, body, flags, t);
+}
+
+static sequence_t writeArrayDoc(KeyStore *store, int i, Transaction &t,
+                                DocumentFlags flags =DocumentFlags::kNone) {
+    string docID = stringWithFormat("rec-%03d", i);
+
+    fleece::Encoder enc;
+    enc.beginDictionary();
+    enc.writeKey("numbers");
+    enc.beginArray();
+    for (int j = max(i-5, 1); j <= i; j++)
+        enc.writeInt(j);
+    enc.endArray();
+    enc.endDictionary();
+    alloc_slice body = enc.extractOutput();
+
+    return store->set(slice(docID), nullslice, body, flags, t);
+}
+
+static void addArrayDocs(KeyStore *store) {
+    Transaction t(store->dataFile());
+    for (int i = 1; i <= 100; i++)
+        REQUIRE(writeArrayDoc(store, i, t) == (sequence_t)i);
+    t.commit();
 }
 
 static void writeMultipleTypeDocs(KeyStore* store, Transaction &t) {
@@ -194,6 +219,13 @@ TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query][FTS]") {
     store->deleteIndex("num_second"_sl); // Duplicate should be no-op
     indexes = extractIndexes(store->getIndexes());
     CHECK(indexes.size() == 0);
+}
+
+
+TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Array Index", "[Query][ArrayIndex]") {
+    addArrayDocs(store);
+    store->createIndex("nums"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex);
+    store->deleteIndex("nums"_sl);
 }
 
 
@@ -1071,6 +1103,26 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query JOINs", "[Query]") {
         CHECK(e->columns()[1]->asInt() == (i / 10));
     }*/
 }
+
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query UNNEST", "[Query]") {
+    addArrayDocs(store);
+    auto query = store->compileQuery(json5("['SELECT', {\
+                                                  FROM: [{as: 'doc'}, \
+                                                         {as: 'num', 'unnest': ['.doc.numbers']}],\
+                                                 WHERE: ['=', ['.num'], 15]}]"));
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    CHECK(e->getRowCount() == 6);
+    int docNo = 15;
+    while (e->next()) {
+        auto cols = e->columns();
+        slice docID = cols[0]->asString();
+        string expectedDocID = stringWithFormat("rec-%03d", docNo);
+        CHECK(docID == slice(expectedDocID));
+        ++docNo;
+    }
+}
+
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query NULL check", "[Query]")
 {

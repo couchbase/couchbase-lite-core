@@ -150,11 +150,11 @@ namespace litecore {
 
     // Creates a value index.
     void SQLiteKeyStore::createValueIndex(string indexName,
-                                          const Array *params,
+                                          const Array *expressions,
                                           const IndexOptions *options)
     {
         QueryParser qp(tableName());
-        qp.writeCreateIndex(indexName, params);
+        qp.writeCreateIndex(indexName, expressions);
         _sqlCreateIndex(kValueIndex, indexName, indexName, qp.SQL());
     }
 
@@ -254,10 +254,50 @@ namespace litecore {
 
 
     void SQLiteKeyStore::createArrayIndex(string indexName,
-                                          const Array *params,
+                                          const Array *expressions,
                                           const IndexOptions *options)
     {
-        error::_throw(error::Unimplemented);
+        auto kvTableName = tableName();
+        auto indexTableName = QueryParser(kvTableName).FTSTableName(indexName);
+        stringstream sql;
+        // Create the index table, but if an identical one already exists, return:
+        if (!_sqlCreateIndex(kFullTextIndex, indexTableName, indexName,
+                             CONCAT("CREATE TABLE \"" << indexTableName << "\""
+                                    "(key BLOB, i INTEGER, "
+                                    " docid INTEGER REFERENCES " << kvTableName << "(rowid))")))
+            return;
+
+        string eachExpr = QueryParser::eachExpressionSQL(expressions->get(0), "new.body");
+        string itemSQL;
+        if (expressions->count() >= 2)
+            itemSQL = QueryParser::expressionSQL(expressions->get(1), "_each.value");
+        else
+            itemSQL = "_each.value";
+
+        // Populate the index-table with data from existing documents:
+        db().exec(CONCAT("INSERT INTO \"" << indexTableName << "\" (docid, i, key) "
+                         "SELECT new.rowid, _each.rowid, (" << itemSQL << ") " <<
+                         "FROM " << kvTableName << " as new, " << eachExpr << " AS _each "
+                         "WHERE (new.flags & 1) = 0"));
+
+        // Create the SQL index on the index-table:
+        db().exec(CONCAT("CREATE INDEX \"" << indexTableName << "::keys\" ON \""
+                         << indexTableName << "\"(key)"));
+
+        // Set up triggers to keep the index-table up to date
+        // ...on insertion:
+        string insertTriggerExpr = CONCAT("INSERT INTO \"" << indexTableName << "\" (docid, key) "
+                                          "SELECT new.rowid, (" << itemSQL << ") " <<
+                                          "FROM " << eachExpr << " AS _each ");
+        createTrigger(indexTableName, "ins", "INSERT", insertTriggerExpr);
+
+        // ...on delete:
+        string deleteTriggerExpr = CONCAT("DELETE FROM \"" << indexTableName << "\" "
+                                          "WHERE docid = old.rowid");
+        createTrigger(indexTableName, "del", "DELETE", deleteTriggerExpr);
+
+        // ...on update:
+        createTrigger(indexTableName, "upd", "UPDATE", deleteTriggerExpr + "; " + insertTriggerExpr);
     }
 
 

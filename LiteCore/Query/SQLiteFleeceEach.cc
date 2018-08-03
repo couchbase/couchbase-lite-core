@@ -104,7 +104,7 @@ private:
         /* "A virtual table that contains hidden columns can be used like a table-valued function
             in the FROM clause of a SELECT statement. The arguments to the table-valued function
             become constraints on the HIDDEN columns of the virtual table." */
-        int rc = sqlite3_declare_vtab(db, "CREATE TABLE x(key, value, type, data, pointer,"
+        int rc = sqlite3_declare_vtab(db, "CREATE TABLE x(key, value, type, data, body,"
                                           " root_data HIDDEN, root_path HIDDEN)");
         if( rc!=SQLITE_OK )
             return rc;
@@ -276,9 +276,7 @@ private:
                 break;
             }
             case kPointerColumn: {
-                auto value = currentValue();
-                sqlite3_result_blob(ctx, &value, sizeof(value), SQLITE_TRANSIENT);
-                sqlite3_result_subtype(ctx, kFleecePointerSubtype);
+                sqlite3_result_pointer(ctx, (void*)currentValue(), kFleeceValuePointerType, nullptr);
                 break;
             }
 #if 0 // these columns are used for the join but are never actually queried
@@ -398,6 +396,8 @@ int RegisterFleeceEachFunctions(sqlite3 *db,
                                 DataFile::FleeceAccessor accessor,
                                 SharedKeys *sharedKeys)
 {
+    if (!accessor)
+        accessor = [](slice data) {return data;};
     return sqlite3_create_module_v2(db,
                                     "fl_each",
                                     &FleeceCursor::kEachModule,

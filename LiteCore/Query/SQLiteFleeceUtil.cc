@@ -31,6 +31,9 @@ using namespace std;
 namespace litecore {
 
 
+    const char* const kFleeceValuePointerType = "FleeceValue";
+
+
     const Value* fleeceDocRoot(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
         auto type = sqlite3_value_type(arg);
         if (type == SQLITE_NULL)
@@ -53,18 +56,12 @@ namespace litecore {
 
 
     const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
+        const Value *value = asFleeceValue(arg);
+        if (value)
+            return value;
         DebugAssert(sqlite3_value_type(arg) == SQLITE_BLOB);
         slice fleece = valueAsSlice(arg);
         switch (sqlite3_value_subtype(arg)) {
-            case kFleecePointerSubtype:
-                // Data is just a Value* (4 or 8 bytes), so extract it:
-                if (fleece.size == sizeof(Value*)) {
-                    return *(const Value**)fleece.buf;
-                } else {
-                    sqlite3_result_error(ctx, "invalid Fleece pointer", -1);
-                    sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
-                    return nullptr;
-                }
             case kFleeceDataSubtype: {
                 if (!fleece)
                     return Dict::kEmpty;             // No body; may be deleted rev

@@ -62,6 +62,7 @@ namespace litecore {
         bool isAggregateQuery() const                               {return _isAggregateQuery;}
 
         static std::string expressionSQL(const fleece::Value*, const char *bodyColumnName = "body");
+        static std::string eachExpressionSQL(const fleece::Value*, const char *bodyColumnName = "body");
         std::string FTSTableName(const fleece::Value *key) const;
         std::string FTSTableName(const std::string &property) const;
         static std::string FTSColumnName(const fleece::Value *expression);
@@ -121,6 +122,8 @@ namespace litecore {
 
         bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::Array::iterator &operands);
         void writePropertyGetter(slice fn, std::string property);
+        void writeEachExpression(const std::string &property);
+        void writeEachExpression(const fleece::Value *arrayExpr);
         void writeSQLString(slice str)              {writeSQLString(_sql, str);}
         void writeArgList(fleece::Array::iterator& operands);
         void writeColumnList(fleece::Array::iterator& operands);
@@ -136,6 +139,8 @@ namespace litecore {
         std::string _tableName;
         std::string _bodyColumnName;
         std::vector<std::string> _aliases;      // Aliased table/join names
+        std::set<std::string> _unnestAliases;
+        bool _useDocAlias {false};
         std::vector<std::string> _baseResultColumns;
         std::stringstream _sql;
         std::vector<const Operation*> _context;

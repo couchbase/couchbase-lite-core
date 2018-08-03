@@ -135,7 +135,7 @@ TEST_CASE("QueryParser ANY", "[Query]") {
 
 TEST_CASE("QueryParser ANY complex", "[Query]") {
     CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X', 'last'], 'Smith']]")
-          == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE fl_nested_value(_X.pointer, 'last') = 'Smith')");
+          == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE fl_nested_value(_X.body, 'last') = 'Smith')");
 }
 
 
@@ -143,47 +143,48 @@ TEST_CASE("QueryParser SELECT", "[Query]") {
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'],\
                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
                               ORDER_BY: [['.', 'first'], ['.', 'age']]}]")
-          == "SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
+          == "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age')");
     CHECK(parseWhere("['array_count()', ['SELECT',\
                                   {WHAT: ['._id'],\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                ORDER_BY: [['.', 'first'], ['.', 'age']]}]]")
-          == "array_count(SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "array_count(SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
     // note this query is lowercase, to test case-insensitivity
     CHECK(parseWhere("['exists', ['select',\
                                   {what: ['._id'],\
                                   where: ['=', ['.', 'last'], 'Smith'],\
                                order_by: [['.', 'first'], ['.', 'age']]}]]")
-          == "EXISTS (SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "EXISTS (SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
     CHECK(parseWhere("['EXISTS', ['SELECT',\
                                   {WHAT: [['MAX()', ['.weight']]],\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                DISTINCT: true,\
                                GROUP_BY: [['.', 'first'], ['.', 'age']]}]]")
-          == "EXISTS (SELECT DISTINCT fl_result(max(fl_value(body, 'weight'))) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 GROUP BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "EXISTS (SELECT DISTINCT fl_result(max(fl_value(_doc.body, 'weight'))) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (flags & 1) = 0 GROUP BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
 }
 
 
 TEST_CASE("QueryParser SELECT FTS", "[Query][FTS]") {
     CHECK(parseWhere("['SELECT', {\
                      WHERE: ['MATCH', 'bio', 'mobile']}]")
-          == "SELECT kv_default.rowid, offsets(\"kv_default::bio\"), key, sequence FROM kv_default JOIN \"kv_default::bio\" AS FTS1 ON FTS1.docid = kv_default.rowid WHERE (FTS1.\"kv_default::bio\" MATCH 'mobile') AND (flags & 1) = 0");
+          == "SELECT _doc.rowid, offsets(\"kv_default::bio\"), key, sequence FROM kv_default AS _doc JOIN \"kv_default::bio\" AS FTS1 ON FTS1.docid = _doc.rowid WHERE (FTS1.\"kv_default::bio\" MATCH 'mobile') AND (flags & 1) = 0");
 }
+
 
 TEST_CASE("QueryParser SELECT WHAT", "[Query]") {
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {WHAT: [['.first']],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(fl_value(body, 'first')) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(fl_value(_doc.body, 'first')) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {WHAT: [['.first'], ['length()', ['.middle']]],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(fl_value(body, 'first')), fl_result(N1QL_length(fl_value(body, 'middle'))) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(fl_value(_doc.body, 'first')), fl_result(N1QL_length(fl_value(_doc.body, 'middle'))) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (flags & 1) = 0");
     // Check the "." operator (like SQL "*"):
     CHECK(parseWhere("['SELECT', {WHAT: ['.'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(fl_root(body)) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(fl_root(_doc.body)) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {WHAT: [['.']], WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(fl_root(body)) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(fl_root(_doc.body)) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (flags & 1) = 0");
 }
 
 
@@ -213,6 +214,21 @@ TEST_CASE("QueryParser Join", "[Query]") {
                            {'as':'licence','on':['=',['.','session','licenceID'],['.','licence','id']]}],\
                  'WHERE':['AND',['AND',['=',['.','session','type'],'session'],['=',['.','user','type'],'user']],['=',['.','licence','type'],'licence']]}")
           == "SELECT fl_result(fl_value(\"session\".body, 'appId')), fl_result(fl_value(\"user\".body, 'username')), fl_result(fl_value(\"session\".body, 'emoId')) FROM kv_default AS \"session\" CROSS JOIN kv_default AS \"user\" ON (fl_value(\"session\".body, 'emoId') = fl_value(\"user\".body, 'emoId')) AND (\"user\".flags & 1) = 0 CROSS JOIN kv_default AS \"licence\" ON (fl_value(\"session\".body, 'licenceID') = fl_value(\"licence\".body, 'id')) AND (\"licence\".flags & 1) = 0 WHERE ((fl_value(\"session\".body, 'type') = 'session' AND fl_value(\"user\".body, 'type') = 'user') AND fl_value(\"licence\".body, 'type') = 'licence') AND (\"session\".flags & 1) = 0");
+}
+
+
+TEST_CASE("QueryParser SELECT UNNEST", "[Query][FTS]") {
+    CHECK(parseWhere("['SELECT', {\
+                      FROM: [{as: 'book'}, \
+                             {as: 'notes', 'unnest': ['.book.notes']}],\
+                     WHERE: ['=', ['.notes'], 'torn']}]")
+          == "SELECT book.key, book.sequence FROM kv_default AS \"book\", fl_each(\"book\".body, 'notes') AS \"notes\" WHERE (\"notes\".value = 'torn') AND (\"book\".flags & 1) = 0");
+    CHECK(parseWhere("['SELECT', {\
+                      WHAT: ['.notes'], \
+                      FROM: [{as: 'book'}, \
+                             {as: 'notes', 'unnest': ['.book.notes']}],\
+                     WHERE: ['>', ['.notes.page'], 100]}]")
+          == "SELECT fl_result(\"notes\".value) FROM kv_default AS \"book\", fl_each(\"book\".body, 'notes') AS \"notes\" WHERE (fl_nested_value(\"notes\".body, 'page') > 100) AND (\"book\".flags & 1) = 0");
 }
 
 

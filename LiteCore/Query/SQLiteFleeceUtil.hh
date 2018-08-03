@@ -27,11 +27,16 @@ namespace litecore {
     // SQLite value subtypes to represent type info that SQL doesn't convey:
     enum {
         kFleeceDataSubtype     = 0x66,  // Blob contains encoded Fleece data
-        kFleecePointerSubtype,          // Blob contains a raw Value* (4 or 8 bytes)
         kFleeceNullSubtype,             // Zero-length blob representing JSON null
         kFleeceIntBoolean,              // Integer is a boolean (true or false)
         kFleeceIntUnsigned,             // Integer is unsigned
     };
+
+    extern const char* const kFleeceValuePointerType;
+
+    static inline const fleece::Value* asFleeceValue(sqlite3_value *value) {
+        return (const fleece::Value*) sqlite3_value_pointer(value, kFleeceValuePointerType);
+    }
 
     // What the user_data of a registered function points to
     struct fleeceFuncContext {

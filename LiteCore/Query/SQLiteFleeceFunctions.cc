@@ -66,6 +66,11 @@ namespace litecore {
             auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
             slice fleece = funcCtx->accessor(body);
             setResultBlobFromFleeceData(ctx, fleece);
+            return;
+        }
+        const Value *val = asFleeceValue(argv[0]);
+        if (val) {
+            sqlite3_result_pointer(ctx, (void*)val, kFleeceValuePointerType, nullptr);
         } else {
             DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_NULL);
             sqlite3_result_null(ctx);
@@ -188,11 +193,13 @@ namespace litecore {
     static void fl_result(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             auto arg = argv[0];
-            if (sqlite3_value_type(arg) == SQLITE_BLOB) {
+            const Value *value = asFleeceValue(arg);
+            if (value) {
+                setResultBlobFromEncodedValue(ctx, value);
+            } else if (sqlite3_value_type(arg) == SQLITE_BLOB) {
                 switch (sqlite3_value_subtype(arg)) {
-                    case kFleecePointerSubtype:
                     case kFleeceNullSubtype: {
-                        auto value = fleeceParam(ctx, arg);
+                        value = fleeceParam(ctx, arg);
                         if (!value)
                             return;
                         setResultBlobFromEncodedValue(ctx, value);

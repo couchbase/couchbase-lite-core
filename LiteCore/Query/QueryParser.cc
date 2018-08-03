@@ -147,8 +147,10 @@ namespace litecore {
         _parameters.clear();
         _variables.clear();
         _ftsTables.clear();
+        _aliases.clear();
+        _unnestAliases.clear();
         _1stCustomResultCol = 0;
-        _isAggregateQuery = _aggregatesOK = false;
+        _isAggregateQuery = _aggregatesOK = _useDocAlias = false;
     }
 
 
@@ -196,20 +198,19 @@ namespace litecore {
 
 
     void QueryParser::writeSelect(const Value *where, const Dict *operands) {
+        // Find all the joins in the FROM clause first, to populate _aliases. This has to be done
+        // before writing the WHAT clause, because that will depend on _aliases.
+        auto from = getCaseInsensitive(operands, "FROM"_sl);
+        parseFromClause(from);
+        
         // Have to find all properties involved in MATCH before emitting the FROM clause:
         if (where) {
             unsigned numMatches = findFTSProperties(where);
             require(numMatches <= _ftsTables.size(),
                     "Sorry, multiple MATCHes of the same property are not allowed");
             if (numMatches > 0)
-                _baseResultColumns.push_back(_tableName + ".rowid");
+                _baseResultColumns.push_back(_useDocAlias ? "_doc.rowid" : (_tableName + ".rowid"));
         }
-
-        // Find all the joins in the FROM clause first, to populate _aliases. This has to be done
-        // before writing the WHAT clause, because that will depend on _aliases.
-        auto from = getCaseInsensitive(operands, "FROM"_sl);
-        if (from)
-            parseFromClause(from);
 
         _sql << "SELECT ";
 
@@ -356,27 +357,51 @@ namespace litecore {
 
 
     void QueryParser::parseFromClause(const Value *from) {
-        for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
-            auto entry = requiredDict(i.value(), "FROM item");
-            string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
-                                          "AS in FROM item").asString();
-            require(isAlphanumericOrUnderscore(alias), "AS value");
-            _aliases.push_back(alias);
+        _useDocAlias = true;
+        if (from) {
+            for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
+                auto entry = requiredDict(i.value(), "FROM item");
+                string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
+                                              "AS in FROM item").asString();
+                require(isAlphanumericOrUnderscore(alias), "AS value");
+                require(find(_aliases.begin(), _aliases.end(), alias) == _aliases.end(),
+                        "duplicate AS identifier '%s'", alias.c_str());
+                _aliases.push_back(alias);
+                if (getCaseInsensitive(entry, "UNNEST"_sl))
+                    _unnestAliases.emplace(alias);
+                _useDocAlias = false;
+            }
         }
     }
 
 
     void QueryParser::writeFromClause(const Value *from) {
         _sql << " FROM " << _tableName;
+        if (_useDocAlias)
+            _sql << " AS _doc";
+
         unsigned i = 0;
         if (from) {
             for (i = 0; i < _aliases.size(); ++i) {
                 auto entry = from->asArray()->get(i)->asDict();
                 auto on = getCaseInsensitive(entry, "ON"_sl);
+                auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
                 if (i == 0) {
-                    require(!on, "first FROM item cannot have an ON clause");
+                    // The first item is the database alias:
+                    require(!on && !unnest, "first FROM item cannot have an ON or UNNEST clause");
                     _sql << " AS \"" << _aliases[i] << "\"";
+
+                } else if (unnest) {
+                    // An UNNEST clause:
+                    require (!on, "cannot use ON and UNNEST together");
+                    string property = propertyFromNode(unnest);
+                    auto alias = _aliases[i];
+                    _sql << ", ";
+                    writeEachExpression(property);
+                    _sql << " AS \"" << alias << "\"";
+
                 } else {
+                    // A join:
                     JoinType joinType = kInner;
                     const Value* joinTypeVal = getCaseInsensitive(entry, "JOIN"_sl);
                     if (joinTypeVal) {
@@ -414,13 +439,15 @@ namespace litecore {
                 }
             }
         }
+        
         unsigned ftsTableNo = 0;
         for (auto ftsTable : _ftsTables) {
             ++ftsTableNo;
             if (i > 1)
                 _sql << ",";
             _sql << " JOIN \"" << ftsTable << "\" AS FTS" << ftsTableNo
-                 << " ON FTS" << ftsTableNo << ".docid = kv_default.rowid";
+                 << " ON FTS" << ftsTableNo << ".docid = "
+                 << (_useDocAlias ? "_doc" : _tableName) << ".rowid";
         }
     }
 
@@ -726,12 +753,10 @@ namespace litecore {
         _variables.insert(var);
 
         string property = propertyFromNode(operands[1]);
-        require(!property.empty(), "ANY/EVERY only supports a property as its source");
+        //OPT: If expr is `var = value`, can generate `fl_contains(array, value)` instead
 
         bool every = !op.caseEquivalent("ANY"_sl);
         bool anyAndEvery = op.caseEquivalent("ANY AND EVERY"_sl);
-
-        //OPT: If expr is `var = value`, can generate `fl_contains(array, value)` instead 
 
         if (anyAndEvery) {
             _sql << '(';
@@ -742,7 +767,7 @@ namespace litecore {
         if (every)
             _sql << "NOT ";
         _sql << "EXISTS (SELECT 1 FROM ";
-        writePropertyGetter(kEachFnName, property);
+        writeEachExpression(property);
         _sql << " AS _" << var << " WHERE ";
         if (every)
             _sql << "NOT (";
@@ -810,7 +835,7 @@ namespace litecore {
         if (property.empty()) {
             _sql << '_' << var << ".value";
         } else {
-            _sql << kNestedValueFnName << "(_" << var << ".pointer, ";
+            _sql << kNestedValueFnName << "(_" << var << ".body, ";
             writeSQLString(_sql, slice(property));
             _sql << ")";
         }
@@ -1009,7 +1034,10 @@ namespace litecore {
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, string property) {
         string tableName;
-        if (!_aliases.empty()) {
+        if (_aliases.empty()) {
+            if (_useDocAlias)
+                tableName = "_doc.";
+        } else {
             // Interpret the first component of the property as a db alias:
             auto dot = property.find('.');
             string rest;
@@ -1024,11 +1052,26 @@ namespace litecore {
             auto bra = property.find('[');
             require(bra == string::npos || dot < bra,
                     "Missing database alias name in property '%s'", property.c_str());
-
             require(find(_aliases.begin(), _aliases.end(), first) != _aliases.end(),
                     "Unknown database alias name in property '%s'", property.c_str());
+
             tableName = "\"" + first + "\".";
             property = rest;
+
+            if (_unnestAliases.find(first) != _unnestAliases.end()) {
+                // The alias is to an UNNEST. This needs to be written specially:
+                require(fn == kValueFnName, "can't use an UNNEST alias in this context");
+                require(property != "_id" && property != "_sequence",
+                        "can't use '%s' on an UNNEST", property.c_str());
+                if (property.empty()) {
+                    _sql << '\"' << first << "\".value";
+                } else {
+                    _sql << kNestedValueFnName << "(\"" << first << "\".body, ";
+                    writeSQLString(_sql, slice(property));
+                    _sql << ")";
+                }
+                return;
+            }
         }
 
         if (property == "_id") {
@@ -1053,11 +1096,46 @@ namespace litecore {
     }
 
 
+    // Writes an 'fl_each()' call representing a virtual table for the array at the given property
+    void QueryParser::writeEachExpression(const string &property) {
+        require(!property.empty(), "array expressions only support a property as their source");
+#if 0
+        // Is the property an existing UNNEST alias?
+        for (auto &elem : _unnestAliases) {
+            if (elem.second == property) {
+                _sql << property;
+                return;
+            }
+        }
+
+        auto i = _unnestAliases.find(property);
+        if (i != _unnestAliases.end())
+            _sql << i->second;                              // write existing table alias
+        else
+#endif
+        writePropertyGetter(kEachFnName, property);     // write fl_each()
+    }
+
+    // Writes an 'fl_each()' call representing a virtual table for the array at the given property
+    void QueryParser::writeEachExpression(const Value *propertyExpr) {
+        writeEachExpression(propertyFromNode(propertyExpr));
+    }
+
+
     /*static*/ std::string QueryParser::expressionSQL(const fleece::Value* expr,
                                                       const char *bodyColumnName)
     {
         QueryParser qp("XXX", bodyColumnName);
         qp.parseJustExpression(expr);
+        return qp.SQL();
+    }
+
+
+    /*static*/ std::string QueryParser::eachExpressionSQL(const fleece::Value* arrayExpr,
+                                                          const char *bodyColumnName)
+    {
+        QueryParser qp("XXX", bodyColumnName);
+        qp.writeEachExpression(arrayExpr);
         return qp.SQL();
     }
 
