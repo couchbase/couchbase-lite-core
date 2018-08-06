@@ -37,6 +37,14 @@ using namespace fleece;
 
 namespace litecore {
 
+    /*
+     A value index is a SQL index named 'NAME'.
+     A FTS index is a SQL virtual table named 'kv_default::NAME'
+     An array index has two parts:
+         * A SQL table named `kv_default::unnest::PATH`
+         * An index on that table named `NAME`
+     */
+
     static void validateIndexName(slice name);
     static pair<alloc_slice, const Array*> parseIndexExpr(slice expression, KeyStore::IndexType);
     static void writeTokenizerOptions(stringstream &sql, const KeyStore::IndexOptions*);
@@ -54,7 +62,11 @@ namespace litecore {
 
         Transaction t(db());
         switch (type) {
-            case kValueIndex:    createValueIndex(indexNameStr, params, options); break;
+            case kValueIndex: {
+                Array::iterator iParams(params);
+                createValueIndex(tableName(), indexNameStr, iParams, options);
+                break;
+            }
             case kFullTextIndex: createFTSIndex(indexNameStr, params, options); break;
             case kArrayIndex:    createArrayIndex(indexNameStr, params, options); break;
             default:             error::_throw(error::Unimplemented);
@@ -85,16 +97,19 @@ namespace litecore {
         Encoder enc;
         enc.beginArray();
         string tableNameStr = tableName();
+
+        // First find indexes on this KeyStore, or on one of its unnested tables:
         SQLite::Statement getIndex(db(), "SELECT name FROM sqlite_master WHERE type='index' "
-                                         "AND tbl_name=? "
+                                         "AND (tbl_name=?1 OR tbl_name like (?1 || ':unnest:%')) "
                                          "AND sql NOT NULL");
         getIndex.bind(1, tableNameStr);
         while(getIndex.executeStep()) {
             enc.writeString(getIndex.getColumn(0).getString());
         }
 
+        // Now find FTS tables on this KeyStore:
         SQLite::Statement getFTS(db(), "SELECT name FROM sqlite_master WHERE type='table' "
-                                       "AND name like ? || '::%' "
+                                       "AND name like (? || '::%') "
                                        "AND sql LIKE 'CREATE VIRTUAL TABLE % USING fts%'");
         getFTS.bind(1, tableNameStr);
         while(getFTS.executeStep()) {
@@ -108,32 +123,22 @@ namespace litecore {
     }
 
 
-    // Actually creates a value or FTS index, given the SQL statement to do so.
-    // If an identical index with the same name exists, returns false.
-    // Otherwise, any index with the same name is replaced.
-    bool SQLiteKeyStore::_sqlCreateIndex(IndexType type, const string &sqlName,
-                                         const string &liteCoreName, const string &sql) {
-        {
-            SQLite::Statement check(db(), "SELECT sql FROM sqlite_master "
-                                          "WHERE name = ? AND tbl_name = ? AND type = ?");
-            check.bind(1, sqlName);
-            check.bind(2, type == kValueIndex ? name()  : sqlName);
-            check.bind(3, type == kValueIndex ? "index" : "table");
-            if (check.executeStep() && check.getColumn(0).getString() == sql)
-                return false;
-        }
-        _sqlDeleteIndex(liteCoreName);
-        db().exec(sql);
-        return true;
+    // Returns true if an entity exists in the database with the given type and SQL schema
+    bool SQLiteKeyStore::_sqlExists(const string &name, const string &type,
+                                    const string &tableName, const string &sql) {
+        string existingSQL;
+        return db().getSchema(name, type, tableName, existingSQL) && existingSQL == sql;
     }
 
 
     // Actually deletes an index from SQLite.
     void SQLiteKeyStore::_sqlDeleteIndex(slice name) {
-        // Delete any expression index:
+        // Delete any expression or array index:
         validateIndexName(name);
         string indexName = (string)name;
         db().exec(CONCAT("DROP INDEX IF EXISTS \"" << indexName << "\""));
+
+        //TODO: Garbage-collect any unnest table that has no more array indexes
 
         // Delete any FTS index:
         QueryParser qp(tableName());
@@ -149,13 +154,18 @@ namespace litecore {
 
 
     // Creates a value index.
-    void SQLiteKeyStore::createValueIndex(string indexName,
-                                          const Array *expressions,
+    void SQLiteKeyStore::createValueIndex(const string &sourceTableName,
+                                          const string &indexName,
+                                          Array::iterator &expressions,
                                           const IndexOptions *options)
     {
-        QueryParser qp(tableName());
+        QueryParser qp(CONCAT('"' << sourceTableName << '"'));
         qp.writeCreateIndex(indexName, expressions);
-        _sqlCreateIndex(kValueIndex, indexName, indexName, qp.SQL());
+        string sql = qp.SQL();
+        if (_sqlExists(indexName, "index", sourceTableName, sql))
+            return;
+        _sqlDeleteIndex(indexName);
+        db().exec(sql);
     }
 
 
@@ -178,14 +188,20 @@ namespace litecore {
         string exprs = join(colExprs, ", ");
 
         // Build the SQL that creates an FTS table, including the tokenizer options:
-        stringstream sql;
-        sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(" << columns << ", ";
-        writeTokenizerOptions(sql, options);
-        sql << ")";
+        string sqlStr;
+        {
+            stringstream sql;
+            sql << "CREATE VIRTUAL TABLE \"" << ftsTableName << "\" USING fts4(" << columns << ", ";
+            writeTokenizerOptions(sql, options);
+            sql << ")";
+            sqlStr = sql.str();
+        }
 
         // Create the FTS table, but if an identical one already exists, return:
-        if (!_sqlCreateIndex(kFullTextIndex, ftsTableName, indexName, sql.str()))
+        if (_sqlExists(ftsTableName, "table", ftsTableName, sqlStr))
             return;
+        _sqlDeleteIndex(indexName);
+        db().exec(sqlStr);
 
         // Index the existing records:
         db().exec(CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
@@ -193,12 +209,12 @@ namespace litecore {
 
         // Set up triggers to keep the FTS table up to date
         // ...on insertion:
-        createTrigger(ftsTableName, "ins", "INSERT",
+        createTrigger(ftsTableName, "ins", "AFTER INSERT", "",
                       CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "
                              "VALUES (new.rowid, " << exprs << ")"));
 
         // ...on delete:
-        createTrigger(ftsTableName, "del", "DELETE",
+        createTrigger(ftsTableName, "del", "AFTER DELETE", "",
                       CONCAT("DELETE FROM \"" << ftsTableName << "\" WHERE docid = old.rowid"));
 
         // ...on update:
@@ -210,7 +226,7 @@ namespace litecore {
             upd << colNames[i] << " = " << colExprs[i];
         }
         upd << " WHERE docid = new.rowid";
-        createTrigger(ftsTableName, "upd", "UPDATE", upd.str());
+        createTrigger(ftsTableName, "upd", "AFTER UPDATE", "", upd.str());
     }
 
 
@@ -257,47 +273,64 @@ namespace litecore {
                                           const Array *expressions,
                                           const IndexOptions *options)
     {
+        Array::iterator iExprs(expressions);
+        string arrayTableName = createUnnestedTable(iExprs.value(), options);
+        createValueIndex(arrayTableName, indexName, ++iExprs, options);
+    }
+
+
+    string SQLiteKeyStore::createUnnestedTable(const Value *path, const IndexOptions *options) {
+        // Derive the table name from the expression (path) it unnests:
         auto kvTableName = tableName();
-        auto indexTableName = QueryParser(kvTableName).FTSTableName(indexName);
-        stringstream sql;
-        // Create the index table, but if an identical one already exists, return:
-        if (!_sqlCreateIndex(kFullTextIndex, indexTableName, indexName,
-                             CONCAT("CREATE TABLE \"" << indexTableName << "\""
-                                    "(key BLOB, i INTEGER, "
-                                    " docid INTEGER REFERENCES " << kvTableName << "(rowid))")))
-            return;
+        auto arrayTableName = QueryParser(kvTableName).unnestedTableName(path);
 
-        string eachExpr = QueryParser::eachExpressionSQL(expressions->get(0), "new.body");
-        string itemSQL;
-        if (expressions->count() >= 2)
-            itemSQL = QueryParser::expressionSQL(expressions->get(1), "_each.value");
-        else
-            itemSQL = "_each.value";
+        // Create the index table, unless an identical one already exists:
+        string sql = CONCAT("CREATE TABLE \"" << arrayTableName << "\" "
+                            "(docid INTEGER NOT NULL REFERENCES " << kvTableName << "(rowid), "
+                            " i INTEGER NOT NULL, body BLOB NOT NULL, "
+                            " CONSTRAINT pk PRIMARY KEY (docid, i)) "
+                            "WITHOUT ROWID");
+        if (!_sqlExists(arrayTableName, "table", arrayTableName, sql)) {
+            db().exec(sql);
 
-        // Populate the index-table with data from existing documents:
-        db().exec(CONCAT("INSERT INTO \"" << indexTableName << "\" (docid, i, key) "
-                         "SELECT new.rowid, _each.rowid, (" << itemSQL << ") " <<
-                         "FROM " << kvTableName << " as new, " << eachExpr << " AS _each "
-                         "WHERE (new.flags & 1) = 0"));
+            string eachExpr = QueryParser::eachExpressionSQL(path, "new.body");
 
-        // Create the SQL index on the index-table:
-        db().exec(CONCAT("CREATE INDEX \"" << indexTableName << "::keys\" ON \""
-                         << indexTableName << "\"(key)"));
+            // Populate the index-table with data from existing documents:
+            db().exec(CONCAT("INSERT INTO \"" << arrayTableName << "\" (docid, i, body) "
+                             "SELECT new.rowid, _each.rowid, _each.value " <<
+                             "FROM " << kvTableName << " as new, " << eachExpr << " AS _each "
+                             "WHERE (new.flags & 1) = 0"));
 
-        // Set up triggers to keep the index-table up to date
-        // ...on insertion:
-        string insertTriggerExpr = CONCAT("INSERT INTO \"" << indexTableName << "\" (docid, key) "
-                                          "SELECT new.rowid, (" << itemSQL << ") " <<
-                                          "FROM " << eachExpr << " AS _each ");
-        createTrigger(indexTableName, "ins", "INSERT", insertTriggerExpr);
+            // Set up triggers to keep the index-table up to date
+            // ...on insertion:
+            string insertTriggerExpr = CONCAT("INSERT INTO \"" << arrayTableName <<
+                                              "\" (docid, i, body) "
+                                              "SELECT new.rowid, _each.rowid, _each.value " <<
+                                              "FROM " << eachExpr << " AS _each ");
+            createTrigger(arrayTableName, "ins",
+                          "AFTER INSERT",
+                          "WHEN (new.flags & 1) = 0",
+                          insertTriggerExpr);
 
-        // ...on delete:
-        string deleteTriggerExpr = CONCAT("DELETE FROM \"" << indexTableName << "\" "
-                                          "WHERE docid = old.rowid");
-        createTrigger(indexTableName, "del", "DELETE", deleteTriggerExpr);
+            // ...on delete:
+            string deleteTriggerExpr = CONCAT("DELETE FROM \"" << arrayTableName << "\" "
+                                              "WHERE docid = old.rowid");
+            createTrigger(arrayTableName, "del",
+                          "BEFORE DELETE",
+                          "WHEN (old.flags & 1) = 0",
+                          deleteTriggerExpr);
 
-        // ...on update:
-        createTrigger(indexTableName, "upd", "UPDATE", deleteTriggerExpr + "; " + insertTriggerExpr);
+            // ...on update:
+            createTrigger(arrayTableName, "preupdate",
+                          "BEFORE UPDATE OF body, flags",
+                          "WHEN (old.flags & 1) = 0",
+                          deleteTriggerExpr);
+            createTrigger(arrayTableName, "postupdate",
+                          "AFTER UPDATE OF body, flags",
+                          "WHEN (new.flags & 1 = 0)",
+                          insertTriggerExpr);
+        }
+        return arrayTableName;
     }
 
 

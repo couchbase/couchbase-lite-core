@@ -49,9 +49,9 @@ namespace litecore {
 
         void parseJustExpression(const fleece::Value *expression);
 
-        void writeCreateIndex(const std::string &name, const fleece::Array *expressions);
+        void writeCreateIndex(const std::string &name, fleece::Array::iterator &expressions);
 
-        static void writeSQLString(std::ostream &out, slice str);
+        static void writeSQLString(std::ostream &out, slice str, char quote ='\'');
 
         std::string SQL()  const                                    {return _sql.str();}
 
@@ -66,6 +66,7 @@ namespace litecore {
         std::string FTSTableName(const fleece::Value *key) const;
         std::string FTSTableName(const std::string &property) const;
         static std::string FTSColumnName(const fleece::Value *expression);
+        std::string unnestedTableName(const fleece::Value *key) const;
 
     private:
         struct Operation;

@@ -82,6 +82,7 @@ namespace litecore {
 
     // Sets the function result based on a Value*
     void setResultFromValue(sqlite3_context*, const fleece::Value*) noexcept;
+    void setResultFromValue(sqlite3_context*, const fleece::Value*, fleece::SharedKeys*) noexcept;
 
     // Sets the function result to a string, from the given slice.
     // If the slice is null, sets the function result to SQLite null.
@@ -92,6 +93,9 @@ namespace litecore {
 
     // Encodes the Value as a Fleece container and sets it as the result
     bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::Value*);
+
+    // Encodes the Value as a Fleece container and sets it as the result
+    bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::Value*, fleece::SharedKeys*);
 
     // Sets the function result to be a Fleece/JSON null (an empty blob with kFleeceNullSubtype)
     void setResultFleeceNull(sqlite3_context*);

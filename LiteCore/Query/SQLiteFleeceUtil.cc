@@ -120,7 +120,7 @@ namespace litecore {
     }
 
 
-    void setResultFromValue(sqlite3_context *ctx, const Value *val) noexcept {
+    void setResultFromValue(sqlite3_context *ctx, const Value *val, SharedKeys *sk) noexcept {
         if (val == nullptr) {
             sqlite3_result_null(ctx);
         } else {
@@ -149,10 +149,15 @@ namespace litecore {
                 case kData:
                 case kArray:
                 case kDict:
-                    setResultBlobFromEncodedValue(ctx, val);
+                    setResultBlobFromEncodedValue(ctx, val, sk);
                     break;
             }
         }
+    }
+
+
+    void setResultFromValue(sqlite3_context *ctx, const Value *val) noexcept {
+        setResultFromValue(ctx, val, getSharedKeys(ctx));
     }
 
 
@@ -174,9 +179,11 @@ namespace litecore {
     }
 
 
-    bool setResultBlobFromEncodedValue(sqlite3_context *ctx, const Value *val) {
+    bool setResultBlobFromEncodedValue(sqlite3_context *ctx,
+                                       const fleece::Value *val,
+                                       fleece::SharedKeys *sk)
+    {
         try {
-            SharedKeys* sk = getSharedKeys(ctx);
             Encoder enc;
             enc.setSharedKeys(sk);
             enc.writeValue(val, sk);
@@ -188,6 +195,11 @@ namespace litecore {
             sqlite3_result_error_code(ctx, SQLITE_ERROR);
         }
         return false;
+    }
+
+
+    bool setResultBlobFromEncodedValue(sqlite3_context *ctx, const Value *val) {
+        return setResultBlobFromEncodedValue(ctx, val, getSharedKeys(ctx));
     }
 
 

@@ -50,6 +50,14 @@ static sequence_t writeNumberedDoc(KeyStore *store, int i, slice str, Transactio
     return store->set(slice(docID), nullslice, body, flags, t);
 }
 
+// Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
+static void addNumberedDocs(KeyStore *store, int first =1, int n =100) {
+    Transaction t(store->dataFile());
+    for (int i = first; i < first + n; i++)
+        REQUIRE(writeNumberedDoc(store, i, nullslice, t) == (sequence_t)i);
+    t.commit();
+}
+
 static sequence_t writeArrayDoc(KeyStore *store, int i, Transaction &t,
                                 DocumentFlags flags =DocumentFlags::kNone) {
     string docID = stringWithFormat("rec-%03d", i);
@@ -67,9 +75,9 @@ static sequence_t writeArrayDoc(KeyStore *store, int i, Transaction &t,
     return store->set(slice(docID), nullslice, body, flags, t);
 }
 
-static void addArrayDocs(KeyStore *store) {
+static void addArrayDocs(KeyStore *store, int first =1, int n =100) {
     Transaction t(store->dataFile());
-    for (int i = 1; i <= 100; i++)
+    for (int i = first; i < first + n; i++)
         REQUIRE(writeArrayDoc(store, i, t) == (sequence_t)i);
     t.commit();
 }
@@ -159,28 +167,22 @@ static void writeFalselyDocs(KeyStore* store, Transaction &t) {
     store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
 }
 
-// Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
-static void addNumberedDocs(KeyStore *store) {
-    Transaction t(store->dataFile());
-    for (int i = 1; i <= 100; i++)
-        REQUIRE(writeNumberedDoc(store, i, nullslice, t) == (sequence_t)i);
-    t.commit();
-}
-
 static vector<string> extractIndexes(slice encodedIndexes) {
-    vector<string> retVal;
+    set<string> retVal;
     const Array *val = Value::fromTrustedData(encodedIndexes)->asArray();
     CHECK(val != nullptr);
     Array::iterator iter(val);
     int size = iter.count();
     for(int i = 0; i < size; i++, ++iter) {
-        retVal.emplace_back(iter.value()->asString().asString());
+        retVal.insert(iter.value()->asString().asString());
     }
-    
-    return retVal;
+    return vector<string>(retVal.begin(), retVal.end());
 }
 
 TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query][FTS]") {
+    addNumberedDocs(store, 1, 100);
+    addArrayDocs(store, 101, 100);
+
     KeyStore::IndexOptions options { "en", true };
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
         store->createIndex(""_sl, "[[\".num\"]]"_sl);
@@ -191,34 +193,27 @@ TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query][FTS]") {
     });
     
     store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
-    auto indexes = extractIndexes(store->getIndexes());
-    CHECK(indexes.size() == 1);
-    CHECK(indexes[0] == "num");
-    
+    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
+
     store->deleteIndex("num"_sl);
     store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
     store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, KeyStore::kFullTextIndex, &options);
-    indexes = extractIndexes(store->getIndexes());
-    CHECK(indexes.size() == 1);
-    CHECK(indexes[0] == "num_second");
+    CHECK(extractIndexes(store->getIndexes()) == vector<string>{"num_second"});
     
     store->createIndex("num"_sl, "[\".num\"]"_sl);
     store->createIndex("num_second"_sl, "[\".num\"]"_sl);
-    indexes = extractIndexes(store->getIndexes());
-    CHECK(indexes.size() == 2);
-    CHECK(find(indexes.begin(), indexes.end(), "num") != indexes.end());
-    CHECK(find(indexes.begin(), indexes.end(), "num_second") != indexes.end());
+    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num", "num_second"}));
     store->deleteIndex("num"_sl);
-    indexes = extractIndexes(store->getIndexes());
-    CHECK(indexes.size() == 1);
-    CHECK(indexes[0] == "num_second");
-    
+    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
+
+    store->createIndex("num_third"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options);
+    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second", "num_third"}));
+
     store->deleteIndex("num_second"_sl);
     store->deleteIndex("num_second"_sl); // Duplicate should be no-op
-    store->deleteIndex("num_second"_sl);
-    store->deleteIndex("num_second"_sl); // Duplicate should be no-op
-    indexes = extractIndexes(store->getIndexes());
-    CHECK(indexes.size() == 0);
+    store->deleteIndex("num_third"_sl);
+    store->deleteIndex("num_third"_sl); // Duplicate should be no-op
+    CHECK(extractIndexes(store->getIndexes()) == vector<string>{ });
 }
 
 

@@ -18,11 +18,8 @@
 
 #pragma once
 #include "KeyStore.hh"
+#include "Fleece.hh"
 
-namespace fleece {
-    class Value;
-    class Array;
-}
 namespace SQLite {
     class Column;
     class Statement;
@@ -100,13 +97,18 @@ namespace litecore {
         void createTrigger(const std::string &triggerName,
                            const char *triggerSuffix,
                            const char *operation,
+                           const char *when,
                            const std::string &statements);
         void dropTrigger(const std::string &name, const char *suffix);
-        void createValueIndex(std::string, const fleece::Array *params, const IndexOptions*);
+        void createValueIndex(const std::string &sourceTableName,
+                              const std::string &indexName,
+                              fleece::Array::iterator &expressions,
+                              const IndexOptions *options);
         void createFTSIndex(std::string, const fleece::Array *params, const IndexOptions*);
         void createArrayIndex(std::string, const fleece::Array *params, const IndexOptions*);
-        bool _sqlCreateIndex(IndexType type, const std::string &sqlName,
-                             const std::string &liteCoreName, const std::string &sql);
+        std::string createUnnestedTable(const fleece::Value *arrayPath, const IndexOptions*);
+        bool _sqlExists(const std::string &name, const std::string &type,
+                        const std::string &tableName, const std::string &sql);
         void _sqlDeleteIndex(slice name);
 
         std::unique_ptr<SQLite::Statement> _recCountStmt;

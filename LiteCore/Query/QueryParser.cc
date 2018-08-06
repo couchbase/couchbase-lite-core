@@ -111,11 +111,10 @@ namespace litecore {
 
 
     // Writes a string with SQL quoting (inside apostrophes, doubling contained apostrophes.)
-    /*static*/ void QueryParser::writeSQLString(std::ostream &out, slice str) {
-        out << "'";
+    static void writeEscapedString(std::ostream &out, slice str, char quote) {
         bool simple = true;
         for (unsigned i = 0; i < str.size; i++) {
-            if (str[i] == '\'') {
+            if (str[i] == quote) {
                 simple = false;
                 break;
             }
@@ -124,13 +123,19 @@ namespace litecore {
             out << str;
         } else {
             for (unsigned i = 0; i < str.size; i++) {
-                if (str[i] == '\'')
-                    out.write("''", 2);
-                else
-                    out.write((const char*)&str[i], 1);
+                if (str[i] == quote)
+                    out.write(&quote, 1);
+                out.write((const char*)&str[i], 1);
             }
         }
-        out << "'";
+    }
+
+
+    // Writes a string with SQL quoting (inside apostrophes, doubling contained apostrophes.)
+    /*static*/ void QueryParser::writeSQLString(std::ostream &out, slice str, char quote) {
+        out << quote;
+        writeEscapedString(out, str, quote);
+        out << quote;
     }
 
     
@@ -332,11 +337,15 @@ namespace litecore {
     }
 
 
-    void QueryParser::writeCreateIndex(const string &name, const Array *expressions) {
+    void QueryParser::writeCreateIndex(const string &name, Array::iterator &expressionsIter) {
         reset();
         _sql << "CREATE INDEX \"" << name << "\" ON " << _tableName << " ";
-        Array::iterator iter(expressions);
-        writeColumnList(iter);
+        if (expressionsIter.count() > 0) {
+            writeColumnList(expressionsIter);
+        } else {
+            // No expressions; index the entire body (this is used with unnested/array tables):
+            _sql << "(" << _bodyColumnName << ")";
+        }
         // TODO: Add 'WHERE' clause for use with SQLite 3.15+
     }
 
@@ -1197,6 +1206,16 @@ namespace litecore {
         string property = propertyFromNode(expression);
         require(!property.empty(), "invalid property expression");
         return property;
+    }
+
+
+    string QueryParser::unnestedTableName(const Value *arrayExpr) const {
+        string path = propertyFromNode(arrayExpr);
+        require(!path.empty(), "invalid property path for array index");
+        stringstream str;
+        str << _tableName + ":unnest:";
+        writeEscapedString(str, path, '"');
+        return str.str();
     }
 
 }

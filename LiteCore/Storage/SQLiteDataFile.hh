@@ -53,6 +53,8 @@ namespace litecore {
 #endif
         bool keyStoreExists(const std::string &name);
         bool tableExists(const std::string &name) const;
+        bool getSchema(const std::string &name, const std::string &type,
+                       const std::string &tableName, std::string &outSQL) const;
 
         fleece::alloc_slice rawQuery(const std::string &query) override;
 
