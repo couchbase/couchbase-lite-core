@@ -32,6 +32,18 @@ using namespace std;
 // NOTE: This test does not use RevTree or Database, so it stores plain Fleece in record bodies.
 
 
+static string numberString(int n) {
+    static const char* kDigit[10] = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
+    string str;
+    do {
+        str = string(kDigit[n % 10]) + str;
+        n /= 10;
+        if (n > 0)
+            str = string("-") + str;
+    } while (n > 0);
+    return str;
+}
+
 static sequence_t writeNumberedDoc(KeyStore *store, int i, slice str, Transaction &t,
                                    DocumentFlags flags =DocumentFlags::kNone) {
     string docID = stringWithFormat("rec-%03d", i);
@@ -67,7 +79,7 @@ static sequence_t writeArrayDoc(KeyStore *store, int i, Transaction &t,
     enc.writeKey("numbers");
     enc.beginArray();
     for (int j = max(i-5, 1); j <= i; j++)
-        enc.writeInt(j);
+        enc.writeString(numberString(j));
     enc.endArray();
     enc.endDictionary();
     alloc_slice body = enc.extractOutput();
@@ -180,9 +192,6 @@ static vector<string> extractIndexes(slice encodedIndexes) {
 }
 
 TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query][FTS]") {
-    addNumberedDocs(store, 1, 100);
-    addArrayDocs(store, 101, 100);
-
     KeyStore::IndexOptions options { "en", true };
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
         store->createIndex(""_sl, "[[\".num\"]]"_sl);
@@ -1102,19 +1111,31 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query JOINs", "[Query]") {
 
 TEST_CASE_METHOD(DataFileTestFixture, "Query UNNEST", "[Query]") {
     addArrayDocs(store);
-    auto query = store->compileQuery(json5("['SELECT', {\
+    for (int withIndex = 0; withIndex <= 1; ++withIndex) {
+        if (withIndex) {
+            Log("-------- Repeating with index --------");
+            store->createIndex("numbersIndex"_sl,
+                               "[[\".numbers\"]]"_sl,
+                               KeyStore::kArrayIndex);
+        }
+        auto query = store->compileQuery(json5("['SELECT', {\
                                                   FROM: [{as: 'doc'}, \
                                                          {as: 'num', 'unnest': ['.doc.numbers']}],\
-                                                 WHERE: ['=', ['.num'], 15]}]"));
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
-    CHECK(e->getRowCount() == 6);
-    int docNo = 15;
-    while (e->next()) {
-        auto cols = e->columns();
-        slice docID = cols[0]->asString();
-        string expectedDocID = stringWithFormat("rec-%03d", docNo);
-        CHECK(docID == slice(expectedDocID));
-        ++docNo;
+                                                 WHERE: ['=', ['.num'], 'one-five']}]"));
+        string explanation = query->explain();
+        Log("%s", explanation.c_str());
+        if (withIndex)
+            CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        CHECK(e->getRowCount() == 6);
+        int docNo = 15;
+        while (e->next()) {
+            auto cols = e->columns();
+            slice docID = cols[0]->asString();
+            string expectedDocID = stringWithFormat("rec-%03d", docNo);
+            CHECK(docID == slice(expectedDocID));
+            ++docNo;
+        }
     }
 }
 

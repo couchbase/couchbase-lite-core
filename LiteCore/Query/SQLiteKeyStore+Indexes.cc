@@ -64,7 +64,7 @@ namespace litecore {
         switch (type) {
             case kValueIndex: {
                 Array::iterator iParams(params);
-                createValueIndex(tableName(), indexNameStr, iParams, options);
+                createValueIndex(kValueIndex, tableName(), indexNameStr, iParams, options);
                 break;
             }
             case kFullTextIndex: createFTSIndex(indexNameStr, params, options); break;
@@ -141,8 +141,7 @@ namespace litecore {
         //TODO: Garbage-collect any unnest table that has no more array indexes
 
         // Delete any FTS index:
-        QueryParser qp(tableName());
-        auto ftsTableName = qp.FTSTableName(indexName);
+        auto ftsTableName = FTSTableName(indexName);
         db().exec(CONCAT("DROP TABLE IF EXISTS \"" << ftsTableName << "\""));
         dropTrigger(ftsTableName, "ins");
         dropTrigger(ftsTableName, "upd");
@@ -150,17 +149,25 @@ namespace litecore {
     }
 
 
+    // Part of the QueryParser delegate API
+    bool SQLiteKeyStore::tableExists(const std::string &tableName) const {
+        return db().tableExists(tableName);
+    }
+
+
 #pragma mark - VALUE INDEX:
 
 
     // Creates a value index.
-    void SQLiteKeyStore::createValueIndex(const string &sourceTableName,
+    void SQLiteKeyStore::createValueIndex(IndexType type,
+                                          const string &sourceTableName,
                                           const string &indexName,
                                           Array::iterator &expressions,
                                           const IndexOptions *options)
     {
-        QueryParser qp(CONCAT('"' << sourceTableName << '"'));
-        qp.writeCreateIndex(indexName, expressions);
+        QueryParser qp(*this);
+        qp.setTableName(CONCAT('"' << sourceTableName << '"'));
+        qp.writeCreateIndex(indexName, expressions, (type == kArrayIndex));
         string sql = qp.SQL();
         if (_sqlExists(indexName, "index", sourceTableName, sql))
             return;
@@ -177,12 +184,14 @@ namespace litecore {
                                         const Array *params,
                                         const IndexOptions *options)
     {
-        auto ftsTableName = QueryParser(tableName()).FTSTableName(indexName);
+        auto ftsTableName = FTSTableName(indexName);
         // Collect the name of each FTS column and the SQL expression that populates it:
+        QueryParser qp(*this);
+        qp.setBodyColumnName("new.body");
         vector<string> colNames, colExprs;
         for (Array::iterator i(params); i; ++i) {
             colNames.push_back(CONCAT('"' << QueryParser::FTSColumnName(i.value()) << '"'));
-            colExprs.push_back(QueryParser::expressionSQL(i.value(), "new.body"));
+            colExprs.push_back(qp.expressionSQL(i.value()));
         }
         string columns = join(colNames, ", ");
         string exprs = join(colExprs, ", ");
@@ -227,6 +236,11 @@ namespace litecore {
         }
         upd << " WHERE docid = new.rowid";
         createTrigger(ftsTableName, "upd", "AFTER UPDATE", "", upd.str());
+    }
+
+
+    string SQLiteKeyStore::FTSTableName(const std::string &property) const {
+        return tableName() + "::" + property;
     }
 
 
@@ -275,14 +289,14 @@ namespace litecore {
     {
         Array::iterator iExprs(expressions);
         string arrayTableName = createUnnestedTable(iExprs.value(), options);
-        createValueIndex(arrayTableName, indexName, ++iExprs, options);
+        createValueIndex(kArrayIndex, arrayTableName, indexName, ++iExprs, options);
     }
 
 
     string SQLiteKeyStore::createUnnestedTable(const Value *path, const IndexOptions *options) {
         // Derive the table name from the expression (path) it unnests:
         auto kvTableName = tableName();
-        auto arrayTableName = QueryParser(kvTableName).unnestedTableName(path);
+        auto arrayTableName = QueryParser(*this).unnestedTableName(path);
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE \"" << arrayTableName << "\" "
@@ -293,7 +307,9 @@ namespace litecore {
         if (!_sqlExists(arrayTableName, "table", arrayTableName, sql)) {
             db().exec(sql);
 
-            string eachExpr = QueryParser::eachExpressionSQL(path, "new.body");
+            QueryParser qp(*this);
+            qp.setBodyColumnName("new.body");
+            string eachExpr = qp.eachExpressionSQL(path);
 
             // Populate the index-table with data from existing documents:
             db().exec(CONCAT("INSERT INTO \"" << arrayTableName << "\" (docid, i, body) "
@@ -333,6 +349,10 @@ namespace litecore {
         return arrayTableName;
     }
 
+
+    string SQLiteKeyStore::unnestedTableName(const std::string &property) const {
+        return tableName() + ":unnest:" + property;
+    }
 
 
 #pragma mark - UTILITIES:

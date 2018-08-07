@@ -31,31 +31,6 @@ namespace litecore {
     // Core SQLite functions for accessing values inside Fleece blobs.
 
 
-    // fl_value(body, propertyPath) -> propertyValue
-    static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        try {
-            const Value *val;
-            if (!evaluatePathFromArgs(ctx, argv, true, &val))
-                return;
-            setResultFromValue(ctx, val);
-        } catch (const std::exception &) {
-            sqlite3_result_error(ctx, "fl_value: exception!", -1);
-        }
-    }
-
-    // fl_nested_value(fleeceData, propertyPath) -> propertyValue
-    static void fl_nested_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        try {
-            const Value *val;
-            if (!evaluatePathFromArgs(ctx, argv, false, &val))
-                return;
-            setResultFromValue(ctx, val);
-        } catch (const std::exception &) {
-            sqlite3_result_error(ctx, "fl_value: exception!", -1);
-        }
-    }
-
-
     // fl_root(body) -> fleeceData
     static void fl_root(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         // Pull the Fleece data out of a raw document body:
@@ -76,6 +51,50 @@ namespace litecore {
             sqlite3_result_null(ctx);
         }
     }
+
+    // fl_value(body, propertyPath) -> propertyValue
+    static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            const Value *val;
+            if (!evaluatePathFromArgs(ctx, argv, true, &val))
+                return;
+            setResultFromValue(ctx, val);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_value: exception!", -1);
+        }
+    }
+
+    // fl_nested_value(fleeceData, propertyPath) -> propertyValue
+    static void fl_nested_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            const Value *val;
+            if (!evaluatePathFromArgs(ctx, argv, false, &val))
+                return;
+            setResultFromValue(ctx, val);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_nested_value: exception!", -1);
+        }
+    }
+
+    // fl_unnested_value(unnestTableBody [, propertyPath]) -> propertyValue
+    static void fl_unnested_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        DebugAssert(argc == 1 || argc == 2);
+        sqlite3_value *body = argv[0];
+        if (sqlite3_value_type(body) == SQLITE_BLOB) {
+            // body is Fleece data:
+            if (argc == 1)
+                return fl_root(ctx, argc, argv);
+            else
+                return fl_value(ctx, argc, argv);
+        } else {
+            // body is a SQLite value; just return it
+            if (argc == 1)
+                sqlite3_result_value(ctx, body);
+            else
+                sqlite3_result_null(ctx);
+        }
+    }
+
 
     // fl_exists(body, propertyPath) -> 0/1
     static void fl_exists(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
@@ -241,4 +260,8 @@ namespace litecore {
         { }
     };
 
+    const SQLiteFunctionSpec kFleeceNullAccessorFunctionsSpec[] = {
+        { "fl_unnested_value",-1, fl_unnested_value },
+        { }
+    };
 }

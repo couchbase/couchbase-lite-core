@@ -12,6 +12,7 @@
 #include "c4Query.h"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
+#include "StringUtil.hh"
 #include <iostream>
 
 using namespace std;
@@ -66,6 +67,13 @@ public:
             json << ", \"OFFSET\": [\"$offset\"], \"LIMIT\":  [\"$limit\"]";
         json << "}]";
         compileSelect(json.str());
+    }
+
+    void checkExplanation(bool indexed =false) {
+        alloc_slice explanation = c4query_explain(query);
+        C4Log("Explanation: %.*s", SPLAT(explanation));
+        if (indexed)
+            CHECK(explanation.find("SCAN"_sl) == nullslice);    // should be no linear table scans
     }
 
 

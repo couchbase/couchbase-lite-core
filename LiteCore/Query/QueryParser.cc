@@ -40,6 +40,7 @@ namespace litecore {
     // in SQLiteFleeceFunctions.cc:
     static constexpr slice kValueFnName = "fl_value"_sl;
     static constexpr slice kNestedValueFnName = "fl_nested_value"_sl;
+    static constexpr slice kUnnestedValueFnName = "fl_unnested_value"_sl;
     static constexpr slice kRootFnName  = "fl_root"_sl;
     static constexpr slice kEachFnName  = "fl_each"_sl;
     static constexpr slice kCountFnName = "fl_count"_sl;
@@ -147,15 +148,18 @@ namespace litecore {
 
 
     void QueryParser::reset() {
+        _sql.str(string());
         _context.clear();
         _context.push_back(&kOuterOperation);
         _parameters.clear();
         _variables.clear();
         _ftsTables.clear();
         _aliases.clear();
-        _unnestAliases.clear();
+        _dbAlias.clear();
         _1stCustomResultCol = 0;
-        _isAggregateQuery = _aggregatesOK = _useDocAlias = false;
+        _isAggregateQuery = _aggregatesOK = _propertiesUseAliases = false;
+
+        _aliases.insert({_dbAlias, kDBAlias});
     }
 
 
@@ -203,8 +207,8 @@ namespace litecore {
 
 
     void QueryParser::writeSelect(const Value *where, const Dict *operands) {
-        // Find all the joins in the FROM clause first, to populate _aliases. This has to be done
-        // before writing the WHAT clause, because that will depend on _aliases.
+        // Find all the joins in the FROM clause first, to populate alias info. This has to be done
+        // before writing the WHAT clause, because that will depend on the aliases.
         auto from = getCaseInsensitive(operands, "FROM"_sl);
         parseFromClause(from);
         
@@ -214,7 +218,7 @@ namespace litecore {
             require(numMatches <= _ftsTables.size(),
                     "Sorry, multiple MATCHes of the same property are not allowed");
             if (numMatches > 0)
-                _baseResultColumns.push_back(_useDocAlias ? "_doc.rowid" : (_tableName + ".rowid"));
+                _baseResultColumns.push_back(_dbAlias + ".rowid");
         }
 
         _sql << "SELECT ";
@@ -229,8 +233,8 @@ namespace litecore {
         // WHAT clause:
         // Default result columns:
         string defaultTablePrefix;
-        if (!_aliases.empty())
-            defaultTablePrefix = _aliases[0] + ".";
+        if (_propertiesUseAliases)
+            defaultTablePrefix = _dbAlias + ".";
         int nCol = 0;
         
         if(!distinctVal) {
@@ -321,30 +325,35 @@ namespace litecore {
                 parseNode(where);
                 _sql << ") AND ";
             }
-            writeNotDeletedTest(0);
+            writeNotDeletedTest(_dbAlias);
         }
     }
 
 
-    void QueryParser::writeNotDeletedTest(unsigned tableIndex) {
+    void QueryParser::writeNotDeletedTest(const string &alias) {
         _sql << '(';
-        if (_aliases.empty())
-            Assert(tableIndex == 0);
-        else
-            _sql << '"' << _aliases[tableIndex] << "\".";
+        if (alias == "_doc")
+            _sql << alias << ".";
+        else if (!alias.empty())
+            _sql << '"' << alias << "\".";
         _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << ") = 0";
-
     }
 
 
-    void QueryParser::writeCreateIndex(const string &name, Array::iterator &expressionsIter) {
+    void QueryParser::writeCreateIndex(const string &name,
+                                       Array::iterator &expressionsIter,
+                                       bool isUnnestedTable)
+    {
         reset();
+        if (isUnnestedTable)
+            _aliases[_dbAlias] = kUnnestTableAlias;
         _sql << "CREATE INDEX \"" << name << "\" ON " << _tableName << " ";
         if (expressionsIter.count() > 0) {
             writeColumnList(expressionsIter);
         } else {
             // No expressions; index the entire body (this is used with unnested/array tables):
-            _sql << "(" << _bodyColumnName << ")";
+            Assert(isUnnestedTable);
+            _sql << '(' << kUnnestedValueFnName << "(" << _bodyColumnName << "))";
         }
         // TODO: Add 'WHERE' clause for use with SQLite 3.15+
     }
@@ -366,97 +375,127 @@ namespace litecore {
 
 
     void QueryParser::parseFromClause(const Value *from) {
-        _useDocAlias = true;
+        _aliases.clear();
+        bool first = true;
         if (from) {
             for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
+                if (first)
+                _propertiesUseAliases = true;
                 auto entry = requiredDict(i.value(), "FROM item");
                 string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
                                               "AS in FROM item").asString();
                 require(isAlphanumericOrUnderscore(alias), "AS value");
-                require(find(_aliases.begin(), _aliases.end(), alias) == _aliases.end(),
+                require(_aliases.find(alias) == _aliases.end(),
                         "duplicate AS identifier '%s'", alias.c_str());
-                _aliases.push_back(alias);
-                if (getCaseInsensitive(entry, "UNNEST"_sl))
-                    _unnestAliases.emplace(alias);
-                _useDocAlias = false;
+
+                // Determine the alias type:
+                auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
+                auto on = getCaseInsensitive(entry, "ON"_sl);
+
+                aliasType type;
+                if (first) {
+                    require(!on && !unnest, "first FROM item cannot have an ON or UNNEST clause");
+                    type = kDBAlias;
+                    _dbAlias = alias;
+                } else if (!unnest) {
+                    type = kJoinAlias;
+                } else {
+                    require (!on, "cannot use ON and UNNEST together");
+                    string unnestTable = unnestedTableName(unnest);
+                    if (_delegate.tableExists(unnestTable))
+                        type = kUnnestTableAlias;
+                    else
+                        type = kUnnestVirtualTableAlias;
+                }
+                _aliases.insert({alias, type});
+                first = false;
             }
+        }
+        if (first) {
+            _dbAlias = "_doc";
+            _aliases.insert({_dbAlias, kDBAlias});
         }
     }
 
 
     void QueryParser::writeFromClause(const Value *from) {
-        _sql << " FROM " << _tableName;
-        if (_useDocAlias)
-            _sql << " AS _doc";
+        auto fromArray = (const Array*)from;    // already type-checked by parseFromClause
 
-        unsigned i = 0;
-        if (from) {
-            for (i = 0; i < _aliases.size(); ++i) {
-                auto entry = from->asArray()->get(i)->asDict();
+        _sql << " FROM " << _tableName;
+
+        if (fromArray && !fromArray->empty()) {
+            for (Array::iterator i(fromArray); i; ++i) {
+                auto entry = requiredDict(i.value(), "FROM item");
+                string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
+                                              "AS in FROM item").asString();
                 auto on = getCaseInsensitive(entry, "ON"_sl);
                 auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
-                if (i == 0) {
-                    // The first item is the database alias:
-                    require(!on && !unnest, "first FROM item cannot have an ON or UNNEST clause");
-                    _sql << " AS \"" << _aliases[i] << "\"";
-
-                } else if (unnest) {
-                    // An UNNEST clause:
-                    require (!on, "cannot use ON and UNNEST together");
-                    string property = propertyFromNode(unnest);
-                    auto alias = _aliases[i];
-                    _sql << ", ";
-                    writeEachExpression(property);
-                    _sql << " AS \"" << alias << "\"";
-
-                } else {
-                    // A join:
-                    JoinType joinType = kInner;
-                    const Value* joinTypeVal = getCaseInsensitive(entry, "JOIN"_sl);
-                    if (joinTypeVal) {
-                        slice joinTypeStr = requiredString(joinTypeVal, "JOIN value");
-                        joinType = JoinType(parseJoinType(joinTypeStr));
-                        require(joinType != kInvalidJoin, "Unknown JOIN type '%.*s'",
-                                SPLAT(joinTypeStr));
+                switch (_aliases[alias]) {
+                    case kDBAlias:
+                        // The first item is the database alias:
+                        _sql << " AS \"" << alias << "\"";
+                        break;
+                    case kUnnestVirtualTableAlias:
+                        // UNNEST: Use fl_each() to make a virtual table:
+                        _sql << " JOIN ";
+                        writeEachExpression(propertyFromNode(unnest));
+                        _sql << " AS \"" << alias << "\"";
+                        break;
+                    case kUnnestTableAlias: {
+                        // UNNEST: Optimize query by using the unnest table as a join source:
+                        string unnestTable = unnestedTableName(unnest);
+                        _sql << " JOIN \"" << unnestTable << "\" AS \"" << alias << "\""
+                                " ON \"" << alias << "\".docid=\"" << _dbAlias << "\".rowid";
+                        break;
                     }
+                    case kJoinAlias: {
+                        // A join:
+                        JoinType joinType = kInner;
+                        const Value* joinTypeVal = getCaseInsensitive(entry, "JOIN"_sl);
+                        if (joinTypeVal) {
+                            slice joinTypeStr = requiredString(joinTypeVal, "JOIN value");
+                            joinType = JoinType(parseJoinType(joinTypeStr));
+                            require(joinType != kInvalidJoin, "Unknown JOIN type '%.*s'",
+                                    SPLAT(joinTypeStr));
+                        }
 
-                    if (joinType == kCross) {
-                        require(!on, "CROSS JOIN cannot accept an ON clause");
-                    } else {
-                        require(on, "FROM item needs an ON clause to be a join");
-                    }
+                        if (joinType == kCross) {
+                            require(!on, "CROSS JOIN cannot accept an ON clause");
+                        } else {
+                            require(on, "FROM item needs an ON clause to be a join");
+                        }
 
-                    // Substitute CROSS for INNER join to work around SQLite loop-ordering (#379)
-                    _sql << " " << kJoinTypeNames[ (joinType == kInner) ? kCross : joinType ];
-                    
-                    _sql << " JOIN " << _tableName << " AS \"" << _aliases[i] << "\"";
+                        // Substitute CROSS for INNER join to work around SQLite loop-ordering (#379)
+                        _sql << " " << kJoinTypeNames[ (joinType == kInner) ? kCross : joinType ];
 
-                    if (on || !_includeDeleted) {
-                        _sql << " ON ";
-                        if (on) {
-                            if (!_includeDeleted)
-                                _sql << "(";
-                            parseNode(on);
-                            if (!_includeDeleted) {
-                                _sql << ") AND ";
+                        _sql << " JOIN " << _tableName << " AS \"" << alias << "\"";
+
+                        if (on || !_includeDeleted) {
+                            _sql << " ON ";
+                            if (on) {
+                                if (!_includeDeleted)
+                                    _sql << "(";
+                                parseNode(on);
+                                if (!_includeDeleted) {
+                                    _sql << ") AND ";
+                                }
                             }
+                            if(!_includeDeleted)
+                                writeNotDeletedTest(alias);
                         }
-                        if(!_includeDeleted) {
-                            writeNotDeletedTest(i);
-                        }
+                        break;
                     }
                 }
             }
+        } else {
+            _sql << " AS " << _dbAlias;
         }
         
         unsigned ftsTableNo = 0;
         for (auto ftsTable : _ftsTables) {
             ++ftsTableNo;
-            if (i > 1)
-                _sql << ",";
             _sql << " JOIN \"" << ftsTable << "\" AS FTS" << ftsTableNo
-                 << " ON FTS" << ftsTableNo << ".docid = "
-                 << (_useDocAlias ? "_doc" : _tableName) << ".rowid";
+                 << " ON FTS" << ftsTableNo << ".docid = " << _dbAlias << ".rowid";
         }
     }
 
@@ -895,7 +934,7 @@ namespace litecore {
             writeSelect(dict);
         } else {
             // Nested SELECT; use a fresh parser
-            QueryParser nested(_tableName, _bodyColumnName);
+            QueryParser nested(this);
             nested.parse(dict);
             _sql << nested.SQL();
         }
@@ -1042,11 +1081,8 @@ namespace litecore {
 
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, string property) {
-        string tableName;
-        if (_aliases.empty()) {
-            if (_useDocAlias)
-                tableName = "_doc.";
-        } else {
+        string alias, tablePrefix;
+        if (_propertiesUseAliases) {
             // Interpret the first component of the property as a db alias:
             auto dot = property.find('.');
             string rest;
@@ -1055,48 +1091,74 @@ namespace litecore {
             } else {
                 rest = property.substr(dot+1);
             }
-            string first = property.substr(0, dot);
+            alias = property.substr(0, dot);
 
             // Make sure there isn't a bracket (array index) before the dot:
             auto bra = property.find('[');
             require(bra == string::npos || dot < bra,
                     "Missing database alias name in property '%s'", property.c_str());
-            require(find(_aliases.begin(), _aliases.end(), first) != _aliases.end(),
-                    "Unknown database alias name in property '%s'", property.c_str());
 
-            tableName = "\"" + first + "\".";
+            tablePrefix = "\"" + alias + "\".";
             property = rest;
+        } else {
+            alias = _dbAlias;
+            if (!alias.empty())
+                tablePrefix = alias + ".";
+        }
 
-            if (_unnestAliases.find(first) != _unnestAliases.end()) {
-                // The alias is to an UNNEST. This needs to be written specially:
-                require(fn == kValueFnName, "can't use an UNNEST alias in this context");
-                require(property != "_id" && property != "_sequence",
-                        "can't use '%s' on an UNNEST", property.c_str());
-                if (property.empty()) {
-                    _sql << '\"' << first << "\".value";
-                } else {
-                    _sql << kNestedValueFnName << "(\"" << first << "\".body, ";
-                    writeSQLString(_sql, slice(property));
-                    _sql << ")";
-                }
-                return;
-            }
+        auto iType = _aliases.find(alias);
+        require(iType != _aliases.end(),
+                "property '%s.%s' does not begin with a declared 'AS' alias",
+                alias.c_str(), property.c_str());
+        if (iType->second >= kUnnestVirtualTableAlias) {
+            // The alias is to an UNNEST. This needs to be written specially:
+            writeUnnestPropertyGetter(fn, property, alias, iType->second);
+            return;
         }
 
         if (property == "_id") {
             require(fn == kValueFnName, "can't use '_id' in this context");
-            _sql << tableName << "key";
+            _sql << tablePrefix << "key";
         } else if (property == "_sequence") {
             require(fn == kValueFnName, "can't use '_sequence' in this context");
-            _sql << tableName << "sequence";
+            _sql << tablePrefix << "sequence";
         } else {
             // It's more efficent to get the doc root with fl_root than with fl_value:
             if (property == "" && fn == kValueFnName)
                 fn = kRootFnName;
 
             // Write the function call:
-            _sql << fn << "(" << tableName << _bodyColumnName;
+            _sql << fn << "(" << tablePrefix << _bodyColumnName;
             if(!property.empty()) {
+                _sql << ", ";
+                writeSQLString(_sql, slice(property));
+            }
+            _sql << ")";
+        }
+    }
+
+
+    void QueryParser::writeUnnestPropertyGetter(slice fn, const string &property,
+                                                const string &alias, aliasType type)
+    {
+        require(fn == kValueFnName, "can't use an UNNEST alias in this context");
+        require(property != "_id" && property != "_sequence",
+                "can't use '%s' on an UNNEST", property.c_str());
+        string tablePrefix;
+        if (_propertiesUseAliases)
+            tablePrefix = "\"" + alias + "\".";
+
+        if (type == kUnnestVirtualTableAlias) {
+            if (property.empty()) {
+                _sql << tablePrefix << "value";
+            } else {
+                _sql << kNestedValueFnName << "(" << tablePrefix << "body, ";
+                writeSQLString(_sql, slice(property));
+                _sql << ")";
+            }
+        } else {
+            _sql << kUnnestedValueFnName << "(" << tablePrefix << "body";
+            if (!property.empty()) {
                 _sql << ", ";
                 writeSQLString(_sql, slice(property));
             }
@@ -1131,21 +1193,17 @@ namespace litecore {
     }
 
 
-    /*static*/ std::string QueryParser::expressionSQL(const fleece::Value* expr,
-                                                      const char *bodyColumnName)
-    {
-        QueryParser qp("XXX", bodyColumnName);
-        qp.parseJustExpression(expr);
-        return qp.SQL();
+    std::string QueryParser::expressionSQL(const fleece::Value* expr) {
+        reset();
+        parseJustExpression(expr);
+        return SQL();
     }
 
 
-    /*static*/ std::string QueryParser::eachExpressionSQL(const fleece::Value* arrayExpr,
-                                                          const char *bodyColumnName)
-    {
-        QueryParser qp("XXX", bodyColumnName);
-        qp.writeEachExpression(arrayExpr);
-        return qp.SQL();
+    std::string QueryParser::eachExpressionSQL(const fleece::Value* arrayExpr) {
+        reset();
+        writeEachExpression(arrayExpr);
+        return SQL();
     }
 
 
@@ -1175,14 +1233,10 @@ namespace litecore {
 
 
     string QueryParser::FTSTableName(const Value *key) const {
-        slice ftsName = requiredString(key, "left-hand side of MATCH expression");
-        return FTSTableName(string(ftsName));
-    }
-
-    string QueryParser::FTSTableName(const string &indexName) const {
-        require(!indexName.empty() && indexName.find('"') == string::npos,
+        string ftsName( requiredString(key, "left-hand side of MATCH expression") );
+        require(!ftsName.empty() && ftsName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");
-        return _tableName + "::" + indexName;
+        return _delegate.FTSTableName(ftsName);
     }
 
     size_t QueryParser::FTSPropertyIndex(const Value *matchLHS, bool canAdd) {
@@ -1211,11 +1265,14 @@ namespace litecore {
 
     string QueryParser::unnestedTableName(const Value *arrayExpr) const {
         string path = propertyFromNode(arrayExpr);
-        require(!path.empty(), "invalid property path for array index");
-        stringstream str;
-        str << _tableName + ":unnest:";
-        writeEscapedString(str, path, '"');
-        return str.str();
+        require(!path.empty() && path.find('"') == string::npos,
+                "invalid property path for array index");
+        if (_propertiesUseAliases) {
+            string dbAliasPrefix = _dbAlias + ".";
+            if (hasPrefix(path, dbAliasPrefix))
+                path = path.substr(dbAliasPrefix.size());
+        }
+        return _delegate.unnestedTableName(path);
     }
 
 }

@@ -17,6 +17,7 @@
 //
 
 #include "c4QueryTest.hh"
+#include "StringUtil.hh"
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
@@ -435,50 +436,68 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Join", "[Query][C]") {
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query UNNEST", "[Query][C]") {
-    compileSelect(json5("{WHAT: ['.person._id'],\
-                          FROM: [{as: 'person'}, \
-                                 {as: 'like', unnest: ['.person.likes']}],\
-                         WHERE: ['=', ['.like'], 'climbing'],\
-                      ORDER_BY: [['.person.name.first']]}"));
-    CHECK(run() == (vector<string>{ "0000021", "0000017", "0000045", "0000060", "0000023" }));
+    for (int withIndex = 0; withIndex <= 1; ++withIndex) {
+        if (withIndex) {
+            C4Log("-------- Repeating with index --------");
+            REQUIRE(c4db_createIndex(db, C4STR("likes"), C4STR("[[\".likes\"]]"), kC4ArrayIndex, nullptr, nullptr));
+        }
+        compileSelect(json5("{WHAT: ['.person._id'],\
+                              FROM: [{as: 'person'}, \
+                                     {as: 'like', unnest: ['.person.likes']}],\
+                             WHERE: ['=', ['.like'], 'climbing'],\
+                          ORDER_BY: [['.person.name.first']]}"));
+        checkExplanation(withIndex);
+        CHECK(run() == (vector<string>{ "0000021", "0000017", "0000045", "0000060", "0000023" }));
 
-    compileSelect(json5("{WHAT: ['.person._id', '.like'],\
-                          FROM: [{as: 'person'}, \
-                                 {as: 'like', unnest: ['.person.likes']}],\
-                         WHERE: ['>', ['.like'], 'snowboarding'],\
-                      ORDER_BY: [['.like'], ['.person._id']]}"));
-    CHECK(run2() == (vector<string>{ "0000003, swimming", "0000012, swimming", "0000020, swimming",
-        "0000072, swimming", "0000076, swimming", "0000081, swimming", "0000085, swimming",
-        "0000010, travelling", "0000027, travelling", "0000037, travelling", "0000060, travelling",
-        "0000068, travelling", "0000096, travelling" }));
+        compileSelect(json5("{WHAT: ['.person._id', '.like'],\
+                              FROM: [{as: 'person'}, \
+                                     {as: 'like', unnest: ['.person.likes']}],\
+                             WHERE: ['>', ['.like'], 'snowboarding'],\
+                          ORDER_BY: [['.like'], ['.person._id']]}"));
+        checkExplanation(withIndex);
+        CHECK(run2() == (vector<string>{ "0000003, swimming", "0000012, swimming", "0000020, swimming",
+            "0000072, swimming", "0000076, swimming", "0000081, swimming", "0000085, swimming",
+            "0000010, travelling", "0000027, travelling", "0000037, travelling", "0000060, travelling",
+            "0000068, travelling", "0000096, travelling" }));
 
-    compileSelect(json5("{WHAT: ['.like'],\
-                      DISTINCT: true,\
-                          FROM: [{as: 'person'}, \
-                                 {as: 'like', unnest: ['.person.likes']}],\
-                      ORDER_BY: [['.like']]}"));
-    CHECK(run() == (vector<string>{ "biking", "boxing", "chatting", "checkers", "chess", "climbing", "driving", "ironing", "reading", "running",
-                                    "shopping", "skiing", "snowboarding", "swimming", "travelling" }));
+        compileSelect(json5("{WHAT: ['.like'],\
+                          DISTINCT: true,\
+                              FROM: [{as: 'person'}, \
+                                     {as: 'like', unnest: ['.person.likes']}],\
+                          ORDER_BY: [['.like']]}"));
+        checkExplanation(false);        // even with index, this must do a scan
+        CHECK(run() == (vector<string>{ "biking", "boxing", "chatting", "checkers", "chess", "climbing", "driving", "ironing", "reading", "running",
+                                        "shopping", "skiing", "snowboarding", "swimming", "travelling" }));
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(NestedQueryTest, "DB Query UNNEST objects", "[Query][C]") {
-    compileSelect(json5("{WHAT: ['.shape.color'],\
-                      DISTINCT: true,\
-                          FROM: [{as: 'doc'}, \
-                                 {as: 'shape', unnest: ['.doc.shapes']}],\
-                      ORDER_BY: [['.shape.color']]}"));
-    CHECK(run() == (vector<string>{ "blue", "cyan", "green", "red", "white", "yellow" }));
+    for (int withIndex = 0; withIndex <= 1; ++withIndex) {
+        if (withIndex) {
+            C4Log("-------- Repeating with index --------");
+            REQUIRE(c4db_createIndex(db, C4STR("shapes"), C4STR("[[\".shapes\"], [\".color\"]]"), kC4ArrayIndex, nullptr, nullptr));
+        }
+        compileSelect(json5("{WHAT: ['.shape.color'],\
+                          DISTINCT: true,\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'shape', unnest: ['.doc.shapes']}],\
+                          ORDER_BY: [['.shape.color']]}"));
+        checkExplanation(false);        // even with index, this must do a scan
+        CHECK(run() == (vector<string>{ "blue", "cyan", "green", "red", "white", "yellow" }));
 
-    compileSelect(json5("{WHAT: [['sum()', ['.shape.size']]],\
-                          FROM: [{as: 'doc'}, \
-                                 {as: 'shape', unnest: ['.doc.shapes']}]}"));
-    CHECK(run() == (vector<string>{ "32" }));
+        compileSelect(json5("{WHAT: [['sum()', ['.shape.size']]],\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'shape', unnest: ['.doc.shapes']}]}"));
+        checkExplanation(false);        // even with index, this must do a scan
+        CHECK(run() == (vector<string>{ "32" }));
 
-    compileSelect(json5("{WHAT: [['sum()', ['.shape.size']]],\
-                          FROM: [{as: 'doc'}, \
-                                 {as: 'shape', unnest: ['.doc.shapes']}],\
-                         WHERE: ['=', ['.shape.color'], 'red']}"));
-    CHECK(run() == (vector<string>{ "11" }));
+        compileSelect(json5("{WHAT: [['sum()', ['.shape.size']]],\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'shape', unnest: ['.doc.shapes']}],\
+                             WHERE: ['=', ['.shape.color'], 'red']}"));
+        checkExplanation(withIndex);
+        CHECK(run() == (vector<string>{ "11" }));
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Seek", "[Query][C]") {
@@ -530,7 +549,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
     C4SliceResult explanation = c4query_explain(query);
     string explanationString = toString((C4Slice)explanation);
     c4slice_free(explanation);
-    CHECK(explanationString.substr(0, 130) == "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (flags & 1) = 0");
+    CHECK(litecore::hasPrefix(explanationString, "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (_doc.flags & 1) = 0"));
     
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
     REQUIRE(e);

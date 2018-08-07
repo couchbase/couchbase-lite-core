@@ -18,6 +18,7 @@
 
 #pragma once
 #include "KeyStore.hh"
+#include "QueryParser.hh"
 #include "Fleece.hh"
 
 namespace SQLite {
@@ -32,7 +33,7 @@ namespace litecore {
     
 
     /** SQLite implementation of KeyStore; corresponds to a SQL table. */
-    class SQLiteKeyStore : public KeyStore {
+    class SQLiteKeyStore : public KeyStore, public QueryParser::delegate {
     public:
         uint64_t recordCount() const override;
         sequence_t lastSequence() const override;
@@ -62,9 +63,14 @@ namespace litecore {
 
         void createSequenceIndex();
 
-    protected:
-        std::string tableName() const                       {return std::string("kv_") + name();}
+        // QueryParser::delegate:
+        virtual std::string tableName() const override  {return std::string("kv_") + name();}
+        virtual std::string FTSTableName(const std::string &property) const override;
+        virtual std::string unnestedTableName(const std::string &property) const override;
+        virtual bool tableExists(const std::string &tableName) const override;
 
+
+    protected:
         RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                   sequence_t since,
                                                   RecordEnumerator::Options) override;
@@ -100,7 +106,7 @@ namespace litecore {
                            const char *when,
                            const std::string &statements);
         void dropTrigger(const std::string &name, const char *suffix);
-        void createValueIndex(const std::string &sourceTableName,
+        void createValueIndex(IndexType, const std::string &sourceTableName,
                               const std::string &indexName,
                               fleece::Array::iterator &expressions,
                               const IndexOptions *options);

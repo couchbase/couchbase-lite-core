@@ -54,7 +54,7 @@ namespace litecore {
         ,Logging(QueryLog)
         {
             log("Compiling JSON query: %.*s", SPLAT(selectorExpression));
-            QueryParser qp(keyStore.tableName());
+            QueryParser qp(keyStore);
             qp.parseJSON(selectorExpression);
 
             _parameters = qp.parameters();

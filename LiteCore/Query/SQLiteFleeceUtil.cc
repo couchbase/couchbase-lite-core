@@ -238,6 +238,7 @@ namespace litecore {
                                  fleece::SharedKeys *sharedKeys)
     {
         registerFunctionSpecs(db, accessor, sharedKeys, kFleeceFunctionsSpec);
+        registerFunctionSpecs(db, nullptr,  sharedKeys, kFleeceNullAccessorFunctionsSpec);
         registerFunctionSpecs(db, accessor, sharedKeys, kRankFunctionsSpec);
         registerFunctionSpecs(db, accessor, sharedKeys, kN1QLFunctionsSpec);
         RegisterFleeceEachFunctions(db, accessor, sharedKeys);
