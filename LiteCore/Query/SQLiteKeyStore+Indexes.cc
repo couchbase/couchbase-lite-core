@@ -20,6 +20,7 @@
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "SQLite_Internal.hh"
+#include "Query.hh"
 #include "QueryParser.hh"
 #include "Record.hh"
 #include "Error.hh"
@@ -71,13 +72,17 @@ namespace litecore {
             case kArrayIndex:    createArrayIndex(indexNameStr, params, options); break;
             default:             error::_throw(error::Unimplemented);
         }
+        garbageCollectArrayIndexes();
         t.commit();
     }
 
 
     void SQLiteKeyStore::deleteIndex(slice name) {
+        validateIndexName(name);
         Transaction t(db());
-        _sqlDeleteIndex(name);
+        LogTo(QueryLog, "Deleting index '%.*s'", SPLAT(name));
+        _sqlDeleteIndex(string(name));
+        garbageCollectArrayIndexes();
         t.commit();
     }
 
@@ -123,22 +128,10 @@ namespace litecore {
     }
 
 
-    // Returns true if an entity exists in the database with the given type and SQL schema
-    bool SQLiteKeyStore::_sqlExists(const string &name, const string &type,
-                                    const string &tableName, const string &sql) {
-        string existingSQL;
-        return db().getSchema(name, type, tableName, existingSQL) && existingSQL == sql;
-    }
-
-
     // Actually deletes an index from SQLite.
-    void SQLiteKeyStore::_sqlDeleteIndex(slice name) {
+    void SQLiteKeyStore::_sqlDeleteIndex(const string &indexName) {
         // Delete any expression or array index:
-        validateIndexName(name);
-        string indexName = (string)name;
         db().exec(CONCAT("DROP INDEX IF EXISTS \"" << indexName << "\""));
-
-        //TODO: Garbage-collect any unnest table that has no more array indexes
 
         // Delete any FTS index:
         auto ftsTableName = FTSTableName(indexName);
@@ -169,9 +162,11 @@ namespace litecore {
         qp.setTableName(CONCAT('"' << sourceTableName << '"'));
         qp.writeCreateIndex(indexName, expressions, (type == kArrayIndex));
         string sql = qp.SQL();
-        if (_sqlExists(indexName, "index", sourceTableName, sql))
+        if (_schemaExistsWithSQL(indexName, "index", sourceTableName, sql))
             return;
         _sqlDeleteIndex(indexName);
+        LogTo(QueryLog, "Creating %sindex '%s'",
+              (type == kArrayIndex ? "array " : ""), indexName.c_str());
         db().exec(sql);
     }
 
@@ -207,9 +202,10 @@ namespace litecore {
         }
 
         // Create the FTS table, but if an identical one already exists, return:
-        if (_sqlExists(ftsTableName, "table", ftsTableName, sqlStr))
+        if (_schemaExistsWithSQL(ftsTableName, "table", ftsTableName, sqlStr))
             return;
         _sqlDeleteIndex(indexName);
+        LogTo(QueryLog, "Creating full-text search index '%s'", indexName.c_str());
         db().exec(sqlStr);
 
         // Index the existing records:
@@ -296,15 +292,17 @@ namespace litecore {
     string SQLiteKeyStore::createUnnestedTable(const Value *path, const IndexOptions *options) {
         // Derive the table name from the expression (path) it unnests:
         auto kvTableName = tableName();
-        auto arrayTableName = QueryParser(*this).unnestedTableName(path);
+        auto unnestTableName = QueryParser(*this).unnestedTableName(path);
 
         // Create the index table, unless an identical one already exists:
-        string sql = CONCAT("CREATE TABLE \"" << arrayTableName << "\" "
+        string sql = CONCAT("CREATE TABLE \"" << unnestTableName << "\" "
                             "(docid INTEGER NOT NULL REFERENCES " << kvTableName << "(rowid), "
-                            " i INTEGER NOT NULL, body BLOB NOT NULL, "
+                            " i INTEGER NOT NULL,"
+                            " body BLOB NOT NULL, "
                             " CONSTRAINT pk PRIMARY KEY (docid, i)) "
                             "WITHOUT ROWID");
-        if (!_sqlExists(arrayTableName, "table", arrayTableName, sql)) {
+        if (!_schemaExistsWithSQL(unnestTableName, "table", unnestTableName, sql)) {
+            LogTo(QueryLog, "Creating UNNEST table '%s'", unnestTableName.c_str());
             db().exec(sql);
 
             QueryParser qp(*this);
@@ -312,41 +310,41 @@ namespace litecore {
             string eachExpr = qp.eachExpressionSQL(path);
 
             // Populate the index-table with data from existing documents:
-            db().exec(CONCAT("INSERT INTO \"" << arrayTableName << "\" (docid, i, body) "
+            db().exec(CONCAT("INSERT INTO \"" << unnestTableName << "\" (docid, i, body) "
                              "SELECT new.rowid, _each.rowid, _each.value " <<
                              "FROM " << kvTableName << " as new, " << eachExpr << " AS _each "
                              "WHERE (new.flags & 1) = 0"));
 
             // Set up triggers to keep the index-table up to date
             // ...on insertion:
-            string insertTriggerExpr = CONCAT("INSERT INTO \"" << arrayTableName <<
+            string insertTriggerExpr = CONCAT("INSERT INTO \"" << unnestTableName <<
                                               "\" (docid, i, body) "
                                               "SELECT new.rowid, _each.rowid, _each.value " <<
                                               "FROM " << eachExpr << " AS _each ");
-            createTrigger(arrayTableName, "ins",
+            createTrigger(unnestTableName, "ins",
                           "AFTER INSERT",
                           "WHEN (new.flags & 1) = 0",
                           insertTriggerExpr);
 
             // ...on delete:
-            string deleteTriggerExpr = CONCAT("DELETE FROM \"" << arrayTableName << "\" "
+            string deleteTriggerExpr = CONCAT("DELETE FROM \"" << unnestTableName << "\" "
                                               "WHERE docid = old.rowid");
-            createTrigger(arrayTableName, "del",
+            createTrigger(unnestTableName, "del",
                           "BEFORE DELETE",
                           "WHEN (old.flags & 1) = 0",
                           deleteTriggerExpr);
 
             // ...on update:
-            createTrigger(arrayTableName, "preupdate",
+            createTrigger(unnestTableName, "preupdate",
                           "BEFORE UPDATE OF body, flags",
                           "WHEN (old.flags & 1) = 0",
                           deleteTriggerExpr);
-            createTrigger(arrayTableName, "postupdate",
+            createTrigger(unnestTableName, "postupdate",
                           "AFTER UPDATE OF body, flags",
                           "WHEN (new.flags & 1 = 0)",
                           insertTriggerExpr);
         }
-        return arrayTableName;
+        return unnestTableName;
     }
 
 
@@ -355,7 +353,40 @@ namespace litecore {
     }
 
 
+    // Drops unnested-array tables that no longer have any indexes on them.
+    void SQLiteKeyStore::garbageCollectArrayIndexes() {
+        vector<string> garbageTableNames;
+        {
+            SQLite::Statement st(db(),
+                 "SELECT unnestTbl.name FROM sqlite_master as unnestTbl "
+                  "WHERE unnestTbl.type='table' and unnestTbl.name like (?1 || ':unnest:%') "
+                        "and not exists (SELECT * FROM sqlite_master "
+                                         "WHERE type='index' and tbl_name=unnestTbl.name "
+                                               "and sql not null)");
+            st.bind(1, tableName());
+            while(st.executeStep())
+                garbageTableNames.push_back(st.getColumn(0));
+        }
+        for (string &tableName : garbageTableNames) {
+            LogTo(QueryLog, "Dropping unused UNNEST table '%s'", tableName.c_str());
+            db().exec(CONCAT("DROP TABLE \"" << tableName << "\""));
+            dropTrigger(tableName, "ins");
+            dropTrigger(tableName, "del");
+            dropTrigger(tableName, "preupdate");
+            dropTrigger(tableName, "postupdate");
+        }
+    }
+
+
 #pragma mark - UTILITIES:
+
+
+    // Returns true if an index/table exists in the database with the given type and SQL schema
+    bool SQLiteKeyStore::_schemaExistsWithSQL(const string &name, const string &type,
+                                              const string &tableName, const string &sql) {
+        string existingSQL;
+        return db().getSchema(name, type, tableName, existingSQL) && existingSQL == sql;
+    }
 
 
     static void validateIndexName(slice name) {

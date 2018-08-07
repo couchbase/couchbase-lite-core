@@ -113,9 +113,10 @@ namespace litecore {
         void createFTSIndex(std::string, const fleece::Array *params, const IndexOptions*);
         void createArrayIndex(std::string, const fleece::Array *params, const IndexOptions*);
         std::string createUnnestedTable(const fleece::Value *arrayPath, const IndexOptions*);
-        bool _sqlExists(const std::string &name, const std::string &type,
-                        const std::string &tableName, const std::string &sql);
-        void _sqlDeleteIndex(slice name);
+        bool _schemaExistsWithSQL(const std::string &name, const std::string &type,
+                                  const std::string &tableName, const std::string &sql);
+        void _sqlDeleteIndex(const std::string &name);
+        void garbageCollectArrayIndexes();
 
         std::unique_ptr<SQLite::Statement> _recCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;

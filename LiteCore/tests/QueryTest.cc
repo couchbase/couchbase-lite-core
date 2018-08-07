@@ -215,13 +215,17 @@ TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query][FTS]") {
     store->deleteIndex("num"_sl);
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
 
-    store->createIndex("num_third"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options);
-    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second", "num_third"}));
+    store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options);
+    store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options);
+    store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, KeyStore::kArrayIndex, &options);
+    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
 
     store->deleteIndex("num_second"_sl);
     store->deleteIndex("num_second"_sl); // Duplicate should be no-op
-    store->deleteIndex("num_third"_sl);
-    store->deleteIndex("num_third"_sl); // Duplicate should be no-op
+    store->deleteIndex("array_1st"_sl);
+    store->deleteIndex("array_1st"_sl); // Duplicate should be no-op
+    store->deleteIndex("array_2nd"_sl);
+    store->deleteIndex("array_2nd"_sl); // Duplicate should be no-op
     CHECK(extractIndexes(store->getIndexes()) == vector<string>{ });
 }
 
