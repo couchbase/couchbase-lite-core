@@ -16,204 +16,12 @@
 // limitations under the License.
 //
 
-#include "DataFile.hh"
-#include "Query.hh"
-#include "Error.hh"
-#include "Fleece.hh"
-#include "Benchmark.hh"
-#include "StringUtil.hh"
-
-#include "LiteCoreTest.hh"
-
-using namespace litecore;
-using namespace std;
+#include "QueryTest.hh"
 
 
-// NOTE: This test does not use RevTree or Database, so it stores plain Fleece in record bodies.
+TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
+    addArrayDocs();
 
-
-static string numberString(int n) {
-    static const char* kDigit[10] = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"};
-    string str;
-    do {
-        str = string(kDigit[n % 10]) + str;
-        n /= 10;
-        if (n > 0)
-            str = string("-") + str;
-    } while (n > 0);
-    return str;
-}
-
-static sequence_t writeNumberedDoc(KeyStore *store, int i, slice str, Transaction &t,
-                                   DocumentFlags flags =DocumentFlags::kNone) {
-    string docID = stringWithFormat("rec-%03d", i);
-
-    fleece::Encoder enc;
-    enc.beginDictionary();
-    enc.writeKey("num");
-    enc.writeInt(i);
-    if (str) {
-        enc.writeKey("str");
-        enc.writeString(str);
-    }
-    enc.endDictionary();
-    alloc_slice body = enc.extractOutput();
-
-    return store->set(slice(docID), nullslice, body, flags, t);
-}
-
-// Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
-static void addNumberedDocs(KeyStore *store, int first =1, int n =100) {
-    Transaction t(store->dataFile());
-    for (int i = first; i < first + n; i++)
-        REQUIRE(writeNumberedDoc(store, i, nullslice, t) == (sequence_t)i);
-    t.commit();
-}
-
-static sequence_t writeArrayDoc(KeyStore *store, int i, Transaction &t,
-                                DocumentFlags flags =DocumentFlags::kNone) {
-    string docID = stringWithFormat("rec-%03d", i);
-
-    fleece::Encoder enc;
-    enc.beginDictionary();
-    enc.writeKey("numbers");
-    enc.beginArray();
-    for (int j = max(i-5, 1); j <= i; j++)
-        enc.writeString(numberString(j));
-    enc.endArray();
-    enc.endDictionary();
-    alloc_slice body = enc.extractOutput();
-
-    return store->set(slice(docID), nullslice, body, flags, t);
-}
-
-static void addArrayDocs(KeyStore *store, int first =1, int n =100) {
-    Transaction t(store->dataFile());
-    for (int i = first; i < first + n; i++)
-        REQUIRE(writeArrayDoc(store, i, t) == (sequence_t)i);
-    t.commit();
-}
-
-static void writeMultipleTypeDocs(KeyStore* store, Transaction &t) {
-    string docID = "doc1";
-    
-    fleece::Encoder enc;
-    enc.beginDictionary(1);
-    enc.writeKey("value");
-    enc.beginArray();
-    enc.writeInt(1);
-    enc.endArray();
-    enc.endDictionary();
-    alloc_slice body = enc.extractOutput();
-    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-    
-    enc.reset();
-    docID = "doc2";
-    enc.beginDictionary(1);
-    enc.writeKey("value");
-    enc.writeString("cool value");
-    enc.endDictionary();
-    body = enc.extractOutput();
-    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-    
-    enc.reset();
-    docID = "doc3";
-    enc.beginDictionary(1);
-    enc.writeKey("value");
-    enc.writeDouble(4.5);
-    enc.endDictionary();
-    body = enc.extractOutput();
-    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-    
-    enc.reset();
-    docID = "doc4";
-    enc.beginDictionary(1);
-    enc.writeKey("value");
-    enc.beginDictionary(1);
-    enc.writeKey("subvalue");
-    enc.writeString("FTW");
-    enc.endDictionary();
-    enc.endDictionary();
-    body = enc.extractOutput();
-    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-    
-    enc.reset();
-    docID = "doc5";
-    enc.beginDictionary(1);
-    enc.writeKey("value");
-    enc.writeBool(true);
-    enc.endDictionary();
-    body = enc.extractOutput();
-    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-}
-
-static void writeFalselyDocs(KeyStore* store, Transaction &t) {
-    string docID = "doc6";
-    
-    fleece::Encoder enc;
-    enc.beginDictionary(1);
-    enc.writeKey("value");
-    enc.beginArray();
-    enc.endArray();
-    enc.endDictionary();
-    alloc_slice body = enc.extractOutput();
-    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-    
-    enc.reset();
-    docID = "doc7";
-    enc.beginDictionary(1);
-    enc.writeKey("value");
-    enc.beginDictionary();
-    enc.endDictionary();
-    enc.endDictionary();
-    body = enc.extractOutput();
-    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-    
-    enc.reset();
-    docID = "doc8";
-    enc.beginDictionary(1);
-    enc.writeKey("value");
-    enc.writeBool(false);
-    enc.endDictionary();
-    body = enc.extractOutput();
-    store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-}
-
-static void deleteDoc(KeyStore *store, slice docID, bool hardDelete) {
-    Transaction t(store->dataFile());
-    if (hardDelete) {
-        store->del(docID, t);
-    } else {
-        Record doc = store->get(docID);
-        CHECK(doc.exists());
-        doc.setFlag(DocumentFlags::kDeleted);
-        store->write(doc, t);
-    }
-    t.commit();
-}
-
-static void undeleteDoc(KeyStore *store, slice docID) {
-    Transaction t(store->dataFile());
-    Record doc = store->get(docID);
-    CHECK(doc.exists());
-    doc.clearFlag(DocumentFlags::kDeleted);
-    store->write(doc, t);
-    t.commit();
-}
-
-static vector<string> extractIndexes(slice encodedIndexes) {
-    set<string> retVal;
-    const Array *val = Value::fromTrustedData(encodedIndexes)->asArray();
-    CHECK(val != nullptr);
-    Array::iterator iter(val);
-    int size = iter.count();
-    for(int i = 0; i < size; i++, ++iter) {
-        retVal.insert(iter.value()->asString().asString());
-    }
-    return vector<string>(retVal.begin(), retVal.end());
-}
-
-TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query][FTS]") {
     KeyStore::IndexOptions options { "en", true };
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
         store->createIndex(""_sl, "[[\".num\"]]"_sl);
@@ -222,24 +30,30 @@ TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query][FTS]") {
     ExpectException(error::Domain::LiteCore, error::LiteCoreError::InvalidParameter, [=] {
         store->createIndex("\"num\""_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
     });
-    
-    store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
+
+    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kValueIndex, &options));
+    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
+    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kValueIndex, &options));
+    CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
+
+    CHECK(store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    CHECK(!store->createIndex("num"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num"}));
 
     store->deleteIndex("num"_sl);
-    store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options);
-    store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, KeyStore::kFullTextIndex, &options);
+    CHECK(store->createIndex("num_second"_sl, "[[\".num\"]]"_sl, KeyStore::kFullTextIndex, &options));
+    CHECK(store->createIndex("num_second"_sl, "[[\".num_second\"]]"_sl, KeyStore::kFullTextIndex, &options));
     CHECK(extractIndexes(store->getIndexes()) == vector<string>{"num_second"});
     
-    store->createIndex("num"_sl, "[\".num\"]"_sl);
-    store->createIndex("num_second"_sl, "[\".num\"]"_sl);
+    CHECK(store->createIndex("num"_sl, "[\".num\"]"_sl));
+    CHECK(store->createIndex("num_second"_sl, "[\".num\"]"_sl));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num", "num_second"}));
     store->deleteIndex("num"_sl);
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"num_second"}));
 
-    store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options);
-    store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options);
-    store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, KeyStore::kArrayIndex, &options);
+    CHECK(store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options));
+    CHECK(!store->createIndex("array_1st"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex, &options));
+    CHECK(store->createIndex("array_2nd"_sl, "[[\".numbers\"],[\".key\"]]"_sl, KeyStore::kArrayIndex, &options));
     CHECK(extractIndexes(store->getIndexes()) == (vector<string>{"array_1st", "array_2nd", "num_second"}));
 
     store->deleteIndex("num_second"_sl);
@@ -252,15 +66,15 @@ TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Index", "[Query][FTS]") {
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Create/Delete Array Index", "[Query][ArrayIndex]") {
-    addArrayDocs(store);
+TEST_CASE_METHOD(QueryTest, "Create/Delete Array Index", "[Query][ArrayIndex]") {
+    addArrayDocs();
     store->createIndex("nums"_sl, "[[\".numbers\"]]"_sl, KeyStore::kArrayIndex);
     store->deleteIndex("nums"_sl);
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT", "[Query]") {
-    addNumberedDocs(store);
+TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
+    addNumberedDocs();
     // Use a (SQL) query based on the Fleece "num" property:
     Retained<Query> query{ store->compileQuery(json5("['AND', ['>=', ['.', 'num'], 30], ['<=', ['.', 'num'], 40]]")) };
     CHECK(query->columnCount() == 2);   // docID and sequence, by default
@@ -295,8 +109,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT WHAT", "[Query]") {
-    addNumberedDocs(store);
+TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query]") {
+    addNumberedDocs();
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
     CHECK(query->columnCount() == 2);
@@ -313,8 +127,9 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT WHAT", "[Query]") {
     REQUIRE(num == 101);
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
-    addNumberedDocs(store);
+
+TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
+    addNumberedDocs();
     Retained<Query> query1{ store->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
     Retained<Query> query2{ store->compileQuery(json5("{WHAT: [ '.main',  ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
 
@@ -323,7 +138,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
     SECTION("Ignore deleted docs") {
         Transaction t(store->dataFile());
         for (int i = 201; i <= 300; i++)
-            writeNumberedDoc(store, i, nullslice, t,
+            writeNumberedDoc(i, nullslice, t,
                              DocumentFlags::kDeleted | DocumentFlags::kHasAttachments);
         t.commit();
     }
@@ -351,7 +166,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query SELECT All", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query null value", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
     {
         Transaction t(store->dataFile());
         fleece::Encoder enc;
@@ -378,8 +193,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query null value", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query refresh", "[Query]") {
-    addNumberedDocs(store);
+TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
+    addNumberedDocs();
     Retained<Query> query{ store->compileQuery(json5(
                      "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
     CHECK(query->columnCount() == 2);
@@ -394,7 +209,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query refresh", "[Query]") {
     // Add a doc that doesn't alter the query:
     {
         Transaction t(db);
-        writeNumberedDoc(store, -1, nullslice, t);
+        writeNumberedDoc(-1, nullslice, t);
         t.commit();
     }
     CHECK(e->refresh() == nullptr);
@@ -404,7 +219,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query refresh", "[Query]") {
     // Modify a doc in a way that doesn't affect the query results
     {
         Transaction t(db);
-        writeNumberedDoc(store, 20, "howdy"_sl, t);
+        writeNumberedDoc(20, "howdy"_sl, t);
         t.commit();
     }
     CHECK(e->refresh() == nullptr);
@@ -427,7 +242,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query refresh", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query boolean", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     {
         Transaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
@@ -469,10 +284,11 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query boolean", "[Query]") {
         CHECK(e->columns()[0]->asString().asString() == stringWithFormat("rec-%03d", i++));
     }
 }
-    
+
+
 #pragma mark Targeted N1QL tests
     
-TEST_CASE_METHOD(DataFileTestFixture, "Query array length", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
     {
         Transaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
@@ -504,7 +320,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query array length", "[Query]") {
     REQUIRE(e->columns()[0]->asString() == "rec-002"_sl);
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query missing and null", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     {
         Transaction t(store->dataFile());
         string docID = "doc1";
@@ -566,7 +383,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query missing and null", "[Query]") {
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query regex", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     {
         Transaction t(store->dataFile());
         string docID = "doc1";
@@ -637,10 +455,11 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query regex", "[Query]") {
     REQUIRE(e->columns()[0]->asString() == "invalid"_sl);
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query type check", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     {
         Transaction t(store->dataFile());
-        writeMultipleTypeDocs(store, t);
+        writeMultipleTypeDocs(t);
         t.commit();
     }
     
@@ -702,11 +521,12 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query type check", "[Query]") {
     CHECK(e->columns()[1]->asString() == "doc5"_sl);
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query toboolean", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
     {
         Transaction t(store->dataFile());
-        writeMultipleTypeDocs(store, t);
-        writeFalselyDocs(store, t);
+        writeMultipleTypeDocs(t);
+        writeFalselyDocs(t);
         t.commit();
     }
     
@@ -732,11 +552,12 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query toboolean", "[Query]") {
     CHECK(!e->columns()[0]->asBool());
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query toatom", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
     {
         Transaction t(store->dataFile());
-        writeMultipleTypeDocs(store, t);
-        writeFalselyDocs(store, t);
+        writeMultipleTypeDocs(t);
+        writeFalselyDocs(t);
         t.commit();
     }
     
@@ -762,10 +583,11 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query toatom", "[Query]") {
     CHECK(!e->columns()[0]->asBool());
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query tonumber", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     {
         Transaction t(store->dataFile());
-        writeMultipleTypeDocs(store, t);
+        writeMultipleTypeDocs(t);
         t.commit();
     }
     
@@ -789,11 +611,12 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query tonumber", "[Query]") {
     CHECK(e->columns()[0]->asDouble() == 1.0);
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query tostring", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     {
         Transaction t(store->dataFile());
-        writeMultipleTypeDocs(store, t);
-        writeFalselyDocs(store, t);
+        writeMultipleTypeDocs(t);
+        writeFalselyDocs(t);
         t.commit();
     }
     
@@ -819,7 +642,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query tostring", "[Query]") {
     CHECK(e->columns()[0]->asString() == "false"_sl);
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query HAVING", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
     {
         Transaction t(store->dataFile());
 
@@ -862,10 +686,11 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query HAVING", "[Query]") {
     CHECK(e->columns()[1]->asInt() == 5);
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query Functions", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
     {
         Transaction t(store->dataFile());
-        writeNumberedDoc(store, 1, nullslice, t);
+        writeNumberedDoc(1, nullslice, t);
 
         t.commit();
     }
@@ -925,7 +750,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query Functions", "[Query]") {
     CHECK(e->columns()[0]->asInt() == 1);
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query unsigned", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
     {
         Transaction t(store->dataFile());
         string docID = "rec-001";
@@ -952,8 +778,9 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query unsigned", "[Query]") {
 
 }
 
+
 // Test for #341, "kData fleece type unable to be queried"
-TEST_CASE_METHOD(DataFileTestFixture, "Query data type", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
      {
         Transaction t(store->dataFile());
         string docID = "rec-001";
@@ -986,7 +813,7 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query data type", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Missing columns", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query]") {
     {
         Transaction t(store->dataFile());
         string docID = "rec-001";
@@ -1022,7 +849,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Missing columns", "[Query]") {
     CHECK(e->columns()[3]->toJSONString() == "\"FOO\"");
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Negative Limit / Offset", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     {
         Transaction t(store->dataFile());
         string docID = "rec-001";
@@ -1071,7 +899,8 @@ TEST_CASE_METHOD(DataFileTestFixture, "Negative Limit / Offset", "[Query]") {
     CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
 }
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query JOINs", "[Query]") {
+
+TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
      {
         Transaction t(store->dataFile());
         string docID = "rec-00";
@@ -1148,8 +977,8 @@ static void checkUnnestQuery(Query *query, int docNo, int expectedRowCount) {
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query UNNEST", "[Query]") {
-    addArrayDocs(store, 1, 90);
+TEST_CASE_METHOD(QueryTest, "Query UNNEST", "[Query]") {
+    addArrayDocs(1, 90);
 
     auto queryJSON = json5("['SELECT', {\
                               FROM: [{as: 'doc'}, \
@@ -1172,25 +1001,24 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query UNNEST", "[Query]") {
     checkUnnestQuery(query, 88, 3);
 
     Log("-------- Adding a doc --------");
-    addArrayDocs(store, 91, 1);
+    addArrayDocs(91, 1);
     checkUnnestQuery(query, 88, 4);
 
     Log("-------- Purging a doc --------");
-    deleteDoc(store, "rec-091"_sl, true);
+    deleteDoc("rec-091"_sl, true);
     checkUnnestQuery(query, 88, 3);
 
     Log("-------- Soft-deleting a doc --------");
-    deleteDoc(store, "rec-090"_sl, false);
+    deleteDoc("rec-090"_sl, false);
     checkUnnestQuery(query, 88, 2);
 
     Log("-------- Un-deleting a doc --------");
-    undeleteDoc(store, "rec-090"_sl);
+    undeleteDoc("rec-090"_sl);
     checkUnnestQuery(query, 88, 3);
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query NULL check", "[Query]")
-{
+TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
 	{
         Transaction t(store->dataFile());
         string docID = "rec-00";
@@ -1240,11 +1068,12 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query NULL check", "[Query]")
 	CHECK(e->getRowCount() == 3); // Make sure there are actually three docs!
 }
 
+
 // NOTE: This test cannot be reproduced in this way on Windows, and it is likely a Unix specific
 // problem.  Leaving an enumerator open in this way will cause a permission denied error when
 // trying to delete the database via db->deleteDataFile()
 #ifndef _MSC_VER
-TEST_CASE_METHOD(DataFileTestFixture, "Query finalized after db deleted", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
     Retained<Query> query{ store->compileQuery(json5(
           "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
     unique_ptr<QueryEnumerator> e(query->createEnumerator());

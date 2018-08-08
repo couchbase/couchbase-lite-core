@@ -71,7 +71,7 @@ namespace litecore {
         error::_throw(error::Unimplemented);
     }
 
-    void KeyStore::createIndex(slice name, slice expressionJSON, IndexType, const IndexOptions*) {
+    bool KeyStore::createIndex(slice name, slice expressionJSON, IndexType, const IndexOptions*) {
         error::_throw(error::Unimplemented);
     }
 

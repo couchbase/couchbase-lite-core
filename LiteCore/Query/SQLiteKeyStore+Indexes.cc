@@ -27,6 +27,7 @@
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "Fleece.hh"
+#include "Stopwatch.hh"
 #include <sstream>
 
 extern "C" {
@@ -42,7 +43,7 @@ namespace litecore {
      A value index is a SQL index named 'NAME'.
      A FTS index is a SQL virtual table named 'kv_default::NAME'
      An array index has two parts:
-         * A SQL table named `kv_default::unnest::PATH`
+         * A SQL table named `kv_default:unnest:PATH`
          * An index on that table named `NAME`
      */
 
@@ -51,7 +52,7 @@ namespace litecore {
     static void writeTokenizerOptions(stringstream &sql, const KeyStore::IndexOptions*);
 
 
-    void SQLiteKeyStore::createIndex(slice indexName,
+    bool SQLiteKeyStore::createIndex(slice indexName,
                                      slice expression,
                                      IndexType type,
                                      const IndexOptions *options) {
@@ -61,19 +62,28 @@ namespace litecore {
         const Array *params;
         tie(expressionFleece, params) = parseIndexExpr(expression, type);
 
+        Stopwatch st;
         Transaction t(db());
+        bool created;
         switch (type) {
             case kValueIndex: {
                 Array::iterator iParams(params);
-                createValueIndex(kValueIndex, tableName(), indexNameStr, iParams, options);
+                created = createValueIndex(kValueIndex, tableName(), indexNameStr, iParams, options);
                 break;
             }
-            case kFullTextIndex: createFTSIndex(indexNameStr, params, options); break;
-            case kArrayIndex:    createArrayIndex(indexNameStr, params, options); break;
+            case kFullTextIndex: created = createFTSIndex(indexNameStr, params, options); break;
+            case kArrayIndex:    created = createArrayIndex(indexNameStr, params, options); break;
             default:             error::_throw(error::Unimplemented);
         }
-        garbageCollectArrayIndexes();
-        t.commit();
+
+        if (created) {
+            garbageCollectArrayIndexes();
+            t.commit();
+            double time = st.elapsed();
+            QueryLog.log((time < 3.0 ? LogLevel::Info : LogLevel::Warning),
+                         "Created index '%.*s' in %.3f sec", SPLAT(indexName), time);
+        }
+        return created;
     }
 
 
@@ -142,17 +152,11 @@ namespace litecore {
     }
 
 
-    // Part of the QueryParser delegate API
-    bool SQLiteKeyStore::tableExists(const std::string &tableName) const {
-        return db().tableExists(tableName);
-    }
-
-
 #pragma mark - VALUE INDEX:
 
 
     // Creates a value index.
-    void SQLiteKeyStore::createValueIndex(IndexType type,
+    bool SQLiteKeyStore::createValueIndex(IndexType type,
                                           const string &sourceTableName,
                                           const string &indexName,
                                           Array::iterator &expressions,
@@ -163,11 +167,12 @@ namespace litecore {
         qp.writeCreateIndex(indexName, expressions, (type == kArrayIndex));
         string sql = qp.SQL();
         if (_schemaExistsWithSQL(indexName, "index", sourceTableName, sql))
-            return;
+            return false;
         _sqlDeleteIndex(indexName);
         LogTo(QueryLog, "Creating %sindex '%s'",
               (type == kArrayIndex ? "array " : ""), indexName.c_str());
         db().exec(sql);
+        return true;
     }
 
 
@@ -175,7 +180,7 @@ namespace litecore {
 
 
     // Creates a FTS index.
-    void SQLiteKeyStore::createFTSIndex(string indexName,
+    bool SQLiteKeyStore::createFTSIndex(string indexName,
                                         const Array *params,
                                         const IndexOptions *options)
     {
@@ -203,7 +208,7 @@ namespace litecore {
 
         // Create the FTS table, but if an identical one already exists, return:
         if (_schemaExistsWithSQL(ftsTableName, "table", ftsTableName, sqlStr))
-            return;
+            return false;
         _sqlDeleteIndex(indexName);
         LogTo(QueryLog, "Creating full-text search index '%s'", indexName.c_str());
         db().exec(sqlStr);
@@ -232,6 +237,7 @@ namespace litecore {
         }
         upd << " WHERE docid = new.rowid";
         createTrigger(ftsTableName, "upd", "AFTER UPDATE", "", upd.str());
+        return true;
     }
 
 
@@ -279,13 +285,13 @@ namespace litecore {
 #pragma mark - ARRAY INDEX:
 
 
-    void SQLiteKeyStore::createArrayIndex(string indexName,
+    bool SQLiteKeyStore::createArrayIndex(string indexName,
                                           const Array *expressions,
                                           const IndexOptions *options)
     {
         Array::iterator iExprs(expressions);
         string arrayTableName = createUnnestedTable(iExprs.value(), options);
-        createValueIndex(kArrayIndex, arrayTableName, indexName, ++iExprs, options);
+        return createValueIndex(kArrayIndex, arrayTableName, indexName, ++iExprs, options);
     }
 
 
@@ -379,6 +385,12 @@ namespace litecore {
 
 
 #pragma mark - UTILITIES:
+
+
+    // Part of the QueryParser delegate API
+    bool SQLiteKeyStore::tableExists(const std::string &tableName) const {
+        return db().tableExists(tableName);
+    }
 
 
     // Returns true if an index/table exists in the database with the given type and SQL schema

@@ -53,7 +53,7 @@ namespace litecore {
         void erase() override;
 
         bool supportsIndexes(IndexType t) const override               {return true;}
-        void createIndex(slice name,
+        bool createIndex(slice name,
                          slice expressionJSON,
                          IndexType =kValueIndex,
                          const IndexOptions* = nullptr) override;
@@ -106,12 +106,12 @@ namespace litecore {
                            const char *when,
                            const std::string &statements);
         void dropTrigger(const std::string &name, const char *suffix);
-        void createValueIndex(IndexType, const std::string &sourceTableName,
+        bool createValueIndex(IndexType, const std::string &sourceTableName,
                               const std::string &indexName,
                               fleece::Array::iterator &expressions,
                               const IndexOptions *options);
-        void createFTSIndex(std::string, const fleece::Array *params, const IndexOptions*);
-        void createArrayIndex(std::string, const fleece::Array *params, const IndexOptions*);
+        bool createFTSIndex(std::string, const fleece::Array *params, const IndexOptions*);
+        bool createArrayIndex(std::string, const fleece::Array *params, const IndexOptions*);
         std::string createUnnestedTable(const fleece::Value *arrayPath, const IndexOptions*);
         bool _schemaExistsWithSQL(const std::string &name, const std::string &type,
                                   const std::string &tableName, const std::string &sql);

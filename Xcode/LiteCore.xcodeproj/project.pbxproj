@@ -958,6 +958,7 @@
 		2722504D1D7892610006D5A5 /* c4BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStore.cc; sourceTree = "<group>"; };
 		272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStoreTest.cc; sourceTree = "<group>"; };
 		27234104211516C000DA9437 /* c4QueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4QueryTest.hh; sourceTree = "<group>"; };
+		2723410F211B5FC400DA9437 /* QueryTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryTest.hh; sourceTree = "<group>"; };
 		2726F630207ED137007F2D02 /* ReplicatorTuning.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ReplicatorTuning.hh; sourceTree = "<group>"; };
 		272850A91E9AF53B009CA22F /* Upgrader.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Upgrader.cc; sourceTree = "<group>"; };
 		272850AA1E9AF53B009CA22F /* Upgrader.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Upgrader.hh; sourceTree = "<group>"; };
@@ -1602,6 +1603,7 @@
 				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
 				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
 				27E6737C1EC78144008F50C4 /* QueryTest.cc */,
+				2723410F211B5FC400DA9437 /* QueryTest.hh */,
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
 				277BE1C8204F4D45008047C9 /* RevTreeTest.cc */,
 				27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */,
@@ -3191,17 +3193,17 @@
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				277BE1C9204F4D45008047C9 /* RevTreeTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
-				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
-				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */,
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
+				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
+				722AA64F20005F6900261887 /* TokenizerTest.cc in Sources */,
+				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
-				722AA64F20005F6900261887 /* TokenizerTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
