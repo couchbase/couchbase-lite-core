@@ -179,6 +179,28 @@ static void writeFalselyDocs(KeyStore* store, Transaction &t) {
     store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
 }
 
+static void deleteDoc(KeyStore *store, slice docID, bool hardDelete) {
+    Transaction t(store->dataFile());
+    if (hardDelete) {
+        store->del(docID, t);
+    } else {
+        Record doc = store->get(docID);
+        CHECK(doc.exists());
+        doc.setFlag(DocumentFlags::kDeleted);
+        store->write(doc, t);
+    }
+    t.commit();
+}
+
+static void undeleteDoc(KeyStore *store, slice docID) {
+    Transaction t(store->dataFile());
+    Record doc = store->get(docID);
+    CHECK(doc.exists());
+    doc.clearFlag(DocumentFlags::kDeleted);
+    store->write(doc, t);
+    t.commit();
+}
+
 static vector<string> extractIndexes(slice encodedIndexes) {
     set<string> retVal;
     const Array *val = Value::fromTrustedData(encodedIndexes)->asArray();
@@ -1113,34 +1135,57 @@ TEST_CASE_METHOD(DataFileTestFixture, "Query JOINs", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(DataFileTestFixture, "Query UNNEST", "[Query]") {
-    addArrayDocs(store);
-    for (int withIndex = 0; withIndex <= 1; ++withIndex) {
-        if (withIndex) {
-            Log("-------- Repeating with index --------");
-            store->createIndex("numbersIndex"_sl,
-                               "[[\".numbers\"]]"_sl,
-                               KeyStore::kArrayIndex);
-        }
-        auto query = store->compileQuery(json5("['SELECT', {\
-                                                  FROM: [{as: 'doc'}, \
-                                                         {as: 'num', 'unnest': ['.doc.numbers']}],\
-                                                 WHERE: ['=', ['.num'], 'one-five']}]"));
-        string explanation = query->explain();
-        Log("%s", explanation.c_str());
-        if (withIndex)
-            CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
-        CHECK(e->getRowCount() == 6);
-        int docNo = 15;
-        while (e->next()) {
-            auto cols = e->columns();
-            slice docID = cols[0]->asString();
-            string expectedDocID = stringWithFormat("rec-%03d", docNo);
-            CHECK(docID == slice(expectedDocID));
-            ++docNo;
-        }
+static void checkUnnestQuery(Query *query, int docNo, int expectedRowCount) {
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    CHECK(e->getRowCount() == expectedRowCount);
+    while (e->next()) {
+        auto cols = e->columns();
+        slice docID = cols[0]->asString();
+        string expectedDocID = stringWithFormat("rec-%03d", docNo);
+        CHECK(docID == slice(expectedDocID));
+        ++docNo;
     }
+}
+
+
+TEST_CASE_METHOD(DataFileTestFixture, "Query UNNEST", "[Query]") {
+    addArrayDocs(store, 1, 90);
+
+    auto queryJSON = json5("['SELECT', {\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'num', 'unnest': ['.doc.numbers']}],\
+                              WHERE: ['=', ['.num'], 'eight-eight']}]");
+    Retained<Query> query;
+    query = store->compileQuery(queryJSON);
+    string explanation = query->explain();
+    Log("%s", explanation.c_str());
+    checkUnnestQuery(query, 88, 3);
+
+    Log("-------- Repeating with index --------");
+    store->createIndex("numbersIndex"_sl,
+                       "[[\".numbers\"]]"_sl,
+                       KeyStore::kArrayIndex);
+    query = store->compileQuery(queryJSON);
+    explanation = query->explain();
+    Log("%s", explanation.c_str());
+    CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
+    checkUnnestQuery(query, 88, 3);
+
+    Log("-------- Adding a doc --------");
+    addArrayDocs(store, 91, 1);
+    checkUnnestQuery(query, 88, 4);
+
+    Log("-------- Purging a doc --------");
+    deleteDoc(store, "rec-091"_sl, true);
+    checkUnnestQuery(query, 88, 3);
+
+    Log("-------- Soft-deleting a doc --------");
+    deleteDoc(store, "rec-090"_sl, false);
+    checkUnnestQuery(query, 88, 2);
+
+    Log("-------- Un-deleting a doc --------");
+    undeleteDoc(store, "rec-090"_sl);
+    checkUnnestQuery(query, 88, 3);
 }
 
 
