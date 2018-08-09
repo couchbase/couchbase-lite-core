@@ -27,11 +27,16 @@ namespace litecore {
     // SQLite value subtypes to represent type info that SQL doesn't convey:
     enum {
         kFleeceDataSubtype     = 0x66,  // Blob contains encoded Fleece data
-        kFleecePointerSubtype,          // Blob contains a raw Value* (4 or 8 bytes)
         kFleeceNullSubtype,             // Zero-length blob representing JSON null
         kFleeceIntBoolean,              // Integer is a boolean (true or false)
         kFleeceIntUnsigned,             // Integer is unsigned
     };
+
+    extern const char* const kFleeceValuePointerType;
+
+    static inline const fleece::Value* asFleeceValue(sqlite3_value *value) {
+        return (const fleece::Value*) sqlite3_value_pointer(value, kFleeceValuePointerType);
+    }
 
     // What the user_data of a registered function points to
     struct fleeceFuncContext {
@@ -39,6 +44,10 @@ namespace litecore {
         fleece::SharedKeys *sharedKeys;
     };
 
+
+    static inline fleece::SharedKeys* getSharedKeys(sqlite3_context *ctx) {
+        return ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys;
+    }
 
     // Returns the data of a SQLite blob value as a slice
     static inline slice valueAsSlice(sqlite3_value *arg) noexcept {
@@ -73,6 +82,7 @@ namespace litecore {
 
     // Sets the function result based on a Value*
     void setResultFromValue(sqlite3_context*, const fleece::Value*) noexcept;
+    void setResultFromValue(sqlite3_context*, const fleece::Value*, fleece::SharedKeys*) noexcept;
 
     // Sets the function result to a string, from the given slice.
     // If the slice is null, sets the function result to SQLite null.
@@ -84,8 +94,15 @@ namespace litecore {
     // Encodes the Value as a Fleece container and sets it as the result
     bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::Value*);
 
+    // Encodes the Value as a Fleece container and sets it as the result
+    bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::Value*, fleece::SharedKeys*);
+
     // Sets the function result to be a Fleece/JSON null (an empty blob with kFleeceNullSubtype)
     void setResultFleeceNull(sqlite3_context*);
+
+    // Common implementation of fl_contains and array_contains
+    void collectionContainsImpl(sqlite3_context*, const fleece::Value *collection, sqlite3_value *arg);
+
 
     //// Registering SQLite functions:
 
@@ -98,6 +115,7 @@ namespace litecore {
     };
 
     extern const SQLiteFunctionSpec kFleeceFunctionsSpec[];
+    extern const SQLiteFunctionSpec kFleeceNullAccessorFunctionsSpec[];
     extern const SQLiteFunctionSpec kRankFunctionsSpec[];
     extern const SQLiteFunctionSpec kN1QLFunctionsSpec[];
 

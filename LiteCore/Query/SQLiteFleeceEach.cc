@@ -52,7 +52,7 @@ enum {
     kValueColumn,           // 'value': The item as a SQL value
     kTypeColumn,            // 'type':  The item's type, an integer
     kDataColumn,            // 'data':  The item as encoded Fleece data
-    kPointerColumn,         // 'pointer':  The item as a raw Value*
+    kBodyColumn,            // 'body':  The item as a raw Value*
     kRootFleeceDataColumn,  // 'root_data': The Fleece data of the root [hidden]
     kRootPathColumn,        // 'root_path': Path from the root to the item being iterated [hidden]
 };
@@ -104,7 +104,7 @@ private:
         /* "A virtual table that contains hidden columns can be used like a table-valued function
             in the FROM clause of a SELECT statement. The arguments to the table-valued function
             become constraints on the HIDDEN columns of the virtual table." */
-        int rc = sqlite3_declare_vtab(db, "CREATE TABLE x(key, value, type, data, pointer,"
+        int rc = sqlite3_declare_vtab(db, "CREATE TABLE x(key, value, type, data, body,"
                                           " root_data HIDDEN, root_path HIDDEN)");
         if( rc!=SQLITE_OK )
             return rc;
@@ -202,6 +202,11 @@ private:
     }
 
 
+    inline SharedKeys* sharedKeys() const {
+        return _vtab->context.sharedKeys;
+    }
+
+
     // This method is called to "rewind" the FleeceCursor object back
     // to the first row of output.  This method is always called at least
     // once prior to any call to column() or rowid() or eof().
@@ -228,7 +233,7 @@ private:
         // Evaluate the path, if there is one:
         if (idxNum == kPathIndex) {
             _rootPath = valueAsSlice(argv[1]);
-            int rc = evaluatePath(_rootPath, _vtab->context.sharedKeys, &_container);
+            int rc = evaluatePath(_rootPath, sharedKeys(), &_container);
             if (rc != SQLITE_OK)
                 return rc;
         }
@@ -256,35 +261,33 @@ private:
     int column(sqlite3_context *ctx, int column) noexcept {
         if (atEOF())
             return SQLITE_ERROR;
+        auto sk = sharedKeys();
         switch( column ) {
             case kKeyColumn: {
                 auto key = currentKey();
                 if (key && key->isInteger()) {
-                    setResultTextFromSlice(ctx,
-                                           _vtab->context.sharedKeys->decode((int)key->asInt()));
+                    setResultTextFromSlice(ctx, sk->decode((int)key->asInt()));
                 } else {
-                    setResultFromValue(ctx, key);
+                    setResultFromValue(ctx, key, sk);
                 }
                 break;
             }
             case kValueColumn:
-                setResultFromValue(ctx, currentValue());
+                setResultFromValue(ctx, currentValue(), sk);
                 break;
             case kTypeColumn: {
                 auto value = currentValue();
                 sqlite3_result_int(ctx, (value ? value->type() : -1));
                 break;
             }
-            case kPointerColumn: {
-                auto value = currentValue();
-                sqlite3_result_blob(ctx, &value, sizeof(value), SQLITE_TRANSIENT);
-                sqlite3_result_subtype(ctx, kFleecePointerSubtype);
+            case kBodyColumn: {
+                sqlite3_result_pointer(ctx, (void*)currentValue(), kFleeceValuePointerType, nullptr);
                 break;
             }
-#if 0 // these columns are used for the join but are never actually queried
             case kDataColumn:
-                setResultBlobFromEncodedValue(ctx, currentValue());
+                setResultBlobFromEncodedValue(ctx, currentValue(), sk);
                 break;
+#if 0 // these columns are used for the join but are never actually queried
             case kRootFleeceDataColumn:
                 setResultBlobFromSlice(ctx, _fleeceData);
                 break;
@@ -398,6 +401,8 @@ int RegisterFleeceEachFunctions(sqlite3 *db,
                                 DataFile::FleeceAccessor accessor,
                                 SharedKeys *sharedKeys)
 {
+    if (!accessor)
+        accessor = [](slice data) {return data;};
     return sqlite3_create_module_v2(db,
                                     "fl_each",
                                     &FleeceCursor::kEachModule,

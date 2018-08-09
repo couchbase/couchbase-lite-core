@@ -114,7 +114,7 @@ fleece::alloc_slice json5slice(std::string str) {
     FLError err;
     FLSliceResult json = FLJSON5_ToJSON({str.data(), str.size()}, &err);
     REQUIRE(json.buf);
-    return {json.buf, json.size};
+    return json;
 }
 
 
@@ -481,7 +481,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     C4DocPutRequest rq = {};
     rq.docID = docID;
     rq.revFlags = kRevHasAttachments;
-    rq.body = (C4Slice)body;
+    rq.allocedBody = body;
     rq.save = true;
     C4Document* doc = c4doc_put(db, &rq, nullptr, &c4err);
     c4slice_free(body);
@@ -570,7 +570,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
         C4Error c4err;
         C4DocPutRequest rq = {};
         rq.docID = c4str(docID);
-        rq.body = (C4Slice)body;
+        rq.allocedBody = body;
         rq.save = true;
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
@@ -599,7 +599,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
         readFileByLines(path, [&](FLSlice line)
         {
             C4Error c4err;
-            FLSliceResult body = c4db_encodeJSON(db, {line.buf, line.size}, &c4err);
+            fleece::alloc_slice body = c4db_encodeJSON(db, {line.buf, line.size}, &c4err);
             REQUIRE(body.buf);
 
             char docID[20];
@@ -608,12 +608,11 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
             // Save document:
             C4DocPutRequest rq = {};
             rq.docID = c4str(docID);
-            rq.body = (C4Slice)body;
+            rq.allocedBody = {(void*)body.buf, body.size};
             rq.save = true;
             C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
             REQUIRE(doc != nullptr);
             c4doc_free(doc);
-            FLSliceResult_Free(body);
             ++numDocs;
             if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
                 C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());

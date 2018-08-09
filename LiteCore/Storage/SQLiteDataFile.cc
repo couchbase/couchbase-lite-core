@@ -433,15 +433,27 @@ namespace litecore {
     }
 
 
+    bool SQLiteDataFile::getSchema(const string &name,
+                                   const string &type,
+                                   const string &tableName,
+                                   string &outSQL) const
+    {
+        SQLite::Statement check(*_sqlDb, "SELECT sql FROM sqlite_master "
+                                         "WHERE name = ? AND type = ? AND tbl_name = ?");
+        check.bind(1, name);
+        check.bind(2, type);
+        check.bind(3, tableName);
+        LogStatement(check);
+        if (!check.executeStep())
+            return false;
+        outSQL = check.getColumn(0).getString();
+        return true;
+    }
+
+
     bool SQLiteDataFile::tableExists(const string &name) const {
-        checkOpen();
-        SQLite::Statement st(*_sqlDb, string("SELECT * FROM sqlite_master"
-                                             " WHERE type='table' AND name=?"));
-        st.bind(1, name);
-        LogStatement(st);
-        bool exists = st.executeStep();
-        st.reset();
-        return exists;
+        string sql;
+        return getSchema(name, "table", name, sql);
     }
 
     

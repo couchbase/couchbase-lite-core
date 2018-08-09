@@ -51,18 +51,18 @@ extern "C" {
 
     /** Describes a revision of a document. A sub-struct of C4Document. */
     typedef struct {
-        C4String revID;              ///< Revision ID
+        C4HeapString revID;         ///< Revision ID
         C4RevisionFlags flags;      ///< Flags (deleted?, leaf?, new? hasAttachments?)
         C4SequenceNumber sequence;  ///< Sequence number in database
-        C4String body;               ///< The raw body, or NULL if not loaded yet
+        C4String body;              ///< The raw body, or NULL if not loaded yet
     } C4Revision;
 
 
     /** Describes a version-controlled document. */
     typedef struct C4Document {
         C4DocumentFlags flags;      ///< Document flags
-        C4String docID;              ///< Document ID
-        C4String revID;              ///< Revision ID of current revision
+        C4HeapString docID;         ///< Document ID
+        C4HeapString revID;         ///< Revision ID of current revision
         C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
 
         C4Revision selectedRev;     ///< Describes the currently-selected revision
@@ -290,6 +290,7 @@ extern "C" {
         bool save;                  ///< Save the document after inserting the revision?
         uint32_t maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
         C4RemoteID remoteDBID;      ///< Identifier of remote db this rev's from (or 0 if local)
+        C4SliceResult allocedBody;  ///< Set this instead of body if body is heap-allocated
     } C4DocPutRequest;
 
     /** A high-level Put operation, to insert a new or downloaded revision.

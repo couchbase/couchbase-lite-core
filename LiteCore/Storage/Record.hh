@@ -44,6 +44,7 @@ namespace litecore {
     public:
         Record()                              { }
         explicit Record(slice key);
+        explicit Record(alloc_slice key);
         Record(const Record&);
         Record(Record&&) noexcept;
 

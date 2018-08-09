@@ -908,7 +908,7 @@ namespace litecore { namespace repl {
                 rev->body = nullslice;
 
                 C4DocPutRequest put = {};
-                put.body = bodyForDB;
+                put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
                 put.docID = rev->docID;
                 put.revFlags = rev->flags;
                 put.existingRevision = true;

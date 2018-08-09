@@ -50,7 +50,7 @@ namespace litecore { namespace repl {
     /** Implementation of C4Socket */
     C4SocketImpl::C4SocketImpl(websocket::URL url,
                                Role role,
-                               slice options,
+                               alloc_slice options,
                                const C4SocketFactory *factory_,
                                void *nativeHandle_)
     :WebSocketImpl(url,

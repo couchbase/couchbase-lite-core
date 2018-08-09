@@ -70,7 +70,11 @@ namespace litecore { namespace repl {
         bool deleted() const        {return (flags & kRevDeleted) != 0;}
 
     protected:
-        Rev(slice docID_, slice revID_, C4SequenceNumber sequence_ =0, uint64_t bodySize_ =0);
+        template <class SLICE1, class SLICE2>
+        Rev(SLICE1 docID_, SLICE2 revID_, C4SequenceNumber sequence_ =0, uint64_t bodySize_ =0)
+        :docID(docID_), revID(revID_), sequence(sequence_), bodySize(bodySize_)
+        { }
+
         ~Rev() =default;
     };
 

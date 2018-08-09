@@ -31,6 +31,9 @@ using namespace std;
 namespace litecore {
 
 
+    const char* const kFleeceValuePointerType = "FleeceValue";
+
+
     const Value* fleeceDocRoot(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
         auto type = sqlite3_value_type(arg);
         if (type == SQLITE_NULL)
@@ -53,18 +56,12 @@ namespace litecore {
 
 
     const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
+        const Value *value = asFleeceValue(arg);
+        if (value)
+            return value;
         DebugAssert(sqlite3_value_type(arg) == SQLITE_BLOB);
         slice fleece = valueAsSlice(arg);
         switch (sqlite3_value_subtype(arg)) {
-            case kFleecePointerSubtype:
-                // Data is just a Value* (4 or 8 bytes), so extract it:
-                if (fleece.size == sizeof(Value*)) {
-                    return *(const Value**)fleece.buf;
-                } else {
-                    sqlite3_result_error(ctx, "invalid Fleece pointer", -1);
-                    sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
-                    return nullptr;
-                }
             case kFleeceDataSubtype: {
                 if (!fleece)
                     return Dict::kEmpty;             // No body; may be deleted rev
@@ -113,8 +110,7 @@ namespace litecore {
             *outValue = path->eval(val);
         } else {
             // No cached Path yet, so create one, use it & cache it:
-            auto sharedKeys = ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys;
-            path = new Path(valueAsSlice(argv[1]).asString(), sharedKeys);
+            path = new Path(valueAsSlice(argv[1]).asString(), getSharedKeys(ctx));
             *outValue = path->eval(val);
             sqlite3_set_auxdata(ctx, 1, path, [](void *auxdata) {
                 delete (Path*)auxdata;
@@ -124,7 +120,7 @@ namespace litecore {
     }
 
 
-    void setResultFromValue(sqlite3_context *ctx, const Value *val) noexcept {
+    void setResultFromValue(sqlite3_context *ctx, const Value *val, SharedKeys *sk) noexcept {
         if (val == nullptr) {
             sqlite3_result_null(ctx);
         } else {
@@ -153,10 +149,15 @@ namespace litecore {
                 case kData:
                 case kArray:
                 case kDict:
-                    setResultBlobFromEncodedValue(ctx, val);
+                    setResultBlobFromEncodedValue(ctx, val, sk);
                     break;
             }
         }
+    }
+
+
+    void setResultFromValue(sqlite3_context *ctx, const Value *val) noexcept {
+        setResultFromValue(ctx, val, getSharedKeys(ctx));
     }
 
 
@@ -178,10 +179,14 @@ namespace litecore {
     }
 
 
-    bool setResultBlobFromEncodedValue(sqlite3_context *ctx, const Value *val) {
+    bool setResultBlobFromEncodedValue(sqlite3_context *ctx,
+                                       const fleece::Value *val,
+                                       fleece::SharedKeys *sk)
+    {
         try {
             Encoder enc;
-            enc.writeValue(val);
+            enc.setSharedKeys(sk);
+            enc.writeValue(val, sk);
             setResultBlobFromFleeceData(ctx, enc.extractOutput());
             return true;
         } catch (const bad_alloc&) {
@@ -190,6 +195,11 @@ namespace litecore {
             sqlite3_result_error_code(ctx, SQLITE_ERROR);
         }
         return false;
+    }
+
+
+    bool setResultBlobFromEncodedValue(sqlite3_context *ctx, const Value *val) {
+        return setResultBlobFromEncodedValue(ctx, val, getSharedKeys(ctx));
     }
 
 
@@ -228,6 +238,7 @@ namespace litecore {
                                  fleece::SharedKeys *sharedKeys)
     {
         registerFunctionSpecs(db, accessor, sharedKeys, kFleeceFunctionsSpec);
+        registerFunctionSpecs(db, nullptr,  sharedKeys, kFleeceNullAccessorFunctionsSpec);
         registerFunctionSpecs(db, accessor, sharedKeys, kRankFunctionsSpec);
         registerFunctionSpecs(db, accessor, sharedKeys, kN1QLFunctionsSpec);
         RegisterFleeceEachFunctions(db, accessor, sharedKeys);
