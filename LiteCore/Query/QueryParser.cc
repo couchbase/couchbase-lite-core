@@ -141,7 +141,8 @@ namespace litecore {
     }
 
     
-    static string propertyFromOperands(Array::iterator &operands);
+    static string propertyFromString(slice str);
+    static string propertyFromOperands(Array::iterator &operands, bool skipDot =false);
     static string propertyFromNode(const Value *node, char prefix ='.');
 
 
@@ -605,10 +606,7 @@ namespace litecore {
     // a column-list ('FROM', 'ORDER BY', creating index, etc.) where it's a property path.
     void QueryParser::parseStringLiteral(slice str) {
         if (_context.back() == &kColumnListOperation || _context.back() == &kResultListOperation) {
-            require(str.size > 0 && str[0] == '.',
-                    "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
-            str.moveStart(1);
-            writePropertyGetter(kValueFnName, str.asString());
+            writePropertyGetter(kValueFnName, propertyFromString(str));
         } else {
             writeSQLString(str);
         }
@@ -963,14 +961,13 @@ namespace litecore {
         operation.op = op;
         _context.back() = &operation;
 
-        if (op.size > 0 && op[0] == '.') {
-            op.moveStart(1);  // skip '.'
-            writePropertyGetter(kValueFnName, string(op));
-        } else if (op.size > 0 && op[0] == '$') {
+        if (op.hasPrefix('.')) {
+            writePropertyGetter(kValueFnName, propertyFromString(op));
+        } else if (op.hasPrefix('$')) {
             parameterOp(op, operands);
-        } else if (op.size > 0 && op[0] == '?') {
+        } else if (op.hasPrefix('?')) {
             variableOp(op, operands);
-        } else if (op.size > 2 && op[op.size-2] == '(' && op[op.size-1] == ')') {
+        } else if (op.hasSuffix("()"_sl)) {
             functionOp(op, operands);
         } else {
             fail("Unknown operator '%.*s'", SPLAT(op));
@@ -1036,29 +1033,42 @@ namespace litecore {
 #pragma mark - PROPERTIES:
 
 
+    static string propertyFromString(slice str) {
+        require(str.hasPrefix('.'),
+                "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
+        str.moveStart(1);
+        auto property = str.asString();
+        if (str.hasPrefix('$'))
+            property.insert(0, 1, '\\');
+        return property;
+    }
+
+
     // Concatenates property operands to produce the property path string
-    static string propertyFromOperands(Array::iterator &operands) {
-        stringstream property;
+    static string propertyFromOperands(Array::iterator &operands, bool skipDotPrefix) {
+        stringstream pathStr;
         int n = 0;
         for (auto &i = operands; i; ++i,++n) {
-            auto item = i.value();
-            auto arr = item->asArray();
+            auto arr = i.value()->asArray();
             if (arr) {
                 require(n > 0, "Property path can't start with an array index");
-                // TODO: Support ranges (2 numbers)
                 require(arr->count() == 1, "Property array index must have exactly one item");
                 require(arr->get(0)->isInteger(), "Property array index must be an integer");
-                auto index = arr->get(0)->asInt();
-                property << '[' << index << ']';
+                Path::writeIndex(pathStr, (int)arr->get(0)->asInt());
             } else {
-                slice name = item->asString();
+                slice name = i.value()->asString();
                 require(name, "Invalid JSON value in property path");
-                if (n > 0)
-                    property << '.';
-                property << name;
+                if (skipDotPrefix) {
+                    name.moveStart(1);
+                    pathStr.write((const char*)name.buf, name.size);
+                } else {
+                    Path::writeProperty(pathStr, name, n==0);
+                }
+                require(name.size > 0, "Property name must not be empty");
             }
+            skipDotPrefix = false;
         }
-        return property.str();
+        return pathStr.str();
     }
 
 
@@ -1067,17 +1077,11 @@ namespace litecore {
         Array::iterator i(node->asArray());
         if (i.count() >= 1) {
             auto op = i[0]->asString();
-            if (op && op[0] == prefix) {
-                ++i;  // skip "." item
-                if (op.size == 1) {
-                    return propertyFromOperands(i);
-                } else {
-                    op.moveStart(1);
-                    string result = (string)op;
-                    if (i)
-                        result += '.' + propertyFromOperands(i);
-                    return result;
-                }
+            if (op.hasPrefix(prefix)) {
+                bool justDot = (op.size == 1);
+                if (justDot)
+                    ++i;
+                return propertyFromOperands(i, !justDot);
             }
         }
         return "";              // not a valid property node
@@ -1273,8 +1277,7 @@ namespace litecore {
 
     string QueryParser::FTSColumnName(const Value *expression) {
         slice op = requiredArray(expression, "FTS index expression")->get(0)->asString();
-        require(op.size > 0, "invalid FTS index expression");
-        require(op[0] == '.', "FTS index expression must be a property");
+        require(op.hasPrefix('.'), "FTS index expression must be a property");
         string property = propertyFromNode(expression);
         require(!property.empty(), "invalid property expression");
         return property;

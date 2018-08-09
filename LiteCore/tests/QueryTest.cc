@@ -286,6 +286,46 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
+    // For <https://github.com/couchbase/couchbase-lite-core/issues/545>
+    {
+        Transaction t(store->dataFile());
+        fleece::Encoder enc;
+        enc.beginDictionary();
+        enc.writeKey("$foo");    enc.writeInt(17);
+        enc.writeKey("?foo");    enc.writeInt(18);
+        enc.writeKey("[foo");    enc.writeInt(19);
+        enc.writeKey(".foo");    enc.writeInt(20);
+        enc.writeKey("f$o?o[o."); enc.writeInt(21);
+        enc.endDictionary();
+        alloc_slice body = enc.extractOutput();
+        store->set("doc1"_sl, nullslice, body, DocumentFlags::kNone, t);
+        t.commit();
+    }
+
+    CHECK(rowsInQuery(json5("{WHAT: ['.$foo']}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['=', ['.', '$foo'], 17]}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['EXISTS', ['.', '$foo']]}")) == 1);
+
+    CHECK(rowsInQuery(json5("{WHAT: ['.\\\\?foo']}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['=', ['.', '?foo'], 18]}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['EXISTS', ['.', '?foo']]}")) == 1);
+
+    CHECK(rowsInQuery(json5("{WHAT: ['.\\\\[foo']}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['=', ['.', '[foo'], 19]}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['EXISTS', ['.', '[foo']]}")) == 1);
+
+    CHECK(rowsInQuery(json5("{WHAT: ['.\\\\.foo']}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['=', ['.', '.foo'], 20]}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['EXISTS', ['.', '.foo']]}")) == 1);
+
+    // Finally the boss battle:
+    CHECK(rowsInQuery(json5("{WHAT: ['.f$o\\\\?o\\\\[o\\\\.']}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['=', ['.', 'f$o?o[o.'], 21]}")) == 1);
+    CHECK(rowsInQuery(json5("{WHERE: ['EXISTS', ['.', 'f$o?o[o.']]}")) == 1);
+}
+
+
 #pragma mark Targeted N1QL tests
     
 TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {

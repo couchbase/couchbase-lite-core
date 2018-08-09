@@ -205,4 +205,10 @@ protected:
         return vector<string>(retVal.begin(), retVal.end());
     }
 
+    int64_t rowsInQuery(string json) {
+        Retained<Query> query = store->compileQuery(json);
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        return e->getRowCount();
+    }
+
 };
