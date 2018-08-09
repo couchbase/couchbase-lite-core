@@ -52,12 +52,12 @@ namespace litecore {
 
     std::string Collation::sqliteName() const {
         if (unicodeAware) {
-            char name[20];
-            sprintf(name, "LCUnicode_%c%c_%.*s",
-                    caseSensitive ? '_' : 'C',
-                    diacriticSensitive ? '_' : 'D',
-                    SPLAT(localeName));
-            return name;
+            std::stringstream name;
+            name << "LCUnicode_"
+                 << (caseSensitive ? '_' : 'C')
+                 << (diacriticSensitive ? '_' : 'D')
+                 << '_' << (string)localeName;
+            return name.str();
         } else if (caseSensitive) {
             return "BINARY";
         } else {

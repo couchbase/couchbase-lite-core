@@ -556,7 +556,7 @@ namespace litecore {
 
 
     void QueryParser::writeCollation() {
-        _sql << " COLLATE " << _collation.sqliteName();
+        _sql << " COLLATE \"" << _collation.sqliteName() << "\"";
     }
 
 
