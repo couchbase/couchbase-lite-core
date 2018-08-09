@@ -218,10 +218,13 @@ TEST_CASE("QueryParser Join", "[Query]") {
 
 TEST_CASE("QueryParser Collate", "[Query][Collation]") {
     CHECK(parseWhere("['AND',['COLLATE',{'UNICODE':true,'CASE':false,'DIAC':false},['=',['.Artist'],['$ARTIST']]],['IS',['.Compilation'],['MISSING']]]")
-          == "fl_value(body, 'Artist') COLLATE LCUnicode_CD_ = $_ARTIST AND fl_value(body, 'Compilation') IS NULL");
+          == "fl_value(body, 'Artist') COLLATE \"LCUnicode_CD_\" = $_ARTIST AND fl_value(body, 'Compilation') IS NULL");
     CHECK(parseWhere("['COLLATE', {unicode: true, locale:'se', case:false}, \
                                   ['=', ['.', 'name'], 'Puddin\\' Tane']]")
-          == "fl_value(body, 'name') COLLATE LCUnicode_C__se = 'Puddin'' Tane'");
+          == "fl_value(body, 'name') COLLATE \"LCUnicode_C__se\" = 'Puddin'' Tane'");
+    CHECK(parseWhere("['COLLATE', {unicode: true, locale:'yue_Hans_CN', case:false}, \
+                     ['=', ['.', 'name'], 'Puddin\\' Tane']]")
+          == "fl_value(body, 'name') COLLATE \"LCUnicode_C__yue_Hans_CN\" = 'Puddin'' Tane'");
     CHECK(parse("{WHAT: ['.book.title'], \
                   FROM: [{as: 'book'}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']], \
@@ -229,7 +232,7 @@ TEST_CASE("QueryParser Collate", "[Query][Collation]") {
           == "SELECT fl_result(fl_value(\"book\".body, 'title')) "
                "FROM kv_default AS \"book\" "
               "WHERE (fl_value(\"book\".body, 'author') = $_AUTHOR) AND (\"book\".flags & 1) = 0 "
-           "ORDER BY fl_value(\"book\".body, 'title') COLLATE LCUnicode_C__");
+           "ORDER BY fl_value(\"book\".body, 'title') COLLATE \"LCUnicode_C__\"");
 }
 
 
