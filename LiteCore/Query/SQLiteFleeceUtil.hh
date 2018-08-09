@@ -100,6 +100,10 @@ namespace litecore {
     // Sets the function result to be a Fleece/JSON null (an empty blob with kFleeceNullSubtype)
     void setResultFleeceNull(sqlite3_context*);
 
+    // Common implementation of fl_contains and array_contains
+    void collectionContainsImpl(sqlite3_context*, const fleece::Value *collection, sqlite3_value *arg);
+
+
     //// Registering SQLite functions:
 
     struct SQLiteFunctionSpec {

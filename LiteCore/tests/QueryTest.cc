@@ -964,57 +964,74 @@ TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
 }
 
 
-static void checkUnnestQuery(Query *query, int docNo, int expectedRowCount) {
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
-    CHECK(e->getRowCount() == expectedRowCount);
-    while (e->next()) {
-        auto cols = e->columns();
-        slice docID = cols[0]->asString();
-        string expectedDocID = stringWithFormat("rec-%03d", docNo);
-        CHECK(docID == slice(expectedDocID));
-        ++docNo;
+class ArrayQueryTest : public QueryTest {
+protected:
+    Retained<Query> query;
+
+    void checkQuery(int docNo, int expectedRowCount) {
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        CHECK(e->getRowCount() == expectedRowCount);
+        while (e->next()) {
+            auto cols = e->columns();
+            slice docID = cols[0]->asString();
+            string expectedDocID = stringWithFormat("rec-%03d", docNo);
+            CHECK(docID == slice(expectedDocID));
+            ++docNo;
+        }
     }
+
+    void testArrayQuery(const string &json, bool checkOptimization) {
+        addArrayDocs(1, 90);
+
+        query = store->compileQuery(json);
+        string explanation = query->explain();
+        Log("%s", explanation.c_str());
+        checkQuery(88, 3);
+
+        Log("-------- Repeating with index --------");
+        store->createIndex("numbersIndex"_sl,
+                           "[[\".numbers\"]]"_sl,
+                           KeyStore::kArrayIndex);
+        query = store->compileQuery(json);
+        explanation = query->explain();
+        Log("%s", explanation.c_str());
+        if (checkOptimization)
+            CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
+        checkQuery(88, 3);
+
+        Log("-------- Adding a doc --------");
+        addArrayDocs(91, 1);
+        checkQuery(88, 4);
+
+        Log("-------- Purging a doc --------");
+        deleteDoc("rec-091"_sl, true);
+        checkQuery(88, 3);
+
+        Log("-------- Soft-deleting a doc --------");
+        deleteDoc("rec-090"_sl, false);
+        checkQuery(88, 2);
+
+        Log("-------- Un-deleting a doc --------");
+        undeleteDoc("rec-090"_sl);
+        checkQuery(88, 3);
+    }
+};
+
+
+TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
+    testArrayQuery(json5("['SELECT', {\
+                             WHERE: ['ANY', 'num', ['.numbers'],\
+                                            ['=', ['?num'], 'eight-eight']]}]"),
+                   false);
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query UNNEST", "[Query]") {
-    addArrayDocs(1, 90);
-
-    auto queryJSON = json5("['SELECT', {\
+TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
+    testArrayQuery(json5("['SELECT', {\
                               FROM: [{as: 'doc'}, \
                                      {as: 'num', 'unnest': ['.doc.numbers']}],\
-                              WHERE: ['=', ['.num'], 'eight-eight']}]");
-    Retained<Query> query;
-    query = store->compileQuery(queryJSON);
-    string explanation = query->explain();
-    Log("%s", explanation.c_str());
-    checkUnnestQuery(query, 88, 3);
-
-    Log("-------- Repeating with index --------");
-    store->createIndex("numbersIndex"_sl,
-                       "[[\".numbers\"]]"_sl,
-                       KeyStore::kArrayIndex);
-    query = store->compileQuery(queryJSON);
-    explanation = query->explain();
-    Log("%s", explanation.c_str());
-    CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
-    checkUnnestQuery(query, 88, 3);
-
-    Log("-------- Adding a doc --------");
-    addArrayDocs(91, 1);
-    checkUnnestQuery(query, 88, 4);
-
-    Log("-------- Purging a doc --------");
-    deleteDoc("rec-091"_sl, true);
-    checkUnnestQuery(query, 88, 3);
-
-    Log("-------- Soft-deleting a doc --------");
-    deleteDoc("rec-090"_sl, false);
-    checkUnnestQuery(query, 88, 2);
-
-    Log("-------- Un-deleting a doc --------");
-    undeleteDoc("rec-090"_sl);
-    checkUnnestQuery(query, 88, 3);
+                              WHERE: ['=', ['.num'], 'eight-eight']}]"),
+                   true);
 }
 
 

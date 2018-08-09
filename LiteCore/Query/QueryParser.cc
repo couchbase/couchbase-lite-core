@@ -46,6 +46,7 @@ namespace litecore {
     static constexpr slice kCountFnName = "fl_count"_sl;
     static constexpr slice kExistsFnName= "fl_exists"_sl;
     static constexpr slice kResultFnName= "fl_result"_sl;
+    static constexpr slice kContainsFnName = "fl_contains"_sl;
 
     // Existing SQLite FTS rank function:
     static constexpr slice kRankFnName  = "rank"_sl;
@@ -141,7 +142,7 @@ namespace litecore {
 
     
     static string propertyFromOperands(Array::iterator &operands);
-    static string propertyFromNode(const Value *node);
+    static string propertyFromNode(const Value *node, char prefix ='.');
 
 
 #pragma mark - QUERY PARSER TOP LEVEL:
@@ -380,7 +381,7 @@ namespace litecore {
         if (from) {
             for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
                 if (first)
-                _propertiesUseAliases = true;
+                    _propertiesUseAliases = true;
                 auto entry = requiredDict(i.value(), "FROM item");
                 string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
                                               "AS in FROM item").asString();
@@ -801,10 +802,24 @@ namespace litecore {
         _variables.insert(var);
 
         string property = propertyFromNode(operands[1]);
-        //OPT: If expr is `var = value`, can generate `fl_contains(array, value)` instead
+        auto predicate = requiredArray(operands[2], "ANY/EVERY third parameter");
+
 
         bool every = !op.caseEquivalent("ANY"_sl);
         bool anyAndEvery = op.caseEquivalent("ANY AND EVERY"_sl);
+
+        if (op.caseEquivalent("ANY"_sl) && predicate->count() == 3
+                                        && predicate->get(0)->asString() == "="_sl
+                                        && propertyFromNode(predicate->get(1), '?') == var) {
+            // If predicate is `var = value`, generate `fl_contains(array, value)` instead
+            _sql << kContainsFnName << '(';
+            if (_propertiesUseAliases)
+                _sql << _dbAlias << ".";
+            _sql << "body, '" << property << "', ";
+            parseNode(predicate->get(2));
+            _sql << ')';
+            return;
+        }
 
         if (anyAndEvery) {
             _sql << '(';
@@ -819,7 +834,7 @@ namespace litecore {
         _sql << " AS _" << var << " WHERE ";
         if (every)
             _sql << "NOT (";
-        parseNode(operands[2]);
+        parseNode(predicate);
         if (every)
             _sql << ')';
         _sql << ')';
@@ -1048,17 +1063,20 @@ namespace litecore {
 
 
     // Returns the property represented by a node, or "" if it's not a property node
-    static string propertyFromNode(const Value *node) {
+    static string propertyFromNode(const Value *node, char prefix) {
         Array::iterator i(node->asArray());
         if (i.count() >= 1) {
             auto op = i[0]->asString();
-            if (op && op[0] == '.') {
+            if (op && op[0] == prefix) {
+                ++i;  // skip "." item
                 if (op.size == 1) {
-                    ++i;  // skip "." item
                     return propertyFromOperands(i);
                 } else {
                     op.moveStart(1);
-                    return (string)op;
+                    string result = (string)op;
+                    if (i)
+                        result += '.' + propertyFromOperands(i);
+                    return result;
                 }
             }
         }
