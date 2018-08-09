@@ -27,6 +27,8 @@
 #include <vector>
 
 namespace litecore { namespace repl {
+    using fleece::RefCounted;
+    using fleece::Retained;
 
     /** Represents an HTTP cookie. */
     struct Cookie {

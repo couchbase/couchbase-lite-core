@@ -108,7 +108,7 @@ static void writeFalselyDocs(KeyStore* store, Transaction &t) {
     fleece::Encoder enc;
     enc.beginDictionary(1);
     enc.writeKey("value");
-    enc.beginArray(0);
+    enc.beginArray();
     enc.endArray();
     enc.endDictionary();
     alloc_slice body = enc.extractOutput();
@@ -118,7 +118,7 @@ static void writeFalselyDocs(KeyStore* store, Transaction &t) {
     docID = "doc7";
     enc.beginDictionary(1);
     enc.writeKey("value");
-    enc.beginDictionary(0);
+    enc.beginDictionary();
     enc.endDictionary();
     enc.endDictionary();
     body = enc.extractOutput();

@@ -10,6 +10,9 @@ include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}Lite
                     ${TOP}LiteCore/ ${TOP}REST/
                     ${TOP}tools/
                     ${TOP}vendor/fleece/Fleece/
+                    ${TOP}vendor/fleece/Fleece/Mutable
+                    ${TOP}vendor/fleece/Fleece/Tree
+                    ${TOP}vendor/fleece/Experimental
                     ${TOP}vendor/fleece/vendor/catch/
                     ${TOP}vendor/fleece/vendor/jsonsl/
                     ${TOP}vendor/SQLiteCpp/include/
@@ -23,7 +26,10 @@ LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/FleeceTestsMain.cc)
 if(NOT APPLE)
     LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/ObjCTests.mm)
 endif()
-set(TEST_SRC ${TEST_SRC} ${FLEECE_TEST_SRC} ${TOP}/tools/ArgumentTokenizer.cc)
+set(TEST_SRC ${TEST_SRC}
+             ${FLEECE_TEST_SRC}
+             ${TOP}/tools/ArgumentTokenizer.cc
+             ${TOP}vendor/fleece/Experimental/KeyTree.cc)
 
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
 file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)

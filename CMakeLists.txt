@@ -145,6 +145,9 @@ endif()
 ### SUBMODULES:
 
 include_directories("vendor/fleece/Fleece"
+                    "vendor/fleece/Fleece/Core"
+                    "vendor/fleece/Fleece/Experimental"
+                    "vendor/fleece/Fleece/Support"
                     "vendor/fleece/vendor"
                     "vendor/SQLiteCpp/include"
                     "vendor/SQLiteCpp/sqlite3"
@@ -337,7 +340,6 @@ add_library(LiteCoreREST SHARED LiteCore/Support/Error.cc
                                 LiteCore/Support/FilePath.cc
                                 LiteCore/Support/Logging_Stub.cc
                                 LiteCore/Support/StringUtil.cc
-                                LiteCore/Support/RefCounted.cc
                                 C/c4ExceptionUtils.cc)
 target_link_libraries(LiteCoreREST PRIVATE ${WHOLE_LIBRARY_FLAG} LiteCoreREST_Static ${NO_WHOLE_LIBRARY_FLAG} LiteCore FleeceStatic)
 
@@ -383,7 +385,6 @@ add_library(Support STATIC
     LiteCore/Support/Error_android.cc
     LiteCore/Support/FilePath.cc
     LiteCore/Support/Logging_Stub.cc
-    LiteCore/Support/RefCounted.cc
     LiteCore/Support/StringUtil.cc
     Replicator/Address.cc
     ${PLATFORM_SRC}

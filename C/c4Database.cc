@@ -54,7 +54,7 @@ FLEncoder c4Database::sharedFLEncoder() {
     if (_flEncoder) {
         FLEncoder_Reset(_flEncoder);
     } else {
-        _flEncoder = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true, true);
+        _flEncoder = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
         FLEncoder_SetSharedKeys(_flEncoder, (FLSharedKeys)documentKeys());
     }
     return _flEncoder;
