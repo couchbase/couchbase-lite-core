@@ -26,13 +26,30 @@ static constexpr int kDefaultPort = 59840;
 static bool gStop = false;
 
 
+const Tool::FlagSpec CBLiteTool::kServeFlags[] = {
+    {"--create",    (FlagHandler)&CBLiteTool::createDBFlag},
+    {"--dir",       (FlagHandler)&CBLiteTool::dirFlag},
+    {"--port",      (FlagHandler)&CBLiteTool::portFlag},
+    {"--replicate", (FlagHandler)&CBLiteTool::replicateFlag},
+    {"--readonly",  (FlagHandler)&CBLiteTool::readonlyFlag},
+    {"--verbose",   (FlagHandler)&CBLiteTool::verboseFlag},
+    {"-v",          (FlagHandler)&CBLiteTool::verboseFlag},
+    {nullptr, nullptr}
+};
+
 void CBLiteTool::serveUsage() {
-    writeUsageCommand("serve", false);
+    writeUsageCommand("serve", true);
+    if (!_interactive) {
+        cerr << ansiBold() << "cblite serve " << ansiItalic() << "[FLAGS] --dir DIRECTORY"
+             << ansiReset() << "\n";
+    }
     cerr <<
     "  Runs a REST API server\n"
     "    --port N : Sets TCP port number (default "<<kDefaultPort<<")\n"
+    "    --create : Creates database if it doesn't already exist\n"
     "    --readonly : Prevents REST calls from altering the database\n"
-    "    --verbose or -v : Log requests; repeat flag for more verbosity.\n"
+    "    --replicate : Enable incoming replications/sync [EE only]\n"
+    "    --verbose or -v : Logs requests; repeat flag for more verbosity\n"
     "  Note: Only a subset of the Couchbase Lite REST API is implemented so far.\n"
     "        See <github.com/couchbase/couchbase-lite-core/wiki/REST-API>\n"
     ;
@@ -71,22 +88,35 @@ void CBLiteTool::serve() {
         return;
     }
 
-    if (_dbFlags & kC4DB_ReadOnly)
+    bool serveDirectory = !_listenerDirectory.empty();
+    if (serveDirectory) {
+        if (_db)
+            fail("--dir flag cannot be used in interactive mode");
+        _listenerConfig.directory = slice(_listenerDirectory);
+    }
+
+    if (!(_dbFlags & kC4DB_ReadOnly)) {
         _listenerConfig.allowPull = true;
+        if (serveDirectory)
+            _listenerConfig.allowCreateDBs = _listenerConfig.allowDeleteDBs = true;
+    }
 
-    openDatabaseFromNextArg();
+    if (!serveDirectory)
+        openDatabaseFromNextArg();
     endOfArgs();
-
-    alloc_slice dbPath(c4db_getPath(_db));
-    alloc_slice name = databaseNameFromPath(dbPath);
 
     c4log_setCallbackLevel(kC4LogInfo);
     auto restLog = c4log_getDomain("REST", true);
     c4log_setLevel(restLog, max(kC4LogDebug, C4LogLevel(kC4LogInfo - verbose())));
 
     startListener();
-    
-    c4listener_shareDB(_listener, name, _db);
+
+    alloc_slice name;
+    if (_db) {
+        alloc_slice dbPath(c4db_getPath(_db));
+        name = databaseNameFromPath(dbPath);
+        c4listener_shareDB(_listener, name, _db);
+    }
 
     cout << "LiteCore ";
     if (_listenerConfig.apis & kC4SyncAPI) {
@@ -97,9 +127,12 @@ void CBLiteTool::serve() {
     if (_listenerConfig.apis & kC4RESTAPI)
         cout << "REST";
     cout << " server is now listening at " << ansiBold() << ansiUnderline()
-    << "http://localhost:" << _listenerConfig.port << "/" << name << "/";
-    if (_listenerConfig.apis == kC4SyncAPI)
-        cout << "_blipsync";
+    << "http://localhost:" << _listenerConfig.port << "/";
+    if (!serveDirectory) {
+        cout << name << "/";
+        if (_listenerConfig.apis == kC4SyncAPI)
+            cout << "_blipsync";
+    }
     cout << ansiReset() << "\n";
 
 #ifndef _MSC_VER

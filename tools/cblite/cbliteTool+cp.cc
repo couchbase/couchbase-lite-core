@@ -23,6 +23,19 @@
 #include "Stopwatch.hh"
 
 
+const Tool::FlagSpec CBLiteTool::kCpFlags[] = {
+    {"--bidi",      (FlagHandler)&CBLiteTool::bidiFlag},
+    {"--continuous",(FlagHandler)&CBLiteTool::continuousFlag},
+    {"--limit",     (FlagHandler)&CBLiteTool::limitFlag},
+    {"--existing",  (FlagHandler)&CBLiteTool::existingFlag},
+    {"-x",          (FlagHandler)&CBLiteTool::existingFlag},
+    {"--jsonid",    (FlagHandler)&CBLiteTool::jsonIDFlag},
+    {"--careful",   (FlagHandler)&CBLiteTool::carefulFlag},
+    {"--verbose",   (FlagHandler)&CBLiteTool::verboseFlag},
+    {"-v",          (FlagHandler)&CBLiteTool::verboseFlag},
+    {nullptr, nullptr}
+};
+
 void CBLiteTool::cpUsage() {
     cerr << ansiBold();
     if (!_interactive)

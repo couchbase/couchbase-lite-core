@@ -19,13 +19,17 @@
 #include "cbliteTool.hh"
 
 
+const Tool::FlagSpec CBLiteTool::kRevsFlags[] = {
+    {"--remotes",   (FlagHandler)&CBLiteTool::remotesFlag},
+};
+
 void CBLiteTool::revsUsage() {
     writeUsageCommand("revs", false, "DOCID");
     cerr <<
     "  Shows a document's revision history\n"
     "    --remotes : Shows which revisions are known current on remote databases\n"
     "  Revision flags are denoted by dashes or the letters:\n"
-    "    [D]eleted  [X]Closed  [C]onflict  [A]ttachments  [K]eep body  [L]eaf"
+    "    [D]eleted  [X]Closed  [C]onflict  [A]ttachments  [K]eep body  [L]eaf\n"
     ;
 }
 
