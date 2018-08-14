@@ -21,6 +21,7 @@
 #include "Path.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "Fleece.h"
 
 using namespace fleece;
 using namespace std;
