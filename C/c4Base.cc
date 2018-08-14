@@ -265,20 +265,10 @@ bool c4error_mayBeNetworkDependent(C4Error err) C4API {
 #pragma mark - SLICES:
 
 
-bool c4SliceEqual(C4Slice a, C4Slice b) noexcept {
-    return slice(a) == slice(b);
-}
-
-
 C4SliceResult c4slice_createResult(C4Slice slice) {
     alloc_slice result(slice);
     result.retain();
     return {(void*)result.buf, result.size};
-}
-
-
-void c4slice_free(C4SliceResult slice) noexcept {
-    alloc_slice::release({slice.buf, slice.size});
 }
 
 
