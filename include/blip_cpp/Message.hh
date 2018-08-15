@@ -19,14 +19,13 @@
 #pragma once
 #include "BLIPProtocol.hh"
 #include "RefCounted.hh"
-#include "Fleece.h"
-#include "slice.hh"
+#include "fleece/Fleece.hh"
 #include <functional>
 #include <strstream>
 #include <memory>
 #include <mutex>
 
-namespace fleeceapi {
+namespace fleece {
     class Value;
 }
 
@@ -159,7 +158,7 @@ namespace litecore { namespace blip {
         alloc_slice extractBody();
 
         /** Converts the body from JSON to Fleece and returns a pointer to the root object. */
-        fleeceapi::Value JSONBody();
+        fleece::Value JSONBody();
 
         /** Sends a response. (The message must be complete.) */
         void respond(MessageBuilder&);
@@ -206,7 +205,7 @@ namespace litecore { namespace blip {
         Retained<Connection> _connection;       // The owning BLIP connection     
         std::mutex _receiveMutex;
         MessageSize _rawBytesReceived {0};
-        std::unique_ptr<fleeceapi::JSONEncoder> _in; // Accumulates body data (not JSON)
+        std::unique_ptr<fleece::JSONEncoder> _in; // Accumulates body data (not JSON)
         uint32_t _propertiesSize {0};           // Length of properties in bytes
         slice _propertiesRemaining;             // Subrange of _properties still to be read
         uint32_t _unackedBytes {0};             // # bytes received that haven't been ACKed yet

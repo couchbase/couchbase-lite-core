@@ -43,14 +43,14 @@ namespace litecore { namespace websocket {
     public:
         WebSocketImpl(const URL &url,
                       Role role,
-                      const fleeceapi::AllocedDict &options,
+                      const fleece::AllocedDict &options,
                       bool framing);
 
         virtual bool send(fleece::slice message, bool binary =true) override;
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) override;
 
         // Concrete socket implementation needs to call these:
-        void gotHTTPResponse(int status, const fleeceapi::AllocedDict &headers);
+        void gotHTTPResponse(int status, const fleece::AllocedDict &headers);
         void onConnect();
         void onCloseRequested(int status, fleece::slice message);
         void onClose(int posixErrno);
@@ -58,7 +58,7 @@ namespace litecore { namespace websocket {
         void onReceive(fleece::slice);
         void onWriteComplete(size_t);
 
-        const fleeceapi::AllocedDict& options() const   {return _options;}
+        const fleece::AllocedDict& options() const   {return _options;}
 
     protected:
         virtual ~WebSocketImpl();
@@ -92,7 +92,7 @@ namespace litecore { namespace websocket {
         void sendPing();
         void receivedPong();
 
-        fleeceapi::AllocedDict _options;
+        fleece::AllocedDict _options;
         bool _framing;
         std::unique_ptr<ClientProtocol> _clientProtocol;  // 3rd party class that does the framing
         std::unique_ptr<ServerProtocol> _serverProtocol;  // 3rd party class that does the framing

@@ -21,7 +21,7 @@
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
 #include "Codec.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
 #include <algorithm>
@@ -182,7 +182,7 @@ namespace litecore { namespace blip {
                 // Update my flags and allocate the Writer:
                 assert(_number > 0);
                 _flags = (FrameFlags)(frameFlags & ~kMoreComing);
-                _in.reset(new fleeceapi::JSONEncoder);
+                _in.reset(new fleece::JSONEncoder);
 
                 // Read just a few bytes to get the length of the properties (a varint at the
                 // start of the frame):
@@ -243,7 +243,7 @@ namespace litecore { namespace blip {
                 // Completed!
                 if (_propertiesRemaining.size > 0)
                     throw std::runtime_error("message ends before end of properties");
-                _body = _in->finish();
+                _body = _in->extractOutput();
                 _in.reset();
                 _complete = true;
 
@@ -314,11 +314,11 @@ namespace litecore { namespace blip {
     }
 
 
-    fleeceapi::Value MessageIn::JSONBody() {
+    fleece::Value MessageIn::JSONBody() {
         lock_guard<mutex> lock(_receiveMutex);
         if (!_bodyAsFleece)
             _bodyAsFleece = FLData_ConvertJSON({_body.buf, _body.size}, nullptr);
-        return fleeceapi::Value::fromData(_bodyAsFleece);
+        return fleece::Value::fromData(_bodyAsFleece);
     }
 
 
@@ -328,7 +328,7 @@ namespace litecore { namespace blip {
         if (body) {
             _body = nullslice;
         } else if (_in) {
-            body = _in->finish();
+            body = _in->extractOutput();
             _in->reset();
         }
         return body;

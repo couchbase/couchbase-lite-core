@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "Logging.hh"
 #include "RefCounted.hh"
 #include <assert.h>
@@ -168,7 +168,7 @@ namespace litecore { namespace websocket {
 
         virtual void onWebSocketStart() { }
         virtual void onWebSocketGotHTTPResponse(int status,
-                                                const fleeceapi::AllocedDict &headers) { }
+                                                const fleece::AllocedDict &headers) { }
         virtual void onWebSocketConnect() =0;
         virtual void onWebSocketClose(CloseStatus) =0;
 

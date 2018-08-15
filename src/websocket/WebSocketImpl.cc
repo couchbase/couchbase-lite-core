@@ -56,7 +56,7 @@ namespace litecore { namespace websocket {
 
     WebSocketImpl::WebSocketImpl(const URL &url,
                                  Role role,
-                                 const fleeceapi::AllocedDict &options,
+                                 const fleece::AllocedDict &options,
                                  bool framing)
     :WebSocket(url, role)
     ,Logging(WSLogDomain)
@@ -80,7 +80,7 @@ namespace litecore { namespace websocket {
     }
 
 
-    void WebSocketImpl::gotHTTPResponse(int status, const fleeceapi::AllocedDict &headersFleece) {
+    void WebSocketImpl::gotHTTPResponse(int status, const fleece::AllocedDict &headersFleece) {
         delegate().onWebSocketGotHTTPResponse(status, headersFleece);
     }
 
@@ -269,7 +269,7 @@ namespace litecore { namespace websocket {
     int WebSocketImpl::heartbeatInterval() const {
         if (!_framing)
             return 0;
-        fleeceapi::Value heartbeat = options().get(kHeartbeatOption);
+        fleece::Value heartbeat = options().get(kHeartbeatOption);
         if (heartbeat.type() == kFLNumber)
             return (int)heartbeat.asInt();
         else

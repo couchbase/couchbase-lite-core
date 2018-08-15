@@ -66,7 +66,7 @@ namespace litecore { namespace blip {
         void makeError(Error);
 
         /** JSON encoder that can be used to write JSON to the body. */
-        fleeceapi::JSONEncoder& jsonBody()          {finishProperties(); return _out;}
+        fleece::JSONEncoder& jsonBody()          {finishProperties(); return _out;}
 
         /** Adds data to the body of the message. No more properties can be added afterwards. */
         MessageBuilder& write(slice s);
@@ -103,7 +103,7 @@ namespace litecore { namespace blip {
     private:
         void finishProperties();
 
-        fleeceapi::JSONEncoder _out;    // Actually using it for the entire msg, not just JSON
+        fleece::JSONEncoder _out;    // Actually using it for the entire msg, not just JSON
         std::stringstream _properties;  // Accumulates encoded properties
         bool _wroteProperties {false};  // Have _properties been written to _out yet?
     };
