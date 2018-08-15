@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "SharedKeys.hh"
 
 namespace litecore {
@@ -29,13 +29,13 @@ namespace litecore {
         bool isOldMetaProperty(fleece::slice key);
 
         /** Returns true if the document contains 1.x metadata properties (at top level). */
-        bool hasOldMetaProperties(const fleece::Dict* root, fleece::SharedKeys *sk);
+        bool hasOldMetaProperties(const fleece::impl::Dict* root);
 
         /** Encodes to Fleece, without any 1.x metadata properties.
             The _attachments property is treated specially, in that any entries in it that don't
             appear elsewhere in the dictionary as blobs are preserved. */
-        fleece::alloc_slice encodeStrippingOldMetaProperties(const fleece::Dict* root,
-                                                             fleece::SharedKeys *sk =nullptr);
+        fleece::alloc_slice encodeStrippingOldMetaProperties(const fleece::impl::Dict* root,
+                                                             fleece::impl::SharedKeys*);
     }
 
 }

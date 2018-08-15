@@ -325,7 +325,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT returning object", "[Query][C]") {
-    auto sk = c4db_getFLSharedKeys(db);
     vector<string> expectedFirst = {"Cleveland", "Georgetta", "Margaretta"};
     vector<string> expectedLast  = {"Bejcek",    "Kolding",   "Ogwynn"};
     compileSelect(json5("{WHAT: ['.name'], \
@@ -344,9 +343,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT returning object", "[Query][C]"
         Value col = Array::iterator(e->columns)[0];
         REQUIRE(col.type() == kFLDict);
         Dict name = col.asDict();
-        INFO("name = " << name.toJSON(sk));
-        CHECK(name.get("first"_sl, sk).asstring() == expectedFirst[i]);
-        CHECK(name.get("last"_sl,  sk).asstring() == expectedLast[i]);
+        INFO("name = " << FLSlice(name.toJSON()));
+        CHECK(name.get("first"_sl).asstring() == expectedFirst[i]);
+        CHECK(name.get("last"_sl) .asstring() == expectedLast[i]);
         ++i;
     }
     CHECK(error.code == 0);
@@ -609,7 +608,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
     for(int i = 0; i < 2; i++) {
         REQUIRE(c4db_createIndex(db, names[i], desc[i], types[i], nullptr, &err));
         C4SliceResult indexes = c4db_getIndexes(db, &err);
-        FLValue val = FLValue_FromTrustedData((FLSlice)indexes);
+        FLValue val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
         REQUIRE(FLValue_GetType(val) == kFLArray);
         FLArray indexArray = FLValue_AsArray(val);
         FLArrayIterator iter;
@@ -621,7 +620,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
         
         REQUIRE(c4db_deleteIndex(db, names[i], &err));
         indexes = c4db_getIndexes(db, &err);
-        val = FLValue_FromTrustedData((FLSlice)indexes);
+        val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
         REQUIRE(FLValue_GetType(val) == kFLArray);
         indexArray = FLValue_AsArray(val);
         FLArrayIterator_Begin(indexArray, &iter);

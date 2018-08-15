@@ -27,7 +27,7 @@
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "varint.hh"
 #include <ctime>
 #include <algorithm>
@@ -369,7 +369,7 @@ namespace c4Internal {
 
             alloc_slice body = requestBody(rq);
             if (!body)
-                body = alloc_slice{fleece::Dict::kEmpty, 2};
+                body = alloc_slice{fleece::impl::Dict::kEmpty, 2};
             
             int httpStatus;
             auto newRev = _versionedDoc.insert(encodedNewRevID,
@@ -476,14 +476,14 @@ bool c4doc_save(C4Document *doc,
                 uint32_t maxRevTreeDepth,
                 C4Error *outError) noexcept
 {
-    auto idoc = internal(doc);
+    auto idoc = asInternal(doc);
     if (!idoc->mustUseVersioning(kC4RevisionTrees, outError))
         return false;
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {
         if (maxRevTreeDepth == 0)
-            maxRevTreeDepth = internal(doc)->database()->maxRevTreeDepth();
+            maxRevTreeDepth = asInternal(doc)->database()->maxRevTreeDepth();
         ((TreeDocument*)idoc)->save(maxRevTreeDepth);
         return true;
     } catchError(outError)

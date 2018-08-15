@@ -22,9 +22,10 @@
 #error "This is C++ only"
 #endif
 
-#include "slice.hh"
-#include "FleeceCpp.hh"
+#include "fleece/slice.hh"
+#include "fleece/Fleece.hh"
 #include "c4.h"
+#include "c4Document+Fleece.h"
 #include "c4Listener.h"
 #include <assert.h>
 
@@ -107,4 +108,9 @@ namespace c4 {
         C4Database *_db;
         bool _active {false};
     };
+
+
+    static inline fleece::Doc getFleeceDoc(C4Document *doc) {
+        return fleece::Doc(c4doc_createFleeceDoc(doc), false);
+    }
 }

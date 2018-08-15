@@ -22,7 +22,7 @@
 #include "DBWorker.hh"
 #include "Actor.hh"
 #include "SequenceSet.hh"
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include "make_unique.h"
 #include <deque>
 #include <unordered_map>
@@ -71,7 +71,7 @@ namespace litecore { namespace repl {
         void handleProveAttachment(Retained<MessageIn>);
         void _attachmentSent();
         C4ReadStream* readBlobFromRequest(MessageIn *req, slice &digest, C4Error *outError);
-        void filterByDocIDs(fleeceapi::Array docIDs);
+        void filterByDocIDs(fleece::Array docIDs);
 
         static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
         static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one

@@ -72,7 +72,7 @@ namespace litecore { namespace REST {
         void write(const char *content)                     {write(fleece::slice(content));}
         void printf(const char *format, ...) __printflike(2, 3);
 
-        fleeceapi::JSONEncoder& jsonEncoder();
+        fleece::JSONEncoder& jsonEncoder();
 
         void writeStatusJSON(HTTPStatus status, const char *message =nullptr);
         void writeErrorJSON(C4Error);
@@ -93,7 +93,7 @@ namespace litecore { namespace REST {
         bool _chunked {false};
         int64_t _contentLength {-1};
         int64_t _contentSent {0};
-        std::unique_ptr<fleeceapi::JSONEncoder> _jsonEncoder;
+        std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;
     };
 
 } }

@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include "RevTree.hh"
 #include "KeyStore.hh"
 #include "Endian.hh"

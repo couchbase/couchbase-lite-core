@@ -18,7 +18,7 @@
 
 #pragma once
 #include "c4Compat.h"
-#include "FLSlice.h"
+#include "fleece/FLSlice.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>

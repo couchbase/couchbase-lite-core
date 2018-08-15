@@ -10,7 +10,7 @@
 FRAMEWORK_SEARCH_PATHS       = $(DEVELOPER_FRAMEWORKS_DIR) $(inherited)
 GCC_PREFIX_HEADER            = $(SRCROOT)/../LiteCore/Support/LiteCore-Prefix.pch
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_CPP_TESTS=1
-HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/../vendor/fleece/Fleece $(SRCROOT)/../vendor/fleece/vendor/catch
+HEADER_SEARCH_PATHS          = $(inherited) $(SRCROOT)/../vendor/fleece/API $(SRCROOT)/../vendor/fleece/vendor/catch
 INFOPLIST_FILE               = XcodeTests/LiteCore Tests-Info.plist
 PRODUCT_BUNDLE_IDENTIFIER    = org.couchbase.${PRODUCT_NAME:rfc1034identifier}
 PRODUCT_NAME                 = LiteCore Tests

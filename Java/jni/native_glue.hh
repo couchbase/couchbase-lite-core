@@ -23,8 +23,8 @@
 #include <vector>
 #include <c4.h>
 #include "RefCounted.hh"
-#include "Fleece.h"
-#include "slice.hh"
+#include "fleece/Fleece.h"
+#include "fleece/slice.hh"
 
 #include "logging.h"
 

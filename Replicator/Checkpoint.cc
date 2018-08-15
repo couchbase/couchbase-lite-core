@@ -19,11 +19,10 @@
 #include "Checkpoint.hh"
 #include "StringUtil.hh"
 #include "Logging.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include <assert.h>
 
 using namespace fleece;
-using namespace fleeceapi;
 using namespace std;
 
 namespace litecore { namespace repl {
@@ -77,8 +76,7 @@ namespace litecore { namespace repl {
         _seq.local = 0;
         _seq.remote = nullslice;
         if (json) {
-            alloc_slice f = Encoder::convertJSON(json, nullptr);
-            Dict root = Value::fromData(f).asDict();
+            Doc root = Doc::fromJSON(json, nullptr);
             _seq.local = (C4SequenceNumber) root["local"_sl].asInt();
             _seq.remote = root["remote"_sl].toJSON();
         }

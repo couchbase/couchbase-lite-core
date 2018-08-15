@@ -19,7 +19,7 @@
 #pragma once
 #include "c4Database.h"
 #include "c4Document.h"
-#include "Fleece.h"
+#include "fleece/Fleece.h"
 
 #ifdef __cplusplus
 extern "C" {

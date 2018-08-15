@@ -39,7 +39,7 @@ namespace litecore { namespace repl {
 
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
 
-        static bool shouldCompress(fleeceapi::Dict meta);
+        static bool shouldCompress(fleece::Dict meta);
 
     protected:
         ActivityLevel computeActivityLevel() const override;

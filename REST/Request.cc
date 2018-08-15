@@ -26,7 +26,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 
 namespace litecore { namespace REST {
 
@@ -275,10 +274,10 @@ namespace litecore { namespace REST {
     }
 
 
-    fleeceapi::JSONEncoder& RequestResponse::jsonEncoder() {
+    fleece::JSONEncoder& RequestResponse::jsonEncoder() {
         setHeader("Content-Type", "application/json");
         if (!_jsonEncoder)
-            _jsonEncoder.reset(new fleeceapi::JSONEncoder);
+            _jsonEncoder.reset(new fleece::JSONEncoder);
         return *_jsonEncoder;
     }
 

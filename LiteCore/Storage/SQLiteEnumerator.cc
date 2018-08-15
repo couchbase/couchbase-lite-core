@@ -22,7 +22,7 @@
 #include "Logging.hh"
 #include "RecordEnumerator.hh"
 #include "Error.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "Path.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sstream>
@@ -30,6 +30,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace fleece::impl;
 
 namespace litecore {
 

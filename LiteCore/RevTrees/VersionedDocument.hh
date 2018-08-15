@@ -19,6 +19,13 @@
 #pragma once
 #include "RevTree.hh"
 #include "Record.hh"
+#include "Doc.hh"
+#include <memory>
+#include <queue>
+
+namespace fleece { namespace impl {
+    class Scope;
+}}
 
 namespace litecore {
     class KeyStore;
@@ -32,6 +39,7 @@ namespace litecore {
         VersionedDocument(KeyStore&, const Record&);
 
         VersionedDocument(const VersionedDocument&);
+        ~VersionedDocument();
 
         /** Reads and parses the body of the record. Useful if doc was read as meta-only. */
         void read();
@@ -62,14 +70,19 @@ namespace litecore {
         void dump()          {RevTree::dump();}
 #endif
     protected:
+        virtual slice copyBody(slice body) override;
+        virtual slice copyBody(alloc_slice body) override;
 #if DEBUG
         virtual void dump(std::ostream&) override;
 #endif
 
     private:
         void decode();
+        void updateScope();
+        slice addScope(slice body);
 
-        KeyStore&       _db;
+        KeyStore&       _store;
         Record          _rec;
+        std::queue<fleece::impl::Scope> _fleeceScopes;
     };
 }

@@ -41,6 +41,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace fleece::impl;
 
 
 namespace litecore {
@@ -78,7 +79,7 @@ class FleeceCursor : public sqlite3_vtab_cursor {
 private:
     // Instance data:
     FleeceVTab* _vtab;                  // The virtual table
-    alloc_slice _fleeceData;            // The root Fleece data
+    Retained<Doc> _fleeceDoc;           // Fleece document
     alloc_slice _rootPath;              // The path string within the data, if any
     const Value *_container;            // The object being iterated (target of the path)
     valueType _containerType;           // The value type of _container
@@ -193,17 +194,12 @@ private:
 
 
     void reset() noexcept {
-        _fleeceData = nullslice;
+        _fleeceDoc = nullptr;
         _rootPath = nullslice;
         _container = nullptr;
         _containerType = kNull;
         _rowCount = 0;
         _rowid = 0;
-    }
-
-
-    inline SharedKeys* sharedKeys() const {
-        return _vtab->context.sharedKeys;
     }
 
 
@@ -216,15 +212,16 @@ private:
             return SQLITE_OK;
 
         // Parse the Fleece data:
-        _fleeceData = valueAsSlice(argv[0]);
-        if (!_fleeceData) {
+        slice data = valueAsSlice(argv[0]);
+        if (!data) {
             // Weird not to get a document; have to return early to avoid a crash.
             // Treat this as an empty doc. (See issue #379)
             Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
             return SQLITE_OK;
         }
-        slice data = _vtab->context.accessor(_fleeceData);
-        _container = Value::fromTrustedData(data);
+        data = _vtab->context.accessor(data);
+        _fleeceDoc = new Doc(data, Doc::kTrusted, _vtab->context.sharedKeys);
+        _container = _fleeceDoc->root();
         if (!_container) {
             Warn("Invalid Fleece data in SQLite table");
             return SQLITE_MISMATCH; // failed to parse Fleece data
@@ -233,7 +230,7 @@ private:
         // Evaluate the path, if there is one:
         if (idxNum == kPathIndex) {
             _rootPath = valueAsSlice(argv[1]);
-            int rc = evaluatePath(_rootPath, sharedKeys(), &_container);
+            int rc = evaluatePath(_rootPath, &_container);
             if (rc != SQLITE_OK)
                 return rc;
         }
@@ -261,19 +258,12 @@ private:
     int column(sqlite3_context *ctx, int column) noexcept {
         if (atEOF())
             return SQLITE_ERROR;
-        auto sk = sharedKeys();
         switch( column ) {
-            case kKeyColumn: {
-                auto key = currentKey();
-                if (key && key->isInteger()) {
-                    setResultTextFromSlice(ctx, sk->decode((int)key->asInt()));
-                } else {
-                    setResultFromValue(ctx, key, sk);
-                }
+            case kKeyColumn:
+                setResultTextFromSlice(ctx, currentKey());
                 break;
-            }
             case kValueColumn:
-                setResultFromValue(ctx, currentValue(), sk);
+                setResultFromValue(ctx, currentValue());
                 break;
             case kTypeColumn: {
                 auto value = currentValue();
@@ -285,7 +275,7 @@ private:
                 break;
             }
             case kDataColumn:
-                setResultBlobFromEncodedValue(ctx, currentValue(), sk);
+                setResultBlobFromEncodedValue(ctx, currentValue());
                 break;
 #if 0 // these columns are used for the join but are never actually queried
             case kRootFleeceDataColumn:
@@ -303,13 +293,13 @@ private:
     }
 
 
-    const Value* currentKey() noexcept {
+    const slice currentKey() noexcept {
         const Dict *dict = _container->asDict();
         if (!dict)
-            return nullptr;
+            return nullslice;
         Dict::iterator iter(dict);
         iter += _rowid;
-        return iter.key();
+        return iter.keyString();
     }
 
 

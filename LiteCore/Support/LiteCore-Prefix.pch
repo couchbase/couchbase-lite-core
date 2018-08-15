@@ -30,9 +30,9 @@
 
     // Ensure that C4Slice will be defined as a typedef of FLSlice, which in turn enables
     // closer integration between FLSlice and slice (see slice.hh)
-    #include "Fleece.h"
+    #include "fleece/Fleece.h"
     #include "c4.h"
-    #include "slice.hh"
+    #include "fleece/slice.hh"
 #endif
 
 #ifdef __OBJC__

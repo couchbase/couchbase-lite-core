@@ -20,7 +20,7 @@
 #include "RecordEnumerator.hh"
 #include "Error.hh"
 #include "FilePath.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "Benchmark.hh"
 #ifndef _MSC_VER
 #include <sys/stat.h>
@@ -29,6 +29,7 @@
 #include "LiteCoreTest.hh"
 
 using namespace litecore;
+using namespace fleece::impl;
 using namespace std;
 
 
@@ -595,7 +596,7 @@ N_WAY_TEST_CASE_METHOD(DataFileTestFixture, "JSON null chars", "[Upgrade]") {
     bool ok = converter.encodeJSON("{\"foo\":\"Hello\\u0000There\"}"_sl);
     INFO("JSONConverter error " << converter.errorCode() << " '" << converter.errorMessage() << "' at pos " << converter.errorPos());
     REQUIRE(ok);
-    auto data = enc.extractOutput();
+    auto data = enc.finish();
     REQUIRE(data);
     auto root = Value::fromData(data);
     REQUIRE(root);

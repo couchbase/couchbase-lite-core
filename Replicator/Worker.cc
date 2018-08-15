@@ -32,7 +32,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 using namespace litecore::blip;
 
 namespace litecore {

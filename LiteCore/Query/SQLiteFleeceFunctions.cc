@@ -21,9 +21,10 @@
 #include "Path.hh"
 #include "Error.hh"
 #include "Logging.hh"
-#include "Fleece.h"
+#include "fleece/Fleece.h"
 
 using namespace fleece;
+using namespace fleece::impl;
 using namespace std;
 
 namespace litecore {
@@ -56,10 +57,8 @@ namespace litecore {
     // fl_value(body, propertyPath) -> propertyValue
     static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
-            const Value *val;
-            if (!evaluatePathFromArgs(ctx, argv, true, &val))
-                return;
-            setResultFromValue(ctx, val);
+            QueryFleeceScope scope(ctx, argv);
+            setResultFromValue(ctx, scope.root);
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_value: exception!", -1);
         }
@@ -68,9 +67,10 @@ namespace litecore {
     // fl_nested_value(fleeceData, propertyPath) -> propertyValue
     static void fl_nested_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
-            const Value *val;
-            if (!evaluatePathFromArgs(ctx, argv, false, &val))
+            const Value *val = fleeceParam(ctx, argv[0]);
+            if (!val)
                 return;
+            val = evaluatePathFromArg(ctx, argv, 1, val);
             setResultFromValue(ctx, val);
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_nested_value: exception!", -1);
@@ -99,38 +99,49 @@ namespace litecore {
 
     // fl_exists(body, propertyPath) -> 0/1
     static void fl_exists(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        const Value *val;
-        if (!evaluatePathFromArgs(ctx, argv, true, &val))
-            return;
-        sqlite3_result_int(ctx, (val ? 1 : 0));
-        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
+        try {
+            QueryFleeceScope scope(ctx, argv);
+            sqlite3_result_int(ctx, (scope.root ? 1 : 0));
+            sqlite3_result_subtype(ctx, kFleeceIntBoolean);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_exists: exception!", -1);
+        }
     }
 
     
     // fl_count(body, propertyPath) -> int
     static void fl_count(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        const Value *val;
-        if (!evaluatePathFromArgs(ctx, argv, true, &val))
-            return;
-        switch (val->type()) {
-            case kArray:
-                sqlite3_result_int(ctx, val->asArray()->count());
-                break;
-            case kDict:
-                sqlite3_result_int(ctx, val->asDict()->count());
-                break;
-            default:
+        try {
+            QueryFleeceScope scope(ctx, argv);
+            if (!scope.root) {
                 sqlite3_result_null(ctx);
-                break;
+                return;
+            }
+            switch (scope.root->type()) {
+                case kArray:
+                    sqlite3_result_int(ctx, scope.root->asArray()->count());
+                    break;
+                case kDict:
+                    sqlite3_result_int(ctx, scope.root->asDict()->count());
+                    break;
+                default:
+                    sqlite3_result_null(ctx);
+                    break;
+            }
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_count: exception!", -1);
         }
     }
 
 
     // fl_contains(body, propertyPath, value) -> 0/1
     static void fl_contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        const Value *collection;
-        if (evaluatePathFromArgs(ctx, argv, true, &collection))
-            collectionContainsImpl(ctx, collection, argv[2]);
+        try {
+            QueryFleeceScope scope(ctx, argv);
+            collectionContainsImpl(ctx, scope.root, argv[2]);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_contains: exception!", -1);
+        }
     }
 
 
@@ -239,7 +250,7 @@ namespace litecore {
                         // are Fleece containers.
                         Encoder enc;
                         enc.writeData(valueAsSlice(arg));
-                        setResultBlobFromFleeceData(ctx, enc.extractOutput());
+                        setResultBlobFromFleeceData(ctx, enc.finish());
                         break;
                     }
                 }

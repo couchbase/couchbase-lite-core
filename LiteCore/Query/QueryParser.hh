@@ -25,12 +25,12 @@
 #include <sstream>
 #include <vector>
 
-namespace fleece {
+namespace fleece { namespace impl {
     class Value;
     class Array;
     class Dict;
     class Path;
-}
+} }
 
 namespace litecore {
 
@@ -56,13 +56,13 @@ namespace litecore {
         void setBodyColumnName(const std::string &name)             {_bodyColumnName = name;}
         void setBaseResultColumns(const std::vector<std::string>& c){_baseResultColumns = c;}
 
-        void parse(const fleece::Value*);
+        void parse(const fleece::impl::Value*);
         void parseJSON(slice);
 
-        void parseJustExpression(const fleece::Value *expression);
+        void parseJustExpression(const fleece::impl::Value *expression);
 
         void writeCreateIndex(const std::string &name,
-                              fleece::Array::iterator &expressions,
+                              fleece::impl::Array::iterator &expressions,
                               bool isUnnestedTable);
 
         static void writeSQLString(std::ostream &out, slice str, char quote ='\'');
@@ -75,10 +75,10 @@ namespace litecore {
 
         bool isAggregateQuery() const                               {return _isAggregateQuery;}
 
-        std::string expressionSQL(const fleece::Value*);
-        std::string eachExpressionSQL(const fleece::Value*);
-        static std::string FTSColumnName(const fleece::Value *expression);
-        std::string unnestedTableName(const fleece::Value *key) const;
+        std::string expressionSQL(const fleece::impl::Value*);
+        std::string eachExpressionSQL(const fleece::impl::Value*);
+        static std::string FTSColumnName(const fleece::impl::Value *expression);
+        std::string unnestedTableName(const fleece::impl::Value *key) const;
 
     private:
 
@@ -111,64 +111,65 @@ namespace litecore {
         QueryParser& operator=(const QueryParser&) =delete;
 
         void reset();
-        void parseNode(const fleece::Value*);
-        void parseOpNode(const fleece::Array*);
-        void handleOperation(const Operation*, slice actualOperator, fleece::Array::iterator& operands);
+        void parseNode(const fleece::impl::Value*);
+        void parseOpNode(const fleece::impl::Array*);
+        void handleOperation(const Operation*, slice actualOperator, fleece::impl::Array::iterator& operands);
         void parseStringLiteral(slice str);
 
-        void writeSelect(const fleece::Dict *dict);
-        void writeSelect(const fleece::Value *where, const fleece::Dict *operands);
-        unsigned writeSelectListClause(const fleece::Dict *operands, slice key, const char *sql, bool aggregatesOK =false);
+        void writeSelect(const fleece::impl::Dict *dict);
+        void writeSelect(const fleece::impl::Value *where, const fleece::impl::Dict *operands);
+        unsigned writeSelectListClause(const fleece::impl::Dict *operands, slice key, const char *sql, bool aggregatesOK =false);
 
-        void writeWhereClause(const fleece::Value *where);
+        void writeWhereClause(const fleece::impl::Value *where);
         void writeNotDeletedTest(const std::string &alias);
 
-        void parseFromClause(const fleece::Value *from);
-        void writeFromClause(const fleece::Value *from);
+        void parseFromClause(const fleece::impl::Value *from);
+        void writeFromClause(const fleece::impl::Value *from);
         int parseJoinType(fleece::slice);
-        void writeOrderOrLimitClause(const fleece::Dict *operands,
+        void writeOrderOrLimitClause(const fleece::impl::Dict *operands,
                                      fleece::slice jsonKey,
                                      const char *keyword);
 
-        void prefixOp(slice, fleece::Array::iterator&);
-        void postfixOp(slice, fleece::Array::iterator&);
-        void infixOp(slice, fleece::Array::iterator&);
-        void resultOp(slice, fleece::Array::iterator&);
-        void arrayLiteralOp(slice, fleece::Array::iterator&);
-        void betweenOp(slice, fleece::Array::iterator&);
-        void existsOp(slice, fleece::Array::iterator&);
-        void collateOp(slice, fleece::Array::iterator&);
-        void inOp(slice, fleece::Array::iterator&);
-        void matchOp(slice, fleece::Array::iterator&);
-        void anyEveryOp(slice, fleece::Array::iterator&);
-        void parameterOp(slice, fleece::Array::iterator&);
-        void propertyOp(slice, fleece::Array::iterator&);
-        void variableOp(slice, fleece::Array::iterator&);
-        void missingOp(slice, fleece::Array::iterator&);
-        void caseOp(slice, fleece::Array::iterator&);
-        void selectOp(slice, fleece::Array::iterator&);
-        void fallbackOp(slice, fleece::Array::iterator&);
+        void prefixOp(slice, fleece::impl::Array::iterator&);
+        void postfixOp(slice, fleece::impl::Array::iterator&);
+        void infixOp(slice, fleece::impl::Array::iterator&);
+        void resultOp(slice, fleece::impl::Array::iterator&);
+        void arrayLiteralOp(slice, fleece::impl::Array::iterator&);
+        void betweenOp(slice, fleece::impl::Array::iterator&);
+        void existsOp(slice, fleece::impl::Array::iterator&);
+        void collateOp(slice, fleece::impl::Array::iterator&);
+        void inOp(slice, fleece::impl::Array::iterator&);
+        void matchOp(slice, fleece::impl::Array::iterator&);
+        void anyEveryOp(slice, fleece::impl::Array::iterator&);
+        void parameterOp(slice, fleece::impl::Array::iterator&);
+        void propertyOp(slice, fleece::impl::Array::iterator&);
+        void variableOp(slice, fleece::impl::Array::iterator&);
+        void missingOp(slice, fleece::impl::Array::iterator&);
+        void caseOp(slice, fleece::impl::Array::iterator&);
+        void selectOp(slice, fleece::impl::Array::iterator&);
+        void fallbackOp(slice, fleece::impl::Array::iterator&);
 
-        void functionOp(slice, fleece::Array::iterator&);
+        void functionOp(slice, fleece::impl::Array::iterator&);
 
-        bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::Array::iterator &operands);
-        void writePropertyGetter(slice fn, std::string property, const fleece::Value *param =nullptr);
+        bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::impl::Array::iterator &operands);
+        void writePropertyGetter(slice fn, std::string property,
+                                 const fleece::impl::Value *param =nullptr);
         void writeUnnestPropertyGetter(slice fn, const std::string &property,
                                        const std::string &alias, aliasType);
         void writeEachExpression(const std::string &property);
-        void writeEachExpression(const fleece::Value *arrayExpr);
+        void writeEachExpression(const fleece::impl::Value *arrayExpr);
         void writeSQLString(slice str)              {writeSQLString(_sql, str);}
-        void writeArgList(fleece::Array::iterator& operands);
-        void writeColumnList(fleece::Array::iterator& operands);
-        void writeResultColumn(const fleece::Value*);
+        void writeArgList(fleece::impl::Array::iterator& operands);
+        void writeColumnList(fleece::impl::Array::iterator& operands);
+        void writeResultColumn(const fleece::impl::Value*);
         void writeCollation();
-        void parseCollatableNode(const fleece::Value*);
+        void parseCollatableNode(const fleece::impl::Value*);
 
-        void parseJoin(const fleece::Dict*);
+        void parseJoin(const fleece::impl::Dict*);
 
-        unsigned findFTSProperties(const fleece::Value *node);
-        size_t FTSPropertyIndex(const fleece::Value *matchLHS, bool canAdd =false);
-        std::string FTSTableName(const fleece::Value *key) const;
+        unsigned findFTSProperties(const fleece::impl::Value *node);
+        size_t FTSPropertyIndex(const fleece::impl::Value *matchLHS, bool canAdd =false);
+        std::string FTSTableName(const fleece::impl::Value *key) const;
 
         const delegate& _delegate;                  // delegate object (SQLiteKeyStore)
         std::string _tableName;                     // Name of the table containing documents

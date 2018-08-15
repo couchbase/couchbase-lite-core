@@ -20,7 +20,7 @@
 #include "Worker.hh"
 #include "Checkpoint.hh"
 #include "BLIPConnection.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "Stopwatch.hh"
 
 using namespace litecore::blip;
@@ -53,7 +53,7 @@ namespace litecore { namespace repl {
 
             virtual void replicatorGotHTTPResponse(Replicator*,
                                                    int status,
-                                                   const fleeceapi::AllocedDict &headers) { }
+                                                   const fleece::AllocedDict &headers) { }
             virtual void replicatorStatusChanged(Replicator*,
                                                  const Status&) =0;
             virtual void replicatorConnectionClosed(Replicator*,
@@ -83,7 +83,7 @@ namespace litecore { namespace repl {
         virtual std::string loggingClassName() const override {return "Repl";}
 
         // BLIP ConnectionDelegate API:
-        virtual void onHTTPResponse(int status, const fleeceapi::AllocedDict &headers) override
+        virtual void onHTTPResponse(int status, const fleece::AllocedDict &headers) override
                                         {enqueue(&Replicator::_onHTTPResponse, status, headers);}
         virtual void onConnect() override
                                                 {enqueue(&Replicator::_onConnect);}
@@ -100,7 +100,7 @@ namespace litecore { namespace repl {
         virtual void onError(C4Error error) override;
 
     private:
-        void _onHTTPResponse(int status, fleeceapi::AllocedDict headers);
+        void _onHTTPResponse(int status, fleece::AllocedDict headers);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
         void _onClose(Connection::CloseStatus, Connection::State);

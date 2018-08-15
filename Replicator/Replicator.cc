@@ -33,7 +33,6 @@
 using namespace std;
 using namespace std::placeholders;
 using namespace fleece;
-using namespace fleeceapi;
 
 
 namespace litecore { namespace repl {
@@ -236,7 +235,7 @@ namespace litecore { namespace repl {
 #pragma mark - BLIP DELEGATE:
 
 
-    void Replicator::_onHTTPResponse(int status, fleeceapi::AllocedDict headers) {
+    void Replicator::_onHTTPResponse(int status, fleece::AllocedDict headers) {
         if (status == 101 && !headers["Sec-WebSocket-Protocol"]) {
             gotError(c4error_make(WebSocketDomain, kWebSocketCloseProtocolError,
                                   "Incompatible replication protocol "

@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 
-using namespace fleeceapi;
+using namespace fleece;
 
 #include "c4.h"
 #include "c4Private.h"

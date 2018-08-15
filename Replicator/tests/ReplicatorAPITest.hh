@@ -7,8 +7,8 @@
 //
 
 #pragma once
-#include "slice.hh"
-#include "FleeceCpp.hh"
+#include "fleece/slice.hh"
+#include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "CivetWebSocket.hh"
 #include "Response.hh"

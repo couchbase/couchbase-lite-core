@@ -20,36 +20,53 @@
 #include "c4Document+Fleece.h"
 #include "LegacyAttachments.hh"
 #include "StringUtil.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "DeepIterator.hh"
 
 using namespace fleece;
+using namespace fleece::impl;
 
 namespace c4Internal {
 
-    bool Document::getBlobKey(const Dict *dict, blobKey &outKey, SharedKeys* sk) {
-        const Value* digest = ((const Dict*)dict)->get("digest"_sl, sk);
+    Retained<Doc> Document::fleeceDoc() {
+        if (!selectedRev.body.buf)
+            return nullptr;
+        return new Doc(selectedRev.body, Doc::kTrusted, _db->documentKeys());
+    }
+
+    alloc_slice Document::bodyAsJSON(bool canonical) {
+        if (!selectedRev.body.buf)
+            error::_throw(error::NotFound);
+        auto doc = fleeceDoc();
+        if (!doc)
+            error::_throw(error::CorruptRevisionData);
+        return doc->asDict()->toJSON(canonical);
+    }
+
+
+    bool Document::getBlobKey(const Dict *dict, blobKey &outKey) {
+        const Value* digest = ((const Dict*)dict)->get("digest"_sl);
         return digest && outKey.readFromBase64(digest->asString());
     }
 
 
-    bool Document::dictIsBlob(const Dict *dict, SharedKeys* sk) {
-        const Value* cbltype= dict->get(C4STR(kC4ObjectTypeProperty), sk);
+    bool Document::dictIsBlob(const Dict *dict) {
+        const Value* cbltype= dict->get(C4STR(kC4ObjectTypeProperty));
         return cbltype && cbltype->asString() == slice(kC4ObjectType_Blob);
     }
 
 
-    bool Document::dictIsBlob(const Dict *dict, blobKey &outKey, SharedKeys* sk) {
-        return dictIsBlob(dict, sk) && getBlobKey(dict, outKey, sk);
+    bool Document::dictIsBlob(const Dict *dict, blobKey &outKey) {
+        return dictIsBlob(dict) && getBlobKey(dict, outKey);
     }
 
 
     // Finds blob references in a Fleece Dict, recursively.
-    bool Document::findBlobReferences(const Dict *dict, SharedKeys* sk, const FindBlobCallback &callback)
+    bool Document::findBlobReferences(const Dict *dict, const FindBlobCallback &callback)
     {
-        for (DeepIterator i(dict, sk); i; ++i) {
+        for (DeepIterator i(dict); i; ++i) {
             auto d = i.value()->asDict();
-            if (d && dictIsBlob(d, sk)) {
+            if (d && dictIsBlob(d)) {
                 if (!callback(d))
                     return false;
                 i.skipChildren();
@@ -119,14 +136,14 @@ namespace c4Internal {
         return false;
     }
 
-    bool Document::blobIsCompressible(const Dict *meta, SharedKeys *sk) {
+    bool Document::blobIsCompressible(const Dict *meta) {
         // Don't compress an attachment with a compressed encoding:
-        auto encodingProp = meta->get("encoding"_sl, sk);
+        auto encodingProp = meta->get("encoding"_sl);
         if (encodingProp && containsAnyOf(encodingProp->asString(), kCompressedTypeSubstrings))
             return false;
 
         // Don't compress attachments with unknown MIME type:
-        auto typeProp = meta->get("content_type"_sl, sk);
+        auto typeProp = meta->get("content_type"_sl);
         if (!typeProp)
             return false;
         slice type = typeProp->asString();

@@ -28,7 +28,7 @@
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "PlatformCompat.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include <mutex>
 #include <sqlite3.h>
 #include <sstream>
@@ -508,7 +508,7 @@ namespace litecore {
     alloc_slice SQLiteDataFile::rawQuery(const string &query) {
         SQLite::Statement stmt(*_sqlDb, query);
         int nCols = stmt.getColumnCount();
-        fleeceapi::Encoder enc;
+        fleece::impl::Encoder enc;
         enc.beginArray();
         while (stmt.executeStep()) {
             enc.beginArray();

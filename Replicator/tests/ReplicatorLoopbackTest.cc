@@ -19,7 +19,7 @@ constexpr duration ReplicatorLoopbackTest::kLatency;
 
 TEST_CASE("Options password logging redaction") {
     string password("SEEKRIT");
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
     enc.beginDict();
@@ -40,7 +40,7 @@ TEST_CASE("Options password logging redaction") {
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.endDict();
     alloc_slice body = enc.finish();
@@ -96,7 +96,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.endDict();
     alloc_slice body = enc.finish();
@@ -325,8 +325,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     // Get one of the pushed docs from db2 and look up "gender":
     c4::ref<C4Document> doc = c4doc_get(db2, "0000001"_sl, true, nullptr);
     REQUIRE(doc);
-    Dict root = Value::fromData(doc->selectedRev.body).asDict();
-    Value gender = root.get("gender"_sl, c4db_getFLSharedKeys(db2));
+    Doc rev = c4doc_createFleeceDoc(doc);
+    Value gender = rev["gender"_sl];
     REQUIRE(gender != nullptr);
     REQUIRE(gender.asstring() == "female");
 }
@@ -393,7 +393,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
 
 
 static Replicator::Options pushOptionsWithProperty(const char *property, vector<string> array) {
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey(slice(property));
     enc.beginArray();
@@ -702,7 +702,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][Pull]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey(C4STR(kC4ReplicatorOptionDocIDs));
     enc.beginArray();
@@ -739,7 +739,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey("filter"_sl);
     enc.writeString("Melitta"_sl);
@@ -920,7 +920,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     Log("-------- Update Doc --------");
     alloc_slice body;
     {
-        fleeceapi::Encoder enc(c4db_createFleeceEncoder(db2));
+        fleece::Encoder enc(c4db_createFleeceEncoder(db2));
         enc.beginDict();
         enc.writeKey("answer"_sl);
         enc.writeInt(666);

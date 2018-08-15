@@ -22,7 +22,7 @@
 #include "QueryParserTables.hh"
 #include "Record.hh"
 #include "Error.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "Path.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -32,6 +32,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace fleece::impl;
 
 namespace litecore {
 
@@ -176,13 +177,13 @@ namespace litecore {
 
 
     void QueryParser::parseJSON(slice expressionJSON) {
-        alloc_slice expressionFleece;
+        Retained<Doc> doc;
         try {
-            expressionFleece = JSONConverter::convertJSON(expressionJSON);
+            doc = Doc::fromJSON(expressionJSON);
         } catch (FleeceException x) {
             fail("JSON parse error: %s", x.what());
         }
-        return parse(Value::fromTrustedData(expressionFleece));
+        return parse(doc->root());
     }
     
     
@@ -1116,7 +1117,7 @@ namespace litecore {
 
 
     // Writes a call to a Fleece SQL function, including the closing ")".
-    void QueryParser::writePropertyGetter(slice fn, string property, const fleece::Value *param) {
+    void QueryParser::writePropertyGetter(slice fn, string property, const Value *param) {
         string alias, tablePrefix;
         if (_propertiesUseAliases) {
             // Interpret the first component of the property as a db alias:
@@ -1231,14 +1232,14 @@ namespace litecore {
     }
 
 
-    std::string QueryParser::expressionSQL(const fleece::Value* expr) {
+    std::string QueryParser::expressionSQL(const fleece::impl::Value* expr) {
         reset();
         parseJustExpression(expr);
         return SQL();
     }
 
 
-    std::string QueryParser::eachExpressionSQL(const fleece::Value* arrayExpr) {
+    std::string QueryParser::eachExpressionSQL(const fleece::impl::Value* arrayExpr) {
         reset();
         writeEachExpression(arrayExpr);
         return SQL();
