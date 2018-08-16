@@ -528,11 +528,7 @@ namespace litecore {
                     // and the above issue happens so query parser needs to use a higher
                     // precision version of the floating point number
                     char buf[32];
-                    if (node->isDouble())
-                        sprintf(buf, "%.17g", node->asDouble());
-                    else
-                        sprintf(buf, "%.8g", node->asFloat());
-                    
+                    sprintf(buf, "%.17g", node->asDouble());
                     _sql << buf;
                 }
                 
