@@ -243,7 +243,7 @@ namespace litecore { namespace blip {
                 // Completed!
                 if (_propertiesRemaining.size > 0)
                     throw std::runtime_error("message ends before end of properties");
-                _body = _in->extractOutput();
+                _body = _in->finish();
                 _in.reset();
                 _complete = true;
 
@@ -328,7 +328,7 @@ namespace litecore { namespace blip {
         if (body) {
             _body = nullslice;
         } else if (_in) {
-            body = _in->extractOutput();
+            body = _in->finish();
             _in->reset();
         }
         return body;

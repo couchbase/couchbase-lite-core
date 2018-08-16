@@ -95,7 +95,7 @@ namespace litecore { namespace blip {
         friend class MessageOut;
 
         FrameFlags flags() const;
-        alloc_slice extractOutput();
+        alloc_slice finish();
         void writeTokenizedString(std::ostream &out, slice str);
 
         MessageType type {kRequestType};
