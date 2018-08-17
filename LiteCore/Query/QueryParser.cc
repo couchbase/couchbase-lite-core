@@ -821,12 +821,7 @@ namespace litecore {
                                         && predicate->get(0)->asString() == "="_sl
                                         && propertyFromNode(predicate->get(1), '?') == var) {
             // If predicate is `var = value`, generate `fl_contains(array, value)` instead
-            _sql << kContainsFnName << '(';
-            if (_propertiesUseAliases)
-                _sql << _dbAlias << ".";
-            _sql << "body, '" << property << "', ";
-            parseNode(predicate->get(2));
-            _sql << ')';
+            writePropertyGetter(kContainsFnName, property, predicate->get(2));
             return;
         }
 
@@ -1113,7 +1108,7 @@ namespace litecore {
 
 
     // Writes a call to a Fleece SQL function, including the closing ")".
-    void QueryParser::writePropertyGetter(slice fn, string property) {
+    void QueryParser::writePropertyGetter(slice fn, string property, const fleece::Value *param) {
         string alias, tablePrefix;
         if (_propertiesUseAliases) {
             // Interpret the first component of the property as a db alias:
@@ -1165,6 +1160,10 @@ namespace litecore {
             if(!property.empty()) {
                 _sql << ", ";
                 writeSQLString(_sql, slice(property));
+            }
+            if (param) {
+                _sql << ", ";
+                parseNode(param);
             }
             _sql << ")";
         }

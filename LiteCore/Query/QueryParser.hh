@@ -152,7 +152,7 @@ namespace litecore {
         void functionOp(slice, fleece::Array::iterator&);
 
         bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::Array::iterator &operands);
-        void writePropertyGetter(slice fn, std::string property);
+        void writePropertyGetter(slice fn, std::string property, const fleece::Value *param =nullptr);
         void writeUnnestPropertyGetter(slice fn, const std::string &property,
                                        const std::string &alias, aliasType);
         void writeEachExpression(const std::string &property);
