@@ -443,7 +443,18 @@ namespace litecore {
                 _sql << "x''";        // Represent a Fleece/JSON/N1QL null as an empty blob (?)
                 break;
             case kNumber:
-                _sql << node->toString();
+                if(node->isInteger()) {
+                    _sql << node->toString();
+                } else {
+                    // https://github.com/couchbase/couchbase-lite-core/issues/555
+                    // Too much precision and stringifying is affected, but too little
+                    // and the above issue happens so query parser needs to use a higher
+                    // precision version of the floating point number
+                    char buf[32];
+                    sprintf(buf, "%.17g", node->asDouble());
+                    _sql << buf;
+                }
+                
                 break;
             case kBoolean:
                 _sql << (node->asBool() ? '1' : '0');    // SQL doesn't have true/false
