@@ -159,10 +159,10 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY", "[Query]") {
 
     CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}],\
                                  WHERE: ['ANY', 'X', ['.', 'person', 'names'], ['=', ['?', 'X'], 'Smith']]}]")
-          == "SELECT person.key, person.sequence FROM kv_default AS \"person\" WHERE ((fl_contains(\"person\".body, 'names', 'Smith'))) AND (\"person\".flags & 1) = 0");
+          == "SELECT \"person\".key, \"person\".sequence FROM kv_default AS \"person\" WHERE ((fl_contains(\"person\".body, 'names', 'Smith'))) AND (\"person\".flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}, {AS: 'book', 'ON': 1}],\
                                  WHERE: ['ANY', 'X', ['.', 'book', 'keywords'], ['=', ['?', 'X'], 'horror']]}]")
-          == "SELECT person.key, person.sequence FROM kv_default AS \"person\" CROSS JOIN kv_default AS \"book\" ON (1) AND (\"book\".flags & 1) = 0 WHERE ((fl_contains(\"book\".body, 'keywords', 'horror'))) AND (\"person\".flags & 1) = 0");
+          == "SELECT \"person\".key, \"person\".sequence FROM kv_default AS \"person\" CROSS JOIN kv_default AS \"book\" ON (1) AND (\"book\".flags & 1) = 0 WHERE ((fl_contains(\"book\".body, 'keywords', 'horror'))) AND (\"person\".flags & 1) = 0");
 }
 
 
@@ -255,7 +255,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST", "[Query][FTS]") {
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['=', ['.notes'], 'torn']}]")
-          == "SELECT book.key, book.sequence FROM kv_default AS \"book\" JOIN fl_each(\"book\".body, 'notes') AS \"notes\" WHERE (\"notes\".value = 'torn') AND (\"book\".flags & 1) = 0");
+          == "SELECT \"book\".key, \"book\".sequence FROM kv_default AS \"book\" JOIN fl_each(\"book\".body, 'notes') AS \"notes\" WHERE (\"notes\".value = 'torn') AND (\"book\".flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \
@@ -272,7 +272,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST optimized", "[Query
                       FROM: [{as: 'book'}, \
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['=', ['.notes'], 'torn']}]")
-          == "SELECT book.key, book.sequence FROM kv_default AS \"book\" JOIN \"kv_default:unnest:notes\" AS \"notes\" ON \"notes\".docid=\"book\".rowid WHERE (fl_unnested_value(\"notes\".body) = 'torn') AND (\"book\".flags & 1) = 0");
+          == "SELECT \"book\".key, \"book\".sequence FROM kv_default AS \"book\" JOIN \"kv_default:unnest:notes\" AS \"notes\" ON \"notes\".docid=\"book\".rowid WHERE (fl_unnested_value(\"notes\".body) = 'torn') AND (\"book\".flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {\
                       WHAT: ['.notes'], \
                       FROM: [{as: 'book'}, \

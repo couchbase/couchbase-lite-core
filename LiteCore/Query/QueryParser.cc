@@ -53,6 +53,8 @@ namespace litecore {
 
     static constexpr slice kArrayCountFnName = "array_count"_sl;
 
+    static const char* const kDefaultTableAlias = "_doc";
+
 
 #pragma mark - UTILITY FUNCTIONS:
 
@@ -138,6 +140,14 @@ namespace litecore {
         out << quote;
         writeEscapedString(out, str, quote);
         out << quote;
+    }
+
+
+    static string quoteTableName(const string &name) {
+        if (name == kDefaultTableAlias)
+            return name;
+        else
+            return string("\"") + name + "\"";
     }
 
     
@@ -236,7 +246,7 @@ namespace litecore {
         // Default result columns:
         string defaultTablePrefix;
         if (_propertiesUseAliases)
-            defaultTablePrefix = _dbAlias + ".";
+            defaultTablePrefix = quoteTableName(_dbAlias) + ".";
         int nCol = 0;
         
         if(!distinctVal) {
@@ -334,10 +344,8 @@ namespace litecore {
 
     void QueryParser::writeNotDeletedTest(const string &alias) {
         _sql << '(';
-        if (alias == "_doc")
-            _sql << alias << ".";
-        else if (!alias.empty())
-            _sql << '"' << alias << "\".";
+        if (!alias.empty())
+            _sql << quoteTableName(alias) << '.';
         _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << ") = 0";
     }
 
@@ -414,7 +422,7 @@ namespace litecore {
             }
         }
         if (first) {
-            _dbAlias = "_doc";
+            _dbAlias = kDefaultTableAlias;
             _aliases.insert({_dbAlias, kDBAlias});
         }
     }
@@ -490,14 +498,14 @@ namespace litecore {
                 }
             }
         } else {
-            _sql << " AS " << _dbAlias;
+            _sql << " AS " << quoteTableName(_dbAlias);
         }
         
         unsigned ftsTableNo = 0;
         for (auto ftsTable : _ftsTables) {
             ++ftsTableNo;
             _sql << " JOIN \"" << ftsTable << "\" AS FTS" << ftsTableNo
-                 << " ON FTS" << ftsTableNo << ".docid = " << _dbAlias << ".rowid";
+                 << " ON FTS" << ftsTableNo << ".docid = " << quoteTableName(_dbAlias) << ".rowid";
         }
     }
 
@@ -1125,14 +1133,12 @@ namespace litecore {
             auto bra = property.find('[');
             require(bra == string::npos || dot < bra,
                     "Missing database alias name in property '%s'", property.c_str());
-
-            tablePrefix = "\"" + alias + "\".";
             property = rest;
         } else {
             alias = _dbAlias;
-            if (!alias.empty())
-                tablePrefix = alias + ".";
         }
+        if (!alias.empty())
+            tablePrefix = quoteTableName(alias) + ".";
 
         auto iType = _aliases.find(alias);
         require(iType != _aliases.end(),
@@ -1178,7 +1184,7 @@ namespace litecore {
                 "can't use '%s' on an UNNEST", property.c_str());
         string tablePrefix;
         if (_propertiesUseAliases)
-            tablePrefix = "\"" + alias + "\".";
+            tablePrefix = quoteTableName(alias) + ".";
 
         if (type == kUnnestVirtualTableAlias) {
             if (property.empty()) {
