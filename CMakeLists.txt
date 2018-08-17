@@ -18,7 +18,7 @@ include_directories("include/blip_cpp"
                     "src/util"
                     "src/websocket"
                     "vendor/zlibcomplete/lib"
-                    "../fleece/Fleece"
+                    "../fleece/API"
                     "../../LiteCore/Support")
 
 aux_source_directory("src/blip"                 BLIP_SRC)
