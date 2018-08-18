@@ -18,7 +18,6 @@
 
 #pragma once
 #include "slice.hh"
-#include <assert.h>
 #include <map>
 
 namespace litecore { namespace repl {

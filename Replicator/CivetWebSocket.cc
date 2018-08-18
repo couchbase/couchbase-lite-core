@@ -125,7 +125,7 @@ namespace litecore { namespace websocket {
         }
 
         ~CivetWebSocket() {
-            assert(!_connection);
+            DebugAssert(!_connection);
             mg_exit_library();
             logStats();
         }

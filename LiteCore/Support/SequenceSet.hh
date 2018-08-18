@@ -18,7 +18,6 @@
 
 #pragma once
 #include <set>
-#include <assert.h>
 
 namespace litecore {
 

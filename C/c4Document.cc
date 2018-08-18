@@ -667,7 +667,7 @@ bool c4doc_getDictBlobKey(FLDict dict, FLSharedKeys sk, C4BlobKey *outKey) {
 
 
 bool c4doc_dictIsBlob(FLDict dict, FLSharedKeys sk, C4BlobKey *outKey) C4API {
-    assert(outKey);
+    Assert(outKey);
     return Document::dictIsBlob((const Dict*)dict, *(blobKey*)outKey, (SharedKeys*)sk);
 }
 

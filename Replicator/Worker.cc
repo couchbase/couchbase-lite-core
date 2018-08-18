@@ -120,7 +120,7 @@ namespace litecore { namespace repl {
             if (!builder.noreply)
                 warn("Ignoring the response to a BLIP message!");
         }
-        assert(_connection);
+        DebugAssert(_connection);
         _connection->sendRequest(builder);
     }
 

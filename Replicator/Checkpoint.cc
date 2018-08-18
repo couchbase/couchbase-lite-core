@@ -17,6 +17,7 @@
 //
 
 #include "Checkpoint.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "Logging.hh"
 #include "FleeceCpp.hh"
@@ -108,7 +109,7 @@ namespace litecore { namespace repl {
 
 
     void Checkpoint::enableAutosave(duration saveTime, SaveCallback cb) {
-        assert(saveTime > duration(0));
+        DebugAssert(saveTime > duration(0));
         LOCK();
         _saveCallback = cb;
         _saveTime = saveTime;

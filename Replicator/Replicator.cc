@@ -164,7 +164,7 @@ namespace litecore { namespace repl {
                     const_cast<Replicator*>(this)->_stop();
                     level = kC4Busy;
                 }
-                assert(level > kC4Stopped);
+                DebugAssert(level > kC4Stopped);
                 break;
             }
             case Connection::kClosing:
@@ -198,7 +198,7 @@ namespace litecore { namespace repl {
 
     void Replicator::changedStatus() {
         if (status().level == kC4Stopped) {
-            assert(!connection());  // must already have gotten _onClose() delegate callback
+            DebugAssert(!connection());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
             _dbActor = nullptr;

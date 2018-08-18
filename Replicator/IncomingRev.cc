@@ -56,7 +56,7 @@ namespace litecore { namespace repl {
     
     // Read the 'rev' message, on my actor thread:
     void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
-        assert(!_revMessage);
+        DebugAssert(!_revMessage);
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
 
         _revMessage = msg;
