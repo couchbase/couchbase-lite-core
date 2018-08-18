@@ -18,6 +18,7 @@
 
 #include "ThreadedMailbox.hh"
 #include "Actor.hh"
+#include "Error.hh"
 #include "Timer.hh"
 #include "Logging.hh"
 #include "Channel.cc"       // Brings in the definitions of the template methods
@@ -185,9 +186,7 @@ namespace litecore { namespace actor {
 
     void ThreadedMailbox::performNextMessage() {
         LogToAt(ActorLog, Verbose, "%s performNextMessage", _actor->actorName().c_str());
-#if DEBUG
-        assert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
-#endif
+        DebugAssert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
         try {
             auto &fn = front();
             fn();
@@ -196,9 +195,7 @@ namespace litecore { namespace actor {
         }
         _actor->afterEvent();
         
-#if DEBUG
-        assert(--_active == 0);
-#endif
+        DebugAssert(--_active == 0);
 
         bool empty;
         popNoWaiting(empty);

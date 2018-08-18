@@ -125,7 +125,7 @@ namespace litecore { namespace websocket {
                 }
                 frame.shorten(newSize);
             } else {
-                assert(opcode == uWS::BINARY);
+                DebugAssert(opcode == uWS::BINARY);
                 frame = message;
             }
             _bufferedBytes += frame.size;
@@ -223,7 +223,7 @@ namespace litecore { namespace websocket {
         if (fin && remainingBytes == 0) {
             _curMessage.shorten(_curMessageLength);
             bool ok = receivedMessage(_curOpCode, move(_curMessage));
-            assert(!_curMessage);
+            DebugAssert(!_curMessage);
             _curMessageLength = 0;
             return ok;
         }
@@ -360,7 +360,7 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::onCloseRequested(int status, fleece::slice message) {
-        assert(!_framing);
+        DebugAssert(!_framing);
         requestClose(status, message);
     }
 

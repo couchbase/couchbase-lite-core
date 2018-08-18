@@ -259,7 +259,7 @@ namespace litecore { namespace blip {
 
         /** Adds a message to the outgoing queue */
         void requeue(MessageOut *msg, bool andWrite =false) {
-            assert(!_outbox.contains(msg));
+            DebugAssert(!_outbox.contains(msg));
             auto i = _outbox.end();
             if (msg->urgent() && _outbox.size() > 1) {
                 // High-priority gets queued after the last existing high-priority message,
@@ -287,8 +287,8 @@ namespace litecore { namespace blip {
         /** Adds an outgoing message to the icebox (until an ACK arrives.) */
         void freezeMessage(MessageOut *msg) {
             logVerbose("Freezing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
-            assert(!_outbox.contains(msg));
-            assert(!_icebox.contains(msg));
+            DebugAssert(!_outbox.contains(msg));
+            DebugAssert(!_icebox.contains(msg));
             _icebox.push_back(msg);
         }
 
@@ -297,7 +297,7 @@ namespace litecore { namespace blip {
         void thawMessage(MessageOut *msg) {
             logVerbose("Thawing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
             LITECORE_UNUSED bool removed = _icebox.remove(msg);
-            assert(removed);
+            DebugAssert(removed);
             requeue(msg, true);
         }
 
@@ -638,7 +638,7 @@ namespace litecore { namespace blip {
     /** Public API to send a new request. */
     void Connection::sendRequest(MessageBuilder &mb) {
         Retained<MessageOut> message = new MessageOut(this, mb, 0);
-        assert(message->type() == kRequestType);
+        DebugAssert(message->type() == kRequestType);
         send(message);
     }
 

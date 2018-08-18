@@ -18,9 +18,9 @@
 
 #pragma once
 #include "FleeceCpp.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "RefCounted.hh"
-#include <assert.h>
 #include <atomic>
 #include <map>
 #include <string>
@@ -90,7 +90,7 @@ namespace litecore { namespace websocket {
         const char* reasonName() const  {
             static const char* kReasonNames[] = {"WebSocket status", "errno",
                                                  "Network error", "Exception", "Unknown error"};
-            assert(reason < CloseReason(5));
+            DebugAssert(reason < CloseReason(5));
             return kReasonNames[reason];
         }
     };
@@ -108,7 +108,7 @@ namespace litecore { namespace websocket {
     public:
         const URL& url() const                      {return _url;}
         Role role() const                           {return _role;}
-        Delegate& delegate() const                  {assert(_delegate); return *_delegate;}
+        Delegate& delegate() const                  {DebugAssert(_delegate); return *_delegate;}
         bool hasDelegate() const                    {return _delegate != nullptr;}
 
         virtual std::string name() const {

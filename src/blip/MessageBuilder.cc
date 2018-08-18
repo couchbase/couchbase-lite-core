@@ -43,7 +43,7 @@ namespace litecore { namespace blip {
     MessageBuilder::MessageBuilder(MessageIn *inReplyTo)
     :MessageBuilder()
     {
-        assert(!inReplyTo->isResponse());
+        DebugAssert(!inReplyTo->isResponse());
         type = kResponseType;
         urgent = inReplyTo->urgent();
     }
@@ -64,7 +64,7 @@ namespace litecore { namespace blip {
 
 
     void MessageBuilder::makeError(Error err) {
-        assert(err.domain && err.code);
+        DebugAssert(err.domain && err.code);
         type = kErrorType;
         addProperty("Error-Domain"_sl, err.domain);
         addProperty("Error-Code"_sl, err.code);
@@ -89,7 +89,7 @@ namespace litecore { namespace blip {
 
 
     MessageBuilder& MessageBuilder::addProperty(slice name, slice value) {
-        assert(!_wroteProperties);
+        DebugAssert(!_wroteProperties);
         writeTokenizedString(_properties, name);
         writeTokenizedString(_properties, value);
         return *this;
