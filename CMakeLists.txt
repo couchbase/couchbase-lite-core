@@ -394,10 +394,6 @@ add_library(Support STATIC
     ${PLATFORM_SRC}
 )
 
-### TOOLS:
-
-add_subdirectory(tools)
-
 ### TESTS:
 
 add_subdirectory(LiteCore/tests)
