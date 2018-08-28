@@ -43,7 +43,7 @@ namespace litecore { namespace actor {
     /** Default Actor mailbox implementation that uses a thread pool run by a Scheduler. */
     class ThreadedMailbox : Channel<std::function<void()>> {
     public:
-        ThreadedMailbox(Actor*, const std::string &name ="");
+        ThreadedMailbox(Actor*, const std::string &name ="", ThreadedMailbox *parentMailbox =nullptr);
         ~ThreadedMailbox();
 
         const std::string& name() const                     {return _name;}

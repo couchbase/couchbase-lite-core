@@ -134,7 +134,7 @@ namespace litecore { namespace actor {
 #pragma mark - MAILBOX:
 
 
-    ThreadedMailbox::ThreadedMailbox(Actor *a, const std::string &name)
+    ThreadedMailbox::ThreadedMailbox(Actor *a, const std::string &name, ThreadedMailbox *parent)
     :_actor(a)
     ,_name(name)
     {

@@ -30,7 +30,7 @@ namespace litecore { namespace actor {
         Available on Apple platforms, or elsewhere if libdispatch is installed. */
     class GCDMailbox {
     public:
-        GCDMailbox(Actor *a, const std::string &name ="", Scheduler *s =nullptr);
+        GCDMailbox(Actor *a, const std::string &name ="", GCDMailbox *parentMailbox =nullptr);
         ~GCDMailbox();
 
         std::string name() const;
@@ -47,9 +47,6 @@ namespace litecore { namespace actor {
         static void startScheduler(Scheduler *)             { }
 
         void logStats();
-
-        static GCDMailbox* currentMailbox();
-        static Actor* currentActor();
 
     private:
         void runEvent(void (^block)());
