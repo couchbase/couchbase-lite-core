@@ -165,6 +165,10 @@ namespace litecore { namespace repl {
 
         ~Worker();
 
+        virtual actor::Mailbox* mailboxForChildren() {
+            return _parent ? _parent->mailboxForChildren() : nullptr;
+        }
+
         /** Registers a callback to run when a BLIP request with the given profile arrives. */
         template <class ACTOR>
         void registerHandler(const char *profile,
