@@ -48,7 +48,7 @@ namespace litecore { namespace repl {
     ,_connectionState(connection()->state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_dbActor(new DBWorker(connection(), this, db, webSocket->url(), options))
+    ,_dbActor(new DBWorker(this, db, webSocket->url()))
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
@@ -56,9 +56,9 @@ namespace litecore { namespace repl {
         log("%s", string(options).c_str());
 
         if (options.push != kC4Disabled)
-            _pusher = new Pusher(connection(), this, _dbActor, _options);
+            _pusher = new Pusher(this, _dbActor);
         if (options.pull != kC4Disabled)
-            _puller = new Puller(connection(), this, _dbActor, _options);
+            _puller = new Puller(this, _dbActor);
         _checkpoint.enableAutosave(options.checkpointSaveDelay(),
                                    bind(&Replicator::saveCheckpoint, this, _1));
     }

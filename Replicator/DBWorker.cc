@@ -50,12 +50,10 @@ namespace litecore { namespace repl {
         return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
     }
 
-    DBWorker::DBWorker(Connection *connection,
-                       Replicator *replicator,
+    DBWorker::DBWorker(Replicator *replicator,
                        C4Database *db,
-                       const websocket::URL &remoteURL,
-                       Options options)
-    :Worker(connection, replicator, options, "DB")
+                       const websocket::URL &remoteURL)
+    :Worker(replicator, "DB")
     ,_db(c4db_retain(db))
     ,_blobStore(c4db_getBlobStore(db, nullptr))
     ,_remoteURL(remoteURL)
@@ -64,7 +62,7 @@ namespace litecore { namespace repl {
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
-        _disableBlobSupport = options.properties["disable_blob_support"_sl].asBool();
+        _disableBlobSupport = _options.properties["disable_blob_support"_sl].asBool();
     }
 
 

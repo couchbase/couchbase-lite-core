@@ -28,7 +28,7 @@ namespace litecore { namespace repl {
 
     class Puller : public Worker {
     public:
-        Puller(blip::Connection*, Replicator*, DBWorker*, Options options);
+        Puller(Replicator*, DBWorker*);
 
         void setSkipDeleted()                   {enqueue(&Puller::_setSkipDeleted);}
 

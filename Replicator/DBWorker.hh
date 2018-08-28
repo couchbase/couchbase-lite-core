@@ -36,11 +36,9 @@ namespace litecore { namespace repl {
     class DBWorker : public Worker {
     public:
 
-        DBWorker(blip::Connection *connection,
-                Replicator*,
-                C4Database *db,
-                const fleece::alloc_slice &remoteURL,
-                Options options);
+        DBWorker(Replicator*,
+                 C4Database *db,
+                 const fleece::alloc_slice &remoteURL);
 
         /** The blob store is thread-safe so it can be accessed directly. */
         C4BlobStore* blobStore() const                  {return _blobStore;}
