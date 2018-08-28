@@ -40,6 +40,8 @@ namespace litecore { namespace actor {
 #endif
 
     
+    static char kQueueMailboxSpecificKey;
+
     GCDMailbox::GCDMailbox(Actor *a, const std::string &name, GCDMailbox *parentMailbox)
     :_actor(a)
     {
@@ -59,6 +61,7 @@ namespace litecore { namespace actor {
             _queue = dispatch_queue_create(nameCstr, attr);
             dispatch_set_target_queue(_queue, targetQueue);
         }
+        dispatch_queue_set_specific(_queue, &kQueueMailboxSpecificKey, this, nullptr);
     }
 
     GCDMailbox::~GCDMailbox() {
@@ -68,6 +71,12 @@ namespace litecore { namespace actor {
 
     std::string GCDMailbox::name() const {
         return dispatch_queue_get_label(_queue);
+    }
+
+
+    Actor* GCDMailbox::currentActor() {
+        auto mailbox = (GCDMailbox*) dispatch_get_specific(&kQueueMailboxSpecificKey);
+        return mailbox ? mailbox->_actor : nullptr;
     }
 
 

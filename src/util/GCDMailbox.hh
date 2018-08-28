@@ -48,6 +48,8 @@ namespace litecore { namespace actor {
 
         void logStats();
 
+        static Actor* currentActor();
+
     private:
         void runEvent(void (^block)());
         void afterEvent();

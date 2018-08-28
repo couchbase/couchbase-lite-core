@@ -18,6 +18,7 @@
 
 #pragma once
 #include "ThreadedMailbox.hh"
+#include "Async.hh"
 #include <assert.h>
 #include <chrono>
 #include <functional>
@@ -40,6 +41,7 @@
 
 namespace litecore { namespace actor {
     class Actor;
+    class AsyncContext;
 
 
     //// Some support code for asynchronize(), from http://stackoverflow.com/questions/42124866
@@ -56,6 +58,7 @@ namespace litecore { namespace actor {
 
 #ifdef ACTORS_USE_GCD
     using Mailbox = GCDMailbox;
+    #define ACTOR_BIND_METHOD0(RCVR, METHOD)        ^{ ((RCVR)->*METHOD)(); }
     #define ACTOR_BIND_METHOD(RCVR, METHOD, ARGS)   ^{ ((RCVR)->*METHOD)(ARGS...); }
     #define ACTOR_BIND_FN(FN, ARGS)                 ^{ FN(ARGS...); }
 #else
@@ -82,6 +85,9 @@ namespace litecore { namespace actor {
         unsigned eventCount() const                         {return _mailbox.eventCount();}
 
         std::string actorName() const                       {return _mailbox.name();}
+
+        /** The Actor that's currently running, else nullptr */
+        static Actor* currentActor()                        {return Mailbox::currentActor();}
 
     protected:
         /** Constructs an Actor.
@@ -133,9 +139,22 @@ namespace litecore { namespace actor {
             _mailbox.logStats();
         }
 
+
+        /** Body of an async method: Creates an AsyncProvider from the lambda given,
+            then returns an Async that refers to that provider. */
+        template <class T, class LAMBDA>
+        Async<T> _asyncBody(const LAMBDA &bodyFn) {
+            return Async<T>(this, bodyFn);
+        }
+
+        void wakeAsyncContext(AsyncContext *context) {
+            _mailbox.enqueue(ACTOR_BIND_METHOD0(context, &AsyncContext::next));
+        }
+
     private:
         friend class ThreadedMailbox;
         friend class GCDMailbox;
+        friend class AsyncContext;
 
         template <class ACTOR, class ITEM>
         friend class Batcher;

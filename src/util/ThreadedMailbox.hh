@@ -53,6 +53,8 @@ namespace litecore { namespace actor {
         void enqueue(std::function<void()>);
         void enqueueAfter(delay_t delay, std::function<void()>);
 
+        static Actor* currentActor()                        {return sCurrentActor;}
+
         void logStats()                                     { /* TODO */ }
 
     private:
@@ -67,6 +69,8 @@ namespace litecore { namespace actor {
 #if DEBUG
         std::atomic_int _active {0};
 #endif
+        
+        static __thread Actor* sCurrentActor;
     };
 
 

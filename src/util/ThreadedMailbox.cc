@@ -133,6 +133,8 @@ namespace litecore { namespace actor {
 
 #pragma mark - MAILBOX:
 
+    __thread Actor* ThreadedMailbox::sCurrentActor;
+
 
     ThreadedMailbox::ThreadedMailbox(Actor *a, const std::string &name, ThreadedMailbox *parent)
     :_actor(a)
@@ -187,6 +189,7 @@ namespace litecore { namespace actor {
     void ThreadedMailbox::performNextMessage() {
         LogToAt(ActorLog, Verbose, "%s performNextMessage", _actor->actorName().c_str());
         DebugAssert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
+        sCurrentActor = _actor;
         try {
             auto &fn = front();
             fn();
@@ -194,6 +197,7 @@ namespace litecore { namespace actor {
             _actor->caughtException(x);
         }
         _actor->afterEvent();
+        sCurrentActor = nullptr;
         
         DebugAssert(--_active == 0);
 
