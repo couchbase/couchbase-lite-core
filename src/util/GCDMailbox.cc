@@ -45,13 +45,18 @@ namespace litecore { namespace actor {
     GCDMailbox::GCDMailbox(Actor *a, const std::string &name, Scheduler *s)
     :_actor(a)
     {
+        auto targetQueue = dispatch_get_global_queue(QOS_CLASS_UTILITY, 0);
+        auto nameCstr = name.empty() ? nullptr : name.c_str();
         dispatch_queue_attr_t attr = DISPATCH_QUEUE_SERIAL;
         attr = dispatch_queue_attr_make_with_qos_class(attr, QOS_CLASS_UTILITY, 0);
         if (__builtin_available(iOS 10.0, macOS 10.12, tvos 10.0, watchos 3.0, *)) {
             attr = dispatch_queue_attr_make_with_autorelease_frequency(attr,
                                                         DISPATCH_AUTORELEASE_FREQUENCY_NEVER);
+            _queue = dispatch_queue_create_with_target(nameCstr, attr, targetQueue);
+        } else {
+            _queue = dispatch_queue_create(nameCstr, attr);
+            dispatch_set_target_queue(_queue, targetQueue);
         }
-        _queue = dispatch_queue_create((name.empty() ? nullptr : name.c_str()), attr);
         dispatch_queue_set_specific(_queue, &kQueueMailboxSpecificKey, this, nullptr);
     }
 
