@@ -18,7 +18,7 @@
 
 #pragma once
 #include "PlatformCompat.hh"
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include "RevID.hh"
 #include <deque>
 #include <unordered_map>
@@ -168,6 +168,8 @@ namespace litecore {
     protected:
         virtual bool isBodyOfRevisionAvailable(const Rev* r NONNULL) const;
         virtual alloc_slice readBodyOfRevision(const Rev* r NONNULL) const;
+        virtual slice copyBody(slice body);
+        virtual slice copyBody(alloc_slice body);
 #if DEBUG
         virtual void dump(std::ostream&);
 #endif
@@ -179,8 +181,6 @@ namespace litecore {
         friend class Rev;
         friend class RawRevision;
         void initRevs();
-        slice copyBody(slice body);
-        slice copyBody(alloc_slice body);
         Rev* _insert(revid, alloc_slice body, Rev *parentRev, Rev::Flags, bool markConflicts);
         bool confirmLeaf(Rev* testRev NONNULL);
         void compact();

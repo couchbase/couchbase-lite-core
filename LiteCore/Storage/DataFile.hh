@@ -29,10 +29,10 @@
 #undef check
 #endif
 
-namespace fleece {
+namespace fleece { namespace impl {
     class SharedKeys;
     class PersistentSharedKeys;
-}
+} }
 
 namespace litecore {
 
@@ -82,7 +82,7 @@ namespace litecore {
         virtual void rekey(EncryptionAlgorithm, slice newKey);
 
         FleeceAccessor fleeceAccessor() const               {return _options.fleeceAccessor;}
-        fleece::SharedKeys* documentKeys() const;
+        fleece::impl::SharedKeys* documentKeys() const;
 
         void* owner()                                       {return _owner;}
         void setOwner(void* owner)                          {_owner = owner;}
@@ -216,7 +216,7 @@ namespace litecore {
         Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
-        std::unique_ptr<fleece::PersistentSharedKeys> _documentKeys;
+        Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic<void*>      _owner {nullptr};               // App-defined object that owns me
     };

@@ -7,8 +7,7 @@
 //
 
 #pragma once
-#include "slice.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
@@ -258,10 +257,9 @@ public:
         REQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:
-        Value root1 = Value::fromData(doc1->selectedRev.body);
-        Value root2 = Value::fromData(doc2->selectedRev.body);
-        alloc_slice json1 = root1.toJSON(c4db_getFLSharedKeys(db), true, true);
-        alloc_slice json2 = root2.toJSON(c4db_getFLSharedKeys(db2), true, true);
+        Doc rev1 = c4::getFleeceDoc(doc1), rev2 = c4::getFleeceDoc(doc2);
+        alloc_slice json1 = rev1.root().toJSON(true, true);
+        alloc_slice json2 = rev2.root().toJSON(true, true);
         CHECK(json1 == json2);
     }
 
@@ -279,7 +277,7 @@ public:
         while (c4enum_next(e1, &error)) {
             c4::ref<C4Document> doc1 = c4enum_getDocument(e1, &error);
             REQUIRE(doc1);
-            INFO("db document #" << i << ": '" << asstring(doc1->docID) << "'");
+            INFO("db document #" << i << ": '" << slice(doc1->docID).asString() << "'");
             REQUIRE(c4enum_next(e2, &error));
             c4::ref<C4Document> doc2 = c4enum_getDocument(e2, &error);
             REQUIRE(doc2);

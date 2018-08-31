@@ -19,25 +19,25 @@
 #include "c4Test.hh"
 #include "c4Private.h"
 #include "Benchmark.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "c4Document+Fleece.h"
 
 using namespace fleece;
 
 
-static AllocedDict json2dict(C4Database *db, const char *json) {
+static Doc json2dict(C4Database *db, const char *json) {
     std::string jsonStr = json5(json);
     C4Error c4err;
-    AllocedDict dict( alloc_slice( c4db_encodeJSON(db, slice(jsonStr), &c4err) ) );
-    REQUIRE(dict);
-    return dict;
+    alloc_slice f (c4db_encodeJSON(db, slice(jsonStr), &c4err));
+    REQUIRE(f);
+    return Doc(f, kFLTrusted, c4db_getFLSharedKeys(db));
 }
 
 
-static std::string fleece2json(slice fleece, FLSharedKeys sk) {
+static std::string fleece2json(slice fleece) {
     auto value = Value::fromData(fleece);
     REQUIRE(value);
-    return alloc_slice(value.toJSON(sk, true, false)).asString();
+    return alloc_slice(value.toJSON(true, true)).asString();
 }
 
 
@@ -661,32 +661,34 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {
         FLEncoder_EndDict(enc);
     }
     
-    FLSliceResult result = FLEncoder_Finish(enc, nullptr);
-    REQUIRE(result.buf);
-    FLValue val = FLValue_FromTrustedData((FLSlice)result);
+    FLDoc result = FLEncoder_FinishDoc(enc, nullptr);
+    REQUIRE(result);
+    REQUIRE(FLDoc_GetSharedKeys(result));
+    FLValue val = FLDoc_GetRoot(result);
     FLDict d = FLValue_AsDict(val);
     REQUIRE(d);
     
-    FLDictKey testKey = c4db_initFLDictKey(db, C4STR("@type"));
+    FLDictKey testKey = FLDictKey_Init(C4STR("@type"));
     FLValue testVal = FLDict_GetWithKey(d, &testKey);
     
     FLSlice blobSl = FLSTR("blob"); // Windows cannot compile this inside of a REQUIRE
     REQUIRE(FLValue_AsString(testVal) == blobSl);
-    
-    CHECK(c4doc_dictContainsBlobs(d, c4db_getFLSharedKeys(db)));
-    FLSliceResult_Free(result);
+
+    REQUIRE(FLValue_FindDoc((FLValue)d) == result);
+    CHECK(c4doc_dictContainsBlobs(d));
+    FLDoc_Release(result);
     
     enc = c4db_getSharedFleeceEncoder(db);
     FLEncoder_BeginDict(enc, 0);
     FLEncoder_EndDict(enc);
-    result = FLEncoder_Finish(enc, nullptr);
-    REQUIRE(result.buf);
-    val = FLValue_FromTrustedData((FLSlice)result);
+    result = FLEncoder_FinishDoc(enc, nullptr);
+    REQUIRE(result);
+    val = val = FLDoc_GetRoot(result);
     d = FLValue_AsDict(val);
     REQUIRE(d);
     
-    CHECK(!c4doc_dictContainsBlobs(d, nullptr));
-    FLSliceResult_Free(result);
+    CHECK(!c4doc_dictContainsBlobs(d));
+    FLDoc_Release(result);
 }
 
 
@@ -695,9 +697,10 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Database][C]") 
     TransactionHelper t(db);
     auto sk = c4db_getFLSharedKeys(db);
     auto dict = json2dict(db, "{_id:'foo', _rev:'1-2345', x:17}");
-    CHECK(c4doc_hasOldMetaProperties(dict, sk));
+    CHECK(c4doc_hasOldMetaProperties(dict));
     alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
-    CHECK(fleece2json(stripped, sk) == "{x:17}");
+    Doc doc(stripped, kFLTrusted, sk);
+    CHECK(fleece2json(stripped) == "{x:17}");
 }
 
 
@@ -709,9 +712,10 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Database][C]") 
     auto dict = json2dict(db, "{_attachments: {'blob_/foo/1': {'digest': 'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='},"
                                               "oldie: {'digest': 'sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU='} },"
                               "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='} ] }");
-    CHECK(c4doc_hasOldMetaProperties(dict, sk));
+    CHECK(c4doc_hasOldMetaProperties(dict));
     alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
-    CHECK(fleece2json(stripped, sk) == "{_attachments:{oldie:{digest:\"sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}},foo:[0,{\"@type\":\"blob\",digest:\"sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
+    Doc doc(stripped, kFLTrusted, sk);
+    CHECK(fleece2json(stripped) == "{_attachments:{oldie:{digest:\"sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}},foo:[0,{\"@type\":\"blob\",digest:\"sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
 }
 
 
@@ -723,9 +727,10 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Database][C]") 
     auto sk = c4db_getFLSharedKeys(db);
     auto dict = json2dict(db, "{_attachments: {'blob_/foo/1': {'digest': 'sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
                               "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
-    CHECK(c4doc_hasOldMetaProperties(dict, sk));
+    CHECK(c4doc_hasOldMetaProperties(dict));
     alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
-    CHECK(fleece2json(stripped, sk) == "{foo:[0,{\"@type\":\"blob\",content_type:\"image/png\",digest:\"sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
+    Doc doc(stripped, kFLTrusted, sk);
+    CHECK(fleece2json(stripped) == "{foo:[0,{\"@type\":\"blob\",content_type:\"image/png\",digest:\"sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
 }
 
 

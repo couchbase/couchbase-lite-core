@@ -23,11 +23,12 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include <sstream>
 
 using namespace std;
 using namespace fleece;
+using namespace fleece::impl;
 
 namespace litecore {
 

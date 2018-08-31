@@ -26,7 +26,7 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "Stopwatch.hh"
 #include <sstream>
 
@@ -36,6 +36,7 @@ extern "C" {
 
 using namespace std;
 using namespace fleece;
+using namespace fleece::impl;
 
 namespace litecore {
 
@@ -134,7 +135,7 @@ namespace litecore {
         }
 
         enc.endArray();
-        return enc.extractOutput();
+        return enc.finish();
     }
 
 
@@ -420,10 +421,9 @@ namespace litecore {
         alloc_slice expressionFleece;
         const Array *params = nullptr;
         try {
-            expressionFleece = JSONConverter::convertJSON(expression);
-            auto f = Value::fromTrustedData(expressionFleece);
-            if (f)
-                params = f->asArray();
+            Retained<Doc> doc = Doc::fromJSON(expression);
+            expressionFleece = doc->allocedData();
+            params = doc->asArray();
         } catch (const FleeceException &) { }
         if (!params || params->count() == 0)
             error::_throw(error::InvalidQuery);

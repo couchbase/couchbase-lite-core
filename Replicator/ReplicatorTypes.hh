@@ -17,8 +17,8 @@
 //
 
 #pragma once
-#include "Fleece.h"
-#include "slice.hh"
+#include "fleece/Fleece.h"
+#include "fleece/slice.hh"
 #include "c4.hh"
 #include "c4Private.h"
 #include "RefCounted.hh"

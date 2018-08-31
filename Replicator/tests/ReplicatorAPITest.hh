@@ -7,8 +7,8 @@
 //
 
 #pragma once
-#include "slice.hh"
-#include "FleeceCpp.hh"
+#include "fleece/slice.hh"
+#include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "CivetWebSocket.hh"
 #include "Response.hh"
@@ -192,7 +192,7 @@ public:
             CHECK(status.error.code == 0);
             CHECK(_numCallbacksWithLevel[kC4Busy] > 0);
             if (!db2)
-                CHECK(_headers != (FLDict)nullptr);
+                CHECK(_headers);
         }
         CHECK(_numCallbacksWithLevel[kC4Stopped] > 0);
         CHECK(_callbackStatus.level == status.level);

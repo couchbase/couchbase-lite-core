@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include "PlatformCompat.hh"
 #include <atomic>
 #include <map>

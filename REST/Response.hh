@@ -17,8 +17,8 @@
 //
 
 #pragma once
-#include "slice.hh"
-#include "FleeceCpp.hh"
+#include "fleece/slice.hh"
+#include "fleece/Fleece.hh"
 #include "c4Base.h"
 #include <functional>
 #include <map>
@@ -56,7 +56,7 @@ namespace litecore { namespace REST {
 
         bool hasContentType(fleece::slice contentType) const;
         fleece::alloc_slice body() const;
-        fleeceapi::Value bodyAsJSON() const;
+        fleece::Value bodyAsJSON() const;
 
         // Utilities:
         static std::string urlDecode(const std::string&);
@@ -69,7 +69,7 @@ namespace litecore { namespace REST {
         bool _gotBody {false};
         fleece::alloc_slice _body;
         bool _gotBodyFleece {false};
-        fleece::alloc_slice _bodyFleece;
+        fleece::Doc _bodyFleece;
     };
 
 

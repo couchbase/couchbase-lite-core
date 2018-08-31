@@ -26,6 +26,7 @@
 #include <sqlite3.h>
 
 using namespace fleece;
+using namespace fleece::impl;
 using namespace std;
 
 namespace litecore {
@@ -34,24 +35,15 @@ namespace litecore {
     const char* const kFleeceValuePointerType = "FleeceValue";
 
 
-    const Value* fleeceDocRoot(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
+    static slice argAsSlice(sqlite3_context* ctx, sqlite3_value *arg) {
         auto type = sqlite3_value_type(arg);
         if (type == SQLITE_NULL)
-            return Dict::kEmpty;             // No 'body' column; may be deleted doc
+            return nullslice;             // No 'body' column; may be deleted doc
         Assert(type == SQLITE_BLOB);
         Assert(sqlite3_value_subtype(arg) == 0);
         slice fleece = valueAsSlice(arg);
         auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-        fleece = funcCtx->accessor(fleece);
-        if (!fleece)
-            return Dict::kEmpty;             // No current revision body; may be deleted rev
-        const Value *root = Value::fromTrustedData(fleece);
-        if (!root) {
-            Warn("Invalid Fleece data in SQLite table");
-            sqlite3_result_error(ctx, "invalid Fleece data", -1);
-            sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
-        }
-        return root;
+        return funcCtx->accessor(fleece);
     }
 
 
@@ -81,11 +73,11 @@ namespace litecore {
     }
 
 
-    int evaluatePath(slice path, SharedKeys *sharedKeys, const Value **pValue) noexcept {
+    int evaluatePath(slice path, const Value **pValue) noexcept {
         if (!path.buf)
             return SQLITE_FORMAT;
         try {
-            *pValue = Path::eval(path, sharedKeys, *pValue);    // can throw!
+            *pValue = Path::eval(path, *pValue);    // can throw!
             return SQLITE_OK;
         } catch (const error &error) {
             WarnError("Invalid property path `%.*s` in query (err %d)",
@@ -99,28 +91,40 @@ namespace litecore {
     }
 
 
-    bool evaluatePathFromArgs(sqlite3_context *ctx, sqlite3_value **argv, bool isDocBody, const Value* *outValue) {
-        const Value *val = isDocBody ? fleeceDocRoot(ctx, argv[0]) : fleeceParam(ctx, argv[0]);
-        if (!val)
-            return false;
-
+    const Value* evaluatePathFromArg(sqlite3_context *ctx, sqlite3_value **argv, int argNo, const Value *root) {
         // Cache a pre-parsed Path object using SQLite's auxdata API:
-        auto path = (Path*)sqlite3_get_auxdata(ctx, 1);
+        auto path = (Path*)sqlite3_get_auxdata(ctx, argNo);
         if (path) {
-            *outValue = path->eval(val);
+            return path->eval(root);
         } else {
             // No cached Path yet, so create one, use it & cache it:
-            path = new Path(valueAsSlice(argv[1]).asString(), getSharedKeys(ctx));
-            *outValue = path->eval(val);
-            sqlite3_set_auxdata(ctx, 1, path, [](void *auxdata) {
+            path = new Path(valueAsSlice(argv[argNo]).asString());
+            const Value *result = path->eval(root);
+            sqlite3_set_auxdata(ctx, argNo, path, [](void *auxdata) {
                 delete (Path*)auxdata;
             });
+            return result;
         }
-        return true;
     }
 
 
-    void setResultFromValue(sqlite3_context *ctx, const Value *val, SharedKeys *sk) noexcept {
+    QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
+    :Scope(argAsSlice(ctx, argv[0]), getSharedKeys(ctx))
+    {
+        if (data()) {
+            root = Value::fromTrustedData(data());
+            if (!root) {
+                Warn("Invalid Fleece data in SQLite table");
+                error::_throw(error::CorruptRevisionData);
+            }
+        } else {
+            root = Dict::kEmpty;             // No current revision body; may be deleted rev
+        }
+        root = evaluatePathFromArg(ctx, argv, 1, root);
+    }
+
+
+    void setResultFromValue(sqlite3_context *ctx, const Value *val) noexcept {
         if (val == nullptr) {
             sqlite3_result_null(ctx);
         } else {
@@ -149,15 +153,10 @@ namespace litecore {
                 case kData:
                 case kArray:
                 case kDict:
-                    setResultBlobFromEncodedValue(ctx, val, sk);
+                    setResultBlobFromEncodedValue(ctx, val);
                     break;
             }
         }
-    }
-
-
-    void setResultFromValue(sqlite3_context *ctx, const Value *val) noexcept {
-        setResultFromValue(ctx, val, getSharedKeys(ctx));
     }
 
 
@@ -180,14 +179,13 @@ namespace litecore {
 
 
     bool setResultBlobFromEncodedValue(sqlite3_context *ctx,
-                                       const fleece::Value *val,
-                                       fleece::SharedKeys *sk)
+                                       const fleece::impl::Value *val)
     {
         try {
             Encoder enc;
-            enc.setSharedKeys(sk);
-            enc.writeValue(val, sk);
-            setResultBlobFromFleeceData(ctx, enc.extractOutput());
+            enc.setSharedKeys(val->sharedKeys());
+            enc.writeValue(val);
+            setResultBlobFromFleeceData(ctx, enc.finish());
             return true;
         } catch (const bad_alloc&) {
             sqlite3_result_error_code(ctx, SQLITE_NOMEM);
@@ -195,11 +193,6 @@ namespace litecore {
             sqlite3_result_error_code(ctx, SQLITE_ERROR);
         }
         return false;
-    }
-
-
-    bool setResultBlobFromEncodedValue(sqlite3_context *ctx, const Value *val) {
-        return setResultBlobFromEncodedValue(ctx, val, getSharedKeys(ctx));
     }
 
 
@@ -214,7 +207,7 @@ namespace litecore {
 
     static void registerFunctionSpecs(sqlite3 *db,
                                       DataFile::FleeceAccessor accessor,
-                                      fleece::SharedKeys *sharedKeys,
+                                      fleece::impl::SharedKeys *sharedKeys,
                                       const SQLiteFunctionSpec functions[])
     {
         if (!accessor)
@@ -235,7 +228,7 @@ namespace litecore {
 
     void RegisterSQLiteFunctions(sqlite3 *db,
                                  DataFile::FleeceAccessor accessor,
-                                 fleece::SharedKeys *sharedKeys)
+                                 fleece::impl::SharedKeys *sharedKeys)
     {
         registerFunctionSpecs(db, accessor, sharedKeys, kFleeceFunctionsSpec);
         registerFunctionSpecs(db, nullptr,  sharedKeys, kFleeceNullAccessorFunctionsSpec);

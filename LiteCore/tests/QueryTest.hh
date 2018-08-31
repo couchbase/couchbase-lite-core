@@ -8,13 +8,14 @@
 #include "DataFile.hh"
 #include "Query.hh"
 #include "Error.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "Benchmark.hh"
 #include "StringUtil.hh"
 
 #include "LiteCoreTest.hh"
 
 using namespace litecore;
+using namespace fleece::impl;
 using namespace std;
 
 
@@ -40,7 +41,7 @@ protected:
                                        DocumentFlags flags =DocumentFlags::kNone) {
         string docID = stringWithFormat("rec-%03d", i);
 
-        fleece::Encoder enc;
+        fleece::impl::Encoder enc;
         enc.beginDictionary();
         enc.writeKey("num");
         enc.writeInt(i);
@@ -49,7 +50,7 @@ protected:
             enc.writeString(str);
         }
         enc.endDictionary();
-        alloc_slice body = enc.extractOutput();
+        alloc_slice body = enc.finish();
 
         return store->set(slice(docID), nullslice, body, flags, t);
     }
@@ -66,7 +67,7 @@ protected:
                                     DocumentFlags flags =DocumentFlags::kNone) {
         string docID = stringWithFormat("rec-%03d", i);
 
-        fleece::Encoder enc;
+        fleece::impl::Encoder enc;
         enc.beginDictionary();
         enc.writeKey("numbers");
         enc.beginArray();
@@ -74,7 +75,7 @@ protected:
             enc.writeString(numberString(j));
         enc.endArray();
         enc.endDictionary();
-        alloc_slice body = enc.extractOutput();
+        alloc_slice body = enc.finish();
 
         return store->set(slice(docID), nullslice, body, flags, t);
     }
@@ -89,14 +90,14 @@ protected:
     void writeMultipleTypeDocs(Transaction &t) {
         string docID = "doc1";
 
-        fleece::Encoder enc;
+        fleece::impl::Encoder enc;
         enc.beginDictionary(1);
         enc.writeKey("value");
         enc.beginArray();
         enc.writeInt(1);
         enc.endArray();
         enc.endDictionary();
-        alloc_slice body = enc.extractOutput();
+        alloc_slice body = enc.finish();
         store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
 
         enc.reset();
@@ -105,7 +106,7 @@ protected:
         enc.writeKey("value");
         enc.writeString("cool value");
         enc.endDictionary();
-        body = enc.extractOutput();
+        body = enc.finish();
         store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
 
         enc.reset();
@@ -114,7 +115,7 @@ protected:
         enc.writeKey("value");
         enc.writeDouble(4.5);
         enc.endDictionary();
-        body = enc.extractOutput();
+        body = enc.finish();
         store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
 
         enc.reset();
@@ -126,7 +127,7 @@ protected:
         enc.writeString("FTW");
         enc.endDictionary();
         enc.endDictionary();
-        body = enc.extractOutput();
+        body = enc.finish();
         store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
 
         enc.reset();
@@ -135,20 +136,20 @@ protected:
         enc.writeKey("value");
         enc.writeBool(true);
         enc.endDictionary();
-        body = enc.extractOutput();
+        body = enc.finish();
         store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
     }
 
     void writeFalselyDocs(Transaction &t) {
         string docID = "doc6";
 
-        fleece::Encoder enc;
+        fleece::impl::Encoder enc;
         enc.beginDictionary(1);
         enc.writeKey("value");
         enc.beginArray();
         enc.endArray();
         enc.endDictionary();
-        alloc_slice body = enc.extractOutput();
+        alloc_slice body = enc.finish();
         store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
 
         enc.reset();
@@ -158,7 +159,7 @@ protected:
         enc.beginDictionary();
         enc.endDictionary();
         enc.endDictionary();
-        body = enc.extractOutput();
+        body = enc.finish();
         store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
 
         enc.reset();
@@ -167,7 +168,7 @@ protected:
         enc.writeKey("value");
         enc.writeBool(false);
         enc.endDictionary();
-        body = enc.extractOutput();
+        body = enc.finish();
         store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
     }
 

@@ -24,7 +24,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 
 namespace litecore { namespace REST {
 
@@ -74,7 +73,7 @@ namespace litecore { namespace REST {
             } while (bytesRead > 0);
             if (bytesRead < 0)
                 return {};
-            alloc_slice body = writer.extractOutput();
+            alloc_slice body = writer.finish();
             if (body.size == 0)
                 body.reset();
             const_cast<Body*>(this)->_body = body;
@@ -90,11 +89,11 @@ namespace litecore { namespace REST {
                 alloc_slice b = body();
                 if (b)
                     const_cast<Body*>(this)->_bodyFleece =
-                    JSONEncoder::convertJSON(b, nullptr);
+                    Doc::fromJSON(b, nullptr);
             }
             const_cast<Body*>(this)->_gotBodyFleece = true;
         }
-        return _bodyFleece ? Value::fromData(_bodyFleece) : nullptr;
+        return _bodyFleece.root();
     }
 
 

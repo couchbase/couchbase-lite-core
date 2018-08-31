@@ -24,7 +24,7 @@
 #include "Timer.hh"
 #include "c4.hh"
 #include "c4Private.h"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "Error.hh"
 #include <chrono>
 #include <functional>
@@ -50,7 +50,7 @@ namespace litecore { namespace repl {
 
             Mode                    push                    {kC4Disabled};
             Mode                    pull                    {kC4Disabled};
-            fleeceapi::AllocedDict  properties;
+            fleece::AllocedDict  properties;
             Validator               pullValidator           {nullptr};
             void*                   pullValidatorContext    {nullptr};
 
@@ -79,20 +79,20 @@ namespace litecore { namespace repl {
                 return std::chrono::seconds(secs);
             }
 
-            fleeceapi::Array channels() const {return arrayProperty(kC4ReplicatorOptionChannels);}
-            fleeceapi::Array docIDs() const   {return arrayProperty(kC4ReplicatorOptionDocIDs);}
-            fleeceapi::Dict headers() const  {return dictProperty(kC4ReplicatorOptionExtraHeaders);}
+            fleece::Array channels() const {return arrayProperty(kC4ReplicatorOptionChannels);}
+            fleece::Array docIDs() const   {return arrayProperty(kC4ReplicatorOptionDocIDs);}
+            fleece::Dict headers() const  {return dictProperty(kC4ReplicatorOptionExtraHeaders);}
             fleece::slice filter() const  {return properties[kC4ReplicatorOptionFilter].asString();}
-            fleeceapi::Dict filterParams() const
+            fleece::Dict filterParams() const
                                       {return properties[kC4ReplicatorOptionFilterParams].asDict();}
             bool skipDeleted() const  {return properties[kC4ReplicatorOptionSkipDeleted].asBool();}
             bool noIncomingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
             bool noOutgoingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
 
-            fleeceapi::Array arrayProperty(const char *name) const {
+            fleece::Array arrayProperty(const char *name) const {
                 return properties[name].asArray();
             }
-            fleeceapi::Dict dictProperty(const char *name) const {
+            fleece::Dict dictProperty(const char *name) const {
                 return properties[name].asDict();
             }
 
@@ -101,13 +101,13 @@ namespace litecore { namespace repl {
                 Fleece value pointers or slices previously accessed from it. */
             template <class T>
             Options& setProperty(fleece::slice name, T value) {
-                fleeceapi::Encoder enc;
+                fleece::Encoder enc;
                 enc.beginDict();
                 if (value) {
                     enc.writeKey(name);
                     enc << value;
                 }
-                for (fleeceapi::Dict::iterator i(properties); i; ++i) {
+                for (fleece::Dict::iterator i(properties); i; ++i) {
                     slice key = i.keyString();
                     if (key != name) {
                         enc.writeKey(key);
@@ -115,7 +115,7 @@ namespace litecore { namespace repl {
                     }
                 }
                 enc.endDict();
-                properties = fleeceapi::AllocedDict(enc.finish());
+                properties = fleece::AllocedDict(enc.finish());
                 return *this;
             }
 

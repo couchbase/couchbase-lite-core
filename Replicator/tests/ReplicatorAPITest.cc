@@ -9,10 +9,9 @@
 #include "ReplicatorAPITest.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 
 using namespace fleece;
-using namespace fleeceapi;
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
 constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
@@ -370,11 +369,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull Big Attachments", "[.SyncServer]")
     c4::ref<C4Document> doc = c4doc_get(db, "Abstract"_sl, true, &error);
     REQUIRE(doc);
     auto root = Value::fromData(doc->selectedRev.body).asDict();
-    auto sk = c4db_getFLSharedKeys(db);
-    auto attach = root.get("_attachments"_sl, sk).asDict().get("Abstract.jpg"_sl, sk).asDict();
+    auto attach = root.get("_attachments"_sl).asDict().get("Abstract.jpg"_sl).asDict();
     REQUIRE(attach);
-    CHECK(attach.get("content_type",sk).asString() == "image/jpeg"_sl);
-    slice digest = attach.get("digest",sk).asString();
+    CHECK(attach.get("content_type").asString() == "image/jpeg"_sl);
+    slice digest = attach.get("digest").asString();
     CHECK(digest == "sha1-9g3HeOewh8//ctPcZkh03o+A+PQ="_sl);
     C4BlobKey blobKey;
     c4blob_keyFromString(digest, &blobKey);

@@ -19,7 +19,7 @@
 #include "c4Test.hh"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include "FilePath.hh"
 #include "StringUtil.hh"
 #include "Benchmark.hh"
@@ -422,7 +422,7 @@ string C4Test::listSharedKeys(string delimiter) {
     auto sk = c4db_getFLSharedKeys(db);
     REQUIRE(sk);
     for (int keyCode = 0; true; ++keyCode) {
-        FLSlice key = FLSharedKey_GetKeyString(sk, keyCode, nullptr);
+        FLSlice key = FLSharedKeys_Decode(sk, keyCode);
         if (!key.buf)
             break;
         if (keyCode > 0)
@@ -547,7 +547,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
     FLError error;
     FLSliceResult fleeceData = FLData_ConvertJSON(readFile(path), &error);
     REQUIRE(fleeceData.buf != nullptr);
-    Array root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
+    Array root = FLValue_AsArray(FLValue_FromData((C4Slice)fleeceData, kFLTrusted));
     REQUIRE(root);
 
     TransactionHelper t(db);

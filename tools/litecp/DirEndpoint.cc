@@ -31,7 +31,7 @@ void DirectoryEndpoint::prepare(bool isSource, bool mustExist, slice docIDProper
             _dir.mkdir();
     }
     if (docIDProperty) {
-        _docIDPath.reset(new KeyPath(docIDProperty, nullptr, nullptr));
+        _docIDPath.reset(new KeyPath(docIDProperty, nullptr));
         if (!*_docIDPath)
             Tool::instance->fail("Invalid key-path");
     }

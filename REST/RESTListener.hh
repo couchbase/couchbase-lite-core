@@ -60,7 +60,7 @@ namespace litecore { namespace REST {
             unsigned taskID() const     {return _taskID;}
             time_t timeUpdated() const  {return _timeUpdated;}
             virtual bool finished() const =0;
-            virtual void writeDescription(fleeceapi::JSONEncoder&);
+            virtual void writeDescription(fleece::JSONEncoder&);
 
             virtual void stop() =0;
 
@@ -110,13 +110,13 @@ namespace litecore { namespace REST {
         void handleModifyDoc(RequestResponse&, C4Database*);
         void handleBulkDocs(RequestResponse&, C4Database*);
 
-        bool modifyDoc(fleeceapi::Dict body,
+        bool modifyDoc(fleece::Dict body,
                        std::string docID,
                        std::string revIDQuery,
                        bool deleting,
                        bool newEdits,
                        C4Database *db,
-                       fleeceapi::JSONEncoder& json,
+                       fleece::JSONEncoder& json,
                        C4Error *outError);
 
         std::unique_ptr<FilePath> _directory;

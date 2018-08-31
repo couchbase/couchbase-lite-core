@@ -19,7 +19,7 @@
 #pragma once
 #include "KeyStore.hh"
 #include "QueryParser.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 
 namespace SQLite {
     class Column;
@@ -108,11 +108,11 @@ namespace litecore {
         void dropTrigger(const std::string &name, const char *suffix);
         bool createValueIndex(IndexType, const std::string &sourceTableName,
                               const std::string &indexName,
-                              fleece::Array::iterator &expressions,
+                              fleece::impl::Array::iterator &expressions,
                               const IndexOptions *options);
-        bool createFTSIndex(std::string, const fleece::Array *params, const IndexOptions*);
-        bool createArrayIndex(std::string, const fleece::Array *params, const IndexOptions*);
-        std::string createUnnestedTable(const fleece::Value *arrayPath, const IndexOptions*);
+        bool createFTSIndex(std::string, const fleece::impl::Array *params, const IndexOptions*);
+        bool createArrayIndex(std::string, const fleece::impl::Array *params, const IndexOptions*);
+        std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexOptions*);
         bool _schemaExistsWithSQL(const std::string &name, const std::string &type,
                                   const std::string &tableName, const std::string &sql);
         void _sqlDeleteIndex(const std::string &name);

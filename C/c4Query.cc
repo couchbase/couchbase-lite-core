@@ -23,10 +23,13 @@
 #include "DataFile.hh"
 #include "Query.hh"
 #include "Record.hh"
+#include "FleeceImpl.hh"
 #include <math.h>
 #include <limits.h>
 #include <mutex>
+
 using namespace litecore;
+using namespace fleece::impl;
 
 
 #pragma mark COMMON CODE:
@@ -96,7 +99,7 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
     void populatePublicFields() {
         static_assert(sizeof(C4FullTextMatch) == sizeof(Query::FullTextTerm),
                       "C4FullTextMatch does not match Query::FullTextTerm");
-        (fleece::Array::iterator&)columns = _enum->columns();
+        (Array::iterator&)columns = _enum->columns();
         missingColumns = _enum->missingColumns();
         if (_hasFullText) {
             auto &ft = _enum->fullTextTerms();
@@ -124,7 +127,7 @@ private:
 };
 
 
-static C4QueryEnumeratorImpl* internal(C4QueryEnumerator *e) {return (C4QueryEnumeratorImpl*)e;}
+static C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumeratorImpl*)e;}
 
 
 #pragma mark - QUERY:
@@ -191,7 +194,7 @@ bool c4queryenum_next(C4QueryEnumerator *e,
                       C4Error *outError) noexcept
 {
     return tryCatch<bool>(outError, [&]{
-        if (internal(e)->next())
+        if (asInternal(e)->next())
             return true;
         clearError(outError);      // end of iteration is not an error
         return false;
@@ -204,7 +207,7 @@ bool c4queryenum_seek(C4QueryEnumerator *e,
                       C4Error *outError) noexcept
 {
     return tryCatch<bool>(outError, [&]{
-        internal(e)->seek(rowIndex);
+        asInternal(e)->seek(rowIndex);
         return true;
     });
 }
@@ -214,7 +217,7 @@ int64_t c4queryenum_getRowCount(C4QueryEnumerator *e,
                                  C4Error *outError) noexcept
 {
     try {
-        return internal(e)->getRowCount();
+        return asInternal(e)->getRowCount();
     } catchError(outError)
     return -1;
 }
@@ -226,19 +229,19 @@ C4QueryEnumerator* c4queryenum_refresh(C4QueryEnumerator *e,
 {
     return tryCatch<C4QueryEnumerator*>(outError, [&]{
         clearError(outError);
-        return internal(e)->refresh();
+        return asInternal(e)->refresh();
     });
 }
 
 
 void c4queryenum_close(C4QueryEnumerator *e) noexcept {
     if (e) {
-        internal(e)->close();
+        asInternal(e)->close();
     }
 }
 
 void c4queryenum_free(C4QueryEnumerator *e) noexcept {
-    delete internal(e);
+    delete asInternal(e);
 }
 
 

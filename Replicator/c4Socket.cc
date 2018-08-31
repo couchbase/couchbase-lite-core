@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "c4Private.h"
 #include "c4Socket.h"
@@ -30,7 +30,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 using namespace litecore;
 using namespace litecore::repl;
 

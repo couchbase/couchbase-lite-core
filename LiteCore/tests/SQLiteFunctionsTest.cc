@@ -20,12 +20,13 @@
 #include "SQLite_Internal.hh"
 #include "StringUtil.hh"
 #include "UnicodeCollator.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
 
 using namespace litecore;
 using namespace fleece;
+using namespace fleece::impl;
 using namespace std;
 
 
@@ -50,14 +51,14 @@ public:
     {
         // Run test once with shared keys, once without:
         if (which & 1)
-            sharedKeys = make_unique<SharedKeys>();
-        RegisterSQLiteFunctions(db.getHandle(), flip, sharedKeys.get());
+            sharedKeys = new SharedKeys();
+        RegisterSQLiteFunctions(db.getHandle(), flip, sharedKeys);
         db.exec("CREATE TABLE kv (key TEXT, body BLOB)");
         insertStmt = make_unique<SQLite::Statement>(db, "INSERT INTO kv (key, body) VALUES (?, ?)");
     }
 
     void insert(const char *key, const char *json) {
-        auto body = JSONConverter::convertJSON(slice(json), sharedKeys.get());
+        auto body = JSONConverter::convertJSON(slice(json), sharedKeys);
         flip(body); // 'encode' the data in the database to test the accessor function
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
@@ -88,7 +89,7 @@ public:
 protected:
     SQLite::Database db;
     unique_ptr<SQLite::Statement> insertStmt;
-    std::unique_ptr<SharedKeys> sharedKeys;
+    Retained<SharedKeys> sharedKeys;
 };
 
 

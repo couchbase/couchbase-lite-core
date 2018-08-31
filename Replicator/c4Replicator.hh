@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "c4Private.h"
 #include "c4Replicator.h"
@@ -30,7 +30,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 using namespace litecore;
 using namespace litecore::repl;
 using namespace litecore::websocket;

@@ -21,7 +21,7 @@
 #include "Worker.hh"
 #include "Batcher.hh"
 #include "c4BlobStore.h"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "function_ref.hh"
 #include <string>
 #include <unordered_set>
@@ -89,13 +89,11 @@ namespace litecore { namespace repl {
         }
 
         using FindBlobCallback = function_ref<void(FLDeepIterator,
-                                                   fleeceapi::Dict blob,
+                                                   fleece::Dict blob,
                                                    const C4BlobKey &key)>;
 
         /** Finds blob/attachment references anywhere in a document. */
-        void findBlobReferences(fleeceapi::Dict root,
-                                FLSharedKeys sk,
-                                const FindBlobCallback&);
+        void findBlobReferences(fleece::Dict root, const FindBlobCallback&);
 
         bool disableBlobSupport() const     {return _disableBlobSupport;}
 
@@ -131,11 +129,10 @@ namespace litecore { namespace repl {
 
         void dbChanged();
 
-        fleeceapi::Dict getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
+        fleece::Dict getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
         static std::string revHistoryString(C4Document*, const RevToSend&);
-        void writeRevWithLegacyAttachments(fleeceapi::Encoder&,
-                                           fleeceapi::Dict rev,
-                                           FLSharedKeys sk,
+        void writeRevWithLegacyAttachments(fleece::Encoder&,
+                                           fleece::Dict rev,
                                            unsigned revpos);
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);

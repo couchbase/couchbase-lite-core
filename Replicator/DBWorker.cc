@@ -21,7 +21,7 @@
 #include "Pusher.hh"
 #include "IncomingRev.hh"
 #include "Address.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
 #include "Stopwatch.hh"
@@ -39,7 +39,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 using namespace litecore::blip;
 
 namespace litecore { namespace repl {
@@ -181,7 +180,7 @@ namespace litecore { namespace repl {
     }
     
     // Writes a Value to an Encoder, substituting null if the value is an empty array.
-    static void writeValueOrNull(fleeceapi::Encoder &enc, Value val) {
+    static void writeValueOrNull(fleece::Encoder &enc, Value val) {
         auto a = val.asArray();
         if (!val || (a && a.empty()))
             enc.writeNull();
@@ -212,7 +211,7 @@ namespace litecore { namespace repl {
         Array docIDs = _options.docIDs();
 
         // Compute the ID by writing the values to a Fleece array, then taking a SHA1 digest:
-        fleeceapi::Encoder enc;
+        fleece::Encoder enc;
         enc.beginArray();
         enc.writeString({localUUID, sizeof(C4UUID)});
 
@@ -693,11 +692,9 @@ namespace litecore { namespace repl {
                 msg.write("{}"_sl);
             } else {
                 auto &bodyEncoder = msg.jsonBody();
-                auto sk = c4db_getFLSharedKeys(_db);
-                bodyEncoder.setSharedKeys(sk);
                 if (request->legacyAttachments && (revisionFlags & kRevHasAttachments)
                                                && !_disableBlobSupport)
-                    writeRevWithLegacyAttachments(bodyEncoder, root, sk,
+                    writeRevWithLegacyAttachments(bodyEncoder, root,
                                                   c4rev_getGeneration(request->revID));
                 else
                     bodyEncoder.writeValue(root);
@@ -739,7 +736,7 @@ namespace litecore { namespace repl {
             return nullptr;
         }
 
-        Dict root = Value::fromTrustedData(revisionBody).asDict();
+        Dict root = Value::fromData(revisionBody, kFLTrusted).asDict();
         if (!root)
             *c4err = {LiteCoreDomain, kC4ErrorCorruptData};
         return root;
@@ -764,7 +761,7 @@ namespace litecore { namespace repl {
             }
             if (nWritten++ > 0)
                 historyStream << ',';
-            historyStream << fleeceapi::asstring(revID);
+            historyStream << revID.asString();
             if (request.hasRemoteAncestor(revID))
                 break;
         }
@@ -772,13 +769,13 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBWorker::writeRevWithLegacyAttachments(fleeceapi::Encoder& enc, Dict root, FLSharedKeys sk,
+    void DBWorker::writeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root,
                                                  unsigned revpos) {
         enc.beginDict();
 
         // Write existing properties except for _attachments:
         Dict oldAttachments;
-        for (Dict::iterator i(root, sk); i; ++i) {
+        for (Dict::iterator i(root); i; ++i) {
             slice key = i.keyString();
             if (key == slice(kC4LegacyAttachmentsProperty)) {
                 oldAttachments = i.value().asDict();    // remember _attachments dict for later
@@ -792,7 +789,7 @@ namespace litecore { namespace repl {
         enc.writeKey("_attachments"_sl);
         enc.beginDict();
         // First pre-existing legacy attachments, if any:
-        for (Dict::iterator i(oldAttachments, sk); i; ++i) {
+        for (Dict::iterator i(oldAttachments); i; ++i) {
             slice key = i.keyString();
             if (!key.hasPrefix("blob_"_sl)) {
                 // TODO: Should skip this entry if a blob with the same digest exists
@@ -802,12 +799,12 @@ namespace litecore { namespace repl {
         }
 
         // Then entries for blobs found in the document:
-        findBlobReferences(root, sk, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
+        findBlobReferences(root, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
             alloc_slice path(FLDeepIterator_GetJSONPointer(di));
             string attName = string("blob_") + string(path);
             enc.writeKey(slice(attName));
             enc.beginDict();
-            for (Dict::iterator i(blob, sk); i; ++i) {
+            for (Dict::iterator i(blob); i; ++i) {
                 slice key = i.keyString();
                 if (key != slice(kC4ObjectTypeProperty) && key != "stub"_sl) {
                     enc.writeKey(key);
@@ -826,28 +823,28 @@ namespace litecore { namespace repl {
     }
 
 
-    static inline bool isAttachment(FLDeepIterator i, FLSharedKeys sk, C4BlobKey *blobKey, bool noBlobs) {
+    static inline bool isAttachment(FLDeepIterator i, C4BlobKey *blobKey, bool noBlobs) {
         auto dict = FLValue_AsDict(FLDeepIterator_GetValue(i));
         if (!dict)
             return false;
-        if (!noBlobs && c4doc_dictIsBlob(dict, sk, blobKey))
+        if (!noBlobs && c4doc_dictIsBlob(dict, blobKey))
             return true;
         FLPathComponent* path;
         size_t depth;
         FLDeepIterator_GetPath(i, &path, &depth);
         return depth == 2
             && FLSlice_Equal(path[0].key, FLSTR(kC4LegacyAttachmentsProperty))
-            && c4doc_getDictBlobKey(dict, sk, blobKey);
+            && c4doc_getDictBlobKey(dict, blobKey);
     }
 
 
-    void DBWorker::findBlobReferences(Dict root, FLSharedKeys sk, const FindBlobCallback &callback) {
+    void DBWorker::findBlobReferences(Dict root, const FindBlobCallback &callback) {
         set<string> found;
-        FLDeepIterator i = FLDeepIterator_New(root, sk);
+        FLDeepIterator i = FLDeepIterator_New(root);
         for (; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i)) {
             alloc_slice path(FLDeepIterator_GetJSONPointer(i));
             C4BlobKey blobKey;
-            if (isAttachment(i, sk, &blobKey, _disableBlobSupport)) {
+            if (isAttachment(i, &blobKey, _disableBlobSupport)) {
                 if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second) {
                     auto blob = Value(FLDeepIterator_GetValue(i)).asDict();
                     callback(i, blob, blobKey);
@@ -899,7 +896,7 @@ namespace litecore { namespace repl {
                 // rev->body is Fleece, but sadly we can't insert it directly because it doesn't
                 // use the db's SharedKeys, so all of its Dict keys are strings. Putting this into
                 // the db would cause failures looking up those keys (see #156). So re-encode:
-                Value root = Value::fromTrustedData(rev->body);
+                Value root = Value::fromData(rev->body, kFLTrusted);
                 enc.writeValue(root);
                 alloc_slice bodyForDB = enc.finish();
                 enc.reset();

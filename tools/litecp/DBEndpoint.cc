@@ -65,7 +65,7 @@ void DbEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, con
     auto sk = c4db_getFLSharedKeys(_db);
     _encoder.setSharedKeys(sk);
     if (docIDProperty) {
-        _docIDPath.reset(new KeyPath(docIDProperty, sk, nullptr));
+        _docIDPath.reset(new KeyPath(docIDProperty, nullptr));
         if (!*_docIDPath)
             Tool::instance->fail("Invalid key-path");
     }

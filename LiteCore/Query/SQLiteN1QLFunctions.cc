@@ -24,6 +24,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "function_ref.hh"
+#include "FleeceImpl.hh"
 #include <regex>
 #include <cmath>
 #include <string>
@@ -34,6 +35,7 @@
 #endif
 
 using namespace fleece;
+using namespace fleece::impl;
 using namespace std;
 
 namespace litecore {
@@ -244,10 +246,10 @@ namespace litecore {
 
     static void array_agg(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
         try {
-            auto enc = (Encoder*) sqlite3_aggregate_context(ctx, sizeof(fleece::Encoder));
+            auto enc = (Encoder*) sqlite3_aggregate_context(ctx, sizeof(fleece::impl::Encoder));
             if (*(void**)enc == nullptr) {
                 // On first call, initialize Fleece encoder:
-                enc = new (enc) fleece::Encoder();
+                enc = new (enc) fleece::impl::Encoder();
                 enc->beginArray();
             }
 
@@ -279,7 +281,7 @@ namespace litecore {
             } else {
                 // On final call, finish encoding and set the result to the encoded data:
                 enc->endArray();
-                setResultBlobFromFleeceData(ctx,  enc->extractOutput() );
+                setResultBlobFromFleeceData(ctx,  enc->finish() );
                 enc->~Encoder();
             }
         } catch (const std::exception &) {

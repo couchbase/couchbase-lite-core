@@ -28,10 +28,10 @@
 #include <mutex>
 #include <unordered_set>
 
-namespace fleece {
+namespace fleece { namespace impl {
     class Encoder;
     class SharedKeys;
-}
+} }
 namespace litecore {
     class SequenceTracker;
     class BlobStore;
@@ -100,9 +100,9 @@ namespace c4Internal {
 
         DocumentFactory& documentFactory()                  {return *_documentFactory;}
 
-        fleece::Encoder& sharedEncoder();
+        fleece::impl::Encoder& sharedEncoder();
 
-        fleece::SharedKeys* documentKeys()                  {return _db->documentKeys();}
+        fleece::impl::SharedKeys* documentKeys()                  {return _db->documentKeys();}
 
         SequenceTracker& sequenceTracker();
 
@@ -140,7 +140,7 @@ namespace c4Internal {
         Transaction*                _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
-        unique_ptr<fleece::Encoder> _encoder;
+        unique_ptr<fleece::impl::Encoder> _encoder;
         unique_ptr<SequenceTracker> _sequenceTracker;       // Doc change tracker/notifier
         unique_ptr<BlobStore>       _blobStore;
         uint32_t                    _maxRevTreeDepth {0};

@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "Address.hh"
 #include "c4Replicator.h"
 #include "Error.hh"
@@ -24,7 +24,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 using namespace litecore;
 
 

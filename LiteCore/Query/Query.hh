@@ -19,7 +19,7 @@
 #pragma once
 #include "RefCounted.hh"
 #include "KeyStore.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "Error.hh"
 
 namespace litecore {
@@ -75,7 +75,7 @@ namespace litecore {
 
         virtual bool next() =0;
 
-        virtual fleece::Array::iterator columns() const noexcept =0;
+        virtual fleece::impl::Array::iterator columns() const noexcept =0;
         virtual uint64_t missingColumns() const noexcept =0;
         
         /** Random access to rows. May not be supported by all implementations, but does work with

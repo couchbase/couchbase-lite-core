@@ -29,7 +29,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 
 namespace litecore { namespace repl {
 

@@ -13,6 +13,8 @@
 			buildPhases = (
 			);
 			dependencies = (
+				27DE2EEF2126212800123597 /* PBXTargetDependency */,
+				27DE2EED2126212300123597 /* PBXTargetDependency */,
 				27410EAA198BFD97007EE67C /* PBXTargetDependency */,
 				2701C2311C4DA840006D7A99 /* PBXTargetDependency */,
 				27732CE21D734EFB006D3802 /* PBXTargetDependency */,
@@ -39,7 +41,6 @@
 		2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE5D1CF6197D0022F721 /* RawRevTree.hh */; };
 		270AB2A02072B1EA009A4596 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
 		270AB2A12072B1F2009A4596 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
-		270AB2A22072B24F009A4596 /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */; };
 		270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
 		270BEE2420647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
 		270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */; };
@@ -59,7 +60,6 @@
 		272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850B41E9BE361009CA22F /* UpgraderTest.cc */; };
 		272850E91E9D484A009CA22F /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
 		272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */; };
-		272850EB1E9D48C7009CA22F /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libFleece.a */; };
 		272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		272850EE1E9D4D23009CA22F /* libz.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 2759DC251E70908900F3C4B2 /* libz.tbd */; };
 		272850F11E9D4F94009CA22F /* ReplicatorAPITest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */; };
@@ -336,6 +336,8 @@
 		27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A9E1D4FF65000D806E0 /* c4Base.cc */; };
 		27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27D74A9E1D4FF65000D806E0 /* c4Base.cc */; };
 		27DD1513193CD005009A367D /* RevID.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DD1511193CD005009A367D /* RevID.cc */; };
+		27DE2E862125F32700123597 /* libactors.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2E852125F32700123597 /* libactors.a */; };
+		27DE2EE72125FAD600123597 /* libFleeceBase.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2EE62125FAD600123597 /* libFleeceBase.a */; };
 		27DF46C41A12CF46007BB4A4 /* Record.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF46C21A12CF46007BB4A4 /* Record.cc */; };
 		27DF7D351F3ACEBF0022F3DF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
 		27DF7D691F42368D0022F3DF /* libSQLite.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DF7D631F4236500022F3DF /* libSQLite.a */; };
@@ -750,6 +752,34 @@
 			proxyType = 2;
 			remoteGlobalIDString = 27EF6A9E1E2B0CE9004748DF;
 			remoteInfo = bliptest;
+		};
+		27DE2E842125F32700123597 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 27DE2E822125F2C100123597;
+			remoteInfo = actors;
+		};
+		27DE2EE52125FAD600123597 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 27DE2EDF2125FA1700123597;
+			remoteInfo = FleeceBase;
+		};
+		27DE2EEC2126212300123597 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 279AC5301C096872002C80DB;
+			remoteInfo = Tool;
+		};
+		27DE2EEE2126212800123597 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 272E5A4A1BF7FE5600848580;
+			remoteInfo = Test;
 		};
 		27DF4C281ECCD76200EE6B8D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1452,12 +1482,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27DE2EE72125FAD600123597 /* libFleeceBase.a in Frameworks */,
+				27DE2E862125F32700123597 /* libactors.a in Frameworks */,
 				274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */,
 				276E02121EA9802A00FEFE8A /* libLiteCoreREST.dylib in Frameworks */,
 				279691771ED4B3720086565D /* libSupport.a in Frameworks */,
 				276E02131EA9802F00FEFE8A /* libcivetweb.a in Frameworks */,
-				270AB2A22072B24F009A4596 /* libblip_cpp.a in Frameworks */,
-				272850EB1E9D48C7009CA22F /* libFleece.a in Frameworks */,
 				270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2119,6 +2149,7 @@
 			isa = PBXGroup;
 			children = (
 				27CCC7BD1E525DD800CE1989 /* libblip_cpp.a */,
+				27DE2E852125F32700123597 /* libactors.a */,
 				27CCC7C11E525DD800CE1989 /* bliptest */,
 			);
 			name = Products;
@@ -2405,6 +2436,7 @@
 			isa = PBXGroup;
 			children = (
 				27FA09BC1D70ADE8005888AA /* libFleece.a */,
+				27DE2EE62125FAD600123597 /* libFleeceBase.a */,
 				272B1BE81FB13B7500F56620 /* libFleeceMutableObjC.a */,
 				27FA09BE1D70ADE8005888AA /* Test */,
 				27FA09C01D70ADE8005888AA /* fleece */,
@@ -3071,6 +3103,20 @@
 			fileType = "compiled.mach-o.executable";
 			path = bliptest;
 			remoteRef = 27CCC7C01E525DD800CE1989 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		27DE2E852125F32700123597 /* libactors.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libactors.a;
+			remoteRef = 27DE2E842125F32700123597 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		27DE2EE62125FAD600123597 /* libFleeceBase.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libFleeceBase.a;
+			remoteRef = 27DE2EE52125FAD600123597 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		27FA09BC1D70ADE8005888AA /* libFleece.a */ = {
@@ -3765,6 +3811,16 @@
 			isa = PBXTargetDependency;
 			target = 272AEC4A1F560FF600051F0A /* cblite */;
 			targetProxy = 27BF02421FB620E5003D5BB8 /* PBXContainerItemProxy */;
+		};
+		27DE2EED2126212300123597 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Tool;
+			targetProxy = 27DE2EEC2126212300123597 /* PBXContainerItemProxy */;
+		};
+		27DE2EEF2126212800123597 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Test;
+			targetProxy = 27DE2EEE2126212800123597 /* PBXContainerItemProxy */;
 		};
 		27DF4C291ECCD76200EE6B8D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;

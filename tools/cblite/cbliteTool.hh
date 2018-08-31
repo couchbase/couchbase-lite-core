@@ -30,7 +30,7 @@
 #include <vector>
 
 using namespace std;
-using namespace fleeceapi;
+using namespace fleece;
 
 class Endpoint;
 

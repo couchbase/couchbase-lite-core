@@ -18,13 +18,14 @@
 
 #include "QueryParser.hh"
 #include "Error.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include <string>
 #include <vector>
 #include <iostream>
 #include "LiteCoreTest.hh"
 
 using namespace std;
+using namespace fleece::impl;
 
 
 class QueryParserTest : public QueryParser::delegate {
