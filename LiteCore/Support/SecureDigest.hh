@@ -23,7 +23,6 @@
 
     // iOS and Mac OS implementation based on system-level CommonCrypto library:
     #include <CommonCrypto/CommonDigest.h>
-    #include <assert.h>
 
     typedef CC_MD5_CTX md5Context;
 

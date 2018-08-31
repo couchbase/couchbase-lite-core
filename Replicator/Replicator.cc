@@ -47,7 +47,7 @@ namespace litecore { namespace repl {
     ,_connectionState(connection()->state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_dbActor(new DBWorker(connection(), this, db, webSocket->url(), options))
+    ,_dbActor(new DBWorker(this, db, webSocket->url()))
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
@@ -55,9 +55,9 @@ namespace litecore { namespace repl {
         log("%s", string(options).c_str());
 
         if (options.push != kC4Disabled)
-            _pusher = new Pusher(connection(), this, _dbActor, _options);
+            _pusher = new Pusher(this, _dbActor);
         if (options.pull != kC4Disabled)
-            _puller = new Puller(connection(), this, _dbActor, _options);
+            _puller = new Puller(this, _dbActor);
         _checkpoint.enableAutosave(options.checkpointSaveDelay(),
                                    bind(&Replicator::saveCheckpoint, this, _1));
     }
@@ -163,7 +163,7 @@ namespace litecore { namespace repl {
                     const_cast<Replicator*>(this)->_stop();
                     level = kC4Busy;
                 }
-                assert(level > kC4Stopped);
+                DebugAssert(level > kC4Stopped);
                 break;
             }
             case Connection::kClosing:
@@ -197,7 +197,7 @@ namespace litecore { namespace repl {
 
     void Replicator::changedStatus() {
         if (status().level == kC4Stopped) {
-            assert(!connection());  // must already have gotten _onClose() delegate callback
+            DebugAssert(!connection());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
             _dbActor = nullptr;

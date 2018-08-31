@@ -79,10 +79,11 @@ namespace litecore { namespace repl {
 
 
     Worker::Worker(blip::Connection *connection,
-                         Worker *parent,
-                         const Options &options,
-                         const char *namePrefix)
-    :Actor( string(namePrefix) + connection->name() )
+                   Worker *parent,
+                   const Options &options,
+                   const char *namePrefix)
+    :Actor(string(namePrefix) + connection->name(),
+           (parent ? parent->mailboxForChildren() : nullptr))
     ,Logging(SyncLog)
     ,_connection(connection)
     ,_parent(parent)
@@ -92,8 +93,7 @@ namespace litecore { namespace repl {
     { }
 
 
-    Worker::Worker(Worker *parent,
-                         const char *namePrefix)
+    Worker::Worker(Worker *parent, const char *namePrefix)
     :Worker(parent->_connection, parent, parent->_options, namePrefix)
     {
 
@@ -119,7 +119,7 @@ namespace litecore { namespace repl {
             if (!builder.noreply)
                 warn("Ignoring the response to a BLIP message!");
         }
-        assert(_connection);
+        DebugAssert(_connection);
         _connection->sendRequest(builder);
     }
 

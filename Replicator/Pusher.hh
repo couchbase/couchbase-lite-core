@@ -31,7 +31,7 @@ namespace litecore { namespace repl {
 
     class Pusher : public Worker {
     public:
-        Pusher(blip::Connection *connection, Replicator *replicator, DBWorker *dbActor, Options options);
+        Pusher(Replicator *replicator, DBWorker *dbActor);
 
         // Starts an active push
         void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}

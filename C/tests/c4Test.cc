@@ -266,7 +266,7 @@ C4Test::~C4Test() {
 
 
 C4Database* C4Test::createDatabase(const string &nameSuffix) {
-    assert(!nameSuffix.empty());
+    REQUIRE(!nameSuffix.empty());
     string dbPath = fleece::slice(databasePath()).asString();
     Assert(litecore::hasSuffix(dbPath, ".cblite2"));
     dbPath.replace(dbPath.size()-8, 8, "_" + nameSuffix + ".cblite2");

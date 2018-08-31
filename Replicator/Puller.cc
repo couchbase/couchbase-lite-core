@@ -31,9 +31,12 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
-    Puller::Puller(Connection *connection, Replicator *replicator, DBWorker *dbActor, Options options)
-    :Worker(connection, replicator, options, "Pull")
+    Puller::Puller(Replicator *replicator, DBWorker *dbActor)
+    :Worker(replicator, "Pull")
     ,_dbActor(dbActor)
+#if __APPLE__
+    ,_revMailbox(nullptr, "Puller revisions")
+#endif
     {
         registerHandler("changes",          &Puller::handleChanges);
         registerHandler("proposeChanges",   &Puller::handleChanges);
@@ -41,7 +44,7 @@ namespace litecore { namespace repl {
         registerHandler("norev",            &Puller::handleNoRev);
         _spareIncomingRevs.reserve(tuning::kMaxActiveIncomingRevs);
         _skipDeleted = _options.skipDeleted();
-        if (nonPassive() && options.noIncomingConflicts())
+        if (nonPassive() && _options.noIncomingConflicts())
             warn("noIncomingConflicts mode is not compatible with active pull replications!");
     }
 
