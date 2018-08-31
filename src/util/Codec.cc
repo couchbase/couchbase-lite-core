@@ -28,7 +28,6 @@
 #include <mutex>
 
 namespace litecore { namespace blip {
-    using namespace fleeceapi;
     using namespace fleece;
 
 

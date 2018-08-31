@@ -10,32 +10,60 @@
 		2726F62F207E9F0B007F2D02 /* Batcher.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2726F62D207E9F0B007F2D02 /* Batcher.hh */; };
 		272850731E95BCCF009CA22F /* MessageOut.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850711E95BCCF009CA22F /* MessageOut.cc */; };
 		272850741E95BCCF009CA22F /* MessageOut.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850721E95BCCF009CA22F /* MessageOut.hh */; };
-		272850F81EA022B5009CA22F /* GCDMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850F61EA022B5009CA22F /* GCDMailbox.cc */; };
 		272850F91EA022B5009CA22F /* GCDMailbox.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850F71EA022B5009CA22F /* GCDMailbox.hh */; };
-		272850FC1EA02B49009CA22F /* ThreadedMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850FA1EA02B49009CA22F /* ThreadedMailbox.cc */; };
 		272850FD1EA02B49009CA22F /* ThreadedMailbox.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850FB1EA02B49009CA22F /* ThreadedMailbox.hh */; };
 		27491C921E7AFCED001DC54B /* WebSocketImpl.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27491C8F1E7AFCED001DC54B /* WebSocketImpl.cc */; };
 		27491C941E7AFCED001DC54B /* WebSocketProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */; };
 		27491CA11E7B417C001DC54B /* WebSocketImpl.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491CA01E7B417C001DC54B /* WebSocketImpl.hh */; };
 		275CE0E01E57A5650084E014 /* libFleece.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 275CE0DF1E57A5650084E014 /* libFleece.a */; };
-		2773FD011E69FD9100108780 /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCFF1E69FD9100108780 /* Timer.cc */; };
 		2773FD021E69FD9100108780 /* Timer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD001E69FD9100108780 /* Timer.hh */; };
-		2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FD031E69FE2000108780 /* ActorProperty.cc */; };
 		2773FD061E69FE2000108780 /* ActorProperty.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD041E69FE2000108780 /* ActorProperty.hh */; };
 		2799762C1E944B2F00B27639 /* MessageBuilder.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2799762A1E944B2F00B27639 /* MessageBuilder.hh */; };
 		2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2799762D1E94509000B27639 /* MessageBuilder.cc */; };
 		279976301E94518200B27639 /* BLIP.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2799762F1E94518200B27639 /* BLIP.hh */; };
 		27AE22BA1FBE559100C40EB9 /* Codec.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27AE22B81FBE559100C40EB9 /* Codec.hh */; };
 		27AE22BB1FBE559100C40EB9 /* Codec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27AE22B91FBE559100C40EB9 /* Codec.cc */; };
-		27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A51E524F0B00CE1989 /* Logging.cc */; };
 		27CCC7AA1E524F0B00CE1989 /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A61E524F0B00CE1989 /* Logging.hh */; };
-		27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */; };
 		27CCC7AC1E524F0B00CE1989 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A81E524F0B00CE1989 /* PlatformIO.hh */; };
 		27CCC7B31E5251C900CE1989 /* libevent_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7AD1E524F8000CE1989 /* libevent_core.a */; };
 		27CCC7B41E5251CC00CE1989 /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7B11E524FB500CE1989 /* libevent_pthreads.a */; };
 		27CCC7B51E5251CE00CE1989 /* libevent_extra.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7AF1E524FA200CE1989 /* libevent_extra.a */; };
 		27CE4CF9207BCC7F00ACA225 /* WebSocketInterface.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF8207BCC7F00ACA225 /* WebSocketInterface.cc */; };
-		27DF27F120851FFD007FD912 /* Actor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF27F020851FFD007FD912 /* Actor.cc */; };
+		27DE2E4A2125F2C100123597 /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCFF1E69FD9100108780 /* Timer.cc */; };
+		27DE2E4B2125F2C100123597 /* Channel.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A661E2858E7004748DF /* Channel.cc */; };
+		27DE2E4C2125F2C100123597 /* GCDMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850F61EA022B5009CA22F /* GCDMailbox.cc */; };
+		27DE2E542125F2C100123597 /* ThreadedMailbox.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850FA1EA02B49009CA22F /* ThreadedMailbox.cc */; };
+		27DE2E572125F2C100123597 /* Actor.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27DF27F020851FFD007FD912 /* Actor.cc */; };
+		27DE2E602125F2C100123597 /* encode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A5D1E28587A004748DF /* encode.h */; };
+		27DE2E612125F2C100123597 /* Codec.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27AE22B81FBE559100C40EB9 /* Codec.hh */; };
+		27DE2E622125F2C100123597 /* Channel.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A671E2858E7004748DF /* Channel.hh */; };
+		27DE2E632125F2C100123597 /* cencode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A5B1E28587A004748DF /* cencode.h */; };
+		27DE2E642125F2C100123597 /* FleeceException.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6AAE1E2B0D9E004748DF /* FleeceException.hh */; };
+		27DE2E652125F2C100123597 /* BLIPInternal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69D61E28260D004748DF /* BLIPInternal.hh */; };
+		27DE2E662125F2C100123597 /* Message.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E71E282662004748DF /* Message.hh */; };
+		27DE2E672125F2C100123597 /* WebSocketImpl.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491CA01E7B417C001DC54B /* WebSocketImpl.hh */; };
+		27DE2E682125F2C100123597 /* MessageOut.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850721E95BCCF009CA22F /* MessageOut.hh */; };
+		27DE2E692125F2C100123597 /* WebSocketInterface.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E81E282662004748DF /* WebSocketInterface.hh */; };
+		27DE2E6A2125F2C100123597 /* varint.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A4F1E2857F7004748DF /* varint.hh */; };
+		27DE2E6B2125F2C100123597 /* BLIPProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E51E282662004748DF /* BLIPProtocol.hh */; };
+		27DE2E6C2125F2C100123597 /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A61E524F0B00CE1989 /* Logging.hh */; };
+		27DE2E6D2125F2C100123597 /* ActorProperty.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD041E69FE2000108780 /* ActorProperty.hh */; };
+		27DE2E6E2125F2C100123597 /* Timer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2773FD001E69FD9100108780 /* Timer.hh */; };
+		27DE2E6F2125F2C100123597 /* slice.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A4D1E2857F7004748DF /* slice.hh */; };
+		27DE2E702125F2C100123597 /* BLIP.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2799762F1E94518200B27639 /* BLIP.hh */; };
+		27DE2E712125F2C100123597 /* Actor.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A651E2858E7004748DF /* Actor.hh */; };
+		27DE2E722125F2C100123597 /* Batcher.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2726F62D207E9F0B007F2D02 /* Batcher.hh */; };
+		27DE2E732125F2C100123597 /* GCDMailbox.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850F71EA022B5009CA22F /* GCDMailbox.hh */; };
+		27DE2E742125F2C100123597 /* Writer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A511E2857F7004748DF /* Writer.hh */; };
+		27DE2E752125F2C100123597 /* MessageBuilder.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2799762A1E944B2F00B27639 /* MessageBuilder.hh */; };
+		27DE2E762125F2C100123597 /* PlatformCompat.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A741E28594F004748DF /* PlatformCompat.hh */; };
+		27DE2E772125F2C100123597 /* BLIPConnection.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E41E282662004748DF /* BLIPConnection.hh */; };
+		27DE2E782125F2C100123597 /* decode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A5C1E28587A004748DF /* decode.h */; };
+		27DE2E792125F2C100123597 /* cdecode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A591E28587A004748DF /* cdecode.h */; };
+		27DE2E7A2125F2C100123597 /* ThreadedMailbox.hh in Headers */ = {isa = PBXBuildFile; fileRef = 272850FB1EA02B49009CA22F /* ThreadedMailbox.hh */; };
+		27DE2E7B2125F2C100123597 /* WebSocketProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */; };
+		27DE2E7C2125F2C100123597 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A81E524F0B00CE1989 /* PlatformIO.hh */; };
+		27DE2E872125F3E100123597 /* libactors.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27DE2E822125F2C100123597 /* libactors.a */; };
 		27EF69DD1E28260D004748DF /* Message.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF69D11E28260D004748DF /* Message.cc */; };
 		27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF69D31E28260D004748DF /* BLIPConnection.cc */; };
 		27EF69E21E28260D004748DF /* BLIPInternal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69D61E28260D004748DF /* BLIPInternal.hh */; };
@@ -43,25 +71,18 @@
 		27EF69EA1E282662004748DF /* BLIPProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E51E282662004748DF /* BLIPProtocol.hh */; };
 		27EF69EC1E282662004748DF /* Message.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E71E282662004748DF /* Message.hh */; };
 		27EF69ED1E282662004748DF /* WebSocketInterface.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF69E81E282662004748DF /* WebSocketInterface.hh */; };
-		27EF6A521E2857F7004748DF /* slice.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A4C1E2857F7004748DF /* slice.cc */; };
 		27EF6A531E2857F7004748DF /* slice.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A4D1E2857F7004748DF /* slice.hh */; };
-		27EF6A541E2857F7004748DF /* varint.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A4E1E2857F7004748DF /* varint.cc */; };
 		27EF6A551E2857F7004748DF /* varint.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A4F1E2857F7004748DF /* varint.hh */; };
-		27EF6A561E2857F7004748DF /* Writer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A501E2857F7004748DF /* Writer.cc */; };
 		27EF6A571E2857F7004748DF /* Writer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A511E2857F7004748DF /* Writer.hh */; };
-		27EF6A5E1E28587A004748DF /* cdecode.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A581E28587A004748DF /* cdecode.c */; };
 		27EF6A5F1E28587A004748DF /* cdecode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A591E28587A004748DF /* cdecode.h */; };
-		27EF6A601E28587A004748DF /* cencode.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A5A1E28587A004748DF /* cencode.c */; };
 		27EF6A611E28587A004748DF /* cencode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A5B1E28587A004748DF /* cencode.h */; };
 		27EF6A621E28587A004748DF /* decode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A5C1E28587A004748DF /* decode.h */; };
 		27EF6A631E28587A004748DF /* encode.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A5D1E28587A004748DF /* encode.h */; };
 		27EF6A691E2858E7004748DF /* Actor.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A651E2858E7004748DF /* Actor.hh */; };
-		27EF6A6A1E2858E7004748DF /* Channel.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A661E2858E7004748DF /* Channel.cc */; };
 		27EF6A6B1E2858E7004748DF /* Channel.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A671E2858E7004748DF /* Channel.hh */; };
 		27EF6A751E28594F004748DF /* PlatformCompat.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6A741E28594F004748DF /* PlatformCompat.hh */; };
 		27EF6AA71E2B0D0D004748DF /* libblip_cpp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF69B71E282549004748DF /* libblip_cpp.a */; };
 		27EF6AA81E2B0D27004748DF /* BLIPTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF69D71E28260D004748DF /* BLIPTest.cc */; };
-		27EF6AAF1E2B0D9E004748DF /* FleeceException.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6AAD1E2B0D9E004748DF /* FleeceException.cc */; };
 		27EF6AB01E2B0D9E004748DF /* FleeceException.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27EF6AAE1E2B0D9E004748DF /* FleeceException.hh */; };
 /* End PBXBuildFile section */
 
@@ -127,6 +148,7 @@
 		27CCC7AF1E524FA200CE1989 /* libevent_extra.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_extra.a; path = /usr/local/lib/libevent_extra.a; sourceTree = "<absolute>"; };
 		27CCC7B11E524FB500CE1989 /* libevent_pthreads.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libevent_pthreads.a; path = /usr/local/lib/libevent_pthreads.a; sourceTree = "<absolute>"; };
 		27CE4CF8207BCC7F00ACA225 /* WebSocketInterface.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = WebSocketInterface.cc; sourceTree = "<group>"; };
+		27DE2E822125F2C100123597 /* libactors.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libactors.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27DF27F020851FFD007FD912 /* Actor.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Actor.cc; sourceTree = "<group>"; };
 		27EF69B71E282549004748DF /* libblip_cpp.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libblip_cpp.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27EF69D11E28260D004748DF /* Message.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Message.cc; sourceTree = "<group>"; };
@@ -161,10 +183,18 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		27DE2E5E2125F2C100123597 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		27EF69B41E282549004748DF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27DE2E872125F3E100123597 /* libactors.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -228,6 +258,7 @@
 			children = (
 				27EF69B71E282549004748DF /* libblip_cpp.a */,
 				27EF6A9E1E2B0CE9004748DF /* bliptest */,
+				27DE2E822125F2C100123597 /* libactors.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -369,6 +400,42 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
+		27DE2E5F2125F2C100123597 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27DE2E602125F2C100123597 /* encode.h in Headers */,
+				27DE2E612125F2C100123597 /* Codec.hh in Headers */,
+				27DE2E622125F2C100123597 /* Channel.hh in Headers */,
+				27DE2E632125F2C100123597 /* cencode.h in Headers */,
+				27DE2E642125F2C100123597 /* FleeceException.hh in Headers */,
+				27DE2E652125F2C100123597 /* BLIPInternal.hh in Headers */,
+				27DE2E662125F2C100123597 /* Message.hh in Headers */,
+				27DE2E672125F2C100123597 /* WebSocketImpl.hh in Headers */,
+				27DE2E682125F2C100123597 /* MessageOut.hh in Headers */,
+				27DE2E692125F2C100123597 /* WebSocketInterface.hh in Headers */,
+				27DE2E6A2125F2C100123597 /* varint.hh in Headers */,
+				27DE2E6B2125F2C100123597 /* BLIPProtocol.hh in Headers */,
+				27DE2E6C2125F2C100123597 /* Logging.hh in Headers */,
+				27DE2E6D2125F2C100123597 /* ActorProperty.hh in Headers */,
+				27DE2E6E2125F2C100123597 /* Timer.hh in Headers */,
+				27DE2E6F2125F2C100123597 /* slice.hh in Headers */,
+				27DE2E702125F2C100123597 /* BLIP.hh in Headers */,
+				27DE2E712125F2C100123597 /* Actor.hh in Headers */,
+				27DE2E722125F2C100123597 /* Batcher.hh in Headers */,
+				27DE2E732125F2C100123597 /* GCDMailbox.hh in Headers */,
+				27DE2E742125F2C100123597 /* Writer.hh in Headers */,
+				27DE2E752125F2C100123597 /* MessageBuilder.hh in Headers */,
+				27DE2E762125F2C100123597 /* PlatformCompat.hh in Headers */,
+				27DE2E772125F2C100123597 /* BLIPConnection.hh in Headers */,
+				27DE2E782125F2C100123597 /* decode.h in Headers */,
+				27DE2E792125F2C100123597 /* cdecode.h in Headers */,
+				27DE2E7A2125F2C100123597 /* ThreadedMailbox.hh in Headers */,
+				27DE2E7B2125F2C100123597 /* WebSocketProtocol.hh in Headers */,
+				27DE2E7C2125F2C100123597 /* PlatformIO.hh in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		27EF69B51E282549004748DF /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -408,6 +475,23 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		27DE2E472125F2C100123597 /* actors */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 27DE2E7D2125F2C100123597 /* Build configuration list for PBXNativeTarget "actors" */;
+			buildPhases = (
+				27DE2E482125F2C100123597 /* Sources */,
+				27DE2E5E2125F2C100123597 /* Frameworks */,
+				27DE2E5F2125F2C100123597 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = actors;
+			productName = blip_cpp;
+			productReference = 27DE2E822125F2C100123597 /* libactors.a */;
+			productType = "com.apple.product-type.library.static";
+		};
 		27EF69B61E282549004748DF /* blip_cpp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 27EF69C21E282549004748DF /* Build configuration list for PBXNativeTarget "blip_cpp" */;
@@ -477,37 +561,36 @@
 			projectRoot = "";
 			targets = (
 				27EF69B61E282549004748DF /* blip_cpp */,
+				27DE2E472125F2C100123597 /* actors */,
 				27EF6A9D1E2B0CE9004748DF /* bliptest */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		27DE2E482125F2C100123597 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				27DE2E4A2125F2C100123597 /* Timer.cc in Sources */,
+				27DE2E4B2125F2C100123597 /* Channel.cc in Sources */,
+				27DE2E542125F2C100123597 /* ThreadedMailbox.cc in Sources */,
+				27DE2E4C2125F2C100123597 /* GCDMailbox.cc in Sources */,
+				27DE2E572125F2C100123597 /* Actor.cc in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		27EF69B31E282549004748DF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				27AE22BB1FBE559100C40EB9 /* Codec.cc in Sources */,
-				2773FD011E69FD9100108780 /* Timer.cc in Sources */,
-				27EF6A6A1E2858E7004748DF /* Channel.cc in Sources */,
-				272850F81EA022B5009CA22F /* GCDMailbox.cc in Sources */,
-				2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */,
-				27CCC7A91E524F0B00CE1989 /* Logging.cc in Sources */,
-				27EF6AAF1E2B0D9E004748DF /* FleeceException.cc in Sources */,
+				27CE4CF9207BCC7F00ACA225 /* WebSocketInterface.cc in Sources */,
 				27491C921E7AFCED001DC54B /* WebSocketImpl.cc in Sources */,
-				27EF6A521E2857F7004748DF /* slice.cc in Sources */,
-				27EF6A541E2857F7004748DF /* varint.cc in Sources */,
-				2773FD051E69FE2000108780 /* ActorProperty.cc in Sources */,
-				272850FC1EA02B49009CA22F /* ThreadedMailbox.cc in Sources */,
+				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
+				2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */,
 				272850731E95BCCF009CA22F /* MessageOut.cc in Sources */,
 				27EF69DF1E28260D004748DF /* BLIPConnection.cc in Sources */,
-				27DF27F120851FFD007FD912 /* Actor.cc in Sources */,
-				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
-				27EF6A561E2857F7004748DF /* Writer.cc in Sources */,
-				27CCC7AB1E524F0B00CE1989 /* PlatformIO.cc in Sources */,
-				27CE4CF9207BCC7F00ACA225 /* WebSocketInterface.cc in Sources */,
-				27EF6A601E28587A004748DF /* cencode.c in Sources */,
-				27EF6A5E1E28587A004748DF /* cdecode.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -530,6 +613,38 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		27DE2E7E2125F2C100123597 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F61E84724E00BD7112 /* blip.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		27DE2E7F2125F2C100123597 /* Debug-EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F61E84724E00BD7112 /* blip.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Debug-EE";
+		};
+		27DE2E802125F2C100123597 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F61E84724E00BD7112 /* blip.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		27DE2E812125F2C100123597 /* Release-EE */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273C77F61E84724E00BD7112 /* blip.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = "Release-EE";
+		};
 		27EF69C01E282549004748DF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273C77F31E84716E00BD7112 /* Project_Debug.xcconfig */;
@@ -617,6 +732,17 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		27DE2E7D2125F2C100123597 /* Build configuration list for PBXNativeTarget "actors" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27DE2E7E2125F2C100123597 /* Debug */,
+				27DE2E7F2125F2C100123597 /* Debug-EE */,
+				27DE2E802125F2C100123597 /* Release */,
+				27DE2E812125F2C100123597 /* Release-EE */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		27EF69B21E282549004748DF /* Build configuration list for PBXProject "blip_cpp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -126,7 +126,7 @@ namespace litecore { namespace blip {
     }
 
 
-    alloc_slice MessageBuilder::extractOutput() {
+    alloc_slice MessageBuilder::finish() {
         finishProperties();
         return _out.finish();
     }

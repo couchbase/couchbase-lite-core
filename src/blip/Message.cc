@@ -21,7 +21,7 @@
 #include "BLIPConnection.hh"
 #include "BLIPInternal.hh"
 #include "Codec.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
 #include <algorithm>
@@ -182,7 +182,7 @@ namespace litecore { namespace blip {
                 // Update my flags and allocate the Writer:
                 DebugAssert(_number > 0);
                 _flags = (FrameFlags)(frameFlags & ~kMoreComing);
-                _in.reset(new fleeceapi::JSONEncoder);
+                _in.reset(new fleece::JSONEncoder);
 
                 // Read just a few bytes to get the length of the properties (a varint at the
                 // start of the frame):
@@ -314,11 +314,11 @@ namespace litecore { namespace blip {
     }
 
 
-    fleeceapi::Value MessageIn::JSONBody() {
+    fleece::Value MessageIn::JSONBody() {
         lock_guard<mutex> lock(_receiveMutex);
         if (!_bodyAsFleece)
             _bodyAsFleece = FLData_ConvertJSON({_body.buf, _body.size}, nullptr);
-        return fleeceapi::Value::fromData(_bodyAsFleece);
+        return fleece::Value::fromData(_bodyAsFleece);
     }
 
 

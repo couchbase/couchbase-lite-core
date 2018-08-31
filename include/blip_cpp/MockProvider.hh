@@ -63,7 +63,7 @@ namespace litecore { namespace websocket {
 
         // Mock API -- call this to simulate incoming events:
 
-        void simulateHTTPResponse(int status, const fleeceapi::AllocedDict &headers,
+        void simulateHTTPResponse(int status, const fleece::AllocedDict &headers,
                                   actor::delay_t latency = actor::delay_t::zero())
         {
             _driver->enqueueAfter(latency, &Driver::_simulateHTTPResponse, status, headers);
@@ -146,7 +146,7 @@ namespace litecore { namespace websocket {
                 _webSocket = nullptr;  // breaks cycle
             }
 
-            virtual void _simulateHTTPResponse(int status, fleeceapi::AllocedDict headers) {
+            virtual void _simulateHTTPResponse(int status, fleece::AllocedDict headers) {
                 logVerbose("GOT RESPONSE (%d)", status);
                 DebugAssert(!_isOpen);
                 _webSocket->delegate().onWebSocketGotHTTPResponse(status, headers);
