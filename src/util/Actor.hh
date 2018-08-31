@@ -84,8 +84,15 @@ namespace litecore { namespace actor {
         std::string actorName() const                       {return _mailbox.name();}
 
     protected:
-        Actor(const std::string &name ="")
-        :_mailbox(this, name)
+        /** Constructs an Actor.
+            @param name  Used for logging, and on Apple platforms for naming the GCD queue;
+                        otherwise unimportant.
+            @param parentMailbox  Used for limiting concurrency on some platforms: if non-null,
+                        then only one Actor with the same parentMailbox can execute at once.
+                        This helps control the number of threads created by the OS. This is only
+                        implemented on Apple platforms, where it determines the target queue. */
+        Actor(const std::string &name ="", Mailbox *parentMailbox =nullptr)
+        :_mailbox(this, name, parentMailbox)
         { }
 
         /** Schedules a call to a method. */

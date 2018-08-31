@@ -17,6 +17,7 @@
 //
 
 #include "Channel.hh"
+#include "Error.hh"
 
 namespace litecore { namespace actor {
 
@@ -55,7 +56,7 @@ namespace litecore { namespace actor {
     template <class T>
     const T& Channel<T>::front() const {
         std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(_mutex));
-        assert(!_queue.empty());
+        DebugAssert(!_queue.empty());
         return _queue.front();
     }
 

@@ -54,8 +54,8 @@ namespace litecore { namespace websocket {
 
 
     void WebSocket::connect(Delegate *delegate) {
-        assert(!_delegate);
-        assert(delegate);
+        DebugAssert(!_delegate);
+        DebugAssert(delegate);
         _delegate = delegate;
         connect();
     }

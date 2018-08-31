@@ -20,12 +20,12 @@
 #include "Actor.hh"
 #include "Logging.hh"
 #include <algorithm>
+#include "betterassert.hh"
 
 using namespace std;
 
 namespace litecore { namespace actor {
 
-    extern LogDomain ActorLog;
 
 #if ACTORS_TRACK_STATS
 #define beginLatency()  fleece::Stopwatch st
@@ -40,19 +40,25 @@ namespace litecore { namespace actor {
 #endif
 
     
-    static char kQueueMailboxSpecificKey;
-
-    GCDMailbox::GCDMailbox(Actor *a, const std::string &name, Scheduler *s)
+    GCDMailbox::GCDMailbox(Actor *a, const std::string &name, GCDMailbox *parentMailbox)
     :_actor(a)
     {
+        dispatch_queue_t targetQueue;
+        if (parentMailbox)
+            targetQueue = parentMailbox->_queue;
+        else
+            targetQueue = dispatch_get_global_queue(QOS_CLASS_UTILITY, 0);
+        auto nameCstr = name.empty() ? nullptr : name.c_str();
         dispatch_queue_attr_t attr = DISPATCH_QUEUE_SERIAL;
         attr = dispatch_queue_attr_make_with_qos_class(attr, QOS_CLASS_UTILITY, 0);
         if (__builtin_available(iOS 10.0, macOS 10.12, tvos 10.0, watchos 3.0, *)) {
             attr = dispatch_queue_attr_make_with_autorelease_frequency(attr,
                                                         DISPATCH_AUTORELEASE_FREQUENCY_NEVER);
+            _queue = dispatch_queue_create_with_target(nameCstr, attr, targetQueue);
+        } else {
+            _queue = dispatch_queue_create(nameCstr, attr);
+            dispatch_set_target_queue(_queue, targetQueue);
         }
-        _queue = dispatch_queue_create((name.empty() ? nullptr : name.c_str()), attr);
-        dispatch_queue_set_specific(_queue, &kQueueMailboxSpecificKey, this, nullptr);
     }
 
     GCDMailbox::~GCDMailbox() {
@@ -62,17 +68,6 @@ namespace litecore { namespace actor {
 
     std::string GCDMailbox::name() const {
         return dispatch_queue_get_label(_queue);
-    }
-
-
-    GCDMailbox* GCDMailbox::currentMailbox() {
-        return (GCDMailbox*) dispatch_get_specific(&kQueueMailboxSpecificKey);
-    }
-
-    
-    Actor* GCDMailbox::currentActor() {
-        auto mailbox = currentMailbox();
-        return mailbox ? mailbox->_actor : nullptr;
     }
 
 

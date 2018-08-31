@@ -180,7 +180,7 @@ namespace litecore { namespace blip {
             if (!_in) {
                 // First frame!
                 // Update my flags and allocate the Writer:
-                assert(_number > 0);
+                DebugAssert(_number > 0);
                 _flags = (FrameFlags)(frameFlags & ~kMoreComing);
                 _in.reset(new fleece::JSONEncoder);
 
@@ -221,7 +221,7 @@ namespace litecore { namespace blip {
                 for (size_t i = 0; i < _propertiesSize; ++i)
                     if (_properties[i] == 0)
                         ++nulls;
-                assert((nulls & 1) == 0);
+                DebugAssert((nulls & 1) == 0);
 #endif
                 _connection->logVerbose("Receiving %s", description().c_str());
 

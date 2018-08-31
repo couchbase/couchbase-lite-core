@@ -158,7 +158,7 @@ namespace litecore { namespace blip {
     ,_unsentPayload(payload.buf, payload.size)
     ,_dataSource(dataSource)
     {
-        assert(payload.size <= UINT32_MAX);
+        DebugAssert(payload.size <= UINT32_MAX);
     }
 
 
