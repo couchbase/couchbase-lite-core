@@ -193,7 +193,7 @@ namespace litecore {
                     break;
 
                 if (n++ == 0)
-                    LogTo(DBLog, "Waiting for %zu other connection(s) to close before deleting %s",
+                    LogTo(DBLog, "Waiting for %ld other connection(s) to close before deleting %s",
                           otherConnections, shared->path.c_str());
                 if (st.elapsed() > kOtherDBCloseTimeoutSecs)
                     error::_throw(error::Busy, "Can't delete db file while other connections are open");
