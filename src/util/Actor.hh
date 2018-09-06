@@ -89,6 +89,11 @@ namespace litecore { namespace actor {
         /** The Actor that's currently running, else nullptr */
         static Actor* currentActor()                        {return Mailbox::currentActor();}
 
+        /** Blocks until the Actor has finished handling all outstanding events.
+            Obviously the actor should never call this on itself, nor should it be called by
+            anything else that might be called directly by the actor (on its thread.) */
+        void waitTillCaughtUp();
+
     protected:
         /** Constructs an Actor.
             @param name  Used for logging, and on Apple platforms for naming the GCD queue;
@@ -158,6 +163,8 @@ namespace litecore { namespace actor {
 
         template <class ACTOR, class ITEM>
         friend class Batcher;
+
+        void _waitTillCaughtUp(std::mutex*, std::condition_variable*, bool*);
 
         Mailbox _mailbox;
     };

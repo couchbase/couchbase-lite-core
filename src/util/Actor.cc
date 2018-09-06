@@ -19,6 +19,7 @@
 
 #include "Actor.hh"
 #include "Logging.hh"
+#include <mutex>
 
 
 namespace litecore { namespace actor {
@@ -26,5 +27,25 @@ namespace litecore { namespace actor {
     void Actor::caughtException(const std::exception &x) {
         Warn("Caught exception in Actor %s: %s", actorName().c_str(), x.what());
     }
+
+
+    void Actor::waitTillCaughtUp() {
+        std::mutex mut;
+        std::condition_variable cond;
+        bool finished = false;
+        enqueue(&Actor::_waitTillCaughtUp, &mut, &cond, &finished);
+        
+        std::unique_lock<std::mutex> lock(mut);
+        cond.wait(lock, [&]{return finished;});
+    }
+
+    void Actor::_waitTillCaughtUp(std::mutex *mut, std::condition_variable *cond, bool *finished) {
+        {
+            std::lock_guard<std::mutex> lock(*mut);
+            *finished = true;
+        }
+        cond->notify_one();
+    }
+
 
 } }
