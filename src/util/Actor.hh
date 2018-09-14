@@ -63,6 +63,7 @@ namespace litecore { namespace actor {
     #define ACTOR_BIND_FN(FN, ARGS)                 ^{ FN(ARGS...); }
 #else
     using Mailbox = ThreadedMailbox;
+    #define ACTOR_BIND_METHOD0(RCVR, METHOD)        std::bind(METHOD, RCVR)
     #define ACTOR_BIND_METHOD(RCVR, METHOD, ARGS)   std::bind(METHOD, RCVR, ARGS...)
     #define ACTOR_BIND_FN(FN, ARGS)                 std::bind(FN, ARGS...)
 #endif
