@@ -345,6 +345,26 @@ while processing the `rev` message, in which case it MUST NOT send the
 message(s) and durably added the attachments, as well as the document,
 to its database.
 
+
+[[norev]]
+norev
+^^^^^
+
+`id`: Document ID _(optional)_ +
+`rev`: Revision ID _(optional)_ +
+`sequence`: Sequence ID, JSON-encoded _(optional unless unsolicited,
+q.v.)_ +
+`error`: The error number +
+Body: None
+
+In the case a rev is requested from a peer via a `changes` response,
+but that revision is not available, the `norev` message should be sent 
+as a placeholder to inform the `peer` that there will be no corresponding 
+`rev` message sent for the requested revision.  This prevents the peer 
+from waiting for a `rev` message that will never come, which could cause 
+the replication to get stuck.
+
+
 [[getattachment]]
 getAttachment
 ^^^^^^^^^^^^^
