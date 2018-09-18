@@ -34,14 +34,17 @@ void CBLiteTool::usage() {
     "       cblite file " << it("DBPATH") << "\n"
     "       cblite logcat " << it("LOGPATH") << "\n"
     "       cblite ls " << it("[FLAGS] DBPATH [PATTERN]") << "\n"
+    "       cblite put " << it("DBPATH DOCID \"JSON\"") << "\n"
     "       cblite query " << it("[FLAGS] DBPATH JSONQUERY") << "\n"
     "       cblite revs " << it("DBPATH DOCID") << "\n"
+    "       cblite rm " << it("DBPATH DOCID [\"JSON\"]") << "\n"
     "       cblite serve " << it("DBPATH") << "\n"
 //  "       cblite sql " << it("DBPATH QUERY") << "\n"
     "       cblite [--create] " << it("DBPATH") << "   (interactive shell)\n"
-    "           The shell accepts the same commands listed above, but without the\n"
-    "           'cblite' and DBPATH parameters. For example, 'ls -l'.\n"
-    "   For information about parameters, run `cblite help SUBCOMMAND`.\n"
+    "             --create: Creates the database if it doesn't already exist.\n"
+    "The shell accepts the same commands listed above, but without the 'cblite'\n"
+    "and DBPATH parameters. For example, 'ls -l'.\n"
+    "For information about subcommand parameters/flags, run `cblite help SUBCOMMAND`.\n"
     ;
 }
 
@@ -124,9 +127,11 @@ void CBLiteTool::openDatabaseFromNextArg() {
 #pragma mark - INTERACTIVE MODE:
 
 
+// Flags that can come before the subcommand name:
 const Tool::FlagSpec CBLiteTool::kPreCommandFlags[] = {
-    {"--create",  (FlagHandler)&CBLiteTool::createDBFlag},
-    {"--version", (FlagHandler)&CBLiteTool::versionFlag},
+    {"--create",    (FlagHandler)&CBLiteTool::createDBFlag},
+    {"--version",   (FlagHandler)&CBLiteTool::versionFlag},
+    {"--writeable", (FlagHandler)&CBLiteTool::writeableFlag},
     {nullptr, nullptr}
 };
 
@@ -141,7 +146,8 @@ void CBLiteTool::shell() {
 
 void CBLiteTool::runInteractively() {
     _interactive = true;
-    cout << "Opened database " << alloc_slice(c4db_getPath(_db)) << '\n';
+    const char *mode = (_dbFlags & kC4DB_ReadOnly) ? "read-only" : "writeable";
+    cout << "Opened " << mode << " database " << alloc_slice(c4db_getPath(_db)) << '\n';
 
     while(true) {
         try {
@@ -172,6 +178,7 @@ void CBLiteTool::helpCommand() {
         fileUsage();
         listUsage();
         logcatUsage();
+        putUsage();
         queryUsage();
         revsUsage();
         serveUsage();
@@ -203,8 +210,10 @@ const Tool::FlagSpec CBLiteTool::kSubcommands[] = {
     {"help",    (FlagHandler)&CBLiteTool::helpCommand},
     {"logcat",  (FlagHandler)&CBLiteTool::logcat},
     {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
+    {"put",     (FlagHandler)&CBLiteTool::putDoc},
     {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
     {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
+    {"rm",      (FlagHandler)&CBLiteTool::putDoc},
     {"serve",   (FlagHandler)&CBLiteTool::serve},
     {"sql",     (FlagHandler)&CBLiteTool::sqlQuery},
 
@@ -223,8 +232,10 @@ const Tool::FlagSpec CBLiteTool::kInteractiveSubcommands[] = {
     {"help",    (FlagHandler)&CBLiteTool::helpCommand},
     {"logcat",  (FlagHandler)&CBLiteTool::logcat},
     {"ls",      (FlagHandler)&CBLiteTool::listDocsCommand},
+    {"put",     (FlagHandler)&CBLiteTool::putDoc},
     {"query",   (FlagHandler)&CBLiteTool::queryDatabase},
     {"revs",    (FlagHandler)&CBLiteTool::revsInfo},
+    {"rm",      (FlagHandler)&CBLiteTool::putDoc},
     {"sql",     (FlagHandler)&CBLiteTool::sqlQuery},
 
     {"quit",    (FlagHandler)&CBLiteTool::quitCommand},

@@ -109,6 +109,7 @@
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		2749B9881EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274A698C1BED28BF00D16D37 /* c4Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274A69871BED288D00D16D37 /* c4Document.cc */; };
+		274C948F215180C600F9AEA9 /* cbliteTool+put.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274C948E215180C600F9AEA9 /* cbliteTool+put.cc */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
 		274D03E51BA7332000FF7C35 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		274D03E61BA7333000FF7C35 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
@@ -1063,6 +1064,7 @@
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
+		274C948E215180C600F9AEA9 /* cbliteTool+put.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "cbliteTool+put.cc"; sourceTree = "<group>"; };
 		274D03D31BA732B000FF7C35 /* libLiteCoreJNI.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCoreJNI.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		274D03E11BA732FC00FF7C35 /* JavaVM.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaVM.framework; path = System/Library/Frameworks/JavaVM.framework; sourceTree = SDKROOT; };
 		274D03EC1BA734A300FF7C35 /* native_glue.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_glue.cc; sourceTree = "<group>"; };
@@ -1717,6 +1719,7 @@
 				275BF3A11F63291A0051374A /* cbliteTool+file.cc */,
 				27BE83EE20521275001D0AB4 /* cbliteTool+logcat.cc */,
 				275BF39B1F6327270051374A /* cbliteTool+ls.cc */,
+				274C948E215180C600F9AEA9 /* cbliteTool+put.cc */,
 				275BF3981F6326910051374A /* cbliteTool+query.cc */,
 				275BF39F1F6328B70051374A /* cbliteTool+revs.cc */,
 				27B321B62009615B00C40AD5 /* cbliteTool+serve.cc */,
@@ -3294,6 +3297,7 @@
 				27B321B72009615B00C40AD5 /* cbliteTool+serve.cc in Sources */,
 				27BE83EF20521275001D0AB4 /* cbliteTool+logcat.cc in Sources */,
 				275BF3A01F6328B70051374A /* cbliteTool+revs.cc in Sources */,
+				274C948F215180C600F9AEA9 /* cbliteTool+put.cc in Sources */,
 				722AA64C20005E3500261887 /* ArgumentTokenizer.cc in Sources */,
 				722AA64D20005E5A00261887 /* Tool.cc in Sources */,
 				27D416EA1FE31F7D00008197 /* RemoteEndpoint.cc in Sources */,

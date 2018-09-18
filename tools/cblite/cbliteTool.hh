@@ -79,6 +79,10 @@ private:
     void listDocsCommand();
     void listDocs(string docIDPattern);
 
+    // put command
+    void putUsage();
+    void putDoc();
+
     // query command
     void queryUsage();
     void queryDatabase();
@@ -176,7 +180,9 @@ private:
     void confFlag()      {_enumFlags &= ~kC4IncludeNonConflicted;}
     void continuousFlag(){_continuous = true;}
     void createDBFlag()  {_dbFlags |= kC4DB_Create; _dbFlags &= ~kC4DB_ReadOnly;}
+    void createDocFlag() {_putMode = kCreate;}
     void delFlag()       {_enumFlags |= kC4IncludeDeleted;}
+    void deleteDocFlag() {_putMode = kDelete;}
     void descFlag()      {_enumFlags |= kC4Descending;}
     void dirFlag()       {_listenerDirectory = nextArg("directory");}
     void existingFlag()  {_createDst = false;}
@@ -195,7 +201,9 @@ private:
     void replicateFlag() {_listenerConfig.apis |= kC4SyncAPI;}
     void revIDFlag()     {_showRevID = true;}
     void seqFlag()       {_listBySeq = true;}
+    void updateDocFlag() {_putMode = kUpdate;}
     void versionFlag();
+    void writeableFlag() {_dbFlags &= ~kC4DB_ReadOnly;}
 
     static const FlagSpec kPreCommandFlags[];
     static const FlagSpec kSubcommands[];
@@ -203,6 +211,7 @@ private:
     static const FlagSpec kCatFlags[];
     static const FlagSpec kCpFlags[];
     static const FlagSpec kListFlags[];
+    static const FlagSpec kPutFlags[];
     static const FlagSpec kQueryFlags[];
     static const FlagSpec kRevsFlags[];
     static const FlagSpec kServeFlags[];
@@ -227,6 +236,8 @@ private:
     bool _bidi {false};
     bool _continuous {false};
     alloc_slice _jsonIDProperty;
+
+    enum {kPut, kUpdate, kCreate, kDelete} _putMode {kPut};
 
     C4Listener* _listener {nullptr};
     C4ListenerConfig _listenerConfig {};  // all false/0
