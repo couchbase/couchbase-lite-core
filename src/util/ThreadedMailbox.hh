@@ -19,6 +19,7 @@
 #pragma once
 #include "Channel.hh"
 #include "RefCounted.hh"
+#include "PlatformCompat.hh"
 #include <atomic>
 #include <string>
 #include <thread>
@@ -70,7 +71,7 @@ namespace litecore { namespace actor {
         std::atomic_int _active {0};
 #endif
         
-        static thread_local Actor* sCurrentActor;
+        static THREAD_LOCAL Actor* sCurrentActor;
     };
 
 
