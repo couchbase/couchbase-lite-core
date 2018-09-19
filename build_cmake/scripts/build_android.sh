@@ -22,7 +22,7 @@ for arch in x86 armeabi-v7a arm64-v8a; do
     STRIP=`dirname $(find $ANDROID_NDK_ROOT/toolchains -name strip | grep x86-)`
   fi
 
-  if [-d "couchbase-lite-core"]; then
+  if [ -d "couchbase-lite-core" ]; then
     ./strip.sh `pwd`/couchbase-lite-core $STRIP/
   else
     ./strip.sh `pwd` $STRIP/
