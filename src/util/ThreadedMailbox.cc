@@ -133,7 +133,7 @@ namespace litecore { namespace actor {
 
 #pragma mark - MAILBOX:
 
-    __thread Actor* ThreadedMailbox::sCurrentActor;
+    thread_local Actor* ThreadedMailbox::sCurrentActor;
 
 
     ThreadedMailbox::ThreadedMailbox(Actor *a, const std::string &name, ThreadedMailbox *parent)

@@ -70,7 +70,7 @@ namespace litecore { namespace actor {
         std::atomic_int _active {0};
 #endif
         
-        static __thread Actor* sCurrentActor;
+        static thread_local Actor* sCurrentActor;
     };
 
 
