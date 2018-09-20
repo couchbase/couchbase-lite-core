@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 
+#ifndef ACTORS_USE_GCD
 #include "ThreadedMailbox.hh"
 #include "Actor.hh"
 #include "Error.hh"
@@ -133,7 +134,7 @@ namespace litecore { namespace actor {
 
 #pragma mark - MAILBOX:
 
-    THREAD_LOCAL Actor* ThreadedMailbox::sCurrentActor;
+    thread_local Actor* ThreadedMailbox::sCurrentActor;
 
 
     ThreadedMailbox::ThreadedMailbox(Actor *a, const std::string &name, ThreadedMailbox *parent)
@@ -209,3 +210,4 @@ namespace litecore { namespace actor {
     }
 
 } }
+#endif

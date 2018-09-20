@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 
+#ifndef ACTORS_USE_GCD
 #pragma once
 #include "Channel.hh"
 #include "RefCounted.hh"
@@ -71,7 +72,7 @@ namespace litecore { namespace actor {
         std::atomic_int _active {0};
 #endif
         
-        static THREAD_LOCAL Actor* sCurrentActor;
+        static thread_local Actor* sCurrentActor;
     };
 
 
@@ -117,3 +118,4 @@ namespace litecore { namespace actor {
     extern template class Channel<std::function<void()>>;
 
 } }
+#endif
