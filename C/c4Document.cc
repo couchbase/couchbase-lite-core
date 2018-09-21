@@ -687,8 +687,8 @@ bool c4doc_blobIsCompressible(FLDict blobDict, FLSharedKeys sk) {
 }
 
 
-C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc, FLSharedKeys sk) noexcept {
-    return tryCatch<C4SliceResult>(nullptr, [&]{
+C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc, FLSharedKeys sk, C4Error *outError) noexcept {
+    return tryCatch<C4SliceResult>(outError, [&]{
         return C4SliceResult(legacy_attachments::encodeStrippingOldMetaProperties((const Dict*)doc,
                                                                                   (SharedKeys*)sk));
     });
