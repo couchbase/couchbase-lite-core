@@ -477,20 +477,23 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
     
     // Create a document:
     C4Document* doc = putDoc(C4STR("doc"), kC4SliceNull, C4STR("{\"property\":\"value\"}"));
-    REQUIRE(doc->revID == C4STR("1-3de83144ab0b66114ff350b20724e1fd48c6c57b"));
+    C4Slice revID = C4STR("1-3de83144ab0b66114ff350b20724e1fd48c6c57b");
+    REQUIRE(doc->revID == revID);
     C4String docID = copy(doc->docID);
     C4String revID1 = copy(doc->revID);
     c4doc_free(doc);
     
     // Update a document
     doc = putDoc(docID, revID1, C4STR("{\"property\":\"newvalue\"}"));
-    REQUIRE(doc->revID == C4STR("2-7718b0324ed598dda05874ab0afa1c826a4dc45c"));
+    revID = C4STR("2-7718b0324ed598dda05874ab0afa1c826a4dc45c");
+    REQUIRE(doc->revID == revID);
     C4String revID2 = copy(doc->revID);
     c4doc_free(doc);
 
     // Delete a document
     doc = putDoc(docID, revID2, kC4SliceNull, kRevDeleted);
-    REQUIRE(doc->revID == C4STR("3-6f61ee6f47b9f70773aa769d97b116d615cad7b9"));
+    revID = C4STR("3-6f61ee6f47b9f70773aa769d97b116d615cad7b9");
+    REQUIRE(doc->revID == revID);
     c4doc_free(doc);
     
     // free copied C4String instances
