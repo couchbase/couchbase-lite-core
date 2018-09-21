@@ -16,11 +16,14 @@
 // limitations under the License.
 //
 
-#ifndef ACTORS_USE_GCD
+#if __APPLE__
+// Use GCD if available, as it's more efficient and has better integration with OS & debugger.
+#define ACTORS_USE_GCD
+#endif
+
 #pragma once
 #include "Channel.hh"
 #include "RefCounted.hh"
-#include "PlatformCompat.hh"
 #include <atomic>
 #include <string>
 #include <thread>
@@ -42,6 +45,7 @@ namespace litecore { namespace actor {
     using delay_t = std::chrono::duration<double>;
 
 
+    #ifndef ACTORS_USE_GCD
     /** Default Actor mailbox implementation that uses a thread pool run by a Scheduler. */
     class ThreadedMailbox : Channel<std::function<void()>> {
     public:
@@ -74,7 +78,6 @@ namespace litecore { namespace actor {
         
         static thread_local Actor* sCurrentActor;
     };
-
 
     /** The Scheduler is reponsible for calling ThreadedMailboxes to run their Actor methods.
         It managers a thread pool on which Mailboxes and Actors will run. */
@@ -112,10 +115,9 @@ namespace litecore { namespace actor {
         std::atomic_flag _started = ATOMIC_FLAG_INIT;
     };
 
-
     // This prevents the compiler from specializing Channel in every compilation unit:
     extern template class Channel<ThreadedMailbox*>;
     extern template class Channel<std::function<void()>>;
+#endif
 
 } }
-#endif

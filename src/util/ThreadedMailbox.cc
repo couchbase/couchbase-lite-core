@@ -16,8 +16,9 @@
 // limitations under the License.
 //
 
-#ifndef ACTORS_USE_GCD
 #include "ThreadedMailbox.hh"
+
+#ifndef ACTORS_USE_GCD
 #include "Actor.hh"
 #include "Error.hh"
 #include "Timer.hh"
