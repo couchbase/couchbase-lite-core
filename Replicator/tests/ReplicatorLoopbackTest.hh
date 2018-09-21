@@ -294,8 +294,15 @@ public:
     void validateCheckpoint(C4Database *database, bool local,
                             const char *body, const char *meta = "1-") {
         C4Error err;
+		C4Slice storeName;
+		if(local) {
+			storeName = C4STR("checkpoints");
+		} else {
+			storeName = C4STR("peerCheckpoints");
+		}
+
         c4::ref<C4RawDocument> doc( c4raw_get(database,
-                                              (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
+                                              storeName,
                                               _checkpointID,
                                               &err) );
         INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID) << "'; err = " << err.domain << "," << err.code);
@@ -313,8 +320,15 @@ public:
 
     void clearCheckpoint(C4Database *database, bool local) {
         C4Error err;
+		C4Slice storeName;
+		if(local) {
+			storeName = C4STR("checkpoints");
+		} else {
+			storeName = C4STR("peerCheckpoints");
+		}
+
         REQUIRE( c4raw_put(database,
-                           (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
+                           storeName,
                            _checkpointID,
                            kC4SliceNull, kC4SliceNull, &err) );
     }
