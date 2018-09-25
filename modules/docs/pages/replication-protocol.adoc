@@ -354,7 +354,8 @@ norev
 `rev`: Revision ID _(optional)_ +
 `sequence`: Sequence ID, JSON-encoded _(optional unless unsolicited,
 q.v.)_ +
-`error`: The error number +
+`error`: The error number, which should correspond to HTTP Response status codes +
+`reason`: A more detailed description of the cause of the error _(optional)_
 Body: None
 
 In the case a rev is requested from a peer via a `changes` response,
