@@ -154,6 +154,7 @@ static void socket_write(C4Socket *socket, C4SliceResult allocatedData) {
     } else {
         LOGE("socket_write(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
     }
+    c4slice_free(allocatedData);
 }
 
 static void socket_completedReceive(C4Socket *socket, size_t byteCount) {
