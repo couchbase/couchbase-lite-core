@@ -412,7 +412,7 @@ void C4Test::createNumberedDocs(unsigned numberOfDocs) {
     char docID[20];
     for (unsigned i = 1; i <= numberOfDocs; i++) {
         sprintf(docID, "doc-%03u", i);
-        createRev(c4str(docID), kRevID, kBody);
+        createRev(c4str(docID), kRevID, kFleeceBody);
     }
 }
 
@@ -630,5 +630,4 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
 
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
-const C4Slice C4Test::kBody  = C4STR("{\"name\":7}");
 C4Slice C4Test::kFleeceBody, C4Test::kEmptyFleeceBody;

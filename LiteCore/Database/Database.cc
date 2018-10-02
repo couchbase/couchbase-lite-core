@@ -600,7 +600,7 @@ namespace c4Internal {
 
 
     void Database::validateRevisionBody(slice body) {
-        if (body.size > 0 && body[0] != '{') {        // There are a few unit tests that store JSON
+        if (body.size > 0) {
             Retained<Doc> doc = new Doc(body, Doc::kUntrusted, documentKeys());
             const Value *v = doc->root();
             if (!v)

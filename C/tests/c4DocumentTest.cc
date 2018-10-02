@@ -20,25 +20,8 @@
 #include "c4Private.h"
 #include "Benchmark.hh"
 #include "fleece/Fleece.hh"
-#include "c4Document+Fleece.h"
 
 using namespace fleece;
-
-
-static Doc json2dict(C4Database *db, const char *json) {
-    std::string jsonStr = json5(json);
-    C4Error c4err;
-    alloc_slice f (c4db_encodeJSON(db, slice(jsonStr), &c4err));
-    REQUIRE(f);
-    return Doc(f, kFLTrusted, c4db_getFLSharedKeys(db));
-}
-
-
-static std::string fleece2json(slice fleece) {
-    auto value = Value::fromData(fleece);
-    REQUIRE(value);
-    return alloc_slice(value.toJSON(true, true)).asString();
-}
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Database][C]") {
@@ -48,7 +31,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Database][C]") {
     auto checkPutBadDocID = [this](C4Slice docID) {
         C4Error error;
         C4DocPutRequest rq = {};
-        rq.body = C4Test::kBody;
+        rq.body = C4Test::kFleeceBody;
         rq.save = true;
         rq.docID = docID;
         CHECK(c4doc_put(db, &rq, nullptr, &error) == nullptr);
@@ -82,9 +65,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "FleeceDocs", "[Document][Fleece][C]") {
 N_WAY_TEST_CASE_METHOD(C4Test, "Document PossibleAncestors", "[Document][C]") {
     if (!isRevTrees()) return;
 
-    createRev(kDocID, kRevID, kBody);
-    createRev(kDocID, kRev2ID, kBody);
-    createRev(kDocID, kRev3ID, kBody);
+    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev2ID, kFleeceBody);
+    createRev(kDocID, kRev3ID, kFleeceBody);
 
     C4Document *doc = c4doc_get(db, kDocID, true, NULL);
     REQUIRE(doc);
@@ -134,14 +117,14 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
         rq.docID = kDocID;
         rq.history = &kRevID;
         rq.historyCount = 1;
-        rq.body = kBody;
+        rq.body = kFleeceBody;
         rq.save = true;
         doc = c4doc_put(db, &rq, nullptr, &error);
         REQUIRE(doc != nullptr);
         REQUIRE(doc->revID == kRevID);
         REQUIRE(doc->selectedRev.revID == kRevID);
         REQUIRE(doc->selectedRev.flags == (kRevKeepBody | kRevLeaf));
-        REQUIRE(doc->selectedRev.body == kBody);
+        REQUIRE(doc->selectedRev.body == kFleeceBody);
         c4doc_free(doc);
     }
 
@@ -154,7 +137,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     REQUIRE(doc->revID == kRevID);
     REQUIRE(doc->selectedRev.revID == kRevID);
     REQUIRE(doc->selectedRev.sequence == 1);
-    REQUIRE(doc->selectedRev.body == kBody);
+    REQUIRE(doc->selectedRev.body == kFleeceBody);
     c4doc_free(doc);
 
     // Get the doc by its sequence:
@@ -166,7 +149,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     REQUIRE(doc->revID == kRevID);
     REQUIRE(doc->selectedRev.revID == kRevID);
     REQUIRE(doc->selectedRev.sequence == 1);
-    REQUIRE(doc->selectedRev.body == kBody);
+    REQUIRE(doc->selectedRev.body == kFleeceBody);
     {
         TransactionHelper t(db);
         REQUIRE(c4doc_removeRevisionBody(doc));
@@ -186,11 +169,11 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C]") {
-    const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
-    const C4Slice kBody3 = C4STR("{\"ubu\":\"roi\"}");
-    createRev(kDocID, kRevID, kBody);
-    createRev(kDocID, kRev2ID, kBody2, kRevKeepBody);
-    createRev(kDocID, kRev2ID, kBody2); // test redundant insert
+    const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
+    const auto kFleeceBody3 = json2fleece("{'ubu':'roi'}");
+    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev2ID, kFleeceBody2, kRevKeepBody);
+    createRev(kDocID, kRev2ID, kFleeceBody2); // test redundant insert
 
     // Reload the doc:
     C4Error error;
@@ -201,7 +184,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
     REQUIRE(doc->revID == kRev2ID);
     REQUIRE(doc->selectedRev.revID == kRev2ID);
     REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)2);
-    REQUIRE(doc->selectedRev.body == kBody2);
+    REQUIRE(doc->selectedRev.body == kFleeceBody2);
 
     if (versioning() == kC4RevisionTrees) {
         // Select 1st revision:
@@ -214,7 +197,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
         c4doc_free(doc);
 
         // Add a 3rd revision:
-        createRev(kDocID, kRev3ID, kBody3);
+        createRev(kDocID, kRev3ID, kFleeceBody3);
         // Revision 2 should keep its body due to the kRevKeepBody flag:
         doc = c4doc_get(db, kDocID, true, &error);
         REQUIRE(doc != nullptr);
@@ -222,7 +205,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
         REQUIRE(doc->selectedRev.revID == kRev2ID);
         REQUIRE(doc->selectedRev.sequence == (C4SequenceNumber)2);
         REQUIRE(doc->selectedRev.flags == kRevKeepBody);
-        REQUIRE(doc->selectedRev.body == kBody2);
+        REQUIRE(doc->selectedRev.body == kFleeceBody2);
         c4doc_free(doc);
 
         // Purge doc
@@ -245,11 +228,11 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
 }
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][C]") {
-    const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
-    const C4Slice kBody3 = C4STR("{\"ubu\":\"roi\"}");
-    createRev(kDocID, kRevID, kBody);
-    createRev(kDocID, kRev2ID, kBody2);
-    createRev(kDocID, kRev3ID, kBody3);
+    const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
+    const auto kFleeceBody3 = json2fleece("{'ubu':'roi'}");
+    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev2ID, kFleeceBody2);
+    createRev(kDocID, kRev3ID, kFleeceBody3);
     
     C4Slice history[3] = {C4STR("3-ababab"), kRev2ID};
     C4DocPutRequest rq = {};
@@ -257,7 +240,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][C]") {
     rq.docID = kDocID;
     rq.history = history;
     rq.historyCount = 2;
-    rq.body = kBody3;
+    rq.body = kFleeceBody3;
     rq.save = true;
     C4Error err;
     REQUIRE(c4db_beginTransaction(db, &err));
@@ -272,9 +255,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][C]") {
     
     REQUIRE(c4db_getDocumentCount(db) == 0);
     
-    createRev(kDocID, kRevID, kBody);
-    createRev(kDocID, kRev2ID, kBody2);
-    createRev(kDocID, kRev3ID, kBody3);
+    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev2ID, kFleeceBody2);
+    createRev(kDocID, kRev3ID, kFleeceBody3);
     REQUIRE(c4db_beginTransaction(db, &err));
     doc = c4doc_put(db, &rq, nullptr, &err);
     REQUIRE(doc);
@@ -319,7 +302,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document maxRevTreeDepth", "[Database][C]") {
                 rq.docID = doc->docID;
                 rq.history = &doc->revID;
                 rq.historyCount = 1;
-                rq.body = kBody;
+                rq.body = kFleeceBody;
                 if (setRemoteOrigin && i == 0) {
                     // Pretend the 1st revision has a remote origin (see issue #376)
                     rq.remoteDBID = 1;
@@ -389,7 +372,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document GetForPut", "[Database][C]") {
     REQUIRE(error.code == kC4ErrorNotFound);
 
     // Adding new rev of existing doc:
-    createRev(kDocID, kRevID, kBody);
+    createRev(kDocID, kRevID, kFleeceBody);
     doc = c4doc_getForPut(db, kDocID, kRevID, false, false, &error);
     REQUIRE(doc != nullptr);
     REQUIRE(doc->docID == kDocID);
@@ -404,8 +387,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document GetForPut", "[Database][C]") {
     REQUIRE(error.code == kC4ErrorConflict);
 
     // Conflict -- try & fail to update non-current rev:
-    const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
-    createRev(kDocID, kRev2ID, kBody2);
+    const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
+    createRev(kDocID, kRev2ID, kFleeceBody2);
     doc = c4doc_getForPut(db, kDocID, kRevID, false, false, &error);
     REQUIRE(doc == nullptr);
     REQUIRE(error.code == kC4ErrorConflict);
@@ -447,45 +430,47 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     // Creating doc given ID:
     C4DocPutRequest rq = {};
     rq.docID = kDocID;
-    rq.body = kBody;
+    rq.body = kFleeceBody;
     rq.save = true;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
     REQUIRE(doc != nullptr);
     REQUIRE(doc->docID == kDocID);
     C4Slice kExpectedRevID;
 	if(isRevTrees()) {
-		kExpectedRevID = C4STR("1-9a57afaa2e551a0bc470548763a5660a19d579f4");
+		kExpectedRevID = C4STR("1-d41ffed6be0529153fd3d27b3218d9052e1c2b40");
 	} else {
         kExpectedRevID = C4STR("1@*");
 	}
 
-    REQUIRE(doc->revID == kExpectedRevID);
-    REQUIRE(doc->flags == kDocExists);
-    REQUIRE(doc->selectedRev.revID == kExpectedRevID);
+    CHECK(doc->revID == kExpectedRevID);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->selectedRev.revID == kExpectedRevID);
     c4doc_free(doc);
 
     // Update doc:
-    rq.body = C4STR("{\"ok\":\"go\"}");
+    auto body = json2fleece("{'ok':'go'}");
+    rq.body = body;
     rq.history = &kExpectedRevID;
     rq.historyCount = 1;
     size_t commonAncestorIndex;
     doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE((unsigned long)commonAncestorIndex == 0ul);
+    CHECK((unsigned long)commonAncestorIndex == 0ul);
     C4Slice kExpectedRev2ID;
 	if(isRevTrees()) {
-		kExpectedRev2ID = C4STR("2-559298a253c7bfb7edc0ce1dc93c8e8ebf504065");
+		kExpectedRev2ID = C4STR("2-e388dff9126ba5a0d93c7af05bc72f3cdf450598");
 	} else {
         kExpectedRev2ID = C4STR("2@*");
 	}
 
-    REQUIRE(doc->revID == kExpectedRev2ID);
-    REQUIRE(doc->flags == kDocExists);
-    REQUIRE(doc->selectedRev.revID == kExpectedRev2ID);
+    CHECK(doc->revID == kExpectedRev2ID);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->selectedRev.revID == kExpectedRev2ID);
     c4doc_free(doc);
 
     // Insert existing rev that conflicts:
-    rq.body = C4STR("{\"from\":\"elsewhere\"}");
+    body = json2fleece("{'from':'elsewhere'}");
+    rq.body = body;
     rq.existingRevision = true;
     rq.remoteDBID = 1;
     C4Slice kConflictRevID;
@@ -500,17 +485,16 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     rq.historyCount = 2;
     doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
     REQUIRE(doc != nullptr);
-    REQUIRE((unsigned long)commonAncestorIndex == 1ul);
-    REQUIRE(doc->selectedRev.revID == kConflictRevID);
-    REQUIRE(doc->flags == (kDocExists | kDocConflicted));
+    CHECK((unsigned long)commonAncestorIndex == 1ul);
+    CHECK(doc->selectedRev.revID == kConflictRevID);
+    CHECK(doc->flags == (kDocExists | kDocConflicted));
     // The conflicting rev will now never be the default, even with rev-trees.
-    REQUIRE(doc->revID == kExpectedRev2ID);
+    CHECK(doc->revID == kExpectedRev2ID);
     
-    C4SliceResult body = c4doc_detachRevisionBody(doc);
-    CHECK(body == rq.body);
+    auto latestBody = c4doc_detachRevisionBody(doc);
+    CHECK(latestBody == rq.body);
     CHECK(!doc->selectedRev.body.buf);
     c4doc_free(doc);
-    c4slice_free(body);
 }
 
 
@@ -522,21 +506,21 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     {
         C4Log("Begin create");
         TransactionHelper t(db);
-        doc = c4doc_create(db, kDocID, kBody, 0, &error);
+        doc = c4doc_create(db, kDocID, kFleeceBody, 0, &error);
         REQUIRE(doc);
     }
     C4Log("After save");
     C4Slice kExpectedRevID;
 	if(isRevTrees()) {
-		kExpectedRevID = C4STR("1-9a57afaa2e551a0bc470548763a5660a19d579f4");
+		kExpectedRevID = C4STR("1-d41ffed6be0529153fd3d27b3218d9052e1c2b40");
 	} else {
         kExpectedRevID = C4STR("1@*");
 	}
 
-    REQUIRE(doc->revID == kExpectedRevID);
-    REQUIRE(doc->flags == kDocExists);
-    REQUIRE(doc->selectedRev.revID == kExpectedRevID);
-    REQUIRE(doc->docID == kDocID);
+    CHECK(doc->revID == kExpectedRevID);
+    CHECK(doc->flags == kDocExists);
+    CHECK(doc->selectedRev.revID == kExpectedRevID);
+    CHECK(doc->docID == kDocID);
 
     // Read the doc into another C4Document:
     auto doc2 = c4doc_get(db, kDocID, false, &error);
@@ -547,29 +531,29 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
         C4Log("Begin save #%d", update);
         TransactionHelper t(db);
         fleece::alloc_slice oldRevID(doc->revID);
-        auto updatedDoc = c4doc_update(doc, C4STR("{\"ok\":\"go\"}"), 0, &error);
+        auto updatedDoc = c4doc_update(doc, json2fleece("{'ok':'go'}"), 0, &error);
         REQUIRE(updatedDoc);
-        REQUIRE(doc->selectedRev.revID == oldRevID);
-        REQUIRE(doc->revID == oldRevID);
+        CHECK(doc->selectedRev.revID == oldRevID);
+        CHECK(doc->revID == oldRevID);
         c4doc_free(doc);
         doc = updatedDoc;
     }
     C4Log("After multiple updates");
 	C4Slice kExpectedRev2ID;
 	if(isRevTrees()) {
-		kExpectedRev2ID = C4STR("5-b0a49dc580ffd380050fe54d26d380d270ad275f");
+		kExpectedRev2ID = C4STR("5-78d95933f4efa6e8b23644037990e4b1eca982fe");
 	} else {
         kExpectedRev2ID = C4STR("5@*");
 	}
 
-    REQUIRE(doc->revID == kExpectedRev2ID);
-    REQUIRE(doc->selectedRev.revID == kExpectedRev2ID);
+    CHECK(doc->revID == kExpectedRev2ID);
+    CHECK(doc->selectedRev.revID == kExpectedRev2ID);
 
     // Now try to update the other C4Document, which will fail:
     {
         C4Log("Begin conflicting save");
         TransactionHelper t(db);
-        REQUIRE(c4doc_update(doc2, C4STR("{\"ok\":\"no way\"}"), 0, &error) == nullptr);
+        REQUIRE(c4doc_update(doc2, json2fleece("{'ok':'no way'}"), 0, &error) == nullptr);
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorConflict);
     }
@@ -578,7 +562,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Update", "[Database][C]") {
     {
         C4Log("Begin conflicting create");
         TransactionHelper t(db);
-        REQUIRE(c4doc_create(db, kDocID, C4STR("{\"ok\":\"no way\"}"), 0, &error) == nullptr);
+        REQUIRE(c4doc_create(db, kDocID, json2fleece("{'ok':'no way'}"), 0, &error) == nullptr);
         CHECK(error.domain == LiteCoreDomain);
         CHECK(error.code == kC4ErrorConflict);
     }
@@ -592,11 +576,11 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     if (!isRevTrees())
         return;
 
-    const C4Slice kBody2 = C4STR("{\"ok\":\"go\"}");
-    const C4Slice kBody3 = C4STR("{\"ubu\":\"roi\"}");
-    createRev(kDocID, kRevID, kBody);
-    createRev(kDocID, kRev2ID, kBody2, kRevKeepBody);
-    createRev(kDocID, C4STR("3-aaaaaa"), kBody3);
+    const auto kFleeceBody2 = json2fleece("{'ok':'go'}");
+    const auto kFleeceBody3 = json2fleece("{'ubu':'roi'}");
+    createRev(kDocID, kRevID, kFleeceBody);
+    createRev(kDocID, kRev2ID, kFleeceBody2, kRevKeepBody);
+    createRev(kDocID, C4STR("3-aaaaaa"), kFleeceBody3);
 
     TransactionHelper t(db);
 
@@ -607,7 +591,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     rq.docID = kDocID;
     rq.history = history;
     rq.historyCount = 3;
-    rq.body = kBody3;
+    rq.body = kFleeceBody3;
     rq.save = true;
     rq.remoteDBID = 1;
     C4Error err;
@@ -736,7 +720,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Database][C]") 
     // Check that old meta properties get removed:
     TransactionHelper t(db);
     auto sk = c4db_getFLSharedKeys(db);
-    auto dict = json2dict(db, "{_id:'foo', _rev:'1-2345', x:17}");
+    auto dict = json2dict("{_id:'foo', _rev:'1-2345', x:17}");
     CHECK(c4doc_hasOldMetaProperties(dict));
     alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
     Doc doc(stripped, kFLTrusted, sk);
@@ -749,9 +733,9 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Database][C]") 
     // but that the translated-from-blob attachments are removed:
     TransactionHelper t(db);
     auto sk = c4db_getFLSharedKeys(db);
-    auto dict = json2dict(db, "{_attachments: {'blob_/foo/1': {'digest': 'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='},"
-                                              "oldie: {'digest': 'sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU='} },"
-                              "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='} ] }");
+    auto dict = json2dict("{_attachments: {'blob_/foo/1': {'digest': 'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='},"
+                                           "oldie: {'digest': 'sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU='} },"
+                           "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='} ] }");
     CHECK(c4doc_hasOldMetaProperties(dict));
     alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
     Doc doc(stripped, kFLTrusted, sk);
@@ -765,8 +749,8 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Database][C]") 
     // the blob before being deleted. See #507. (Also, the _attachments property should be deleted.)
     TransactionHelper t(db);
     auto sk = c4db_getFLSharedKeys(db);
-    auto dict = json2dict(db, "{_attachments: {'blob_/foo/1': {'digest': 'sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
-                              "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
+    auto dict = json2dict("{_attachments: {'blob_/foo/1': {'digest': 'sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
+                          "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
     CHECK(c4doc_hasOldMetaProperties(dict));
     alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
     Doc doc(stripped, kFLTrusted, sk);
@@ -783,7 +767,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
     TransactionHelper t(db);
 
     // Write doc to db
-    createRev(kDocID, kRevID, kBody);
+    createRev(kDocID, kRevID, kFleeceBody);
 
     // Use default remote id
     C4RemoteID testRemoteId = 1;
@@ -806,7 +790,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Clobber Remote Rev", "[Database][C]") {
     REQUIRE(remoteRevID == curDocAfterMarkSync->revID);
 
     // Update doc -- before the bugfix, this was clobbering the remote ancestor rev
-    auto updatedDoc = c4doc_update(curDoc, C4STR("{\"ok\":\"go\"}"), 0, &error);
+    auto updatedDoc = c4doc_update(curDoc, json2fleece("{'ok':'go'}"), 0, &error);
     REQUIRE(updatedDoc);
 
     // Re-read the doc from the db just to be sure getting accurate version

@@ -89,7 +89,7 @@ public:
             if (kLog) fprintf(stderr, "(%d) ", i); else if (i%10 == 0) fprintf(stderr, ":");
             char docID[20];
             sprintf(docID, "doc-%05d", i);
-            createRev(c4str(docID), kRevID, kBody);
+            createRev(c4str(docID), kRevID, kFleeceBody);
             //std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
     }
