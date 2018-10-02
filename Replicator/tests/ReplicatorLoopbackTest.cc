@@ -410,7 +410,7 @@ static Replicator::Options pushOptionsWithProperty(const char *property, vector<
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
     // Test that replicators with different channel or docIDs options use different checkpoints
     // (#386)
-    createFleeceRev(db, "doc"_sl, kRevID, kFleeceBody);
+    createFleeceRev(db, "doc"_sl, kRevID, "{\"agent\":7}"_sl);
     _expectedDocumentCount = 1;
 
     runPushReplication();
