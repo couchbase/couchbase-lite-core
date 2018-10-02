@@ -207,6 +207,9 @@ namespace litecore { namespace repl {
 
     void Puller::handleNoRev(Retained<MessageIn> msg) {
         decrement(_pendingRevMessages);
+        slice sequence(msg->property("sequence"_sl));
+        if (sequence)
+            completedSequence(alloc_slice(sequence));
         handleMoreChanges();
         if (!msg->noReply()) {
             MessageBuilder response(msg);
