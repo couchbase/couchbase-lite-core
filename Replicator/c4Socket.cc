@@ -18,17 +18,20 @@
 
 #include "FleeceCpp.hh"
 #include "c4.hh"
+#include "c4ExceptionUtils.hh"
 #include "c4Private.h"
 #include "c4Socket.h"
 #include "c4Socket+Internal.hh"
 #include "Address.hh"
 #include "Error.hh"
+#include "Logging.hh"
 #include "WebSocketImpl.hh"
 #include "StringUtil.hh"
 #include <atomic>
 #include <exception>
 
 using namespace std;
+using namespace c4Internal;
 using namespace fleece;
 using namespace fleeceapi;
 using namespace litecore;
@@ -137,6 +140,15 @@ namespace litecore { namespace repl {
 
 static C4SocketImpl* internal(C4Socket *s)  {return (C4SocketImpl*)s;}
 
+static void closeWithError(C4Socket *s, C4Error error) {
+    alloc_slice message(c4error_getMessage(error));
+    WarnError("Closing socket due to fatal error: %.*s", SPLAT(message));
+    C4SocketFactory f = internal(s)->factory();
+    if (f.framing == kC4NoFraming)
+        f.requestClose(s, kCodeUnexpectedCondition, message);
+    else
+        f.close(s);
+}
 
 void c4socket_registerFactory(C4SocketFactory factory) C4API {
     C4SocketImpl::registerFactory(factory);
@@ -150,8 +162,13 @@ C4Socket* c4socket_fromNative(C4SocketFactory factory,
 }
 
 void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) C4API {
-    AllocedDict headers((slice)responseHeadersFleece);
-    internal(socket)->gotHTTPResponse(status, headers);
+    C4Error error;
+    bool success = tryCatch(&error, [&]{
+        AllocedDict headers((slice)responseHeadersFleece);
+        internal(socket)->gotHTTPResponse(status, headers);
+    });
+    if (!success)
+        closeWithError(socket, error);
 }
 
 void c4socket_opened(C4Socket *socket) C4API {
@@ -183,5 +200,10 @@ void c4socket_completedWrite(C4Socket *socket, size_t byteCount) C4API {
 }
 
 void c4socket_received(C4Socket *socket, C4Slice data) C4API {
-    internal(socket)->onReceive(data);
+    C4Error error;
+    bool success = tryCatch(&error, [&]{
+        internal(socket)->onReceive(data);
+    });
+    if (!success)
+        closeWithError(socket, error);
 }

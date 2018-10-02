@@ -42,6 +42,8 @@ namespace litecore { namespace repl {
                      void *nativeHandle_ =nullptr);
 
         ~C4SocketImpl();
+        
+        C4SocketFactory factory() { return _factory; }
 
         void connect() override;
 
