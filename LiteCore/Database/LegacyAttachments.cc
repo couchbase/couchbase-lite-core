@@ -67,8 +67,17 @@ namespace litecore { namespace legacy_attachments {
                     continue;
                 auto attDigest = attachment->get("digest"_sl, sk);
                 const Dict *blob = nullptr;
-                if (key.hasPrefix("blob_"_sl) && attachment)
+                if (key.hasPrefix("blob_"_sl) && attachment) {
+                    slice pointer = key.from(5);
+                    // 2.0: blob_<index>
+                    if (pointer.size > 0 && isdigit(pointer[0])) {
+                        removeThese.insert(attachment);
+                        continue;
+                    }
+                    // 2.1: blob_/<property-pointer>
                     blob = Value::asDict(Path::evalJSONPointer(key.from(5), sk, root));
+                }
+                
                 if (attDigest && blob && Document::dictIsBlob(blob, sk)) {
                     // OK, this is a stand-in; remove it. But has its digest changed?
                     removeThese.insert(attachment);

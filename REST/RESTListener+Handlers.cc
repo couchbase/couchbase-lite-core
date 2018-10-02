@@ -287,8 +287,11 @@ namespace litecore { namespace REST {
 
         // Encode body as Fleece (and strip _id and _rev):
         alloc_slice encodedBody = c4doc_encodeStrippingOldMetaProperties(body,
-                                                                         c4db_getFLSharedKeys(db));
-
+                                                                         c4db_getFLSharedKeys(db),
+                                                                         outError);
+        if (!encodedBody)
+            return false;
+        
         // Save the revision:
         C4Slice history[1] = {revID};
         C4DocPutRequest put = {};

@@ -696,7 +696,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Database][C]") 
     auto sk = c4db_getFLSharedKeys(db);
     auto dict = json2dict(db, "{_id:'foo', _rev:'1-2345', x:17}");
     CHECK(c4doc_hasOldMetaProperties(dict, sk));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
     CHECK(fleece2json(stripped, sk) == "{x:17}");
 }
 
@@ -710,7 +710,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Database][C]") 
                                               "oldie: {'digest': 'sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU='} },"
                               "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='} ] }");
     CHECK(c4doc_hasOldMetaProperties(dict, sk));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
     CHECK(fleece2json(stripped, sk) == "{_attachments:{oldie:{digest:\"sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}},foo:[0,{\"@type\":\"blob\",digest:\"sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
 }
 
@@ -726,6 +726,18 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Database][C]") 
     CHECK(c4doc_hasOldMetaProperties(dict, sk));
     alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
     CHECK(fleece2json(stripped, sk) == "{foo:[0,{\"@type\":\"blob\",content_type:\"image/png\",digest:\"sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Database][C]") {
+    // Check that the 2.0.0 blob_<number> gets removed:
+    TransactionHelper t(db);
+    auto sk = c4db_getFLSharedKeys(db);
+    auto dict = json2dict(db, "{_attachments: {'blob_1': {'digest': 'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
+                              "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
+    CHECK(c4doc_hasOldMetaProperties(dict, sk));
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
+    CHECK(fleece2json(stripped, sk) == "{foo:[0,{\"@type\":\"blob\",content_type:\"text/plain\",digest:\"sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
 }
 
 
