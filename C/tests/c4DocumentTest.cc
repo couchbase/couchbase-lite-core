@@ -716,6 +716,20 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Database][C]") 
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Database][C]") {
+    // Check that a translated attachment whose digest is different than its blob (i.e. the
+    // attachment was probably modified by a non-blob-aware system) has its digest transferred to
+    // the blob before being deleted. See #507. (Also, the _attachments property should be deleted.)
+    TransactionHelper t(db);
+    auto sk = c4db_getFLSharedKeys(db);
+    auto dict = json2dict(db, "{_attachments: {'blob_/foo/1': {'digest': 'sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
+                              "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
+    CHECK(c4doc_hasOldMetaProperties(dict, sk));
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    CHECK(fleece2json(stripped, sk) == "{foo:[0,{\"@type\":\"blob\",content_type:\"image/png\",digest:\"sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Database][C]") {
     // Check that the 2.0.0 blob_<number> gets removed:
     TransactionHelper t(db);
     auto sk = c4db_getFLSharedKeys(db);

@@ -289,7 +289,7 @@ namespace litecore { namespace REST {
         alloc_slice encodedBody = c4doc_encodeStrippingOldMetaProperties(body,
                                                                          c4db_getFLSharedKeys(db),
                                                                          outError);
-        if (!encodedBody && outError && outError->domain != 0 && outError->code != 0)
+        if (!encodedBody)
             return false;
         
         // Save the revision:
