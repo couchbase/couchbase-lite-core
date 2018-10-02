@@ -36,6 +36,7 @@ PRODUCT_NAME                                       = $(TARGET_NAME)
 ALWAYS_SEARCH_USER_PATHS                           = NO
 
 CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW         = YES    // range-check C++ STL containers
+CLANG_UNDEFINED_BEHAVIOR_SANITIZER_INTEGER         = NO     // don't flag int over/underflows
 
 CLANG_CXX_LANGUAGE_STANDARD                        = c++11
 CLANG_CXX_LIBRARY                                  = libc++
