@@ -74,7 +74,8 @@ namespace litecore { namespace blip {
             if (bytesWritten > 0) {
                 // SyncFlush always ends the output with the 4 bytes 00 00 FF FF.
                 // We can remove those, then add them when reading the data back in.
-                Assert(bytesWritten >= 4 && memcmp(&dst[-4], "\x00\x00\xFF\xFF", 4) == 0);
+                Assert(bytesWritten >= 4 &&
+                       memcmp((const char*)dst.buf - 4, "\x00\x00\xFF\xFF", 4) == 0);
                 dst.moveStart(-4);
             }
         }
@@ -207,6 +208,9 @@ namespace litecore { namespace blip {
             uint32_t propertiesSize;
             ReadUVarInt32(&props, &propertiesSize);
             props.setSize(propertiesSize);
+        } else if (!props.buf) {
+            body = nullslice;
+            return;
         }
         body = slice(props.end(), _payload.end());
     }
