@@ -724,7 +724,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Database][C]") 
     auto dict = json2dict(db, "{_attachments: {'blob_/foo/1': {'digest': 'sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
                               "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
     CHECK(c4doc_hasOldMetaProperties(dict, sk));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
     CHECK(fleece2json(stripped, sk) == "{foo:[0,{\"@type\":\"blob\",content_type:\"image/png\",digest:\"sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
 }
 
