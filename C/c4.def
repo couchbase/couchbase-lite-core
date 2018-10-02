@@ -209,7 +209,8 @@ gC4ExpectExceptions
 
 FLSlice_Equal
 FLSlice_Compare
-FLSliceResult_Free
+FLSliceResult_Retain
+FLSliceResult_Release
 
 FLDoc_FromResultData
 FLDoc_FromJSON
