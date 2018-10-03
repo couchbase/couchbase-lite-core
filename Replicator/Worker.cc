@@ -88,6 +88,7 @@ namespace litecore { namespace repl {
     ,_connection(connection)
     ,_parent(parent)
     ,_options(options)
+    ,_progressLevel(options.progressLevel())
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
     ,_loggingID(connection->name())
     { }
@@ -179,15 +180,24 @@ namespace litecore { namespace repl {
     }
 
 
-    void Worker::gotDocumentError(slice docID, C4Error error, bool pushing, bool transient) {
-        _parent->gotDocumentError(docID, error, pushing, transient);
+    Replicator* Worker::replicator() const {
+        const Worker *root = this;
+        while (root->_parent)
+            root = root->_parent;
+        Assert(root);
+        return (Replicator*)root;
     }
 
 
-    void Worker::finishedDocument(slice docID, bool pushing) {
+    void Worker::documentGotError(slice docID, Dir dir, C4Error error, bool transient) {
+        replicator()->endedDocument(docID, dir, error, transient);
+    }
+
+
+    void Worker::finishedDocument(slice docID, Dir dir) {
         addProgress({0, 0, 1});
-//        if (_notifyAllDocuments)  // experimental
-//            gotDocumentError(docID, {}, pushing, true);
+        if (_progressLevel >= 1)
+            replicator()->endedDocument(docID, dir, {}, true);
     }
 
 

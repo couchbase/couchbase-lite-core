@@ -46,6 +46,16 @@ namespace litecore { namespace repl {
                    Delegate&,
                    Options);
 
+        struct BlobProgress {
+            Dir         dir;
+            alloc_slice docID;
+            alloc_slice docProperty;
+            C4BlobKey   key;
+            uint64_t    bytesCompleted;
+            uint64_t    bytesTotal;
+            C4Error     error;
+        };
+
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {
         public:
@@ -58,11 +68,13 @@ namespace litecore { namespace repl {
                                                  const Status&) =0;
             virtual void replicatorConnectionClosed(Replicator*,
                                                     const CloseStatus&)  { }
-            virtual void replicatorDocumentError(Replicator*,
-                                                 bool pushing,
+            virtual void replicatorDocumentEnded(Replicator*,
+                                                 Dir,
                                                  slice docID,
                                                  C4Error error,
                                                  bool transient) =0;
+            virtual void replicatorBlobProgress(Replicator*,
+                                                const BlobProgress&) = 0;
         };
 
         Status status() const                   {return Worker::status();}   //FIX: Needs to be thread-safe
@@ -78,7 +90,14 @@ namespace litecore { namespace repl {
         // internal API for Pusher/Puller:
         void updatePushCheckpoint(C4SequenceNumber s)   {_checkpoint.setLocalSeq(s);}
         void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
-        
+
+        void endedDocument(slice docID, Dir dir, C4Error error, bool transient) {
+            enqueue(&Replicator::_endedDocument, alloc_slice(docID), dir, error, transient);
+        }
+        void onBlobProgress(const BlobProgress &progress) {
+            enqueue(&Replicator::_onBlobProgress, progress);
+        }
+
     protected:
         virtual std::string loggingClassName() const override {return "Repl";}
 
@@ -92,10 +111,6 @@ namespace litecore { namespace repl {
         virtual void onRequestReceived(blip::MessageIn *msg) override
                                         {enqueue(&Replicator::_onRequestReceived, retained(msg));}
         virtual void changedStatus() override;
-
-        virtual void gotDocumentError(slice docID, C4Error error, bool pushing, bool transient) override {
-            enqueue(&Replicator::_gotDocumentError, alloc_slice(docID), error, pushing, transient);
-        }
 
         virtual void onError(C4Error error) override;
 
@@ -121,7 +136,8 @@ namespace litecore { namespace repl {
         void saveCheckpointNow();
 
         virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
-        void _gotDocumentError(alloc_slice docID, C4Error, bool pushing, bool transient);
+        void _endedDocument(alloc_slice docID, Dir, C4Error, bool transient);
+        void _onBlobProgress(BlobProgress);
 
         CloseStatus _closeStatus;
         Delegate* _delegate;

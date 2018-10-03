@@ -118,4 +118,13 @@ namespace litecore { namespace repl {
         ~RevToInsert() =default;
     };
 
+
+    struct PendingBlob {
+        fleece::alloc_slice docID;
+        fleece::alloc_slice docProperty;
+        C4BlobKey key;
+        uint64_t length;
+        bool compressible;
+    };
+
 } }
