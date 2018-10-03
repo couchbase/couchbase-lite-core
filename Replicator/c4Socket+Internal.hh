@@ -42,10 +42,10 @@ namespace litecore { namespace repl {
                      void *nativeHandle_ =nullptr);
 
         ~C4SocketImpl();
-        
-        C4SocketFactory factory() { return _factory; }
 
         void connect() override;
+
+        void closeWithException(const std::exception&);
 
     protected:
         virtual void requestClose(int status, fleece::slice message) override;
