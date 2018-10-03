@@ -43,7 +43,7 @@
 
 static char sErrorMessageBuffer[256];
 #define errorInfo(error) \
-    INFO("Error: " << c4error_getMessageC(error, sErrorMessageBuffer, sizeof(sErrorMessageBuffer)))
+    INFO("Error: " << c4error_getDescriptionC(error, sErrorMessageBuffer, sizeof(sErrorMessageBuffer)))
 
 static C4Document* c4enum_nextDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
     return c4enum_next(e, outError) ? c4enum_getDocument(e, outError) : nullptr;
@@ -65,7 +65,7 @@ public:
         c4slice_free(msg);
         
         char buf[256];
-        char *cmsg = c4error_getMessageC({domain, code}, buf, sizeof(buf));
+        char *cmsg = c4error_getDescriptionC({domain, code}, buf, sizeof(buf));
         REQUIRE(std::string(cmsg) == std::string(expectedMsg));
         REQUIRE(cmsg == &buf[0]);
     }

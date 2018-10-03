@@ -89,9 +89,9 @@ namespace litecore { namespace repl {
                            addr.hostname, addr.path, &err)) {
             logVerbose("Set cookie: `%.*s`", SPLAT(setCookieHeader));
         } else {
-            alloc_slice message = c4error_getMessage(err);
-            warn("Unable to set cookie `%.*s`: %.*s (%d/%d)",
-                 SPLAT(setCookieHeader), SPLAT(message), err.domain, err.code);
+            alloc_slice message = c4error_getDescription(err);
+            warn("Unable to set cookie `%.*s`: %.*s",
+                 SPLAT(setCookieHeader), SPLAT(message));
         }
     }
 

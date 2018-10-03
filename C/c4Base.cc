@@ -161,7 +161,7 @@ void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *o
 }
 
 
-C4SliceResult c4error_getMessage(C4Error err) noexcept {
+C4SliceResult c4error_getMessage(C4Error err) C4API {
     if (err.code == 0) {
         return sliceResult(nullptr);
     } else if (err.domain < 1 || err.domain >= (C4ErrorDomain)error::NumDomainsPlus1) {
@@ -177,8 +177,19 @@ C4SliceResult c4error_getMessage(C4Error err) noexcept {
     }
 }
 
-char* c4error_getMessageC(C4Error error, char buffer[], size_t bufferSize) noexcept {
-    C4SliceResult msg = c4error_getMessage(error);
+C4SliceResult c4error_getDescription(C4Error error) C4API {
+    if (error.code == 0)
+        return sliceResult("No error");
+    alloc_slice message(c4error_getMessage(error));
+    stringstream str;
+    str << error::nameOfDomain((error::Domain)error.domain)
+        << " error " << error.code
+        << " \"" << message << "\"";
+    return sliceResult(str.str());
+}
+
+char* c4error_getDescriptionC(C4Error error, char buffer[], size_t bufferSize) C4API {
+    C4SliceResult msg = c4error_getDescription(error);
     auto len = min(msg.size, bufferSize-1);
     if (msg.buf)
         memcpy(buffer, msg.buf, len);

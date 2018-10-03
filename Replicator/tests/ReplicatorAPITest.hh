@@ -85,11 +85,11 @@ public:
 
     void logState(C4ReplicatorStatus status) {
         char message[200];
-        c4error_getMessageC(status.error, message, sizeof(message));
-        C4Log("*** C4Replicator state: %-s, progress=%llu/%llu, error=%d/%d: %s",
+        c4error_getDescriptionC(status.error, message, sizeof(message));
+        C4Log("*** C4Replicator state: %-s, progress=%llu/%llu, error=%s",
               kC4ReplicatorActivityLevelNames[status.level],
               status.progress.unitsCompleted, status.progress.unitsTotal,
-              status.error.domain, status.error.code, message);
+              message);
     }
 
     void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
@@ -136,7 +136,7 @@ public:
                            void *context)
     {
         char message[256];
-        c4error_getMessageC(error, message, sizeof(message));
+        c4error_getDescriptionC(error, message, sizeof(message));
         C4Log(">> Replicator %serror %s '%.*s': %s",
               (transient ? "transient " : ""),
               (pushing ? "pushing" : "pulling"),

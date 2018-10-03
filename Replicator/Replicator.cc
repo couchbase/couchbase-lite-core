@@ -188,7 +188,7 @@ namespace litecore { namespace repl {
         Worker::onError(error);
         if (error.domain == LiteCoreDomain && error.code == kC4ErrorUnexpectedError) {
             // Treat an exception as a fatal error for replication:
-            alloc_slice message( c4error_getMessage(error) );
+            alloc_slice message( c4error_getDescription(error) );
             logError("Stopping due to fatal error: %.*s", SPLAT(message));
             _disconnect(websocket::kCodeUnexpectedCondition, "An exception was thrown"_sl);
         }

@@ -176,8 +176,6 @@ static void statusChangedCallback(C4Replicator *repl, C4ReplicatorStatus status,
  */
 static void documentErrorCallback(C4Replicator *repl, bool pushing, C4String docID, C4Error error,
                                   bool transient, void *ctx) {
-    char message[256];
-    c4error_getMessageC(error, message, sizeof(message));
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {

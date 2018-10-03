@@ -139,6 +139,7 @@ static C4SocketImpl* internal(C4Socket *s)  {return (C4SocketImpl*)s;}
 
 void c4socket_registerFactory(C4SocketFactory factory) C4API {
     C4SocketImpl::registerFactory(factory);
+    // the only exception this can throw is a fatal logic error, so no need to catch it
 }
 
 C4Socket* c4socket_fromNative(C4SocketFactory factory,

@@ -175,7 +175,7 @@ public:
     {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         char message[256];
-        c4error_getMessageC(error, message, sizeof(message));
+        c4error_getDescriptionC(error, message, sizeof(message));
         Log(">> Replicator %serror %s '%.*s': %s",
             (transient ? "transient " : ""),
             (pushing ? "pushing" : "pulling"),

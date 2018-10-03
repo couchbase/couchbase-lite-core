@@ -105,6 +105,8 @@ namespace litecore {
         /** Static version of the standard `what` method. */
         static std::string _what(Domain, int code) noexcept;
 
+        static const char* nameOfDomain(Domain) noexcept;
+
         /** Constructs and throws an error. */
         [[noreturn]] static void _throw(Domain d, int c );
         [[noreturn]] static void _throw(LiteCoreError);

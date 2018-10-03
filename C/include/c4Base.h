@@ -141,13 +141,18 @@ typedef struct {
 /** Returns an error message describing a C4Error. Remember to free the result. */
 C4StringResult c4error_getMessage(C4Error error) C4API;
 
-/** Writes an error message describing a C4Error to a buffer, as a C string.
+/** Returns a description of an error, including the domain and code as well as the message.
+    Remember to free the result. */
+C4SliceResult c4error_getDescription(C4Error error) C4API;
+
+/** Returns a description of an error, including the domain and code as well as the message.
+    The description is copied to the buffer as a C string.
     It will not write past the end of the buffer; the message will be truncated if necessary.
     @param error  The error to describe
     @param buffer  Where to write the C string to
     @param bufferSize  The size of the buffer
     @return  A pointer to the string, i.e. to the first byte of the buffer. */
-char* c4error_getMessageC(C4Error error, char buffer[] C4NONNULL, size_t bufferSize) C4API;
+char* c4error_getDescriptionC(C4Error error, char buffer[] C4NONNULL, size_t bufferSize) C4API;
 
 /** Creates a C4Error struct with the given domain and code, and associates the message with it. */
 C4Error c4error_make(C4ErrorDomain domain, int code, C4String message) C4API;

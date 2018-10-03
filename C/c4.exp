@@ -33,7 +33,8 @@ _c4log_setLevel
 _c4log_warnOnErrors
 _c4error_make
 _c4error_getMessage
-_c4error_getMessageC
+_c4error_getDescription
+_c4error_getDescriptionC
 _c4error_mayBeTransient
 _c4error_mayBeNetworkDependent
 

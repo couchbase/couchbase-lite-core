@@ -127,15 +127,11 @@ namespace litecore { namespace repl {
 #pragma mark - ERRORS:
 
 
-    static const char* const kErrorDomainNames[] = {
-        nullptr, "LiteCore", "POSIX", nullptr, "SQLite", "Fleece", "Network", "WebSocket"};
-
-
     blip::ErrorBuf Worker::c4ToBLIPError(C4Error err) {
         //FIX: Map common errors to more standard domains
         if (!err.code)
             return { };
-        return {slice(kErrorDomainNames[err.domain]),
+        return {slice(error::nameOfDomain((error::Domain)err.domain)),
                 err.code,
                 alloc_slice(c4error_getMessage(err))};
     }
@@ -148,8 +144,8 @@ namespace litecore { namespace repl {
         int code = kC4ErrorRemoteError;
         string domainStr = err.domain.asString();
         const char* domainCStr = domainStr.c_str();
-        for (uint32_t d = 0; d <= WebSocketDomain; d++) {
-            if (kErrorDomainNames[d] && strcmp(domainCStr, kErrorDomainNames[d]) == 0) {
+        for (error::Domain d = error::LiteCore; d < error::NumDomainsPlus1; d = (error::Domain)(d+1)) {
+            if (strcmp(domainCStr, error::nameOfDomain(d)) == 0) {
                 domain = (C4ErrorDomain)d;
                 code = err.code;
                 break;
@@ -167,8 +163,8 @@ namespace litecore { namespace repl {
     }
 
     void Worker::gotError(C4Error err) {
-        alloc_slice message = c4error_getMessage(err);
-        logError("Got LiteCore error: %.*s (%d/%d)", SPLAT(message), err.domain, err.code);
+        alloc_slice message = c4error_getDescription(err);
+        logError("Got LiteCore error: %.*s", SPLAT(message));
         onError(err);
     }
 

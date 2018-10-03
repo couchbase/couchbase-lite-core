@@ -306,9 +306,8 @@ void DbEndpoint::onStateChanged(C4ReplicatorStatus status) {
     if (status.error.code != 0) {
         startLine();
         char message[200];
-        c4error_getMessageC(status.error, message, sizeof(message));
-        C4Log("** Replicator error: %s (%d,%d)",
-              message, status.error.domain, status.error.code);
+        c4error_getDescriptionC(status.error, message, sizeof(message));
+        C4Log("** Replicator error: %s", message);
     }
 
     setDocCount(documentCount);
@@ -326,11 +325,11 @@ void DbEndpoint::onDocError(bool pushing,
     } else {
         startLine();
         char message[200];
-        c4error_getMessageC(error, message, sizeof(message));
-        C4Log("** Error %s doc \"%.*s\": %s (%d,%d)",
+        c4error_getDescriptionC(error, message, sizeof(message));
+        C4Log("** Error %s doc \"%.*s\": %s",
               (pushing ? "pushing" : "pulling"),
               (int)docID.size, docID.buf,
-              message, error.domain, error.code)
+              message)
     }
 }
 

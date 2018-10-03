@@ -98,13 +98,6 @@ namespace litecore {
         return code & 0xff;
     }
 
-    // Indexed by Domain
-    static const char* kDomainNames[] = {"0",
-                                         "LiteCore", "POSIX", "SQLite", "Fleece",
-                                         "Network", "WebSocket"};
-    static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
-                  "Incomplete domain name table");
-
 #ifdef LITECORE_IMPL
     static const char* litecore_errstr(error::LiteCoreError code) {
         static const char* kLiteCoreMessages[] = {
@@ -263,6 +256,20 @@ namespace litecore {
     }
 
 
+    const char* error::nameOfDomain(Domain domain) noexcept {
+        // Indexed by Domain
+        static const char* kDomainNames[] = {"0",
+                                             "LiteCore", "POSIX", "SQLite", "Fleece",
+                                             "Network", "WebSocket"};
+        static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
+                      "Incomplete domain name table");
+        
+        if (domain < 0 || domain >= NumDomainsPlus1)
+            return "INVALID_DOMAIN";
+        return kDomainNames[domain];
+    }
+
+
 #pragma mark - ERROR CLASS:
 
 
@@ -351,10 +358,8 @@ namespace litecore {
 
     void error::_throw() {
         if (sWarnOnError && !isUnremarkable()) {
-            static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) ==
-                          error::NumDomainsPlus1, "Incomplete domain name table");
             WarnError("LiteCore throwing %s error %d: %s%s",
-                      kDomainNames[domain], code, what(), backtrace(1).c_str());
+                      nameOfDomain(domain), code, what(), backtrace(1).c_str());
         }
         throw *this;
     }

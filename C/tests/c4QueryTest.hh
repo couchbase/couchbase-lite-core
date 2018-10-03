@@ -51,7 +51,7 @@ public:
         c4query_free(query);
         query = c4query_new(db, c4str(queryStr.c_str()), &error);
         char errbuf[256];
-        INFO("error " << error.domain << "/" << error.code << ": " << c4error_getMessageC(error, errbuf, sizeof(errbuf)));
+        INFO("error " << c4error_getDescriptionC(error, errbuf, sizeof(errbuf)));
         REQUIRE(query);
     }
 

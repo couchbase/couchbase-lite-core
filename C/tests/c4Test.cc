@@ -93,8 +93,8 @@ std::ostream& operator<< (std::ostream& o, C4SliceResult s)     {return o << fle
 
 
 ostream& operator<< (ostream &out, C4Error error) {
-    C4SliceResult s = c4error_getMessage(error);
-    out << "C4Error(" << error.domain << ", " << error.code << "): \"" << string((const char*)s.buf, s.size) << "\"";
+    C4SliceResult s = c4error_getDescription(error);
+    out << "C4Error(" << string((const char*)s.buf, s.size) << ")";
     c4slice_free(s);
     return out;
 }
@@ -361,7 +361,7 @@ void C4Test::createConflictingRev(C4Database *db,
     C4Error error;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
     char buf[256];
-    INFO("Error: " << c4error_getMessageC(error, buf, sizeof(buf)));
+    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
     REQUIRE(doc != nullptr);
     c4doc_free(doc);
 }
@@ -385,7 +385,7 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
     auto doc = c4doc_put(db, &rq, nullptr, &error);
     if (!doc) {
         char buf[256];
-        INFO("Error: " << c4error_getMessageC(error, buf, sizeof(buf)));
+        INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
     }
     REQUIRE(doc != nullptr);
     string revID((char*)doc->revID.buf, doc->revID.size);

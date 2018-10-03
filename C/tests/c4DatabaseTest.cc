@@ -46,15 +46,17 @@ class C4DatabaseTest : public C4Test {
 
     C4DatabaseTest(int testOption) :C4Test(testOption) { }
 
-    void assertMessage(C4ErrorDomain domain, int code, const char *expectedMsg) {
+    void assertMessage(C4ErrorDomain domain, int code,
+                       const char *expectedDomainAndType, const char *expectedMsg) {
         C4SliceResult msg = c4error_getMessage({domain, code});
-        REQUIRE(std::string((char*)msg.buf, msg.size) == std::string(expectedMsg));
+        CHECK(std::string((char*)msg.buf, msg.size) == std::string(expectedMsg));
         c4slice_free(msg);
 
+        string expectedDesc = string(expectedDomainAndType) + " \"" + expectedMsg + "\"";
         char buf[256];
-        char *cmsg = c4error_getMessageC({domain, code}, buf, sizeof(buf));
-        REQUIRE(std::string(cmsg) == std::string(expectedMsg));
-        REQUIRE(cmsg == &buf[0]);
+        char *cmsg = c4error_getDescriptionC({domain, code}, buf, sizeof(buf));
+        CHECK(std::string(cmsg) == expectedDesc);
+        CHECK(cmsg == &buf[0]);
     }
 
     void setupAllDocs() {
@@ -66,23 +68,26 @@ class C4DatabaseTest : public C4Test {
 
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]") {
-    C4SliceResult msg = c4error_getMessage({LiteCoreDomain, 0});
+    alloc_slice msg = c4error_getMessage({LiteCoreDomain, 0});
     REQUIRE(msg.buf == (const void*)nullptr);
     REQUIRE((unsigned long)msg.size == 0ul);
 
-    char buf[256];
-    char *cmsg = c4error_getMessageC({LiteCoreDomain, 0}, buf, sizeof(buf));
-    REQUIRE(cmsg == &buf[0]);
-    REQUIRE(buf[0] == '\0');
+    msg = c4error_getDescription({LiteCoreDomain, 0});
+    REQUIRE(msg == "No error"_sl);
 
-    assertMessage(SQLiteDomain, SQLITE_CORRUPT, "database disk image is malformed");
-    assertMessage(SQLiteDomain, SQLITE_IOERR_ACCESS, "disk I/O error (3338)");
-    assertMessage(SQLiteDomain, SQLITE_IOERR, "disk I/O error");
-    assertMessage(LiteCoreDomain, 15, "data is corrupted");
-    assertMessage(POSIXDomain, ENOENT, "No such file or directory");
-    assertMessage(LiteCoreDomain, kC4ErrorTransactionNotClosed, "transaction not closed");
-    assertMessage(SQLiteDomain, -1234, "unknown error (-1234)");
-    assertMessage((C4ErrorDomain)666, -1234, "unknown error domain");
+    char buf[256];
+    char *cmsg = c4error_getDescriptionC({LiteCoreDomain, 0}, buf, sizeof(buf));
+    REQUIRE(cmsg == &buf[0]);
+    REQUIRE(strcmp(cmsg, "No error") == 0);
+
+    assertMessage(SQLiteDomain, SQLITE_CORRUPT, "SQLite error 11", "database disk image is malformed");
+    assertMessage(SQLiteDomain, SQLITE_IOERR_ACCESS, "SQLite error 3338", "disk I/O error (3338)");
+    assertMessage(SQLiteDomain, SQLITE_IOERR, "SQLite error 10", "disk I/O error");
+    assertMessage(LiteCoreDomain, 15, "LiteCore error 15", "data is corrupted");
+    assertMessage(POSIXDomain, ENOENT, "POSIX error 2", "No such file or directory");
+    assertMessage(LiteCoreDomain, kC4ErrorTransactionNotClosed, "LiteCore error 18", "transaction not closed");
+    assertMessage(SQLiteDomain, -1234, "SQLite error -1234", "unknown error (-1234)");
+    assertMessage((C4ErrorDomain)666, -1234, "INVALID_DOMAIN error -1234", "unknown error domain");
 }
 
 
