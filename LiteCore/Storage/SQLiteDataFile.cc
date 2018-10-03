@@ -100,9 +100,9 @@ namespace litecore {
             return;     // ignore warning closing zombie db that's been deleted (#381)
 
         if (baseCode == SQLITE_NOTICE || baseCode == SQLITE_READONLY) {
-            Log("SQLite message: %s", msg);
+            LogTo(DBLog, "SQLite message: %s", msg);
         } else {
-            Warn("SQLite error (code %d): %s", errCode, msg);
+            LogToAt(DBLog, Error, "SQLite error (code %d): %s", errCode, msg);
         }
     }
 
@@ -241,7 +241,7 @@ namespace litecore {
         RegisterSQLiteFunctions(sqlite, fleeceAccessor(), documentKeys());
         int rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)
-            Warn("Unable to register FTS tokenizer: SQLite err %d", rc);
+            warn("Unable to register FTS tokenizer: SQLite err %d", rc);
     }
 
 
@@ -264,7 +264,7 @@ namespace litecore {
                 // finalizers run. (Couchbase Lite Java has this issue.)
                 // We'll log info about the statements so this situation can be detected from logs.
                 _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
-                    LogVerbose(DBLog, "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
+                    logVerbose("SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
                                _sqlDb.get(), (busy ? "busy" : "open"), sql);
                 });
                 // Also, tell SQLite not to checkpoint the WAL when it eventually closes the db
@@ -316,13 +316,13 @@ namespace litecore {
         if (alg == kNoEncryption) {
             if (!currentlyEncrypted)
                 return;
-            LogTo(DBLog, "Decrypting DataFile");
+            log("Decrypting DataFile");
         } else {
             if (currentlyEncrypted) {
-                LogTo(DBLog, "Changing DataFile encryption key");
+                log("Changing DataFile encryption key");
             }
             else {
-                LogTo(DBLog, "Encrypting DataFile");
+                log("Encrypting DataFile");
             }
         }
         
@@ -425,7 +425,7 @@ namespace litecore {
                 const_cast<unique_ptr<SQLite::Statement>&>(ref)
                                                     = make_unique<SQLite::Statement>(*_sqlDb, sql);
             } catch (const SQLite::Exception &x) {
-                Warn("SQLite error compiling statement \"%s\": %s", sql, x.what());
+                warn("SQLite error compiling statement \"%s\": %s", sql, x.what());
                 throw;
             }
         }
@@ -483,18 +483,18 @@ namespace litecore {
         try {
             int64_t pageCount = intQuery("PRAGMA page_count");
             int64_t freePages = intQuery("PRAGMA freelist_count");
-            LogVerbose(DBLog, "Pre-close housekeeping: %lld of %lld pages free (%.0f%%)",
+            logVerbose("Pre-close housekeeping: %lld of %lld pages free (%.0f%%)",
                        (long long)freePages, (long long)pageCount, (float)freePages / pageCount);
 
             _exec("PRAGMA optimize");
 
             if ((pageCount > 0 && (float)freePages / pageCount >= kVacuumFractionThreshold)
                     || (freePages * kPageSize >= kVacuumSizeThreshold)) {
-                Log("Vacuuming database '%s'...", filePath().dirName().c_str());
+                log("Vacuuming database...");
                 _exec("PRAGMA incremental_vacuum");
             }
         } catch (const SQLite::Exception &x) {
-            Warn("Caught SQLite exception while vacuuming: %s", x.what());
+            warn("Caught SQLite exception while vacuuming: %s", x.what());
         }
     }
 

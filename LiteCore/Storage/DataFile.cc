@@ -105,7 +105,8 @@ namespace litecore {
 
 
     DataFile::DataFile(const FilePath &path, const DataFile::Options *options)
-    :_path(path)
+    :Logging(DBLog)
+    ,_path(path)
     ,_options(options ? *options : Options::defaults)
     {
         // Do this last so I'm fully constructed before other threads can see me (#425)
@@ -114,10 +115,15 @@ namespace litecore {
 
 
     DataFile::~DataFile() {
-        LogToAt(DBLog, Debug, "DataFile: destructing (~DataFile) %p", this);
+        logDebug("destructing (~DataFile)");
         Assert(!_inTransaction);
         if (_shared)
             _shared->removeDataFile(this);
+    }
+
+
+    string DataFile::loggingIdentifier() const {
+        return _path.path();
     }
 
 
@@ -126,12 +132,12 @@ namespace litecore {
             i.second->close();
         }
         if (_shared->removeDataFile(this))
-            LogTo(DBLog, "Closing database %s", _path.path().c_str());
+            log("Closing database");
     }
 
 
     void DataFile::reopen() {
-        LogTo(DBLog, "Opening database %s", filePath().path().c_str());
+        log("Opening database");
         _shared->addDataFile(this);
     }
 
@@ -237,7 +243,7 @@ namespace litecore {
     }
 
     KeyStore& DataFile::addKeyStore(const string &name, KeyStore::Capabilities options) {
-        LogToAt(DBLog, Debug, "DataFile: open KVS '%s'", name.c_str());
+        logDebug("open KVS '%s'", name.c_str());
         checkOpen();
         Assert(!(options.sequences && !_options.keyStores.sequences),
                "KeyStore can't have sequences if Database doesn't");
@@ -247,7 +253,7 @@ namespace litecore {
     }
 
     void DataFile::closeKeyStore(const string &name) {
-        LogToAt(DBLog, Debug, "DataFile: close KVS '%s'", name.c_str());
+        logDebug("close KVS '%s'", name.c_str());
         auto i = _keyStores.find(name);
         if (i != _keyStores.end()) {
             // Never remove a KeyStore from _keyStores: there may be objects pointing to it 
@@ -338,7 +344,7 @@ namespace litecore {
     {
         _db.beginTransactionScope(this);
         if (active) {
-            LogToAt(DBLog, Verbose, "DataFile: begin transaction");
+            _db.logVerbose("begin transaction");
             Signpost::begin(Signpost::transaction, uint32_t(size_t(this)));
             _db._beginTransaction(this);
             _active = true;
@@ -351,7 +357,7 @@ namespace litecore {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, true);
         _active = false;
-        LogToAt(DBLog, Verbose, "DataFile: commit transaction");
+        _db.logVerbose("commit transaction");
         _db._endTransaction(this, true);
         Signpost::end(Signpost::transaction, uint32_t(size_t(this)));
     }
@@ -361,7 +367,7 @@ namespace litecore {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, false);
         _active = false;
-        LogTo(DBLog, "DataFile: abort transaction");
+        _db.log("abort transaction");
         _db._endTransaction(this, false);
         Signpost::end(Signpost::transaction, uint32_t(size_t(this)));
     }
@@ -369,7 +375,7 @@ namespace litecore {
 
     Transaction::~Transaction() {
         if (_active) {
-            LogTo(DBLog, "DataFile: Transaction exiting scope without explicit commit; aborting");
+            _db.log("Transaction exiting scope without explicit commit; aborting");
             abort();
         }
         _db.endTransactionScope(this);
@@ -386,7 +392,7 @@ namespace litecore {
             try {
                 _db->endReadOnlyTransaction();
             } catch (...) {
-                Warn("~ReadOnlyTransaction caught C++ exception in endReadOnlyTransaction");
+                _db->warn("~ReadOnlyTransaction caught C++ exception in endReadOnlyTransaction");
             }
         }
     }

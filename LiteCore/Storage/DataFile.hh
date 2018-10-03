@@ -41,7 +41,7 @@ namespace litecore {
 
     /** A database file, primarily a container of KeyStores which store the actual data.
         This is an abstract class, with concrete subclasses for different database engines. */
-    class DataFile {
+    class DataFile : public Logging {
     public:
 
         // Callback that takes a record body and returns the portion of it containing Fleece data
@@ -159,6 +159,8 @@ namespace litecore {
         static Factory* factoryForFile(const FilePath&);
 
     protected:
+        virtual std::string loggingIdentifier() const override;
+        
         /** Reopens database after it's been closed. */
         virtual void reopen();
 

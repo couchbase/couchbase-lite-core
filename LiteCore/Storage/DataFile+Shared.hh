@@ -8,6 +8,7 @@
 
 #pragma once
 #include "Error.hh"
+#include "Logging.hh"
 #include "c4Private.h"        // C4InstanceCounted
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
@@ -22,7 +23,7 @@ namespace litecore {
     /** Shared state between all open DataFile instances on the same filesystem file.
         Manages a mutex that ensures that only one DataFile can open a transaction at once.
         This class is internal to DataFile. */
-    class DataFile::Shared : public RefCounted, C4InstanceCounted {
+    class DataFile::Shared : public RefCounted, C4InstanceCounted, Logging {
     public:
 
         static Shared* forPath(const FilePath &path, DataFile *dataFile) {
@@ -32,9 +33,9 @@ namespace litecore {
             if (!file) {
                 file = new Shared(pathStr);
                 sFileMap[pathStr] = file;
-                LogToAt(DBLog, Debug, "File %p: created for DataFile %p at %s", file, dataFile, pathStr.c_str());
+                file->logDebug("created for DataFile %p at %s", dataFile, pathStr.c_str());
             } else {
-                LogToAt(DBLog, Debug, "File %p: adding DataFile %p", file, dataFile);
+                file->logDebug("adding DataFile %p", dataFile);
             }
             lock.unlock();
 
@@ -69,7 +70,7 @@ namespace litecore {
 
         bool removeDataFile(DataFile *dataFile) {
             unique_lock<mutex> lock(_mutex);
-            LogToAt(DBLog, Debug, "File %p: Remove DataFile %p", this, dataFile);
+            logDebug("Remove DataFile %p", dataFile);
             auto pos = find(_dataFiles.begin(), _dataFiles.end(), dataFile);
             if (pos == _dataFiles.end())
                 return false;
@@ -141,11 +142,12 @@ namespace litecore {
 
     protected:
         Shared(const string &p)
-        :path(p)
+        :Logging(DBLog)
+        ,path(p)
         { }
 
         ~Shared() {
-            LogToAt(DBLog, Debug, "File %p: destructing", this);
+            logDebug("destructing");
             unique_lock<mutex> lock(sFileMapMutex);
             sFileMap.erase(path);
         }
