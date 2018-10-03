@@ -23,13 +23,12 @@
 #include "RecordEnumerator.hh"
 #include "KeyStore.hh"
 #include "varint.hh"
-#include "slice.hh"
-#include "FleeceCpp.hh"
+#include "fleece/slice.hh"
+#include "fleece/Fleece.hh"
 #include <stdint.h>
 #include <ctime>
 
 using namespace fleece;
-using namespace fleeceapi;
 
 
 // This helper function is meant to be wrapped in a transaction
@@ -41,7 +40,7 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
             return false;
         }
 
-        fleeceapi::Encoder enc;
+        Encoder enc;
         enc.beginArray();
         enc << (double)timestamp;
         enc << (slice)docId;
@@ -63,7 +62,7 @@ static bool c4doc_setExpirationInternal(C4Database *db, C4Slice docId, uint64_t 
 
             // Remove old entry
             uint64_t oldTimestamp = 0;
-            fleeceapi::Encoder oldKeyEnc;
+            Encoder oldKeyEnc;
             GetUVarInt(existingDoc.body(), &oldTimestamp);
             oldKeyEnc.beginArray();
             oldKeyEnc << (double)oldTimestamp;
@@ -153,7 +152,7 @@ public:
         return true;
     }
     
-    slice docID() const
+    alloc_slice docID() const
     {
         return _current;
     }
@@ -165,7 +164,7 @@ public:
     
     void reset()
     {
-        fleeceapi::Encoder e;
+        Encoder e;
         e.beginArray();
         e << (double)_endTimestamp;
         e.beginDict();

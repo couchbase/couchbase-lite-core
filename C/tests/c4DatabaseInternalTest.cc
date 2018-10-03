@@ -21,6 +21,7 @@
 #include "c4DocEnumerator.h"
 #include "c4ExpiryEnumerator.h"
 #include "c4BlobStore.h"
+#include "c4Document+Fleece.h"
 #include <cmath>
 #include <errno.h>
 #include <iostream>
@@ -97,17 +98,28 @@ public:
         REQUIRE(doc);
         return doc;
     }
+
+    alloc_slice encodeBodyIfJSON(C4Slice body) {
+        if (slice(body).hasPrefix("{"_sl) && slice(body).hasSuffix("}"_sl)) {
+            // auto-convert JSON to Fleece as a convenience for the tests
+            return json2fleece(std::string(slice(body)).c_str());
+        } else {
+            return alloc_slice(body);
+        }
+    }
     
     C4Document* putDoc(C4Database *db, C4Slice docID, C4Slice revID,
-                       C4Slice body, C4RevisionFlags flags, C4Error* error) {
+                       C4Slice body, C4RevisionFlags flags, C4Error* error)
+    {
         TransactionHelper t(db);
+        alloc_slice encodedBody = encodeBodyIfJSON(body);
         C4Slice history[1] = {revID};
         C4DocPutRequest rq = {};
         rq.allowConflict = false;
         rq.docID = docID;
         rq.history = revID == kC4SliceNull? NULL : history;
         rq.historyCount = (size_t)(revID == kC4SliceNull? 0 : 1);
-        rq.body = body;
+        rq.body = encodedBody;
         rq.revFlags = flags;
         rq.save = true;
         rq.remoteDBID = _remoteID;
@@ -136,15 +148,17 @@ public:
     C4Document* forceInsert(C4Database *db, C4Slice docID,
                             const C4Slice* history, size_t historyCount,
                             C4Slice body, C4RevisionFlags flags,
-                            C4Error* error) {
+                            C4Error* error)
+    {
         TransactionHelper t(db);
+        alloc_slice encodedBody = encodeBodyIfJSON(body);
         C4DocPutRequest rq = {};
         rq.docID = docID;
         rq.existingRevision = true;
         rq.allowConflict = true;
         rq.history = history;
         rq.historyCount = historyCount;
-        rq.body = body;
+        rq.body = encodedBody;
         rq.revFlags = flags;
         rq.save = true;
         rq.remoteDBID = _remoteID;
@@ -224,9 +238,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "CRUD", "[Database][C]") {
     if(!isRevTrees()) return;
     
     C4Error c4err;
-    C4String body = C4STR("{\"foo\":1, \"bar\":false}");
-    C4String updatedBody = C4STR("{\"foo\":1, \"bar\":false, \"status\":\"updated!\"}");
-    
+    alloc_slice body = json2fleece("{'foo':1, 'bar':false}");
+    alloc_slice updatedBody = json2fleece("{'foo':1, 'bar':false, 'status':'updated!'}");
+
     // Make sure the database-changed notifications have the right data in them (see issue #93)
     // TODO: Observer
     
@@ -447,7 +461,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "EmptyDoc", "[Database][C]") {
     if(!isRevTrees()) return;
     
     // Create a document:
-    C4Document* doc = putDoc(kC4SliceNull, kC4SliceNull, C4STR("{}"));
+    C4Document* doc = putDoc(kC4SliceNull, kC4SliceNull, kEmptyFleeceBody);
     C4String docID = copy(doc->docID);
     c4doc_free(doc);
     
@@ -476,21 +490,24 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
     if(!isRevTrees()) return;
     
     // Create a document:
-    C4Document* doc = putDoc(C4STR("doc"), kC4SliceNull, C4STR("{\"property\":\"value\"}"));
-    REQUIRE(doc->revID == C4STR("1-3de83144ab0b66114ff350b20724e1fd48c6c57b"));
+    C4Document* doc = putDoc(C4STR("doc"), kC4SliceNull, C4STR("{'property':'value'}"));
+    C4Slice revID = C4STR("1-d65a07abdb5c012a1bd37e11eef1d0aca3fa2a90");
+    REQUIRE(doc->revID == revID);
     C4String docID = copy(doc->docID);
     C4String revID1 = copy(doc->revID);
     c4doc_free(doc);
     
     // Update a document
-    doc = putDoc(docID, revID1, C4STR("{\"property\":\"newvalue\"}"));
-    REQUIRE(doc->revID == C4STR("2-7718b0324ed598dda05874ab0afa1c826a4dc45c"));
+    doc = putDoc(docID, revID1, C4STR("{'property':'newvalue'}"));
+    revID = C4STR("2-eaaa643f551df08eb0c60f87f3f011ac4355f834");
+    REQUIRE(doc->revID == revID);
     C4String revID2 = copy(doc->revID);
     c4doc_free(doc);
 
     // Delete a document
     doc = putDoc(docID, revID2, kC4SliceNull, kRevDeleted);
-    REQUIRE(doc->revID == C4STR("3-6f61ee6f47b9f70773aa769d97b116d615cad7b9"));
+    revID = C4STR("3-b0089cb43d39c6aba5aea3c0bd5e382dc030033d");
+    REQUIRE(doc->revID == revID);
     c4doc_free(doc);
     
     // free copied C4String instances
@@ -508,14 +525,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteWithProperties", "[Databas
     if(!isRevTrees()) return;
     
     // Create a document:
-    C4String body1 = C4STR("{\"property\":\"newvalue\"}");
+    C4String body1 = C4STR("{'property':'newvalue'}");
     C4Document* doc = putDoc(kC4SliceNull, kC4SliceNull, body1);
     C4String docID = copy(doc->docID);
     C4String revID1 = copy(doc->revID);
     c4doc_free(doc);
     
     // Delete a document
-    C4String body2 = C4STR("{\"property\":\"newvalue\"}");
+    alloc_slice body2 = json2fleece("{'property':'newvalue'}");
     doc = putDoc(docID, revID1, body2, kRevDeleted);
     C4String revID2 = copy(doc->revID);
     c4doc_free(doc);
@@ -556,10 +573,9 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeleteAndRecreate", "[Database][
     if(!isRevTrees()) return;
     
     // Create a document:
-    C4String body = C4STR("{\"property\":\"value\"}");
-    C4Document* doc = putDoc(C4STR("dock"), kC4SliceNull, body);
+    C4Document* doc = putDoc(C4STR("dock"), kC4SliceNull, C4STR("{'property':'value'}"));
     REQUIRE(C4STR_TO_STDSTR(doc->revID).compare(0, 2, "1-") == 0);
-    REQUIRE(doc->selectedRev.body == body);
+    alloc_slice body(doc->selectedRev.body);
     C4String revID1 = copy(doc->revID);
     c4doc_free(doc);
     
@@ -589,7 +605,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     // TODO: Observer
     
     C4String docID = C4STR("MyDocID");
-    C4String body = C4STR("{\"message\":\"hi\"}");
+    alloc_slice body = json2fleece("{'message':'hi'}");
     const size_t historyCount = 4;
     const C4String history[historyCount] =
         {C4STR("4-4444"), C4STR("3-3333"), C4STR("2-2222"), C4STR("1-1111")};
@@ -612,7 +628,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     const C4String conflictHistory[conflictHistoryCount] =
     {C4STR("5-5555"), C4STR("4-4545"), C4STR("3-3030"),
         C4STR("2-2222"), C4STR("1-1111")};
-    C4String conflictBody = C4STR("{\"message\":\"yo\"}");
+    alloc_slice conflictBody = json2fleece("{'message':'yo'}");
     forceInsert(docID, conflictHistory, conflictHistoryCount, conflictBody);
     _remoteID = 0;
 
@@ -628,7 +644,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTree", "[Database][C]") {
     
     // Add an unrelated document:
     C4String otherDocID = C4STR("AnotherDocID");
-    C4String otherBody = C4STR("{\"language\":\"jp\"}");
+    alloc_slice otherBody = json2fleece("{'language':'jp'}");
     const size_t otherHistoryCount = 1;
     const C4String otherHistory[otherHistoryCount] = {C4STR("1-1010")};
     forceInsert(otherDocID, otherHistory, otherHistoryCount, otherBody);
@@ -747,7 +763,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "RevTreeConflict", "[Database][C]
     // TODO: Observer
     
     C4String docID = C4STR("MyDocID");
-    C4String body = C4STR("{\"message\":\"hi\"}");
+    alloc_slice body = json2fleece("{'message':'hi'}");
     const size_t historyCount = 1;
     const C4String history[historyCount] = {C4STR("1-1111")};
     C4Document* doc = forceInsert(db, docID, history, historyCount, body, 0);
@@ -768,7 +784,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DeterministicRevIDs", "[Database
     if(!isRevTrees()) return;
     
     C4String docID = C4STR("mydoc");
-    C4String body = C4STR("{\"key\":\"value\"}");
+    C4String body = C4STR("{'key':'value'}");
     C4Document* doc = putDoc(docID, kC4SliceNull, body);
     C4String revID = copy(doc->revID);
     c4doc_free(doc);
@@ -789,13 +805,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "DuplicateRev", "[Database][C]") 
     
     // rev1
     C4String docID = C4STR("mydoc");
-    C4String body = C4STR("{\"key\":\"value\"}");
+    alloc_slice body = json2fleece("{'key':'value'}");
     C4Document* doc = putDoc(docID, kC4SliceNull, body);
     C4String revID = copy(doc->revID);
     c4doc_free(doc);
     
     // rev2a
-    body = C4STR("{\"key\":\"new-value\"}");
+    body = json2fleece("{'key':'new-value'}");
     doc = putDoc(docID, revID, body);
     C4String revID2a = copy(doc->revID);
     c4doc_free(doc);

@@ -21,39 +21,16 @@
 #include "Path.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "fleece/Fleece.h"
 
 using namespace fleece;
+using namespace fleece::impl;
 using namespace std;
 
 namespace litecore {
 
     
     // Core SQLite functions for accessing values inside Fleece blobs.
-
-
-    // fl_value(body, propertyPath) -> propertyValue
-    static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        try {
-            const Value *val;
-            if (!evaluatePathFromArgs(ctx, argv, true, &val))
-                return;
-            setResultFromValue(ctx, val);
-        } catch (const std::exception &) {
-            sqlite3_result_error(ctx, "fl_value: exception!", -1);
-        }
-    }
-
-    // fl_nested_value(fleeceData, propertyPath) -> propertyValue
-    static void fl_nested_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        try {
-            const Value *val;
-            if (!evaluatePathFromArgs(ctx, argv, false, &val))
-                return;
-            setResultFromValue(ctx, val);
-        } catch (const std::exception &) {
-            sqlite3_result_error(ctx, "fl_value: exception!", -1);
-        }
-    }
 
 
     // fl_root(body) -> fleeceData
@@ -66,119 +43,183 @@ namespace litecore {
             auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
             slice fleece = funcCtx->accessor(body);
             setResultBlobFromFleeceData(ctx, fleece);
+            return;
+        }
+        const Value *val = asFleeceValue(argv[0]);
+        if (val) {
+            sqlite3_result_pointer(ctx, (void*)val, kFleeceValuePointerType, nullptr);
         } else {
             DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_NULL);
             sqlite3_result_null(ctx);
         }
     }
 
+    // fl_value(body, propertyPath) -> propertyValue
+    static void fl_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            QueryFleeceScope scope(ctx, argv);
+            setResultFromValue(ctx, scope.root);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_value: exception!", -1);
+        }
+    }
+
+    // fl_nested_value(fleeceData, propertyPath) -> propertyValue
+    static void fl_nested_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            const Value *val = fleeceParam(ctx, argv[0]);
+            if (!val)
+                return;
+            val = evaluatePathFromArg(ctx, argv, 1, val);
+            setResultFromValue(ctx, val);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_nested_value: exception!", -1);
+        }
+    }
+
+    // fl_unnested_value(unnestTableBody [, propertyPath]) -> propertyValue
+    static void fl_unnested_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        DebugAssert(argc == 1 || argc == 2);
+        sqlite3_value *body = argv[0];
+        if (sqlite3_value_type(body) == SQLITE_BLOB) {
+            // body is Fleece data:
+            if (argc == 1)
+                return fl_root(ctx, argc, argv);
+            else
+                return fl_value(ctx, argc, argv);
+        } else {
+            // body is a SQLite value; just return it
+            if (argc == 1)
+                sqlite3_result_value(ctx, body);
+            else
+                sqlite3_result_null(ctx);
+        }
+    }
+
+
     // fl_exists(body, propertyPath) -> 0/1
     static void fl_exists(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        const Value *val;
-        if (!evaluatePathFromArgs(ctx, argv, true, &val))
-            return;
-        sqlite3_result_int(ctx, (val ? 1 : 0));
-        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
+        try {
+            QueryFleeceScope scope(ctx, argv);
+            sqlite3_result_int(ctx, (scope.root ? 1 : 0));
+            sqlite3_result_subtype(ctx, kFleeceIntBoolean);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_exists: exception!", -1);
+        }
     }
 
     
     // fl_count(body, propertyPath) -> int
     static void fl_count(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        const Value *val;
-        if (!evaluatePathFromArgs(ctx, argv, true, &val))
-            return;
-        switch (val->type()) {
-            case kArray:
-                sqlite3_result_int(ctx, val->asArray()->count());
-                break;
-            case kDict:
-                sqlite3_result_int(ctx, val->asDict()->count());
-                break;
-            default:
+        try {
+            QueryFleeceScope scope(ctx, argv);
+            if (!scope.root) {
                 sqlite3_result_null(ctx);
-                break;
+                return;
+            }
+            switch (scope.root->type()) {
+                case kArray:
+                    sqlite3_result_int(ctx, scope.root->asArray()->count());
+                    break;
+                case kDict:
+                    sqlite3_result_int(ctx, scope.root->asDict()->count());
+                    break;
+                default:
+                    sqlite3_result_null(ctx);
+                    break;
+            }
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_count: exception!", -1);
         }
     }
 
 
-    // fl_contains(body, propertyPath, all?, value1, ...) -> 0/1
+    // fl_contains(body, propertyPath, value) -> 0/1
     static void fl_contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        if (argc < 4) {
-            sqlite3_result_error(ctx, "fl_contains: too few arguments", -1);
-            return;
+        try {
+            QueryFleeceScope scope(ctx, argv);
+            collectionContainsImpl(ctx, scope.root, argv[2]);
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_contains: exception!", -1);
         }
-        const Value *val;
-        if (!evaluatePathFromArgs(ctx, argv, true, &val))
-            return;
-        const Array *array = val ? val->asArray() : nullptr;
-        if (!array) {
-            sqlite3_result_int(ctx, 0);
+    }
+
+
+    void collectionContainsImpl(sqlite3_context* ctx, const Value *collection, sqlite3_value *arg) {
+        if (!collection || collection->type() < kArray) {
+            sqlite3_result_zeroblob(ctx, 0); // JSON null
             return;
         }
 
-        int found = 0, needed = 1;
-        if (sqlite3_value_int(argv[2]) != 0)    // 'all' flag
-            needed = (argc - 3);
+        // Set up a predicate callback that will match the desired value:
+        union target_t {
+            int64_t i;
+            double d;
+            FLSlice s;
+        };
+        target_t target;
+        valueType targetType;
+        bool (*predicate)(const Value*, const target_t&);
 
-        for (int i = 3; i < argc; ++i) {
-            auto arg = argv[i];
-            auto argType = sqlite3_value_type(arg);
-            switch (argType) {
-                case SQLITE_INTEGER: {
-                    int64_t n = sqlite3_value_int64(arg);
-                    for (Array::iterator j(array); j; ++j) {
-                        if (j->type() == kNumber && j->isInteger() && j->asInt() == n) {
-                            ++found;
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case SQLITE_FLOAT: {
-                    double n = sqlite3_value_double(arg);
-                    for (Array::iterator j(array); j; ++j) {
-                        if (j->type() == kNumber && j->asDouble() == n) {   //TODO: Approx equal?
-                            ++found;
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case SQLITE_BLOB:
-                    if (sqlite3_value_bytes(arg) == 0) {
-                        // A zero-length blob represents a Fleece/JSON 'null'.
-                        for (Array::iterator j(array); j; ++j) {
-                            if (j->type() == kNull) {
-                                ++found;
-                                break;
-                            }
-                        }
-                        break;
-                    }
-                    // ... else fall through to match blobs:
-                case SQLITE_TEXT: {
-                    valueType type = (argType == SQLITE_TEXT) ? kString : kData;
-                    const void *blob = sqlite3_value_blob(arg);
-                    slice blobVal(blob, sqlite3_value_bytes(arg));
-                    for (Array::iterator j(array); j; ++j) {
-                        if (j->type() == type && j->asString() == blobVal) {
-                            ++found;
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case SQLITE_NULL: {
-                    // A SQL null doesn't match anything
-                    break;
-                }
+        switch (sqlite3_value_type(arg)) {
+            case SQLITE_INTEGER: {
+                targetType = kNumber;
+                target.i = sqlite3_value_int64(arg);
+                predicate = [](const Value *v, const target_t &t) {return v->asInt() == t.i;};
+                break;
             }
-            if (found >= needed) {
-                sqlite3_result_int(ctx, 1);
+            case SQLITE_FLOAT: {
+                targetType = kNumber;
+                target.d = sqlite3_value_double(arg);
+                predicate = [](const Value *v, const target_t &t) {return v->asDouble() == t.d;};
+                break;
+            }
+            case SQLITE_TEXT: {
+                targetType = kString;
+                target.s = slice(sqlite3_value_blob(arg), sqlite3_value_bytes(arg));
+                predicate = [](const Value *v, const target_t &t) {return v->asString() == slice(t.s);};
+                break;
+            }
+            case SQLITE_BLOB: {
+                if (sqlite3_value_bytes(arg) == 0) {
+                    // A zero-length blob represents a Fleece/JSON 'null'.
+                    sqlite3_result_zeroblob(ctx, 0); // JSON null
+                    return;
+                } else {
+                    targetType = kData;
+                    target.s = slice(sqlite3_value_blob(arg), sqlite3_value_bytes(arg));
+                    predicate = [](const Value *v, const target_t &t) {return v->asData() == slice(t.s);};
+                }
+                break;
+            }
+            case SQLITE_NULL:
+            default:{
+                // A SQL null (MISSING) doesn't match anything
+                sqlite3_result_null(ctx);
                 return;
             }
         }
-        sqlite3_result_int(ctx, 0);
+
+        // Now iterate the array/dict:
+        bool found = false;
+        if (collection->type() == kArray) {
+            for (Array::iterator j(collection->asArray()); j; ++j) {
+                auto val = j.value();
+                if (val->type() == targetType && predicate(val, target)) {
+                    found = true;
+                    break;
+                }
+            }
+        } else {
+            for (Dict::iterator j(collection->asDict()); j; ++j) {
+                auto val = j.value();
+                if (val->type() == targetType && predicate(val, target)) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        sqlite3_result_int(ctx, found);
     }
 
 
@@ -188,11 +229,13 @@ namespace litecore {
     static void fl_result(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
             auto arg = argv[0];
-            if (sqlite3_value_type(arg) == SQLITE_BLOB) {
+            const Value *value = asFleeceValue(arg);
+            if (value) {
+                setResultBlobFromEncodedValue(ctx, value);
+            } else if (sqlite3_value_type(arg) == SQLITE_BLOB) {
                 switch (sqlite3_value_subtype(arg)) {
-                    case kFleecePointerSubtype:
                     case kFleeceNullSubtype: {
-                        auto value = fleeceParam(ctx, arg);
+                        value = fleeceParam(ctx, arg);
                         if (!value)
                             return;
                         setResultBlobFromEncodedValue(ctx, value);
@@ -207,7 +250,7 @@ namespace litecore {
                         // are Fleece containers.
                         Encoder enc;
                         enc.writeData(valueAsSlice(arg));
-                        setResultBlobFromFleeceData(ctx, enc.extractOutput());
+                        setResultBlobFromFleeceData(ctx, enc.finish());
                         break;
                     }
                 }
@@ -229,9 +272,13 @@ namespace litecore {
         { "fl_nested_value",   2, fl_nested_value },
         { "fl_exists",         2, fl_exists },
         { "fl_count",          2, fl_count },
-        { "fl_contains",      -1, fl_contains },
+        { "fl_contains",       3, fl_contains },
         { "fl_result",         1, fl_result },
         { }
     };
 
+    const SQLiteFunctionSpec kFleeceNullAccessorFunctionsSpec[] = {
+        { "fl_unnested_value",-1, fl_unnested_value },
+        { }
+    };
 }

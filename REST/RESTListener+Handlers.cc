@@ -29,7 +29,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 
 
 namespace litecore { namespace REST {
@@ -245,7 +244,7 @@ namespace litecore { namespace REST {
                              bool deleting,
                              bool newEdits,
                              C4Database *db,
-                             fleeceapi::JSONEncoder& json,
+                             fleece::JSONEncoder& json,
                              C4Error *outError)
     {
         if (!deleting && !body) {
@@ -285,29 +284,30 @@ namespace litecore { namespace REST {
         if (body["_deleted"_sl].asBool())
             deleting = true;
 
-        // Encode body as Fleece (and strip _id and _rev):
-        alloc_slice encodedBody = c4doc_encodeStrippingOldMetaProperties(body,
-                                                                         c4db_getFLSharedKeys(db));
-
-        // Save the revision:
-        C4Slice history[1] = {revID};
-        C4DocPutRequest put = {};
-        put.body = encodedBody;
-        if (!docID.empty())
-            put.docID = slice(docID);
-        put.revFlags = (deleting ? kRevDeleted : 0);
-        put.existingRevision = !newEdits;
-        put.allowConflict = false;
-        put.history = history;
-        put.historyCount = revID ? 1 : 0;
-        put.save = true;
-
         c4::ref<C4Document> doc;
         {
-            C4Error err;
             c4::Transaction t(db);
-            if (t.begin(&err))
-                doc = c4doc_put(db, &put, nullptr, outError);
+            if (!t.begin(outError))
+                return false;
+
+            // Encode body as Fleece (and strip _id and _rev):
+            alloc_slice encodedBody = c4doc_encodeStrippingOldMetaProperties(body,
+                                                                        c4db_getFLSharedKeys(db));
+
+            // Save the revision:
+            C4Slice history[1] = {revID};
+            C4DocPutRequest put = {};
+            put.allocedBody = {(void*)encodedBody.buf, encodedBody.size};
+            if (!docID.empty())
+                put.docID = slice(docID);
+            put.revFlags = (deleting ? kRevDeleted : 0);
+            put.existingRevision = !newEdits;
+            put.allowConflict = false;
+            put.history = history;
+            put.historyCount = revID ? 1 : 0;
+            put.save = true;
+            doc = c4doc_put(db, &put, nullptr, outError);
+
             if (!doc || !t.commit(outError))
                 return false;
         }

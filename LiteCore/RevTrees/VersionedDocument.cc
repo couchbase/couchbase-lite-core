@@ -19,38 +19,47 @@
 #include "VersionedDocument.hh"
 #include "Record.hh"
 #include "KeyStore.hh"
+#include "DataFile.hh"
 #include "Error.hh"
+#include "Doc.hh"
 #include "varint.hh"
 #include <ostream>
 
 namespace litecore {
     using namespace fleece;
+    using namespace fleece::impl;
 
-    VersionedDocument::VersionedDocument(KeyStore& db, slice docID)
-    :_db(db), _rec(docID)
+    VersionedDocument::VersionedDocument(KeyStore& store, slice docID)
+    :_store(store), _rec(docID)
     {
         read();
     }
 
-    VersionedDocument::VersionedDocument(KeyStore& db, const Record& rec)
-    :_db(db), _rec(std::move(rec))
+    VersionedDocument::VersionedDocument(KeyStore& store, const Record& rec)
+    :_store(store), _rec(std::move(rec))
     {
         decode();
     }
 
     VersionedDocument::VersionedDocument(const VersionedDocument &other)
     :RevTree(other)
-    ,_db(other._db)
+    ,_store(other._store)
     ,_rec(other._rec)
-    { }
+    {
+        updateScope();
+    }
+
+    VersionedDocument::~VersionedDocument() {
+    }
 
     void VersionedDocument::read() {
-        _db.read(_rec);
+        _store.read(_rec);
         decode();
     }
 
     void VersionedDocument::decode() {
         _unknown = false;
+        updateScope();
         if (_rec.body().buf) {
             RevTree::decode(_rec.body(), _rec.sequence());
             // The kSynced flag is set when the document's current revision is pushed to a server.
@@ -67,6 +76,28 @@ namespace litecore {
             _unknown = true;        // i.e. rec was read as meta-only
         }
     }
+
+    void VersionedDocument::updateScope() {
+        Assert(_fleeceScopes.empty());
+        addScope(_rec.body());
+    }
+
+    slice VersionedDocument::addScope(slice body) {
+        // A Scope associates the SharedKeys with the Fleece data in the body, so Fleece Dict
+        // accessors can decode the int keys.
+        if (body)
+            _fleeceScopes.emplace(body, _store.dataFile().documentKeys());
+        return body;
+    }
+
+    slice VersionedDocument::copyBody(slice body) {
+        return addScope(RevTree::copyBody(body));
+    }
+
+    slice VersionedDocument::copyBody(alloc_slice body) {
+        return addScope(RevTree::copyBody(body));
+    }
+
 
     bool VersionedDocument::updateMeta() {
         auto oldFlags = _rec.flags();
@@ -108,7 +139,7 @@ namespace litecore {
             createSequence = seq == 0 || hasNewRevisions();
             // (Don't call _rec.setBody(), because it'd invalidate all the inner pointers from
             // Revs into the existing body buffer.)
-            seq = _db.set(_rec.key(), _rec.version(), newBody, _rec.flags(),
+            seq = _store.set(_rec.key(), _rec.version(), newBody, _rec.flags(),
                           transaction, &seq, createSequence);
             if (!seq)
                 return kConflict;               // Conflict
@@ -118,7 +149,7 @@ namespace litecore {
                 saved(seq);
         } else {
             createSequence = false;
-            if (seq && !_db.del(_rec.key(), transaction, seq))
+            if (seq && !_store.del(_rec.key(), transaction, seq))
                 return kConflict;
         }
         _changed = false;

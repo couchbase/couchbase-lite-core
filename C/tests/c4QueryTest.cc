@@ -16,117 +16,9 @@
 // limitations under the License.
 //
 
-#include "c4Test.hh"
-#include "c4Query.h"
-#include "c4.hh"
-#include "c4Document+Fleece.h"
-#include <iostream>
+#include "c4QueryTest.hh"
+#include "StringUtil.hh"
 
-using namespace std;
-using namespace fleece;
-
-
-static bool operator==(C4FullTextMatch a, C4FullTextMatch b) {
-    return memcmp(&a, &b, sizeof(a)) == 0;
-}
-
-static ostream& operator<< (ostream& o, C4FullTextMatch match) {
-    return o << "{ds " << match.dataSource << ", prop " << match.property << ", term " << match.term << ", "
-             << "bytes " << match.start << " + " << match.length << "}";
-}
-
-
-class QueryTest : public C4Test {
-public:
-    QueryTest(int which, string filename)
-    :C4Test(which)
-    {
-        importJSONLines(sFixturesDir + filename);
-    }
-
-    QueryTest(int which)
-    :QueryTest(which, "names_100.json")
-    { }
-
-    ~QueryTest() {
-        c4query_free(query);
-    }
-
-    void compileSelect(const string &queryStr) {
-        INFO("Query = " << queryStr);
-        C4Error error;
-        c4query_free(query);
-        query = c4query_new(db, c4str(queryStr.c_str()), &error);
-        char errbuf[256];
-        INFO("error " << error.domain << "/" << error.code << ": " << c4error_getMessageC(error, errbuf, sizeof(errbuf)));
-        REQUIRE(query);
-    }
-
-    void compile(const string &whereExpr,
-                 const string &sortExpr ="",
-                 bool addOffsetLimit =false)
-    {
-        stringstream json;
-        json << "[\"SELECT\", {\"WHAT\": [[\"._id\"]], \"WHERE\": " << whereExpr;
-        if (!sortExpr.empty())
-            json << ", \"ORDER_BY\": " << sortExpr;
-        if (addOffsetLimit)
-            json << ", \"OFFSET\": [\"$offset\"], \"LIMIT\":  [\"$limit\"]";
-        json << "}]";
-        compileSelect(json.str());
-    }
-
-
-    // Runs query, invoking callback for each row and collecting its return values into a vector
-    template <class Collected>
-    vector<Collected> runCollecting(const char *bindings,
-                                    function<Collected(C4QueryEnumerator*)> callback)
-    {
-        REQUIRE(query);
-        C4QueryOptions options = kC4DefaultQueryOptions;
-        C4Error error;
-        auto e = c4query_run(query, &options, c4str(bindings), &error);
-        INFO("c4query_run got error " << error.domain << "/" << error.code);
-        REQUIRE(e);
-        vector<Collected> results;
-        while (c4queryenum_next(e, &error))
-            results.push_back(callback(e));
-        CHECK(error.code == 0);
-        c4queryenum_free(e);
-        return results;
-    }
-
-    // Runs query, returning vector of doc IDs
-    vector<string> run(const char *bindings =nullptr) {
-        return runCollecting<string>(bindings, [&](C4QueryEnumerator *e) {
-            REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
-            fleece::slice docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
-            return docID.asString();
-        });
-    }
-
-    // Runs query, returning vectors of FTS matches (one vector per row)
-    vector<vector<C4FullTextMatch>> runFTS(const char *bindings =nullptr) {
-        return runCollecting<vector<C4FullTextMatch>>(bindings, [&](C4QueryEnumerator *e) {
-            return vector<C4FullTextMatch>(&e->fullTextMatches[0],
-                                           &e->fullTextMatches[e->fullTextMatchCount]);
-        });
-    }
-
-protected:
-    C4Query *query {nullptr};
-};
-
-
-class PathsQueryTest : public QueryTest {
-public:
-    PathsQueryTest(int which)
-    :QueryTest(which, "paths.json")
-    { }
-};
-
-
-#pragma mark - TESTS:
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
@@ -433,7 +325,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT", "[Query][C]") {
 
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT returning object", "[Query][C]") {
-    auto sk = c4db_getFLSharedKeys(db);
     vector<string> expectedFirst = {"Cleveland", "Georgetta", "Margaretta"};
     vector<string> expectedLast  = {"Bejcek",    "Kolding",   "Ogwynn"};
     compileSelect(json5("{WHAT: ['.name'], \
@@ -452,9 +343,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query WHAT returning object", "[Query][C]"
         Value col = Array::iterator(e->columns)[0];
         REQUIRE(col.type() == kFLDict);
         Dict name = col.asDict();
-        INFO("name = " << name.toJSON(sk));
-        CHECK(name.get("first"_sl, sk).asstring() == expectedFirst[i]);
-        CHECK(name.get("last"_sl,  sk).asstring() == expectedLast[i]);
+        INFO("name = " << FLSlice(name.toJSON()));
+        CHECK(name.get("first"_sl).asstring() == expectedFirst[i]);
+        CHECK(name.get("last"_sl) .asstring() == expectedLast[i]);
         ++i;
     }
     CHECK(error.code == 0);
@@ -543,6 +434,71 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Join", "[Query][C]") {
     c4queryenum_free(e);
 }
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query UNNEST", "[Query][C]") {
+    for (int withIndex = 0; withIndex <= 1; ++withIndex) {
+        if (withIndex) {
+            C4Log("-------- Repeating with index --------");
+            REQUIRE(c4db_createIndex(db, C4STR("likes"), C4STR("[[\".likes\"]]"), kC4ArrayIndex, nullptr, nullptr));
+        }
+        compileSelect(json5("{WHAT: ['.person._id'],\
+                              FROM: [{as: 'person'}, \
+                                     {as: 'like', unnest: ['.person.likes']}],\
+                             WHERE: ['=', ['.like'], 'climbing'],\
+                          ORDER_BY: [['.person.name.first']]}"));
+        checkExplanation(withIndex);
+        CHECK(run() == (vector<string>{ "0000021", "0000017", "0000045", "0000060", "0000023" }));
+
+        compileSelect(json5("{WHAT: ['.person._id', '.like'],\
+                              FROM: [{as: 'person'}, \
+                                     {as: 'like', unnest: ['.person.likes']}],\
+                             WHERE: ['>', ['.like'], 'snowboarding'],\
+                          ORDER_BY: [['.like'], ['.person._id']]}"));
+        checkExplanation(withIndex);
+        CHECK(run2() == (vector<string>{ "0000003, swimming", "0000012, swimming", "0000020, swimming",
+            "0000072, swimming", "0000076, swimming", "0000081, swimming", "0000085, swimming",
+            "0000010, travelling", "0000027, travelling", "0000037, travelling", "0000060, travelling",
+            "0000068, travelling", "0000096, travelling" }));
+
+        compileSelect(json5("{WHAT: ['.like'],\
+                          DISTINCT: true,\
+                              FROM: [{as: 'person'}, \
+                                     {as: 'like', unnest: ['.person.likes']}],\
+                          ORDER_BY: [['.like']]}"));
+        checkExplanation(false);        // even with index, this must do a scan
+        CHECK(run() == (vector<string>{ "biking", "boxing", "chatting", "checkers", "chess", "climbing", "driving", "ironing", "reading", "running",
+                                        "shopping", "skiing", "snowboarding", "swimming", "travelling" }));
+    }
+}
+
+N_WAY_TEST_CASE_METHOD(NestedQueryTest, "DB Query UNNEST objects", "[Query][C]") {
+    for (int withIndex = 0; withIndex <= 1; ++withIndex) {
+        if (withIndex) {
+            C4Log("-------- Repeating with index --------");
+            REQUIRE(c4db_createIndex(db, C4STR("shapes"), C4STR("[[\".shapes\"], [\".color\"]]"), kC4ArrayIndex, nullptr, nullptr));
+        }
+        compileSelect(json5("{WHAT: ['.shape.color'],\
+                          DISTINCT: true,\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'shape', unnest: ['.doc.shapes']}],\
+                          ORDER_BY: [['.shape.color']]}"));
+        checkExplanation(false);        // even with index, this must do a scan
+        CHECK(run() == (vector<string>{ "blue", "cyan", "green", "red", "white", "yellow" }));
+
+        compileSelect(json5("{WHAT: [['sum()', ['.shape.size']]],\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'shape', unnest: ['.doc.shapes']}]}"));
+        checkExplanation(false);        // even with index, this must do a scan
+        CHECK(run() == (vector<string>{ "32" }));
+
+        compileSelect(json5("{WHAT: [['sum()', ['.shape.size']]],\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'shape', unnest: ['.doc.shapes']}],\
+                             WHERE: ['=', ['.shape.color'], 'red']}"));
+        checkExplanation(withIndex);
+        CHECK(run() == (vector<string>{ "11" }));
+    }
+}
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Seek", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
@@ -569,13 +525,6 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query Seek", "[Query][C]") {
     c4queryenum_free(e);
 }
 
-class NestedQueryTest : public QueryTest {
-public:
-    NestedQueryTest(int which)
-    :QueryTest(which, "nested.json")
-    { }
-};
-
 
 N_WAY_TEST_CASE_METHOD(NestedQueryTest, "DB Query ANY nested", "[Query][C]") {
     compile(json5("['ANY', 'Shape', ['.', 'shapes'], ['=', ['?', 'Shape', 'color'], 'red']]"));
@@ -599,7 +548,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
     C4SliceResult explanation = c4query_explain(query);
     string explanationString = toString((C4Slice)explanation);
     c4slice_free(explanation);
-    CHECK(explanationString.substr(0, 112) == "SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'contact.address.state') = 'CA') AND (flags & 1) = 0");
+    CHECK(litecore::hasPrefix(explanationString, "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (_doc.flags & 1) = 0"));
     
     auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
     REQUIRE(e);
@@ -630,7 +579,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
         // Save document:
         C4DocPutRequest rq = {};
         rq.docID = C4STR("added_later");
-        rq.body = (C4Slice)body;
+        rq.allocedBody = body;
         rq.save = true;
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
@@ -659,7 +608,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
     for(int i = 0; i < 2; i++) {
         REQUIRE(c4db_createIndex(db, names[i], desc[i], types[i], nullptr, &err));
         C4SliceResult indexes = c4db_getIndexes(db, &err);
-        FLValue val = FLValue_FromTrustedData((FLSlice)indexes);
+        FLValue val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
         REQUIRE(FLValue_GetType(val) == kFLArray);
         FLArray indexArray = FLValue_AsArray(val);
         FLArrayIterator iter;
@@ -671,7 +620,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
         
         REQUIRE(c4db_deleteIndex(db, names[i], &err));
         indexes = c4db_getIndexes(db, &err);
-        val = FLValue_FromTrustedData((FLSlice)indexes);
+        val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
         REQUIRE(FLValue_GetType(val) == kFLArray);
         indexArray = FLValue_AsArray(val);
         FLArrayIterator_Begin(indexArray, &iter);

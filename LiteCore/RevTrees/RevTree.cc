@@ -218,9 +218,17 @@ namespace litecore {
     }
 
 
+    slice RevTree::copyBody(alloc_slice body) {
+        if (body.size == 0)
+            return body;
+        _insertedData.push_back(body);
+        return body;
+    }
+
+
     // Lowest-level insert method. Does no sanity checking, always inserts.
     Rev* RevTree::_insert(revid unownedRevID,
-                          slice body,
+                          alloc_slice body,
                           Rev *parentRev,
                           Rev::Flags revFlags,
                           bool markConflict)
@@ -261,7 +269,7 @@ namespace litecore {
         return newRev;
     }
 
-    const Rev* RevTree::insert(revid revID, slice data, Rev::Flags revFlags,
+    const Rev* RevTree::insert(revid revID, alloc_slice body, Rev::Flags revFlags,
                                const Rev* parent, bool allowConflict, bool markConflict,
                                int &httpStatus)
     {
@@ -301,10 +309,10 @@ namespace litecore {
         
         // Finally, insert:
         httpStatus = (revFlags & Rev::kDeleted) ? 200 : 201;
-        return _insert(revID, data, (Rev*)parent, revFlags, markConflict);
+        return _insert(revID, body, (Rev*)parent, revFlags, markConflict);
     }
 
-    const Rev* RevTree::insert(revid revID, slice body, Rev::Flags revFlags,
+    const Rev* RevTree::insert(revid revID, alloc_slice body, Rev::Flags revFlags,
                                revid parentRevID, bool allowConflict, bool markConflict,
                                int &httpStatus)
     {
@@ -320,7 +328,7 @@ namespace litecore {
     }
 
     int RevTree::insertHistory(const std::vector<revidBuffer> history,
-                               slice data,
+                               alloc_slice body,
                                Rev::Flags revFlags,
                                bool markConflict) {
         Assert(history.size() > 0);
@@ -344,8 +352,8 @@ namespace litecore {
         if (i > 0) {
             // Insert all the new revisions in chronological order:
             while (--i > 0)
-                parent = _insert(history[i], slice(), parent, Rev::kNoFlags, markConflict);
-            _insert(history[0], data, parent, revFlags, markConflict);
+                parent = _insert(history[i], {}, parent, Rev::kNoFlags, markConflict);
+            _insert(history[0], body, parent, revFlags, markConflict);
         }
         return commonAncestorIndex;
     }

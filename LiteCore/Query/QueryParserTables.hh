@@ -18,11 +18,12 @@
 
 #pragma once
 #include "QueryParser.hh"
-#include "slice.hh"
+#include "fleece/slice.hh"
 
 namespace litecore {
 
     using namespace fleece; // enables ""_sl syntax
+    using namespace fleece::impl;
 
 
     // This table defines the operators and their characteristics.

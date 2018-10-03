@@ -19,7 +19,7 @@ constexpr duration ReplicatorLoopbackTest::kLatency;
 
 TEST_CASE("Options password logging redaction") {
     string password("SEEKRIT");
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
     enc.beginDict();
@@ -40,7 +40,7 @@ TEST_CASE("Options password logging redaction") {
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.endDict();
     alloc_slice body = enc.finish();
@@ -96,7 +96,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.endDict();
     alloc_slice body = enc.finish();
@@ -325,8 +325,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push With Existing Key", "[Push]") {
     // Get one of the pushed docs from db2 and look up "gender":
     c4::ref<C4Document> doc = c4doc_get(db2, "0000001"_sl, true, nullptr);
     REQUIRE(doc);
-    Dict root = Value::fromData(doc->selectedRev.body).asDict();
-    Value gender = root.get("gender"_sl, c4db_getFLSharedKeys(db2));
+    Doc rev = c4doc_createFleeceDoc(doc);
+    Value gender = rev["gender"_sl];
     REQUIRE(gender != nullptr);
     REQUIRE(gender.asstring() == "female");
 }
@@ -393,7 +393,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Multiple Remotes", "[Push]") {
 
 
 static Replicator::Options pushOptionsWithProperty(const char *property, vector<string> array) {
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey(slice(property));
     enc.beginArray();
@@ -410,7 +410,7 @@ static Replicator::Options pushOptionsWithProperty(const char *property, vector<
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Different Checkpoint IDs", "[Push]") {
     // Test that replicators with different channel or docIDs options use different checkpoints
     // (#386)
-    createFleeceRev(db, "doc"_sl, kRevID, kBody);
+    createFleeceRev(db, "doc"_sl, kRevID, "{\"agent\":7}"_sl);
     _expectedDocumentCount = 1;
 
     runPushReplication();
@@ -715,7 +715,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Blobs Legacy Mode", "[Push][blob]
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][Pull]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey(C4STR(kC4ReplicatorOptionDocIDs));
     enc.beginArray();
@@ -752,7 +752,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "DocID Filtered Replication", "[Push][P
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Channels", "[Pull]") {
-    fleeceapi::Encoder enc;
+    fleece::Encoder enc;
     enc.beginDict();
     enc.writeKey("filter"_sl);
     enc.writeString("Melitta"_sl);
@@ -805,10 +805,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     // Verify that rev 1 body is still available, for later use in conflict resolution:
     c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
     REQUIRE(doc);
-    CHECK(doc->selectedRev.revID == C4STR("2-2a2a2a2a"));
+	C4Slice revID = C4STR("2-2a2a2a2a");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
+	revID = C4STR("1-11111111");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 
@@ -821,19 +823,23 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Conflict", "[Push][Pull][Conflict
     doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
-    CHECK(doc->selectedRev.revID == C4STR("2-2a2a2a2a"));
+	revID = C4STR("2-2a2a2a2a");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
+	revID = C4STR("1-11111111");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
     REQUIRE(c4doc_selectCurrentRevision(doc));
     REQUIRE(c4doc_selectNextRevision(doc));
-    CHECK(doc->selectedRev.revID == C4STR("2-2b2b2b2b"));
+	revID = C4STR("2-2b2b2b2b");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
+	revID = C4STR("1-11111111");
+    CHECK(doc->selectedRev.revID == revID);
 }
 
 
@@ -913,7 +919,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Conflict OutgoingConflicts", "[Pu
     c4::ref<C4Document> doc = c4doc_get(db2, C4STR("conflict"), true, nullptr);
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
-    CHECK(doc->selectedRev.revID == C4STR("2-2b2b2b2b"));
+	C4Slice revID = C4STR("2-2b2b2b2b");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(c4doc_selectRevision(doc, C4STR("2-2a2a2a2a"), true, nullptr));
 }
 
@@ -933,7 +940,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     Log("-------- Update Doc --------");
     alloc_slice body;
     {
-        fleeceapi::Encoder enc(c4db_createFleeceEncoder(db2));
+        fleece::Encoder enc(c4db_createFleeceEncoder(db2));
         enc.beginDict();
         enc.writeKey("answer"_sl);
         enc.writeInt(666);
@@ -984,7 +991,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Lost Checkpoint No-Conflicts", "[Push]
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]") {
-    auto docID = C4STR("Khan");
+    C4Slice docID = C4STR("Khan");
 
     createFleeceRev(db,  docID, C4STR("1-11111111"), C4STR("{}"));
     _expectedDocumentCount = 1;
@@ -1003,10 +1010,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
 
     c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
-    CHECK(doc->selectedRev.revID == C4STR("2-88888888"));
+	C4Slice revID = C4STR("2-88888888");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-    CHECK(doc->selectedRev.revID == C4STR("2-dddddddd"));
+	revID = C4STR("2-dddddddd");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
 
@@ -1022,7 +1031,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
     }
     
     doc = c4doc_get(db, docID, true, nullptr);
-    CHECK(doc->revID == C4STR("2-dddddddd"));
+	revID = C4STR("2-dddddddd");
+    CHECK(doc->revID == revID);
 
     // Update the doc and push it to db2:
     createRev(db, docID, "3-cafebabe"_sl, kFleeceBody);
@@ -1033,9 +1043,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incoming Deletion Conflict", "[Pull]")
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conflict]") {
-    auto docID = C4STR("Khan");
+    C4Slice docID = C4STR("Khan");
 
-    createFleeceRev(db,  docID, C4STR("1-11111111"), C4STR("{}"));
+	C4Slice revID =  C4STR("1-11111111");
+    createFleeceRev(db,  docID, revID, C4STR("{}"));
     _expectedDocumentCount = 1;
 
     // Push db to db2, so both will have the doc:
@@ -1052,10 +1063,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
 
     c4::ref<C4Document> doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
-    CHECK(doc->selectedRev.revID == C4STR("2-dddddddd"));
+	revID = C4STR("2-dddddddd");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevDeleted) != 0);
     REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-    CHECK(doc->selectedRev.revID == C4STR("2-88888888"));
+	revID = C4STR("2-88888888");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
 
@@ -1071,7 +1084,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
     }
 
     doc = c4doc_get(db, docID, true, nullptr);
-    CHECK(doc->revID == C4STR("2-88888888"));
+    CHECK(doc->revID == revID);
 
     // Update the doc and push it to db2:
     createRev(db, docID, "3-cafebabe"_sl, kFleeceBody);
@@ -1083,7 +1096,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Local Deletion Conflict", "[Pull][Conf
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull][Conflict]") {
     // For https://github.com/couchbase/sync_gateway/issues/3359
-    auto docID = C4STR("Khan");
+    C4Slice docID = C4STR("Khan");
 
     {
         TransactionHelper t(db);
@@ -1097,7 +1110,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
 
     c4::ref<C4Document> doc = c4doc_get(db2, docID, true, nullptr);
     REQUIRE(doc);
-    CHECK(doc->selectedRev.revID == C4STR("3-33333333"));
+	C4Slice revID = C4STR("3-33333333");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->flags & kDocConflicted) == 0);  // locally in db there is no conflict
 
     {
@@ -1107,8 +1121,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
 
     doc = c4doc_get(db, docID, true, nullptr);
     REQUIRE(doc);
-    CHECK(doc->revID == C4STR("2-ffffffff"));
-    CHECK(doc->selectedRev.revID == C4STR("2-ffffffff"));
+	revID = C4STR("2-ffffffff");
+    CHECK(doc->revID == revID);
+    CHECK(doc->selectedRev.revID == revID);
 
     SECTION("Unmodified") {
         Log("-------- Second pull --------");
@@ -1116,7 +1131,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
 
         doc = c4doc_get(db2, docID, true, nullptr);
         REQUIRE(doc);
-        CHECK(doc->selectedRev.revID == C4STR("2-ffffffff"));
+        CHECK(doc->selectedRev.revID == revID);
         CHECK((doc->flags & kDocConflicted) == 0);
     }
 
@@ -1133,10 +1148,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         doc = c4doc_get(db2, docID, true, nullptr);
         REQUIRE(doc);
         CHECK((doc->flags & kDocConflicted) != 0);
-        CHECK(doc->selectedRev.revID == C4STR("4-4444"));
+		revID = C4STR("4-4444");
+        CHECK(doc->selectedRev.revID == revID);
         CHECK((doc->selectedRev.flags & kRevIsConflict) == 0);
         CHECK(c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-        CHECK(doc->selectedRev.revID == C4STR("2-ffffffff"));
+		revID = C4STR("2-ffffffff");
+        CHECK(doc->selectedRev.revID == revID);
         CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
 
         {
@@ -1149,14 +1166,18 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Server Conflict Branch-Switch", "[Pull
         doc = c4doc_get(db2, docID, true, nullptr);
         REQUIRE(doc);
         CHECK((doc->flags & kDocConflicted) == 0);
-        CHECK(doc->selectedRev.revID == C4STR("4-4444"));
+		revID = C4STR("4-4444");
+        CHECK(doc->selectedRev.revID == revID);
         CHECK(!c4doc_selectNextLeafRevision(doc, false, false, nullptr));
         CHECK(c4doc_selectParentRevision(doc));
-        CHECK(doc->selectedRev.revID == C4STR("3-33333333"));
+		revID = C4STR("3-33333333");
+        CHECK(doc->selectedRev.revID == revID);
         CHECK(c4doc_selectParentRevision(doc));
-        CHECK(doc->selectedRev.revID == C4STR("2-22222222"));
+		revID = C4STR("2-22222222");
+        CHECK(doc->selectedRev.revID == revID);
         CHECK(c4doc_selectParentRevision(doc));
-        CHECK(doc->selectedRev.revID == C4STR("1-11111111"));
+		revID = C4STR("1-11111111");
+        CHECK(doc->selectedRev.revID == revID);
         CHECK(!c4doc_selectParentRevision(doc));
     }
 }

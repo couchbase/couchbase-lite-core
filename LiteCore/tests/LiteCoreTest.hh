@@ -19,7 +19,7 @@
 #pragma once
 
 #include <iostream>
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include "PlatformCompat.hh"
 #include "Error.hh"
 #include "Logging.hh"

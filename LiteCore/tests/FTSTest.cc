@@ -41,12 +41,12 @@ public:
             for (int i = 0; i < sizeof(kStrings)/sizeof(kStrings[0]); i++) {
                 string docID = stringWithFormat("rec-%03d", i);
 
-                fleece::Encoder enc;
+                fleece::impl::Encoder enc;
                 enc.beginDictionary();
                 enc.writeKey("sentence");
                 enc.writeString(kStrings[i]);
                 enc.endDictionary();
-                alloc_slice body = enc.extractOutput();
+                alloc_slice body = enc.finish();
 
                 store->set(slice(docID), body, t);
             }

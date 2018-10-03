@@ -22,7 +22,7 @@
 #include "DBWorker.hh"
 #include "Actor.hh"
 #include "SequenceSet.hh"
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include "make_unique.h"
 #include <deque>
 #include <unordered_map>
@@ -31,7 +31,7 @@ namespace litecore { namespace repl {
 
     class Pusher : public Worker {
     public:
-        Pusher(blip::Connection *connection, Replicator *replicator, DBWorker *dbActor, Options options);
+        Pusher(Replicator *replicator, DBWorker *dbActor);
 
         // Starts an active push
         void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}
@@ -70,11 +70,12 @@ namespace litecore { namespace repl {
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);
         void _attachmentSent();
+
         C4ReadStream* readBlobFromRequest(MessageIn *req,
                                           slice &outDigest,
                                           Replicator::BlobProgress &outProgress,
                                           C4Error *outError);
-        void filterByDocIDs(fleeceapi::Array docIDs);
+        void filterByDocIDs(fleece::Array docIDs);
 
         static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
         static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one

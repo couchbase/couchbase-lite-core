@@ -1,4 +1,4 @@
-﻿//
+//
 // SQLiteFunctionsTest.cc
 //
 // Copyright (c) 2016 Couchbase, Inc All rights reserved.
@@ -20,12 +20,13 @@
 #include "SQLite_Internal.hh"
 #include "StringUtil.hh"
 #include "UnicodeCollator.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include <sqlite3.h>
 
 using namespace litecore;
 using namespace fleece;
+using namespace fleece::impl;
 using namespace std;
 
 
@@ -50,14 +51,14 @@ public:
     {
         // Run test once with shared keys, once without:
         if (which & 1)
-            sharedKeys = make_unique<SharedKeys>();
-        RegisterSQLiteFunctions(db.getHandle(), flip, sharedKeys.get());
+            sharedKeys = new SharedKeys();
+        RegisterSQLiteFunctions(db.getHandle(), flip, sharedKeys);
         db.exec("CREATE TABLE kv (key TEXT, body BLOB)");
         insertStmt = make_unique<SQLite::Statement>(db, "INSERT INTO kv (key, body) VALUES (?, ?)");
     }
 
     void insert(const char *key, const char *json) {
-        auto body = JSONConverter::convertJSON(slice(json), sharedKeys.get());
+        auto body = JSONConverter::convertJSON(slice(json), sharedKeys);
         flip(body); // 'encode' the data in the database to test the accessor function
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
@@ -70,10 +71,12 @@ public:
         vector<string> results;
         while (each.executeStep()) {
             auto column = each.getColumn(0);
-            if(column.getType() != SQLITE_NULL) {
-                results.push_back( each.getColumn(0).getText() );
-            } else {
+            if(column.getType() == SQLITE_NULL) {
                 results.push_back("MISSING");
+            } else if (column.getType() == SQLITE_BLOB && column.getBytes() == 0) {
+                results.push_back("null");
+            } else {
+                results.push_back( each.getColumn(0).getText() );
             }
         }
         return results;
@@ -86,22 +89,24 @@ public:
 protected:
     SQLite::Database db;
     unique_ptr<SQLite::Statement> insertStmt;
-    std::unique_ptr<SharedKeys> sharedKeys;
+    Retained<SharedKeys> sharedKeys;
 };
 
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_contains", "[Query]") {
+    // fl_contains is called for the ANY operator when the condition is a simple equality test
     insert("one",   "{\"hey\": [1, 2, 3, 4]}");
     insert("two",   "{\"hey\": [2, 4, 6, 8]}");
-    insert("three", "{\"hey\": [1, \"T\", 3.1416, []]}");
+    insert("three", "{\"hey\": [1, \"T\", \"4\", []]}");
     insert("four",  "{\"hey\": [1, \"T\", 3.15,   []]}");
+    insert("five",  "{\"hey\": {\"a\": \"bar\", \"b\": 4}}");   // ANY supports dicts!
+    insert("xorp",  "{\"hey\": \"oops\"}");
     insert("yerg",  "{\"xxx\": [1, \"T\", 3.1416, []]}");
 
-    CHECK(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 0, 4)")
-            == (vector<string>{"one", "two"}));
-    CHECK(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 1, 3.1416, 'T')")
-            == (vector<string>{"three"}));
-
+    CHECK(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 4)")
+            == (vector<string>{"one", "two", "five"}));
+    CHECK(query("SELECT key FROM kv WHERE fl_contains(kv.body, 'hey', 'T')")
+            == (vector<string>{"three", "four"}));
 }
 
 
@@ -130,12 +135,15 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_avg of fl_value", "[Qu
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_contains of fl_value", "[Query]") {
     insert("a",   "{\"hey\": [1, 1, 2, true, true, 4, \"bar\"]}");
     insert("b",   "{\"hey\": [1, 1, 2, true, true, 4]}");
-    insert("c",   "{\"hey\": [1, 1, 2, \"bar\"]}");
+    insert("c",   "{\"hey\": [1, 1, 2, \"4\", \"bar\"]}");
+    insert("e",   "{\"hey\": {\"a\": \"bar\", \"b\": 1}}"); // array_contains doesn't match dicts!
+    insert("f",   "{\"hey\": \"bar\"}");
     insert("d",   "{\"xxx\": [1, 1, 2, \"bar\"]}");
-    insert("e",   "{\"hey\": \"bar\"}");
-    
+
+    CHECK(query("SELECT ARRAY_CONTAINS(fl_value(body, 'hey'), 4) FROM kv")
+          == (vector<string>{"1", "1", "0", "null", "null", "MISSING" }));
     CHECK(query("SELECT ARRAY_CONTAINS(fl_value(body, 'hey'), 'bar') FROM kv")
-            == (vector<string>{"1", "0", "1", "0", "0" }));
+          == (vector<string>{"1", "0", "1", "null", "null", "MISSING" }));
 }
 
 N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_ifnull of fl_value", "[Query]") {
@@ -181,7 +189,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite array_agg", "[Query]") {
     CHECK(!st.executeStep());
 }
 
-N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite missingif", "[Query]") {
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "N1QL missingif/nullif", "[Query]") {
     insert("a",   "{\"hey\": [null, null, 2, true, true, 4, \"bar\"]}");
     
     CHECK(query("SELECT MISSINGIF('5', '5') FROM kv")
@@ -189,7 +197,7 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite missingif", "[Query]") {
     CHECK(query("SELECT MISSINGIF('5', '4') FROM kv")
             == (vector<string>{ "5" }));
     CHECK(query("SELECT N1QL_NULLIF('5', '5') FROM kv")
-            == (vector<string>{ "" }));
+            == (vector<string>{ "null" }));
     CHECK(query("SELECT N1QL_NULLIF('5', '4') FROM kv")
             == (vector<string>{ "5" }));
 }

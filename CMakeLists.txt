@@ -144,11 +144,9 @@ endif()
 
 ### SUBMODULES:
 
-include_directories("vendor/fleece/Fleece"
+include_directories("vendor/fleece/API"
                     "vendor/fleece/Fleece/Core"
-                    "vendor/fleece/Fleece/Experimental"
                     "vendor/fleece/Fleece/Support"
-                    "vendor/fleece/vendor"
                     "vendor/SQLiteCpp/include"
                     "vendor/SQLiteCpp/sqlite3"
                     "vendor/sqlite3-unicodesn"

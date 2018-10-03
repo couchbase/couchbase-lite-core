@@ -33,7 +33,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 
 
 namespace litecore { namespace REST {
@@ -127,7 +126,7 @@ namespace litecore { namespace REST {
             return _message;
         }
 
-        virtual void writeDescription(fleeceapi::JSONEncoder &json) override {
+        virtual void writeDescription(fleece::JSONEncoder &json) override {
             Task::writeDescription(json);
 
             json.writeKey("type"_sl);

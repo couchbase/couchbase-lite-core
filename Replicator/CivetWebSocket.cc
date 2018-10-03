@@ -16,8 +16,8 @@
 // limitations under the License.
 //
 
-#include "Fleece.h"
-#include "slice.hh"
+#include "fleece/Fleece.hh"
+#include "fleece/slice.hh"
 #include "CivetWebSocket.hh"
 #include "c4Replicator.h"
 #include "Address.hh"
@@ -38,7 +38,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 
 #undef Log
 #undef LogDebug
@@ -125,7 +124,7 @@ namespace litecore { namespace websocket {
         }
 
         ~CivetWebSocket() {
-            assert(!_connection);
+            DebugAssert(!_connection);
             mg_exit_library();
             logStats();
         }

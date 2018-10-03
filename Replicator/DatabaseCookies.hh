@@ -18,7 +18,7 @@
 
 #pragma once
 #include "CookieStore.hh"
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include <mutex>
 #include <unordered_map>
 

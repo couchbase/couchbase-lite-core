@@ -24,7 +24,7 @@
 #include "QueryParser.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "Path.hh"
 #include "Stopwatch.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
@@ -34,6 +34,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace fleece::impl;
 
 namespace litecore {
 
@@ -54,7 +55,7 @@ namespace litecore {
         ,Logging(QueryLog)
         {
             log("Compiling JSON query: %.*s", SPLAT(selectorExpression));
-            QueryParser qp(keyStore.tableName());
+            QueryParser qp(keyStore);
             qp.parseJSON(selectorExpression);
 
             _parameters = qp.parameters();
@@ -164,7 +165,6 @@ namespace litecore {
                             sequence_t lastSequence)
         :_query(query)
         ,_lastSequence(lastSequence)
-        ,_documentKeys(query->keyStore().dataFile().documentKeys())
         {
             if (options)
                 _options = *options;
@@ -174,7 +174,6 @@ namespace litecore {
         Retained<SQLiteQuery> _query;
         Query::Options _options;
         sequence_t _lastSequence;       // DB's lastSequence at the time the query ran
-        SharedKeys* _documentKeys;
     };
 
 
@@ -186,17 +185,17 @@ namespace litecore {
         SQLiteQueryEnumerator(SQLiteQuery *query,
                               const Query::Options *options,
                               sequence_t lastSequence,
-                              alloc_slice recording,
+                              Doc *recording,
                               unsigned long long rowCount,
                               double elapsedTime)
         :SQLiteQueryEnumBase(query, options, lastSequence)
         ,Logging(QueryLog)
         ,_recording(recording)
-        ,_rows(Value::fromTrustedData(_recording)->asArray())
+        ,_rows(_recording->asArray())
         ,_iter(_rows)
         {
             log("Created on {Query#%u} with %llu rows (%zu bytes) in %.3fms",
-                query->objectRef(), rowCount, recording.size, elapsedTime*1000);
+                query->objectRef(), rowCount, recording->data().size, elapsedTime*1000);
         }
 
         ~SQLiteQueryEnumerator() {
@@ -204,7 +203,7 @@ namespace litecore {
         }
 
         bool hasEqualContents(const SQLiteQueryEnumerator* other) const {
-            return _recording == other->_recording;
+            return _recording->data() == other->_recording->data();
         }
 
         virtual int64_t getRowCount() const override {
@@ -230,7 +229,7 @@ namespace litecore {
                 return false;
             }
             if (willLog(LogLevel::Verbose)) {
-                alloc_slice json = _iter->asArray()->toJSON(_documentKeys);
+                alloc_slice json = _iter->asArray()->toJSON();
                 logVerbose("--> %.*s", SPLAT(json));
             }
             return true;
@@ -288,7 +287,7 @@ namespace litecore {
         string loggingClassName() const override    {return "QueryEnum";}
 
     private:
-        alloc_slice _recording;
+        Retained<Doc> _recording;
         const Array* _rows;
         Array::iterator _iter;
         bool _first {true};
@@ -303,6 +302,7 @@ namespace litecore {
         SQLiteQueryRunner(SQLiteQuery *query, const Query::Options *options, sequence_t lastSequence)
         :SQLiteQueryEnumBase(query, options, lastSequence)
         ,_statement(query->statement())
+        ,_sk(query->keyStore().dataFile().documentKeys())
         {
             _statement->clearBindings();
             _unboundParameters = _query->_parameters;
@@ -383,10 +383,11 @@ namespace litecore {
                 case SQLITE_BLOB: {
                     if (i >= _query->_1stCustomResultColumn) {
                         slice fleeceData {col.getBlob(), (size_t)col.getBytes()};
-                        const Value *value = Value::fromData(fleeceData);
+                        Scope fleeceScope(fleeceData, _sk);
+                        const Value *value = Value::fromTrustedData(fleeceData);
                         if (!value)
                             error::_throw(error::CorruptRevisionData);
-                        enc.writeValue(value, _documentKeys);
+                        enc.writeValue(value);
                         break;
                     }
                     // else fall through:
@@ -405,7 +406,7 @@ namespace litecore {
             int nCols = _statement->getColumnCount();
             uint64_t rowCount = 0;
             Encoder enc;
-            enc.setSharedKeys(_documentKeys);
+            enc.setSharedKeys(_sk);
             enc.beginArray();
             while (_statement->executeStep()) {
                 uint64_t missingCols = 0;
@@ -420,7 +421,7 @@ namespace litecore {
                 ++rowCount;
             }
             enc.endArray();
-            alloc_slice recording = enc.extractOutput();
+            Retained<Doc> recording = enc.finishDoc();
             return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, recording,
                                              rowCount, st.elapsed());
         }
@@ -428,6 +429,7 @@ namespace litecore {
     private:
         shared_ptr<SQLite::Statement> _statement;
         set<string> _unboundParameters;
+        SharedKeys* _sk;
     };
 
 

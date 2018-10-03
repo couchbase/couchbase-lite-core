@@ -28,7 +28,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 using namespace litecore::blip;
 
 namespace litecore { namespace repl {
@@ -56,7 +55,7 @@ namespace litecore { namespace repl {
     
     // Read the 'rev' message, on my actor thread:
     void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
-        assert(!_revMessage);
+        DebugAssert(!_revMessage);
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
 
         _revMessage = msg;
@@ -98,19 +97,19 @@ namespace litecore { namespace repl {
         // database because it doesn't use the SharedKeys, but it lets us look at the doc
         // metadata and blobs.
         FLError err;
-        alloc_slice fleeceBody = Encoder::convertJSON(_revMessage->body(), &err);
+        alloc_slice fleeceBody = Doc::fromJSON(_revMessage->body(), &err).allocedData();
         if (!fleeceBody) {
             _error = {FleeceDomain, err};
             finish();
             return;
         }
-        Dict root = Value::fromTrustedData(fleeceBody).asDict();
+        Dict root = Value::fromData(fleeceBody, kFLTrusted).asDict();
 
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
-        if (c4doc_hasOldMetaProperties(root, nullptr) && !_dbWorker->disableBlobSupport()) {
+        if (c4doc_hasOldMetaProperties(root) && !_dbWorker->disableBlobSupport()) {
             fleeceBody = c4doc_encodeStrippingOldMetaProperties(root, nullptr);
-            root = Value::fromTrustedData(fleeceBody).asDict();
+            root = Value::fromData(fleeceBody, kFLTrusted).asDict();
         }
 
         // Populate the RevToInsert's body:
@@ -127,13 +126,13 @@ namespace litecore { namespace repl {
         }
 
         // Check for blobs, and queue up requests for any I don't have yet:
-        _dbWorker->findBlobReferences(root, nullptr, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
+        _dbWorker->findBlobReferences(root, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
             _rev->flags |= kRevHasAttachments;
             _pendingBlobs.push_back({_rev->docID,
                                      alloc_slice(FLDeepIterator_GetPathString(i)),
                                      key,
                                      blob["length"_sl].asUnsigned(),
-                                     c4doc_blobIsCompressible(blob, nullptr)});
+                                     c4doc_blobIsCompressible(blob)});
         });
 
         // Request the first blob, or if there are none, finish:

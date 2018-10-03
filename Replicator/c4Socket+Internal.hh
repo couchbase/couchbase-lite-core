@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
 
         C4SocketImpl(websocket::URL,
                      websocket::Role role,
-                     fleece::slice options,
+                     fleece::alloc_slice options,
                      const C4SocketFactory *factory_,
                      void *nativeHandle_ =nullptr);
 

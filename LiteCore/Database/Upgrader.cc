@@ -23,7 +23,7 @@
 #include "Database.hh"
 #include "Document.hh"
 #include "BlobStore.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "RevID.hh"
@@ -32,6 +32,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace fleece::impl;
 using namespace c4Internal;
 
 
@@ -51,7 +52,6 @@ namespace litecore {
         :_oldPath(oldPath)
         ,_oldDB(oldPath["db.sqlite3"].path(), SQLite::OPEN_READWRITE) // *
         ,_newDB(newDB)
-        ,_sharedKeys(newDB->documentKeys())
         ,_attachments(oldPath["attachments/"])
         {
             // * Note: It would be preferable to open the old db read-only, but that will fail
@@ -173,10 +173,13 @@ namespace litecore {
 
             // Convert the JSON body to Fleece:
             alloc_slice body;
-            body = convertBody(asSlice(_currentRev->getColumn(4)));
-            if (hasAttachments)
-                copyAttachments(body);
-            put.body = body;
+            {
+                Retained<Doc> doc = convertBody(asSlice(_currentRev->getColumn(4)));
+                if (hasAttachments)
+                    copyAttachments(doc);
+                body = doc->allocedData();
+            }
+            put.allocedBody = {(void*)body.buf, body.size};
 
             int64_t nextSequence = _currentRev->getColumn(2);
 
@@ -200,27 +203,27 @@ namespace litecore {
 
 
         // Converts a JSON document body to Fleece.
-        alloc_slice convertBody(slice json) {
+        Retained<Doc> convertBody(slice json) {
             Encoder &enc = _newDB->sharedEncoder();
             JSONConverter converter(enc);
             if (!converter.encodeJSON(json))
                 error::_throw(error::CorruptRevisionData, "invalid JSON data");
-            return enc.extractOutput();
+            return enc.finishDoc();
         }
 
 
         // Copies all blobs referenced in attachments of a revision from the old db.
-        void copyAttachments(slice fleeceBody) {
-            auto root = Value::fromTrustedData(fleeceBody)->asDict();
+        void copyAttachments(Doc *doc) {
+            auto root = doc->asDict();
             if (!root) return;
-            auto atts = root->get(C4STR(kC4LegacyAttachmentsProperty), _sharedKeys);
+            auto atts = root->get(C4STR(kC4LegacyAttachmentsProperty));
             if (!atts) return;
             auto attsDict = atts->asDict();
             if (!attsDict) return;
-            for (Dict::iterator i(attsDict, _sharedKeys); i; ++i) {
+            for (Dict::iterator i(attsDict); i; ++i) {
                 auto meta = i.value()->asDict();
                 if (meta) {
-                    auto digest = meta->get("digest"_sl, _sharedKeys);
+                    auto digest = meta->get("digest"_sl);
                     if (digest)
                         copyAttachment((string)digest->asString());
                 }
@@ -266,7 +269,7 @@ namespace litecore {
                     Warn("Upgrader: invalid JSON data in _local doc being upgraded; skipping");
                     continue;
                 }
-                auto body = enc.extractOutput();
+                auto body = enc.finish();
                 _newDB->putRawDocument("_local", docID, revID, body);
             }
         }
@@ -275,7 +278,6 @@ namespace litecore {
         FilePath _oldPath;
         SQLite::Database _oldDB;
         Retained<Database> _newDB;
-        SharedKeys* _sharedKeys;
         FilePath _attachments;
         unique_ptr<SQLite::Statement> _currentRev, _parentRevs;
     };

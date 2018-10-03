@@ -19,7 +19,7 @@
 #include "c4Test.hh"
 #include "c4Document+Fleece.h"
 #include "c4Private.h"
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include "FilePath.hh"
 #include "StringUtil.hh"
 #include "Benchmark.hh"
@@ -114,7 +114,7 @@ fleece::alloc_slice json5slice(std::string str) {
     FLError err;
     FLSliceResult json = FLJSON5_ToJSON({str.data(), str.size()}, &err);
     REQUIRE(json.buf);
-    return {json.buf, json.size};
+    return json;
 }
 
 
@@ -266,7 +266,7 @@ C4Test::~C4Test() {
 
 
 C4Database* C4Test::createDatabase(const string &nameSuffix) {
-    assert(!nameSuffix.empty());
+    REQUIRE(!nameSuffix.empty());
     string dbPath = fleece::slice(databasePath()).asString();
     Assert(litecore::hasSuffix(dbPath, ".cblite2"));
     dbPath.replace(dbPath.size()-8, 8, "_" + nameSuffix + ".cblite2");
@@ -412,7 +412,7 @@ void C4Test::createNumberedDocs(unsigned numberOfDocs) {
     char docID[20];
     for (unsigned i = 1; i <= numberOfDocs; i++) {
         sprintf(docID, "doc-%03u", i);
-        createRev(c4str(docID), kRevID, kBody);
+        createRev(c4str(docID), kRevID, kFleeceBody);
     }
 }
 
@@ -422,7 +422,7 @@ string C4Test::listSharedKeys(string delimiter) {
     auto sk = c4db_getFLSharedKeys(db);
     REQUIRE(sk);
     for (int keyCode = 0; true; ++keyCode) {
-        FLSlice key = FLSharedKey_GetKeyString(sk, keyCode, nullptr);
+        FLSlice key = FLSharedKeys_Decode(sk, keyCode);
         if (!key.buf)
             break;
         if (keyCode > 0)
@@ -481,7 +481,7 @@ vector<C4BlobKey> C4Test::addDocWithAttachments(C4Slice docID,
     C4DocPutRequest rq = {};
     rq.docID = docID;
     rq.revFlags = kRevHasAttachments;
-    rq.body = (C4Slice)body;
+    rq.allocedBody = body;
     rq.save = true;
     C4Document* doc = c4doc_put(db, &rq, nullptr, &c4err);
     c4slice_free(body);
@@ -547,7 +547,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
     FLError error;
     FLSliceResult fleeceData = FLData_ConvertJSON(readFile(path), &error);
     REQUIRE(fleeceData.buf != nullptr);
-    Array root = FLValue_AsArray(FLValue_FromTrustedData((C4Slice)fleeceData));
+    Array root = FLValue_AsArray(FLValue_FromData((C4Slice)fleeceData, kFLTrusted));
     REQUIRE(root);
 
     TransactionHelper t(db);
@@ -570,7 +570,7 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
         C4Error c4err;
         C4DocPutRequest rq = {};
         rq.docID = c4str(docID);
-        rq.body = (C4Slice)body;
+        rq.allocedBody = body;
         rq.save = true;
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
         REQUIRE(doc != nullptr);
@@ -599,7 +599,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
         readFileByLines(path, [&](FLSlice line)
         {
             C4Error c4err;
-            FLSliceResult body = c4db_encodeJSON(db, {line.buf, line.size}, &c4err);
+            fleece::alloc_slice body = c4db_encodeJSON(db, {line.buf, line.size}, &c4err);
             REQUIRE(body.buf);
 
             char docID[20];
@@ -608,12 +608,11 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
             // Save document:
             C4DocPutRequest rq = {};
             rq.docID = c4str(docID);
-            rq.body = (C4Slice)body;
+            rq.allocedBody = {(void*)body.buf, body.size};
             rq.save = true;
             C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
             REQUIRE(doc != nullptr);
             c4doc_free(doc);
-            FLSliceResult_Free(body);
             ++numDocs;
             if (numDocs % 1000 == 0 && st.elapsed() >= timeout) {
                 C4Warn("Stopping JSON import after %.3f sec  ", st.elapsed());
@@ -631,5 +630,4 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
 
 
 const C4Slice C4Test::kDocID = C4STR("mydoc");
-const C4Slice C4Test::kBody  = C4STR("{\"name\":7}");
 C4Slice C4Test::kFleeceBody, C4Test::kEmptyFleeceBody;

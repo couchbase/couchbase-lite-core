@@ -15,7 +15,7 @@ GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = NO
 GCC_WARN_SIGN_COMPARE = NO
 GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
 
-LITECORE_VERSION_STRING                            = 2.0.0
+LITECORE_VERSION_STRING                            = 2.5.0
 LITECORE_BUILD_NUMBER                              = 0
 
 IPHONEOS_DEPLOYMENT_TARGET                         = 9.0
@@ -36,6 +36,7 @@ PRODUCT_NAME                                       = $(TARGET_NAME)
 ALWAYS_SEARCH_USER_PATHS                           = NO
 
 CLANG_ADDRESS_SANITIZER_CONTAINER_OVERFLOW         = YES    // range-check C++ STL containers
+CLANG_UNDEFINED_BEHAVIOR_SANITIZER_INTEGER         = NO     // don't flag int over/underflows
 
 CLANG_CXX_LANGUAGE_STANDARD                        = c++11
 CLANG_CXX_LIBRARY                                  = libc++

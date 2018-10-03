@@ -17,92 +17,40 @@
 //
 
 #pragma once
+#include "c4Compat.h"
+#include "fleece/FLSlice.h"
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
-#ifndef __has_feature
-#define __has_feature(x) 0
-#endif
-#ifndef __has_attribute
-#define __has_attribute(x) 0
-#endif
-#ifndef __has_extension
-#define __has_extension(x) 0
-#endif
-
-#ifdef _MSC_VER
-#define C4INLINE __forceinline
-#define C4NONNULL
-#else
-#define C4INLINE inline
-#define C4NONNULL __attribute((nonnull))
-#endif
-
-// Macros for defining typed enumerations and option flags.
-// To define an enumeration whose values won't be combined:
-//      typedef C4_ENUM(baseIntType, name) { ... };
-// To define an enumeration of option flags that will be ORed together:
-//      typedef C4_OPTIONS(baseIntType, name) { ... };
-// These aren't just a convenience; they are required for Swift bindings.
-#if APPLE
-    #include <CoreFoundation/CFBase.h>      /* for CF_ENUM and CF_OPTIONS macros */
-    #define C4_ENUM CF_ENUM
-    #define C4_OPTIONS CF_OPTIONS
-#elif DOXYGEN_PARSING
-    #define C4_ENUM(_type, _name)     enum _name : _type _name; enum _name : _type
-    #define C4_OPTIONS(_type, _name) enum _name : _type _name; enum _name : _type
-#else
-    #if (__cplusplus && _MSC_VER) || (__cplusplus && __cplusplus >= 201103L && (__has_extension(cxx_strong_enums) || __has_feature(objc_fixed_enum))) || (!__cplusplus && __has_feature(objc_fixed_enum))
-        #define C4_ENUM(_type, _name)     enum _name : _type _name; enum _name : _type
-        #if (__cplusplus)
-            #define C4_OPTIONS(_type, _name) _type _name; enum : _type
-        #else
-            #define C4_OPTIONS(_type, _name) enum _name : _type _name; enum _name : _type
-        #endif
-    #else
-        #define C4_ENUM(_type, _name) _type _name; enum
-        #define C4_OPTIONS(_type, _name) _type _name; enum
-    #endif
-#endif
-
-
-#ifdef __cplusplus
-#define C4API noexcept
-#else
-#define C4API
-#endif
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Export/import stuff:
-#ifdef _MSC_VER
-#ifdef LITECORE_EXPORTS
-#define CBL_CORE_API __declspec(dllexport)
-#else
-#define CBL_CORE_API __declspec(dllimport)
-#endif
-#else // _MSC_VER
-#define CBL_CORE_API
-#endif
-
-// Type-checking for printf-style vararg functions:
-#ifdef _MSC_VER
-#define __printflike(A, B)
-#else
-#ifndef __printflike
-#define __printflike(fmtarg, firstvararg) __attribute__((__format__ (__printf__, fmtarg, firstvararg)))
-#endif
-#endif
-
-
 
 /** A database sequence number, representing the order in which a revision was created. */
 typedef uint64_t C4SequenceNumber;
+
+
+//////// SLICES:
+
+// (This is just renaming stuff from FLSlice.h)
+
+typedef FLSlice C4Slice;
+typedef FLHeapSlice C4HeapSlice;
+typedef FLSliceResult C4SliceResult;
+typedef C4Slice C4String;
+typedef C4HeapSlice C4HeapString;
+typedef C4SliceResult C4StringResult;
+
+static C4INLINE C4Slice c4str(const char *str) {return FLStr(str);}
+#define C4STR(STR) FLSTR(STR)
+#define kC4SliceNull kFLSliceNull
+
+static inline bool c4SliceEqual(C4Slice a, C4Slice b)       {return FLSlice_Equal(a,b);}
+static inline void c4slice_free(C4SliceResult s)            {return FLSliceResult_Free(s);}
 
 
 //////// ERRORS:
@@ -188,67 +136,6 @@ typedef struct {
     int32_t code;
     int32_t internal_info;
 } C4Error;
-
-
-//////// SLICES:
-
-
-#ifdef FL_SLICE_DEFINED
-    typedef FLSlice C4Slice;
-    typedef FLSliceResult C4SliceResult;
-#else
-    /** A slice is simply a pointer to a range of bytes, usually interpreted as a UTF-8 string.
-        A "null slice" has chars==NULL and length==0.
-        A slice with length==0 is not necessarily null; if chars!=NULL it's an empty string.
-        A slice as a function parameter is temporary and read-only: the function will not alter or free
-        the bytes, and the pointer won't be accessed after the function returns.
-        A slice _returned from_ a function points to newly-allocated memory and must be freed by the
-        caller, with c4slice_free(). */
-    typedef struct {
-        const void *buf;
-        size_t size;
-    } C4Slice;
-
-    /** Denotes a slice returned from a function, which needs to have its buf freed by the caller. */
-    typedef C4Slice C4SliceResult;
-#endif
-    
-    
-typedef C4Slice C4String;
-typedef C4SliceResult C4StringResult;
-
-/** Creates a slice pointing to the contents of a C string. */
-static C4INLINE C4Slice c4str(const char *str) {
-    C4Slice foo = { str, str ? strlen(str) : 0 };
-    return foo;
-}
-
-// Macro version of c4str, for use in initializing compile-time constants.
-// STR must be a C string literal.
-#ifdef _MSC_VER
-#define C4STR(STR) C4Slice({("" STR), sizeof(("" STR))-1})
-#else
-#define C4STR(STR) ((C4Slice){("" STR), sizeof(("" STR))-1})
-#endif
-
-// A convenient constant denoting a null slice.
-
-#if !defined(kC4SliceNull)
-#ifdef _MSC_VER
-static const C4Slice kC4SliceNull = { NULL, 0 };
-#else
-#define kC4SliceNull ((C4Slice){NULL, 0})
-#endif
-#endif
-
-/** Returns true if two slices have equal contents. */
-bool c4SliceEqual(C4Slice a, C4Slice b) C4API;
-
-/** Frees the memory of a heap-allocated slice by calling free(buf). */
-void c4slice_free(C4SliceResult) C4API;
-
-
-//////// ERRORS:
 
 
 /** Returns an error message describing a C4Error. Remember to free the result. */

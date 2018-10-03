@@ -30,7 +30,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 
 
 namespace litecore { namespace REST {
@@ -169,7 +168,7 @@ namespace litecore { namespace REST {
 
 
 
-    void RESTListener::Task::writeDescription(fleeceapi::JSONEncoder &json) {
+    void RESTListener::Task::writeDescription(fleece::JSONEncoder &json) {
         json.writeKey("pid"_sl);
         json.writeUInt(_taskID);
         json.writeKey("started_on"_sl);

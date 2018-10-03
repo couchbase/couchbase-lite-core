@@ -16,9 +16,7 @@ _kC4DatabaseLog
 _kC4QueryLog
 _kC4SyncLog
 _kC4WebSocketLog
-_c4SliceEqual
 _c4slice_createResult
-_c4slice_free
 _c4log
 _c4vlog
 _c4slog
@@ -62,7 +60,6 @@ _c4db_isInTransaction
 _c4db_createFleeceEncoder
 _c4db_getSharedFleeceEncoder
 _c4db_encodeJSON
-_c4db_initFLDictKey
 _c4db_getFLSharedKeys
 _c4db_lock
 _c4db_unlock
@@ -217,14 +214,28 @@ _c4_dumpInstances
 _gC4InstanceCount
 _gC4ExpectExceptions
 
+
 # Fleece:
 _FLSlice_Equal
 _FLSlice_Compare
-_FLSliceResult_Free
+_FLSliceResult_Retain
+_FLSliceResult_Release
+
+_FLDoc_FromData
+_FLDoc_FromResultData
+_FLDoc_FromJSON
+_FLDoc_GetData
+_FLDoc_GetRoot
+_FLDoc_GetSharedKeys
+_FLDoc_Retain
+_FLDoc_Release
+
+_FLSharedKeys_Decode
+_FLSharedKeys_Retain
+_FLSharedKeys_Release
+
 _FLValue_FromData
-_FLValue_FromTrustedData
-_FLData_ConvertJSON
-_FLData_Dump
+_FLValue_FindDoc
 _FLValue_GetType
 _FLValue_IsInteger
 _FLValue_IsUnsigned
@@ -242,7 +253,10 @@ _FLValue_ToString
 _FLValue_ToJSON
 _FLValue_ToJSONX
 _FLValue_ToJSON5
+
+_FLData_ConvertJSON
 _FLJSON5_ToJSON
+
 _FLArray_Count
 _FLArray_Get
 _FLArrayIterator_Begin
@@ -250,20 +264,18 @@ _FLArrayIterator_GetCount
 _FLArrayIterator_GetValue
 _FLArrayIterator_GetValueAt
 _FLArrayIterator_Next
+
 _FLDict_Count
 _FLDict_Get
-_FLDict_GetSharedKey
-_FLSharedKey_GetKeyString
+_FLDict_GetWithKey
 _FLDictIterator_Begin
-_FLDictIterator_BeginShared
 _FLDictIterator_GetKey
 _FLDictIterator_GetKeyString
 _FLDictIterator_GetValue
 _FLDictIterator_Next
 _FLDictKey_Init
-_FLDictKey_InitWithSharedKeys
 _FLDictKey_GetString
-_FLDict_GetWithKey
+
 _FLEncoder_GetExtraInfo
 _FLEncoder_SetExtraInfo
 _FLEncoder_New
@@ -288,13 +300,19 @@ _FLEncoder_WriteKey
 _FLEncoder_EndDict
 _FLEncoder_ConvertJSON
 _FLEncoder_BytesWritten
+_FLEncoder_FinishDoc
 _FLEncoder_Finish
 _FLEncoder_GetError
 _FLEncoder_GetErrorMessage
+
 _FLKeyPath_New
 _FLKeyPath_Free
 _FLKeyPath_Eval
 _FLKeyPath_EvalOnce
+
+_FLData_Dump
+_FLDump
+_FLDumpData
 
 # Fleece CF/Obj-C:
 _FLEncoder_WriteCFObject

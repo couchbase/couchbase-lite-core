@@ -28,7 +28,7 @@ namespace litecore { namespace repl {
 
     class Puller : public Worker {
     public:
-        Puller(blip::Connection*, Replicator*, DBWorker*, Options options);
+        Puller(Replicator*, DBWorker*);
 
         void setSkipDeleted()                   {enqueue(&Puller::_setSkipDeleted);}
 
@@ -42,7 +42,7 @@ namespace litecore { namespace repl {
                            bool complete);
 
     protected:
-        virtual std::string loggingClassName() const override {return "Pull";}
+        virtual std::string loggingClassName() const override       {return "Pull";}
 
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         virtual void _childChangedStatus(Worker *task, Status) override;
@@ -76,6 +76,12 @@ namespace litecore { namespace repl {
         bool _waitingForChangesCallback {false};  // Waiting for DBAgent::findOrRequestRevs?
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
+
+#if __APPLE__
+        // This helps limit the number of threads used by GCD:
+        virtual actor::Mailbox* mailboxForChildren() override       {return &_revMailbox;}
+        actor::Mailbox _revMailbox;
+#endif
     };
 
 

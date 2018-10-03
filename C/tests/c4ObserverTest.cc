@@ -85,16 +85,16 @@ TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
     dbObserver = c4dbobs_create(db, dbObserverCallback, this);
     CHECK(dbCallbackCalls == 0);
 
-    createRev(C4STR("A"), C4STR("1-aa"), kBody);
+    createRev(C4STR("A"), C4STR("1-aa"), kFleeceBody);
     CHECK(dbCallbackCalls == 1);
-    createRev(C4STR("B"), C4STR("1-bb"), kBody);
+    createRev(C4STR("B"), C4STR("1-bb"), kFleeceBody);
     CHECK(dbCallbackCalls == 1);
 
     checkChanges({"A", "B"}, {"1-aa", "1-bb"});
 
-    createRev(C4STR("B"), C4STR("2-bbbb"), kBody);
+    createRev(C4STR("B"), C4STR("2-bbbb"), kFleeceBody);
     CHECK(dbCallbackCalls == 2);
-    createRev(C4STR("C"), C4STR("1-cc"), kBody);
+    createRev(C4STR("C"), C4STR("1-cc"), kFleeceBody);
     CHECK(dbCallbackCalls == 2);
 
     checkChanges({"B", "C"}, {"2-bbbb", "1-cc"});
@@ -102,19 +102,19 @@ TEST_CASE_METHOD(C4ObserverTest, "DB Observer", "[Observer][C]") {
     c4dbobs_free(dbObserver);
     dbObserver = nullptr;
 
-    createRev(C4STR("A"), C4STR("2-aaaa"), kBody);
+    createRev(C4STR("A"), C4STR("2-aaaa"), kFleeceBody);
     CHECK(dbCallbackCalls == 2);
 }
 
 
 TEST_CASE_METHOD(C4ObserverTest, "Doc Observer", "[Observer][C]") {
-    createRev(C4STR("A"), C4STR("1-aa"), kBody);
+    createRev(C4STR("A"), C4STR("1-aa"), kFleeceBody);
 
     docObserver = c4docobs_create(db, C4STR("A"), docObserverCallback, this);
     CHECK(docCallbackCalls == 0);
 
-    createRev(C4STR("A"), C4STR("2-bb"), kBody);
-    createRev(C4STR("B"), C4STR("1-bb"), kBody);
+    createRev(C4STR("A"), C4STR("2-bb"), kFleeceBody);
+    createRev(C4STR("B"), C4STR("1-bb"), kFleeceBody);
     CHECK(docCallbackCalls == 1);
 }
 
@@ -123,9 +123,9 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     dbObserver = c4dbobs_create(db, dbObserverCallback, this);
     CHECK(dbCallbackCalls == 0);
 
-    createRev(C4STR("A"), C4STR("1-aa"), kBody);
+    createRev(C4STR("A"), C4STR("1-aa"), kFleeceBody);
     CHECK(dbCallbackCalls == 1);
-    createRev(C4STR("B"), C4STR("1-bb"), kBody);
+    createRev(C4STR("B"), C4STR("1-bb"), kFleeceBody);
     CHECK(dbCallbackCalls == 1);
     checkChanges({"A", "B"}, {"1-aa", "1-bb"});
 
@@ -134,9 +134,9 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     REQUIRE(otherdb);
     {
         TransactionHelper t(otherdb);
-        createRev(otherdb, C4STR("c"), C4STR("1-cc"), kBody);
-        createRev(otherdb, C4STR("d"), C4STR("1-dd"), kBody);
-        createRev(otherdb, C4STR("e"), C4STR("1-ee"), kBody);
+        createRev(otherdb, C4STR("c"), C4STR("1-cc"), kFleeceBody);
+        createRev(otherdb, C4STR("d"), C4STR("1-dd"), kFleeceBody);
+        createRev(otherdb, C4STR("e"), C4STR("1-ee"), kFleeceBody);
     }
 
     CHECK(dbCallbackCalls == 2);
@@ -146,7 +146,7 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     c4dbobs_free(dbObserver);
     dbObserver = nullptr;
 
-    createRev(C4STR("A"), C4STR("2-aaaa"), kBody);
+    createRev(C4STR("A"), C4STR("2-aaaa"), kFleeceBody);
     CHECK(dbCallbackCalls == 2);
 
     c4db_close(otherdb, NULL);

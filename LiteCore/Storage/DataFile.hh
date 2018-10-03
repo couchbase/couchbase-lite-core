@@ -29,10 +29,10 @@
 #undef check
 #endif
 
-namespace fleece {
+namespace fleece { namespace impl {
     class SharedKeys;
     class PersistentSharedKeys;
-}
+} }
 
 namespace litecore {
 
@@ -41,7 +41,7 @@ namespace litecore {
 
     /** A database file, primarily a container of KeyStores which store the actual data.
         This is an abstract class, with concrete subclasses for different database engines. */
-    class DataFile {
+    class DataFile : public Logging {
     public:
 
         // Callback that takes a record body and returns the portion of it containing Fleece data
@@ -82,7 +82,7 @@ namespace litecore {
         virtual void rekey(EncryptionAlgorithm, slice newKey);
 
         FleeceAccessor fleeceAccessor() const               {return _options.fleeceAccessor;}
-        fleece::SharedKeys* documentKeys() const;
+        fleece::impl::SharedKeys* documentKeys() const;
 
         void* owner()                                       {return _owner;}
         void setOwner(void* owner)                          {_owner = owner;}
@@ -159,6 +159,8 @@ namespace litecore {
         static Factory* factoryForFile(const FilePath&);
 
     protected:
+        virtual std::string loggingIdentifier() const override;
+        
         /** Reopens database after it's been closed. */
         virtual void reopen();
 
@@ -216,7 +218,7 @@ namespace litecore {
         Options                 _options;                       // Option/capability flags
         KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
-        std::unique_ptr<fleece::PersistentSharedKeys> _documentKeys;
+        Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic<void*>      _owner {nullptr};               // App-defined object that owns me
     };

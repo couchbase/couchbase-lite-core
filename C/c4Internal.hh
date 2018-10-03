@@ -22,7 +22,7 @@
 #include "Error.hh"
 #include "RefCounted.hh"
 #include "PlatformCompat.hh"
-#include "Fleece.h"
+#include "fleece/Fleece.h"
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
 #include "function_ref.hh"

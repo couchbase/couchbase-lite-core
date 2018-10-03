@@ -33,7 +33,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 
 namespace litecore { namespace repl {
 
@@ -168,7 +167,7 @@ namespace litecore { namespace repl {
         return out << cookie.name << '=' << cookie.value;
     }
 
-    fleeceapi::Encoder& operator<< (fleeceapi::Encoder &enc, const Cookie &cookie) {
+    fleece::Encoder& operator<< (fleece::Encoder &enc, const Cookie &cookie) {
         Assert(cookie.persistent());
         enc.beginDict(6);
         enc.writeKey("name"_sl);

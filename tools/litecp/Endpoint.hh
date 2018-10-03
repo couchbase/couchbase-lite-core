@@ -20,7 +20,7 @@
 #include "Tool.hh"
 #include <memory>
 
-using namespace fleeceapi;
+using namespace fleece;
 
 
 /** Abstract base class for a source or target of copying/replication. */
@@ -73,13 +73,13 @@ public:
 protected:
 
     alloc_slice docIDFromJSON(slice json) {
-        alloc_slice body = Encoder::convertJSON(json, nullptr);
+        alloc_slice body = Doc::fromJSON(json, nullptr).allocedData();
         return docIDFromFleece(body, json);
     }
 
     alloc_slice docIDFromFleece(slice body, slice json) {
         alloc_slice docIDBuf;
-        Dict root = Value::fromTrustedData(body).asDict();
+        Dict root = Value::fromData(body).asDict();
         Value docIDProp = root[*_docIDPath];
         if (docIDProp) {
             docIDBuf = docIDProp.toString();

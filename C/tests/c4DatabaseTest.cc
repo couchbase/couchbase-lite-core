@@ -182,7 +182,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Transaction", "[Database][C]") 
     
     REQUIRE(c4db_beginTransaction(db, &error));
     REQUIRE(c4db_isInTransaction(db));
-    createRev(kDocID, kRevID, kBody);
+    createRev(kDocID, kRevID, kFleeceBody);
     REQUIRE(c4db_endTransaction(db, false, &error));
     REQUIRE(!c4db_isInTransaction(db));
     CHECK(c4db_getDocumentCount(db) == 0);
@@ -194,14 +194,14 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]")
     const C4Slice meta = c4str("meta");
     C4Error error;
     REQUIRE(c4db_beginTransaction(db, &error));
-    c4raw_put(db, c4str("test"), key, meta, kBody, &error);
+    c4raw_put(db, c4str("test"), key, meta, kFleeceBody, &error);
     REQUIRE(c4db_endTransaction(db, true, &error));
 
     C4RawDocument *doc = c4raw_get(db, c4str("test"), key, &error);
     REQUIRE(doc != nullptr);
     REQUIRE(doc->key == key);
     REQUIRE(doc->meta == meta);
-    REQUIRE(doc->body == kBody);
+    REQUIRE(doc->body == kFleeceBody);
     c4raw_free(doc);
 
     // Nonexistent:
@@ -284,7 +284,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
         REQUIRE(doc->selectedRev.body == kC4SliceNull);
         // Doc was loaded without its body, but it should load on demand:
         REQUIRE(c4doc_loadRevisionBody(doc, &error)); // have to explicitly load the body
-        REQUIRE(doc->selectedRev.body == kBody);
+        REQUIRE(doc->selectedRev.body == kFleeceBody);
 
         C4DocumentInfo info;
         REQUIRE(c4enum_getDocumentInfo(e, &info));
@@ -387,7 +387,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     C4Slice docID = C4STR("expire_me");
-    createRev(docID, kRevID, kBody);
+    createRev(docID, kRevID, kFleeceBody);
     time_t expire = time(nullptr) + 1;
     C4Error err;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
@@ -398,11 +398,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
     
     C4Slice docID2 = C4STR("expire_me_too");
-    createRev(docID2, kRevID, kBody);
+    createRev(docID2, kRevID, kFleeceBody);
     REQUIRE(c4doc_setExpiration(db, docID2, expire, &err));
 
     C4Slice docID3 = C4STR("dont_expire_me");
-    createRev(docID3, kRevID, kBody);
+    createRev(docID3, kRevID, kFleeceBody);
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
@@ -461,7 +461,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
 {
     C4Slice docID = C4STR("expire_me");
-    createRev(docID, kRevID, kBody);
+    createRev(docID, kRevID, kFleeceBody);
     time_t expire = time(nullptr) + 2;
     C4Error err;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
@@ -556,8 +556,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     C4Slice doc1ID = C4STR("doc001");
     C4Slice doc2ID = C4STR("doc002");
 
-    createRev(doc1ID, kRevID, kBody);
-    createRev(doc2ID, kRevID, kBody);
+    createRev(doc1ID, kRevID, kFleeceBody);
+    createRev(doc2ID, kRevID, kFleeceBody);
     C4SliceResult srcPath = c4db_getPath(db);
     string srcPathStr = toString((C4Slice)srcPath);
     c4slice_free(srcPath);
@@ -578,7 +578,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     
     nudb = c4db_open(c4str(nuPath.c_str()), &config, &error);
     REQUIRE(nudb);
-    createRev(nudb, doc1ID, kRevID, kBody);
+    createRev(nudb, doc1ID, kRevID, kFleeceBody);
     CHECK(c4db_getDocumentCount(nudb) == 1);
     c4db_free(nudb);
     

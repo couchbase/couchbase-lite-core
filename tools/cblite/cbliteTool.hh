@@ -30,7 +30,7 @@
 #include <vector>
 
 using namespace std;
-using namespace fleeceapi;
+using namespace fleece;
 
 class Endpoint;
 
@@ -50,6 +50,7 @@ public:
 
 private:
 
+    bool isDatabasePath(const string &path);
     void openDatabase(string path);
     void openDatabaseFromNextArg();
 
@@ -77,6 +78,10 @@ private:
     void listUsage();
     void listDocsCommand();
     void listDocs(string docIDPattern);
+
+    // put command
+    void putUsage();
+    void putDoc();
 
     // query command
     void queryUsage();
@@ -165,36 +170,48 @@ private:
         _showHelp = false;
     }
 
-
-    void offsetFlag()    {_offset = stoul(nextArg("offset value"));}
-    void limitFlag()     {_limit = stol(nextArg("limit value"));}
-    void keyFlag()       {_keys.insert(alloc_slice(nextArg("key")));}
-    void longListFlag()  {_longListing = true;}
-    void seqFlag()       {_listBySeq = true;}
-    void bodyFlag()      {_enumFlags |= kC4IncludeBodies;}
-    void descFlag()      {_enumFlags |= kC4Descending;}
-    void delFlag()       {_enumFlags |= kC4IncludeDeleted;}
-    void confFlag()      {_enumFlags &= ~kC4IncludeNonConflicted;}
-    void revIDFlag()     {_showRevID = true;}
-    void prettyFlag()    {_prettyPrint = true; _enumFlags |= kC4IncludeBodies;}
-    void json5Flag()     {_json5 = true; _enumFlags |= kC4IncludeBodies;}
-    void rawFlag()       {_prettyPrint = false; _enumFlags |= kC4IncludeBodies;}
-    void helpFlag()      {_showHelp = true;}
-    void existingFlag()  {_createDst = false;}
-    void carefulFlag()   {_failOnError = true;}
-    void jsonIDFlag()    {_jsonIDProperty = nextArg("JSON-id property");}
-    void replicateFlag() {_listenerConfig.apis |= kC4SyncAPI;}
-    void readonlyFlag()  {_dbFlags = (_dbFlags | kC4DB_ReadOnly) & ~kC4DB_Create;}
+    virtual const FlagSpec* initialFlags() override {
+        return kPreCommandFlags;
+    }
+    
     void bidiFlag()      {_bidi = true;}
+    void bodyFlag()      {_enumFlags |= kC4IncludeBodies;}
+    void carefulFlag()   {_failOnError = true;}
+    void confFlag()      {_enumFlags &= ~kC4IncludeNonConflicted;}
     void continuousFlag(){_continuous = true;}
+    void createDBFlag()  {_dbFlags |= kC4DB_Create; _dbFlags &= ~kC4DB_ReadOnly;}
+    void createDocFlag() {_putMode = kCreate;}
+    void delFlag()       {_enumFlags |= kC4IncludeDeleted;}
+    void deleteDocFlag() {_putMode = kDelete;}
+    void descFlag()      {_enumFlags |= kC4Descending;}
+    void dirFlag()       {_listenerDirectory = nextArg("directory");}
+    void existingFlag()  {_createDst = false;}
+    void helpFlag()      {_showHelp = true;}
+    void json5Flag()     {_json5 = true; _enumFlags |= kC4IncludeBodies;}
+    void jsonIDFlag()    {_jsonIDProperty = nextArg("JSON-id property");}
+    void keyFlag()       {_keys.insert(alloc_slice(nextArg("key")));}
+    void limitFlag()     {_limit = stol(nextArg("limit value"));}
+    void longListFlag()  {_longListing = true;}
+    void offsetFlag()    {_offset = stoul(nextArg("offset value"));}
     void portFlag()      {_listenerConfig.port = stoul(nextArg("port"));}
+    void prettyFlag()    {_prettyPrint = true; _enumFlags |= kC4IncludeBodies;}
+    void rawFlag()       {_prettyPrint = false; _enumFlags |= kC4IncludeBodies;}
+    void readonlyFlag()  {_dbFlags = (_dbFlags | kC4DB_ReadOnly) & ~kC4DB_Create;}
     void remotesFlag()   {_showRemotes = true;}
+    void replicateFlag() {_listenerConfig.apis |= kC4SyncAPI;}
+    void revIDFlag()     {_showRevID = true;}
+    void seqFlag()       {_listBySeq = true;}
+    void updateDocFlag() {_putMode = kUpdate;}
+    void versionFlag();
+    void writeableFlag() {_dbFlags &= ~kC4DB_ReadOnly;}
 
+    static const FlagSpec kPreCommandFlags[];
     static const FlagSpec kSubcommands[];
     static const FlagSpec kInteractiveSubcommands[];
     static const FlagSpec kCatFlags[];
     static const FlagSpec kCpFlags[];
     static const FlagSpec kListFlags[];
+    static const FlagSpec kPutFlags[];
     static const FlagSpec kQueryFlags[];
     static const FlagSpec kRevsFlags[];
     static const FlagSpec kServeFlags[];
@@ -220,6 +237,9 @@ private:
     bool _continuous {false};
     alloc_slice _jsonIDProperty;
 
+    enum {kPut, kUpdate, kCreate, kDelete} _putMode {kPut};
+
     C4Listener* _listener {nullptr};
     C4ListenerConfig _listenerConfig {};  // all false/0
+    std::string _listenerDirectory;
 };

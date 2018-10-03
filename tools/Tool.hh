@@ -18,7 +18,7 @@
 
 #pragma once
 #include "c4.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "StringUtil.hh"
 #include "ArgumentTokenizer.hh"
 #include <iostream>

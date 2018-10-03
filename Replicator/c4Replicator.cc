@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "c4Replicator.hh"
 #include "c4ExceptionUtils.hh"
 #include "DatabaseCookies.hh"

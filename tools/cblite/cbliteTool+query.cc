@@ -19,6 +19,13 @@
 #include "cbliteTool.hh"
 
 
+const Tool::FlagSpec CBLiteTool::kQueryFlags[] = {
+    {"--offset", (FlagHandler)&CBLiteTool::offsetFlag},
+    {"--limit",  (FlagHandler)&CBLiteTool::limitFlag},
+    {"--help",   (FlagHandler)&CBLiteTool::helpFlag},
+    {nullptr, nullptr}
+};
+
 void CBLiteTool::queryUsage() {
     writeUsageCommand("query", true, "JSONQUERY");
     cerr <<

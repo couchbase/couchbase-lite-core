@@ -24,6 +24,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "function_ref.hh"
+#include "FleeceImpl.hh"
 #include <regex>
 #include <cmath>
 #include <string>
@@ -34,6 +35,7 @@
 #endif
 
 using namespace fleece;
+using namespace fleece::impl;
 using namespace std;
 
 namespace litecore {
@@ -153,15 +155,18 @@ namespace litecore {
 
     // array_contains(array, value) returns true if `array` contains `value`.
     static void fl_array_contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        slice comparand = valueAsStringSlice(argv[1]);
-        bool found = false;
-        aggregateArrayOperation(ctx, argc, argv, [&comparand, &found](const Value* val, bool& stop) {
-            if(val->toString().compare(comparand) == 0) {
-                found = stop = true;
-            }
-        });
-
-        sqlite3_result_int(ctx, found ? 1 : 0);
+        auto type = sqlite3_value_type(argv[0]);
+        if (type == SQLITE_NULL)
+            sqlite3_result_null(ctx);
+        else if (type != SQLITE_BLOB)
+            sqlite3_result_zeroblob(ctx, 0);    // return JSON 'null' when collection isn't a collection
+        else {
+            const Value *collection = fleeceParam(ctx, argv[0]);
+            if (!collection || collection->type() != kArray)
+                sqlite3_result_zeroblob(ctx, 0);    // return JSON 'null' when collection isn't a collection
+            else
+                collectionContainsImpl(ctx, collection, argv[1]);
+        }
     }
 
     // array_count() returns the number of non-null items in an array.
@@ -241,10 +246,10 @@ namespace litecore {
 
     static void array_agg(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
         try {
-            auto enc = (Encoder*) sqlite3_aggregate_context(ctx, sizeof(fleece::Encoder));
+            auto enc = (Encoder*) sqlite3_aggregate_context(ctx, sizeof(fleece::impl::Encoder));
             if (*(void**)enc == nullptr) {
                 // On first call, initialize Fleece encoder:
-                enc = new (enc) fleece::Encoder();
+                enc = new (enc) fleece::impl::Encoder();
                 enc->beginArray();
             }
 
@@ -276,7 +281,7 @@ namespace litecore {
             } else {
                 // On final call, finish encoding and set the result to the encoded data:
                 enc->endArray();
-                setResultBlobFromFleeceData(ctx,  enc->extractOutput() );
+                setResultBlobFromFleeceData(ctx,  enc->finish() );
                 enc->~Encoder();
             }
         } catch (const std::exception &) {

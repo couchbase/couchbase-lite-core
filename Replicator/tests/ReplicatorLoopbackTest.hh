@@ -7,8 +7,7 @@
 //
 
 #pragma once
-#include "slice.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
@@ -282,10 +281,9 @@ public:
         REQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:
-        Value root1 = Value::fromData(doc1->selectedRev.body);
-        Value root2 = Value::fromData(doc2->selectedRev.body);
-        alloc_slice json1 = root1.toJSON(c4db_getFLSharedKeys(db), true, true);
-        alloc_slice json2 = root2.toJSON(c4db_getFLSharedKeys(db2), true, true);
+        Doc rev1 = c4::getFleeceDoc(doc1), rev2 = c4::getFleeceDoc(doc2);
+        alloc_slice json1 = rev1.root().toJSON(true, true);
+        alloc_slice json2 = rev2.root().toJSON(true, true);
         CHECK(json1 == json2);
     }
 
@@ -303,7 +301,7 @@ public:
         while (c4enum_next(e1, &error)) {
             c4::ref<C4Document> doc1 = c4enum_getDocument(e1, &error);
             REQUIRE(doc1);
-            INFO("db document #" << i << ": '" << asstring(doc1->docID) << "'");
+            INFO("db document #" << i << ": '" << slice(doc1->docID).asString() << "'");
             REQUIRE(c4enum_next(e2, &error));
             c4::ref<C4Document> doc2 = c4enum_getDocument(e2, &error);
             REQUIRE(doc2);
@@ -320,8 +318,15 @@ public:
     void validateCheckpoint(C4Database *database, bool local,
                             const char *body, const char *meta = "1-") {
         C4Error err;
+		C4Slice storeName;
+		if(local) {
+			storeName = C4STR("checkpoints");
+		} else {
+			storeName = C4STR("peerCheckpoints");
+		}
+
         c4::ref<C4RawDocument> doc( c4raw_get(database,
-                                              (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
+                                              storeName,
                                               _checkpointID,
                                               &err) );
         INFO("Checking " << (local ? "local" : "remote") << " checkpoint '" << string(_checkpointID) << "'; err = " << err.domain << "," << err.code);
@@ -339,8 +344,15 @@ public:
 
     void clearCheckpoint(C4Database *database, bool local) {
         C4Error err;
+		C4Slice storeName;
+		if(local) {
+			storeName = C4STR("checkpoints");
+		} else {
+			storeName = C4STR("peerCheckpoints");
+		}
+
         REQUIRE( c4raw_put(database,
-                           (local ? C4STR("checkpoints") : C4STR("peerCheckpoints")),
+                           storeName,
                            _checkpointID,
                            kC4SliceNull, kC4SliceNull, &err) );
     }

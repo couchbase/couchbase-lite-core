@@ -9,10 +9,9 @@
 #include "ReplicatorAPITest.hh"
 #include "c4Document+Fleece.h"
 #include "StringUtil.hh"
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 
 using namespace fleece;
-using namespace fleeceapi;
 
 constexpr const C4Address ReplicatorAPITest::kDefaultAddress;
 constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::kITunesDBName,
@@ -370,11 +369,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull Big Attachments", "[.SyncServer]")
     c4::ref<C4Document> doc = c4doc_get(db, "Abstract"_sl, true, &error);
     REQUIRE(doc);
     auto root = Value::fromData(doc->selectedRev.body).asDict();
-    auto sk = c4db_getFLSharedKeys(db);
-    auto attach = root.get("_attachments"_sl, sk).asDict().get("Abstract.jpg"_sl, sk).asDict();
+    auto attach = root.get("_attachments"_sl).asDict().get("Abstract.jpg"_sl).asDict();
     REQUIRE(attach);
-    CHECK(attach.get("content_type",sk).asString() == "image/jpeg"_sl);
-    slice digest = attach.get("digest",sk).asString();
+    CHECK(attach.get("content_type").asString() == "image/jpeg"_sl);
+    slice digest = attach.get("digest").asString();
     CHECK(digest == "sha1-9g3HeOewh8//ctPcZkh03o+A+PQ="_sl);
     C4BlobKey blobKey;
     c4blob_keyFromString(digest, &blobKey);
@@ -394,10 +392,12 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
 
     c4::ref<C4Document> doc = c4doc_get(db, C4STR("0000013"), true, nullptr);
     REQUIRE(doc);
-    CHECK(doc->selectedRev.revID == C4STR("2-f000"));
+	C4Slice revID = C4STR("2-f000");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK(doc->selectedRev.revID == C4STR("1-3cb9cfb09f3f0b5142e618553966ab73539b8888"));
+	revID = C4STR("1-3cb9cfb09f3f0b5142e618553966ab73539b8888");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 
@@ -414,21 +414,25 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
     doc = c4doc_get(db, C4STR("0000013"), true, nullptr);
     REQUIRE(doc);
     CHECK((doc->flags & kDocConflicted) != 0);
-    CHECK(doc->selectedRev.revID == C4STR("2-f000"));
+	revID = C4STR("2-f000");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK(doc->selectedRev.revID == C4STR("1-3cb9cfb09f3f0b5142e618553966ab73539b8888"));
+	revID = C4STR("1-3cb9cfb09f3f0b5142e618553966ab73539b8888");
+    CHECK(doc->selectedRev.revID == revID);
 #if 0 // FIX: These checks fail due to issue #402; re-enable when fixing that bug
     CHECK(doc->selectedRev.body.size > 0);
     CHECK((doc->selectedRev.flags & kRevKeepBody) != 0);
 #endif
     REQUIRE(c4doc_selectCurrentRevision(doc));
     REQUIRE(c4doc_selectNextRevision(doc));
-    CHECK(doc->selectedRev.revID == C4STR("2-883a2dacc15171a466f76b9d2c39669b"));
+	revID = C4STR("2-883a2dacc15171a466f76b9d2c39669b");
+    CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     CHECK(doc->selectedRev.body.size > 0);
     REQUIRE(c4doc_selectParentRevision(doc));
-    CHECK(doc->selectedRev.revID == C4STR("1-3cb9cfb09f3f0b5142e618553966ab73539b8888"));
+	revID = C4STR("1-3cb9cfb09f3f0b5142e618553966ab73539b8888");
+    CHECK(doc->selectedRev.revID == revID);
 }
 
 
@@ -449,7 +453,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Update Once-Conflicted Doc", "[.SyncServer]
     // Verify doc:
     c4::ref<C4Document> doc = c4doc_get(db, "doc"_sl, true, nullptr);
     REQUIRE(doc);
-    CHECK(doc->revID == C4STR("2-bbbb"));
+	C4Slice revID = C4STR("2-bbbb");
+    CHECK(doc->revID == revID);
     CHECK((doc->flags & kDocDeleted) == 0);
     REQUIRE(c4doc_selectParentRevision(doc));
     CHECK(doc->selectedRev.revID == "1-aaaa"_sl);
@@ -463,7 +468,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Update Once-Conflicted Doc", "[.SyncServer]
 
     // Verify doc is updated on SG:
     auto body = sendRemoteRequest("GET", "doc");
-    CHECK(C4Slice(body) == C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"answer\":42}"));
+	C4Slice bodySlice = C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"answer\":42}");
+    CHECK(C4Slice(body) == bodySlice);
 }
 
 

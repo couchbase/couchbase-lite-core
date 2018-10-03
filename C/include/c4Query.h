@@ -19,7 +19,7 @@
 #pragma once
 #include "c4Database.h"
 #include "c4Document.h"
-#include "Fleece.h"
+#include "fleece/Fleece.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -182,6 +182,7 @@ extern "C" {
     typedef C4_ENUM(uint32_t, C4IndexType) {
         kC4ValueIndex,         ///< Regular index of property value
         kC4FullTextIndex,      ///< Full-text index
+        kC4ArrayIndex,         ///< Index of array values, for use with UNNEST
         kC4GeoIndex,           ///< Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
     };
 
@@ -236,6 +237,8 @@ extern "C" {
           search: a query with a `MATCH` operator will fail to compile unless there is already a
           FTS index for the property/expression being matched. Only a single expression is
           currently allowed, and it must evaluate to a string.
+        * Array indexes optimize UNNEST queries, by materializing an unnested array property
+          (across all documents) as a table in the SQLite database, and creating a SQL index on it.
 
         Note: If the value of an expression in some document is missing or an unsupported type,
         that document will just be omitted from the index. It's not an error.
@@ -245,6 +248,12 @@ extern "C" {
         since an expression is already an array.
 
         Currently, full-text indexes are limited to a single expression only.
+
+        In an array index, the first expression must be a property path: this references the array
+        to be unnested. If the array items are nonscalar (dictionaries or arrays), you should add
+        a second expression defining the sub-property (or computed value) to index, relative to the
+        array item.
+
         Geospatial indexes are not implemented at all yet.
 
         @param database  The database to index.

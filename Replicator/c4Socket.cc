@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "c4Private.h"
 #include "c4Socket.h"
@@ -30,7 +30,6 @@
 
 using namespace std;
 using namespace fleece;
-using namespace fleeceapi;
 using namespace litecore;
 using namespace litecore::repl;
 
@@ -50,7 +49,7 @@ namespace litecore { namespace repl {
     /** Implementation of C4Socket */
     C4SocketImpl::C4SocketImpl(websocket::URL url,
                                Role role,
-                               slice options,
+                               alloc_slice options,
                                const C4SocketFactory *factory_,
                                void *nativeHandle_)
     :WebSocketImpl(url,

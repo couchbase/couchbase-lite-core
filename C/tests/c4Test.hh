@@ -18,12 +18,13 @@
 
 #pragma once
 
-#include "FleeceCpp.hh"
+#include "fleece/Fleece.hh"
 
-using namespace fleeceapi;
+using namespace fleece;
 
 #include "c4.h"
 #include "c4Private.h"
+#include "c4Document+Fleece.h"
 
 #include "CatchHelper.hh"
 #include "PlatformCompat.hh"
@@ -204,13 +205,33 @@ public:
                             bool verbose =false);
     bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
     unsigned importJSONLines(std::string path, double timeout =15.0, bool verbose =false);
+
     
+    static std::string fleece2json(slice fleece) {
+        auto value = Value::fromData(fleece);
+        REQUIRE(value);
+        return value.toJSON(true, true).asString();
+    }
+
+
+    alloc_slice json2fleece(const char *json5str) {
+        std::string jsonStr = json5(json5str);
+        TransactionHelper t(db);
+        alloc_slice encodedBody = c4db_encodeJSON(db, slice(jsonStr), nullptr);
+        REQUIRE(encodedBody);
+        return encodedBody;
+    }
+
+    Doc json2dict(const char *json) {
+        return Doc(json2fleece(json), kFLTrusted, c4db_getFLSharedKeys(db));
+    }
+
+
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"
     C4Slice kRevID;    // "1-abcdef"
     C4Slice kRev2ID;   // "2-d00d3333"
     C4Slice kRev3ID;
-    static const C4Slice kBody;     // "{\"name\":7}"
     static C4Slice kFleeceBody;
     static C4Slice kEmptyFleeceBody;
 

@@ -18,11 +18,9 @@
 
 #pragma once
 #include "KeyStore.hh"
+#include "QueryParser.hh"
+#include "FleeceImpl.hh"
 
-namespace fleece {
-    class Value;
-    class Array;
-}
 namespace SQLite {
     class Column;
     class Statement;
@@ -35,7 +33,7 @@ namespace litecore {
     
 
     /** SQLite implementation of KeyStore; corresponds to a SQL table. */
-    class SQLiteKeyStore : public KeyStore {
+    class SQLiteKeyStore : public KeyStore, public QueryParser::delegate {
     public:
         uint64_t recordCount() const override;
         sequence_t lastSequence() const override;
@@ -55,7 +53,7 @@ namespace litecore {
         void erase() override;
 
         bool supportsIndexes(IndexType t) const override               {return true;}
-        void createIndex(slice name,
+        bool createIndex(slice name,
                          slice expressionJSON,
                          IndexType =kValueIndex,
                          const IndexOptions* = nullptr) override;
@@ -65,9 +63,14 @@ namespace litecore {
 
         void createSequenceIndex();
 
-    protected:
-        std::string tableName() const                       {return std::string("kv_") + name();}
+        // QueryParser::delegate:
+        virtual std::string tableName() const override  {return std::string("kv_") + name();}
+        virtual std::string FTSTableName(const std::string &property) const override;
+        virtual std::string unnestedTableName(const std::string &property) const override;
+        virtual bool tableExists(const std::string &tableName) const override;
 
+
+    protected:
         RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                   sequence_t since,
                                                   RecordEnumerator::Options) override;
@@ -100,17 +103,20 @@ namespace litecore {
         void createTrigger(const std::string &triggerName,
                            const char *triggerSuffix,
                            const char *operation,
+                           const char *when,
                            const std::string &statements);
         void dropTrigger(const std::string &name, const char *suffix);
-        bool _createIndex(IndexType type, const std::string &sqlName,
-                          const std::string &liteCoreName, const std::string &sql);
-        void createValueIndex(std::string indexName,
-                              const fleece::Array *params,
+        bool createValueIndex(IndexType, const std::string &sourceTableName,
+                              const std::string &indexName,
+                              fleece::impl::Array::iterator &expressions,
                               const IndexOptions *options);
-        void createFTSIndex(std::string indexName,
-                            const fleece::Array *params,
-                            const IndexOptions *options);
-        void _deleteIndex(slice name);
+        bool createFTSIndex(std::string, const fleece::impl::Array *params, const IndexOptions*);
+        bool createArrayIndex(std::string, const fleece::impl::Array *params, const IndexOptions*);
+        std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexOptions*);
+        bool _schemaExistsWithSQL(const std::string &name, const std::string &type,
+                                  const std::string &tableName, const std::string &sql);
+        void _sqlDeleteIndex(const std::string &name);
+        void garbageCollectArrayIndexes();
 
         std::unique_ptr<SQLite::Statement> _recCountStmt;
         std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;

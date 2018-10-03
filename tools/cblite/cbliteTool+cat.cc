@@ -20,6 +20,15 @@
 #include <algorithm>
 
 
+const Tool::FlagSpec CBLiteTool::kCatFlags[] = {
+    {"--pretty", (FlagHandler)&CBLiteTool::prettyFlag},
+    {"--raw",    (FlagHandler)&CBLiteTool::rawFlag},
+    {"--json5",  (FlagHandler)&CBLiteTool::json5Flag},
+    {"--key",    (FlagHandler)&CBLiteTool::keyFlag},
+    {"--rev",    (FlagHandler)&CBLiteTool::revIDFlag},
+    {nullptr, nullptr}
+};
+
 void CBLiteTool::catUsage() {
     writeUsageCommand("cat", true, "DOCID [DOCID...]");
     cerr <<
@@ -88,8 +97,7 @@ void CBLiteTool::catDoc(C4Document *doc, bool includeID) {
 
 
 void CBLiteTool::rawPrint(Value body, slice docID, slice revID) {
-    FLSharedKeys sharedKeys = c4db_getFLSharedKeys(_db);
-    alloc_slice jsonBuf = body.toJSON(sharedKeys, _json5, true);
+    alloc_slice jsonBuf = body.toJSON(_json5, true);
     slice restOfJSON = jsonBuf;
     if (docID) {
         // Splice a synthesized "_id" property into the start of the JSON object:
@@ -121,7 +129,6 @@ void CBLiteTool::prettyPrint(Value value,
     switch (value.type()) {
         case kFLDict: {
             auto dict = value.asDict();
-            auto sk = c4db_getFLSharedKeys(_db);
             string subIndent = indent + "  ";
             int n = 0;
             cout << "{";
@@ -138,7 +145,7 @@ void CBLiteTool::prettyPrint(Value value,
                 }
             }
             vector<slice> keys;
-            for (Dict::iterator i(dict, sk); i; ++i) {
+            for (Dict::iterator i(dict); i; ++i) {
                 slice key = i.keyString();
                 if (!onlyKeys || onlyKeys->find(alloc_slice(key)) != onlyKeys->end())
                     keys.push_back(key);
@@ -154,7 +161,7 @@ void CBLiteTool::prettyPrint(Value value,
                     cout << '"' << key << '"';      //FIX: Escape quotes
                 cout << ansiReset() << ": ";
 
-                prettyPrint(dict.get(key, sk), subIndent);
+                prettyPrint(dict.get(key), subIndent);
             }
             cout << '\n' << indent << "}";
             break;

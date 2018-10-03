@@ -24,12 +24,16 @@
 #include "BlobStore.hh"
 #include "RefCounted.hh"
 #include "Logging.hh"
-#include "Value.hh"
 #include "function_ref.hh"
 
 namespace litecore {
     class Record;
 }
+
+namespace fleece { namespace impl {
+    class Dict;
+    class Doc;
+} }
 
 namespace c4Internal {
     class TreeDocument;
@@ -119,14 +123,9 @@ namespace c4Internal {
             return result;
         }
 
-        alloc_slice bodyAsJSON(bool canonical =false) {
-            if (!selectedRev.body.buf)
-                error::_throw(error::NotFound);
-            auto root = fleece::Value::fromTrustedData(selectedRev.body);
-            if (!root)
-                error::_throw(error::CorruptRevisionData);
-            return root->toJSON(database()->documentKeys(), canonical);
-        }
+        Retained<fleece::impl::Doc> fleeceDoc();
+
+        alloc_slice bodyAsJSON(bool canonical =false);
 
         virtual int32_t putExistingRevision(const C4DocPutRequest&) =0;
         virtual bool putNewRevision(const C4DocPutRequest&) =0;
@@ -156,24 +155,24 @@ namespace c4Internal {
         static bool isValidDocID(slice);
 
         /** Returns true if the given dictionary is a [reference to a] blob. */
-        static bool dictIsBlob(const fleece::Dict *dict, fleece::SharedKeys* sk);
+        static bool dictIsBlob(const fleece::impl::Dict *dict);
 
         /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key. */
-        static bool dictIsBlob(const fleece::Dict *dict, blobKey &outKey, fleece::SharedKeys* sk);
+        static bool dictIsBlob(const fleece::impl::Dict *dict, blobKey &outKey);
 
         /** Returns the dict's "digest" property decoded into a blobKey. */
-        static bool getBlobKey(const fleece::Dict*, blobKey &outKey, fleece::SharedKeys*);
+        static bool getBlobKey(const fleece::impl::Dict*, blobKey &outKey);
 
-        using FindBlobCallback = function_ref<bool(const fleece::Dict*)>;
-        static bool findBlobReferences(const fleece::Dict*, fleece::SharedKeys* sk,
+        using FindBlobCallback = function_ref<bool(const fleece::impl::Dict*)>;
+        static bool findBlobReferences(const fleece::impl::Dict*,
                                        const FindBlobCallback&);
 
-        static bool blobIsCompressible(const fleece::Dict *meta, fleece::SharedKeys *sk);
+        static bool blobIsCompressible(const fleece::impl::Dict *meta);
 
     protected:
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;
-            selectedRev.revID = kC4SliceNull;
+            selectedRev.revID = {};
             selectedRev.flags = (C4RevisionFlags)0;
             selectedRev.sequence = 0;
             selectedRev.body = kC4SliceNull;
@@ -184,7 +183,7 @@ namespace c4Internal {
     };
 
 
-    static inline Document *internal(C4Document *doc) {
+    static inline Document *asInternal(C4Document *doc) {
         return (Document*)doc;
     }
 

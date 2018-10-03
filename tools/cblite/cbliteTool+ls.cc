@@ -30,6 +30,22 @@
 static constexpr int kListColumnWidth = 24;
 
 
+const Tool::FlagSpec CBLiteTool::kListFlags[] = {
+    {"--offset", (FlagHandler)&CBLiteTool::offsetFlag},
+    {"--limit",  (FlagHandler)&CBLiteTool::limitFlag},
+    {"-l",       (FlagHandler)&CBLiteTool::longListFlag},
+    {"--body",   (FlagHandler)&CBLiteTool::bodyFlag},
+    {"--pretty", (FlagHandler)&CBLiteTool::prettyFlag},
+    {"--raw",    (FlagHandler)&CBLiteTool::rawFlag},
+    {"--json5",  (FlagHandler)&CBLiteTool::json5Flag},
+    {"--desc",   (FlagHandler)&CBLiteTool::descFlag},
+    {"--seq",    (FlagHandler)&CBLiteTool::seqFlag},
+    {"--del",    (FlagHandler)&CBLiteTool::delFlag},
+    {"--conf",   (FlagHandler)&CBLiteTool::confFlag},
+    {"--help",   (FlagHandler)&CBLiteTool::helpFlag},
+    {nullptr, nullptr}
+};
+
 void CBLiteTool::listUsage() {
     writeUsageCommand("ls", true, "[PATTERN]");
     cerr <<

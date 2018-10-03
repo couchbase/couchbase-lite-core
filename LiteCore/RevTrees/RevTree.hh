@@ -18,7 +18,7 @@
 
 #pragma once
 #include "PlatformCompat.hh"
-#include "slice.hh"
+#include "fleece/slice.hh"
 #include "RevID.hh"
 #include <deque>
 #include <unordered_map>
@@ -111,7 +111,7 @@ namespace litecore {
 
         // Adds a new leaf revision, given the parent's revID
         const Rev* insert(revid,
-                          slice body,
+                          alloc_slice body,
                           Rev::Flags,
                           revid parentRevID,
                           bool allowConflict,
@@ -120,7 +120,7 @@ namespace litecore {
 
         // Adds a new leaf revision, given a pointer to the parent Rev
         const Rev* insert(revid,
-                          slice body,
+                          alloc_slice body,
                           Rev::Flags,
                           const Rev* parent,
                           bool allowConflict,
@@ -130,7 +130,7 @@ namespace litecore {
         // Adds a new leaf revision along with any new ancestor revs in its history.
         // (history[0] is the new rev's ID, history[1] is its parent's, etc.)
         int insertHistory(const std::vector<revidBuffer> history,
-                          slice body,
+                          alloc_slice body,
                           Rev::Flags,
                           bool markConflict);
 
@@ -168,6 +168,8 @@ namespace litecore {
     protected:
         virtual bool isBodyOfRevisionAvailable(const Rev* r NONNULL) const;
         virtual alloc_slice readBodyOfRevision(const Rev* r NONNULL) const;
+        virtual slice copyBody(slice body);
+        virtual slice copyBody(alloc_slice body);
 #if DEBUG
         virtual void dump(std::ostream&);
 #endif
@@ -179,8 +181,7 @@ namespace litecore {
         friend class Rev;
         friend class RawRevision;
         void initRevs();
-        slice copyBody(slice body);
-        Rev* _insert(revid, slice body, Rev *parentRev, Rev::Flags, bool markConflicts);
+        Rev* _insert(revid, alloc_slice body, Rev *parentRev, Rev::Flags, bool markConflicts);
         bool confirmLeaf(Rev* testRev NONNULL);
         void compact();
         void checkForResolvedConflict();

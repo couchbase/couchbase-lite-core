@@ -22,7 +22,7 @@
 #include "QueryParserTables.hh"
 #include "Record.hh"
 #include "Error.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "Path.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -32,6 +32,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace fleece::impl;
 
 namespace litecore {
 
@@ -40,16 +41,20 @@ namespace litecore {
     // in SQLiteFleeceFunctions.cc:
     static constexpr slice kValueFnName = "fl_value"_sl;
     static constexpr slice kNestedValueFnName = "fl_nested_value"_sl;
+    static constexpr slice kUnnestedValueFnName = "fl_unnested_value"_sl;
     static constexpr slice kRootFnName  = "fl_root"_sl;
     static constexpr slice kEachFnName  = "fl_each"_sl;
     static constexpr slice kCountFnName = "fl_count"_sl;
     static constexpr slice kExistsFnName= "fl_exists"_sl;
     static constexpr slice kResultFnName= "fl_result"_sl;
+    static constexpr slice kContainsFnName = "fl_contains"_sl;
 
     // Existing SQLite FTS rank function:
     static constexpr slice kRankFnName  = "rank"_sl;
 
     static constexpr slice kArrayCountFnName = "array_count"_sl;
+
+    static const char* const kDefaultTableAlias = "_doc";
 
 
 #pragma mark - UTILITY FUNCTIONS:
@@ -111,11 +116,10 @@ namespace litecore {
 
 
     // Writes a string with SQL quoting (inside apostrophes, doubling contained apostrophes.)
-    /*static*/ void QueryParser::writeSQLString(std::ostream &out, slice str) {
-        out << "'";
+    static void writeEscapedString(std::ostream &out, slice str, char quote) {
         bool simple = true;
         for (unsigned i = 0; i < str.size; i++) {
-            if (str[i] == '\'') {
+            if (str[i] == quote) {
                 simple = false;
                 break;
             }
@@ -124,42 +128,62 @@ namespace litecore {
             out << str;
         } else {
             for (unsigned i = 0; i < str.size; i++) {
-                if (str[i] == '\'')
-                    out.write("''", 2);
-                else
-                    out.write((const char*)&str[i], 1);
+                if (str[i] == quote)
+                    out.write(&quote, 1);
+                out.write((const char*)&str[i], 1);
             }
         }
-        out << "'";
+    }
+
+
+    // Writes a string with SQL quoting (inside apostrophes, doubling contained apostrophes.)
+    /*static*/ void QueryParser::writeSQLString(std::ostream &out, slice str, char quote) {
+        out << quote;
+        writeEscapedString(out, str, quote);
+        out << quote;
+    }
+
+
+    static string quoteTableName(const string &name) {
+        if (name == kDefaultTableAlias)
+            return name;
+        else
+            return string("\"") + name + "\"";
     }
 
     
-    static string propertyFromOperands(Array::iterator &operands);
-    static string propertyFromNode(const Value *node);
+    static string propertyFromString(slice str);
+    static string propertyFromOperands(Array::iterator &operands, bool skipDot =false);
+    static string propertyFromNode(const Value *node, char prefix ='.');
 
 
 #pragma mark - QUERY PARSER TOP LEVEL:
 
 
     void QueryParser::reset() {
+        _sql.str(string());
         _context.clear();
         _context.push_back(&kOuterOperation);
         _parameters.clear();
         _variables.clear();
         _ftsTables.clear();
+        _aliases.clear();
+        _dbAlias.clear();
         _1stCustomResultCol = 0;
-        _isAggregateQuery = _aggregatesOK = false;
+        _isAggregateQuery = _aggregatesOK = _propertiesUseAliases = false;
+
+        _aliases.insert({_dbAlias, kDBAlias});
     }
 
 
     void QueryParser::parseJSON(slice expressionJSON) {
-        alloc_slice expressionFleece;
+        Retained<Doc> doc;
         try {
-            expressionFleece = JSONConverter::convertJSON(expressionJSON);
+            doc = Doc::fromJSON(expressionJSON);
         } catch (FleeceException x) {
             fail("JSON parse error: %s", x.what());
         }
-        return parse(Value::fromTrustedData(expressionFleece));
+        return parse(doc->root());
     }
     
     
@@ -196,20 +220,19 @@ namespace litecore {
 
 
     void QueryParser::writeSelect(const Value *where, const Dict *operands) {
+        // Find all the joins in the FROM clause first, to populate alias info. This has to be done
+        // before writing the WHAT clause, because that will depend on the aliases.
+        auto from = getCaseInsensitive(operands, "FROM"_sl);
+        parseFromClause(from);
+        
         // Have to find all properties involved in MATCH before emitting the FROM clause:
         if (where) {
             unsigned numMatches = findFTSProperties(where);
             require(numMatches <= _ftsTables.size(),
                     "Sorry, multiple MATCHes of the same property are not allowed");
             if (numMatches > 0)
-                _baseResultColumns.push_back(_tableName + ".rowid");
+                _baseResultColumns.push_back(_dbAlias + ".rowid");
         }
-
-        // Find all the joins in the FROM clause first, to populate _aliases. This has to be done
-        // before writing the WHAT clause, because that will depend on _aliases.
-        auto from = getCaseInsensitive(operands, "FROM"_sl);
-        if (from)
-            parseFromClause(from);
 
         _sql << "SELECT ";
 
@@ -223,8 +246,8 @@ namespace litecore {
         // WHAT clause:
         // Default result columns:
         string defaultTablePrefix;
-        if (!_aliases.empty())
-            defaultTablePrefix = _aliases[0] + ".";
+        if (_propertiesUseAliases)
+            defaultTablePrefix = quoteTableName(_dbAlias) + ".";
         int nCol = 0;
         
         if(!distinctVal) {
@@ -315,27 +338,34 @@ namespace litecore {
                 parseNode(where);
                 _sql << ") AND ";
             }
-            writeNotDeletedTest(0);
+            writeNotDeletedTest(_dbAlias);
         }
     }
 
 
-    void QueryParser::writeNotDeletedTest(unsigned tableIndex) {
+    void QueryParser::writeNotDeletedTest(const string &alias) {
         _sql << '(';
-        if (_aliases.empty())
-            Assert(tableIndex == 0);
-        else
-            _sql << '"' << _aliases[tableIndex] << "\".";
+        if (!alias.empty())
+            _sql << quoteTableName(alias) << '.';
         _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << ") = 0";
-
     }
 
 
-    void QueryParser::writeCreateIndex(const string &name, const Array *expressions) {
+    void QueryParser::writeCreateIndex(const string &name,
+                                       Array::iterator &expressionsIter,
+                                       bool isUnnestedTable)
+    {
         reset();
+        if (isUnnestedTable)
+            _aliases[_dbAlias] = kUnnestTableAlias;
         _sql << "CREATE INDEX \"" << name << "\" ON " << _tableName << " ";
-        Array::iterator iter(expressions);
-        writeColumnList(iter);
+        if (expressionsIter.count() > 0) {
+            writeColumnList(expressionsIter);
+        } else {
+            // No expressions; index the entire body (this is used with unnested/array tables):
+            Assert(isUnnestedTable);
+            _sql << '(' << kUnnestedValueFnName << "(" << _bodyColumnName << "))";
+        }
         // TODO: Add 'WHERE' clause for use with SQLite 3.15+
     }
 
@@ -356,71 +386,127 @@ namespace litecore {
 
 
     void QueryParser::parseFromClause(const Value *from) {
-        for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
-            auto entry = requiredDict(i.value(), "FROM item");
-            string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
-                                          "AS in FROM item").asString();
-            require(isAlphanumericOrUnderscore(alias), "AS value");
-            _aliases.push_back(alias);
+        _aliases.clear();
+        bool first = true;
+        if (from) {
+            for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
+                if (first)
+                    _propertiesUseAliases = true;
+                auto entry = requiredDict(i.value(), "FROM item");
+                string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
+                                              "AS in FROM item").asString();
+                require(isAlphanumericOrUnderscore(alias), "AS value");
+                require(_aliases.find(alias) == _aliases.end(),
+                        "duplicate AS identifier '%s'", alias.c_str());
+
+                // Determine the alias type:
+                auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
+                auto on = getCaseInsensitive(entry, "ON"_sl);
+
+                aliasType type;
+                if (first) {
+                    require(!on && !unnest, "first FROM item cannot have an ON or UNNEST clause");
+                    type = kDBAlias;
+                    _dbAlias = alias;
+                } else if (!unnest) {
+                    type = kJoinAlias;
+                } else {
+                    require (!on, "cannot use ON and UNNEST together");
+                    string unnestTable = unnestedTableName(unnest);
+                    if (_delegate.tableExists(unnestTable))
+                        type = kUnnestTableAlias;
+                    else
+                        type = kUnnestVirtualTableAlias;
+                }
+                _aliases.insert({alias, type});
+                first = false;
+            }
+        }
+        if (first) {
+            _dbAlias = kDefaultTableAlias;
+            _aliases.insert({_dbAlias, kDBAlias});
         }
     }
 
 
     void QueryParser::writeFromClause(const Value *from) {
+        auto fromArray = (const Array*)from;    // already type-checked by parseFromClause
+
         _sql << " FROM " << _tableName;
-        unsigned i = 0;
-        if (from) {
-            for (i = 0; i < _aliases.size(); ++i) {
-                auto entry = from->asArray()->get(i)->asDict();
+
+        if (fromArray && !fromArray->empty()) {
+            for (Array::iterator i(fromArray); i; ++i) {
+                auto entry = requiredDict(i.value(), "FROM item");
+                string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
+                                              "AS in FROM item").asString();
                 auto on = getCaseInsensitive(entry, "ON"_sl);
-                if (i == 0) {
-                    require(!on, "first FROM item cannot have an ON clause");
-                    _sql << " AS \"" << _aliases[i] << "\"";
-                } else {
-                    JoinType joinType = kInner;
-                    const Value* joinTypeVal = getCaseInsensitive(entry, "JOIN"_sl);
-                    if (joinTypeVal) {
-                        slice joinTypeStr = requiredString(joinTypeVal, "JOIN value");
-                        joinType = JoinType(parseJoinType(joinTypeStr));
-                        require(joinType != kInvalidJoin, "Unknown JOIN type '%.*s'",
-                                SPLAT(joinTypeStr));
+                auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
+                switch (_aliases[alias]) {
+                    case kDBAlias:
+                        // The first item is the database alias:
+                        _sql << " AS \"" << alias << "\"";
+                        break;
+                    case kUnnestVirtualTableAlias:
+                        // UNNEST: Use fl_each() to make a virtual table:
+                        _sql << " JOIN ";
+                        writeEachExpression(propertyFromNode(unnest));
+                        _sql << " AS \"" << alias << "\"";
+                        break;
+                    case kUnnestTableAlias: {
+                        // UNNEST: Optimize query by using the unnest table as a join source:
+                        string unnestTable = unnestedTableName(unnest);
+                        _sql << " JOIN \"" << unnestTable << "\" AS \"" << alias << "\""
+                                " ON \"" << alias << "\".docid=\"" << _dbAlias << "\".rowid";
+                        break;
                     }
+                    case kJoinAlias: {
+                        // A join:
+                        JoinType joinType = kInner;
+                        const Value* joinTypeVal = getCaseInsensitive(entry, "JOIN"_sl);
+                        if (joinTypeVal) {
+                            slice joinTypeStr = requiredString(joinTypeVal, "JOIN value");
+                            joinType = JoinType(parseJoinType(joinTypeStr));
+                            require(joinType != kInvalidJoin, "Unknown JOIN type '%.*s'",
+                                    SPLAT(joinTypeStr));
+                        }
 
-                    if (joinType == kCross) {
-                        require(!on, "CROSS JOIN cannot accept an ON clause");
-                    } else {
-                        require(on, "FROM item needs an ON clause to be a join");
-                    }
+                        if (joinType == kCross) {
+                            require(!on, "CROSS JOIN cannot accept an ON clause");
+                        } else {
+                            require(on, "FROM item needs an ON clause to be a join");
+                        }
 
-                    // Substitute CROSS for INNER join to work around SQLite loop-ordering (#379)
-                    _sql << " " << kJoinTypeNames[ (joinType == kInner) ? kCross : joinType ];
-                    
-                    _sql << " JOIN " << _tableName << " AS \"" << _aliases[i] << "\"";
+                        // Substitute CROSS for INNER join to work around SQLite loop-ordering (#379)
+                        _sql << " " << kJoinTypeNames[ (joinType == kInner) ? kCross : joinType ];
 
-                    if (on || !_includeDeleted) {
-                        _sql << " ON ";
-                        if (on) {
-                            if (!_includeDeleted)
-                                _sql << "(";
-                            parseNode(on);
-                            if (!_includeDeleted) {
-                                _sql << ") AND ";
+                        _sql << " JOIN " << _tableName << " AS \"" << alias << "\"";
+
+                        if (on || !_includeDeleted) {
+                            _sql << " ON ";
+                            if (on) {
+                                if (!_includeDeleted)
+                                    _sql << "(";
+                                parseNode(on);
+                                if (!_includeDeleted) {
+                                    _sql << ") AND ";
+                                }
                             }
+                            if(!_includeDeleted)
+                                writeNotDeletedTest(alias);
                         }
-                        if(!_includeDeleted) {
-                            writeNotDeletedTest(i);
-                        }
+                        break;
                     }
                 }
             }
+        } else {
+            _sql << " AS " << quoteTableName(_dbAlias);
         }
+        
         unsigned ftsTableNo = 0;
         for (auto ftsTable : _ftsTables) {
             ++ftsTableNo;
-            if (i > 1)
-                _sql << ",";
             _sql << " JOIN \"" << ftsTable << "\" AS FTS" << ftsTableNo
-                 << " ON FTS" << ftsTableNo << ".docid = kv_default.rowid";
+                 << " ON FTS" << ftsTableNo << ".docid = " << quoteTableName(_dbAlias) << ".rowid";
         }
     }
 
@@ -443,7 +529,18 @@ namespace litecore {
                 _sql << "x''";        // Represent a Fleece/JSON/N1QL null as an empty blob (?)
                 break;
             case kNumber:
-                _sql << node->toString();
+                if(node->isInteger()) {
+                    _sql << node->toString();
+                } else {
+                    // https://github.com/couchbase/couchbase-lite-core/issues/555
+                    // Too much precision and stringifying is affected, but too little
+                    // and the above issue happens so query parser needs to use a higher
+                    // precision version of the floating point number
+                    char buf[32];
+                    sprintf(buf, "%.17g", node->asDouble());
+                    _sql << buf;
+                }
+                
                 break;
             case kBoolean:
                 _sql << (node->asBool() ? '1' : '0');    // SQL doesn't have true/false
@@ -479,7 +576,7 @@ namespace litecore {
 
 
     void QueryParser::writeCollation() {
-        _sql << " COLLATE " << _collation.sqliteName();
+        _sql << " COLLATE \"" << _collation.sqliteName() << "\"";
     }
 
 
@@ -529,10 +626,7 @@ namespace litecore {
     // a column-list ('FROM', 'ORDER BY', creating index, etc.) where it's a property path.
     void QueryParser::parseStringLiteral(slice str) {
         if (_context.back() == &kColumnListOperation || _context.back() == &kResultListOperation) {
-            require(str.size > 0 && str[0] == '.',
-                    "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
-            str.moveStart(1);
-            writePropertyGetter(kValueFnName, str.asString());
+            writePropertyGetter(kValueFnName, propertyFromString(str));
         } else {
             writeSQLString(str);
         }
@@ -726,12 +820,19 @@ namespace litecore {
         _variables.insert(var);
 
         string property = propertyFromNode(operands[1]);
-        require(!property.empty(), "ANY/EVERY only supports a property as its source");
+        auto predicate = requiredArray(operands[2], "ANY/EVERY third parameter");
+
 
         bool every = !op.caseEquivalent("ANY"_sl);
         bool anyAndEvery = op.caseEquivalent("ANY AND EVERY"_sl);
 
-        //OPT: If expr is `var = value`, can generate `fl_contains(array, value)` instead 
+        if (op.caseEquivalent("ANY"_sl) && predicate->count() == 3
+                                        && predicate->get(0)->asString() == "="_sl
+                                        && propertyFromNode(predicate->get(1), '?') == var) {
+            // If predicate is `var = value`, generate `fl_contains(array, value)` instead
+            writePropertyGetter(kContainsFnName, property, predicate->get(2));
+            return;
+        }
 
         if (anyAndEvery) {
             _sql << '(';
@@ -742,11 +843,11 @@ namespace litecore {
         if (every)
             _sql << "NOT ";
         _sql << "EXISTS (SELECT 1 FROM ";
-        writePropertyGetter(kEachFnName, property);
+        writeEachExpression(property);
         _sql << " AS _" << var << " WHERE ";
         if (every)
             _sql << "NOT (";
-        parseNode(operands[2]);
+        parseNode(predicate);
         if (every)
             _sql << ')';
         _sql << ')';
@@ -810,7 +911,7 @@ namespace litecore {
         if (property.empty()) {
             _sql << '_' << var << ".value";
         } else {
-            _sql << kNestedValueFnName << "(_" << var << ".pointer, ";
+            _sql << kNestedValueFnName << "(_" << var << ".body, ";
             writeSQLString(_sql, slice(property));
             _sql << ")";
         }
@@ -861,7 +962,7 @@ namespace litecore {
             writeSelect(dict);
         } else {
             // Nested SELECT; use a fresh parser
-            QueryParser nested(_tableName, _bodyColumnName);
+            QueryParser nested(this);
             nested.parse(dict);
             _sql << nested.SQL();
         }
@@ -875,14 +976,13 @@ namespace litecore {
         operation.op = op;
         _context.back() = &operation;
 
-        if (op.size > 0 && op[0] == '.') {
-            op.moveStart(1);  // skip '.'
-            writePropertyGetter(kValueFnName, string(op));
-        } else if (op.size > 0 && op[0] == '$') {
+        if (op.hasPrefix('.')) {
+            writePropertyGetter(kValueFnName, propertyFromString(op));
+        } else if (op.hasPrefix('$')) {
             parameterOp(op, operands);
-        } else if (op.size > 0 && op[0] == '?') {
+        } else if (op.hasPrefix('?')) {
             variableOp(op, operands);
-        } else if (op.size > 2 && op[op.size-2] == '(' && op[op.size-1] == ')') {
+        } else if (op.hasSuffix("()"_sl)) {
             functionOp(op, operands);
         } else {
             fail("Unknown operator '%.*s'", SPLAT(op));
@@ -948,45 +1048,55 @@ namespace litecore {
 #pragma mark - PROPERTIES:
 
 
+    static string propertyFromString(slice str) {
+        require(str.hasPrefix('.'),
+                "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
+        str.moveStart(1);
+        auto property = str.asString();
+        if (str.hasPrefix('$'))
+            property.insert(0, 1, '\\');
+        return property;
+    }
+
+
     // Concatenates property operands to produce the property path string
-    static string propertyFromOperands(Array::iterator &operands) {
-        stringstream property;
+    static string propertyFromOperands(Array::iterator &operands, bool skipDotPrefix) {
+        stringstream pathStr;
         int n = 0;
         for (auto &i = operands; i; ++i,++n) {
-            auto item = i.value();
-            auto arr = item->asArray();
+            auto arr = i.value()->asArray();
             if (arr) {
                 require(n > 0, "Property path can't start with an array index");
-                // TODO: Support ranges (2 numbers)
                 require(arr->count() == 1, "Property array index must have exactly one item");
                 require(arr->get(0)->isInteger(), "Property array index must be an integer");
-                auto index = arr->get(0)->asInt();
-                property << '[' << index << ']';
+                Path::writeIndex(pathStr, (int)arr->get(0)->asInt());
             } else {
-                slice name = item->asString();
+                slice name = i.value()->asString();
                 require(name, "Invalid JSON value in property path");
-                if (n > 0)
-                    property << '.';
-                property << name;
+                if (skipDotPrefix) {
+                    name.moveStart(1);
+                    pathStr.write((const char*)name.buf, name.size);
+                } else {
+                    Path::writeProperty(pathStr, name, n==0);
+                }
+                require(name.size > 0, "Property name must not be empty");
             }
+            skipDotPrefix = false;
         }
-        return property.str();
+        return pathStr.str();
     }
 
 
     // Returns the property represented by a node, or "" if it's not a property node
-    static string propertyFromNode(const Value *node) {
+    static string propertyFromNode(const Value *node, char prefix) {
         Array::iterator i(node->asArray());
         if (i.count() >= 1) {
             auto op = i[0]->asString();
-            if (op && op[0] == '.') {
-                if (op.size == 1) {
-                    ++i;  // skip "." item
-                    return propertyFromOperands(i);
-                } else {
-                    op.moveStart(1);
-                    return (string)op;
-                }
+            if (op.hasPrefix(prefix)) {
+                bool justDot = (op.size == 1);
+                if (justDot)
+                    ++i;
+                return propertyFromOperands(i, !justDot);
             }
         }
         return "";              // not a valid property node
@@ -1007,9 +1117,9 @@ namespace litecore {
 
 
     // Writes a call to a Fleece SQL function, including the closing ")".
-    void QueryParser::writePropertyGetter(slice fn, string property) {
-        string tableName;
-        if (!_aliases.empty()) {
+    void QueryParser::writePropertyGetter(slice fn, string property, const Value *param) {
+        string alias, tablePrefix;
+        if (_propertiesUseAliases) {
             // Interpret the first component of the property as a db alias:
             auto dot = property.find('.');
             string rest;
@@ -1018,33 +1128,76 @@ namespace litecore {
             } else {
                 rest = property.substr(dot+1);
             }
-            string first = property.substr(0, dot);
+            alias = property.substr(0, dot);
 
             // Make sure there isn't a bracket (array index) before the dot:
             auto bra = property.find('[');
             require(bra == string::npos || dot < bra,
                     "Missing database alias name in property '%s'", property.c_str());
-
-            require(find(_aliases.begin(), _aliases.end(), first) != _aliases.end(),
-                    "Unknown database alias name in property '%s'", property.c_str());
-            tableName = "\"" + first + "\".";
             property = rest;
+        } else {
+            alias = _dbAlias;
+        }
+        if (!alias.empty())
+            tablePrefix = quoteTableName(alias) + ".";
+
+        auto iType = _aliases.find(alias);
+        require(iType != _aliases.end(),
+                "property '%s.%s' does not begin with a declared 'AS' alias",
+                alias.c_str(), property.c_str());
+        if (iType->second >= kUnnestVirtualTableAlias) {
+            // The alias is to an UNNEST. This needs to be written specially:
+            writeUnnestPropertyGetter(fn, property, alias, iType->second);
+            return;
         }
 
         if (property == "_id") {
             require(fn == kValueFnName, "can't use '_id' in this context");
-            _sql << tableName << "key";
+            _sql << tablePrefix << "key";
         } else if (property == "_sequence") {
             require(fn == kValueFnName, "can't use '_sequence' in this context");
-            _sql << tableName << "sequence";
+            _sql << tablePrefix << "sequence";
         } else {
             // It's more efficent to get the doc root with fl_root than with fl_value:
             if (property == "" && fn == kValueFnName)
                 fn = kRootFnName;
 
             // Write the function call:
-            _sql << fn << "(" << tableName << _bodyColumnName;
+            _sql << fn << "(" << tablePrefix << _bodyColumnName;
             if(!property.empty()) {
+                _sql << ", ";
+                writeSQLString(_sql, slice(property));
+            }
+            if (param) {
+                _sql << ", ";
+                parseNode(param);
+            }
+            _sql << ")";
+        }
+    }
+
+
+    void QueryParser::writeUnnestPropertyGetter(slice fn, const string &property,
+                                                const string &alias, aliasType type)
+    {
+        require(fn == kValueFnName, "can't use an UNNEST alias in this context");
+        require(property != "_id" && property != "_sequence",
+                "can't use '%s' on an UNNEST", property.c_str());
+        string tablePrefix;
+        if (_propertiesUseAliases)
+            tablePrefix = quoteTableName(alias) + ".";
+
+        if (type == kUnnestVirtualTableAlias) {
+            if (property.empty()) {
+                _sql << tablePrefix << "value";
+            } else {
+                _sql << kNestedValueFnName << "(" << tablePrefix << "body, ";
+                writeSQLString(_sql, slice(property));
+                _sql << ")";
+            }
+        } else {
+            _sql << kUnnestedValueFnName << "(" << tablePrefix << "body";
+            if (!property.empty()) {
                 _sql << ", ";
                 writeSQLString(_sql, slice(property));
             }
@@ -1053,12 +1206,43 @@ namespace litecore {
     }
 
 
-    /*static*/ std::string QueryParser::expressionSQL(const fleece::Value* expr,
-                                                      const char *bodyColumnName)
-    {
-        QueryParser qp("XXX", bodyColumnName);
-        qp.parseJustExpression(expr);
-        return qp.SQL();
+    // Writes an 'fl_each()' call representing a virtual table for the array at the given property
+    void QueryParser::writeEachExpression(const string &property) {
+        require(!property.empty(), "array expressions only support a property as their source");
+#if 0
+        // Is the property an existing UNNEST alias?
+        for (auto &elem : _unnestAliases) {
+            if (elem.second == property) {
+                _sql << property;
+                return;
+            }
+        }
+
+        auto i = _unnestAliases.find(property);
+        if (i != _unnestAliases.end())
+            _sql << i->second;                              // write existing table alias
+        else
+#endif
+        writePropertyGetter(kEachFnName, property);     // write fl_each()
+    }
+
+    // Writes an 'fl_each()' call representing a virtual table for the array at the given property
+    void QueryParser::writeEachExpression(const Value *propertyExpr) {
+        writeEachExpression(propertyFromNode(propertyExpr));
+    }
+
+
+    std::string QueryParser::expressionSQL(const fleece::impl::Value* expr) {
+        reset();
+        parseJustExpression(expr);
+        return SQL();
+    }
+
+
+    std::string QueryParser::eachExpressionSQL(const fleece::impl::Value* arrayExpr) {
+        reset();
+        writeEachExpression(arrayExpr);
+        return SQL();
     }
 
 
@@ -1088,14 +1272,10 @@ namespace litecore {
 
 
     string QueryParser::FTSTableName(const Value *key) const {
-        slice ftsName = requiredString(key, "left-hand side of MATCH expression");
-        return FTSTableName(string(ftsName));
-    }
-
-    string QueryParser::FTSTableName(const string &indexName) const {
-        require(!indexName.empty() && indexName.find('"') == string::npos,
+        string ftsName( requiredString(key, "left-hand side of MATCH expression") );
+        require(!ftsName.empty() && ftsName.find('"') == string::npos,
                 "FTS index name may not contain double-quotes nor be empty");
-        return _tableName + "::" + indexName;
+        return _delegate.FTSTableName(ftsName);
     }
 
     size_t QueryParser::FTSPropertyIndex(const Value *matchLHS, bool canAdd) {
@@ -1114,11 +1294,23 @@ namespace litecore {
 
     string QueryParser::FTSColumnName(const Value *expression) {
         slice op = requiredArray(expression, "FTS index expression")->get(0)->asString();
-        require(op.size > 0, "invalid FTS index expression");
-        require(op[0] == '.', "FTS index expression must be a property");
+        require(op.hasPrefix('.'), "FTS index expression must be a property");
         string property = propertyFromNode(expression);
         require(!property.empty(), "invalid property expression");
         return property;
+    }
+
+
+    string QueryParser::unnestedTableName(const Value *arrayExpr) const {
+        string path = propertyFromNode(arrayExpr);
+        require(!path.empty() && path.find('"') == string::npos,
+                "invalid property path for array index");
+        if (_propertiesUseAliases) {
+            string dbAliasPrefix = _dbAlias + ".";
+            if (hasPrefix(path, dbAliasPrefix))
+                path = path.substr(dbAliasPrefix.size());
+        }
+        return _delegate.unnestedTableName(path);
     }
 
 }

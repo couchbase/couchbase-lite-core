@@ -18,7 +18,7 @@
 
 #pragma once
 #include "Base.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include <sqlite3.h>
 
 
@@ -27,20 +27,34 @@ namespace litecore {
     // SQLite value subtypes to represent type info that SQL doesn't convey:
     enum {
         kFleeceDataSubtype     = 0x66,  // Blob contains encoded Fleece data
-        kFleecePointerSubtype,          // Blob contains a raw Value* (4 or 8 bytes)
         kFleeceNullSubtype,             // Zero-length blob representing JSON null
         kFleeceIntBoolean,              // Integer is a boolean (true or false)
         kFleeceIntUnsigned,             // Integer is unsigned
     };
 
+    extern const char* const kFleeceValuePointerType;
+
+    static inline const fleece::impl::Value* asFleeceValue(sqlite3_value *value) {
+        return (const fleece::impl::Value*) sqlite3_value_pointer(value, kFleeceValuePointerType);
+    }
+
     // What the user_data of a registered function points to
     struct fleeceFuncContext {
         DataFile::FleeceAccessor accessor;
-        fleece::SharedKeys *sharedKeys;
+        fleece::impl::SharedKeys *sharedKeys;
     };
 
 
-    static inline fleece::SharedKeys* getSharedKeys(sqlite3_context *ctx) {
+    // Takes a document body from argv[0] and key-path from argv[1].
+    // Establishes a scope for the Fleece data, and evaluates the path, setting `root`
+    class QueryFleeceScope : public fleece::impl::Scope {
+    public:
+        QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv);
+        const fleece::impl::Value *root;
+    };
+
+
+    static inline fleece::impl::SharedKeys* getSharedKeys(sqlite3_context *ctx) {
         return ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys;
     }
 
@@ -56,27 +70,18 @@ namespace litecore {
         return slice(blob, sqlite3_value_bytes(arg));
     }
 
-    // Takes 'body' column value from arg, and returns the current revision's body as a Value*.
-    // On error returns nullptr (and sets the SQLite result error.)
-    const fleece::Value* fleeceDocRoot(sqlite3_context* ctx, sqlite3_value *arg) noexcept;
-
     // Interprets the arg, which must be a blob, as a Fleece value and returns it as a Value*.
     // On error returns nullptr (and sets the SQLite result error.)
-    const fleece::Value* fleeceParam(sqlite3_context*, sqlite3_value *arg) noexcept;
+    const fleece::impl::Value* fleeceParam(sqlite3_context*, sqlite3_value *arg) noexcept;
 
     // Evaluates a path from the current value of *pValue and stores the result back to
     // *pValue. Returns a SQLite error code, or SQLITE_OK on success.
-    int evaluatePath(slice path, fleece::SharedKeys*, const fleece::Value **pValue) noexcept;
+    int evaluatePath(slice path, const fleece::impl::Value **pValue) noexcept;
 
-    // Takes document body from arg 0 and path string from arg 1, and evaluates the path.
-    // Stores result, which may be nullptr if path wasn't found, in *outValue.
-    // Returns true on success, false on error.
-    bool evaluatePathFromArgs(sqlite3_context *ctx, sqlite3_value **argv,
-                            bool isDocBody,
-                            const fleece::Value* *outValue);
+    const fleece::impl::Value* evaluatePathFromArg(sqlite3_context*, sqlite3_value **argv, int argNo, const fleece::impl::Value *root);
 
     // Sets the function result based on a Value*
-    void setResultFromValue(sqlite3_context*, const fleece::Value*) noexcept;
+    void setResultFromValue(sqlite3_context*, const fleece::impl::Value*) noexcept;
 
     // Sets the function result to a string, from the given slice.
     // If the slice is null, sets the function result to SQLite null.
@@ -86,10 +91,14 @@ namespace litecore {
     void setResultBlobFromFleeceData(sqlite3_context*, slice) noexcept;
 
     // Encodes the Value as a Fleece container and sets it as the result
-    bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::Value*);
+    bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::impl::Value*);
 
     // Sets the function result to be a Fleece/JSON null (an empty blob with kFleeceNullSubtype)
     void setResultFleeceNull(sqlite3_context*);
+
+    // Common implementation of fl_contains and array_contains
+    void collectionContainsImpl(sqlite3_context*, const fleece::impl::Value *collection, sqlite3_value *arg);
+
 
     //// Registering SQLite functions:
 
@@ -102,10 +111,11 @@ namespace litecore {
     };
 
     extern const SQLiteFunctionSpec kFleeceFunctionsSpec[];
+    extern const SQLiteFunctionSpec kFleeceNullAccessorFunctionsSpec[];
     extern const SQLiteFunctionSpec kRankFunctionsSpec[];
     extern const SQLiteFunctionSpec kN1QLFunctionsSpec[];
 
     int RegisterFleeceEachFunctions(sqlite3 *db, DataFile::FleeceAccessor,
-                                    fleece::SharedKeys*);
+                                    fleece::impl::SharedKeys*);
 
 }

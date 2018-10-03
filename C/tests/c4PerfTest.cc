@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "Fleece.h"     // including this before c4 makes FLSlice and C4Slice compatible
+#include "fleece/Fleece.h"
 #include "c4Test.hh"
 #include "c4Document+Fleece.h"
 #include "Base.hh"
@@ -53,16 +53,16 @@ public:
 
 
     unsigned insertDocs(Array docs) {
-        Dict::Key typeKey   (FLSTR("Track Type"), true);
-        Dict::Key idKey     (FLSTR("Persistent ID"), true);
-        Dict::Key nameKey   (FLSTR("Name"), true);
-        Dict::Key albumKey  (FLSTR("Album"), true);
-        Dict::Key artistKey (FLSTR("Artist"), true);
-        Dict::Key timeKey   (FLSTR("Total Time"), true);
-        Dict::Key genreKey  (FLSTR("Genre"), true);
-        Dict::Key yearKey   (FLSTR("Year"), true);
-        Dict::Key trackNoKey(FLSTR("Track Number"), true);
-        Dict::Key compKey   (FLSTR("Compilation"), true);
+        Dict::Key typeKey   (FLSTR("Track Type"));
+        Dict::Key idKey     (FLSTR("Persistent ID"));
+        Dict::Key nameKey   (FLSTR("Name"));
+        Dict::Key albumKey  (FLSTR("Album"));
+        Dict::Key artistKey (FLSTR("Artist"));
+        Dict::Key timeKey   (FLSTR("Total Time"));
+        Dict::Key genreKey  (FLSTR("Genre"));
+        Dict::Key yearKey   (FLSTR("Year"));
+        Dict::Key trackNoKey(FLSTR("Track Number"));
+        Dict::Key compKey   (FLSTR("Compilation"));
 
         TransactionHelper t(db);
 
@@ -93,7 +93,7 @@ public:
             copyValue(track, compKey, enc);
             enc.endDict();
             FLError error;
-            FLSliceResult body = enc.finish(&error);
+            alloc_slice body = enc.finish(&error);
             REQUIRE(body.buf);
             enc.reset();
 
@@ -106,7 +106,6 @@ public:
             C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
             REQUIRE(doc != nullptr);
             c4doc_free(doc);
-            FLSliceResult_Free(body);
             ++numDocs;
         }
         

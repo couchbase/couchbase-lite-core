@@ -17,8 +17,7 @@
 //
 
 #pragma once
-#include "slice.hh"
-#include <assert.h>
+#include "fleece/slice.hh"
 #include <map>
 
 namespace litecore { namespace repl {

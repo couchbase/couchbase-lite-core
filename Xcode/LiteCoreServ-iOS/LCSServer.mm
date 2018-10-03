@@ -14,7 +14,6 @@
 #include "Server.hh"
 
 using namespace fleece;
-using namespace fleeceapi;
 using namespace litecore::REST;
 
 @interface LCSServer ()

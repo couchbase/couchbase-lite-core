@@ -18,39 +18,62 @@
 
 #include "QueryParser.hh"
 #include "Error.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include <string>
 #include <vector>
 #include <iostream>
 #include "LiteCoreTest.hh"
 
 using namespace std;
+using namespace fleece::impl;
 
 
-static string parse(string json) {
-    QueryParser qp("kv_default");
-    alloc_slice fleece = JSONConverter::convertJSON(json5(json));
-    qp.parse(Value::fromTrustedData(fleece));
-    return qp.SQL();
-}
+class QueryParserTest : public QueryParser::delegate {
+public:
+    QueryParserTest() { }
 
-static string parseWhere(string json) {
-    QueryParser qp("kv_default");
-    alloc_slice fleece = JSONConverter::convertJSON(json5(json));
-    qp.parseJustExpression(Value::fromTrustedData(fleece));
-    return qp.SQL();
-}
+    virtual std::string tableName() const override {
+        return "kv_default";
+    }
+    virtual std::string FTSTableName(const std::string &property) const override {
+        return tableName() + "::" + property;
+    }
+    virtual std::string unnestedTableName(const std::string &property) const override {
+        return tableName() + ":unnest:" + property;
+    }
+    virtual bool tableExists(const string &tableName) const override {
+        return tablesExist;
+    }
 
-static void mustFail(string json) {
-    QueryParser qp("kv_default");
-    alloc_slice fleece = JSONConverter::convertJSON(json5(json));
-    ExpectException(error::LiteCore, error::InvalidQuery, [&]{
+protected:
+    string parse(string json) {
+        QueryParser qp(*this);
+        alloc_slice fleece = JSONConverter::convertJSON(json5(json));
+        qp.parse(Value::fromTrustedData(fleece));
+        return qp.SQL();
+    }
+
+    string parseWhere(string json) {
+        QueryParser qp(*this);
+        alloc_slice fleece = JSONConverter::convertJSON(json5(json));
         qp.parseJustExpression(Value::fromTrustedData(fleece));
-    });
-}
+        return qp.SQL();
+    }
+
+    void mustFail(string json) {
+        QueryParser qp(*this);
+        alloc_slice fleece = JSONConverter::convertJSON(json5(json));
+        ExpectException(error::LiteCore, error::InvalidQuery, [&]{
+            qp.parseJustExpression(Value::fromTrustedData(fleece));
+        });
+    }
+
+    bool tablesExist {false};
+
+};
 
 
-TEST_CASE("QueryParser basic", "[Query]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser basic", "[Query]") {
     CHECK(parseWhere("['=', ['.', 'name'], 'Puddin\\' Tane']")
           == "fl_value(body, 'name') = 'Puddin'' Tane'");
     CHECK(parseWhere("['=', ['.name'], 'Puddin\\' Tane']")
@@ -90,7 +113,7 @@ TEST_CASE("QueryParser basic", "[Query]") {
 }
 
 
-TEST_CASE("QueryParser bindings", "[Query]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser bindings", "[Query]") {
     CHECK(parseWhere("['=', ['$', 'X'], ['$', 7]]")
           == "$_X = $_7");
     CHECK(parseWhere("['=', ['$X'], ['$', 7]]")
@@ -98,7 +121,7 @@ TEST_CASE("QueryParser bindings", "[Query]") {
 }
 
 
-TEST_CASE("QueryParser special properties", "[Query]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser special properties", "[Query]") {
     CHECK(parseWhere("['ifnull()', ['.', '_id'], ['.', '_sequence']]")
           == "N1QL_ifnull(key, sequence)");
     CHECK(parseWhere("['ifnull()', ['._id'], ['.', '_sequence']]")
@@ -106,7 +129,7 @@ TEST_CASE("QueryParser special properties", "[Query]") {
 }
 
 
-TEST_CASE("QueryParser property contexts", "[Query]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser property contexts", "[Query]") {
     // Special cases where a property access uses a different function than fl_value()
     CHECK(parseWhere("['EXISTS', 17]")
           == "EXISTS 17");
@@ -123,71 +146,83 @@ TEST_CASE("QueryParser property contexts", "[Query]") {
 }
 
 
-TEST_CASE("QueryParser ANY", "[Query]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY", "[Query]") {
     CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
-          == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE _X.value = 'Smith')");
+          == "fl_contains(body, 'names', 'Smith')");
+    CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?X'], 'Smith']]")
+          == "fl_contains(body, 'names', 'Smith')");
+    CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['>', ['?', 'X'], 3.125]]")
+          == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE _X.value > 3.125)");
     CHECK(parseWhere("['EVERY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
           == "NOT EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE NOT (_X.value = 'Smith'))");
     CHECK(parseWhere("['ANY AND EVERY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
           == "(fl_count(body, 'names') > 0 AND NOT EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE NOT (_X.value = 'Smith')))");
+
+    CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}],\
+                                 WHERE: ['ANY', 'X', ['.', 'person', 'names'], ['=', ['?', 'X'], 'Smith']]}]")
+          == "SELECT \"person\".key, \"person\".sequence FROM kv_default AS \"person\" WHERE ((fl_contains(\"person\".body, 'names', 'Smith'))) AND (\"person\".flags & 1) = 0");
+    CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}, {AS: 'book', 'ON': 1}],\
+                                 WHERE: ['ANY', 'X', ['.', 'book', 'keywords'], ['=', ['?', 'X'], 'horror']]}]")
+          == "SELECT \"person\".key, \"person\".sequence FROM kv_default AS \"person\" CROSS JOIN kv_default AS \"book\" ON (1) AND (\"book\".flags & 1) = 0 WHERE ((fl_contains(\"book\".body, 'keywords', 'horror'))) AND (\"person\".flags & 1) = 0");
 }
 
 
-TEST_CASE("QueryParser ANY complex", "[Query]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY complex", "[Query]") {
     CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X', 'last'], 'Smith']]")
-          == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE fl_nested_value(_X.pointer, 'last') = 'Smith')");
+          == "EXISTS (SELECT 1 FROM fl_each(body, 'names') AS _X WHERE fl_nested_value(_X.body, 'last') = 'Smith')");
 }
 
 
-TEST_CASE("QueryParser SELECT", "[Query]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT", "[Query]") {
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'],\
                                  WHERE: ['=', ['.', 'last'], 'Smith'],\
                               ORDER_BY: [['.', 'first'], ['.', 'age']]}]")
-          == "SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(body, 'first'), fl_value(body, 'age')");
+          == "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0 ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age')");
     CHECK(parseWhere("['array_count()', ['SELECT',\
                                   {WHAT: ['._id'],\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                ORDER_BY: [['.', 'first'], ['.', 'age']]}]]")
-          == "array_count(SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "array_count(SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0 ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
     // note this query is lowercase, to test case-insensitivity
     CHECK(parseWhere("['exists', ['select',\
                                   {what: ['._id'],\
                                   where: ['=', ['.', 'last'], 'Smith'],\
                                order_by: [['.', 'first'], ['.', 'age']]}]]")
-          == "EXISTS (SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 ORDER BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "EXISTS (SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0 ORDER BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
     CHECK(parseWhere("['EXISTS', ['SELECT',\
                                   {WHAT: [['MAX()', ['.weight']]],\
                                   WHERE: ['=', ['.', 'last'], 'Smith'],\
                                DISTINCT: true,\
                                GROUP_BY: [['.', 'first'], ['.', 'age']]}]]")
-          == "EXISTS (SELECT DISTINCT fl_result(max(fl_value(body, 'weight'))) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0 GROUP BY fl_value(body, 'first'), fl_value(body, 'age'))");
+          == "EXISTS (SELECT DISTINCT fl_result(max(fl_value(_doc.body, 'weight'))) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0 GROUP BY fl_value(_doc.body, 'first'), fl_value(_doc.body, 'age'))");
 }
 
 
-TEST_CASE("QueryParser SELECT FTS", "[Query][FTS]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT FTS", "[Query][FTS]") {
     CHECK(parseWhere("['SELECT', {\
                      WHERE: ['MATCH', 'bio', 'mobile']}]")
-          == "SELECT kv_default.rowid, offsets(\"kv_default::bio\"), key, sequence FROM kv_default JOIN \"kv_default::bio\" AS FTS1 ON FTS1.docid = kv_default.rowid WHERE (FTS1.\"kv_default::bio\" MATCH 'mobile') AND (flags & 1) = 0");
+          == "SELECT _doc.rowid, offsets(\"kv_default::bio\"), key, sequence FROM kv_default AS _doc JOIN \"kv_default::bio\" AS FTS1 ON FTS1.docid = _doc.rowid WHERE (FTS1.\"kv_default::bio\" MATCH 'mobile') AND (_doc.flags & 1) = 0");
 }
 
-TEST_CASE("QueryParser SELECT WHAT", "[Query]") {
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT WHAT", "[Query]") {
     CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {WHAT: [['.first']],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(fl_value(body, 'first')) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(fl_value(_doc.body, 'first')) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {WHAT: [['.first'], ['length()', ['.middle']]],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(fl_value(body, 'first')), fl_result(N1QL_length(fl_value(body, 'middle'))) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(fl_value(_doc.body, 'first')), fl_result(N1QL_length(fl_value(_doc.body, 'middle'))) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0");
     // Check the "." operator (like SQL "*"):
     CHECK(parseWhere("['SELECT', {WHAT: ['.'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(fl_root(body)) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(fl_root(_doc.body)) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0");
     CHECK(parseWhere("['SELECT', {WHAT: [['.']], WHERE: ['=', ['.', 'last'], 'Smith']}]")
-          == "SELECT fl_result(fl_root(body)) FROM kv_default WHERE (fl_value(body, 'last') = 'Smith') AND (flags & 1) = 0");
+          == "SELECT fl_result(fl_root(_doc.body)) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0");
 }
 
 
-TEST_CASE("QueryParser CASE", "[Query]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser CASE", "[Query]") {
     CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2]")
           == "CASE fl_value(body, 'color') WHEN 'red' THEN 1 WHEN 'green' THEN 2 END");
     CHECK(parseWhere("['CASE', ['.color'], 'red', 1, 'green', 2, 0]")
@@ -199,7 +234,7 @@ TEST_CASE("QueryParser CASE", "[Query]") {
 }
 
 
-TEST_CASE("QueryParser Join", "[Query]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query]") {
     CHECK(parse("{WHAT: ['.book.title', '.library.name', '.library'], \
                   FROM: [{as: 'book'}, \
                          {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
@@ -216,12 +251,47 @@ TEST_CASE("QueryParser Join", "[Query]") {
 }
 
 
-TEST_CASE("QueryParser Collate", "[Query][Collation]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST", "[Query][FTS]") {
+    CHECK(parseWhere("['SELECT', {\
+                      FROM: [{as: 'book'}, \
+                             {as: 'notes', 'unnest': ['.book.notes']}],\
+                     WHERE: ['=', ['.notes'], 'torn']}]")
+          == "SELECT \"book\".key, \"book\".sequence FROM kv_default AS \"book\" JOIN fl_each(\"book\".body, 'notes') AS \"notes\" WHERE (\"notes\".value = 'torn') AND (\"book\".flags & 1) = 0");
+    CHECK(parseWhere("['SELECT', {\
+                      WHAT: ['.notes'], \
+                      FROM: [{as: 'book'}, \
+                             {as: 'notes', 'unnest': ['.book.notes']}],\
+                     WHERE: ['>', ['.notes.page'], 100]}]")
+          == "SELECT fl_result(\"notes\".value) FROM kv_default AS \"book\" JOIN fl_each(\"book\".body, 'notes') AS \"notes\" WHERE (fl_nested_value(\"notes\".body, 'page') > 100) AND (\"book\".flags & 1) = 0");
+}
+
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST optimized", "[Query][FTS]") {
+    tablesExist = true;
+    
+    CHECK(parseWhere("['SELECT', {\
+                      FROM: [{as: 'book'}, \
+                             {as: 'notes', 'unnest': ['.book.notes']}],\
+                     WHERE: ['=', ['.notes'], 'torn']}]")
+          == "SELECT \"book\".key, \"book\".sequence FROM kv_default AS \"book\" JOIN \"kv_default:unnest:notes\" AS \"notes\" ON \"notes\".docid=\"book\".rowid WHERE (fl_unnested_value(\"notes\".body) = 'torn') AND (\"book\".flags & 1) = 0");
+    CHECK(parseWhere("['SELECT', {\
+                      WHAT: ['.notes'], \
+                      FROM: [{as: 'book'}, \
+                             {as: 'notes', 'unnest': ['.book.notes']}],\
+                     WHERE: ['>', ['.notes.page'], 100]}]")
+          == "SELECT fl_result(fl_unnested_value(\"notes\".body)) FROM kv_default AS \"book\" JOIN \"kv_default:unnest:notes\" AS \"notes\" ON \"notes\".docid=\"book\".rowid WHERE (fl_unnested_value(\"notes\".body, 'page') > 100) AND (\"book\".flags & 1) = 0");
+}
+
+
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Collate", "[Query][Collation]") {
     CHECK(parseWhere("['AND',['COLLATE',{'UNICODE':true,'CASE':false,'DIAC':false},['=',['.Artist'],['$ARTIST']]],['IS',['.Compilation'],['MISSING']]]")
-          == "fl_value(body, 'Artist') COLLATE LCUnicode_CD_ = $_ARTIST AND fl_value(body, 'Compilation') IS NULL");
+          == "fl_value(body, 'Artist') COLLATE \"LCUnicode_CD_\" = $_ARTIST AND fl_value(body, 'Compilation') IS NULL");
     CHECK(parseWhere("['COLLATE', {unicode: true, locale:'se', case:false}, \
                                   ['=', ['.', 'name'], 'Puddin\\' Tane']]")
-          == "fl_value(body, 'name') COLLATE LCUnicode_C__se = 'Puddin'' Tane'");
+          == "fl_value(body, 'name') COLLATE \"LCUnicode_C__se\" = 'Puddin'' Tane'");
+    CHECK(parseWhere("['COLLATE', {unicode: true, locale:'yue_Hans_CN', case:false}, \
+                     ['=', ['.', 'name'], 'Puddin\\' Tane']]")
+          == "fl_value(body, 'name') COLLATE \"LCUnicode_C__yue_Hans_CN\" = 'Puddin'' Tane'");
     CHECK(parse("{WHAT: ['.book.title'], \
                   FROM: [{as: 'book'}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']], \
@@ -229,11 +299,11 @@ TEST_CASE("QueryParser Collate", "[Query][Collation]") {
           == "SELECT fl_result(fl_value(\"book\".body, 'title')) "
                "FROM kv_default AS \"book\" "
               "WHERE (fl_value(\"book\".body, 'author') = $_AUTHOR) AND (\"book\".flags & 1) = 0 "
-           "ORDER BY fl_value(\"book\".body, 'title') COLLATE LCUnicode_C__");
+           "ORDER BY fl_value(\"book\".body, 'title') COLLATE \"LCUnicode_C__\"");
 }
 
 
-TEST_CASE("QueryParser errors", "[Query][!throws]") {
+TEST_CASE_METHOD(QueryParserTest, "QueryParser errors", "[Query][!throws]") {
     mustFail("['poop()', 1]");
     mustFail("['power()', 1]");
     mustFail("['power()', 1, 2, 3]");

@@ -108,8 +108,9 @@ namespace litecore {
 
         enum IndexType {
             kValueIndex,         ///< Regular index of property value
-            kFullTextIndex,      ///< Full-text index
-            kGeoIndex,           ///< Geo index of GeoJSON values
+            kFullTextIndex,      ///< Full-text index, for MATCH queries
+            kArrayIndex,         ///< Index of array values, for UNNEST queries
+            kGeoIndex,           ///< Geo index of GeoJSON values [unimplemented]
         };
 
         struct IndexOptions {
@@ -120,7 +121,7 @@ namespace litecore {
         };
 
         virtual bool supportsIndexes(IndexType) const                   {return false;}
-        virtual void createIndex(slice name,
+        virtual bool createIndex(slice name,
                                  slice expressionJSON,
                                  IndexType =kValueIndex,
                                  const IndexOptions* = nullptr);

@@ -27,7 +27,7 @@
 #include "StringUtil.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
-#include "Fleece.hh"
+#include "FleeceImpl.hh"
 #include "varint.hh"
 #include <ctime>
 #include <algorithm>
@@ -306,6 +306,11 @@ namespace c4Internal {
 #pragma mark - INSERTING REVISIONS
 
 
+        static alloc_slice requestBody(const C4DocPutRequest &rq) {
+            return (rq.allocedBody.buf)? rq.allocedBody : alloc_slice(rq.body);
+        }
+
+
         int32_t putExistingRevision(const C4DocPutRequest &rq) override {
             Assert(rq.historyCount >= 1);
             int32_t commonAncestor = -1;
@@ -316,7 +321,7 @@ namespace c4Internal {
 
             auto priorCurrentRev = _versionedDoc.currentRevision();
             commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
-                                                         rq.body,
+                                                         requestBody(rq),
                                                          (Rev::Flags)rq.revFlags,
                                                          (rq.remoteDBID != 0));
             if (commonAncestor < 0)
@@ -361,9 +366,11 @@ namespace c4Internal {
                 error::_throw(error::InvalidParameter, "remoteDBID cannot be used when existing=false");
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
             revidBuffer encodedNewRevID = generateDocRevID(rq.body, selectedRev.revID, deletion);
-            slice body = rq.body;
+
+            alloc_slice body = requestBody(rq);
             if (!body)
-                body = slice{fleece::Dict::kEmpty, 2};
+                body = alloc_slice{fleece::impl::Dict::kEmpty, 2};
+            
             int httpStatus;
             auto newRev = _versionedDoc.insert(encodedNewRevID,
                                                body,
@@ -469,14 +476,14 @@ bool c4doc_save(C4Document *doc,
                 uint32_t maxRevTreeDepth,
                 C4Error *outError) noexcept
 {
-    auto idoc = internal(doc);
+    auto idoc = asInternal(doc);
     if (!idoc->mustUseVersioning(kC4RevisionTrees, outError))
         return false;
     if (!idoc->mustBeInTransaction(outError))
         return false;
     try {
         if (maxRevTreeDepth == 0)
-            maxRevTreeDepth = internal(doc)->database()->maxRevTreeDepth();
+            maxRevTreeDepth = asInternal(doc)->database()->maxRevTreeDepth();
         ((TreeDocument*)idoc)->save(maxRevTreeDepth);
         return true;
     } catchError(outError)
