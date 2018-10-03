@@ -153,8 +153,11 @@ namespace litecore {
 
     bool SQLiteDataFile::Factory::_deleteFile(const FilePath &path, const Options*) {
         LogTo(DBLog, "Deleting database file %s (with -wal and -shm)", path.path().c_str());
-        return path.del() | path.appendingToName("-shm").del() | path.appendingToName("-wal").del();
+        bool ok =  path.del() | path.appendingToName("-shm").del() | path.appendingToName("-wal").del();
         // Note the non-short-circuiting 'or'! All 3 paths will be deleted.
+        LogDebug(DBLog, "...finished deleting database file %s (with -wal and -shm)",
+                 path.path().c_str());
+        return ok;
     }
 
 
@@ -275,6 +278,7 @@ namespace litecore {
             }
             // Finally, delete the SQLite::Database instance:
             _sqlDb.reset();
+            logVerbose("Closed SQLite database");
         }
         _collationContexts.clear();
     }
