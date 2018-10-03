@@ -12,6 +12,7 @@
 #include "c4Document+Fleece.h"
 #include "Replicator.hh"
 #include "LoopbackProvider.hh"
+#include "ReplicatorTuning.hh"
 #include "StringUtil.hh"
 #include <algorithm>
 #include <chrono>
@@ -35,7 +36,11 @@ public:
     ReplicatorLoopbackTest()
     :C4Test(0)
     ,db2(createDatabase("2"))
-    { }
+    {
+        // Change tuning param so that tests will actually create deltas, despite using small
+        // document bodies:
+        litecore::repl::tuning::kMinBodySizeForDelta = 0;
+    }
 
     ~ReplicatorLoopbackTest() {
         if (_parallelThread)

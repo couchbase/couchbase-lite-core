@@ -505,6 +505,8 @@ namespace litecore { namespace repl {
         response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
         if (!_disableBlobSupport)
             response["blobs"_sl] = "true"_sl;
+        if (proposed && !_disableDeltaSupport)
+            response["deltas"_sl] = "true"_sl;
         vector<bool> whichRequested(changes.count());
         unsigned itemsWritten = 0, requested = 0;
         vector<alloc_slice> ancestors;
@@ -664,10 +666,17 @@ namespace litecore { namespace repl {
 
         // Get the document & revision:
         C4Error c4err;
+        slice revisionBody;
         Dict root;
         c4::ref<C4Document> doc = c4doc_get(_db, request->docID, true, &c4err);
-        if (doc)
-            root = getRevToSend(doc, *request, &c4err);
+        if (doc) {
+            revisionBody = getRevToSend(doc, *request, &c4err);
+            if (revisionBody) {
+                root = Value::fromData(revisionBody, kFLTrusted).asDict();
+                if (!root)
+                    c4err = {LiteCoreDomain, kC4ErrorCorruptData};
+            }
+        }
 
         // Now send the BLIP message. Normally it's "rev", but if this is an error we make it
         // "norev" and include the error code:
@@ -677,23 +686,52 @@ namespace litecore { namespace repl {
         msg["rev"_sl] = request->revID;
         msg["sequence"_sl] = request->sequence;
         if (root) {
+            auto sk = c4db_getFLSharedKeys(_db);
+            auto revisionFlags = doc->selectedRev.flags;
+            bool sendLegacyAttachments = (request->legacyAttachments
+                                          && (revisionFlags & kRevHasAttachments)
+                                          && !_disableBlobSupport);
+            alloc_slice delta;
+            if (request->deltaOK && !sendLegacyAttachments
+                    && revisionBody.size >= tuning::kMinBodySizeForDelta) {
+                // Delta-encode:
+                Dict ancestor = getRemoteAncestorRev(doc, *request);
+                if (ancestor) {
+                    delta = FLCreateJSONDelta(ancestor, root);
+                    if (!delta)
+                        delta = "{}"_sl;
+                    else if (delta.size > revisionBody.size * 1.2)
+                        delta = nullslice;       // Delta is (probably) bigger than body; don't use
+                }
+                if (delta) {
+                    msg["deltaSrc"_sl] = request->remoteAncestorRevID;
+                    if (willLog(LogLevel::Verbose)) {
+                        alloc_slice old (ancestor.toJSON(sk));
+                        alloc_slice nuu (root.toJSON(sk));
+                        logVerbose("Encoded revision as delta, saving %zd bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
+                                   nuu.size - delta.size,
+                                   SPLAT(old), SPLAT(nuu), SPLAT(delta));
+                    }
+                }
+            }
+
             msg.noreply = !onProgress;
             if (request->noConflicts)
                 msg["noconflicts"_sl] = true;
-            auto revisionFlags = doc->selectedRev.flags;
             if (revisionFlags & kRevDeleted)
                 msg["deleted"_sl] = "1"_sl;
             string history = revHistoryString(doc, *request);
             if (!history.empty())
                 msg["history"_sl] = history;
 
-            // Write doc body as JSON:
-            if (root.empty()) {
+            // Write doc body (or delta) as JSON:
+                auto &bodyEncoder = msg.jsonBody();
+            if (delta) {
+                bodyEncoder.writeRaw(delta);
+            } else if (root.empty()) {
                 msg.write("{}"_sl);
             } else {
-                auto &bodyEncoder = msg.jsonBody();
-                if (request->legacyAttachments && (revisionFlags & kRevHasAttachments)
-                                               && !_disableBlobSupport)
+                if (sendLegacyAttachments)
                     writeRevWithLegacyAttachments(bodyEncoder, root,
                                                   c4rev_getGeneration(request->revID));
                 else
@@ -724,26 +762,34 @@ namespace litecore { namespace repl {
     }
 
 
-    Dict DBWorker::getRevToSend(C4Document* doc, const RevToSend &request, C4Error *c4err) {
+    slice DBWorker::getRevToSend(C4Document* doc, const RevToSend &request, C4Error *c4err) {
         if (!c4doc_selectRevision(doc, request.revID, true, c4err))
-            return nullptr;
+            return nullslice;
 
         slice revisionBody(doc->selectedRev.body);
         if (!revisionBody) {
             log("Revision '%.*s' #%.*s is obsolete; not sending it",
                 SPLAT(request.docID), SPLAT(request.revID));
             *c4err = {WebSocketDomain, 410}; // Gone
-            return nullptr;
         }
+        return revisionBody;
+    }
 
-        Dict root = Value::fromData(revisionBody, kFLTrusted).asDict();
-        if (!root)
-            *c4err = {LiteCoreDomain, kC4ErrorCorruptData};
-        return root;
+
+    Dict DBWorker::getRemoteAncestorRev(C4Document* doc, const RevToSend &request) {
+        if (!request.remoteAncestorRevID)
+            return nullptr;
+        if (!c4doc_selectRevision(doc, request.remoteAncestorRevID, true, nullptr))
+            return nullptr;
+        slice revisionBody(doc->selectedRev.body);
+        if (!revisionBody)
+            return nullptr;
+        return Value::fromData(revisionBody).asDict();
     }
 
 
     string DBWorker::revHistoryString(C4Document *doc, const RevToSend &request) {
+        Assert(c4doc_selectRevision(doc, request.revID, true, nullptr));
         stringstream historyStream;
         int nWritten = 0;
         unsigned lastGen = c4rev_getGeneration(doc->selectedRev.revID);
@@ -858,6 +904,26 @@ namespace litecore { namespace repl {
 #pragma mark - INSERTING & SYNCING REVISIONS:
 
 
+    // Applies a delta, asynchronously returning expanded Fleece -- called by IncomingRev
+    void DBWorker::_applyDelta(alloc_slice docID, alloc_slice baseRevID,
+                               alloc_slice deltaJSON,
+                               std::function<void(alloc_slice body, C4Error)> callback)
+    {
+        alloc_slice body;
+        C4Error c4err;
+        c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &c4err);
+        if (doc && c4doc_selectRevision(doc, baseRevID, true, &c4err)) {
+            Value srcRoot = Value::fromData(doc->selectedRev.body, kFLTrusted);
+            Assert(srcRoot);
+            FLError flErr;
+            body = FLApplyJSONDelta(srcRoot, deltaJSON, &flErr);
+            if (!body)
+                c4err = {FleeceDomain, flErr};
+        }
+        callback(body, c4err);
+    }
+
+
     void DBWorker::insertRevision(RevToInsert *rev) {
         _revsToInsert.push(rev);
     }
@@ -882,7 +948,7 @@ namespace litecore { namespace repl {
             
             for (RevToInsert *rev : *revs) {
                 // Add a revision:
-                logVerbose("    {'%.*s' #%.*s}", SPLAT(rev->docID), SPLAT(rev->revID));
+                logVerbose("    {'%.*s' #%.*s <- %.*s}", SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(rev->historyBuf));
                 vector<C4String> history;
                 history.reserve(10);
                 history.push_back(rev->revID);

@@ -75,6 +75,13 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_findOrRequestRevs, req, callback);
         }
 
+        void applyDelta(slice docID, slice baseRevID,
+                        alloc_slice deltaJSON,
+                        std::function<void(alloc_slice body, C4Error)> callback) {
+            enqueue(&DBWorker::_applyDelta, alloc_slice(docID), alloc_slice(baseRevID),
+                    deltaJSON, callback);
+        }
+
         void sendRevision(RevToSend *request,
                           blip::MessageProgressCallback onProgress) {
             enqueue(&DBWorker::_sendRevision, retained(request), onProgress);
@@ -119,6 +126,9 @@ namespace litecore { namespace repl {
                              std::shared_ptr<RevToSendList> &changes);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
+        void _applyDelta(alloc_slice docID, alloc_slice baseRevID,
+                         alloc_slice deltaJSON,
+                         std::function<void(alloc_slice body, C4Error)> callback);
         void _sendRevision(Retained<RevToSend> request,
                            blip::MessageProgressCallback onProgress);
         void _setCookie(alloc_slice setCookieHeader);
@@ -129,7 +139,8 @@ namespace litecore { namespace repl {
 
         void dbChanged();
 
-        fleece::Dict getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
+        fleece::slice getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
+        fleece::Dict getRemoteAncestorRev(C4Document*, const RevToSend&);
         static std::string revHistoryString(C4Document*, const RevToSend&);
         void writeRevWithLegacyAttachments(fleece::Encoder&,
                                            fleece::Dict rev,
@@ -161,6 +172,7 @@ namespace litecore { namespace repl {
         bool _insertionScheduled {false};                   // True if call to insert/sync pending
         std::mutex _insertionQueueMutex;                    // For safe access to the above
         bool _disableBlobSupport {false};                   // for testing only
+        bool _disableDeltaSupport {false};                  // for testing only
     };
 
 } }

@@ -21,6 +21,10 @@
 
 using namespace std;
 
+namespace litecore { namespace repl { namespace tuning {
+    size_t kMinBodySizeForDelta = 200;
+}}}
+
 namespace litecore { namespace repl {
 
     RevToSend::RevToSend(const C4DocumentInfo &info, const alloc_slice &remoteAncestor)

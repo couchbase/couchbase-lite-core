@@ -93,16 +93,30 @@ namespace litecore { namespace repl {
             return;
         }
 
-        // Parse the JSON to Fleece. This Fleece data is _not_ suitable for inserting into the
-        // database because it doesn't use the SharedKeys, but it lets us look at the doc
-        // metadata and blobs.
-        FLError err;
-        alloc_slice fleeceBody = Doc::fromJSON(_revMessage->body(), &err).allocedData();
+        slice deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
+        if (deltaSrcRevID) {
+            _dbWorker->applyDelta(_rev->docID, deltaSrcRevID, _revMessage->body(),
+                                  asynchronize([this](alloc_slice body, C4Error err) {
+                processBody(body, err);
+            }));
+        } else {
+            FLError err;
+            alloc_slice body = Doc::fromJSON(_revMessage->body(), &err).allocedData();
+            processBody(body, {FleeceDomain, err});
+        }
+    }
+
+
+    void IncomingRev::processBody(alloc_slice fleeceBody, C4Error error) {
         if (!fleeceBody) {
-            _error = {FleeceDomain, err};
+            _error = error;
             finish();
             return;
         }
+
+        // Note: fleeceBody is _not_ suitable for inserting into the
+        // database because it doesn't use the SharedKeys, but it lets us look at the doc
+        // metadata and blobs.
         Dict root = Value::fromData(fleeceBody, kFLTrusted).asDict();
 
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
