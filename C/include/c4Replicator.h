@@ -211,35 +211,37 @@ extern "C" {
 
 
     // Replicator option dictionary keys:
-    #define kC4ReplicatorOptionExtraHeaders   "headers"  // Extra HTTP headers; string[]
-    #define kC4ReplicatorOptionCookies        "cookies"  // HTTP Cookie header value; string
-    #define kC4ReplicatorOptionAuthentication "auth"     // Auth settings; Dict
-    #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  // Cert or public key; data
-    #define kC4ReplicatorOptionDocIDs         "docIDs"   // Docs to replicate; string[]
-    #define kC4ReplicatorOptionChannels       "channels" // SG channel names; string[]
-    #define kC4ReplicatorOptionFilter         "filter"   // Filter name; string
-    #define kC4ReplicatorOptionFilterParams   "filterParams"  // Filter params; Dict[string]
-    #define kC4ReplicatorOptionSkipDeleted    "skipDeleted" // Don't push/pull tombstones; bool
-    #define kC4ReplicatorOptionNoIncomingConflicts "noIncomingConflicts" // Reject incoming conflicts; bool
-    #define kC4ReplicatorOptionOutgoingConflicts "outgoingConflicts" // Allow creating conflicts on remote; bool
-    #define kC4ReplicatorCheckpointInterval   "checkpointInterval" // How often to checkpoint, in seconds; number
-    #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" // Stable ID for remote db with unstable URL; string
-    #define kC4ReplicatorHeartbeatInterval    "heartbeat" // Interval in secs to send a keepalive ping
-    #define kC4ReplicatorResetCheckpoint      "reset"     // Start over w/o checkpoint; bool
-    #define kC4ReplicatorOptionProgressLevel  "progress"  // 0=overall, 1=per-document; int
+    #define kC4ReplicatorOptionExtraHeaders     "headers"  ///< Extra HTTP headers (string[])
+    #define kC4ReplicatorOptionCookies          "cookies"  ///< HTTP Cookie header value (string)
+    #define kC4ReplicatorOptionAuthentication   "auth"     ///< Auth settings (Dict)
+    #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
+    #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
+    #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
+    #define kC4ReplicatorOptionFilter           "filter"   ///< Filter name (string)
+    #define kC4ReplicatorOptionFilterParams     "filterParams"  ///< Filter params (Dict[string])
+    #define kC4ReplicatorOptionSkipDeleted      "skipDeleted" ///< Don't push/pull tombstones (bool)
+    #define kC4ReplicatorOptionNoIncomingConflicts "noIncomingConflicts" ///< Reject incoming conflicts (bool)
+    #define kC4ReplicatorOptionOutgoingConflicts   "outgoingConflicts" ///< Allow creating conflicts on remote (bool)
+    #define kC4ReplicatorCheckpointInterval     "checkpointInterval" ///< How often to checkpoint, in seconds (number)
+    #define kC4ReplicatorOptionRemoteDBUniqueID "remoteDBUniqueID" ///< Stable ID for remote db with unstable URL (string)
+    #define kC4ReplicatorHeartbeatInterval      "heartbeat" ///< Interval in secs to send a keepalive ping
+    #define kC4ReplicatorResetCheckpoint        "reset"     ///< Start over w/o checkpoint (bool)
+    #define kC4ReplicatorOptionProgressLevel    "progress"  ///< If >=1, notify on every doc; if >=2, on every attachment (int)
+    #define kC4ReplicatorOptionDisableDeltas    "noDeltas"   ///< Disables delta sync (bool)
 
     // Auth dictionary keys:
-    #define kC4ReplicatorAuthType       "type"           // Auth property; string
-    #define kC4ReplicatorAuthUserName   "username"       // Auth property; string
-    #define kC4ReplicatorAuthPassword   "password"       // Auth property; string
-    #define kC4ReplicatorAuthClientCert "clientCert"     // Auth property; value platform-dependent
+    #define kC4ReplicatorAuthType       "type"           ///< Auth type; see below (string)
+    #define kC4ReplicatorAuthUserName   "username"       ///< User name for basic auth (string)
+    #define kC4ReplicatorAuthPassword   "password"       ///< Password for basic auth (string)
+    #define kC4ReplicatorAuthClientCert "clientCert"     ///< TLS client certificate (value platform-dependent)
+    #define kC4ReplicatorAuthToken      "token"          ///< Session cookie or auth token (string)
 
     // auth.type values:
-    #define kC4AuthTypeBasic            "Basic"          // HTTP Basic (the default)
-    #define kC4AuthTypeSession          "Session"        // SG session cookie
-    #define kC4AuthTypeOpenIDConnect    "OpenID Connect"
-    #define kC4AuthTypeFacebook         "Facebook"
-    #define kC4AuthTypeClientCert       "Client Cert"
+    #define kC4AuthTypeBasic            "Basic"          ///< HTTP Basic (the default)
+    #define kC4AuthTypeSession          "Session"        ///< SG session cookie
+    #define kC4AuthTypeOpenIDConnect    "OpenID Connect" ///< OpenID Connect token
+    #define kC4AuthTypeFacebook         "Facebook"       ///< Facebook auth token
+    #define kC4AuthTypeClientCert       "Client Cert"    ///< TLS client cert
 
     /** @} */
 

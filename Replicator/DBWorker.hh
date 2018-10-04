@@ -172,7 +172,7 @@ namespace litecore { namespace repl {
         bool _insertionScheduled {false};                   // True if call to insert/sync pending
         std::mutex _insertionQueueMutex;                    // For safe access to the above
         bool _disableBlobSupport {false};                   // for testing only
-        bool _disableDeltaSupport {false};                  // for testing only
+        bool _disableDeltaSupport {false};                  // From "noDeltas" replicator option
     };
 
 } }

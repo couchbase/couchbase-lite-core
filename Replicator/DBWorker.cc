@@ -62,6 +62,7 @@ namespace litecore { namespace repl {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
         _disableBlobSupport = _options.properties["disable_blob_support"_sl].asBool();
+        _disableDeltaSupport = _options.properties[kC4ReplicatorOptionDisableDeltas].asBool();
     }
 
 
@@ -693,7 +694,8 @@ namespace litecore { namespace repl {
                                           && !_disableBlobSupport);
             alloc_slice delta;
             if (request->deltaOK && !sendLegacyAttachments
-                    && revisionBody.size >= tuning::kMinBodySizeForDelta) {
+                                 && !_disableDeltaSupport
+                                 && revisionBody.size >= tuning::kMinBodySizeForDelta) {
                 // Delta-encode:
                 Dict ancestor = getRemoteAncestorRev(doc, *request);
                 if (ancestor) {

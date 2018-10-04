@@ -281,7 +281,8 @@ namespace litecore { namespace repl {
             // The response contains an array that parallels the array I sent, with each item
             int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl, kDefaultMaxHistory));
             bool legacyAttachments = !reply->boolProperty("blobs"_sl);
-            bool deltasOK = reply->boolProperty("deltas"_sl);
+            bool deltasOK = reply->boolProperty("deltas"_sl)
+                                && !_options.properties[kC4ReplicatorOptionDisableDeltas].asBool();
             auto requests = reply->JSONBody().asArray();
 
             unsigned index = 0;
