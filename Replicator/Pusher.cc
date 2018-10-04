@@ -447,7 +447,8 @@ namespace litecore { namespace repl {
                        SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
             Retained<Replicator> repl = replicator();
             auto lastNotifyTime = actor::Timer::clock::now();
-            repl->onBlobProgress(progress);
+            if (progressNotificationLevel() >= 2)
+                repl->onBlobProgress(progress);
             reply.dataSource = [=](void *buf, size_t capacity) mutable {
                 // Callback to read bytes from the blob into the BLIP message:
                 // For performance reasons this is NOT run on my actor thread, so it can't access
@@ -467,10 +468,12 @@ namespace litecore { namespace repl {
                     bytesRead = -1;
                     done = true;
                 }
-                auto now = actor::Timer::clock::now();
-                if (done || now - lastNotifyTime > std::chrono::milliseconds(250)) {
-                    lastNotifyTime = now;
-                    repl->onBlobProgress(progress);
+                if (progressNotificationLevel() >= 2) {
+                    auto now = actor::Timer::clock::now();
+                    if (done || now - lastNotifyTime > std::chrono::milliseconds(250)) {
+                        lastNotifyTime = now;
+                        repl->onBlobProgress(progress);
+                    }
                 }
                 return (int)bytesRead;
             };

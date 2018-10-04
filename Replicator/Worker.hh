@@ -218,6 +218,8 @@ namespace litecore { namespace repl {
         void addProgress(C4Progress);
         void setProgress(C4Progress);
 
+        int progressNotificationLevel() const   {return _progressNotificationLevel;}
+
         virtual void _childChangedStatus(Worker *task, Status) { }
 
         virtual void afterEvent() override;
@@ -234,7 +236,7 @@ namespace litecore { namespace repl {
     private:
         Retained<blip::Connection> _connection;
         int _pendingResponseCount {0};
-        int _progressLevel;
+        int _progressNotificationLevel;
         Status _status { };
         bool _statusChanged {false};
     };

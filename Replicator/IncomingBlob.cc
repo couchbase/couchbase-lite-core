@@ -114,6 +114,8 @@ namespace litecore { namespace repl {
 
 
     void IncomingBlob::notifyProgress(bool always) {
+        if (progressNotificationLevel() < 2)
+            return;
         auto now = actor::Timer::clock::now();
         if (always || now - _lastNotifyTime > std::chrono::milliseconds(250)) {
             _lastNotifyTime = now;

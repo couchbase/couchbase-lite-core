@@ -88,7 +88,7 @@ namespace litecore { namespace repl {
     ,_connection(connection)
     ,_parent(parent)
     ,_options(options)
-    ,_progressLevel(options.progressLevel())
+    ,_progressNotificationLevel(options.progressLevel())
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
     ,_loggingID(connection->name())
     { }
@@ -196,7 +196,7 @@ namespace litecore { namespace repl {
 
     void Worker::finishedDocument(slice docID, Dir dir) {
         addProgress({0, 0, 1});
-        if (_progressLevel >= 1)
+        if (_progressNotificationLevel >= 1)
             replicator()->endedDocument(docID, dir, {}, true);
     }
 
