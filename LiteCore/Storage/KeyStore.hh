@@ -62,7 +62,7 @@ namespace litecore {
         void deleteKeyStore(Transaction&);
 #endif
 
-        // Keys/values:
+        //////// Keys/values:
 
         Record get(slice key, ContentOptions = kDefaultContent) const;
         virtual Record get(sequence_t) const =0;
@@ -79,6 +79,7 @@ namespace litecore {
 
         /** Creates a database query object. */
         virtual Retained<Query> compileQuery(slice expr);
+
 
         //////// Writing:
 
@@ -104,7 +105,29 @@ namespace litecore {
         /** Sets a flag of a record, without having to read/write the Record. */
         virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&);
 
-        //////// INDEXING:
+
+        //////// Expiration:
+
+        /** Record expiration timestamp: seconds since Unix epoch (Jan 1 1970).
+            A zero value means no expiration. */
+        using expiration_t = int64_t;
+
+        /** Sets a record's expiration time. Zero means 'never'.
+            @return  true if the time was set, false if no record with that key exists. */
+        virtual bool setExpiration(slice key, expiration_t) =0;
+
+        /** Returns a record's expiration time, or zero if it doesn't expire. */
+        virtual expiration_t getExpiration(slice key) =0;
+
+        /** Returns the nearest future time at which a record will expire, or 0 if none. */
+        virtual expiration_t nextExpiration() =0;
+
+        /** Deletes all records whose expiration time is in the past.
+            @return  The number of records deleted */
+        virtual unsigned expireRecords() =0;
+
+
+        //////// Indexing:
 
         enum IndexType {
             kValueIndex,         ///< Regular index of property value

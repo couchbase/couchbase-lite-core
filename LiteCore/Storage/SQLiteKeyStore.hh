@@ -52,6 +52,11 @@ namespace litecore {
 
         void erase() override;
 
+        virtual bool setExpiration(slice key, expiration_t) override;
+        virtual expiration_t getExpiration(slice key) override;
+        virtual expiration_t nextExpiration() override;
+        virtual unsigned expireRecords() override;
+
         bool supportsIndexes(IndexType t) const override               {return true;}
         bool createIndex(slice name,
                          slice expressionJSON,
@@ -118,12 +123,15 @@ namespace litecore {
         void _sqlDeleteIndex(const std::string &name);
         void garbageCollectArrayIndexes();
 
+        // All of these Statement pointers have to be reset in the close() method.
         std::unique_ptr<SQLite::Statement> _recCountStmt;
-        std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt, _getByOffStmt;
+        std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt;
         std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
         std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
-        std::unique_ptr<SQLite::Statement> _backupStmt, _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
+        std::unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
         std::unique_ptr<SQLite::Statement> _setFlagStmt;
+        std::unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt;
+
         bool _createdSeqIndex {false};     // Created by-seq index yet?
         bool _lastSequenceChanged {false};
         int64_t _lastSequence {-1};

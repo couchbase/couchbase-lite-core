@@ -63,12 +63,14 @@ namespace litecore {
             // Create the sequence and flags columns regardless of options, otherwise it's too
             // complicated to customize all the SQL queries to conditionally use them...
             db.execWithLock(subst("CREATE TABLE IF NOT EXISTS kv_@ ("
-                          "  key TEXT PRIMARY KEY,"
-                          "  sequence INTEGER,"
-                          "  flags INTEGER DEFAULT 0,"
-                          "  version BLOB,"
-                          "  body BLOB)"));
+                                  "  key TEXT PRIMARY KEY,"
+                                  "  sequence INTEGER,"
+                                  "  flags INTEGER DEFAULT 0,"
+                                  "  expiration INTEGER,"                       // New in 2.5
+                                  "  version BLOB,"
+                                  "  body BLOB)"));
         }
+        //FIX: Need to alter existing table to add column!
     }
 
 
@@ -78,7 +80,6 @@ namespace litecore {
         _getByKeyStmt.reset();
         _getMetaByKeyStmt.reset();
         _getBySeqStmt.reset();
-        _getByOffStmt.reset();
         _getMetaBySeqStmt.reset();
         _setStmt.reset();
         _insertStmt.reset();
@@ -86,8 +87,10 @@ namespace litecore {
         _delByKeyStmt.reset();
         _delBySeqStmt.reset();
         _delByBothStmt.reset();
-        _backupStmt.reset();
         _setFlagStmt.reset();
+        _setExpStmt.reset();
+        _getExpStmt.reset();
+        _nextExpStmt.reset();
         KeyStore::close();
     }
 
@@ -339,6 +342,45 @@ namespace litecore {
 
     void SQLiteKeyStore::dropTrigger(const string &name, const char *suffix) {
         db().exec(CONCAT("DROP TRIGGER IF EXISTS \"" << name << "::" << suffix << "\""));
+    }
+
+
+    bool SQLiteKeyStore::setExpiration(slice key, expiration_t expTime) {
+        Assert(expTime >= 0, "Invalid (negative) expiration time");
+        compile(_setExpStmt, "UPDATE kv_@ SET expiration=? WHERE key=?");
+        UsingStatement u(*_setExpStmt);
+        if (expTime > 0)
+            _setExpStmt->bind(1, expTime);
+        else
+            _setExpStmt->bind(1); // null
+        _setExpStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
+        return _setExpStmt->exec() > 0;
+    }
+
+
+    KeyStore::expiration_t SQLiteKeyStore::getExpiration(slice key) {
+        compile(_getExpStmt, "SELECT expiration FROM kv_@ WHERE key=?");
+        UsingStatement u(*_getExpStmt);
+        _getExpStmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
+        if (!_getExpStmt->executeStep())
+            return 0;
+        return _getExpStmt->getColumn(0);
+    }
+
+
+    KeyStore::expiration_t SQLiteKeyStore::nextExpiration() {
+        compile(_nextExpStmt, "SELECT min(expiration) FROM kv_@");
+        UsingStatement u(*_nextExpStmt);
+        if (!_nextExpStmt->executeStep())
+            return 0;
+        return _nextExpStmt->getColumn(0);
+    }
+
+
+    unsigned SQLiteKeyStore::expireRecords() {
+        return db().exec(format("DELETE FROM kv_%s WHERE expiration <= %lld",
+                                name().c_str(),
+                                (int64_t)time(nullptr)));
     }
 
 }

@@ -19,7 +19,6 @@
 #include "c4Test.hh"
 #include "c4Private.h"
 #include "c4DocEnumerator.h"
-#include "c4ExpiryEnumerator.h"
 #include "c4BlobStore.h"
 #include "c4Document+Fleece.h"
 #include <cmath>
