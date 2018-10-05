@@ -20,9 +20,18 @@
 // Consumer Edition or Enterprise Edition of LiteCore.
 
 #ifdef COUCHBASE_ENTERPRISE
-    // This source file is NOT in this repository, rather in a private repository that needs to be
-    // checked out next to this one.
+    // These source files are NOT in this repository, rather in a Couchbase-private
+    // repository that needs to be checked out next to this one.
+    #ifndef SQLITE_HAS_CODEC
+        #error SQLITE_HAS_CODEC was not defined in EE build
+    #endif
     #include "../../../couchbase-lite-core-EE/Encryption/see-sqlite.c"
+    #if __APPLE__
+        #define CCCRYPT256
+        #include "../../../couchbase-lite-core-EE/Encryption/see-cccrypt.c"
+    #else
+        #include "../../../couchbase-lite-core-EE/Encryption/see-aes256-ofb.c"
+    #endif
 #else
     #include "../../vendor/SQLiteCpp/sqlite3/sqlite3.c"
 #endif
