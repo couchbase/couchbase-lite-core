@@ -31,7 +31,7 @@
 // To define an enumeration of option flags that will be ORed together:
 //      typedef C4_OPTIONS(baseIntType, name) { ... };
 // These aren't just a convenience; they are required for Swift bindings.
-#if APPLE
+#if __APPLE__
     #include <CoreFoundation/CFBase.h>      /* for CF_ENUM and CF_OPTIONS macros */
     #define C4_ENUM CF_ENUM
     #define C4_OPTIONS CF_OPTIONS
