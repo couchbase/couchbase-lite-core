@@ -147,11 +147,21 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
 TEST_CASE("Logging prune old files", "[Log]") {
     FilePath tmpLogDir = FilePath::tempDirectory()["Log_Prune/"];
     tmpLogDir.mkdir();
+
+    // Create a folder and a fake file to simulate random other files (they will appear in between the last 
+    // log file 'abcd' and the others log 1 - 10)
+    tmpLogDir.subdirectoryNamed("cdef").mkdir();
+    ofstream fbogus(tmpLogDir["dfeg"].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
+    fbogus.write("7", 1);
     for(int i = 0; i < 11; i++) {
         if(i == 1 || i == 2) {
             // Need some of the logs to be later because otherwise it is
             // impossible to test which logs should disappear
             this_thread::sleep_for(chrono::seconds(2));
+
+            // Hijack this knowledge to insert some files to be ignored
+            ofstream fbogus2(tmpLogDir["log5.log"].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
+            fbogus2.write("7", 1);
         }
         
         stringstream s;
@@ -162,7 +172,7 @@ TEST_CASE("Logging prune old files", "[Log]") {
         e.log(0, nullptr, LogEncoder::None, "Hi");
     }
 
-    LogDomain::writeEncodedLogsTo(tmpLogDir["log_last"].canonicalPath(), LogLevel::Info, "Hello");
+    LogDomain::writeEncodedLogsTo(tmpLogDir["abcd"].canonicalPath(), LogLevel::Info, "Hello");
     int count = 0;
     tmpLogDir.forEachFile([&count](const FilePath& f)
     {
@@ -171,6 +181,6 @@ TEST_CASE("Logging prune old files", "[Log]") {
         count++;
     });
 
-    CHECK(count == 10);
+    CHECK(count == 13);
     LogDomain::writeEncodedLogsTo(string(), LogLevel::None, string());
 } 
