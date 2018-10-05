@@ -43,8 +43,9 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
 
     static Replicator::Options replOpts(const C4ReplicatorParameters &params) {
         Replicator::Options opts(params.push, params.pull, params.optionsDictFleece);
+        opts.pushFilter = params.pushFilter;
         opts.pullValidator = params.validationFunc;
-        opts.pullValidatorContext = params.callbackContext;
+        opts.callbackContext = params.callbackContext;
         return opts;
     }
 

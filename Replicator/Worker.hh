@@ -56,9 +56,10 @@ namespace litecore { namespace repl {
 
             Mode                    push                    {kC4Disabled};
             Mode                    pull                    {kC4Disabled};
-            fleece::AllocedDict  properties;
+            fleece::AllocedDict     properties;
+            Validator               pushFilter              {nullptr};
             Validator               pullValidator           {nullptr};
-            void*                   pullValidatorContext    {nullptr};
+            void*                   callbackContext         {nullptr};
 
             Options()
             { }

@@ -777,7 +777,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     auto pullOptions = Replicator::Options::passive();
     atomic<int> validationCount {0};
-    pullOptions.pullValidatorContext = &validationCount;
+    pullOptions.callbackContext = &validationCount;
     pullOptions.pullValidator = [](FLString docID, FLDict body, void *context)->bool {
         ++(*(atomic<int>*)context);
         return (Dict(body)["birthday"].asstring() < "1993");

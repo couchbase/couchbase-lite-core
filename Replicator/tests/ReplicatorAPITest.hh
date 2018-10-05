@@ -166,6 +166,7 @@ public:
         params.push = push;
         params.pull = pull;
         params.optionsDictFleece = _options.data();
+        params.pushFilter = _pushFilter;
         params.validationFunc = onValidate;
         params.onStatusChanged = onStateChanged;
         params.onDocumentEnded = onDocEnded;
@@ -246,6 +247,7 @@ public:
     C4Address _address {kDefaultAddress};
     C4String _remoteDBName {kScratchDBName};
     AllocedDict _options;
+    C4ReplicatorPushFilterFunction _pushFilter {nullptr};
     C4SocketFactory* _socketFactory {nullptr};
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;
@@ -258,5 +260,6 @@ public:
     bool _stopWhenIdle {false};
     set<string> _docPushErrors, _docPullErrors;
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;
+    int _counter {0};
 };
 

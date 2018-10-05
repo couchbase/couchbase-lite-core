@@ -186,6 +186,25 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Custom SocketFactory", "[Push][Pull]") 
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
+    importJSONLines(sFixturesDir + "names_100.json");
+    createDB2();
+
+    _pushFilter = [](C4String docID, FLDict flbody, void *context) {
+        ((ReplicatorAPITest*)context)->_counter++;
+        assert(docID.size > 0);
+        Dict body(flbody);
+        assert(body.count() >= 4);
+        return body["gender"_sl].asString() == "male"_sl;
+    };
+
+    replicate(kC4OneShot, kC4Disabled);
+
+    CHECK(_counter == 100);
+    CHECK(c4db_getDocumentCount(db2) == 45);
+}
+
+
 #pragma mark - REAL-REPLICATOR (SYNC GATEWAY) TESTS
 
 

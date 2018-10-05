@@ -131,7 +131,7 @@ namespace litecore { namespace repl {
 
         // Call the custom validation function if any:
         if (_options.pullValidator) {
-            if (!_options.pullValidator(_rev->docID, root, _options.pullValidatorContext)) {
+            if (!_options.pullValidator(_rev->docID, root, _options.callbackContext)) {
                 log("Rejected by pull validator function");
                 _error = c4error_make(WebSocketDomain, 403, "rejected by validation function"_sl);
                 finish();

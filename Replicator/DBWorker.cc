@@ -327,8 +327,11 @@ namespace litecore { namespace repl {
 #pragma mark - CHANGES:
 
 
-    static bool passesDocIDFilter(const DocIDSet &docIDs, slice docID) {
-        return !docIDs || (docIDs->find(docID.asString()) != docIDs->end());
+    static Dict getDocRoot(C4Document *doc) {
+        slice revisionBody(doc->selectedRev.body);
+        if (!revisionBody)
+            return nullptr;
+        return Value::fromData(revisionBody, kFLTrusted).asDict();
     }
 
 
@@ -346,6 +349,7 @@ namespace litecore { namespace repl {
         logVerbose("Reading up to %u local changes since #%llu", p.limit, p.since);
         _getForeignAncestors = p.getForeignAncestors;
         _skipForeignChanges = p.skipForeign;
+        _pushDocIDs = p.docIDs;
         if (_maxPushedSequence == 0)
             _maxPushedSequence = p.since;
         C4SequenceNumber latestChangeSequence = _maxPushedSequence;
@@ -357,7 +361,7 @@ namespace litecore { namespace repl {
         auto changes = make_shared<RevToSendList>();
         C4Error error = {};
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
-        if (!p.getForeignAncestors)
+        if (!p.getForeignAncestors && !_options.pushFilter)
             options.flags &= ~kC4IncludeBodies;
         if (!p.skipDeleted)
             options.flags |= kC4IncludeDeleted;
@@ -367,20 +371,8 @@ namespace litecore { namespace repl {
             while (c4enum_next(e, &error) && p.limit > 0) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                // (There's very similar code below in dbChanged; keep them in sync)
                 latestChangeSequence = info.sequence;
-                if (!passesDocIDFilter(p.docIDs, info.docID))
-                    continue;       // reject rev: not in filter
-
-                c4::ref<C4Document> doc;
-                if (_getForeignAncestors) {
-                    doc = c4enum_getDocument(e, &error);
-                    if (!doc) {
-                        documentGotError(info.docID, Dir::kPushing, error, false);
-                        continue;   // reject rev: error getting doc
-                    }
-                }
-                if (addChangeToList(info, doc, changes))
+                if (addChangeToList(info, e, changes))
                     --p.limit;
             }
         }
@@ -391,7 +383,6 @@ namespace litecore { namespace repl {
 
         if (p.continuous && p.limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
-            _pushDocIDs = p.docIDs;
             _changeObserver = c4dbobs_create(_db,
                                              [](C4DatabaseObserver* observer, void *context) {
                                                  auto self = (DBWorker*)context;
@@ -429,23 +420,8 @@ namespace litecore { namespace repl {
             for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
                 C4DocumentInfo info {0, c4change->docID, c4change->revID,
                                      c4change->sequence, c4change->bodySize};
-                // (There's very similar code above in _getChanges; keep them in sync)
                 latestChangeSequence = info.sequence;
-                if (!passesDocIDFilter(_pushDocIDs, info.docID))
-                    continue;
-
-                c4::ref<C4Document> doc;
-                if (_getForeignAncestors) {
-                    C4Error error;
-                    doc = c4doc_get(_db, info.docID, true, &error);
-                    if (!doc) {
-                        documentGotError(info.docID, Dir::kPushing, error, false);
-                        continue;   // reject rev: error getting doc
-                    }
-                    if (slice(doc->revID) != slice(info.revID))
-                        continue;   // ignore rev: there's a newer one already
-                }
-                addChangeToList(info, doc, changes);
+                addChangeToList(info, nullptr, changes);
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
@@ -461,19 +437,45 @@ namespace litecore { namespace repl {
 
 
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
-    bool DBWorker::addChangeToList(const C4DocumentInfo &info, C4Document *doc,
+    bool DBWorker::addChangeToList(const C4DocumentInfo &info,
+                                   C4DocEnumerator *e,
                                    shared_ptr<RevToSendList> &changes)
     {
+        if (_pushDocIDs != nullptr)
+            if (_pushDocIDs->find(slice(info.docID).asString()) == _pushDocIDs->end())
+                return false;
+
         alloc_slice remoteRevID;
-        if (_getForeignAncestors && _checkpointValid) {
-            // For proposeChanges, find the nearest foreign ancestor of the current rev:
-            Assert(_remoteDBID);
-            alloc_slice foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
-            logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
-            if (_skipForeignChanges && foreignAncestor == slice(info.revID))
-                return false;   // skip this rev: it's already on the peer
-            remoteRevID = alloc_slice(foreignAncestor);
+        bool needRemoteRevID = (_getForeignAncestors && _checkpointValid);
+        if (needRemoteRevID || _options.pushFilter) {
+            c4::ref<C4Document> doc;
+            C4Error error;
+            doc = e ? c4enum_getDocument(e, &error) : c4doc_get(_db, info.docID, true, &error);
+            if (!doc) {
+                documentGotError(info.docID, Dir::kPushing, error, false);
+                return false;   // reject rev: error getting doc
+            }
+            if (slice(doc->revID) != slice(info.revID))
+                return false;   // ignore rev: there's a newer one already
+
+            if (needRemoteRevID) {
+                // For proposeChanges, find the nearest foreign ancestor of the current rev:
+                Assert(_remoteDBID);
+                alloc_slice foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
+                logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
+                if (_skipForeignChanges && foreignAncestor == slice(info.revID))
+                    return false;   // skip this rev: it's already on the peer
+                remoteRevID = alloc_slice(foreignAncestor);
+            }
+
+            if (_options.pushFilter) {
+                if (!_options.pushFilter(doc->docID, getDocRoot(doc), _options.callbackContext)) {
+                    logVerbose("Doc '%.*s' rejected by push filter", SPLAT(doc->docID));
+                    return false;
+                }
+            }
         }
+
         changes->push_back(new RevToSend(info, remoteRevID));
         return true;
     }
@@ -783,10 +785,7 @@ namespace litecore { namespace repl {
             return nullptr;
         if (!c4doc_selectRevision(doc, request.remoteAncestorRevID, true, nullptr))
             return nullptr;
-        slice revisionBody(doc->selectedRev.body);
-        if (!revisionBody)
-            return nullptr;
-        return Value::fromData(revisionBody).asDict();
+        return getDocRoot(doc);
     }
 
 
@@ -915,12 +914,15 @@ namespace litecore { namespace repl {
         C4Error c4err;
         c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &c4err);
         if (doc && c4doc_selectRevision(doc, baseRevID, true, &c4err)) {
-            Value srcRoot = Value::fromData(doc->selectedRev.body, kFLTrusted);
-            Assert(srcRoot);
-            FLError flErr;
-            body = FLApplyJSONDelta(srcRoot, deltaJSON, &flErr);
-            if (!body)
-                c4err = {FleeceDomain, flErr};
+            Dict srcRoot = getDocRoot(doc);
+            if (srcRoot) {
+                FLError flErr;
+                body = FLApplyJSONDelta(srcRoot, deltaJSON, &flErr);
+                if (!body)
+                    c4err = {FleeceDomain, flErr};
+            } else {
+                c4err = {LiteCoreDomain, kC4ErrorCorruptRevisionData};
+            }
         }
         callback(body, c4err);
     }

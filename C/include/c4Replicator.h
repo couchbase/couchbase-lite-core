@@ -101,6 +101,11 @@ extern "C" {
                                                      C4Error error,
                                                      void *context);
 
+    /** Callback that can choose to skip an outgoing revision by returning false. */
+    typedef bool (*C4ReplicatorPushFilterFunction)(C4String docID,
+                                                   FLDict body,
+                                                   void* context);
+
     /** Callback that can choose to reject an incoming pulled revision by returning false. */
     typedef bool (*C4ReplicatorValidationFunction)(C4String docID,
                                                    FLDict body,
@@ -131,6 +136,7 @@ extern "C" {
         C4ReplicatorMode                  push;              ///< Push mode (from db to remote/other db)
         C4ReplicatorMode                  pull;              ///< Pull mode (from db to remote/other db).
         C4Slice                           optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
+        C4ReplicatorPushFilterFunction    pushFilter;        ///< Callback that can reject outgoing revisions
         C4ReplicatorValidationFunction    validationFunc;    ///< Callback that can reject incoming revisions
         C4ReplicatorStatusChangedCallback onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
         C4ReplicatorDocumentEndedCallback onDocumentEnded;   ///< Callback notifying status of individual documents
@@ -217,8 +223,8 @@ extern "C" {
     #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
     #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
     #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
-    #define kC4ReplicatorOptionFilter           "filter"   ///< Filter name (string)
-    #define kC4ReplicatorOptionFilterParams     "filterParams"  ///< Filter params (Dict[string])
+    #define kC4ReplicatorOptionFilter           "filter"   ///< Pull filter name (string)
+    #define kC4ReplicatorOptionFilterParams     "filterParams"  ///< Pull filter params (Dict[string])
     #define kC4ReplicatorOptionSkipDeleted      "skipDeleted" ///< Don't push/pull tombstones (bool)
     #define kC4ReplicatorOptionNoIncomingConflicts "noIncomingConflicts" ///< Reject incoming conflicts (bool)
     #define kC4ReplicatorOptionOutgoingConflicts   "outgoingConflicts" ///< Allow creating conflicts on remote (bool)

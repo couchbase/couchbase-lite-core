@@ -122,8 +122,8 @@ namespace litecore { namespace repl {
         std::string _getOldCheckpoint(C4Error*);
         alloc_slice _checkpointFromID(const slice &, C4Error*);
         void _getChanges(GetChangesParams, Retained<Pusher> pusher);
-        bool addChangeToList(const C4DocumentInfo &info, C4Document *doc,
-                             std::shared_ptr<RevToSendList> &changes);
+        bool addChangeToList(const C4DocumentInfo&, C4DocEnumerator*,
+                             std::shared_ptr<RevToSendList>&);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
         void _applyDelta(alloc_slice docID, alloc_slice baseRevID,
