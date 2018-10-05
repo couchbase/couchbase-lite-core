@@ -346,7 +346,8 @@ namespace litecore {
     }
 
 
-    unsigned LogDomain::registerObject(const string &description,
+    unsigned LogDomain::registerObject(const void *object,
+                                       const string &description,
                                        const string &nickname,
                                        LogLevel level)
     {
@@ -360,8 +361,8 @@ namespace litecore {
         _objNames.insert({objRef, nickname});
 
         if (sCallback && level >= _callbackLogLevel())
-            invokeCallback(*this, level, "{%s#%u}==> %s",
-                           nickname.c_str(), objRef, description.c_str());
+            invokeCallback(*this, level, "{%s#%u}==> %s @%p",
+                           nickname.c_str(), objRef, description.c_str(), object);
         return objRef;
     }
 
@@ -426,7 +427,8 @@ namespace litecore {
                 return;
             string nickname = loggingClassName();
             string identifier = classNameOf(this) + " " + loggingIdentifier();
-            const_cast<Logging*>(this)->_objectRef = _domain.registerObject(identifier, nickname, level);
+            const_cast<Logging*>(this)->_objectRef = _domain.registerObject(this, identifier,
+                                                                            nickname, level);
         }
         _domain.vlog(level, _objectRef, format, args);
     }

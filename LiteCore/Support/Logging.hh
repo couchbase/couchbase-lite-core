@@ -115,9 +115,8 @@ public:
 
 private:
     friend class Logging;
-    unsigned registerObject(const std::string &description,
-                            const std::string &nickname,
-                            LogLevel);
+    unsigned registerObject(const void *object, const std::string &description,
+                            const std::string &nickname, LogLevel);
     void unregisterObject(unsigned obj);
     void vlog(LogLevel level, unsigned obj, const char *fmt, va_list);
 
