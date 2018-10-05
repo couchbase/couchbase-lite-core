@@ -60,20 +60,21 @@ namespace litecore {
     static mutex sLogMutex;
     static const int kNumLogFiles = 10;
 
+
     static void purgeOldLogs(const string& filePath)
     {
         FilePath filePathObj(filePath);
         FilePath logDir = filePathObj.dir();
+        string ext = filePathObj.extension();
         multimap<time_t, FilePath> logFiles;
-        const uint32_t magicNumber = *(uint32_t*)LogEncoder::kMagicNumber;
-        logDir.forEachFile([&logFiles, &magicNumber](const FilePath& f)
-        {
-            char magicBuffer[4];
-            ifstream fin(f.canonicalPath(), ios::binary);
+        logDir.forEachFile([&](const FilePath& f) {
+            if (f.extension() == ext) {
+                char magicBuffer[4] = {};
+                ifstream fin(f.path(), ios::binary);
             fin.read(magicBuffer, 4);
-            const int foundMagic = *(uint32_t*)magicBuffer;
-            if(foundMagic == magicNumber) {
+                if (fin.good() && 0 == memcmp(magicBuffer, LogEncoder::kMagicNumber, 4)) {
                 logFiles.insert(make_pair(f.lastModified(), f));
+            }
             }
         });
 
