@@ -19,7 +19,6 @@
 #include "c4Test.hh"
 #include "c4Private.h"
 #include "c4DocEnumerator.h"
-#include "c4ExpiryEnumerator.h"
 #include "c4BlobStore.h"
 #include <cmath>
 #include <errno.h>
@@ -391,10 +390,13 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
+    C4Error err;
+    CHECK(c4db_nextDocExpiration(db) == 0);
+    CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
+
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
-    time_t expire = time(nullptr) + 1;
-    C4Error err;
+    uint64_t expire = time(nullptr) + 1;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
     
     expire = time(nullptr) + 2;
@@ -409,58 +411,33 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     C4Slice docID3 = C4STR("dont_expire_me");
     createRev(docID3, kRevID, kFleeceBody);
 
+    C4Slice docID4 = C4STR("expire_me_later");
+    createRev(docID4, kRevID, kFleeceBody);
+    REQUIRE(c4doc_setExpiration(db, docID4, expire + 100, &err));
+
+    REQUIRE(!c4doc_setExpiration(db, "nonexistent"_sl, expire + 50, &err));
+    CHECK(err.domain == LiteCoreDomain);
+    CHECK(err.code == kC4ErrorNotFound);
+
+    CHECK(c4doc_getExpiration(db, docID)  == expire);
+    CHECK(c4doc_getExpiration(db, docID2) == expire);
+    CHECK(c4doc_getExpiration(db, docID3) == 0);
+    CHECK(c4doc_getExpiration(db, docID4) == expire + 100);
+    CHECK(c4doc_getExpiration(db, "nonexistent"_sl) == 0);
+    CHECK(c4db_nextDocExpiration(db) == expire);
+
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
     sleep(2u);
-
-    C4Log("---- Scan expired docs (#1)");
-    C4ExpiryEnumerator *e = c4db_enumerateExpired(db, &err);
-    REQUIRE(e != nullptr);
-    int expiredCount = 0;
-    while(c4exp_next(e, &err)) {
-        C4SliceResult existingDocID = c4exp_getDocID(e);
-        REQUIRE(existingDocID != docID3);
-        c4slice_free(existingDocID);
-        expiredCount++;
-    }
-    REQUIRE(err.code == 0);
-    c4exp_free(e);
-    REQUIRE(expiredCount == 2);
-
-    REQUIRE(c4doc_getExpiration(db, docID) == (uint64_t)expire);
-    REQUIRE(c4doc_getExpiration(db, docID2) == (uint64_t)expire);
-    REQUIRE(c4db_nextDocExpiration(db) == (uint64_t)expire);
-    
-    C4Log("---- Scan expired docs (#2)");
-    e = c4db_enumerateExpired(db, &err);
-    REQUIRE(e != nullptr);
-    expiredCount = 0;
-    while(c4exp_next(e, &err)) {
-        C4SliceResult existingDocID = c4exp_getDocID(e);
-        REQUIRE(existingDocID != docID3);
-        c4slice_free(existingDocID);
-        expiredCount++;
-    }
-    REQUIRE(err.code == 0);
-    REQUIRE(expiredCount == 2);
+    REQUIRE(time(nullptr) >= expire);
 
     C4Log("---- Purge expired docs");
-    REQUIRE(c4exp_purgeExpired(e, &err));
-    c4exp_free(e);
+    REQUIRE(c4db_purgeExpiredDocs(db, &err) == 2);
 
-    C4Log("---- Scan expired docs (#3)");
-    e = c4db_enumerateExpired(db, &err);
-    REQUIRE(e != nullptr);
-    expiredCount = 0;
-    while(c4exp_next(e, &err)) {
-        expiredCount++;
-    }
-    REQUIRE(err.code == 0);
-    REQUIRE(expiredCount == 0);
+    CHECK(c4db_nextDocExpiration(db) == expire + 100);
 
     C4Log("---- Purge expired docs (again)");
-    REQUIRE(c4exp_purgeExpired(e, &err));
-    c4exp_free(e);
+    CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
@@ -470,20 +447,34 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
     time_t expire = time(nullptr) + 2;
     C4Error err;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
-    REQUIRE(c4doc_setExpiration(db, docID, UINT64_MAX, &err));
-    
-    sleep(2u);
-    auto e = c4db_enumerateExpired(db, &err);
-    REQUIRE(e != nullptr);
-    
-    int expiredCount = 0;
-    while(c4exp_next(e, nullptr)) {
-        expiredCount++;
-    }
-    
-    REQUIRE(c4exp_purgeExpired(e, &err));
-    c4exp_free(e);
-    REQUIRE(expiredCount == 0);
+    REQUIRE(c4doc_getExpiration(db, docID) == expire);
+    CHECK(c4db_nextDocExpiration(db) == expire);
+
+    REQUIRE(c4doc_setExpiration(db, docID, 0, &err));
+    CHECK(c4doc_getExpiration(db, docID) == 0);
+    CHECK(c4db_nextDocExpiration(db) == 0);
+    CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
+}
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[Database][C]") {
+    // Checks that after one instance creates the 'expiration' column, other instances recognize it
+    // and don't try to create it themselves.
+    C4Error error;
+    auto db2 = c4db_open(databasePath(), c4db_getConfig(db), &error);
+    REQUIRE(db2);
+
+    CHECK(c4db_nextDocExpiration(db) == 0);
+    CHECK(c4db_nextDocExpiration(db2) == 0);
+
+    C4Slice docID = C4STR("expire_me");
+    createRev(docID, kRevID, kFleeceBody);
+
+    uint64_t expire = time(nullptr) + 1;
+    REQUIRE(c4doc_setExpiration(db, docID, expire, &error));
+
+    CHECK(c4db_nextDocExpiration(db2) == expire);
+
+    c4db_free(db2);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C]")

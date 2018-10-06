@@ -63,11 +63,11 @@ namespace litecore {
             // Create the sequence and flags columns regardless of options, otherwise it's too
             // complicated to customize all the SQL queries to conditionally use them...
             db.execWithLock(subst("CREATE TABLE IF NOT EXISTS kv_@ ("
-                          "  key TEXT PRIMARY KEY,"
-                          "  sequence INTEGER,"
-                          "  flags INTEGER DEFAULT 0,"
-                          "  version BLOB,"
-                          "  body BLOB)"));
+                                  "  key TEXT PRIMARY KEY,"
+                                  "  sequence INTEGER,"
+                                  "  flags INTEGER DEFAULT 0,"
+                                  "  version BLOB,"
+                                  "  body BLOB)"));
         }
     }
 
@@ -78,7 +78,6 @@ namespace litecore {
         _getByKeyStmt.reset();
         _getMetaByKeyStmt.reset();
         _getBySeqStmt.reset();
-        _getByOffStmt.reset();
         _getMetaBySeqStmt.reset();
         _setStmt.reset();
         _insertStmt.reset();
@@ -86,8 +85,10 @@ namespace litecore {
         _delByKeyStmt.reset();
         _delBySeqStmt.reset();
         _delByBothStmt.reset();
-        _backupStmt.reset();
         _setFlagStmt.reset();
+        _setExpStmt.reset();
+        _getExpStmt.reset();
+        _nextExpStmt.reset();
         KeyStore::close();
     }
 
@@ -339,6 +340,90 @@ namespace litecore {
 
     void SQLiteKeyStore::dropTrigger(const string &name, const char *suffix) {
         db().exec(CONCAT("DROP TRIGGER IF EXISTS \"" << name << "::" << suffix << "\""));
+    }
+
+
+#pragma mark - EXPIRATION:
+
+
+    // Returns true if the KeyStore's table has had the 'expiration' column added to it.
+    bool SQLiteKeyStore::hasExpiration() {
+        if (!_hasExpirationColumn) {
+            string sql;
+            string tableName = "kv_" + name();
+            db().getSchema(tableName, "table", tableName, sql);
+            if (sql.find("expiration") != string::npos)
+                _hasExpirationColumn = true;
+        }
+        return _hasExpirationColumn;
+    }
+
+
+    // Adds the 'expiration' column to the table.
+    void SQLiteKeyStore::addExpiration() {
+        Assert(!_hasExpirationColumn);
+        db().logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
+        db().execWithLock(subst(
+                    "ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
+                    "CREATE INDEX kv_@_expiration ON kv_@ (expiration) WHERE expiration not null"));
+        _hasExpirationColumn = true;
+    }
+
+
+    bool SQLiteKeyStore::setExpiration(slice key, expiration_t expTime) {
+        Assert(expTime >= 0, "Invalid (negative) expiration time");
+        if (!hasExpiration())
+            addExpiration();
+        compile(_setExpStmt, "UPDATE kv_@ SET expiration=? WHERE key=?");
+        UsingStatement u(*_setExpStmt);
+        if (expTime > 0)
+            _setExpStmt->bind(1, expTime);
+        else
+            _setExpStmt->bind(1); // null
+        _setExpStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
+        bool ok = _setExpStmt->exec() > 0;
+        if (ok)
+            db().logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %lld",
+                            _name.c_str(), SPLAT(key), expTime);
+        return ok;
+    }
+
+
+    KeyStore::expiration_t SQLiteKeyStore::getExpiration(slice key) {
+        if (!hasExpiration())
+            return 0;
+        compile(_getExpStmt, "SELECT expiration FROM kv_@ WHERE key=?");
+        UsingStatement u(*_getExpStmt);
+        _getExpStmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
+        if (!_getExpStmt->executeStep())
+            return 0;
+        return _getExpStmt->getColumn(0);
+    }
+
+
+    KeyStore::expiration_t SQLiteKeyStore::nextExpiration() {
+        expiration_t next = 0;
+        if (hasExpiration()) {
+            compile(_nextExpStmt, "SELECT min(expiration) FROM kv_@");
+            UsingStatement u(*_nextExpStmt);
+            if (!_nextExpStmt->executeStep())
+                return 0;
+            next = _nextExpStmt->getColumn(0);
+        }
+        db().logVerbose("Next expiration time is %lld", next);
+        return next;
+    }
+
+
+    unsigned SQLiteKeyStore::expireRecords() {
+        unsigned expired = 0;
+        if (hasExpiration()) {
+            expired = db().exec(format("DELETE FROM kv_%s WHERE expiration <= %lld",
+                                                name().c_str(),
+                                                (int64_t)time(nullptr)));
+        }
+        db().log("Purged %u expired documents", expired);
+        return expired;
     }
 
 }

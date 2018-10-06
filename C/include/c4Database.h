@@ -166,8 +166,13 @@ extern "C" {
     /** Returns the latest sequence number allocated to a revision. */
     C4SequenceNumber c4db_getLastSequence(C4Database* database C4NONNULL) C4API;
 
-    /** Returns the timestamp at which the next document expiration should take place. */
+    /** Returns the timestamp at which the next document expiration should take place,
+        or 0 if there are no documents with expiration times. */
     uint64_t c4db_nextDocExpiration(C4Database *database C4NONNULL) C4API;
+
+    /** Purges all documents that have expired.
+        @return  The number of documents purged, or -1 on error. */
+    int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error*) C4API;
 
     /** Returns the number of revisions of a document that are tracked. (Defaults to 20.) */
     uint32_t c4db_getMaxRevTreeDepth(C4Database *database C4NONNULL) C4API;

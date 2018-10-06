@@ -97,6 +97,7 @@ _c4doc_save
 _c4doc_setExpiration
 _c4doc_getExpiration
 _c4db_nextDocExpiration
+_c4db_purgeExpiredDocs
 _c4doc_bodyAsJSON
 _c4doc_isOldMetaProperty
 _c4doc_hasOldMetaProperties
@@ -113,7 +114,6 @@ _c4rev_flagsFromDocFlags
 
 _c4db_enumerateChanges
 _c4db_enumerateAllDocs
-_c4db_enumerateExpired
 _c4db_createIndex
 _c4db_deleteIndex
 _c4db_getIndexes
@@ -122,11 +122,6 @@ _c4enum_getDocumentInfo
 _c4enum_getDocument
 _c4enum_close
 _c4enum_free
-_c4exp_free
-_c4exp_close
-_c4exp_getDocID
-_c4exp_next
-_c4exp_purgeExpired
 
 _kC4DefaultEnumeratorOptions
 _kC4DefaultQueryOptions

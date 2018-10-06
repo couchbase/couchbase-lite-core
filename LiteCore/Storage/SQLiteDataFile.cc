@@ -185,14 +185,6 @@ namespace litecore {
         if (!decrypt())
             error::_throw(error::UnsupportedEncryption);
 
-        if (sqlite3_libversion_number() < 003012) {
-            // Prior to 3.12, the default page size was 1024, which is less than optimal.
-            // Note that setting the page size has to be done before any other command that touches
-            // the database file.
-            // The cache_size value is negative to tell SQLite it's in KB (hence the /1024.)
-            _exec(format("PRAGMA page_size=%lld", (long long)kPageSize));
-        }
-
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
             int userVersion = _sqlDb->execAndGet("PRAGMA user_version");

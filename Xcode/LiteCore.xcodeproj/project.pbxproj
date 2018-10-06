@@ -269,7 +269,6 @@
 		27B6494F2069723900FC12F7 /* c4Document.h in Headers */ = {isa = PBXBuildFile; fileRef = 274A69881BED288D00D16D37 /* c4Document.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B649502069723900FC12F7 /* c4Document+Fleece.h in Headers */ = {isa = PBXBuildFile; fileRef = 27F370821DC02C3D0096F717 /* c4Document+Fleece.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B649512069723900FC12F7 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		27B649522069723900FC12F7 /* c4ExpiryEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B649532069723900FC12F7 /* c4Observer.h in Headers */ = {isa = PBXBuildFile; fileRef = 276943881DCD4AAD00DB2555 /* c4Observer.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B649542069723900FC12F7 /* c4Query.h in Headers */ = {isa = PBXBuildFile; fileRef = 27E6DFE81DA5A6C8008EB681 /* c4Query.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B649552069723900FC12F7 /* c4Replicator.h in Headers */ = {isa = PBXBuildFile; fileRef = 275CE0E21E57B7E70084E014 /* c4Replicator.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -1421,7 +1420,6 @@
 		72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrebuiltCopier.cc; sourceTree = "<group>"; };
 		72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrebuiltCopier.hh; sourceTree = "<group>"; };
 		72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4DocExpiration.cc; sourceTree = "<group>"; };
-		72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4ExpiryEnumerator.h; sourceTree = "<group>"; };
 		930BE2AC1EE0C47500CCC14C /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS10.3.sdk/usr/lib/libz.tbd; sourceTree = DEVELOPER_DIR; };
 		93FA3F481EE21A4D00D15CF5 /* LiteCoreServ-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LiteCoreServ-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		93FA3F4B1EE21A4D00D15CF5 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -2431,7 +2429,6 @@
 				274A69881BED288D00D16D37 /* c4Document.h */,
 				27F370821DC02C3D0096F717 /* c4Document+Fleece.h */,
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
-				72C086931CBDEB2000808CE7 /* c4ExpiryEnumerator.h */,
 				728EC54C1EC14611002C9A73 /* c4Listener.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
@@ -2545,7 +2542,6 @@
 				27B6494F2069723900FC12F7 /* c4Document.h in Headers */,
 				27B649502069723900FC12F7 /* c4Document+Fleece.h in Headers */,
 				27B649512069723900FC12F7 /* c4DocEnumerator.h in Headers */,
-				27B649522069723900FC12F7 /* c4ExpiryEnumerator.h in Headers */,
 				27B649532069723900FC12F7 /* c4Observer.h in Headers */,
 				27B649542069723900FC12F7 /* c4Query.h in Headers */,
 				27B649552069723900FC12F7 /* c4Replicator.h in Headers */,

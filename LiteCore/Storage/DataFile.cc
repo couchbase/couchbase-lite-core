@@ -367,7 +367,7 @@ namespace litecore {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, false);
         _active = false;
-        _db.log("abort transaction");
+        _db.logVerbose("abort transaction");
         _db._endTransaction(this, false);
         Signpost::end(Signpost::transaction, uint32_t(size_t(this)));
     }

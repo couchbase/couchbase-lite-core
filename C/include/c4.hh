@@ -37,7 +37,6 @@ namespace c4 {
     static inline void freeRef(C4RawDocument* c)       {c4raw_free(c);}
     static inline void freeRef(C4Document* c)          {c4doc_free(c);}
     static inline void freeRef(C4DocEnumerator* c)     {c4enum_free(c);}
-    static inline void freeRef(C4ExpiryEnumerator* c)  {c4exp_free(c);}
     static inline void freeRef(C4DatabaseObserver* c)  {c4dbobs_free(c);}
     static inline void freeRef(C4DocumentObserver* c)  {c4docobs_free(c);}
     static inline void freeRef(C4QueryEnumerator* c)   {c4queryenum_free(c);}
