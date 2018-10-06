@@ -122,6 +122,8 @@ namespace litecore {
                                   const std::string &tableName, const std::string &sql);
         void _sqlDeleteIndex(const std::string &name);
         void garbageCollectArrayIndexes();
+        bool hasExpiration();
+        void addExpiration();
 
         // All of these Statement pointers have to be reset in the close() method.
         std::unique_ptr<SQLite::Statement> _recCountStmt;
@@ -135,6 +137,7 @@ namespace litecore {
         bool _createdSeqIndex {false};     // Created by-seq index yet?
         bool _lastSequenceChanged {false};
         int64_t _lastSequence {-1};
+        bool _hasExpirationColumn {false};
     };
 
 }

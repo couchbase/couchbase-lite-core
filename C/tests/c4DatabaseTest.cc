@@ -456,6 +456,27 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
     CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
 }
 
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[Database][C]") {
+    // Checks that after one instance creates the 'expiration' column, other instances recognize it
+    // and don't try to create it themselves.
+    C4Error error;
+    auto db2 = c4db_open(databasePath(), c4db_getConfig(db), &error);
+    REQUIRE(db2);
+
+    CHECK(c4db_nextDocExpiration(db) == 0);
+    CHECK(c4db_nextDocExpiration(db2) == 0);
+
+    C4Slice docID = C4STR("expire_me");
+    createRev(docID, kRevID, kFleeceBody);
+
+    uint64_t expire = time(nullptr) + 1;
+    REQUIRE(c4doc_setExpiration(db, docID, expire, &error));
+
+    CHECK(c4db_nextDocExpiration(db2) == expire);
+
+    c4db_free(db2);
+}
+
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database BlobStore", "[Database][C]")
 {
     C4Error err;
