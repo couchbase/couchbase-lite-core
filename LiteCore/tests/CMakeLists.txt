@@ -37,6 +37,7 @@ file(COPY ../../vendor/fleece/Tests/1000people.json DESTINATION ${CMAKE_CURRENT_
 file(COPY ../../vendor/fleece/Tests/1person.fleece DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Tests)
 file(COPY ../../vendor/fleece/Tests/1person-deepIterOutput.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Tests)
 file(COPY ../../vendor/fleece/Tests/1person-shallowIterOutput.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Tests)
+file(COPY ../../vendor/fleece/Tests/DeltaTests.json5 DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Tests)
 add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTest.cc
   ../../C/tests/c4Test.cc ../../Replicator/tests/CookieStoreTest.cc
   ../../REST/Response.cc)
