@@ -377,7 +377,7 @@ namespace litecore {
         compile(_setExpStmt, "UPDATE kv_@ SET expiration=? WHERE key=?");
         UsingStatement u(*_setExpStmt);
         if (expTime > 0)
-            _setExpStmt->bind(1, expTime);
+            _setExpStmt->bind(1, (long long)expTime);
         else
             _setExpStmt->bind(1); // null
         _setExpStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
