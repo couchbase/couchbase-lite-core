@@ -72,7 +72,9 @@ namespace litecore {
 
     // Interprets the arg, which must be a blob, as a Fleece value and returns it as a Value*.
     // On error returns nullptr (and sets the SQLite result error.)
-    const fleece::impl::Value* fleeceParam(sqlite3_context*, sqlite3_value *arg) noexcept;
+    const fleece::impl::Value* fleeceParam(sqlite3_context*,
+                                           sqlite3_value *arg,
+                                           bool required =true) noexcept;
 
     // Evaluates a path from the current value of *pValue and stores the result back to
     // *pValue. Returns a SQLite error code, or SQLITE_OK on success.

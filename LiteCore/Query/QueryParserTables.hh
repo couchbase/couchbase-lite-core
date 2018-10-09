@@ -37,6 +37,7 @@ namespace litecore {
         {"."_sl,       0, 9, 99,  &QueryParser::propertyOp},
         {"$"_sl,       1, 1, 99,  &QueryParser::parameterOp},
         {"?"_sl,       1, 9, 99,  &QueryParser::variableOp},
+        {"_."_sl,      1, 2, 99,  &QueryParser::objectPropertyOp},
         {"[]"_sl,      0, 9, 99,  &QueryParser::arrayLiteralOp},
 
         {"MISSING"_sl, 0, 0, 99,  &QueryParser::missingOp},

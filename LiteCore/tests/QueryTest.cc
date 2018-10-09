@@ -328,6 +328,38 @@ TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
+    {
+        Transaction t(db);
+        writeMultipleTypeDocs(t);
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery(json5("['=', 'FTW', ['_.subvalue', ['.value']]]")) };
+
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->asString() == "doc4"_sl);
+    CHECK(!e->next());
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Query array index", "[Query]") {
+    addArrayDocs();
+
+    Retained<Query> query{ store->compileQuery(json5("['=', 'five', ['_.[0]', ['.numbers']]]")) };
+
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    int i = 0;
+    while (e->next()) {
+        slice docID = e->columns()[0]->asString();
+        CHECK(docID == "rec-010"_sl);
+        ++i;
+    }
+    REQUIRE(i == 1);
+}
+
+
 #pragma mark Targeted N1QL tests
     
 TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {

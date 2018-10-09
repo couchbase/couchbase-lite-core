@@ -96,6 +96,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser basic", "[Query]") {
           == "(1 + 2) * -(3 + 4)");
     CHECK(parseWhere("['BETWEEN', 10, 0, 100]")
           == "10 BETWEEN 0 AND 100");
+
     CHECK(parseWhere("['=', ['.', 'candies'], ['[]', 'm&ms', 'jujubes']]")
           == "fl_value(body, 'candies') = array_of('m&ms', 'jujubes')");
     CHECK(parseWhere("['IN', ['.', 'name'], ['[]', 'Webbis', 'Wowbagger']]")
@@ -110,6 +111,15 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser basic", "[Query]") {
           == "fl_value(body, 'addresses[1].zip')");
     CHECK(parseWhere("['.', 'addresses', [1], 'zip']")
           == "fl_value(body, 'addresses[1].zip')");
+
+    CHECK(parseWhere("['_.', ['.address'], 'zip']")
+          == "fl_nested_value(fl_value(body, 'address'), 'zip')");
+    CHECK(parseWhere("['_.zip', ['.address']]")
+          == "fl_nested_value(fl_value(body, 'address'), 'zip')");
+    CHECK(parseWhere("['_.', ['.addresses'], '[0]']")
+          == "fl_nested_value(fl_value(body, 'addresses'), '[0]')");
+    CHECK(parseWhere("['_.[0]', ['.addresses']]")
+          == "fl_nested_value(fl_value(body, 'addresses'), '[0]')");
 }
 
 

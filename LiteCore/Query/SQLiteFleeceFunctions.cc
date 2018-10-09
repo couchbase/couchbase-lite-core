@@ -67,9 +67,11 @@ namespace litecore {
     // fl_nested_value(fleeceData, propertyPath) -> propertyValue
     static void fl_nested_value(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
-            const Value *val = fleeceParam(ctx, argv[0]);
-            if (!val)
+            const Value *val = fleeceParam(ctx, argv[0], false);
+            if (!val) {
+                sqlite3_result_null(ctx);
                 return;
+            }
             val = evaluatePathFromArg(ctx, argv, 1, val);
             setResultFromValue(ctx, val);
         } catch (const std::exception &) {

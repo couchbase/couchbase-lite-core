@@ -47,28 +47,39 @@ namespace litecore {
     }
 
 
-    const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value *arg) noexcept {
-        const Value *value = asFleeceValue(arg);
-        if (value)
-            return value;
-        DebugAssert(sqlite3_value_type(arg) == SQLITE_BLOB);
-        slice fleece = valueAsSlice(arg);
-        switch (sqlite3_value_subtype(arg)) {
-            case kFleeceDataSubtype: {
-                if (!fleece)
-                    return Dict::kEmpty;             // No body; may be deleted rev
-                const Value *root = Value::fromTrustedData(fleece);
-                if (root)
-                    return root;
+    const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value *arg, bool required) noexcept {
+        switch (sqlite3_value_type(arg)) {
+            case SQLITE_BLOB: {
+                slice fleece = valueAsSlice(arg);
+                switch (sqlite3_value_subtype(arg)) {
+                    case kFleeceDataSubtype: {
+                        if (!fleece)
+                            return Dict::kEmpty;             // No body; may be deleted rev
+                        const Value *root = Value::fromTrustedData(fleece);
+                        if (root)
+                            return root;
+                        break;
+                    }
+                    case kFleeceNullSubtype:
+                        return Value::kNullValue;
+                    default:
+                        break;
+                }
                 break;
             }
-            case kFleeceNullSubtype:
-                return Value::kNullValue;
+            case SQLITE_NULL: {
+                const Value *value = asFleeceValue(arg);
+                if (value)
+                    return value;
+                break;
+            }
             default:
                 break;
         }
-        sqlite3_result_error(ctx, "invalid Fleece data", -1);
-        sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
+        if (required) {
+            sqlite3_result_error(ctx, "invalid Fleece data", -1);
+            sqlite3_result_error_code(ctx, SQLITE_MISMATCH);
+        }
         return nullptr;
     }
 

@@ -143,6 +143,7 @@ namespace litecore {
         void anyEveryOp(slice, fleece::impl::Array::iterator&);
         void parameterOp(slice, fleece::impl::Array::iterator&);
         void propertyOp(slice, fleece::impl::Array::iterator&);
+        void objectPropertyOp(slice, fleece::impl::Array::iterator&);
         void variableOp(slice, fleece::impl::Array::iterator&);
         void missingOp(slice, fleece::impl::Array::iterator&);
         void caseOp(slice, fleece::impl::Array::iterator&);

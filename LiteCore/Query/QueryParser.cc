@@ -864,6 +864,29 @@ namespace litecore {
     }
 
 
+    // Handles object (dict) property accessors, e.g. ["_.", [..., "prop"] --> fl_property(..., "prop")
+    void QueryParser::objectPropertyOp(slice op, Array::iterator& operands) {
+        _sql << kNestedValueFnName << '(';
+        _context.push_back(&kArgListOperation);     // prevents extra parens around operands
+        parseNode(operands[0]);
+        _context.pop_back();
+
+        slice path;
+        if (op.size == 2) {
+            require(operands.count() == 2, "Missing object-property path parameter");
+            path = requiredString(operands[1], "object property path");
+        } else {
+            require(operands.count() == 1, "Excess object-property parameter");
+            path = op;
+            path.moveStart(2);
+        }
+
+        _sql << ", ";
+        writeSQLString(path);
+        _sql << ")";
+    }
+
+
     // Handles substituted query parameters, e.g. ["$", "x"] or ["$x"] --> $_x
     void QueryParser::parameterOp(slice op, Array::iterator& operands) {
         alloc_slice parameter;
@@ -978,6 +1001,8 @@ namespace litecore {
 
         if (op.hasPrefix('.')) {
             writePropertyGetter(kValueFnName, propertyFromString(op));
+        } else if (op.hasPrefix("_."_sl)) {
+            objectPropertyOp(op, operands);
         } else if (op.hasPrefix('$')) {
             parameterOp(op, operands);
         } else if (op.hasPrefix('?')) {
