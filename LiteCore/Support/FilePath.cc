@@ -637,7 +637,9 @@ namespace litecore {
         }
 
         // Move the old item aside, to be deleted later:
-        FilePath trashDir(FilePath::tempDirectory(path())["CBL_Obsolete-"].mkTempDir());
+        auto toPath = to.path();
+        auto toParentPath = splitPath(toPath.substr(0, toPath.size() - 1)).first;
+        FilePath trashDir(FilePath::tempDirectory(toParentPath)["CBL_Obsolete-"].mkTempDir());
         FilePath trashPath(trashDir, to.fileOrDirName());
         to.moveTo(trashPath);
 

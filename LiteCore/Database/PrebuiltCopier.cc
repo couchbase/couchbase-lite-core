@@ -42,8 +42,8 @@ namespace litecore {
         
         FilePath backupPath;
         Log("Copying prebuilt database from %s to %s", from.path().c_str(), to.path().c_str());
-
-        FilePath temp = FilePath::tempDirectory(from.path()).mkTempDir();
+        
+        FilePath temp = FilePath::tempDirectory(to.dir().path()).mkTempDir();
         temp.delRecursive();
         from.copyTo(temp);
         
