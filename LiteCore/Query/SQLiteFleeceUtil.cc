@@ -179,10 +179,26 @@ namespace litecore {
     }
 
     
-    void setResultBlobFromFleeceData(sqlite3_context *ctx, slice blob) noexcept {
+    void setResultBlobFromData(sqlite3_context *ctx, slice blob, int subtype) noexcept {
         if (blob) {
+            // This copies the blob data into SQLite.
             sqlite3_result_blob(ctx, blob.buf, (int)blob.size, SQLITE_TRANSIENT);
-            sqlite3_result_subtype(ctx, kFleeceDataSubtype);
+            if (subtype)
+                sqlite3_result_subtype(ctx, subtype);
+        } else {
+            sqlite3_result_null(ctx);
+        }
+    }
+
+
+    void setResultBlobFromData(sqlite3_context *ctx, alloc_slice blob, int subtype) noexcept {
+        if (blob) {
+            // Don't copy the data; retain the alloc_slice till SQLite is done with the blob
+            blob.retain();
+            sqlite3_result_blob(ctx, blob.buf, (int)blob.size,
+                                [](void *buf) { alloc_slice::release({buf, 1}); });
+            if (subtype)
+                sqlite3_result_subtype(ctx, subtype);
         } else {
             sqlite3_result_null(ctx);
         }
@@ -217,18 +233,15 @@ namespace litecore {
 
 
     static void registerFunctionSpecs(sqlite3 *db,
-                                      DataFile::FleeceAccessor accessor,
-                                      fleece::impl::SharedKeys *sharedKeys,
+                                      const fleeceFuncContext &context,
                                       const SQLiteFunctionSpec functions[])
     {
-        if (!accessor)
-            accessor = [](slice data) {return data;};
         for (auto fn = functions; fn->name; ++fn) {
             int rc = sqlite3_create_function_v2(db,
                                                 fn->name,
                                                 fn->argCount,
                                                 SQLITE_UTF8 | SQLITE_DETERMINISTIC,
-                                                new fleeceFuncContext{accessor, sharedKeys},
+                                                new fleeceFuncContext(context),
                                                 fn->function, fn->stepCallback, fn->finalCallback,
                                                 [](void *param) {delete (fleeceFuncContext*)param;});
             if (rc != SQLITE_OK)
@@ -237,15 +250,21 @@ namespace litecore {
     }
 
 
-    void RegisterSQLiteFunctions(sqlite3 *db,
-                                 DataFile::FleeceAccessor accessor,
-                                 fleece::impl::SharedKeys *sharedKeys)
+    void RegisterSQLiteFunctions(sqlite3 *db, fleeceFuncContext context)
     {
-        registerFunctionSpecs(db, accessor, sharedKeys, kFleeceFunctionsSpec);
-        registerFunctionSpecs(db, nullptr,  sharedKeys, kFleeceNullAccessorFunctionsSpec);
-        registerFunctionSpecs(db, accessor, sharedKeys, kRankFunctionsSpec);
-        registerFunctionSpecs(db, accessor, sharedKeys, kN1QLFunctionsSpec);
-        RegisterFleeceEachFunctions(db, accessor, sharedKeys);
+        if (!context.accessor)
+            context.accessor = [](slice data) {return data;};
+        if (!context.blobAccessor)
+            context.blobAccessor = [](slice digest) {return alloc_slice();};
+        registerFunctionSpecs(db, context, kFleeceFunctionsSpec);
+        registerFunctionSpecs(db, context, kRankFunctionsSpec);
+        registerFunctionSpecs(db, context, kN1QLFunctionsSpec);
+        RegisterFleeceEachFunctions(db, context);
+
+        // The functions registered below operate on virtual tables, not on the actual db,
+        // so they should not use the db's Fleece accessor. That's why we clear it first.
+        context.accessor = [](slice data) {return data;};
+        registerFunctionSpecs(db, context, kFleeceNullAccessorFunctionsSpec);
     }
 
 }

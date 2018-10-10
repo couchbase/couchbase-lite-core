@@ -29,6 +29,7 @@
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
 #include "make_unique.h"
+#include <functional>
 
 namespace litecore { namespace constants
 {
@@ -193,7 +194,14 @@ namespace c4Internal {
             default:                error::_throw(error::InvalidParameter);
         }
         _documentFactory.reset(factory);
-}
+
+        _db->setBlobAccessor([this](slice digest) {
+            blobKey key;
+            if (!key.readFromBase64(digest))
+                return alloc_slice();
+            return blobStore()->get(key).contents();
+        });
+    }
 
 
     Database::~Database() {

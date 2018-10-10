@@ -42,6 +42,7 @@ namespace litecore {
     static constexpr slice kValueFnName = "fl_value"_sl;
     static constexpr slice kNestedValueFnName = "fl_nested_value"_sl;
     static constexpr slice kUnnestedValueFnName = "fl_unnested_value"_sl;
+    static constexpr slice kBlobFnName = "fl_blob"_sl;
     static constexpr slice kRootFnName  = "fl_root"_sl;
     static constexpr slice kEachFnName  = "fl_each"_sl;
     static constexpr slice kCountFnName = "fl_count"_sl;
@@ -889,6 +890,11 @@ namespace litecore {
         _sql << ", ";
         writeSQLString(path);
         _sql << ")";
+    }
+
+
+    void QueryParser::blobOp(slice op, Array::iterator& operands) {
+        writePropertyGetter(kBlobFnName, propertyFromString(requiredString(operands[0], "blob path")));
     }
 
 

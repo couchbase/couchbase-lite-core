@@ -47,6 +47,9 @@ namespace litecore {
         // Callback that takes a record body and returns the portion of it containing Fleece data
         typedef slice (*FleeceAccessor)(slice recordBody);
 
+        // Callback that takes a base64 blob digest and returns the blob data
+        typedef std::function<alloc_slice(slice)> BlobAccessor;
+
         struct Options {
             KeyStore::Capabilities keyStores;
             bool                create         :1;      ///< Should the db be created if it doesn't exist?
@@ -82,7 +85,10 @@ namespace litecore {
         virtual void rekey(EncryptionAlgorithm, slice newKey);
 
         FleeceAccessor fleeceAccessor() const               {return _options.fleeceAccessor;}
+        BlobAccessor blobAccessor() const                   {return _blobAccessor;}
+        void setBlobAccessor(BlobAccessor b)                {_blobAccessor = b;}
         fleece::impl::SharedKeys* documentKeys() const;
+
 
         void* owner()                                       {return _owner;}
         void setOwner(void* owner)                          {_owner = owner;}
@@ -221,6 +227,7 @@ namespace litecore {
         Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic<void*>      _owner {nullptr};               // App-defined object that owns me
+        BlobAccessor            _blobAccessor;
     };
 
 

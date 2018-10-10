@@ -41,6 +41,7 @@ namespace litecore {
             DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_BLOB);
             DebugAssert(sqlite3_value_subtype(argv[0]) == 0);
             auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
+            
             slice fleece = funcCtx->accessor(body);
             setResultBlobFromFleeceData(ctx, fleece);
             return;
@@ -61,6 +62,32 @@ namespace litecore {
             setResultFromValue(ctx, scope.root);
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "fl_value: exception!", -1);
+        }
+    }
+
+    // fl_blob(body, propertyPath) -> blob data
+    static void fl_blob(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            QueryFleeceScope scope(ctx, argv);
+            if (!scope.root)
+                return;
+            const Dict *blobDict = scope.root->asDict();
+            if (!blobDict)
+                return;
+
+            // Get the blob's "digest" property as a string:
+            const Value *digestVal = blobDict->get("digest"_sl);
+            if (!digestVal)
+                return;
+            slice digest = digestVal->asString();
+            if (!digest)
+                return;
+
+            auto context = ((fleeceFuncContext*)sqlite3_user_data(ctx));
+            alloc_slice blob = context->blobAccessor(digest);
+            setResultBlobFromData(ctx, blob);
+        } catch (const std::exception &x) {
+            sqlite3_result_error(ctx, "unexpected error reading blob", -1);
         }
     }
 
@@ -368,6 +395,7 @@ namespace litecore {
         { "fl_root",           1, fl_root },
         { "fl_value",          2, fl_value },
         { "fl_nested_value",   2, fl_nested_value },
+        { "fl_blob",           2, fl_blob },
         { "fl_exists",         2, fl_exists },
         { "fl_count",          2, fl_count },
         { "fl_contains",       3, fl_contains },

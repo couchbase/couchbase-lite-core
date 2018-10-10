@@ -178,6 +178,30 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query][C]") {
     }
 }
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Blob access", "[Query][Blob][C]") {
+    string blob = "This is a blob to store in the store!";
+    vector<C4BlobKey> keys;
+    {
+        TransactionHelper t(db);
+        keys = addDocWithAttachments("doc1"_sl,
+                                     vector<string>{blob},
+                                     "text/plain");
+    }
+    compileSelect(json5("['SELECT', {WHAT: [['BLOB', '.attached[0]']], WHERE: ['=', ['._id'], 'doc1']}]"));
+    auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
+        return string(slice(FLValue_AsData(FLArrayIterator_GetValueAt(&e->columns, 0))));
+    });
+    CHECK(results == vector<string>{blob});
+
+    // Same as above, but wrap the blob in an array when returning it from the query:
+    compileSelect(json5("['SELECT', {WHAT: [['[]', ['BLOB', '.attached[0]']]], WHERE: ['=', ['._id'], 'doc1']}]"));
+    results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
+        FLValue result = FLArrayIterator_GetValueAt(&e->columns, 0);
+        FLValue item = FLArray_Get(FLValue_AsArray(result), 0);
+        return string(slice(FLValue_AsData(item)));
+    });
+    CHECK(results == vector<string>{blob});
+}
 
 #pragma mark - FTS:
 

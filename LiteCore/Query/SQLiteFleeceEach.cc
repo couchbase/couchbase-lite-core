@@ -114,7 +114,9 @@ private:
         auto vtab = (FleeceVTab*) malloc(sizeof(FleeceVTab));
         if (!vtab)
             return SQLITE_NOMEM;
-        vtab->context = *(fleeceFuncContext*)aux;
+
+        auto context = (fleeceFuncContext*)aux;
+        new (&vtab->context) fleeceFuncContext(*context);
         *outVtab = vtab;
         return SQLITE_OK;
     }
@@ -387,16 +389,12 @@ public:
 constexpr sqlite3_module FleeceCursor::kEachModule;
 
 
-int RegisterFleeceEachFunctions(sqlite3 *db,
-                                DataFile::FleeceAccessor accessor,
-                                SharedKeys *sharedKeys)
+int RegisterFleeceEachFunctions(sqlite3 *db, const fleeceFuncContext &context)
 {
-    if (!accessor)
-        accessor = [](slice data) {return data;};
     return sqlite3_create_module_v2(db,
                                     "fl_each",
                                     &FleeceCursor::kEachModule,
-                                    new fleeceFuncContext{accessor, sharedKeys},
+                                    new fleeceFuncContext(context),
                                     [](void *param){delete (fleeceFuncContext*)param;});
 }
 

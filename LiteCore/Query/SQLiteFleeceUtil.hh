@@ -18,6 +18,8 @@
 
 #pragma once
 #include "Base.hh"
+#include "DataFile.hh"
+#include "SQLite_Internal.hh"
 #include "FleeceImpl.hh"
 #include <sqlite3.h>
 
@@ -37,13 +39,6 @@ namespace litecore {
     static inline const fleece::impl::Value* asFleeceValue(sqlite3_value *value) {
         return (const fleece::impl::Value*) sqlite3_value_pointer(value, kFleeceValuePointerType);
     }
-
-    // What the user_data of a registered function points to
-    struct fleeceFuncContext {
-        DataFile::FleeceAccessor accessor;
-        fleece::impl::SharedKeys *sharedKeys;
-    };
-
 
     // Takes a document body from argv[0] and key-path from argv[1].
     // Establishes a scope for the Fleece data, and evaluates the path, setting `root`
@@ -89,8 +84,17 @@ namespace litecore {
     // If the slice is null, sets the function result to SQLite null.
     void setResultTextFromSlice(sqlite3_context*, slice) noexcept;
 
+    // Sets the function result to a blob, with optional subtype
+    void setResultBlobFromData(sqlite3_context*, slice, int subtype =0) noexcept;
+    void setResultBlobFromData(sqlite3_context*, alloc_slice, int subtype =0) noexcept;
+
     // Sets the function result to a Fleece container (a blob with kFleeceDataSubtype)
-    void setResultBlobFromFleeceData(sqlite3_context*, slice) noexcept;
+    static inline void setResultBlobFromFleeceData(sqlite3_context *ctx, slice blob) noexcept {
+        setResultBlobFromData(ctx, blob, kFleeceDataSubtype);
+    }
+    static inline void setResultBlobFromFleeceData(sqlite3_context *ctx, alloc_slice blob) noexcept {
+        setResultBlobFromData(ctx, blob, kFleeceDataSubtype);
+    }
 
     // Encodes the Value as a Fleece container and sets it as the result
     bool setResultBlobFromEncodedValue(sqlite3_context*, const fleece::impl::Value*);
@@ -117,7 +121,6 @@ namespace litecore {
     extern const SQLiteFunctionSpec kRankFunctionsSpec[];
     extern const SQLiteFunctionSpec kN1QLFunctionsSpec[];
 
-    int RegisterFleeceEachFunctions(sqlite3 *db, DataFile::FleeceAccessor,
-                                    fleece::impl::SharedKeys*);
+    int RegisterFleeceEachFunctions(sqlite3 *db, const fleeceFuncContext&);
 
 }

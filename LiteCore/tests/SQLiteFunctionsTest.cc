@@ -41,6 +41,16 @@ static slice flip(slice s) {
 }
 
 
+static alloc_slice mockBlob(slice digest) {
+    CHECK(digest);
+    if (digest.hasPrefix("sha1-"_sl)) {
+        return alloc_slice(digest.from(5));
+    } else {
+        return {};
+    }
+}
+
+
 class SQLiteFunctionsTest {
 public:
 
@@ -52,13 +62,13 @@ public:
         // Run test once with shared keys, once without:
         if (which & 1)
             sharedKeys = new SharedKeys();
-        RegisterSQLiteFunctions(db.getHandle(), flip, sharedKeys);
+        RegisterSQLiteFunctions(db.getHandle(), {flip, sharedKeys, mockBlob});
         db.exec("CREATE TABLE kv (key TEXT, body BLOB)");
         insertStmt = make_unique<SQLite::Statement>(db, "INSERT INTO kv (key, body) VALUES (?, ?)");
     }
 
     void insert(const char *key, const char *json) {
-        auto body = JSONConverter::convertJSON(slice(json), sharedKeys);
+        auto body = JSONConverter::convertJSON(slice(json5(json)), sharedKeys);
         flip(body); // 'encode' the data in the database to test the accessor function
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
@@ -349,6 +359,22 @@ N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "N1QL string functions", "[Query]") 
     CHECK(query("SELECT N1QL_rtrim('  x  ')") == (vector<string>{"  x"}));
     CHECK(query("SELECT N1QL_trim('  x  ')") == (vector<string>{"x"}));
 }
+
+
+N_WAY_TEST_CASE_METHOD(SQLiteFunctionsTest, "SQLite fl_blob", "[Query]") {
+    insert("1",   "{attachment: {digest: 'sha1-foobar', content_type: 'text/plain'}}");
+    insert("2",   "{attachment: {digest: 'sha1-bazz'}}");
+    insert("3",   "{attachment: {digest: 'rot13-whoops'}}");
+    insert("4",   "{attachment: {stub: true}}");
+    insert("4",   "{duh: false}");
+
+    CHECK(query("SELECT fl_blob(body, '.attachment') FROM kv ORDER BY key")
+          == (vector<string>{"foobar", "bazz", "MISSING", "MISSING", "MISSING"}));
+}
+
+
+#pragma mark - COLLATION:
+
 
 #if __APPLE__ || defined(_MSC_VER) || LITECORE_USES_ICU //FIXME: collator isn't available on all platforms yet
 TEST_CASE("Unicode collation", "[Query][Collation]") {

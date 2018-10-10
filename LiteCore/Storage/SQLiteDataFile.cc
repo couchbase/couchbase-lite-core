@@ -233,7 +233,10 @@ namespace litecore {
 
         // Register collators, custom functions, and the FTS tokenizer:
         RegisterSQLiteUnicodeCollations(sqlite, _collationContexts);
-        RegisterSQLiteFunctions(sqlite, fleeceAccessor(), documentKeys());
+        auto proxyBlobAccessor = [this](slice digest) {
+            return blobAccessor() ? blobAccessor()(digest) : alloc_slice();
+        };
+        RegisterSQLiteFunctions(sqlite, {fleeceAccessor(), documentKeys(), proxyBlobAccessor});
         int rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)
             warn("Unable to register FTS tokenizer: SQLite err %d", rc);

@@ -56,7 +56,18 @@ namespace litecore {
     };
 
 
-    void RegisterSQLiteFunctions(sqlite3 *db,
-                                 DataFile::FleeceAccessor accessor,
-                                 fleece::impl::SharedKeys *sharedKeys);
+    // What the user_data of a registered function points to
+    struct fleeceFuncContext {
+        fleeceFuncContext(DataFile::FleeceAccessor a,
+                          fleece::impl::SharedKeys *sk, DataFile::BlobAccessor b)
+        :accessor(a), sharedKeys(sk), blobAccessor(b)
+        { }
+
+        DataFile::FleeceAccessor  accessor;
+        fleece::impl::SharedKeys* sharedKeys;
+        DataFile::BlobAccessor    blobAccessor;
+    };
+
+
+    void RegisterSQLiteFunctions(sqlite3 *db, fleeceFuncContext);
 }
