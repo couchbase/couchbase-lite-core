@@ -79,7 +79,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser basic", "[Query]") {
     CHECK(parseWhere("['=', ['.name'], 'Puddin\\' Tane']")
           == "fl_value(body, 'name') = 'Puddin'' Tane'");
     CHECK(parseWhere("['AND', ['=', ['.', 'again'], true], ['=', ['.', 'name'], 'Puddin\\' Tane']]")
-          == "fl_value(body, 'again') = 1 AND fl_value(body, 'name') = 'Puddin'' Tane'");
+          == "fl_value(body, 'again') = fl_bool(1) AND fl_value(body, 'name') = 'Puddin'' Tane'");
     CHECK(parseWhere("['=', ['+', 2, 2], 5]")
           == "2 + 2 = 5");
     CHECK(parseWhere("['=', ['power()', 25, ['/', 1, 2]], 5]")
@@ -99,6 +99,10 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser basic", "[Query]") {
 
     CHECK(parseWhere("['=', ['.', 'candies'], ['[]', 'm&ms', 'jujubes']]")
           == "fl_value(body, 'candies') = array_of('m&ms', 'jujubes')");
+    CHECK(parseWhere("['=', ['.address'], {street:'123 Main St', city: ['.city']}]")
+          == "fl_value(body, 'address') = dict_of('city', fl_value(body, 'city'), 'street', '123 Main St')");
+    CHECK(parseWhere("['=', ['.address'], {}]")
+          == "fl_value(body, 'address') = dict_of()");
     CHECK(parseWhere("['IN', ['.', 'name'], ['[]', 'Webbis', 'Wowbagger']]")
           == "fl_value(body, 'name') IN ('Webbis', 'Wowbagger')");
     CHECK(parseWhere("['NOT IN', ['.', 'name'], ['[]', 'Webbis', 'Wowbagger']]")

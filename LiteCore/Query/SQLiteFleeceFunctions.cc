@@ -136,6 +136,60 @@ namespace litecore {
     }
 
 
+    // fl_result(value) -> value suitable for use as a result column
+    // Primarily what this does is change the various custom blob subtypes into Fleece containers
+    // that can be read by SQLiteQueryRunner::encodeColumn().
+    static void fl_result(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        try {
+            auto arg = argv[0];
+            const Value *value = asFleeceValue(arg);
+            if (value) {
+                setResultBlobFromEncodedValue(ctx, value);
+            } else if (sqlite3_value_type(arg) == SQLITE_BLOB) {
+                switch (sqlite3_value_subtype(arg)) {
+                    case kFleeceNullSubtype: {
+                        value = fleeceParam(ctx, arg);
+                        if (!value)
+                            return;
+                        setResultBlobFromEncodedValue(ctx, value);
+                        break;
+                    }
+                    case kFleeceDataSubtype:
+                        sqlite3_result_value(ctx, arg);
+                        break;
+                    default: {
+                        // A plain blob/data value has to be wrapped in a Fleece container to avoid
+                        // misinterpretation, since SQLiteQueryRunner will assume all blob results
+                        // are Fleece containers.
+                        Encoder enc;
+                        enc.writeData(valueAsSlice(arg));
+                        setResultBlobFromFleeceData(ctx, enc.finish());
+                        break;
+                    }
+                }
+            } else {
+                sqlite3_result_value(ctx, arg);
+            }
+        } catch (const std::exception &) {
+            sqlite3_result_error(ctx, "fl_result: exception!", -1);
+        }
+    }
+
+
+    static void fl_null(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        sqlite3_result_zeroblob(ctx, 0);
+        sqlite3_result_subtype(ctx, kFleeceNullSubtype);
+    }
+
+    static void fl_bool(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        sqlite3_result_int(ctx, sqlite3_value_int(argv[0]) != 0);
+        sqlite3_result_subtype(ctx, kFleeceIntBoolean);
+    }
+
+
+#pragma mark - CONTAINS()
+
+
     // fl_contains(body, propertyPath, value) -> 0/1
     static void fl_contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
         try {
@@ -225,43 +279,85 @@ namespace litecore {
     }
 
 
-    // fl_result(value) -> value suitable for use as a result column
-    // Primarily what this does is change the various custom blob subtypes into Fleece containers
-    // that can be read by SQLiteQueryRunner::encodeColumn().
-    static void fl_result(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        try {
-            auto arg = argv[0];
-            const Value *value = asFleeceValue(arg);
-            if (value) {
-                setResultBlobFromEncodedValue(ctx, value);
-            } else if (sqlite3_value_type(arg) == SQLITE_BLOB) {
-                switch (sqlite3_value_subtype(arg)) {
-                    case kFleeceNullSubtype: {
-                        value = fleeceParam(ctx, arg);
-                        if (!value)
-                            return;
-                        setResultBlobFromEncodedValue(ctx, value);
-                        break;
-                    }
-                    case kFleeceDataSubtype:
-                        sqlite3_result_value(ctx, arg);
-                        break;
-                    default: {
-                        // A plain blob/data value has to be wrapped in a Fleece container to avoid
-                        // misinterpretation, since SQLiteQueryRunner will assume all blob results
-                        // are Fleece containers.
-                        Encoder enc;
-                        enc.writeData(valueAsSlice(arg));
-                        setResultBlobFromFleeceData(ctx, enc.finish());
-                        break;
-                    }
-                }
-            } else {
-                sqlite3_result_value(ctx, arg);
+#pragma mark - ARRAY() and OBJECT()
+
+
+    // write a SQLite arg value to a Fleece Encoder
+    static bool writeSQLiteValue(sqlite3_context* ctx, sqlite3_value *arg, Encoder &enc) {
+        switch (sqlite3_value_type(arg)) {
+            case SQLITE_INTEGER: {
+                auto intVal = sqlite3_value_int(arg);
+                if(sqlite3_value_subtype(arg) == kFleeceIntBoolean)
+                    enc.writeBool(intVal != 0);
+                else
+                    enc.writeInt(intVal);
+                break;
             }
-        } catch (const std::exception &) {
-            sqlite3_result_error(ctx, "fl_result: exception!", -1);
+            case SQLITE_FLOAT:
+                enc.writeDouble( sqlite3_value_double(arg) );
+                break;
+            case SQLITE_TEXT:
+                enc.writeString(valueAsStringSlice(arg));
+                break;
+            case SQLITE_BLOB: {
+                switch (sqlite3_value_subtype(arg)) {
+                    case kFleeceDataSubtype: {
+                        const Value *value = fleeceParam(ctx, arg);
+                        if (!value)
+                            return false;
+                        break;
+                    }
+                    case kFleeceNullSubtype:
+                        enc.writeNull();
+                        break;
+                    case 0:
+                        enc.writeData(valueAsSlice(arg));
+                        break;
+                }
+                break;
+            }
+            case SQLITE_NULL: {
+                const Value *value = asFleeceValue(arg);
+                if (value)
+                    enc.writeValue(value);
+                break;
+            }
         }
+        return true;
+    }
+
+
+    static void array_of(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        Encoder enc;
+        enc.beginArray(argc);
+        for (int i = 0; i < argc; i++) {
+            if (!writeSQLiteValue(ctx, argv[i], enc))
+                return;
+        }
+        enc.endArray();
+        setResultBlobFromFleeceData(ctx, enc.finish());
+    }
+
+
+    static void dict_of(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
+        if (argc % 2) {
+            sqlite3_result_error(ctx, "object() must have an even arg count", -1);
+            return;
+        }
+        Encoder enc;
+        enc.beginDictionary(argc / 2);
+        for (int i = 0; i < argc; i += 2) {
+            slice key = valueAsStringSlice(argv[i]);
+            if (!key) {
+                sqlite3_result_error(ctx, "invalid key arg to object()", -1);
+                return;
+            }
+            enc.writeKey(key);
+            if (!writeSQLiteValue(ctx, argv[i+1], enc))
+                return;
+        }
+        enc.endDictionary();
+        setResultBlobFromFleeceData(ctx, enc.finish());
     }
 
 
@@ -276,6 +372,10 @@ namespace litecore {
         { "fl_count",          2, fl_count },
         { "fl_contains",       3, fl_contains },
         { "fl_result",         1, fl_result },
+        { "fl_null",           0, fl_null },
+        { "fl_bool",           1, fl_bool },
+        { "array_of",         -1, array_of },
+        { "dict_of",          -1, dict_of },
         { }
     };
 

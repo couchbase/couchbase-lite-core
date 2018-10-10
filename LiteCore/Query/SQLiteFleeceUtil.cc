@@ -50,9 +50,9 @@ namespace litecore {
     const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value *arg, bool required) noexcept {
         switch (sqlite3_value_type(arg)) {
             case SQLITE_BLOB: {
-                slice fleece = valueAsSlice(arg);
                 switch (sqlite3_value_subtype(arg)) {
                     case kFleeceDataSubtype: {
+                        slice fleece = valueAsSlice(arg);
                         if (!fleece)
                             return Dict::kEmpty;             // No body; may be deleted rev
                         const Value *root = Value::fromTrustedData(fleece);

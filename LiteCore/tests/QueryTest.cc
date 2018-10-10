@@ -360,6 +360,30 @@ TEST_CASE_METHOD(QueryTest, "Query array index", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
+    addNumberedDocs(1, 1);
+    Retained<Query> query{ store->compileQuery(json5(
+        "{WHAT: [['[]', null, false, true, 12345, 1234.5, 'howdy', ['._id']]]}")) };
+
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->toJSONString() == "[null,false,true,12345,1234.5,\"howdy\",\"rec-001\"]");
+    CHECK(!e->next());
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
+    addNumberedDocs(1, 1);
+    Retained<Query> query{ store->compileQuery(json5(
+                                                     "{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', id: ['._id']}]}")) };
+
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    CHECK(e->columns()[0]->toJSON<5>() == "{d:1234.5,f:false,i:12345,id:\"rec-001\",n:null,s:\"howdy\",t:true}"_sl);
+    CHECK(!e->next());
+}
+
+
 #pragma mark Targeted N1QL tests
     
 TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {

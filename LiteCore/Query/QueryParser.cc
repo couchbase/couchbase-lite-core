@@ -48,6 +48,10 @@ namespace litecore {
     static constexpr slice kExistsFnName= "fl_exists"_sl;
     static constexpr slice kResultFnName= "fl_result"_sl;
     static constexpr slice kContainsFnName = "fl_contains"_sl;
+    static constexpr slice kNullFnName = "fl_null"_sl;
+    static constexpr slice kBoolFnName = "fl_bool"_sl;
+    static constexpr slice kArrayFnName = "array_of()"_sl;
+    static constexpr slice kDictFnName = "dict_of"_sl;
 
     // Existing SQLite FTS rank function:
     static constexpr slice kRankFnName  = "rank"_sl;
@@ -526,7 +530,7 @@ namespace litecore {
     void QueryParser::parseNode(const Value *node) {
         switch (node->type()) {
             case kNull:
-                _sql << "x''";        // Represent a Fleece/JSON/N1QL null as an empty blob (?)
+                _sql << kNullFnName << "()";
                 break;
             case kNumber:
                 if(node->isInteger()) {
@@ -543,7 +547,7 @@ namespace litecore {
                 
                 break;
             case kBoolean:
-                _sql << (node->asBool() ? '1' : '0');    // SQL doesn't have true/false
+                _sql << kBoolFnName << '(' << (int)node->asBool() << ')';
                 break;
             case kString:
                 parseStringLiteral(node->asString());
@@ -554,7 +558,8 @@ namespace litecore {
                 parseOpNode((const Array*)node);
                 break;
             case kDict:
-                fail("Dictionaries not supported in query");
+                writeDictLiteral((const Dict*)node);
+                break;
         }
     }
 
@@ -692,7 +697,7 @@ namespace litecore {
     // Handles array literals (the "[]" op)
     // But note that this op is treated specially if it's an operand of "IN" (see inOp)
     void QueryParser::arrayLiteralOp(slice op, Array::iterator& operands) {
-        functionOp("array_of()"_sl, operands);
+        functionOp(kArrayFnName, operands);
     }
 
     // Handles EXISTS
@@ -1067,6 +1072,21 @@ namespace litecore {
 
     void QueryParser::writeColumnList(Array::iterator& operands) {
         handleOperation(&kColumnListOperation, kColumnListOperation.op, operands);
+    }
+
+    void QueryParser::writeDictLiteral(const fleece::impl::Dict *dict) {
+        _context.push_back(&kArgListOperation);
+        _sql << kDictFnName << '(';
+        int n = 0;
+        for (Dict::iterator i(dict); i; ++i) {
+            if (n++ > 0)
+                _sql << ", ";
+            writeSQLString(i.keyString());
+            _sql << ", ";
+            parseNode(i.value());
+        }
+        _sql << ')';
+        _context.pop_back();
     }
 
 
