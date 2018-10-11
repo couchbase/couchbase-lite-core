@@ -405,8 +405,12 @@ namespace litecore {
             Stopwatch st;
             int nCols = _statement->getColumnCount();
             uint64_t rowCount = 0;
+            // Give this encoder its own SharedKeys instead of using the database's DocumentKeys,
+            // because the query results might include dicts with new keys that aren't in the
+            // DocumentKeys.
             Encoder enc;
-            enc.setSharedKeys(_sk);
+            auto sk = retained(new SharedKeys);
+            enc.setSharedKeys(sk);
             enc.beginArray();
             while (_statement->executeStep()) {
                 uint64_t missingCols = 0;

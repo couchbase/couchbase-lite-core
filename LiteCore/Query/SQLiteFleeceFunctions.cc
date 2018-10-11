@@ -309,9 +309,12 @@ namespace litecore {
 #pragma mark - ARRAY() and OBJECT()
 
 
-    // write a SQLite arg value to a Fleece Encoder
-    static bool writeSQLiteValue(sqlite3_context* ctx, sqlite3_value *arg, Encoder &enc) {
-        switch (sqlite3_value_type(arg)) {
+    // writes a SQLite arg value to a Fleece Encoder. Returns false on failure
+    static bool writeSQLiteValue(sqlite3_context* ctx, sqlite3_value *arg, slice key, Encoder &enc) {
+        auto type = sqlite3_value_type(arg);
+        if (key && type != SQLITE_NULL)
+            enc.writeKey(key);
+        switch (type) {
             case SQLITE_INTEGER: {
                 auto intVal = sqlite3_value_int(arg);
                 if(sqlite3_value_subtype(arg) == kFleeceIntBoolean)
@@ -329,9 +332,10 @@ namespace litecore {
             case SQLITE_BLOB: {
                 switch (sqlite3_value_subtype(arg)) {
                     case kFleeceDataSubtype: {
+                        enc.writeKey(key);
                         const Value *value = fleeceParam(ctx, arg);
                         if (!value)
-                            return false;
+                            return false; // error occurred
                         break;
                     }
                     case kFleeceNullSubtype:
@@ -340,13 +344,19 @@ namespace litecore {
                     case 0:
                         enc.writeData(valueAsSlice(arg));
                         break;
+                    default:
+                        sqlite3_result_error(ctx, "internal error: unknown blob subtype", -1);
+                        return false;
                 }
                 break;
             }
             case SQLITE_NULL: {
                 const Value *value = asFleeceValue(arg);
-                if (value)
+                if (value) {
+                    if (key)
+                        enc.writeKey(key);
                     enc.writeValue(value);
+                }
                 break;
             }
         }
@@ -358,7 +368,7 @@ namespace litecore {
         Encoder enc;
         enc.beginArray(argc);
         for (int i = 0; i < argc; i++) {
-            if (!writeSQLiteValue(ctx, argv[i], enc))
+            if (!writeSQLiteValue(ctx, argv[i], nullslice, enc))
                 return;
         }
         enc.endArray();
@@ -379,8 +389,7 @@ namespace litecore {
                 sqlite3_result_error(ctx, "invalid key arg to object()", -1);
                 return;
             }
-            enc.writeKey(key);
-            if (!writeSQLiteValue(ctx, argv[i+1], enc))
+            if (!writeSQLiteValue(ctx, argv[i+1], key, enc))
                 return;
         }
         enc.endDictionary();

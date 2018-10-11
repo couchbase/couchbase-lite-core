@@ -20,6 +20,16 @@
 #include "StringUtil.hh"
 
 
+static bool operator==(C4FullTextMatch a, C4FullTextMatch b) {
+    return memcmp(&a, &b, sizeof(a)) == 0;
+}
+
+static ostream& operator<< (ostream& o, C4FullTextMatch match) {
+    return o << "{ds " << match.dataSource << ", prop " << match.property << ", term " << match.term << ", "
+             << "bytes " << match.start << " + " << match.length << "}";
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     CHECK(run() == (vector<string>{"0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"}));
@@ -201,6 +211,16 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Blob access", "[Query][Blob][C]") {
         return string(slice(FLValue_AsData(item)));
     });
     CHECK(results == vector<string>{blob});
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query][C]") {
+    compileSelect(json5("{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', m: ['.bogus'], id: ['._id']}]}"));
+
+    auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
+        FLValue result = FLArrayIterator_GetValueAt(&e->columns, 0);
+        return string(slice(FLValue_ToJSON5(result)));
+    });
+    CHECK(results[0] == "{d:1234.5,f:false,i:12345,id:\"0000001\",n:null,s:\"howdy\",t:true}");
 }
 
 #pragma mark - FTS:

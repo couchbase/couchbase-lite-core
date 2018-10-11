@@ -19,16 +19,6 @@ using namespace std;
 using namespace fleece;
 
 
-static bool operator==(C4FullTextMatch a, C4FullTextMatch b) {
-    return memcmp(&a, &b, sizeof(a)) == 0;
-}
-
-static ostream& operator<< (ostream& o, C4FullTextMatch match) {
-    return o << "{ds " << match.dataSource << ", prop " << match.property << ", term " << match.term << ", "
-             << "bytes " << match.start << " + " << match.length << "}";
-}
-
-
 class QueryTest : public C4Test {
 public:
     QueryTest(int which, string filename)

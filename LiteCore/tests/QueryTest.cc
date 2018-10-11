@@ -375,7 +375,7 @@ TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
     addNumberedDocs(1, 1);
     Retained<Query> query{ store->compileQuery(json5(
-                                                     "{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', id: ['._id']}]}")) };
+        "{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', m: ['.bogus'], id: ['._id']}]}")) };
 
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
