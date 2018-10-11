@@ -259,6 +259,7 @@ namespace litecore {
         registerFunctionSpecs(db, context, kFleeceFunctionsSpec);
         registerFunctionSpecs(db, context, kRankFunctionsSpec);
         registerFunctionSpecs(db, context, kN1QLFunctionsSpec);
+        registerFunctionSpecs(db, context, kPredictFunctionsSpec);
         RegisterFleeceEachFunctions(db, context);
 
         // The functions registered below operate on virtual tables, not on the actual db,

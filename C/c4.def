@@ -194,6 +194,9 @@ c4db_clearCookies
 kC4ReplicatorActivityLevelNames
 kC4SocketOptionWSProtocols
 
+c4pred_registerModel
+c4pred_unregisterModel
+
 c4error_return
 c4doc_getForPut
 c4_getObjectCount

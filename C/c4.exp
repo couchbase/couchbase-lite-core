@@ -200,6 +200,11 @@ _c4db_clearCookies
 _kC4ReplicatorActivityLevelNames
 _kC4SocketOptionWSProtocols
 
+# EE Only:
+_c4pred_registerModel
+_c4pred_unregisterModel
+
+
 # Private API:
 _c4error_return
 _c4doc_getForPut

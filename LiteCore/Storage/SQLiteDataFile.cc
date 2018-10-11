@@ -476,17 +476,32 @@ namespace litecore {
     }
 
 
+    void SQLiteDataFile::optimize() {
+        bool logged = false;
+        if (SQL.willLog(LogLevel::Verbose)) {
+            // Log the details of what the optimize will do, before actually doing it:
+            SQLite::Statement stmt(*_sqlDb, "PRAGMA optimize(3)");
+            while (stmt.executeStep()) {
+                LogVerbose(SQL, "PRAGMA optimize ... %s", stmt.getColumn(0).getString().c_str());
+                logged = true;
+            }
+        }
+        if (!logged)
+            LogVerbose(SQL, "PRAGMA optimize");
+        _sqlDb->exec("PRAGMA optimize");
+    }
+
+
     void SQLiteDataFile::optimizeAndVacuum() {
         // <https://sqlite.org/pragma.html#pragma_optimize>
         // <https://blogs.gnome.org/jnelson/2015/01/06/sqlite-vacuum-and-auto_vacuum/>
         try {
+            optimize();
+
             int64_t pageCount = intQuery("PRAGMA page_count");
             int64_t freePages = intQuery("PRAGMA freelist_count");
             logVerbose("Pre-close housekeeping: %lld of %lld pages free (%.0f%%)",
                        (long long)freePages, (long long)pageCount, (float)freePages / pageCount);
-
-            _exec("PRAGMA optimize");
-
             if ((pageCount > 0 && (float)freePages / pageCount >= kVacuumFractionThreshold)
                     || (freePages * kPageSize >= kVacuumSizeThreshold)) {
                 log("Vacuuming database...");

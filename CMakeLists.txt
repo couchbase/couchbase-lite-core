@@ -145,6 +145,7 @@ endif()
 
 include_directories("vendor/fleece/API"
                     "vendor/fleece/Fleece/Core"
+                    "vendor/fleece/Fleece/Mutable"
                     "vendor/fleece/Fleece/Support"
                     "vendor/SQLiteCpp/include"
                     "vendor/SQLiteCpp/sqlite3"

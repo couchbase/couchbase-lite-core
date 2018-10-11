@@ -193,6 +193,11 @@ namespace litecore {
         {"min"_sl,              1, 1, nullslice, true},
         {"sum"_sl,              1, 1, nullslice, true},
 
+        // Predictive query:
+#ifdef COUCHBASE_ENTERPRISE
+        {"prediction"_sl,       2, 3},
+#endif
+
         {nullslice} // End of data
     };
 

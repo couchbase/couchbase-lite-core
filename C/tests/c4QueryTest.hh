@@ -24,7 +24,8 @@ public:
     QueryTest(int which, string filename)
     :C4Test(which)
     {
-        importJSONLines(sFixturesDir + filename);
+        if (!filename.empty())
+            importJSONLines(sFixturesDir + filename);
     }
 
     QueryTest(int which)
@@ -86,10 +87,12 @@ public:
         return results;
     }
 
-    // Runs query, returning vector of doc IDs
+    // Runs query, returning vector of doc IDs (or whatever 1st result col is)
     vector<string> run(const char *bindings =nullptr) {
         return runCollecting<string>(bindings, [&](C4QueryEnumerator *e) {
             REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
+            if (e->missingColumns & 1)
+                return string("MISSING");
             fleece::alloc_slice docID = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 0));
             return docID.asString();
         });
@@ -101,6 +104,10 @@ public:
             REQUIRE(FLArrayIterator_GetCount(&e->columns) >= 2);
             fleece::alloc_slice c1 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 0));
             fleece::alloc_slice c2 = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 1));
+            if (e->missingColumns & 1)
+                c1 = "MISSING"_sl;
+            if (e->missingColumns & 2)
+                c2 = "MISSING"_sl;
             return c1.asString() + ", " + c2.asString();
         });
     }
