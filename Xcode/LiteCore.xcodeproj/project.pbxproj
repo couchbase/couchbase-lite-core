@@ -39,6 +39,15 @@
 		2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5C1CF6197D0022F721 /* RawRevTree.cc */; };
 		2708FE601CF6197D0022F721 /* RawRevTree.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2708FE5D1CF6197D0022F721 /* RawRevTree.hh */; };
+		27098A97216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098A95216C1D2E002751DA /* c4PredictiveQuery.cc */; };
+		27098A98216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098A95216C1D2E002751DA /* c4PredictiveQuery.cc */; };
+		27098A99216C1D2E002751DA /* c4PredictiveQuery.h in Headers */ = {isa = PBXBuildFile; fileRef = 27098A96216C1D2E002751DA /* c4PredictiveQuery.h */; };
+		27098AA1216C1E88002751DA /* SQLitePredictionFunction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */; };
+		27098AA2216C1E88002751DA /* SQLitePredictionFunction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */; };
+		27098AA6216C2108002751DA /* PredictiveModel.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AA4216C2108002751DA /* PredictiveModel.cc */; };
+		27098AA7216C2108002751DA /* PredictiveModel.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AA4216C2108002751DA /* PredictiveModel.cc */; };
+		27098AA8216C2108002751DA /* PredictiveModel.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27098AA5216C2108002751DA /* PredictiveModel.hh */; };
+		27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */; };
 		270AB2A02072B1EA009A4596 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
 		270AB2A12072B1F2009A4596 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
 		270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
@@ -220,8 +229,8 @@
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
-		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */; };
-		279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */; };
+		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */; };
+		279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */; };
 		279D40F91EA533D900D8DD9D /* civetUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D40F61EA533D900D8DD9D /* civetUtils.hh */; };
 		279D41021EA54AD500D8DD9D /* civetweb.c in Sources */ = {isa = PBXBuildFile; fileRef = 272851171EA44992009CA22F /* civetweb.c */; };
 		279D411B1EA557A800D8DD9D /* RESTListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851201EA4537A009CA22F /* RESTListener.cc */; };
@@ -978,6 +987,12 @@
 		2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LiteCoreTest.cc; sourceTree = "<group>"; };
 		2708FE5C1CF6197D0022F721 /* RawRevTree.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RawRevTree.cc; sourceTree = "<group>"; };
 		2708FE5D1CF6197D0022F721 /* RawRevTree.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RawRevTree.hh; sourceTree = "<group>"; };
+		27098A95216C1D2E002751DA /* c4PredictiveQuery.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4PredictiveQuery.cc; sourceTree = "<group>"; };
+		27098A96216C1D2E002751DA /* c4PredictiveQuery.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4PredictiveQuery.h; sourceTree = "<group>"; };
+		27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SQLitePredictionFunction.cc; sourceTree = "<group>"; };
+		27098AA4216C2108002751DA /* PredictiveModel.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PredictiveModel.cc; sourceTree = "<group>"; };
+		27098AA5216C2108002751DA /* PredictiveModel.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PredictiveModel.hh; sourceTree = "<group>"; };
+		27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PredictiveQueryTest.cc; sourceTree = "<group>"; };
 		270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTSyncListener_stub.cc; sourceTree = "<group>"; };
 		270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CivetC4Socket_stub.cc; sourceTree = "<group>"; };
 		270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListener_stub.cc; sourceTree = "<group>"; };
@@ -1190,7 +1205,7 @@
 		2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4AllDocsPerformanceTest.cc; sourceTree = "<group>"; };
 		279976311E94AAD000B27639 /* IncomingBlob.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IncomingBlob.cc; sourceTree = "<group>"; };
 		279976321E94AAD000B27639 /* IncomingBlob.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingBlob.hh; sourceTree = "<group>"; };
-		279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFTSRankFunction.cpp; sourceTree = "<group>"; };
+		279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFTSRankFunction.cc; sourceTree = "<group>"; };
 		279D40F51EA533D900D8DD9D /* civetUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = civetUtils.cc; sourceTree = "<group>"; };
 		279D40F61EA533D900D8DD9D /* civetUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = civetUtils.hh; sourceTree = "<group>"; };
 		279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libcivetweb.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1640,6 +1655,7 @@
 				27E0CA9F1DBEB0BA0089A9C0 /* DocumentKeysTest.cc */,
 				272B1BEA1FB1513100F56620 /* FTSTest.cc */,
 				270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */,
+				27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */,
 				27E6737C1EC78144008F50C4 /* QueryTest.cc */,
 				2723410F211B5FC400DA9437 /* QueryTest.hh */,
 				274EDDF91DA322D4003AD158 /* QueryParserTest.cc */,
@@ -2008,6 +2024,7 @@
 				273E9EC01C506C60003115A6 /* c4DocEnumerator.cc */,
 				72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */,
 				2769438B1DCD502A00DB2555 /* c4Observer.cc */,
+				27098A95216C1D2E002751DA /* c4PredictiveQuery.cc */,
 				2705154C1D8CBE6C00D62D05 /* c4Query.cc */,
 				27ECCB011D89DCDB00FA8C4A /* Doxyfile */,
 				274D04231BA8932800FF7C35 /* c4.exp */,
@@ -2084,10 +2101,13 @@
 				274EDDF41DA30B43003AD158 /* QueryParser.cc */,
 				274EDDF51DA30B43003AD158 /* QueryParser.hh */,
 				275FF6661E42A90C005F90DD /* QueryParserTables.hh */,
+				27098AA4216C2108002751DA /* PredictiveModel.cc */,
+				27098AA5216C2108002751DA /* PredictiveModel.hh */,
 				27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */,
 				27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */,
 				27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */,
-				279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cpp */,
+				279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */,
+				27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */,
 				27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */,
 				27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */,
 			);
@@ -2431,6 +2451,7 @@
 				273E9EC11C506C60003115A6 /* c4DocEnumerator.h */,
 				728EC54C1EC14611002C9A73 /* c4Listener.h */,
 				276943881DCD4AAD00DB2555 /* c4Observer.h */,
+				27098A96216C1D2E002751DA /* c4PredictiveQuery.h */,
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
@@ -2624,6 +2645,7 @@
 				27D74A8F1D4D3F3400D806E0 /* Assertion.h in Headers */,
 				27D74A931D4D3F3400D806E0 /* Exception.h in Headers */,
 				274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */,
+				27098AA8216C2108002751DA /* PredictiveModel.hh in Headers */,
 				272850AD1E9AF53B009CA22F /* Upgrader.hh in Headers */,
 				279D40F91EA533D900D8DD9D /* civetUtils.hh in Headers */,
 				272851301EA46475009CA22F /* Server.hh in Headers */,
@@ -2639,6 +2661,7 @@
 				27D74A961D4D3F3400D806E0 /* Transaction.h in Headers */,
 				27E0CAA51DBEC3440089A9C0 /* DocumentKeys.hh in Headers */,
 				273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */,
+				27098A99216C1D2E002751DA /* c4PredictiveQuery.h in Headers */,
 				27E3DD391DB450B300F2872D /* Logging.hh in Headers */,
 				2753AFE61EC2363600C12E98 /* CivetWebSocket.hh in Headers */,
 				27D74A971D4D3F3400D806E0 /* VariadicBind.h in Headers */,
@@ -3260,6 +3283,7 @@
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
 				722AA64F20005F6900261887 /* TokenizerTest.cc in Sources */,
+				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
@@ -3500,7 +3524,9 @@
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
+				27098A97216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */,
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
+				27098AA6216C2108002751DA /* PredictiveModel.cc in Sources */,
 				278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				2749B9491EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
@@ -3536,6 +3562,7 @@
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
 				2763012B1F3A36BD004A1592 /* StringUtil_Apple.mm in Sources */,
+				27098AA1216C1E88002751DA /* SQLitePredictionFunction.cc in Sources */,
 				27ADA7891F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc in Sources */,
 				274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */,
 				27D74A7C1D4D3F2300D806E0 /* Column.cpp in Sources */,
@@ -3550,7 +3577,7 @@
 				27D74A821D4D3F2300D806E0 /* Statement.cpp in Sources */,
 				27E487231922A64F007D8940 /* RevTree.cc in Sources */,
 				27E89BA61D679542002C32B3 /* FilePath.cc in Sources */,
-				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
+				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
 				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
@@ -3641,13 +3668,15 @@
 				27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */,
 				2763011C1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
 				270C6B961EBA3A1900E73415 /* LogEncoder.cc in Sources */,
+				27098AA2216C1E88002751DA /* SQLitePredictionFunction.cc in Sources */,
 				72DE480D1E9C550A00B60952 /* IncomingBlob.cc in Sources */,
 				27E3DD591DB8524300F2872D /* Database.cc in Sources */,
 				274EDDF71DA30B43003AD158 /* QueryParser.cc in Sources */,
 				27B699E21F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */,
-				279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cpp in Sources */,
+				279C18F11DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */,
 				72DE48101E9C550A00B60952 /* c4Socket.cc in Sources */,
 				27FB0C3E205B18A500987D9C /* Instrumentation.cc in Sources */,
+				27098AA7216C2108002751DA /* PredictiveModel.cc in Sources */,
 				720EA4121BA8D834002B8416 /* VersionedDocument.cc in Sources */,
 				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
 				72DE480C1E9C550A00B60952 /* IncomingRev.cc in Sources */,
@@ -3673,6 +3702,7 @@
 				274D5BA51DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
 				27D74A851D4D3F2300D806E0 /* Transaction.cpp in Sources */,
 				277C14721EA8102B0075348F /* Document.cc in Sources */,
+				27098A98216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */,
 				276D15421DFF54B800543B1B /* SQLiteEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

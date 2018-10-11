@@ -193,6 +193,9 @@ namespace litecore {
         {"min"_sl,              1, 1, nullslice, true},
         {"sum"_sl,              1, 1, nullslice, true},
 
+        // Predictive query:
+        {"prediction"_sl,       2, 2},
+
         {nullslice} // End of data
     };
 

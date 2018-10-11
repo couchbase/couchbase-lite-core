@@ -120,6 +120,7 @@ namespace litecore {
     extern const SQLiteFunctionSpec kFleeceNullAccessorFunctionsSpec[];
     extern const SQLiteFunctionSpec kRankFunctionsSpec[];
     extern const SQLiteFunctionSpec kN1QLFunctionsSpec[];
+    extern const SQLiteFunctionSpec kPredictFunctionsSpec[];
 
     int RegisterFleeceEachFunctions(sqlite3 *db, const fleeceFuncContext&);
 

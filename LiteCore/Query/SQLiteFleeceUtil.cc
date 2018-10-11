@@ -50,21 +50,21 @@ namespace litecore {
     const Value* fleeceParam(sqlite3_context* ctx, sqlite3_value *arg, bool required) noexcept {
         switch (sqlite3_value_type(arg)) {
             case SQLITE_BLOB: {
-                switch (sqlite3_value_subtype(arg)) {
-                    case kFleeceDataSubtype: {
+        switch (sqlite3_value_subtype(arg)) {
+            case kFleeceDataSubtype: {
                         slice fleece = valueAsSlice(arg);
-                        if (!fleece)
-                            return Dict::kEmpty;             // No body; may be deleted rev
-                        const Value *root = Value::fromTrustedData(fleece);
-                        if (root)
-                            return root;
-                        break;
-                    }
-                    case kFleeceNullSubtype:
-                        return Value::kNullValue;
-                    default:
-                        break;
-                }
+                if (!fleece)
+                    return Dict::kEmpty;             // No body; may be deleted rev
+                const Value *root = Value::fromTrustedData(fleece);
+                if (root)
+                    return root;
+                break;
+            }
+            case kFleeceNullSubtype:
+                return Value::kNullValue;
+            default:
+                break;
+        }
                 break;
             }
             case SQLITE_NULL: {
@@ -259,6 +259,7 @@ namespace litecore {
         registerFunctionSpecs(db, context, kFleeceFunctionsSpec);
         registerFunctionSpecs(db, context, kRankFunctionsSpec);
         registerFunctionSpecs(db, context, kN1QLFunctionsSpec);
+        registerFunctionSpecs(db, context, kPredictFunctionsSpec);
         RegisterFleeceEachFunctions(db, context);
 
         // The functions registered below operate on virtual tables, not on the actual db,
