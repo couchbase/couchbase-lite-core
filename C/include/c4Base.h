@@ -261,6 +261,7 @@ void c4slog(C4LogDomain domain C4NONNULL, C4LogLevel level, C4String msg) C4API;
             c4log(DOMAIN, LEVEL, FMT, ## __VA_ARGS__);}
 #define C4Debug(FMT, ...)           C4LogToAt(kC4DefaultLog, kC4LogDebug,   FMT, ## __VA_ARGS__)
 #define C4Log(FMT, ...)             C4LogToAt(kC4DefaultLog, kC4LogInfo,    FMT, ## __VA_ARGS__)
+#define C4LogVerbose(FMT, ...)      C4LogToAt(kC4DefaultLog, kC4LogVerbose, FMT, ## __VA_ARGS__)
 #define C4Warn(FMT, ...)            C4LogToAt(kC4DefaultLog, kC4LogWarning, FMT, ## __VA_ARGS__)
 #define C4WarnError(FMT, ...)       C4LogToAt(kC4DefaultLog, kC4LogError,   FMT, ## __VA_ARGS__)
 
