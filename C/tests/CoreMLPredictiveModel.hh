@@ -25,11 +25,9 @@ namespace cbl {
         void unregister();
 
     private:
-        static C4SliceResult predictCallback(void* modelInternal, FLValue input, C4Error *error);
         C4SliceResult predict(FLValue input, C4Error *error);
         MLFeatureValue* featureFromDict(NSString* name, FLValue, C4Error *outError);
-        NSDictionary* convertToMLDictionary(FLDict);
-        NSDictionary* convertToMLDictionary(NSString*);
+        NSDictionary* convertWordsToMLDictionary(NSString*);
 
         CoreMLPredictiveModel(CoreMLPredictiveModel&) =delete;
         CoreMLPredictiveModel& operator=(const CoreMLPredictiveModel&) =delete;

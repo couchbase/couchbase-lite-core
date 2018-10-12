@@ -19,6 +19,7 @@
 #include "CoreMLPredictiveModel.hh"
 #include "c4PredictiveQuery.h"
 #include "fleece/Fleece.hh"
+#include "fleece/Fleece+CoreFoundation.h"
 #include <CoreML/CoreML.h>
 #include <stdarg.h>
 
@@ -29,17 +30,9 @@ namespace cbl {
     using namespace fleece;
 
 
-    static void reportError(C4Error *outError, const char *format, ...) {
-        va_list args;
-        va_start(args, format);
-        char *message = nullptr;
-        vasprintf(&message, format, args);
-        va_end(args);
-        C4LogToAt(kC4QueryLog, kC4LogError, "prediction() failed: %s", message);
-        if (outError)
-            *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidQuery, slice(message));
-        free(message);
-    }
+    static NSDictionary* convertToMLDictionary(Dict);
+    static void encodeFeature(Encoder &enc, MLFeatureValue *feature);
+    static void reportError(C4Error *outError, const char *format, ...);
 
 
     CoreMLPredictiveModel::CoreMLPredictiveModel(MLModel *model)
@@ -49,8 +42,12 @@ namespace cbl {
 
 
     void CoreMLPredictiveModel::registerWithName(const char *name) {
+        auto callback = [](void* modelInternal, FLValue input, C4Error *outError) {
+            auto self = (CoreMLPredictiveModel*)modelInternal;
+            return self->predict(input, outError);
+        };
+        c4pred_registerModel(name, {this, callback});
         _name = name;
-        c4pred_registerModel(name, {this, &CoreMLPredictiveModel::predictCallback});
     }
 
 
@@ -62,15 +59,7 @@ namespace cbl {
     }
 
 
-    C4SliceResult CoreMLPredictiveModel::predictCallback(void* modelInternal,
-                                                         FLValue input,
-                                                         C4Error *outError)
-    {
-        auto self = (CoreMLPredictiveModel*)modelInternal;
-        return self->predict(input, outError);
-    }
-
-
+    // The core prediction function!
     C4SliceResult CoreMLPredictiveModel::predict(FLValue input, C4Error *outError) {
         // Convert the input dictionary into an MLFeatureProvider:
         Dict inputDict = Value(input).asDict();
@@ -105,23 +94,27 @@ namespace cbl {
         enc.beginDict(result.featureNames.count);
         for (NSString* name in result.featureNames) {
             enc.writeKey(nsstring_slice(name));
-            auto feature = [result featureValueForName: name];
-            switch (feature.type) {
-                case MLFeatureTypeInt64:
-                    enc.writeInt(feature.int64Value); break;
-                case MLFeatureTypeDouble:
-                    enc.writeDouble(feature.doubleValue); break;
-                case MLFeatureTypeString:
-                    enc.writeString(nsstring_slice(feature.stringValue)); break;
-                default:
-                    C4Warn("predict(): Don't know how to convert result feature type %ld", //TODO
-                           (long)feature.type);
-                    enc.writeNull();
-            }
+            encodeFeature(enc, [result featureValueForName: name]);
         }
         enc.endDict();
         return C4SliceResult(enc.finish());
     }
+
+
+    static void reportError(C4Error *outError, const char *format, ...) {
+        va_list args;
+        va_start(args, format);
+        char *message = nullptr;
+        vasprintf(&message, format, args);
+        va_end(args);
+        C4LogToAt(kC4QueryLog, kC4LogError, "prediction() failed: %s", message);
+        if (outError)
+            *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidQuery, slice(message));
+        free(message);
+    }
+
+
+#pragma mark - INPUT FEATURE CONVERSION:
 
 
     // Creates an MLFeatureValue from the value of the same name in a Fleece dictionary.
@@ -158,7 +151,7 @@ namespace cbl {
                         return nil;
                     }
                 } else if (valueType == kFLString) {
-                    dict = convertToMLDictionary(value.asString().asNSString());
+                    dict = convertWordsToMLDictionary(value.asString().asNSString());
                 }
                 if (dict)
                     feature = [MLFeatureValue featureValueWithDictionary: dict error: nullptr];
@@ -168,8 +161,8 @@ namespace cbl {
             case MLFeatureTypeMultiArray:
             case MLFeatureTypeSequence:
             case MLFeatureTypeInvalid:
-                reportError(outError, "input feature '%s' has a type we don't support yet; sorry!",
-                            name.UTF8String);
+                reportError(outError, "model input feature '%s' is of unsupported type %d; sorry!",
+                            name.UTF8String, desc.type);
                 return nil;
         }
         if (!feature) {
@@ -183,43 +176,124 @@ namespace cbl {
 
 
     // Converts a Fleece dictionary to an NSDictionary. All values must be numeric.
-    NSDictionary* CoreMLPredictiveModel::convertToMLDictionary(FLDict flDict) {
-        auto dict = [[NSMutableDictionary alloc] initWithCapacity: FLDict_Count(flDict)];
-        for (Dict::iterator i(flDict); i; ++i) {
-            // Apparently dict features can only contain numbers...
+    static NSDictionary* convertToMLDictionary(Dict dict) {
+        auto nsdict = [[NSMutableDictionary alloc] initWithCapacity: dict.count()];
+        for (Dict::iterator i(dict); i; ++i) {
+            // Apparently dictionary features can only contain numbers...
             if (i.value().type() != kFLNumber)
                 return nil;
-            dict[i.keyString().asNSString()] = @(i.value().asDouble());
+            nsdict[i.keyString().asNSString()] = @(i.value().asDouble());
         }
-        return dict;
+        return nsdict;
     }
 
 
     // Converts a string into a dictionary that maps its words to the number of times they appear.
-    NSDictionary* CoreMLPredictiveModel::convertToMLDictionary(NSString* inputString) {
+    NSDictionary* CoreMLPredictiveModel::convertWordsToMLDictionary(NSString* input) {
         constexpr auto options = NSLinguisticTaggerOmitWhitespace |
-        NSLinguisticTaggerOmitPunctuation |
-        NSLinguisticTaggerOmitOther;
+                                 NSLinguisticTaggerOmitPunctuation |
+                                 NSLinguisticTaggerOmitOther;
         if (!_tagger) {
             auto schemes = [NSLinguisticTagger availableTagSchemesForLanguage: @"en"]; //FIX: L10N
             _tagger = [[NSLinguisticTagger alloc] initWithTagSchemes: schemes options: options];
         }
 
         auto words = [NSMutableDictionary new];
-        _tagger.string = inputString;
-        [_tagger enumerateTagsInRange: NSMakeRange(0, inputString.length)
+        _tagger.string = input;
+        [_tagger enumerateTagsInRange: NSMakeRange(0, input.length)
                               scheme: NSLinguisticTagSchemeNameType
                              options: options
                           usingBlock: ^(NSLinguisticTag tag, NSRange tokenRange,
                                         NSRange sentenceRange, BOOL *stop)
          {
-             if (tokenRange.length >= 3) {
-                 NSString *token = [inputString substringWithRange: tokenRange].localizedLowercaseString;
+             if (tokenRange.length >= 3) {  // skip 1- and 2-letter words
+                 NSString *token = [input substringWithRange: tokenRange].localizedLowercaseString;
                  NSNumber* count = words[token];
                  words[token] = @(count.intValue + 1);
              }
          }];
         return words;
+    }
+
+
+#pragma mark - OUTPUT FEATURE CONVERSION:
+
+
+    static void encodeMultiArray(Encoder &enc, MLMultiArray* array,
+                                 NSUInteger dimension, const uint8_t *data)
+    {
+        bool outer = (dimension + 1 < array.shape.count);
+        auto n = array.shape[dimension].unsignedIntegerValue;
+        auto stride = array.strides[dimension].unsignedIntegerValue;
+        auto dataType = array.dataType;
+        enc.beginArray();
+        for (NSUInteger i = 0; i < n; i++) {
+            if (outer) {
+                encodeMultiArray(enc, array, dimension + 1, data);
+            } else {
+                switch (dataType) {
+                    case MLMultiArrayDataTypeInt32:
+                        enc.writeInt(*(const int32_t*)data);
+                    case MLMultiArrayDataTypeFloat32:
+                        enc.writeFloat(*(const float*)data);
+                    case MLMultiArrayDataTypeDouble:
+                        enc.writeDouble(*(const double*)data);
+                }
+            }
+            data += stride;
+        }
+        enc.endArray();
+    }
+
+    static void encodeMultiArray(Encoder &enc, MLMultiArray* array) {
+        encodeMultiArray(enc, array, 0, (const uint8_t*)array.dataPointer);
+    }
+
+
+    API_AVAILABLE(macos(10.14))
+    static void encodeSequence(Encoder &enc, MLSequence *sequence) {
+        switch (sequence.type) {
+            case MLFeatureTypeString:
+                FLEncoder_WriteNSObject(enc, sequence.stringValues); break;
+            case MLFeatureTypeInt64:
+                FLEncoder_WriteNSObject(enc, sequence.int64Values); break;
+            default:
+                enc.writeNull(); break;     // MLSequence API doesn't support any other types...
+        }
+    }
+
+
+    static void encodeFeature(Encoder &enc, MLFeatureValue *feature) {
+        switch (feature.type) {
+            case MLFeatureTypeInt64:
+                enc.writeInt(feature.int64Value);
+                break;
+            case MLFeatureTypeDouble:
+                enc.writeDouble(feature.doubleValue);
+                break;
+            case MLFeatureTypeString:
+                enc.writeString(nsstring_slice(feature.stringValue));
+                break;
+            case MLFeatureTypeDictionary:
+                FLEncoder_WriteNSObject(enc, feature.dictionaryValue);
+                break;
+            case MLFeatureTypeMultiArray:
+                encodeMultiArray(enc, feature.multiArrayValue);
+                break;
+            case MLFeatureTypeSequence:
+                if (@available(macOS 10.14, *))
+                    encodeSequence(enc, feature.sequenceValue);
+                else
+                    enc.writeNull();
+                break;
+            case MLFeatureTypeImage:
+                C4Warn("predict(): Don't know how to convert result MLFeatureTypeImage");//TODO
+                enc.writeNull();
+                break;
+            case MLFeatureTypeInvalid:
+                enc.writeNull();
+                break;
+        }
     }
 }
 
