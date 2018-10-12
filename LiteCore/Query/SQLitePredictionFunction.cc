@@ -46,15 +46,12 @@ namespace litecore {
                 input = NewValue(sqlite3_value_double(argv[1]));
                 break;
             case SQLITE_TEXT: {
-                auto bytes = sqlite3_value_text(argv[1]);
-                auto len = sqlite3_value_bytes(argv[1]);
-                input = NewValue(slice(bytes, len));
+                input = NewValue(valueAsStringSlice(argv[1]));
                 break;
             }
             case SQLITE_BLOB:
-                input = fleeceParam(ctx, argv[1]);
-                break;
-            default:
+            case SQLITE_NULL:
+                input = fleeceParam(ctx, argv[1], false);
                 break;
         }
         if (!input) {

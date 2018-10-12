@@ -146,24 +146,77 @@ namespace cbl {
                     feature = [MLFeatureValue featureValueWithString: str.asNSString()];
                 break;
             }
+            case MLFeatureTypeDictionary: {
+                NSDictionary *dict;
+                if (valueType == kFLDict) {
+                    dict = convertToMLDictionary(value.asDict());
+                    if (!dict) {
+                        reportError(outError, "input dictionary '%s' contains a non-numeric value",
+                                    name.UTF8String);
+                        return nil;
+                    }
+                } else if (valueType == kFLString) {
+                    dict = convertToMLDictionary(value.asString().asNSString());
+                }
+                if (dict)
+                    feature = [MLFeatureValue featureValueWithDictionary: dict error: nullptr];
+                break;
+            }
             case MLFeatureTypeImage:
             case MLFeatureTypeMultiArray:
-            case MLFeatureTypeDictionary:
             case MLFeatureTypeSequence:
             case MLFeatureTypeInvalid:
-                break;
+                reportError(outError, "input feature '%s' has a type we don't support yet; sorry!",
+                            name.UTF8String);
+                return nil;
         }
         if (!feature) {
-            reportError(outError, "%sinput property '%s' has wrong type",
-                        (desc.optional ? "" : "required "),
-                        name.UTF8String);
+            reportError(outError, "input property '%s' has wrong type", name.UTF8String);
         } else if (![desc isAllowedValue: feature]) {
-            reportError(outError, "%sinput property '%s' has an invalid value",
-                        (desc.optional ? "" : "required "),
-                        name.UTF8String);
+            reportError(outError, "input property '%s' has an invalid value", name.UTF8String);
             feature = nil;
         }
         return feature;
     }
 
+
+    // Converts a Fleece dictionary to an NSDictionary. All values must be numeric.
+    NSDictionary* CoreMLPredictiveModel::convertToMLDictionary(FLDict flDict) {
+        auto dict = [[NSMutableDictionary alloc] initWithCapacity: FLDict_Count(flDict)];
+        for (Dict::iterator i(flDict); i; ++i) {
+            // Apparently dict features can only contain numbers...
+            if (i.value().type() != kFLNumber)
+                return nil;
+            dict[i.keyString().asNSString()] = @(i.value().asDouble());
+        }
+        return dict;
+    }
+
+
+    // Converts a string into a dictionary that maps its words to the number of times they appear.
+    NSDictionary* CoreMLPredictiveModel::convertToMLDictionary(NSString* inputString) {
+        constexpr auto options = NSLinguisticTaggerOmitWhitespace |
+        NSLinguisticTaggerOmitPunctuation |
+        NSLinguisticTaggerOmitOther;
+        if (!_tagger) {
+            auto schemes = [NSLinguisticTagger availableTagSchemesForLanguage: @"en"]; //FIX: L10N
+            _tagger = [[NSLinguisticTagger alloc] initWithTagSchemes: schemes options: options];
+        }
+
+        auto words = [NSMutableDictionary new];
+        _tagger.string = inputString;
+        [_tagger enumerateTagsInRange: NSMakeRange(0, inputString.length)
+                              scheme: NSLinguisticTagSchemeNameType
+                             options: options
+                          usingBlock: ^(NSLinguisticTag tag, NSRange tokenRange,
+                                        NSRange sentenceRange, BOOL *stop)
+         {
+             if (tokenRange.length >= 3) {
+                 NSString *token = [inputString substringWithRange: tokenRange].localizedLowercaseString;
+                 NSNumber* count = words[token];
+                 words[token] = @(count.intValue + 1);
+             }
+         }];
+        return words;
+    }
 }

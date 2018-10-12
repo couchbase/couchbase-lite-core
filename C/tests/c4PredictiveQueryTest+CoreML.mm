@@ -94,5 +94,28 @@ TEST_CASE_METHOD(CoreMLTest, "CoreML Query Error", "[Query][C]") {
     checkQueryError("{'WHAT': [['._id'], ['PREDICTION()', 'mars', "
                         "{solarPanels: ['.panels'], greenhouses: 'oops', size: ['.acres']}"
                     "]], 'ORDER_BY': [['._id']]}",
-                    "required input property 'greenhouses' has wrong type");
+                    "input property 'greenhouses' has wrong type");
 }
+
+
+class CoreMLSentimentTest : public CoreMLTest {
+public:
+    CoreMLSentimentTest()
+    :CoreMLTest("sentiments.json", "sentiment", "SentimentPolarity.mlmodel")
+    { }
+};
+
+
+TEST_CASE_METHOD(CoreMLSentimentTest, "CoreML Sentiment Query", "[Query][C]") {
+    compileSelect(json5("{'WHAT': [['._id'], ['PREDICTION()', 'sentiment', "
+                            "{input: ['.text']}"
+                        "]], 'ORDER_BY': [['._id']]}"));
+    auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
+        Value val = FLArrayIterator_GetValueAt(&e->columns, 1);
+        C4Log("result: %.*s", SPLAT(val.toJSON()));
+        return string(val.asDict()["classLabel"].asString());
+    });
+    CHECK(results == (vector<string>{"Neg", "Neg", "Pos"}));
+}
+
+

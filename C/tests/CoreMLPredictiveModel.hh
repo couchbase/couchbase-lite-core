@@ -8,7 +8,7 @@
 #include "c4PredictiveQuery.h"
 #include <Foundation/Foundation.h>
 #include <string>
-@class MLModel, MLFeatureDescription, MLFeatureValue;
+@class MLModel, MLFeatureDescription, MLFeatureValue, NSLinguisticTagger;
 
 namespace cbl {
 
@@ -26,6 +26,8 @@ namespace cbl {
         static C4SliceResult predictCallback(void* modelInternal, FLValue input, C4Error *error);
         C4SliceResult predict(FLValue input, C4Error *error);
         MLFeatureValue* featureFromDict(NSString* name, FLValue, C4Error *outError);
+        NSDictionary* convertToMLDictionary(FLDict);
+        NSDictionary* convertToMLDictionary(NSString*);
 
         CoreMLPredictiveModel(CoreMLPredictiveModel&) =delete;
         CoreMLPredictiveModel& operator=(const CoreMLPredictiveModel&) =delete;
@@ -33,6 +35,7 @@ namespace cbl {
         MLModel* _model;
         NSDictionary<NSString*,MLFeatureDescription*>* _featureDescriptions;
         std::string _name;
+        NSLinguisticTagger* _tagger {nil};
     };
 
 }
