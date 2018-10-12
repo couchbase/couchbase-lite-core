@@ -31,26 +31,26 @@ using namespace fleece::impl;
 
 class EightBall : public PredictiveModel {
 public:
-    virtual alloc_slice predict(const Value* input) noexcept override {
+    virtual alloc_slice predict(const Value* input, C4Error *outError) noexcept override {
         string json = input->toJSONString();
         Log("8-ball input: %s", json.c_str());
+        if (input->type() != kNumber) {
+            if (outError)
+                *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                                         "Input must be a number"_sl);
+            return {};
+        }
+
+        double n = input->asDouble();
+
         Encoder enc;
         enc.beginDictionary();
-        enc.writeKey("JSON");
-        enc.writeString(json);
-        enc.writeKey("number");
-        if (input->type() == kNumber) {
-            enc.writeDouble(1.0);
-            double n = input->asDouble();
-            enc.writeKey("integer");
-            enc.writeDouble(intness(n));
-            enc.writeKey("even");
-            enc.writeDouble(intness(n / 2.0));
-            enc.writeKey("square");
-            enc.writeDouble(intness(sqrt(n)));
-        } else {
-            enc.writeDouble(0.0);
-        }
+        enc.writeKey("integer");
+        enc.writeDouble(intness(n));
+        enc.writeKey("even");
+        enc.writeDouble(intness(n / 2.0));
+        enc.writeKey("square");
+        enc.writeDouble(intness(sqrt(n)));
         enc.endDictionary();
         return enc.finish();
     }
@@ -61,7 +61,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(QueryTest, "Predictive Query Errors", "[Query][Predict]") {
+TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict]") {
     addNumberedDocs(1, 10);
     Retained<Query> query{ store->compileQuery(json5(
                                 "{'WHAT': [['PREDICTION()', '8ball', ['.value']]]}")) };
@@ -72,10 +72,11 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query Errors", "[Query][Predict]") {
 
 
 TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
+    addNumberedDocs(1, 100);
+
     Retained<PredictiveModel> model = new EightBall();
     model->registerAs("8ball");
 
-    addNumberedDocs(1, 100);
     Retained<Query> query{ store->compileQuery(json5(
                                 "{'WHAT': [['.num'], ['PREDICTION()', '8ball', ['.num']]]}")) };
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
@@ -83,6 +84,26 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
     while (e->next()) {
         Log("%lld : %s", e->columns()[0]->asInt(), e->columns()[1]->toJSONString().c_str());
     }
+
+    PredictiveModel::unregister("8ball");
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]") {
+    {
+        Transaction t(db);
+        writeMultipleTypeDocs(t);
+        t.commit();
+    }
+
+    Retained<PredictiveModel> model = new EightBall();
+    model->registerAs("8ball");
+
+    Retained<Query> query{ store->compileQuery(json5(
+                                "{'WHAT': [['.value'], ['PREDICTION()', '8ball', ['.value']]]}")) };
+    ExpectException(error::SQLite, 1, [&]() {
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    });
 
     PredictiveModel::unregister("8ball");
 }
