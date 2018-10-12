@@ -24,7 +24,8 @@ public:
     QueryTest(int which, string filename)
     :C4Test(which)
     {
-        importJSONLines(sFixturesDir + filename);
+        if (!filename.empty())
+            importJSONLines(sFixturesDir + filename);
     }
 
     QueryTest(int which)

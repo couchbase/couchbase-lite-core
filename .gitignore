@@ -41,3 +41,4 @@ project.lock.json
 packages/
 /C/Documentation
 *.pyc
+C/tests/data/imagePrediction/MobileNet.mlmodel

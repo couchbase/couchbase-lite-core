@@ -50,6 +50,7 @@
 		27098AA7216C2108002751DA /* PredictiveModel.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AA4216C2108002751DA /* PredictiveModel.cc */; };
 		27098AA8216C2108002751DA /* PredictiveModel.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27098AA5216C2108002751DA /* PredictiveModel.hh */; };
 		27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */; };
+		27098AB821714AB0002751DA /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27098AB721714AB0002751DA /* Vision.framework */; };
 		270AB2A02072B1EA009A4596 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
 		270AB2A12072B1F2009A4596 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
 		270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
@@ -999,6 +1000,7 @@
 		27098AA4216C2108002751DA /* PredictiveModel.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PredictiveModel.cc; sourceTree = "<group>"; };
 		27098AA5216C2108002751DA /* PredictiveModel.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PredictiveModel.hh; sourceTree = "<group>"; };
 		27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PredictiveQueryTest.cc; sourceTree = "<group>"; };
+		27098AB721714AB0002751DA /* Vision.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vision.framework; path = System/Library/Frameworks/Vision.framework; sourceTree = SDKROOT; };
 		270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTSyncListener_stub.cc; sourceTree = "<group>"; };
 		270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CivetC4Socket_stub.cc; sourceTree = "<group>"; };
 		270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListener_stub.cc; sourceTree = "<group>"; };
@@ -1519,6 +1521,7 @@
 				276E02131EA9802F00FEFE8A /* libcivetweb.a in Frameworks */,
 				270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */,
 				2700BB53216FF2DB00797537 /* CoreML.framework in Frameworks */,
+				27098AB821714AB0002751DA /* Vision.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1933,6 +1936,7 @@
 		2750723D18E3E52800A80C5A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				27098AB721714AB0002751DA /* Vision.framework */,
 				2700BB4D216FF2DA00797537 /* CoreML.framework */,
 				277C1B231F58794100031200 /* libreadline.tbd */,
 				27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */,

@@ -21,6 +21,7 @@
 #include "fleece/Fleece.hh"
 #include "fleece/Fleece+CoreFoundation.h"
 #include <CoreML/CoreML.h>
+#include <Vision/Vision.h>
 #include <stdarg.h>
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -30,28 +31,29 @@ namespace cbl {
     using namespace fleece;
 
 
-    static NSDictionary* convertToMLDictionary(Dict);
-    static void encodeFeature(Encoder &enc, MLFeatureValue *feature);
-    static void reportError(C4Error *outError, const char *format, ...);
-
-
-    CoreMLPredictiveModel::CoreMLPredictiveModel(MLModel *model)
-    :_model(model)
-    ,_featureDescriptions(_model.modelDescription.inputDescriptionsByName)
-    { }
-
-
-    void CoreMLPredictiveModel::registerWithName(const char *name) {
+    void PredictiveModel::registerWithName(const char *name) {
         auto callback = [](void* modelInternal, FLValue input, C4Error *outError) {
-            auto self = (CoreMLPredictiveModel*)modelInternal;
-            return self->predict(input, outError);
+            @autoreleasepool {
+                try {
+                    Encoder enc;
+                    enc.beginDict();
+                    auto self = (PredictiveModel*)modelInternal;
+                    if (!self->predict(Value(input).asDict(), enc, outError))
+                        return C4SliceResult{};
+                    enc.endDict();
+                    return C4SliceResult(enc.finish());
+                } catch (const std::exception &x) {
+                    reportError(outError, "prediction() threw an exception: %s", x.what());
+                    return C4SliceResult{};
+                }
+            }
         };
         c4pred_registerModel(name, {this, callback});
         _name = name;
     }
 
 
-    void CoreMLPredictiveModel::unregister() {
+    void PredictiveModel::unregister() {
         if (!_name.empty()) {
             c4pred_unregisterModel(_name.c_str());
             _name = "";
@@ -59,10 +61,60 @@ namespace cbl {
     }
 
 
-    // The core prediction function!
-    C4SliceResult CoreMLPredictiveModel::predict(FLValue input, C4Error *outError) {
+    bool PredictiveModel::reportError(C4Error *outError, const char *format, ...) {
+        va_list args;
+        va_start(args, format);
+        char *message = nullptr;
+        vasprintf(&message, format, args);
+        va_end(args);
+        C4LogToAt(kC4QueryLog, kC4LogError, "prediction() failed: %s", message);
+        if (outError)
+            *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidQuery, slice(message));
+        free(message);
+        return false;
+    }
+
+
+#pragma mark - CoreMLPredictiveModel:
+
+
+    static NSDictionary* convertToMLDictionary(Dict);
+
+
+    CoreMLPredictiveModel::CoreMLPredictiveModel(MLModel *model)
+    :_model(model)
+    ,_featureDescriptions(_model.modelDescription.inputDescriptionsByName)
+    {
+        // Check for image inputs:
+        for (NSString *inputName in _featureDescriptions) {
+            if (_featureDescriptions[inputName].type == MLFeatureTypeImage) {
+                _imagePropertyName = nsstring_slice(inputName);
+                break;
+            }
+        }
+    }
+
+
+    // The main prediction function!
+    bool CoreMLPredictiveModel::predict(Dict inputDict, fleece::Encoder &enc, C4Error *outError) {
+        if (_imagePropertyName) {
+            if (!_visionModel) {
+                NSError* error;
+                _visionModel = [VNCoreMLModel modelForMLModel: _model error: &error];
+                if (!_visionModel)
+                    return reportError(outError, "Failed to create Vision model: %s",
+                                       error.localizedDescription.UTF8String);
+            }
+            return predictViaVision(inputDict, enc, outError);
+        } else {
+            return predictViaCoreML(inputDict, enc, outError);
+        }
+    }
+
+
+    // Uses CoreML API to generate prediction:
+    bool CoreMLPredictiveModel::predictViaCoreML(Dict inputDict, fleece::Encoder &enc, C4Error *outError) {
         // Convert the input dictionary into an MLFeatureProvider:
-        Dict inputDict = Value(input).asDict();
         auto featureDict = [NSMutableDictionary new];
         for (NSString *name in _featureDescriptions) {
             Value value = Dict(inputDict)[nsstring_slice(name)];
@@ -72,8 +124,7 @@ namespace cbl {
                     return {};
                 featureDict[name] = feature;
             } else if (!_featureDescriptions[name].optional) {
-                reportError(outError, "required input property '%s' is missing", name.UTF8String);
-                return {};
+                return reportError(outError, "required input property '%s' is missing", name.UTF8String);
             }
         }
         NSError *error;
@@ -85,32 +136,68 @@ namespace cbl {
         id<MLFeatureProvider> result = [_model predictionFromFeatures: features error: &error];
         if (!result) {
             const char *msg = error.localizedDescription.UTF8String;
-            reportError(outError, "CoreML error: %s", msg);
-            return {};
+            return reportError(outError, "CoreML error: %s", msg);
         }
 
         // Decode the result to Fleece:
-        Encoder enc;
-        enc.beginDict(result.featureNames.count);
         for (NSString* name in result.featureNames) {
             enc.writeKey(nsstring_slice(name));
-            encodeFeature(enc, [result featureValueForName: name]);
+            encodeMLFeature(enc, [result featureValueForName: name]);
         }
-        enc.endDict();
-        return C4SliceResult(enc.finish());
+        return true;
     }
 
 
-    static void reportError(C4Error *outError, const char *format, ...) {
-        va_list args;
-        va_start(args, format);
-        char *message = nullptr;
-        vasprintf(&message, format, args);
-        va_end(args);
-        C4LogToAt(kC4QueryLog, kC4LogError, "prediction() failed: %s", message);
-        if (outError)
-            *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidQuery, slice(message));
-        free(message);
+    // Uses Vision API to generate prediction:
+    bool CoreMLPredictiveModel::predictViaVision(fleece::Dict input, Encoder &enc, C4Error *outError) {
+        if (!_model)
+            return reportError(outError, "Couldn't register Vision model");
+
+        // Get the image data and create a Vision handler:
+        slice image = input[_imagePropertyName].asData();
+        if (!image)
+            return reportError(outError, "Image input property '%.*s' missing or not a blob",
+                               FMTSLICE(_imagePropertyName));
+        NSData* imageData = image.uncopiedNSData();
+        auto handler = [[VNImageRequestHandler alloc] initWithData: imageData options: @{}];
+
+        // Process the model:
+        NSError* error;
+        auto request = [[VNCoreMLRequest alloc] initWithModel: _visionModel];
+        request.imageCropAndScaleOption = VNImageCropAndScaleOptionCenterCrop;
+        if (![handler performRequests: @[request] error: &error]) {
+            return reportError(outError, "Image processing failed: %s",
+                               error.localizedDescription.UTF8String);
+        }
+        auto results = request.results;
+        if (!results)
+            return reportError(outError, "Image processing returned no results");
+
+        unsigned nClassifications = 0;
+        double maxConfidence = 0.0;
+        for (VNObservation* result in results) {
+            if ([result isKindOfClass: [VNClassificationObservation class]]) {
+                NSString* identifier = ((VNClassificationObservation*)result).identifier;
+                double confidence = result.confidence;
+                if (maxConfidence == 0.0)
+                    maxConfidence = confidence;
+                else if (confidence < maxConfidence * 0.5)
+                    break;
+                enc.writeKey(nsstring_slice(identifier));
+                enc.writeDouble(confidence);
+                if (++nClassifications >= kMaxClassifications)
+                    break;
+            } else if ([result isKindOfClass: [VNCoreMLFeatureValueObservation class]]) {
+                auto feature = ((VNCoreMLFeatureValueObservation*)result).featureValue;
+                enc.writeKey("output"_sl);      //???? How do I find the feature name?
+                encodeMLFeature(enc, feature);
+            } else {
+                C4LogToAt(kC4QueryLog, kC4LogWarning,
+                          "Image processing returned result of unsupported class %s",
+                          result.className.UTF8String);
+            }
+        }
+        return true;
     }
 
 
@@ -263,7 +350,7 @@ namespace cbl {
     }
 
 
-    static void encodeFeature(Encoder &enc, MLFeatureValue *feature) {
+    void PredictiveModel::encodeMLFeature(Encoder &enc, MLFeatureValue *feature) {
         switch (feature.type) {
             case MLFeatureTypeInt64:
                 enc.writeInt(feature.int64Value);

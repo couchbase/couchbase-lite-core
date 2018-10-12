@@ -41,19 +41,26 @@ public:
     :CoreMLTest("mars.json", "mars", "MarsHabitatPricer.mlmodel")
     { }
 
-    CoreMLTest(const string &jsonFilename, const char *modelName, const string &modelFilename)
+    CoreMLTest(const string &jsonFilename,
+               const char *modelName,
+               const string &modelFilename,
+               bool required =true)
     :QueryTest(0, jsonFilename)
     {
         NSURL *url = [NSURL fileURLWithPath: asNSString(sFixturesDir + modelFilename)];
         NSError *error;
-        NSURL* compiled = [MLModel compileModelAtURL: url error: &error];
-        INFO("Error" << (error.description.UTF8String ?: "none"));
-        REQUIRE(compiled);
-        auto model = [MLModel modelWithContentsOfURL: compiled error: &error];
-        INFO("Error" << (error.description.UTF8String ?: "none"));
-        REQUIRE(model);
-        _model.reset(new cbl::CoreMLPredictiveModel(model));
-        _model->registerWithName(modelName);
+        if (required || [url checkResourceIsReachableAndReturnError: nullptr]) {
+            NSURL* compiled = [MLModel compileModelAtURL: url error: &error];
+            INFO("Error" << (error.description.UTF8String ?: "none"));
+            REQUIRE(compiled);
+            auto model = [MLModel modelWithContentsOfURL: compiled error: &error];
+            INFO("Error" << (error.description.UTF8String ?: "none"));
+            REQUIRE(model);
+            _model.reset(new cbl::CoreMLPredictiveModel(model));
+            _model->registerWithName(modelName);
+        } else {
+            C4Log("*** SKIPPING test, as CoreML model '%s' is not present **", modelFilename.c_str());
+        }
     }
 
     void checkQueryError(const char *queryStr, const char *expectedErrorMessage) {
@@ -119,6 +126,49 @@ TEST_CASE_METHOD(CoreMLSentimentTest, "CoreML Sentiment Query", "[Query][C]") {
         return string(val.asDict()["classLabel"].asString());
     });
     CHECK(results == (vector<string>{"Neg", "Neg", "Pos"}));
+}
+
+
+
+class CoreMLImageTest : public CoreMLTest {
+public:
+    CoreMLImageTest()
+    :CoreMLTest("", "mobilenet", "imagePrediction/MobileNet.mlmodel", false)
+    { }
+
+    void addDocWithImage(const string &baseName) {
+        auto image = readFile(sFixturesDir + "imagePrediction/" + baseName + ".jpeg");
+        addDocWithAttachments(slice(baseName), {string(image)}, "image/jpeg");
+    }
+};
+
+
+TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][C]") {
+    if (!_model)
+        return;
+    {
+        TransactionHelper t(db);
+        addDocWithImage("cat");
+        addDocWithImage("jeep");
+        addDocWithImage("pineapple");
+        addDocWithImage("waterfall");
+    }
+
+    compileSelect(json5("{WHAT: [['._id'],"
+                                "['PREDICTION()', 'mobilenet', {image: ['BLOB', '.attached[0]']}]],"
+                         "ORDER_BY: [['._id']]}"));
+    auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
+        Value val = FLArrayIterator_GetValueAt(&e->columns, 1);
+        alloc_slice json = val.toJSON();
+        C4Log("result: %.*s", SPLAT(json));
+        return string(json);
+    });
+    CHECK(results == (vector<string>{
+        "{\"Egyptian cat\":0.133192}",
+        "{\"jeep, landrover\":0.616046}",
+        "{\"pineapple, ananas\":0.999959}",
+        "{\"cliff, drop, drop-off\":0.522751}"
+    }));
 }
 
 
