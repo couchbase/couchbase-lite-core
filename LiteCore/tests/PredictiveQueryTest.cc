@@ -20,6 +20,9 @@
 #include "PredictiveModel.hh"
 #include <math.h>
 
+#ifdef COUCHBASE_ENTERPRISE
+
+
 using namespace std;
 using namespace fleece;
 using namespace fleece::impl;
@@ -83,3 +86,5 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
 
     PredictiveModel::unregister("8ball");
 }
+
+#endif // COUCHBASE_ENTERPRISE

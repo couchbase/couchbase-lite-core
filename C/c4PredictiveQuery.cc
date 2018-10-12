@@ -17,6 +17,9 @@
 //
 
 #include "c4PredictiveQuery.h"
+
+#ifdef COUCHBASE_ENTERPRISE
+
 #include "PredictiveModel.hh"
 
 using namespace litecore;
@@ -48,3 +51,16 @@ void c4pred_registerModel(const char *name, C4PredictiveModel model) {
 bool c4pred_unregisterModel(const char *name) {
     return PredictiveModel::unregister(name);
 }
+
+
+#else // COUCHBASE_ENTERPRISE
+
+void c4pred_registerModel(const char *name, C4PredictiveModel model) {
+    abort();
+}
+
+bool c4pred_unregisterModel(const char *name) {
+    abort();
+}
+
+#endif // COUCHBASE_ENTERPRISE

@@ -20,6 +20,8 @@
 #include <mutex>
 #include <unordered_map>
 
+#ifdef COUCHBASE_ENTERPRISE
+
 namespace litecore {
     using namespace std;
     using namespace fleece;
@@ -47,3 +49,5 @@ namespace litecore {
     }
 
 }
+
+#endif

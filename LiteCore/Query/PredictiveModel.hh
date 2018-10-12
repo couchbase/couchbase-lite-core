@@ -10,6 +10,8 @@
 #include "Value.hh"
 #include <string>
 
+#ifdef COUCHBASE_ENTERPRISE
+
 namespace litecore {
 
     class PredictiveModel : public fleece::RefCounted {
@@ -23,3 +25,5 @@ namespace litecore {
     };
 
 }
+
+#endif

@@ -23,10 +23,13 @@
 #include <sqlite3.h>
 #include <string>
 
+
 namespace litecore {
     using namespace std;
     using namespace fleece;
     using namespace fleece::impl;
+
+#ifdef COUCHBASE_ENTERPRISE
 
     static void predictionFunc(sqlite3_context *ctx, int argc, sqlite3_value **argv){
         auto name = (const char*)sqlite3_value_text(argv[0]);
@@ -74,9 +77,12 @@ namespace litecore {
         setResultBlobFromFleeceData(ctx, result);
     }
 
+#endif
 
     const SQLiteFunctionSpec kPredictFunctionsSpec[] = {
+#ifdef COUCHBASE_ENTERPRISE
         { "prediction",       2, predictionFunc  },
+#endif
         { }
     };
 

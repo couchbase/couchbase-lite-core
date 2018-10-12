@@ -22,6 +22,8 @@
 #include <CoreML/CoreML.h>
 #include <stdarg.h>
 
+#ifdef COUCHBASE_ENTERPRISE
+
 namespace cbl {
     using namespace std;
     using namespace fleece;
@@ -220,3 +222,5 @@ namespace cbl {
         return words;
     }
 }
+
+#endif // COUCHBASE_ENTERPRISE

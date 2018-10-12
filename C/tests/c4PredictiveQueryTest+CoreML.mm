@@ -25,6 +25,9 @@
 using namespace fleece;
 
 
+#ifdef COUCHBASE_ENTERPRISE
+
+
 static NSString* asNSString(const string &str) {
     return [NSString stringWithUTF8String: str.c_str()];
 }
@@ -119,3 +122,4 @@ TEST_CASE_METHOD(CoreMLSentimentTest, "CoreML Sentiment Query", "[Query][C]") {
 }
 
 
+#endif // COUCHBASE_ENTERPRISE

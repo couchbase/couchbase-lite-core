@@ -10,6 +10,8 @@
 #include <string>
 @class MLModel, MLFeatureDescription, MLFeatureValue, NSLinguisticTagger;
 
+#ifdef COUCHBASE_ENTERPRISE
+
 namespace cbl {
 
     /** An Objective-C++ adapter class that registers a CoreML model with LiteCore
@@ -39,3 +41,5 @@ namespace cbl {
     };
 
 }
+
+#endif
