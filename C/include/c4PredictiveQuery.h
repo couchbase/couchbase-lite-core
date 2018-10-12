@@ -19,7 +19,7 @@ extern "C" {
     typedef struct {
         void* modelInternal;
 
-        C4SliceResult (*predict)(void* modelInternal, FLValue C4NONNULL input);
+        C4SliceResult (*predict)(void* modelInternal, FLValue C4NONNULL input, C4Error *error);
     } C4PredictiveModel;
 
     void c4pred_registerModel(const char *name, C4PredictiveModel);

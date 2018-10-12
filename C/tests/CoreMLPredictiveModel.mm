@@ -20,10 +20,24 @@
 #include "c4PredictiveQuery.h"
 #include "fleece/Fleece.hh"
 #include <CoreML/CoreML.h>
+#include <stdarg.h>
 
 namespace cbl {
     using namespace std;
     using namespace fleece;
+
+
+    static void reportError(C4Error *outError, const char *format, ...) {
+        va_list args;
+        va_start(args, format);
+        char *message = nullptr;
+        vasprintf(&message, format, args);
+        va_end(args);
+        C4LogToAt(kC4QueryLog, kC4LogError, "prediction() failed: %s", message);
+        if (outError)
+            *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidQuery, slice(message));
+        free(message);
+    }
 
 
     CoreMLPredictiveModel::CoreMLPredictiveModel(MLModel *model)
@@ -31,7 +45,7 @@ namespace cbl {
     ,_featureDescriptions(_model.modelDescription.inputDescriptionsByName)
     { }
 
-    
+
     void CoreMLPredictiveModel::registerWithName(const char *name) {
         _name = name;
         c4pred_registerModel(name, {this, &CoreMLPredictiveModel::predictCallback});
@@ -46,20 +60,30 @@ namespace cbl {
     }
 
 
-    C4SliceResult CoreMLPredictiveModel::predictCallback(void* modelInternal, FLValue input) {
+    C4SliceResult CoreMLPredictiveModel::predictCallback(void* modelInternal,
+                                                         FLValue input,
+                                                         C4Error *outError)
+    {
         auto self = (CoreMLPredictiveModel*)modelInternal;
-        return self->predict(input);
+        return self->predict(input, outError);
     }
 
 
-    C4SliceResult CoreMLPredictiveModel::predict(FLValue input) {
+    C4SliceResult CoreMLPredictiveModel::predict(FLValue input, C4Error *outError) {
         // Convert the input dictionary into an MLFeatureProvider:
         Dict inputDict = Value(input).asDict();
         auto featureDict = [NSMutableDictionary new];
         for (NSString *name in _featureDescriptions) {
-            MLFeatureValue *feature = featureFromDict(name, inputDict);
-            if (feature)
+            Value value = Dict(inputDict)[nsstring_slice(name)];
+            if (value) {
+                MLFeatureValue *feature = featureFromDict(name, value, outError);
+                if (!feature)
+                    return {};
                 featureDict[name] = feature;
+            } else if (!_featureDescriptions[name].optional) {
+                reportError(outError, "required input property '%s' is missing", name.UTF8String);
+                return {};
+            }
         }
         NSError *error;
         auto features = [[MLDictionaryFeatureProvider alloc] initWithDictionary: featureDict
@@ -69,7 +93,8 @@ namespace cbl {
         // Run the model!
         id<MLFeatureProvider> result = [_model predictionFromFeatures: features error: &error];
         if (!result) {
-            C4Warn("predict() returned error: %s", error.description.UTF8String);
+            const char *msg = error.localizedDescription.UTF8String;
+            reportError(outError, "CoreML error: %s", msg);
             return {};
         }
 
@@ -98,15 +123,13 @@ namespace cbl {
 
 
     // Creates an MLFeatureValue from the value of the same name in a Fleece dictionary.
-    MLFeatureValue* CoreMLPredictiveModel::featureFromDict(NSString* name, FLDict inputDict) {
+    MLFeatureValue* CoreMLPredictiveModel::featureFromDict(NSString* name,
+                                                           FLValue flValue,
+                                                           C4Error *outError)
+    {
+        Value value(flValue);
         MLFeatureDescription *desc = _featureDescriptions[name];
-        Value value = Dict(inputDict)[nsstring_slice(name)];
         auto valueType = value.type();
-        if (!value) {
-            if (!desc.optional)
-                C4Warn("predict(): required input feature '%s' is missing", name.UTF8String);
-            return nil;
-        }
         MLFeatureValue* feature = nil;
         switch (desc.type) {
             case MLFeatureTypeInt64:
@@ -131,13 +154,13 @@ namespace cbl {
                 break;
         }
         if (!feature) {
-            C4Warn("predict():%s input feature '%s' is of wrong type",
-                   (desc.optional ? "" : " required"),
-                   name.UTF8String);
+            reportError(outError, "%sinput property '%s' has wrong type",
+                        (desc.optional ? "" : "required "),
+                        name.UTF8String);
         } else if (![desc isAllowedValue: feature]) {
-            C4Warn("predict():%s input feature '%s' has an invalid value",
-                   (desc.optional ? "" : " required"),
-                   name.UTF8String);
+            reportError(outError, "%sinput property '%s' has an invalid value",
+                        (desc.optional ? "" : "required "),
+                        name.UTF8String);
             feature = nil;
         }
         return feature;

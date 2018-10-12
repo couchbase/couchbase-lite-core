@@ -53,6 +53,21 @@ public:
         _model->registerWithName(modelName);
     }
 
+    void checkQueryError(const char *queryStr, const char *expectedErrorMessage) {
+        compileSelect(json5(queryStr));
+        C4QueryOptions options = kC4DefaultQueryOptions;
+        C4Error error = {};
+        ExpectingExceptions x;
+        auto e = c4query_run(query, &options, nullslice, &error);
+        CHECK(!e);
+        char errbuf[256];
+        C4Log("Error is %s", c4error_getDescriptionC(error, errbuf, sizeof(errbuf)))
+        CHECK(error.domain == SQLiteDomain);
+        CHECK(error.code != 0);
+        alloc_slice msg = c4error_getMessage(error);
+        CHECK(string(msg) == expectedErrorMessage);
+    }
+
     unique_ptr<cbl::CoreMLPredictiveModel> _model;
 };
 
@@ -68,4 +83,16 @@ TEST_CASE_METHOD(CoreMLTest, "CoreML Query", "[Query][C]") {
     });
     CHECK(results == (vector<double>{1566, 16455, 28924}));
     // Expected results come from running Apple's MarsHabitatPricePredictor sample app.
+}
+
+
+TEST_CASE_METHOD(CoreMLTest, "CoreML Query Error", "[Query][C]") {
+    checkQueryError("{'WHAT': [['._id'], ['PREDICTION()', 'mars', "
+                        "{solarPanels: ['.panels'], size: ['.acres']}"
+                    "]], 'ORDER_BY': [['._id']]}",
+                    "required input property 'greenhouses' is missing");
+    checkQueryError("{'WHAT': [['._id'], ['PREDICTION()', 'mars', "
+                        "{solarPanels: ['.panels'], greenhouses: 'oops', size: ['.acres']}"
+                    "]], 'ORDER_BY': [['._id']]}",
+                    "required input property 'greenhouses' has wrong type");
 }

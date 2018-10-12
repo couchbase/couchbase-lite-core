@@ -30,8 +30,8 @@ public:
     :_c4Model(model)
     { }
 
-    virtual alloc_slice predict(const Value *input) noexcept override {
-        return _c4Model.predict(_c4Model.modelInternal, (FLValue)input);
+    virtual alloc_slice predict(const Value *input, C4Error *outError) noexcept override {
+        return _c4Model.predict(_c4Model.modelInternal, (FLValue)input, outError);
     }
 
 private:

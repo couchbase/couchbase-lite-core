@@ -67,9 +67,11 @@ namespace litecore {
             LogVerbose(QueryLog, "calling predict(\"%s\", %s)", name, json.c_str());
         }
 
-        alloc_slice result = model->predict(input);
+        C4Error error;
+        alloc_slice result = model->predict(input, &error);
         if (!result) {
-            sqlite3_result_error(ctx, "ML model error", -1);
+            alloc_slice msg = c4error_getMessage(error);
+            sqlite3_result_error(ctx, (const char*)msg.buf, (int)msg.size);
             return;
         }
         setResultBlobFromFleeceData(ctx, result);
