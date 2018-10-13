@@ -173,28 +173,40 @@ namespace cbl {
         if (!results)
             return reportError(outError, "Image processing returned no results");
 
-        unsigned nClassifications = 0;
-        double maxConfidence = 0.0;
-        for (VNObservation* result in results) {
-            if ([result isKindOfClass: [VNClassificationObservation class]]) {
-                NSString* identifier = ((VNClassificationObservation*)result).identifier;
+        NSString* predictedProbabilitiesName = _model.modelDescription.predictedProbabilitiesName;
+        if (predictedProbabilitiesName) {
+            // Result is a list of identifiers in declining order of confidence:
+            enc.writeKey(nsstring_slice(predictedProbabilitiesName));
+            enc.beginDict();
+            NSString* maxIdentifier = nil;
+            double maxConfidence = 0.0;
+            unsigned nClassifications = 0;
+            for (VNClassificationObservation* result in results) {
+                NSString* identifier = result.identifier;
                 double confidence = result.confidence;
-                if (maxConfidence == 0.0)
+                if (!maxIdentifier) {
+                    maxIdentifier = identifier;
                     maxConfidence = confidence;
-                else if (confidence < maxConfidence * 0.5)
+                } else if (confidence < maxConfidence * kConfidenceCutoffRatio) {
                     break;
+                }
                 enc.writeKey(nsstring_slice(identifier));
                 enc.writeDouble(confidence);
                 if (++nClassifications >= kMaxClassifications)
                     break;
-            } else if ([result isKindOfClass: [VNCoreMLFeatureValueObservation class]]) {
-                auto feature = ((VNCoreMLFeatureValueObservation*)result).featureValue;
+            }
+            enc.endDict();
+            NSString* predictedFeatureName = _model.modelDescription.predictedFeatureName;
+            if (predictedFeatureName && maxIdentifier) {
+                enc.writeKey(nsstring_slice(predictedFeatureName));
+                enc.writeString(nsstring_slice(maxIdentifier));
+            }
+        } else {
+            // Result is a list of CoreML feature values:
+            for (VNCoreMLFeatureValueObservation* result in results) {
+                auto feature = result.featureValue;
                 enc.writeKey("output"_sl);      //???? How do I find the feature name?
                 encodeMLFeature(enc, feature);
-            } else {
-                C4LogToAt(kC4QueryLog, kC4LogWarning,
-                          "Image processing returned result of unsupported class %s",
-                          result.className.UTF8String);
             }
         }
         return true;

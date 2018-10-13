@@ -68,6 +68,7 @@ namespace cbl {
         VNCoreMLModel* _visionModel;
 
         static constexpr unsigned kMaxClassifications {5};
+        static constexpr double kConfidenceCutoffRatio = 0.1;
     };
 
 }

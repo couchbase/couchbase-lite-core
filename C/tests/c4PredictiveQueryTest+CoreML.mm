@@ -164,10 +164,10 @@ TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][C]") {
         return string(json);
     });
     CHECK(results == (vector<string>{
-        "{\"Egyptian cat\":0.133192}",
-        "{\"jeep, landrover\":0.616046}",
-        "{\"pineapple, ananas\":0.999959}",
-        "{\"cliff, drop, drop-off\":0.522751}"
+        "{\"classLabel\":\"Egyptian cat\",\"classLabelProbs\":{\"pickelhaube\":0.0375685,\"Egyptian cat\":0.133192,\"Windsor tie\":0.0598003,\"fur coat\":0.0447883,\"neck brace\":0.0407802}}",
+        "{\"classLabel\":\"jeep, landrover\",\"classLabelProbs\":{\"jeep, landrover\":0.616046,\"pickup, pickup truck\":0.0639241,\"tow truck, tow car, wrecker\":0.147471}}",
+        "{\"classLabel\":\"pineapple, ananas\",\"classLabelProbs\":{\"pineapple, ananas\":0.999959}}",
+        "{\"classLabel\":\"cliff, drop, drop-off\",\"classLabelProbs\":{\"fountain\":0.0595746,\"volcano\":0.0729924,\"cliff, drop, drop-off\":0.522751,\"valley, vale\":0.164491}}"
     }));
 }
 
