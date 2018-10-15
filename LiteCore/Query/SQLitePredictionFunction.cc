@@ -18,8 +18,10 @@
 
 #include "SQLiteFleeceUtil.hh"
 #include "PredictiveModel.hh"
+#include "Logging.hh"
 #include "StringUtil.hh"
 #include "HeapValue.hh"
+#include "Stopwatch.hh"
 #include <sqlite3.h>
 #include <string>
 
@@ -40,41 +42,42 @@ namespace litecore {
             return;
         }
 
-        RetainedConst<Value> input;
-        switch(sqlite3_value_type(argv[1])) {
-            case SQLITE_INTEGER:
-                input = NewValue(sqlite3_value_int64(argv[1]));
-                break;
-            case SQLITE_FLOAT:
-                input = NewValue(sqlite3_value_double(argv[1]));
-                break;
-            case SQLITE_TEXT: {
-                input = NewValue(valueAsStringSlice(argv[1]));
-                break;
-            }
-            case SQLITE_BLOB:
-            case SQLITE_NULL:
-                input = fleeceParam(ctx, argv[1], false);
-                break;
-        }
-        if (!input) {
-            sqlite3_result_error(ctx, "Invalid input to predict()", -1);
+        const Value *input = fleeceParam(ctx, argv[1], false);
+        if (!input || input->type() != kDict) {
+            if (!input && sqlite3_value_type(argv[1]) == SQLITE_NULL)
+                sqlite3_result_null(ctx);
+            else
+                sqlite3_result_error(ctx, "Parameter of prediction() must be a dictionary", -1);
             return;
         }
 
+        Stopwatch st;
         if (QueryLog.willLog(LogLevel::Verbose)) {
             auto json = input->toJSONString();
-            LogVerbose(QueryLog, "calling predict(\"%s\", %s)", name, json.c_str());
+            if (json.size() > 200)
+                json = json.substr(0, 200) + "..."; // suppress huge base64 image data dumps
+            LogVerbose(QueryLog, "calling prediction(\"%s\", %s)", name, json.c_str());
+            st.start();
         }
 
-        C4Error error;
-        alloc_slice result = model->predict(input, &error);
-        if (!result) {
+        C4Error error = {};
+        alloc_slice result = model->predict((const Dict*)input, &error);
+        if (result || error.code == 0) {
+            if (QueryLog.willLog(LogLevel::Verbose)) {
+                if (result)
+                    LogVerbose(QueryLog, "    ...prediction took %.3fms", st.elapsedMS());
+                else
+                    LogVerbose(QueryLog, "    ...prediction returned no result");
+            }
+            setResultBlobFromFleeceData(ctx, result);
+        } else {
+            alloc_slice desc(c4error_getDescription(error));
+            LogToAt(QueryLog, Error, "Predictive model '%s' failed: %.*s",
+                    name, SPLAT(desc));
             alloc_slice msg = c4error_getMessage(error);
             sqlite3_result_error(ctx, (const char*)msg.buf, (int)msg.size);
             return;
         }
-        setResultBlobFromFleeceData(ctx, result);
     }
 
 #endif

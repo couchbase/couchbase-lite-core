@@ -31,17 +31,14 @@ using namespace fleece::impl;
 
 class EightBall : public PredictiveModel {
 public:
-    virtual alloc_slice predict(const Value* input, C4Error *outError) noexcept override {
-        string json = input->toJSONString();
-        Log("8-ball input: %s", json.c_str());
-        if (input->type() != kNumber) {
-            if (outError)
-                *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
-                                         "Input must be a number"_sl);
+    virtual alloc_slice predict(const Dict* input, C4Error *outError) noexcept override {
+//        Log("8-ball input: %s", input->toJSONString().c_str());
+        const Value *param = input->get("number"_sl);
+        if (!param || param->type() != kNumber) {
+            Log("8-ball: No 'number' property; returning MISSING");
             return {};
         }
-
-        double n = input->asDouble();
+        double n = param->asDouble();
 
         Encoder enc;
         enc.beginDictionary();
@@ -73,17 +70,33 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict]")
 
 TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
     addNumberedDocs(1, 100);
+    {
+        Transaction t(db);
+        writeArrayDoc(101, t);      // Add a row that has no 'num' property
+        t.commit();
+    }
 
     Retained<PredictiveModel> model = new EightBall();
     model->registerAs("8ball");
 
     Retained<Query> query{ store->compileQuery(json5(
-                                "{'WHAT': [['.num'], ['PREDICTION()', '8ball', ['.num']]]}")) };
+        "{'WHAT': [['._id'], ['PREDICTION()', '8ball', {number: ['.num']}]]}")) };
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
-    REQUIRE(e->getRowCount() == 100);
+    int docNo = 0;
     while (e->next()) {
-        Log("%lld : %s", e->columns()[0]->asInt(), e->columns()[1]->toJSONString().c_str());
+        ++docNo;
+        auto col = e->columns();
+        slice docID = col[0]->asString();
+        Log("%.*s : %s", SPLAT(docID), col[1]->toJSONString().c_str());
+        if (docNo < 101) {
+            REQUIRE(col[1]->asDict());
+            CHECK(col[1]->asDict()->get("integer"_sl)->asInt() == 1);
+            CHECK(col[1]->asDict()->get("even"_sl)->asInt() == !(docNo % 2));
+        } else {
+            CHECK(col[1]->type() == kNull);
+        }
     }
+    CHECK(docNo == 101);
 
     PredictiveModel::unregister("8ball");
 }

@@ -82,7 +82,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(CoreMLTest, "CoreML Query", "[Query][C]") {
+TEST_CASE_METHOD(CoreMLTest, "CoreML Query", "[Query][Predict][C]") {
     compileSelect(json5("{'WHAT': [['._id'], ['PREDICTION()', 'mars', "
                         "{solarPanels: ['.panels'], greenhouses: ['.greenhouses'], size: ['.acres']}"
                         "]], 'ORDER_BY': [['._id']]}"));
@@ -96,15 +96,17 @@ TEST_CASE_METHOD(CoreMLTest, "CoreML Query", "[Query][C]") {
 }
 
 
-TEST_CASE_METHOD(CoreMLTest, "CoreML Query Error", "[Query][C]") {
-    checkQueryError("{'WHAT': [['._id'], ['PREDICTION()', 'mars', "
+TEST_CASE_METHOD(CoreMLTest, "CoreML Query Error", "[Query][Predict][C]") {
+    // Missing 'greenhouses' parameter:
+    compileSelect(json5("{'WHAT': [['PREDICTION()', 'mars', "
                         "{solarPanels: ['.panels'], size: ['.acres']}"
-                    "]], 'ORDER_BY': [['._id']]}",
-                    "required input property 'greenhouses' is missing");
-    checkQueryError("{'WHAT': [['._id'], ['PREDICTION()', 'mars', "
+                    "]], 'ORDER_BY': [['._id']]}"));
+    // 'greenhouses' is of wrong type:
+    CHECK(run() == (vector<string>{ "MISSING", "MISSING", "MISSING" }));
+    compileSelect(json5("{'WHAT': [['PREDICTION()', 'mars', "
                         "{solarPanels: ['.panels'], greenhouses: 'oops', size: ['.acres']}"
-                    "]], 'ORDER_BY': [['._id']]}",
-                    "input property 'greenhouses' has wrong type");
+                    "]], 'ORDER_BY': [['._id']]}"));
+    CHECK(run() == (vector<string>{ "MISSING", "MISSING", "MISSING" }));
 }
 
 
@@ -116,7 +118,7 @@ public:
 };
 
 
-TEST_CASE_METHOD(CoreMLSentimentTest, "CoreML Sentiment Query", "[Query][C]") {
+TEST_CASE_METHOD(CoreMLSentimentTest, "CoreML Sentiment Query", "[Query][Predict][C]") {
     compileSelect(json5("{'WHAT': [['._id'], ['PREDICTION()', 'sentiment', "
                             "{input: ['.text']}"
                         "]], 'ORDER_BY': [['._id']]}"));
@@ -143,7 +145,10 @@ public:
 };
 
 
-TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][C]") {
+// This test is skipped by default because the CoreML model is too large to include in the Git repo.
+// You can download it at https://docs-assets.developer.apple.com/coreml/models/MobileNet.mlmodel
+// and copy it to C/tests/data/imagePrediction/MobileNet.mlmodel .
+TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][Predict][C]") {
     if (!_model)
         return;
     {
@@ -157,17 +162,16 @@ TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][C]") {
     compileSelect(json5("{WHAT: [['._id'],"
                                 "['PREDICTION()', 'mobilenet', {image: ['BLOB', '.attached[0]']}]],"
                          "ORDER_BY: [['._id']]}"));
-    auto results = runCollecting<string>(nullptr, [=](C4QueryEnumerator *e) {
+    auto collect = [=](C4QueryEnumerator *e) {
         Value val = FLArrayIterator_GetValueAt(&e->columns, 1);
         alloc_slice json = val.toJSON();
         C4Log("result: %.*s", SPLAT(json));
-        return string(json);
-    });
+        slice label = FLValue_AsString( FLDict_Get(FLValue_AsDict(val), "classLabel"_sl) );
+        return string(label);
+    };
+    auto results = runCollecting<string>(nullptr, collect);
     CHECK(results == (vector<string>{
-        "{\"classLabel\":\"Egyptian cat\",\"classLabelProbs\":{\"pickelhaube\":0.0375685,\"Egyptian cat\":0.133192,\"Windsor tie\":0.0598003,\"fur coat\":0.0447883,\"neck brace\":0.0407802}}",
-        "{\"classLabel\":\"jeep, landrover\",\"classLabelProbs\":{\"jeep, landrover\":0.616046,\"pickup, pickup truck\":0.0639241,\"tow truck, tow car, wrecker\":0.147471}}",
-        "{\"classLabel\":\"pineapple, ananas\",\"classLabelProbs\":{\"pineapple, ananas\":0.999959}}",
-        "{\"classLabel\":\"cliff, drop, drop-off\",\"classLabelProbs\":{\"fountain\":0.0595746,\"volcano\":0.0729924,\"cliff, drop, drop-off\":0.522751,\"valley, vale\":0.164491}}"
+        "Egyptian cat", "jeep, landrover", "pineapple, ananas", "cliff, drop, drop-off"
     }));
 }
 

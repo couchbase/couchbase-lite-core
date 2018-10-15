@@ -33,8 +33,8 @@ public:
     :_c4Model(model)
     { }
 
-    virtual alloc_slice predict(const Value *input, C4Error *outError) noexcept override {
-        return _c4Model.predict(_c4Model.modelInternal, (FLValue)input, outError);
+    virtual alloc_slice predict(const Dict *input, C4Error *outError) noexcept override {
+        return _c4Model.predict(_c4Model.context, (FLDict)input, outError);
     }
 
 private:
@@ -43,8 +43,8 @@ private:
 
 
 void c4pred_registerModel(const char *name, C4PredictiveModel model) {
-    auto modelInternal = retained(new C4PredictiveModelInternal(model));
-    modelInternal->registerAs(name);
+    auto context = retained(new C4PredictiveModelInternal(model));
+    context->registerAs(name);
 }
 
 

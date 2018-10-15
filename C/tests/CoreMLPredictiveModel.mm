@@ -32,13 +32,13 @@ namespace cbl {
 
 
     void PredictiveModel::registerWithName(const char *name) {
-        auto callback = [](void* modelInternal, FLValue input, C4Error *outError) {
+        auto callback = [](void* context, FLDict input, C4Error *outError) {
             @autoreleasepool {
                 try {
                     Encoder enc;
                     enc.beginDict();
-                    auto self = (PredictiveModel*)modelInternal;
-                    if (!self->predict(Value(input).asDict(), enc, outError))
+                    auto self = (PredictiveModel*)context;
+                    if (!self->predict(Dict(input), enc, outError))
                         return C4SliceResult{};
                     enc.endDict();
                     return C4SliceResult(enc.finish());
@@ -61,16 +61,22 @@ namespace cbl {
     }
 
 
+    // If `outError` is non-null, stores a C4Error in it with the formatted message.
+    // Otherwise, it just logs the message at verbose level as a non-fatal issue.
+    // Always returns false, as a convenience to the caller.
     bool PredictiveModel::reportError(C4Error *outError, const char *format, ...) {
-        va_list args;
-        va_start(args, format);
-        char *message = nullptr;
-        vasprintf(&message, format, args);
-        va_end(args);
-        C4LogToAt(kC4QueryLog, kC4LogError, "prediction() failed: %s", message);
-        if (outError)
-            *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidQuery, slice(message));
-        free(message);
+        if (outError || c4log_getLevel(kC4QueryLog) >= kC4LogVerbose) {
+            va_list args;
+            va_start(args, format);
+            char *message = nullptr;
+            vasprintf(&message, format, args);
+            va_end(args);
+            if (outError)
+                *outError = c4error_make(LiteCoreDomain, kC4ErrorInvalidQuery, slice(message));
+            else
+                C4LogToAt(kC4QueryLog, kC4LogVerbose, "prediction() giving up on this row: %s", message);
+            free(message);
+        }
         return false;
     }
 
@@ -121,10 +127,10 @@ namespace cbl {
             if (value) {
                 MLFeatureValue *feature = featureFromDict(name, value, outError);
                 if (!feature)
-                    return {};
+                    return false;
                 featureDict[name] = feature;
             } else if (!_featureDescriptions[name].optional) {
-                return reportError(outError, "required input property '%s' is missing", name.UTF8String);
+                return reportError(nullptr, "required input property '%s' is missing", name.UTF8String);
             }
         }
         NSError *error;
@@ -134,10 +140,8 @@ namespace cbl {
 
         // Run the model!
         id<MLFeatureProvider> result = [_model predictionFromFeatures: features error: &error];
-        if (!result) {
-            const char *msg = error.localizedDescription.UTF8String;
-            return reportError(outError, "CoreML error: %s", msg);
-        }
+        if (!result)
+            return reportError(outError, "CoreML error: %s", error.localizedDescription.UTF8String);
 
         // Decode the result to Fleece:
         for (NSString* name in result.featureNames) {
@@ -155,9 +159,10 @@ namespace cbl {
 
         // Get the image data and create a Vision handler:
         slice image = input[_imagePropertyName].asData();
-        if (!image)
-            return reportError(outError, "Image input property '%.*s' missing or not a blob",
+        if (!image) {
+            return reportError(nullptr, "Image input property '%.*s' missing or not a blob",
                                FMTSLICE(_imagePropertyName));
+        }
         NSData* imageData = image.uncopiedNSData();
         auto handler = [[VNImageRequestHandler alloc] initWithData: imageData options: @{}];
 
@@ -171,7 +176,7 @@ namespace cbl {
         }
         auto results = request.results;
         if (!results)
-            return reportError(outError, "Image processing returned no results");
+            return reportError(nullptr, "Image processing returned no results");
 
         NSString* predictedProbabilitiesName = _model.modelDescription.predictedProbabilitiesName;
         if (predictedProbabilitiesName) {
@@ -216,6 +221,14 @@ namespace cbl {
 #pragma mark - INPUT FEATURE CONVERSION:
 
 
+    static const char* kMLFeatureTypeName[8] = {
+        "(invalid)", "int64", "double", "string", "image", "multi-array", "dictionary", "sequence"
+    };
+    static const char* kCompatibleMLFeatureTypeName[8] = {
+        "(invalid)", "numeric", "numeric", "string", "blob", "numeric array", "dictionary", "sequence"
+    };
+
+
     // Creates an MLFeatureValue from the value of the same name in a Fleece dictionary.
     MLFeatureValue* CoreMLPredictiveModel::featureFromDict(NSString* name,
                                                            FLValue flValue,
@@ -245,7 +258,7 @@ namespace cbl {
                 if (valueType == kFLDict) {
                     dict = convertToMLDictionary(value.asDict());
                     if (!dict) {
-                        reportError(outError, "input dictionary '%s' contains a non-numeric value",
+                        reportError(nullptr, "input dictionary '%s' contains a non-numeric value",
                                     name.UTF8String);
                         return nil;
                     }
@@ -260,14 +273,15 @@ namespace cbl {
             case MLFeatureTypeMultiArray:
             case MLFeatureTypeSequence:
             case MLFeatureTypeInvalid:
-                reportError(outError, "model input feature '%s' is of unsupported type %d; sorry!",
-                            name.UTF8String, desc.type);
+                reportError(outError, "MLModel input feature '%s' is of unsupported type %s; sorry!",
+                            name.UTF8String, kMLFeatureTypeName[desc.type]);
                 return nil;
         }
         if (!feature) {
-            reportError(outError, "input property '%s' has wrong type", name.UTF8String);
+            reportError(nullptr, "input property '%s' has wrong type; should be %s",
+                        name.UTF8String, kCompatibleMLFeatureTypeName[desc.type]);
         } else if (![desc isAllowedValue: feature]) {
-            reportError(outError, "input property '%s' has an invalid value", name.UTF8String);
+            reportError(nullptr, "input property '%s' has an invalid value", name.UTF8String);
             feature = nil;
         }
         return feature;
