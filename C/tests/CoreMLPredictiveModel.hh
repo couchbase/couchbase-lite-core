@@ -34,7 +34,7 @@ namespace cbl {
         virtual bool predict(fleece::Dict input, fleece::Encoder&, C4Error *error) =0;
 
         static void encodeMLFeature(fleece::Encoder&, MLFeatureValue*);
-        static bool reportError(C4Error *outError, const char *format, ...);
+        static bool __printflike(2, 3) reportError(C4Error *outError, const char *format, ...);
 
     private:
         PredictiveModel(PredictiveModel&) =delete;

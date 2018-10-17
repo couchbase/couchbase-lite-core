@@ -45,7 +45,9 @@ namespace litecore {
             virtual std::string bodyColumnName() const        {return "body";}
             virtual std::string FTSTableName(const std::string &property) const =0;
             virtual std::string unnestedTableName(const std::string &property) const =0;
+#ifdef COUCHBASE_ENTERPRISE
             virtual std::string predictiveTableName(const std::string &property) const =0;
+#endif
             virtual bool tableExists(const std::string &tableName) const =0;
         };
 
@@ -174,7 +176,7 @@ namespace litecore {
         void parseJoin(const fleece::impl::Dict*);
 
         unsigned findFTSProperties(const fleece::impl::Value *root);
-        unsigned findPredictionCalls(const fleece::impl::Value *root);
+        void findPredictionCalls(const fleece::impl::Value *root);
         const std::string& indexJoinTableAlias(const std::string &key, const char *aliasPrefix =nullptr);
         const std::string&  FTSJoinTableAlias(const fleece::impl::Value *matchLHS, bool canAdd =false);
         const std::string&  predictiveJoinTableAlias(const fleece::impl::Value *expr, bool canAdd =false);

@@ -24,6 +24,8 @@
 #include "MutableArray.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 
+#ifdef COUCHBASE_ENTERPRISE
+
 using namespace std;
 using namespace fleece;
 using namespace fleece::impl;
@@ -144,3 +146,5 @@ namespace litecore {
     }
 
 }
+
+#endif // COUCHBASE_ENTERPRISE

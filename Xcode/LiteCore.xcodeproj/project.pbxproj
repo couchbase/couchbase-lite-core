@@ -137,6 +137,8 @@
 		274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 274D040A1BA75E1C00FF7C35 /* main.cpp */; };
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
+		274D17822177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */; };
+		274D17832177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */; };
 		274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		274D5BA51DF8D90100BDAF9D /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
@@ -1107,6 +1109,8 @@
 		274D040A1BA75E1C00FF7C35 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		274D04231BA8932800FF7C35 /* c4.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4.exp; sourceTree = "<group>"; };
 		274D04261BA8A5BC00FF7C35 /* c4Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Internal.hh; sourceTree = "<group>"; };
+		274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "QueryParser+Prediction.cc"; sourceTree = "<group>"; };
+		274D17842177F212007FD01A /* QueryParser+Private.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "QueryParser+Private.hh"; sourceTree = "<group>"; };
 		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
 		274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteKeyStore.hh; sourceTree = "<group>"; };
@@ -2136,6 +2140,8 @@
 				276D15401DFF541000543B1B /* SQLiteQuery.cc */,
 				274EDDF41DA30B43003AD158 /* QueryParser.cc */,
 				274EDDF51DA30B43003AD158 /* QueryParser.hh */,
+				274D17842177F212007FD01A /* QueryParser+Private.hh */,
+				274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */,
 				275FF6661E42A90C005F90DD /* QueryParserTables.hh */,
 				27098AA4216C2108002751DA /* PredictiveModel.cc */,
 				27098AA5216C2108002751DA /* PredictiveModel.hh */,
@@ -3584,6 +3590,7 @@
 				93CD01101E933BE100AFB3FA /* Checkpoint.cc in Sources */,
 				27D74A6F1D4D3DF500D806E0 /* SQLiteDataFile.cc in Sources */,
 				27D74A841D4D3F2300D806E0 /* Transaction.cpp in Sources */,
+				274D17822177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */,
 				27D74A9F1D4FF65000D806E0 /* c4Base.cc in Sources */,
 				27FDF1391DA8116A0087B4E6 /* SQLiteFleeceEach.cc in Sources */,
 				273407231DEE116600EA5532 /* PlatformIO.cc in Sources */,
@@ -3723,6 +3730,7 @@
 				27E6DFF11DA5AFF3008EB681 /* Query.cc in Sources */,
 				72DE480C1E9C550A00B60952 /* IncomingRev.cc in Sources */,
 				27CE4CF32077F51000ACA225 /* Address.cc in Sources */,
+				274D17832177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */,
 				276D15431DFF54BD00543B1B /* SQLiteQuery.cc in Sources */,
 				72DE48091E9C550A00B60952 /* DBWorker.cc in Sources */,
 				276683B71DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,

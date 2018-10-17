@@ -44,9 +44,11 @@ public:
     virtual bool tableExists(const string &tableName) const override {
         return tablesExist;
     }
+#ifdef COUCHBASE_ENTERPRISE
     virtual std::string predictiveTableName(const std::string &property) const override {
         return tableName() + ":predict:" + property;
     }
+#endif
 
 protected:
     string parse(string json) {

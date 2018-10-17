@@ -184,7 +184,7 @@ extern "C" {
         kC4FullTextIndex,      ///< Full-text index
         kC4ArrayIndex,         ///< Index of array values, for use with UNNEST
         kC4GeoIndex,           ///< Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
-        kC4PredictiveIndex,    ///< Index of prediction() results
+        kC4PredictiveIndex,    ///< Index of prediction() results (Enterprise Edition only)
     };
 
 

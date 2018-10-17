@@ -69,7 +69,9 @@ namespace litecore {
             }
             case kFullTextIndex:  created = createFTSIndex(indexNameStr, params, options); break;
             case kArrayIndex:     created = createArrayIndex(indexNameStr, params, options); break;
+#ifdef COUCHBASE_ENTERPRISE
             case kPredictiveIndex:created = createPredictiveIndex(indexNameStr, params, options); break;
+#endif
             default:             error::_throw(error::Unimplemented);
         }
 

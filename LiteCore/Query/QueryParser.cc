@@ -19,6 +19,7 @@
 // https://github.com/couchbase/couchbase-lite-core/wiki/JSON-Query-Schema
 
 #include "QueryParser.hh"
+#include "QueryParser+Private.hh"
 #include "QueryParserTables.hh"
 #include "Record.hh"
 #include "Error.hh"
@@ -28,80 +29,58 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "PlatformIO.hh"
-#include "SecureDigest.hh"
 #include <utility>
 #include <algorithm>
 
 using namespace std;
 using namespace fleece;
 using namespace fleece::impl;
+using namespace litecore::qp;
 
 namespace litecore {
 
 
-    // Names of the SQLite functions we register for working with Fleece data,
-    // in SQLiteFleeceFunctions.cc:
-    static constexpr slice kValueFnName = "fl_value"_sl;
-    static constexpr slice kNestedValueFnName = "fl_nested_value"_sl;
-    static constexpr slice kUnnestedValueFnName = "fl_unnested_value"_sl;
-    static constexpr slice kBlobFnName = "fl_blob"_sl;
-    static constexpr slice kRootFnName  = "fl_root"_sl;
-    static constexpr slice kEachFnName  = "fl_each"_sl;
-    static constexpr slice kCountFnName = "fl_count"_sl;
-    static constexpr slice kExistsFnName= "fl_exists"_sl;
-    static constexpr slice kResultFnName= "fl_result"_sl;
-    static constexpr slice kContainsFnName = "fl_contains"_sl;
-    static constexpr slice kNullFnName = "fl_null"_sl;
-    static constexpr slice kBoolFnName = "fl_bool"_sl;
-    static constexpr slice kArrayFnNameWithParens = "array_of()"_sl;
-    static constexpr slice kDictFnName = "dict_of"_sl;
-    static constexpr slice kPredictFnName = "prediction"_sl;
-    static constexpr slice kPredictFnNameWithParens = "prediction()"_sl;
-
-    // Existing SQLite FTS rank function:
-    static constexpr slice kRankFnName  = "rank"_sl;
-
-    static constexpr slice kArrayCountFnName = "array_count"_sl;
-
-    static const char* const kDefaultTableAlias = "_doc";
-
-
 #pragma mark - UTILITY FUNCTIONS:
 
+    namespace qp {
+        void fail(const char *format, ...) {
+            va_list args;
+            va_start(args, format);
+            string message = vformat(format, args);
+            va_end(args);
 
-    [[noreturn]] __printflike(1, 2)
-    static void fail(const char *format, ...) {
-        va_list args;
-        va_start(args, format);
-        string message = vformat(format, args);
-        va_end(args);
+            Warn("Invalid LiteCore query: %s", message.c_str());
+            throw error(error::LiteCore, error::InvalidQuery, message);
+        }
 
-        Warn("Invalid LiteCore query: %s", message.c_str());
-        throw error(error::LiteCore, error::InvalidQuery, message);
+
+        const Array* requiredArray(const Value *v, const char *what) {
+            return required(required(v, what)->asArray(), what, "must be an array");
+        }
+
+        const Dict* requiredDict(const Value *v, const char *what) {
+            return required(required(v, what)->asDict(), what, "must be a dictionary");
+        }
+
+        slice requiredString(const Value *v, const char *what) {
+            return required(required(v, what)->asString(), what, "must be a string");
+        }
+
+        unsigned findNodes(const Value *root, slice op, unsigned argCount,
+                           function_ref<void(const Array*)> callback)
+        {
+            unsigned n = 0;
+            for (DeepIterator di(root); di; ++di) {
+                auto operation = di.value()->asArray();
+                if (operation && operation->count() > argCount
+                    && operation->get(0)->asString().caseEquivalent(op)) {
+                    callback(operation);
+                    ++n;
+                }
+            }
+            return n;
+        }
     }
-
-    #define require(TEST, FORMAT, ...)  if (TEST) ; else fail(FORMAT, ##__VA_ARGS__)
-
-
-    template <class T>
-    static T required(T val, const char *name, const char *message = "is missing") {
-        require(val, "%s %s", name, message);
-        return val;
-    }
-
-
-    static const Array* requiredArray(const Value *v, const char *what) {
-        return required(required(v, what)->asArray(), what, "must be an array");
-    }
-
-    static const Dict* requiredDict(const Value *v, const char *what) {
-        return required(required(v, what)->asDict(), what, "must be a dictionary");
-    }
-
-    static slice requiredString(const Value *v, const char *what) {
-        return required(required(v, what)->asString(), what, "must be a string");
-    }
-
     
     static bool isAlphanumericOrUnderscore(slice str) {
         if (str.size == 0)
@@ -161,26 +140,6 @@ namespace litecore {
     }
 
     
-    static unsigned findNodes(const Value *root, slice op, unsigned argCount,
-                              function_ref<void(const Array*)> callback)
-    {
-        unsigned n = 0;
-        for (DeepIterator di(root); di; ++di) {
-            auto operation = di.value()->asArray();
-            if (operation->count() > argCount && operation->get(0)->asString().caseEquivalent(op)) {
-                callback(operation);
-                ++n;
-            }
-        }
-        return n;
-    }
-
-
-    static string propertyFromString(slice str);
-    static string propertyFromOperands(Array::iterator &operands, bool skipDot =false);
-    static string propertyFromNode(const Value *node, char prefix ='.');
-
-
 #pragma mark - QUERY PARSER TOP LEVEL:
 
 
@@ -1097,27 +1056,13 @@ namespace litecore {
         }
 
         // Special case: "predict()" may be indexed:
-        if (op.caseEquivalent(kPredictFnName) && writeIndexedPrediction((const Array*)_curNode))
+#ifdef COUCHBASE_ENTERPRISE
+        if (op.caseEquivalent(kPredictionFnName) && writeIndexedPrediction((const Array*)_curNode))
             return;
+#endif
 
         _sql << op;
         writeArgList(operands);
-    }
-
-
-    bool QueryParser::writeIndexedPrediction(const Array *node) {
-        auto alias = predictiveJoinTableAlias(node);
-        if (alias.empty())
-            return false;
-        if (node->count() >= 4) {
-            slice property = requiredString(node->get(3), "PREDICTION() property name");
-            _sql << kValueFnName << "(" << alias << ".body, ";
-            writeSQLString(_sql, propertyFromString(property));
-            _sql << ")";
-        } else {
-            _sql << kRootFnName << "(" << alias << ".body)";
-        }
-        return true;
     }
 
 
@@ -1149,58 +1094,60 @@ namespace litecore {
 #pragma mark - PROPERTIES:
 
 
-    static string propertyFromString(slice str) {
-        require(str.hasPrefix('.'),
-                "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
-        str.moveStart(1);
-        auto property = str.asString();
-        if (str.hasPrefix('$'))
-            property.insert(0, 1, '\\');
-        return property;
-    }
+    namespace qp {
+        string propertyFromString(slice str) {
+            require(str.hasPrefix('.'),
+                    "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
+            str.moveStart(1);
+            auto property = str.asString();
+            if (str.hasPrefix('$'))
+                property.insert(0, 1, '\\');
+            return property;
+        }
 
 
-    // Concatenates property operands to produce the property path string
-    static string propertyFromOperands(Array::iterator &operands, bool skipDotPrefix) {
-        stringstream pathStr;
-        int n = 0;
-        for (auto &i = operands; i; ++i,++n) {
-            auto arr = i.value()->asArray();
-            if (arr) {
-                require(n > 0, "Property path can't start with an array index");
-                require(arr->count() == 1, "Property array index must have exactly one item");
-                require(arr->get(0)->isInteger(), "Property array index must be an integer");
-                Path::writeIndex(pathStr, (int)arr->get(0)->asInt());
-            } else {
-                slice name = i.value()->asString();
-                require(name, "Invalid JSON value in property path");
-                if (skipDotPrefix) {
-                    name.moveStart(1);
-                    pathStr.write((const char*)name.buf, name.size);
+        // Concatenates property operands to produce the property path string
+        string propertyFromOperands(Array::iterator &operands, bool skipDotPrefix) {
+            stringstream pathStr;
+            int n = 0;
+            for (auto &i = operands; i; ++i,++n) {
+                auto arr = i.value()->asArray();
+                if (arr) {
+                    require(n > 0, "Property path can't start with an array index");
+                    require(arr->count() == 1, "Property array index must have exactly one item");
+                    require(arr->get(0)->isInteger(), "Property array index must be an integer");
+                    Path::writeIndex(pathStr, (int)arr->get(0)->asInt());
                 } else {
-                    Path::writeProperty(pathStr, name, n==0);
+                    slice name = i.value()->asString();
+                    require(name, "Invalid JSON value in property path");
+                    if (skipDotPrefix) {
+                        name.moveStart(1);
+                        pathStr.write((const char*)name.buf, name.size);
+                    } else {
+                        Path::writeProperty(pathStr, name, n==0);
+                    }
+                    require(name.size > 0, "Property name must not be empty");
                 }
-                require(name.size > 0, "Property name must not be empty");
+                skipDotPrefix = false;
             }
-            skipDotPrefix = false;
+            return pathStr.str();
         }
-        return pathStr.str();
-    }
 
 
-    // Returns the property represented by a node, or "" if it's not a property node
-    static string propertyFromNode(const Value *node, char prefix) {
-        Array::iterator i(node->asArray());
-        if (i.count() >= 1) {
-            auto op = i[0]->asString();
-            if (op.hasPrefix(prefix)) {
-                bool justDot = (op.size == 1);
-                if (justDot)
-                    ++i;
-                return propertyFromOperands(i, !justDot);
+        // Returns the property represented by a node, or "" if it's not a property node
+        string propertyFromNode(const Value *node, char prefix) {
+            Array::iterator i(node->asArray());
+            if (i.count() >= 1) {
+                auto op = i[0]->asString();
+                if (op.hasPrefix(prefix)) {
+                    bool justDot = (op.size == 1);
+                    if (justDot)
+                        ++i;
+                    return propertyFromOperands(i, !justDot);
+                }
             }
+            return "";              // not a valid property node
         }
-        return "";              // not a valid property node
     }
 
 
@@ -1424,44 +1371,9 @@ namespace litecore {
 #pragma mark - PREDICTIVE QUERY:
 
 
-    // Scans the entire query for PREDICTION() calls and adds join tables for ones that are indexed.
-    unsigned QueryParser::findPredictionCalls(const Value *root) {
-        return findNodes(root, kPredictFnNameWithParens, 1, [this](const Array *pred) {
-            predictiveJoinTableAlias(pred, true);
-        });
+#ifndef COUCHBASE_ENTERPRISE
+    void QueryParser::findPredictionCalls(const Value *root) {
     }
-
-
-    // Looks up or adds a join alias for a predictive index table.
-    const string& QueryParser::predictiveJoinTableAlias(const Value *predictionExpr, bool canAdd) {
-        string table = predictiveTableName(predictionExpr);
-        if (canAdd && !_delegate.tableExists(table))
-            canAdd = false; // not indexed
-        return indexJoinTableAlias(table, (canAdd ? "pred" : nullptr));
-    }
-
-
-    // Constructs a unique identifier of a specific PREDICTION() call, from a digest of its JSON.
-    string QueryParser::predictiveIdentifier(const Value *expression) const {
-        Array::iterator array(expression->asArray());
-        require(array.count() >= 2 && array[0]->asString().caseEquivalent(kPredictFnNameWithParens),
-                "Invalid PREDICTION() call");
-        alloc_slice name = array[1]->toJSON(true);
-        alloc_slice input = array[2]->toJSON(true);
-
-        uint8_t digest[20];
-        sha1Context ctx;
-        sha1_begin(&ctx);
-        sha1_add(&ctx, name.buf, name.size);
-        sha1_add(&ctx, input.buf, input.size);
-        sha1_end(&ctx, &digest);
-        return slice(&digest, sizeof(digest)).base64String();
-    }
-
-
-    // Returns the name of the index table for a PREDICTION() call expression.
-    string QueryParser::predictiveTableName(const Value *expression) const {
-        return _delegate.predictiveTableName(predictiveIdentifier(expression));
-    }
+#endif
 
 }
