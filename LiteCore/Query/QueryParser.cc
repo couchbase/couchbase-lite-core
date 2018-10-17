@@ -23,10 +23,12 @@
 #include "Record.hh"
 #include "Error.hh"
 #include "FleeceImpl.hh"
+#include "DeepIterator.hh"
 #include "Path.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "PlatformIO.hh"
+#include "SecureDigest.hh"
 #include <utility>
 #include <algorithm>
 
@@ -51,8 +53,10 @@ namespace litecore {
     static constexpr slice kContainsFnName = "fl_contains"_sl;
     static constexpr slice kNullFnName = "fl_null"_sl;
     static constexpr slice kBoolFnName = "fl_bool"_sl;
-    static constexpr slice kArrayFnName = "array_of()"_sl;
+    static constexpr slice kArrayFnNameWithParens = "array_of()"_sl;
     static constexpr slice kDictFnName = "dict_of"_sl;
+    static constexpr slice kPredictFnName = "prediction"_sl;
+    static constexpr slice kPredictFnNameWithParens = "prediction()"_sl;
 
     // Existing SQLite FTS rank function:
     static constexpr slice kRankFnName  = "rank"_sl;
@@ -157,6 +161,21 @@ namespace litecore {
     }
 
     
+    static unsigned findNodes(const Value *root, slice op, unsigned argCount,
+                              function_ref<void(const Array*)> callback)
+    {
+        unsigned n = 0;
+        for (DeepIterator di(root); di; ++di) {
+            auto operation = di.value()->asArray();
+            if (operation->count() > argCount && operation->get(0)->asString().caseEquivalent(op)) {
+                callback(operation);
+                ++n;
+            }
+        }
+        return n;
+    }
+
+
     static string propertyFromString(slice str);
     static string propertyFromOperands(Array::iterator &operands, bool skipDot =false);
     static string propertyFromNode(const Value *node, char prefix ='.');
@@ -172,6 +191,7 @@ namespace litecore {
         _parameters.clear();
         _variables.clear();
         _ftsTables.clear();
+        _indexJoinTables.clear();
         _aliases.clear();
         _dbAlias.clear();
         _1stCustomResultCol = 0;
@@ -260,11 +280,16 @@ namespace litecore {
                 _sql << (nCol++ ? ", " : "") << defaultTablePrefix << col;
         }
 
-        for (auto ftsTable : _ftsTables) {
-            _sql << (nCol++ ? ", " : "") << "offsets(\"" << ftsTable << "\")";
+        // Write columns for the FTS match offsets (in order of appearance of the MATCH expressions)
+        for (string &ftsTable : _ftsTables) {
+            const string &alias = _indexJoinTables[ftsTable];
+            _sql << (nCol++ ? ", " : "") << "offsets(" << alias << ".\"" << ftsTable << "\")";
         }
-        _1stCustomResultCol = nCol;
 
+        // Add the indexed prediction() calls now
+        findPredictionCalls(operands);
+
+        _1stCustomResultCol = nCol;
         auto nCustomCol = writeSelectListClause(operands, "WHAT"_sl, (nCol ? ", " : ""), true);
 
         if (nCustomCol == 0) {
@@ -506,12 +531,15 @@ namespace litecore {
         } else {
             _sql << " AS " << quoteTableName(_dbAlias);
         }
-        
-        unsigned ftsTableNo = 0;
-        for (auto ftsTable : _ftsTables) {
-            ++ftsTableNo;
-            _sql << " JOIN \"" << ftsTable << "\" AS FTS" << ftsTableNo
-                 << " ON FTS" << ftsTableNo << ".docid = " << quoteTableName(_dbAlias) << ".rowid";
+
+        // Add joins to index tables (FTS, predictive):
+        for (auto &ftsTable : _indexJoinTables) {
+            auto &table = ftsTable.first;
+            auto &alias = ftsTable.second;
+            if (!hasPrefix(alias, "fts"))    // Can't use LEFT join with FTS tables
+                _sql << " LEFT";
+            _sql << " JOIN \"" << table << "\" AS " << alias
+                 << " ON " << alias << ".docid = " << quoteTableName(_dbAlias) << ".rowid";
         }
     }
 
@@ -529,6 +557,7 @@ namespace litecore {
     
     
     void QueryParser::parseNode(const Value *node) {
+        _curNode = node;
         switch (node->type()) {
             case kNull:
                 _sql << kNullFnName << "()";
@@ -698,7 +727,7 @@ namespace litecore {
     // Handles array literals (the "[]" op)
     // But note that this op is treated specially if it's an operand of "IN" (see inOp)
     void QueryParser::arrayLiteralOp(slice op, Array::iterator& operands) {
-        functionOp(kArrayFnName, operands);
+        functionOp(kArrayFnNameWithParens, operands);
     }
 
     // Handles EXISTS
@@ -810,9 +839,9 @@ namespace litecore {
                 "MATCH can only appear at top-level, or in a top-level AND");
 
         // Write the expression:
-        auto ftsTableNo = FTSPropertyIndex(operands[0]);
-        Assert(ftsTableNo > 0);
-        _sql << "FTS" << ftsTableNo << ".\"" << FTSTableName(operands[0]) << "\" MATCH ";
+        auto ftsTableAlias = FTSJoinTableAlias(operands[0]);
+        Assert(!ftsTableAlias.empty());
+        _sql << ftsTableAlias << ".\"" << FTSTableName(operands[0]) << "\" MATCH ";
         parseCollatableNode(operands[1]);
     }
 
@@ -1060,14 +1089,35 @@ namespace litecore {
         // Special case: in "rank(ftsName)" the param has to be a matchinfo() call:
         if (op.caseEquivalent(kRankFnName)) {
             string fts = FTSTableName(operands[0]);
-            if (find(_ftsTables.begin(), _ftsTables.end(), fts) == _ftsTables.end())
+            auto i = _indexJoinTables.find(fts);
+            if (i == _indexJoinTables.end())
                 fail("rank() can only be called on FTS indexes");
-            _sql << "rank(matchinfo(\"" << fts << "\"))";
+            _sql << "rank(matchinfo(" << i->second << ".\"" << i->first << "\"))";
             return;
         }
 
+        // Special case: "predict()" may be indexed:
+        if (op.caseEquivalent(kPredictFnName) && writeIndexedPrediction((const Array*)_curNode))
+            return;
+
         _sql << op;
         writeArgList(operands);
+    }
+
+
+    bool QueryParser::writeIndexedPrediction(const Array *node) {
+        auto alias = predictiveJoinTableAlias(node);
+        if (alias.empty())
+            return false;
+        if (node->count() >= 4) {
+            slice property = requiredString(node->get(3), "PREDICTION() property name");
+            _sql << kValueFnName << "(" << alias << ".body, ";
+            writeSQLString(_sql, propertyFromString(property));
+            _sql << ")";
+        } else {
+            _sql << kRootFnName << "(" << alias << ".body)";
+        }
+        return true;
     }
 
 
@@ -1297,31 +1347,34 @@ namespace litecore {
     }
 
 
-#pragma mark - FULL-TEXT-SEARCH MATCH:
-
-
-    // Recursively looks for MATCH expressions and adds the properties being matched to _ftsTables.
-    // Returns the number of expressions found.
-    unsigned QueryParser::findFTSProperties(const Value *node) {
-        unsigned found = 0;
-        Array::iterator i(node->asArray());
-        if (i.count() == 0)
-            return 0;
-        slice op = i.value()->asString();
-        ++i;
-        if (op.caseEquivalent("MATCH"_sl) && i) {
-            found = 1;
-            FTSPropertyIndex(i.value(), true); // add LHS
-            ++i;
+    // Given an index table name, returns its join alias. If `aliasPrefix` is given, it will add
+    // a new alias if necessary, which will begin with that prefix.
+    const string& QueryParser::indexJoinTableAlias(const string &tableName, const char *aliasPrefix) {
+        auto i = _indexJoinTables.find(tableName);
+        if (i == _indexJoinTables.end()) {
+            if (!aliasPrefix) {
+                static string kEmptyString;
+                return kEmptyString;
+            }
+            string alias = aliasPrefix + to_string(_indexJoinTables.size() + 1);
+            i = _indexJoinTables.insert({tableName, alias}).first;
         }
-
-        // Recurse into operands:
-        for (; i; ++i)
-            found += findFTSProperties(i.value());
-        return found;
+        return i->second;
     }
 
 
+#pragma mark - FULL-TEXT-SEARCH:
+
+
+    // Recursively looks for MATCH expressions and adds the properties being matched to
+    // _indexJoinTables. Returns the number of expressions found.
+    unsigned QueryParser::findFTSProperties(const Value *root) {
+        return findNodes(root, "MATCH"_sl, 1, [this](const Array *match) {
+            FTSJoinTableAlias(match->get(1), true); // add LHS
+        });
+    }
+
+    // Returns the FTS table name given the LHS of a MATCH expression.
     string QueryParser::FTSTableName(const Value *key) const {
         string ftsName( requiredString(key, "left-hand side of MATCH expression") );
         require(!ftsName.empty() && ftsName.find('"') == string::npos,
@@ -1329,20 +1382,18 @@ namespace litecore {
         return _delegate.FTSTableName(ftsName);
     }
 
-    size_t QueryParser::FTSPropertyIndex(const Value *matchLHS, bool canAdd) {
-        string key = FTSTableName(matchLHS);
-        auto i = find(_ftsTables.begin(), _ftsTables.end(), key);
-        if (i != _ftsTables.end()) {
-            return i - _ftsTables.begin() + 1;
-        } else if (canAdd) {
-            _ftsTables.push_back(key);
-            return _ftsTables.size();
-        } else {
-            return 0;
-        }
+    // Returns or creates the FTS join alias given the LHS of a MATCH expression.
+    const string& QueryParser::FTSJoinTableAlias(const Value *matchLHS, bool canAdd) {
+        auto tableName = FTSTableName(matchLHS);
+        const string &alias = indexJoinTableAlias(tableName);
+        if (!canAdd || !alias.empty())
+            return alias;
+        _ftsTables.push_back(tableName);
+        return indexJoinTableAlias(tableName, "fts");
     }
 
 
+    // Returns the column name of an FTS table to use for a MATCH expression.
     string QueryParser::FTSColumnName(const Value *expression) {
         slice op = requiredArray(expression, "FTS index expression")->get(0)->asString();
         require(op.hasPrefix('.'), "FTS index expression must be a property");
@@ -1352,6 +1403,11 @@ namespace litecore {
     }
 
 
+
+#pragma mark - UNNEST QUERY:
+
+
+    // Returns the index table name for an unnested array property.
     string QueryParser::unnestedTableName(const Value *arrayExpr) const {
         string path = propertyFromNode(arrayExpr);
         require(!path.empty() && path.find('"') == string::npos,
@@ -1362,6 +1418,50 @@ namespace litecore {
                 path = path.substr(dbAliasPrefix.size());
         }
         return _delegate.unnestedTableName(path);
+    }
+
+
+#pragma mark - PREDICTIVE QUERY:
+
+
+    // Scans the entire query for PREDICTION() calls and adds join tables for ones that are indexed.
+    unsigned QueryParser::findPredictionCalls(const Value *root) {
+        return findNodes(root, kPredictFnNameWithParens, 1, [this](const Array *pred) {
+            predictiveJoinTableAlias(pred, true);
+        });
+    }
+
+
+    // Looks up or adds a join alias for a predictive index table.
+    const string& QueryParser::predictiveJoinTableAlias(const Value *predictionExpr, bool canAdd) {
+        string table = predictiveTableName(predictionExpr);
+        if (canAdd && !_delegate.tableExists(table))
+            canAdd = false; // not indexed
+        return indexJoinTableAlias(table, (canAdd ? "pred" : nullptr));
+    }
+
+
+    // Constructs a unique identifier of a specific PREDICTION() call, from a digest of its JSON.
+    string QueryParser::predictiveIdentifier(const Value *expression) const {
+        Array::iterator array(expression->asArray());
+        require(array.count() >= 2 && array[0]->asString().caseEquivalent(kPredictFnNameWithParens),
+                "Invalid PREDICTION() call");
+        alloc_slice name = array[1]->toJSON(true);
+        alloc_slice input = array[2]->toJSON(true);
+
+        uint8_t digest[20];
+        sha1Context ctx;
+        sha1_begin(&ctx);
+        sha1_add(&ctx, name.buf, name.size);
+        sha1_add(&ctx, input.buf, input.size);
+        sha1_end(&ctx, &digest);
+        return slice(&digest, sizeof(digest)).base64String();
+    }
+
+
+    // Returns the name of the index table for a PREDICTION() call expression.
+    string QueryParser::predictiveTableName(const Value *expression) const {
+        return _delegate.predictiveTableName(predictiveIdentifier(expression));
     }
 
 }

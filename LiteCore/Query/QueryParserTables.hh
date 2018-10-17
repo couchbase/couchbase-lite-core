@@ -195,7 +195,7 @@ namespace litecore {
 
         // Predictive query:
 #ifdef COUCHBASE_ENTERPRISE
-        {"prediction"_sl,       2, 2},
+        {"prediction"_sl,       2, 3},
 #endif
 
         {nullslice} // End of data

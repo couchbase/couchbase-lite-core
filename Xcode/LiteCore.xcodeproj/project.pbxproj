@@ -51,6 +51,12 @@
 		27098AA8216C2108002751DA /* PredictiveModel.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27098AA5216C2108002751DA /* PredictiveModel.hh */; };
 		27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */; };
 		27098AB821714AB0002751DA /* Vision.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27098AB721714AB0002751DA /* Vision.framework */; };
+		27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */; };
+		27098ABD217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */; };
+		27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */; };
+		27098AC12175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */; };
+		27098AC421752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */; };
+		27098AC521752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */; };
 		270AB2A02072B1EA009A4596 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
 		270AB2A12072B1F2009A4596 /* CivetWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AFE21EC2363600C12E98 /* CivetWebSocket.cc */; };
 		270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
@@ -1001,6 +1007,9 @@
 		27098AA5216C2108002751DA /* PredictiveModel.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PredictiveModel.hh; sourceTree = "<group>"; };
 		27098AA9216C2ED6002751DA /* PredictiveQueryTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PredictiveQueryTest.cc; sourceTree = "<group>"; };
 		27098AB721714AB0002751DA /* Vision.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vision.framework; path = System/Library/Frameworks/Vision.framework; sourceTree = SDKROOT; };
+		27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+FTSIndexes.cc"; sourceTree = "<group>"; };
+		27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+ArrayIndexes.cc"; sourceTree = "<group>"; };
+		27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+PredictiveIndexes.cc"; sourceTree = "<group>"; };
 		270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTSyncListener_stub.cc; sourceTree = "<group>"; };
 		270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CivetC4Socket_stub.cc; sourceTree = "<group>"; };
 		270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListener_stub.cc; sourceTree = "<group>"; };
@@ -2119,6 +2128,9 @@
 			isa = PBXGroup;
 			children = (
 				2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */,
+				27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */,
+				27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */,
+				27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */,
 				27E6DFEE1DA5AFF3008EB681 /* Query.cc */,
 				27E6DFEF1DA5AFF3008EB681 /* Query.hh */,
 				276D15401DFF541000543B1B /* SQLiteQuery.cc */,
@@ -3549,10 +3561,12 @@
 				2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */,
 				27393A871C8A353A00829C9B /* Error.cc in Sources */,
 				27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */,
+				27098ABC217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
 				726F2B901EB2C36E00C1EC3C /* DefaultLogger.cc in Sources */,
 				27098A97216C1D2E002751DA /* c4PredictiveQuery.cc in Sources */,
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27098AA6216C2108002751DA /* PredictiveModel.cc in Sources */,
+				27098AC421752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc in Sources */,
 				278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				2749B9491EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
@@ -3625,6 +3639,7 @@
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
 				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
 				277C14711EA8102B0075348F /* Document.cc in Sources */,
+				27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */,
 				276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3693,6 +3708,7 @@
 				276CD4291D77E92E001346A3 /* BlobStore.cc in Sources */,
 				27D74AA01D4FF65000D806E0 /* c4Base.cc in Sources */,
 				2763011C1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
+				27098AC12175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */,
 				270C6B961EBA3A1900E73415 /* LogEncoder.cc in Sources */,
 				27098AA2216C1E88002751DA /* SQLitePredictionFunction.cc in Sources */,
 				72DE480D1E9C550A00B60952 /* IncomingBlob.cc in Sources */,
@@ -3715,11 +3731,13 @@
 				720EA3E61BA7EAD9002B8416 /* c4Database.cc in Sources */,
 				72DE48111E9C550A00B60952 /* c4Replicator.cc in Sources */,
 				72DE480B1E9C550A00B60952 /* Puller.cc in Sources */,
+				27098ABD217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc in Sources */,
 				27B341281D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */,
 				2708FE5F1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				273E9EC31C506C60003115A6 /* c4DocEnumerator.cc in Sources */,
 				2734F61B206ABEB000C982FF /* ReplicatorTypes.cc in Sources */,
 				2753AF761EBD190700C12E98 /* LogDecoder.cc in Sources */,
+				27098AC521752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc in Sources */,
 				2769438D1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				273407241DEE116600EA5532 /* PlatformIO.cc in Sources */,
 				72DE480F1E9C550A00B60952 /* Checkpoint.cc in Sources */,

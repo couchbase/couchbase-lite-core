@@ -72,6 +72,7 @@ namespace litecore {
         virtual std::string tableName() const override  {return std::string("kv_") + name();}
         virtual std::string FTSTableName(const std::string &property) const override;
         virtual std::string unnestedTableName(const std::string &property) const override;
+        virtual std::string predictiveTableName(const std::string &property) const override;
         virtual bool tableExists(const std::string &tableName) const override;
 
 
@@ -117,11 +118,15 @@ namespace litecore {
                               const IndexOptions *options);
         bool createFTSIndex(std::string, const fleece::impl::Array *params, const IndexOptions*);
         bool createArrayIndex(std::string, const fleece::impl::Array *params, const IndexOptions*);
+        bool createPredictiveIndex(std::string, const fleece::impl::Array *params,
+                                   const IndexOptions*);
         std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexOptions*);
+        std::string createPredictionTable(const fleece::impl::Value *arrayPath, const IndexOptions*);
         bool _schemaExistsWithSQL(const std::string &name, const std::string &type,
                                   const std::string &tableName, const std::string &sql);
         void _sqlDeleteIndex(const std::string &name);
         void garbageCollectArrayIndexes();
+        void garbageCollectPredictiveIndexes();
         bool hasExpiration();
         void addExpiration();
 

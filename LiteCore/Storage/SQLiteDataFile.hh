@@ -43,6 +43,7 @@ namespace litecore {
         bool isOpen() const noexcept override;
         void close() override;
         void compact() override;
+        void optimize();
 
         static void shutdown() { }
 

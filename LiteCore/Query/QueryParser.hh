@@ -45,6 +45,7 @@ namespace litecore {
             virtual std::string bodyColumnName() const        {return "body";}
             virtual std::string FTSTableName(const std::string &property) const =0;
             virtual std::string unnestedTableName(const std::string &property) const =0;
+            virtual std::string predictiveTableName(const std::string &property) const =0;
             virtual bool tableExists(const std::string &tableName) const =0;
         };
 
@@ -79,6 +80,8 @@ namespace litecore {
         std::string eachExpressionSQL(const fleece::impl::Value*);
         static std::string FTSColumnName(const fleece::impl::Value *expression);
         std::string unnestedTableName(const fleece::impl::Value *key) const;
+        std::string predictiveIdentifier(const fleece::impl::Value *) const;
+        std::string predictiveTableName(const fleece::impl::Value *) const;
 
     private:
 
@@ -170,9 +173,14 @@ namespace litecore {
 
         void parseJoin(const fleece::impl::Dict*);
 
-        unsigned findFTSProperties(const fleece::impl::Value *node);
-        size_t FTSPropertyIndex(const fleece::impl::Value *matchLHS, bool canAdd =false);
+        unsigned findFTSProperties(const fleece::impl::Value *root);
+        unsigned findPredictionCalls(const fleece::impl::Value *root);
+        const std::string& indexJoinTableAlias(const std::string &key, const char *aliasPrefix =nullptr);
+        const std::string&  FTSJoinTableAlias(const fleece::impl::Value *matchLHS, bool canAdd =false);
+        const std::string&  predictiveJoinTableAlias(const fleece::impl::Value *expr, bool canAdd =false);
         std::string FTSTableName(const fleece::impl::Value *key) const;
+        void findPredictiveJoins(const fleece::impl::Value *node, std::vector<std::string> &joins);
+        bool writeIndexedPrediction(const fleece::impl::Array *node);
 
         const delegate& _delegate;                  // delegate object (SQLiteKeyStore)
         std::string _tableName;                     // Name of the table containing documents
@@ -182,9 +190,11 @@ namespace litecore {
         bool _propertiesUseAliases {false};         // Must properties include alias as prefix?
         std::vector<std::string> _baseResultColumns;// Default columns to always emit
         std::stringstream _sql;                     // The SQL being generated
+        const fleece::impl::Value* _curNode;        // Current node being parsed
         std::vector<const Operation*> _context;     // Parser stack
         std::set<std::string> _parameters;          // Plug-in "$" parameters found in parsing
         std::set<std::string> _variables;           // Active variables, inside ANY/EVERY exprs
+        std::map<std::string, std::string> _indexJoinTables;  // index table name --> alias
         std::vector<std::string> _ftsTables;        // FTS virtual tables being used
         unsigned _1stCustomResultCol {0};           // Index of 1st result after _baseResultColumns
         bool _aggregatesOK {false};                 // Are aggregate fns OK to call?

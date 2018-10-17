@@ -133,6 +133,7 @@ namespace litecore {
             kValueIndex,         ///< Regular index of property value
             kFullTextIndex,      ///< Full-text index, for MATCH queries
             kArrayIndex,         ///< Index of array values, for UNNEST queries
+            kPredictiveIndex,    ///< Index of prediction results
             kGeoIndex,           ///< Geo index of GeoJSON values [unimplemented]
         };
 

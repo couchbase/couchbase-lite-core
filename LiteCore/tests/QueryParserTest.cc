@@ -44,6 +44,9 @@ public:
     virtual bool tableExists(const string &tableName) const override {
         return tablesExist;
     }
+    virtual std::string predictiveTableName(const std::string &property) const override {
+        return tableName() + ":predict:" + property;
+    }
 
 protected:
     string parse(string json) {
@@ -215,8 +218,28 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT", "[Query]") {
 TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT FTS", "[Query][FTS]") {
     CHECK(parseWhere("['SELECT', {\
                      WHERE: ['MATCH', 'bio', 'mobile']}]")
-          == "SELECT _doc.rowid, offsets(\"kv_default::bio\"), key, sequence FROM kv_default AS _doc JOIN \"kv_default::bio\" AS FTS1 ON FTS1.docid = _doc.rowid WHERE (FTS1.\"kv_default::bio\" MATCH 'mobile') AND (_doc.flags & 1) = 0");
+          == "SELECT _doc.rowid, offsets(fts1.\"kv_default::bio\"), key, sequence FROM kv_default AS _doc JOIN \"kv_default::bio\" AS fts1 ON fts1.docid = _doc.rowid WHERE (fts1.\"kv_default::bio\" MATCH 'mobile') AND (_doc.flags & 1) = 0");
 }
+
+
+#if COUCHBASE_ENTERPRISE
+TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT prediction", "[Query][Predict]") {
+    string pred = "['PREDICTION()', 'bias', {text: ['.text']}, '.bias']";
+    auto query1 = "['SELECT', {WHERE: ['>', " + pred + ", 0] }]";
+    auto query2 = "['SELECT', {WHERE: ['>', " + pred + ", 0], WHAT: [" + pred + "] }]";
+    tablesExist = false;
+    CHECK(parseWhere(query1)
+          == "SELECT key, sequence FROM kv_default AS _doc WHERE (prediction('bias', dict_of('text', fl_value(_doc.body, 'text')), '.bias') > 0) AND (_doc.flags & 1) = 0");
+    CHECK(parseWhere(query2)
+          == "SELECT fl_result(prediction('bias', dict_of('text', fl_value(_doc.body, 'text')), '.bias')) FROM kv_default AS _doc WHERE (prediction('bias', dict_of('text', fl_value(_doc.body, 'text')), '.bias') > 0) AND (_doc.flags & 1) = 0");
+
+    tablesExist = true;
+    CHECK(parseWhere(query1)
+          == "SELECT key, sequence FROM kv_default AS _doc LEFT JOIN \"kv_default:predict:ngJPs3yJmEb4R/mMbtrLCzOMwAQ=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
+    CHECK(parseWhere(query2)
+          == "SELECT fl_result(fl_value(pred1.body, 'bias')) FROM kv_default AS _doc LEFT JOIN \"kv_default:predict:ngJPs3yJmEb4R/mMbtrLCzOMwAQ=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
+}
+#endif
 
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT WHAT", "[Query]") {

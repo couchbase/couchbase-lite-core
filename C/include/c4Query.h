@@ -184,6 +184,7 @@ extern "C" {
         kC4FullTextIndex,      ///< Full-text index
         kC4ArrayIndex,         ///< Index of array values, for use with UNNEST
         kC4GeoIndex,           ///< Geospatial index of GeoJSON values (NOT YET IMPLEMENTED)
+        kC4PredictiveIndex,    ///< Index of prediction() results
     };
 
 
@@ -226,7 +227,7 @@ extern "C" {
         The name is used to identify the index for later updating or deletion; if an index with the
         same name already exists, it will be replaced unless it has the exact same expressions.
 
-        Currently two types of indexes are supported:
+        Currently four types of indexes are supported:
 
         * Value indexes speed up queries by making it possible to look up property (or expression)
           values without scanning every document. They're just like regular indexes in SQL or N1QL.
@@ -239,9 +240,11 @@ extern "C" {
           currently allowed, and it must evaluate to a string.
         * Array indexes optimize UNNEST queries, by materializing an unnested array property
           (across all documents) as a table in the SQLite database, and creating a SQL index on it.
+        * Predictive indexes optimize queries that use the PREDICTION() function, by materializing
+          the function's results as a table and creating a SQL index on a result property.
 
-        Note: If the value of an expression in some document is missing or an unsupported type,
-        that document will just be omitted from the index. It's not an error.
+        Note: If some documents are missing the values to be indexed,
+        those documents will just be omitted from the index. It's not an error.
 
         Expressions are defined in JSON, as in a query, and wrapped in a JSON array. For example,
         `[[".name.first"]]` will index on the first-name property. Note the two levels of brackets,
@@ -254,7 +257,8 @@ extern "C" {
         a second expression defining the sub-property (or computed value) to index, relative to the
         array item.
 
-        Geospatial indexes are not implemented at all yet.
+        In a predictive index, the expression is a PREDICTION() call in JSON query syntax,
+        including the optional 3rd parameter that gives the result property to extract (and index.)
 
         @param database  The database to index.
         @param name  The name of the index. Any existing index with the same name will be replaced,
