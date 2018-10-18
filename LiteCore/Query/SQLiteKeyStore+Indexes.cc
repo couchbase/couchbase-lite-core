@@ -34,13 +34,14 @@ using namespace fleece::impl;
 namespace litecore {
 
     /*
-     A value index is a SQL index named 'NAME'.
-     A FTS index is a SQL virtual table named 'kv_default::NAME'
-     An array index has two parts:
-         * A SQL table named `kv_default:unnest:PATH`
+     - A value index is a SQL index named 'NAME'.
+     - A FTS index is a SQL virtual table named 'kv_default::NAME'
+     - An array index has two parts:
+         * A SQL table named `kv_default:unnest:PATH`, where PATH is the property path
          * An index on that table named `NAME`
-     A predictive index has two parts:
-         * A SQL table named `kv_default:prediction:PATH`
+     - A predictive index has two parts:
+         * A SQL table named `kv_default:prediction:DIGEST`, where DIGEST is a unique digest
+            of the prediction function name and the parameter dictionary
          * An index on that table named `NAME`
      */
 
@@ -76,7 +77,7 @@ namespace litecore {
         }
 
         if (created) {
-            garbageCollectArrayIndexes();
+            garbageCollectIndexTables();
             t.commit();
             db().optimize();
             double time = st.elapsed();
@@ -92,7 +93,7 @@ namespace litecore {
         Transaction t(db());
         LogTo(QueryLog, "Deleting index '%.*s'", SPLAT(name));
         _sqlDeleteIndex(string(name));
-        garbageCollectArrayIndexes();
+        garbageCollectIndexTables();
         t.commit();
     }
 

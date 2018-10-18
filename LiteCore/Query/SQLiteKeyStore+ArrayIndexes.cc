@@ -103,21 +103,21 @@ namespace litecore {
 
 
     // Drops unnested-array tables that no longer have any indexes on them.
-    void SQLiteKeyStore::garbageCollectArrayIndexes() {
+    void SQLiteKeyStore::garbageCollectIndexTables() {
         vector<string> garbageTableNames;
         {
             SQLite::Statement st(db(),
-                 "SELECT unnestTbl.name FROM sqlite_master as unnestTbl "
-                  "WHERE unnestTbl.type='table' and unnestTbl.name like (?1 || ':unnest:%') "
+                 "SELECT tbl.name FROM sqlite_master as tbl "
+                  "WHERE tbl.type='table' and tbl.name like (?1 || ':_%:%')"
                         "and not exists (SELECT * FROM sqlite_master "
-                                         "WHERE type='index' and tbl_name=unnestTbl.name "
+                                         "WHERE type='index' and tbl_name=tbl.name "
                                                "and sql not null)");
             st.bind(1, tableName());
             while(st.executeStep())
                 garbageTableNames.push_back(st.getColumn(0));
         }
         for (string &tableName : garbageTableNames) {
-            LogTo(QueryLog, "Dropping unused UNNEST table '%s'", tableName.c_str());
+            LogTo(QueryLog, "Dropping unused index table '%s'", tableName.c_str());
             db().exec(CONCAT("DROP TABLE \"" << tableName << "\""));
             dropTrigger(tableName, "ins");
             dropTrigger(tableName, "del");

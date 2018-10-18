@@ -124,7 +124,7 @@ namespace litecore {
         bool _schemaExistsWithSQL(const std::string &name, const std::string &type,
                                   const std::string &tableName, const std::string &sql);
         void _sqlDeleteIndex(const std::string &name);
-        void garbageCollectArrayIndexes();
+        void garbageCollectIndexTables();
         bool hasExpiration();
         void addExpiration();
 

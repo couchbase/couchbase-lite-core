@@ -120,31 +120,6 @@ namespace litecore {
         return tableName() + ":predict:" + property;
     }
 
-
-    // Drops unnested-array tables that no longer have any indexes on them.
-    void SQLiteKeyStore::garbageCollectPredictiveIndexes() {
-        vector<string> garbageTableNames;
-        {
-            SQLite::Statement st(db(),
-                 "SELECT predTbl.name FROM sqlite_master as predTbl "
-                  "WHERE predTbl.type='table' and predTbl.name like (?1 || ':predict:%') "
-                        "and not exists (SELECT * FROM sqlite_master "
-                                         "WHERE type='index' and tbl_name=predTbl.name "
-                                               "and sql not null)");
-            st.bind(1, tableName());
-            while(st.executeStep())
-                garbageTableNames.push_back(st.getColumn(0));
-        }
-        for (string &tableName : garbageTableNames) {
-            LogTo(QueryLog, "Dropping unused predictive table '%s'", tableName.c_str());
-            db().exec(CONCAT("DROP TABLE \"" << tableName << "\""));
-            dropTrigger(tableName, "ins");
-            dropTrigger(tableName, "del");
-            dropTrigger(tableName, "preupdate");
-            dropTrigger(tableName, "postupdate");
-        }
-    }
-
 }
 
 #endif // COUCHBASE_ENTERPRISE
