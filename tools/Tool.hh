@@ -124,6 +124,9 @@ public:
         If it returns false, the user has decided to end the session (probably by hitting ^D.) */
     bool readLine(const char *prompt);
 
+    /** Reads a password from the terminal without echoing it. */
+    string readPassword(const char *prompt);
+
     enum TerminalType {
         kTTY,
         kColorTTY,

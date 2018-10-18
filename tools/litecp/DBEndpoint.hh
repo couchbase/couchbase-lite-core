@@ -20,6 +20,7 @@
 #include "Endpoint.hh"
 #include "c4Replicator.h"
 #include "Stopwatch.hh"
+#include "fleece/slice.hh"
 
 class JSONEndpoint;
 class RemoteEndpoint;
@@ -40,6 +41,10 @@ public:
     virtual void prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint*) override;
     void setBidirectional(bool bidi)                {_bidirectional = bidi;}
     void setContinuous(bool cont)                   {_continuous = cont;}
+
+    using credentials = std::pair<std::string, std::string>;
+    void setCredentials(const credentials &cred)    {_credentials = cred;}
+
     virtual void copyTo(Endpoint *dst, uint64_t limit) override;
     virtual void writeJSON(slice docID, slice json) override;
     virtual void finish() override;
@@ -68,15 +73,17 @@ private:
     c4::ref<C4Database> _db;
     unsigned _transactionSize {0};
     bool _inTransaction {false};
-
-    // Replication mode only:
-    bool _bidirectional {false};
-    bool _continuous {false};
     Endpoint* _otherEndpoint;
     Stopwatch _stopwatch;
     double _lastElapsed {0};
     uint64_t _lastDocCount {0};
     bool _needNewline {false};
+
+    // Replication mode only:
+    bool _bidirectional {false};
+    bool _continuous {false};
+    credentials _credentials;
+    fleece::alloc_slice _options;
 
     static constexpr unsigned kMaxTransactionSize = 1000;
 };

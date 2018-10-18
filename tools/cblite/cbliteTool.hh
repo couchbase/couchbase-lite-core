@@ -202,6 +202,7 @@ private:
     void revIDFlag()     {_showRevID = true;}
     void seqFlag()       {_listBySeq = true;}
     void updateDocFlag() {_putMode = kUpdate;}
+    void userFlag()      {_user = nextArg("user name for replication");}
     void versionFlag();
     void writeableFlag() {_dbFlags &= ~kC4DB_ReadOnly;}
 
@@ -236,6 +237,7 @@ private:
     bool _bidi {false};
     bool _continuous {false};
     alloc_slice _jsonIDProperty;
+    string _user;
 
     enum {kPut, kUpdate, kCreate, kDelete} _putMode {kPut};
 

@@ -154,3 +154,16 @@ bool Tool::dumbReadLine(const char *prompt) {
         cout << "Please type a command, or Ctrl-D to exit.\n";
     }
 }
+
+
+string Tool::readPassword(const char *prompt) {
+#if defined(_MSC_VER)
+    fail("Sorry, password input is unimplemented on Windows");  //FIX //TODO
+#else
+    char *cpass = getpass(prompt);
+    string password = cpass;
+    memset(cpass, '*', strlen(cpass)); // overwrite password at known static location
+    return password;
+#endif
+}
+

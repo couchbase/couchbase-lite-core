@@ -31,6 +31,7 @@ const Tool::FlagSpec CBLiteTool::kCpFlags[] = {
     {"-x",          (FlagHandler)&CBLiteTool::existingFlag},
     {"--jsonid",    (FlagHandler)&CBLiteTool::jsonIDFlag},
     {"--careful",   (FlagHandler)&CBLiteTool::carefulFlag},
+    {"--user",      (FlagHandler)&CBLiteTool::userFlag},
     {"--verbose",   (FlagHandler)&CBLiteTool::verboseFlag},
     {"-v",          (FlagHandler)&CBLiteTool::verboseFlag},
     {nullptr, nullptr}
@@ -48,20 +49,22 @@ void CBLiteTool::cpUsage() {
     "DESTINATION" << ansiReset() << "\n"
     "  Copies local and remote databases and JSON files.\n"
     "    --existing or -x : Fail if DESTINATION doesn't already exist.\n"
-    "    --jsonid <property>: When SOURCE is JSON, this is a property name/path whose value will\n"
+    "    --jsonid <property> : When SOURCE is JSON, this is a property name/path whose value will\n"
     "           be used as the docID. (If omitted, documents are given UUIDs.)\n"
     "           When DESTINATION is JSON, this is a property name that will be added to the JSON, whose\n"
     "           value is the docID. (If omitted, defaults to \"_id\".)\n"
     "    --bidi : Bidirectional (push+pull) replication.\n"
     "    --continuous : Continuous replication.\n"
-    "    --limit <n>: Stop after <n> documents. (Replicator ignores this)\n"
-    "    --careful: Abort on any error.\n"
+    "    --user <name>[:<password>] : Credentials for remote database. (If password is not given,\n"
+    "           the tool will prompt you to enter it.)\n"
+    "    --limit <n> : Stop after <n> documents. (Replicator ignores this)\n"
+    "    --careful : Abort on any error.\n"
     "    --verbose or -v : Display progress; repeat flag for more verbosity.\n"
     "    " << it(_interactive ? "DESTINATION" : "SOURCE, DESTINATION")
            << " : Database path, replication URL, or JSON file path\n"
     "    Modes:\n"
     "        *.cblite2 <--> *.cblite2 :  Local replication\n"
-    "        *.cblite2 <--> blip://*  :  Networked replication\n"
+    "        *.cblite2 <--> ws://*    :  Networked replication\n"
     "        *.cblite2 <--> *.json    :  Imports/exports JSON file (one doc per line)\n"
     "        *.cblite2 <--> */        :  Imports/exports directory of JSON files (one per doc)\n";
     if (_interactive) {
@@ -102,20 +105,29 @@ void CBLiteTool::copyDatabase(bool reversed) {
         swap(src, dst);
 
     bool replicating = (src->isDatabase() && dst->isDatabase());
+    if (replicating) {
+        auto localDB = dynamic_cast<DbEndpoint*>(src.get());
+        if (!localDB)
+            localDB = dynamic_cast<DbEndpoint*>(dst.get());
+        localDB->setBidirectional(_bidi);
+        localDB->setContinuous(_continuous);
 
-    if (_bidi) {
-        if (!replicating)
-            fail("--bidi flag only applies to replication");
-        auto srcDb = dynamic_cast<DbEndpoint*>(src.get());
-        if (srcDb) {
-            srcDb->setBidirectional(_bidi);
-            srcDb->setContinuous(_continuous);
+        if (!_user.empty()) {
+            string user;
+            string password;
+            auto colon = _user.find(':');
+            if (colon != string::npos) {
+                password = _user.substr(colon+1);
+                user = _user.substr(0, colon);
+            } else {
+                user = _user;
+                password = readPassword(("Server password for " + user + ": ").c_str());
+            }
+            localDB->setCredentials({user, password});
         }
-        auto dstDb = dynamic_cast<DbEndpoint*>(src.get());
-        if (dstDb) {
-            dstDb->setBidirectional(_bidi);
-            dstDb->setContinuous(_continuous);
-        }
+    } else {
+        if (_bidi || _continuous || !_user.empty())
+            fail("--bidi, --continuous and --user flags only apply to replication");
     }
 
     if (_currentCommand == "push" || _currentCommand == "pull") {

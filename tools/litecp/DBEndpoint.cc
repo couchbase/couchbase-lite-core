@@ -21,6 +21,7 @@
 #include "c4Document+Fleece.h"
 #include "c4Replicator.h"
 #include "Stopwatch.hh"
+#include "fleece/Fleece.hh"
 #include <algorithm>
 #include <thread>
 
@@ -238,6 +239,21 @@ C4ReplicatorParameters DbEndpoint::replicatorParameters(C4ReplicatorMode push, C
     params.push = push;
     params.pull = pull;
     params.callbackContext = this;
+
+    if (!_credentials.first.empty()) {
+        fleece::Encoder enc;
+        enc.beginDict();
+        enc.writeKey(slice(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+        enc.writeKey(slice(kC4ReplicatorAuthUserName));
+        enc.writeString(_credentials.first);
+        enc.writeKey(slice(kC4ReplicatorAuthPassword));
+        enc.writeString(_credentials.second);
+        enc.endDict();
+        enc.endDict();
+        _options = enc.finish();
+        params.optionsDictFleece = _options;
+    }
 
     params.onStatusChanged = [](C4Replicator *replicator,
                                 C4ReplicatorStatus status,

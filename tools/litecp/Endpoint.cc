@@ -36,7 +36,7 @@ Endpoint* Endpoint::create(const string &str) {
         return new DirectoryEndpoint(str);
     } else {
         if (str.find("://") != string::npos)
-            cerr << "HINT: Replication URLs must use the 'blip:' or 'blips:' schemes.\n";
+            cerr << "HINT: Replication URLs must use the 'ws:' or 'wss:' schemes.\n";
         else if (FilePath(str).existsAsDir() || str.find('.') == string::npos)
             cerr << "HINT: If you are trying to copy to/from a directory of JSON files, append a '/' to the path.\n";
         return nullptr;
