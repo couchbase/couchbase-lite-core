@@ -455,6 +455,22 @@ TEST_CASE("CanonicalPath") {
     CHECK(path.canonicalPath() == endPath);
 }
 
+TEST_CASE("ParentDir") {
+    CHECK(FilePath("/").parentDir().path() == "/");
+    CHECK(FilePath("/folder/subfolder/file").parentDir().path() == "/folder/subfolder/");
+    CHECK(FilePath("/folder/subfolder/").parentDir().path() == "/folder/");
+    CHECK(FilePath("/folder/file").parentDir().path() == "/folder/");
+    CHECK(FilePath("folder/subfolder/").parentDir().path() == "folder/");
+    CHECK(FilePath("folder/file").parentDir().path() == "folder/");
+    CHECK(FilePath("./file").parentDir().path() == "./");
+    CHECK(FilePath("./folder/").parentDir().path() == "./");
+    CHECK(FilePath("file").parentDir().path() == "./");
+    CHECK(FilePath("folder/").parentDir().path() == "./");
+    ExpectException(error::POSIX, EINVAL, [&]{
+        FilePath("./").parentDir();
+    });
+}
+
 
 #pragma mark - ENCRYPTION:
 
