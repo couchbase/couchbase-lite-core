@@ -33,7 +33,7 @@ class EightBall : public PredictiveModel {
 public:
     bool allowCalls {true};
 
-    virtual alloc_slice predict(const Dict* input, C4Error *outError) noexcept override {
+    virtual alloc_slice prediction(const Dict* input, C4Error *outError) noexcept override {
 //        Log("8-ball input: %s", input->toJSONString().c_str());
         CHECK(allowCalls);
         const Value *param = input->get("number"_sl);

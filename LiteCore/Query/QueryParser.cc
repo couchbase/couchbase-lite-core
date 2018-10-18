@@ -1055,7 +1055,7 @@ namespace litecore {
             return;
         }
 
-        // Special case: "predict()" may be indexed:
+        // Special case: "prediction()" may be indexed:
 #ifdef COUCHBASE_ENTERPRISE
         if (op.caseEquivalent(kPredictionFnName) && writeIndexedPrediction((const Array*)_curNode))
             return;

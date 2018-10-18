@@ -62,7 +62,7 @@ namespace litecore {
             }
 
             C4Error error = {};
-            alloc_slice result = model->predict((const Dict*)input, &error);
+            alloc_slice result = model->prediction((const Dict*)input, &error);
             if (!result) {
                 if (error.code == 0) {
                     LogVerbose(QueryLog, "    ...prediction returned no result");

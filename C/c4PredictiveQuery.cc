@@ -33,8 +33,14 @@ public:
     :_c4Model(model)
     { }
 
-    virtual alloc_slice predict(const Dict *input, C4Error *outError) noexcept override {
-        return _c4Model.predict(_c4Model.context, (FLDict)input, outError);
+    virtual alloc_slice prediction(const Dict *input, C4Error *outError) noexcept override {
+        try {
+            return _c4Model.prediction(_c4Model.context, (FLDict)input, outError);
+        } catch (const std::exception &x) {
+            if (outError)
+                *outError = c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()));
+            return C4SliceResult{};
+        }
     }
 
 private:

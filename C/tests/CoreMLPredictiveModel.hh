@@ -26,7 +26,10 @@ namespace cbl {
         PredictiveModel()                                           { }
         virtual ~PredictiveModel()                                  {unregister();}
 
+        /** Registers this instance under the given name. */
         void registerWithName(const char* C4NONNULL name);
+
+        /** Unregisters this instance. */
         void unregister();
 
     protected:
@@ -44,7 +47,8 @@ namespace cbl {
     };
 
 
-    /** An adapter class that registers a CoreML model with LiteCore for predictive queries. */
+    /** An adapter class that registers a CoreML model with LiteCore for predictive queries.
+        (Only available on Apple platforms, obviously.) */
     class API_AVAILABLE(macos(10.13), ios(11))
     CoreMLPredictiveModel : public PredictiveModel {
     public:

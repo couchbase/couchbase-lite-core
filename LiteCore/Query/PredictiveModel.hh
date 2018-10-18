@@ -16,8 +16,8 @@ namespace litecore {
 
     class PredictiveModel : public fleece::RefCounted {
     public:
-        virtual fleece::alloc_slice predict(const fleece::impl::Dict* NONNULL,
-                                            C4Error* NONNULL) noexcept =0;
+        virtual fleece::alloc_slice prediction(const fleece::impl::Dict* NONNULL,
+                                               C4Error* NONNULL) noexcept =0;
 
         void registerAs(const std::string &name);
         static bool unregister(const std::string &name);

@@ -34,21 +34,17 @@ namespace cbl {
     void PredictiveModel::registerWithName(const char *name) {
         auto callback = [](void* context, FLDict input, C4Error *outError) {
             @autoreleasepool {
-                try {
-                    Encoder enc;
-                    enc.beginDict();
-                    auto self = (PredictiveModel*)context;
-                    if (!self->predict(Dict(input), enc, outError))
-                        return C4SliceResult{};
-                    enc.endDict();
-                    return C4SliceResult(enc.finish());
-                } catch (const std::exception &x) {
-                    reportError(outError, "prediction() threw an exception: %s", x.what());
+                Encoder enc;
+                enc.beginDict();
+                auto self = (PredictiveModel*)context;
+                if (!self->predict(Dict(input), enc, outError))
                     return C4SliceResult{};
-                }
+                enc.endDict();
+                return C4SliceResult(enc.finish());
             }
         };
-        c4pred_registerModel(name, {this, callback});
+        C4PredictiveModel model = {.context = this, .prediction = callback};
+        c4pred_registerModel(name, model);
         _name = name;
     }
 
@@ -210,7 +206,7 @@ namespace cbl {
             // Result is a list of CoreML feature values:
             for (VNCoreMLFeatureValueObservation* result in results) {
                 auto feature = result.featureValue;
-                enc.writeKey("output"_sl);      //???? How do I find the feature name?
+                enc.writeKey("output"_sl);      //FIX: How do I find the feature name?
                 encodeMLFeature(enc, feature);
             }
         }
@@ -263,13 +259,15 @@ namespace cbl {
                         return nil;
                     }
                 } else if (valueType == kFLString) {
+                    // If a string is given where a dictionary is wanted, assume the dictionary is
+                    // supposed to map words to counts.
                     dict = convertWordsToMLDictionary(value.asString().asNSString());
                 }
                 if (dict)
                     feature = [MLFeatureValue featureValueWithDictionary: dict error: nullptr];
                 break;
             }
-            case MLFeatureTypeImage:
+            case MLFeatureTypeImage:        // image features are handled by predictViaVision
             case MLFeatureTypeMultiArray:
             case MLFeatureTypeSequence:
             case MLFeatureTypeInvalid:
@@ -292,7 +290,7 @@ namespace cbl {
     static NSDictionary* convertToMLDictionary(Dict dict) {
         auto nsdict = [[NSMutableDictionary alloc] initWithCapacity: dict.count()];
         for (Dict::iterator i(dict); i; ++i) {
-            // Apparently dictionary features can only contain numbers...
+            // Apparently CoreML dictionary features can only contain numbers...
             if (i.value().type() != kFLNumber)
                 return nil;
             nsdict[i.keyString().asNSString()] = @(i.value().asDouble());
@@ -358,11 +356,13 @@ namespace cbl {
         enc.endArray();
     }
 
+    // Encodes a multi-array feature as nested Fleece arrays of numbers.
     static void encodeMultiArray(Encoder &enc, MLMultiArray* array) {
         encodeMultiArray(enc, array, 0, (const uint8_t*)array.dataPointer);
     }
 
 
+    // Encodes a sequence feature as a Fleece array of strings or numbers.
     API_AVAILABLE(macos(10.14))
     static void encodeSequence(Encoder &enc, MLSequence *sequence) {
         switch (sequence.type) {
@@ -376,6 +376,7 @@ namespace cbl {
     }
 
 
+    // Encodes an ML feature to Fleece.
     void PredictiveModel::encodeMLFeature(Encoder &enc, MLFeatureValue *feature) {
         switch (feature.type) {
             case MLFeatureTypeInt64:

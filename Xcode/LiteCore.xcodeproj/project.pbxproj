@@ -1898,6 +1898,18 @@
 			path = tests;
 			sourceTree = "<group>";
 		};
+		274D178B2178101B007FD01A /* EE */ = {
+			isa = PBXGroup;
+			children = (
+				27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */,
+				274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */,
+				27098AA4216C2108002751DA /* PredictiveModel.cc */,
+				27098AA5216C2108002751DA /* PredictiveModel.hh */,
+				27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */,
+			);
+			name = EE;
+			sourceTree = "<group>";
+		};
 		2750723218E3E52800A80C5A = {
 			isa = PBXGroup;
 			children = (
@@ -2134,24 +2146,20 @@
 				2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */,
 				27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */,
 				27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */,
-				27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */,
 				27E6DFEE1DA5AFF3008EB681 /* Query.cc */,
 				27E6DFEF1DA5AFF3008EB681 /* Query.hh */,
 				276D15401DFF541000543B1B /* SQLiteQuery.cc */,
 				274EDDF41DA30B43003AD158 /* QueryParser.cc */,
 				274EDDF51DA30B43003AD158 /* QueryParser.hh */,
 				274D17842177F212007FD01A /* QueryParser+Private.hh */,
-				274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */,
 				275FF6661E42A90C005F90DD /* QueryParserTables.hh */,
-				27098AA4216C2108002751DA /* PredictiveModel.cc */,
-				27098AA5216C2108002751DA /* PredictiveModel.hh */,
 				27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */,
 				27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */,
 				27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */,
 				279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */,
-				27098A9F216C1E88002751DA /* SQLitePredictionFunction.cc */,
 				27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */,
 				27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */,
+				274D178B2178101B007FD01A /* EE */,
 			);
 			path = Query;
 			sourceTree = "<group>";
