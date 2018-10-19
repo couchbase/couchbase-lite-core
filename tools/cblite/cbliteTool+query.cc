@@ -73,14 +73,28 @@ void CBLiteTool::queryDatabase() {
         fail("starting query", error);
     if (_offset > 0)
         cout << "(Skipping first " << _offset << " rows)\n";
+
+    // Write the column titles:
+    cout << "[ ";
+    unsigned nCols = c4query_columnCount(query);
+    unsigned width = 2 + 2 * nCols;
+    for (unsigned i = 0; i < nCols; ++i) {
+        if (i > 0)
+            cout << ", ";
+        auto title = c4query_columnTitle(query, i);
+        cout << title;
+        width += title.size;  // not UTF-8-aware...
+    }
+    cout << " ]\n" << string(width, '-') << "\n";
+
     uint64_t nRows = 0;
     while (c4queryenum_next(e, &error)) {
         // Write a result row:
         ++nRows;
         cout << "[";
-        int nCols = 0;
+        int col = 0;
         for (Array::iterator i(e->columns); i; ++i) {
-            if (nCols++)
+            if (col++)
                 cout << ", ";
             rawPrint(i.value(), nullslice);
         }
