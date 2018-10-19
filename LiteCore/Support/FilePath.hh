@@ -42,6 +42,15 @@ namespace litecore {
 
         /** Returns the system's temporary-files directory. */
         static FilePath tempDirectory();
+        
+        /** Returns the system's temporary-files directory within the context
+         *  of the provided hint path.
+         *  @param neighbor A filesystem path that serves both as the source of
+         *         the device that the temp directory must exist on, as well as
+         *         a fallback for if the device is not the same, or the default
+         *         temp directory is not writable
+         */
+        static FilePath tempDirectory(const std::string& neighbor);
 
         static const std::string kSeparator;
 
@@ -93,6 +102,11 @@ namespace litecore {
 
         FilePath fileNamed(const std::string &filename) const;
         FilePath subdirectoryNamed(const std::string &dirname) const;
+        
+        /** Returns the parent directory. If the current path is root, the root directory
+            will be returned. An exception will be thrown if the parent directory cannot
+            be determined. */
+        FilePath parentDir() const;
 
         /////// FILESYSTEM OPERATIONS:
 

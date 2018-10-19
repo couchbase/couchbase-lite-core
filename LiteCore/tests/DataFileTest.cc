@@ -31,6 +31,16 @@
 using namespace litecore;
 using namespace std;
 
+static void check_parent(string full, string parent)
+{
+#ifdef _MSC_VER
+    replace(full.begin(), full.end(), '/', '\\');
+    replace(parent.begin(), parent.end(), '/', '\\');
+#endif
+
+    CHECK(FilePath(full).parentDir().path() == parent);
+}
+
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
     REQUIRE(db->isOpen());
@@ -454,6 +464,31 @@ TEST_CASE("CanonicalPath") {
     CHECK(path.canonicalPath() == endPath);
 }
 
+TEST_CASE("ParentDir") {
+#ifdef _MSC_VER
+    CHECK(FilePath("C:\\").parentDir().path() == "C:\\");
+    CHECK(FilePath("D:\\folder\\subfolder\\file").parentDir().path() == "D:\\folder\\subfolder\\");
+    CHECK(FilePath("C:\\folder\\subfolder\\").parentDir().path() == "C:\\folder\\");
+    CHECK(FilePath("C:\\folder\\file").parentDir().path() == "C:\\folder\\");
+#else
+    CHECK(FilePath("/").parentDir().path() == "/");
+    CHECK(FilePath("/folder/subfolder/file").parentDir().path() == "/folder/subfolder/");
+    CHECK(FilePath("/folder/subfolder/").parentDir().path() == "/folder/");
+    CHECK(FilePath("/folder/file").parentDir().path() == "/folder/");
+#endif
+
+    check_parent("folder/subfolder/", "folder/");
+    check_parent("folder/file", "folder/");
+    check_parent("./file", "./");
+    check_parent("./folder/", "./");
+    check_parent("file", "./");
+    check_parent("folder/", "./");
+    ExpectException(error::POSIX, EINVAL, [&]{
+        stringstream ss;
+        ss << "." << FilePath::kSeparator;
+        FilePath(ss.str()).parentDir();
+    });
+}
 
 #pragma mark - ENCRYPTION:
 
