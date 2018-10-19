@@ -45,7 +45,10 @@ namespace litecore {
     class QueryFleeceScope : public fleece::impl::Scope {
     public:
         QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv);
+        ~QueryFleeceScope();
         const fleece::impl::Value *root;
+    private:
+        bool _copied;
     };
 
 

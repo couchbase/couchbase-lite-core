@@ -35,7 +35,8 @@ namespace litecore {
     const char* const kFleeceValuePointerType = "FleeceValue";
 
 
-    static slice argAsSlice(sqlite3_context* ctx, sqlite3_value *arg) {
+    static slice argAsSlice(sqlite3_context* ctx, sqlite3_value *arg, bool &copied) {
+        copied = false;
         auto type = sqlite3_value_type(arg);
         if (type == SQLITE_NULL)
             return nullslice;             // No 'body' column; may be deleted doc
@@ -43,7 +44,16 @@ namespace litecore {
         Assert(sqlite3_value_subtype(arg) == 0);
         slice fleece = valueAsSlice(arg);
         auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-        return funcCtx->accessor(fleece);
+        fleece = funcCtx->accessor(fleece);
+
+        if (size_t(fleece.buf) & 1) {
+            // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
+            // revision data, so it could occur. Now that it's not allowed, we have to work around
+            // this by copying the data to an even address. (#589)
+            fleece = fleece.copy();
+            copied = true;
+        }
+        return fleece;
     }
 
 
@@ -120,7 +130,7 @@ namespace litecore {
 
 
     QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
-    :Scope(argAsSlice(ctx, argv[0]), getSharedKeys(ctx))
+    :Scope(argAsSlice(ctx, argv[0], _copied), getSharedKeys(ctx))
     {
         if (data()) {
             root = Value::fromTrustedData(data());
@@ -132,6 +142,12 @@ namespace litecore {
             root = Dict::kEmpty;             // No current revision body; may be deleted rev
         }
         root = evaluatePathFromArg(ctx, argv, 1, root);
+    }
+
+
+    QueryFleeceScope::~QueryFleeceScope() {
+        if (_copied)
+            data().free();
     }
 
 
