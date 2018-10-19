@@ -153,6 +153,14 @@ unsigned c4query_columnCount(C4Query *query) noexcept {
 }
 
 
+FLString c4query_columnTitle(C4Query *query, unsigned column) C4API {
+    auto &titles = query->query()->columnTitles();
+    if (column >= titles.size())
+        return {};
+    return slice(titles[column]);
+}
+
+
 C4QueryEnumerator* c4query_run(C4Query *query,
                                const C4QueryOptions *c4options,
                                C4Slice encodedParameters,

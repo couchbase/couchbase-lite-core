@@ -253,6 +253,9 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT WHAT", "[Query]") {
     CHECK(parseWhere("['SELECT', {WHAT: [['.first'], ['length()', ['.middle']]],\
                                  WHERE: ['=', ['.', 'last'], 'Smith']}]")
           == "SELECT fl_result(fl_value(_doc.body, 'first')), fl_result(N1QL_length(fl_value(_doc.body, 'middle'))) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0");
+    CHECK(parseWhere("['SELECT', {WHAT: [['.first'], ['AS', ['length()', ['.middle']], 'mid']],\
+                                 WHERE: ['=', ['.', 'last'], 'Smith']}]")
+          == "SELECT fl_result(fl_value(_doc.body, 'first')), fl_result(N1QL_length(fl_value(_doc.body, 'middle'))) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0");
     // Check the "." operator (like SQL "*"):
     CHECK(parseWhere("['SELECT', {WHAT: ['.'], WHERE: ['=', ['.', 'last'], 'Smith']}]")
           == "SELECT fl_result(fl_root(_doc.body)) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'last') = 'Smith') AND (_doc.flags & 1) = 0");

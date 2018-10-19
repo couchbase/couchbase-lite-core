@@ -120,6 +120,14 @@ public:
         });
     }
 
+    void checkColumnTitles(const vector<string> &expectedTitles) {
+        size_t n = c4query_columnCount(query);
+        vector<string> titles;
+        for (unsigned i = 0; i < n; ++i)
+            titles.push_back( string(slice(c4query_columnTitle(query, i))) );
+        CHECK(titles == expectedTitles);
+    }
+
 protected:
     C4Query *query {nullptr};
 };

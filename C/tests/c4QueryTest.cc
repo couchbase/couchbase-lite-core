@@ -168,6 +168,22 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete indexed doc", "[Query][C]") {
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Column titles", "[Query][C]") {
+    // Properties:
+    compileSelect(json5("['SELECT', {'WHAT': [['.'], ['.name'], '.gender', ['.', 'address', 'zip']]}]"));
+    checkColumnTitles({"*", "name", "gender", "zip"});
+    // Duplicates:
+    compileSelect(json5("['SELECT', {'WHAT': ['.name', '.name', '.name']}]"));
+    checkColumnTitles({"name", "name #2", "name #3"});
+    // 'AS':
+    compileSelect(json5("['SELECT', {'WHAT': [['AS', '.address.zip', 'ZIP']]}]"));
+    checkColumnTitles({"ZIP"});
+    // Expressions:
+    compileSelect(json5("['SELECT', {'WHAT': [['+', ['.age'], 14], ['min()', ['.n']]]}]"));
+    checkColumnTitles({"+", "min()"});
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query][C]") {
     const char *query = nullptr;
     uint64_t expectedMissing = 0;

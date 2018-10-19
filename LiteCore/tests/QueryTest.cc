@@ -114,8 +114,9 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query]") {
     addNumberedDocs();
     Retained<Query> query{ store->compileQuery(json5(
-        "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
+        "{WHAT: ['.num', ['AS', ['*', ['.num'], ['.num']], 'square']], WHERE: ['>', ['.num'], 10]}")) };
     CHECK(query->columnCount() == 2);
+    CHECK(query->columnTitles() == (vector<string>{"num", "square"}));
     int num = 11;
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     while (e->next()) {
@@ -134,6 +135,9 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
     addNumberedDocs();
     Retained<Query> query1{ store->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
     Retained<Query> query2{ store->compileQuery(json5("{WHAT: [ '.main',  ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
+
+    CHECK(query1->columnTitles() == (vector<string>{"main", "*"}));
+    CHECK(query1->columnTitles() == (vector<string>{"main", "*"}));
 
     SECTION("Just regular docs") {
     }
@@ -279,6 +283,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: ['._id'], WHERE: ['ISBOOLEAN()', ['.value']]}")) };
+    CHECK(query->columnTitles() == (vector<string>{"id"}));
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     int i = 1;
@@ -365,6 +370,8 @@ TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: [['[]', null, false, true, 12345, 1234.5, 'howdy', ['._id']]]}")) };
 
+    CHECK(query->columnTitles() == (vector<string>{"[]"}));
+
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
     CHECK(e->columns()[0]->toJSONString() == "[null,false,true,12345,1234.5,\"howdy\",\"rec-001\"]");
@@ -376,6 +383,8 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
     addNumberedDocs(1, 1);
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', m: ['.bogus'], id: ['._id']}]}")) };
+
+    CHECK(query->columnTitles() == (vector<string>{"{}"}));
 
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());

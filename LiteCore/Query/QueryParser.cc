@@ -39,7 +39,6 @@ using namespace litecore::qp;
 
 namespace litecore {
 
-
 #pragma mark - UTILITY FUNCTIONS:
 
     namespace qp {
@@ -153,6 +152,7 @@ namespace litecore {
         _indexJoinTables.clear();
         _aliases.clear();
         _dbAlias.clear();
+        _columnTitles.clear();
         _1stCustomResultCol = 0;
         _isAggregateQuery = _aggregatesOK = _propertiesUseAliases = false;
 
@@ -256,6 +256,8 @@ namespace litecore {
             if (nCol > 0)
                 _sql << ", ";
             _sql << defaultTablePrefix << "key, " << defaultTablePrefix << "sequence";
+            _columnTitles.push_back(kDocIDProperty);
+            _columnTitles.push_back(kSequenceProperty);
         }
 
         // FROM clause:
@@ -669,16 +671,71 @@ namespace litecore {
     }
 
 
+    static string columnTitleFromProperty(const string &property) {
+        if (property == kDocIDProperty) {
+            return "id";
+        } else if (property == kSequenceProperty) {
+            return "sequence";
+        } else {
+            auto dot = property.rfind('.');
+            return (dot == string::npos) ? property : property.substr(dot+1);
+        }
+    }
+
+
     // Handles the WHAT clause (list of results)
     void QueryParser::resultOp(slice op, Array::iterator& operands) {
         int n = 0;
         for (auto &i = operands; i; ++i) {
             // Write the operation/delimiter between arguments
+            auto result = i.value();
+            string title;
+            Array::iterator expr(result->asArray());
+            if (expr && expr[0]->asString().caseEquivalent("AS"_sl)) {
+                // Handle 'AS':
+                require(expr.count() == 3, "'AS' must have two operands");
+                title = string(requiredString(expr[2], "'AS' alias"));
+                result = expr[1];
+            }
+
             if (n++ > 0)
                 _sql << ", ";
             _sql << kResultFnName << "(";
-            parseCollatableNode(i.value());
+            parseCollatableNode(result);
             _sql << ")";
+
+            // Come up with a column title if there is no 'AS':
+            if (title.empty()) {
+                switch (result->type()) {
+                    case kString: {
+                        title = columnTitleFromProperty(propertyFromString(result->asString()));
+                        break;
+                    }
+                    case kArray: {
+                        slice resultOp = expr[0]->asString();
+                        if (resultOp.hasPrefix('.'))
+                            title = columnTitleFromProperty(propertyFromNode(result));
+                        else
+                            title = string(resultOp);  // e.g. "max()" or "+"
+                        break;
+                    }
+                    case kDict:
+                        title = "{}";
+                        break;
+                    default:
+                        title = result->toJSON<5>().asString();
+                        break;
+                }
+                if (title.empty())
+                    title = "*";    // results from ["."], i.e. entire doc
+            }
+
+            // Make the title unique:
+            string uniqueTitle = title;
+            unsigned dup = 2;
+            while (find(_columnTitles.begin(), _columnTitles.end(), uniqueTitle) != _columnTitles.end())
+                uniqueTitle = title + format(" #%u", dup++);
+            _columnTitles.push_back(uniqueTitle);
         }
     }
 
@@ -1199,10 +1256,10 @@ namespace litecore {
             return;
         }
 
-        if (property == "_id") {
+        if (property == kDocIDProperty) {
             require(fn == kValueFnName, "can't use '_id' in this context");
             _sql << tablePrefix << "key";
-        } else if (property == "_sequence") {
+        } else if (property == kSequenceProperty) {
             require(fn == kValueFnName, "can't use '_sequence' in this context");
             _sql << tablePrefix << "sequence";
         } else {
@@ -1229,7 +1286,7 @@ namespace litecore {
                                                 const string &alias, aliasType type)
     {
         require(fn == kValueFnName, "can't use an UNNEST alias in this context");
-        require(property != "_id" && property != "_sequence",
+        require(property != kDocIDProperty && property != kSequenceProperty,
                 "can't use '%s' on an UNNEST", property.c_str());
         string tablePrefix;
         if (_propertiesUseAliases)

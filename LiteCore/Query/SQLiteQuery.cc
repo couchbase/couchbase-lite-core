@@ -79,6 +79,7 @@ namespace litecore {
             
             _1stCustomResultColumn = qp.firstCustomResultColumn();
             _isAggregate = qp.isAggregateQuery();
+            _columnTitles = qp.columnTitles();
         }
 
 
@@ -115,6 +116,11 @@ namespace litecore {
         }
 
 
+        virtual const vector<string>& columnTitles() const noexcept override {
+            return _columnTitles;
+        }
+
+
         string explain() override {
             stringstream result;
             // https://www.sqlite.org/eqp.html
@@ -140,6 +146,7 @@ namespace litecore {
         set<string> _parameters;
         vector<string> _ftsTables;
         unsigned _1stCustomResultColumn;
+        vector<string> _columnTitles;
         bool _isAggregate;
 
         shared_ptr<SQLite::Statement> statement() {return _statement;}

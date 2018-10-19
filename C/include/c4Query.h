@@ -47,7 +47,7 @@ extern "C" {
         @param expression  JSON data describing the query. (Schema is documented elsewhere.)
         @param error  Error will be written here if the function fails.
         @result  A new C4Query, or NULL on failure. */
-    C4Query* c4query_new(C4Database *database,
+    C4Query* c4query_new(C4Database *database C4NONNULL,
                          C4String expression,
                          C4Error *error) C4API;
 
@@ -57,11 +57,19 @@ extern "C" {
     /** Returns a string describing the implementation of the compiled query.
         This is intended to be read by a developer for purposes of optimizing the query, especially
         to add database indexes. */
-    C4StringResult c4query_explain(C4Query *query) C4API;
+    C4StringResult c4query_explain(C4Query* C4NONNULL) C4API;
 
 
     /** Returns the number of columns (the values specified in the WHAT clause) in each row. */
-    unsigned c4query_columnCount(C4Query *query) C4API;
+    unsigned c4query_columnCount(C4Query* C4NONNULL) C4API;
+
+    /** Returns a suggested title for a column, which may be:
+         * An alias specified in an 'AS' modifier in the column definition
+         * A property name
+         * A function/operator that computes the column value, e.g. 'MAX()' or '+'
+        Each column's title is unique. If multiple columns would have the same title, the
+        later ones (in numeric order) will have " #2", "#3", etc. appended. */
+    FLString c4query_columnTitle(C4Query* C4NONNULL, unsigned column) C4API;
 
 
     //////// RUNNING QUERIES:

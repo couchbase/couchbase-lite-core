@@ -43,6 +43,8 @@ namespace litecore {
         KeyStore& keyStore() const                                      {return _keyStore;}
 
         virtual unsigned columnCount() const noexcept =0;
+        
+        virtual const std::vector<std::string>& columnTitles() const noexcept =0;
 
         virtual alloc_slice getMatchedText(const FullTextTerm&) =0;
 

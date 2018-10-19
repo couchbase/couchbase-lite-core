@@ -75,6 +75,7 @@ namespace litecore {
         const std::set<std::string>& parameters()                   {return _parameters;}
         const std::vector<std::string>& ftsTablesUsed() const       {return _ftsTables;}
         unsigned firstCustomResultColumn() const                    {return _1stCustomResultCol;}
+        const std::vector<std::string>& columnTitles() const        {return _columnTitles;}
 
         bool isAggregateQuery() const                               {return _isAggregateQuery;}
 
@@ -191,6 +192,7 @@ namespace litecore {
         std::string _dbAlias;                       // Alias of the db itself, "_doc" by default
         bool _propertiesUseAliases {false};         // Must properties include alias as prefix?
         std::vector<std::string> _baseResultColumns;// Default columns to always emit
+        std::vector<std::string> _columnTitles;     // Pretty names of result columns
         std::stringstream _sql;                     // The SQL being generated
         const fleece::impl::Value* _curNode;        // Current node being parsed
         std::vector<const Operation*> _context;     // Parser stack
