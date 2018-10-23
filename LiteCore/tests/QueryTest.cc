@@ -858,6 +858,57 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        writeNumberedDoc(1, nullslice, t);
+        t.commit();
+    }
+    vector<pair<string, string>> tests {
+        {"[['str_to_utc()', null]]",                            "null"},
+        {"[['str_to_utc()', 99]]",                              "null"},
+        {"[['str_to_utc()', '']]",                              "null"},
+        {"[['str_to_utc()', 'x']]",                             "null"},
+        {"[['str_to_utc()', '2018-10-23']]",                    "2018-10-23T00:00:00Z"},
+        {"[['str_to_utc()', '2018-10-23T18:33']]",              "2018-10-23T18:33:00Z"},
+        {"[['str_to_utc()', '2018-10-23T18:33:01']]",           "2018-10-23T18:33:01Z"},
+        {"[['str_to_utc()', '2018-10-23T18:33:01Z']]",          "2018-10-23T18:33:01Z"},
+        {"[['str_to_utc()', '2018-10-23T11:33:01-0700']]",      "2018-10-23T18:33:01Z"},
+        {"[['str_to_utc()', '2018-10-23T11:33:01+03:30']]",     "2018-10-23T08:03:01Z"},
+        {"[['str_to_utc()', '2018-10-23T18:33:01.123Z']]",      "2018-10-23T18:33:01.123Z"},
+        {"[['str_to_utc()', '2018-10-23T11:33:01.123-0700']]",  "2018-10-23T18:33:01.123Z"},
+
+        {"[['str_to_millis()', '']]",                           "null"},
+        {"[['str_to_millis()', '1970-01-01T00:00:00Z']]",       "0"},
+        {"[['str_to_millis()', '2018-10-23T11:33:01-0700']]",   "1540319581000"},
+        {"[['str_to_millis()', '2018-10-23T18:33:01Z']]",       "1540319581000"},
+        {"[['str_to_millis()', '2018-10-23T18:33:01.123Z']]",   "1540319581123"},
+
+        {"[['millis_to_utc()', 'x']]",                          "null"},
+        {"[['millis_to_utc()', '0']]",                          "null"},
+        {"[['millis_to_utc()', 0]]",                            "1970-01-01T00:00:00Z"},
+        {"[['millis_to_utc()', 1540319581000]]",                "2018-10-23T18:33:01Z"},
+        {"[['millis_to_utc()', 1540319581123]]",                "2018-10-23T18:33:01.123Z"},
+        {"[['millis_to_utc()', 1540319581999]]",                "2018-10-23T18:33:01.999Z"},
+
+        // It's hard to test millis_to_str directly, because the result depends on the
+        // local time zone...
+        //{"[['millis_to_str()', 1540319581000]]", "2018-10-23T11:33:01-0700"},
+        {"[['str_to_utc()', ['millis_to_str()', 1540319581000]]]", "2018-10-23T18:33:01Z"},
+        {"[['millis_to_str()', 'x']]",                          "null"},
+        {"[['millis_to_str()', '0']]",                          "null"},
+    };
+    for(auto &test : tests) {
+        INFO("Testing " << test.first);
+        auto query = store->compileQuery(json5("{'WHAT': " + test.first + "}"));
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        REQUIRE(e->getRowCount() == 1);
+        REQUIRE(e->next());
+        CHECK(e->columns()[0]->toString() == slice(test.second));
+    }
+}
+
+
 TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
     {
         Transaction t(store->dataFile());

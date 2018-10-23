@@ -25,6 +25,7 @@
 #include "StringUtil.hh"
 #include "function_ref.hh"
 #include "FleeceImpl.hh"
+#include "ParseDate.hh"
 #include <regex>
 #include <cmath>
 #include <string>
@@ -698,11 +699,15 @@ namespace litecore {
 #pragma mark - MATH:
 
 
-    static bool isNumeric(sqlite3_context* ctx, sqlite3_value *arg) {
+    static bool isNumericNoError(sqlite3_value *arg) {
         auto type = sqlite3_value_type(arg);
-        if (_usuallyTrue(type == SQLITE_FLOAT || type == SQLITE_INTEGER))
+        return type == SQLITE_FLOAT || type == SQLITE_INTEGER;
+    }
+
+    static bool isNumeric(sqlite3_context* ctx, sqlite3_value *arg) {
+        if (_usuallyTrue(isNumericNoError(arg))) {
             return true;
-        else {
+        } else {
             sqlite3_result_error(ctx, "Invalid numeric value", SQLITE_MISMATCH);
             return false;
         }
@@ -794,6 +799,46 @@ namespace litecore {
             return;
         double num = sqlite3_value_double(argv[0]);
         sqlite3_result_int(ctx, num > 0 ? 1 : (num < 0 ? -1 : 0) );
+    }
+
+
+#pragma mark - DATES:
+
+
+    static bool parseDateArg(sqlite3_value *arg, int64_t *outTime) {
+        auto str = stringArgument(arg);
+        return str && kInvalidDate != (*outTime = ParseISO8601Date(str));
+    }
+
+    static void setResultDateString(sqlite3_context* ctx, int64_t millis, bool asUTC) {
+        char buf[kFormattedISO8601DateMaxSize];
+        setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, asUTC));
+    }
+
+    static void millis_to_utc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if (isNumericNoError(argv[0])) {
+            int64_t millis = sqlite3_value_int64(argv[0]);
+            setResultDateString(ctx, millis, true);
+        }
+    }
+
+    static void millis_to_str(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if (isNumericNoError(argv[0])) {
+            int64_t millis = sqlite3_value_int64(argv[0]);
+            setResultDateString(ctx, millis, false);
+        }
+    }
+
+    static void str_to_millis(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        int64_t millis;
+        if (parseDateArg(argv[0], &millis))
+            sqlite3_result_int64(ctx, millis);
+    }
+
+    static void str_to_utc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        int64_t millis;
+        if (parseDateArg(argv[0], &millis))
+            setResultDateString(ctx, millis, true);
     }
 
 
@@ -1223,6 +1268,12 @@ namespace litecore {
         { "tan",               1, fl_tan },
         { "trunc",             1, fl_trunc },
         { "trunc",             2, fl_trunc },
+
+        { "millis_to_str",     1, millis_to_str },
+        { "millis_to_utc",     1, millis_to_utc },
+        { "str_to_millis",     1, str_to_millis },
+        { "str_to_utc",        1, str_to_utc },
+
         { }
     };
 

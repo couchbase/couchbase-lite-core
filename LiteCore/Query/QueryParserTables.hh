@@ -129,6 +129,12 @@ namespace litecore {
         {"missingif"_sl,        2, 2, "nullif"_sl},
         {"nullif"_sl,           2, 2, "N1QL_nullif"_sl},
 
+        // Dates/times:
+        { "millis_to_str"_sl,   1, 1 },
+        { "millis_to_utc"_sl,   1, 1 },
+        { "str_to_millis"_sl,   1, 1 },
+        { "str_to_utc"_sl,      1, 1 },
+
         // Math:
         {"abs"_sl,              1, 1},
         {"acos"_sl,             1, 1},
