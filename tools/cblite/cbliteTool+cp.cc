@@ -89,7 +89,7 @@ void CBLiteTool::copyDatabase(bool reversed) {
         c4log_setLevel(syncLog, max(kC4LogDebug, C4LogLevel(kC4LogInfo - verbose() + 2)));
     }
 
-    c4socket_registerFactory(C4CivetWebSocketFactory);
+    RegisterC4CivetWebSocketFactory();
 
     const char *firstArgName = "source path/URL", *secondArgName = "destination path/URL";
     if (reversed)

@@ -20,3 +20,5 @@
 #include "c4Socket.h"
 
 extern const C4SocketFactory C4CivetWebSocketFactory;
+
+void RegisterC4CivetWebSocketFactory();

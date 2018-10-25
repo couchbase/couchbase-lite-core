@@ -1118,7 +1118,6 @@
 		279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib.xcconfig"; sourceTree = "<group>"; };
 		279D41281EA55A8D00D8DD9D /* c4REST.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4REST.exp; sourceTree = "<group>"; };
 		279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib_Release.xcconfig"; sourceTree = "<group>"; };
-		279D414C1EA591C900D8DD9D /* LiteCoreServ.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LiteCoreServ.cc; sourceTree = "<group>"; };
 		279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreServ.xcconfig; sourceTree = "<group>"; };
 		27A16314201FC2A500C18D9C /* DataFile+Shared.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "DataFile+Shared.hh"; sourceTree = "<group>"; };
 		27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
@@ -1616,7 +1615,6 @@
 				279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */,
 				275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */,
 				279D41281EA55A8D00D8DD9D /* c4REST.exp */,
-				279D414C1EA591C900D8DD9D /* LiteCoreServ.cc */,
 				270BEE1C20647E8A005E8BE8 /* EE */,
 				276E020F1EA9712700FEFE8A /* tests */,
 				2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */,

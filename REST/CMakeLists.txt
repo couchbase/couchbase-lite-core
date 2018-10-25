@@ -35,7 +35,6 @@ if(BUILD_ENTERPRISE)
 endif()
 
 aux_source_directory("." REST_SRC)
-list(REMOVE_ITEM REST_SRC ./LiteCoreServ.cc)
 
 if(BUILD_ENTERPRISE)
     set(REST_SRC ${REST_SRC}

@@ -40,6 +40,15 @@ namespace litecore { namespace REST {
     static int kTaskExpirationTime = 10;
 
 
+    string RESTListener::kServerName = "LiteCoreServ";
+
+
+    string RESTListener::serverNameAndVersion() {
+        alloc_slice version(c4_getVersion());
+        return format("%s/%.*s", kServerName.c_str(), SPLAT(version));
+    }
+
+
     RESTListener::RESTListener(const Config &config)
     :_directory(config.directory.buf ? new FilePath(slice(config.directory).asString(), "")
                                      : nullptr)
@@ -56,7 +65,7 @@ namespace litecore { namespace REST {
             nullptr
         };
         _server.reset(new Server(options, this));
-        _server->setExtraHeaders({{"Server", "LiteCoreServ/0.0"}});
+        _server->setExtraHeaders({{"Server", serverNameAndVersion()}});
 
         if (config.apis & kC4RESTAPI) {
             auto notFound =  [](RequestResponse &rq) {

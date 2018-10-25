@@ -37,6 +37,7 @@ namespace litecore { namespace REST {
 
 
     void RESTListener::handleGetRoot(RequestResponse &rq) {
+        alloc_slice version(c4_getVersion());
         auto &json = rq.jsonEncoder();
         json.beginDict();
         json.writeKey("couchdb"_sl);
@@ -44,12 +45,12 @@ namespace litecore { namespace REST {
         json.writeKey("vendor"_sl);
         json.beginDict();
         json.writeKey("name"_sl);
-        json.writeString("LiteCoreServ"_sl);
+        json.writeString(kServerName);
         json.writeKey("version"_sl);
-        json.writeString("0.0"_sl);
+        json.writeString(version);
         json.endDict();
         json.writeKey("version"_sl);
-        json.writeString("LiteCoreServ/0.0"_sl);
+        json.writeString(serverNameAndVersion());
         json.endDict();
     }
 
@@ -332,7 +333,7 @@ namespace litecore { namespace REST {
         Dict body = rq.bodyAsJSON().asDict();
         if (!body) {
             if (!deleting || rq.body())
-                return rq.respondWithStatus(HTTPStatus::BadRequest);
+                return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid JSON in request body");
         }
 
         auto &json = rq.jsonEncoder();
@@ -355,7 +356,7 @@ namespace litecore { namespace REST {
         Dict body = rq.bodyAsJSON().asDict();
         Array docs = body["docs"].asArray();
         if (!docs) {
-            return rq.respondWithStatus(HTTPStatus::BadRequest);
+            return rq.respondWithStatus(HTTPStatus::BadRequest, "Request body is invalid JSON, or has no \"docs\" array");
         }
 
         Value v = body["new_edits"];

@@ -419,3 +419,11 @@ const C4SocketFactory C4CivetWebSocketFactory {
     &sock_requestClose,
     &sock_dispose
 };
+
+
+void RegisterC4CivetWebSocketFactory() {
+    static std::once_flag once;
+    std::call_once(once, [] {
+        c4socket_registerFactory(C4CivetWebSocketFactory);
+    });
+}

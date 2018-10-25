@@ -42,10 +42,7 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
-        static std::once_flag once;
-        std::call_once(once, [] {
-            c4socket_registerFactory(C4CivetWebSocketFactory);
-        });
+        RegisterC4CivetWebSocketFactory();
         // Environment variables can also override the default address above:
         const char *hostname = getenv("REMOTE_HOST");
         if (hostname)

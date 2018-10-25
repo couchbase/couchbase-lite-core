@@ -95,6 +95,9 @@ namespace litecore { namespace REST {
         void addHandler(Server::Method, const char *uri, HandlerMethod);
         void addDBHandler(Server::Method, const char *uri, DBHandlerMethod);
 
+        static std::string serverNameAndVersion();
+        static std::string kServerName;
+
     private:
         void handleGetRoot(RequestResponse&);
         void handleGetAllDBs(RequestResponse&);

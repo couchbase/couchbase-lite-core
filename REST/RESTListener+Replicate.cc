@@ -244,6 +244,8 @@ namespace litecore { namespace REST {
     void RESTListener::handleReplicate(litecore::REST::RequestResponse &rq) {
         // Parse the JSON body:
         auto params = rq.bodyAsJSON().asDict();
+        if (!params)
+            return rq.respondWithStatus(HTTPStatus::BadRequest, "Invalid JSON in request body (or body is not an object)");
         slice source = params["source"].asString();
         slice target = params["target"].asString();
         if (!source || !target)
@@ -314,7 +316,11 @@ namespace litecore { namespace REST {
         } else {
             task->writeErrorInfo(json);
         }
-        rq.setStatus(statusCode, task->message().asString().c_str());
+
+        string message = task->message().asString();
+        if (statusCode == HTTPStatus::GatewayError)
+            message = "Replicator error: " + message;
+        rq.setStatus(statusCode, message.c_str());
     }
 
 } }
