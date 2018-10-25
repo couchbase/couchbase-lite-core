@@ -19,6 +19,7 @@
 #pragma once
 #include "c4Socket.h"
 #include "c4Database.h"
+#include "c4Document.h"
 #include "c4BlobStore.h"
 #include "fleece/Fleece.h"
 
@@ -101,13 +102,12 @@ extern "C" {
                                                      C4Error error,
                                                      void *context);
 
-    /** Callback that can choose to skip an outgoing revision by returning false. */
-    typedef bool (*C4ReplicatorPushFilterFunction)(C4String docID,
-                                                   FLDict body,
-                                                   void* context);
-
-    /** Callback that can choose to reject an incoming pulled revision by returning false. */
+    /** Callback that can choose to reject an incoming pulled revision, or stop a local
+        revision from being pushed, by returning false.
+        (Note: In the case of an incoming revision, no flags other than 'deletion' and
+        'hasAttachments' will be set.) */
     typedef bool (*C4ReplicatorValidationFunction)(C4String docID,
+                                                   C4RevisionFlags,
                                                    FLDict body,
                                                    void* context);
 
@@ -136,7 +136,7 @@ extern "C" {
         C4ReplicatorMode                  push;              ///< Push mode (from db to remote/other db)
         C4ReplicatorMode                  pull;              ///< Pull mode (from db to remote/other db).
         C4Slice                           optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
-        C4ReplicatorPushFilterFunction    pushFilter;        ///< Callback that can reject outgoing revisions
+        C4ReplicatorValidationFunction    pushFilter;        ///< Callback that can reject outgoing revisions
         C4ReplicatorValidationFunction    validationFunc;    ///< Callback that can reject incoming revisions
         C4ReplicatorStatusChangedCallback onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
         C4ReplicatorDocumentEndedCallback onDocumentEnded;   ///< Callback notifying status of individual documents

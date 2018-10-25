@@ -129,16 +129,6 @@ namespace litecore { namespace repl {
         // Populate the RevToInsert's body:
         _rev->body = fleeceBody;
 
-        // Call the custom validation function if any:
-        if (_options.pullValidator) {
-            if (!_options.pullValidator(_rev->docID, root, _options.callbackContext)) {
-                log("Rejected by pull validator function");
-                _error = c4error_make(WebSocketDomain, 403, "rejected by validation function"_sl);
-                finish();
-                return;
-            }
-        }
-
         // Check for blobs, and queue up requests for any I don't have yet:
         _dbWorker->findBlobReferences(root, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
             _rev->flags |= kRevHasAttachments;
@@ -148,6 +138,16 @@ namespace litecore { namespace repl {
                                      blob["length"_sl].asUnsigned(),
                                      c4doc_blobIsCompressible(blob)});
         });
+
+        // Call the custom validation function if any:
+        if (_options.pullValidator) {
+            if (!_options.pullValidator(_rev->docID, _rev->flags, root, _options.callbackContext)) {
+                log("Rejected by pull validator function");
+                _error = c4error_make(WebSocketDomain, 403, "rejected by validation function"_sl);
+                finish();
+                return;
+            }
+        }
 
         // Request the first blob, or if there are none, finish:
         if (!fetchNextBlob())
