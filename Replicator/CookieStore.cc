@@ -43,12 +43,8 @@ namespace litecore { namespace repl {
         struct tm* ptm;
 
         // Convert that raw time_t to GMT
-#if !defined(WIN32)
         struct tm gbuf;
         ptm = gmtime_r(&rawtime, &gbuf);
-#else
-        ptm = gmtime(&rawtime);
-#endif
 
         // Caveat: Undefined behavior during ambigiuous times (e.g. during a repeated
         // hour at the end of daylight savings time)
