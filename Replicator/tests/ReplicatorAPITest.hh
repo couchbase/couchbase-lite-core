@@ -76,7 +76,7 @@ public:
         return true;
     }
 
-    static bool onValidate(FLString docID, FLDict body, void *context) {
+    static bool onValidate(FLString docID, C4RevisionFlags flags, FLDict body, void *context) {
         return ((ReplicatorAPITest*)context)->validate(docID, body);
     }
 
@@ -244,7 +244,7 @@ public:
     C4Address _address {kDefaultAddress};
     C4String _remoteDBName {kScratchDBName};
     AllocedDict _options;
-    C4ReplicatorPushFilterFunction _pushFilter {nullptr};
+    C4ReplicatorValidationFunction _pushFilter {nullptr};
     C4SocketFactory* _socketFactory {nullptr};
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;

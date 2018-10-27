@@ -190,7 +190,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
     createDB2();
 
-    _pushFilter = [](C4String docID, FLDict flbody, void *context) {
+    _pushFilter = [](C4String docID, C4RevisionFlags flags, FLDict flbody, void *context) {
         ((ReplicatorAPITest*)context)->_counter++;
         assert(docID.size > 0);
         Dict body(flbody);

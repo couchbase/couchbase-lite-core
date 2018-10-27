@@ -16,7 +16,12 @@ include_directories(${TOP}C/include/
                     ${TOP}vendor/fleece/vendor/catch/
                 )
 
-aux_source_directory(.  TEST_SRC)
+FILE(GLOB TEST_SRC *.cc)
+if(APPLE)
+    FILE(GLOB TEST_SRC_MM  *.mm)
+    set(TEST_SRC ${TEST_SRC} ${TEST_SRC_MM})
+endif(APPLE)
+
 aux_source_directory(${TOP}/REST/tests  REST_TEST_SRC)
 
 set(TEST_SRC ${TEST_SRC}
