@@ -35,15 +35,20 @@ namespace litecore {
     const char* const kFleeceValuePointerType = "FleeceValue";
 
 
-    static slice argAsSlice(sqlite3_context* ctx, sqlite3_value *arg) {
+    static slice argAsFleeceData(sqlite3_context* ctx, sqlite3_value *arg) {
         auto type = sqlite3_value_type(arg);
         if (type == SQLITE_NULL)
             return nullslice;             // No 'body' column; may be deleted doc
         Assert(type == SQLITE_BLOB);
-        Assert(sqlite3_value_subtype(arg) == 0);
+        auto blobType = sqlite3_value_subtype(arg);
         slice fleece = valueAsSlice(arg);
-        auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-        return funcCtx->accessor(fleece);
+        if (blobType == 0) {
+            auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
+            return funcCtx->accessor(fleece);
+        } else {
+            Assert(blobType == kFleeceDataSubtype);
+            return fleece;
+        }
     }
 
 
@@ -120,7 +125,7 @@ namespace litecore {
 
 
     QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
-    :Scope(argAsSlice(ctx, argv[0]), getSharedKeys(ctx))
+    :Scope(argAsFleeceData(ctx, argv[0]), getSharedKeys(ctx))
     {
         if (data()) {
             root = Value::fromTrustedData(data());
@@ -131,7 +136,8 @@ namespace litecore {
         } else {
             root = Dict::kEmpty;             // No current revision body; may be deleted rev
         }
-        root = evaluatePathFromArg(ctx, argv, 1, root);
+        if (sqlite3_value_type(argv[1]) != SQLITE_NULL)
+            root = evaluatePathFromArg(ctx, argv, 1, root);
     }
 
 

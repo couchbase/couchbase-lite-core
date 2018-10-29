@@ -162,6 +162,8 @@ namespace litecore {
         bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::impl::Array::iterator &operands);
         void writePropertyGetter(slice fn, std::string property,
                                  const fleece::impl::Value *param =nullptr);
+        void writeFunctionGetter(slice fn, const fleece::impl::Value *source,
+                                 const fleece::impl::Value *param =nullptr);
         void writeUnnestPropertyGetter(slice fn, const std::string &property,
                                        const std::string &alias, aliasType);
         void writeEachExpression(const std::string &property);
@@ -181,6 +183,7 @@ namespace litecore {
         const std::string&  FTSJoinTableAlias(const fleece::impl::Value *matchLHS, bool canAdd =false);
         const std::string&  predictiveJoinTableAlias(const fleece::impl::Value *expr, bool canAdd =false);
         std::string FTSTableName(const fleece::impl::Value *key) const;
+        std::string expressionIdentifier(const fleece::impl::Array *expression, unsigned maxItems =0) const;
         void findPredictiveJoins(const fleece::impl::Value *node, std::vector<std::string> &joins);
         bool writeIndexedPrediction(const fleece::impl::Array *node);
 

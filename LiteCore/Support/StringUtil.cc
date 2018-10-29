@@ -80,6 +80,15 @@ namespace litecore {
     }
 
 
+    void replace(std::string &str, const std::string &oldStr, const std::string &newStr) {
+        string::size_type pos = 0;
+        while (string::npos != (pos = str.find(oldStr, pos))) {
+            str.replace(pos, oldStr.size(), newStr);
+            pos += newStr.size();
+        }
+    }
+
+
     bool hasPrefix(const std::string &str, const std::string &prefix) noexcept {
         return str.size() >= prefix.size() && memcmp(str.data(), prefix.data(), prefix.size()) == 0;
     }

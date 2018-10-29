@@ -183,6 +183,15 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY", "[Query]") {
     CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}, {AS: 'book', 'ON': 1}],\
                                  WHERE: ['ANY', 'X', ['.', 'book', 'keywords'], ['=', ['?', 'X'], 'horror']]}]")
           == "SELECT \"person\".key, \"person\".sequence FROM kv_default AS \"person\" CROSS JOIN kv_default AS \"book\" ON (1) AND (\"book\".flags & 1) = 0 WHERE ((fl_contains(\"book\".body, 'keywords', 'horror'))) AND (\"person\".flags & 1) = 0");
+
+    // Non-property calls:
+    CHECK(parseWhere("['ANY', 'X', ['pi()'], ['=', ['?X'], 'Smith']]")
+          == "fl_contains(pi(), null, 'Smith')");
+    CHECK(parseWhere("['EVERY', 'X', ['pi()'], ['=', ['?', 'X'], 'Smith']]")
+          == "NOT EXISTS (SELECT 1 FROM fl_each(pi()) AS _X WHERE NOT (_X.value = 'Smith'))");
+    CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}],\
+                     WHERE: ['ANY', 'X', ['pi()'], ['=', ['?', 'X'], 'Smith']]}]")
+          == "SELECT \"person\".key, \"person\".sequence FROM kv_default AS \"person\" WHERE ((fl_contains(pi(), null, 'Smith'))) AND (\"person\".flags & 1) = 0");
 }
 
 
@@ -237,9 +246,9 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT prediction", "[Query][Pred
 
     tablesExist = true;
     CHECK(parseWhere(query1)
-          == "SELECT key, sequence FROM kv_default AS _doc LEFT JOIN \"kv_default:predict:ngJPs3yJmEb4R/mMbtrLCzOMwAQ=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
+          == "SELECT key, sequence FROM kv_default AS _doc LEFT JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
     CHECK(parseWhere(query2)
-          == "SELECT fl_result(fl_value(pred1.body, 'bias')) FROM kv_default AS _doc LEFT JOIN \"kv_default:predict:ngJPs3yJmEb4R/mMbtrLCzOMwAQ=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
+          == "SELECT fl_result(fl_value(pred1.body, 'bias')) FROM kv_default AS _doc LEFT JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
 }
 #endif
 
@@ -302,6 +311,12 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT UNNEST", "[Query][FTS]") {
                              {as: 'notes', 'unnest': ['.book.notes']}],\
                      WHERE: ['>', ['.notes.page'], 100]}]")
           == "SELECT fl_result(\"notes\".value) FROM kv_default AS \"book\" JOIN fl_each(\"book\".body, 'notes') AS \"notes\" WHERE (fl_nested_value(\"notes\".body, 'page') > 100) AND (\"book\".flags & 1) = 0");
+    CHECK(parseWhere("['SELECT', {\
+                      WHAT: ['.notes'], \
+                      FROM: [{as: 'book'}, \
+                             {as: 'notes', 'unnest': ['pi()']}],\
+                     WHERE: ['>', ['.notes.page'], 100]}]")
+          == "SELECT fl_result(\"notes\".value) FROM kv_default AS \"book\" JOIN fl_each(pi()) AS \"notes\" WHERE (fl_nested_value(\"notes\".body, 'page') > 100) AND (\"book\".flags & 1) = 0");
 }
 
 

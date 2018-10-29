@@ -66,6 +66,9 @@ namespace litecore {
     /** Replaces all occurrences of `oldChar` with `newChar`. */
     void replace(std::string &str, char oldChar, char newChar);
 
+    /** Replaces all occurrences of `oldStr` with `newStr`. */
+    void replace(std::string &str, const std::string &oldStr, const std::string &newStr);
+
     /** Returns true if `str` begins with the string `prefix`. */
     bool hasPrefix(const std::string &str, const std::string &prefix) noexcept;
 

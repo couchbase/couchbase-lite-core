@@ -20,7 +20,6 @@
 #include "QueryParser+Private.hh"
 #include "FleeceImpl.hh"
 #include "StringUtil.hh"
-#include "SecureDigest.hh"
 
 #ifdef COUCHBASE_ENTERPRISE
 
@@ -51,19 +50,11 @@ namespace litecore {
 
     // Constructs a unique identifier of a specific PREDICTION() call, from a digest of its JSON.
     string QueryParser::predictiveIdentifier(const Value *expression) const {
-        Array::iterator array(expression->asArray());
-        if (array.count() < 2 || !array[0]->asString().caseEquivalent(kPredictionFnNameWithParens))
+        auto array = expression->asArray();
+        if (!array || array->count() < 2
+                   || !array->get(0)->asString().caseEquivalent(kPredictionFnNameWithParens))
             fail("Invalid PREDICTION() call");
-        alloc_slice name = array[1]->toJSON(true);
-        alloc_slice input = array[2]->toJSON(true);
-
-        uint8_t digest[20];
-        sha1Context ctx;
-        sha1_begin(&ctx);
-        sha1_add(&ctx, name.buf, name.size);
-        sha1_add(&ctx, input.buf, input.size);
-        sha1_end(&ctx, &digest);
-        return slice(&digest, sizeof(digest)).base64String();
+        return expressionIdentifier(array, 3);     // ignore the output-property parameter
     }
 
 

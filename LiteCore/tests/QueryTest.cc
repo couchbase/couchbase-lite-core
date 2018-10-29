@@ -1086,10 +1086,11 @@ protected:
         Log("%s", explanation.c_str());
         checkQuery(88, 3);
 
-        Log("-------- Repeating with index --------");
+        Log("-------- Creating index --------");
         store->createIndex("numbersIndex"_sl,
                            "[[\".numbers\"]]"_sl,
                            KeyStore::kArrayIndex);
+        Log("-------- Recompiling query with index --------");
         query = store->compileQuery(json);
         explanation = query->explain();
         Log("%s", explanation.c_str());
@@ -1115,14 +1116,12 @@ protected:
     }
 };
 
-
 TEST_CASE_METHOD(ArrayQueryTest, "Query ANY", "[Query]") {
     testArrayQuery(json5("['SELECT', {\
                              WHERE: ['ANY', 'num', ['.numbers'],\
                                             ['=', ['?num'], 'eight-eight']]}]"),
                    false);
 }
-
 
 TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
     testArrayQuery(json5("['SELECT', {\
@@ -1132,6 +1131,46 @@ TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST", "[Query]") {
                    true);
 }
 
+
+TEST_CASE_METHOD(ArrayQueryTest, "Query ANY expression", "[Query]") {
+    addArrayDocs(1, 90);
+
+    auto json = json5("['SELECT', {\
+                          WHERE: ['ANY', 'num', ['[]', ['.numbers[0]'], ['.numbers[1]']],\
+                                         ['=', ['?num'], 'eight']]}]");
+    query = store->compileQuery(json);
+    string explanation = query->explain();
+    Log("%s", explanation.c_str());
+
+    checkQuery(12, 2);
+}
+
+
+TEST_CASE_METHOD(ArrayQueryTest, "Query UNNEST expression", "[Query]") {
+    addArrayDocs(1, 90);
+
+    auto json = json5("['SELECT', {\
+                              FROM: [{as: 'doc'}, \
+                                     {as: 'num', 'unnest': ['[]', ['.doc.numbers[0]'], ['.doc.numbers[1]']]}],\
+                              WHERE: ['=', ['.num'], 'one-eight']}]");
+    query = store->compileQuery(json);
+    string explanation = query->explain();
+    Log("%s", explanation.c_str());
+
+    checkQuery(22, 2);
+
+    Log("-------- Creating index --------");
+    store->createIndex("numbersIndex"_sl,
+                       json5("[['[]', ['.numbers[0]'], ['.numbers[1]']]]"),
+                       KeyStore::kArrayIndex);
+    Log("-------- Recompiling query with index --------");
+    query = store->compileQuery(json);
+    explanation = query->explain();
+    Log("%s", explanation.c_str());
+    CHECK(explanation.find("SCAN") == string::npos);    // should be no linear table scans
+
+    checkQuery(22, 2);
+}
 
 TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
 	{
