@@ -1,0 +1,22 @@
+dist: trusty
+sudo: false
+language: cpp
+
+addons:
+  apt:
+    sources:
+      - llvm-toolchain-trusty-7
+      - ubuntu-toolchain-r-test
+    packages:
+      - clang-7
+      - libc++-7-dev
+      - libc++abi-7-dev
+before_script:
+  - uname -a
+  - cmake --version
+  - export PATH=/usr/lib/llvm-7/bin:$PATH
+  - mkdir -p build_cmake/unix/tlm/deps
+  - ln -s /usr/lib/llvm-7 build_cmake/unix/tlm/deps/libcxx.exploded
+  - clang --version
+script:
+  - ./build_cmake/scripts/build_unix.sh
