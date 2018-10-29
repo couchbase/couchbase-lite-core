@@ -6,6 +6,7 @@
 
 #pragma once
 #include "RefCounted.hh"
+#include "c4Base.h"
 #include "fleece/slice.hh"
 #include "Value.hh"
 #include <string>
