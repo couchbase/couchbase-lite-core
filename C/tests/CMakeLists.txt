@@ -34,6 +34,10 @@ set(TEST_SRC ${TEST_SRC}
              ${TOP}/LiteCore/Support/Logging_Stub.cc
              ${TOP}/REST/Response.cc)
 
+if(NOT APPLE)
+    list(FILTER TEST_SRC EXCLUDE REGEX "\\.m+$")
+endif()
+
 add_executable(C4Tests ${TEST_SRC} )
 
 target_link_libraries(C4Tests  LiteCore LiteCoreREST CivetWeb FleeceStatic Support BLIPStatic)
