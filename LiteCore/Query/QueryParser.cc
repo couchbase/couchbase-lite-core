@@ -29,6 +29,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "PlatformIO.hh"
+#include "SecureDigest.hh"
 #include <utility>
 #include <algorithm>
 
@@ -440,7 +441,7 @@ namespace litecore {
                     case kUnnestVirtualTableAlias:
                         // UNNEST: Use fl_each() to make a virtual table:
                         _sql << " JOIN ";
-                        writeEachExpression(propertyFromNode(unnest));
+                        writeEachExpression(unnest);
                         _sql << " AS \"" << alias << "\"";
                         break;
                     case kUnnestTableAlias: {
@@ -870,9 +871,8 @@ namespace litecore {
         require(_variables.count(var) == 0, "Variable '%s' is already in use", var.c_str());
         _variables.insert(var);
 
-        string property = propertyFromNode(operands[1]);
+        const Value *arraySource = operands[1];
         auto predicate = requiredArray(operands[2], "ANY/EVERY third parameter");
-
 
         bool every = !op.caseEquivalent("ANY"_sl);
         bool anyAndEvery = op.caseEquivalent("ANY AND EVERY"_sl);
@@ -881,20 +881,20 @@ namespace litecore {
                                         && predicate->get(0)->asString() == "="_sl
                                         && propertyFromNode(predicate->get(1), '?') == var) {
             // If predicate is `var = value`, generate `fl_contains(array, value)` instead
-            writePropertyGetter(kContainsFnName, property, predicate->get(2));
+            writeFunctionGetter(kContainsFnName, arraySource, predicate->get(2));
             return;
         }
 
         if (anyAndEvery) {
             _sql << '(';
-            writePropertyGetter(kCountFnName, property);
+            writeFunctionGetter(kCountFnName, arraySource);
             _sql << " > 0 AND ";
         }
 
         if (every)
             _sql << "NOT ";
         _sql << "EXISTS (SELECT 1 FROM ";
-        writeEachExpression(property);
+        writeEachExpression(arraySource);
         _sql << " AS _" << var << " WHERE ";
         if (every)
             _sql << "NOT (";
@@ -1221,6 +1221,22 @@ namespace litecore {
     }
 
 
+    void QueryParser::writeFunctionGetter(slice fn, const Value *source, const Value *param) {
+        string property = propertyFromNode(source);
+        if (property.empty()) {
+            _sql << fn << "(";
+            parseNode(source);
+            if (param) {
+                _sql << ", null, ";
+                parseNode(param);
+            }
+            _sql << ")";
+        } else {
+            writePropertyGetter(fn, property, param);
+        }
+    }
+
+
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, string property, const Value *param) {
         string alias, tablePrefix;
@@ -1333,7 +1349,8 @@ namespace litecore {
 
     // Writes an 'fl_each()' call representing a virtual table for the array at the given property
     void QueryParser::writeEachExpression(const Value *propertyExpr) {
-        writeEachExpression(propertyFromNode(propertyExpr));
+        writeFunctionGetter(kEachFnName, propertyExpr);
+//        writeEachExpression(propertyFromNode(propertyExpr));
     }
 
 
@@ -1411,15 +1428,46 @@ namespace litecore {
 #pragma mark - UNNEST QUERY:
 
 
+    // Constructs a unique identifier of an expression, from a digest of its JSON.
+    string QueryParser::expressionIdentifier(const Array *expression, unsigned maxItems) const {
+        require(expression, "Invalid expression to index");
+        uint8_t digest[20];
+        sha1Context ctx;
+        sha1_begin(&ctx);
+        unsigned item = 0;
+        for (Array::iterator i(expression); i; ++i) {
+            if (maxItems > 0 && ++item > maxItems)
+                break;
+            alloc_slice json = i.value()->toJSON(true);
+            if (_propertiesUseAliases) {
+                // Strip ".doc" from property paths if necessary:
+                string s = json.asString();
+                replace(s, "[\"." + _dbAlias + ".", "[\".");
+                sha1_add(&ctx, s.data(), s.size());
+            } else {
+                sha1_add(&ctx, json.buf, json.size);
+            }
+        }
+        sha1_end(&ctx, &digest);
+        return slice(&digest, sizeof(digest)).base64String();
+    }
+
+
     // Returns the index table name for an unnested array property.
     string QueryParser::unnestedTableName(const Value *arrayExpr) const {
         string path = propertyFromNode(arrayExpr);
-        require(!path.empty() && path.find('"') == string::npos,
-                "invalid property path for array index");
-        if (_propertiesUseAliases) {
-            string dbAliasPrefix = _dbAlias + ".";
-            if (hasPrefix(path, dbAliasPrefix))
-                path = path.substr(dbAliasPrefix.size());
+        if (!path.empty()) {
+            // It's a property path
+            require(path.find('"') == string::npos,
+                    "invalid property path for array index");
+            if (_propertiesUseAliases) {
+                string dbAliasPrefix = _dbAlias + ".";
+                if (hasPrefix(path, dbAliasPrefix))
+                    path = path.substr(dbAliasPrefix.size());
+            }
+        } else {
+            // It's some other expression; make a unique digest of it:
+            path = expressionIdentifier(arrayExpr->asArray());
         }
         return _delegate.unnestedTableName(path);
     }

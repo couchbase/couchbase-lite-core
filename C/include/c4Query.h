@@ -260,10 +260,10 @@ extern "C" {
 
         Currently, full-text indexes are limited to a single expression only.
 
-        In an array index, the first expression must be a property path: this references the array
-        to be unnested. If the array items are nonscalar (dictionaries or arrays), you should add
-        a second expression defining the sub-property (or computed value) to index, relative to the
-        array item.
+        In an array index, the first expression must evaluate to an array to be unnested; it's
+        usually a property path but could be some other expression type. If the array items are
+        nonscalar (dictionaries or arrays), you should add a second expression defining the sub-
+        property (or computed value) to index, relative to the array item.
 
         In a predictive index, the expression is a PREDICTION() call in JSON query syntax,
         including the optional 3rd parameter that gives the result property to extract (and index.)

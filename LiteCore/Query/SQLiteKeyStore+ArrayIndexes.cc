@@ -38,10 +38,10 @@ namespace litecore {
     }
 
 
-    string SQLiteKeyStore::createUnnestedTable(const Value *path, const IndexOptions *options) {
-        // Derive the table name from the expression (path) it unnests:
+    string SQLiteKeyStore::createUnnestedTable(const Value *expression, const IndexOptions *options) {
+        // Derive the table name from the expression it unnests:
         auto kvTableName = tableName();
-        auto unnestTableName = QueryParser(*this).unnestedTableName(path);
+        auto unnestTableName = QueryParser(*this).unnestedTableName(expression);
 
         // Create the index table, unless an identical one already exists:
         string sql = CONCAT("CREATE TABLE \"" << unnestTableName << "\" "
@@ -51,12 +51,13 @@ namespace litecore {
                             " CONSTRAINT pk PRIMARY KEY (docid, i)) "
                             "WITHOUT ROWID");
         if (!_schemaExistsWithSQL(unnestTableName, "table", unnestTableName, sql)) {
-            LogTo(QueryLog, "Creating UNNEST table '%s'", unnestTableName.c_str());
+            LogTo(QueryLog, "Creating UNNEST table '%s' on %s", unnestTableName.c_str(),
+                  expression->toJSON(true).asString().c_str());
             db().exec(sql);
 
             QueryParser qp(*this);
             qp.setBodyColumnName("new.body");
-            string eachExpr = qp.eachExpressionSQL(path);
+            string eachExpr = qp.eachExpressionSQL(expression);
 
             // Populate the index-table with data from existing documents:
             db().exec(CONCAT("INSERT INTO \"" << unnestTableName << "\" (docid, i, body) "

@@ -35,25 +35,29 @@ namespace litecore {
     const char* const kFleeceValuePointerType = "FleeceValue";
 
 
-    static slice argAsSlice(sqlite3_context* ctx, sqlite3_value *arg, bool &copied) {
+    static slice argAsFleeceData(sqlite3_context* ctx, sqlite3_value *arg, bool &copied) {
         copied = false;
         auto type = sqlite3_value_type(arg);
         if (type == SQLITE_NULL)
             return nullslice;             // No 'body' column; may be deleted doc
         Assert(type == SQLITE_BLOB);
-        Assert(sqlite3_value_subtype(arg) == 0);
+        auto blobType = sqlite3_value_subtype(arg);
         slice fleece = valueAsSlice(arg);
-        auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-        fleece = funcCtx->accessor(fleece);
+        if (blobType == 0) {
+            auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
+            fleece = funcCtx->accessor(fleece);
 
-        if (size_t(fleece.buf) & 1) {
-            // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
-            // revision data, so it could occur. Now that it's not allowed, we have to work around
-            // this by copying the data to an even address. (#589)
-            fleece = fleece.copy();
-            copied = true;
+            if (size_t(fleece.buf) & 1) {
+                // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
+                // revision data, so it could occur. Now that it's not allowed, we have to work around
+                // this by copying the data to an even address. (#589)
+                fleece = fleece.copy();
+                copied = true;
+            }
+        } else {
+            Assert(blobType == kFleeceDataSubtype);
         }
-        return fleece;
+return fleece;
     }
 
 
@@ -130,7 +134,7 @@ namespace litecore {
 
 
     QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
-    :Scope(argAsSlice(ctx, argv[0], _copied), getSharedKeys(ctx))
+    :Scope(argAsFleeceData(ctx, argv[0], _copied), getSharedKeys(ctx))
     {
         if (data()) {
             root = Value::fromTrustedData(data());
@@ -141,6 +145,7 @@ namespace litecore {
         } else {
             root = Dict::kEmpty;             // No current revision body; may be deleted rev
         }
+        if (sqlite3_value_type(argv[1]) != SQLITE_NULL)
         root = evaluatePathFromArg(ctx, argv, 1, root);
     }
 
