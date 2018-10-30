@@ -26,6 +26,10 @@
 
 #ifdef COUCHBASE_ENTERPRISE
 
+#ifdef MAC_OS_X_VERSION_10_14
+#define SDK_HAS_SEQUENCES           // CoreML sequence APIs were added in 10.14 / iOS 12 SDK
+#endif
+
 namespace cbl {
     using namespace std;
     using namespace fleece;
@@ -269,7 +273,9 @@ namespace cbl {
             }
             case MLFeatureTypeImage:        // image features are handled by predictViaVision
             case MLFeatureTypeMultiArray:
+#ifdef SDK_HAS_SEQUENCES
             case MLFeatureTypeSequence:
+#endif
             case MLFeatureTypeInvalid:
                 reportError(outError, "MLModel input feature '%s' is of unsupported type %s; sorry!",
                             name.UTF8String, kMLFeatureTypeName[desc.type]);
@@ -362,6 +368,7 @@ namespace cbl {
     }
 
 
+#ifdef SDK_HAS_SEQUENCES
     // Encodes a sequence feature as a Fleece array of strings or numbers.
     API_AVAILABLE(macos(10.14))
     static void encodeSequence(Encoder &enc, MLSequence *sequence) {
@@ -374,6 +381,7 @@ namespace cbl {
                 enc.writeNull(); break;     // MLSequence API doesn't support any other types...
         }
     }
+#endif
 
 
     // Encodes an ML feature to Fleece.
@@ -394,12 +402,14 @@ namespace cbl {
             case MLFeatureTypeMultiArray:
                 encodeMultiArray(enc, feature.multiArrayValue);
                 break;
+#ifdef SDK_HAS_SEQUENCES
             case MLFeatureTypeSequence:
                 if (@available(macOS 10.14, *))
                     encodeSequence(enc, feature.sequenceValue);
                 else
                     enc.writeNull();
                 break;
+#endif
             case MLFeatureTypeImage:
                 C4Warn("predict(): Don't know how to convert result MLFeatureTypeImage");//TODO
                 enc.writeNull();
