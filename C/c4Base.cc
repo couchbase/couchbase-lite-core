@@ -236,6 +236,7 @@ bool c4error_mayBeTransient(C4Error err) C4API {
         504, /* Gateway Timeout */
         websocket::kCodeGoingAway,
         websocket::kCodeAbnormal,
+        websocket::kCodeUnexpectedCondition,
         0};
     static ErrorSet kTransient = { // indexed by C4ErrorDomain
         nullptr,

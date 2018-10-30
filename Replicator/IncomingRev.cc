@@ -122,7 +122,12 @@ namespace litecore { namespace repl {
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
         if (c4doc_hasOldMetaProperties(root) && !_dbWorker->disableBlobSupport()) {
-            fleeceBody = c4doc_encodeStrippingOldMetaProperties(root, nullptr);
+            C4Error err;
+            fleeceBody = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
+            if (!fleeceBody) {
+                warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
+                _error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
+            }
             root = Value::fromData(fleeceBody, kFLTrusted).asDict();
         }
 

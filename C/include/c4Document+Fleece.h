@@ -62,7 +62,8 @@ extern "C" {
     /** Re-encodes to Fleece, without any 1.x metadata properties. Old-style attachments that
         _don't_ refer to blobs will be removed; others are kept. */
     C4SliceResult c4doc_encodeStrippingOldMetaProperties(FLDict doc,
-                                                         FLSharedKeys sk) C4API;
+                                                         FLSharedKeys sk,
+                                                         C4Error *outError) C4API;
 
     /** Decodes the dict's "digest" property to a C4BlobKey.
         Returns false if there is no such property or it's not a valid blob key. */

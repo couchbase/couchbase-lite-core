@@ -64,6 +64,8 @@ namespace litecore {
 
     int MIGRATE_2(chmod_u8, ::_wchmod, int)
 
+    int MIGRATE_2(access_u8, ::_waccess, int);
+
     FILE* MIGRATE_2S(fopen_u8, ::_wfopen)
 
 }

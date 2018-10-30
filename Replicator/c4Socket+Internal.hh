@@ -45,6 +45,8 @@ namespace litecore { namespace repl {
 
         void connect() override;
 
+        void closeWithException(const std::exception&);
+
     protected:
         virtual void requestClose(int status, fleece::slice message) override;
         virtual void closeSocket() override;

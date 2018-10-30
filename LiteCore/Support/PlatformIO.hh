@@ -32,6 +32,10 @@
     #define strcasecmp  _stricmp
     #define fdclose ::_close
 
+    #define R_OK 1
+    #define W_OK 2
+    #define X_OK 4
+
     struct stat;
 
     namespace litecore {
@@ -41,6 +45,7 @@
         int rename_u8(const char* const oldPath, const char* const newPath);
         int unlink_u8(const char* const filename);
         int chmod_u8(const char* const filename, int mode);
+        int access_u8(const char* const path, int mode);
         FILE* fopen_u8(const char* const path, const char* const mode);
     }
 
@@ -75,6 +80,10 @@
 
         inline int chmod_u8(const char* const filename NONNULL, int mode) {
             return ::chmod(filename, (mode_t)mode);
+        }
+
+        inline int access_u8(const char* const path NONNULL, int mode) {
+            return ::access(path, mode);
         }
 
         inline FILE* fopen_u8(const char* const path NONNULL, const char* const mode NONNULL) {

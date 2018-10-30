@@ -722,7 +722,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 2", "[Database][C]") 
     auto sk = c4db_getFLSharedKeys(db);
     auto dict = json2dict("{_id:'foo', _rev:'1-2345', x:17}");
     CHECK(c4doc_hasOldMetaProperties(dict));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
     Doc doc(stripped, kFLTrusted, sk);
     CHECK(fleece2json(stripped) == "{x:17}");
 }
@@ -737,7 +737,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 3", "[Database][C]") 
                                            "oldie: {'digest': 'sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU='} },"
                            "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU='} ] }");
     CHECK(c4doc_hasOldMetaProperties(dict));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
     Doc doc(stripped, kFLTrusted, sk);
     CHECK(fleece2json(stripped) == "{_attachments:{oldie:{digest:\"sha1-xVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}},foo:[0,{\"@type\":\"blob\",digest:\"sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
 }
@@ -750,11 +750,24 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 4", "[Database][C]") 
     TransactionHelper t(db);
     auto sk = c4db_getFLSharedKeys(db);
     auto dict = json2dict("{_attachments: {'blob_/foo/1': {'digest': 'sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
-                          "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
+                           "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
     CHECK(c4doc_hasOldMetaProperties(dict));
-    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk);
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
     Doc doc(stripped, kFLTrusted, sk);
     CHECK(fleece2json(stripped) == "{foo:[0,{\"@type\":\"blob\",content_type:\"image/png\",digest:\"sha1-XXXVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties 5", "[Database][C]") {
+    // Check that the 2.0.0 blob_<number> gets removed:
+    TransactionHelper t(db);
+    auto sk = c4db_getFLSharedKeys(db);
+    auto dict = json2dict("{_attachments: {'blob_1': {'digest': 'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'image/png',revpos:23}},"
+                           "foo: [ 0, {'@type':'blob', digest:'sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=',content_type:'text/plain'} ] }");
+    CHECK(c4doc_hasOldMetaProperties(dict));
+    alloc_slice stripped = c4doc_encodeStrippingOldMetaProperties(dict, sk, NULL);
+    Doc doc(stripped, kFLTrusted, sk);
+    CHECK(fleece2json(stripped) == "{foo:[0,{\"@type\":\"blob\",content_type:\"text/plain\",digest:\"sha1-VVVVVVVVVVVVVVVVVVVVVVVVVVU=\"}]}");
 }
 
 

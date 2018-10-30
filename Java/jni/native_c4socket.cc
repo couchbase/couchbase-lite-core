@@ -94,8 +94,6 @@ bool litecore::jni::initC4Socket(JNIEnv *env) {
 // ----------------------------------------------------------------------------
 static void
 socket_open(C4Socket *socket, const C4Address *addr, C4Slice options, void *socketFactoryContext) {
-    LOGI("socket_open() socket -> 0x%x socketFactoryContext -> 0x%x", socket, socketFactoryContext);
-
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -131,7 +129,6 @@ socket_open(C4Socket *socket, const C4Address *addr, C4Slice options, void *sock
 }
 
 static void socket_write(C4Socket *socket, C4SliceResult allocatedData) {
-    LOGI("socket_write() socket -> 0x%x data.size -> %d", socket, allocatedData.size);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -154,10 +151,10 @@ static void socket_write(C4Socket *socket, C4SliceResult allocatedData) {
     } else {
         LOGE("socket_write(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
     }
+    c4slice_free(allocatedData);
 }
 
 static void socket_completedReceive(C4Socket *socket, size_t byteCount) {
-    LOGI("socket_completedReceive() s -> 0x%x byteCount -> %ld", socket, byteCount);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -184,7 +181,6 @@ static void socket_completedReceive(C4Socket *socket, size_t byteCount) {
 }
 
 static void socket_requestClose(C4Socket *socket, int status, C4String messageSlice) {
-    LOGI("socket_requestClose() socket -> 0x%x status -> %d", socket, status);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -212,7 +208,6 @@ static void socket_requestClose(C4Socket *socket, int status, C4String messageSl
 }
 
 static void socket_close(C4Socket *socket) {
-    LOGI("socket_close() socket -> 0x%x", socket);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -232,7 +227,6 @@ static void socket_close(C4Socket *socket) {
 }
 
 static void socket_dispose(C4Socket *socket) {
-    LOGI("socket_dispose() socket -> 0x%x", socket);
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -297,7 +291,6 @@ Java_com_couchbase_litecore_C4Socket_gotHTTPResponse(JNIEnv *env, jclass clazz, 
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Socket_opened(JNIEnv *env, jclass clazz, jlong jsocket) {
     C4Socket *socket = (C4Socket *) jsocket;
-    LOGI("[NATIVE] opened() socket -> 0x%x", socket);
     c4socket_opened(socket);
 }
 
@@ -313,7 +306,6 @@ Java_com_couchbase_litecore_C4Socket_closed(JNIEnv *env, jclass clazz,
                                             jint code,
                                             jstring message) {
     C4Socket *socket = (C4Socket *) jSocket;
-    LOGI("[NATIVE] closed() socket -> 0x%x", socket);
     jstringSlice sliceMessage(env, message);
     C4Error error = c4error_make((C4ErrorDomain) domain, code, sliceMessage);
     c4socket_closed((C4Socket *) socket, error);
@@ -330,7 +322,6 @@ Java_com_couchbase_litecore_C4Socket_closeRequested(JNIEnv *env, jclass clazz,
                                                     jint status,
                                                     jstring jmessage) {
     C4Socket *socket = (C4Socket *) jSocket;
-    LOGI("[NATIVE] closeRequested() socket -> 0x%x", socket);
     jstringSlice message(env, jmessage);
     c4socket_closeRequested((C4Socket *) socket, (int) status, message);
 }
@@ -346,7 +337,6 @@ Java_com_couchbase_litecore_C4Socket_completedWrite(JNIEnv *env, jclass clazz,
                                                     jlong jByteCount) {
     C4Socket *socket = (C4Socket *) jSocket;
     size_t byteCount = (size_t) jByteCount;
-    LOGI("[NATIVE] completedWrite() socket -> 0x%x, byteCount -> %d", socket, byteCount);
     c4socket_completedWrite(socket, byteCount);
 }
 
@@ -360,7 +350,6 @@ Java_com_couchbase_litecore_C4Socket_received(JNIEnv *env, jclass clazz,
                                               jlong jSocket,
                                               jbyteArray jdata) {
     C4Socket *socket = (C4Socket *) jSocket;
-    LOGI("[NATIVE] received() socket -> 0x%x", socket);
     jbyteArraySlice data(env, jdata, false);
     c4socket_received((C4Socket *) socket, data);
 }
@@ -378,11 +367,7 @@ Java_com_couchbase_litecore_C4Socket_fromNative(JNIEnv *env, jclass clazz,
                                                 jint jport,
                                                 jstring jpath,
                                                 jint jframing) {
-    LOGI("[NATIVE] fromNative() framing -> %d", jframing);
-
     void *nativeHandle = (void *) jnativeHandle;
-
-    LOGI("[NATIVE] fromNative() nativeHandle -> 0x%x", nativeHandle);
 
     jstringSlice scheme(env, jscheme);
     jstringSlice host(env, jhost);
@@ -399,5 +384,4 @@ Java_com_couchbase_litecore_C4Socket_fromNative(JNIEnv *env, jclass clazz,
     socketFactory.context = nativeHandle;
     C4Socket *c4socket = c4socket_fromNative(socketFactory, nativeHandle, &c4Address);
     return (jlong) c4socket;
-
 }

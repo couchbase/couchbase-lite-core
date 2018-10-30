@@ -356,8 +356,9 @@ namespace litecore {
             struct stat tmp_info, alt_info;
             stat_u8(tmpDir.path().c_str(), &tmp_info);
             stat_u8(nPath.path().c_str(), &alt_info);
-            unsigned short permissions = tmp_info.st_mode & 0777;
-            valid = tmp_info.st_dev == alt_info.st_dev && (permissions & S_IWUSR);
+            bool sameDeice = tmp_info.st_dev == alt_info.st_dev;
+            bool hasWriteAccess = access_u8(tmpDir.path().c_str(), W_OK) == 0;
+            valid = sameDeice && hasWriteAccess;
         }
         
         if (!valid) {

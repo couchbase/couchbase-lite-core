@@ -396,7 +396,6 @@ JNIEXPORT jbyteArray JNICALL
 Java_com_couchbase_litecore_C4Replicator_getResponseHeaders(JNIEnv *env, jclass clazz, jlong repl) {
     C4Slice s = c4repl_getResponseHeaders((C4Replicator *) repl);
     jbyteArray res = toJByteArray(env, s);
-    c4slice_free(s);
     return res;
 }
 
