@@ -40,7 +40,7 @@ endif()
 
 add_executable(C4Tests ${TEST_SRC} )
 
-target_link_libraries(C4Tests  LiteCore LiteCoreREST CivetWeb FleeceStatic Support BLIPStatic)
+target_link_libraries(C4Tests PRIVATE  LiteCore LiteCoreREST CivetWeb FleeceStatic Support BLIPStatic)
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 file(COPY ../../LiteCore/tests/data/replacedb/ios120/iosdb.cblite2
   DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests/data/replacedb/ios120)
@@ -55,7 +55,11 @@ if(MSVC)
         -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
         -P ${TOP}MSVC/copy_artifacts.cmake)
 elseif(ANDROID)
-    target_link_libraries(C4Tests "log")
-elseif(UNIX AND NOT APPLE)
-    target_link_libraries(C4Tests "pthread" "${LIBCXX_LIB}" "${LIBCXXABI_LIB}" dl)
+    target_link_libraries(C4Tests PUBLIC  "log")
+elseif(APPLE AND BUILD_ENTERPRISE)
+    target_link_libraries(C4Tests PUBLIC  "-framework CoreFoundation"
+                                          "-framework CoreML"
+                                          "-framework Vision")
+elseif(UNIX)
+    target_link_libraries(C4Tests PUBLIC  "pthread" "${LIBCXX_LIB}" "${LIBCXXABI_LIB}" dl)
 endif()
