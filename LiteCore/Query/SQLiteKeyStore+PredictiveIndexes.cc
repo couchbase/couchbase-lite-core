@@ -73,7 +73,8 @@ namespace litecore {
                             " body BLOB NOT NULL ON CONFLICT IGNORE) "
                             "WITHOUT ROWID");
         if (!_schemaExistsWithSQL(predTableName, "table", predTableName, sql)) {
-            LogTo(QueryLog, "Creating predictive table '%s'", predTableName.c_str());
+            LogTo(QueryLog, "Creating predictive table '%s' on %s", predTableName.c_str(),
+                  expression->toJSONString().c_str());
             db().exec(sql);
 
             // Populate the index-table with data from existing documents:

@@ -330,6 +330,15 @@ namespace cbl {
 #pragma mark - OUTPUT FEATURE CONVERSION:
 
 
+    template <typename T>
+    static void encodeInner(Encoder &enc, const T *data, size_t stride, NSUInteger n) {
+        for (NSUInteger i = 0; i < n; i++) {
+            enc << *data;
+            data += stride;
+        }
+    }
+
+
     static void encodeMultiArray(Encoder &enc, MLMultiArray* array,
                                  NSUInteger dimension, const uint8_t *data)
     {
@@ -338,20 +347,28 @@ namespace cbl {
         auto stride = array.strides[dimension].unsignedIntegerValue;
         auto dataType = array.dataType;
         enc.beginArray();
-        for (NSUInteger i = 0; i < n; i++) {
-            if (outer) {
-                encodeMultiArray(enc, array, dimension + 1, data);
-            } else {
-                switch (dataType) {
-                    case MLMultiArrayDataTypeInt32:
-                        enc.writeInt(*(const int32_t*)data);
-                    case MLMultiArrayDataTypeFloat32:
-                        enc.writeFloat(*(const float*)data);
-                    case MLMultiArrayDataTypeDouble:
-                        enc.writeDouble(*(const double*)data);
-                }
+        if (outer) {
+            switch (dataType) {
+                case MLMultiArrayDataTypeInt32:     stride *= sizeof(int32_t); break;
+                case MLMultiArrayDataTypeFloat32:   stride *= sizeof(float); break;
+                case MLMultiArrayDataTypeDouble:    stride *= sizeof(double); break;
             }
-            data += stride;
+            for (NSUInteger i = 0; i < n; i++) {
+                encodeMultiArray(enc, array, dimension + 1, data);
+                data += stride;
+            }
+        } else {
+            switch (dataType) {
+                case MLMultiArrayDataTypeInt32:
+                    encodeInner(enc, (const uint32_t*)data, stride, n);
+                    break;
+                case MLMultiArrayDataTypeFloat32:
+                    encodeInner(enc, (const float*)data, stride, n);
+                    break;
+                case MLMultiArrayDataTypeDouble:
+                    encodeInner(enc, (const double*)data, stride, n);
+                    break;
+            }
         }
         enc.endArray();
     }

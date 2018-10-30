@@ -91,11 +91,31 @@ namespace litecore {
         }
     }
 
+    static void euclideanDistanceFunc(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
+        auto p1 = fleeceParam(ctx, argv[0]), p2 = fleeceParam(ctx, argv[1]);
+        if (!p1 || !p2)
+            return;
+        auto a1 = p1->asArray(), a2 = p2->asArray();
+        if (!a1 || !a2)
+            return;
+        Array::iterator i1(a1), i2(a2);
+        if (i1.count() != i2.count())
+            return;
+
+        double dist = 0.0;
+        for (; i1; ++i1, ++i2) {
+            double d = i1.value()->asDouble() - i2.value()->asDouble();
+            dist += d * d;
+        }
+        sqlite3_result_double(ctx, sqrt(dist));
+    }
+
 #endif
 
     const SQLiteFunctionSpec kPredictFunctionsSpec[] = {
 #ifdef COUCHBASE_ENTERPRISE
-        { "prediction",      -1, predictionFunc  },
+        { "prediction",         -1, predictionFunc  },
+        { "euclidean_distance",  2, euclideanDistanceFunc  },
 #endif
         { }
     };
