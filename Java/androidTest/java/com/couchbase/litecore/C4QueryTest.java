@@ -389,9 +389,8 @@ public class C4QueryTest extends C4QueryBaseTest {
             FLValue col = itr.getValueAt(0);
             assertTrue(col.getType() == kFLDict);
             FLDict name = col.asFLDict();
-            name.getSharedKey("first", db.getFLSharedKeys());
-            assertEquals(expectedFirst.get(i), name.getSharedKey("first", db.getFLSharedKeys()).asString());
-            assertEquals(expectedLast.get(i), name.getSharedKey("last", db.getFLSharedKeys()).asString());
+            assertEquals(expectedFirst.get(i), name.get("first").asString());
+            assertEquals(expectedLast.get(i), name.get("last").asString());
             i++;
         }
         e.free();
@@ -513,9 +512,8 @@ public class C4QueryTest extends C4QueryBaseTest {
     @Test
     public void testQueryRefresh() throws LiteCoreException {
         compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
-        String explanation = query.explain();
-        // NOTE: Different from LiteCore expected: "SELECT fl_result(key) FROM kv_default WHERE (fl_value(body, 'contact.address.state') = 'CA') AND (flags & 1) = 0"
-        assertEquals("SELECT key, sequence FROM kv_default WHERE (fl_value(body, 'contact.address.state') = 'CA') AND (flags & 1) = 0", explanation.substring(0, 111));
+        String explanation = query.explain().substring(0, 129);
+        assertEquals("SELECT key, sequence FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (_doc.flags & 1) = 0", explanation);
 
         C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
         assertNotNull(e);

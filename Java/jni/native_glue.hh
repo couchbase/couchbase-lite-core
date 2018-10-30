@@ -58,8 +58,7 @@ namespace litecore {
             jstringSlice(jstringSlice &&s) // move constructor
                     : _slice(s._slice), _env(s._env), _jstr(s._jstr) {
                 s._env = nullptr;
-                s._slice.setBuf(nullptr);
-                s._slice.setSize(0);
+                s._slice = nullslice;
             }
 
             operator slice() { return _slice; }
@@ -68,8 +67,6 @@ namespace litecore {
 
             // Copies the string data and releases the JNI local ref.
             void copyAndReleaseRef();
-
-
 
         private:
             static void UTF8ToModifiedUTF8(const char* input, char* output);
@@ -135,12 +132,16 @@ namespace litecore {
         typedef Retained<JNIRef> JNative;
 
         // Creates a Java String from the contents of a C4Slice.
+
         jstring toJString(JNIEnv *, C4Slice);
 
-        jstring toJStringFromSlice(JNIEnv *, slice);
+        jstring toJString(JNIEnv *, C4SliceResult);
 
         // Creates a Java byte[] from the contents of a C4Slice.
+
         jbyteArray toJByteArray(JNIEnv *, C4Slice);
+
+        jbyteArray toJByteArray(JNIEnv *, C4SliceResult);
 
         // Sets a Java exception based on the LiteCore error.
         void throwError(JNIEnv *, C4Error);

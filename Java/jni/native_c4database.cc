@@ -228,7 +228,8 @@ Java_com_couchbase_litecore_C4Database_getPublicUUID(JNIEnv *env, jclass clazz, 
     C4Error error;
     if (!c4db_getUUIDs((C4Database *) jdb, &uuid, nullptr, &error))
         throwError(env, error);
-    return toJByteArray(env, {&uuid, sizeof(uuid)});
+    C4Slice s = {&uuid, sizeof(uuid)};
+    return toJByteArray(env, s);
 }
 
 /*
@@ -242,7 +243,8 @@ Java_com_couchbase_litecore_C4Database_getPrivateUUID(JNIEnv *env, jclass clazz,
     C4Error error;
     if (!c4db_getUUIDs((C4Database *) jdb, nullptr, &uuid, &error))
         throwError(env, error);
-    return toJByteArray(env, {&uuid, sizeof(uuid)});
+    C4Slice s = {&uuid, sizeof(uuid)};
+    return toJByteArray(env, s);
 }
 
 /*
@@ -322,16 +324,16 @@ Java_com_couchbase_litecore_C4Database_rawGet(JNIEnv *env, jclass clazz, jlong j
 /*
  * Class:     com_couchbase_litecore_C4Database
  * Method:    rawPut
- * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;[B)V
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Database_rawPut(JNIEnv *env, jclass clazz, jlong jdb,
                                               jstring jstoreName,
-                                              jstring jkey, jstring jmeta, jstring jbody) {
+                                              jstring jkey, jstring jmeta, jbyteArray jbody) {
     jstringSlice storeName(env, jstoreName);
     jstringSlice key(env, jkey);
     jstringSlice meta(env, jmeta);
-    jstringSlice body(env, jbody);
+    jbyteArraySlice body(env, jbody, false);
     C4Error error;
     if (!c4raw_put((C4Database *) jdb, storeName, key, meta, body, &error))
         throwError(env, error);
@@ -339,12 +341,12 @@ Java_com_couchbase_litecore_C4Database_rawPut(JNIEnv *env, jclass clazz, jlong j
 
 /*
  * Class:     com_couchbase_litecore_C4Database
- * Method:    createFleeceEncoder
+ * Method:    getSharedFleeceEncoder
  * Signature: (J)J
  */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Database_createFleeceEncoder
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Database_getSharedFleeceEncoder
         (JNIEnv *env, jclass clazz, jlong db) {
-    return (jlong) c4db_createFleeceEncoder((C4Database *) db);
+    return (jlong) c4db_getSharedFleeceEncoder((C4Database *) db);
 }
 
 /*

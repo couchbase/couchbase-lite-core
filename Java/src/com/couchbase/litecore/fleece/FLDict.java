@@ -17,8 +17,6 @@
 //
 package com.couchbase.litecore.fleece;
 
-import com.couchbase.litecore.SharedKeys;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,14 +31,10 @@ public class FLDict {
         this.handle = handle;
     }
 
-    public FLValue getSharedKey(String key, FLSharedKeys sharedKeys) {
+    public FLValue get(String key) {
         if (key == null) return null;
-        long hValue = getSharedKey(handle, key.getBytes(), sharedKeys == null ? 0L : sharedKeys.getHandle());
+        long hValue = get(handle, key.getBytes());
         return hValue != 0L ? new FLValue(hValue) : null;
-    }
-
-    public static String getKeyString(FLSharedKeys sharedKeys, int keyCode) {
-        return getKeyString(sharedKeys == null ? 0L : sharedKeys.getHandle(), keyCode);
     }
 
     public Map<String, Object> asDict() {
@@ -48,28 +42,9 @@ public class FLDict {
         FLDictIterator itr = new FLDictIterator();
         try {
             itr.begin(this);
-            FLValue flKey;
-            while ((flKey = itr.getKey()) != null) {
-                String key = flKey.asString();
-                Object value = itr.getValue().asObject();
-                results.put(key, value);
-                if (!itr.next())
-                    break;
-            }
-        } finally {
-            itr.free();
-        }
-        return results;
-    }
-
-    public Map<String, Object> toObject(final SharedKeys sharedKeys) {
-        Map<String, Object> results = new HashMap<>();
-        FLDictIterator itr = new FLDictIterator();
-        try {
-            itr.begin(this);
             String key;
-            while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
-                Object value = itr.getValue().toObject(sharedKeys);
+            while ((key = itr.getKeyString()) != null) {
+                Object value = itr.getValue().asObject();
                 results.put(key, value);
                 if (!itr.next())
                     break;
@@ -113,10 +88,7 @@ public class FLDict {
      *
      * @param dict       FLDict
      * @param keyString  FLSlice
-     * @param sharedKeys FLSharedKeys
      * @return FLValue
      */
-    static native long getSharedKey(long dict, byte[] keyString, long sharedKeys);
-
-    static native String getKeyString(long sharedKeys, int keyCode);
+    static native long get(long dict, byte[] keyString);
 }

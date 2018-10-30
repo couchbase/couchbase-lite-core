@@ -36,5 +36,8 @@ JNIEXPORT jstring JNICALL
 Java_com_couchbase_litecore_C4Base_getMessage(JNIEnv *env, jclass clazz, jint jdomain, jint jcode,
                                               jint jinfo) {
     C4Error c4err = {(C4ErrorDomain) jdomain, (int32_t) jcode, (int32_t) jinfo};
-    return toJString(env, c4error_getMessage(c4err));
+    C4StringResult msg = c4error_getMessage(c4err);
+    jstring result = toJString(env, msg);
+    c4slice_free(msg);
+    return result;
 }

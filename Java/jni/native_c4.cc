@@ -37,7 +37,9 @@ Java_com_couchbase_litecore_C4_setenv(JNIEnv *env, jclass clazz, jstring jname, 
                                       jint overwrite) {
     jstringSlice name(env, jname);
     jstringSlice value(env, jvalue);
-    setenv(((slice) name).cString(), ((slice) value).cString(), overwrite);
+    slice nameSlice = name;
+    slice valueSlice = value;
+    setenv(nameSlice.cString(), valueSlice.cString(), overwrite);
 }
 
 /*
@@ -48,7 +50,8 @@ Java_com_couchbase_litecore_C4_setenv(JNIEnv *env, jclass clazz, jstring jname, 
 JNIEXPORT jstring JNICALL
 Java_com_couchbase_litecore_C4_getenv(JNIEnv *env, jclass clazz, jstring jname) {
     jstringSlice name(env, jname);
-    return env->NewStringUTF(getenv(((slice) name).cString()));
+    slice s = name;
+    return env->NewStringUTF(getenv(s.cString()));
 }
 
 /*
@@ -88,7 +91,8 @@ JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jdomain,
                                            jint jlevel) {
     jstringSlice domain(env, jdomain);
-    C4LogDomain logDomain = c4log_getDomain(((slice) domain).cString(), false);
+    slice s = domain;
+    C4LogDomain logDomain = c4log_getDomain(s.cString(), false);
     if (logDomain)
         c4log_setLevel(logDomain, (C4LogLevel) jlevel);
 }

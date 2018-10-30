@@ -126,7 +126,7 @@ Java_com_couchbase_litecore_C4Query_createIndex(JNIEnv *env, jclass clazz, jlong
     jstringSlice expressionsJSON(env, jexpressionsJSON);
     jstringSlice language(env, jlanguage);
     C4IndexOptions options = {};
-    slice sLang = (slice)language;
+    slice sLang = language;
     if(sLang.buf != NULL)
         options.language = (const char *)sLang.buf;
     options.ignoreDiacritics = (bool)ignoreDiacritics;
@@ -161,5 +161,5 @@ Java_com_couchbase_litecore_C4Query_deleteIndex(JNIEnv *env, jclass clazz, jlong
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4Query_getIndexes(JNIEnv *env, jclass clazz, jlong jdb) {
     C4SliceResult data = c4db_getIndexes((C4Database *) jdb, nullptr);
-    return (jlong) FLValue_FromTrustedData({data.buf, data.size});
+    return (jlong) FLValue_FromData({data.buf, data.size}, kFLTrusted);
 }

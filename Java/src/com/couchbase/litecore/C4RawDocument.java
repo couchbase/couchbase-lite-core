@@ -43,7 +43,7 @@ public class C4RawDocument {
         return meta(handle);
     }
 
-    public String body() {
+    public byte[] body() {
         return body(handle);
     }
 
@@ -71,5 +71,5 @@ public class C4RawDocument {
 
     static native String meta(long rawDoc);
 
-    static native String body(long rawDoc);
+    static native byte[] body(long rawDoc);
 }

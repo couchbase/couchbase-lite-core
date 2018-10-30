@@ -61,7 +61,7 @@ public class C4AllDocsPerformanceTest extends C4BaseTest {
                 else
                     list.add("1@deadbeefcafebabe80081e50");
                 String[] history = list.toArray(new String[list.size()]);
-                C4Document doc = db.put(json.getBytes(), docID, 0, true,
+                C4Document doc = db.put(json2fleece(json), docID, 0, true,
                         false, history, true, 0, 0);
                 assertNotNull(doc);
                 doc.free();

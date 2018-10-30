@@ -122,7 +122,7 @@ public class C4Database implements C4Constants {
         return new C4RawDocument(rawGet(handle, storeName, docID));
     }
 
-    public void rawPut(String storeName, String key, String meta, String body)
+    public void rawPut(String storeName, String key, String meta, byte[] body)
             throws LiteCoreException {
         rawPut(handle, storeName, key, meta, body);
     }
@@ -131,8 +131,8 @@ public class C4Database implements C4Constants {
 
     // - Fleece-related
 
-    public FLEncoder createFleeceEncoder() {
-        return new FLEncoder(createFleeceEncoder(handle));
+    public FLEncoder getSharedFleeceEncoder() {
+        return new FLEncoder(getSharedFleeceEncoder(handle), true);
     }
 
     // NOTE: Should param be String instead of byte[]?
@@ -384,7 +384,7 @@ public class C4Database implements C4Constants {
             throws LiteCoreException;
 
     static native void rawPut(long db, String storeName,
-                              String key, String meta, String body)
+                              String key, String meta, byte[] body)
             throws LiteCoreException;
 
     ////////////////////////////////
@@ -393,7 +393,7 @@ public class C4Database implements C4Constants {
 
     // - Fleece-related
 
-    static native long createFleeceEncoder(long db);
+    static native long getSharedFleeceEncoder(long db);
 
     static native long encodeJSON(long db, byte[] jsonData) throws LiteCoreException;
 

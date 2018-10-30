@@ -42,12 +42,12 @@ void litecore::jni::UTF8CharToModifiedUTF8(const char *input, char *output) {
 
     int surrogates[2] { 0xD800 | (unicodePoint >> 10), 0xDC00 | (unicodePoint & 0x3FF) };
 
-    output[0] = surrogates[0]>>12 & 0x0F | 0xE0;
-    output[1] = surrogates[0]>>6 & 0x3F | 0x80;
-    output[2] = surrogates[0] & 0x3F | 0x80;
-    output[3] = surrogates[1]>>12 & 0x0F | 0xE0;
-    output[4] = surrogates[1]>>6 & 0x3F | 0x80;
-    output[5] = surrogates[1] & 0x3F | 0x80;
+    output[0] = (surrogates[0]>>12 & 0x0F) | 0xE0;
+    output[1] = (surrogates[0]>>6  & 0x3F) | 0x80;
+    output[2] = (surrogates[0]     & 0x3F) | 0x80;
+    output[3] = (surrogates[1]>>12 & 0x0F) | 0xE0;
+    output[4] = (surrogates[1]>>6  & 0x3F) | 0x80;
+    output[5] = (surrogates[1]     & 0x3F) | 0x80;
 }
 
 ssize_t litecore::jni::UTF8ToModifiedUTF8(const char* input, const char** output, size_t len){
@@ -107,7 +107,7 @@ void litecore::jni::ModifiedUTF8CharToUTF8(char *input) {
     int surrogate[2] = { ((c & 0x0F) << 12) | (c1 << 6) | c2, ((d & 0x0F) << 12) | (d1 << 6) | d2 };
     int codePoint = ((surrogate[0] - 0xD800) << 10) + (surrogate[1] - 0xDC00) + 0x10000;
 
-    input[0] = 0xF0 | (codePoint >> 18);
+    input[0] = 0xF0 | (codePoint  >> 18);
     input[1] = 0x80 | ((codePoint >> 12) & 0x3F);
     input[2] = 0x80 | ((codePoint >> 6) & 0x3F);
     input[3] = 0x80 | ((codePoint & 0x3F));
@@ -230,8 +230,7 @@ namespace litecore {
                   _jbytes(jbytes),
                   _critical(critical) {
             if (jbytes == nullptr) {
-                _slice.setBuf(nullptr);
-                _slice.setSize(0);
+                _slice = nullslice;
                 return;
             }
 
@@ -275,7 +274,6 @@ namespace litecore {
             env->CallStaticVoidMethod(xclass, m, (jint) error.domain, (jint) error.code, msg);
         }
 
-
         jstring toJString(JNIEnv *env, C4Slice s) {
             if (s.buf == nullptr)
                 return nullptr;
@@ -284,8 +282,8 @@ namespace litecore {
             return env->NewStringUTF(utf8Buf.c_str());
         }
 
-        jstring toJStringFromSlice(JNIEnv *env, slice s) {
-            return toJString(env, {s.buf, s.size});
+        jstring toJString(JNIEnv *env, C4SliceResult s) {
+            return toJString(env, (C4Slice) s);
         }
 
         jbyteArray toJByteArray(JNIEnv *env, C4Slice s) {
@@ -299,12 +297,16 @@ namespace litecore {
             return array;
         }
 
+        jbyteArray toJByteArray(JNIEnv *env, C4SliceResult s) {
+            return toJByteArray(env, (C4Slice) s);
+        }
+
         bool getEncryptionKey(JNIEnv *env, jint keyAlg, jbyteArray jKeyBytes,
                               C4EncryptionKey *outKey) {
             outKey->algorithm = (C4EncryptionAlgorithm) keyAlg;
             if (keyAlg != kC4EncryptionNone) {
                 jbyteArraySlice keyBytes(env, jKeyBytes);
-                fleece::slice keySlice = (slice) keyBytes;
+                fleece::slice keySlice = keyBytes;
                 if (!keySlice.buf || keySlice.size > sizeof(outKey->bytes)) {
                     throwError(env, C4Error{LiteCoreDomain, kC4ErrorCrypto});
                     return false;

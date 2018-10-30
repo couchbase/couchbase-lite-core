@@ -197,7 +197,7 @@ public class C4DatabaseTest extends C4BaseTest {
         boolean commit = false;
         db.beginTransaction();
         try {
-            db.rawPut(store, key, meta, kBody);
+            db.rawPut(store, key, meta, kFleeceBody);
             commit = true;
         } finally {
             db.endTransaction(commit);
@@ -207,7 +207,7 @@ public class C4DatabaseTest extends C4BaseTest {
         assertNotNull(doc);
         assertEquals(doc.key(), key);
         assertEquals(doc.meta(), meta);
-        assertEquals(doc.body(), kBody);
+        assertTrue(Arrays.equals(doc.body(), kFleeceBody));
         doc.free();
 
         // Nonexistent:
@@ -255,7 +255,7 @@ public class C4DatabaseTest extends C4BaseTest {
                     assertNull(doc.getSelectedBody());
                     // Doc was loaded without its body, but it should load on demand:
                     doc.loadRevisionBody();
-                    assertTrue(Arrays.equals(kBody.getBytes(), doc.getSelectedBody()));
+                    assertTrue(Arrays.equals(kFleeceBody, doc.getSelectedBody()));
                     i++;
                 } finally {
                     doc.free();
@@ -305,7 +305,7 @@ public class C4DatabaseTest extends C4BaseTest {
     public void testDatabaseChanges() throws LiteCoreException {
         for (int i = 1; i < 100; i++) {
             String docID = String.format(Locale.ENGLISH, "doc-%03d", i);
-            createRev(docID, kRevID, kBody);
+            createRev(docID, kRevID, kFleeceBody);
         }
 
         C4Document doc;
@@ -359,7 +359,7 @@ public class C4DatabaseTest extends C4BaseTest {
     @Test
     public void testDatabaseExpired() throws LiteCoreException {
         String docID = "expire_me";
-        createRev(docID, kRevID, kBody);
+        createRev(docID, kRevID, kFleeceBody);
 
         // unix time
         long expire = System.currentTimeMillis() / 1000 + 1;
@@ -370,11 +370,11 @@ public class C4DatabaseTest extends C4BaseTest {
         db.setExpiration(docID, expire);
 
         String docID2 = "expire_me_too";
-        createRev(docID2, kRevID, kBody);
+        createRev(docID2, kRevID, kFleeceBody);
         db.setExpiration(docID2, expire);
 
         String docID3 = "dont_expire_me";
-        createRev(docID3, kRevID, kBody);
+        createRev(docID3, kRevID, kFleeceBody);
         try {
             Thread.sleep(2 * 1000); // sleep 2 sec
         } catch (InterruptedException e) {
@@ -391,7 +391,7 @@ public class C4DatabaseTest extends C4BaseTest {
     @Test
     public void testDatabaseCancelExpire() throws LiteCoreException {
         String docID = "expire_me";
-        createRev(docID, kRevID, kBody);
+        createRev(docID, kRevID, kFleeceBody);
 
         // unix time
         long expire = System.currentTimeMillis() / 1000 + 2;
@@ -488,8 +488,8 @@ public class C4DatabaseTest extends C4BaseTest {
         String doc1ID = "doc001";
         String doc2ID = "doc002";
 
-        createRev(doc1ID, kRevID, kBody);
-        createRev(doc2ID, kRevID, kBody);
+        createRev(doc1ID, kRevID, kFleeceBody);
+        createRev(doc2ID, kRevID, kFleeceBody);
 
         String srcPath = db.getPath();
 
@@ -516,7 +516,7 @@ public class C4DatabaseTest extends C4BaseTest {
 
         nudb = new C4Database(nuPath.getAbsolutePath(), getFlags(), null, kC4RevisionTrees, kC4EncryptionNone, null);
         assertNotNull(nudb);
-        createRev(nudb, doc1ID, kRevID, kBody);
+        createRev(nudb, doc1ID, kRevID, kFleeceBody);
         assertEquals(1, nudb.getDocumentCount());
         nudb.close();
 
@@ -559,7 +559,7 @@ public class C4DatabaseTest extends C4BaseTest {
     private void setupAllDocs() throws LiteCoreException {
         for (int i = 1; i < 100; i++) {
             String docID = String.format(Locale.ENGLISH, "doc-%03d", i);
-            createRev(docID, kRevID, kBody);
+            createRev(docID, kRevID, kFleeceBody);
         }
 
         // Add a deleted doc to make sure it's skipped by default:

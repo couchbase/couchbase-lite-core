@@ -26,6 +26,7 @@ import java.util.Map;
 public class Encoder {
     long _handle = 0; // hold pointer to Encoder*
     boolean _managed;
+    FLEncoder _flEncoder;
 
     public Encoder() {
         this(init(), false);
@@ -33,6 +34,7 @@ public class Encoder {
 
     public Encoder(FLEncoder enc) {
         this(initWithFLEncoder(enc._handle), false);
+        _flEncoder = enc;
     }
 
     Encoder(long handle, boolean managed) {
@@ -57,7 +59,9 @@ public class Encoder {
     }
 
     public FLEncoder getFLEncoder() {
-        return new FLEncoder(getFLEncoder(_handle), true);
+        if (_flEncoder == null)
+            _flEncoder = new FLEncoder(getFLEncoder(_handle), true);
+        return _flEncoder;
     }
 
     public boolean writeNull() {

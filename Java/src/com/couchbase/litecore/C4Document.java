@@ -190,7 +190,7 @@ public class C4Document extends RefCounted implements C4Constants {
     //-------------------------------------------------------------------------
 
     public static boolean dictContainsBlobs(FLSliceResult dict, FLSharedKeys sk) {
-        return dictContainsBlobs2(dict.getHandle(), sk == null ? 0L : sk.getHandle());
+        return dictContainsBlobs(dict.getHandle(), sk.getHandle());
     }
 
     public String bodyAsJSON(boolean canonical) throws LiteCoreException {
@@ -320,7 +320,7 @@ public class C4Document extends RefCounted implements C4Constants {
 
     // -- Fleece-related
 
-    static native boolean dictContainsBlobs2(long dict, long sk); // dict -> FLSliceResult
+    static native boolean dictContainsBlobs(long dict, long sk); // dict -> FLSliceResult
 
     static native String bodyAsJSON(long doc, boolean canonical) throws LiteCoreException;
     // doc -> pointer to C4Document

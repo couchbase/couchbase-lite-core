@@ -174,25 +174,29 @@ static void statusChangedCallback(C4Replicator *repl, C4ReplicatorStatus status,
  * @param transient
  * @param ctx
  */
-static void documentErrorCallback(C4Replicator *repl, bool pushing, C4String docID, C4Error error,
+static void documentEndedCallback(C4Replicator *repl, bool pushing, C4String docID, C4Error error,
                                   bool transient, void *ctx) {
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
-        env->CallStaticVoidMethod(cls_C4Replicator,
-                                  m_C4Replicator_documentErrorCallback,
-                                  (jlong) repl,
-                                  pushing,
-                                  toJString(env, docID),
-                                  error.domain, error.code, error.internal_info, transient);
-    } else if (getEnvStat == JNI_EDETACHED) {
-        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
+        if (error.code) {
             env->CallStaticVoidMethod(cls_C4Replicator,
                                       m_C4Replicator_documentErrorCallback,
                                       (jlong) repl,
                                       pushing,
                                       toJString(env, docID),
                                       error.domain, error.code, error.internal_info, transient);
+        }
+    } else if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
+            if (error.code) {
+                env->CallStaticVoidMethod(cls_C4Replicator,
+                                          m_C4Replicator_documentErrorCallback,
+                                          (jlong) repl,
+                                          pushing,
+                                          toJString(env, docID),
+                                          error.domain, error.code, error.internal_info, transient);
+            }
             if (gJVM->DetachCurrentThread() != 0)
                 LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
         } else {
@@ -241,7 +245,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
     params.pull = (C4ReplicatorMode) jpull;
     params.optionsDictFleece = options;
     params.onStatusChanged = &statusChangedCallback;
-    params.onDocumentError = &documentErrorCallback;
+    params.onDocumentEnded = &documentEndedCallback;
     params.callbackContext = NULL;
 
     C4Error error;
@@ -303,7 +307,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
     params.pull = (C4ReplicatorMode) jpull;
     params.optionsDictFleece = options;
     params.onStatusChanged = &statusChangedCallback;
-    params.onDocumentError = &documentErrorCallback;
+    params.onDocumentEnded = &documentEndedCallback;
     params.callbackContext = replicatorContext;
     params.socketFactory = &socketFactory;
 

@@ -17,8 +17,6 @@
 //
 package com.couchbase.litecore.fleece;
 
-import com.couchbase.litecore.SharedKeys;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -73,10 +71,6 @@ public class MDict extends MCollection implements Iterable<String> {
         return _count;
     }
 
-    public FLSharedKeys getSharedKeys() {
-        return getContext().getSharedKeys();
-    }
-
     /* Public methods */
 
     public boolean clear() {
@@ -94,8 +88,7 @@ public class MDict extends MCollection implements Iterable<String> {
             try {
                 itr.begin(_dict);
                 String key;
-                SharedKeys sk = new SharedKeys(getSharedKeys());
-                while ((key = SharedKeys.getKey(itr, sk)) != null) {
+                while ((key = itr.getKeyString()) != null) {
                     _map.put(key, MValue.EMPTY);
                     if (!itr.next())
                         break;
@@ -117,7 +110,7 @@ public class MDict extends MCollection implements Iterable<String> {
         if (v != null)
             return !v.isEmpty();
         else
-            return _dict != null && _dict.getSharedKey(key, getSharedKeys()) != null;
+            return _dict != null && _dict.get(key) != null;
     }
 
     public MValue get(String key) {
@@ -126,7 +119,7 @@ public class MDict extends MCollection implements Iterable<String> {
 
         MValue v = _map.get(key);
         if (v == null) {
-            FLValue value = _dict != null ? _dict.getSharedKey(key, getSharedKeys()) : null;
+            FLValue value = _dict != null ? _dict.get(key) : null;
             v = value != null ? setInMap(key, new MValue(value)) : MValue.EMPTY;
         }
         return v;
@@ -144,13 +137,14 @@ public class MDict extends MCollection implements Iterable<String> {
             FLDictIterator itr = new FLDictIterator();
             try {
                 itr.begin(_dict);
-                String key;
-                SharedKeys sk = new SharedKeys(getSharedKeys());
-                while ((key = SharedKeys.getKey(itr, sk)) != null) {
-                    if (!_map.containsKey(key))
-                        keys.add(key);
-                    if (!itr.next())
-                        break;
+                if (itr.getCount() > 0) {
+                    String key;
+                    while ((key = itr.getKeyString()) != null) {
+                        if (!_map.containsKey(key))
+                            keys.add(key);
+                        if (!itr.next())
+                            break;
+                    }
                 }
             } finally {
                 itr.free();
@@ -181,7 +175,7 @@ public class MDict extends MCollection implements Iterable<String> {
             _map.put(key, value);
         } else {
             // Not found; check _dict:
-            if (_dict != null && _dict.getSharedKey(key, getSharedKeys()) != null) {
+            if (_dict != null && _dict.get(key) != null) {
                 if (value.isEmpty())
                     _count--;
             } else {
@@ -230,8 +224,7 @@ public class MDict extends MCollection implements Iterable<String> {
                 try {
                     itr.begin(_dict);
                     String key;
-                    SharedKeys sk = new SharedKeys(getSharedKeys());
-                    while ((key = SharedKeys.getKey(itr, sk)) != null) {
+                    while ((key = itr.getKeyString()) != null) {
                         if (!_map.containsKey(key)) {
                             enc.writeKey(key);
                             enc.writeValue(itr.getValue());

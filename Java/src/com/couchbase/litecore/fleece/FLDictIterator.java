@@ -32,9 +32,8 @@ public class FLDictIterator {
         begin(dict.getHandle(), handle);
     }
 
-    public FLValue getKey() {
-        long hValue = getKey(handle);
-        return hValue != 0L ? new FLValue(hValue) : null;
+    public String getKeyString() {
+        return getKeyString(handle);
     }
 
     public FLValue getValue() {
@@ -44,6 +43,10 @@ public class FLDictIterator {
 
     public boolean next() {
         return next(handle);
+    }
+
+    public long getCount() {
+        return getCount(handle);
     }
 
     public void free() {
@@ -56,6 +59,7 @@ public class FLDictIterator {
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
+
     @Override
     protected void finalize() throws Throwable {
         free();
@@ -66,7 +70,6 @@ public class FLDictIterator {
     // native methods
     //-------------------------------------------------------------------------
 
-    // TODO: init() and begin() could be combined.
 
     /**
      * Create FLDictIterator instance
@@ -84,12 +87,12 @@ public class FLDictIterator {
     static native void begin(long dict, long itr);
 
     /**
-     * Returns the current key being iterated over.
+     * Returns the key's string value.
      *
      * @param itr (FLDictIterator *)
-     * @return
+     * @return key string
      */
-    static native long getKey(final long itr);
+    static native String getKeyString(final long itr);
 
     /**
      * Returns the current value being iterated over.
@@ -105,6 +108,13 @@ public class FLDictIterator {
      * @param itr (FLDictIterator *)
      */
     static native boolean next(long itr);
+
+    /**
+     * Returns the number of items remaining to be iterated, including the current one.
+     *
+     * @param itr (FLDictIterator *)
+     */
+    static native long getCount(long itr);
 
     /**
      * Free FLDictIterator instance

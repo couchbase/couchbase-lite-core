@@ -164,6 +164,10 @@ public class FLEncoder {
         return getExtraInfo(_handle);
     }
 
+    public void reset() {
+        reset(_handle);
+    }
+
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
@@ -216,4 +220,6 @@ public class FLEncoder {
     static native void setExtraInfo(long encoder, Object info);
 
     static native Object getExtraInfo(long encoder);
+
+    static native void reset(long encoder);
 }

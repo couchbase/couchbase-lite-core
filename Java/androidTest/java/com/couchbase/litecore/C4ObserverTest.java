@@ -83,16 +83,16 @@ public class C4ObserverTest extends C4BaseTest implements C4Constants {
         }, this);
         assertEquals(0, dbCallbackCalls.get());
 
-        createRev("A", "1-aa", kBody);
+        createRev("A", "1-aa", kFleeceBody);
         assertEquals(1, dbCallbackCalls.get());
-        createRev("B", "1-bb", kBody);
+        createRev("B", "1-bb", kFleeceBody);
         assertEquals(1, dbCallbackCalls.get());
 
         checkChanges(Arrays.asList("A", "B"), Arrays.asList("1-aa", "1-bb"), false);
 
-        createRev("B", "2-bbbb", kBody);
+        createRev("B", "2-bbbb", kFleeceBody);
         assertEquals(2, dbCallbackCalls.get());
-        createRev("C", "1-cc", kBody);
+        createRev("C", "1-cc", kFleeceBody);
         assertEquals(2, dbCallbackCalls.get());
 
         checkChanges(Arrays.asList("B", "C"), Arrays.asList("2-bbbb", "1-cc"), false);
@@ -100,14 +100,14 @@ public class C4ObserverTest extends C4BaseTest implements C4Constants {
         dbObserver.free();
         dbObserver = null;
 
-        createRev("A", "2-aaaa", kBody);
+        createRev("A", "2-aaaa", kFleeceBody);
         assertEquals(2, dbCallbackCalls.get());
     }
 
     // - Doc Observer
     @Test
     public void testDocObserver() throws LiteCoreException {
-        createRev("A", "1-aa", kBody);
+        createRev("A", "1-aa", kFleeceBody);
 
         docObserver = this.db.createDocumentObserver("A", new C4DocumentObserverListener() {
             @Override
@@ -121,8 +121,8 @@ public class C4ObserverTest extends C4BaseTest implements C4Constants {
         }, this);
         assertEquals(0, dbCallbackCalls.get());
 
-        createRev("A", "2-bb", kBody);
-        createRev("B", "1-bb", kBody);
+        createRev("A", "2-bb", kFleeceBody);
+        createRev("B", "1-bb", kFleeceBody);
         assertEquals(1, dbCallbackCalls.get());
     }
 
@@ -139,9 +139,9 @@ public class C4ObserverTest extends C4BaseTest implements C4Constants {
         }, this);
         assertEquals(0, dbCallbackCalls.get());
 
-        createRev("A", "1-aa", kBody);
+        createRev("A", "1-aa", kFleeceBody);
         assertEquals(1, dbCallbackCalls.get());
-        createRev("B", "1-bb", kBody);
+        createRev("B", "1-bb", kFleeceBody);
         assertEquals(1, dbCallbackCalls.get());
 
         checkChanges(Arrays.asList("A", "B"), Arrays.asList("1-aa", "1-bb"), false);
@@ -154,9 +154,9 @@ public class C4ObserverTest extends C4BaseTest implements C4Constants {
             boolean commit = false;
             otherdb.beginTransaction();
             try {
-                createRev(otherdb, "c", "1-cc", kBody);
-                createRev(otherdb, "d", "1-dd", kBody);
-                createRev(otherdb, "e", "1-ee", kBody);
+                createRev(otherdb, "c", "1-cc", kFleeceBody);
+                createRev(otherdb, "d", "1-dd", kFleeceBody);
+                createRev(otherdb, "e", "1-ee", kFleeceBody);
                 commit = true;
             } finally {
                 otherdb.endTransaction(commit);
@@ -169,7 +169,7 @@ public class C4ObserverTest extends C4BaseTest implements C4Constants {
         dbObserver.free();
         dbObserver = null;
 
-        createRev("A", "2-aaaa", kBody);
+        createRev("A", "2-aaaa", kFleeceBody);
         assertEquals(2, dbCallbackCalls.get());
 
         otherdb.close();
@@ -201,20 +201,20 @@ public class C4ObserverTest extends C4BaseTest implements C4Constants {
         assertEquals(0, dbCallbackCalls1.get());
 
 
-        createRev("A", "1-aa", kBody);
+        createRev("A", "1-aa", kFleeceBody);
         assertEquals(1, dbCallbackCalls.get());
         assertEquals(1, dbCallbackCalls1.get());
-        createRev("B", "1-bb", kBody);
+        createRev("B", "1-bb", kFleeceBody);
         assertEquals(1, dbCallbackCalls.get());
         assertEquals(1, dbCallbackCalls1.get());
 
         checkChanges(dbObserver, Arrays.asList("A", "B"), Arrays.asList("1-aa", "1-bb"), false);
         checkChanges(dbObserver1, Arrays.asList("A", "B"), Arrays.asList("1-aa", "1-bb"), false);
 
-        createRev("B", "2-bbbb", kBody);
+        createRev("B", "2-bbbb", kFleeceBody);
         assertEquals(2, dbCallbackCalls.get());
         assertEquals(2, dbCallbackCalls1.get());
-        createRev("C", "1-cc", kBody);
+        createRev("C", "1-cc", kFleeceBody);
         assertEquals(2, dbCallbackCalls.get());
         assertEquals(2, dbCallbackCalls1.get());
 
@@ -228,7 +228,7 @@ public class C4ObserverTest extends C4BaseTest implements C4Constants {
         dbObserver1.free();
         dbObserver1 = null;
 
-        createRev("A", "2-aaaa", kBody);
+        createRev("A", "2-aaaa", kFleeceBody);
         assertEquals(2, dbCallbackCalls.get());
         assertEquals(2, dbCallbackCalls1.get());
     }

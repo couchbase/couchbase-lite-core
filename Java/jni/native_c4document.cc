@@ -21,6 +21,7 @@
 #include <c4Base.h>
 #include "com_couchbase_litecore_C4Document.h"
 #include "native_glue.hh"
+#include "fleece/Fleece.hh"
 
 using namespace litecore;
 using namespace litecore::jni;
@@ -128,7 +129,7 @@ Java_com_couchbase_litecore_C4Document_getSelectedBody2(JNIEnv *env, jclass claz
     FLDict root = NULL;
     C4Slice body = doc->selectedRev.body;
     if (body.size > 0)
-        root = FLValue_AsDict(FLValue_FromTrustedData({body.buf, body.size}));
+        root = FLValue_AsDict(FLValue_FromData({body.buf, body.size}, kFLTrusted));
     return (jlong) root;
 }
 
@@ -573,14 +574,14 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_update2(JNIEnv *e
 
 /*
  * Class:     com_couchbase_litecore_C4Document
- * Method:    dictContainsBlobs2
+ * Method:    dictContainsBlobs
  * Signature: (JJ)Z
  */
 JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_C4Document_dictContainsBlobs2(JNIEnv *env, jclass clazz,
+Java_com_couchbase_litecore_C4Document_dictContainsBlobs(JNIEnv *env, jclass clazz,
                                                           jlong jbody, jlong jsk) {
-    FLValue root = FLValue_FromTrustedData(*(FLSlice *) jbody);
-    return c4doc_dictContainsBlobs((FLDict) root, (FLSharedKeys) jsk);
+    Doc doc(*(FLSlice *) jbody, kFLTrusted, (FLSharedKeys) jsk);
+    return c4doc_dictContainsBlobs(doc);
 }
 
 /*

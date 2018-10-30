@@ -49,11 +49,6 @@ public class MRoot extends MCollection {
 
     /* Public Methods */
 
-    public static Object asNative(AllocSlice fleeceData, FLSharedKeys sk, boolean mutableContainer) {
-        MRoot root = new MRoot(new MContext(fleeceData, sk), mutableContainer);
-        return root.asNative();
-    }
-
     public Object asNative() {
         return _slot.asNative(this);
     }

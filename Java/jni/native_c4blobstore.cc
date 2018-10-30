@@ -259,7 +259,8 @@ Java_com_couchbase_litecore_C4BlobReadStream_read(JNIEnv *env, jclass clazz, jlo
                                 buff,
                                 (size_t) jsize,
                                 &error);
-    return toJByteArray(env, {buff, read});
+    C4Slice s = {buff, read};
+    return toJByteArray(env, s);
 }
 
 /*

@@ -48,9 +48,9 @@ Java_com_couchbase_litecore_C4RawDocument_meta(JNIEnv *env, jclass clazz, jlong 
 /*
  * Class:     com_couchbase_litecore_C4RawDocument
  * Method:    body
- * Signature: (J)Ljava/lang/String;
+ * Signature: (J)[B
  */
-JNIEXPORT jstring JNICALL
+JNIEXPORT jbyteArray JNICALL
 Java_com_couchbase_litecore_C4RawDocument_body(JNIEnv *env, jclass clazz, jlong jrawDoc) {
-    return toJString(env, ((C4RawDocument *) jrawDoc)->body);
+    return toJByteArray(env, ((C4RawDocument *) jrawDoc)->body);
 }

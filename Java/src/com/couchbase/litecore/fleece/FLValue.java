@@ -18,10 +18,7 @@
 package com.couchbase.litecore.fleece;
 
 import com.couchbase.litecore.LiteCoreException;
-import com.couchbase.litecore.SharedKeys;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,20 +30,17 @@ import static com.couchbase.litecore.fleece.FLConstants.FLValueType.kFLNull;
 import static com.couchbase.litecore.fleece.FLConstants.FLValueType.kFLNumber;
 import static com.couchbase.litecore.fleece.FLConstants.FLValueType.kFLString;
 
-/**
- * FLValue_xxxx(...)
- * Fleece.h
- */
-
 public class FLValue {
     //-------------------------------------------------------------------------
     // private variables
     //-------------------------------------------------------------------------
+
     private long handle = 0L; // pointer to FLValue
 
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
+
     public static FLValue fromData(AllocSlice slice) {
         long value = fromData(slice._handle);
         return value != 0 ? new FLValue(value) : null;
@@ -109,17 +103,7 @@ public class FLValue {
         return asFLArray().asArray();
     }
 
-    // call from native (JNI)
-    private static Object asObject(long h) {
-        return asObject(new FLValue(h));
-    }
-
-    private static Object asObject(FLValue flValue) {
-        return flValue.asObject();
-    }
-
-
-    Object asObject() {
+    public Object asObject() {
         switch (getType(handle)) {
             case kFLNull:
                 return null;
@@ -149,90 +133,10 @@ public class FLValue {
         }
     }
 
-    // call from native (JNI)
-    static Object toObject(long h) {
-        return toObject(new FLValue(h));
-    }
-
     public static Object toObject(FLValue flValue) {
-        return flValue.toObject((SharedKeys) null);
+        return flValue.asObject();
     }
 
-    // TODO: This method should be in `com.couchbase.lite.Properties` or `com.couchbase.lite.Document` ?
-    // Equivalent to
-    // in Value+ObjC.mm
-    // id Value::toNSObject(__unsafe_unretained NSMapTable *sharedStrings, const SharedKeys *sk) const
-    // In FLValueConverter.cs
-    // public static object ToObject(FLValue* value, SharedStringCache sharedKeys)
-    public Object toObject(SharedKeys sharedKeys) {
-        switch (getType(handle)) {
-            case kFLNull:
-                return null;
-            case kFLBoolean:
-                return Boolean.valueOf(asBool());
-            case kFLNumber:
-                if (isInteger()) {
-                    if (isUnsigned())
-                        return Long.valueOf(asUnsigned());
-                    return Long.valueOf(asInt());
-                } else if (isDouble()) {
-                    return Double.valueOf(asDouble());
-                } else {
-                    return Float.valueOf(asFloat());
-                }
-            case kFLString:
-                return asString();
-            case kFLData:
-                return asData();
-            case kFLArray: {
-                List<Object> results = new ArrayList<>();
-                FLArrayIterator itr = new FLArrayIterator();
-                try {
-                    itr.begin(asFLArray());
-                    FLValue value;
-                    while ((value = itr.getValue()) != null) {
-                        results.add(value.toObject(sharedKeys));
-                        if (!itr.next())
-                            break;
-                    }
-                } finally {
-                    itr.free();
-                }
-                return results;
-            }
-            case kFLDict: {
-                FLDict dict = asFLDict();
-                if (sharedKeys == null) {
-                    return dict.asDict();
-                } else {
-                    Map<String, Object> results = new HashMap<>();
-                    FLDictIterator itr = new FLDictIterator();
-                    try {
-                        itr.begin(dict);
-                        String key;
-                        while ((key = SharedKeys.getKey(itr, sharedKeys)) != null) {
-                            Object value = itr.getValue().toObject(sharedKeys);
-                            results.put(key, value);
-                            itr.next();
-                        }
-                    } finally {
-                        itr.free();
-                    }
-                    return results;
-                }
-            }
-            default:
-                return null; // TODO: Throw Exception?
-        }
-    }
-
-    /**
-     * Converts valid JSON5 to JSON.
-     *
-     * @param json5 String
-     * @return JSON String
-     * @throws LiteCoreException
-     */
     public static String json5ToJson(String json5) throws LiteCoreException {
         return JSON5ToJSON(json5);
     }
@@ -253,7 +157,6 @@ public class FLValue {
         return isUnsigned(handle);
     }
 
-    // @note instead of toString()
     public String toStr() {
         return toString(handle);
     }
@@ -269,14 +172,10 @@ public class FLValue {
     //-------------------------------------------------------------------------
     // package level access
     //-------------------------------------------------------------------------
+
     long getHandle() {
         return handle;
     }
-
-    //-------------------------------------------------------------------------
-    // private methods
-    //-------------------------------------------------------------------------
-
 
     //-------------------------------------------------------------------------
     // native methods
@@ -407,14 +306,10 @@ public class FLValue {
      */
     static native String JSON5ToJSON(String json5) throws LiteCoreException;
 
-
     static native String toString(long handle);
 
     static native String toJSON(long handle);
 
     static native String toJSON5(long handle);
-
-
-    // TODO: Need free()?
 }
 

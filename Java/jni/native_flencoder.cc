@@ -110,8 +110,7 @@ JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_writeString(JNIEnv *env, jclass clazz, jlong jenc,
                                                          jstring jvalue) {
     jstringSlice value(env, jvalue);
-    return (jboolean) FLEncoder_WriteString((FLEncoder) jenc,
-                                            {((slice) value).buf, ((slice) value).size});
+    return (jboolean) FLEncoder_WriteString((FLEncoder) jenc, value);
 }
 
 /*
@@ -123,8 +122,7 @@ JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_writeData(JNIEnv *env, jclass clazz, jlong jenc,
                                                        jbyteArray jvalue) {
     jbyteArraySlice value(env, jvalue, true);
-    return (jboolean) FLEncoder_WriteData((FLEncoder) jenc,
-                                          {((slice) value).buf, ((slice) value).size});
+    return (jboolean) FLEncoder_WriteData((FLEncoder) jenc, value);
 }
 
 /*
@@ -177,10 +175,10 @@ Java_com_couchbase_litecore_fleece_FLEncoder_endDict(JNIEnv *env, jclass clazz, 
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_FLEncoder_writeKey(JNIEnv *env, jclass clazz, jlong jenc,
                                                       jstring jkey) {
-    if (jkey == NULL) return false;
+    if (jkey == NULL)
+        return false;
     jstringSlice key(env, jkey);
-    return (jboolean) FLEncoder_WriteKey((FLEncoder) jenc,
-                                         {((slice) key).buf, ((slice) key).size});
+    return (jboolean) FLEncoder_WriteKey((FLEncoder) jenc, key);
 }
 
 /*
@@ -194,7 +192,7 @@ Java_com_couchbase_litecore_fleece_FLEncoder_finish(JNIEnv *env, jclass clazz, j
     FLSliceResult result = FLEncoder_Finish((FLEncoder) jenc, &error);
     if (error != kFLNoError)
         throwError(env, {FleeceDomain, error});
-    jbyteArray res = toJByteArray(env, {result.buf, result.size});
+    jbyteArray res = toJByteArray(env, (C4Slice) result);
     FLSliceResult_Free(result);
     return res;
 }
@@ -251,4 +249,14 @@ Java_com_couchbase_litecore_fleece_FLEncoder_getExtraInfo(JNIEnv *env, jclass cl
         return (jobject) ref->get()->native();
     else
         return NULL;
+}
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLEncoder
+ * Method:    reset
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_fleece_FLEncoder_reset(JNIEnv *env, jclass clazz, jlong jenc) {
+    FLEncoder_Reset((FLEncoder) jenc);
 }

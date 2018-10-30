@@ -34,7 +34,7 @@ public class MValueDelegate implements MValue.Delegate, FLConstants.FLValueType 
                 cacheIt.set(true);
                 return new FleeceDict(mv, parent);
             default:
-                return value.toObject(new SharedKeys(parent.getContext().getSharedKeys()));
+                return value.asObject();
         }
     }
 

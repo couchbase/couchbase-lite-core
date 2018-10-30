@@ -56,7 +56,7 @@ Java_com_couchbase_litecore_fleece_AllocSlice_free(JNIEnv *env, jclass clazz, jl
 JNIEXPORT jbyteArray JNICALL
 Java_com_couchbase_litecore_fleece_AllocSlice_getBuf(JNIEnv *env, jclass clazz, jlong jslice) {
     alloc_slice *s = (alloc_slice *) jslice;
-    return toJByteArray(env, {s->buf, s->size});
+    return toJByteArray(env, (C4Slice) {s->buf, s->size});
 }
 
 /*

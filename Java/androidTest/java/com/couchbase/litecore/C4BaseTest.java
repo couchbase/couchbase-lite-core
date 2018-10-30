@@ -21,6 +21,7 @@ import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
+import com.couchbase.litecore.fleece.FLEncoder;
 import com.couchbase.litecore.fleece.FLSliceResult;
 import com.couchbase.litecore.fleece.FLValue;
 import com.couchbase.litecore.utils.Config;
@@ -37,13 +38,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static com.couchbase.lite.utils.Config.EE_TEST_PROPERTIES_FILE;
 import static com.couchbase.litecore.C4Constants.C4DocumentVersioning.kC4RevisionTrees;
 import static com.couchbase.litecore.C4Constants.C4DocumentVersioning.kC4VersionVectors;
 import static com.couchbase.litecore.C4Constants.C4RevisionFlags.kRevHasAttachments;
+import static com.couchbase.litecore.fleece.FLConstants.FLValueType.kFLData;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -77,7 +83,7 @@ public class C4BaseTest implements C4Constants {
     protected static final String kRevID = "1-abcd";
     protected static final String kRev2ID = "2-c001d00d";
     protected static final String kRev3ID = "3-deadbeef";
-    protected static final String kBody = "{\"name\":007}";
+    protected byte[] kFleeceBody;
 
     protected boolean isRevTrees() {
         return versioning == kC4RevisionTrees;
@@ -112,6 +118,10 @@ public class C4BaseTest implements C4Constants {
         FileUtils.cleanDirectory(dir);
         db = new C4Database(dir.getPath(), getFlags(), null, getVersioning(),
                 encryptionAlgorithm(), encryptionKey());
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("answer", 42);
+        kFleeceBody = createFleeceBody(body);
     }
 
     protected void deleteDatabaseFile(String dbFileName) {
@@ -124,6 +134,49 @@ public class C4BaseTest implements C4Constants {
             if (!file.delete()) {
                 Log.e(TAG, "ERROR failed to delete: dbFile=" + file);
             }
+        }
+    }
+
+    private byte[] createFleeceBody(Map<String, Object> body) throws LiteCoreException {
+        FLEncoder enc = new FLEncoder();
+        enc.beginDict(body != null ? body.size() : 0);
+        for (String key : body.keySet()) {
+            enc.writeKey(key);
+            enc.writeValue(body.get(key));
+        }
+        enc.endDict();
+        return enc.finish();
+    }
+
+    protected byte[] json2fleece(String json) throws LiteCoreException {
+        boolean commit = false;
+        db.beginTransaction();
+        try {
+            byte[] bytes = db.encodeJSON(json5(json).getBytes()).getBuf();
+            commit = true;
+            return bytes;
+        } finally {
+            db.endTransaction(commit);
+        }
+    }
+
+    public void testEncodeBytes() throws LiteCoreException {
+        byte[] input = "Hello World!".getBytes();
+
+        FLEncoder enc = new FLEncoder();
+        try {
+            enc.writeData(input);
+            byte[] optionsFleece = enc.finish();
+            assertNotNull(optionsFleece);
+
+            FLValue value = FLValue.fromData(optionsFleece);
+            assertNotNull(value);
+            assertEquals(kFLData, value.getType());
+            byte[] output = value.asData();
+            assertNotNull(output);
+            assertArrayEquals(input, output);
+        } finally {
+            enc.free();
         }
     }
 
@@ -161,16 +214,16 @@ public class C4BaseTest implements C4Constants {
         assertNotNull(db);
     }
 
-    protected void createRev(String docID, String revID, String body) throws LiteCoreException {
+    protected void createRev(String docID, String revID, byte[] body) throws LiteCoreException {
         createRev(docID, revID, body, 0);
     }
 
-    protected void createRev(C4Database db, String docID, String revID, String body)
+    protected void createRev(C4Database db, String docID, String revID, byte[] body)
             throws LiteCoreException {
         createRev(db, docID, revID, body, 0);
     }
 
-    protected void createRev(String docID, String revID, String body, int flags)
+    protected void createRev(String docID, String revID, byte[] body, int flags)
             throws LiteCoreException {
         createRev(this.db, docID, revID, body, flags);
     }
@@ -178,7 +231,7 @@ public class C4BaseTest implements C4Constants {
     /**
      * @param flags C4RevisionFlags
      */
-    protected void createRev(C4Database db, String docID, String revID, String body, int flags)
+    protected void createRev(C4Database db, String docID, String revID, byte[] body, int flags)
             throws LiteCoreException {
         boolean commit = false;
         db.beginTransaction();
@@ -190,7 +243,7 @@ public class C4BaseTest implements C4Constants {
             if (curDoc.getRevID() != null)
                 revIDs.add(curDoc.getRevID());
             String[] history = revIDs.toArray(new String[revIDs.size()]);
-            C4Document doc = db.put(body != null ? body.getBytes() : null, docID, flags,
+            C4Document doc = db.put(body, docID, flags,
                     true, false, history, true,
                     0, 0);
             assertNotNull(doc);

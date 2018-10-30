@@ -17,11 +17,11 @@
 //
 
 #include "native_glue.hh"
+#include "fleece/Fleece.hh"
 #include "com_couchbase_litecore_fleece_Encoder.h"
 
 using namespace fleece;
 using namespace litecore::jni;
-using namespace fleeceapi;
 
 // ----------------------------------------------------------------------------
 // Encoder
@@ -66,7 +66,7 @@ Java_com_couchbase_litecore_fleece_Encoder_free(JNIEnv *env, jclass clazz, jlong
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_fleece_Encoder_release(JNIEnv *env, jclass clazz, jlong jenc) {
     Encoder *enc = (Encoder *) jenc;
-    enc->release();
+    enc->detach();
     delete enc;
 }
 
@@ -144,7 +144,8 @@ JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_Encoder_writeString(JNIEnv *env, jclass clazz, jlong jenc,
                                                        jstring jvalue) {
     jstringSlice value(env, jvalue);
-    return ((Encoder *) jenc)->writeString({((slice) value).buf, ((slice) value).size});
+    slice s = value;
+    return ((Encoder *) jenc)->writeString(s);
 }
 
 /*
@@ -156,7 +157,8 @@ JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_fleece_Encoder_writeData(JNIEnv *env, jclass clazz, jlong jenc,
                                                      jbyteArray jvalue) {
     jbyteArraySlice value(env, jvalue, true);
-    return ((Encoder *) jenc)->writeData({((slice) value).buf, ((slice) value).size});
+    slice s = value;
+    return ((Encoder *) jenc)->writeData(s);
 }
 
 /*
@@ -212,7 +214,8 @@ Java_com_couchbase_litecore_fleece_Encoder_writeKey(JNIEnv *env, jclass clazz, j
                                                     jstring jkey) {
     if (jkey == NULL) return false;
     jstringSlice key(env, jkey);
-    return ((Encoder *) jenc)->writeKey({((slice) key).buf, ((slice) key).size});
+    slice s = key;
+    return ((Encoder *) jenc)->writeKey({s.buf, s.size});
 }
 
 /*
@@ -233,8 +236,8 @@ Java_com_couchbase_litecore_fleece_Encoder_endDict(JNIEnv *env, jclass clazz, jl
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_Encoder_finish(JNIEnv *env, jclass clazz, jlong jenc) {
     FLError error = kFLNoError;
-    FLSliceResult res = ((Encoder *) jenc)->finish(&error);
+    alloc_slice result = ((Encoder *) jenc)->finish(&error);
     if (error != kFLNoError)
         throwError(env, {FleeceDomain, error});
-    return (jlong) new alloc_slice(res.buf, res.size);
+    return (jlong) new alloc_slice(result);
 }
