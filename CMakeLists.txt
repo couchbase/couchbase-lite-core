@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 3.1)
 cmake_policy(VERSION 3.1)
 
-# macOS SDK selection; requires Xcode 10, else the build will fail with "missing sysroot" errors.
-set(CMAKE_OSX_SYSROOT macosx10.14)      # this line MUST be above the 1st "project()" line!
+# Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
+set(CMAKE_OSX_SYSROOT macosx)      # this line MUST be above the 1st "project()" line!
 
 project (LiteCore)
 
