@@ -165,7 +165,7 @@ namespace litecore {
     {
         QueryParser qp(*this);
         qp.setTableName(CONCAT('"' << sourceTableName << '"'));
-        qp.writeCreateIndex(indexName, expressions, (type == kArrayIndex));
+        qp.writeCreateIndex(indexName, expressions, (type != kValueIndex));
         string sql = qp.SQL();
         if (_schemaExistsWithSQL(indexName, "index", sourceTableName, sql))
             return false;
@@ -218,7 +218,7 @@ namespace litecore {
             params = doc->asArray();
         } catch (const FleeceException &) { }
         if (!params || params->count() == 0)
-            error::_throw(error::InvalidQuery);
+            error::_throw(error::InvalidQuery, "JSON syntax error, or not an array");
         return {expressionFleece, params};
     }
 
