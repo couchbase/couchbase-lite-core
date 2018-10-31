@@ -153,27 +153,42 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
     Retained<EightBall> model = new EightBall();
     model->registerAs("8ball");
 
-    store->createIndex("nums"_sl, json5("[['PREDICTION()', '8ball', {number: ['.num']}, '.square']]"),
-                       KeyStore::kPredictiveIndex);
+    string prediction = "['PREDICTION()', '8ball', {number: ['.num']}, '.square']";
 
-    // Now that it's indexed, there should be no more calls to the model:
-    model->allowCalls = false;
+    for (int pass = 1; pass <= 2; ++pass) {
+        INFO("During pass #" << pass);
+        if (pass == 2) {
+            store->createIndex("nums"_sl, json5("["+prediction+"]"),
+                               KeyStore::kPredictiveIndex);
 
-    // Query numbers in descending order of square-ness:
-    Retained<Query> query{ store->compileQuery(json5(
-        "{'WHAT': [['.num'], ['PREDICTION()', '8ball', {number: ['.num']}, '.square']],"
-        " 'ORDER_BY': [['DESC', ['PREDICTION()', '8ball', {number: ['.num']}, '.square']],"
-                      "['DESC', ['.num']]] }")) };
-    Log("Explanation: %s", query->explain().c_str());
-    vector<int64_t> results;
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
-    while (e->next())
-        results.push_back( e->columns()[0]->asInt() );
-    CHECK(results == (vector<int64_t>({ 100, 81, 64, 49, 36, 25, 16, 9, 4, 1, 99, 82, 80, 65, 63, 50, 48, 37, 35, 26, 98, 24, 83, 79, 17, 66, 62, 15, 51,
-        47, 97, 10, 38, 84, 78, 34, 8, 67, 61, 27, 96, 23, 52, 46, 85, 77, 5, 18, 39, 68, 95, 60, 33, 14, 3, 86, 53, 76, 28,
-        45, 94, 69, 22, 11, 59, 40, 87, 75, 32, 54, 7, 93, 19, 70, 44, 88, 58, 29, 13, 74, 41, 92, 2, 55, 21, 71, 31, 89, 43,
-        6, 57, 73, 91, 12, 20, 30, 42, 56, 72, 90, 0 })));
+            // Now that it's indexed, there should be no more calls to the model:
+            model->allowCalls = false;
+        }
 
+        // Query numbers in descending order of square-ness:
+        Retained<Query> query{ store->compileQuery(json5(
+            "{'WHAT': [['.num'], "+prediction+"],"
+            " 'ORDER_BY': [['DESC', "+prediction+"],"
+                          "['DESC', ['.num']]] }")) };
+        string explanation = query->explain();
+        Log("Explanation: %s", explanation.c_str());
+
+        if (pass >= 2) {
+            CHECK(explanation.find("prediction(") == string::npos);
+            CHECK(explanation.find("USING INDEX nums") != string::npos);
+        }
+
+        vector<int64_t> results;
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        while (e->next()) {
+            if (e->columns()[0]->type() == kNumber)
+                results.push_back( e->columns()[0]->asInt() );
+        }
+        CHECK(results == (vector<int64_t>({ 100, 81, 64, 49, 36, 25, 16, 9, 4, 1, 99, 82, 80, 65, 63, 50, 48, 37, 35, 26, 98, 24, 83, 79, 17, 66, 62, 15, 51,
+            47, 97, 10, 38, 84, 78, 34, 8, 67, 61, 27, 96, 23, 52, 46, 85, 77, 5, 18, 39, 68, 95, 60, 33, 14, 3, 86, 53, 76, 28,
+            45, 94, 69, 22, 11, 59, 40, 87, 75, 32, 54, 7, 93, 19, 70, 44, 88, 58, 29, 13, 74, 41, 92, 2, 55, 21, 71, 31, 89, 43,
+            6, 57, 73, 91, 12, 20, 30, 42, 56, 72, 90 })));
+    }
     PredictiveModel::unregister("8ball");
 }
 

@@ -246,9 +246,9 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser SELECT prediction", "[Query][Pred
 
     tablesExist = true;
     CHECK(parseWhere(query1)
-          == "SELECT key, sequence FROM kv_default AS _doc LEFT JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_unnested_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
+          == "SELECT key, sequence FROM kv_default AS _doc JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_unnested_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
     CHECK(parseWhere(query2)
-          == "SELECT fl_result(fl_unnested_value(pred1.body, 'bias')) FROM kv_default AS _doc LEFT JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_unnested_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
+          == "SELECT fl_result(fl_unnested_value(pred1.body, 'bias')) FROM kv_default AS _doc JOIN \"kv_default:predict:dIrX6kaB9tP3x7oyJKq5st+23kE=\" AS pred1 ON pred1.docid = _doc.rowid WHERE (fl_unnested_value(pred1.body, 'bias') > 0) AND (_doc.flags & 1) = 0");
 }
 #endif
 

@@ -498,8 +498,6 @@ namespace litecore {
         for (auto &ftsTable : _indexJoinTables) {
             auto &table = ftsTable.first;
             auto &alias = ftsTable.second;
-            if (!hasPrefix(alias, "fts"))    // Can't use LEFT join with FTS tables
-                _sql << " LEFT";
             _sql << " JOIN \"" << table << "\" AS " << alias
                  << " ON " << alias << ".docid = " << quoteTableName(_dbAlias) << ".rowid";
         }
