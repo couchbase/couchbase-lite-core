@@ -91,11 +91,72 @@ namespace litecore {
         }
     }
 
+
+    // Creates Fleece array iterators on the 1st two parameters of the function.
+    static bool getArrays(sqlite3_context *ctx, sqlite3_value **argv,
+                          Array::iterator &i1, Array::iterator &i2)
+    {
+        auto p1 = fleeceParam(ctx, argv[0], false), p2 = fleeceParam(ctx, argv[1], false);
+        if (!p1 || !p2)
+            return false;
+        auto a1 = p1->asArray(), a2 = p2->asArray();
+        if (!a1 || !a2)
+            return false;
+        i1 = Array::iterator(a1);
+        i2 = Array::iterator(a2);
+        return (i1.count() == i2.count());
+    }
+
+
+    // https://en.wikipedia.org/wiki/Euclidean_distance
+    static void euclidean_distance(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
+        Array::iterator i1(nullptr), i2(nullptr);
+        if (!getArrays(ctx, argv, i1, i2))
+            return;
+
+        double dist = 0.0;
+        for (; i1; ++i1, ++i2) {
+            double d = i1.value()->asDouble() - i2.value()->asDouble();
+            dist += d * d;
+        }
+        
+        // Optional 3rd param raises result to that power. (Useful for squared-Euclidean distance.)
+        if (argc < 3) {
+            dist = sqrt(dist);
+        } else {
+            double power = sqlite3_value_double(argv[2]);
+            if (power != 2.0)
+                dist = pow(sqrt(dist), power);
+        }
+        sqlite3_result_double(ctx, dist);
+    }
+
+
+    // https://en.wikipedia.org/wiki/Cosine_similarity
+    static void cosine_distance(sqlite3_context *ctx, int argc, sqlite3_value **argv) {
+        Array::iterator i1(nullptr), i2(nullptr);
+        if (!getArrays(ctx, argv, i1, i2))
+            return;
+
+        double aa = 0.0, ab = 0.0, bb = 0.0;
+        for (; i1; ++i1, ++i2) {
+            double a = i1.value()->asDouble(), b = i2.value()->asDouble();
+            aa += a * a;
+            ab += a * b;
+            bb += b * b;
+        }
+        double dist =  1.0 - ab / sqrt(aa * bb);
+        sqlite3_result_double(ctx, dist);
+    }
+
+
 #endif
 
     const SQLiteFunctionSpec kPredictFunctionsSpec[] = {
 #ifdef COUCHBASE_ENTERPRISE
-        { "prediction",      -1, predictionFunc  },
+        { "prediction",         -1, predictionFunc  },
+        { "euclidean_distance", -1, euclidean_distance  },
+        { "cosine_distance",     2, cosine_distance  },
 #endif
         { }
     };
