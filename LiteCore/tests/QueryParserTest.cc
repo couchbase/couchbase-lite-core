@@ -165,6 +165,14 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser property contexts", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Deletion", "[Query]") {
+    CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['._deleted']}]")
+          == "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE ((_doc.flags & 1) != 0)");
+    CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['OR', ['._deleted'], ['.junk']]}]")
+          == "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE ((_doc.flags & 1) != 0 OR fl_value(_doc.body, 'junk'))");
+}
+
+
 TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY", "[Query]") {
     CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
           == "fl_contains(body, 'names', 'Smith')");

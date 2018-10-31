@@ -22,6 +22,7 @@ namespace litecore { namespace qp {
     // Magic property names to reference doc metadata:
     constexpr const char* kDocIDProperty = "_id";
     constexpr const char* kSequenceProperty = "_sequence";
+    constexpr const char* kDeletedProperty = "_deleted";
 
 
     // Names of the SQLite functions we register for working with Fleece data,

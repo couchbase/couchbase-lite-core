@@ -318,28 +318,27 @@ namespace litecore {
 
 
     void QueryParser::writeWhereClause(const Value *where) {
-        if (_includeDeleted) {
-            if (where) {
-                _sql << " WHERE ";
-                parseNode(where);
-            }
-        } else {
-            _sql << " WHERE ";
-            if (where) {
-                _sql << "(";
-                parseNode(where);
-                _sql << ") AND ";
-            }
-            writeNotDeletedTest(_dbAlias);
+        _checkedDeleted = false;
+        _sql << " WHERE ";
+        if (where) {
+            _sql << "(";
+            parseNode(where);
+            _sql << ")";
+        }
+        if (!_checkedDeleted) {
+            if (where)
+                _sql << " AND ";
+            writeDeletionTest(_dbAlias);
         }
     }
 
 
-    void QueryParser::writeNotDeletedTest(const string &alias) {
+    void QueryParser::writeDeletionTest(const string &alias, bool isDeleted) {
         _sql << '(';
         if (!alias.empty())
             _sql << quoteTableName(alias) << '.';
-        _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << ") = 0";
+        _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << ")"
+             << (isDeleted ? " != 0" : " = 0");
     }
 
 
@@ -473,18 +472,17 @@ namespace litecore {
 
                         _sql << " JOIN " << _tableName << " AS \"" << alias << "\"";
 
-                        if (on || !_includeDeleted) {
-                            _sql << " ON ";
-                            if (on) {
-                                if (!_includeDeleted)
-                                    _sql << "(";
-                                parseNode(on);
-                                if (!_includeDeleted) {
-                                    _sql << ") AND ";
-                                }
-                            }
-                            if(!_includeDeleted)
-                                writeNotDeletedTest(alias);
+                        _sql << " ON ";
+                        _checkedDeleted = false;
+                        if (on) {
+                            _sql << "(";
+                            parseNode(on);
+                            _sql << ")";
+                        }
+                        if (!_checkedDeleted) {
+                            if (on)
+                                _sql << " AND ";
+                            writeDeletionTest(alias);
                         }
                         break;
                     }
@@ -671,10 +669,8 @@ namespace litecore {
 
 
     static string columnTitleFromProperty(const string &property) {
-        if (property == kDocIDProperty) {
-            return "id";
-        } else if (property == kSequenceProperty) {
-            return "sequence";
+        if (property == kDocIDProperty || property == kSequenceProperty || property == kDeletedProperty) {
+            return property.substr(1);
         } else {
             auto dot = property.rfind('.');
             return (dot == string::npos) ? property : property.substr(dot+1);
@@ -1276,6 +1272,10 @@ namespace litecore {
         } else if (property == kSequenceProperty) {
             require(fn == kValueFnName, "can't use '_sequence' in this context");
             _sql << tablePrefix << "sequence";
+        } else if (property == kDeletedProperty) {
+            require(fn == kValueFnName, "can't use '_deleted' in this context");
+            writeDeletionTest(alias, true);
+            _checkedDeleted = true;     // note that the query has tested _deleted
         } else {
             // It's more efficent to get the doc root with fl_root than with fl_value:
             if (property == "" && fn == kValueFnName)
