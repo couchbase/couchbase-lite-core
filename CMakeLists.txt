@@ -1,8 +1,10 @@
 cmake_minimum_required (VERSION 3.1)
 cmake_policy(VERSION 3.1)
 
-# Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
-set(CMAKE_OSX_SYSROOT macosx)      # this line MUST be above the 1st "project()" line!
+if(NOT DEFINED CMAKE_OSX_SYSROOT)
+    # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
+    set(CMAKE_OSX_SYSROOT macosx)      # this line MUST be above the 1st "project()" line!
+endif()
 
 project (LiteCore)
 
