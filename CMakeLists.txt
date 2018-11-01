@@ -134,7 +134,7 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
     find_path(LIBICU_INCLUDE unicode/ucol.h
         HINTS "${CMAKE_BINARY_DIR}/tlm/deps/icu4c.exploded"
         PATH_SUFFIXES include)
-    if (NOT LIBCXX_INCLUDE)
+    if (NOT LIBICU_INCLUDE)
         message(FATAL_ERROR "libicu header files not found")
     endif()
     message("Using libicu header files in ${LIBICU_INCLUDE}")
