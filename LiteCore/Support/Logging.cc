@@ -122,14 +122,16 @@ namespace litecore {
             static once_flag f;
             call_once(f, []{
                 atexit([]{
-                    unique_lock<mutex> lock(sLogMutex);
-                    if (sLogEncoder)
-                        sLogEncoder->log((int)LogLevel::Info, "", LogEncoder::None,
-                                         "---- END ----");
-                    delete sLogEncoder;
-                    delete sFileOut;
-                    sLogEncoder = nullptr;
-                    sFileOut = nullptr;
+                    if (sLogMutex.try_lock()) {     // avoid deadlock on crash inside logging code
+                        if (sLogEncoder)
+                            sLogEncoder->log((int)LogLevel::Info, "", LogEncoder::None,
+                                             "---- END ----");
+                        delete sLogEncoder;
+                        delete sFileOut;
+                        sLogEncoder = nullptr;
+                        sFileOut = nullptr;
+                        sLogMutex.unlock();
+                    }
                 });
             });
         }
