@@ -245,6 +245,8 @@ C4ReplicatorParameters DbEndpoint::replicatorParameters(C4ReplicatorMode push, C
         enc.beginDict();
         enc.writeKey(slice(kC4ReplicatorOptionAuthentication));
         enc.beginDict();
+        enc.writeKey(slice(kC4ReplicatorAuthType));
+        enc.writeString(kC4AuthTypeBasic);
         enc.writeKey(slice(kC4ReplicatorAuthUserName));
         enc.writeString(_credentials.first);
         enc.writeKey(slice(kC4ReplicatorAuthPassword));

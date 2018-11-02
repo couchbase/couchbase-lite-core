@@ -170,6 +170,22 @@ namespace litecore { namespace websocket {
                      header; ++header) {
                 extraHeaders << header.keyString() << ": " << header.value().asString() << "\r\n";
             }
+
+            Dict auth = _options[kC4ReplicatorOptionAuthentication].asDict();
+            if (auth) {
+                slice authType = auth[kC4ReplicatorAuthType].asString();
+                if (authType == slice(kC4AuthTypeBasic)) {
+                    auto user = auth[kC4ReplicatorAuthUserName].asString();
+                    auto pass = auth[kC4ReplicatorAuthPassword].asString();
+                    string cred = slice(format("%.*s:%.*s", SPLAT(user), SPLAT(pass))).base64String();
+                    extraHeaders << "Authorization: Basic " << cred << "\r\n";
+                } else {
+                    c4socket_closed(_c4socket, c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                                                            "Unsupported auth type"_sl));
+                    return;
+                }
+            }
+
             slice cookies = _options[kC4ReplicatorOptionCookies].asString();
             if (cookies)
                 extraHeaders << "Cookie: " << cookies << "\r\n";
