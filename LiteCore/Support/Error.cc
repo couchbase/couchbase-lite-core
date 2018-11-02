@@ -20,7 +20,6 @@
 #include "Logging.hh"
 #include "FleeceException.hh"
 #include "PlatformIO.hh"
-#include "Backtrace.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
 #include <cerrno>
@@ -29,6 +28,11 @@
 
 #if __ANDROID__
 #include <android/log.h>
+#endif
+
+#if defined(__clang__) && !defined(__ANDROID__) // For logBacktrace:
+#include <execinfo.h>   // Not available in Windows?
+#include <cxxabi.h>
 #endif
 
 #ifndef LITECORE_IMPL
@@ -400,15 +404,49 @@ namespace litecore {
         throw error(error::AssertionFailed);
     }
 
-    /*static*/ void error::writeBacktrace(ostream &out, unsigned skip) {
-        fleece::Backtrace bt(skip);
-        bt.writeTo(out);
-    }
-
+#if !defined(__ANDROID__) && !defined(_MSC_VER)
     /*static*/ string error::backtrace(unsigned skip) {
-        fleece::Backtrace bt(skip);
-        return bt.toString();
-    }
+#ifdef __clang__
+        ++skip;     // skip the logBacktrace frame itself
+        void* addrs[50];
+        int n = ::backtrace(addrs, 50) - skip;
+        if (n <= 0)
+            return "";
+        char** lines = backtrace_symbols(&addrs[skip], n);
+        char* unmangled = nullptr;
+        size_t unmangledLen = 0;
 
+        stringstream out;
+
+        for (int i = 0; i < n; ++i) {
+            out << "\n\t";
+            char library[101], functionBuf[201];
+            size_t pc;
+            int offset;
+            if (sscanf(lines[i], "%*d %100s %zi %200s + %i",
+                       library, &pc, functionBuf, &offset) == 4 ||
+                sscanf(lines[i], "%100[^(](%200[^+]+%i) ""[""%zi""]",
+                       library, functionBuf, &offset, &pc) == 4) {
+                const char *function = functionBuf;
+                int status;
+                unmangled = abi::__cxa_demangle(function, unmangled, &unmangledLen, &status);
+                if (unmangled && status == 0)
+                    function = unmangled;
+                char *cstr = nullptr;
+                asprintf(&cstr, "%2d  %-25s %s + %d", i, library, function, offset);
+                out << cstr;
+                free(cstr);
+            } else {
+                out << lines[i];
+            }
+        }
+        free(unmangled);
+        free(lines);
+        return out.str();
+#else
+        return " (no backtrace available)";
+#endif
+    }
+#endif
 }
 

@@ -118,7 +118,6 @@ namespace litecore {
                                                  const char *expr,
                                                  const char *message =nullptr);
 
-        static void writeBacktrace(std::ostream &out, unsigned skipFrames =0);
         static std::string backtrace(unsigned skipFrames =0);
 
         static bool sWarnOnError;
