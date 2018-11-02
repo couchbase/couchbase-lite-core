@@ -155,7 +155,7 @@ namespace litecore {
         _dbAlias.clear();
         _columnTitles.clear();
         _1stCustomResultCol = 0;
-        _isAggregateQuery = _aggregatesOK = _propertiesUseAliases = false;
+        _isAggregateQuery = _aggregatesOK = _propertiesUseAliases = _checkedExpiration = false;
 
         _aliases.insert({_dbAlias, kDBAlias});
     }
@@ -669,7 +669,7 @@ namespace litecore {
 
 
     static string columnTitleFromProperty(const string &property) {
-        if (property == kDocIDProperty || property == kSequenceProperty || property == kDeletedProperty) {
+        if (property[0] == '_') {
             return property.substr(1);
         } else {
             auto dot = property.rfind('.');
@@ -1272,6 +1272,10 @@ namespace litecore {
         } else if (property == kSequenceProperty) {
             require(fn == kValueFnName, "can't use '_sequence' in this context");
             _sql << tablePrefix << "sequence";
+        } else if (property == kExpirationProperty) {
+            require(fn == kValueFnName, "can't use '_expiration' in this context");
+            _sql << "(" << tablePrefix << "expiration * 1000)";
+            _checkedExpiration = true;
         } else if (property == kDeletedProperty) {
             require(fn == kValueFnName, "can't use '_deleted' in this context");
             writeDeletionTest(alias, true);

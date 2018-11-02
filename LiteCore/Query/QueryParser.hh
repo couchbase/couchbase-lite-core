@@ -78,6 +78,7 @@ namespace litecore {
         const std::vector<std::string>& columnTitles() const        {return _columnTitles;}
 
         bool isAggregateQuery() const                               {return _isAggregateQuery;}
+        bool usesExpiration() const                                 {return _checkedExpiration;}
 
         std::string expressionSQL(const fleece::impl::Value*);
         std::string eachExpressionSQL(const fleece::impl::Value*);
@@ -207,6 +208,7 @@ namespace litecore {
         bool _aggregatesOK {false};                 // Are aggregate fns OK to call?
         bool _isAggregateQuery {false};             // Is this an aggregate query?
         bool _checkedDeleted {false};               // Has query accessed _deleted meta-property?
+        bool _checkedExpiration {false};            // Has query accessed _expiration meta-property?
         Collation _collation;                       // Collation in use during parse
         bool _collationUsed {true};                 // Emitted SQL "COLLATION" yet?
     };

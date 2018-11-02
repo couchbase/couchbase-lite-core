@@ -173,6 +173,14 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Deletion", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryParserTest, "QueryParser Expiration", "[Query]") {
+    CHECK(parseWhere("['SELECT', {WHAT: ['._id'], WHERE: ['IS NOT', ['._expiration'], ['MISSING']]}]")
+          == "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE ((_doc.expiration * 1000) IS NOT NULL) AND (_doc.flags & 1) = 0");
+    CHECK(parseWhere("['SELECT', {WHAT: ['._expiration'], WHERE: ['IS NOT', ['._expiration'], ['MISSING']]}]")
+          == "SELECT fl_result((_doc.expiration * 1000)) FROM kv_default AS _doc WHERE ((_doc.expiration * 1000) IS NOT NULL) AND (_doc.flags & 1) = 0");
+}
+
+
 TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY", "[Query]") {
     CHECK(parseWhere("['ANY', 'X', ['.', 'names'], ['=', ['?', 'X'], 'Smith']]")
           == "fl_contains(body, 'names', 'Smith')");

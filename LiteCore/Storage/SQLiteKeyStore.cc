@@ -361,7 +361,8 @@ namespace litecore {
 
     // Adds the 'expiration' column to the table.
     void SQLiteKeyStore::addExpiration() {
-        Assert(!_hasExpirationColumn);
+        if (hasExpiration())
+            return;
         db().logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
         db().execWithLock(subst(
                     "ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
@@ -372,8 +373,7 @@ namespace litecore {
 
     bool SQLiteKeyStore::setExpiration(slice key, expiration_t expTime) {
         Assert(expTime >= 0, "Invalid (negative) expiration time");
-        if (!hasExpiration())
-            addExpiration();
+        addExpiration();
         compile(_setExpStmt, "UPDATE kv_@ SET expiration=? WHERE key=?");
         UsingStatement u(*_setExpStmt);
         if (expTime > 0)

@@ -17,6 +17,7 @@
 //
 
 #include "QueryTest.hh"
+#include <time.h>
 
 using namespace fleece::impl;
 
@@ -1312,3 +1313,59 @@ TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
     CHECK(warningsLogged() == 0);
 }
 #endif
+
+
+TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
+    addNumberedDocs(1, 10);
+    {
+        Transaction t(store->dataFile());
+        for (int i = 11; i <= 20; i++)
+            writeNumberedDoc(i, nullslice, t,
+                             DocumentFlags::kDeleted | DocumentFlags::kHasAttachments);
+        t.commit();
+    }
+
+    CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['<=', ['.num'], 15]}")) == 10);
+    CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['AND', ['<=', ['.num'], 15], ['._deleted']]}")) == 5);
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
+    addNumberedDocs(1, 3);
+    KeyStore::expiration_t now = time(nullptr);
+
+    {
+        Retained<Query> query{ store->compileQuery(json5(
+            "{WHAT: ['._id'], WHERE: ['.expiration']}")) };
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        CHECK(!e->next());
+    }
+
+    store->setExpiration("rec-001"_sl, now - 10);
+    store->setExpiration("rec-003"_sl, now + 10);
+
+    {
+        Retained<Query> query{ store->compileQuery(json5(
+            "{WHAT: ['._expiration'], ORDER_BY: [['._id']]}")) };
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        CHECK(e->next());
+        CHECK(e->columns()[0]->asInt() == (now - 10) * 1000);
+        CHECK(e->next());
+        CHECK(e->columns()[0]->type() == kNull);
+        CHECK(e->missingColumns() == 1);
+        CHECK(e->next());
+        CHECK(e->columns()[0]->asInt() == (now + 10) * 1000);
+        CHECK(!e->next());
+    }
+    {
+        Retained<Query> query{ store->compileQuery(json5(
+            "{WHAT: ['._id'], WHERE: ['<=', ['._expiration'], ['$NOW']], ORDER_BY: [['._expiration']]}")) };
+
+        Query::Options options { alloc_slice(format("{\"NOW\": %lld}", (long long)now * 1000)) };
+        
+        unique_ptr<QueryEnumerator> e(query->createEnumerator(&options));
+        CHECK(e->next());
+        CHECK(e->columns()[0]->asString() == "rec-001"_sl);
+        CHECK(!e->next());
+    }
+}

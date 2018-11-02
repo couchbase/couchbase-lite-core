@@ -72,6 +72,9 @@ namespace litecore {
                     error::_throw(error::NoSuchIndex, "'match' test requires a full-text index");
             }
 
+            if (qp.usesExpiration())
+                keyStore.addExpiration();
+
             string sql = qp.SQL();
             log("Compiled as %s", sql.c_str());
             LogTo(SQL, "Compiled {Query#%u}: %s", _objectRef, sql.c_str());
