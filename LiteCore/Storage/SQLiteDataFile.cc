@@ -21,6 +21,7 @@
 #include "SQLite_Internal.hh"
 #include "Record.hh"
 #include "UnicodeCollator.hh"
+#include "Tokenizer.hh"
 #include "Error.hh"
 #include "FilePath.hh"
 #include "SharedKeys.hh"
@@ -237,7 +238,11 @@ namespace litecore {
             return blobAccessor() ? blobAccessor()(digest) : alloc_slice();
         };
         RegisterSQLiteFunctions(sqlite, {fleeceAccessor(), documentKeys(), proxyBlobAccessor});
-        int rc = register_unicodesn_tokenizer(sqlite);
+
+        int rc = InstallC4Tokenizer(sqlite);
+        if (rc != SQLITE_OK)
+            warn("Unable to register C4Tokenizer: SQLite err %d", rc);
+        rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)
             warn("Unable to register FTS tokenizer: SQLite err %d", rc);
     }

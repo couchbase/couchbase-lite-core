@@ -123,6 +123,7 @@
 		274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D04001BA75C0400FF7C35 /* c4DatabaseTest.cc */; };
 		274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		274D17822177ECCC007FD01A /* QueryParser+Prediction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */; };
+		274D17C62190D06B007FD01A /* Tokenizer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D17C42190D06B007FD01A /* Tokenizer.cc */; };
 		274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
 		274EDDEC1DA2F488003AD158 /* SQLiteKeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */; };
 		274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */; };
@@ -992,6 +993,10 @@
 		274D04261BA8A5BC00FF7C35 /* c4Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = c4Internal.hh; sourceTree = "<group>"; };
 		274D17812177ECCC007FD01A /* QueryParser+Prediction.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "QueryParser+Prediction.cc"; sourceTree = "<group>"; };
 		274D17842177F212007FD01A /* QueryParser+Private.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "QueryParser+Private.hh"; sourceTree = "<group>"; };
+		274D17C32190D01C007FD01A /* fts3_tokenizer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = fts3_tokenizer.h; sourceTree = "<group>"; };
+		274D17C42190D06B007FD01A /* Tokenizer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Tokenizer.cc; sourceTree = "<group>"; };
+		274D17C52190D06B007FD01A /* Tokenizer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Tokenizer.hh; sourceTree = "<group>"; };
+		274D17C72190D9EE007FD01A /* c4Tokenizer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Tokenizer.h; sourceTree = "<group>"; };
 		274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SecureRandomize.cc; sourceTree = "<group>"; };
 		274EDDEA1DA2F488003AD158 /* SQLiteKeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteKeyStore.cc; sourceTree = "<group>"; };
 		274EDDEB1DA2F488003AD158 /* SQLiteKeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SQLiteKeyStore.hh; sourceTree = "<group>"; };
@@ -1787,6 +1792,16 @@
 			name = EE;
 			sourceTree = "<group>";
 		};
+		274D17BD2190CFEF007FD01A /* Tokenizer */ = {
+			isa = PBXGroup;
+			children = (
+				274D17C32190D01C007FD01A /* fts3_tokenizer.h */,
+				274D17C42190D06B007FD01A /* Tokenizer.cc */,
+				274D17C52190D06B007FD01A /* Tokenizer.hh */,
+			);
+			path = Tokenizer;
+			sourceTree = "<group>";
+		};
 		2750723218E3E52800A80C5A = {
 			isa = PBXGroup;
 			children = (
@@ -2224,6 +2239,7 @@
 				27D74A5F1D4C063A00D806E0 /* Storage */,
 				273E9F7C1C518678003115A6 /* Rev-Trees */,
 				276D153D1DFF528B00543B1B /* Query */,
+				274D17BD2190CFEF007FD01A /* Tokenizer */,
 				276CD4251D77E8F7001346A3 /* Blobs */,
 				2750724318E3E52800A80C5A /* Support */,
 				271057C21D3997230018247B /* C++ Tests */,
@@ -2382,6 +2398,7 @@
 				27E6DFE81DA5A6C8008EB681 /* c4Query.h */,
 				275CE0E21E57B7E70084E014 /* c4Replicator.h */,
 				27491C9A1E7B1001001DC54B /* c4Socket.h */,
+				274D17C72190D9EE007FD01A /* c4Tokenizer.h */,
 				27B64936206971FC00FC12F7 /* LiteCore.h */,
 			);
 			path = include;
@@ -3524,6 +3541,7 @@
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
+				274D17C62190D06B007FD01A /* Tokenizer.cc in Sources */,
 				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
 				277C14711EA8102B0075348F /* Document.cc in Sources */,
 				27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */,

@@ -18,11 +18,13 @@
 
 #include "c4Internal.hh"
 #include "c4Query.h"
+#include "c4Tokenizer.h"
 
 #include "Database.hh"
 #include "DataFile.hh"
 #include "Query.hh"
 #include "Record.hh"
+#include "Tokenizer.hh"
 #include "FleeceImpl.hh"
 #include <math.h>
 #include <limits.h>
@@ -131,6 +133,11 @@ static C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {return (C4QueryE
 
 
 #pragma mark - QUERY:
+
+
+void c4query_setFTSTokenizerFactory(C4TokenizerFactory factory) C4API {
+    RegisterC4TokenizerFactory(factory);
+}
 
 
 C4Query* c4query_new(C4Database *database,

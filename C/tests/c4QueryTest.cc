@@ -17,6 +17,7 @@
 //
 
 #include "c4QueryTest.hh"
+#include "c4Tokenizer.h"
 #include "StringUtil.hh"
 
 
@@ -244,7 +245,9 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query][C]") {
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query", "[Query][C][FTS]") {
     C4Error err;
-    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"),
+                             C4STR("[[\".contact.address.street\"]]"),
+                             kC4FullTextIndex, nullptr, &err));
     compile(json5("['MATCH', 'byStreet', 'Hwy']"));
     auto results = runFTS();
     CHECK(results == (vector<vector<C4FullTextMatch>>{
@@ -353,6 +356,120 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Buried Full-text queries", "[Query][C][FTS][!
     REQUIRE(query == nullptr);
     CheckError(err, LiteCoreDomain, kC4ErrorInvalidQuery,
                "MATCH can only appear at top-level, or in a top-level AND");
+}
+
+
+#pragma mark - FTS CUSTOM TOKENIZER:
+
+
+struct DumbCursor : public C4TokenizerCursor {
+    DumbCursor(slice inputText)
+    :_inputText(inputText)
+    ,_work(inputText)
+    {
+        C4Log("  Created Cursor on '%.*s'", SPLAT(inputText));
+        methods = &kCursorMethods;
+    }
+
+    ~DumbCursor() {
+        C4Log("     ~Cursor");
+    }
+
+    bool setLanguageCode(int languageCode) {
+        C4Log("      Set languageCode=%d", languageCode);
+        _languageCode = languageCode;
+        return true;
+    }
+
+    bool next(C4String* outNormalizedToken,
+              C4String* outTokenRange,
+              C4Error* error)
+    {
+        // Skip whitespace and punctuation:
+        static const slice kDelimiters = " -.,;:()\"\t\n"_sl;
+        auto first = _work.findByteNotIn(kDelimiters);
+        if (!first) {
+            C4Log("      No more tokens");
+            return false;
+        }
+        _work.setStart(first);
+        // Find end of token (next whitespace or punctuation):
+        auto after = _work.findAnyByteOf(kDelimiters);
+        if (!after)
+            after = (const uint8_t*)_work.end();
+        // Output the token:
+        _token = string((const char*)first, after-first);
+        litecore::toLowercase(_token);
+        C4Log("      Token = '%s'", _token.c_str());
+        *outNormalizedToken = slice(_token);
+        *outTokenRange = slice(first, after);
+        _work.setStart(after);
+        return true;
+    }
+
+    C4String _inputText;
+    int _languageCode {0};
+    slice _work;
+    string _token;
+
+    static C4TokenizerCursorMethods kCursorMethods;
+};
+
+C4TokenizerCursorMethods DumbCursor::kCursorMethods = {
+    [](C4TokenizerCursor* self,
+       C4String* outNormalizedToken,
+       C4String* outTokenRange,
+       C4Error* error)
+    {
+        return ((DumbCursor*)self)->next(outNormalizedToken, outTokenRange, error);
+    },
+    [](C4TokenizerCursor *self) {delete (DumbCursor*)self;},
+};
+
+C4TokenizerMethods kTokenizerMethods = {
+    [](C4Tokenizer* self, C4String inputText, C4Error*) {
+        return (C4TokenizerCursor*) new DumbCursor(inputText);
+    },
+    /*[](C4Tokenizer *self) {
+        C4Log("Deleted Tokenizer %p", self);
+        free(self);
+    },*/
+};
+
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "C4Tokenizer", "[Query][C][FTS]") {
+    c4query_setFTSTokenizerFactory([](const C4IndexOptions *options) {
+        auto tok = new C4Tokenizer;
+        tok->methods = &kTokenizerMethods;
+        if (options) {
+            C4Log("Created Tokenizer %p (language=%s, ignoreDiacritics=%d, disableStemming=%d, stopWords=%s)",
+                  tok, (options->language ? options->language : "NULL"),
+                  options->ignoreDiacritics, options->disableStemming,
+                  (options->stopWords ? options->stopWords : "NULL"));
+        } else {
+            C4Log("Created Tokenizer %p", tok);
+        }
+        return tok;
+    });
+    C4Error err;
+    C4IndexOptions options = { };
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"),
+                             C4STR("[[\".contact.address.street\"]]"),
+                             kC4FullTextIndex, &options, &err));
+    compile(json5("['MATCH', 'byStreet', 'Hwy']"));
+    auto results = runFTS();
+    CHECK(results == (vector<vector<C4FullTextMatch>>{
+        {{13, 0, 0, 10, 3}},
+        {{15, 0, 0, 11, 3}},
+        {{43, 0, 0, 12, 3}},
+        {{44, 0, 0, 12, 3}},
+        {{52, 0, 0, 11, 3}}
+    }));
+
+    C4SliceResult matched = c4query_fullTextMatched(query, &results[0][0], &err);
+    REQUIRE(matched.buf != nullptr);
+    CHECK(toString((C4Slice)matched) == "7 Wyoming Hwy");
+    c4slice_free(matched);
 }
 
 
