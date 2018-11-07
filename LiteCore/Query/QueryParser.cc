@@ -1231,6 +1231,12 @@ namespace litecore {
     }
 
 
+    void QueryParser::writeMetaProperty(slice fn, const string &tablePrefix, const char *property) {
+        require(fn == kValueFnName, "can't use '_%s' in this context", property);
+        _sql << tablePrefix << property;
+    }
+
+
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, string property, const Value *param) {
         string alias, tablePrefix;
@@ -1267,14 +1273,11 @@ namespace litecore {
         }
 
         if (property == kDocIDProperty) {
-            require(fn == kValueFnName, "can't use '_id' in this context");
-            _sql << tablePrefix << "key";
+            writeMetaProperty(fn, tablePrefix, "key");
         } else if (property == kSequenceProperty) {
-            require(fn == kValueFnName, "can't use '_sequence' in this context");
-            _sql << tablePrefix << "sequence";
+            writeMetaProperty(fn, tablePrefix, "sequence");
         } else if (property == kExpirationProperty) {
-            require(fn == kValueFnName, "can't use '_expiration' in this context");
-            _sql << "(" << tablePrefix << "expiration * 1000)";
+            writeMetaProperty(fn, tablePrefix, "expiration");
             _checkedExpiration = true;
         } else if (property == kDeletedProperty) {
             require(fn == kValueFnName, "can't use '_deleted' in this context");

@@ -176,6 +176,7 @@ namespace litecore {
         void writeResultColumn(const fleece::impl::Value*);
         void writeCollation();
         void parseCollatableNode(const fleece::impl::Value*);
+        void writeMetaProperty(slice fn, const std::string &tablePrefix, const char *property);
 
         void parseJoin(const fleece::impl::Dict*);
 

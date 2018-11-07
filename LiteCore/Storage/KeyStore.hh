@@ -108,9 +108,12 @@ namespace litecore {
 
         //////// Expiration:
 
-        /** Record expiration timestamp: seconds since Unix epoch (Jan 1 1970).
+        /** Record's expiration timestamp: milliseconds since Unix epoch (Jan 1 1970).
             A zero value means no expiration. */
         using expiration_t = int64_t;
+
+        /** The current time. */
+        static expiration_t now() noexcept;
 
         /** Sets a record's expiration time. Zero means 'never'.
             @return  true if the time was set, false if no record with that key exists. */

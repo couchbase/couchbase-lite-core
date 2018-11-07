@@ -34,6 +34,15 @@ extern "C" {
 typedef uint64_t C4SequenceNumber;
 
 
+/** A date/time representation used for document expiration (and in date/time queries.)
+    Measured in milliseconds since the Unix epoch (1/1/1970, midnight UTC.) */
+typedef int64_t C4Timestamp;
+
+
+/** Returns the current time, in milliseconds since 1/1/1970. */
+C4Timestamp c4_now(void) C4API;
+
+
 //////// SLICES:
 
 // (This is just renaming stuff from FLSlice.h)

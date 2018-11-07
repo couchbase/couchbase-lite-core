@@ -1332,7 +1332,7 @@ TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
     addNumberedDocs(1, 3);
-    KeyStore::expiration_t now = time(nullptr);
+    KeyStore::expiration_t now = KeyStore::now();
 
     {
         Retained<Query> query{ store->compileQuery(json5(
@@ -1341,27 +1341,27 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
         CHECK(!e->next());
     }
 
-    store->setExpiration("rec-001"_sl, now - 10);
-    store->setExpiration("rec-003"_sl, now + 10);
+    store->setExpiration("rec-001"_sl, now - 10000);
+    store->setExpiration("rec-003"_sl, now + 10000);
 
     {
         Retained<Query> query{ store->compileQuery(json5(
             "{WHAT: ['._expiration'], ORDER_BY: [['._id']]}")) };
         unique_ptr<QueryEnumerator> e(query->createEnumerator());
         CHECK(e->next());
-        CHECK(e->columns()[0]->asInt() == (now - 10) * 1000);
+        CHECK(e->columns()[0]->asInt() == now - 10000);
         CHECK(e->next());
         CHECK(e->columns()[0]->type() == kNull);
         CHECK(e->missingColumns() == 1);
         CHECK(e->next());
-        CHECK(e->columns()[0]->asInt() == (now + 10) * 1000);
+        CHECK(e->columns()[0]->asInt() == now + 10000);
         CHECK(!e->next());
     }
     {
         Retained<Query> query{ store->compileQuery(json5(
             "{WHAT: ['._id'], WHERE: ['<=', ['._expiration'], ['$NOW']], ORDER_BY: [['._expiration']]}")) };
 
-        Query::Options options { alloc_slice(format("{\"NOW\": %lld}", (long long)now * 1000)) };
+        Query::Options options { alloc_slice(format("{\"NOW\": %lld}", (long long)now)) };
         
         unique_ptr<QueryEnumerator> e(query->createEnumerator(&options));
         CHECK(e->next());

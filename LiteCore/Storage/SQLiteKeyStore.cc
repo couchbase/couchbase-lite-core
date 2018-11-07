@@ -419,8 +419,7 @@ namespace litecore {
         unsigned expired = 0;
         if (hasExpiration()) {
             expired = db().exec(format("DELETE FROM kv_%s WHERE expiration <= %lld",
-                                                name().c_str(),
-                                                (int64_t)time(nullptr)));
+                                       name().c_str(), now()));
         }
         db().log("Purged %u expired documents", expired);
         return expired;

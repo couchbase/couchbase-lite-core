@@ -168,7 +168,7 @@ extern "C" {
 
     /** Returns the timestamp at which the next document expiration should take place,
         or 0 if there are no documents with expiration times. */
-    uint64_t c4db_nextDocExpiration(C4Database *database C4NONNULL) C4API;
+    C4Timestamp c4db_nextDocExpiration(C4Database *database C4NONNULL) C4API;
 
     /** Purges all documents that have expired.
         @return  The number of documents purged, or -1 on error. */

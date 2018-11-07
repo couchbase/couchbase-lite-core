@@ -29,7 +29,12 @@
 using namespace fleece;
 
 
-bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Error *outError) noexcept {
+C4Timestamp c4_now(void) C4API {
+    return KeyStore::now();
+}
+
+
+bool c4doc_setExpiration(C4Database *db, C4Slice docId, C4Timestamp timestamp, C4Error *outError) C4API {
     if (!c4db_beginTransaction(db, outError))
         return false;
     bool ok = tryCatch<bool>(outError, [=]{
@@ -42,23 +47,21 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, uint64_t timestamp, C4Er
 }
 
 
-uint64_t c4doc_getExpiration(C4Database *db, C4Slice docID) noexcept {
+C4Timestamp c4doc_getExpiration(C4Database *db, C4Slice docID) C4API {
     return tryCatch<uint64_t>(nullptr, [=]{
         return db->defaultKeyStore().getExpiration(docID);
     });
 }
 
 
-uint64_t c4db_nextDocExpiration(C4Database *db) noexcept
-{
+C4Timestamp c4db_nextDocExpiration(C4Database *db) C4API {
     return tryCatch<uint64_t>(nullptr, [=]{
         return db->defaultKeyStore().nextExpiration();
     });
 }
 
 
-int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error *outError) noexcept
-{
+C4Timestamp c4db_purgeExpiredDocs(C4Database *db, C4Error *outError) C4API {
     int64_t count = -1;
     if (c4db_beginTransaction(db, outError)) {
         try {
