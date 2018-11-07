@@ -58,13 +58,10 @@ namespace litecore {
         virtual unsigned expireRecords() override;
 
         bool supportsIndexes(IndexType t) const override               {return true;}
-        bool createIndex(slice name,
-                         slice expressionJSON,
-                         IndexType =kValueIndex,
-                         const IndexOptions* = nullptr) override;
+        bool createIndex(const IndexSpec&, const IndexOptions* = nullptr) override;
 
         void deleteIndex(slice name) override;
-        alloc_slice getIndexes() const override;
+        std::vector<IndexSpec> getIndexes() const override;
 
         void createSequenceIndex();
 
@@ -113,23 +110,18 @@ namespace litecore {
                            const char *operation,
                            const char *when,
                            const std::string &statements);
-        void dropTrigger(const std::string &name, const char *suffix);
-        bool createValueIndex(IndexType, const std::string &sourceTableName,
-                              const std::string &indexName,
+        bool createValueIndex(const IndexSpec&,
+                              const std::string &sourceTableName,
                               fleece::impl::Array::iterator &expressions,
                               const IndexOptions *options);
-        bool createFTSIndex(std::string, const fleece::impl::Array *params, const IndexOptions*);
-        bool createArrayIndex(std::string, const fleece::impl::Array *params, const IndexOptions*);
+        bool createFTSIndex(const IndexSpec&, const fleece::impl::Array *params, const IndexOptions*);
+        bool createArrayIndex(const IndexSpec&, const fleece::impl::Array *params, const IndexOptions*);
         std::string createUnnestedTable(const fleece::impl::Value *arrayPath, const IndexOptions*);
-        bool _schemaExistsWithSQL(const std::string &name, const std::string &type,
-                                  const std::string &tableName, const std::string &sql);
-        void _sqlDeleteIndex(const std::string &name);
-        void garbageCollectIndexTables();
         bool hasExpiration();
         void addExpiration();
 
 #ifdef COUCHBASE_ENTERPRISE
-        bool createPredictiveIndex(std::string, const fleece::impl::Array *params,
+        bool createPredictiveIndex(const IndexSpec&, const fleece::impl::Array *params,
                                    const IndexOptions*);
         std::string createPredictionTable(const fleece::impl::Value *arrayPath, const IndexOptions*);
         void garbageCollectPredictiveIndexes();

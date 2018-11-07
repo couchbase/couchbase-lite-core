@@ -55,7 +55,7 @@ public:
     }
 
     void createIndex(KeyStore::IndexOptions options) {
-        store->createIndex("sentence"_sl, "[[\".sentence\"]]"_sl, KeyStore::kFullTextIndex, &options);
+        store->createIndex({"sentence", KeyStore::kFullTextIndex, alloc_slice("[[\".sentence\"]]")}, &options);
     }
 
     void testQuery(const char *queryStr,

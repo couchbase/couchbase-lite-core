@@ -651,7 +651,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
     
     for(int i = 0; i < 2; i++) {
         REQUIRE(c4db_createIndex(db, names[i], desc[i], types[i], nullptr, &err));
-        C4SliceResult indexes = c4db_getIndexes(db, &err);
+        C4SliceResult indexes = c4db_getIndexes(db, false, &err);
         FLValue val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
         REQUIRE(FLValue_GetType(val) == kFLArray);
         FLArray indexArray = FLValue_AsArray(val);
@@ -663,7 +663,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
         c4slice_free(indexes);
         
         REQUIRE(c4db_deleteIndex(db, names[i], &err));
-        indexes = c4db_getIndexes(db, &err);
+        indexes = c4db_getIndexes(db, false, &err);
         val = FLValue_FromData((FLSlice)indexes, kFLTrusted);
         REQUIRE(FLValue_GetType(val) == kFLArray);
         indexArray = FLValue_AsArray(val);

@@ -32,7 +32,7 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    bool SQLiteKeyStore::createPredictiveIndex(string indexName,
+    bool SQLiteKeyStore::createPredictiveIndex(const IndexSpec &spec,
                                                const Array *expressions,
                                                const IndexOptions *options)
     {
@@ -55,7 +55,7 @@ namespace litecore {
             error::_throw(error::InvalidParameter,
                           "Missing result property name for predictive index");
         }
-        return createValueIndex(kPredictiveIndex, predTableName, indexName, i, options);
+        return createValueIndex(spec, predTableName, i, options);
     }
 
 
@@ -72,7 +72,7 @@ namespace litecore {
                             "(docid INTEGER PRIMARY KEY REFERENCES " << kvTableName << "(rowid), "
                             " body BLOB NOT NULL ON CONFLICT IGNORE) "
                             "WITHOUT ROWID");
-        if (!_schemaExistsWithSQL(predTableName, "table", predTableName, sql)) {
+        if (!db().schemaExistsWithSQL(predTableName, "table", predTableName, sql)) {
             LogTo(QueryLog, "Creating predictive table '%s' on %s", predTableName.c_str(),
                   expression->toJSONString().c_str());
             db().exec(sql);

@@ -38,11 +38,11 @@ namespace litecore {
 
 
     // Creates a FTS index.
-    bool SQLiteKeyStore::createFTSIndex(string indexName,
+    bool SQLiteKeyStore::createFTSIndex(const IndexSpec &spec,
                                         const Array *params,
                                         const IndexOptions *options)
     {
-        auto ftsTableName = FTSTableName(indexName);
+        auto ftsTableName = FTSTableName(spec.name);
         // Collect the name of each FTS column and the SQL expression that populates it:
         QueryParser qp(*this);
         qp.setBodyColumnName("new.body");
@@ -64,12 +64,8 @@ namespace litecore {
             sqlStr = sql.str();
         }
 
-        // Create the FTS table, but if an identical one already exists, return:
-        if (_schemaExistsWithSQL(ftsTableName, "table", ftsTableName, sqlStr))
+        if (!db().createIndex(spec, this, ftsTableName, sqlStr))
             return false;
-        _sqlDeleteIndex(indexName);
-        LogTo(QueryLog, "Creating full-text search index '%s'", indexName.c_str());
-        db().exec(sqlStr);
 
         // Index the existing records:
         db().exec(CONCAT("INSERT INTO \"" << ftsTableName << "\" (docid, " << columns << ") "

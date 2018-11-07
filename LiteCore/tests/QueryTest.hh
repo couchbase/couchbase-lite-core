@@ -194,15 +194,10 @@ protected:
         t.commit();
     }
 
-    vector<string> extractIndexes(slice encodedIndexes) {
+    vector<string> extractIndexes(vector<KeyStore::IndexSpec> indexes) {
         set<string> retVal;
-        const Array *val = Value::fromTrustedData(encodedIndexes)->asArray();
-        CHECK(val != nullptr);
-        Array::iterator iter(val);
-        int size = iter.count();
-        for(int i = 0; i < size; i++, ++iter) {
-            retVal.insert(iter.value()->asString().asString());
-        }
+        for (auto &i : indexes)
+            retVal.insert(i.name);
         return vector<string>(retVal.begin(), retVal.end());
     }
 

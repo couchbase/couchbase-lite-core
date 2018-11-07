@@ -56,8 +56,22 @@ namespace litecore {
         bool tableExists(const std::string &name) const;
         bool getSchema(const std::string &name, const std::string &type,
                        const std::string &tableName, std::string &outSQL) const;
+        bool schemaExistsWithSQL(const std::string &name, const std::string &type,
+                                 const std::string &tableName, const std::string &sql);
 
         fleece::alloc_slice rawQuery(const std::string &query) override;
+
+        struct IndexSpec : public KeyStore::IndexSpec {
+            std::string keyStoreName;
+            std::string indexTableName;
+        };
+
+        bool createIndex(const KeyStore::IndexSpec &spec,
+                         SQLiteKeyStore *keyStore,
+                         const std::string &indexTableName,
+                         const std::string &indexSQL);
+        IndexSpec getIndex(slice name);
+        std::vector<IndexSpec> getIndexes(const KeyStore*);
 
         class Factory : public DataFile::Factory {
         public:
@@ -102,6 +116,13 @@ namespace litecore {
 
         bool decrypt();
         int _exec(const std::string &sql);
+        void migrateExistingIndexes();
+        void registerIndex(const KeyStore::IndexSpec&,
+                           const std::string &keyStoreName,
+                           const std::string &indexTableName);
+        void unregisterIndex(slice indexName);
+        void deleteIndex(const IndexSpec&);
+        void garbageCollectIndexTable(const std::string &tableName);
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;

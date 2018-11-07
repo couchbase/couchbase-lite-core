@@ -188,7 +188,9 @@ namespace litecore {
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
             int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
+            bool isNew = false;
             if (userVersion == 0) {
+                isNew = true;
                 // Configure persistent db settings, and create the schema:
                 _exec("PRAGMA journal_mode=WAL; "        // faster writes, better concurrency
                      "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
@@ -198,12 +200,21 @@ namespace litecore {
                      );
                 // Create the default KeyStore's table:
                 (void)defaultKeyStore();
-                _exec("PRAGMA user_version=201; "
-                      "END;");
+                userVersion = 201;
             } else if (userVersion < kMinUserVersion) {
                 error::_throw(error::DatabaseTooOld);
             } else if (userVersion > kMaxUserVersion) {
                 error::_throw(error::DatabaseTooNew);
+            }
+
+            if (userVersion < 300) {
+                if (!isNew)
+                    _exec("BEGIN");
+                _exec("CREATE TABLE indexes (name TEXT PRIMARY KEY, type INTEGER NOT NULL,"
+                      " keyStore TEXT NOT NULL, expression TEXT, indexTableName TEXT)");
+                if (!isNew)
+                    migrateExistingIndexes();
+                _exec("PRAGMA user_version=301; END;");
             }
         });
 
@@ -455,6 +466,14 @@ namespace litecore {
         return getSchema(name, "table", name, sql);
     }
 
+
+    // Returns true if an index/table exists in the database with the given type and SQL schema
+    bool SQLiteDataFile::schemaExistsWithSQL(const string &name, const string &type,
+                                             const string &tableName, const string &sql) {
+        string existingSQL;
+        return getSchema(name, type, tableName, existingSQL) && existingSQL == sql;
+    }
+
     
     sequence_t SQLiteDataFile::lastSequence(const string& keyStoreName) const {
         sequence_t seq = 0;
@@ -529,22 +548,167 @@ namespace litecore {
             for (int i = 0; i < nCols; ++i) {
                 SQLite::Column col = stmt.getColumn(i);
                 switch (col.getType()) {
-                    case SQLITE_NULL:
-                        enc.writeNull(); break;
-                    case SQLITE_INTEGER:
-                        enc.writeInt(col.getInt64()); break;
-                    case SQLITE_FLOAT:
-                        enc.writeDouble(col.getDouble()); break;
-                    case SQLITE_TEXT:
-                        enc.writeString(col.getString()); break;
-                    case SQLITE_BLOB:
-                        enc.writeData(slice(col.getBlob(), col.getBytes())); break;
+                    case SQLITE_NULL:   enc.writeNull(); break;
+                    case SQLITE_INTEGER:enc.writeInt(col.getInt64()); break;
+                    case SQLITE_FLOAT:  enc.writeDouble(col.getDouble()); break;
+                    case SQLITE_TEXT:   enc.writeString(col.getString()); break;
+                    case SQLITE_BLOB:   enc.writeData(slice(col.getBlob(), col.getBytes())); break;
                 }
             }
             enc.endArray();
         }
         enc.endArray();
         return enc.finish();
+    }
+
+
+#pragma mark - INDEXES:
+
+
+    bool SQLiteDataFile::createIndex(const KeyStore::IndexSpec &spec,
+                                     SQLiteKeyStore *keyStore,
+                                     const string &indexTableName,
+                                     const string &indexSQL)
+    {
+        auto existingSpec = getIndex(spec.name);
+        if (existingSpec) {
+            if (existingSpec.type == spec.type && existingSpec.keyStoreName == keyStore->name()) {
+                bool same;
+                if (spec.type == KeyStore::kFullTextIndex)
+                    same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
+                else
+                    same = schemaExistsWithSQL(spec.name, "index", indexTableName, indexSQL);
+                if (same)
+                    return false;       // This is a duplicate of an existing index; do nothing
+            }
+            // Existing index is different, so delete it first:
+            deleteIndex(existingSpec);
+        }
+        LogTo(QueryLog, "Creating %s index \"%s\"",
+              KeyStore::kIndexTypeName[spec.type], spec.name.c_str());
+        exec(indexSQL);
+        registerIndex(spec, keyStore->name(), indexTableName);
+        return true;
+    }
+
+
+    void SQLiteDataFile::registerIndex(const KeyStore::IndexSpec &spec,
+                                       const string &keyStoreName, const string &indexTableName)
+    {
+        SQLite::Statement stmt(*this, "INSERT INTO indexes (name, type, keyStore, expression, indexTableName) "
+                                      "VALUES (?, ?, ?, ?, ?)");
+        stmt.bindNoCopy(1, spec.name);
+        stmt.bind(      2, spec.type);
+        stmt.bindNoCopy(3, keyStoreName);
+        stmt.bindNoCopy(4, (char*)spec.expressionJSON.buf, (int)spec.expressionJSON.size);
+        if (spec.type != KeyStore::kValueIndex)
+            stmt.bindNoCopy(5, indexTableName);
+        LogStatement(stmt);
+        stmt.exec();
+    }
+
+
+    void SQLiteDataFile::unregisterIndex(slice indexName) {
+        SQLite::Statement stmt(*this, "DELETE FROM indexes WHERE name=?");
+        stmt.bindNoCopy(1, (char*)indexName.buf, (int)indexName.size);
+        LogStatement(stmt);
+        stmt.exec();
+    }
+
+
+    void SQLiteDataFile::deleteIndex(const IndexSpec &spec) {
+        LogTo(QueryLog, "Deleting %s index '%s'",
+              KeyStore::kIndexTypeName[spec.type], spec.name.c_str());
+        unregisterIndex(spec.name);
+        if (spec.type != KeyStore::kFullTextIndex)
+            exec(CONCAT("DROP INDEX IF EXISTS \"" << spec.name << "\""));
+        if (!spec.indexTableName.empty())
+            garbageCollectIndexTable(spec.indexTableName);
+    }
+
+
+    void SQLiteDataFile::migrateExistingIndexes() {
+        // First find value indexes:
+        SQLite::Statement getIndex(*this, "SELECT name, tbl_name FROM sqlite_master WHERE type='index' "
+                                          "AND name NOT LIKE 'kv_%_seqs' "
+                                          "AND tableName LIKE 'kv_%' "
+                                          "AND sql NOT NULL");
+        while(getIndex.executeStep()) {
+            string indexName = getIndex.getColumn(0);
+            string keyStoreName = getIndex.getColumn(1).getString().substr(3);
+            registerIndex({indexName, KeyStore::kValueIndex, {}}, keyStoreName, "");
+        }
+
+        // Now find FTS tables:
+        SQLite::Statement getFTS(*this, "SELECT name FROM sqlite_master WHERE type='table' "
+                                        "AND name like '%::%"
+                                        "AND sql LIKE 'CREATE VIRTUAL TABLE % USING fts%'");
+        while(getFTS.executeStep()) {
+            string tableName = getFTS.getColumn(0).getString();
+            auto delim = tableName.find("::");
+            string keyStoreName = tableName.substr(delim);
+            string indexName = tableName.substr(delim + 2);
+            registerIndex({indexName, KeyStore::kValueIndex, {}}, keyStoreName, tableName);
+        }
+    }
+
+
+    static SQLiteDataFile::IndexSpec specFromStatement(SQLite::Statement &stmt) {
+        SQLiteDataFile::IndexSpec spec;
+        spec.name = stmt.getColumn(0).getString();
+        spec.type = (KeyStore::IndexType) stmt.getColumn(1).getInt();
+        spec.expressionJSON = alloc_slice(stmt.getColumn(2).getString());
+        if (spec.expressionJSON.size == 0)
+            spec.expressionJSON = nullslice;
+        spec.keyStoreName = stmt.getColumn(3).getString();
+        spec.indexTableName = stmt.getColumn(4).getString();
+        return spec;
+    }
+
+
+    SQLiteDataFile::IndexSpec SQLiteDataFile::getIndex(slice name) {
+        SQLite::Statement stmt(*this, "SELECT name, type, expression, keyStore, indexTableName "
+                                      "FROM indexes WHERE name=?");
+        stmt.bindNoCopy(1, (char*)name.buf, (int)name.size);
+        if (stmt.executeStep())
+            return specFromStatement(stmt);
+        else
+            return {};
+    }
+
+
+    vector<SQLiteDataFile::IndexSpec> SQLiteDataFile::getIndexes(const KeyStore *store) {
+        vector<IndexSpec> indexes;
+        SQLite::Statement stmt(*this, "SELECT name, type, expression, keyStore, indexTableName "
+                                      "FROM indexes ORDER BY name");
+        while(stmt.executeStep()) {
+            string keyStoreName = stmt.getColumn(3);
+            if (!store || keyStoreName == store->name())
+                indexes.emplace_back(specFromStatement(stmt));
+        }
+        return indexes;
+    }
+
+
+    // Drops unnested-array tables that no longer have any indexes on them.
+    void SQLiteDataFile::garbageCollectIndexTable(const string &tableName) {
+        {
+            SQLite::Statement stmt(*this, "SELECT name FROM indexes WHERE indexTableName=?");
+            stmt.bind(1, tableName);
+            if (stmt.executeStep())
+                return;
+        }
+
+        LogTo(QueryLog, "Dropping unused index table '%s'", tableName.c_str());
+        exec(CONCAT("DROP TABLE \"" << tableName << "\""));
+
+        stringstream sql;
+        static const char* kTriggerSuffixes[] = {"ins", "del", "upd", "preupdate", "postupdate",
+                                                 nullptr};
+        for (int i = 0; kTriggerSuffixes[i]; ++i) {
+            sql << "DROP TRIGGER IF EXISTS \"" << tableName << "::" << kTriggerSuffixes[i] << "\";";
+        }
+        exec(sql.str());
     }
 
 }
