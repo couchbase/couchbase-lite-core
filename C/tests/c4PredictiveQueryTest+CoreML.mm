@@ -48,19 +48,23 @@ public:
                bool required =true)
     :QueryTest(0, jsonFilename)
     {
-        NSURL *url = [NSURL fileURLWithPath: asNSString(sFixturesDir + modelFilename)];
-        NSError *error;
-        if (required || [url checkResourceIsReachableAndReturnError: nullptr]) {
-            NSURL* compiled = [MLModel compileModelAtURL: url error: &error];
-            INFO("Error" << (error.description.UTF8String ?: "none"));
-            REQUIRE(compiled);
-            auto model = [MLModel modelWithContentsOfURL: compiled error: &error];
-            INFO("Error" << (error.description.UTF8String ?: "none"));
-            REQUIRE(model);
-            _model.reset(new cbl::CoreMLPredictiveModel(model));
-            _model->registerWithName(modelName);
+        if (@available(macOS 10.13, iOS 11.0, *)) {
+            NSURL *url = [NSURL fileURLWithPath: asNSString(sFixturesDir + modelFilename)];
+            NSError *error;
+            if (required || [url checkResourceIsReachableAndReturnError: nullptr]) {
+                NSURL* compiled = [MLModel compileModelAtURL: url error: &error];
+                INFO("Error" << (error.description.UTF8String ?: "none"));
+                REQUIRE(compiled);
+                auto model = [MLModel modelWithContentsOfURL: compiled error: &error];
+                INFO("Error" << (error.description.UTF8String ?: "none"));
+                REQUIRE(model);
+                _model.reset(new cbl::CoreMLPredictiveModel(model));
+                _model->registerWithName(modelName);
+            } else {
+                C4Log("*** SKIPPING test, as CoreML model '%s' is not present **", modelFilename.c_str());
+            }
         } else {
-            C4Log("*** SKIPPING test, as CoreML model '%s' is not present **", modelFilename.c_str());
+            C4Log("*** SKIPPING test, as CoreML is not available on this OS **");
         }
     }
 
@@ -84,6 +88,8 @@ public:
 
 
 TEST_CASE_METHOD(CoreMLTest, "CoreML Query", "[Query][Predict][C]") {
+    if (!_model)
+        return;
     compileSelect(json5("{'WHAT': [['._id'], ['PREDICTION()', 'mars', "
                         "{solarPanels: ['.panels'], greenhouses: ['.greenhouses'], size: ['.acres']}"
                         "]], 'ORDER_BY': [['._id']]}"));
@@ -98,6 +104,8 @@ TEST_CASE_METHOD(CoreMLTest, "CoreML Query", "[Query][Predict][C]") {
 
 
 TEST_CASE_METHOD(CoreMLTest, "CoreML Query Error", "[Query][Predict][C]") {
+    if (!_model)
+        return;
     // Missing 'greenhouses' parameter:
     compileSelect(json5("{'WHAT': [['PREDICTION()', 'mars', "
                         "{solarPanels: ['.panels'], size: ['.acres']}"
@@ -120,6 +128,8 @@ public:
 
 
 TEST_CASE_METHOD(CoreMLSentimentTest, "CoreML Sentiment Query", "[Query][Predict][C]") {
+    if (!_model)
+        return;
     compileSelect(json5("{'WHAT': [['._id'], ['PREDICTION()', 'sentiment', "
                             "{input: ['.text']}"
                         "]], 'ORDER_BY': [['._id']]}"));
