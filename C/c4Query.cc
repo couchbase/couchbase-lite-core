@@ -266,9 +266,9 @@ bool c4db_createIndex(C4Database *database,
     static_assert(sizeof(C4IndexOptions) == sizeof(KeyStore::IndexOptions),
                   "IndexOptions types must match");
     return tryCatch(outError, [&]{
-        database->defaultKeyStore().createIndex(toString(name),
-                                                toString(propertyPath),
-                                                (KeyStore::IndexType)indexType,
+        database->defaultKeyStore().createIndex({string(slice(name)),
+                                                 (KeyStore::IndexType)indexType,
+                                                 alloc_slice(propertyPath)},
                                                 (const KeyStore::IndexOptions*)indexOptions);
     });
 }
@@ -283,9 +283,23 @@ bool c4db_deleteIndex(C4Database *database,
     });
 }
 
-C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept
+C4SliceResult c4db_getIndexes(C4Database* database, bool fullInfo, C4Error* outError) noexcept
 {
     return tryCatch<C4SliceResult>(outError, [&]{
-        return C4SliceResult(database->defaultKeyStore().getIndexes());
+        Encoder enc;
+        enc.beginArray();
+        for (const auto &spec : database->defaultKeyStore().getIndexes()) {
+            if (fullInfo) {
+                enc.beginDictionary();
+                enc.writeKey("name"); enc.writeString(spec.name);
+                enc.writeKey("type"); enc.writeInt(spec.type);
+                enc.writeKey("expr"); enc.writeString(spec.expressionJSON);
+                enc.endDictionary();
+            } else {
+                enc.writeString(spec.name);
+            }
+        }
+        enc.endArray();
+        return C4SliceResult(enc.finish());
     });
 }

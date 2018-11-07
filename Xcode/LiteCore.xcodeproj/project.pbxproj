@@ -394,6 +394,7 @@
 		27EF80B819142C9900A327B9 /* stem_UTF_8_swedish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF21914296D00A327B9 /* stem_UTF_8_swedish.h */; };
 		27EF80B919142C9900A327B9 /* stem_UTF_8_turkish.c in Sources */ = {isa = PBXBuildFile; fileRef = 27EF7FF31914296D00A327B9 /* stem_UTF_8_turkish.c */; };
 		27EF80BA19142C9900A327B9 /* stem_UTF_8_turkish.h in Headers */ = {isa = PBXBuildFile; fileRef = 27EF7FF41914296D00A327B9 /* stem_UTF_8_turkish.h */; };
+		27F0426C2196264900D7C6FA /* SQLiteDataFile+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F0426B2196264900D7C6FA /* SQLiteDataFile+Indexes.cc */; };
 		27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
 		27F7A1351D61F7EB00447BC6 /* LiteCoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2708FE5A1CF4D3370022F721 /* LiteCoreTest.cc */; };
 		27F7A1431D61F8B700447BC6 /* c4Test.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27F6F51B1BAA0482003FD798 /* c4Test.cc */; };
@@ -1308,6 +1309,7 @@
 		27EF7FF71914296D00A327B9 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
 		27EF807419142C2500A327B9 /* libTokenizer.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libTokenizer.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		27EF81121917EEC600A327B9 /* libLiteCore-static.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libLiteCore-static.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		27F0426B2196264900D7C6FA /* SQLiteDataFile+Indexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteDataFile+Indexes.cc"; sourceTree = "<group>"; };
 		27F370821DC02C3D0096F717 /* c4Document+Fleece.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "c4Document+Fleece.h"; sourceTree = "<group>"; };
 		27F6F51B1BAA0482003FD798 /* c4Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Test.cc; sourceTree = "<group>"; };
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
@@ -2020,6 +2022,7 @@
 		276D153D1DFF528B00543B1B /* Query */ = {
 			isa = PBXGroup;
 			children = (
+				27F0426B2196264900D7C6FA /* SQLiteDataFile+Indexes.cc */,
 				2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */,
 				27098ABB217525B7002751DA /* SQLiteKeyStore+FTSIndexes.cc */,
 				27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */,
@@ -3521,6 +3524,7 @@
 				2708FE5E1CF6197D0022F721 /* RawRevTree.cc in Sources */,
 				27D74A7A1D4D3F2300D806E0 /* Backup.cpp in Sources */,
 				276683B61DC7DD2E00E3F187 /* SequenceTracker.cc in Sources */,
+				27F0426C2196264900D7C6FA /* SQLiteDataFile+Indexes.cc in Sources */,
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				274D5BA41DF8D90100BDAF9D /* SecureRandomize.cc in Sources */,
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,

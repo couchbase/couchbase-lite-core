@@ -338,11 +338,6 @@ namespace litecore {
     }
 
 
-    void SQLiteKeyStore::dropTrigger(const string &name, const char *suffix) {
-        db().exec(CONCAT("DROP TRIGGER IF EXISTS \"" << name << "::" << suffix << "\""));
-    }
-
-
 #pragma mark - EXPIRATION:
 
 

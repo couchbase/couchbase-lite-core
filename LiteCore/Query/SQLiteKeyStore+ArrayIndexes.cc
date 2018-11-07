@@ -28,13 +28,13 @@ using namespace fleece::impl;
 
 namespace litecore {
 
-    bool SQLiteKeyStore::createArrayIndex(string indexName,
+    bool SQLiteKeyStore::createArrayIndex(const IndexSpec &spec,
                                           const Array *expressions,
                                           const IndexOptions *options)
     {
         Array::iterator iExprs(expressions);
         string arrayTableName = createUnnestedTable(iExprs.value(), options);
-        return createValueIndex(kArrayIndex, arrayTableName, indexName, ++iExprs, options);
+        return createValueIndex(spec, arrayTableName, ++iExprs, options);
     }
 
 
@@ -50,7 +50,7 @@ namespace litecore {
                             " body BLOB NOT NULL, "
                             " CONSTRAINT pk PRIMARY KEY (docid, i)) "
                             "WITHOUT ROWID");
-        if (!_schemaExistsWithSQL(unnestTableName, "table", unnestTableName, sql)) {
+        if (!db().schemaExistsWithSQL(unnestTableName, "table", unnestTableName, sql)) {
             LogTo(QueryLog, "Creating UNNEST table '%s' on %s", unnestTableName.c_str(),
                   expression->toJSON(true).asString().c_str());
             db().exec(sql);
@@ -100,31 +100,6 @@ namespace litecore {
 
     string SQLiteKeyStore::unnestedTableName(const std::string &property) const {
         return tableName() + ":unnest:" + property;
-    }
-
-
-    // Drops unnested-array tables that no longer have any indexes on them.
-    void SQLiteKeyStore::garbageCollectIndexTables() {
-        vector<string> garbageTableNames;
-        {
-            SQLite::Statement st(db(),
-                 "SELECT tbl.name FROM sqlite_master as tbl "
-                  "WHERE tbl.type='table' and tbl.name like (?1 || ':_%:%')"
-                        "and not exists (SELECT * FROM sqlite_master "
-                                         "WHERE type='index' and tbl_name=tbl.name "
-                                               "and sql not null)");
-            st.bind(1, tableName());
-            while(st.executeStep())
-                garbageTableNames.push_back(st.getColumn(0));
-        }
-        for (string &tableName : garbageTableNames) {
-            LogTo(QueryLog, "Dropping unused index table '%s'", tableName.c_str());
-            db().exec(CONCAT("DROP TABLE \"" << tableName << "\""));
-            dropTrigger(tableName, "ins");
-            dropTrigger(tableName, "del");
-            dropTrigger(tableName, "preupdate");
-            dropTrigger(tableName, "postupdate");
-        }
     }
 
 }

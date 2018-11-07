@@ -43,58 +43,63 @@ namespace litecore {
          * A SQL table named `kv_default:prediction:DIGEST`, where DIGEST is a unique digest
             of the prediction function name and the parameter dictionary
          * An index on that table named `NAME`
+
+     Index table:
+        - name (string primary key)
+        - type (integer)
+        - expression (JSON)
+        - table name (string)
+     The SQL index always is always named `name`.
      */
 
     static void validateIndexName(slice name);
     static pair<alloc_slice, const Array*> parseIndexExpr(slice expression, KeyStore::IndexType);
 
 
-    bool SQLiteKeyStore::createIndex(slice indexName,
-                                     slice expression,
-                                     IndexType type,
+    bool SQLiteKeyStore::createIndex(const IndexSpec &spec,
                                      const IndexOptions *options) {
-        validateIndexName(indexName);
-        auto indexNameStr = string(indexName);
+        validateIndexName(spec.name);
         alloc_slice expressionFleece;
         const Array *params;
-        tie(expressionFleece, params) = parseIndexExpr(expression, type);
+        tie(expressionFleece, params) = parseIndexExpr(spec.expressionJSON, spec.type);
 
         Stopwatch st;
         Transaction t(db());
         bool created;
-        switch (type) {
+        switch (spec.type) {
             case kValueIndex: {
                 Array::iterator iParams(params);
-                created = createValueIndex(kValueIndex, tableName(), indexNameStr, iParams, options);
+                created = createValueIndex(spec, tableName(), iParams, options);
                 break;
             }
-            case kFullTextIndex:  created = createFTSIndex(indexNameStr, params, options); break;
-            case kArrayIndex:     created = createArrayIndex(indexNameStr, params, options); break;
+            case kFullTextIndex:  created = createFTSIndex(spec, params, options); break;
+            case kArrayIndex:     created = createArrayIndex(spec, params, options); break;
 #ifdef COUCHBASE_ENTERPRISE
-            case kPredictiveIndex:created = createPredictiveIndex(indexNameStr, params, options); break;
+            case kPredictiveIndex:created = createPredictiveIndex(spec, params, options); break;
 #endif
             default:             error::_throw(error::Unimplemented);
         }
 
         if (created) {
-            garbageCollectIndexTables();
             t.commit();
             db().optimize();
             double time = st.elapsed();
             QueryLog.log((time < 3.0 ? LogLevel::Info : LogLevel::Warning),
-                         "Created index '%.*s' in %.3f sec", SPLAT(indexName), time);
+                         "Created index '%s' in %.3f sec", spec.name.c_str(), time);
         }
         return created;
     }
 
 
-    void SQLiteKeyStore::deleteIndex(slice name) {
-        validateIndexName(name);
+    void SQLiteKeyStore::deleteIndex(slice name)  {
         Transaction t(db());
-        LogTo(QueryLog, "Deleting index '%.*s'", SPLAT(name));
-        _sqlDeleteIndex(string(name));
-        garbageCollectIndexTables();
-        t.commit();
+        auto spec = db().getIndex(name);
+        if (spec) {
+            db().deleteIndex(spec);
+            t.commit();
+        } else {
+            t.abort();
+        }
     }
 
 
@@ -109,47 +114,13 @@ namespace litecore {
     }
 
 
-    alloc_slice SQLiteKeyStore::getIndexes() const {
-        Encoder enc;
-        enc.beginArray();
-        string tableNameStr = tableName();
-
-        // First find indexes on this KeyStore, or on one of its unnested tables:
-        SQLite::Statement getIndex(db(), "SELECT name FROM sqlite_master WHERE type='index' "
-                                         "AND (tbl_name=?1 OR tbl_name like (?1 || ':unnest:%')) "
-                                         "AND sql NOT NULL");
-        getIndex.bind(1, tableNameStr);
-        while(getIndex.executeStep()) {
-            enc.writeString(getIndex.getColumn(0).getString());
+    vector<KeyStore::IndexSpec> SQLiteKeyStore::getIndexes() const {
+        vector<KeyStore::IndexSpec> result;
+        for (auto &spec : db().getIndexes(nullptr)) {
+            if (spec.keyStoreName == name())
+                result.push_back(spec);
         }
-
-        // Now find FTS tables on this KeyStore:
-        SQLite::Statement getFTS(db(), "SELECT name FROM sqlite_master WHERE type='table' "
-                                       "AND name like (? || '::%') "
-                                       "AND sql LIKE 'CREATE VIRTUAL TABLE % USING fts%'");
-        getFTS.bind(1, tableNameStr);
-        while(getFTS.executeStep()) {
-            string ftsName = getFTS.getColumn(0).getString();
-            ftsName = ftsName.substr(ftsName.find("::") + 2);
-            enc.writeString(ftsName);
-        }
-
-        enc.endArray();
-        return enc.finish();
-    }
-
-
-    // Actually deletes an index from SQLite.
-    void SQLiteKeyStore::_sqlDeleteIndex(const string &indexName) {
-        // Delete any expression or array index:
-        db().exec(CONCAT("DROP INDEX IF EXISTS \"" << indexName << "\""));
-
-        // Delete any FTS index:
-        auto ftsTableName = FTSTableName(indexName);
-        db().exec(CONCAT("DROP TABLE IF EXISTS \"" << ftsTableName << "\""));
-        dropTrigger(ftsTableName, "ins");
-        dropTrigger(ftsTableName, "upd");
-        dropTrigger(ftsTableName, "del");
+        return result;
     }
 
 
@@ -157,23 +128,17 @@ namespace litecore {
 
 
     // Creates a value index.
-    bool SQLiteKeyStore::createValueIndex(IndexType type,
+    bool SQLiteKeyStore::createValueIndex(const IndexSpec &spec,
                                           const string &sourceTableName,
-                                          const string &indexName,
                                           Array::iterator &expressions,
                                           const IndexOptions *options)
     {
+        Assert(spec.type != kFullTextIndex);
         QueryParser qp(*this);
         qp.setTableName(CONCAT('"' << sourceTableName << '"'));
-        qp.writeCreateIndex(indexName, expressions, (type != kValueIndex));
+        qp.writeCreateIndex(spec.name, expressions, (spec.type != kValueIndex));
         string sql = qp.SQL();
-        if (_schemaExistsWithSQL(indexName, "index", sourceTableName, sql))
-            return false;
-        _sqlDeleteIndex(indexName);
-        LogTo(QueryLog, "Creating %sindex '%s'",
-              (type == kArrayIndex ? "array " : ""), indexName.c_str());
-        db().exec(sql);
-        return true;
+        return db().createIndex(spec, this, sourceTableName, sql);
     }
 
 
@@ -186,19 +151,10 @@ namespace litecore {
     }
 
 
-    // Returns true if an index/table exists in the database with the given type and SQL schema
-    bool SQLiteKeyStore::_schemaExistsWithSQL(const string &name, const string &type,
-                                              const string &tableName, const string &sql) {
-        string existingSQL;
-        return db().getSchema(name, type, tableName, existingSQL) && existingSQL == sql;
-    }
-
-
     static void validateIndexName(slice name) {
         if(name.size == 0) {
             error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not be empty");
         }
-
         if(name.findByte((uint8_t)'"') != nullptr) {
             error::_throw(error::LiteCoreError::InvalidParameter, "Index name must not contain "
                           "the double quote (\") character");

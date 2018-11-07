@@ -139,6 +139,8 @@ namespace litecore {
             kPredictiveIndex,    ///< Index of prediction results
         };
 
+        static const char* kIndexTypeName[];
+
         struct IndexOptions {
             const char *language;   ///< NULL or an ISO language code ("en", etc)
             bool ignoreDiacritics;  ///< True to strip diacritical marks/accents from letters
@@ -146,13 +148,26 @@ namespace litecore {
             const char *stopWords;  ///< NULL for default, or comma-delimited string, or empty
         };
 
+        struct IndexSpec {
+            std::string name;
+            IndexType type;
+            alloc_slice expressionJSON;
+
+            IndexSpec() { }
+            IndexSpec(std::string name_, KeyStore::IndexType type_, alloc_slice expressionJSON_)
+            :name(name_), type(type_), expressionJSON(expressionJSON_)
+            { }
+            explicit operator bool() const {return !name.empty();}
+        };
+
         virtual bool supportsIndexes(IndexType) const                   {return false;}
-        virtual bool createIndex(slice name,
-                                 slice expressionJSON,
-                                 IndexType =kValueIndex,
-                                 const IndexOptions* = nullptr);
+        virtual bool createIndex(const IndexSpec&, const IndexOptions* = nullptr);
+        bool createIndex(slice name,
+                         slice expressionJSON,
+                         IndexType =kValueIndex,
+                         const IndexOptions* = nullptr); // convenience method
         virtual void deleteIndex(slice name);
-        virtual alloc_slice getIndexes() const;
+        virtual std::vector<IndexSpec> getIndexes() const;
 
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore()                             { }

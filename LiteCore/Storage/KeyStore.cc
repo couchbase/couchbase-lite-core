@@ -30,6 +30,9 @@ namespace litecore {
 
     const KeyStore::Capabilities KeyStore::Capabilities::defaults = {false};
 
+    const char* KeyStore::kIndexTypeName[] = {"value", "full-text", "array", "predictive"};
+
+
     Record KeyStore::get(slice key, ContentOptions options) const {
         Record rec(key);
         read(rec, options);
@@ -71,15 +74,24 @@ namespace litecore {
         error::_throw(error::Unimplemented);
     }
 
-    bool KeyStore::createIndex(slice name, slice expressionJSON, IndexType, const IndexOptions*) {
+    bool KeyStore::createIndex(const IndexSpec&, const IndexOptions*) {
         error::_throw(error::Unimplemented);
     }
+
+    bool KeyStore::createIndex(slice name,
+                               slice expressionJSON,
+                               IndexType type,
+                               const IndexOptions* options)
+    {
+        return createIndex({string(name), type, alloc_slice(expressionJSON)}, options);
+    }
+
 
     void KeyStore::deleteIndex(slice name) {
         error::_throw(error::Unimplemented);
     }
     
-    alloc_slice KeyStore::getIndexes() const {
+    vector<KeyStore::IndexSpec> KeyStore::getIndexes() const {
         error::_throw(error::Unimplemented);
     }
 

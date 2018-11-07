@@ -56,6 +56,8 @@ namespace litecore {
         bool tableExists(const std::string &name) const;
         bool getSchema(const std::string &name, const std::string &type,
                        const std::string &tableName, std::string &outSQL) const;
+        bool schemaExistsWithSQL(const std::string &name, const std::string &type,
+                                 const std::string &tableName, const std::string &sql);
 
         fleece::alloc_slice rawQuery(const std::string &query) override;
 
@@ -97,11 +99,44 @@ namespace litecore {
         int64_t intQuery(const char *query);
         void optimizeAndVacuum();
 
+        // Indexes:
+        struct IndexSpec : public KeyStore::IndexSpec {
+            std::string keyStoreName;
+            std::string indexTableName;
+
+            IndexSpec() { }
+            IndexSpec(const std::string &name, KeyStore::IndexType type, alloc_slice expressionJSON,
+                      const std::string &ksName, const std::string &itName)
+            :KeyStore::IndexSpec(name, type, expressionJSON)
+            ,keyStoreName(ksName)
+            ,indexTableName(itName)
+            { }
+
+        };
+
+        bool createIndex(const KeyStore::IndexSpec &spec,
+                         SQLiteKeyStore *keyStore,
+                         const std::string &indexTableName,
+                         const std::string &indexSQL);
+        void deleteIndex(const IndexSpec&);
+        IndexSpec getIndex(slice name);
+        std::vector<IndexSpec> getIndexes(const KeyStore*);
+
     private:
         friend class SQLiteKeyStore;
 
         bool decrypt();
         int _exec(const std::string &sql);
+
+        bool indexTableExists();
+        void ensureIndexTableExists();
+        void registerIndex(const KeyStore::IndexSpec&,
+                           const std::string &keyStoreName,
+                           const std::string &indexTableName);
+        void unregisterIndex(slice indexName);
+        void garbageCollectIndexTable(const std::string &tableName);
+        IndexSpec specFromStatement(SQLite::Statement &stmt);
+        std::vector<IndexSpec> getIndexesOldStyle(const KeyStore *store =nullptr);
 
         std::unique_ptr<SQLite::Database>    _sqlDb;         // SQLite database object
         std::unique_ptr<SQLite::Statement>   _getLastSeqStmt, _setLastSeqStmt;

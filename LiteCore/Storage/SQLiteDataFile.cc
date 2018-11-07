@@ -56,7 +56,7 @@ namespace litecore {
 
     // Min/max user_version of db files I can read
     static const int kMinUserVersion = 201;
-    static const int kMaxUserVersion = 299;
+    static const int kMaxUserVersion = 399;
 
     // SQLite page size
     static const int64_t kPageSize = 4096;
@@ -129,6 +129,9 @@ namespace litecore {
 
     SQLiteDataFile::Factory::Factory() {
         // One-time initialization at startup:
+        SQLite::Exception::logger = [](const SQLite::Exception &x) {
+            LogToAt(SQL, Error, "%s (%d/%d)", x.what(), x.getErrorCode(), x.getExtendedErrorCode());
+        };
         Assert(sqlite3_libversion_number() >= 300900, "LiteCore requires SQLite 3.9+");
         sqlite3_config(SQLITE_CONFIG_LOG, sqlite3_log_callback, NULL);
 #if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
@@ -188,7 +191,9 @@ namespace litecore {
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
             int userVersion = _sqlDb->execAndGet("PRAGMA user_version");
+            bool isNew = false;
             if (userVersion == 0) {
+                isNew = true;
                 // Configure persistent db settings, and create the schema:
                 _exec("PRAGMA journal_mode=WAL; "        // faster writes, better concurrency
                      "PRAGMA auto_vacuum=incremental; " // incremental vacuum mode
@@ -455,6 +460,14 @@ namespace litecore {
         return getSchema(name, "table", name, sql);
     }
 
+
+    // Returns true if an index/table exists in the database with the given type and SQL schema
+    bool SQLiteDataFile::schemaExistsWithSQL(const string &name, const string &type,
+                                             const string &tableName, const string &sql) {
+        string existingSQL;
+        return getSchema(name, type, tableName, existingSQL) && existingSQL == sql;
+    }
+
     
     sequence_t SQLiteDataFile::lastSequence(const string& keyStoreName) const {
         sequence_t seq = 0;
@@ -529,16 +542,11 @@ namespace litecore {
             for (int i = 0; i < nCols; ++i) {
                 SQLite::Column col = stmt.getColumn(i);
                 switch (col.getType()) {
-                    case SQLITE_NULL:
-                        enc.writeNull(); break;
-                    case SQLITE_INTEGER:
-                        enc.writeInt(col.getInt64()); break;
-                    case SQLITE_FLOAT:
-                        enc.writeDouble(col.getDouble()); break;
-                    case SQLITE_TEXT:
-                        enc.writeString(col.getString()); break;
-                    case SQLITE_BLOB:
-                        enc.writeData(slice(col.getBlob(), col.getBytes())); break;
+                    case SQLITE_NULL:   enc.writeNull(); break;
+                    case SQLITE_INTEGER:enc.writeInt(col.getInt64()); break;
+                    case SQLITE_FLOAT:  enc.writeDouble(col.getDouble()); break;
+                    case SQLITE_TEXT:   enc.writeString(col.getString()); break;
+                    case SQLITE_BLOB:   enc.writeData(slice(col.getBlob(), col.getBytes())); break;
                 }
             }
             enc.endArray();
