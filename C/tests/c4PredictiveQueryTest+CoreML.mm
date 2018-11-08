@@ -19,6 +19,7 @@
 #include "c4PredictiveQuery.h"
 #include "CoreMLPredictiveModel.hh"
 #include "c4QueryTest.hh"
+#include "c4.hh"
 #include "fleece/Fleece.hh"
 #include <CoreML/CoreML.h>
 #include <array>
@@ -211,15 +212,38 @@ TEST_CASE_METHOD(CoreMLImageTest, "CoreML Image Query", "[Query][Predict][C]") {
 
 
 
+// These tests are skipped by default because the CoreML model is too large to include in the Git repo.
+// You can download it at https://github.com/iwantooxxoox/Keras-OpenFace/blob/master/model/OpenFace.mlmodel
+// and copy it to C/tests/data/faces/OpenFace.mlmodel .
 class CoreMLFaceTest : public CoreMLTest {
 public:
     CoreMLFaceTest()
     :CoreMLTest("", "face", "faces/OpenFace.mlmodel", false)
-    { }
+    {
+        if (_model) {
+            TransactionHelper t(db);
+            addDocWithImage("adams");
+            addDocWithImage("carell");
+            addDocWithImage("clapton-1");
+            addDocWithImage("clapton-2");
+            addDocWithImage("lennon-1");
+            addDocWithImage("lennon-2");
+        }
+    }
 
     void addDocWithImage(const string &baseName) {
         auto image = readFile(sFixturesDir + "faces/" + baseName + ".png");
         addDocWithAttachments(slice(baseName), {string(image)}, "image/png");
+    }
+
+    static constexpr const char* kPrediction =
+            "['PREDICTION()', 'face', {data: ['BLOB', '.attached[0]']}, '.output']";
+
+    void createIndex() {
+        C4Log("-------- Creating index");
+        REQUIRE(c4db_createIndex(db, C4STR("faces"),
+                                 slice("[" + json5(kPrediction) + "]"),
+                                 kC4PredictiveIndex, nullptr, nullptr));
     }
 
     using face = array<double,128>;
@@ -232,32 +256,15 @@ public:
     }
 };
 
-// This test is skipped by default because the CoreML model is too large to include in the Git repo.
-// You can download it at https://docs-assets.developer.apple.com/coreml/models/MobileNet.mlmodel
-// and copy it to C/tests/data/imagePrediction/MobileNet.mlmodel .
-TEST_CASE_METHOD(CoreMLFaceTest, "CoreML Face query", "[Query][Predict][C]") {
+TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face query", "[Query][Predict][C]") {
     if (!_model)
         return;
-    {
-        TransactionHelper t(db);
-        addDocWithImage("adams");
-        addDocWithImage("carell");
-        addDocWithImage("clapton-1");
-        addDocWithImage("clapton-2");
-        addDocWithImage("lennon-1");
-        addDocWithImage("lennon-2");
-    }
 
-    string prediction = "['PREDICTION()', 'face', {data: ['BLOB', '.attached[0]']}, '.output']";
-    auto queryString = json5("{WHAT: [['._id'], " + prediction + "], ORDER_BY: [['._id']]}");
+    auto queryString = json5("{WHAT: [['._id'], " + string(kPrediction) + "], ORDER_BY: [['._id']]}");
 
     for (int pass = 0; pass <= 1; ++pass) {
-        if (pass == 1) {
-            // Create an index:
-            C4Log("-------- Creating index");
-            REQUIRE(c4db_createIndex(db, C4STR("faces"),
-                                     slice("[" + json5(prediction) + "]"), kC4PredictiveIndex, nullptr, nullptr));
-        }
+        if (pass == 1)
+            createIndex();
         compileSelect(queryString);
         alloc_slice explanation(c4query_explain(query));
         C4Log("%.*s", SPLAT(explanation));
@@ -283,6 +290,46 @@ TEST_CASE_METHOD(CoreMLFaceTest, "CoreML Face query", "[Query][Predict][C]") {
             cerr << "\n";
         }
     }
+}
+
+
+TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face similarity query", "[Query][Predict][C]") {
+    if (!_model)
+        return;
+
+    string similarity = "['euclidean_distance()', ['$vector'], " + string(kPrediction) + "]";
+
+    // Get the vector of one document:
+    compileSelect(json5("{WHAT: [" + string(kPrediction) + "], WHERE: ['=', ['._id'], 'lennon-2']}"));
+    C4Error error;
+    c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, nullslice, &error);
+    INFO("c4query_run got error " << error.domain << "/" << error.code);
+    REQUIRE(e);
+    bool ok = (c4queryenum_next(e, &error));
+    INFO("c4queryenum_next got error " << error.domain << "/" << error.code);
+    REQUIRE(ok);
+    Value targetVector = Array::iterator(e->columns)[0];
+
+    auto queryString = json5("{WHAT: [['._id'], " + similarity + "], ORDER_BY: [" + similarity + "]}");
+    compileSelect(queryString);
+
+    JSONEncoder enc;
+    enc.beginDict();
+    enc.writeKey("vector"_sl);
+    enc.writeValue(targetVector);
+    enc.endDict();
+    auto params = enc.finish().asString();
+    C4Log("Params = %s", params.c_str());
+
+    auto collect = [=](C4QueryEnumerator *e) {
+        Array::iterator i(e->columns);
+        string docID = i[0].asString().asString();
+        double similarity = i[1].asDouble();
+        C4Log("%s\t%f", docID.c_str(), similarity);
+        return docID;
+    };
+    auto results = runCollecting<string>(params.c_str(), collect);
+    CHECK(results == (vector<string>{ "lennon-2", "lennon-1", "carell", "adams", "clapton-1", "clapton-2" }));
 }
 
 
