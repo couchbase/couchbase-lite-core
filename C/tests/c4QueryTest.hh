@@ -93,8 +93,13 @@ public:
             REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
             if (e->missingColumns & 1)
                 return string("MISSING");
-            fleece::alloc_slice docID = FLValue_ToString(FLArrayIterator_GetValueAt(&e->columns, 0));
-            return docID.asString();
+            FLValue val = FLArrayIterator_GetValueAt(&e->columns, 0);
+            fleece::alloc_slice result;
+            if (FLValue_GetType(val) == kFLString)
+                result = FLValue_ToString(val);
+            else
+                result = FLValue_ToJSON(val);
+            return result.asString();
         });
     }
 

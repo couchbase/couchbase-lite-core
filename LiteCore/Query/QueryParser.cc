@@ -951,7 +951,13 @@ namespace litecore {
         require(isAlphanumericOrUnderscore(parameter),
                 "Invalid query parameter name '%.*s'", SPLAT(parameter));
         _parameters.insert(paramStr);
-        _sql << "$_" << paramStr;
+
+        if (_context.size() >= 2 && _context[_context.size()-2] == &kResultListOperation) {
+            // Returning a parameter directly is a special case; ensure it's treated as Fleece:
+            _sql << kUnnestedValueFnName << "($_" << paramStr << ")";
+        } else {
+            _sql << "$_" << paramStr;
+        }
     }
 
 

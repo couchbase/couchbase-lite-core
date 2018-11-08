@@ -87,6 +87,21 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
 }
 
 
+// Check binding arrays and dicts
+N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query binding types", "[Query][C]") {
+    compileSelect(json5("{WHAT: [['$param']], LIMIT: 1}"));
+    CHECK(run("{\"param\": 177}") == (vector<string>{"177"}));
+    CHECK(run("{\"param\": \"foo\"}") == (vector<string>{"foo"}));
+    CHECK(run("{\"param\": [1, 2, [3, 4]]}") == (vector<string>{"[1,2,[3,4]]"}));
+    CHECK(run("{\"param\": {\"foo\": 17}}") == (vector<string>{"{\"foo\":17}"}));
+
+    compileSelect(json5("{WHAT: [['array_count()', ['$param']]], LIMIT: 1}"));
+    CHECK(run("{\"param\": [1, 2, [3, 4]]}") == (vector<string>{"3"}));
+    compileSelect(json5("{WHAT: [['_.', ['$param'], 'foo']], LIMIT: 1}"));
+    CHECK(run("{\"param\": {\"foo\": 17}}") == (vector<string>{"17"}));
+}
+
+
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query ANY", "[Query][C]") {
     compile(json5("['ANY', 'like', ['.', 'likes'], ['=', ['?', 'like'], 'climbing']]"));
     CHECK(run() == (vector<string>{"0000017", "0000021", "0000023", "0000045", "0000060"}));
