@@ -389,6 +389,8 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Changes", "[Database][C]") {
     REQUIRE(seq == (C4SequenceNumber)94);
 }
 
+static constexpr int secs = 1000;
+
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     C4Error err;
     CHECK(c4db_nextDocExpiration(db) == 0);
@@ -396,10 +398,10 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
 
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
-    uint64_t expire = time(nullptr) + 1;
+    C4Timestamp expire = c4_now() + 1*secs;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
     
-    expire = time(nullptr) + 2;
+    expire = c4_now() + 2*secs;
     // Make sure setting it to the same is also true
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
@@ -413,28 +415,28 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
 
     C4Slice docID4 = C4STR("expire_me_later");
     createRev(docID4, kRevID, kFleeceBody);
-    REQUIRE(c4doc_setExpiration(db, docID4, expire + 100, &err));
+    REQUIRE(c4doc_setExpiration(db, docID4, expire + 100*secs, &err));
 
-    REQUIRE(!c4doc_setExpiration(db, "nonexistent"_sl, expire + 50, &err));
+    REQUIRE(!c4doc_setExpiration(db, "nonexistent"_sl, expire + 50*secs, &err));
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorNotFound);
 
     CHECK(c4doc_getExpiration(db, docID)  == expire);
     CHECK(c4doc_getExpiration(db, docID2) == expire);
     CHECK(c4doc_getExpiration(db, docID3) == 0);
-    CHECK(c4doc_getExpiration(db, docID4) == expire + 100);
+    CHECK(c4doc_getExpiration(db, docID4) == expire + 100*secs);
     CHECK(c4doc_getExpiration(db, "nonexistent"_sl) == 0);
     CHECK(c4db_nextDocExpiration(db) == expire);
 
     // Wait for the expiration time to pass:
     C4Log("---- Wait till expiration time...");
     sleep(2u);
-    REQUIRE(time(nullptr) >= expire);
+    REQUIRE(c4_now() >= expire);
 
     C4Log("---- Purge expired docs");
     REQUIRE(c4db_purgeExpiredDocs(db, &err) == 2);
 
-    CHECK(c4db_nextDocExpiration(db) == expire + 100);
+    CHECK(c4db_nextDocExpiration(db) == expire + 100*secs);
 
     C4Log("---- Purge expired docs (again)");
     CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
@@ -444,7 +446,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
 {
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
-    time_t expire = time(nullptr) + 2;
+    time_t expire = c4_now() + 2*secs;
     C4Error err;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
     REQUIRE(c4doc_getExpiration(db, docID) == expire);
@@ -469,7 +471,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
 
-    uint64_t expire = time(nullptr) + 1;
+    uint64_t expire = c4_now() + 1*secs;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &error));
 
     CHECK(c4db_nextDocExpiration(db2) == expire);

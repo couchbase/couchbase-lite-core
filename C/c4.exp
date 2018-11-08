@@ -9,6 +9,7 @@ _kC4DatabaseFilenameExtension
 
 _c4_getBuildInfo
 _c4_getVersion
+_c4_now
 
 _kC4Cpp_DefaultLog
 _kC4DefaultLog
