@@ -65,11 +65,9 @@ return fleece;
         switch (sqlite3_value_type(arg)) {
             case SQLITE_BLOB: {
                 switch (sqlite3_value_subtype(arg)) {
+                    case 0:                          // blob w/o subtype is a query param
                     case kFleeceDataSubtype: {
-                        slice fleece = valueAsSlice(arg);
-                        if (!fleece)
-                            return Dict::kEmpty;             // No body; may be deleted rev
-                        const Value *root = Value::fromTrustedData(fleece);
+                        const Value *root = Value::fromTrustedData(valueAsSlice(arg));
                         if (root)
                             return root;
                         break;

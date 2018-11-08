@@ -360,13 +360,14 @@ namespace litecore {
                         case kString:
                             _statement->bind(sqlKey, (string)val->asString());
                             break;
-                        case kData: {
-                            slice str = val->asString();
-                            _statement->bind(sqlKey, str.buf, (int)str.size);
+                        default: {
+                            // Encode other types as a Fleece blob:
+                            Encoder enc;
+                            enc.writeValue(val);
+                            alloc_slice asFleece = enc.finish();
+                            _statement->bind(sqlKey, asFleece.buf, (int)asFleece.size);
                             break;
                         }
-                        default:
-                            error::_throw(error::InvalidParameter);
                     }
                 } catch (const SQLite::Exception &x) {
                     if (x.getErrorCode() == SQLITE_RANGE)
