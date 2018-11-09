@@ -34,9 +34,8 @@ public:
 
     DbEndpoint(C4Database* db);
 
-    virtual bool isDatabase() const override {
-        return true;
-    }
+    virtual bool isDatabase() const override        {return true;}
+    alloc_slice path() const;
 
     virtual void prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint*) override;
     void setBidirectional(bool bidi)                {_bidirectional = bidi;}

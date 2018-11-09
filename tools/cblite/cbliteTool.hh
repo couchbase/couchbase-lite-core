@@ -33,6 +33,7 @@ using namespace std;
 using namespace fleece;
 
 class Endpoint;
+class DbEndpoint;
 
 
 class CBLiteTool : public Tool {
@@ -65,6 +66,7 @@ private:
     void copyDatabase()                                     {copyDatabase(false);}
     void copyDatabaseReversed()                             {copyDatabase(true);}
     void copyDatabase(Endpoint *src, Endpoint *dst);
+    void copyLocalToLocalDatabase(DbEndpoint *src, DbEndpoint *dst);
 
     // file command
     void fileUsage();
@@ -198,7 +200,7 @@ private:
     void rawFlag()       {_prettyPrint = false; _enumFlags |= kC4IncludeBodies;}
     void readonlyFlag()  {_dbFlags = (_dbFlags | kC4DB_ReadOnly) & ~kC4DB_Create;}
     void remotesFlag()   {_showRemotes = true;}
-    void replicateFlag() {_listenerConfig.apis |= kC4SyncAPI;}
+    void replicateFlag() {_replicate = true;}
     void revIDFlag()     {_showRevID = true;}
     void seqFlag()       {_listBySeq = true;}
     void updateDocFlag() {_putMode = kUpdate;}
@@ -236,6 +238,7 @@ private:
     bool _createDst {true};
     bool _bidi {false};
     bool _continuous {false};
+    bool _replicate {false};
     alloc_slice _jsonIDProperty;
     string _user;
 

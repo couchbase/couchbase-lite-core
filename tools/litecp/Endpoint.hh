@@ -34,9 +34,8 @@ public:
     static Endpoint* create(C4Database*);
     virtual ~Endpoint() { }
 
-    virtual bool isDatabase() const {
-        return false;
-    }
+    virtual bool isDatabase() const     {return false;}
+    virtual bool isRemote() const       {return false;}
 
     virtual void prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint *other) {
         if (docIDProperty.size > 0)

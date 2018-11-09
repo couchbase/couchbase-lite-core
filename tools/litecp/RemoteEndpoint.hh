@@ -26,9 +26,8 @@ public:
     :Endpoint(spec)
     { }
 
-    virtual bool isDatabase() const override {
-        return true;
-    }
+    virtual bool isDatabase() const override        {return true;}
+    virtual bool isRemote() const override          {return true;}
 
     virtual void prepare(bool isSource, bool mustExist, slice docIDProperty, const Endpoint*) override;
     virtual void copyTo(Endpoint *dst, uint64_t limit) override;

@@ -40,7 +40,7 @@ void CBLiteTool::fileInfo() {
     alloc_slice pathSlice = c4db_getPath(_db);
     auto nDocs = c4db_getDocumentCount(_db);
     auto lastSeq = c4db_getLastSequence(_db);
-    alloc_slice indexesFleece = c4db_getIndexes(_db, nullptr);
+    alloc_slice indexesFleece = c4db_getIndexes(_db, false, nullptr);
     auto indexes = Value::fromData(indexesFleece).asArray();
 
     FilePath path(pathSlice.asString());

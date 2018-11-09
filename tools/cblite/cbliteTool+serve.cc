@@ -92,6 +92,9 @@ void CBLiteTool::serve() {
         return;
     }
 
+    if (_replicate)
+        _listenerConfig.apis |= kC4SyncAPI;
+
     bool serveDirectory = !_listenerDirectory.empty();
     if (serveDirectory) {
         if (_db)

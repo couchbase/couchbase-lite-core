@@ -73,6 +73,15 @@ void DbEndpoint::prepare(bool isSource, bool mustExist, slice docIDProperty, con
 }
 
 
+alloc_slice DbEndpoint::path() const {
+    if (_spec.empty())
+        return c4db_getPath(_db);
+    else
+        return alloc_slice(_spec);
+
+}
+
+
 void DbEndpoint::enterTransaction() {
     if (!_inTransaction) {
         C4Error err;
