@@ -65,6 +65,9 @@ extern "C" {
             @return  The output of the prediction function, encoded as a Fleece dictionary,
                     or as {NULL, 0} if there is no output. */
         C4SliceResult (*prediction)(void* context, FLDict C4NONNULL input, C4Error *error);
+
+        /** Called if the model is unregistered, so it can release resources. */
+        void (*unregistered)(void* context);
     } C4PredictiveModel;
 
 

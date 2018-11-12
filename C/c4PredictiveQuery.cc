@@ -43,6 +43,12 @@ public:
         }
     }
 
+protected:
+    virtual ~C4PredictiveModelInternal() {
+        if (_c4Model.unregistered)
+            _c4Model.unregistered(_c4Model.context);
+    }
+
 private:
     C4PredictiveModel _c4Model;
 };
