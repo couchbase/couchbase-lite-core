@@ -295,13 +295,17 @@ extern "C" {
     
     /** Returns the names of all indexes in the database.
         @param database  The database to check
-        @param fullInfo  If false, the array just contains names (strings).
-                         If true, it contains dicts with multiple index attributes.
         @param outError  On failure, will be set to the error status.
         @return  A Fleece-encoded array of strings, or NULL on failure. */
     C4SliceResult c4db_getIndexes(C4Database* database C4NONNULL,
-                                  bool fullInfo,
                                   C4Error* outError) C4API;
+
+    /** Returns information about all indexes in the database.
+        @param database  The database to check
+        @param outError  On failure, will be set to the error status.
+        @return  A Fleece-encoded array of dictionaries, or NULL on failure. */
+    C4SliceResult c4db_getIndexesInfo(C4Database* database C4NONNULL,
+                                    C4Error* outError) C4API;
 
     /** @} */
 

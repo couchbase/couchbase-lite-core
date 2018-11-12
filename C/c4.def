@@ -113,6 +113,7 @@ c4db_enumerateAllDocs
 c4db_createIndex
 c4db_deleteIndex
 c4db_getIndexes
+c4db_getIndexesInfo
 c4enum_next
 c4enum_getDocumentInfo
 c4enum_getDocument

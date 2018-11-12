@@ -283,8 +283,7 @@ bool c4db_deleteIndex(C4Database *database,
     });
 }
 
-C4SliceResult c4db_getIndexes(C4Database* database, bool fullInfo, C4Error* outError) noexcept
-{
+static C4SliceResult getIndexes(C4Database* database, bool fullInfo, C4Error* outError) noexcept {
     return tryCatch<C4SliceResult>(outError, [&]{
         Encoder enc;
         enc.beginArray();
@@ -302,4 +301,13 @@ C4SliceResult c4db_getIndexes(C4Database* database, bool fullInfo, C4Error* outE
         enc.endArray();
         return C4SliceResult(enc.finish());
     });
+}
+
+C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept {
+    return getIndexes(database, false, outError);
+}
+
+
+C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* outError) noexcept {
+    return getIndexes(database, true, outError);
 }
