@@ -28,7 +28,7 @@ namespace litecore {
 
     // SQLite value subtypes to represent type info that SQL doesn't convey:
     enum {
-        kFleeceDataSubtype     = 0x66,  // Blob contains encoded Fleece data
+        kPlainBlobSubtype     = 0x66,   // Blob is raw data (otherwise assumed to be Fleece)
         kFleeceNullSubtype,             // Zero-length blob representing JSON null
         kFleeceIntBoolean,              // Integer is a boolean (true or false)
         kFleeceIntUnsigned,             // Integer is unsigned
@@ -88,15 +88,15 @@ namespace litecore {
     void setResultTextFromSlice(sqlite3_context*, slice) noexcept;
 
     // Sets the function result to a blob, with optional subtype
-    void setResultBlobFromData(sqlite3_context*, slice, int subtype =0) noexcept;
-    void setResultBlobFromData(sqlite3_context*, alloc_slice, int subtype =0) noexcept;
+    void setResultBlobFromData(sqlite3_context*, slice, int subtype =kPlainBlobSubtype) noexcept;
+    void setResultBlobFromData(sqlite3_context*, alloc_slice, int subtype =kPlainBlobSubtype) noexcept;
 
-    // Sets the function result to a Fleece container (a blob with kFleeceDataSubtype)
+    // Sets the function result to a Fleece container (a blob with subtype 0)
     static inline void setResultBlobFromFleeceData(sqlite3_context *ctx, slice blob) noexcept {
-        setResultBlobFromData(ctx, blob, kFleeceDataSubtype);
+        setResultBlobFromData(ctx, blob, 0);
     }
     static inline void setResultBlobFromFleeceData(sqlite3_context *ctx, alloc_slice blob) noexcept {
-        setResultBlobFromData(ctx, blob, kFleeceDataSubtype);
+        setResultBlobFromData(ctx, blob, 0);
     }
 
     // Encodes the Value as a Fleece container and sets it as the result

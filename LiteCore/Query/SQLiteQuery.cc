@@ -337,12 +337,15 @@ namespace litecore {
 
         void bindParameters(slice json) {
             alloc_slice fleeceData;
-            fleeceData = JSONConverter::convertJSON(json);
+            if (json[0] == '{' && json[json.size-1] == '}')
+                fleeceData = JSONConverter::convertJSON(json);
+            else
+                fleeceData = json;
             const Dict *root = Value::fromData(fleeceData)->asDict();
             if (!root)
                 error::_throw(error::InvalidParameter);
             for (Dict::iterator it(root); it; ++it) {
-                auto key = (string)it.key()->asString();
+                auto key = (string)it.keyString();
                 _unboundParameters.erase(key);
                 auto sqlKey = string("$_") + key;
                 const Value *val = it.value();

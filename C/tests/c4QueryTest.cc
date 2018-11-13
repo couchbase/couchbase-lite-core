@@ -89,11 +89,28 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query bindings", "[Query][C]") {
 
 // Check binding arrays and dicts
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query binding types", "[Query][C]") {
-    compileSelect(json5("{WHAT: [['$param']], LIMIT: 1}"));
-    CHECK(run("{\"param\": 177}") == (vector<string>{"177"}));
-    CHECK(run("{\"param\": \"foo\"}") == (vector<string>{"foo"}));
-    CHECK(run("{\"param\": [1, 2, [3, 4]]}") == (vector<string>{"[1,2,[3,4]]"}));
-    CHECK(run("{\"param\": {\"foo\": 17}}") == (vector<string>{"{\"foo\":17}"}));
+    vector<string> queries = {
+        "['$param']",
+        "['_.', {foo: ['$param']}, 'foo']",
+        "['_.', ['[]', 1, ['$param'], 3], '[1]']",
+    };
+    for (string what : queries) {
+        C4Log("---- %s ----", what.c_str());
+        compileSelect(json5("{WHAT: [" + what + "], LIMIT: 1}"));
+        CHECK(run("{\"param\": 177}") == (vector<string>{"177"}));
+        CHECK(run("{\"param\": \"foo\"}") == (vector<string>{"foo"}));
+        CHECK(run("{\"param\": [1, 2, [3, 4]]}") == (vector<string>{"[1,2,[3,4]]"}));
+        CHECK(run("{\"param\": {\"foo\": 17}}") == (vector<string>{"{\"foo\":17}"}));
+
+        // bind a blob:
+        Encoder enc;
+        enc.beginDict();
+        enc.writeKey("param"_sl);
+        enc.writeData("\001\002\003\004\005"_sl);
+        enc.endDict();
+        auto binding = enc.finish();
+        CHECK(run(string(binding).c_str()) == (vector<string>{"\"AQIDBAU=\""})); // (base64 encoding)
+    }
 
     compileSelect(json5("{WHAT: [['array_count()', ['$param']]], LIMIT: 1}"));
     CHECK(run("{\"param\": [1, 2, [3, 4]]}") == (vector<string>{"3"}));

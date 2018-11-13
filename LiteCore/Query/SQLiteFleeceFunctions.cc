@@ -181,10 +181,10 @@ namespace litecore {
                         setResultBlobFromEncodedValue(ctx, value);
                         break;
                     }
-                    case kFleeceDataSubtype:
+                    case 0:
                         sqlite3_result_value(ctx, arg);
                         break;
-                    default: {
+                    case kPlainBlobSubtype: {
                         // A plain blob/data value has to be wrapped in a Fleece container to avoid
                         // misinterpretation, since SQLiteQueryRunner will assume all blob results
                         // are Fleece containers.
@@ -331,17 +331,17 @@ namespace litecore {
                 break;
             case SQLITE_BLOB: {
                 switch (sqlite3_value_subtype(arg)) {
-                    case kFleeceDataSubtype: {
-                        enc.writeKey(key);
+                    case 0: {
                         const Value *value = fleeceParam(ctx, arg);
                         if (!value)
                             return false; // error occurred
+                        enc.writeValue(value);
                         break;
                     }
                     case kFleeceNullSubtype:
                         enc.writeNull();
                         break;
-                    case 0:
+                    case kPlainBlobSubtype:
                         enc.writeData(valueAsSlice(arg));
                         break;
                     default:

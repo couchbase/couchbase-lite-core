@@ -121,9 +121,9 @@ extern "C" {
         Indexes must be created explicitly by calling `c4db_createIndex`.
         @param query  The compiled query to run.
         @param options  Query options; only `skip` and `limit` are currently recognized.
-        @param encodedParameters  Optional JSON object whose keys correspond to the named
-                parameters in the query expression, and values correspond to the values to
-                bind. Any unbound parameters will be `null`.
+        @param encodedParameters  Optional JSON- or Fleece-encoded dictionary whose keys correspond
+                to the named parameters in the query expression, and values correspond to the
+                values to bind. Any unbound parameters will be `null`.
         @param outError  On failure, will be set to the error status.
         @return  An enumerator for reading the rows, or NULL on error. */
     C4QueryEnumerator* c4query_run(C4Query *query C4NONNULL,

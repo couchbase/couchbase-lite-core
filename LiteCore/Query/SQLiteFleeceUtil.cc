@@ -35,29 +35,25 @@ namespace litecore {
     const char* const kFleeceValuePointerType = "FleeceValue";
 
 
-    static slice argAsFleeceData(sqlite3_context* ctx, sqlite3_value *arg, bool &copied) {
+    static slice argAsDocBody(sqlite3_context* ctx, sqlite3_value *arg, bool &copied) {
         copied = false;
         auto type = sqlite3_value_type(arg);
         if (type == SQLITE_NULL)
             return nullslice;             // No 'body' column; may be deleted doc
         Assert(type == SQLITE_BLOB);
-        auto blobType = sqlite3_value_subtype(arg);
+        Assert(sqlite3_value_subtype(arg) == 0);
         slice fleece = valueAsSlice(arg);
-        if (blobType == 0) {
-            auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-            fleece = funcCtx->accessor(fleece);
+        auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
+        fleece = funcCtx->accessor(fleece);
 
-            if (size_t(fleece.buf) & 1) {
-                // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
-                // revision data, so it could occur. Now that it's not allowed, we have to work around
-                // this by copying the data to an even address. (#589)
-                fleece = fleece.copy();
-                copied = true;
-            }
-        } else {
-            Assert(blobType == kFleeceDataSubtype);
+        if (size_t(fleece.buf) & 1) {
+            // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
+            // revision data, so it could occur. Now that it's not allowed, we have to work around
+            // this by copying the data to an even address. (#589)
+            fleece = fleece.copy();
+            copied = true;
         }
-return fleece;
+        return fleece;
     }
 
 
@@ -65,8 +61,7 @@ return fleece;
         switch (sqlite3_value_type(arg)) {
             case SQLITE_BLOB: {
                 switch (sqlite3_value_subtype(arg)) {
-                    case 0:                          // blob w/o subtype is a query param
-                    case kFleeceDataSubtype: {
+                    case 0: {
                         const Value *root = Value::fromTrustedData(valueAsSlice(arg));
                         if (root)
                             return root;
@@ -132,7 +127,7 @@ return fleece;
 
 
     QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
-    :Scope(argAsFleeceData(ctx, argv[0], _copied), getSharedKeys(ctx))
+    :Scope(argAsDocBody(ctx, argv[0], _copied), getSharedKeys(ctx))
     {
         if (data()) {
             root = Value::fromTrustedData(data());
