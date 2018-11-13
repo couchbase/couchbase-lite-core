@@ -21,7 +21,7 @@
 #include "Record.hh"
 #include "Doc.hh"
 #include <memory>
-#include <queue>
+#include <deque>
 
 namespace fleece { namespace impl {
     class Scope;
@@ -83,6 +83,6 @@ namespace litecore {
 
         KeyStore&       _store;
         Record          _rec;
-        std::queue<fleece::impl::Scope> _fleeceScopes;
+        std::deque<fleece::impl::Scope> _fleeceScopes;
     };
 }

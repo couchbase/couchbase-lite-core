@@ -50,6 +50,7 @@ namespace litecore {
     }
 
     VersionedDocument::~VersionedDocument() {
+        _fleeceScopes.clear(); // do this before the memory is freed (by _rec)
     }
 
     void VersionedDocument::read() {
@@ -86,7 +87,7 @@ namespace litecore {
         // A Scope associates the SharedKeys with the Fleece data in the body, so Fleece Dict
         // accessors can decode the int keys.
         if (body)
-            _fleeceScopes.emplace(body, _store.dataFile().documentKeys());
+            _fleeceScopes.emplace_back(body, _store.dataFile().documentKeys());
         return body;
     }
 
