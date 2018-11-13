@@ -54,10 +54,12 @@ public:
             NSError *error;
             if (required || [url checkResourceIsReachableAndReturnError: nullptr]) {
                 NSURL* compiled = [MLModel compileModelAtURL: url error: &error];
-                INFO("Error" << (error.description.UTF8String ?: "none"));
+                if (!compiled)
+                    INFO("Error" << (error.description.UTF8String ?: "none"));
                 REQUIRE(compiled);
                 auto model = [MLModel modelWithContentsOfURL: compiled error: &error];
-                INFO("Error" << (error.description.UTF8String ?: "none"));
+                if (!model)
+                    INFO("Error" << (error.description.UTF8String ?: "none"));
                 REQUIRE(model);
                 _model.reset(new cbl::CoreMLPredictiveModel(model));
                 _model->registerWithName(modelName);

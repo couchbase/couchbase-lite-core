@@ -69,7 +69,7 @@ namespace cbl {
         NSLinguisticTagger* _tagger {nil};
 
         fleece::alloc_slice _imagePropertyName;
-        VNCoreMLModel* _visionModel;
+        VNCoreMLModel* _visionModel {nil};
 
         static constexpr unsigned kMaxClassifications {5};
         static constexpr double kConfidenceCutoffRatio = 0.1;
