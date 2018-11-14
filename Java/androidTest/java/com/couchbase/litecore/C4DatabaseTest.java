@@ -362,7 +362,7 @@ public class C4DatabaseTest extends C4BaseTest {
         createRev(docID, kRevID, kFleeceBody);
 
         // unix time
-        long expire = System.currentTimeMillis() / 1000 + 1;
+        Long expire = System.currentTimeMillis() / 1000 + 1;
         db.setExpiration(docID, expire);
 
         expire = System.currentTimeMillis() / 1000 + 2;
@@ -382,7 +382,7 @@ public class C4DatabaseTest extends C4BaseTest {
 
         assertEquals(expire, db.getExpiration(docID));
         assertEquals(expire, db.getExpiration(docID2));
-        assertEquals(expire, db.nextDocExpiration());
+        assertEquals((long)expire, db.nextDocExpiration());
 
         // TODO: DB00x - Java does not hava the implementation of c4db_enumerateExpired and c4exp_next yet.
     }
@@ -396,7 +396,7 @@ public class C4DatabaseTest extends C4BaseTest {
         // unix time
         long expire = System.currentTimeMillis() / 1000 + 2;
         db.setExpiration(docID, expire);
-        db.setExpiration(docID, Long.MAX_VALUE);
+        db.setExpiration(docID, null);
 
         try {
             Thread.sleep(2 * 1000); // sleep 2 sec

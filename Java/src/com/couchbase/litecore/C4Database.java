@@ -170,13 +170,20 @@ public class C4Database implements C4Constants {
 
     // - Purging and Expiration
 
-    public void setExpiration(String docID, long timestamp)
+    public void setExpiration(String docID, Long timestamp)
             throws LiteCoreException {
-        C4Document.setExpiration(handle, docID, timestamp);
+        if(timestamp == null)
+            C4Document.setExpiration(handle, docID, 0);
+        else
+            C4Document.setExpiration(handle, docID, timestamp);
     }
 
-    public long getExpiration(String docID) {
-        return C4Document.getExpiration(handle, docID);
+    public Long getExpiration(String docID) {
+        long timestamp = C4Document.getExpiration(handle, docID);
+        if(timestamp == 0)
+            return null;
+        else
+            return timestamp;
     }
 
     // - Creating and Updating Documents
