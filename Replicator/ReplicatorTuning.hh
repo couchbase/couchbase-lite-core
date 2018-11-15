@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "Actor.hh"
+#include "Timer.hh"
 
 namespace litecore { namespace repl {
 
@@ -31,15 +31,18 @@ namespace litecore { namespace repl {
 
         //// DBWorker:
 
-        /* How long to wait before inserting new revisions. Larger values allow more revisions to
-            accumulate, resulting in larger transactions, meaning less disk I/O and time overhead
-            per revision. Smaller values reduce overall latency of pulls, reduce memory usage
-            (revs aren't kept in RAM as long) and can speed up overall throughput by keeping
-            kMaxActiveIncomingRevs low. */
-        constexpr actor::delay_t kInsertionDelay = std::chrono::milliseconds(25);
+        /* Number of new revisions to accumulate in memory before inserting them into the DB.
+           (Actually the queue may grow larger than this, since the insertion is triggered
+           asynchronously, and more revs may be added to the queue before it happens.) */
+        constexpr size_t kInsertionBatchSize = 100;
+
+        /* How long revisions can stay in the queue before triggering insertion into the DB,
+           if the queue size hasn't reached kInsertionBatchSize yet. */
+        constexpr actor::Timer::duration kInsertionDelay = std::chrono::milliseconds(25);
 
         /* Minimum document body size that will be considered for delta compression.
-            (This is the size of the Fleece encoding, which is usually smaller than the JSON.) */
+            (This is the size of the Fleece encoding, which is usually smaller than the JSON.)
+           This is not declared `constexpr`, so that the delta-sync unit tests can change it. */
         extern size_t kMinBodySizeForDelta; // = 200;
 
         //// Puller:

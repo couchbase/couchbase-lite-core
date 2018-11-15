@@ -56,7 +56,8 @@ namespace litecore { namespace repl {
     ,_db(c4db_retain(db))
     ,_blobStore(c4db_getBlobStore(db, nullptr))
     ,_remoteURL(remoteURL)
-    ,_revsToInsert(this, &DBWorker::_insertRevisionsNow, tuning::kInsertionDelay)
+    ,_revsToInsert(this, &DBWorker::_insertRevisionsNow,
+                   tuning::kInsertionDelay, tuning::kInsertionBatchSize)
     ,_revsToMarkSynced(this, &DBWorker::_markRevsSyncedNow, tuning::kInsertionDelay)
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
@@ -665,7 +666,7 @@ namespace litecore { namespace repl {
     void DBWorker::_sendRevision(Retained<RevToSend> request, MessageProgressCallback onProgress) {
         if (!connection())
             return;
-        logVerbose("Sending revision '%.*s' #%.*s",
+        logVerbose("Reading document '%.*s' #%.*s",
                    SPLAT(request->docID), SPLAT(request->revID));
 
         // Get the document & revision:
@@ -742,6 +743,8 @@ namespace litecore { namespace repl {
                 else
                     bodyEncoder.writeValue(root);
             }
+            logVerbose("Transmitting 'rev' message with '%.*s' #%.*s",
+                       SPLAT(request->docID), SPLAT(request->revID));
             sendRequest(msg, onProgress);
 
         } else {
