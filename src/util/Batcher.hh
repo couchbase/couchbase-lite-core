@@ -18,6 +18,8 @@
 
 #pragma once
 #include "Actor.hh"
+#include "Timer.hh"
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -37,10 +39,12 @@ namespace litecore { namespace actor {
             @param processor  The Actor method that should be called to process the queue.
             @param latency  How long to wait before calling the processor, after the first item
                             is added to the queue. */
-        Batcher(ACTOR *actor, Processor processor, delay_t latency ={})
+        Batcher(ACTOR *actor, Processor processor, Timer::duration latency ={}, size_t capacity = 0)
         :_actor(*actor)
         ,_processor(processor)
         ,_latency(latency)
+        ,_capacity(capacity)
+        ,_timer(std::bind(&Batcher::scheduledPop, this))
         { }
 
         /** Adds an item to the queue, and schedules a call to the Actor if necessary.
@@ -50,13 +54,27 @@ namespace litecore { namespace actor {
 
             if (!_items) {
                 _items.reset(new std::vector<Retained<ITEM>>);
-                _items->reserve(200);
+                _items->reserve(_capacity ? _capacity : 200);
             }
             _items->push_back(item);
             if (!_scheduled) {
+                // Schedule a pop as soon as an item is added:
                 _scheduled = true;
-                _actor.enqueueAfter(_latency, _processor);
+                if (_latency > Timer::duration(0))
+                    _timer.fireAfter(_latency);
+                else
+                    _actor.enqueue(_processor);
             }
+            if (_latency > Timer::duration(0) && _capacity > 0 && _items->size() == _capacity) {
+                // I'm full -- schedule a pop NOW
+                LogVerbose(SyncLog, "Batcher scheduling immediate pop");
+                _timer.stop();
+                _actor.enqueue(_processor);
+            }
+        }
+
+        void scheduledPop() {
+            _actor.enqueue(_processor);
         }
 
         /** Removes & returns all the items from  the queue, in the order they were added,
@@ -72,10 +90,13 @@ namespace litecore { namespace actor {
     private:
         ACTOR& _actor;
         Processor _processor;
-        delay_t _latency;
+        Timer::duration _latency;
+        size_t _capacity;
         std::mutex _mutex;
+        Timer _timer;
         Items _items;
         bool _scheduled {false};
+        size_t _generation {0};
     };
 
 } }
