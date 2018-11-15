@@ -348,16 +348,16 @@ namespace litecore { namespace repl {
                 maybeGetMoreChanges();          // I may now be eligible to send more changes
         }
 //        if (!_revsToSend.empty())
-//            log("Throttling sending revs; _revisionsInFlight=%u, _revisionBytesAwaitingReply=%u",
-//                _revisionsInFlight, _revisionBytesAwaitingReply);
+//            logVerbose("Throttling sending revs; _revisionsInFlight=%u/%u, _revisionBytesAwaitingReply=%llu/%u",
+//                       _revisionsInFlight, tuning::kMaxRevsInFlight,
+//                       _revisionBytesAwaitingReply, tuning::kMaxRevBytesAwaitingReply);
     }
 
     
     // Tells the DBWorker to send a "rev" message containing a revision body.
     void Pusher::sendRevision(Retained<RevToSend> rev) {
-        // Callback for after the peer receives the "rev" message:
         increment(_revisionsInFlight);
-        logVerbose("Uploading rev %.*s %.*s (seq #%llu) [%d/%d]",
+        logVerbose("Sending rev %.*s %.*s (seq #%llu) [%d/%d]",
                    SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
         _dbWorker->sendRevision(rev, asynchronize([=](MessageProgress progress) {
@@ -367,7 +367,7 @@ namespace litecore { namespace repl {
                 return;
             }
             if (progress.state == MessageProgress::kAwaitingReply) {
-                logDebug("Uploaded rev %.*s #%.*s (seq #%llu)",
+                logDebug("Transmitted 'rev' %.*s #%.*s (seq #%llu)",
                          SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                 decrement(_revisionsInFlight);
                 increment(_revisionBytesAwaitingReply, progress.bytesSent);

@@ -174,10 +174,12 @@ _versioning(kC4RevisionTrees)
 
         if (c4log_binaryFileLevel() == kC4LogNone) {
             string path = TempDir() + "LiteCoreAPITests.c4log";
-            C4Log("Beginning logging to %s", path.c_str());
+            C4Log("Beginning binary logging to %s", path.c_str());
             C4Error error;
             REQUIRE(c4log_writeToBinaryFile(kC4LogVerbose, c4str(path.c_str()), &error));
         }
+        if (getenv("LiteCoreTestsQuiet"))
+            c4log_setCallbackLevel(kC4LogWarning);
     });
     c4log_warnOnErrors(true);
 

@@ -84,6 +84,7 @@ public:
 
         // Bind the replicators' WebSockets and start them:
         LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
+        Stopwatch st;
         _replClient->start();
         _replServer->start();
 
@@ -94,8 +95,10 @@ public:
                 _cond.wait(lock);
         }
         
-        Log(">>> Replication complete <<<");
+        Log(">>> Replication complete (%.3f sec) <<<", st.elapsed());
         _checkpointID = _replClient->checkpointID();
+        _replClient = _replServer = nullptr;
+
         CHECK(_gotResponse);
         CHECK(_statusChangedCalls > 0);
         CHECK(_statusReceived.level == kC4Stopped);
@@ -278,21 +281,26 @@ public:
         });
     }
 
+#define fastREQUIRE(EXPR)  if (EXPR) ; else REQUIRE(EXPR)       // REQUIRE() is kind of expensive
+
     void compareDocs(C4Document *doc1, C4Document *doc2) {
         const auto kPublicDocumentFlags = (kDocDeleted | kDocConflicted | kDocHasAttachments);
 
-        REQUIRE(doc1->docID == doc2->docID);
-        REQUIRE(doc1->revID == doc2->revID);
-        REQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
+        fastREQUIRE(doc1->docID == doc2->docID);
+        fastREQUIRE(doc1->revID == doc2->revID);
+        fastREQUIRE((doc1->flags & kPublicDocumentFlags) == (doc2->flags & kPublicDocumentFlags));
 
         // Compare canonical JSON forms of both docs:
         Doc rev1 = c4::getFleeceDoc(doc1), rev2 = c4::getFleeceDoc(doc2);
-        alloc_slice json1 = rev1.root().toJSON(true, true);
-        alloc_slice json2 = rev2.root().toJSON(true, true);
-        CHECK(json1 == json2);
+        if (!rev1.root().isEqual(rev2.root())) {        // fast check to avoid expensive toJSON
+            alloc_slice json1 = rev1.root().toJSON(true, true);
+            alloc_slice json2 = rev2.root().toJSON(true, true);
+            CHECK(json1 == json2);
+        }
     }
 
     void compareDatabases(bool db2MayHaveMoreDocs =false, bool compareDeletedDocs =true) {
+        C4Log(">> Comparing databases...");
         C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
         if (compareDeletedDocs)
             options.flags |= kC4IncludeDeleted;
@@ -305,11 +313,12 @@ public:
         unsigned i = 0;
         while (c4enum_next(e1, &error)) {
             c4::ref<C4Document> doc1 = c4enum_getDocument(e1, &error);
-            REQUIRE(doc1);
+            fastREQUIRE(doc1);
             INFO("db document #" << i << ": '" << slice(doc1->docID).asString() << "'");
-            REQUIRE(c4enum_next(e2, &error));
+            bool ok = c4enum_next(e2, &error);
+            fastREQUIRE(ok);
             c4::ref<C4Document> doc2 = c4enum_getDocument(e2, &error);
-            REQUIRE(doc2);
+            fastREQUIRE(doc2);
             compareDocs(doc1, doc2);
             ++i;
         }

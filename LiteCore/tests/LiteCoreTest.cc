@@ -197,6 +197,8 @@ DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options
             LogDomain::writeEncodedLogsTo(path, LogLevel::Verbose,
                                           format("LiteCore %.*s", SPLAT(version)));
         }
+        if (getenv("LiteCoreTestsQuiet"))
+            LogDomain::setCallbackLogLevel(LogLevel::Warning);
         c4slice_free(version);
     });
     error::sWarnOnError = true;
