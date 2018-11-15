@@ -223,7 +223,8 @@ namespace litecore { namespace blip {
                         ++nulls;
                 DebugAssert((nulls & 1) == 0);
 #endif
-                _connection->logVerbose("Receiving %s", description().c_str());
+                if (_connection->willLog(LogLevel::Verbose))
+                    _connection->_logVerbose("Receiving %s", description().c_str());
 
                 if (!isError())
                     state = kBeginning;
@@ -247,7 +248,8 @@ namespace litecore { namespace blip {
                 _in.reset();
                 _complete = true;
 
-                _connection->logVerbose("Finished receiving %s", description().c_str());
+                if (_connection->willLog(LogLevel::Verbose))
+                    _connection->_logVerbose("Finished receiving %s", description().c_str());
                 state = kEnd;
             }
         }

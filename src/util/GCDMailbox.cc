@@ -42,6 +42,8 @@ namespace litecore { namespace actor {
     
     static char kQueueMailboxSpecificKey;
 
+    static const qos_class_t kQOS = QOS_CLASS_UTILITY;
+
     GCDMailbox::GCDMailbox(Actor *a, const std::string &name, GCDMailbox *parentMailbox)
     :_actor(a)
     {
@@ -49,10 +51,10 @@ namespace litecore { namespace actor {
         if (parentMailbox)
             targetQueue = parentMailbox->_queue;
         else
-            targetQueue = dispatch_get_global_queue(QOS_CLASS_UTILITY, 0);
+            targetQueue = dispatch_get_global_queue(kQOS, 0);
         auto nameCstr = name.empty() ? nullptr : name.c_str();
         dispatch_queue_attr_t attr = DISPATCH_QUEUE_SERIAL;
-        attr = dispatch_queue_attr_make_with_qos_class(attr, QOS_CLASS_UTILITY, 0);
+        attr = dispatch_queue_attr_make_with_qos_class(attr, kQOS, 0);
         if (__builtin_available(iOS 10.0, macOS 10.12, tvos 10.0, watchos 3.0, *)) {
             attr = dispatch_queue_attr_make_with_autorelease_frequency(attr,
                                                         DISPATCH_AUTORELEASE_FREQUENCY_NEVER);
@@ -125,6 +127,7 @@ namespace litecore { namespace actor {
         _actor->afterEvent();
         endBusy();
 #if ACTORS_TRACK_STATS
+        ++_callCount;
         if (_eventCount > _maxEventCount) {
             _maxEventCount = _eventCount;
         }
@@ -136,8 +139,8 @@ namespace litecore { namespace actor {
 
     void GCDMailbox::logStats() {
 #if ACTORS_TRACK_STATS
-        LogTo(ActorLog, "Max queue depth of %s was %d; max latency was %s; busy %s (%.1f%%)",
-              _actor->actorName().c_str(), _maxEventCount,
+        LogTo(ActorLog, "%s handled %d events; max queue depth was %d; max latency was %s; busy %s (%.1f%%)",
+              _actor->actorName().c_str(), _callCount, _maxEventCount,
               fleece::Stopwatch::formatTime(_maxLatency).c_str(),
               fleece::Stopwatch::formatTime(_busy.elapsed()).c_str(),
               (_busy.elapsed() / _createdAt.elapsed())*100.0);

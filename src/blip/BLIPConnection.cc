@@ -114,6 +114,7 @@ namespace litecore { namespace blip {
         RequestHandlers         _requestHandlers;
         size_t                  _maxOutboxDepth {0}, _totalOutboxDepth {0}, _countOutboxDepth {0};
         uint64_t                _totalBytesWritten {0}, _totalBytesRead {0};
+        Stopwatch               _timeOpen;
 
     public:
 
@@ -176,6 +177,7 @@ namespace litecore { namespace blip {
 
         // websocket::Delegate interface:
         virtual void onWebSocketConnect() override {
+            _timeOpen.reset();
             _connection->connected();
             onWebSocketWriteable();
         }

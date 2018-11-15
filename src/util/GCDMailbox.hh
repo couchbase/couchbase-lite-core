@@ -60,6 +60,7 @@ namespace litecore { namespace actor {
         std::atomic<int32_t> _eventCount {0};
         
 #if ACTORS_TRACK_STATS
+        int32_t _callCount {0};
         int32_t _maxEventCount {0};
         double _maxLatency {0};
         fleece::Stopwatch _createdAt {true};
