@@ -54,7 +54,7 @@ namespace litecore {
         :Query(keyStore)
         ,Logging(QueryLog)
         {
-            log("Compiling JSON query: %.*s", SPLAT(selectorExpression));
+            logInfo("Compiling JSON query: %.*s", SPLAT(selectorExpression));
             QueryParser qp(keyStore);
             qp.parseJSON(selectorExpression);
 
@@ -76,7 +76,7 @@ namespace litecore {
                 keyStore.addExpiration();
 
             string sql = qp.SQL();
-            log("Compiled as %s", sql.c_str());
+            logInfo("Compiled as %s", sql.c_str());
             LogTo(SQL, "Compiled {Query#%u}: %s", _objectRef, sql.c_str());
             _statement.reset(keyStore.compile(sql));
             
@@ -204,12 +204,12 @@ namespace litecore {
         ,_rows(_recording->asArray())
         ,_iter(_rows)
         {
-            log("Created on {Query#%u} with %llu rows (%zu bytes) in %.3fms",
+            logInfo("Created on {Query#%u} with %llu rows (%zu bytes) in %.3fms",
                 query->objectRef(), rowCount, recording->data().size, elapsedTime*1000);
         }
 
         ~SQLiteQueryEnumerator() {
-            log("Deleted");
+            logInfo("Deleted");
         }
 
         bool hasEqualContents(const SQLiteQueryEnumerator* other) const {

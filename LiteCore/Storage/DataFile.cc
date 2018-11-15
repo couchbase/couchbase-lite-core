@@ -132,12 +132,12 @@ namespace litecore {
             i.second->close();
         }
         if (_shared->removeDataFile(this))
-            log("Closing database");
+            logInfo("Closing database");
     }
 
 
     void DataFile::reopen() {
-        log("Opening database");
+        logInfo("Opening database");
         _shared->addDataFile(this);
     }
 
@@ -344,7 +344,7 @@ namespace litecore {
     {
         _db.beginTransactionScope(this);
         if (active) {
-            _db.logVerbose("begin transaction");
+            _db._logVerbose("begin transaction");
             Signpost::begin(Signpost::transaction, uint32_t(size_t(this)));
             _db._beginTransaction(this);
             _active = true;
@@ -357,7 +357,7 @@ namespace litecore {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, true);
         _active = false;
-        _db.logVerbose("commit transaction");
+        _db._logVerbose("commit transaction");
         _db._endTransaction(this, true);
         Signpost::end(Signpost::transaction, uint32_t(size_t(this)));
     }
@@ -367,7 +367,7 @@ namespace litecore {
         Assert(_active, "Transaction is not active");
         _db.transactionEnding(this, false);
         _active = false;
-        _db.logVerbose("abort transaction");
+        _db._logVerbose("abort transaction");
         _db._endTransaction(this, false);
         Signpost::end(Signpost::transaction, uint32_t(size_t(this)));
     }
@@ -375,7 +375,7 @@ namespace litecore {
 
     Transaction::~Transaction() {
         if (_active) {
-            _db.log("Transaction exiting scope without explicit commit; aborting");
+            _db._logInfo("Transaction exiting scope without explicit commit; aborting");
             abort();
         }
         _db.endTransactionScope(this);

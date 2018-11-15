@@ -238,14 +238,14 @@ namespace litecore {
         SQLite::Statement *stmt;
         if (replacingSequence == nullptr) {
             // Default:
-            db().logVerbose("KeyStore(%s) set %.*s", name().c_str(), SPLAT(key));
+            db()._logVerbose("KeyStore(%s) set %.*s", name().c_str(), SPLAT(key));
             compile(_setStmt,
                     "INSERT OR REPLACE INTO kv_@ (version, body, flags, sequence, key)"
                     " VALUES (?, ?, ?, ?, ?)");
             stmt = _setStmt.get();
         } else if (*replacingSequence == 0) {
             // Insert only:
-            db().logVerbose("KeyStore(%s) insert %.*s", name().c_str(), SPLAT(key));
+            db()._logVerbose("KeyStore(%s) insert %.*s", name().c_str(), SPLAT(key));
             compile(_insertStmt,
                     "INSERT OR IGNORE INTO kv_@ (version, body, flags, sequence, key)"
                     " VALUES (?, ?, ?, ?, ?)");
@@ -253,7 +253,7 @@ namespace litecore {
         } else {
             // Replace only:
             Assert(_capabilities.sequences);
-            db().logVerbose("KeyStore(%s) update %.*s", name().c_str(), SPLAT(key));
+            db()._logVerbose("KeyStore(%s) update %.*s", name().c_str(), SPLAT(key));
             compile(_replaceStmt,
                     "UPDATE kv_@ SET version=?, body=?, flags=?, sequence=?"
                     " WHERE key=? AND sequence=?");
@@ -292,7 +292,7 @@ namespace litecore {
     bool SQLiteKeyStore::del(slice key, Transaction&, sequence_t seq) {
         Assert(key);
         SQLite::Statement *stmt;
-        db().logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %llu",
+        db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %llu",
                         _name.c_str(), SPLAT(key), seq);
         if (seq) {
             stmt = &compile(_delByBothStmt, "DELETE FROM kv_@ WHERE key=? AND sequence=?");
@@ -358,7 +358,7 @@ namespace litecore {
     void SQLiteKeyStore::addExpiration() {
         if (hasExpiration())
             return;
-        db().logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
+        db()._logVerbose("Adding the `expiration` column & index to kv_%s", name().c_str());
         db().execWithLock(subst(
                     "ALTER TABLE kv_@ ADD COLUMN expiration INTEGER; "
                     "CREATE INDEX kv_@_expiration ON kv_@ (expiration) WHERE expiration not null"));
@@ -378,7 +378,7 @@ namespace litecore {
         _setExpStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
         bool ok = _setExpStmt->exec() > 0;
         if (ok)
-            db().logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %lld",
+            db()._logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %lld",
                             _name.c_str(), SPLAT(key), expTime);
         return ok;
     }
@@ -405,7 +405,7 @@ namespace litecore {
                 return 0;
             next = _nextExpStmt->getColumn(0);
         }
-        db().logVerbose("Next expiration time is %lld", next);
+        db()._logVerbose("Next expiration time is %lld", next);
         return next;
     }
 
@@ -416,7 +416,7 @@ namespace litecore {
             expired = db().exec(format("DELETE FROM kv_%s WHERE expiration <= %lld",
                                        name().c_str(), now()));
         }
-        db().log("Purged %u expired documents", expired);
+        db()._logInfo("Purged %u expired documents", expired);
         return expired;
     }
 

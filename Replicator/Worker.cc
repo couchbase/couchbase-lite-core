@@ -246,7 +246,7 @@ namespace litecore { namespace repl {
             if (_important) {
                 auto name = kC4ReplicatorActivityLevelNames[newLevel];
                 if (_important > 1)
-                    log("now %-s", name);
+                    logInfo("now %-s", name);
                 else
                     logVerbose("now %-s", name);
             }

@@ -200,50 +200,36 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         virtual std::string loggingIdentifier() const;
         virtual std::string loggingClassName() const;
 
-#if DEBUG
-        // In debug mode, use code that's inefficient but allows use of __printflike, so the
-        // compiler can catch invalid format parameters.
         #define LOGBODY(LEVEL)  va_list args; \
                                 va_start(args, format); \
                                 _logv(LogLevel::LEVEL, format, args); \
                                 va_end(args);
-        inline void log(const char *format, ...) const __printflike(2, 3)        {LOGBODY(Info)}
-        inline void warn(const char *format, ...) const __printflike(2, 3)       {LOGBODY(Warning)}
-        inline void logError(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Error)}
-        inline void logVerbose(const char *format, ...) const __printflike(2, 3) {LOGBODY(Verbose)}
-        inline void logDebug(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Debug)}
+        void warn(const char *format, ...) const __printflike(2, 3)       {LOGBODY(Warning)}
+        void logError(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Error)}
 
-#else
-        // In release mode, generate efficient code (but it can't be type-checked.)
-        template <LogLevel LEVEL =LogLevel::Info, class... ARGS>
-        inline void log(const char *format, ARGS... args) const {
-            if (_usuallyFalse(_domain.willLog(LEVEL)))
-                _log(LEVEL, format, args...);
-        }
+        // For performance reasons, logInfo(), logVerbose(), logDebug() are macros (below)
+        void _logInfo(const char *format, ...) const __printflike(2, 3)   {LOGBODY(Info)}
+        void _logVerbose(const char *format, ...) const __printflike(2, 3){LOGBODY(Verbose)}
+        void _logDebug(const char *format, ...) const __printflike(2, 3)  {LOGBODY(Debug)}
 
-        template <class... ARGS>
-        inline void warn(const char *format, ARGS... args) const {
-            log<LogLevel::Warning>(format, args...);
-        }
-        template <class... ARGS>
-        inline void logError(const char *format, ARGS... args) const {
-            log<LogLevel::Error>(format, args...);
-        }
-        template <class... ARGS>
-        inline void logVerbose(const char *format, ARGS... args) const {
-            log<LogLevel::Verbose>(format, args...);
-        }
-
-        inline void logDebug(const char *format, ...) const {
-            // does nothing in a release build
-        }
-#endif
         bool willLog(LogLevel level =LogLevel::Info) const         {return _domain.willLog(level);}
 
-        void _log(LogLevel level, const char *format, ...) const;// __printflike(3, 4);
+        void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
         void _logv(LogLevel level, const char *format, va_list) const;
         LogDomain &_domain;
         unsigned _objectRef {0};
     };
 
+#define _logAt(LEVEL, FMT, ARGS...) ({ \
+    if (_usuallyFalse(this->willLog(LogLevel::LEVEL))) \
+        this->_log(LogLevel::LEVEL, FMT, ##ARGS); \
+    })
+#define logInfo(FMT, ARGS...)    _logAt(Info,    FMT, ##ARGS)
+#define logVerbose(FMT, ARGS...) _logAt(Verbose, FMT, ##ARGS)
+
+#if DEBUG
+#define logDebug(FMT, ARGS...)   _logAt(Debug,   FMT, ##ARGS)
+#else
+#define logDebug(FMT, ARGS...)   ({})
+#endif
 }

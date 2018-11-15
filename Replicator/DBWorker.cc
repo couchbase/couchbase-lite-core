@@ -158,7 +158,7 @@ namespace litecore { namespace repl {
         C4Error err;
         const auto checkpointID = effectiveRemoteCheckpointDocID(&err);
         if (checkpointID && c4raw_put(_db, constants::kLocalCheckpointStore, checkpointID, nullslice, data, &err))
-            log("Saved local checkpoint %.*s to db", SPLAT(checkpointID));
+            logInfo("Saved local checkpoint %.*s to db", SPLAT(checkpointID));
         else
             gotError(err);
         onComplete();
@@ -240,7 +240,7 @@ namespace litecore { namespace repl {
             request->respondWithError({"BLIP"_sl, 400, "missing checkpoint ID"_sl});
             return false;
         }
-        log("Request to %s checkpoint '%.*s'",
+        logInfo("Request to %s checkpoint '%.*s'",
             (getting ? "get" : "set"), SPLAT(checkpointID));
 
         C4Error err;
@@ -492,11 +492,11 @@ namespace litecore { namespace repl {
         auto changes = req->JSONBody().asArray();
         if (willLog() && !changes.empty()) {
             if (proposed) {
-                log("Received %u changes", changes.count());
+                logInfo("Received %u changes", changes.count());
             } else {
                 alloc_slice firstSeq(changes[0].asArray()[0].toString());
                 alloc_slice lastSeq (changes[changes.count()-1].asArray()[0].toString());
-                log("Received %u changes (seq '%.*s'..'%.*s')",
+                logInfo("Received %u changes (seq '%.*s'..'%.*s')",
                     changes.count(), SPLAT(firstSeq), SPLAT(lastSeq));
             }
         }
@@ -539,7 +539,7 @@ namespace litecore { namespace repl {
                     ++requested;
                     whichRequested[i] = true;
                 } else {
-                    log("Rejecting proposed change '%.*s' %.*s with parent %.*s (status %d; current rev is %.*s)",
+                    logInfo("Rejecting proposed change '%.*s' %.*s with parent %.*s (status %d; current rev is %.*s)",
                         SPLAT(docID), SPLAT(revID), SPLAT(parentRevID), status, SPLAT(currentRevID));
                     while (itemsWritten++ < i)
                         encoder.writeInt(0);
@@ -568,7 +568,7 @@ namespace litecore { namespace repl {
             callback(whichRequested);
 
         req->respond(response);
-        log("Responded to '%.*s' REQ#%llu w/request for %u revs",
+        logInfo("Responded to '%.*s' REQ#%llu w/request for %u revs",
             SPLAT(req->property("Profile"_sl)), req->number(), requested);
     }
 
@@ -607,7 +607,7 @@ namespace litecore { namespace repl {
     // Updates the doc to have the currently-selected rev marked as the remote
     void DBWorker::updateRemoteRev(C4Document *doc) {
         slice revID = doc->selectedRev.revID;
-        log("Updating remote #%u's rev of '%.*s' to %.*s",
+        logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
                    _remoteDBID, SPLAT(doc->docID), SPLAT(revID));
         C4Error error;
         c4::Transaction t(_db);
@@ -773,7 +773,7 @@ namespace litecore { namespace repl {
 
         slice revisionBody(doc->selectedRev.body);
         if (!revisionBody) {
-            log("Revision '%.*s' #%.*s is obsolete; not sending it",
+            logInfo("Revision '%.*s' #%.*s is obsolete; not sending it",
                 SPLAT(request.docID), SPLAT(request.revID));
             *c4err = {WebSocketDomain, 410}; // Gone
         }
@@ -994,7 +994,7 @@ namespace litecore { namespace repl {
                     }
                 } else if (doc->selectedRev.flags & kRevIsConflict) {
                     // Note that rev was inserted but caused a conflict:
-                    log("Created conflict with '%.*s' #%.*s",
+                    logInfo("Created conflict with '%.*s' #%.*s",
                         SPLAT(rev->docID), SPLAT(rev->revID));
                     rev->flags |= kRevIsConflict;
                 }
@@ -1020,7 +1020,7 @@ namespace litecore { namespace repl {
             gotError(transactionErr);
         } else {
             double t = st.elapsed();
-            log("Inserted %zu revs in %.2fms (%.0f/sec)", revs->size(), t*1000, revs->size()/t);
+            logInfo("Inserted %zu revs in %.2fms (%.0f/sec)", revs->size(), t*1000, revs->size()/t);
         }
     }
 
@@ -1054,7 +1054,7 @@ namespace litecore { namespace repl {
             }
             if (transaction.commit(&error)) {
                 double t = st.elapsed();
-                log("Marked %zu revs as synced-to-server in %.2fms (%.0f/sec)",
+                logInfo("Marked %zu revs as synced-to-server in %.2fms (%.0f/sec)",
                     revs->size(), t*1000, revs->size()/t);
                 return;
             }
@@ -1069,7 +1069,7 @@ namespace litecore { namespace repl {
     Worker::ActivityLevel DBWorker::computeActivityLevel() const {
         ActivityLevel level = Worker::computeActivityLevel();
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            log("activityLevel=%-s: pendingResponseCount=%d, eventCount=%d",
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, eventCount=%d",
                 kC4ReplicatorActivityLevelNames[level], pendingResponseCount(), eventCount());
         }
         return level;

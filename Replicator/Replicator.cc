@@ -52,7 +52,7 @@ namespace litecore { namespace repl {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
 
-        log("%s", string(options).c_str());
+        logInfo("%s", string(options).c_str());
 
         if (options.push != kC4Disabled)
             _pusher = new Pusher(this, _dbActor);
@@ -83,7 +83,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_stop() {
-        log("Told to stop!");
+        logInfo("Told to stop!");
         _disconnect(websocket::kCodeNormal, {});
     }
 
@@ -126,7 +126,7 @@ namespace litecore { namespace repl {
         setProgress(_pushStatus.progress + _pullStatus.progress);
 
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            log("pushStatus=%-s, pullStatus=%-s, dbStatus=%-s, progress=%llu/%llu",
+            logInfo("pushStatus=%-s, pullStatus=%-s, dbStatus=%-s, progress=%llu/%llu",
                 kC4ReplicatorActivityLevelNames[_pushStatus.level],
                 kC4ReplicatorActivityLevelNames[_pullStatus.level],
                 kC4ReplicatorActivityLevelNames[_dbStatus.level],
@@ -159,7 +159,7 @@ namespace litecore { namespace repl {
                 level = max(level, max(_pushStatus.level, _pullStatus.level));
                 if (level == kC4Idle && !isContinuous() && !isOpenServer()) {
                     // Detect that a non-continuous active push or pull replication is done:
-                    log("Replication complete! Closing connection");
+                    logInfo("Replication complete! Closing connection");
                     const_cast<Replicator*>(this)->_stop();
                     level = kC4Busy;
                 }
@@ -177,7 +177,7 @@ namespace litecore { namespace repl {
                 break;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            log("activityLevel=%-s: connectionState=%d",
+            logInfo("activityLevel=%-s: connectionState=%d",
                 kC4ReplicatorActivityLevelNames[level], _connectionState);
         }
         return level;
@@ -262,7 +262,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onConnect() {
-        log("Connected!");
+        logInfo("Connected!");
         Signpost::mark(Signpost::replicatorConnect, uint32_t(size_t(this)));
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
@@ -273,7 +273,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onClose(Connection::CloseStatus status, Connection::State state) {
-        log("Connection closed with %-s %d: \"%.*s\" (state=%d)",
+        logInfo("Connection closed with %-s %d: \"%.*s\" (state=%d)",
             status.reasonName(), status.code, SPLAT(status.message), _connectionState);
         Signpost::mark(Signpost::replicatorDisconnect, uint32_t(size_t(this)));
 
@@ -291,7 +291,7 @@ namespace litecore { namespace repl {
             _puller->connectionClosed();
 
         if (status.isNormal() && closedByPeer && (_options.push > kC4Passive || _options.pull > kC4Passive)) {
-            log("I didn't initiate the close; treating this as code 1001 (GoingAway)");
+            logInfo("I didn't initiate the close; treating this as code 1001 (GoingAway)");
             status.code = websocket::kCodeGoingAway;
             status.message = alloc_slice("WebSocket connection closed by peer");
         }
@@ -342,21 +342,21 @@ namespace litecore { namespace repl {
             _checkpointDocID = checkpointID;
 
             if (_options.properties[kC4ReplicatorResetCheckpoint].asBool()) {
-                log("Ignoring local checkpoint ('reset' option is set)");
+                logInfo("Ignoring local checkpoint ('reset' option is set)");
             } else if (data) {
                 _checkpoint.decodeFrom(data);
                 auto cp = _checkpoint.sequences();
-                log("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
+                logInfo("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
                     SPLAT(checkpointID), cp.local, SPLAT(cp.remote));
                 _hadLocalCheckpoint = true;
             } else if (err.code == 0) {
-                log("No local checkpoint '%.*s'", SPLAT(checkpointID));
+                logInfo("No local checkpoint '%.*s'", SPLAT(checkpointID));
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
                 if (dbIsEmpty && _options.pull > kC4Passive)
                     _puller->setSkipDeleted();
             } else {
-                log("Fatal error getting local checkpoint");
+                logInfo("Fatal error getting local checkpoint");
                 gotError(err);
                 stop();
                 return;
@@ -389,14 +389,14 @@ namespace litecore { namespace repl {
                 auto err = response->getError();
                 if (!(err.domain == "HTTP"_sl && err.code == 404))
                     return gotError(response);
-                log("No remote checkpoint");
+                logInfo("No remote checkpoint");
                 _checkpointRevID.reset();
             } else {
                 remoteCheckpoint.decodeFrom(response->body());
                 _checkpointRevID = response->property("rev"_sl);
                 if (willLog()) {
                     auto gotcp = remoteCheckpoint.sequences();
-                    log("Received remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
+                    logInfo("Received remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
                         gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
                 }
             }
@@ -461,7 +461,7 @@ namespace litecore { namespace repl {
             } else {
                 // Remote checkpoint saved, so update local one:
                 _checkpointRevID = response->property("rev"_sl);
-                log("Saved remote checkpoint %.*s as rev='%.*s'",
+                logInfo("Saved remote checkpoint %.*s as rev='%.*s'",
                     SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
                 _dbActor->setCheckpoint(json, asynchronize([this]{
                     _checkpoint.saved();

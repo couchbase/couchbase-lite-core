@@ -53,7 +53,7 @@ namespace litecore { namespace repl {
     void Puller::_start(alloc_slice sinceSequence) {
         _lastSequence = sinceSequence;
         _missingSequences.clear(sinceSequence);
-        log("Starting pull from remote seq %.*s", SPLAT(_lastSequence));
+        logInfo("Starting pull from remote seq %.*s", SPLAT(_lastSequence));
 
         MessageBuilder msg("subChanges"_sl);
         if (_lastSequence)
@@ -146,7 +146,7 @@ namespace litecore { namespace repl {
 
         if (changes.empty()) {
             // Empty array indicates we've caught up.
-            log("Caught up with remote changes");
+            logInfo("Caught up with remote changes");
             _caughtUp = true;
             _skipDeleted = false;
             req->respond();
@@ -310,7 +310,7 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            log("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _waitingForChangesCallback=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _waitingForChangesCallback=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
                 kC4ReplicatorActivityLevelNames[level],
                 pendingResponseCount(), _caughtUp, _waitingForChangesCallback,
                 _pendingRevMessages, _activeIncomingRevs);

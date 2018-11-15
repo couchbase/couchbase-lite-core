@@ -76,7 +76,7 @@ namespace litecore { namespace repl {
 
     // Begins active push, starting from the next sequence after sinceSequence
     void Pusher::_start(C4SequenceNumber sinceSequence) {
-        log("Starting %spush from local seq #%llu",
+        logInfo("Starting %spush from local seq #%llu",
             (_continuous ? "continuous " : ""), sinceSequence+1);
         _started = true;
         _pendingSequences.clear(sinceSequence);
@@ -94,12 +94,12 @@ namespace litecore { namespace repl {
         auto since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
         _skipDeleted = req->boolProperty("activeOnly"_sl);
-        log("Peer is pulling %schanges from seq #%llu",
+        logInfo("Peer is pulling %schanges from seq #%llu",
             (_continuous ? "continuous " : ""), _lastSequence);
 
         auto filter = req->property("filter"_sl);
         if (filter) {
-            log("Peer requested filter '%.*s'", SPLAT(filter));
+            logInfo("Peer requested filter '%.*s'", SPLAT(filter));
             req->respondWithError({"LiteCore"_sl, kC4ErrorUnsupported,
                                    "Filtering not supported"_sl});
             return;
@@ -107,7 +107,7 @@ namespace litecore { namespace repl {
 
         filterByDocIDs(req->JSONBody().asDict()["docIDs"].asArray());
         if (_docIDs)
-            log("Peer requested filtering to %zu docIDs", _docIDs->size());
+            logInfo("Peer requested filtering to %zu docIDs", _docIDs->size());
 
         req->respond();
         startSending(since);
@@ -160,10 +160,10 @@ namespace litecore { namespace repl {
         _lastSequenceRead = lastSequence;
         _pendingSequences.seen(lastSequence);
         if (changes->empty()) {
-            log("Found 0 changes up to #%llu", lastSequence);
+            logInfo("Found 0 changes up to #%llu", lastSequence);
             updateCheckpoint();
         } else {
-            log("Read %zu local changes up to #%llu: sending '%-s' with sequences #%llu - #%llu",
+            logInfo("Read %zu local changes up to #%llu: sending '%-s' with sequences #%llu - #%llu",
                 changes->size(), lastSequence,
                 (_proposeChanges ? "proposeChanges" : "changes"),
                 changes->at(0)->sequence, _lastSequenceRead);
@@ -195,7 +195,7 @@ namespace litecore { namespace repl {
 
         if (changeCount < _changesBatchSize) {
             if (!_caughtUp) {
-                log("Caught up, at lastSequence #%llu", _lastSequenceRead);
+                logInfo("Caught up, at lastSequence #%llu", _lastSequenceRead);
                 _caughtUp = true;
                 if (changeCount > 0 && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
@@ -255,7 +255,7 @@ namespace litecore { namespace repl {
 
             // Got reply to the "changes" or "proposeChanges":
             if (!changes->empty()) {
-                log("Got response for %zu local changes (sequences from %llu)",
+                logInfo("Got response for %zu local changes (sequences from %llu)",
                     changes->size(), changes->front()->sequence);
             }
             decrement(_changeListsInFlight);
@@ -265,7 +265,7 @@ namespace litecore { namespace repl {
                 auto err = progress.reply->getError();
                 if (err.code == 409 && (err.domain == "BLIP"_sl || err.domain == "HTTP"_sl)) {
                     // Caller is in no-conflict mode, wants 'proposeChanges' instead; retry
-                    log("Server requires 'proposeChanges'; retrying...");
+                    logInfo("Server requires 'proposeChanges'; retrying...");
                     _proposeChanges = true;
                     sendChanges(move(changes));
                     return;
@@ -578,7 +578,7 @@ namespace litecore { namespace repl {
         auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
         if (lastSeq > _lastSequence) {
             if (lastSeq / 1000 > _lastSequence / 1000)
-                log("Checkpoint now at #%llu", lastSeq);
+                logInfo("Checkpoint now at #%llu", lastSeq);
             else
                 logVerbose("Checkpoint now at #%llu", lastSeq);
             _lastSequence = lastSeq;
@@ -604,7 +604,7 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            log("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
                 kC4ReplicatorActivityLevelNames[level],
                 pendingResponseCount(),
                 _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,

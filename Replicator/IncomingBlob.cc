@@ -92,7 +92,7 @@ namespace litecore { namespace repl {
             int n = ++sNumOpenWriters;
             if (n > sMaxOpenWriters) {
                 sMaxOpenWriters = n;
-                log("There are now %d blob writers open", n);
+                logInfo("There are now %d blob writers open", n);
             }
             logVerbose("Opened writer  [%d open; max %d]", n, (int)sMaxOpenWriters);
 #endif

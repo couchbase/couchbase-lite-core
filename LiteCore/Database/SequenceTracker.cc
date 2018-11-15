@@ -59,7 +59,7 @@ namespace litecore {
 
 
     void SequenceTracker::beginTransaction() {
-        log("begin transaction at #%llu", _lastSequence);
+        logInfo("begin transaction at #%llu", _lastSequence);
         auto notifier = new DatabaseChangeNotifier(*this, nullptr);
         Assert(!inTransaction());
         _transaction.reset(notifier);
@@ -72,7 +72,7 @@ namespace litecore {
         Assert(inTransaction());
 
         if (commit) {
-            log("commit: sequences #%llu -- #%llu", _preTransactionLastSequence, _lastSequence);
+            logInfo("commit: sequences #%llu -- #%llu", _preTransactionLastSequence, _lastSequence);
             // Bump their committedSequences:
             for (auto entry = next(_transaction->_placeholder); entry != _changes.end(); ++entry) {
                 if (!entry->isPlaceholder()) {
@@ -81,7 +81,7 @@ namespace litecore {
             }
 
         } else {
-            log("abort: from seq #%llu back to #%llu", _lastSequence, _preTransactionLastSequence);
+            logInfo("abort: from seq #%llu back to #%llu", _lastSequence, _preTransactionLastSequence);
             _lastSequence = _preTransactionLastSequence;
 
             // Revert their committedSequences:
@@ -182,7 +182,7 @@ namespace litecore {
         Assert(!inTransaction());
         Assert(other.inTransaction());
         if (!_changes.empty() || _numDocObservers > 0) {
-            log("addExternalTransaction from %s", other.loggingIdentifier().c_str());
+            logInfo("addExternalTransaction from %s", other.loggingIdentifier().c_str());
             for (auto e = next(other._transaction->_placeholder); e != other._changes.end(); ++e) {
                 _lastSequence = e->sequence;
                 _documentChanged(e->docID, e->revID, e->sequence, e->bodySize);
@@ -345,20 +345,20 @@ namespace litecore {
     ,_placeholder(tracker.addPlaceholderAfter(this, afterSeq))
     {
         if (callback)
-            log("Created, starting after #%lld", afterSeq);
+            logInfo("Created, starting after #%lld", afterSeq);
     }
 
 
     DatabaseChangeNotifier::~DatabaseChangeNotifier() {
         if (callback)
-            log("Deleting");
+            logInfo("Deleting");
         tracker.removePlaceholder(_placeholder);
     }
 
 
     void DatabaseChangeNotifier::notify() {
         if (callback) {
-            log("posting notification");
+            logInfo("posting notification");
             callback(*this);
         }
     }
@@ -368,7 +368,7 @@ namespace litecore {
                                                size_t maxChanges,
                                                bool &external) {
         size_t n = tracker.readChanges(_placeholder, changes, maxChanges, external);
-        log("readChanges(%zu) -> %zu changes", maxChanges, n);
+        logInfo("readChanges(%zu) -> %zu changes", maxChanges, n);
         return n;
     }
 

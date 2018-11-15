@@ -320,13 +320,13 @@ namespace litecore {
         if (alg == kNoEncryption) {
             if (!currentlyEncrypted)
                 return;
-            log("Decrypting DataFile");
+            logInfo("Decrypting DataFile");
         } else {
             if (currentlyEncrypted) {
-                log("Changing DataFile encryption key");
+                logInfo("Changing DataFile encryption key");
             }
             else {
-                log("Encrypting DataFile");
+                logInfo("Encrypting DataFile");
             }
         }
         
@@ -517,7 +517,7 @@ namespace litecore {
                        (long long)freePages, (long long)pageCount, (float)freePages / pageCount);
             if ((pageCount > 0 && (float)freePages / pageCount >= kVacuumFractionThreshold)
                     || (freePages * kPageSize >= kVacuumSizeThreshold)) {
-                log("Vacuuming database...");
+                logInfo("Vacuuming database...");
                 _exec("PRAGMA incremental_vacuum");
             }
         } catch (const SQLite::Exception &x) {

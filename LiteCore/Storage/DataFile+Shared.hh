@@ -33,9 +33,9 @@ namespace litecore {
             if (!file) {
                 file = new Shared(pathStr);
                 sFileMap[pathStr] = file;
-                file->logDebug("created for DataFile %p at %s", dataFile, pathStr.c_str());
+                file->_logDebug("created for DataFile %p at %s", dataFile, pathStr.c_str());
             } else {
-                file->logDebug("adding DataFile %p", dataFile);
+                file->_logDebug("adding DataFile %p", dataFile);
             }
             lock.unlock();
 
