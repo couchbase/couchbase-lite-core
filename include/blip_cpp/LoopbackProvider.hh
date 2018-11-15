@@ -213,7 +213,7 @@ namespace litecore { namespace websocket {
             }
 
             void connectCompleted() {
-                log("CONNECTED");
+                logInfo("CONNECTED");
                 _state = State::connected;
                 _webSocket->delegate().onWebSocketGotHTTPResponse(200, _responseHeaders);
                 _webSocket->delegate().onWebSocketConnect();
@@ -226,7 +226,7 @@ namespace litecore { namespace websocket {
                     Retained<Message> message(new LoopbackMessage(_webSocket, msg, binary));
                     _peer->received(message, _latency);
                 } else {
-                    log("SEND: Failed, socket is closed");
+                    logInfo("SEND: Failed, socket is closed");
                 }
             }
 
@@ -248,7 +248,7 @@ namespace litecore { namespace websocket {
 
             virtual void _close(int status, fleece::alloc_slice message) {
                 Assert(_state == State::connecting || _state == State::connected);
-                log("CLOSE; status=%d", status);
+                logInfo("CLOSE; status=%d", status);
                 std::string messageStr(message);
                 _peer->closed(kWebSocketClose, status, messageStr.c_str(), _latency);
                 _closed({kWebSocketClose, status, message});
@@ -258,12 +258,12 @@ namespace litecore { namespace websocket {
                 if (_state == State::closed)
                     return;
                 if (_state >= State::connecting) {
-                    log("CLOSED with %-s %d: %.*s",
+                    logInfo("CLOSED with %-s %d: %.*s",
                         status.reasonName(), status.code,
                         (int)status.message.size, status.message.buf);
                     _webSocket->delegate().onWebSocketClose(status);
                 } else {
-                    log("CLOSED");
+                    logInfo("CLOSED");
                 }
                 _state = State::closed;
                 _peer = nullptr;

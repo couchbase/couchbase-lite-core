@@ -76,7 +76,7 @@ namespace litecore { namespace blip {
 
     // Uncompressed write: just copies input bytes to output (updating checksum)
     void Codec::_writeRaw(slice &input, slice &output) {
-        log("Copying %zu bytes into %zu-byte buf (no compression)", input.size, output.size);
+        logInfo("Copying %zu bytes into %zu-byte buf (no compression)", input.size, output.size);
         Assert(output.size > 0);
         size_t count = std::min(input.size, output.size);
         addToChecksum({input.buf, count});
@@ -105,7 +105,7 @@ namespace litecore { namespace blip {
         Assert(outSize > 0);
         Assert(mode > Mode::Raw);
         int result = _flate(&_z, (int)mode);
-        log("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes",
+        logInfo("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes",
             operation, inSize, outSize, mode, result,
             (long)(_z.next_in - (uint8_t*)input.buf),
             (long)(_z.next_out - (uint8_t*)output.buf));
@@ -143,7 +143,7 @@ namespace litecore { namespace blip {
 
         slice origInput = input;
         size_t origOutputSize = output.size;
-        log("Compressing %zu bytes into %zu-byte buf", input.size, origOutputSize);
+        logInfo("Compressing %zu bytes into %zu-byte buf", input.size, origOutputSize);
 
         switch (mode) {
             case Mode::NoFlush:     _write("deflate", input, output, mode); break;
@@ -154,7 +154,7 @@ namespace litecore { namespace blip {
         if (kZlibRawDeflate)
             addToChecksum({origInput.buf, input.buf});
 
-        log("    compressed %zu bytes to %zu (%.0f%%), %u unflushed",
+        logInfo("    compressed %zu bytes to %zu (%.0f%%), %u unflushed",
             (origInput.size-input.size), (origOutputSize-output.size),
             (origOutputSize-output.size) * 100.0 / (origInput.size-input.size),
             unflushedBytes());
@@ -228,7 +228,7 @@ namespace litecore { namespace blip {
         if (mode == Mode::Raw)
             return _writeRaw(input, output);
 
-        log("Decompressing %zu bytes into %zu-byte buf", input.size, output.size);
+        logInfo("Decompressing %zu bytes into %zu-byte buf", input.size, output.size);
         auto outStart = (uint8_t*)output.buf;
         _write("inflate", input, output, mode);
         if (kZlibRawDeflate)

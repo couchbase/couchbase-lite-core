@@ -160,9 +160,11 @@ namespace litecore { namespace blip {
     protected:
 
         ~BLIPIO() {
-            log("~BLIPIO: Sent %llu bytes, rcvd %llu. Max outbox depth was %zu, avg %.2f",
-                _totalBytesWritten, _totalBytesRead,
-                _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
+            LogTo(SyncLog, "BLIP sent %zu msgs (%llu bytes), rcvd %llu msgs (%llu bytes) in %.3f sec. Max outbox depth was %zu, avg %.2f",
+                  _countOutboxDepth, _totalBytesWritten,
+                  _numRequestsReceived, _totalBytesRead,
+                  _timeOpen.elapsed(),
+                  _maxOutboxDepth, _totalOutboxDepth/(double)_countOutboxDepth);
             logStats();
         }
 
@@ -239,7 +241,7 @@ namespace litecore { namespace blip {
             Adds a new message to the outgoing queue and wakes up the queue. */
         void _queueMessage(Retained<MessageOut> msg) {
             if (!_webSocket || _closingWithError) {
-                log("Can't send %s #%llu; socket is closed",
+                logInfo("Can't send %s #%llu; socket is closed",
                     kMessageTypeNames[msg->type()], msg->number());
                 msg->disconnected();
                 return;
@@ -539,7 +541,7 @@ namespace litecore { namespace blip {
 
         void cancelAll(MessageQueue &queue) {   // either _outbox or _icebox
             if (!queue.empty())
-                log("Notifying %zd outgoing messages they're canceled", queue.size());
+                logInfo("Notifying %zd outgoing messages they're canceled", queue.size());
             for (auto &msg : queue)
                 msg->disconnected();
             queue.clear();
@@ -547,7 +549,7 @@ namespace litecore { namespace blip {
 
         void cancelAll(MessageMap &pending) {   // either _pendingResponses or _pendingRequests
             if (!pending.empty())
-                log("Notifying %zd incoming messages they're canceled", pending.size());
+                logInfo("Notifying %zd incoming messages they're canceled", pending.size());
             for (auto &item : pending)
                 item.second->disconnected();
             pending.clear();
@@ -608,9 +610,9 @@ namespace litecore { namespace blip {
     ,_delegate(delegate)
     {
         if (_role == Role::Server)
-            log("Accepted connection");
+            logInfo("Accepted connection");
         else
-            log("Opening connection...");
+            logInfo("Opening connection...");
 
         _compressionLevel = kDefaultCompressionLevel;
         auto levelP = options.get(kCompressionLevelOption);
@@ -669,21 +671,21 @@ namespace litecore { namespace blip {
 
 
     void Connection::connected() {
-        log("Connected!");
+        logInfo("Connected!");
         _state = kConnected;
         delegate().onConnect();
     }
 
 
     void Connection::close(CloseCode closeCode, slice errorMessage) {
-        log("Closing with code %d, msg '%.*s'", closeCode, SPLAT(errorMessage));
+        logInfo("Closing with code %d, msg '%.*s'", closeCode, SPLAT(errorMessage));
         _state = kClosing;
         _io->close(closeCode, errorMessage);
     }
 
 
     void Connection::closed(CloseStatus status) {
-        log("Closed with %-s %d: %.*s",
+        logInfo("Closed with %-s %d: %.*s",
               status.reasonName(), status.code,
               (int)status.message.size, status.message.buf);
         _state = status.isNormal() ? kClosed : kDisconnected;

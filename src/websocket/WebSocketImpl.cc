@@ -153,7 +153,7 @@ namespace litecore { namespace websocket {
 
         if (disconnect) {
             // My close message has gone through; now I can disconnect:
-            log("sent close echo; disconnecting socket now");
+            logInfo("sent close echo; disconnecting socket now");
             closeSocket();
         } else if (notify) {
             delegate().onWebSocketWriteable();
@@ -288,7 +288,7 @@ namespace litecore { namespace websocket {
             lock_guard<mutex> lock(_mutex);
             if (!_pingTimer)
                 return;
-            log("Sending PING");
+            logInfo("Sending PING");
             schedulePing();
             // exit scope to release the lock -- this is needed before calling sendOp,
             // which acquires the lock itself
@@ -298,7 +298,7 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::receivedPong() {
-        log("Received PONG");
+        logInfo("Received PONG");
     }
 
 
@@ -310,7 +310,7 @@ namespace litecore { namespace websocket {
 
     // Initiates a request to close the connection cleanly.
     void WebSocketImpl::close(int status, fleece::slice message) {
-        log("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
+        logInfo("Requesting close with status=%d, message='%.*s'", status, SPLAT(message));
         if (_framing) {
             alloc_slice closeMsg;
             {
@@ -339,13 +339,13 @@ namespace litecore { namespace websocket {
         _closeReceived = true;
         if (_closeSent) {
             // I initiated the close; the peer has confirmed, so disconnect the socket now:
-            log("Close confirmed by peer; disconnecting socket now");
+            logInfo("Close confirmed by peer; disconnecting socket now");
             closeSocket();
         } else {
             // Peer is initiating a close. Save its message and echo it:
             if (willLog()) {
                 auto close = ClientProtocol::parseClosePayload((char*)message.buf, message.size);
-                log("Client is requesting close (%d '%.*s'); echoing it",
+                logInfo("Client is requesting close (%d '%.*s'); echoing it",
                     close.code, (int)close.length, close.message);
             }
             _closeSent = true;
@@ -384,7 +384,7 @@ namespace litecore { namespace websocket {
                               || (status.reason == kWebSocketClose && status.code == kCodeNormal));
                 bool expected = (_closeSent && _closeReceived);
                 if (expected && clean)
-                    log("Socket disconnected cleanly");
+                    logInfo("Socket disconnected cleanly");
                 else
                     warn("Unexpected or unclean socket disconnect! (reason=%-s, code=%d)",
                         status.reasonName(), status.code);
@@ -408,13 +408,13 @@ namespace litecore { namespace websocket {
                     if (status.code != kCodeNormal && status.code != kCodeGoingAway)
                         warn("WebSocket closed abnormally with status %d", status.code);
                 } else if (status.code != 0) {
-                    log("Socket disconnected! (reason=%d, code=%d)", status.reason, status.code);
+                    logInfo("Socket disconnected! (reason=%d, code=%d)", status.reason, status.code);
                 }
             }
 
             _timeConnected.stop();
             double t = _timeConnected.elapsed();
-            log("sent %llu bytes, rcvd %llu, in %.3f sec (%.0f/sec, %.0f/sec)",
+            logInfo("sent %llu bytes, rcvd %llu, in %.3f sec (%.0f/sec, %.0f/sec)",
                 _bytesSent, _bytesReceived, t,
                 _bytesSent/t, _bytesReceived/t);
         }
