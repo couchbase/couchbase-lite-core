@@ -168,8 +168,8 @@ namespace litecore {
     protected:
         virtual bool isBodyOfRevisionAvailable(const Rev* r NONNULL) const;
         virtual alloc_slice readBodyOfRevision(const Rev* r NONNULL) const;
-        virtual slice copyBody(slice body);
-        virtual slice copyBody(alloc_slice body);
+        virtual alloc_slice copyBody(slice body);
+        virtual alloc_slice copyBody(const alloc_slice &body);
 #if DEBUG
         virtual void dump(std::ostream&);
 #endif

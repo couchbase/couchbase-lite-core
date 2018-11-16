@@ -20,19 +20,12 @@
 #include "c4Document+Fleece.h"
 #include "LegacyAttachments.hh"
 #include "StringUtil.hh"
-#include "FleeceImpl.hh"
 #include "DeepIterator.hh"
 
 using namespace fleece;
 using namespace fleece::impl;
 
 namespace c4Internal {
-
-    Retained<Doc> Document::fleeceDoc() {
-        if (!selectedRev.body.buf)
-            return nullptr;
-        return new Doc(selectedRev.body, Doc::kTrusted, _db->documentKeys());
-    }
 
     alloc_slice Document::bodyAsJSON(bool canonical) {
         if (!selectedRev.body.buf)

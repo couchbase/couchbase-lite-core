@@ -155,7 +155,7 @@ namespace litecore {
             // Fleece data must be 2-byte-aligned, so we have to copy body to the heap:
             auto xthis = const_cast<Rev*>(this);
             auto xowner = const_cast<RevTree*>(owner);
-            body = xthis->_body = xowner->copyBody(_body);
+            body = xthis->_body = (slice)xowner->copyBody(_body);
         }
         return body;
     }
@@ -210,15 +210,13 @@ namespace litecore {
 #pragma mark - INSERTION:
 
 
-    slice RevTree::copyBody(slice body) {
-        if (body.size == 0)
-            return body;
+    alloc_slice RevTree::copyBody(slice body) {
         _insertedData.emplace_back(body);
         return _insertedData.back();
     }
 
 
-    slice RevTree::copyBody(alloc_slice body) {
+    alloc_slice RevTree::copyBody(const alloc_slice &body) {
         if (body.size == 0)
             return body;
         _insertedData.push_back(body);
@@ -245,7 +243,7 @@ namespace litecore {
         Rev *newRev = &_revsStorage.back();
         newRev->owner = this;
         newRev->revID = revID;
-        newRev->_body = copyBody(body);
+        newRev->_body = (slice)copyBody(body);
         newRev->sequence = 0; // Sequence is unknown till record is saved
         newRev->flags = Rev::Flags(Rev::kLeaf | Rev::kNew | revFlags);
         newRev->parent = parentRev;

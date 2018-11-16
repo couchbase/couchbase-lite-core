@@ -609,8 +609,8 @@ namespace c4Internal {
 
     void Database::validateRevisionBody(slice body) {
         if (body.size > 0) {
-            Retained<Doc> doc = new Doc(body, Doc::kUntrusted, documentKeys());
-            const Value *v = doc->root();
+            Scope scope(body, documentKeys());
+            const Value *v = Value::fromData(body);
             if (!v)
                 error::_throw(error::CorruptRevisionData, "Revision body is not parseable as Fleece");
             const Dict *root = v->asDict();

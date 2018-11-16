@@ -66,12 +66,14 @@ namespace litecore {
 
         bool updateMeta();
 
+        const fleece::impl::Scope& scopeFor(slice) const;
+
 #if DEBUG
         void dump()          {RevTree::dump();}
 #endif
     protected:
-        virtual slice copyBody(slice body) override;
-        virtual slice copyBody(alloc_slice body) override;
+        virtual alloc_slice copyBody(slice body) override;
+        virtual alloc_slice copyBody(const alloc_slice &body) override;
 #if DEBUG
         virtual void dump(std::ostream&) override;
 #endif
@@ -79,7 +81,7 @@ namespace litecore {
     private:
         void decode();
         void updateScope();
-        slice addScope(slice body);
+        alloc_slice addScope(const alloc_slice &body);
 
         KeyStore&       _store;
         Record          _rec;

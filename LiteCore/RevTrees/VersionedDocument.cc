@@ -83,7 +83,7 @@ namespace litecore {
         addScope(_rec.body());
     }
 
-    slice VersionedDocument::addScope(slice body) {
+    alloc_slice VersionedDocument::addScope(const alloc_slice &body) {
         // A Scope associates the SharedKeys with the Fleece data in the body, so Fleece Dict
         // accessors can decode the int keys.
         if (body)
@@ -91,12 +91,20 @@ namespace litecore {
         return body;
     }
 
-    slice VersionedDocument::copyBody(slice body) {
+    alloc_slice VersionedDocument::copyBody(slice body) {
         return addScope(RevTree::copyBody(body));
     }
 
-    slice VersionedDocument::copyBody(alloc_slice body) {
+    alloc_slice VersionedDocument::copyBody(const alloc_slice &body) {
         return addScope(RevTree::copyBody(body));
+    }
+
+    const fleece::impl::Scope& VersionedDocument::scopeFor(slice s) const {
+        for (auto &scope : _fleeceScopes) {
+            if (scope.data().contains(s))
+                return scope;
+        }
+        error::_throw(error::AssertionFailed, "VersionedDocument has no scope for slice");
     }
 
 

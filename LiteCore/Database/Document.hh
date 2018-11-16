@@ -123,7 +123,7 @@ namespace c4Internal {
             return result;
         }
 
-        Retained<fleece::impl::Doc> fleeceDoc();
+        virtual Retained<fleece::impl::Doc> fleeceDoc() =0;
 
         alloc_slice bodyAsJSON(bool canonical =false);
 

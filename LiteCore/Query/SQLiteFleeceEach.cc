@@ -79,7 +79,7 @@ class FleeceCursor : public sqlite3_vtab_cursor {
 private:
     // Instance data:
     FleeceVTab* _vtab;                  // The virtual table
-    Retained<Doc> _fleeceDoc;           // Fleece document
+    unique_ptr<Scope> _scope;           // Fleece document
     alloc_slice _rootPath;              // The path string within the data, if any
     const Value *_container;            // The object being iterated (target of the path)
     valueType _containerType;           // The value type of _container
@@ -196,7 +196,7 @@ private:
 
 
     void reset() noexcept {
-        _fleeceDoc = nullptr;
+        _scope.reset();
         _rootPath = nullslice;
         _container = nullptr;
         _containerType = kNull;
@@ -222,8 +222,8 @@ private:
             return SQLITE_OK;
         }
         data = _vtab->context.accessor(data);
-        _fleeceDoc = new Doc(data, Doc::kTrusted, _vtab->context.sharedKeys);
-        _container = _fleeceDoc->root();
+        _scope = make_unique<Scope>(data, _vtab->context.sharedKeys);
+        _container = Value::fromTrustedData(data);
         if (!_container) {
             Warn("Invalid Fleece data in SQLite table");
             return SQLITE_MISMATCH; // failed to parse Fleece data

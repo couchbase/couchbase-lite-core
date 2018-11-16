@@ -35,6 +35,9 @@
 
 namespace c4Internal {
 
+    using namespace fleece;
+    using namespace fleece::impl;
+
     class TreeDocument : public Document {
     public:
         TreeDocument(Database* database, C4Slice docID)
@@ -227,6 +230,13 @@ namespace c4Internal {
             return true;
         }
 
+        Retained<Doc> fleeceDoc() override {
+            slice body = selectedRev.body;
+            if (!body)
+                return nullptr;
+            return new Doc(_versionedDoc.scopeFor(body), body, Doc::kTrusted);
+        }
+
         bool save(unsigned maxRevTreeDepth) override {
             requireValidDocID();
             if (maxRevTreeDepth == 0)
@@ -369,7 +379,7 @@ namespace c4Internal {
 
             alloc_slice body = requestBody(rq);
             if (!body)
-                body = alloc_slice{fleece::impl::Dict::kEmpty, 2};
+                body = alloc_slice{Dict::kEmpty, 2};
             
             int httpStatus;
             auto newRev = _versionedDoc.insert(encodedNewRevID,
