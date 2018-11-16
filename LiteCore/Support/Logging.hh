@@ -220,7 +220,6 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         unsigned _objectRef {0};
     };
 
-#ifdef _MSC_VER
 #define _logAt(LEVEL, FMT, ...) do { \
     if (_usuallyFalse(this->willLog(LogLevel::LEVEL))) \
         this->_log(LogLevel::LEVEL, FMT, ##__VA_ARGS__); \
@@ -233,18 +232,5 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
 #else
 #define logDebug(FMT, ...)
 #endif
-#else
-#define _logAt(LEVEL, FMT, ARGS...) ({ \
-    if (_usuallyFalse(this->willLog(LogLevel::LEVEL))) \
-        this->_log(LogLevel::LEVEL, FMT, ##ARGS); \
-    })
-#define logInfo(FMT, ARGS...)    _logAt(Info,    FMT, ##ARGS)
-#define logVerbose(FMT, ARGS...) _logAt(Verbose, FMT, ##ARGS)
 
-#if DEBUG
-#define logDebug(FMT, ARGS...)   _logAt(Debug,   FMT, ##ARGS)
-#else
-#define logDebug(FMT, ARGS...)   ({})
-#endif
-#endif
 }
