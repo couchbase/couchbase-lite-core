@@ -890,6 +890,8 @@ namespace litecore { namespace repl {
 
 
     void DBWorker::findBlobReferences(Dict root, const FindBlobCallback &callback) {
+        // This method is non-static because it references _disableBlobSupport, but it's
+        // thread-safe.
         set<string> found;
         FLDeepIterator i = FLDeepIterator_New(root);
         for (; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i)) {

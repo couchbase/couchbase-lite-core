@@ -42,20 +42,10 @@ namespace litecore { namespace repl {
     }
 
 
-    // Resets the object so it can be reused for another revision.
-    void IncomingRev::clear() {
-        Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
-        _revMessage = nullptr;
-        _rev = nullptr;
-        _error = {};
-        _currentBlob = nullptr;
-        _pendingBlobs.clear();
-    }
-
-    
     // Read the 'rev' message, on my actor thread:
     void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
         DebugAssert(!_revMessage);
+        _error = {};
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
 
         _revMessage = msg;
@@ -65,7 +55,8 @@ namespace litecore { namespace repl {
                                _revMessage->boolProperty("deleted"_sl),
                                _revMessage->boolProperty("noconflicts"_sl)
                                    || _options.noIncomingConflicts());
-        slice sequence(_revMessage->property("sequence"_sl));
+        _docID = _rev->docID;
+        _remoteSequence = _revMessage->property(slice("sequence"));
 
         _peerError = (int)_revMessage->intProperty("error"_sl);
         if (_peerError) {
@@ -78,14 +69,14 @@ namespace litecore { namespace repl {
 
         // Validate the revID and sequence:
         logVerbose("Received revision '%.*s' #%.*s (seq '%.*s')",
-                   SPLAT(_rev->docID), SPLAT(_rev->revID), SPLAT(sequence));
+                   SPLAT(_rev->docID), SPLAT(_rev->revID), SPLAT(_remoteSequence));
         if (_rev->docID.size == 0 || _rev->revID.size == 0) {
             warn("Got invalid revision");
             _error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
             finish();
             return;
         }
-        if (!sequence && nonPassive()) {
+        if (!_remoteSequence && nonPassive()) {
             warn("Missing sequence in 'rev' message for active puller");
             _error = c4error_make(WebSocketDomain, 400,
                                   "received revision with missing 'sequence'"_sl);
@@ -226,8 +217,15 @@ namespace litecore { namespace repl {
             // (though it did get inserted), so notify the delegate of the conflict:
             documentGotError(_rev->docID, Dir::kPulling, {LiteCoreDomain, kC4ErrorConflict}, true);
         }
-        _puller->revWasHandled(this, _rev->docID, remoteSequence(), (_error.code == 0));
-        clear();
+
+        // Free up memory now that I'm done:
+        Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
+        _revMessage = nullptr;
+        _rev = nullptr;
+        _currentBlob = nullptr;
+        _pendingBlobs.clear();
+
+        _puller->revWasHandled(this);
     }
 
 

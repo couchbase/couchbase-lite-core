@@ -20,6 +20,7 @@
 #include "Replicator.hh"
 #include "Actor.hh"
 #include "RemoteSequenceSet.hh"
+#include "Batcher.hh"
 #include <deque>
 
 namespace litecore { namespace repl {
@@ -36,10 +37,7 @@ namespace litecore { namespace repl {
         void start(alloc_slice sinceSequence)   {enqueue(&Puller::_start, sinceSequence);}
 
         // Called only by IncomingRev
-        void revWasHandled(IncomingRev *inc,
-                           const alloc_slice &docID,
-                           slice sequence,
-                           bool complete);
+        void revWasHandled(IncomingRev *inc);
 
     protected:
         virtual std::string loggingClassName() const override       {return "Pull";}
@@ -58,8 +56,7 @@ namespace litecore { namespace repl {
         void handleRev(Retained<MessageIn>);
         void handleNoRev(Retained<MessageIn>);
         void startIncomingRev(MessageIn*);
-        void _revWasHandled(Retained<IncomingRev>, alloc_slice docID, alloc_slice sequence,
-                            bool complete);
+        void _revsFinished();
         void completedSequence(alloc_slice sequence);
 
         void _setSkipDeleted()                  {_skipDeleted = true;}
@@ -73,6 +70,7 @@ namespace litecore { namespace repl {
         std::deque<Retained<MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
         std::deque<Retained<MessageIn>> _waitingRevMessages;     // Queued 'rev' messages
         std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRev objects
+        actor::Batcher<Puller,IncomingRev> _returningRevs;
         bool _waitingForChangesCallback {false};  // Waiting for DBAgent::findOrRequestRevs?
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running

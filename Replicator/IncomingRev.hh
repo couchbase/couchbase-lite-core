@@ -41,6 +41,10 @@ namespace litecore { namespace repl {
 
         static bool shouldCompress(fleece::Dict meta);
 
+        slice docID() const                     {return _docID;}
+        slice remoteSequence() const            {return _remoteSequence;}
+        C4Error error() const                   {return _error;}
+
     protected:
         ActivityLevel computeActivityLevel() const override;
 
@@ -51,10 +55,7 @@ namespace litecore { namespace repl {
         bool fetchNextBlob();
         void insertRevision();
         void finish();
-        void clear();
         virtual void _childChangedStatus(Worker *task, Status status) override;
-
-        slice remoteSequence() const            {return _revMessage->property(slice("sequence"));}
 
         C4BlobStore *_blobStore;
         Puller* _puller;
@@ -66,6 +67,7 @@ namespace litecore { namespace repl {
         Retained<IncomingBlob> _currentBlob;
         C4Error _error {};
         int _peerError {0};
+        alloc_slice _docID, _remoteSequence;
     };
 
 } }

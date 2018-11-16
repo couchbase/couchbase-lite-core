@@ -34,6 +34,7 @@ namespace litecore { namespace repl {
     Puller::Puller(Replicator *replicator, DBWorker *dbActor)
     :Worker(replicator, "Pull")
     ,_dbActor(dbActor)
+    ,_returningRevs(this, &Puller::_revsFinished)
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
@@ -236,36 +237,35 @@ namespace litecore { namespace repl {
     }
 
 
-    void Puller::revWasHandled(IncomingRev *inc,
-                               const alloc_slice &docID,
-                               slice sequence,
-                               bool successful)
-    {
-        enqueue(&Puller::_revWasHandled, retained(inc), docID, alloc_slice(sequence), successful);
+    void Puller::revWasHandled(IncomingRev *inc) {
+        _returningRevs.push(inc);
     }
 
 
     // Callback from an IncomingRev when it's finished (either added to db, or failed)
-    void Puller::_revWasHandled(Retained<IncomingRev> inc,
-                                alloc_slice docID,
-                                alloc_slice sequence,
-                                bool successful)
+    void Puller::_revsFinished()
     {
-        if (successful && nonPassive()) {
-            completedSequence(sequence);
-            finishedDocument(docID, Dir::kPulling);
+        auto revs = _returningRevs.pop();
+        if (nonPassive()) {
+            for (IncomingRev *inc : *revs) {
+                if (inc->error().code == 0) {
+                    completedSequence(alloc_slice(inc->remoteSequence()));
+                    finishedDocument(inc->docID(), Dir::kPulling);
+                }
+            }
         }
+        _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(), revs->end());
 
-        _spareIncomingRevs.push_back(inc);
-
-        decrement(_activeIncomingRevs);
-        if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs && !_waitingRevMessages.empty()) {
+        decrement(_activeIncomingRevs, (unsigned)revs->size());
+        bool any = false;
+        while (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs && !_waitingRevMessages.empty()) {
             auto msg = _waitingRevMessages.front();
             _waitingRevMessages.pop_front();
             startIncomingRev(msg);
-        } else {
-            handleMoreChanges();
+            any = true;
         }
+        if (!any)
+            handleMoreChanges();
     }
 
 
