@@ -57,7 +57,8 @@ static string getBuildInfo() {
     static const char *ee = "";
 #endif
 #if LiteCoreOfficial
-    return format("%sbuild number %s from commit %.8s", ee, LiteCoreBuildNum, GitCommit);
+    return format("%sbuild number %s, ID %.8s, from commit %.8s",
+                  ee, LiteCoreBuildNum, LiteCoreBuildID, GitCommit);
 #else
     if (strcmp(GitBranch, "HEAD") == (0))
         return format("%sbuilt from commit %.8s%s on %s %s",
