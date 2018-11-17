@@ -37,20 +37,14 @@ namespace litecore { namespace websocket {
     LogDomain WSLogDomain("WS", LogLevel::Warning);
 
 
-    atomic_int WebSocket::gInstanceCount;
-
-
     WebSocket::WebSocket(const alloc_slice &a, Role role)
     :_url(a)
     ,_role(role)
-    {
-        ++gInstanceCount;
-    }
+    { }
 
 
-    WebSocket::~WebSocket() {
-        --gInstanceCount;
-    }
+    WebSocket::~WebSocket()
+    { }
 
 
     void WebSocket::connect(Delegate *delegate) {

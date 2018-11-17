@@ -21,6 +21,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "RefCounted.hh"
+#include "InstanceCounted.hh"
 #include <atomic>
 #include <map>
 #include <string>
@@ -104,7 +105,7 @@ namespace litecore { namespace websocket {
 
 
     /** Abstract class representing a WebSocket connection. */
-    class WebSocket : public RefCounted {
+    class WebSocket : public RefCounted, fleece::InstanceCounted {
     public:
         const URL& url() const                      {return _url;}
         Role role() const                           {return _role;}
@@ -125,9 +126,6 @@ namespace litecore { namespace websocket {
 
         /** Closes the WebSocket. Callable from any thread. */
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) =0;
-
-        /** The number of WebSocket instances in memory; for leak checking */
-        static std::atomic_int gInstanceCount;
 
         static constexpr const char *kProtocolsOption = "WS-Protocols";     // string
         static constexpr const char *kHeartbeatOption = "heartbeat";        // seconds
