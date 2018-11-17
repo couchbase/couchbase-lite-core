@@ -25,6 +25,7 @@
 #include "Record.hh"
 #include "RecordEnumerator.hh"
 #include "Logging.hh"
+#include "InstanceCounted.hh"
 #include <set>
 
 
@@ -38,7 +39,7 @@ CBL_CORE_API const C4EnumeratorOptions kC4DefaultEnumeratorOptions = {
 typedef function<bool(const Record&, uint32_t/*C4DocumentFlags*/ documentFlags)> EnumFilter;
 
 
-struct C4DocEnumerator: C4InstanceCounted {
+struct C4DocEnumerator: fleece::InstanceCounted {
     C4DocEnumerator(C4Database *database,
                     sequence_t since,
                     const C4EnumeratorOptions &options)

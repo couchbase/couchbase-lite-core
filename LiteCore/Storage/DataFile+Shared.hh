@@ -9,7 +9,7 @@
 #pragma once
 #include "Error.hh"
 #include "Logging.hh"
-#include "c4Private.h"        // C4InstanceCounted
+#include "InstanceCounted.hh"
 #include <mutex>              // std::mutex, std::unique_lock
 #include <condition_variable> // std::condition_variable
 #include <unordered_map>
@@ -23,7 +23,7 @@ namespace litecore {
     /** Shared state between all open DataFile instances on the same filesystem file.
         Manages a mutex that ensures that only one DataFile can open a transaction at once.
         This class is internal to DataFile. */
-    class DataFile::Shared : public RefCounted, C4InstanceCounted, Logging {
+    class DataFile::Shared : public RefCounted, fleece::InstanceCountedIn<RefCounted>, Logging {
     public:
 
         static Shared* forPath(const FilePath &path, DataFile *dataFile) {
@@ -144,7 +144,9 @@ namespace litecore {
         Shared(const string &p)
         :Logging(DBLog)
         ,path(p)
-        { }
+        {
+            logInfo("instantiated on %s", p.c_str());
+        }
 
         ~Shared() {
             logDebug("destructing");

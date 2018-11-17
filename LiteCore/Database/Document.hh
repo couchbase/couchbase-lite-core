@@ -22,6 +22,7 @@
 #include "Database.hh"
 #include "DataFile.hh"
 #include "BlobStore.hh"
+#include "InstanceCounted.hh"
 #include "RefCounted.hh"
 #include "Logging.hh"
 #include "function_ref.hh"
@@ -44,7 +45,7 @@ namespace c4Internal {
         This is an abstract base class whose concrete subclasses are TreeDocument (rev-trees) 
         and VectorDocument (version-vectors).
         Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
-    class Document : public C4Document, C4InstanceCounted {
+    class Document : public C4Document, fleece::InstanceCountedIn<Document> {
     public:
         alloc_slice _docIDBuf;
         alloc_slice _revIDBuf;

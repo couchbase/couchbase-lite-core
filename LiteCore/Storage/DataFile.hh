@@ -21,6 +21,7 @@
 #include "FilePath.hh"
 #include "Logging.hh"
 #include "RefCounted.hh"
+#include "InstanceCounted.hh"          // For fleece::InstanceCountedIn
 #include <vector>
 #include <unordered_map>
 #include <atomic> // for std::atomic_uint
@@ -41,7 +42,7 @@ namespace litecore {
 
     /** A database file, primarily a container of KeyStores which store the actual data.
         This is an abstract class, with concrete subclasses for different database engines. */
-    class DataFile : public Logging {
+    class DataFile : public Logging, fleece::InstanceCountedIn<DataFile> {
     public:
 
         // Callback that takes a record body and returns the portion of it containing Fleece data

@@ -29,16 +29,11 @@
 #ifdef __cplusplus
 extern "C" {
 
-    /** Total number of C4 objects whose classes inherit from C4InstanceCounted (see below).
-        This is compared by unit tests before and after the test runs, to check for leaks. */
-    CBL_CORE_API extern std::atomic_int gC4InstanceCount;
-
     /** If > 0, the currently running test is expected to throw an exception, so debuggers should
         ignore the exception. */
     CBL_CORE_API extern std::atomic_int gC4ExpectExceptions;
 
 #else
-    CBL_CORE_API extern atomic_int gC4InstanceCount;
     CBL_CORE_API extern atomic_int gC4ExpectExceptions;
 #endif
 
@@ -87,26 +82,6 @@ bool c4db_markSynced(C4Database *database,
 #ifdef __cplusplus
 }
 
-
-
-
-/** Base class that keeps track of the total instance count of it and all subclasses.
-    This is useful for leak detection. */
-class C4InstanceCounted {
-public:
-#if DEBUG
-    C4InstanceCounted()                             {++gC4InstanceCount; track();}
-    C4InstanceCounted(const C4InstanceCounted&)     {++gC4InstanceCount; track();}
-    virtual ~C4InstanceCounted()                    {--gC4InstanceCount; untrack();}
-
-    void track() const;
-    void untrack() const;
-#else
-    C4InstanceCounted()                             {++gC4InstanceCount;}
-    C4InstanceCounted(const C4InstanceCounted&)     {++gC4InstanceCount;}
-    ~C4InstanceCounted()                            {--gC4InstanceCount;}
-#endif
-};
 
 namespace litecore { namespace constants {
     extern const C4Slice kLocalCheckpointStore;

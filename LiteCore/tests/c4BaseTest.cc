@@ -17,8 +17,10 @@
 //
 
 #include "c4Internal.hh"
-#include "c4Private.h"
+#include "InstanceCounted.hh"
 #include "catch.hpp"
+
+using namespace fleece;
 
 
 // NOTE: These tests have to be in the C++ tests target, not the C tests, because they use internal
@@ -69,4 +71,44 @@ TEST_CASE("C4Error exceptions") {
     C4StringResult message = c4error_getMessage(error);
     string messageStr = result2string(message);
     CHECK(messageStr == "Oops");
+}
+
+namespace {
+
+    class NonVirt {
+    public:
+        int64_t o_hai;
+    };
+
+    class Virt {
+    public:
+        int64_t foo;
+        virtual ~Virt() { }
+    };
+
+    class NonVirtCounty : public NonVirt, public fleece::InstanceCountedIn<NonVirtCounty> {
+    public:
+        NonVirtCounty(int32_t b) :bar(b) { }
+        int32_t bar;
+    };
+
+    class VirtCounty : public Virt, public fleece::InstanceCountedIn<VirtCounty> {
+    public:
+        VirtCounty(int32_t b) :bar(b) { }
+        int32_t bar;
+    };
+
+    TEST_CASE("fleece::InstanceCounted") {
+        REQUIRE(InstanceCounted::count() == 0);
+        auto n = new NonVirtCounty(12);
+        auto v = new VirtCounty(34);
+        C4Log("NonVirtCounty instance at %p; IC at %p", n, (fleece::InstanceCounted*)n);
+        C4Log("VirtCounty instance at %p; IC at %p", v, (fleece::InstanceCountedIn<Virt>*)v);
+        REQUIRE(InstanceCounted::count() == 2);
+        c4_dumpInstances();
+        delete n;
+        delete v;
+        REQUIRE(InstanceCounted::count() == 0);
+    }
+
 }

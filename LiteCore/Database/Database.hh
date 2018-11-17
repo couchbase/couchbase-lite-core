@@ -23,7 +23,7 @@
 #include "c4Document.h"
 #include "DataFile.hh"
 #include "FilePath.hh"
-#include "c4Private.h"
+#include "InstanceCounted.hh"
 #include <memory>
 #include <mutex>
 #include <unordered_set>
@@ -44,7 +44,7 @@ namespace c4Internal {
 
 
     /** A top-level LiteCore database. */
-    class Database : public RefCounted, C4InstanceCounted {
+    class Database : public RefCounted, fleece::InstanceCountedIn<Database> {
     public:
         Database(const string &path, C4DatabaseConfig config);
 

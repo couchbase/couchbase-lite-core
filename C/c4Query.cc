@@ -23,6 +23,7 @@
 #include "DataFile.hh"
 #include "Query.hh"
 #include "Record.hh"
+#include "InstanceCounted.hh"
 #include "FleeceImpl.hh"
 #include <math.h>
 #include <limits.h>
@@ -41,7 +42,7 @@ CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
 
 
 // This is the same as C4Query
-struct c4Query : C4InstanceCounted {
+struct c4Query : fleece::InstanceCounted {
     c4Query(Database *db, C4Slice queryExpression)
     :_database(db),
      _query(db->defaultKeyStore().compileQuery(queryExpression))
@@ -57,7 +58,7 @@ private:
 
 
 // Extension of C4QueryEnumerator
-struct C4QueryEnumeratorImpl : public C4QueryEnumerator, C4InstanceCounted {
+struct C4QueryEnumeratorImpl : public C4QueryEnumerator, fleece::InstanceCountedIn<C4QueryEnumerator> {
     C4QueryEnumeratorImpl(Database *database, QueryEnumerator *e)
     :_database(database)
     ,_enum(e)

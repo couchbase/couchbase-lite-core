@@ -206,7 +206,6 @@ c4_getObjectCount
 c4_shutdown
 c4db_markSynced
 c4_dumpInstances
-gC4InstanceCount
 gC4ExpectExceptions
 
 FLSlice_Equal
