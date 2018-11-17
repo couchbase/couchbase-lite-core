@@ -28,7 +28,6 @@ if(NOT APPLE)
 endif()
 set(TEST_SRC ${TEST_SRC}
              ${FLEECE_TEST_SRC}
-             ${TOP}/tools/ArgumentTokenizer.cc
              ${TOP}vendor/fleece/Experimental/KeyTree.cc)
 
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
