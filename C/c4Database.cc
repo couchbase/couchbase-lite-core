@@ -128,11 +128,8 @@ bool c4db_close(C4Database* database, C4Error *outError) noexcept {
 }
 
 
-bool c4db_free(C4Database* database) noexcept {
-    if (database && !database->mustNotBeInTransaction(nullptr))
-        return false;
+void c4db_free(C4Database* database) noexcept {
     release(database);
-    return true;
 }
 
 

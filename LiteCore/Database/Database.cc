@@ -205,7 +205,8 @@ namespace c4Internal {
 
 
     Database::~Database() {
-        Assert(_transactionLevel == 0);
+        Assert(_transactionLevel == 0,
+               "Database being dealloced while in a transaction");
     }
 
 

@@ -123,7 +123,7 @@ extern "C" {
     /** Frees a database handle, closing the database first if it's still open.
         (More precisely, this decrements the handle's reference count. The handle is only freed
         if the count reaches zero, which it will unless c4db_retain has previously been called.) */
-    bool c4db_free(C4Database* database) C4API;
+    void c4db_free(C4Database* database) C4API;
 
     /** Closes the database. Does not free the handle, although any operation other than
         c4db_free() will fail with an error. */
