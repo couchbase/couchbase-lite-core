@@ -75,7 +75,20 @@ using namespace litecore;
 using namespace std;
 
 
-class DataFileTestFixture {
+class TestFixture {
+public:
+    TestFixture();
+    ~TestFixture();
+
+    unsigned warningsLogged() noexcept;
+    
+private:
+    unsigned const _warningsAlreadyLogged;
+    int _objectCount;
+};
+
+
+class DataFileTestFixture : public TestFixture {
 public:
 
     static const int numberOfOptions = 1;
@@ -88,18 +101,14 @@ public:
 
     DataFile::Factory& factory();
     
-    DataFile *db {nullptr};
+    std::unique_ptr<DataFile> db;
     KeyStore *store {nullptr};
 
     FilePath databasePath(const string baseName);
+    void deleteDatabase();
     void deleteDatabase(const FilePath &dbPath);
     DataFile* newDatabase(const FilePath &path, const DataFile::Options* =nullptr);
     void reopenDatabase(const DataFile::Options *newOptions =nullptr);
-
-    unsigned warningsLogged() noexcept;
-
-private:
-    unsigned const _warningsAlreadyLogged;
 };
 
 

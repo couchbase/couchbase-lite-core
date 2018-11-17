@@ -1302,8 +1302,7 @@ TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
     e->next();
     query = nullptr;
 
-    db->deleteDataFile();
-    db = nullptr;
+    deleteDatabase();
 
     // Now free the query enum, which will free the sqlite_stmt, triggering a SQLite warning
     // callback about the database file being unlinked:

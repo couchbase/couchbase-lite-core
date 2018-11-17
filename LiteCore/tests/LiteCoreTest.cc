@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <mutex>
+#include <thread>
 
 #if defined(__linux__)
     #include "arc4random.h"
@@ -135,6 +136,75 @@ void ExpectException(litecore::error::Domain domain, int code, std::function<voi
 }
 
 
+#pragma mark - TESTFIXTURE:
+
+
+static atomic_uint sWarningsLogged;
+
+
+static void logCallback(const LogDomain &domain, LogLevel level,
+                        const char *fmt, va_list args)
+{
+    LogDomain::defaultCallback(domain, level, fmt, args);
+    if (level >= LogLevel::Warning)
+        ++sWarningsLogged;
+}
+
+
+TestFixture::TestFixture()
+:_warningsAlreadyLogged(sWarningsLogged)
+,_objectCount(c4_getObjectCount())
+{
+    CHECK(_objectCount == 0);//TEMP
+    static once_flag once;
+    call_once(once, [] {
+        C4StringResult version = c4_getBuildInfo();
+        Log("This is LiteCore %.*s", SPLAT(version));
+
+        LogDomain::setCallback(&logCallback, false);
+        if (LogDomain::fileLogLevel() == LogLevel::None) {
+            auto path = FilePath::tempDirectory()["LiteCoreC++Tests.c4log"];
+            Log("Beginning logging to %s", path.path().c_str());
+            LogDomain::writeEncodedLogsTo(path, LogLevel::Verbose,
+                                          format("LiteCore %.*s", SPLAT(version)));
+        }
+        if (getenv("LiteCoreTestsQuiet"))
+            LogDomain::setCallbackLogLevel(LogLevel::Warning);
+        c4slice_free(version);
+    });
+    error::sWarnOnError = true;
+}
+
+
+TestFixture::~TestFixture() {
+#if ATOMIC_INT_LOCK_FREE > 1
+    if (!current_exception()) {
+        // Check for leaks:
+        int leaks;
+        int attempt = 0;
+        while ((leaks = c4_getObjectCount() - _objectCount) > 0 && attempt++ < 10) {
+            this_thread::sleep_for(chrono::microseconds(200000)); // wait up to 2 seconds for bg threads to free objects
+        }
+        if (leaks > 0) {
+            fprintf(stderr, "*** LEAKED LITECORE OBJECTS: \n");
+            c4_dumpInstances();
+            fprintf(stderr, "***\n");
+        }
+        CHECK(leaks == 0);
+    }
+#endif
+}
+
+
+unsigned TestFixture::warningsLogged() noexcept {
+    return sWarningsLogged - _warningsAlreadyLogged;
+}
+
+
+
+#pragma mark - DATAFILETESTFIXTURE:
+
+
 DataFile::Factory& DataFileTestFixture::factory() {
     return SQLiteDataFile::sqliteFactory();
 }
@@ -161,66 +231,31 @@ void DataFileTestFixture::reopenDatabase(const DataFile::Options *newOptions) {
     auto dbPath = db->filePath();
     auto options = db->options();
     Debug("//// Closing db");
-    delete db;
-    db = nullptr;
+    db.reset();
     store = nullptr;
     Debug("//// Reopening db");
-    db = newDatabase(dbPath, newOptions ? newOptions : &options);
+    db.reset(newDatabase(dbPath, newOptions ? newOptions : &options));
     store = &db->defaultKeyStore();
 }
 
 
-static atomic_uint sWarningsLogged;
-
-
-static void logCallback(const LogDomain &domain, LogLevel level,
-                        const char *fmt, va_list args)
-{
-    LogDomain::defaultCallback(domain, level, fmt, args);
-    if (level >= LogLevel::Warning)
-        ++sWarningsLogged;
-}
-
-
-DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options *options)
-:_warningsAlreadyLogged(sWarningsLogged)
-{
-    static once_flag once;
-    call_once(once, [] {
-        C4StringResult version = c4_getBuildInfo();
-        Log("This is LiteCore %.*s", SPLAT(version));
-
-        LogDomain::setCallback(&logCallback, false);
-        if (LogDomain::fileLogLevel() == LogLevel::None) {
-            auto path = FilePath::tempDirectory()["LiteCoreC++Tests.c4log"];
-            Log("Beginning logging to %s", path.path().c_str());
-            LogDomain::writeEncodedLogsTo(path, LogLevel::Verbose,
-                                          format("LiteCore %.*s", SPLAT(version)));
-        }
-        if (getenv("LiteCoreTestsQuiet"))
-            LogDomain::setCallbackLogLevel(LogLevel::Warning);
-        c4slice_free(version);
-    });
-    error::sWarnOnError = true;
-
+DataFileTestFixture::DataFileTestFixture(int testOption, const DataFile::Options *options) {
     auto dbPath = databasePath("cbl_core_temp");
     deleteDatabase(dbPath);
-    db = newDatabase(dbPath, options);
+    db.reset(newDatabase(dbPath, options));
     store = &db->defaultKeyStore();
+}
+
+
+void DataFileTestFixture::deleteDatabase() {
+    try {
+        db->deleteDataFile();
+    } catch (...) { }
+    db.reset();
 }
 
 
 DataFileTestFixture::~DataFileTestFixture() {
-    if (db) {
-        try {
-            db->deleteDataFile();
-        } catch (...) { }
-        delete db;
-    }
+    if (db)
+        deleteDatabase();
 }
-
-
-unsigned DataFileTestFixture::warningsLogged() noexcept {
-    return sWarningsLogged - _warningsAlreadyLogged;
-}
-

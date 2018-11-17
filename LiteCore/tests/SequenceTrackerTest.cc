@@ -31,7 +31,7 @@ inline alloc_slice operator "" _asl (const char *str, size_t length)
 
 namespace litecore {
 
-    class SequenceTrackerTest {     // SequenceTracker declares this class a friend
+    class SequenceTrackerTest : public TestFixture {     // SequenceTracker declares this class a friend
     public:
         SequenceTracker tracker;
         sequence_t seq = 0;

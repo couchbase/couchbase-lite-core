@@ -28,7 +28,7 @@ using namespace std;
 using namespace fleece::impl;
 
 
-class QueryParserTest : public QueryParser::delegate {
+class QueryParserTest : public TestFixture, public QueryParser::delegate {
 public:
     QueryParserTest() { }
 

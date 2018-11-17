@@ -27,7 +27,7 @@ using namespace std;
 using namespace fleece;
 
 
-class UpgradeTestFixture {
+class UpgradeTestFixture : public TestFixture {
 protected:
 
     Retained<Database> db;

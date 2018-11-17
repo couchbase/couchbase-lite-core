@@ -240,6 +240,7 @@ namespace litecore {
     public:
         explicit Transaction(DataFile*);
         explicit Transaction(DataFile &db)  :Transaction(&db) { }
+        explicit Transaction(const std::unique_ptr<DataFile>& db)  :Transaction(db.get()) { }
         ~Transaction();
 
         DataFile& dataFile() const          {return _db;}

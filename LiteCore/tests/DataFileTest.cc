@@ -45,7 +45,7 @@ static void check_parent(string full, string parent)
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
     REQUIRE(db->isOpen());
-    REQUIRE(&store->dataFile() == db);
+    REQUIRE(&store->dataFile() == db.get());
     REQUIRE(store->recordCount() == 0);
     REQUIRE(store->lastSequence() == 0);
 }
@@ -53,9 +53,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DbInfo", "[DataFile]") {
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Delete DB", "[DataFile]") {
     auto path = db->filePath();
-    db->deleteDataFile();
-    delete db;
-    db = nullptr;
+    deleteDatabase();
     path.forEachMatch([](const FilePath &file) {
         FAIL("Leftover file(s) '" << file.path() << "' after deleting database");
     });

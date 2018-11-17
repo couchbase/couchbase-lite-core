@@ -21,7 +21,7 @@
 #include <deque>
 using namespace std;
 
-class TokenizerTestFixture {
+class TokenizerTestFixture : public TestFixture {
 protected:
     ArgumentTokenizer _tokenizer;
 };
