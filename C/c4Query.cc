@@ -312,3 +312,18 @@ C4SliceResult c4db_getIndexes(C4Database* database, C4Error* outError) noexcept 
 C4SliceResult c4db_getIndexesInfo(C4Database* database, C4Error* outError) noexcept {
     return getIndexes(database, true, outError);
 }
+
+
+// Stubs for functions only available in EE:
+#ifndef COUCHBASE_ENTERPRISE
+#include "c4PredictiveQuery.h"
+
+void c4pred_registerModel(const char *name, C4PredictiveModel model) C4API {
+    abort();
+}
+
+bool c4pred_unregisterModel(const char *name) C4API {
+    abort();
+}
+
+#endif

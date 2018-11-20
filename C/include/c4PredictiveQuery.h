@@ -3,6 +3,19 @@
 //
 // Copyright © 2018 Couchbase. All rights reserved.
 //
+//  COUCHBASE LITE ENTERPRISE EDITION
+//
+//  Licensed under the Couchbase License Agreement (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//  https://info.couchbase.com/rs/302-GJY-034/images/2017-10-30_License_Agreement.pdf
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+//
 
 #pragma once
 #include "c4Base.h"
@@ -74,10 +87,10 @@ extern "C" {
     /** Registers a predictive model, under a name. The model can now be invoked within a query
         by calling `prediction(_name_, _input_)`. The model remains registered until it's explicitly
         unregistered, or another model is registered with the same name. */
-    void c4pred_registerModel(const char *name, C4PredictiveModel);
+    void c4pred_registerModel(const char* C4NONNULL name, C4PredictiveModel) C4API;
 
     /** Unregisters whatever model was last registered with this name. */
-    bool c4pred_unregisterModel(const char *name);
+    bool c4pred_unregisterModel(const char* C4NONNULL name) C4API;
 
 
     /** @} */
