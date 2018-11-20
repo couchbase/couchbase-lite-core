@@ -21,6 +21,7 @@
 #include "RefCounted.hh"
 #include "RecordEnumerator.hh"
 #include "function_ref.hh"
+#include <functional>
 
 namespace litecore {
 
@@ -125,9 +126,11 @@ namespace litecore {
         /** Returns the nearest future time at which a record will expire, or 0 if none. */
         virtual expiration_t nextExpiration() =0;
 
+        using ExpirationCallback = std::function<void(slice docID)>;
+
         /** Deletes all records whose expiration time is in the past.
             @return  The number of records deleted */
-        virtual unsigned expireRecords() =0;
+        virtual unsigned expireRecords(ExpirationCallback =nullptr) =0;
 
 
         //////// Indexing:

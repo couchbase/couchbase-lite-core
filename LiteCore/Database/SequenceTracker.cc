@@ -36,7 +36,7 @@ Any document change items before the first placeholder can be removed:
 After a document changes, if the item(s) directly before its change object are placeholders,
 their notifiers post notifications. Here document F changed, and notifier 1 posts a notification:
                 Pl2 -> B -> A -> Pl1 -> F
- 
+
 Transactions:
  When a transaction begins, a placeholder is added at the end of the list.
  On commit: Generate a list of all changes since that placeholder, and broadcast to all other databases open on this file. They add those changes to their SequenceTrackers.
@@ -107,11 +107,19 @@ namespace litecore {
     void SequenceTracker::documentChanged(const alloc_slice &docID,
                                           const alloc_slice &revID,
                                           sequence_t sequence,
-                                          uint64_t bodySize) {
+                                          uint64_t bodySize)
+    {
+        Assert(docID && revID && sequence > _lastSequence);
         Assert(inTransaction());
-        Assert(sequence > _lastSequence);
         _lastSequence = sequence;
         _documentChanged(docID, revID, sequence, bodySize);
+    }
+
+
+    void SequenceTracker::documentPurged(slice docID) {
+        Assert(docID);
+        Assert(inTransaction());
+        _documentChanged(alloc_slice(docID), {}, 0, 0);
     }
 
 
@@ -197,11 +205,17 @@ namespace litecore {
         if (sinceSeq >= _lastSequence) {
             return _changes.cend();
         } else {
-            return lower_bound(_changes.cbegin(), _changes.cend(),
-                               sinceSeq + 1,
-                               [](const Entry &c, sequence_t s) {return c.sequence < s;} );
-            //OPT: This is O(n) since _changes is a linked list. I don't expect it to be called often enough for this to be a problem, but I could be wrong.
-            //OPT: Might be more efficient to search backwards, if sinceSeq is usually recent?
+            // Scan back till we find a document entry with sequence less than sinceSeq
+            // (but not a purge); then back up one:
+            auto result = _changes.crbegin();
+            for (auto i = _changes.crbegin(); i != _changes.crend(); ++i) {
+                __unused auto &entry = *i;
+                if (i->sequence > sinceSeq || i->isPurge())
+                    result = i;
+                else if (!i->isPlaceholder())
+                    break;
+            }
+            return prev(result.base());      // (convert `result` to regular fwd iterator)
         }
     }
 

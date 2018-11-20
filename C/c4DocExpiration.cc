@@ -61,11 +61,11 @@ C4Timestamp c4db_nextDocExpiration(C4Database *db) C4API {
 }
 
 
-C4Timestamp c4db_purgeExpiredDocs(C4Database *db, C4Error *outError) C4API {
+int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error *outError) C4API {
     int64_t count = -1;
     if (c4db_beginTransaction(db, outError)) {
         try {
-            count = db->defaultKeyStore().expireRecords();
+            count = db->purgeExpiredDocs();
         } catchError(outError);
         if (!c4db_endTransaction(db, (count > 0), outError))
             count = -1;

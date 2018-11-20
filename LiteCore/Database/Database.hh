@@ -88,6 +88,7 @@ namespace c4Internal {
         KeyStore& getKeyStore(const string &name) const;
 
         bool purgeDocument(slice docID);
+        int64_t purgeExpiredDocs();
 
 #if DEBUG
         void validateRevisionBody(slice body);
@@ -113,12 +114,8 @@ namespace c4Internal {
 
     public:
         // should be private, but called from Document
-        void saved(Document* NONNULL);
+        void documentSaved(Document* NONNULL);
 
-        // these should be private, but are also used by c4View
-        static DataFile* newDataFile(const FilePath &path,
-                                     const C4DatabaseConfig &config,
-                                     bool isMainDB);
     protected:
         virtual ~Database();
         void mustNotBeInTransaction();
@@ -128,6 +125,9 @@ namespace c4Internal {
         static FilePath findOrCreateBundle(const string &path, bool canCreate,
                                            C4StorageEngine &outStorageEngine);
         static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
+        static DataFile* newDataFile(const FilePath &path,
+                                     const C4DatabaseConfig &config,
+                                     bool isMainDB);
         void _cleanupTransaction(bool committed);
         bool getUUIDIfExists(slice key, UUID&);
         UUID generateUUID(slice key, Transaction&, bool overwrite =false);

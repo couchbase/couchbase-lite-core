@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Base.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include <list>
 #include <mutex>
@@ -56,33 +57,39 @@ namespace litecore {
                              sequence_t sequence,
                              uint64_t bodySize);
 
+        /** Document implementation calls this to register the change with the Notifier. */
+        void documentPurged(slice docID);
+
         /** Copy the other tracker's transaction's changes into myself as committed & external */
         void addExternalTransaction(const SequenceTracker &from);
 
-        sequence_t lastSequence() const         {return _lastSequence;}
+        sequence_t lastSequence() const        {return _lastSequence;}
 
         /** Tracks a document's current sequence. */
         struct Entry {
+            alloc_slice const               docID;
             sequence_t                      sequence {0};
 
-            // Document entry (when sequence != 0):
+            // Document entry (when docID != nullslice):
             sequence_t                      committedSequence {0};
-            alloc_slice const               docID;
             alloc_slice                     revID;
             std::vector<DocChangeNotifier*> documentObservers;
             uint32_t                        bodySize;
             bool                            idle     :1;
             bool                            external :1;
 
-            // Placeholder entry (when sequence == 0):
+            // Placeholder entry (when docID == nullslice):
             DatabaseChangeNotifier* const   databaseObserver {nullptr};
 
             Entry(const alloc_slice &d, alloc_slice r, sequence_t s, uint32_t bs)
-            :docID(d), revID(r), sequence(s), bodySize(bs), idle(false), external(false) { }
+            :docID(d), revID(r), sequence(s), bodySize(bs), idle(false), external(false) {
+                DebugAssert(docID != nullslice);
+            }
             Entry(DatabaseChangeNotifier *o)
             :databaseObserver(o) { }    // placeholder
 
             bool isPlaceholder() const          {return docID.buf == nullptr;}
+            bool isPurge() const                {return sequence == 0 && !isPlaceholder();}
             bool isIdle() const                 {return idle && !isPlaceholder();}
         };
 

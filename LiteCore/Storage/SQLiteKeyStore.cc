@@ -89,6 +89,7 @@ namespace litecore {
         _setExpStmt.reset();
         _getExpStmt.reset();
         _nextExpStmt.reset();
+        _findExpStmt.reset();
         KeyStore::close();
     }
 
@@ -410,11 +411,25 @@ namespace litecore {
     }
 
 
-    unsigned SQLiteKeyStore::expireRecords() {
+    unsigned SQLiteKeyStore::expireRecords(ExpirationCallback callback) {
+        if (!hasExpiration())
+            return 0;
+        expiration_t t = now();
         unsigned expired = 0;
-        if (hasExpiration()) {
+        bool none = false;
+        if (callback) {
+            compile(_findExpStmt, "SELECT key FROM kv_@ WHERE expiration <= ?");
+            UsingStatement u(*_findExpStmt);
+            _findExpStmt->bind(1, (long long)t);
+            none = true;
+            while (_findExpStmt->executeStep()) {
+                none = false;
+                callback(columnAsSlice(_findExpStmt->getColumn(0)));
+            }
+        }
+        if (!none) {
             expired = db().exec(format("DELETE FROM kv_%s WHERE expiration <= %lld",
-                                       name().c_str(), now()));
+                                       name().c_str(), t));
         }
         db()._logInfo("Purged %u expired documents", expired);
         return expired;

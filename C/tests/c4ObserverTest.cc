@@ -152,3 +152,39 @@ TEST_CASE_METHOD(C4ObserverTest, "Multi-DB Observer", "[Observer][C]") {
     c4db_close(otherdb, NULL);
     c4db_free(otherdb);
 }
+
+
+TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Purge", "[Observer][C]") {
+    createRev(C4STR("A"), C4STR("1-aa"), kFleeceBody);
+
+    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+    CHECK(dbCallbackCalls == 0);
+
+    REQUIRE(c4db_beginTransaction(db, nullptr));
+    REQUIRE(c4db_purgeDoc(db, "A"_sl, nullptr));
+    REQUIRE(c4db_endTransaction(db, true, nullptr));
+
+    CHECK(dbCallbackCalls == 1);
+
+    checkChanges({"A"}, {""});
+}
+
+
+TEST_CASE_METHOD(C4ObserverTest, "Doc Observer Expiration", "[Observer][C]") {
+    auto now = c4_now();
+
+    createRev(C4STR("A"), C4STR("1-aa"), kFleeceBody);
+    createRev(C4STR("B"), C4STR("1-bb"), kFleeceBody);
+    REQUIRE(c4doc_setExpiration(db, "A"_sl, now - 100*1000, nullptr));
+    REQUIRE(c4doc_setExpiration(db, "B"_sl, now + 100*1000, nullptr));
+
+    dbObserver = c4dbobs_create(db, dbObserverCallback, this);
+    CHECK(dbCallbackCalls == 0);
+
+    REQUIRE(c4db_purgeExpiredDocs(db, nullptr));
+
+    CHECK(dbCallbackCalls == 1);
+    checkChanges({"A"}, {""});
+}
+
+

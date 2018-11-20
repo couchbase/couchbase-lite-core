@@ -556,11 +556,6 @@ namespace c4Internal {
 #pragma mark - DOCUMENTS:
 
     
-    bool Database::purgeDocument(slice docID) {
-        return defaultKeyStore().del(docID, transaction());
-    }
-
-
     Record Database::getRawDocument(const string &storeName, slice key) {
         return getKeyStore(storeName).get(key);
     }
@@ -628,7 +623,7 @@ namespace c4Internal {
 #endif
 
 
-    void Database::saved(Document* doc) {
+    void Database::documentSaved(Document* doc) {
         if (_sequenceTracker) {
             lock_guard<mutex> lock(_sequenceTracker->mutex());
             Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
@@ -637,6 +632,23 @@ namespace c4Internal {
                                               doc->selectedRev.sequence,
                                               doc->selectedRev.body.size);
         }
+    }
+
+
+    bool Database::purgeDocument(slice docID) {
+        if (!defaultKeyStore().del(docID, transaction()))
+            return false;
+        if (_sequenceTracker.get())
+            _sequenceTracker->documentPurged(docID);
+        return true;
+    }
+
+
+    int64_t Database::purgeExpiredDocs() {
+        KeyStore::ExpirationCallback cb = [=](slice docID) {
+            _sequenceTracker->documentPurged(docID);
+        };
+        return _db->defaultKeyStore().expireRecords(_sequenceTracker ? cb : nullptr);
     }
 
 }

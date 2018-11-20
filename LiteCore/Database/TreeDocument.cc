@@ -253,7 +253,7 @@ namespace c4Internal {
                         sequence = _versionedDoc.sequence();
                         if (selectedRev.sequence == 0)
                             selectedRev.sequence = sequence;
-                        _db->saved(this);
+                        _db->documentSaved(this);
                     }
                     return true;
             }

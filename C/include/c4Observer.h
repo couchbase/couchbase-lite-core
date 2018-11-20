@@ -28,17 +28,32 @@ extern "C" {
     /** \defgroup Observer  Database and Document Observers
         @{ */
 
+    /** \name Database Observer
+        @{ */
+
+    /** Represents a change to a document in a database. */
     typedef struct {
-        C4HeapString docID;
-        C4HeapString revID;
-        C4SequenceNumber sequence;
-        uint32_t bodySize;
+        C4HeapString docID;         ///< The document's ID
+        C4HeapString revID;         ///< The latest revision ID (or null if doc was purged)
+        C4SequenceNumber sequence;  ///< The latest sequence number (or 0 if doc was purged)
+        uint32_t bodySize;          ///< The size of the revision body in bytes
     } C4DatabaseChange;
 
     /** A database-observer reference. */
     typedef struct c4DatabaseObserver C4DatabaseObserver;
 
     /** Callback invoked by a database observer.
+     
+        CAUTION: This callback is called when a transaction is committed, even one made by a
+        different connection (C4Database instance) on the same file. This means that, if your
+        application is multithreaded, the callback may be running on a different thread than the
+        one this database instance uses. It is your responsibility to ensure thread safety.
+
+        In general, it is best to make _no_ LiteCore calls from within this callback. Instead,
+        use your platform event-handling API to schedule a later call from which you can read the
+        changes. Since this callback may be invoked many times in succession, make sure you
+        schedule only one call at a time.
+
         @param observer  The observer that initiated the callback.
         @param context  user-defined parameter given when registering the callback. */
     typedef void (*C4DatabaseObserverCallback)(C4DatabaseObserver* observer C4NONNULL,
@@ -88,6 +103,11 @@ extern "C" {
         It is safe to pass NULL to this call. */
     void c4dbobs_free(C4DatabaseObserver*) C4API;
 
+    /** @} */
+
+
+    /** \name Document Observer
+     @{ */
 
     /** A document-observer reference. */
     typedef struct c4DocumentObserver C4DocumentObserver;
@@ -118,6 +138,7 @@ extern "C" {
         It is safe to pass NULL to this call. */
     void c4docobs_free(C4DocumentObserver*) C4API;
 
+    /** @} */
     /** @} */
 #ifdef __cplusplus
 }

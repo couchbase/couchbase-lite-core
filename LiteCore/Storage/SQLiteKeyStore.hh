@@ -55,7 +55,7 @@ namespace litecore {
         virtual bool setExpiration(slice key, expiration_t) override;
         virtual expiration_t getExpiration(slice key) override;
         virtual expiration_t nextExpiration() override;
-        virtual unsigned expireRecords() override;
+        virtual unsigned expireRecords(ExpirationCallback =nullptr) override;
 
         bool supportsIndexes(IndexType t) const override               {return true;}
         bool createIndex(const IndexSpec&, const IndexOptions* = nullptr) override;
@@ -134,7 +134,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
         std::unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
         std::unique_ptr<SQLite::Statement> _setFlagStmt;
-        std::unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt;
+        std::unique_ptr<SQLite::Statement> _setExpStmt, _getExpStmt, _nextExpStmt, _findExpStmt;
 
         bool _createdSeqIndex {false};     // Created by-seq index yet?
         bool _lastSequenceChanged {false};

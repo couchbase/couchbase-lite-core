@@ -382,3 +382,28 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker ExternalChanges
     CHECK(changes[0].docID == "B"_sl);
     CHECK(changes[1].docID == "Z"_sl);
 }
+
+
+TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker Purge", "[notification]") {
+    int count1=0;
+    DatabaseChangeNotifier cn1(tracker, [&](DatabaseChangeNotifier&) {++count1;});
+
+    tracker.beginTransaction();
+    tracker.documentChanged("A"_asl, "1-aa"_asl, ++seq, 1111);
+    tracker.documentChanged("B"_asl, "1-bb"_asl, ++seq, 2222);
+    tracker.documentPurged("A"_sl);
+
+    {
+        REQUIRE_IF_DEBUG(dump() == "[*, (B@2, A@0)]");
+        SequenceTracker::Change changes[5];
+        bool external;
+        REQUIRE(cn1.readChanges(changes, 5, external) == 2);
+        CHECK(!external);
+        CHECK(changes[0].docID == "B"_sl);
+        CHECK(changes[0].revID == "1-bb"_sl);
+        CHECK(changes[0].sequence == 2);
+        CHECK(changes[1].docID == "A"_sl);
+        CHECK(changes[1].revID == nullslice);
+        CHECK(changes[1].sequence == 0);
+    }
+}
