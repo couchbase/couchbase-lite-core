@@ -59,7 +59,30 @@ namespace litecore {
     static LogEncoder* sLogEncoder = nullptr;
     static mutex sLogMutex;
     static const int kNumLogFiles = 10;
+    static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
 
+    void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list args)
+    {
+        const char *objName = "?";
+        if (objRef) {
+            auto i = _objNames.find(objRef);
+            if (i != _objNames.end())
+                objName = i->second.c_str();
+        }
+
+        if(sLogEncoder) {
+            sLogEncoder->vlog((int8_t)level, domain, (LogEncoder::ObjectRef)objRef, fmt, args);
+        } else if(sFileOut) {
+            static char formatBuffer[2048];
+            size_t n = 0;
+            LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut);
+            LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut);
+            if (objRef)
+                n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", objName, objRef);
+            vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
+            *sFileOut << formatBuffer << endl;
+        }
+    }
 
     static void purgeOldLogs(const string& filePath)
     {
@@ -99,7 +122,7 @@ namespace litecore {
     }
 
 
-    void LogDomain::writeEncodedLogsTo(const string &filePath, LogLevel atLevel,
+    void LogDomain::writeEncodedLogsTo(const LogFileOptions& options,
                                        const string &initialMessage)
     {
         unique_lock<mutex> lock(sLogMutex);
@@ -107,16 +130,21 @@ namespace litecore {
         sLogEncoder = nullptr;
         delete sFileOut;
         sFileOut = nullptr;
+        auto filePath = options.path();
         if (filePath.empty()) {
             sFileMinLevel = LogLevel::None;
         } else {
-            sFileMinLevel = atLevel;
+            sFileMinLevel = options.logLevel();
             purgeOldLogs(filePath);
             sFileOut = new ofstream(filePath, ofstream::out|ofstream::trunc|ofstream::binary);
-            sLogEncoder = new LogEncoder(*sFileOut);
-            if (!initialMessage.empty())
-                sLogEncoder->log((int)LogLevel::Info, "", LogEncoder::None,
-                                 "---- %s ----", initialMessage.c_str());
+            sLogEncoder = options.isPlaintext() ? nullptr : new LogEncoder(*sFileOut);
+            if (!initialMessage.empty()) {
+                if(sLogEncoder) {
+                    sLogEncoder->log((int8_t)LogLevel::Info, "", LogEncoder::None, "---- %s ----", initialMessage.c_str());
+                } else {
+                    *sFileOut << "---- " << initialMessage << " ----" << endl;
+                }
+            }
 
             // Make sure to flush the log when the process exits:
             static once_flag f;
@@ -294,8 +322,8 @@ namespace litecore {
         }
 
         // Write to the encoded log file:
-        if (sLogEncoder && level >= sFileMinLevel) {
-            sLogEncoder->vlog((int8_t)level, _name, (LogEncoder::ObjectRef)objRef, fmt, args);
+        if (level >= sFileMinLevel) {
+            dylog(level, _name, (LogEncoder::ObjectRef)objRef, fmt, args);
         }
     }
 
@@ -340,7 +368,6 @@ namespace litecore {
             __android_log_vprint(androidLevels[(int) level], tag.c_str(), fmt, args);
         #else
             auto name = domain.name();
-            static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
             LogDecoder::writeTimestamp(LogDecoder::now(), cerr);
             LogDecoder::writeHeader(kLevels[(int)level], name, cerr);
             vfprintf(stderr, fmt, args);

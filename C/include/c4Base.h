@@ -59,7 +59,7 @@ static C4INLINE C4Slice c4str(const char *str) {return FLStr(str);}
 #define kC4SliceNull kFLSliceNull
 
 static inline bool c4SliceEqual(C4Slice a, C4Slice b)       {return FLSlice_Equal(a,b);}
-static inline void c4slice_free(C4SliceResult s)            {return FLSliceResult_Free(s);}
+static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Free(s);}
 
 
 //////// ERRORS:
@@ -203,6 +203,14 @@ CBL_CORE_API extern const C4LogDomain
     kC4SyncLog,                     ///< Log domain for replication operations
     kC4WebSocketLog;                ///< Log domain for WebSocket operations
 
+    typedef struct
+    {
+        C4LogLevel log_level;       ///< The log level that the overall logging will limit to
+        C4String path;              ///< The path to the binary log file *directory*
+        int32_t max_size_bytes;     ///< The maximum size of each log file (minimum 1024)
+        int32_t max_rotate_count;   ///< The maximum amount of old log files to keep
+        bool use_plaintext;         ///< Disables binary encoding of the logs (not recommended)
+    } C4LogFileOptions;
 
 /** Registers (or unregisters) a log callback, and sets the minimum log level to report.
     Before this is called, a default callback is used that writes to stderr at the Info level.
@@ -217,11 +225,10 @@ void c4log_writeToCallback(C4LogLevel level, C4LogCallback callback, bool prefor
 /** Causes log messages to be written to a file, overwriting any previous contents.
     The data is written in an efficient and compact binary form that can be read using the
     "litecorelog" tool.
-    @param level  The minimum level of message to log.
-    @param path  The filesystem path of the file to write to, or a NULL slice for none.
+    @param options The options to use when setting up the binary logger
     @param error  On failure, the filesystem error that caused the call to fail.
     @return  True on success, false on failure. */
-bool c4log_writeToBinaryFile(C4LogLevel level, C4String path, C4Error *error) C4API;
+bool c4log_writeToBinaryFile(C4LogFileOptions options, C4Error *error) C4API;
 
 C4LogLevel c4log_callbackLevel(void) C4API;
 void c4log_setCallbackLevel(C4LogLevel level) C4API;

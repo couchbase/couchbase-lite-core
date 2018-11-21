@@ -62,6 +62,27 @@ enum class LogLevel : int8_t {
     None
 };
 
+class LogFileOptions
+{
+public:
+    LogFileOptions(const std::string& path, LogLevel level, int maxSize, int maxCount, bool plaintext)
+        : _path(path),_level(level), _maxSize(maxSize), _maxCount(maxCount), _isPlaintext(plaintext)
+    {
+        
+    }
+
+    const std::string& path() const { return _path; }
+    LogLevel logLevel() const { return _level; }
+    int maxSize() const { return _maxSize; }
+    int maxCount() const { return _maxCount; }
+    bool isPlaintext() const { return _isPlaintext; }
+private:
+    const std::string _path;
+    LogLevel _level;
+    int _maxSize;
+    int _maxCount;
+    bool _isPlaintext;
+};
 
 class LogDomain {
 public:
@@ -101,11 +122,9 @@ public:
     static void setCallback(Callback_t callback, bool preformatted);
 
     /** Registers (or unregisters) a file to which log messages will be written in binary format.
-        @param filePath  The file to write to, or an empty string to stop writing.
-        @param atLevel  Only log messages at this or a higher level will be written.
+        @param options The options to use when performing file logging
         @param initialMessage  First message that will be written to the log, e.g. version info */
-    static void writeEncodedLogsTo(const std::string &filePath,
-                                   LogLevel atLevel,
+    static void writeEncodedLogsTo(const LogFileOptions& options,
                                    const std::string &initialMessage);
 
     static LogLevel callbackLogLevel() noexcept;
@@ -125,6 +144,8 @@ private:
     LogLevel computeLevel() noexcept;
     LogLevel levelFromEnvironment() const noexcept;
     static void _invalidateEffectiveLevels() noexcept;
+
+    void dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list);
 
     std::atomic<LogLevel> _effectiveLevel {LogLevel::Uninitialized};
     std::atomic<LogLevel> _level;
