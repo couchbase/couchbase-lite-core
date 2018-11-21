@@ -972,36 +972,50 @@ namespace litecore { namespace repl {
                 // use the db's SharedKeys, so all of its Dict keys are strings. Putting this into
                 // the db would cause failures looking up those keys (see #156). So re-encode:
                 Value root = Value::fromData(rev->body, kFLTrusted);
-                enc.writeValue(root);
-                alloc_slice bodyForDB = enc.finish();
-                enc.reset();
-                rev->body = nullslice;
-
-                C4DocPutRequest put = {};
-                put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
-                put.docID = rev->docID;
-                put.revFlags = rev->flags;
-                put.existingRevision = true;
-                put.allowConflict = !rev->noConflicts;
-                put.history = history.data();
-                put.historyCount = history.size();
-                put.remoteDBID = _remoteDBID;
-                put.save = true;
-
                 C4Error docErr;
-                c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &docErr);
-                if (!doc) {
-                    warn("Failed to insert '%.*s' #%.*s : error %d/%d",
-                         SPLAT(rev->docID), SPLAT(rev->revID), docErr.domain, docErr.code);
+                bool docSaved;
+
+                if (rev->flags & kRevPurged) {
+                    // Server says the document is no longer accessible, i.e. it's been
+                    // removed from all channels the client has access to. Purge it.
+                    docSaved = c4db_purgeDoc(_db, rev->docID, &docErr);
+                    if (!docSaved && docErr.domain == LiteCoreDomain && docErr.code == kC4ErrorNotFound)
+                        docSaved = true;
+                } else {
+                    enc.writeValue(root);
+                    alloc_slice bodyForDB = enc.finish();
+                    enc.reset();
+                    rev->body = nullslice;
+
+                    C4DocPutRequest put = {};
+                    put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
+                    put.docID = rev->docID;
+                    put.revFlags = rev->flags;
+                    put.existingRevision = true;
+                    put.allowConflict = !rev->noConflicts;
+                    put.history = history.data();
+                    put.historyCount = history.size();
+                    put.remoteDBID = _remoteDBID;
+                    put.save = true;
+
+                    c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &docErr);
+                    docSaved = (doc != nullptr);
+                    if (docSaved && doc->selectedRev.flags & kRevIsConflict) {
+                        // Note that rev was inserted but caused a conflict:
+                        logInfo("Created conflict with '%.*s' #%.*s",
+                            SPLAT(rev->docID), SPLAT(rev->revID));
+                        rev->flags |= kRevIsConflict;
+                    }
+                }
+
+                if (!docSaved) {
+                    alloc_slice desc = c4error_getDescription(docErr);
+                    warn("Failed to insert '%.*s' #%.*s : %.*s",
+                         SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(desc));
                     if (rev->onInserted) {
                         rev->onInserted(docErr);
                         rev->onInserted = nullptr;
                     }
-                } else if (doc->selectedRev.flags & kRevIsConflict) {
-                    // Note that rev was inserted but caused a conflict:
-                    logInfo("Created conflict with '%.*s' #%.*s",
-                        SPLAT(rev->docID), SPLAT(rev->revID));
-                    rev->flags |= kRevIsConflict;
                 }
             }
 

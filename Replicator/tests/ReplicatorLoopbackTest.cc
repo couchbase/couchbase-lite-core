@@ -354,6 +354,32 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
+    // Start with "mydoc" in both dbs with the same revs
+    createRev(db, kDocID, kRevID, kFleeceBody);
+    createRev(db2, kDocID, kRevID, kFleeceBody);
+
+    // Add the "_removed" property. (Normally this is never added to a doc; it's just returned in
+    // a fake revision body by the SG replictor, to indicate that the doc is removed from all
+    // accessible channels.)
+    fleece::Encoder enc;
+    enc.beginDict();
+    enc["_removed"_sl] = true;
+    enc.endDict();
+    createRev(db, kDocID, kRev2ID, enc.finish());
+
+    _expectedDocumentCount = 1;
+    runPullReplication();
+
+    // Verify the doc was purged:
+    C4Error error;
+    c4::ref<C4Document> doc = c4doc_get(db2, kDocID, true, &error);
+    CHECK(!doc);
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorNotFound);
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push To Erased Destination", "[Push]") {
     // Push; erase destination; push again. For #453
     importJSONLines(sFixturesDir + "names_100.json");

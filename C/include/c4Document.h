@@ -46,7 +46,8 @@ extern "C" {
         kRevKeepBody       = 0x10, ///< Revision's body should not be discarded when non-leaf
         kRevIsConflict     = 0x20, ///< Unresolved conflicting revision; will never be current
         kRevClosed         = 0x40, ///< Rev is the (deleted) end of a closed conflicting branch
-    }; // Note: Same as Revision::Flags
+        kRevPurged         = 0x80, ///< Revision is purged (this flag is never stored in the db)
+    }; // Note: Same as litecore::Rev::Flags
 
 
     /** Describes a revision of a document. A sub-struct of C4Document. */

@@ -110,6 +110,11 @@ namespace litecore { namespace repl {
         // metadata and blobs.
         Dict root = Value::fromData(fleeceBody, kFLTrusted).asDict();
 
+        // SG sends a fake revision with a "_removed":true property, to indicate that the doc is
+        // no longer accessible (not in any channel the client has access to.)
+        if (root["_removed"_sl].asBool())
+            _rev->flags |= kRevPurged;
+
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
         if (c4doc_hasOldMetaProperties(root) && !_dbWorker->disableBlobSupport()) {
