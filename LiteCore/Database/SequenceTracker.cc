@@ -209,7 +209,6 @@ namespace litecore {
             // (but not a purge); then back up one:
             auto result = _changes.crbegin();
             for (auto i = _changes.crbegin(); i != _changes.crend(); ++i) {
-                __unused auto &entry = *i;
                 if (i->sequence > sinceSeq || i->isPurge())
                     result = i;
                 else if (!i->isPlaceholder())
