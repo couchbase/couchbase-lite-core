@@ -387,6 +387,54 @@ public class C4DatabaseTest extends C4BaseTest {
         // TODO: DB00x - Java does not hava the implementation of c4db_enumerateExpired and c4exp_next yet.
     }
 
+    @Test
+    public void testPurgeExpiredDocs() throws LiteCoreException {
+        String docID = "expire_me";
+        createRev(docID, kRevID, kFleeceBody);
+
+        // unix time
+        Long expire = System.currentTimeMillis() / 1000 + 1;
+        db.setExpiration(docID, expire);
+
+        expire = System.currentTimeMillis() / 1000 + 2;
+        db.setExpiration(docID, expire);
+        db.setExpiration(docID, expire);
+
+        String docID2 = "expire_me_too";
+        createRev(docID2, kRevID, kFleeceBody);
+        db.setExpiration(docID2, expire);
+
+        try {
+            Thread.sleep(3 * 1000); // sleep 2 sec
+        } catch (InterruptedException e) {
+        }
+
+        int cnt = db.purgeExpiredDocs();
+
+        assertEquals(cnt, 2);
+    }
+
+    @Test
+    public void testPurgeDoc() throws LiteCoreException {
+        String docID = "purge_me";
+        createRev(docID, kRevID, kFleeceBody);
+        db.beginTransaction();
+        try {
+            db.purgeDoc(docID);
+        } catch(Exception e) {}
+        finally {
+            db.endTransaction(true);
+        }
+
+        try {
+            db.get(docID, true);
+        } catch (LiteCoreException e) {
+            assertEquals(LiteCoreDomain, e.domain);
+            assertEquals(kC4ErrorNotFound, e.code);
+            assertEquals("not found", e.getMessage());
+        }
+    }
+
     // - "Database CancelExpire"
     @Test
     public void testDatabaseCancelExpire() throws LiteCoreException {
