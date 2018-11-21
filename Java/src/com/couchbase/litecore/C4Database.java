@@ -81,6 +81,10 @@ public class C4Database implements C4Constants {
         return nextDocExpiration(handle);
     }
 
+    public int purgeExpiredDocs() {
+        return purgeExpiredDocs(handle);
+    }
+
     public int getMaxRevTreeDepth() {
         return getMaxRevTreeDepth(handle);
     }
@@ -170,12 +174,12 @@ public class C4Database implements C4Constants {
 
     // - Purging and Expiration
 
-    public void setExpiration(String docID, Long timestamp)
+    public boolean setExpiration(String docID, Long timestamp)
             throws LiteCoreException {
         if(timestamp == null)
-            C4Document.setExpiration(handle, docID, 0);
+            return C4Document.setExpiration(handle, docID, 0);
         else
-            C4Document.setExpiration(handle, docID, timestamp);
+            return C4Document.setExpiration(handle, docID, timestamp);
     }
 
     public Long getExpiration(String docID) {
@@ -184,6 +188,10 @@ public class C4Database implements C4Constants {
             return null;
         else
             return timestamp;
+    }
+
+    public boolean purgeDoc(String docID) throws LiteCoreException {
+            return C4Document.purgeDoc(handle, docID);
     }
 
     // - Creating and Updating Documents
@@ -362,6 +370,8 @@ public class C4Database implements C4Constants {
     static native long getLastSequence(long db);
 
     static native long nextDocExpiration(long db);
+
+    static native int purgeExpiredDocs(long db);
 
     static native int getMaxRevTreeDepth(long db);
 

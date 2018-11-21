@@ -198,6 +198,20 @@ Java_com_couchbase_litecore_C4Database_nextDocExpiration(JNIEnv *env, jclass cla
 
 /*
  * Class:     com_couchbase_litecore_C4Database
+ * Method:    purgeExpiredDocs
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL
+Java_com_couchbase_litecore_C4Database_purgeExpiredDocs(JNIEnv *env, jclass clazz, jlong jdb) {
+    C4Error error;
+    int num = c4db_purgeExpiredDocs((C4Database *)jdb, &error);
+    if (num == -1)
+        throwError(env, error);
+    return num;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Database
  * Method:    getMaxRevTreeDepth
  * Signature: (J)I
  */
