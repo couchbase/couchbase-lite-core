@@ -275,10 +275,12 @@ public class C4Document extends RefCounted implements C4Constants {
 
     // - Purging and Expiration
 
-    static native void setExpiration(long db, String docID, long timestamp)
+    static native boolean setExpiration(long db, String docID, long timestamp)
             throws LiteCoreException;
 
     static native long getExpiration(long db, String docID);
+
+    static native boolean purgeDoc(long db, String docID) throws LiteCoreException;
 
     // - Creating and Updating Documents
 
