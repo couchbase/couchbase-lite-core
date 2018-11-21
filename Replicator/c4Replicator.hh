@@ -197,11 +197,8 @@ private:
             _selfRetain = nullptr; // balances retain in constructor
     }
 
-    virtual void replicatorDocumentEnded(Replicator *repl,
-                                         Dir dir,
-                                         slice docID,
-                                         C4Error error,
-                                         bool transient) override
+    virtual void replicatorDocumentsEnded(Replicator *repl,
+                          const std::vector<Retained<ReplicatedRev>>& revs) override
     {
         if (repl != _replicator)
             return;
@@ -210,10 +207,16 @@ private:
             lock_guard<mutex> lock(_mutex);
             onDocEnded = _params.onDocumentEnded;
         }
-        if (onDocEnded)
-            onDocEnded(this, (dir == Dir::kPushing),
-                       {docID.buf, docID.size}, error, transient,
-                       _params.callbackContext);
+        if (onDocEnded) {
+            for (auto &rev : revs) {
+                onDocEnded(this,
+                           (rev->dir() == Dir::kPushing),
+                           rev->docID, rev->revID,
+                           rev->flags,
+                           rev->error, rev->transientError,
+                           _params.callbackContext);
+            }
+        }
     }
 
     virtual void replicatorBlobProgress(Replicator *repl,

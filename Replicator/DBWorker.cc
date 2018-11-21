@@ -453,7 +453,8 @@ namespace litecore { namespace repl {
             C4Error error;
             doc = e ? c4enum_getDocument(e, &error) : c4doc_get(_db, info.docID, true, &error);
             if (!doc) {
-                documentGotError(info.docID, Dir::kPushing, error, false);
+                auto rev = retained(new RevToSend(info, remoteRevID));
+                documentGotError(rev, error, false);
                 return false;   // reject rev: error getting doc
             }
             if (slice(doc->revID) != slice(info.revID))
@@ -680,6 +681,7 @@ namespace litecore { namespace repl {
                 root = Value::fromData(revisionBody, kFLTrusted).asDict();
                 if (!root)
                     c4err = {LiteCoreDomain, kC4ErrorCorruptData};
+                request->flags = doc->selectedRev.flags;
             }
         }
 
@@ -999,12 +1001,17 @@ namespace litecore { namespace repl {
                     put.save = true;
 
                     c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &docErr);
-                    docSaved = (doc != nullptr);
-                    if (docSaved && doc->selectedRev.flags & kRevIsConflict) {
-                        // Note that rev was inserted but caused a conflict:
-                        logInfo("Created conflict with '%.*s' #%.*s",
-                            SPLAT(rev->docID), SPLAT(rev->revID));
-                        rev->flags |= kRevIsConflict;
+                    if (doc) {
+                        docSaved = true;
+                        rev->sequence = doc->selectedRev.sequence;
+                        if (doc->selectedRev.flags & kRevIsConflict) {
+                            // Note that rev was inserted but caused a conflict:
+                            logInfo("Created conflict with '%.*s' #%.*s",
+                                SPLAT(rev->docID), SPLAT(rev->revID));
+                            rev->flags |= kRevIsConflict;
+                        }
+                    } else {
+                        docSaved = false;
                     }
                 }
 
@@ -1049,7 +1056,7 @@ namespace litecore { namespace repl {
     // return the correct answer, because the change hasn't been made in the database yet.
     // For that reason, this class ensures that _markRevsSyncedNow() is called before any call
     // to c4doc_getRemoteAncestor().
-    void DBWorker::markRevSynced(Rev *rev) {
+    void DBWorker::markRevSynced(ReplicatedRev *rev) {
         _revsToMarkSynced.push(rev);
     }
 
@@ -1064,7 +1071,7 @@ namespace litecore { namespace repl {
         C4Error error;
         c4::Transaction transaction(_db);
         if (transaction.begin(&error)) {
-            for (Rev *rev : *revs) {
+            for (ReplicatedRev *rev : *revs) {
                 logDebug("Marking rev '%.*s' %.*s (#%llu) as synced to remote db %u",
                          SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, _remoteDBID);
                 if (!c4db_markSynced(_db, rev->docID, rev->sequence, _remoteDBID, &error))

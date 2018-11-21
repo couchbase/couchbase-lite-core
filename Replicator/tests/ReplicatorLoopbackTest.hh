@@ -175,28 +175,29 @@ public:
         }
     }
 
-    virtual void replicatorDocumentEnded(Replicator *repl,
-                                         Dir dir,
-                                         slice docID,
-                                         C4Error error,
-                                         bool transient) override
+    virtual void replicatorDocumentsEnded(Replicator *repl,
+                                          const vector<Retained<ReplicatedRev>> &revs) override
     {
-        if (error.code) {
-        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-        char message[256];
-        c4error_getDescriptionC(error, message, sizeof(message));
-        Log(">> Replicator %serror %s '%.*s': %s",
-            (transient ? "transient " : ""),
-                (dir == Dir::kPushing ? "pushing" : "pulling"),
-            SPLAT(docID), message);
-            if (dir == Dir::kPushing)
-            _docPushErrors.emplace(docID);
-        else
-            _docPullErrors.emplace(docID);
-        } else {
-            Log(">> Replicator %s '%.*s'",
-                (dir == Dir::kPushing ? "pushed" : "pulled"), SPLAT(docID));
-            _docsFinished.emplace(docID);
+        Log("...%zu docs ended", revs.size()); //TEMP
+        for (auto &rev : revs) {
+            auto dir = rev->dir();
+            if (rev->error.code) {
+                // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+                char message[256];
+                c4error_getDescriptionC(rev->error, message, sizeof(message));
+                Log(">> Replicator %serror %s '%.*s': %s",
+                    (rev->transientError ? "transient " : ""),
+                    (dir == Dir::kPushing ? "pushing" : "pulling"),
+                    SPLAT(rev->docID), message);
+                if (dir == Dir::kPushing)
+                    _docPushErrors.emplace(rev->docID);
+                else
+                    _docPullErrors.emplace(rev->docID);
+            } else {
+                Log(">> Replicator %s '%.*s'",
+                    (dir == Dir::kPushing ? "pushed" : "pulled"), SPLAT(rev->docID));
+                _docsFinished.emplace(rev->docID);
+            }
         }
     }
 

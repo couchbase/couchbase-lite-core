@@ -250,7 +250,7 @@ namespace litecore { namespace repl {
             for (IncomingRev *inc : *revs) {
                 if (inc->error().code == 0) {
                     completedSequence(alloc_slice(inc->remoteSequence()));
-                    finishedDocument(inc->docID(), Dir::kPulling);
+                    finishedDocument(inc->rev());
                 }
             }
         }

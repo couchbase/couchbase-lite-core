@@ -89,7 +89,7 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert *rev);
 
-        void markRevSynced(Rev *rev);
+        void markRevSynced(ReplicatedRev *rev);
 
         void setCookie(slice setCookieHeader) {
             enqueue(&DBWorker::_setCookie, alloc_slice(setCookieHeader));
@@ -168,7 +168,7 @@ namespace litecore { namespace repl {
         bool _skipForeignChanges {false};
         
         actor::Batcher<DBWorker,RevToInsert> _revsToInsert; // Pending revs to be added to db
-        actor::Batcher<DBWorker,Rev> _revsToMarkSynced;     // Pending revs to be marked as synced
+        actor::Batcher<DBWorker,ReplicatedRev> _revsToMarkSynced;     // Pending revs to be marked as synced
         bool _insertionScheduled {false};                   // True if call to insert/sync pending
         std::mutex _insertionQueueMutex;                    // For safe access to the above
         bool _disableBlobSupport {false};                   // for testing only

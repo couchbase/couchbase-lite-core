@@ -18,8 +18,10 @@
 
 #pragma once
 #include "Worker.hh"
+#include "ReplicatedRev.hh"
 #include "Checkpoint.hh"
 #include "BLIPConnection.hh"
+#include "Batcher.hh"
 #include "fleece/Fleece.hh"
 #include "Stopwatch.hh"
 
@@ -56,6 +58,8 @@ namespace litecore { namespace repl {
             C4Error     error;
         };
 
+        using DocumentsEnded = std::vector<Retained<ReplicatedRev>>;
+
         /** Replicator delegate; receives progress & error notifications. */
         class Delegate {
         public:
@@ -68,11 +72,8 @@ namespace litecore { namespace repl {
                                                  const Status&) =0;
             virtual void replicatorConnectionClosed(Replicator*,
                                                     const CloseStatus&)  { }
-            virtual void replicatorDocumentEnded(Replicator*,
-                                                 Dir,
-                                                 slice docID,
-                                                 C4Error error,
-                                                 bool transient) =0;
+            virtual void replicatorDocumentsEnded(Replicator*,
+                                                  const DocumentsEnded&) =0;
             virtual void replicatorBlobProgress(Replicator*,
                                                 const BlobProgress&) = 0;
         };
@@ -91,9 +92,7 @@ namespace litecore { namespace repl {
         void updatePushCheckpoint(C4SequenceNumber s)   {_checkpoint.setLocalSeq(s);}
         void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
 
-        void endedDocument(slice docID, Dir dir, C4Error error, bool transient) {
-            enqueue(&Replicator::_endedDocument, alloc_slice(docID), dir, error, transient);
-        }
+        void endedDocument(ReplicatedRev *d);
         void onBlobProgress(const BlobProgress &progress) {
             enqueue(&Replicator::_onBlobProgress, progress);
         }
@@ -136,7 +135,7 @@ namespace litecore { namespace repl {
         void saveCheckpointNow();
 
         virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
-        void _endedDocument(alloc_slice docID, Dir, C4Error, bool transient);
+        void notifyEndedDocuments();
         void _onBlobProgress(BlobProgress);
 
         CloseStatus _closeStatus;
@@ -149,6 +148,7 @@ namespace litecore { namespace repl {
         fleece::Stopwatch _sinceDelegateCall;
         ActivityLevel _lastDelegateCallLevel {};
         bool _waitingToCallDelegate {false};
+        actor::Batcher<Replicator, ReplicatedRev> _docsEnded;
 
         Checkpoint _checkpoint;
         alloc_slice _checkpointDocID;

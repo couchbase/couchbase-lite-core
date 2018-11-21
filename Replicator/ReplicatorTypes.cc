@@ -28,8 +28,9 @@ namespace litecore { namespace repl { namespace tuning {
 namespace litecore { namespace repl {
 
     RevToSend::RevToSend(const C4DocumentInfo &info, const alloc_slice &remoteAncestor)
-    :Rev(info.docID, info.revID, info.sequence, info.bodySize)
+    :ReplicatedRev(info.docID, info.revID, info.sequence)
     ,remoteAncestorRevID(remoteAncestor)
+    ,bodySize(info.bodySize)
     {
         flags = c4rev_flagsFromDocFlags(info.flags);
     }
@@ -56,16 +57,29 @@ namespace litecore { namespace repl {
     }
 
 
+    void RevToSend::trim() {
+        remoteAncestorRevID.reset();
+        ancestorRevIDs.reset();
+    }
+
+
     RevToInsert::RevToInsert(slice docID_, slice revID_,
                              slice historyBuf_,
                              bool deleted_,
                              bool noConflicts_)
-    :Rev(docID_, revID_)
+    :ReplicatedRev(docID_, revID_)
     ,historyBuf(historyBuf_)
     {
         if (deleted_)
             flags |= kRevDeleted;
         noConflicts = noConflicts_;
+    }
+
+
+    void RevToInsert::trim() {
+        historyBuf.reset();
+        body.reset();
+        onInserted = nullptr;
     }
 
 } }

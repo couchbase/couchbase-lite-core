@@ -189,15 +189,17 @@ namespace litecore { namespace repl {
     }
 
 
-    void Worker::documentGotError(slice docID, Dir dir, C4Error error, bool transient) {
-        replicator()->endedDocument(docID, dir, error, transient);
+    void Worker::documentGotError(ReplicatedRev *rev, C4Error error, bool transient) {
+        rev->error = error;
+        rev->transientError = transient;
+        replicator()->endedDocument(rev);
     }
 
 
-    void Worker::finishedDocument(slice docID, Dir dir) {
+    void Worker::finishedDocument(ReplicatedRev *rev) {
         addProgress({0, 0, 1});
         if (_progressNotificationLevel >= 1)
-            replicator()->endedDocument(docID, dir, {}, true);
+            replicator()->endedDocument(rev);
     }
 
 

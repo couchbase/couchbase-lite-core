@@ -55,7 +55,6 @@ namespace litecore { namespace repl {
                                _revMessage->boolProperty("deleted"_sl),
                                _revMessage->boolProperty("noconflicts"_sl)
                                    || _options.noIncomingConflicts());
-        _docID = _rev->docID;
         _remoteSequence = _revMessage->property(slice("sequence"));
 
         _peerError = (int)_revMessage->intProperty("error"_sl);
@@ -216,19 +215,19 @@ namespace litecore { namespace repl {
         if (_error.code == 0 && _peerError)
             _error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
         if (_error.code) {
-            documentGotError(_rev->docID, Dir::kPulling, _error, false);
+            documentGotError(_rev, _error, false);
         } else if (_rev->flags & kRevIsConflict) {
             // DBWorker::_insertRevision set this flag to indicate that the rev caused a conflict
             // (though it did get inserted), so notify the delegate of the conflict:
-            documentGotError(_rev->docID, Dir::kPulling, {LiteCoreDomain, kC4ErrorConflict}, true);
+            documentGotError(_rev, {LiteCoreDomain, kC4ErrorConflict}, true);
         }
 
         // Free up memory now that I'm done:
         Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
         _revMessage = nullptr;
-        _rev = nullptr;
         _currentBlob = nullptr;
         _pendingBlobs.clear();
+        _rev->trim();
 
         _puller->revWasHandled(this);
     }

@@ -41,7 +41,7 @@ namespace litecore { namespace repl {
 
         static bool shouldCompress(fleece::Dict meta);
 
-        slice docID() const                     {return _docID;}
+        RevToInsert* rev() const                {return _rev;}
         slice remoteSequence() const            {return _remoteSequence;}
         C4Error error() const                   {return _error;}
 
@@ -67,7 +67,7 @@ namespace litecore { namespace repl {
         Retained<IncomingBlob> _currentBlob;
         C4Error _error {};
         int _peerError {0};
-        alloc_slice _docID, _remoteSequence;
+        alloc_slice _remoteSequence;
     };
 
 } }

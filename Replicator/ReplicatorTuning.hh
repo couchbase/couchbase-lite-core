@@ -85,6 +85,9 @@ namespace litecore { namespace repl {
 
         //// Replicator:
 
+        /* How long to wait between delegate calls notifying that that docs have finished. */
+        constexpr actor::Timer::duration kMinDocEndedInterval = std::chrono::milliseconds(200);
+
         /* How long to wait between delegate calls when only the progress % has changed. */
         constexpr double kMinDelegateCallInterval = 0.2;
     }

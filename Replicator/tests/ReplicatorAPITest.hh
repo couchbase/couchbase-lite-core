@@ -127,7 +127,9 @@ public:
 
     static void onDocEnded(C4Replicator *repl,
                            bool pushing,
-                           C4String docID,
+                           C4HeapString docID,
+                           C4HeapString revID,
+                           C4RevisionFlags flags,
                            C4Error error,
                            bool transient,
                            void *context)

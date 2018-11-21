@@ -17,11 +17,10 @@
 //
 
 #pragma once
+#include "ReplicatedRev.hh"
 #include "fleece/Fleece.h"
-#include "fleece/slice.hh"
 #include "c4.hh"
 #include "c4Private.h"
-#include "RefCounted.hh"
 #include <chrono>
 #include <functional>
 #include <set>
@@ -54,36 +53,13 @@ namespace litecore { namespace repl {
     }
 
     
-    /** Metadata of a document revision. */
-    class Rev : public RefCounted {
-    public:
-        using slice = fleece::slice;
-        using alloc_slice = fleece::alloc_slice;
-
-        const alloc_slice docID;
-        const alloc_slice revID;
-        const C4SequenceNumber sequence;
-        const uint64_t bodySize;
-        C4RevisionFlags flags {0};
-        bool noConflicts {false};
-
-        bool deleted() const        {return (flags & kRevDeleted) != 0;}
-
-    protected:
-        template <class SLICE1, class SLICE2>
-        Rev(SLICE1 docID_, SLICE2 revID_, C4SequenceNumber sequence_ =0, uint64_t bodySize_ =0)
-        :docID(docID_), revID(revID_), sequence(sequence_), bodySize(bodySize_)
-        { }
-
-        ~Rev() =default;
-    };
-
-
     /** A request by the peer to send a revision. */
-    class RevToSend : public Rev {
+    class RevToSend : public ReplicatedRev {
     public:
         alloc_slice remoteAncestorRevID;            // Known ancestor revID (no-conflicts mode)
         unsigned maxHistory {0};                    // Max depth of rev history to send
+        const uint64_t bodySize;
+        bool noConflicts {false};
         bool legacyAttachments {false};             // Add _attachments property when sending
         bool deltaOK {false};                       // Can send a delta
 
@@ -92,6 +68,9 @@ namespace litecore { namespace repl {
 
         void addRemoteAncestor(slice revID);
         bool hasRemoteAncestor(slice revID) const;
+
+        Dir dir() const override                    {return Dir::kPushing;}
+        void trim() override;
         
     protected:
         ~RevToSend() =default;
@@ -104,16 +83,20 @@ namespace litecore { namespace repl {
 
 
     /** A revision to be added to the database, complete with body. */
-    class RevToInsert : public Rev {
+    class RevToInsert : public ReplicatedRev {
     public:
-        const alloc_slice historyBuf;
+        alloc_slice historyBuf;
         alloc_slice body;
         std::function<void(C4Error)> onInserted;
+        bool noConflicts {false};
 
         RevToInsert(slice docID_, slice revID_,
                     slice historyBuf_,
                     bool deleted,
                     bool noConflicts);
+
+        Dir dir() const override                    {return Dir::kPulling;}
+        void trim() override;
 
     protected:
         ~RevToInsert() =default;

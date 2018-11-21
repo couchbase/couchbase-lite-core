@@ -86,7 +86,9 @@ extern "C" {
         kC4ReplicatorOptionProgressLevel option to a value greater than zero. */
     typedef void (*C4ReplicatorDocumentEndedCallback)(C4Replicator* C4NONNULL,
                                                       bool pushing,
-                                                      C4String docID,
+                                                      C4HeapString docID,
+                                                      C4HeapString revID,
+                                                      C4RevisionFlags flags,
                                                       C4Error error,
                                                       bool errorIsTransient,
                                                       void *context);

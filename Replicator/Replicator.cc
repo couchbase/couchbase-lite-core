@@ -48,6 +48,7 @@ namespace litecore { namespace repl {
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_dbActor(new DBWorker(this, db, webSocket->url()))
+    ,_docsEnded(this, &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
@@ -219,16 +220,26 @@ namespace litecore { namespace repl {
         _waitingToCallDelegate = false;
         _lastDelegateCallLevel = status().level;
         _sinceDelegateCall.reset();
-        if (_delegate)
+        if (_delegate) {
+            notifyEndedDocuments();
             _delegate->replicatorStatusChanged(this, status());
+        }
         if (status().level == kC4Stopped)
             _delegate = nullptr;        // Never call delegate after telling it I've stopped
     }
 
 
-    void Replicator::_endedDocument(alloc_slice docID, Dir dir, C4Error error, bool transient) {
+    void Replicator::endedDocument(ReplicatedRev *d) {
+        d->trim(); // free up unneeded stuff
         if (_delegate)
-            _delegate->replicatorDocumentEnded(this, dir, docID, error, transient);
+            _docsEnded.push(d);
+    }
+
+
+    void Replicator::notifyEndedDocuments() {
+        auto docs = _docsEnded.pop();
+        if (docs && !docs->empty() && _delegate)
+            _delegate->replicatorDocumentsEnded(this, *docs);
     }
 
 
@@ -313,8 +324,10 @@ namespace litecore { namespace repl {
             gotError(c4error_make(domain, code, status.message));
         }
 
-        if (_delegate)
+        if (_delegate) {
+            notifyEndedDocuments();
             _delegate->replicatorConnectionClosed(this, status);
+        }
     }
 
 
