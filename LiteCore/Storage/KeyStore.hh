@@ -30,9 +30,6 @@ namespace litecore {
     class Transaction;
     class Query;
 
-    /** A sequence number in a KeyStore. */
-    typedef uint64_t sequence_t;
-
     /** A container of key/value mappings. Keys and values are opaque blobs.
         The value is divided into 'meta' and 'body'; the body can optionally be omitted when
         reading, to save time/space. There is also a 'sequence' number that's assigned every time
@@ -108,10 +105,6 @@ namespace litecore {
 
 
         //////// Expiration:
-
-        /** Record's expiration timestamp: milliseconds since Unix epoch (Jan 1 1970).
-            A zero value means no expiration. */
-        using expiration_t = int64_t;
 
         /** The current time. */
         static expiration_t now() noexcept;

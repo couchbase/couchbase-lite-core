@@ -1331,7 +1331,7 @@ TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
     addNumberedDocs(1, 3);
-    KeyStore::expiration_t now = KeyStore::now();
+    expiration_t now = KeyStore::now();
 
     {
         Retained<Query> query{ store->compileQuery(json5(

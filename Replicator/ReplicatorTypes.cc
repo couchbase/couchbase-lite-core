@@ -31,6 +31,7 @@ namespace litecore { namespace repl {
     :ReplicatedRev(info.docID, info.revID, info.sequence)
     ,remoteAncestorRevID(remoteAncestor)
     ,bodySize(info.bodySize)
+    ,expiration(info.expiration)
     {
         flags = c4rev_flagsFromDocFlags(info.flags);
     }

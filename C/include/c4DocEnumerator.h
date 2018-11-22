@@ -61,6 +61,7 @@ extern "C" {
         C4HeapString revID;         ///< RevID of current revision
         C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
         uint64_t bodySize;          ///< Size in bytes of document body (approx)
+        int64_t expiration;         ///< Expiration time, or 0 if none
     } C4DocumentInfo;
 
 

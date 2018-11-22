@@ -354,6 +354,34 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull existing revs", "[Pull]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
+    createRev(db, "obsolete"_sl, kRevID, kFleeceBody);
+    createRev(db, "fresh"_sl, kRevID, kFleeceBody);
+    createRev(db, "permanent"_sl, kRevID, kFleeceBody);
+
+    REQUIRE(c4doc_setExpiration(db, "obsolete"_sl, c4_now() - 1, nullptr));
+    REQUIRE(c4doc_setExpiration(db, "fresh"_sl, c4_now() + 100000, nullptr));
+
+    _expectedDocumentCount = 2;
+    runPushReplication();
+
+    // Verify that "obsolete" wasn't pushed, but the other two were:
+    C4Error error;
+    c4::ref<C4Document> doc = c4doc_get(db2, "obsolete"_sl, true, &error);
+    CHECK(!doc);
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorNotFound);
+
+    doc = c4doc_get(db2, "fresh"_sl, true, &error);
+    REQUIRE(doc);
+    CHECK(doc->revID == kRevID);
+
+    doc = c4doc_get(db2, "permanent"_sl, true, &error);
+    REQUIRE(doc);
+    CHECK(doc->revID == kRevID);
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
     // Start with "mydoc" in both dbs with the same revs
     createRev(db, kDocID, kRevID, kFleeceBody);

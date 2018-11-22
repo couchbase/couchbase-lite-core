@@ -92,6 +92,7 @@ struct C4DocEnumerator: fleece::InstanceCounted {
         outInfo->flags = _docFlags;
         outInfo->sequence = _e.record().sequence();
         outInfo->bodySize = _e.record().bodySize();
+        outInfo->expiration = _e.record().expiration();
         return true;
     }
 

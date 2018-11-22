@@ -163,30 +163,35 @@ namespace litecore { namespace repl {
             logInfo("Found 0 changes up to #%llu", lastSequence);
             updateCheckpoint();
         } else {
-            logInfo("Read %zu local changes up to #%llu: sending '%-s' with sequences #%llu - #%llu",
-                changes->size(), lastSequence,
-                (_proposeChanges ? "proposeChanges" : "changes"),
-                changes->at(0)->sequence, _lastSequenceRead);
-
+            auto now = c4_now();
             uint64_t bodySize = 0;
             for (auto i = changes->begin(); i != changes->end();) {
                 RevToSend *rev = *i;
-                auto delayedRev = _activeDocs.find(rev->docID);
-                if (delayedRev == _activeDocs.end()) {
-                    _activeDocs.insert({rev->docID, nullptr});
-                    bodySize += rev->bodySize;
-                    ++i;
+                if (rev->expiration > 0 && rev->expiration < now) {
+                    logVerbose("'%.*s' is expired; not pushing it", SPLAT(rev->docID));
+                    i = changes->erase(i);      // skip expired docs
                 } else {
-                    // This doc already has a revision being sent; wait till that one is done
-                    logDebug("Holding off on change '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
-                    delayedRev->second = rev;
-                    i = changes->erase(i);
+                    auto delayedRev = _activeDocs.find(rev->docID);
+                    if (delayedRev == _activeDocs.end()) {
+                        _activeDocs.insert({rev->docID, nullptr});
+                        bodySize += rev->bodySize;
+                        ++i;
+                    } else {
+                        // This doc already has a revision being sent; wait till that one is done
+                        logDebug("Holding off on change '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
+                        delayedRev->second = rev;
+                        i = changes->erase(i);
+                    }
                 }
             }
             if (changes->empty())
                 return;
-
             addProgress({0, bodySize});
+
+            logInfo("Read %zu local changes up to #%llu: sending '%-s' with sequences #%llu - #%llu",
+                    changes->size(), lastSequence,
+                    (_proposeChanges ? "proposeChanges" : "changes"),
+                    changes->at(0)->sequence, _lastSequenceRead);
         }
 
         // Send the "changes" request, and asynchronously handle the response:

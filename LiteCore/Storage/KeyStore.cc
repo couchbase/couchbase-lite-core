@@ -99,7 +99,7 @@ namespace litecore {
         error::_throw(error::Unimplemented);
     }
 
-    KeyStore::expiration_t KeyStore::now() noexcept {
+    expiration_t KeyStore::now() noexcept {
         // "The encoding of calendar time in time_t is unspecified, but most systems conform to POSIX
         // specification and return a value of integral type holding the number of seconds since the
         // Epoch."

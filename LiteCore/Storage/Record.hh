@@ -38,6 +38,16 @@ namespace litecore {
         return (DocumentFlags)((uint8_t)a | (uint8_t)b);
     }
 
+
+    /** A Record's sequence number in a KeyStore. */
+    typedef uint64_t sequence_t;
+
+
+    /** Record's expiration timestamp: milliseconds since Unix epoch (Jan 1 1970).
+        A zero value means no expiration. */
+    typedef int64_t expiration_t;
+
+
     /** The unit of storage in a DataFile: a key, version and body (all opaque blobs);
         and some extra metadata like flags and a sequence number. */
     class Record {
@@ -83,6 +93,10 @@ namespace litecore {
         void setUnloadedBodySize(size_t size)   {_body = nullslice; _bodySize = size;}
         void setExists()                        {_exists = true;}
 
+        // Only RecordEnumerator sets the expiration property
+        expiration_t expiration() const         {return _expiration;}
+        void setExpiration(expiration_t x)      {_expiration = x;}
+
     private:
         friend class KeyStore;
         friend class Transaction;
@@ -91,6 +105,7 @@ namespace litecore {
         alloc_slice     _key, _version, _body;  // The key, metadata and body of the record
         size_t          _bodySize {0};          // Size of body, if body wasn't loaded
         sequence_t      _sequence {0};          // Sequence number (if KeyStore supports sequences)
+        expiration_t    _expiration {0};        // Expiration time (only set by RecordEnumerator)
         DocumentFlags   _flags {DocumentFlags::kNone};// Document flags (deleted, conflicted, etc.)
         bool            _exists {false};        // Does the record exist?
     };

@@ -385,7 +385,7 @@ namespace litecore {
     }
 
 
-    KeyStore::expiration_t SQLiteKeyStore::getExpiration(slice key) {
+    expiration_t SQLiteKeyStore::getExpiration(slice key) {
         if (!hasExpiration())
             return 0;
         compile(_getExpStmt, "SELECT expiration FROM kv_@ WHERE key=?");
@@ -397,7 +397,7 @@ namespace litecore {
     }
 
 
-    KeyStore::expiration_t SQLiteKeyStore::nextExpiration() {
+    expiration_t SQLiteKeyStore::nextExpiration() {
         expiration_t next = 0;
         if (hasExpiration()) {
             compile(_nextExpStmt, "SELECT min(expiration) FROM kv_@");

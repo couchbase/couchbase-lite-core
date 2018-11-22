@@ -59,6 +59,7 @@ namespace litecore { namespace repl {
         alloc_slice remoteAncestorRevID;            // Known ancestor revID (no-conflicts mode)
         unsigned maxHistory {0};                    // Max depth of rev history to send
         const uint64_t bodySize;
+        int64_t expiration {0};
         bool noConflicts {false};
         bool legacyAttachments {false};             // Add _attachments property when sending
         bool deltaOK {false};                       // Can send a delta

@@ -51,6 +51,7 @@ namespace litecore {
             rec.updateSequence((int64_t)_stmt->getColumn(0));
             rec.setFlags((DocumentFlags)(int)_stmt->getColumn(1));
             rec.setKey(SQLiteKeyStore::columnAsSlice(_stmt->getColumn(2)));
+            rec.setExpiration(_stmt->getColumn(5));
             SQLiteKeyStore::setRecordMetaAndBody(rec, *_stmt.get(), _content);
             return true;
         }
@@ -67,6 +68,10 @@ namespace litecore {
             in << ", length(body)";
         else
             in << ", body";
+        if (hasExpiration())
+            in << ", expiration";
+        else
+            in << ", 0";
         in << " FROM kv_" << name();
     }
 
