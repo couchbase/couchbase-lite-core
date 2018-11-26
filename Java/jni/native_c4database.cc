@@ -212,6 +212,22 @@ Java_com_couchbase_litecore_C4Database_purgeExpiredDocs(JNIEnv *env, jclass claz
 
 /*
  * Class:     com_couchbase_litecore_C4Database
+ * Method:    purgeDoc
+ * Signature: (JLjava/lang/String;)Z
+ */
+JNIEXPORT jboolean JNICALL
+Java_com_couchbase_litecore_C4Database_purgeDoc(JNIEnv *env, jclass clazz,
+                                                jlong jdb, jstring jdocID) {
+    jstringSlice docID(env, jdocID);
+    C4Error error;
+    jboolean res = c4db_purgeDoc((C4Database *)jdb, docID, &error);
+    if (!res)
+        throwError(env, error);
+    return res;
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Database
  * Method:    getMaxRevTreeDepth
  * Signature: (J)I
  */

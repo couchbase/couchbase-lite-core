@@ -405,7 +405,7 @@ public class C4DatabaseTest extends C4BaseTest {
         db.setExpiration(docID2, expire);
 
         try {
-            Thread.sleep(3 * 1000); // sleep 2 sec
+            Thread.sleep(3 * 1000); // sleep 3 sec
         } catch (InterruptedException e) {
         }
 

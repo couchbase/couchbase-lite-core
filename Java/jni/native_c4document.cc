@@ -334,22 +334,6 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_C4Document_resolveConflict
 
 /*
  * Class:     com_couchbase_litecore_C4Document
- * Method:    purgeDoc
- * Signature: (JLjava/lang/String;)Z
- */
-JNIEXPORT jboolean JNICALL
-Java_com_couchbase_litecore_C4Document_purgeDoc(JNIEnv *env, jclass clazz, 
-                                                jlong jdb, jstring jdocID) {
-    jstringSlice docID(env, jdocID);
-    C4Error error;
-    jboolean res = c4doc_purgeDoc((C4Database *)jdb, docID, &error);
-    if (!res)
-        throwError(env, error);
-    return res;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Document
  * Method:    setExpiration
  * Signature: (JLjava/lang/String;J)Z
  */
