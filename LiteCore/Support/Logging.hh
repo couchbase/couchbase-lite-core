@@ -247,6 +247,9 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
 
         void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
         void _logv(LogLevel level, const char *format, va_list) const;
+
+        unsigned getObjectRef() const { return _objectRef; }
+
         LogDomain &_domain;
 private:
         friend class LogDomain;
