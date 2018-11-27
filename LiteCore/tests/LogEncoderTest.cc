@@ -28,6 +28,17 @@
 #define DATESTAMP "\\w+, \\d{2}/\\d{2}/\\d{2}"
 #define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
 
+class LogObject : public Logging
+{
+public:
+    LogObject()
+        : Logging(DBLog)
+    {
+        
+    }
+
+    void doLog(const char *format, ...) const __printflike(2, 3) { LOGBODY(Info); }
+};
 
 static string dumpLog(string encoded, vector<string> levelNames) {
     cerr << "Encoded log is " << encoded.size() << " bytes\n";
@@ -44,18 +55,18 @@ static string dumpLog(string encoded, vector<string> levelNames) {
 TEST_CASE("LogEncoder formatting", "[Log]") {
     stringstream out;
     {
-        LogEncoder logger(out);
+        LogEncoder logger(out, LogLevel::Info);
         size_t size = 0xabcdabcd;
-        logger.log(0, nullptr, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
+        logger.log(nullptr, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
                    1234567890U, 2345678901LU, 123456789123456789LLU, size, (void*)0x7fff5fbc);
         for (int sgn = -1; sgn <= 1; sgn += 2) {
             ptrdiff_t ptrdiff = 1234567890;
-            logger.log(0, nullptr, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
+            logger.log(nullptr, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
                        1234567890*sgn, 234567890L*sgn, 123456789123456789LL*sgn, ptrdiff*sgn, '@');
         }
         const char *str = "C string";
         slice buf("hello");
-        logger.log(0, nullptr, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
+        logger.log(nullptr, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
     }
     string encoded = out.str();
     string result = dumpLog(encoded, {});
@@ -73,14 +84,17 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
     static const vector<string> kLevels = {"***", "", "", "WARNING", "ERROR"};
     stringstream out;
     {
-        LogEncoder logger(out);
-        logger.log(2, "Draw", LogEncoder::None, "drawing %d pictures", 2);
-        logger.log(1, "Paint", LogEncoder::None, "Waiting for drawings");
-        logger.log(3, "Draw", LogEncoder::None, "made a mistake!");
-        logger.log(2, "Draw", LogEncoder::None, "redrawing %d picture(s)", 1);
-        logger.log(2, "Draw", LogEncoder::None, "Handing off to painter");
-        logger.log(2, "Paint", LogEncoder::None, "Painting");
-        logger.log(4, "Customer", LogEncoder::None, "This isn't what I asked for!");
+        LogEncoder verbose(out, LogLevel::Verbose);
+        LogEncoder info(out, LogLevel::Info);
+        LogEncoder warning(out, LogLevel::Warning);
+        LogEncoder error(out, LogLevel::Error);
+        info.log("Draw", LogEncoder::None, "drawing %d pictures", 2);
+        verbose.log("Paint", LogEncoder::None, "Waiting for drawings");
+        warning.log("Draw", LogEncoder::None, "made a mistake!");
+        info.log("Draw", LogEncoder::None, "redrawing %d picture(s)", 1);
+        info.log("Draw", LogEncoder::None, "Handing off to painter");
+        info.log("Paint", LogEncoder::None, "Painting");
+        error.log("Customer", LogEncoder::None, "This isn't what I asked for!");
     }
 
     string encoded = out.str();
@@ -103,14 +117,14 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
 TEST_CASE("LogEncoder tokens", "[Log]") {
     stringstream out;
     {
-        LogEncoder logger(out);
+        LogEncoder logger(out, LogLevel::Info);
         size_t size = 0xabcdabcd;
-        auto tweedledum = logger.registerObject("Tweedledum");
-        logger.log(0, nullptr, tweedledum, "I'm Tweedledum");
-        auto rattle = logger.registerObject("rattle");
-        auto tweedledee = logger.registerObject("Tweedledee");
-        logger.log(0, nullptr, tweedledee, "I'm Tweedledee");
-        logger.log(0, nullptr, rattle, "and I'm the rattle");
+        auto tweedledum = logger.registerObject("Tweedledum", LogEncoder::ObjectRef::None);
+        logger.log(nullptr, tweedledum, "I'm Tweedledum");
+        auto rattle = logger.registerObject("rattle", LogEncoder::ObjectRef::None);
+        auto tweedledee = logger.registerObject("Tweedledee", LogEncoder::ObjectRef::None);
+        logger.log(nullptr, tweedledee, "I'm Tweedledee");
+        logger.log(nullptr, rattle, "and I'm the rattle");
     }
     string encoded = out.str();
     string result = dumpLog(encoded, {});
@@ -125,8 +139,8 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
 
 TEST_CASE("LogEncoder auto-flush", "[Log]") {
     stringstream out;
-    LogEncoder logger(out);
-    logger.log(0, nullptr, LogEncoder::None, "Hi there");
+    LogEncoder logger(out, LogLevel::Info);
+    logger.log(nullptr, LogEncoder::None, "Hi there");
 
     logger.withStream([&](ostream &s) {
         CHECK(out.str().empty());
@@ -168,11 +182,12 @@ TEST_CASE("Logging prune old files", "[Log]") {
         s << "log" << 11 - i;
         FilePath f(tmpLogDir[s.str()]);
         ofstream fout(tmpLogDir[s.str()].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
-        LogEncoder e(fout);
-        e.log(0, nullptr, LogEncoder::None, "Hi");
+        LogEncoder e(fout, LogLevel::Info);
+        e.log(nullptr, LogEncoder::None, "Hi");
     }
 
-    LogDomain::writeEncodedLogsTo(tmpLogDir["abcd"].canonicalPath(), LogLevel::Info, "Hello");
+    LogFileOptions fileOptions(tmpLogDir["abcd"].canonicalPath());
+    LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     int count = 0;
     tmpLogDir.forEachFile([&count](const FilePath& f)
     {
@@ -182,5 +197,76 @@ TEST_CASE("Logging prune old files", "[Log]") {
     });
 
     CHECK(count == 13);
-    LogDomain::writeEncodedLogsTo(string(), LogLevel::None, string());
+    fileOptions.setPath(string());
+    fileOptions.setLogLevel(LogLevel::None);
+    LogDomain::writeEncodedLogsTo(fileOptions, string());
 } 
+
+TEST_CASE("Logging rollover", "[Log]") {
+    FilePath tmpLogDir = FilePath::tempDirectory()["Log_Rollover/"];
+    tmpLogDir.delRecursive();
+    tmpLogDir.mkdir();
+
+    LogFileOptions fileOptions(tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5);
+    LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
+    LogObject obj;
+    for(int i = 0; i < 512; i++) {
+        obj.doLog("This is line #%d in the log.", i);
+        if(i == 256) {
+            // Otherwise the logging will happen to fast that
+            // rollover won't have a chance to occur
+            this_thread::sleep_for(chrono::seconds(2));
+        }
+    }
+
+    vector<string> infoFiles;
+    tmpLogDir.forEachFile([&infoFiles](const FilePath f)
+    {
+       if(f.path().find("info") != string::npos) {
+           infoFiles.push_back(f.path());
+       } 
+    });
+
+    REQUIRE(infoFiles.size() == 2);
+    stringstream out;
+    LogDecoder d1(ifstream(infoFiles[0], ios::binary));
+    d1.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
+
+    out.str("");
+    // If obj ref rollover is not working then this will throw an exception
+    LogDecoder d2(ifstream(infoFiles[1], ios::binary));
+    d2.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
+}
+
+TEST_CASE("Logging plaintext", "[Log]") {
+    FilePath tmpLogDir = FilePath::tempDirectory()["Log_Plaintext/"];
+    tmpLogDir.delRecursive();
+    tmpLogDir.mkdir();
+
+    LogFileOptions fileOptions(tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true);
+    LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
+    LogObject obj;
+    obj.doLog("This will be in plaintext");
+
+    vector<string> infoFiles;
+    tmpLogDir.forEachFile([&infoFiles](const FilePath f)
+    {
+       if(f.path().find("info") != string::npos) {
+           infoFiles.push_back(f.path());
+       } 
+    });
+
+    REQUIRE(infoFiles.size() == 1);
+    ifstream fin(infoFiles[0]);
+    string line;
+    vector<string> lines;
+    while(fin.good()) {
+        getline(fin, line);
+        lines.push_back(line);
+    }
+
+    CHECK(lines[0] == "CBLLOG");
+    CHECK(lines[1] == "---- Hello ----");
+    auto startPos = lines[2].find('|') + 2;
+    CHECK(lines[2].substr(startPos) == "[DB]: {class LogObject#1} This will be in plaintext");
+}

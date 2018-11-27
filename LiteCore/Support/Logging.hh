@@ -65,19 +65,29 @@ enum class LogLevel : int8_t {
 class LogFileOptions
 {
 public:
-    LogFileOptions(const std::string& path, LogLevel level, int maxSize, int maxCount, bool plaintext)
+    LogFileOptions(const std::string& path, LogLevel level = LogLevel::Info, 
+        int maxSize = 1024, int maxCount = 0, bool plaintext = false)
         : _path(path),_level(level), _maxSize(maxSize), _maxCount(maxCount), _isPlaintext(plaintext)
     {
         
     }
 
     const std::string& path() const { return _path; }
+    void setPath(const std::string &path) { _path = path; }
+
     LogLevel logLevel() const { return _level; }
+    void setLogLevel(LogLevel level) { _level = level; }
+
     int maxSize() const { return _maxSize; }
+    void setMaxSize(int maxSize) { _maxSize = maxSize; }
+
     int maxCount() const { return _maxCount; }
+    void setMaxCount(int maxCount) { _maxCount = maxCount; }
+
     bool isPlaintext() const { return _isPlaintext; }
+    void setPlaintext(bool plaintext) { _isPlaintext = plaintext; }
 private:
-    const std::string _path;
+    std::string _path;
     LogLevel _level;
     int _maxSize;
     int _maxCount;
@@ -135,7 +145,7 @@ public:
 private:
     friend class Logging;
     unsigned registerObject(const void *object, const std::string &description,
-                            const std::string &nickname, LogLevel);
+                            const std::string &nickname, LogLevel, unsigned hint);
     void unregisterObject(unsigned obj);
     void vlog(LogLevel level, unsigned obj, const char *fmt, va_list);
 
@@ -238,6 +248,10 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
         void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
         void _logv(LogLevel level, const char *format, va_list) const;
         LogDomain &_domain;
+private:
+        friend class LogDomain;
+        static void rotateLog(LogLevel level);
+
         unsigned _objectRef {0};
     };
 

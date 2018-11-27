@@ -55,59 +55,121 @@ namespace litecore {
     static LogDomain::Callback_t sCallback = LogDomain::defaultCallback;
     static bool sCallbackPreformatted = false;
     LogLevel LogDomain::sFileMinLevel = LogLevel::None;
-    static ofstream *sFileOut = nullptr;
-    static LogEncoder* sLogEncoder = nullptr;
+    static ofstream* sFileOut[5] = {}; // File per log level
+    static LogEncoder* sLogEncoder[5] = {};
+    static string sBaseLogPath;
+    static int sMaxCount = 0, sMaxSize = 1024; // For rotation
     static mutex sLogMutex;
-    static const int kNumLogFiles = 10;
+
+    static const char* const kLevelNames[] = {"debug", "verbose", "info",
+                "warning", "error", nullptr};
     static const char *kLevels[] = {"***", "", "", "WARNING", "ERROR"};
 
-    void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list args)
+    static string createLogPath(LogLevel level)
     {
-        const char *objName = "?";
-        if (objRef) {
-            auto i = _objNames.find(objRef);
-            if (i != _objNames.end())
-                objName = i->second.c_str();
+        auto split = FilePath::splitExtension(sBaseLogPath);
+        const auto prefix = split.first;
+        struct timespec tms;
+        if(!timespec_get(&tms, TIME_UTC)) {
+            // TODO: What to do here?
+            tms.tv_sec = 0;
         }
 
-        if(sLogEncoder) {
-            sLogEncoder->vlog((int8_t)level, domain, (LogEncoder::ObjectRef)objRef, fmt, args);
-        } else if(sFileOut) {
-            static char formatBuffer[2048];
-            size_t n = 0;
-            LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut);
-            LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut);
-            if (objRef)
-                n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", objName, objRef);
-            vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
-            *sFileOut << formatBuffer << endl;
+        stringstream ss;
+        ss << prefix << "_" << kLevelNames[(int)level] << "_" << tms.tv_sec << split.second;
+        return ss.str();
+    }
+
+    static void setupFileOut()
+    {
+        for (int i = 0; kLevelNames[i]; i++) {
+            auto path = createLogPath((LogLevel)i);
+            sFileOut[i] = new ofstream(path, ofstream::out|ofstream::trunc|ofstream::binary);
         }
     }
 
-    static void purgeOldLogs(const string& filePath)
+    static void setupEncoders()
     {
-        FilePath filePathObj(filePath);
+        for(int i = 0; i < 5; i++) {
+            sLogEncoder[i]  = new LogEncoder(*sFileOut[i], (LogLevel)i);
+        }
+    }
+
+    static void teardownEncoders()
+    {
+        for(auto& encoder : sLogEncoder) {
+            if(encoder) encoder->flush();
+            delete encoder;
+            encoder = nullptr;
+        }
+    }
+
+    static void teardownFileOut()
+    {
+        for (auto& fout : sFileOut) {
+            if(fout) fout->flush();
+            delete fout;
+            fout = nullptr;
+        }
+    }
+
+    static void purgeOldLogs(LogLevel level)
+    {
+        FilePath filePathObj(sBaseLogPath);
         FilePath logDir = filePathObj.dir();
         string ext = filePathObj.extension();
         multimap<time_t, FilePath> logFiles;
+        const char* levelStr = kLevelNames[(int)level];
+
         logDir.forEachFile([&](const FilePath& f) {
-            if (f.extension() == ext) {
-                char magicBuffer[4] = {};
+            if (f.extension() == ext && f.fileName().find(levelStr) != string::npos) {
+                char magicBuffer[6] = {};
                 ifstream fin(f.path(), ios::binary);
-            fin.read(magicBuffer, 4);
-                if (fin.good() && 0 == memcmp(magicBuffer, LogEncoder::kMagicNumber, 4)) {
-                logFiles.insert(make_pair(f.lastModified(), f));
-            }
+                fin.read(magicBuffer, 6);
+                if (fin.good() && (0 == memcmp(magicBuffer, LogEncoder::kMagicNumber, 4) || 0 == memcmp(magicBuffer, "CBLLOG", 6))) {
+                    logFiles.insert(make_pair(f.lastModified(), f));
+                }
             }
         });
 
-        // Delete one too many because we are about to start a new one
-        while(logFiles.size() >= kNumLogFiles) {
+        while(logFiles.size() > sMaxCount) {
             logFiles.begin()->second.del();
             logFiles.erase(logFiles.begin());
         }
     }
 
+    static void purgeOldLogs()
+    {
+        for(int i = 0; i < 5; i++) {
+            purgeOldLogs((LogLevel)i);
+        }
+    }
+
+    void Logging::rotateLog(LogLevel level)
+    {
+        auto encoder = sLogEncoder[(int)level];
+        auto file = sFileOut[(int)level];
+        LogEncoder::ObjectRef next = LogEncoder::ObjectRef::None;
+        if(encoder) {
+            encoder->flush();
+            next = encoder->nextObjectRef();
+        } else {
+            file->flush();
+        }
+
+        delete sLogEncoder[(int)level];
+        delete sFileOut[(int)level];
+        purgeOldLogs(level);
+        const auto path = createLogPath(level);
+        file = sFileOut[(int)level] = new ofstream(path, ofstream::out|ofstream::trunc|ofstream::binary);
+        if(encoder) {
+            auto newEncoder = new LogEncoder(*sFileOut[(int)level], level);
+            newEncoder->fastForwardObjects(next);
+            sLogEncoder[(int)level] = newEncoder;
+        } else {
+            *file << "CBLLOG" << endl;
+        }
+    }
 
 #pragma mark - GLOBAL SETTINGS:
 
@@ -126,23 +188,31 @@ namespace litecore {
                                        const string &initialMessage)
     {
         unique_lock<mutex> lock(sLogMutex);
-        delete sLogEncoder;
-        sLogEncoder = nullptr;
-        delete sFileOut;
-        sFileOut = nullptr;
-        auto filePath = options.path();
-        if (filePath.empty()) {
+        sMaxSize = max(1024, options.maxSize());
+        sMaxCount = max(0, options.maxCount());
+        teardownEncoders();
+        teardownFileOut();
+        sBaseLogPath = options.path();
+        if (sBaseLogPath.empty()) {
             sFileMinLevel = LogLevel::None;
         } else {
             sFileMinLevel = options.logLevel();
-            purgeOldLogs(filePath);
-            sFileOut = new ofstream(filePath, ofstream::out|ofstream::trunc|ofstream::binary);
-            sLogEncoder = options.isPlaintext() ? nullptr : new LogEncoder(*sFileOut);
+            purgeOldLogs();
+            setupFileOut();
+            if(!options.isPlaintext()) {
+                setupEncoders();
+            }
+
             if (!initialMessage.empty()) {
-                if(sLogEncoder) {
-                    sLogEncoder->log((int8_t)LogLevel::Info, "", LogEncoder::None, "---- %s ----", initialMessage.c_str());
+                if(sLogEncoder[0]) {
+                    for(auto& encoder : sLogEncoder) {
+                        encoder->log("", LogEncoder::None, "---- %s ----", initialMessage.c_str());
+                    }
                 } else {
-                    *sFileOut << "---- " << initialMessage << " ----" << endl;
+                    for(auto& fout : sFileOut) {
+                        *fout << "CBLLOG" << endl;
+                        *fout << "---- " << initialMessage << " ----" << endl;
+                    }
                 }
             }
 
@@ -151,13 +221,15 @@ namespace litecore {
             call_once(f, []{
                 atexit([]{
                     if (sLogMutex.try_lock()) {     // avoid deadlock on crash inside logging code
-                        if (sLogEncoder)
-                            sLogEncoder->log((int)LogLevel::Info, "", LogEncoder::None,
+                        if (sLogEncoder[0]) {
+                            for(auto& encoder : sLogEncoder) {
+                                encoder->log("", LogEncoder::None,
                                              "---- END ----");
-                        delete sLogEncoder;
-                        delete sFileOut;
-                        sLogEncoder = nullptr;
-                        sFileOut = nullptr;
+                            }
+                        }
+                            
+                        teardownEncoders();
+                        teardownFileOut();
                         sLogMutex.unlock();
                     }
                 });
@@ -280,7 +352,6 @@ namespace litecore {
 
     static char sFormatBuffer[2048];
 
-
     void LogDomain::vlog(LogLevel level, unsigned objRef, const char *fmt, va_list args) {
         if (_effectiveLevel == LogLevel::Uninitialized)
             computeLevel();
@@ -340,6 +411,36 @@ namespace litecore {
         va_end(args);
     }
 
+    void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list args)
+    {
+        const char *objName = "?";
+        if (objRef) {
+            auto i = _objNames.find(objRef);
+            if (i != _objNames.end())
+                objName = i->second.c_str();
+        }
+
+        if(sLogEncoder[(int)level]) {
+            sLogEncoder[(int)level]->vlog(domain, (LogEncoder::ObjectRef)objRef, fmt, args);
+        } else if(sFileOut[(int)level]) {
+            static char formatBuffer[2048];
+            size_t n = 0;
+            LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level]);
+            LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut[(int)level]);
+            if (objRef)
+                n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", objName, objRef);
+            vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
+            *sFileOut[(int)level] << formatBuffer << endl;
+        } else {
+            // No rotation if neither encoder nor file is present
+            return;
+        }
+
+        const long pos = sFileOut[(int)level]->tellp();
+        if(pos >= sMaxSize) {
+            Logging::rotateLog(level);
+        }
+    }
     
     static void invokeCallback(LogDomain &domain, LogLevel level, const char *fmt, ...) {
         va_list args;
@@ -379,23 +480,25 @@ namespace litecore {
     unsigned LogDomain::registerObject(const void *object,
                                        const string &description,
                                        const string &nickname,
-                                       LogLevel level)
+                                       LogLevel level,
+                                       unsigned hint)
     {
         unique_lock<mutex> lock(sLogMutex);
         unsigned objRef;
-        if (sLogEncoder)
-            objRef = sLogEncoder->registerObject(description);
+        if (sLogEncoder[(int)level])
+            objRef = sLogEncoder[(int)level]->registerObject(description, (LogEncoder::ObjectRef)hint);
         else
-            objRef = ++_lastObjRef;
+            objRef = hint == 0 ? ++_lastObjRef : hint;
 
-        _objNames.insert({objRef, nickname});
+        if(_objNames.find(objRef) == _objNames.end()) {
+            _objNames.insert({objRef, nickname});
+        }
 
         if (sCallback && level >= _callbackLogLevel())
             invokeCallback(*this, level, "{%s#%u}==> %s @%p",
                            nickname.c_str(), objRef, description.c_str(), object);
         return objRef;
     }
-
 
     void LogDomain::unregisterObject(unsigned objectRef) {
         unique_lock<mutex> lock(sLogMutex);
@@ -451,15 +554,14 @@ namespace litecore {
     }
     
     void Logging::_logv(LogLevel level, const char *format, va_list args) const {
-        if (!_objectRef) {
-            _domain.computeLevel();
-            if (!_domain.willLog(level))
-                return;
-            string nickname = loggingClassName();
-            string identifier = classNameOf(this) + " " + loggingIdentifier();
-            const_cast<Logging*>(this)->_objectRef = _domain.registerObject(this, identifier,
-                                                                            nickname, level);
-        }
+        _domain.computeLevel();
+        if (!_domain.willLog(level))
+            return;
+
+        string nickname = loggingClassName();
+        string identifier = classNameOf(this) + " " + loggingIdentifier();
+        const_cast<Logging*>(this)->_objectRef = _domain.registerObject(this, identifier,
+                                                                        nickname, level, _objectRef);
         _domain.vlog(level, _objectRef, format, args);
     }
 
