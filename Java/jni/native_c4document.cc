@@ -343,10 +343,10 @@ Java_com_couchbase_litecore_C4Document_setExpiration(JNIEnv *env, jclass clazz,
                                                      jlong jtimestamp) {
     jstringSlice docID(env, jdocID);
     C4Error error;
-    jboolean res = c4doc_setExpiration((C4Database *)jdb, docID, jtimestamp, &error);
+    bool res = c4doc_setExpiration((C4Database *)jdb, docID, jtimestamp, &error);
     if (!res)
         throwError(env, error);
-    return res;
+    return (jboolean)res;
 }
 
 /*
