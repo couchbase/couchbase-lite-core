@@ -82,7 +82,7 @@ Java_com_couchbase_litecore_C4Database_copy(JNIEnv *env, jclass clazz,
 /*
  * Class:     com_couchbase_litecore_C4Database
  * Method:    free
- * Signature: (J)
+ * Signature: (J)V
  */
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_C4Database_free(JNIEnv *env, jclass clazz, jlong jdb) {
