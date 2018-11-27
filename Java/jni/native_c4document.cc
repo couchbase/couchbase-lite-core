@@ -335,18 +335,16 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_C4Document_resolveConflict
 /*
  * Class:     com_couchbase_litecore_C4Document
  * Method:    setExpiration
- * Signature: (JLjava/lang/String;J)Z
+ * Signature: (JLjava/lang/String;J)V
  */
-JNIEXPORT jboolean JNICALL
+JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Document_setExpiration(JNIEnv *env, jclass clazz,
                                                      jlong jdb, jstring jdocID,
                                                      jlong jtimestamp) {
     jstringSlice docID(env, jdocID);
     C4Error error;
-    bool res = c4doc_setExpiration((C4Database *)jdb, docID, jtimestamp, &error);
-    if (!res)
+    if (!c4doc_setExpiration((C4Database *)jdb, docID, jtimestamp, &error))
         throwError(env, error);
-    return (jboolean)res;
 }
 
 /*

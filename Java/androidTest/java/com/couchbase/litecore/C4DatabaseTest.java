@@ -362,7 +362,7 @@ public class C4DatabaseTest extends C4BaseTest {
         createRev(docID, kRevID, kFleeceBody);
 
         // unix time
-        Long expire = System.currentTimeMillis() / 1000 + 1;
+        long expire = System.currentTimeMillis() / 1000 + 1;
         db.setExpiration(docID, expire);
 
         expire = System.currentTimeMillis() / 1000 + 2;
@@ -382,7 +382,7 @@ public class C4DatabaseTest extends C4BaseTest {
 
         assertEquals(expire, db.getExpiration(docID));
         assertEquals(expire, db.getExpiration(docID2));
-        assertEquals((long)expire, db.nextDocExpiration());
+        assertEquals(expire, db.nextDocExpiration());
 
         // TODO: DB00x - Java does not hava the implementation of c4db_enumerateExpired and c4exp_next yet.
     }
@@ -393,11 +393,10 @@ public class C4DatabaseTest extends C4BaseTest {
         createRev(docID, kRevID, kFleeceBody);
 
         // unix time
-        Long expire = System.currentTimeMillis() / 1000 + 1;
+        long expire = System.currentTimeMillis() / 1000 + 1;
         db.setExpiration(docID, expire);
 
         expire = System.currentTimeMillis() / 1000 + 2;
-        db.setExpiration(docID, expire);
         db.setExpiration(docID, expire);
 
         String docID2 = "expire_me_too";
@@ -418,13 +417,9 @@ public class C4DatabaseTest extends C4BaseTest {
     public void testPurgeDoc() throws LiteCoreException {
         String docID = "purge_me";
         createRev(docID, kRevID, kFleeceBody);
-        db.beginTransaction();
         try {
             db.purgeDoc(docID);
         } catch(Exception e) {}
-        finally {
-            db.endTransaction(true);
-        }
 
         try {
             db.get(docID, true);
@@ -433,6 +428,7 @@ public class C4DatabaseTest extends C4BaseTest {
             assertEquals(kC4ErrorNotFound, e.code);
             assertEquals("not found", e.getMessage());
         }
+        assertNull(db.get(docID, true));
     }
 
     // - "Database CancelExpire"
@@ -451,7 +447,7 @@ public class C4DatabaseTest extends C4BaseTest {
         } catch (InterruptedException e) {
         }
 
-        // TODO: DB00x - Java does not hava the implementation of c4db_enumerateExpired, c4exp_next and c4exp_purgeExpired with enumerator.
+        assertNotNull(db.get(docID, true));
     }
 
     // - "Database BlobStore"
