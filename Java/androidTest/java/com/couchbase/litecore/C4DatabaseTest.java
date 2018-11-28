@@ -423,6 +423,7 @@ public class C4DatabaseTest extends C4BaseTest {
 
         try {
             db.get(docID, true);
+            fail("NotFound Exception should be thrown");
         } catch (LiteCoreException e) {
             assertEquals(LiteCoreDomain, e.domain);
             assertEquals(kC4ErrorNotFound, e.code);
@@ -440,7 +441,7 @@ public class C4DatabaseTest extends C4BaseTest {
         // unix time
         long expire = System.currentTimeMillis() / 1000 + 2;
         db.setExpiration(docID, expire);
-        db.setExpiration(docID, null);
+        db.setExpiration(docID, 0);
 
         try {
             Thread.sleep(2 * 1000); // sleep 2 sec
