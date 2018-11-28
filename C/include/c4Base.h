@@ -203,11 +203,10 @@ CBL_CORE_API extern const C4LogDomain
     kC4SyncLog,                     ///< Log domain for replication operations
     kC4WebSocketLog;                ///< Log domain for WebSocket operations
 
-    typedef struct
-    {
+    typedef struct {
         C4LogLevel log_level;       ///< The log level that the overall logging will limit to
         C4String base_path;    ///< The path to the binary log file base name (other elements will be added)
-        int32_t max_size_bytes;     ///< The maximum size of each log file (minimum 1024)
+        int64_t max_size_bytes;     ///< The maximum size of each log file (minimum 1024)
         int32_t max_rotate_count;   ///< The maximum amount of old log files to keep
         bool use_plaintext;         ///< Disables binary encoding of the logs (not recommended)
     } C4LogFileOptions;

@@ -113,6 +113,23 @@ namespace litecore {
         }
     }
 
+    static bool needsTeardown(const LogFileOptions& options)
+    {
+        if(sLogEncoder[0] == nullptr && !options.isPlaintext()) {
+            return true;
+        }
+
+        if(sLogEncoder[0] != nullptr && options.isPlaintext()) {
+            return true;
+        }
+
+        if(sBaseLogPath != options.path()) {
+            return true;
+        }
+
+        return false;
+    }
+
     static void purgeOldLogs(LogLevel level)
     {
         FilePath filePathObj(sBaseLogPath);
@@ -190,13 +207,21 @@ namespace litecore {
         unique_lock<mutex> lock(sLogMutex);
         sMaxSize = max(1024, options.maxSize());
         sMaxCount = max(0, options.maxCount());
-        teardownEncoders();
-        teardownFileOut();
+        const bool teardown = needsTeardown(options);
+        if(teardown) {
+            teardownEncoders();
+            teardownFileOut();
+        }
+
         sBaseLogPath = options.path();
         if (sBaseLogPath.empty()) {
             sFileMinLevel = LogLevel::None;
         } else {
             sFileMinLevel = options.logLevel();
+            if(!teardown) {
+                return;
+            }
+
             purgeOldLogs();
             setupFileOut();
             if(!options.isPlaintext()) {
