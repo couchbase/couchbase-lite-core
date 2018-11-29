@@ -170,11 +170,14 @@ static void statusChangedCallback(C4Replicator *repl, C4ReplicatorStatus status,
  * @param repl
  * @param pushing
  * @param docID
+ * @param revID
+ * @param flags
  * @param error
  * @param transient
  * @param ctx
  */
-static void documentEndedCallback(C4Replicator *repl, bool pushing, C4String docID, C4Error error,
+static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString docID,
+                                  C4HeapString revID, C4RevisionFlags flags, C4Error error,
                                   bool transient, void *ctx) {
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);

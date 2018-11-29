@@ -580,7 +580,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Document_update2(JNIEnv *e
 JNIEXPORT jboolean JNICALL
 Java_com_couchbase_litecore_C4Document_dictContainsBlobs(JNIEnv *env, jclass clazz,
                                                           jlong jbody, jlong jsk) {
-    Doc doc(*(FLSlice *) jbody, kFLTrusted, (FLSharedKeys) jsk);
+    Doc doc(*(alloc_slice *) jbody, kFLTrusted, (FLSharedKeys) jsk);
     return c4doc_dictContainsBlobs(doc);
 }
 

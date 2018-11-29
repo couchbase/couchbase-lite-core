@@ -44,11 +44,8 @@ public class C4Database implements C4Constants {
 
     // - Lifecycle
 
-    public boolean free() {
-        boolean result = true;
-        if (handle != 0L && (result = free(handle)))
-            handle = 0L;
-        return result;
+    public void free() {
+        free(handle);
     }
 
     public void close() throws LiteCoreException {
@@ -336,7 +333,7 @@ public class C4Database implements C4Constants {
                                    byte[] encryptionKey)
             throws LiteCoreException;
 
-    static native boolean free(long db);
+    static native void free(long db);
 
     static native void close(long db) throws LiteCoreException;
 
