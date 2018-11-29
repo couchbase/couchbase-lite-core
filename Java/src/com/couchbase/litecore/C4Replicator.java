@@ -153,7 +153,7 @@ public class C4Replicator {
             repl.listener.statusChanged(repl, status, repl.context);
     }
 
-    private static void documentErrorCallback(long handle, boolean pushing,
+    private static void documentEndedCallback(long handle, boolean pushing,
                                               String docID, int domain, int code, int internalInfo,
                                               boolean trans) {
         Log.e(TAG, "documentErrorCallback() handle -> " + handle +
@@ -166,7 +166,7 @@ public class C4Replicator {
 
         C4Replicator repl = reverseLookupTable.get(handle);
         if (repl != null && repl.listener != null) {
-            repl.listener.documentError(repl, pushing, docID,
+            repl.listener.documentEnded(repl, pushing, docID,
                     new C4Error(domain, code, internalInfo), trans, repl.context);
         }
     }

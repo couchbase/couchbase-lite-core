@@ -34,7 +34,7 @@ using namespace litecore::jni;
 // C4Replicator
 static jclass cls_C4Replicator;           // global reference
 static jmethodID m_C4Replicator_statusChangedCallback; // statusChangedCallback method
-static jmethodID m_C4Replicator_documentErrorCallback; // documentErrorCallback method
+static jmethodID m_C4Replicator_documentEndedCallback; // documentEndedCallback method
 
 // C4ReplicatorStatus
 static jclass cls_C4ReplStatus; // global reference
@@ -64,10 +64,10 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
         if (!m_C4Replicator_statusChangedCallback)
             return false;
 
-        m_C4Replicator_documentErrorCallback = env->GetStaticMethodID(cls_C4Replicator,
-                                                                      "documentErrorCallback",
+        m_C4Replicator_documentEndedCallback = env->GetStaticMethodID(cls_C4Replicator,
+                                                                      "documentEndedCallback",
                                                                       "(JZLjava/lang/String;IIIZ)V");
-        if (!m_C4Replicator_documentErrorCallback)
+        if (!m_C4Replicator_documentEndedCallback)
             return false;
     }
 
@@ -184,7 +184,7 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
     if (getEnvStat == JNI_OK) {
         if (error.code) {
             env->CallStaticVoidMethod(cls_C4Replicator,
-                                      m_C4Replicator_documentErrorCallback,
+                                      m_C4Replicator_documentEndedCallback,
                                       (jlong) repl,
                                       pushing,
                                       toJString(env, docID),
@@ -194,7 +194,7 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
             if (error.code) {
                 env->CallStaticVoidMethod(cls_C4Replicator,
-                                          m_C4Replicator_documentErrorCallback,
+                                          m_C4Replicator_documentEndedCallback,
                                           (jlong) repl,
                                           pushing,
                                           toJString(env, docID),
