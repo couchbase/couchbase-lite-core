@@ -333,7 +333,7 @@ public class C4Database implements C4Constants {
                                    byte[] encryptionKey)
             throws LiteCoreException;
 
-    static native boolean free(long db);
+    static native void free(long db);
 
     static native void close(long db) throws LiteCoreException;
 
