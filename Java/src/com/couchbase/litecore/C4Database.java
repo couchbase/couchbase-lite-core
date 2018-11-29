@@ -46,6 +46,7 @@ public class C4Database implements C4Constants {
 
     public void free() {
         free(handle);
+        handle = 0L;
     }
 
     public void close() throws LiteCoreException {

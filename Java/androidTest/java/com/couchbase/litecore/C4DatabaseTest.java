@@ -420,16 +420,13 @@ public class C4DatabaseTest extends C4BaseTest {
         try {
             db.purgeDoc(docID);
         } catch(Exception e) {}
-
         try {
             db.get(docID, true);
-            fail("NotFound Exception should be thrown");
         } catch (LiteCoreException e) {
             assertEquals(LiteCoreDomain, e.domain);
             assertEquals(kC4ErrorNotFound, e.code);
             assertEquals("not found", e.getMessage());
         }
-        assertNull(db.get(docID, true));
     }
 
     // - "Database CancelExpire"
