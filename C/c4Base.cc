@@ -383,7 +383,7 @@ void c4log(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, ...) noexcep
 
 void c4vlog(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, va_list args) noexcept {
     try {
-        ((LogDomain*)c4Domain)->vlog((LogLevel)level, fmt, args);
+        ((LogDomain*)c4Domain)->vlog((LogLevel)level, true, fmt, args);
     } catch (...) { }
 }
 
@@ -392,8 +392,10 @@ void c4slog(C4LogDomain c4Domain, C4LogLevel level, C4Slice msg) noexcept {
     if(msg.buf == nullptr) {
         return;
     }
-    
-    c4log(c4Domain, level, "%.*s", SPLAT(msg));
+
+    try {
+        ((LogDomain*)c4Domain)->log((LogLevel)level, false, "%.*s", SPLAT(msg));
+    } catch (...) { }
 }
 // LCOV_EXCL_STOP
 

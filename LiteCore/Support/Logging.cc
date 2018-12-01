@@ -377,7 +377,7 @@ namespace litecore {
 
     static char sFormatBuffer[2048];
 
-    void LogDomain::vlog(LogLevel level, unsigned objRef, const char *fmt, va_list args) {
+    void LogDomain::vlog(LogLevel level, unsigned objRef, bool doCallback, const char *fmt, va_list args) {
         if (_effectiveLevel == LogLevel::Uninitialized)
             computeLevel();
         if (!willLog(level))
@@ -386,7 +386,7 @@ namespace litecore {
         unique_lock<mutex> lock(sLogMutex);
 
         // Invoke the client callback:
-        if (sCallback && level >= _callbackLogLevel()) {
+        if (doCallback && sCallback && level >= _callbackLogLevel()) {
             const char *objName = "?";
             if (objRef) {
                 auto i = _objNames.find(objRef);
@@ -424,15 +424,15 @@ namespace litecore {
     }
 
 
-    void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
-        vlog(level, LogEncoder::None, fmt, args);
+    void LogDomain::vlog(LogLevel level, bool callback, const char *fmt, va_list args) {
+        vlog(level, LogEncoder::None, callback, fmt, args);
     }
 
 
-    void LogDomain::log(LogLevel level, const char *fmt, ...) {
+    void LogDomain::log(LogLevel level, bool callback, const char *fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        vlog(level, LogEncoder::None, fmt, args);
+        vlog(level, LogEncoder::None, callback, fmt, args);
         va_end(args);
     }
 

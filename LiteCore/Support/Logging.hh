@@ -118,8 +118,8 @@ public:
 
     bool willLog(LogLevel lv) const                 {return _effectiveLevel <= lv;}
 
-    void log(LogLevel level, const char *fmt, ...) __printflike(3, 4);
-    void vlog(LogLevel level, const char *fmt, va_list);
+    void log(LogLevel level, bool callback, const char *fmt, ...) __printflike(3, 4);
+    void vlog(LogLevel level, bool callback, const char *fmt, va_list);
 
     using Callback_t = void(*)(const LogDomain&, LogLevel, const char *format, va_list);
 
@@ -147,7 +147,7 @@ private:
     unsigned registerObject(const void *object, const std::string &description,
                             const std::string &nickname, LogLevel, unsigned hint);
     void unregisterObject(unsigned obj);
-    void vlog(LogLevel level, unsigned obj, const char *fmt, va_list);
+    void vlog(LogLevel level, unsigned obj, bool callback, const char *fmt, va_list);
 
 private:
     static LogLevel _callbackLogLevel() noexcept;
@@ -176,7 +176,7 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #ifdef _MSC_VER
 #define LogToAt(DOMAIN, LEVEL, FMT, ...) \
     {if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \
-        (DOMAIN).log(LogLevel::LEVEL, FMT, ##__VA_ARGS__);}
+        (DOMAIN).log(LogLevel::LEVEL, true, FMT, ##__VA_ARGS__);}
 
 #define LogTo(DOMAIN, FMT, ...)         LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
 #define LogVerbose(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
