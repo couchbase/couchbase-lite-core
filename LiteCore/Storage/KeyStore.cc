@@ -101,7 +101,8 @@ namespace litecore {
 
     expiration_t KeyStore::now() noexcept {
 #if defined(__ANDROID__)
-        return (std::chrono::system_clock::now().time_since_epoch()).count();
+        return std::chrono::duration_cast<std::chrono::milliseconds>
+                (std::chrono::system_clock::now().time_since_epoch()).count();
 #else
         // "The encoding of calendar time in time_t is unspecified, but most systems conform to POSIX
         // specification and return a value of integral type holding the number of seconds since the
