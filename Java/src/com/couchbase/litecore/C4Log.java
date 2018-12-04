@@ -22,4 +22,12 @@ public class C4Log {
     // native methods
     //-------------------------------------------------------------------------
     public static native void setLevel(String domain, int level);
+
+    public static native void log(String domain, int level, String message);
+
+    public static native int getBinaryFileLevel();
+
+    public static native void setBinaryFileLevel(int level);
+
+    public static native void writeToBinaryFile(String path, int level, int maxRotateCount, long maxSize, boolean usePlaintext);
 }

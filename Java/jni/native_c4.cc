@@ -97,6 +97,64 @@ Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jd
         c4log_setLevel(logDomain, (C4LogLevel) jlevel);
 }
 
+/*
+ * Class:     com_couchbase_litecore_C4Log
+ * Method:    log
+ * Signature: (Ljava/lang/String;I;Ljava/lang/String)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_C4Log_log(JNIEnv* env, jclass clazz, jstring jdomain, jint jlevel, jstring jmessage) {
+    jstringSlice message(env, jmessage);
+    jstringSlice domain(env, jdomain);
+
+    C4LogDomain logDomain = c4log_getDomain(domain.cString(), false);
+    c4slog(logDomain, (C4LogLevel)level, message);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Log
+ * Method:    getBinaryFileLevel
+ * Signature: (V)I
+ */
+JNIEXPORT jint JNICALL
+Java_com_couchbase_litecore_C4Log_getBinaryFileLevel(JNIEnv* env, jclass clazz) {
+    return c4log_binaryFileLevel();
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Log
+ * Method:    setBinaryFileLevel
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_C4Log_setBinaryFileLevel(JNIEnv* env, jclass clazz, jint level) {
+    c4log_setBinaryFileLevel((C4LogLevel)level);
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Log
+ * Method:    writeToBinaryFile
+ * Signature: (Ljava/lang/String;IIJZ)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_C4Log_writeToBinaryFile(JNIEnv* env, jclass clazz, jstring jpath,
+                                                    jint jlevel, jint jmaxrotatecount, jlong jmaxsize,
+                                                    jboolean juseplaintext) {
+    jstringSlice path(env, jpath);
+    C4LogFileOptions options {
+        (C4LogLevel)jlevel,
+        path,
+        jmaxsize,
+        jmaxrotatecount,
+        juseplaintext
+    };
+
+    C4Error err;
+    if(!c4log_writeToBinaryFile(options, &err)) {
+        throwError(env, err);
+    }
+}
+
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4Key
 // ----------------------------------------------------------------------------
