@@ -229,7 +229,7 @@ TEST_CASE("Logging rollover", "[Log]") {
 
     REQUIRE(infoFiles.size() == 2);
     stringstream out;
-    ifstream fin(infoFiles[0], ios::binary));
+    ifstream fin(infoFiles[0], ios::binary);
     LogDecoder d1(fin);
     d1.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
 
