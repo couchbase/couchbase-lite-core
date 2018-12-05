@@ -198,7 +198,7 @@ namespace litecore {
                                        const string &initialMessage)
     {
         unique_lock<mutex> lock(sLogMutex);
-        sMaxSize = max(1024ll, options.maxSize());
+        sMaxSize = max((int64_t)1024, options.maxSize());
         sMaxCount = max(0, options.maxCount());
         const bool teardown = needsTeardown(options);
         if(teardown) {
