@@ -24,6 +24,9 @@
 using namespace litecore;
 using namespace litecore::jni;
 
+static jclass cls_C4Log;
+static jmethodID m_C4Log_logCallback;
+
 // ----------------------------------------------------------------------------
 // com_couchbase_litecore_C4
 // ----------------------------------------------------------------------------
@@ -105,10 +108,15 @@ Java_com_couchbase_litecore_C4Log_setLevel(JNIEnv *env, jclass clazz, jstring jd
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Log_log(JNIEnv* env, jclass clazz, jstring jdomain, jint jlevel, jstring jmessage) {
     jstringSlice message(env, jmessage);
-    jstringSlice domain(env, jdomain);
 
-    C4LogDomain logDomain = c4log_getDomain(domain.cString(), false);
-    c4slog(logDomain, (C4LogLevel)level, message);
+    jboolean isCopy;
+    const char* domain = env->GetStringUTFChars(jdomain, &isCopy);
+    C4LogDomain logDomain = c4log_getDomain(domain, false);
+    c4slog(logDomain, (C4LogLevel)jlevel, message);
+
+    if(isCopy) {
+        free((void *)domain);
+    }
 }
 
 /*
@@ -146,13 +154,67 @@ Java_com_couchbase_litecore_C4Log_writeToBinaryFile(JNIEnv* env, jclass clazz, j
         path,
         jmaxsize,
         jmaxrotatecount,
-        juseplaintext
+        (bool)juseplaintext
     };
 
     C4Error err;
     if(!c4log_writeToBinaryFile(options, &err)) {
         throwError(env, err);
     }
+}
+
+static void logCallback(C4LogDomain domain, C4LogLevel level, const char *fmt, va_list args) {
+    JNIEnv *env = NULL;
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
+    if(getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) != 0) {
+            LOGE("logCallback(): Failed to attach the current thread to a Java VM)");
+            return;
+        }
+    } else if(getEnvStat != JNI_OK) {
+        LOGE("logCallback(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+        return;
+    }
+
+    jstring message = env->NewStringUTF(fmt);
+    const char* domainNameRaw = c4log_getDomainName(domain);
+    jstring domainName = env->NewStringUTF(domainNameRaw);
+    env->CallStaticVoidMethod(cls_C4Log, m_C4Log_logCallback, domainName, (jint)level, message);
+
+    if(getEnvStat == JNI_EDETACHED) {
+        if (gJVM->DetachCurrentThread() != 0) {
+            LOGE("logCallback(): doRequestClose(): Failed to detach the current thread from a Java VM");
+        }
+    }
+}
+
+/*
+ * Class:     com_couchbase_litecore_C4Log
+ * Method:    setCallbackLevel
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL
+Java_com_couchbase_litecore_C4Log_setCallbackLevel(JNIEnv* env, jclass clazz, jint jlevel) {
+    if(cls_C4Log == nullptr) {
+        cls_C4Log = reinterpret_cast<jclass>(env->NewGlobalRef(clazz));
+        if(!cls_C4Log) {
+            C4Error err { .code = kC4ErrorUnexpectedError, .domain = LiteCoreDomain };
+            throwError(env, err);
+        }
+
+        m_C4Log_logCallback = env->GetStaticMethodID(cls_C4Log,
+                                                     "logCallback",
+                                                     "(Ljava/lang/String;ILjava/lang/String;)V");
+
+        if(!m_C4Log_logCallback) {
+            C4Error err { .code = kC4ErrorUnexpectedError, .domain = LiteCoreDomain };
+            throwError(env, err);
+        }
+
+        c4log_writeToCallback((C4LogLevel)jlevel, logCallback, true);
+    }
+
+    c4log_setCallbackLevel((C4LogLevel)jlevel);
 }
 
 // ----------------------------------------------------------------------------

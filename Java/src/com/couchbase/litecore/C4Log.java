@@ -17,7 +17,28 @@
 //
 package com.couchbase.litecore;
 
+import com.couchbase.lite.Database;
+import com.couchbase.lite.Log;
+import com.couchbase.lite.LogDomain;
+import com.couchbase.lite.LogLevel;
+import com.couchbase.lite.Logger;
+
+import java.util.HashMap;
+import java.util.concurrent.Executors;
+
 public class C4Log {
+    private static LogLevel CurrentLevel = LogLevel.WARNING;
+    private static HashMap<String, LogDomain> DomainObjects = new HashMap<>();
+
+    static {
+        DomainObjects.put(C4Constants.C4LogDomain.Database, LogDomain.DATABASE);
+        DomainObjects.put(C4Constants.C4LogDomain.Query, LogDomain.QUERY);
+        DomainObjects.put(C4Constants.C4LogDomain.Sync, LogDomain.REPLICATOR);
+        DomainObjects.put(C4Constants.C4LogDomain.SyncBusy, LogDomain.REPLICATOR);
+        DomainObjects.put(C4Constants.C4LogDomain.BLIP, LogDomain.NETWORK);
+        DomainObjects.put(C4Constants.C4LogDomain.WebSocket, LogDomain.NETWORK);
+    }
+
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
@@ -30,4 +51,44 @@ public class C4Log {
     public static native void setBinaryFileLevel(int level);
 
     public static native void writeToBinaryFile(String path, int level, int maxRotateCount, long maxSize, boolean usePlaintext);
+
+    public static native void setCallbackLevel(int level);
+
+    static void logCallback(String domainName, int level, String message) {
+        recalculateLevels();
+
+        LogDomain domain = LogDomain.COUCHBASE;
+        if(DomainObjects.containsKey(domainName)) {
+            domain = DomainObjects.get(domainName);
+        }
+
+        Database.getLog().getConsole().log(LogLevel.values()[level], domain, message);
+        Logger customLogger = Database.getLog().getCustom();
+        if(customLogger != null) {
+            customLogger.log(LogLevel.values()[level], domain, message);
+        }
+    }
+
+    private static void recalculateLevels() {
+        LogLevel callbackLevel = Database.getLog().getConsole().getLevel();
+        Logger customLogger = Database.getLog().getCustom();
+        if(customLogger != null && customLogger.getLevel().compareTo(callbackLevel) < 0) {
+            callbackLevel = customLogger.getLevel();
+        }
+
+        if(CurrentLevel == callbackLevel) {
+            return;
+        }
+
+        CurrentLevel = callbackLevel;
+        final LogLevel finalLevel = callbackLevel;
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                // This cannot be done synchronously because it will deadlock
+                // on the same mutex that is being held for this callback
+                setCallbackLevel(finalLevel.getValue());
+            }
+        });
+    }
 }

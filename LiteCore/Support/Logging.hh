@@ -118,7 +118,7 @@ public:
 
     bool willLog(LogLevel lv) const                 {return _effectiveLevel <= lv;}
 
-    void log(LogLevel level, bool callback, const char *fmt, ...) __printflike(3, 4);
+    void log(LogLevel level, bool callback, const char *fmt, ...) __printflike(4, 5);
     void vlog(LogLevel level, bool callback, const char *fmt, va_list);
 
     using Callback_t = void(*)(const LogDomain&, LogLevel, const char *format, va_list);
@@ -189,7 +189,7 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #else
 #define LogToAt(DOMAIN, LEVEL, FMT, ARGS...) \
     ({if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \
-        (DOMAIN).log(LogLevel::LEVEL, FMT, ##ARGS);})
+        (DOMAIN).log(LogLevel::LEVEL, false, FMT, ##ARGS);})
 
 #define LogTo(DOMAIN, FMT, ARGS...)         LogToAt(DOMAIN, Info, FMT, ##ARGS)
 #define LogVerbose(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Verbose, FMT, ##ARGS)

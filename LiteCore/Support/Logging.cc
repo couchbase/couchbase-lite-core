@@ -25,7 +25,7 @@
 #include <string>
 #include <fstream>
 #include <mutex>
-
+#include <ctime>
 
 #if __APPLE__
 #include <sys/time.h>
@@ -69,14 +69,10 @@ namespace litecore {
     {
         auto split = FilePath::splitExtension(sBaseLogPath);
         const auto prefix = split.first;
-        struct timespec tms;
-        if(!timespec_get(&tms, TIME_UTC)) {
-            // TODO: What to do here?
-            tms.tv_sec = 0;
-        }
+        time_t result = time(nullptr);
 
         stringstream ss;
-        ss << prefix << "_" << kLevelNames[(int)level] << "_" << tms.tv_sec << split.second;
+        ss << prefix << "_" << kLevelNames[(int)level] << "_" << result << split.second;
         return ss.str();
     }
 
@@ -232,6 +228,7 @@ namespace litecore {
                 if(sLogEncoder[0]) {
                     for(auto& encoder : sLogEncoder) {
                         encoder->log("", LogEncoder::None, "---- %s ----", initialMessage.c_str());
+                        encoder->flush(); // Make sure at least the magic bytes are present
                     }
                 } else {
                     for(auto& fout : sFileOut) {
