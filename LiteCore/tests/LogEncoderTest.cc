@@ -229,12 +229,14 @@ TEST_CASE("Logging rollover", "[Log]") {
 
     REQUIRE(infoFiles.size() == 2);
     stringstream out;
-    LogDecoder d1(ifstream(infoFiles[0], ios::binary));
+    ifstream fin(infoFiles[0], ios::binary));
+    LogDecoder d1(fin);
     d1.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
 
     out.str("");
     // If obj ref rollover is not working then this will throw an exception
-    LogDecoder d2(ifstream(infoFiles[1], ios::binary));
+    ifstream fin2(infoFiles[1], ios::binary);
+    LogDecoder d2(fin2);
     d2.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
 }
 
