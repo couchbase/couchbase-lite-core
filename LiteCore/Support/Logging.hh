@@ -66,7 +66,7 @@ class LogFileOptions
 {
 public:
     LogFileOptions(const std::string& path, LogLevel level = LogLevel::Info, 
-        long maxSize = 1024, int maxCount = 0, bool plaintext = false)
+        int64_t maxSize = 1024, int maxCount = 0, bool plaintext = false)
         : _path(path),_level(level), _maxSize(maxSize), _maxCount(maxCount), _isPlaintext(plaintext)
     {
         
@@ -78,7 +78,7 @@ public:
     LogLevel logLevel() const { return _level; }
     void setLogLevel(LogLevel level) { _level = level; }
 
-    int maxSize() const { return _maxSize; }
+    int64_t maxSize() const { return _maxSize; }
     void setMaxSize(int maxSize) { _maxSize = maxSize; }
 
     int maxCount() const { return _maxCount; }
@@ -89,7 +89,7 @@ public:
 private:
     std::string _path;
     LogLevel _level;
-    int _maxSize;
+    int64_t _maxSize;
     int _maxCount;
     bool _isPlaintext;
 };

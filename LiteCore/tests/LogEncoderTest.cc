@@ -82,12 +82,12 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
 
 TEST_CASE("LogEncoder levels/domains", "[Log]") {
     static const vector<string> kLevels = {"***", "", "", "WARNING", "ERROR"};
-    stringstream out;
+    stringstream out[4];
     {
-        LogEncoder verbose(out, LogLevel::Verbose);
-        LogEncoder info(out, LogLevel::Info);
-        LogEncoder warning(out, LogLevel::Warning);
-        LogEncoder error(out, LogLevel::Error);
+        LogEncoder verbose(out[0], LogLevel::Verbose);
+        LogEncoder info(out[1], LogLevel::Info);
+        LogEncoder warning(out[2], LogLevel::Warning);
+        LogEncoder error(out[3], LogLevel::Error);
         info.log("Draw", LogEncoder::None, "drawing %d pictures", 2);
         verbose.log("Paint", LogEncoder::None, "Waiting for drawings");
         warning.log("Draw", LogEncoder::None, "made a mistake!");
@@ -97,19 +97,25 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
         error.log("Customer", LogEncoder::None, "This isn't what I asked for!");
     }
 
-    string encoded = out.str();
-    string result = dumpLog(encoded, kLevels);
+    static const vector<string> expectedDomains[] = {
+        { "Paint" },
+        { "Draw", "Draw", "Draw", "Paint" },
+        { "Draw" },
+        { "Customer" }
+    };
+    
+    for(int i = 0; i < 4; i++) {
+        string encoded = out[i].str();
+        string result = dumpLog(encoded, kLevels);
 
-    stringstream in(encoded);
-
-    static const vector<int8_t> expectedLevel = {2, 1, 3, 2, 2, 2, 4};
-    static const vector<string> expectedDomain = {"Draw", "Paint", "Draw", "Draw", "Draw", "Paint", "Customer"};
-    unsigned i = 0;
-    LogDecoder decoder(in);
-    while (decoder.next()) {
-        CHECK(decoder.level() == expectedLevel[i]);
-        CHECK(string(decoder.domain()) == expectedDomain[i]);
-        ++i;
+        stringstream in(encoded);
+        LogDecoder decoder(in);
+        unsigned j = 0;
+        while (decoder.next()) {
+            CHECK(decoder.level() == i+1);
+            CHECK(string(decoder.domain()) == expectedDomains[i][j]);
+            ++i;
+        }
     }
 }
 
@@ -158,59 +164,23 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
     CHECK(!result.empty());
 }
 
-TEST_CASE("Logging prune old files", "[Log]") {
-    FilePath tmpLogDir = FilePath::tempDirectory()["Log_Prune/"];
-    tmpLogDir.mkdir();
-
-    // Create a folder and a fake file to simulate random other files (they will appear in between the last 
-    // log file 'abcd' and the others log 1 - 10)
-    tmpLogDir.subdirectoryNamed("cdef").mkdir();
-    ofstream fbogus(tmpLogDir["dfeg"].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
-    fbogus.write("7", 1);
-    for(int i = 0; i < 11; i++) {
-        if(i == 1 || i == 2) {
-            // Need some of the logs to be later because otherwise it is
-            // impossible to test which logs should disappear
-            this_thread::sleep_for(chrono::seconds(2));
-
-            // Hijack this knowledge to insert some files to be ignored
-            ofstream fbogus2(tmpLogDir["log5.log"].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
-            fbogus2.write("7", 1);
-        }
-        
-        stringstream s;
-        s << "log" << 11 - i;
-        FilePath f(tmpLogDir[s.str()]);
-        ofstream fout(tmpLogDir[s.str()].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
-        LogEncoder e(fout, LogLevel::Info);
-        e.log(nullptr, LogEncoder::None, "Hi");
-    }
-
-    LogFileOptions fileOptions(tmpLogDir["abcd"].canonicalPath());
-    LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
-    int count = 0;
-    tmpLogDir.forEachFile([&count](const FilePath& f)
-    {
-        CHECK(f.fileName() != "log10");
-        CHECK(f.fileName() != "log11");
-        count++;
-    });
-
-    CHECK(count == 13);
-    fileOptions.setPath(string());
-    fileOptions.setLogLevel(LogLevel::None);
-    LogDomain::writeEncodedLogsTo(fileOptions, string());
-} 
-
 TEST_CASE("Logging rollover", "[Log]") {
     FilePath tmpLogDir = FilePath::tempDirectory()["Log_Rollover/"];
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
+    tmpLogDir["intheway"].mkdir();
+    
+    {
+        ofstream tmpOut(tmpLogDir["abcd"].canonicalPath(), ios::binary);
+        tmpOut << "I" << endl;
+    }
+    
 
-    LogFileOptions fileOptions(tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5);
+    LogFileOptions fileOptions(tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 1);
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     LogObject obj;
-    for(int i = 0; i < 512; i++) {
+    for(int i = 0; i < 1024; i++) {
+        // Do a lot of logging, so that pruning also gets tested
         obj.doLog("This is line #%d in the log.", i);
         if(i == 256) {
             // Otherwise the logging will happen to fast that
@@ -219,14 +189,24 @@ TEST_CASE("Logging rollover", "[Log]") {
         }
     }
 
+    // HACK: Cause a flush so that the test has something in the second log
+    // to actually read into the decoder
+    FilePath other = FilePath::tempDirectory()["Log_Rollover2/"];
+    other.mkdir();
+    LogFileOptions fileOptions2(other.canonicalPath(), LogLevel::Info, 1024, 2);
+    LogDomain::writeEncodedLogsTo(fileOptions2, "Hello");
+    
     vector<string> infoFiles;
-    tmpLogDir.forEachFile([&infoFiles](const FilePath f)
+    int totalCount = 0;
+    tmpLogDir.forEachFile([&infoFiles, &totalCount](const FilePath f)
     {
+       totalCount++;
        if(f.path().find("info") != string::npos) {
            infoFiles.push_back(f.path());
        } 
     });
 
+    CHECK(totalCount == 8); // 1 for each level besides info, 1 info, 1 "intheway", 1 "acbd"
     REQUIRE(infoFiles.size() == 2);
     stringstream out;
     ifstream fin(infoFiles[0], ios::binary);
@@ -270,5 +250,10 @@ TEST_CASE("Logging plaintext", "[Log]") {
     CHECK(lines[0] == "CBLLOG");
     CHECK(lines[1] == "---- Hello ----");
     auto startPos = lines[2].find('|') + 2;
+#ifdef _MSC_VER
     CHECK(lines[2].substr(startPos) == "[DB]: {class LogObject#1} This will be in plaintext");
+#else
+    CHECK(lines[2].substr(startPos) == "[DB]: {LogObject#1} This will be in plaintext");
+#endif
 }
+

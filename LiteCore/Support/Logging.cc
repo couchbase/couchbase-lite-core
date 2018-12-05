@@ -57,8 +57,9 @@ namespace litecore {
     LogLevel LogDomain::sFileMinLevel = LogLevel::None;
     static ofstream* sFileOut[5] = {}; // File per log level
     static LogEncoder* sLogEncoder[5] = {};
-    static string sBaseLogPath;
-    static int sMaxCount = 0, sMaxSize = 1024; // For rotation
+    static string sLogDirectory;
+    static int sMaxCount = 0;       // For rotation
+    static int64_t sMaxSize = 1024; // For rotation
     static mutex sLogMutex;
 
     static const char* const kLevelNames[] = {"debug", "verbose", "info",
@@ -67,12 +68,10 @@ namespace litecore {
 
     static string createLogPath(LogLevel level)
     {
-        auto split = FilePath::splitExtension(sBaseLogPath);
-        const auto prefix = split.first;
         time_t result = time(nullptr);
 
         stringstream ss;
-        ss << prefix << "_" << kLevelNames[(int)level] << "_" << result << split.second;
+        ss << sLogDirectory << FilePath::kSeparator << "cbl_" << kLevelNames[(int)level] << "_" << result;
         return ss.str();
     }
 
@@ -119,7 +118,7 @@ namespace litecore {
             return true;
         }
 
-        if(sBaseLogPath != options.path()) {
+        if(sLogDirectory != options.path()) {
             return true;
         }
 
@@ -128,14 +127,12 @@ namespace litecore {
 
     static void purgeOldLogs(LogLevel level)
     {
-        FilePath filePathObj(sBaseLogPath);
-        FilePath logDir = filePathObj.dir();
-        string ext = filePathObj.extension();
+        FilePath logDir(sLogDirectory);
         multimap<time_t, FilePath> logFiles;
         const char* levelStr = kLevelNames[(int)level];
 
         logDir.forEachFile([&](const FilePath& f) {
-            if (f.extension() == ext && f.fileName().find(levelStr) != string::npos) {
+            if (f.fileName().find(levelStr) != string::npos) {
                 char magicBuffer[6] = {};
                 ifstream fin(f.path(), ios::binary);
                 fin.read(magicBuffer, 6);
@@ -201,7 +198,7 @@ namespace litecore {
                                        const string &initialMessage)
     {
         unique_lock<mutex> lock(sLogMutex);
-        sMaxSize = max(1024, options.maxSize());
+        sMaxSize = max(1024ll, options.maxSize());
         sMaxCount = max(0, options.maxCount());
         const bool teardown = needsTeardown(options);
         if(teardown) {
@@ -209,8 +206,8 @@ namespace litecore {
             teardownFileOut();
         }
 
-        sBaseLogPath = options.path();
-        if (sBaseLogPath.empty()) {
+        sLogDirectory = options.path();
+        if (sLogDirectory.empty()) {
             sFileMinLevel = LogLevel::None;
         } else {
             sFileMinLevel = options.logLevel();
@@ -584,7 +581,7 @@ namespace litecore {
         string identifier = classNameOf(this) + " " + loggingIdentifier();
         const_cast<Logging*>(this)->_objectRef = _domain.registerObject(this, identifier,
                                                                         nickname, level, _objectRef);
-        _domain.vlog(level, _objectRef, format, args);
+        _domain.vlog(level, _objectRef, true, format, args);
     }
 
 

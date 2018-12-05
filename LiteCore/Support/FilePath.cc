@@ -193,7 +193,7 @@ namespace litecore {
     pair<string,string> FilePath::splitExtension(const string &file) {
         auto dot = file.rfind('.');
         auto lastSlash = file.rfind(kSeparatorChar);
-        if (dot == string::npos || dot < lastSlash)
+        if (dot == string::npos || (lastSlash != string::npos && dot < lastSlash))
             return {file, ""};
         else
             return {file.substr(0, dot), file.substr(dot)};
