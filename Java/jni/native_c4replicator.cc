@@ -182,7 +182,7 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
-        if (error.code) {
+        if (error.code > -1) {
             env->CallStaticVoidMethod(cls_C4Replicator,
                                       m_C4Replicator_documentEndedCallback,
                                       (jlong) repl,
@@ -192,7 +192,7 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
         }
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
-            if (error.code) {
+            if (error.code > -1) {
                 env->CallStaticVoidMethod(cls_C4Replicator,
                                           m_C4Replicator_documentEndedCallback,
                                           (jlong) repl,
