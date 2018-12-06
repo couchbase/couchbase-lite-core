@@ -154,7 +154,7 @@ public class C4Replicator {
     }
 
     private static void documentEndedCallback(long handle, boolean pushing,
-                                              String docID, String revID, C4Constants.C4RevisionFlags flags,
+                                              String docID, String revID, int flags,
                                               int domain, int code, int internalInfo, boolean trans) {
         Log.e(TAG, "documentErrorCallback() handle -> " + handle +
                 ", pushing -> " + pushing +

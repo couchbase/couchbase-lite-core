@@ -66,7 +66,8 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
 
         m_C4Replicator_documentEndedCallback = env->GetStaticMethodID(cls_C4Replicator,
                                                                       "documentEndedCallback",
-                                                                      "(JZLjava/lang/String;IIIZ)V");
+                                                                      "(JZLjava/lang/String;Ljava/lang/String;IIIIZ)V");
+
         if (!m_C4Replicator_documentEndedCallback)
             return false;
     }
