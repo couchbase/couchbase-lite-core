@@ -22,6 +22,7 @@ public interface C4ReplicatorListener {
                        final C4ReplicatorStatus status, final Object context);
 
     void documentEnded(final C4Replicator replicator, final boolean pushing,
-                       final String docID, final C4Error error, final boolean trans,
-                       final Object context);
+                       final String docID, final String revID,
+                       final C4Constants.C4RevisionFlags flags, final C4Error error,
+                       final boolean trans, final Object context);
 }
