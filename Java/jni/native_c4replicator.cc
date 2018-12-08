@@ -189,6 +189,8 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
                                       (jlong) repl,
                                       pushing,
                                       toJString(env, docID),
+                                      toJString(env, revID),
+                                      flags,
                                       error.domain, error.code, error.internal_info, transient);
         }
     } else if (getEnvStat == JNI_EDETACHED) {
@@ -199,6 +201,8 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
                                           (jlong) repl,
                                           pushing,
                                           toJString(env, docID),
+                                          toJString(env, revID),
+                                          flags,
                                           error.domain, error.code, error.internal_info, transient);
             }
             if (gJVM->DetachCurrentThread() != 0)
