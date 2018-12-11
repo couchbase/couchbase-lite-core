@@ -975,6 +975,8 @@ namespace litecore {
         if (dot != string::npos) {
             property = var.substr(dot + 1);
             var = var.substr(0, dot);
+            if (hasPrefix(property, "$"))
+                property.insert(0, 1, '\\');
         }
 
         require(isValidIdentifier(var), "Invalid variable name '%.*s'", SPLAT(op));

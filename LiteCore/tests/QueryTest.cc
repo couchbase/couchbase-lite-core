@@ -305,6 +305,12 @@ TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
         enc.writeKey("[foo");    enc.writeInt(19);
         enc.writeKey(".foo");    enc.writeInt(20);
         enc.writeKey("f$o?o[o."); enc.writeInt(21);
+        enc.writeKey("oids");
+            enc.beginArray();
+                enc.beginDictionary();
+                    enc.writeKey("$oid");   enc.writeString("avoid");
+                enc.endDictionary();
+            enc.endArray();
         enc.endDictionary();
         alloc_slice body = enc.finish();
         store->set("doc1"_sl, nullslice, body, DocumentFlags::kNone, t);
@@ -331,6 +337,12 @@ TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
     CHECK(rowsInQuery(json5("{WHAT: ['.f$o\\\\?o\\\\[o\\\\.']}")) == 1);
     CHECK(rowsInQuery(json5("{WHERE: ['=', ['.', 'f$o?o[o.'], 21]}")) == 1);
     CHECK(rowsInQuery(json5("{WHERE: ['EXISTS', ['.', 'f$o?o[o.']]}")) == 1);
+
+    // Final boss:
+    CHECK(rowsInQuery(json5("{WHERE: ['ANY', 'a', ['.oids'],\
+                                           ['=', ['?a.$oid'], 'avoid']]}"))
+          == 1);
+
 }
 
 
