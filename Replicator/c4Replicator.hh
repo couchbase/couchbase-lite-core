@@ -106,11 +106,12 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     :C4Replicator(new Replicator(db,
                                  new LoopbackWebSocket(Address(db), Role::Client),
                                  *this,
-                                 replOpts(params)),
+                                 replOpts(params).setNoDeltas()),
                   new Replicator(otherDB,
                                  new LoopbackWebSocket(Address(otherDB), Role::Server),
                                  *this,
-                                 Replicator::Options(kC4Passive, kC4Passive).setNoIncomingConflicts()),
+                                 Replicator::Options(kC4Passive, kC4Passive).setNoIncomingConflicts()
+                                                                            .setNoDeltas()),
                   params)
     {
         LoopbackWebSocket::bind(_replicator->webSocket(), _otherReplicator->webSocket());

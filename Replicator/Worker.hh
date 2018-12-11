@@ -126,6 +126,10 @@ namespace litecore { namespace repl {
                 return setProperty(C4STR(kC4ReplicatorOptionNoIncomingConflicts), true);
             }
 
+            Options& setNoDeltas() {
+                return setProperty(C4STR(kC4ReplicatorOptionDisableDeltas), true);
+            }
+
             explicit operator std::string() const;
         };
 
