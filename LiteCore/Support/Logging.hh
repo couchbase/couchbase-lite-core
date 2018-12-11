@@ -62,36 +62,13 @@ enum class LogLevel : int8_t {
     None
 };
 
-class LogFileOptions
+struct LogFileOptions
 {
-public:
-    LogFileOptions(const std::string& path, LogLevel level = LogLevel::Info, 
-        int64_t maxSize = 1024, int maxCount = 0, bool plaintext = false)
-        : _path(path),_level(level), _maxSize(maxSize), _maxCount(maxCount), _isPlaintext(plaintext)
-    {
-        
-    }
-
-    const std::string& path() const { return _path; }
-    void setPath(const std::string &path) { _path = path; }
-
-    LogLevel logLevel() const { return _level; }
-    void setLogLevel(LogLevel level) { _level = level; }
-
-    int64_t maxSize() const { return _maxSize; }
-    void setMaxSize(int maxSize) { _maxSize = maxSize; }
-
-    int maxCount() const { return _maxCount; }
-    void setMaxCount(int maxCount) { _maxCount = maxCount; }
-
-    bool isPlaintext() const { return _isPlaintext; }
-    void setPlaintext(bool plaintext) { _isPlaintext = plaintext; }
-private:
-    std::string _path;
-    LogLevel _level;
-    int64_t _maxSize;
-    int _maxCount;
-    bool _isPlaintext;
+    std::string path;
+    LogLevel level;
+    int64_t maxSize;
+    int maxCount;
+    bool isPlaintext;
 };
 
 class LogDomain {
@@ -118,8 +95,10 @@ public:
 
     bool willLog(LogLevel lv) const                 {return _effectiveLevel <= lv;}
 
-    void log(LogLevel level, bool callback, const char *fmt, ...) __printflike(4, 5);
-    void vlog(LogLevel level, bool callback, const char *fmt, va_list);
+    void logNoCallback(LogLevel level, const char* fmt, ...) __printflike(3, 4);
+    void log(LogLevel level, const char *fmt, ...) __printflike(3, 4);
+    void vlog(LogLevel level, const char *fmt, va_list);
+    void vlogNoCallback(LogLevel level, const char* fmt, va_list);
 
     using Callback_t = void(*)(const LogDomain&, LogLevel, const char *format, va_list);
 
@@ -176,7 +155,7 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #ifdef _MSC_VER
 #define LogToAt(DOMAIN, LEVEL, FMT, ...) \
     {if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \
-        (DOMAIN).log(LogLevel::LEVEL, true, FMT, ##__VA_ARGS__);}
+        (DOMAIN).log(LogLevel::LEVEL, FMT, ##__VA_ARGS__);}
 
 #define LogTo(DOMAIN, FMT, ...)         LogToAt(DOMAIN, Info, FMT, ##__VA_ARGS__)
 #define LogVerbose(DOMAIN, FMT, ...)    LogToAt(DOMAIN, Verbose, FMT, ##__VA_ARGS__)
@@ -189,7 +168,7 @@ extern LogDomain DBLog, QueryLog, SyncLog, &ActorLog;
 #else
 #define LogToAt(DOMAIN, LEVEL, FMT, ARGS...) \
     ({if (_usuallyFalse((DOMAIN).willLog(LogLevel::LEVEL))) \
-        (DOMAIN).log(LogLevel::LEVEL, false, FMT, ##ARGS);})
+        (DOMAIN).log(LogLevel::LEVEL, FMT, ##ARGS);})
 
 #define LogTo(DOMAIN, FMT, ARGS...)         LogToAt(DOMAIN, Info, FMT, ##ARGS)
 #define LogVerbose(DOMAIN, FMT, ARGS...)    LogToAt(DOMAIN, Verbose, FMT, ##ARGS)

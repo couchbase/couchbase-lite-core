@@ -110,15 +110,15 @@ namespace litecore {
 
     static bool needsTeardown(const LogFileOptions& options)
     {
-        if(sLogEncoder[0] == nullptr && !options.isPlaintext()) {
+        if(sLogEncoder[0] == nullptr && !options.isPlaintext) {
             return true;
         }
 
-        if(sLogEncoder[0] != nullptr && options.isPlaintext()) {
+        if(sLogEncoder[0] != nullptr && options.isPlaintext) {
             return true;
         }
 
-        if(sLogDirectory != options.path()) {
+        if(sLogDirectory != options.path) {
             return true;
         }
 
@@ -198,26 +198,26 @@ namespace litecore {
                                        const string &initialMessage)
     {
         unique_lock<mutex> lock(sLogMutex);
-        sMaxSize = max((int64_t)1024, options.maxSize());
-        sMaxCount = max(0, options.maxCount());
+        sMaxSize = max((int64_t)1024, options.maxSize);
+        sMaxCount = max(0, options.maxCount);
         const bool teardown = needsTeardown(options);
         if(teardown) {
             teardownEncoders();
             teardownFileOut();
         }
 
-        sLogDirectory = options.path();
+        sLogDirectory = options.path;
         if (sLogDirectory.empty()) {
             sFileMinLevel = LogLevel::None;
         } else {
-            sFileMinLevel = options.logLevel();
+            sFileMinLevel = options.level;
             if(!teardown) {
                 return;
             }
 
             purgeOldLogs();
             setupFileOut();
-            if(!options.isPlaintext()) {
+            if(!options.isPlaintext) {
                 setupEncoders();
             }
 
@@ -418,15 +418,27 @@ namespace litecore {
     }
 
 
-    void LogDomain::vlog(LogLevel level, bool callback, const char *fmt, va_list args) {
-        vlog(level, LogEncoder::None, callback, fmt, args);
+    void LogDomain::vlog(LogLevel level, const char *fmt, va_list args) {
+        vlog(level, LogEncoder::None, true, fmt, args);
     }
 
 
-    void LogDomain::log(LogLevel level, bool callback, const char *fmt, ...) {
+    void LogDomain::log(LogLevel level, const char *fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        vlog(level, LogEncoder::None, callback, fmt, args);
+        vlog(level, LogEncoder::None, true, fmt, args);
+        va_end(args);
+    }
+
+    void LogDomain::vlogNoCallback(LogLevel level, const char *fmt, va_list args) {
+        vlog(level, LogEncoder::None, false, fmt, args);
+    }
+
+
+    void LogDomain::logNoCallback(LogLevel level, const char *fmt, ...) {
+        va_list args;
+        va_start(args, fmt);
+        vlog(level, LogEncoder::None, false, fmt, args);
         va_end(args);
     }
 

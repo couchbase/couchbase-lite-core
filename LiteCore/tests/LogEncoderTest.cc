@@ -176,7 +176,7 @@ TEST_CASE("Logging rollover", "[Log]") {
     }
     
 
-    LogFileOptions fileOptions(tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 1);
+    LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 1, false };
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     LogObject obj;
     for(int i = 0; i < 1024; i++) {
@@ -193,7 +193,7 @@ TEST_CASE("Logging rollover", "[Log]") {
     // to actually read into the decoder
     FilePath other = FilePath::tempDirectory()["Log_Rollover2/"];
     other.mkdir();
-    LogFileOptions fileOptions2(other.canonicalPath(), LogLevel::Info, 1024, 2);
+    LogFileOptions fileOptions2 { other.canonicalPath(), LogLevel::Info, 1024, 2, false };
     LogDomain::writeEncodedLogsTo(fileOptions2, "Hello");
     
     vector<string> infoFiles;
@@ -225,7 +225,7 @@ TEST_CASE("Logging plaintext", "[Log]") {
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
 
-    LogFileOptions fileOptions(tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true);
+    LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true };
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
     LogObject obj;
     obj.doLog("This will be in plaintext");

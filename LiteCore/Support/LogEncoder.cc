@@ -48,9 +48,9 @@ namespace litecore {
 
 
     LogEncoder::LogEncoder(ostream &out, LogLevel level)
-    :_out(out),
-    _flushTimer(bind(&LogEncoder::performScheduledFlush, this)),
-    _level(level)
+    :_out(out)
+    ,_flushTimer(bind(&LogEncoder::performScheduledFlush, this))
+    ,_level(level)
     {
         _writer.write(&kMagicNumber, 4);
         uint8_t header[2] = {kFormatVersion, sizeof(void*)};
