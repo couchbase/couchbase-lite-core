@@ -278,6 +278,10 @@ namespace litecore {
 #endif
         RegisterFleeceEachFunctions(db, context);
 
+        // Make sure the time zone is setup for any datetime
+        // N1QL functions
+        tzset();
+
         // The functions registered below operate on virtual tables, not on the actual db,
         // so they should not use the db's Fleece accessor. That's why we clear it first.
         context.accessor = [](slice data) {return data;};
