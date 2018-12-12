@@ -511,8 +511,10 @@ namespace litecore { namespace repl {
         response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
         if (!_disableBlobSupport)
             response["blobs"_sl] = "true"_sl;
-        if (!_disableDeltaSupport)
+        if (!_disableDeltaSupport && !_announcedDeltaSupport) {
             response["deltas"_sl] = "true"_sl;
+            _announcedDeltaSupport = true;
+        }
         vector<bool> whichRequested(changes.count());
         unsigned itemsWritten = 0, requested = 0;
         vector<alloc_slice> ancestors;

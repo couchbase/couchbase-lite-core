@@ -93,6 +93,7 @@ namespace litecore { namespace repl {
         C4SequenceNumber _lastSequenceRead {0};   // Last sequence read from db
         bool _started {false};
         bool _caughtUp {false};                   // Received backlog of existing changes?
+        bool _deltasOK {false};                   // OK to send revs in delta form?
         unsigned _changeListsInFlight {0};        // # change lists being requested from db or sent to peer
         unsigned _revisionsInFlight {0};          // # 'rev' messages being sent
         MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied

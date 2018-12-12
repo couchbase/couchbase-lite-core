@@ -283,13 +283,14 @@ namespace litecore { namespace repl {
             if (reply->isError())
                 return gotError(reply);
 
-            // The response contains an array that parallels the array I sent, with each item
             int maxHistory = (int)max(1l, reply->intProperty("maxHistory"_sl, kDefaultMaxHistory));
             bool legacyAttachments = !reply->boolProperty("blobs"_sl);
-            bool deltasOK = reply->boolProperty("deltas"_sl)
-                                && !_options.properties[kC4ReplicatorOptionDisableDeltas].asBool();
-            auto requests = reply->JSONBody().asArray();
+            if (!_deltasOK && reply->boolProperty("deltas"_sl)
+                           && !_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
+                _deltasOK = true;
 
+            // The response body consists of an array that parallels the `changes` array I sent:
+            auto requests = reply->JSONBody().asArray();
             unsigned index = 0;
             for (RevToSend *change : *changes) {
                 bool queued = false;
@@ -300,7 +301,7 @@ namespace litecore { namespace repl {
                         change->maxHistory = maxHistory;
                         change->legacyAttachments = legacyAttachments;
                         change->noConflicts = true;
-                        change->deltaOK = deltasOK;
+                        change->deltaOK = _deltasOK;
                         _revsToSend.push_back(change);
                         queued = true;
                     } else if (status == 304) {

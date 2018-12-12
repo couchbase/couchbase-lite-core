@@ -173,6 +173,7 @@ namespace litecore { namespace repl {
         std::mutex _insertionQueueMutex;                    // For safe access to the above
         bool _disableBlobSupport {false};                   // for testing only
         bool _disableDeltaSupport {false};                  // From "noDeltas" replicator option
+        bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?
     };
 
 } }
