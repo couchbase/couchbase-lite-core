@@ -183,7 +183,16 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
-        if (error.code > -1) {
+        env->CallStaticVoidMethod(cls_C4Replicator,
+                                  m_C4Replicator_documentEndedCallback,
+                                  (jlong) repl,
+                                  pushing,
+                                  toJString(env, docID),
+                                  toJString(env, revID),
+                                  flags,
+                                  error.domain, error.code, error.internal_info, transient);
+    } else if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
             env->CallStaticVoidMethod(cls_C4Replicator,
                                       m_C4Replicator_documentEndedCallback,
                                       (jlong) repl,
@@ -192,19 +201,6 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
                                       toJString(env, revID),
                                       flags,
                                       error.domain, error.code, error.internal_info, transient);
-        }
-    } else if (getEnvStat == JNI_EDETACHED) {
-        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
-            if (error.code > -1) {
-                env->CallStaticVoidMethod(cls_C4Replicator,
-                                          m_C4Replicator_documentEndedCallback,
-                                          (jlong) repl,
-                                          pushing,
-                                          toJString(env, docID),
-                                          toJString(env, revID),
-                                          flags,
-                                          error.domain, error.code, error.internal_info, transient);
-            }
             if (gJVM->DetachCurrentThread() != 0)
                 LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
         } else {
