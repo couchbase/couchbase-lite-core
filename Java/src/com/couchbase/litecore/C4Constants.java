@@ -92,6 +92,8 @@ public interface C4Constants {
         int kRevHasAttachments = 0x08; // Does this rev's body contain attachments?
         int kRevKeepBody = 0x10;       // Revision's body should not be discarded when non-leaf
         int kRevIsConflict = 0x20;     // Unresolved conflicting revision; will never be current
+        int kRevClosed = 0x40;         // Rev is the (deleted) end of a closed conflicting branch
+        int kRevPurged = 0x80;         // Revision is purged (this flag is never stored in the db)
     }
 
     ////////////////////////////////////

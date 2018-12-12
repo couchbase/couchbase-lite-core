@@ -34,7 +34,7 @@ using namespace litecore::jni;
 // C4Replicator
 static jclass cls_C4Replicator;           // global reference
 static jmethodID m_C4Replicator_statusChangedCallback; // statusChangedCallback method
-static jmethodID m_C4Replicator_documentErrorCallback; // documentErrorCallback method
+static jmethodID m_C4Replicator_documentEndedCallback; // documentEndedCallback method
 
 // C4ReplicatorStatus
 static jclass cls_C4ReplStatus; // global reference
@@ -64,10 +64,11 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
         if (!m_C4Replicator_statusChangedCallback)
             return false;
 
-        m_C4Replicator_documentErrorCallback = env->GetStaticMethodID(cls_C4Replicator,
-                                                                      "documentErrorCallback",
-                                                                      "(JZLjava/lang/String;IIIZ)V");
-        if (!m_C4Replicator_documentErrorCallback)
+        m_C4Replicator_documentEndedCallback = env->GetStaticMethodID(cls_C4Replicator,
+                                                                      "documentEndedCallback",
+                                                                      "(JZLjava/lang/String;Ljava/lang/String;IIIIZ)V");
+
+        if (!m_C4Replicator_documentEndedCallback)
             return false;
     }
 
@@ -182,24 +183,24 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
-        if (error.code) {
+        env->CallStaticVoidMethod(cls_C4Replicator,
+                                  m_C4Replicator_documentEndedCallback,
+                                  (jlong) repl,
+                                  pushing,
+                                  toJString(env, docID),
+                                  toJString(env, revID),
+                                  flags,
+                                  error.domain, error.code, error.internal_info, transient);
+    } else if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
             env->CallStaticVoidMethod(cls_C4Replicator,
-                                      m_C4Replicator_documentErrorCallback,
+                                      m_C4Replicator_documentEndedCallback,
                                       (jlong) repl,
                                       pushing,
                                       toJString(env, docID),
+                                      toJString(env, revID),
+                                      flags,
                                       error.domain, error.code, error.internal_info, transient);
-        }
-    } else if (getEnvStat == JNI_EDETACHED) {
-        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
-            if (error.code) {
-                env->CallStaticVoidMethod(cls_C4Replicator,
-                                          m_C4Replicator_documentErrorCallback,
-                                          (jlong) repl,
-                                          pushing,
-                                          toJString(env, docID),
-                                          error.domain, error.code, error.internal_info, transient);
-            }
             if (gJVM->DetachCurrentThread() != 0)
                 LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
         } else {
