@@ -42,6 +42,8 @@
 #include <winapifamily.h>
 #endif
 
+#define CBL_LOG_EXTENSION ".cbllog"
+
 using namespace std;
 
 
@@ -71,7 +73,7 @@ namespace litecore {
         time_t result = time(nullptr);
 
         stringstream ss;
-        ss << sLogDirectory << FilePath::kSeparator << "cbl_" << kLevelNames[(int)level] << "_" << result;
+        ss << sLogDirectory << FilePath::kSeparator << "cbl_" << kLevelNames[(int)level] << "_" << result << CBL_LOG_EXTENSION;
         return ss.str();
     }
 
@@ -132,13 +134,8 @@ namespace litecore {
         const char* levelStr = kLevelNames[(int)level];
 
         logDir.forEachFile([&](const FilePath& f) {
-            if (f.fileName().find(levelStr) != string::npos) {
-                char magicBuffer[6] = {};
-                ifstream fin(f.path(), ios::binary);
-                fin.read(magicBuffer, 6);
-                if (fin.good() && (0 == memcmp(magicBuffer, LogEncoder::kMagicNumber, 4) || 0 == memcmp(magicBuffer, "CBLLOG", 6))) {
-                    logFiles.insert(make_pair(f.lastModified(), f));
-                }
+            if (f.fileName().find(levelStr) != string::npos && f.extension() == CBL_LOG_EXTENSION) {
+                logFiles.insert(make_pair(f.lastModified(), f));
             }
         });
 
@@ -176,8 +173,6 @@ namespace litecore {
             auto newEncoder = new LogEncoder(*sFileOut[(int)level], level);
             newEncoder->fastForwardObjects(next);
             sLogEncoder[(int)level] = newEncoder;
-        } else {
-            *file << "CBLLOG" << endl;
         }
     }
 
@@ -229,7 +224,6 @@ namespace litecore {
                     }
                 } else {
                     for(auto& fout : sFileOut) {
-                        *fout << "CBLLOG" << endl;
                         *fout << "---- " << initialMessage << " ----" << endl;
                     }
                 }

@@ -247,13 +247,12 @@ TEST_CASE("Logging plaintext", "[Log]") {
         lines.push_back(line);
     }
 
-    CHECK(lines[0] == "CBLLOG");
-    CHECK(lines[1] == "---- Hello ----");
-    auto startPos = lines[2].find('|') + 2;
+    CHECK(lines[0] == "---- Hello ----");
+    auto startPos = lines[1].find('|') + 2;
 #ifdef _MSC_VER
-    CHECK(lines[2].substr(startPos) == "[DB]: {class LogObject#1} This will be in plaintext");
+    CHECK(lines[1].substr(startPos) == "[DB]: {class LogObject#1} This will be in plaintext");
 #else
-    CHECK(lines[2].substr(startPos) == "[DB]: {LogObject#1} This will be in plaintext");
+    CHECK(lines[1].substr(startPos) == "[DB]: {LogObject#1} This will be in plaintext");
 #endif
 }
 
