@@ -17,6 +17,8 @@
 //
 package com.couchbase.litecore;
 
+import java.util.concurrent.ExecutionException;
+
 public interface C4ReplicatorListener {
     void statusChanged(final C4Replicator replicator,
                        final C4ReplicatorStatus status, final Object context);
@@ -25,4 +27,7 @@ public interface C4ReplicatorListener {
                        final String docID, final String revID,
                        final int flags, final C4Error error,
                        final boolean trans, final Object context);
+
+    boolean validationFunction(final String docID, final int flags, final long dict,
+                               final Object context) throws ExecutionException, InterruptedException;
 }

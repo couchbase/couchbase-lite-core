@@ -35,6 +35,7 @@ using namespace litecore::jni;
 static jclass cls_C4Replicator;           // global reference
 static jmethodID m_C4Replicator_statusChangedCallback; // statusChangedCallback method
 static jmethodID m_C4Replicator_documentEndedCallback; // documentEndedCallback method
+static jmethodID m_C4Replicator_validationFunction; // validationFunction method
 
 // C4ReplicatorStatus
 static jclass cls_C4ReplStatus; // global reference
@@ -69,6 +70,12 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
                                                                       "(JZLjava/lang/String;Ljava/lang/String;IIIIZ)V");
 
         if (!m_C4Replicator_documentEndedCallback)
+            return false;
+
+        m_C4Replicator_validationFunction = env->GetStaticMethodID(cls_C4Replicator,
+                                                                      "validationFunction",
+                                                                      "(JLjava/lang/String;IJ)Z");
+        if (!m_C4Replicator_validationFunction)
             return false;
     }
 
@@ -212,6 +219,40 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
 }
 
 /*
+ Callback that can choose to reject an incoming pulled revision, or stop a local
+        revision from being pushed, by returning false.
+        (Note: In the case of an incoming revision, no flags other than 'deletion' and
+        'hasAttachments' will be set.)
+ *
+ * @param docID
+ * @param revisionFlags
+ * @param dict
+ */
+static bool validationFunction(C4String docID, C4RevisionFlags flags, FLDict dict, void *ctx) {
+    JNIEnv *env = NULL;
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
+    if (getEnvStat == JNI_OK) {
+        env->CallStaticVoidMethod(cls_C4Replicator, m_C4Replicator_validationFunction,
+                                  toJString(env, docID),
+                                  flags,
+                                  (jlong)dict);
+    } else if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
+            env->CallStaticVoidMethod(cls_C4Replicator, m_C4Replicator_validationFunction,
+                                      toJString(env, docID),
+                                      flags,
+                                      (jlong)dict);
+            if (gJVM->DetachCurrentThread() != 0)
+                LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
+        } else {
+            LOGE("doRequestClose(): Failed to attaches the current thread to a Java VM");
+        }
+    } else {
+        LOGE("doClose(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+    }
+}
+
+/*
  * Class:     com_couchbase_litecore_C4Replicator
  * Method:    create
  * Signature: (JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;JII[B)J
@@ -250,6 +291,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
     params.optionsDictFleece = options;
     params.onStatusChanged = &statusChangedCallback;
     params.onDocumentEnded = &documentEndedCallback;
+    params.pushFilter = &validationFunction;
+    params.validationFunc = &validationFunction;
     params.callbackContext = NULL;
 
     C4Error error;
@@ -312,6 +355,8 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
     params.optionsDictFleece = options;
     params.onStatusChanged = &statusChangedCallback;
     params.onDocumentEnded = &documentEndedCallback;
+    params.pushFilter = &validationFunction;
+    params.validationFunc = &validationFunction;
     params.callbackContext = replicatorContext;
     params.socketFactory = &socketFactory;
 

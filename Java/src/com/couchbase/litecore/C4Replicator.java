@@ -23,6 +23,7 @@ import android.util.Log;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class C4Replicator {
     private static final String TAG = C4Replicator.class.getSimpleName();
@@ -170,6 +171,19 @@ public class C4Replicator {
             repl.listener.documentEnded(repl, pushing, docID, revID, flags,
                     new C4Error(domain, code, internalInfo), trans, repl.context);
         }
+    }
+
+    private static boolean validationFunction(long handle, String docID, int flags, long dict) throws ExecutionException, InterruptedException {
+        Log.e(TAG, "validationFunction() " +
+                ", docID -> " + docID +
+                ", flags -> " + flags +
+                ", FLDict address -> " + dict);
+
+        C4Replicator repl = reverseLookupTable.get(handle);
+        if (repl != null && repl.listener != null) {
+            return repl.listener.validationFunction(docID, flags, dict, repl.context);
+        }
+        return false;
     }
 
     //-------------------------------------------------------------------------
