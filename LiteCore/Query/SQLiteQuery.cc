@@ -53,6 +53,7 @@ namespace litecore {
         SQLiteQuery(SQLiteKeyStore &keyStore, slice selectorExpression)
         :Query(keyStore)
         ,Logging(QueryLog)
+        ,_json(selectorExpression)
         {
             logInfo("Compiling JSON query: %.*s", SPLAT(selectorExpression));
             QueryParser qp(keyStore);
@@ -81,7 +82,6 @@ namespace litecore {
             _statement.reset(keyStore.compile(sql));
             
             _1stCustomResultColumn = qp.firstCustomResultColumn();
-            _isAggregate = qp.isAggregateQuery();
             _columnTitles = qp.columnTitles();
         }
 
@@ -128,7 +128,7 @@ namespace litecore {
             stringstream result;
             // https://www.sqlite.org/eqp.html
             string query = _statement->getQuery();
-            result << query << "\n";
+            result << query << "\n\n";
 
             string sql = "EXPLAIN QUERY PLAN " + query;
             auto &df = (SQLiteDataFile&) keyStore().dataFile();
@@ -138,29 +138,31 @@ namespace litecore {
                     result << x.getColumn(i).getInt() << "|";
                 result << " " << x.getColumn(3).getText() << "\n";
             }
+
+            result << '\n' << _json << '\n';
             return result.str();
         }
 
         virtual QueryEnumerator* createEnumerator(const Options *options) override;
         SQLiteQueryEnumerator* createEnumerator(const Options *options, sequence_t lastSeq);
 
-        unsigned objectRef() const                  {return _objectRef;}
+        shared_ptr<SQLite::Statement> statement()   {return _statement;}
 
-        set<string> _parameters;
-        vector<string> _ftsTables;
-        unsigned _1stCustomResultColumn;
-        vector<string> _columnTitles;
-        bool _isAggregate;
+        unsigned objectRef() const                  {return _objectRef;}    // (for logging)
 
-        shared_ptr<SQLite::Statement> statement() {return _statement;}
+        set<string> _parameters;            // Names of the bindable parameters
+        vector<string> _ftsTables;          // Names of the FTS tables used
+        unsigned _1stCustomResultColumn;    // Column index of the 1st column declared in JSON
 
     protected:
         ~SQLiteQuery() =default;
         string loggingClassName() const override    {return "Query";}
 
     private:
-        shared_ptr<SQLite::Statement> _statement;
-        unique_ptr<SQLite::Statement> _matchedTextStatement;
+        alloc_slice _json;                                  // Original JSON form of the query
+        shared_ptr<SQLite::Statement> _statement;           // Compiled SQLite statement
+        unique_ptr<SQLite::Statement> _matchedTextStatement;// Gets the matched text
+        vector<string> _columnTitles;                       // Titles of columns
     };
 
 
