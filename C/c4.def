@@ -1,4 +1,7 @@
 EXPORTS
+kC4DatabaseFilenameExtension
+kC4SQLiteStorageEngine
+
 kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension
 
@@ -200,6 +203,7 @@ kC4SocketOptionWSProtocols
 c4pred_registerModel
 c4pred_unregisterModel
 
+
 c4error_return
 c4doc_getForPut
 c4_getObjectCount
@@ -208,6 +212,7 @@ c4db_markSynced
 c4_dumpInstances
 gC4ExpectExceptions
 
+
 FLSlice_Equal
 FLSlice_Compare
 FLSliceResult_Retain
@@ -215,6 +220,7 @@ FLSliceResult_Release
 
 FLDoc_FromResultData
 FLDoc_FromJSON
+FLDoc_GetData
 FLDoc_GetRoot
 FLDoc_GetSharedKeys
 FLDoc_Retain
@@ -226,8 +232,6 @@ FLSharedKeys_Release
 
 FLValue_FromData
 FLValue_FindDoc
-FLData_ConvertJSON
-FLData_Dump
 FLValue_GetType
 FLValue_IsInteger
 FLValue_IsUnsigned
@@ -246,6 +250,7 @@ FLValue_ToJSON
 FLValue_ToJSONX
 FLValue_ToJSON5
 
+FLData_ConvertJSON
 FLJSON5_ToJSON
 
 FLArray_Count
@@ -291,8 +296,8 @@ FLEncoder_WriteKey
 FLEncoder_EndDict
 FLEncoder_ConvertJSON
 FLEncoder_BytesWritten
-FLEncoder_Finish
 FLEncoder_FinishDoc
+FLEncoder_Finish
 FLEncoder_GetError
 FLEncoder_GetErrorMessage
 
@@ -300,3 +305,17 @@ FLKeyPath_New
 FLKeyPath_Free
 FLKeyPath_Eval
 FLKeyPath_EvalOnce
+
+FLData_Dump
+FLDump
+FLDumpData
+
+FLEncoder_WriteCFObject
+FLValue_CopyCFObject
+FLDict_GetWithCFString
+FLDictIterator_GetKeyAsNSString
+FLEncoder_WriteNSObject
+FLValue_GetNSObject
+FLDict_GetWithNSString
+FLCreateSharedStringsTable
+FLErrorDomain
