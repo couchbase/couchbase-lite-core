@@ -309,13 +309,3 @@ FLKeyPath_EvalOnce
 FLData_Dump
 FLDump
 FLDumpData
-
-FLEncoder_WriteCFObject
-FLValue_CopyCFObject
-FLDict_GetWithCFString
-FLDictIterator_GetKeyAsNSString
-FLEncoder_WriteNSObject
-FLValue_GetNSObject
-FLDict_GetWithNSString
-FLCreateSharedStringsTable
-FLErrorDomain
