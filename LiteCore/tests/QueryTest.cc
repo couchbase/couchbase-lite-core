@@ -23,16 +23,22 @@ using namespace fleece::impl;
 
 static string local_to_utc(const char* format, int days, int hours, int minutes,
                                int hourOffset, int minuteOffset) {
+    minutes -= minuteOffset;
     hours -= hourOffset;
     if(hours < 0) {
         hours += 24;
         days -= 1;
+    } else if (hours > 23) {
+        hours -= 24;
+        days += 1;
     }
     
-    minutes -= minuteOffset;
     if(minutes < 0) {
         minutes += 60;
         hours -= 1;
+    } else if(minutes > 59) {
+        minutes -= 60;
+        hours += 1;
     }
     
     return stringWithFormat(format, days, hours, minutes);
