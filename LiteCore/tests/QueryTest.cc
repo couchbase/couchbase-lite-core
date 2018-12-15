@@ -21,6 +21,22 @@
 
 using namespace fleece::impl;
 
+static string local_to_utc(const char* format, int days, int hours, int minutes,
+                               int hourOffset, int minuteOffset) {
+    hours -= hourOffset;
+    if(hours < 0) {
+        hours += 24;
+        days -= 1;
+    }
+    
+    minutes -= minuteOffset;
+    if(minutes < 0) {
+        minutes += 60;
+        hours -= 1;
+    }
+    
+    return stringWithFormat(format, days, hours, minutes);
+}
 
 TEST_CASE_METHOD(QueryTest, "Create/Delete Index", "[Query][FTS]") {
     addArrayDocs();
@@ -892,14 +908,28 @@ TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 
 
 TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
+    // Calculate offset
+    time_t rawtime = time(nullptr);
+    struct tm* ptm;
+    struct tm gbuf;
+    ptm = gmtime_r(&rawtime, &gbuf);
+    time_t gmt = mktime(ptm);
+    auto diffTotal = (int)(difftime(rawtime, gmt) / 60.0);
+    auto diffHour = (int)(diffTotal / 60.0);
+    auto diffMinute = diffTotal % 60;
+    
+    auto expected1 = local_to_utc("2018-10-%02DT%02D:%02D:00Z", 23, 0, 0, diffHour, diffMinute);
+    auto expected2 = local_to_utc("2018-10-%02DT%02D:%02D:00Z", 23, 18, 33, diffHour, diffMinute);
+    auto expected3 = local_to_utc("2018-10-%02DT%02D:%02D:01Z", 23, 18, 33, diffHour, diffMinute);
+    
     testExpressions( {
         {"['str_to_utc()', null]",                            "null"},
         {"['str_to_utc()', 99]",                              "null"},
         {"['str_to_utc()', '']",                              "null"},
         {"['str_to_utc()', 'x']",                             "null"},
-        {"['str_to_utc()', '2018-10-23']",                    "2018-10-23T00:00:00Z"},
-        {"['str_to_utc()', '2018-10-23T18:33']",              "2018-10-23T18:33:00Z"},
-        {"['str_to_utc()', '2018-10-23T18:33:01']",           "2018-10-23T18:33:01Z"},
+        {"['str_to_utc()', '2018-10-23']",                    expected1},
+        {"['str_to_utc()', '2018-10-23T18:33']",              expected2},
+        {"['str_to_utc()', '2018-10-23T18:33:01']",           expected3},
         {"['str_to_utc()', '2018-10-23T18:33:01Z']",          "2018-10-23T18:33:01Z"},
         {"['str_to_utc()', '2018-10-23T11:33:01-0700']",      "2018-10-23T18:33:01Z"},
         {"['str_to_utc()', '2018-10-23T11:33:01+03:30']",     "2018-10-23T08:03:01Z"},
