@@ -1,7 +1,7 @@
 //
-// C4ReplicatorListener.java
+// C4ReplicationFilter.java
 //
-// Copyright (c) 2017 Couchbase, Inc All rights reserved.
+// Copyright (c) 2018 Couchbase, Inc All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,6 @@
 //
 package com.couchbase.litecore;
 
-public interface C4ReplicatorListener {
-    void statusChanged(final C4Replicator replicator,
-                       final C4ReplicatorStatus status, final Object context);
-
-    void documentEnded(final C4Replicator replicator, final boolean pushing,
-                       final String docID, final String revID,
-                       final int flags, final C4Error error,
-                       final boolean trans, final Object context);
+public interface C4ReplicationFilter {
+    boolean validationFunction(final String docID, final int flags, final long dict, final boolean isPush, final Object context) throws Exception;
 }

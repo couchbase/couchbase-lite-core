@@ -23,7 +23,6 @@ import android.util.Log;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 public class C4Replicator {
     private static final String TAG = C4Replicator.class.getSimpleName();
@@ -44,11 +43,16 @@ public class C4Replicator {
     private static Map<Long, C4Replicator> reverseLookupTable
             = Collections.synchronizedMap(new HashMap<Long, C4Replicator>());
 
+    private static Map<Long, C4Replicator> reverseLookupTable2
+            = Collections.synchronizedMap(new HashMap<Long, C4Replicator>());
+
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
     private long handle = 0L; // hold pointer to C4Replicator
     private C4ReplicatorListener listener = null;
+    private C4ReplicationFilter pushFilter =  null;
+    private C4ReplicationFilter pullFilter = null;
     private Object context = null;
 
     //-------------------------------------------------------------------------
@@ -62,19 +66,26 @@ public class C4Replicator {
                  int push, int pull,
                  byte[] options,
                  C4ReplicatorListener listener,
+                 C4ReplicationFilter pushFilter,
+                 C4ReplicationFilter pullFilter,
                  Object replicatorContext,
                  int socketFactoryContext,
                  int framing) throws LiteCoreException {
         this.listener = listener;
         this.context = replicatorContext; // replicator context
+        this.pushFilter = pushFilter;
+        this.pullFilter = pullFilter;
         handle = createV2(db, schema, host, port, path, remoteDatabaseName,
                 otherLocalDB,
                 push, pull,
                 replicatorContext.hashCode(),
                 framing,
                 socketFactoryContext,
+                pushFilter,
+                pullFilter,
                 options);
         reverseLookupTable.put(handle, this);
+        reverseLookupTable2.put((long)socketFactoryContext, this);
     }
 
     C4Replicator(C4Database db, C4Socket openSocket, int push, int pull, byte[] options, Object replicatorContext) throws LiteCoreException {
@@ -173,17 +184,19 @@ public class C4Replicator {
         }
     }
 
-    private static boolean validationFunction(long handle, String docID, int flags, long dict) throws ExecutionException, InterruptedException {
+    private static boolean validationFunction(String docID, int flags, long dict, boolean isPush, long ctx) throws Exception {//
         Log.e(TAG, "validationFunction() " +
                 ", docID -> " + docID +
                 ", flags -> " + flags +
-                ", FLDict address -> " + dict);
-
-        C4Replicator repl = reverseLookupTable.get(handle);
-        if (repl != null && repl.listener != null) {
-            return repl.listener.validationFunction(docID, flags, dict, repl.context);
-        }
-        return false;
+                ", isPush -> " + isPush);
+         C4Replicator repl = reverseLookupTable2.get(ctx);
+         if(repl != null && repl != null) {
+             if(isPush)
+                 repl.pushFilter.validationFunction(docID, flags, dict, isPush, repl.context);
+             else
+                 repl.pullFilter.validationFunction(docID, flags, dict, isPush, repl.context);
+         }
+         return false;
     }
 
     //-------------------------------------------------------------------------
@@ -211,6 +224,8 @@ public class C4Replicator {
                                 int socketFactoryContext,
                                 int framing,
                                 int replicatorContext,
+                                C4ReplicationFilter pushFilter,
+                                C4ReplicationFilter pullFilter,
                                 byte[] options) throws LiteCoreException;
 
     /**
