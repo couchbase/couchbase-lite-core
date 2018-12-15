@@ -218,7 +218,7 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
     }
 }
 
-static bool replicationFilter(C4String docID, C4RevisionFlags flags, FLDict dict, bool isPush, jlong ctx) {
+static jboolean replicationFilter(C4String docID, C4RevisionFlags flags, FLDict dict, bool isPush, jlong ctx) {
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     bool res = false;
@@ -247,7 +247,7 @@ static bool replicationFilter(C4String docID, C4RevisionFlags flags, FLDict dict
     } else {
         LOGE("doClose(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
     }
-    return res;
+    return (jboolean)res;
 }
 
 /*
@@ -261,7 +261,7 @@ static bool replicationFilter(C4String docID, C4RevisionFlags flags, FLDict dict
  * @param dict
  */
 static bool validationFunction(C4String docID, C4RevisionFlags flags, FLDict dict, void *ctx) {
-    return replicationFilter(docID, flags, dict, false, (jlong) ctx);
+    return (bool)replicationFilter(docID, flags, dict, false, (jlong) ctx);
 }
 
 /*
@@ -275,7 +275,7 @@ static bool validationFunction(C4String docID, C4RevisionFlags flags, FLDict dic
  * @param dict
  */
 static bool pushFilterFunction(C4String docID, C4RevisionFlags flags, FLDict dict, void *ctx) {
-     return replicationFilter(docID, flags, dict, true, (jlong) ctx);
+     return (bool)replicationFilter(docID, flags, dict, true, (jlong) ctx);
 }
 
 /*
