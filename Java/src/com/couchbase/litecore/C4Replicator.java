@@ -192,11 +192,11 @@ public class C4Replicator {
          C4Replicator repl = reverseLookupTable2.get(ctx);
          if(repl != null && repl != null) {
              if(isPush)
-                 repl.pushFilter.validationFunction(docID, flags, dict, isPush, repl.context);
+                 return repl.pushFilter.validationFunction(docID, flags, dict, isPush, repl.context);
              else
-                 repl.pullFilter.validationFunction(docID, flags, dict, isPush, repl.context);
+                 return repl.pullFilter.validationFunction(docID, flags, dict, isPush, repl.context);
          }
-         return false;
+         return true;
     }
 
     //-------------------------------------------------------------------------
