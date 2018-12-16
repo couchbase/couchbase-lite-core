@@ -924,9 +924,9 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
     auto diffHour = (int)(diffTotal / 60.0);
     auto diffMinute = diffTotal % 60;
     
-    auto expected1 = local_to_utc("2018-10-%02DT%02D:%02D:00Z", 23, 0, 0, diffHour, diffMinute);
-    auto expected2 = local_to_utc("2018-10-%02DT%02D:%02D:00Z", 23, 18, 33, diffHour, diffMinute);
-    auto expected3 = local_to_utc("2018-10-%02DT%02D:%02D:01Z", 23, 18, 33, diffHour, diffMinute);
+    auto expected1 = local_to_utc("2018-10-%02dT%02d:%02d:00Z", 23, 0, 0, diffHour, diffMinute);
+    auto expected2 = local_to_utc("2018-10-%02dT%02d:%02d:00Z", 23, 18, 33, diffHour, diffMinute);
+    auto expected3 = local_to_utc("2018-10-%02dT%02d:%02d:01Z", 23, 18, 33, diffHour, diffMinute);
     
     testExpressions( {
         {"['str_to_utc()', null]",                            "null"},
