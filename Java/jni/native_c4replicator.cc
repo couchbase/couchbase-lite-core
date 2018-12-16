@@ -251,28 +251,28 @@ static jboolean replicationFilter(C4String docID, C4RevisionFlags flags, FLDict 
 }
 
 /*
- Callback that can choose to reject an incoming pulled revision, or stop a local
-        revision from being pushed, by returning false.
+ Callback that can choose to reject an incoming pulled revision by returning false.
         (Note: In the case of an incoming revision, no flags other than 'deletion' and
         'hasAttachments' will be set.)
  *
  * @param docID
- * @param revisionFlags
+ * @param flags
  * @param dict
+ * @param ctx
  */
 static bool validationFunction(C4String docID, C4RevisionFlags flags, FLDict dict, void *ctx) {
     return (bool)replicationFilter(docID, flags, dict, false, (jlong) ctx);
 }
 
 /*
- Callback that can choose to reject an incoming pulled revision, or stop a local
-        revision from being pushed, by returning false.
+ Callback that can stop a local revision from being pushed by returning false.
         (Note: In the case of an incoming revision, no flags other than 'deletion' and
         'hasAttachments' will be set.)
  *
  * @param docID
- * @param revisionFlags
+ * @param flags
  * @param dict
+ * @param ctx
  */
 static bool pushFilterFunction(C4String docID, C4RevisionFlags flags, FLDict dict, void *ctx) {
      return (bool)replicationFilter(docID, flags, dict, true, (jlong) ctx);
