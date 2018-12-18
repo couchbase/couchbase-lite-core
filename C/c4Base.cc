@@ -51,21 +51,28 @@ extern "C" {
 
 // LCOV_EXCL_START
 static string getBuildInfo() {
+    static string commit;
 #ifdef COUCHBASE_ENTERPRISE
+    if(commit.empty()) {
+        commit = format("%.8s+%.8s", GitCommitEE, GitCommit);
+    }
     static const char *ee = "EE ";
 #else
+    if(commit.empty()) {
+        commit = format("%.8s", GitCommit);
+    }
     static const char *ee = "";
 #endif
 #if LiteCoreOfficial
-    return format("%sbuild number %s, ID %.8s, from commit %.8s",
-                  ee, LiteCoreBuildNum, LiteCoreBuildID, GitCommit);
+    return format("%sbuild number %s, ID %.8s, from commit %s",
+                  ee, LiteCoreBuildNum, LiteCoreBuildID, commit.c_str());
 #else
     if (strcmp(GitBranch, "HEAD") == (0))
-        return format("%sbuilt from commit %.8s%s on %s %s",
-                      ee, GitCommit, GitDirty, __DATE__, __TIME__);
+        return format("%sbuilt from commit %s%s on %s %s",
+                      ee, commit.c_str(), GitDirty, __DATE__, __TIME__);
     else
-        return format("%sbuilt from %s branch, commit %.8s%s on %s %s",
-                      ee, GitBranch, GitCommit, GitDirty, __DATE__, __TIME__);
+        return format("%sbuilt from %s branch, commit %s%s on %s %s",
+                      ee, GitBranch, commit.c_str(), GitDirty, __DATE__, __TIME__);
 #endif
 }
 

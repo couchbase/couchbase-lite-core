@@ -10,6 +10,13 @@
 
 OUTPUT_FILE="$1"
 OFFICIAL=false
+TOP=`git rev-parse --show-toplevel`
+if [[ -d $TOP/../couchbase-lite-core-EE/ ]]; then
+  pushd $TOP/../couchbase-lite-core-EE/
+  GIT_COMMIT_EE=`git rev-parse HEAD || true`
+  popd
+fi
+
 GIT_COMMIT=`git rev-parse HEAD || true`
 if [[ ! -z "$BLD_NUM" ]] && [[ ! -z "$VERSION" ]]; then
   GIT_BRANCH=""
@@ -24,6 +31,7 @@ else
 fi
 
 echo "#define GitCommit \"$GIT_COMMIT\"" $'\n'\
+     "#define GitCommitEE \"$GIT_COMMIT_EE\"" $'\n'\
      "#define GitBranch \"$GIT_BRANCH\"" $'\n'\
      "#define GitDirty  \"$GIT_DIRTY\"" $'\n'\
      "#define LiteCoreVersion \"$LITECORE_VERSION_STRING\"" $'\n'\
