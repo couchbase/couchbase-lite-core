@@ -334,11 +334,11 @@ namespace litecore {
 
 
     void QueryParser::writeDeletionTest(const string &alias, bool isDeleted) {
-        _sql << '(';
+        _sql << "(";
         if (!alias.empty())
             _sql << quoteTableName(alias) << '.';
-        _sql << "flags & " << (unsigned)DocumentFlags::kDeleted << ")"
-             << (isDeleted ? " != 0" : " = 0");
+        _sql << "flags & " << (unsigned)DocumentFlags::kDeleted
+             << (isDeleted ? " != 0)" : " = 0)");
     }
 
 

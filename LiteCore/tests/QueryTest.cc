@@ -1374,6 +1374,7 @@ TEST_CASE_METHOD(QueryTest, "Query deleted docs", "[Query]") {
 
     CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['<=', ['.num'], 15]}")) == 10);
     CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['AND', ['<=', ['.num'], 15], ['._deleted']]}")) == 5);
+    CHECK(rowsInQuery(json5("{WHAT: [ '._id'], WHERE: ['OR',['=',['._deleted'],false],['=',['._deleted'],true]]}")) == 20);
 }
 
 
