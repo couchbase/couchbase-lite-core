@@ -6,16 +6,34 @@ Param(
     [Parameter()][string]$gitPath = "C:\Program Files\Git\bin\git.exe"
 )
 
+# To fake an official build for testing purposes, uncomment these two lines:
+$env:BLD_NUM=54321
+$env:VERSION="abcdefabcdef"
+
 $Official="false"
+$Top = (Invoke-Expression '& $gitPath rev-parse --show-toplevel').Replace("/","\\");
+$GitCommitEE=""
+
+# Windows is not as clever about links as Unix is
+if(Test-Path $Top\..\..\..\couchbase-lite-core-EE\) {
+    Push-Location $Top\..\..\..\couchbase-lite-core-EE\
+    $GitCommitEE = Invoke-Expression '& $gitPath rev-parse HEAD'
+    Pop-Location
+} elseif(Test-Path $Top\..\couchbase-lite-core-EE\) {
+    Push-Location $Top\..\couchbase-lite-core-EE\
+    $GitCommitEE = Invoke-Expression '& $gitPath rev-parse HEAD'
+    Pop-Location
+}
+
+$GitCommit = Invoke-Expression '& $gitPath rev-parse HEAD'
 if((Test-Path env:BLD_NUM) -And (Test-Path env:VERSION)) {
   $GitBranch=""
-  $GitCommit=$env:VERSION
   $GitDirty=""
   $BuildNum=$env:BLD_NUM
   $Official="true"
+  $Version = $env:VERSION
 } else {
   $GitBranch = Invoke-Expression '& $gitPath rev-parse --symbolic-full-name HEAD | ForEach-Object { $_ -replace "refs/heads/","" }'
-  $GitCommit = Invoke-Expression '& $gitPath rev-parse HEAD'
   Invoke-Expression '& $gitPath status --porcelain' > $null
   if($?) {
     $GitDirty="+CHANGES"
@@ -23,14 +41,17 @@ if((Test-Path env:BLD_NUM) -And (Test-Path env:VERSION)) {
     $GitDirty = ""
   }
   $BuildNum=""
+  $Version=""
 }
 
 $outContent = @"
 #define GitCommit `"$GitCommit`"
+#define GitCommitEE `"$GitCommitEE`"
 #define GitBranch `"$GitBranch`"
 #define GitDirty  `"$GitDirty`"
 #define LiteCoreVersion `"$env:LITECORE_VERSION_STRING`"
 #define LiteCoreBuildNum `"$BuildNum`"
+#define LiteCoreBuildID `"$Version`"
 #define LiteCoreOfficial $Official
 "@
 
