@@ -85,7 +85,7 @@ public class C4Replicator {
                 pullFilter,
                 options);
         reverseLookupTable.put(handle, this);
-        reverseLookupTable2.put((long)socketFactoryContext, this);
+        reverseLookupTable2.put((long)replicatorContext.hashCode(), this);
     }
 
     C4Replicator(C4Database db, C4Socket openSocket, int push, int pull, byte[] options, Object replicatorContext) throws LiteCoreException {
@@ -184,16 +184,12 @@ public class C4Replicator {
         }
     }
 
-    private static boolean validationFunction(String docID, int flags, long dict, boolean isPush, long ctx) throws Exception {//
-        Log.e(TAG, "validationFunction() " +
-                ", docID -> " + docID +
-                ", flags -> " + flags +
-                ", isPush -> " + isPush);
+    private static boolean validationFunction(String docID, int flags, long dict, boolean isPush, long ctx)  {
          C4Replicator repl = reverseLookupTable2.get(ctx);
-         if(repl != null && repl != null) {
-             if(isPush)
+         if(repl != null ) {
+             if(isPush && repl.pushFilter != null)
                  return repl.pushFilter.validationFunction(docID, flags, dict, isPush, repl.context);
-             else
+             else if(!isPush && repl.pullFilter != null)
                  return repl.pullFilter.validationFunction(docID, flags, dict, isPush, repl.context);
          }
          return true;

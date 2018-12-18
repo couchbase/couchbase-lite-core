@@ -18,5 +18,5 @@
 package com.couchbase.litecore;
 
 public interface C4ReplicationFilter {
-    boolean validationFunction(final String docID, final int flags, final long dict, final boolean isPush, final Object context) throws Exception;
+    boolean validationFunction(final String docID, final int flags, final long dict, final boolean isPush, final Object context);
 }
