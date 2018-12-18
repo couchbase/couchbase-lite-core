@@ -71,6 +71,15 @@ public:
         _remoteDBName = nullslice;
     }
 
+    void enableDocProgressNotifications() {
+        Encoder enc;
+        enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
+        enc.writeInt(1);
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+    }
+
     bool validate(slice docID, Dict body) {
         //TODO: Do something here
         return true;
@@ -125,28 +134,31 @@ public:
         ((ReplicatorAPITest*)context)->stateChanged(replicator, status);
     }
 
-    static void onDocEnded(C4Replicator *repl,
-                           bool pushing,
-                           C4HeapString docID,
-                           C4HeapString revID,
-                           C4RevisionFlags flags,
-                           C4Error error,
-                           bool transient,
-                           void *context)
+    static void onDocsEnded(C4Replicator *repl,
+                            bool pushing,
+                            size_t nDocs,
+                            const C4DocumentEnded* docs[],
+                            void *context)
     {
-        char message[256];
-        c4error_getDescriptionC(error, message, sizeof(message));
-        C4Log(">> Replicator %serror %s '%.*s': %s",
-              (transient ? "transient " : ""),
-              (pushing ? "pushing" : "pulling"),
-              SPLAT(docID), message);
-
         auto test = (ReplicatorAPITest*)context;
-        lock_guard<mutex> lock(test->_mutex);
-        if (pushing)
-            test->_docPushErrors.emplace(slice(docID));
-        else
-            test->_docPullErrors.emplace(slice(docID));
+        char message[256];
+        test->_docsEnded += nDocs;
+        for (size_t i = 0; i < nDocs; ++i) {
+            auto doc = docs[i];
+            if (doc->error.code) {
+                c4error_getDescriptionC(doc->error, message, sizeof(message));
+                C4Log(">> Replicator %serror %s '%.*s': %s",
+                      (doc->errorIsTransient ? "transient " : ""),
+                      (pushing ? "pushing" : "pulling"),
+                      SPLAT(doc->docID), message);
+
+                lock_guard<mutex> lock(test->_mutex);
+                if (pushing)
+                    test->_docPushErrors.emplace(slice(doc->docID));
+                else
+                    test->_docPullErrors.emplace(slice(doc->docID));
+            }
+        }
     }
 
 
@@ -155,6 +167,7 @@ public:
         _numCallbacks = 0;
         memset(_numCallbacksWithLevel, 0, sizeof(_numCallbacksWithLevel));
         _docPushErrors = _docPullErrors = { };
+        _docsEnded = 0;
 
         if (push > kC4Passive && (slice(_remoteDBName).hasPrefix("scratch"_sl))
                 && !db2 && !_flushedScratch) {
@@ -168,7 +181,7 @@ public:
         params.pushFilter = _pushFilter;
         params.validationFunc = onValidate;
         params.onStatusChanged = onStateChanged;
-        params.onDocumentEnded = onDocEnded;
+        params.onDocumentsEnded = onDocsEnded;
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
 
@@ -259,6 +272,7 @@ public:
     int _numCallbacksWithLevel[5] {0};
     AllocedDict _headers;
     bool _stopWhenIdle {false};
+    int _docsEnded {0};
     set<string> _docPushErrors, _docPullErrors;
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;
     int _counter {0};

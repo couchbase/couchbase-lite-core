@@ -70,6 +70,16 @@ extern "C" {
         C4Error error;
     } C4ReplicatorStatus;
 
+    /** Information about a document that's been pushed or pulled. */
+    typedef struct {
+        C4HeapString docID;
+        C4HeapString revID;
+        C4RevisionFlags flags;
+        C4SequenceNumber sequence;
+        C4Error error;
+        bool errorIsTransient;
+    } C4DocumentEnded;
+
 
     /** Opaque reference to a replicator. */
     typedef struct C4Replicator C4Replicator;
@@ -80,18 +90,15 @@ extern "C" {
                                                       C4ReplicatorStatus,
                                                       void *context);
 
-    /** Callback a client can register, to hear about the status of individual documents.
+    /** Callback a client can register, to hear about the replication status of documents.
         By default, only errors will be reported via this callback.
         To also receive callbacks for successfully completed documents, set the
         kC4ReplicatorOptionProgressLevel option to a value greater than zero. */
-    typedef void (*C4ReplicatorDocumentEndedCallback)(C4Replicator* C4NONNULL,
-                                                      bool pushing,
-                                                      C4HeapString docID,
-                                                      C4HeapString revID,
-                                                      C4RevisionFlags flags,
-                                                      C4Error error,
-                                                      bool errorIsTransient,
-                                                      void *context);
+    typedef void (*C4ReplicatorDocumentsEndedCallback)(C4Replicator* C4NONNULL,
+                                                       bool pushing,
+                                                       size_t numDocs,
+                                                       const C4DocumentEnded* docs[],
+                                                       void *context);
 
     /** Callback a client can register, to hear about the status of blobs. */
     typedef void (*C4ReplicatorBlobProgressCallback)(C4Replicator* C4NONNULL,
@@ -135,16 +142,16 @@ extern "C" {
 
     /** Parameters describing a replication, used when creating a C4Replicator. */
     typedef struct {
-        C4ReplicatorMode                  push;              ///< Push mode (from db to remote/other db)
-        C4ReplicatorMode                  pull;              ///< Pull mode (from db to remote/other db).
-        C4Slice                           optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
-        C4ReplicatorValidationFunction    pushFilter;        ///< Callback that can reject outgoing revisions
-        C4ReplicatorValidationFunction    validationFunc;    ///< Callback that can reject incoming revisions
-        C4ReplicatorStatusChangedCallback onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
-        C4ReplicatorDocumentEndedCallback onDocumentEnded;   ///< Callback notifying status of individual documents
-        C4ReplicatorBlobProgressCallback  onBlobProgress;    ///< Callback notifying blob progress
-        void*                             callbackContext;   ///< Value to be passed to the callbacks.
-        const C4SocketFactory*            socketFactory;     ///< Custom C4SocketFactory, if not NULL
+        C4ReplicatorMode                    push;              ///< Push mode (from db to remote/other db)
+        C4ReplicatorMode                    pull;              ///< Pull mode (from db to remote/other db).
+        C4Slice                             optionsDictFleece; ///< Optional Fleece-encoded dictionary of optional parameters.
+        C4ReplicatorValidationFunction      pushFilter;        ///< Callback that can reject outgoing revisions
+        C4ReplicatorValidationFunction      validationFunc;    ///< Callback that can reject incoming revisions
+        C4ReplicatorStatusChangedCallback   onStatusChanged;   ///< Callback to be invoked when replicator's status changes.
+        C4ReplicatorDocumentsEndedCallback  onDocumentsEnded;  ///< Callback notifying status of individual documents
+        C4ReplicatorBlobProgressCallback    onBlobProgress;    ///< Callback notifying blob progress
+        void*                               callbackContext;   ///< Value to be passed to the callbacks.
+        const C4SocketFactory*              socketFactory;     ///< Custom C4SocketFactory, if not NULL
     } C4ReplicatorParameters;
 
 

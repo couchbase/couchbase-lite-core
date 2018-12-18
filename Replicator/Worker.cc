@@ -191,7 +191,7 @@ namespace litecore { namespace repl {
 
     void Worker::documentGotError(ReplicatedRev *rev, C4Error error, bool transient) {
         rev->error = error;
-        rev->transientError = transient;
+        rev->errorIsTransient = transient;
         replicator()->endedDocument(rev);
     }
 

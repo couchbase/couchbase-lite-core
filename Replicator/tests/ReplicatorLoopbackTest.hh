@@ -186,7 +186,7 @@ public:
                 char message[256];
                 c4error_getDescriptionC(rev->error, message, sizeof(message));
                 Log(">> Replicator %serror %s '%.*s': %s",
-                    (rev->transientError ? "transient " : ""),
+                    (rev->errorIsTransient ? "transient " : ""),
                     (dir == Dir::kPushing ? "pushing" : "pulling"),
                     SPLAT(rev->docID), message);
                 if (dir == Dir::kPushing)

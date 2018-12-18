@@ -142,8 +142,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
     createDB2();
+    enableDocProgressNotifications();
     replicate(kC4OneShot, kC4Disabled);
 
+    CHECK(_docsEnded == 100);
     REQUIRE(c4db_getDocumentCount(db2) == 100);
 }
 
@@ -153,7 +155,9 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push]
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
     createDB2();
+    enableDocProgressNotifications();
     replicate(kC4OneShot, kC4Disabled);
+    CHECK(_docsEnded == 1);
 
     c4::ref<C4Document> doc = c4doc_get(db2, "doc"_sl, true, nullptr);
     REQUIRE(doc);
@@ -198,9 +202,11 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
         return body["gender"_sl].asString() == "male"_sl;
     };
 
+    enableDocProgressNotifications();
     replicate(kC4OneShot, kC4Disabled);
 
     CHECK(_counter == 100);
+    CHECK(_docsEnded == 45);
     CHECK(c4db_getDocumentCount(db2) == 45);
 }
 

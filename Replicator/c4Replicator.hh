@@ -152,7 +152,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
     void detach() {
         lock_guard<mutex> lock(_mutex);
         _params.onStatusChanged = nullptr;
-        _params.onDocumentEnded = nullptr;
+        _params.onDocumentsEnded = nullptr;
     }
 
 private:
@@ -203,20 +203,25 @@ private:
     {
         if (repl != _replicator)
             return;
-        C4ReplicatorDocumentEndedCallback onDocEnded;
+        C4ReplicatorDocumentsEndedCallback onDocsEnded;
         {
             lock_guard<mutex> lock(_mutex);
-            onDocEnded = _params.onDocumentEnded;
+            onDocsEnded = _params.onDocumentsEnded;
         }
-        if (onDocEnded) {
-            for (auto &rev : revs) {
-                onDocEnded(this,
-                           (rev->dir() == Dir::kPushing),
-                           rev->docID, rev->revID,
-                           rev->flags,
-                           rev->error, rev->transientError,
-                           _params.callbackContext);
+        if (!onDocsEnded)
+            return;
+
+        auto nRevs = revs.size();
+        vector<const C4DocumentEnded*> docsEnded;
+        docsEnded.reserve(nRevs);
+        for (int pushing = 0; pushing <= 1; ++pushing) {
+            docsEnded.clear();
+            for (auto rev : revs) {
+                if ((rev->dir() == Dir::kPushing) == pushing)
+                    docsEnded.push_back(rev->asDocumentEnded());
             }
+            if (!docsEnded.empty())
+                onDocsEnded(this, pushing, docsEnded.size(), docsEnded.data(), _params.callbackContext);
         }
     }
 
