@@ -79,18 +79,26 @@ extern "C" {
     typedef void (*C4ReplicatorStatusChangedCallback)(C4Replicator* C4NONNULL,
                                                       C4ReplicatorStatus,
                                                       void *context);
+    /**
+     * One entry in a batched document ended callback on a replicator
+     */
+    typedef struct
+    {
+        bool pushing;           ///< Was the replicator event part of a push or a pull?
+        C4HeapString docID;     ///< The docID that was involved
+        C4HeapString revID;     ///< The revID that was involved
+        C4RevisionFlags flags;  ///< The flags of for the document entry (note kRevPurged refers to "channel access lost")
+        C4Error error;          ///< The error that occurred for this document entry, if any
+        bool errorIsTransient;  ///< Whether or not the error should be considered transient
+    } C4DocumentEndedEntry;
 
     /** Callback a client can register, to hear about the status of individual documents.
         By default, only errors will be reported via this callback.
         To also receive callbacks for successfully completed documents, set the
         kC4ReplicatorOptionProgressLevel option to a value greater than zero. */
     typedef void (*C4ReplicatorDocumentEndedCallback)(C4Replicator* C4NONNULL,
-                                                      bool pushing,
-                                                      C4HeapString docID,
-                                                      C4HeapString revID,
-                                                      C4RevisionFlags flags,
-                                                      C4Error error,
-                                                      bool errorIsTransient,
+                                                      C4DocumentEndedEntry* entries,
+                                                      int32_t count,
                                                       void *context);
 
     /** Callback a client can register, to hear about the status of blobs. */

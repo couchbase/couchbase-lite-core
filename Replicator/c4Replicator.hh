@@ -27,6 +27,7 @@
 #include "c4Socket+Internal.hh"
 #include "LoopbackProvider.hh"
 #include "Error.hh"
+#include "TempArray.hh"
 
 using namespace std;
 using namespace fleece;
@@ -209,14 +210,18 @@ private:
             onDocEnded = _params.onDocumentEnded;
         }
         if (onDocEnded) {
+            TempArray(entries, C4DocumentEndedEntry, revs.size());
+            int index = 0;
             for (auto &rev : revs) {
-                onDocEnded(this,
-                           (rev->dir() == Dir::kPushing),
-                           rev->docID, rev->revID,
-                           rev->flags,
-                           rev->error, rev->transientError,
-                           _params.callbackContext);
+                entries[index++] = {
+                   (rev->dir() == Dir::kPushing),
+                   rev->docID, rev->revID,
+                   rev->flags,
+                   rev->error, rev->transientError,
+                };
             }
+
+            onDocEnded(this, entries, (int32_t)revs.size(), _params.callbackContext);
         }
     }
 

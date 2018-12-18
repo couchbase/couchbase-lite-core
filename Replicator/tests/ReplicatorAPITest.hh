@@ -126,27 +126,26 @@ public:
     }
 
     static void onDocEnded(C4Replicator *repl,
-                           bool pushing,
-                           C4HeapString docID,
-                           C4HeapString revID,
-                           C4RevisionFlags flags,
-                           C4Error error,
-                           bool transient,
+                           C4DocumentEndedEntry* entries,
+                           int32_t size,
                            void *context)
     {
         char message[256];
-        c4error_getDescriptionC(error, message, sizeof(message));
-        C4Log(">> Replicator %serror %s '%.*s': %s",
-              (transient ? "transient " : ""),
-              (pushing ? "pushing" : "pulling"),
-              SPLAT(docID), message);
+        for(int i = 0; i < size; i++) {
+            auto entry = entries[i];
+            c4error_getDescriptionC(entry.error, message, sizeof(message));
+            C4Log(">> Replicator %serror %s '%.*s': %s",
+                  (entry.errorIsTransient ? "transient " : ""),
+                  (entry.pushing ? "pushing" : "pulling"),
+                  SPLAT(entry.docID), message);
 
-        auto test = (ReplicatorAPITest*)context;
-        lock_guard<mutex> lock(test->_mutex);
-        if (pushing)
-            test->_docPushErrors.emplace(slice(docID));
-        else
-            test->_docPullErrors.emplace(slice(docID));
+            auto test = (ReplicatorAPITest*)context;
+            lock_guard<mutex> lock(test->_mutex);
+            if (entry.pushing)
+                test->_docPushErrors.emplace(slice(entry.docID));
+            else
+                test->_docPullErrors.emplace(slice(entry.docID));
+        }
     }
 
 
