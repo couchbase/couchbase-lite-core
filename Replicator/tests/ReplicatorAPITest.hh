@@ -179,7 +179,9 @@ public:
         REQUIRE(_repl);
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
         logState(status);
-        CHECK(status.level == kC4Connecting);
+        // Sometimes Windows goes so fast that by the time
+        // it is here, it's already past the connecting stage
+        CHECK((status.level == kC4Connecting || status.level == kC4Busy)); 
         CHECK(status.error.code == 0);
 
         while ((status = c4repl_getStatus(_repl)).level != kC4Stopped)
