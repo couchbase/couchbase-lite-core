@@ -106,7 +106,7 @@ namespace litecore {
 
         //////// Expiration:
 
-        /** The current time. */
+        /** The current time represented in milliseconds since the unix epoch. */
         static expiration_t now() noexcept;
 
         /** Sets a record's expiration time. Zero means 'never'.
