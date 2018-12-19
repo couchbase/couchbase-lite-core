@@ -21,6 +21,7 @@
 #include "Stopwatch.hh"
 #include "Timer.hh"
 #include "PlatformCompat.hh"
+#include "Logging.hh"
 #include <stdarg.h>
 #include <iostream>
 #include <mutex>
@@ -36,20 +37,22 @@ namespace litecore {
     public:
         static const uint8_t kMagicNumber[4];
 
-        LogEncoder(std::ostream &out);
+        LogEncoder(std::ostream &out, LogLevel level);
         ~LogEncoder();
 
         enum ObjectRef : unsigned {
             None = 0
         };
         
-        void vlog(int8_t level, const char *domain, ObjectRef, const char *format, va_list args);
+        void vlog(const char *domain, ObjectRef, const char *format, va_list args);
 
-        void log(int8_t level, const char *domain, ObjectRef, const char *format, ...) __printflike(5, 6);
+        void log(const char *domain, ObjectRef, const char *format, ...) __printflike(4, 5);
 
         void flush();
 
-        ObjectRef registerObject(std::string description);
+        ObjectRef nextObjectRef() const { return _lastObjectRef; }
+        void fastForwardObjects(ObjectRef last);
+        ObjectRef registerObject(std::string description, ObjectRef hint);
         void unregisterObject(ObjectRef);
 
         /** A timestamp, given as a standard time_t (seconds since 1/1/1970) plus microseconds. */
@@ -85,6 +88,7 @@ namespace litecore {
         fleece::Stopwatch _st;
         int64_t _lastElapsed {0};
         int64_t _lastSaved {0};
+        LogLevel _level;
         std::unordered_map<size_t, unsigned> _formats;
         std::unordered_map<unsigned, std::string> _objects;
         ObjectRef _lastObjectRef {ObjectRef::None};

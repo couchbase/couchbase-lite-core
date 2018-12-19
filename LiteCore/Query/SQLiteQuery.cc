@@ -78,7 +78,7 @@ namespace litecore {
 
             string sql = qp.SQL();
             logInfo("Compiled as %s", sql.c_str());
-            LogTo(SQL, "Compiled {Query#%u}: %s", _objectRef, sql.c_str());
+            LogTo(SQL, "Compiled {Query#%u}: %s", getObjectRef(), sql.c_str());
             _statement.reset(keyStore.compile(sql));
             
             _1stCustomResultColumn = qp.firstCustomResultColumn();
@@ -147,8 +147,7 @@ namespace litecore {
         SQLiteQueryEnumerator* createEnumerator(const Options *options, sequence_t lastSeq);
 
         shared_ptr<SQLite::Statement> statement()   {return _statement;}
-
-        unsigned objectRef() const                  {return _objectRef;}    // (for logging)
+        unsigned objectRef() const                  {return getObjectRef();}   // (for logging)
 
         set<string> _parameters;            // Names of the bindable parameters
         vector<string> _ftsTables;          // Names of the FTS tables used

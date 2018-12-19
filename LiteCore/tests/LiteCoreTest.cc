@@ -165,7 +165,8 @@ TestFixture::TestFixture()
         if (LogDomain::fileLogLevel() == LogLevel::None) {
             auto path = FilePath::tempDirectory()["LiteCoreC++Tests.c4log"];
             Log("Beginning logging to %s", path.path().c_str());
-            LogDomain::writeEncodedLogsTo(path, LogLevel::Verbose,
+            LogFileOptions fileOptions { path.path(), LogLevel::Verbose, 1024, 1, false };
+            LogDomain::writeEncodedLogsTo(fileOptions,
                                           format("LiteCore %.*s", SPLAT(version)));
         }
         if (getenv("LiteCoreTestsQuiet"))

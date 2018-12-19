@@ -47,9 +47,10 @@ namespace litecore {
     static const uint64_t kSaveInterval = 1 * kTicksPerSec;
 
 
-    LogEncoder::LogEncoder(ostream &out)
+    LogEncoder::LogEncoder(ostream &out, LogLevel level)
     :_out(out)
     ,_flushTimer(bind(&LogEncoder::performScheduledFlush, this))
+    ,_level(level)
     {
         _writer.write(&kMagicNumber, 4);
         uint8_t header[2] = {kFormatVersion, sizeof(void*)};
@@ -69,10 +70,10 @@ namespace litecore {
 #pragma mark - LOGGING:
 
 
-    void LogEncoder::log(int8_t level, const char *domain, ObjectRef object, const char *format, ...) {
+    void LogEncoder::log(const char *domain, ObjectRef object, const char *format, ...) {
         va_list args;
         va_start(args, format);
-        vlog(level, domain, object, format, args);
+        vlog(domain, object, format, args);
         va_end(args);
     }
 
@@ -81,8 +82,7 @@ namespace litecore {
         return int64_t(_st.elapsed() * kTicksPerSec);
     }
 
-
-    void LogEncoder::vlog(int8_t level, const char *domain, ObjectRef object, const char *format, va_list args) {
+    void LogEncoder::vlog(const char *domain, ObjectRef object, const char *format, va_list args) {
         lock_guard<mutex> lock(_mutex);
 
         // Write the number of ticks elapsed since the last message:
@@ -92,16 +92,16 @@ namespace litecore {
         _writeUVarInt(delta);
 
         // Write level, domain, format string:
-        _writer.write(&level, sizeof(level));
+        _writer.write(&_level, sizeof(_level));
         _writeStringToken(domain ? domain : "");
 
         _writeUVarInt((unsigned)object);
         if (object != ObjectRef::None) {
             auto i = _objects.find(unsigned(object));
-            if (i != _objects.end()) {
+            if (i != _objects.end() && i->second != "\x1") {
                 _writer.write(slice(i->second));
                 _writer.write("\0", 1);
-                _objects.erase(i);
+                i->second = string("\x1"); // Remove this from memory, but keep so we can track as "seen"
             }
         }
 
@@ -239,15 +239,25 @@ namespace litecore {
             _scheduleFlush();
     }
 
-
-    LogEncoder::ObjectRef LogEncoder::registerObject(std::string description) {
-        lock_guard<mutex> lock(_mutex);
-
-        ObjectRef ref = _lastObjectRef = ObjectRef(unsigned(_lastObjectRef) + 1);
-        _objects[unsigned(ref)] = description;
-        return ref;
+    void LogEncoder::fastForwardObjects(ObjectRef last)
+    {
+        _lastObjectRef = last;
     }
 
+    LogEncoder::ObjectRef LogEncoder::registerObject(std::string description, ObjectRef hint) {
+        lock_guard<mutex> lock(_mutex);
+
+        ObjectRef ref = hint;
+        if(ref == 0) {
+            ref = _lastObjectRef = ObjectRef(unsigned(_lastObjectRef) + 1);
+        }
+
+        if(_objects.find(unsigned(ref)) == _objects.end()) {
+            _objects[unsigned(ref)] = description;
+        }
+
+        return ref;
+    }
 
     void LogEncoder::unregisterObject(ObjectRef obj) {
         lock_guard<mutex> lock(_mutex);

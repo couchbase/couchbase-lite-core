@@ -62,6 +62,14 @@ enum class LogLevel : int8_t {
     None
 };
 
+struct LogFileOptions
+{
+    std::string path;
+    LogLevel level;
+    int64_t maxSize;
+    int maxCount;
+    bool isPlaintext;
+};
 
 class LogDomain {
 public:
@@ -87,8 +95,10 @@ public:
 
     bool willLog(LogLevel lv) const                 {return _effectiveLevel <= lv;}
 
+    void logNoCallback(LogLevel level, const char* fmt, ...) __printflike(3, 4);
     void log(LogLevel level, const char *fmt, ...) __printflike(3, 4);
     void vlog(LogLevel level, const char *fmt, va_list);
+    void vlogNoCallback(LogLevel level, const char* fmt, va_list);
 
     using Callback_t = void(*)(const LogDomain&, LogLevel, const char *format, va_list);
 
@@ -101,11 +111,9 @@ public:
     static void setCallback(Callback_t callback, bool preformatted);
 
     /** Registers (or unregisters) a file to which log messages will be written in binary format.
-        @param filePath  The file to write to, or an empty string to stop writing.
-        @param atLevel  Only log messages at this or a higher level will be written.
+        @param options The options to use when performing file logging
         @param initialMessage  First message that will be written to the log, e.g. version info */
-    static void writeEncodedLogsTo(const std::string &filePath,
-                                   LogLevel atLevel,
+    static void writeEncodedLogsTo(const LogFileOptions& options,
                                    const std::string &initialMessage);
 
     static LogLevel callbackLogLevel() noexcept;
@@ -116,15 +124,17 @@ public:
 private:
     friend class Logging;
     unsigned registerObject(const void *object, const std::string &description,
-                            const std::string &nickname, LogLevel);
+                            const std::string &nickname, LogLevel, unsigned hint);
     void unregisterObject(unsigned obj);
-    void vlog(LogLevel level, unsigned obj, const char *fmt, va_list);
+    void vlog(LogLevel level, unsigned obj, bool callback, const char *fmt, va_list);
 
 private:
     static LogLevel _callbackLogLevel() noexcept;
     LogLevel computeLevel() noexcept;
     LogLevel levelFromEnvironment() const noexcept;
     static void _invalidateEffectiveLevels() noexcept;
+
+    void dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list);
 
     std::atomic<LogLevel> _effectiveLevel {LogLevel::Uninitialized};
     std::atomic<LogLevel> _level;
@@ -216,7 +226,14 @@ static inline bool WillLog(LogLevel lv)     {return kC4Cpp_DefaultLog.willLog(lv
 
         void _log(LogLevel level, const char *format, ...) const __printflike(3, 4);
         void _logv(LogLevel level, const char *format, va_list) const;
+
+        unsigned getObjectRef() const { return _objectRef; }
+
         LogDomain &_domain;
+private:
+        friend class LogDomain;
+        static void rotateLog(LogLevel level);
+
         unsigned _objectRef {0};
     };
 

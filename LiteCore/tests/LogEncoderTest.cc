@@ -28,6 +28,17 @@
 #define DATESTAMP "\\w+, \\d{2}/\\d{2}/\\d{2}"
 #define TIMESTAMP "\\d{2}:\\d{2}:\\d{2}\\.\\d{6}\\| "
 
+class LogObject : public Logging
+{
+public:
+    LogObject()
+        : Logging(DBLog)
+    {
+        
+    }
+
+    void doLog(const char *format, ...) const __printflike(2, 3) { LOGBODY(Info); }
+};
 
 static string dumpLog(string encoded, vector<string> levelNames) {
     cerr << "Encoded log is " << encoded.size() << " bytes\n";
@@ -44,18 +55,18 @@ static string dumpLog(string encoded, vector<string> levelNames) {
 TEST_CASE("LogEncoder formatting", "[Log]") {
     stringstream out;
     {
-        LogEncoder logger(out);
+        LogEncoder logger(out, LogLevel::Info);
         size_t size = 0xabcdabcd;
-        logger.log(0, nullptr, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
+        logger.log(nullptr, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
                    1234567890U, 2345678901LU, 123456789123456789LLU, size, (void*)0x7fff5fbc);
         for (int sgn = -1; sgn <= 1; sgn += 2) {
             ptrdiff_t ptrdiff = 1234567890;
-            logger.log(0, nullptr, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
+            logger.log(nullptr, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
                        1234567890*sgn, 234567890L*sgn, 123456789123456789LL*sgn, ptrdiff*sgn, '@');
         }
         const char *str = "C string";
         slice buf("hello");
-        logger.log(0, nullptr, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
+        logger.log(nullptr, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
     }
     string encoded = out.str();
     string result = dumpLog(encoded, {});
@@ -71,31 +82,40 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
 
 TEST_CASE("LogEncoder levels/domains", "[Log]") {
     static const vector<string> kLevels = {"***", "", "", "WARNING", "ERROR"};
-    stringstream out;
+    stringstream out[4];
     {
-        LogEncoder logger(out);
-        logger.log(2, "Draw", LogEncoder::None, "drawing %d pictures", 2);
-        logger.log(1, "Paint", LogEncoder::None, "Waiting for drawings");
-        logger.log(3, "Draw", LogEncoder::None, "made a mistake!");
-        logger.log(2, "Draw", LogEncoder::None, "redrawing %d picture(s)", 1);
-        logger.log(2, "Draw", LogEncoder::None, "Handing off to painter");
-        logger.log(2, "Paint", LogEncoder::None, "Painting");
-        logger.log(4, "Customer", LogEncoder::None, "This isn't what I asked for!");
+        LogEncoder verbose(out[0], LogLevel::Verbose);
+        LogEncoder info(out[1], LogLevel::Info);
+        LogEncoder warning(out[2], LogLevel::Warning);
+        LogEncoder error(out[3], LogLevel::Error);
+        info.log("Draw", LogEncoder::None, "drawing %d pictures", 2);
+        verbose.log("Paint", LogEncoder::None, "Waiting for drawings");
+        warning.log("Draw", LogEncoder::None, "made a mistake!");
+        info.log("Draw", LogEncoder::None, "redrawing %d picture(s)", 1);
+        info.log("Draw", LogEncoder::None, "Handing off to painter");
+        info.log("Paint", LogEncoder::None, "Painting");
+        error.log("Customer", LogEncoder::None, "This isn't what I asked for!");
     }
 
-    string encoded = out.str();
-    string result = dumpLog(encoded, kLevels);
+    static const vector<string> expectedDomains[] = {
+        { "Paint" },
+        { "Draw", "Draw", "Draw", "Paint" },
+        { "Draw" },
+        { "Customer" }
+    };
+    
+    for(int i = 0; i < 4; i++) {
+        string encoded = out[i].str();
+        string result = dumpLog(encoded, kLevels);
 
-    stringstream in(encoded);
-
-    static const vector<int8_t> expectedLevel = {2, 1, 3, 2, 2, 2, 4};
-    static const vector<string> expectedDomain = {"Draw", "Paint", "Draw", "Draw", "Draw", "Paint", "Customer"};
-    unsigned i = 0;
-    LogDecoder decoder(in);
-    while (decoder.next()) {
-        CHECK(decoder.level() == expectedLevel[i]);
-        CHECK(string(decoder.domain()) == expectedDomain[i]);
-        ++i;
+        stringstream in(encoded);
+        LogDecoder decoder(in);
+        unsigned j = 0;
+        while (decoder.next()) {
+            CHECK(decoder.level() == i+1);
+            CHECK(string(decoder.domain()) == expectedDomains[i][j]);
+            ++i;
+        }
     }
 }
 
@@ -103,14 +123,14 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
 TEST_CASE("LogEncoder tokens", "[Log]") {
     stringstream out;
     {
-        LogEncoder logger(out);
+        LogEncoder logger(out, LogLevel::Info);
         size_t size = 0xabcdabcd;
-        auto tweedledum = logger.registerObject("Tweedledum");
-        logger.log(0, nullptr, tweedledum, "I'm Tweedledum");
-        auto rattle = logger.registerObject("rattle");
-        auto tweedledee = logger.registerObject("Tweedledee");
-        logger.log(0, nullptr, tweedledee, "I'm Tweedledee");
-        logger.log(0, nullptr, rattle, "and I'm the rattle");
+        auto tweedledum = logger.registerObject("Tweedledum", LogEncoder::ObjectRef::None);
+        logger.log(nullptr, tweedledum, "I'm Tweedledum");
+        auto rattle = logger.registerObject("rattle", LogEncoder::ObjectRef::None);
+        auto tweedledee = logger.registerObject("Tweedledee", LogEncoder::ObjectRef::None);
+        logger.log(nullptr, tweedledee, "I'm Tweedledee");
+        logger.log(nullptr, rattle, "and I'm the rattle");
     }
     string encoded = out.str();
     string result = dumpLog(encoded, {});
@@ -125,8 +145,8 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
 
 TEST_CASE("LogEncoder auto-flush", "[Log]") {
     stringstream out;
-    LogEncoder logger(out);
-    logger.log(0, nullptr, LogEncoder::None, "Hi there");
+    LogEncoder logger(out, LogLevel::Info);
+    logger.log(nullptr, LogEncoder::None, "Hi there");
 
     logger.withStream([&](ostream &s) {
         CHECK(out.str().empty());
@@ -144,43 +164,95 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
     CHECK(!result.empty());
 }
 
-TEST_CASE("Logging prune old files", "[Log]") {
-    FilePath tmpLogDir = FilePath::tempDirectory()["Log_Prune/"];
+TEST_CASE("Logging rollover", "[Log]") {
+    FilePath tmpLogDir = FilePath::tempDirectory()["Log_Rollover/"];
+    tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
+    tmpLogDir["intheway"].mkdir();
+    
+    {
+        ofstream tmpOut(tmpLogDir["abcd"].canonicalPath(), ios::binary);
+        tmpOut << "I" << endl;
+    }
+    
 
-    // Create a folder and a fake file to simulate random other files (they will appear in between the last 
-    // log file 'abcd' and the others log 1 - 10)
-    tmpLogDir.subdirectoryNamed("cdef").mkdir();
-    ofstream fbogus(tmpLogDir["dfeg"].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
-    fbogus.write("7", 1);
-    for(int i = 0; i < 11; i++) {
-        if(i == 1 || i == 2) {
-            // Need some of the logs to be later because otherwise it is
-            // impossible to test which logs should disappear
+    LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 1, false };
+    LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
+    LogObject obj;
+    for(int i = 0; i < 1024; i++) {
+        // Do a lot of logging, so that pruning also gets tested
+        obj.doLog("This is line #%d in the log.", i);
+        if(i == 256) {
+            // Otherwise the logging will happen to fast that
+            // rollover won't have a chance to occur
             this_thread::sleep_for(chrono::seconds(2));
-
-            // Hijack this knowledge to insert some files to be ignored
-            ofstream fbogus2(tmpLogDir["log5.log"].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
-            fbogus2.write("7", 1);
         }
-        
-        stringstream s;
-        s << "log" << 11 - i;
-        FilePath f(tmpLogDir[s.str()]);
-        ofstream fout(tmpLogDir[s.str()].canonicalPath(), ofstream::trunc|ofstream::binary|ofstream::out);
-        LogEncoder e(fout);
-        e.log(0, nullptr, LogEncoder::None, "Hi");
     }
 
-    LogDomain::writeEncodedLogsTo(tmpLogDir["abcd"].canonicalPath(), LogLevel::Info, "Hello");
-    int count = 0;
-    tmpLogDir.forEachFile([&count](const FilePath& f)
+    // HACK: Cause a flush so that the test has something in the second log
+    // to actually read into the decoder
+    FilePath other = FilePath::tempDirectory()["Log_Rollover2/"];
+    other.mkdir();
+    LogFileOptions fileOptions2 { other.canonicalPath(), LogLevel::Info, 1024, 2, false };
+    LogDomain::writeEncodedLogsTo(fileOptions2, "Hello");
+    
+    vector<string> infoFiles;
+    int totalCount = 0;
+    tmpLogDir.forEachFile([&infoFiles, &totalCount](const FilePath f)
     {
-        CHECK(f.fileName() != "log10");
-        CHECK(f.fileName() != "log11");
-        count++;
+       totalCount++;
+       if(f.path().find("info") != string::npos) {
+           infoFiles.push_back(f.path());
+       } 
     });
 
-    CHECK(count == 13);
-    LogDomain::writeEncodedLogsTo(string(), LogLevel::None, string());
-} 
+    CHECK(totalCount == 8); // 1 for each level besides info, 1 info, 1 "intheway", 1 "acbd"
+    REQUIRE(infoFiles.size() == 2);
+    stringstream out;
+    ifstream fin(infoFiles[0], ios::binary);
+    LogDecoder d1(fin);
+    d1.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
+
+    out.str("");
+    // If obj ref rollover is not working then this will throw an exception
+    ifstream fin2(infoFiles[1], ios::binary);
+    LogDecoder d2(fin2);
+    d2.decodeTo(out, vector<string> { "", "", "INFO", "", "" });
+}
+
+TEST_CASE("Logging plaintext", "[Log]") {
+    FilePath tmpLogDir = FilePath::tempDirectory()["Log_Plaintext/"];
+    tmpLogDir.delRecursive();
+    tmpLogDir.mkdir();
+
+    LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true };
+    LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
+    LogObject obj;
+    obj.doLog("This will be in plaintext");
+
+    vector<string> infoFiles;
+    tmpLogDir.forEachFile([&infoFiles](const FilePath f)
+    {
+       if(f.path().find("info") != string::npos) {
+           infoFiles.push_back(f.path());
+       } 
+    });
+
+    REQUIRE(infoFiles.size() == 1);
+    ifstream fin(infoFiles[0]);
+    string line;
+    vector<string> lines;
+    while(fin.good()) {
+        getline(fin, line);
+        lines.push_back(line);
+    }
+
+    CHECK(lines[0] == "---- Hello ----");
+    auto startPos = lines[1].find('|') + 2;
+#ifdef _MSC_VER
+    CHECK(lines[1].substr(startPos) == "[DB]: {class LogObject#1} This will be in plaintext");
+#else
+    CHECK(lines[1].substr(startPos) == "[DB]: {LogObject#1} This will be in plaintext");
+#endif
+}
+
