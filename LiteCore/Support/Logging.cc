@@ -168,7 +168,7 @@ namespace litecore {
         delete sFileOut[(int)level];
         purgeOldLogs(level);
         const auto path = createLogPath(level);
-        file = sFileOut[(int)level] = new ofstream(path, ofstream::out|ofstream::trunc|ofstream::binary);
+        sFileOut[(int)level] = new ofstream(path, ofstream::out|ofstream::trunc|ofstream::binary);
         if(encoder) {
             auto newEncoder = new LogEncoder(*sFileOut[(int)level], level);
             newEncoder->fastForwardObjects(next);

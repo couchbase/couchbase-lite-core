@@ -146,9 +146,8 @@ namespace litecore {
         virtual QueryEnumerator* createEnumerator(const Options *options) override;
         SQLiteQueryEnumerator* createEnumerator(const Options *options, sequence_t lastSeq);
 
-        unsigned objectRef() const                  {return getObjectRef();}
-
-        unsigned objectRef() const                  {return _objectRef;}    // (for logging)
+        shared_ptr<SQLite::Statement> statement()   {return _statement;}
+        unsigned objectRef() const                  {return getObjectRef();}   // (for logging)
 
         set<string> _parameters;            // Names of the bindable parameters
         vector<string> _ftsTables;          // Names of the FTS tables used
