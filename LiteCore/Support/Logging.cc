@@ -461,7 +461,7 @@ namespace litecore {
             return;
         }
 
-        const long pos = sFileOut[(int)level]->tellp();
+        const auto pos = sFileOut[(int)level]->tellp();
         if(pos >= sMaxSize) {
             Logging::rotateLog(level);
         }
