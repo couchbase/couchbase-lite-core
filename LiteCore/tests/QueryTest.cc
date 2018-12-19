@@ -948,6 +948,34 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
         {"['str_to_millis()', '2018-10-23T18:33:01Z']",       "1540319581000"},
         {"['str_to_millis()', '2018-10-23T18:33:01.123Z']",   "1540319581123"},
 
+        // Range check the month and day number
+        {"['str_to_millis()', '2000-00-01T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2000-13-01T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2000-01-00T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2000-01-32T00:00:00Z']",       "null"},
+
+        // 30 days hath September...
+        {"['str_to_millis()', '2018-01-31T00:00:00Z']",       "1517356800000"},
+        {"['str_to_millis()', '2018-02-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-03-31T00:00:00Z']",       "1522454400000"},
+        {"['str_to_millis()', '2018-04-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-05-31T00:00:00Z']",       "1527724800000"},
+        {"['str_to_millis()', '2018-06-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-07-31T00:00:00Z']",       "1532995200000"},
+        {"['str_to_millis()', '2018-08-31T00:00:00Z']",       "1535673600000"},
+        {"['str_to_millis()', '2018-09-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-10-31T00:00:00Z']",       "1540944000000"},
+        {"['str_to_millis()', '2018-11-31T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2018-12-31T00:00:00Z']",       "1546214400000"},
+
+        // February is complicated
+        {"['str_to_millis()', '2000-02-29T00:00:00Z']",       "951782400000"},
+        {"['str_to_millis()', '2016-02-29T00:00:00Z']",       "1456704000000"},
+        {"['str_to_millis()', '2018-02-29T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2100-02-29T00:00:00Z']",       "null"},
+        {"['str_to_millis()', '2400-02-29T00:00:00Z']",       "13574563200000"},
+        {"['str_to_millis()', '2400-02-30T00:00:00Z']",       "null"},
+
         {"['millis_to_utc()', 'x']",                          "null"},
         {"['millis_to_utc()', '0']",                          "null"},
         {"['millis_to_utc()', 0]",                            "1970-01-01T00:00:00Z"},
