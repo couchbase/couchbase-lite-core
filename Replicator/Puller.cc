@@ -246,13 +246,11 @@ namespace litecore { namespace repl {
     void Puller::_revsFinished()
     {
         auto revs = _returningRevs.pop();
-        if (nonPassive()) {
-            for (IncomingRev *inc : *revs) {
-                if (inc->error().code == 0) {
-                    completedSequence(alloc_slice(inc->remoteSequence()));
-                    finishedDocument(inc->rev());
-                }
-            }
+        for (IncomingRev *inc : *revs) {
+            auto rev = inc->rev();
+            if (rev->error.code == 0 && nonPassive())
+                completedSequence(alloc_slice(inc->remoteSequence()));
+            finishedDocument(rev);
         }
         _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(), revs->end());
 

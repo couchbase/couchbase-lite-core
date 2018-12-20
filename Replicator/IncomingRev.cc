@@ -45,11 +45,11 @@ namespace litecore { namespace repl {
     // Read the 'rev' message, on my actor thread:
     void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
         DebugAssert(!_revMessage);
-        _error = {};
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
 
         _revMessage = msg;
-        _rev = new RevToInsert(_revMessage->property("id"_sl),
+        _rev = new RevToInsert(this,
+                               _revMessage->property("id"_sl),
                                _revMessage->property("rev"_sl),
                                _revMessage->property("history"_sl),
                                _revMessage->boolProperty("deleted"_sl),
@@ -71,14 +71,14 @@ namespace litecore { namespace repl {
                    SPLAT(_rev->docID), SPLAT(_rev->revID), SPLAT(_remoteSequence));
         if (_rev->docID.size == 0 || _rev->revID.size == 0) {
             warn("Got invalid revision");
-            _error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
+            _rev->error = c4error_make(WebSocketDomain, 400, "received invalid revision"_sl);
             finish();
             return;
         }
         if (!_remoteSequence && nonPassive()) {
             warn("Missing sequence in 'rev' message for active puller");
-            _error = c4error_make(WebSocketDomain, 400,
-                                  "received revision with missing 'sequence'"_sl);
+            _rev->error = c4error_make(WebSocketDomain, 400,
+                                       "received revision with missing 'sequence'"_sl);
             finish();
             return;
         }
@@ -102,7 +102,7 @@ namespace litecore { namespace repl {
 
     void IncomingRev::processBody(alloc_slice fleeceBody, C4Error error) {
         if (!fleeceBody) {
-            _error = error;
+            _rev->error = error;
             finish();
             return;
         }
@@ -124,7 +124,7 @@ namespace litecore { namespace repl {
             fleeceBody = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
             if (!fleeceBody) {
                 warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
-                _error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
+                _rev->error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
             }
             root = Value::fromData(fleeceBody, kFLTrusted).asDict();
         }
@@ -146,7 +146,7 @@ namespace litecore { namespace repl {
         if (_options.pullValidator) {
             if (!_options.pullValidator(_rev->docID, _rev->flags, root, _options.callbackContext)) {
                 logInfo("Rejected by pull validator function");
-                _error = c4error_make(WebSocketDomain, 403, "rejected by validation function"_sl);
+                _rev->error = c4error_make(WebSocketDomain, 403, "rejected by validation function"_sl);
                 _pendingBlobs.clear();
                 finish();
                 return;
@@ -179,11 +179,11 @@ namespace litecore { namespace repl {
     void IncomingRev::_childChangedStatus(Worker *task, Status status) {
         addProgress(status.progressDelta);
         if (status.level == kC4Idle) {
-            if (status.error.code && !_error.code)
-                _error = status.error;
+            if (status.error.code && !_rev->error.code)
+                _rev->error = status.error;
             if (!fetchNextBlob()) {
                 // All blobs completed, now finish:
-                if (_error.code == 0) {
+                if (_rev->error.code == 0) {
                     logVerbose("All blobs received, now inserting revision");
                     insertRevision();
                 } else {
@@ -198,38 +198,26 @@ namespace litecore { namespace repl {
     void IncomingRev::insertRevision() {
         Assert(_pendingBlobs.empty() && !_currentBlob);
         increment(_pendingCallbacks);
-        _rev->onInserted = asynchronize([this](C4Error err) {
-            // Callback that will run _after_ insertRevision() completes:
-            decrement(_pendingCallbacks);
-            _error = err;
-            finish();
-        });
-
         _dbWorker->insertRevision(_rev);
+    }
+
+
+    void IncomingRev::_revisionInserted() {
+        decrement(_pendingCallbacks);
+        finish();
     }
 
 
     void IncomingRev::finish() {
         if (!_revMessage->noReply()) {
             MessageBuilder response(_revMessage);
-            if (_error.code != 0)
-                response.makeError(c4ToBLIPError(_error));
+            if (_rev->error.code != 0)
+                response.makeError(c4ToBLIPError(_rev->error));
             _revMessage->respond(response);
         }
         
-        bool transient = false;
-        if (_error.code == 0) {
-            if (_peerError) {
-                _error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
-            } else if (_rev->flags & kRevIsConflict) {
-                // DBWorker::_insertRevision set this flag to indicate that the rev caused a conflict
-                // (though it did get inserted), so notify the delegate of the conflict:
-                _error = c4error_make(LiteCoreDomain, kC4ErrorConflict, nullslice);
-                transient = true;
-            }
-        }
-        if (_error.code)
-            documentGotError(_rev, _error, transient);
+        if (_rev->error.code == 0 && _peerError)
+                _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
 
         // Free up memory now that I'm done:
         Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());

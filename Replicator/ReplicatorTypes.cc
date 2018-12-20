@@ -17,6 +17,7 @@
 //
 
 #include "ReplicatorTypes.hh"
+#include "IncomingRev.hh"
 #include "make_unique.h"
 
 using namespace std;
@@ -64,12 +65,18 @@ namespace litecore { namespace repl {
     }
 
 
-    RevToInsert::RevToInsert(slice docID_, slice revID_,
+    RevToInsert::~RevToInsert()
+    { }
+
+
+    RevToInsert::RevToInsert(IncomingRev* owner_,
+                             slice docID_, slice revID_,
                              slice historyBuf_,
                              bool deleted_,
                              bool noConflicts_)
     :ReplicatedRev(docID_, revID_)
     ,historyBuf(historyBuf_)
+    ,owner(owner_)
     {
         if (deleted_)
             flags |= kRevDeleted;
@@ -80,7 +87,7 @@ namespace litecore { namespace repl {
     void RevToInsert::trim() {
         historyBuf.reset();
         body.reset();
-        onInserted = nullptr;
+        owner = nullptr;
     }
 
 } }

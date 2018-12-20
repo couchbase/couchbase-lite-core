@@ -230,11 +230,18 @@ namespace litecore { namespace repl {
 
 
     void Replicator::endedDocument(ReplicatedRev *d) {
-        logDebug("documentEnded %.*s %.*s (%d/%d)", SPLAT(d->docID), SPLAT(d->revID),
-                 d->error.domain, d->error.code);
+        logInfo("documentEnded %.*s %.*s flags=%02x (%d/%d)", SPLAT(d->docID), SPLAT(d->revID),
+                 d->flags, d->error.domain, d->error.code);
         d->trim(); // free up unneeded stuff
-        if (_delegate)
+        if (_delegate) {
+            if (d->isWarning && (d->flags & kRevIsConflict)) {
+                // DBWorker::_insertRevision set this flag to indicate that the rev caused a conflict
+                // (though it did get inserted), so notify the delegate of the conflict:
+                d->error = c4error_make(LiteCoreDomain, kC4ErrorConflict, nullslice);
+                d->errorIsTransient = true;
+            }
             _docsEnded.push(d);
+        }
     }
 
 

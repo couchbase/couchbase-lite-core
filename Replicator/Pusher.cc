@@ -312,7 +312,7 @@ namespace litecore { namespace repl {
                                  SPLAT(change->docID), SPLAT(change->revID),
                                  SPLAT(change->remoteAncestorRevID), status);
                         auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
-                        documentGotError(change, err, false);
+                        finishedDocumentWithError(change, err, false);
                     }
                 } else {
                     // Entry in "changes" response is an array of known ancestors, or null to skip:
@@ -395,7 +395,7 @@ namespace litecore { namespace repl {
                     logError("Got error response to rev %.*s %.*s (seq #%llu): %.*s %d '%.*s'",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
-                    documentGotError(rev, c4err, transient);
+                    finishedDocumentWithError(rev, c4err, transient);
                     // If this is a permanent failure, like a validation error or conflict,
                     // then I've completed my duty to push it.
                     completed = !transient;

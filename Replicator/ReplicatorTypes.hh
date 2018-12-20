@@ -29,6 +29,7 @@
 namespace litecore { namespace repl {
     using fleece::RefCounted;
     using fleece::Retained;
+    class IncomingRev;
 
     // Operations on C4Progress objects:
     
@@ -87,10 +88,11 @@ namespace litecore { namespace repl {
     public:
         alloc_slice historyBuf;
         alloc_slice body;
-        std::function<void(C4Error)> onInserted;
         bool noConflicts {false};
+        Retained<IncomingRev> owner;
 
-        RevToInsert(slice docID_, slice revID_,
+        RevToInsert(IncomingRev* owner_,
+                    slice docID_, slice revID_,
                     slice historyBuf_,
                     bool deleted,
                     bool noConflicts);
@@ -98,8 +100,10 @@ namespace litecore { namespace repl {
         Dir dir() const override                    {return Dir::kPulling;}
         void trim() override;
 
+        void notifyInserted();
+
     protected:
-        ~RevToInsert() =default;
+        ~RevToInsert();
     };
 
 

@@ -42,6 +42,8 @@ namespace litecore { namespace repl {
             return (const C4DocumentEnded*)&docID;
         }
 
+        bool      isWarning {false};
+
         virtual Dir dir() const =0;
         bool deleted() const                            {return (flags & kRevDeleted) != 0;}
 

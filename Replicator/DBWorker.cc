@@ -460,7 +460,7 @@ namespace litecore { namespace repl {
             doc = e ? c4enum_getDocument(e, &error) : c4doc_get(_db, info.docID, true, &error);
             if (!doc) {
                 auto rev = retained(new RevToSend(info, remoteRevID));
-                documentGotError(rev, error, false);
+                finishedDocumentWithError(rev, error, false);
                 return false;   // reject rev: error getting doc
             }
             if (slice(doc->revID) != slice(info.revID))
@@ -1039,6 +1039,7 @@ namespace litecore { namespace repl {
                             logInfo("Created conflict with '%.*s' #%.*s",
                                 SPLAT(rev->docID), SPLAT(rev->revID));
                             rev->flags |= kRevIsConflict;
+                            rev->isWarning = true;
                         }
                     } else {
                         docSaved = false;
@@ -1049,10 +1050,9 @@ namespace litecore { namespace repl {
                     alloc_slice desc = c4error_getDescription(docErr);
                     warn("Failed to insert '%.*s' #%.*s : %.*s",
                          SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(desc));
-                    if (rev->onInserted) {
-                        rev->onInserted(docErr);
-                        rev->onInserted = nullptr;
-                    }
+                    rev->error = docErr;
+                    if (rev->owner)
+                        rev->owner->revisionInserted();
                 }
             }
 
@@ -1068,8 +1068,9 @@ namespace litecore { namespace repl {
 
         // Notify all revs (that didn't already fail):
         for (auto rev : *revs) {
-            if (rev->onInserted)
-                rev->onInserted(transactionErr);
+            rev->error = transactionErr;
+            if (rev->owner)
+                rev->owner->revisionInserted();
         }
 
         if (transactionErr.code) {

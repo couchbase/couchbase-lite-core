@@ -201,7 +201,7 @@ namespace litecore { namespace repl {
         virtual void onError(C4Error);         // don't call this, but you can override
 
         /** Report less-serious errors that affect a document but don't stop replication. */
-        virtual void documentGotError(ReplicatedRev*, C4Error, bool transientErr);
+        virtual void finishedDocumentWithError(ReplicatedRev*, C4Error, bool transientErr);
 
         void finishedDocument(ReplicatedRev*);
 

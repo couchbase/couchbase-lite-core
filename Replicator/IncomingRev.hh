@@ -44,7 +44,8 @@ namespace litecore { namespace repl {
 
         RevToInsert* rev() const                {return _rev;}
         slice remoteSequence() const            {return _remoteSequence;}
-        C4Error error() const                   {return _error;}
+
+        void revisionInserted()                 {enqueue(&IncomingRev::_revisionInserted);}
 
 #if DEBUG
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
@@ -59,6 +60,7 @@ namespace litecore { namespace repl {
         void processBody(alloc_slice fleeceBody, C4Error);
         bool fetchNextBlob();
         void insertRevision();
+        void _revisionInserted();
         void finish();
         virtual void _childChangedStatus(Worker *task, Status status) override;
 
@@ -70,7 +72,6 @@ namespace litecore { namespace repl {
         unsigned _pendingCallbacks {0};
         std::vector<PendingBlob> _pendingBlobs;
         Retained<IncomingBlob> _currentBlob;
-        C4Error _error {};
         int _peerError {0};
         alloc_slice _remoteSequence;
     };
