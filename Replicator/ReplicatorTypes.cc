@@ -77,10 +77,10 @@ namespace litecore { namespace repl {
     :ReplicatedRev(docID_, revID_)
     ,historyBuf(historyBuf_)
     ,owner(owner_)
+    ,noConflicts(noConflicts_)
     {
         if (deleted_)
             flags |= kRevDeleted;
-        noConflicts = noConflicts_;
     }
 
 

@@ -28,12 +28,12 @@ namespace litecore { namespace repl {
         using alloc_slice = fleece::alloc_slice;
 
         // Note: The following fields must be compatible with the public C4DocumentEnded struct:
-        const alloc_slice docID;
-        const alloc_slice revID;
-        C4RevisionFlags flags {0};
-        C4SequenceNumber sequence;
-        C4Error   error {};
-        bool      errorIsTransient {false};
+        const alloc_slice   docID;
+        const alloc_slice   revID;
+        C4RevisionFlags     flags {0};
+        C4SequenceNumber    sequence;
+        C4Error             error {};
+        bool                errorIsTransient {false};
 
         const C4DocumentEnded* asDocumentEnded() const  {
             static_assert(offsetof(ReplicatedRev, errorIsTransient) - offsetof(ReplicatedRev, docID) ==
@@ -42,7 +42,7 @@ namespace litecore { namespace repl {
             return (const C4DocumentEnded*)&docID;
         }
 
-        bool      isWarning {false};
+        bool                isWarning {false};
 
         virtual Dir dir() const =0;
         bool deleted() const                            {return (flags & kRevDeleted) != 0;}

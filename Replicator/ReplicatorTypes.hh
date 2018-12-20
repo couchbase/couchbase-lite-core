@@ -57,13 +57,14 @@ namespace litecore { namespace repl {
     /** A request by the peer to send a revision. */
     class RevToSend : public ReplicatedRev {
     public:
-        alloc_slice remoteAncestorRevID;            // Known ancestor revID (no-conflicts mode)
-        unsigned maxHistory {0};                    // Max depth of rev history to send
-        const uint64_t bodySize;
-        int64_t expiration {0};
-        bool noConflicts {false};
-        bool legacyAttachments {false};             // Add _attachments property when sending
-        bool deltaOK {false};                       // Can send a delta
+        alloc_slice     remoteAncestorRevID;        // Known ancestor revID (no-conflicts mode)
+        unsigned        maxHistory {0};             // Max depth of rev history to send
+        const uint64_t  bodySize {0};               // (Estimated) size of body
+        int64_t         expiration {0};             // Time doc expires
+        bool            noConflicts {false};        // Server is in no-conflicts mode
+        bool            legacyAttachments {false};  // Add _attachments property when sending
+        bool            deltaOK {false};            // Can send a delta
+        std::unique_ptr<std::set<alloc_slice>> ancestorRevIDs; // Known ancestor revIDs the peer already has
 
         RevToSend(const C4DocumentInfo &info,
                   const alloc_slice &remoteAncestor);
@@ -71,7 +72,6 @@ namespace litecore { namespace repl {
         void addRemoteAncestor(slice revID);
         bool hasRemoteAncestor(slice revID) const;
 
-        std::unique_ptr<std::set<alloc_slice>> ancestorRevIDs;    // Known ancestor revIDs the peer already has
 
         Dir dir() const override                    {return Dir::kPushing;}
         void trim() override;
@@ -86,14 +86,14 @@ namespace litecore { namespace repl {
     /** A revision to be added to the database, complete with body. */
     class RevToInsert : public ReplicatedRev {
     public:
-        alloc_slice historyBuf;
-        alloc_slice body;
-        bool noConflicts {false};
-        Retained<IncomingRev> owner;
+        alloc_slice             historyBuf;             // Revision history (comma-delimited revIDs)
+        alloc_slice             body;                   // The actual doc body (Fleece)
+        const bool              noConflicts {false};    // Server is in no-conflicts mode
+        Retained<IncomingRev>   owner;                  // Object that's processing this rev
 
-        RevToInsert(IncomingRev* owner_,
-                    slice docID_, slice revID_,
-                    slice historyBuf_,
+        RevToInsert(IncomingRev* owner,
+                    slice docID, slice revID,
+                    slice historyBuf,
                     bool deleted,
                     bool noConflicts);
 
@@ -107,6 +107,7 @@ namespace litecore { namespace repl {
     };
 
 
+    /** Metadata of a blob to download. */
     struct PendingBlob {
         fleece::alloc_slice docID;
         fleece::alloc_slice docProperty;
