@@ -230,6 +230,8 @@ namespace litecore { namespace repl {
 
 
     void Replicator::endedDocument(ReplicatedRev *d) {
+        logDebug("documentEnded %.*s %.*s (%d/%d)", SPLAT(d->docID), SPLAT(d->revID),
+                 d->error.domain, d->error.code);
         d->trim(); // free up unneeded stuff
         if (_delegate)
             _docsEnded.push(d);

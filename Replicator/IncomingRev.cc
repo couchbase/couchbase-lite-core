@@ -213,15 +213,20 @@ namespace litecore { namespace repl {
                 response.makeError(c4ToBLIPError(_error));
             _revMessage->respond(response);
         }
-        if (_error.code == 0 && _peerError)
-            _error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
-        if (_error.code) {
-            documentGotError(_rev, _error, false);
-        } else if (_rev->flags & kRevIsConflict) {
-            // DBWorker::_insertRevision set this flag to indicate that the rev caused a conflict
-            // (though it did get inserted), so notify the delegate of the conflict:
-            documentGotError(_rev, {LiteCoreDomain, kC4ErrorConflict}, true);
+        
+        bool transient = false;
+        if (_error.code == 0) {
+            if (_peerError) {
+                _error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
+            } else if (_rev->flags & kRevIsConflict) {
+                // DBWorker::_insertRevision set this flag to indicate that the rev caused a conflict
+                // (though it did get inserted), so notify the delegate of the conflict:
+                _error = c4error_make(LiteCoreDomain, kC4ErrorConflict, nullslice);
+                transient = true;
+            }
         }
+        if (_error.code)
+            documentGotError(_rev, _error, transient);
 
         // Free up memory now that I'm done:
         Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
