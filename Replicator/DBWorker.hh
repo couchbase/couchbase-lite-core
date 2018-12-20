@@ -140,7 +140,7 @@ namespace litecore { namespace repl {
         void dbChanged();
 
         fleece::slice getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
-        fleece::Dict getRemoteAncestorRev(C4Document*, const RevToSend&);
+        fleece::Dict getDeltaSourceRev(C4Document*, const RevToSend&);
         static std::string revHistoryString(C4Document*, const RevToSend&);
         void writeRevWithLegacyAttachments(fleece::Encoder&,
                                            fleece::Dict rev,

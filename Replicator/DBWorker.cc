@@ -335,6 +335,12 @@ namespace litecore { namespace repl {
         return Value::fromData(revisionBody, kFLTrusted).asDict();
     }
 
+    static Dict getDocRoot(C4Document *doc, slice revID) {
+        if (c4doc_selectRevision(doc, revID, true, nullptr) && c4doc_loadRevisionBody(doc, nullptr))
+            return getDocRoot(doc);
+        return nullptr;
+    }
+
 
     void DBWorker::getChanges(const GetChangesParams &params, Pusher *pusher)
     {
@@ -582,27 +588,40 @@ namespace litecore { namespace repl {
     bool DBWorker::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
         C4Error err;
         c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
-        if (doc && c4doc_selectRevision(doc, revID, false, &err)) {
+        if (!doc) {
+            ancestors.resize(0);
+            if (!isNotFoundError(err))
+                gotError(err);
+            return false;
+        }
+
+        alloc_slice remoteRevID;
+        if (_remoteDBID)
+            remoteRevID = c4doc_getRemoteAncestor(doc, _remoteDBID);
+
+        if (c4doc_selectRevision(doc, revID, false, &err)) {
             // I already have this revision. Make sure it's marked as current for this remote:
-            if (_remoteDBID) {
-                alloc_slice remoteRevID(c4doc_getRemoteAncestor(doc, _remoteDBID));
-                if (remoteRevID != revID)
-                    updateRemoteRev(doc);
-            }
+            if (remoteRevID != revID && _remoteDBID)
+                updateRemoteRev(doc);
             return true;
         }
-        
+
+        auto addAncestor = [&]() {
+            if (_disableDeltaSupport || c4doc_hasRevisionBody(doc))  // need body for deltas
+                ancestors.emplace_back(doc->selectedRev.revID);
+        };
+
+        // Revision isn't found, but look for ancestors. Start with the common ancestor:
         ancestors.resize(0);
-        if (doc) {
-            // Revision isn't found, but look for ancestors:
-            if (c4doc_selectFirstPossibleAncestorOf(doc, revID)) {
-                do {
-                    ancestors.emplace_back(doc->selectedRev.revID);
-                } while (c4doc_selectNextPossibleAncestorOf(doc, revID)
-                         && ancestors.size() < kMaxPossibleAncestors);
-            }
-        } else if (!isNotFoundError(err)) {
-            gotError(err);
+        if (c4doc_selectRevision(doc, remoteRevID, true, &err))
+            addAncestor();
+
+        if (c4doc_selectFirstPossibleAncestorOf(doc, revID)) {
+            do {
+                if (doc->selectedRev.revID != remoteRevID)
+                    addAncestor();
+            } while (c4doc_selectNextPossibleAncestorOf(doc, revID)
+                     && ancestors.size() < kMaxPossibleAncestors);
         }
         return false;
     }
@@ -705,7 +724,7 @@ namespace litecore { namespace repl {
                                  && !_disableDeltaSupport
                                  && revisionBody.size >= tuning::kMinBodySizeForDelta) {
                 // Delta-encode:
-                Dict ancestor = getRemoteAncestorRev(doc, *request);
+                Dict ancestor = getDeltaSourceRev(doc, *request);
                 if (ancestor) {
                     delta = FLCreateJSONDelta(ancestor, root);
                     if (!delta)
@@ -788,12 +807,21 @@ namespace litecore { namespace repl {
     }
 
 
-    Dict DBWorker::getRemoteAncestorRev(C4Document* doc, const RevToSend &request) {
-        if (!request.remoteAncestorRevID)
-            return nullptr;
-        if (!c4doc_selectRevision(doc, request.remoteAncestorRevID, true, nullptr))
-            return nullptr;
-        return getDocRoot(doc);
+    // Returns the source of the delta to send for a given RevToSend
+    Dict DBWorker::getDeltaSourceRev(C4Document* doc, const RevToSend &request) {
+        if (request.remoteAncestorRevID) {
+            Dict src = getDocRoot(doc, request.remoteAncestorRevID);
+            if (src)
+                return src;
+        }
+        if (request.ancestorRevIDs) {
+            for (auto revID : *request.ancestorRevIDs) {
+                Dict src = getDocRoot(doc, revID);
+                if (src)
+                    return src;
+            }
+        }
+        return nullptr;
     }
 
 

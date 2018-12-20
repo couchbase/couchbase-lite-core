@@ -70,14 +70,13 @@ namespace litecore { namespace repl {
         void addRemoteAncestor(slice revID);
         bool hasRemoteAncestor(slice revID) const;
 
+        std::unique_ptr<std::set<alloc_slice>> ancestorRevIDs;    // Known ancestor revIDs the peer already has
+
         Dir dir() const override                    {return Dir::kPushing;}
         void trim() override;
         
     protected:
         ~RevToSend() =default;
-
-    private:
-        std::unique_ptr<std::set<alloc_slice>> ancestorRevIDs;    // Known ancestor revIDs the peer already has
     };
 
     typedef std::vector<Retained<RevToSend>> RevToSendList;

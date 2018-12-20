@@ -8,6 +8,7 @@
 
 #include "ReplicatorLoopbackTest.hh"
 #include "Worker.hh"
+#include "IncomingRev.hh"
 #include "Timer.hh"
 #include "Database.hh"
 #include "PrebuiltCopier.hh"
@@ -1305,9 +1306,15 @@ static void mutateProperty(C4Database *db, fleece::Encoder &enc, slice docID, ma
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push", "[Push][Pull]") {
     auto serverOpts = Replicator::Options::passive();
 
+    SECTION("Default") {
+    }
+    SECTION("NoConflicts") {
+        serverOpts.setNoIncomingConflicts();
+    }
+
     importJSONLines(sFixturesDir + "names_100.json");
     _expectedDocumentCount = 100;
-    runPushReplication();
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     compareDatabases();
     validateCheckpoints(db, db2, "{\"local\":100}");
 
@@ -1323,6 +1330,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push", "[Push][Pull]") {
 
     Log("-------- Second Replication --------");
     _expectedDocumentCount = (100+6)/7;
-    runPushReplication();
+    IncomingRev::gNumDeltasApplied = 0;
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     compareDatabases();
+    CHECK(IncomingRev::gNumDeltasApplied == 15);
 }

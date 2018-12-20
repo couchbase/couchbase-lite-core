@@ -87,6 +87,9 @@ namespace litecore { namespace repl {
         if (deltaSrcRevID) {
             _dbWorker->applyDelta(_rev->docID, deltaSrcRevID, _revMessage->body(),
                                   asynchronize([this](alloc_slice body, C4Error err) {
+#if DEBUG
+                ++gNumDeltasApplied;
+#endif
                 processBody(body, err);
             }));
         } else {
@@ -246,6 +249,11 @@ namespace litecore { namespace repl {
             return kC4Stopped;
         }
     }
+
+
+#if DEBUG
+    atomic<unsigned> IncomingRev::gNumDeltasApplied;
+#endif
 
 } }
 

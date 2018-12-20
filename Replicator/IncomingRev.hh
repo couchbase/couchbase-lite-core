@@ -20,6 +20,7 @@
 #include "Worker.hh"
 #include "ReplicatorTypes.hh"
 #include "function_ref.hh"
+#include <atomic>
 #include <vector>
 
 namespace litecore { namespace repl {
@@ -44,6 +45,10 @@ namespace litecore { namespace repl {
         RevToInsert* rev() const                {return _rev;}
         slice remoteSequence() const            {return _remoteSequence;}
         C4Error error() const                   {return _error;}
+
+#if DEBUG
+        static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
+#endif
 
     protected:
         ActivityLevel computeActivityLevel() const override;
