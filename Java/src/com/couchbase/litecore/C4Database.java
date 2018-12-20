@@ -281,6 +281,8 @@ public class C4Database implements C4Constants {
                                          int push, int pull,
                                          byte[] options,
                                          C4ReplicatorListener listener,
+                                         C4ReplicationFilter pushFilter,
+                                         C4ReplicationFilter pullFilter,
                                          Object replicatorContext,
                                          int socketFactoryContext,
                                          int framing)
@@ -290,6 +292,8 @@ public class C4Database implements C4Constants {
                 push, pull,
                 options,
                 listener,
+                pushFilter,
+                pullFilter,
                 replicatorContext,
                 socketFactoryContext,
                 framing);

@@ -43,11 +43,16 @@ public class C4Replicator {
     private static Map<Long, C4Replicator> reverseLookupTable
             = Collections.synchronizedMap(new HashMap<Long, C4Replicator>());
 
+    private static Map<Long, C4Replicator> reverseLookupTable2
+            = Collections.synchronizedMap(new HashMap<Long, C4Replicator>());
+
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
     private long handle = 0L; // hold pointer to C4Replicator
     private C4ReplicatorListener listener = null;
+    private C4ReplicationFilter pushFilter =  null;
+    private C4ReplicationFilter pullFilter = null;
     private Object context = null;
 
     //-------------------------------------------------------------------------
@@ -61,19 +66,26 @@ public class C4Replicator {
                  int push, int pull,
                  byte[] options,
                  C4ReplicatorListener listener,
+                 C4ReplicationFilter pushFilter,
+                 C4ReplicationFilter pullFilter,
                  Object replicatorContext,
                  int socketFactoryContext,
                  int framing) throws LiteCoreException {
         this.listener = listener;
         this.context = replicatorContext; // replicator context
+        this.pushFilter = pushFilter;
+        this.pullFilter = pullFilter;
         handle = createV2(db, schema, host, port, path, remoteDatabaseName,
                 otherLocalDB,
                 push, pull,
                 replicatorContext.hashCode(),
                 framing,
                 socketFactoryContext,
+                pushFilter,
+                pullFilter,
                 options);
         reverseLookupTable.put(handle, this);
+        reverseLookupTable2.put((long)replicatorContext.hashCode(), this);
     }
 
     C4Replicator(C4Database db, C4Socket openSocket, int push, int pull, byte[] options, Object replicatorContext) throws LiteCoreException {
@@ -172,6 +184,17 @@ public class C4Replicator {
         }
     }
 
+    private static boolean validationFunction(String docID, int flags, long dict, boolean isPush, long ctx)  {
+         C4Replicator repl = reverseLookupTable2.get(ctx);
+         if(repl != null ) {
+             if(isPush && repl.pushFilter != null)
+                 return repl.pushFilter.validationFunction(docID, flags, dict, isPush, repl.context);
+             else if(!isPush && repl.pullFilter != null)
+                 return repl.pullFilter.validationFunction(docID, flags, dict, isPush, repl.context);
+         }
+         return true;
+    }
+
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
@@ -197,6 +220,8 @@ public class C4Replicator {
                                 int socketFactoryContext,
                                 int framing,
                                 int replicatorContext,
+                                C4ReplicationFilter pushFilter,
+                                C4ReplicationFilter pullFilter,
                                 byte[] options) throws LiteCoreException;
 
     /**
