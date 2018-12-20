@@ -217,6 +217,7 @@ FLSlice_Equal
 FLSlice_Compare
 FLSliceResult_Retain
 FLSliceResult_Release
+FLSlice_Copy
 
 FLDoc_FromResultData
 FLDoc_FromJSON
