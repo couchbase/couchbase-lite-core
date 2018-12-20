@@ -517,11 +517,11 @@ namespace litecore {
 
         if(_objNames.find(objRef) == _objNames.end()) {
             _objNames.insert({objRef, nickname});
+            if (sCallback && level >= _callbackLogLevel())
+            invokeCallback(*this, level, "{%s#%u}==> %s @%p",
+                nickname.c_str(), objRef, description.c_str(), object);
         }
 
-        if (sCallback && level >= _callbackLogLevel())
-            invokeCallback(*this, level, "{%s#%u}==> %s @%p",
-                           nickname.c_str(), objRef, description.c_str(), object);
         return objRef;
     }
 
