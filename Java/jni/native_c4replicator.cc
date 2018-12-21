@@ -390,7 +390,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
     params.pushFilter = &pushFilterFunction;
     params.validationFunc = &validationFunction;
     params.onDocumentsEnded = &documentEndedCallback;
-	params.callbackContext = NULL;
+    params.callbackContext = NULL;
 
     C4Error error;
     C4Replicator *repl = c4repl_new((C4Database *) jdb,
