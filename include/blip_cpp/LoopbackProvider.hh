@@ -149,7 +149,7 @@ namespace litecore { namespace websocket {
             { }
 
             virtual std::string loggingIdentifier() const override {
-                return _webSocket->name();
+                return _webSocket ? _webSocket->name() : "[Already closed]";
             }
 
             virtual std::string loggingClassName() const override {
@@ -231,7 +231,8 @@ namespace litecore { namespace websocket {
             }
 
             virtual void _received(Retained<Message> message) {
-                Assert(_state == State::connected);
+                if (!connected())
+                    return;
                 logDebug("RECEIVED: %s", formatMsg(message->data, message->binary).c_str());
                 _webSocket->delegate().onWebSocketMessage(message);
             }
