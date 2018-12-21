@@ -47,9 +47,7 @@ namespace litecore { namespace repl {
 
         void revisionInserted()                 {enqueue(&IncomingRev::_revisionInserted);}
 
-#if DEBUG
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
-#endif
 
     protected:
         ActivityLevel computeActivityLevel() const override;
