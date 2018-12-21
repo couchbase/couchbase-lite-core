@@ -508,11 +508,11 @@ namespace c4Internal {
 #pragma mark - FACTORY:
 
 
-    Document* TreeDocumentFactory::newDocumentInstance(C4Slice docID) {
+    Retained<Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID) {
         return new TreeDocument(database(), docID);
     }
 
-    Document* TreeDocumentFactory::newDocumentInstance(const Record &doc) {
+    Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &doc) {
         return new TreeDocument(database(), doc);
     }
 

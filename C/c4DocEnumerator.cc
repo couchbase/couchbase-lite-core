@@ -80,7 +80,7 @@ struct C4DocEnumerator: fleece::InstanceCounted {
         return true;
     }
 
-    C4Document* getDoc() {
+    Retained<Document> getDoc() {
         return _e ? _database->documentFactory().newDocumentInstance(_e.record()) : nullptr;
     }
 
@@ -173,10 +173,10 @@ bool c4enum_getDocumentInfo(C4DocEnumerator *e, C4DocumentInfo *outInfo) noexcep
 
 C4Document* c4enum_getDocument(C4DocEnumerator *e, C4Error *outError) noexcept {
     return tryCatch<C4Document*>(outError, [&]{
-        auto c4doc = e->getDoc();
-        if (!c4doc)
+        Retained<Document> doc = e->getDoc();
+        if (!doc)
             clearError(outError);      // end of iteration is not an error
-        return c4doc;
+        return retain(doc.get());
     });
 }
 

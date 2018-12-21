@@ -35,8 +35,14 @@
 using namespace fleece::impl;
 
 
+C4Document* c4doc_retain(C4Document *doc) noexcept {
+    retain((Document*)doc);
+    return doc;
+}
+
+
 void c4doc_free(C4Document *doc) noexcept {
-    delete (Document*)doc;
+   release((Document*)doc);
 }
 
 
@@ -48,11 +54,10 @@ C4Document* c4doc_get(C4Database *database,
     return tryCatch<C4Document*>(outError, [&]{
         auto doc = database->documentFactory().newDocumentInstance(docID);
         if (mustExist && !asInternal(doc)->exists()) {
-            delete doc;
             doc = nullptr;
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
-        return doc;
+        return retain(doc.get());
     });
 }
 
@@ -64,11 +69,10 @@ C4Document* c4doc_getBySequence(C4Database *database,
     return tryCatch<C4Document*>(outError, [&]{
         auto doc = database->documentFactory().newDocumentInstance(database->defaultKeyStore().get(sequence));
         if (!asInternal(doc)->exists()) {
-            delete doc;
             doc = nullptr;
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
-        return doc;
+        return retain(doc.get());
     });
 }
 
@@ -312,7 +316,8 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
         }
 
         // Slow path: Load the doc and update the remote-ancestor info in the rev tree:
-        unique_ptr<Document> doc(asInternal(c4doc_get(database, docID, true, outError)));
+        Retained<Document> doc(asInternal(c4doc_get(database, docID, true, outError)));
+        release(doc.get());     // balances the +1 ref returned by c4doc_get()
         if (!doc)
             return false;
         bool found = false;
@@ -370,17 +375,15 @@ static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
     Record record(rq->docID);
     if (!rq->docID.buf)
         record.setKey(createDocUUID());
-    Document *idoc = asInternal(database->documentFactory().newDocumentInstance(record));
+    Retained<Document> idoc = database->documentFactory().newDocumentInstance(record);
     bool ok;
     if (rq->existingRevision)
         ok = (idoc->putExistingRevision(*rq, nullptr) >= 0);
     else
         ok = idoc->putNewRevision(*rq);
-    if (!ok) {
-        delete idoc;
-        return nullptr;
-    }
-    return idoc;
+    if (!ok)
+        idoc = nullptr;
+    return retain(idoc.get());
 }
 
 
@@ -395,7 +398,6 @@ C4Document* c4doc_getForPut(C4Database *database,
 {
     if (!database->mustBeInTransaction(outError))
         return nullptr;
-    Document *idoc = nullptr;
     try {
         alloc_slice newDocID;
         if (!docID.buf) {
@@ -403,7 +405,7 @@ C4Document* c4doc_getForPut(C4Database *database,
             docID = newDocID;
         }
 
-        idoc = asInternal(database->documentFactory().newDocumentInstance(docID));
+        Retained<Document> idoc = database->documentFactory().newDocumentInstance(docID);
         int code = 0;
 
         if (parentRevID.buf) {
@@ -428,10 +430,9 @@ C4Document* c4doc_getForPut(C4Database *database,
         if (code)
             recordError(LiteCoreDomain, code, outError);
         else
-            return idoc;
+            return retain(idoc.get());
 
     } catchError(outError)
-    delete idoc;
     return nullptr;
 }
 

@@ -160,8 +160,8 @@ namespace c4Internal {
         Database* database() const          {return _db;}
 
         virtual ~DocumentFactory() { }
-        virtual Document* newDocumentInstance(C4Slice docID) =0;
-        virtual Document* newDocumentInstance(const Record&) =0;
+        virtual Retained<Document> newDocumentInstance(C4Slice docID) =0;
+        virtual Retained<Document> newDocumentInstance(const Record&) =0;
         virtual alloc_slice revIDFromVersion(slice version) =0;
         virtual bool isFirstGenRevID(slice revID)               {return false;}
 
@@ -174,8 +174,8 @@ namespace c4Internal {
     class TreeDocumentFactory : public DocumentFactory {
     public:
         TreeDocumentFactory(Database *db)   :DocumentFactory(db) { }
-        Document* newDocumentInstance(C4Slice docID) override;
-        Document* newDocumentInstance(const Record&) override;
+        Retained<Document> newDocumentInstance(C4Slice docID) override;
+        Retained<Document> newDocumentInstance(const Record&) override;
         alloc_slice revIDFromVersion(slice version) override;
         bool isFirstGenRevID(slice revID) override;
         static slice fleeceAccessor(slice docBody);

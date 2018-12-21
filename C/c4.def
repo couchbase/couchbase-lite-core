@@ -51,6 +51,7 @@ c4raw_get
 c4raw_put
 
 c4doc_generateID
+c4doc_retain
 c4doc_free
 c4doc_get
 c4doc_getBySequence

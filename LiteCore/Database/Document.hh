@@ -45,7 +45,7 @@ namespace c4Internal {
         This is an abstract base class whose concrete subclasses are TreeDocument (rev-trees) 
         and VectorDocument (version-vectors).
         Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
-    class Document : public C4Document, fleece::InstanceCountedIn<Document> {
+    class Document : public RefCounted, public C4Document, fleece::InstanceCountedIn<Document> {
     public:
         alloc_slice _docIDBuf;
         alloc_slice _revIDBuf;
@@ -57,8 +57,6 @@ namespace c4Internal {
         { }
 
         Document(const Document&) =default;
-
-        virtual ~Document() { }
 
         // Returns a new Document object identical to this one (doesn't copy the doc in the db!)
         virtual Document* copy() =0;
@@ -179,6 +177,8 @@ namespace c4Internal {
         static bool blobIsCompressible(const fleece::impl::Dict *meta);
 
     protected:
+        virtual ~Document() { }
+
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;
             selectedRev.revID = {};

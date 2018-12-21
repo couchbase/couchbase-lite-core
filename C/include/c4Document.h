@@ -90,13 +90,15 @@ extern "C" {
         the mustExist flag. If it's true, NULL is returned. If it's false, a valid but empty
         C4Document is returned, that doesn't yet exist in the database (but will be added when
         saved.)
-        The current revision is selected (if the document exists.) */
+        The current revision is selected (if the document exists.)
+        You must call `c4doc_release()` when finished with the document. */
     C4Document* c4doc_get(C4Database *database C4NONNULL,
                           C4String docID,
                           bool mustExist,
                           C4Error *outError) C4API;
 
-    /** Gets a document from the database given its sequence number. */
+    /** Gets a document from the database given its sequence number.
+        You must call `c4doc_release()` when finished with the document.  */
     C4Document* c4doc_getBySequence(C4Database *database C4NONNULL,
                                     C4SequenceNumber,
                                     C4Error *outError) C4API;
@@ -108,8 +110,13 @@ extern "C" {
                     uint32_t maxRevTreeDepth,
                     C4Error *outError) C4API;
 
-    /** Frees a C4Document. */
+    /** Increments the ref-count of a C4Document. */
+    C4Document* c4doc_retain(C4Document *doc) C4API;
+
     void c4doc_free(C4Document *doc) C4API;
+
+    /** Decrements the ref-count of a C4Document, freeing it when it reaches zero. */
+    static inline void c4doc_release(C4Document *doc)    {c4doc_free(doc);}
 
     /** @} */
     
