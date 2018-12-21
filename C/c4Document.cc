@@ -331,19 +331,24 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
 #pragma mark - SAVING:
 
 
-static alloc_slice createDocUUID() {
+char* c4doc_generateID(char *docID, size_t bufferSize) noexcept {
+    if (bufferSize < kC4GeneratedIDLength + 1)
+        return nullptr;
     static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                    "0123456789-_";
-    const unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
-    uint8_t r[kLength];
+    "0123456789-_";
+    uint8_t r[kC4GeneratedIDLength - 1];
     SecureRandomize({r, sizeof(r)});
-
-    alloc_slice docIDSlice(1+kLength);
-    char *docID = (char*)docIDSlice.buf;
-    docID[0] = '-';
-    for (unsigned i = 0; i < kLength; ++i)
+    docID[0] = '~';
+    for (unsigned i = 0; i < sizeof(r); ++i)
         docID[i+1] = kBase64[r[i] % 64];
-    return docIDSlice;
+    docID[kC4GeneratedIDLength] = '\0';
+    return docID;
+}
+
+
+static alloc_slice createDocUUID() {
+    char docID[kC4GeneratedIDLength + 1];
+    return alloc_slice(c4doc_generateID(docID, sizeof(docID)));
 }
 
 

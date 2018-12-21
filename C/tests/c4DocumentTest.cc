@@ -24,6 +24,23 @@
 using namespace fleece;
 
 
+TEST_CASE("Generate docID", "[Database][C]") {
+    char buf[kC4GeneratedIDLength + 1];
+    CHECK(c4doc_generateID(buf, 0) == nullptr);
+    CHECK(c4doc_generateID(buf, kC4GeneratedIDLength) == nullptr);
+    for (int pass = 0; pass < 10; ++pass) {
+        REQUIRE(c4doc_generateID(buf, sizeof(buf)) == buf);
+        C4Log("docID = '%s'", buf);
+        REQUIRE(strlen(buf) == kC4GeneratedIDLength);
+        CHECK(buf[0] == '~');
+        for (int i = 1; i < strlen(buf); ++i) {
+            bool validChar = isalpha(buf[i]) || isdigit(buf[i]) || buf[i] == '_' || buf[i] == '-';
+            CHECK(validChar);
+        }
+    }
+}
+
+
 N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Database][C]") {
     c4log_warnOnErrors(false);
     TransactionHelper t(db);

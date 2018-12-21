@@ -78,6 +78,14 @@ extern "C" {
         @{ */
 
 
+    #define kC4GeneratedIDLength 23
+
+    /** Generates a random 23-byte C string suitable for use as a unique new document ID.
+        @param buffer  Where to write the string.
+        @param bufferSize  Size of the buffer (must be at least kC4GeneratedIDLength + 1)
+        @return  A pointer to the string in the buffer, or NULL if the buffer is too small. */
+    char* c4doc_generateID(char *buffer C4NONNULL, size_t bufferSize) C4API;
+
     /** Gets a document from the database. If there's no such document, the behavior depends on
         the mustExist flag. If it's true, NULL is returned. If it's false, a valid but empty
         C4Document is returned, that doesn't yet exist in the database (but will be added when
