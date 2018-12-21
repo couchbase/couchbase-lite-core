@@ -169,6 +169,10 @@ public class C4Document extends RefCounted implements C4Constants {
         return isSelectedRevFlags(C4RevisionFlags.kRevDeleted);
     }
 
+    public boolean accessRemoved() {
+        return isSelectedRevFlags(C4RevisionFlags.kRevPurged);
+    }
+
     public boolean conflicted() {
         return isFlags(C4DocumentFlags.kDocConflicted);
     }

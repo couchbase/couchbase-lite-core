@@ -48,6 +48,18 @@ static jfieldID f_C4ReplStatus_errorDomain;
 static jfieldID f_C4ReplStatus_errorCode;
 static jfieldID f_C4ReplStatus_errorInternalInfo;
 
+//C4DocumentEnded
+static jclass cls_C4DocEnded;
+static jmethodID m_C4DocEnded_init;
+static jfieldID f_C4DocEnded_docID;
+static jfieldID f_C4DocEnded_revID;
+static jfieldID f_C4DocEnded_flags;
+static jfieldID f_C4DocEnded_sequence;
+static jfieldID f_C4DocEnded_errorIsTransient;
+static jfieldID f_C4DocEnded_errorDomain;
+static jfieldID f_C4DocEnded_errorCode;
+static jfieldID f_C4DocEnded_errorInternalInfo;
+
 bool litecore::jni::initC4Replicator(JNIEnv *env) {
     // Find `C4Replicator` class and `statusChangedCallback(long, C4ReplicatorStatus )` static method for callback
     {
@@ -67,7 +79,7 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
 
         m_C4Replicator_documentEndedCallback = env->GetStaticMethodID(cls_C4Replicator,
                                                                       "documentEndedCallback",
-                                                                      "(JZLjava/lang/String;Ljava/lang/String;IIIIZ)V");
+                                                                      "(JZ[Lcom/couchbase/litecore/C4DocumentEnded;)V");
 
         if (!m_C4Replicator_documentEndedCallback)
             return false;
@@ -125,6 +137,53 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
         if (!f_C4ReplStatus_errorInternalInfo)
             return false;
     }
+
+    // C4DocumentEnded, constructor, and fields
+    {
+        jclass localClass = env->FindClass("com/couchbase/litecore/C4DocumentEnded");
+        if (!localClass)
+            return false;
+
+        cls_C4DocEnded = reinterpret_cast<jclass>(env->NewGlobalRef(localClass));
+        if (!cls_C4DocEnded)
+            return false;
+
+        m_C4DocEnded_init = env->GetMethodID(cls_C4DocEnded, "<init>", "()V");
+        if (!m_C4DocEnded_init)
+            return false;
+
+        f_C4DocEnded_docID = env->GetFieldID(cls_C4DocEnded, "docID", "Ljava/lang/String;");
+        if (!f_C4DocEnded_docID)
+            return false;
+
+        f_C4DocEnded_revID = env->GetFieldID(cls_C4DocEnded, "revID", "Ljava/lang/String;");
+        if (!f_C4DocEnded_revID)
+            return false;
+
+        f_C4DocEnded_flags = env->GetFieldID(cls_C4DocEnded, "flags", "I");
+        if (!f_C4DocEnded_flags)
+            return false;
+
+        f_C4DocEnded_sequence = env->GetFieldID(cls_C4DocEnded, "sequence", "J");
+        if (!f_C4DocEnded_sequence)
+            return false;
+
+        f_C4DocEnded_errorIsTransient = env->GetFieldID(cls_C4DocEnded, "errorIsTransient", "Z");
+        if (!f_C4DocEnded_errorIsTransient)
+            return false;
+
+        f_C4DocEnded_errorDomain = env->GetFieldID(cls_C4DocEnded, "errorDomain", "I");
+        if (!f_C4DocEnded_errorDomain)
+            return false;
+
+        f_C4DocEnded_errorCode = env->GetFieldID(cls_C4DocEnded, "errorCode", "I");
+        if (!f_C4DocEnded_errorCode)
+            return false;
+
+        f_C4DocEnded_errorInternalInfo = env->GetFieldID(cls_C4DocEnded, "errorInternalInfo", "I");
+        if (!f_C4DocEnded_errorInternalInfo)
+            return false;
+    }
     return true;
 }
 
@@ -140,6 +199,28 @@ static jobject toJavaObject(JNIEnv *env, C4ReplicatorStatus status) {
     env->SetIntField(obj, f_C4ReplStatus_errorCode, (int) status.error.code);
     env->SetIntField(obj, f_C4ReplStatus_errorInternalInfo, (int) status.error.internal_info);
     return obj;
+}
+
+static jobject toJavaDocumentEnded(JNIEnv *env, const C4DocumentEnded *document) {
+    jobject obj = env->NewObject(cls_C4DocEnded, m_C4DocEnded_init);
+    env->SetObjectField(obj, f_C4DocEnded_docID, toJString(env, document->docID));
+    env->SetObjectField(obj, f_C4DocEnded_revID, toJString(env,document->revID));
+    env->SetIntField(obj, f_C4DocEnded_flags, (int) document->flags);
+    env->SetLongField(obj, f_C4DocEnded_sequence, (long) document->sequence);
+    env->SetBooleanField(obj, f_C4DocEnded_errorIsTransient, (bool)document->errorIsTransient);
+    env->SetIntField(obj, f_C4DocEnded_errorDomain, (int) document->error.domain);
+    env->SetIntField(obj, f_C4DocEnded_errorCode, (int) document->error.code);
+    env->SetIntField(obj, f_C4DocEnded_errorInternalInfo, (int) document->error.internal_info);
+    return obj;
+}
+
+static jobjectArray toJavaDocumentEndedArray(JNIEnv *env, int arraySize, const C4DocumentEnded* array[]) {
+    jobjectArray ds = env->NewObjectArray(arraySize, cls_C4DocEnded, NULL);
+    for (int i = 0; i < arraySize; i++) {
+        jobject d = toJavaDocumentEnded(env, array[i]);
+        env->SetObjectArrayElement(ds, i, d);
+    }
+    return ds;
 }
 
 /**
@@ -177,16 +258,12 @@ static void statusChangedCallback(C4Replicator *repl, C4ReplicatorStatus status,
  *
  * @param repl
  * @param pushing
- * @param docID
- * @param revID
- * @param flags
- * @param error
- * @param transient
+ * @param numDocs
+ * @param documentEnded
  * @param ctx
  */
-static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString docID,
-                                  C4HeapString revID, C4RevisionFlags flags, C4Error error,
-                                  bool transient, void *ctx) {
+static void documentEndedCallback(C4Replicator *repl, bool pushing, size_t numDocs,
+                                  const C4DocumentEnded* documentEnded[], void *ctx) {
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     if (getEnvStat == JNI_OK) {
@@ -194,20 +271,14 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, C4HeapString
                                   m_C4Replicator_documentEndedCallback,
                                   (jlong) repl,
                                   pushing,
-                                  toJString(env, docID),
-                                  toJString(env, revID),
-                                  flags,
-                                  error.domain, error.code, error.internal_info, transient);
+                                  toJavaDocumentEndedArray(env, numDocs, documentEnded));
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
             env->CallStaticVoidMethod(cls_C4Replicator,
                                       m_C4Replicator_documentEndedCallback,
                                       (jlong) repl,
                                       pushing,
-                                      toJString(env, docID),
-                                      toJString(env, revID),
-                                      flags,
-                                      error.domain, error.code, error.internal_info, transient);
+                                      toJavaDocumentEndedArray(env, numDocs, documentEnded));
             if (gJVM->DetachCurrentThread() != 0)
                 LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
         } else {
@@ -316,10 +387,10 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
     params.pull = (C4ReplicatorMode) jpull;
     params.optionsDictFleece = options;
     params.onStatusChanged = &statusChangedCallback;
-    params.onDocumentEnded = &documentEndedCallback;
     params.pushFilter = &pushFilterFunction;
     params.validationFunc = &validationFunction;
-    params.callbackContext = NULL;
+    params.onDocumentsEnded = &documentEndedCallback;
+	params.callbackContext = NULL;
 
     C4Error error;
     C4Replicator *repl = c4repl_new((C4Database *) jdb,
@@ -382,7 +453,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
     params.pull = (C4ReplicatorMode) jpull;
     params.optionsDictFleece = options;
     params.onStatusChanged = &statusChangedCallback;
-    params.onDocumentEnded = &documentEndedCallback;
+	params.onDocumentsEnded = &documentEndedCallback;
     if(pushFilter) {
         params.pushFilter = &pushFilterFunction;
     }
