@@ -57,7 +57,7 @@ public class C4Log {
     static void logCallback(String domainName, int level, String message) {
         recalculateLevels();
 
-        LogDomain domain = LogDomain.COUCHBASE;
+        LogDomain domain = LogDomain.DATABASE;
         if(DomainObjects.containsKey(domainName)) {
             domain = DomainObjects.get(domainName);
         }
