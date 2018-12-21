@@ -17,7 +17,6 @@
 //
 package com.couchbase.litecore;
 
-import android.content.Context;
 import android.util.Log;
 
 import java.util.Collections;
@@ -166,21 +165,17 @@ public class C4Replicator {
     }
 
     private static void documentEndedCallback(long handle, boolean pushing,
-                                              String docID, String revID, int flags,
-                                              int domain, int code, int internalInfo, boolean trans) {
-        Log.e(TAG, "documentErrorCallback() handle -> " + handle +
-                ", pushing -> " + pushing +
-                ", docID -> " + docID +
-                ", rebID -> " + revID +
-                ", domain -> " + domain +
-                ", code -> " + code +
-                ", internalInfo -> " + internalInfo +
-                ", trans -> " + trans);
+                                              C4DocumentEnded[] documentsEnded) {
 
         C4Replicator repl = reverseLookupTable.get(handle);
-        if (repl != null && repl.listener != null) {
-            repl.listener.documentEnded(repl, pushing, docID, revID, flags,
-                    new C4Error(domain, code, internalInfo), trans, repl.context);
+        for (C4DocumentEnded documentEnded:documentsEnded) {
+            Log.e(TAG, "documentErrorCallback() handle -> " + handle +
+                    ", pushing -> " + pushing);
+
+            if (repl != null && repl.listener != null) {
+                repl.listener.documentEnded(repl, pushing, documentsEnded,
+                        repl.context);
+            }
         }
     }
 
