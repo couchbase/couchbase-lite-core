@@ -453,7 +453,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
     params.pull = (C4ReplicatorMode) jpull;
     params.optionsDictFleece = options;
     params.onStatusChanged = &statusChangedCallback;
-	params.onDocumentsEnded = &documentEndedCallback;
+    params.onDocumentsEnded = &documentEndedCallback;
     if(pushFilter) {
         params.pushFilter = &pushFilterFunction;
     }
