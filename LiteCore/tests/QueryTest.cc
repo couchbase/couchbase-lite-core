@@ -915,12 +915,20 @@ TEST_CASE_METHOD(QueryTest, "Query Distance Metrics", "[Query]") {
 
 TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
     // Calculate offset
-    time_t rawtime = time(nullptr);
-    struct tm* ptm;
+    time_t rawtime = 1540252800; // 2018-10-23 midnight GMT
     struct tm gbuf;
-    ptm = gmtime_r(&rawtime, &gbuf);
-    time_t gmt = mktime(ptm);
-    auto diffTotal = (int)(difftime(rawtime, gmt) / 60.0);
+    struct tm lbuf;
+    gmtime_r(&rawtime, &gbuf);
+    localtime_r(&rawtime, &lbuf);
+    time_t gmt = mktime(&gbuf);
+    auto diff = (int)difftime(rawtime, gmt);
+    if(lbuf.tm_isdst > 0) {
+        // mktime uses GMT, but we want UTC which is unaffected
+        // by DST
+        diff += 3600;
+    }
+    
+    auto diffTotal = (int)(diff / 60.0);
     auto diffHour = (int)(diffTotal / 60.0);
     auto diffMinute = diffTotal % 60;
     
