@@ -7,8 +7,8 @@ Param(
 )
 
 # To fake an official build for testing purposes, uncomment these two lines:
-$env:BLD_NUM=54321
-$env:VERSION="abcdefabcdef"
+# $env:BLD_NUM=54321
+# $env:VERSION="abcdefabcdef"
 
 $Official="false"
 $Top = (Invoke-Expression '& $gitPath rev-parse --show-toplevel').Replace("/","\\");
