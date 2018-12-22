@@ -22,6 +22,12 @@ public class C4Error {
     private int code = 0;          // C4Error.code
     private int internalInfo = 0;  // C4Error.internal_info
 
+    public C4Error() {
+        domain = 0;        // C4Error.domain
+        code = 0;          // C4Error.code
+        internalInfo = 0;
+    }
+
     public C4Error(int domain, int code, int internalInfo) {
         this.domain = domain;
         this.code = code;
