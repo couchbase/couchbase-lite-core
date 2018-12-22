@@ -89,13 +89,15 @@ C4StringResult c4_getVersion() C4API {
 #else
     #ifdef COUCHBASE_ENTERPRISE
     static const char *ee = "-EE";
+    string commit = format("%.8s+%.8s", GitCommitEE, GitCommit);
     #else
-        static const char *ee = "";
+    static const char *ee = "";
+    string commit = format("%.8s", GitCommit);
     #endif
     if (strcmp(GitBranch, "master") == (0) || strcmp(GitBranch, "HEAD") == (0))
-        vers = format("%s%s (%.8s%.1s)", LiteCoreVersion, ee, GitCommit, GitDirty);
+        vers = format("%s%s (%s%.1s)", LiteCoreVersion, ee, commit.c_str(), GitDirty);
     else
-        vers = format("%s%s (%s:%.8s%.1s)", LiteCoreVersion, ee, GitBranch, GitCommit, GitDirty);
+        vers = format("%s%s (%s:%s%.1s)", LiteCoreVersion, ee, GitBranch, commit.c_str(), GitDirty);
 #endif
     return sliceResult(vers);
 }

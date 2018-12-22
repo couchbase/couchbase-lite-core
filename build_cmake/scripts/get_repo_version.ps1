@@ -41,7 +41,11 @@ if((Test-Path env:BLD_NUM) -And (Test-Path env:VERSION)) {
     $GitDirty = ""
   }
   $BuildNum=""
-  $Version=""
+  $Version="0.0.0"
+}
+
+if(!$env:LITECORE_VERSION_STRING) {
+    $env:LITECORE_VERSION_STRING=$Version
 }
 
 $outContent = @"

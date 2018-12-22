@@ -27,7 +27,11 @@ else
   GIT_BRANCH=`git rev-parse --symbolic-full-name HEAD | sed -e 's/refs\/heads\///'`
   GIT_DIRTY=$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)
   BUILD_NUM=""
-  VERSION=""
+  VERSION="0.0.0"
+fi
+
+if [[ -z $LITECORE_VERSION_STRING ]]; then
+    LITECORE_VERSION_STRING=$VERSION
 fi
 
 echo "#define GitCommit \"$GIT_COMMIT\"" $'\n'\
