@@ -166,16 +166,13 @@ public class C4Replicator {
 
     private static void documentEndedCallback(long handle, boolean pushing,
                                               C4DocumentEnded[] documentsEnded) {
-
         C4Replicator repl = reverseLookupTable.get(handle);
-        for (C4DocumentEnded documentEnded:documentsEnded) {
-            Log.e(TAG, "documentErrorCallback() handle -> " + handle +
-                    ", pushing -> " + pushing);
+        Log.e(TAG, "documentErrorCallback() handle -> " + handle +
+                ", pushing -> " + pushing);
 
-            if (repl != null && repl.listener != null) {
-                repl.listener.documentEnded(repl, pushing, documentsEnded,
-                        repl.context);
-            }
+        if (repl != null && repl.listener != null) {
+            repl.listener.documentEnded(repl, pushing, documentsEnded,
+                    repl.context);
         }
     }
 
