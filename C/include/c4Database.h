@@ -120,17 +120,18 @@ extern "C" {
         to c4db_free, to avoid leaks. */
     C4Database* c4db_retain(C4Database* db);
 
-    /** Frees a database handle, closing the database first if it's still open.
-        (More precisely, this decrements the handle's reference count. The handle is only freed
-        if the count reaches zero, which it will unless c4db_retain has previously been called.) */
     void c4db_free(C4Database* database) C4API;
 
+    /** Decrements the ref-count of a C4Database,
+        closing and freeing it if the ref-count hits zero. */
+    static inline void c4db_release(C4Database* db)    {c4db_free(db);}
+
     /** Closes the database. Does not free the handle, although any operation other than
-        c4db_free() will fail with an error. */
+        c4db_release() will fail with an error. */
     bool c4db_close(C4Database* database, C4Error *outError) C4API;
 
     /** Closes the database and deletes the file/bundle. Does not free the handle, although any
-        operation other than c4db_free() will fail with an error. */
+        operation other than c4db_release() will fail with an error. */
     bool c4db_delete(C4Database* database C4NONNULL, C4Error *outError) C4API;
 
     /** Deletes the file(s) for the database at the given path.
