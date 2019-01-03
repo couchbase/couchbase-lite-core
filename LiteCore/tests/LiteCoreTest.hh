@@ -35,6 +35,9 @@
 #define REQUIRE_IF_DEBUG(x)
 #endif
 
+namespace fleece { namespace impl {
+    class Encoder;
+} }
 using namespace fleece;
 
 
@@ -109,6 +112,9 @@ public:
     void deleteDatabase(const FilePath &dbPath);
     DataFile* newDatabase(const FilePath &path, const DataFile::Options* =nullptr);
     void reopenDatabase(const DataFile::Options *newOptions =nullptr);
+
+    sequence_t writeDoc(slice docID, DocumentFlags, Transaction&,
+                        function<void(fleece::impl::Encoder&)>);
 };
 
 

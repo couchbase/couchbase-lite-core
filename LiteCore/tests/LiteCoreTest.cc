@@ -22,6 +22,7 @@
 #include "PlatformIO.hh"
 #include "StringUtil.hh"
 #include "c4Private.h"
+#include "Encoder.hh"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <mutex>
@@ -259,4 +260,19 @@ void DataFileTestFixture::deleteDatabase() {
 DataFileTestFixture::~DataFileTestFixture() {
     if (db)
         deleteDatabase();
+}
+
+
+
+sequence_t DataFileTestFixture::writeDoc(slice docID,
+                                         DocumentFlags flags,
+                                         Transaction &t,
+                                         function<void(fleece::impl::Encoder&)> writeProperties)
+{
+    fleece::impl::Encoder enc;
+    enc.beginDictionary();
+    writeProperties(enc);
+    enc.endDictionary();
+    alloc_slice body = enc.finish();
+    return store->set(docID, nullslice, body, flags, t);
 }

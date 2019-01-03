@@ -39,20 +39,14 @@ protected:
 
     sequence_t writeNumberedDoc(int i, slice str, Transaction &t,
                                        DocumentFlags flags =DocumentFlags::kNone) {
-        string docID = stringWithFormat("rec-%03d", i);
-
-        fleece::impl::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("num");
-        enc.writeInt(i);
-        if (str) {
-            enc.writeKey("str");
-            enc.writeString(str);
-        }
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-
-        return store->set(slice(docID), nullslice, body, flags, t);
+        return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
+            enc.writeKey("num");
+            enc.writeInt(i);
+            if (str) {
+                enc.writeKey("str");
+                enc.writeString(str);
+            }
+        });
     }
 
     // Write 100 docs with Fleece bodies of the form {"num":n} where n is the rec #
@@ -65,19 +59,13 @@ protected:
 
     sequence_t writeArrayDoc(int i, Transaction &t,
                                     DocumentFlags flags =DocumentFlags::kNone) {
-        string docID = stringWithFormat("rec-%03d", i);
-
-        fleece::impl::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("numbers");
-        enc.beginArray();
-        for (int j = max(i-5, 1); j <= i; j++)
-            enc.writeString(numberString(j));
-        enc.endArray();
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-
-        return store->set(slice(docID), nullslice, body, flags, t);
+        return writeDoc(slice(stringWithFormat("rec-%03d", i)), flags, t, [=](Encoder &enc) {
+            enc.writeKey("numbers");
+            enc.beginArray();
+            for (int j = max(i-5, 1); j <= i; j++)
+                enc.writeString(numberString(j));
+            enc.endArray();
+        });
     }
 
     void addArrayDocs(int first =1, int n =100) {
@@ -88,88 +76,54 @@ protected:
     }
 
     void writeMultipleTypeDocs(Transaction &t) {
-        string docID = "doc1";
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.beginArray();
+            enc.writeInt(1);
+            enc.endArray();
+        });
 
-        fleece::impl::Encoder enc;
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.beginArray();
-        enc.writeInt(1);
-        enc.endArray();
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("cool value");
+        });
 
-        enc.reset();
-        docID = "doc2";
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.writeString("cool value");
-        enc.endDictionary();
-        body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeDouble(4.5);
+        });
 
-        enc.reset();
-        docID = "doc3";
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.writeDouble(4.5);
-        enc.endDictionary();
-        body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        writeDoc("doc4"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.beginDictionary(1);
+            enc.writeKey("subvalue");
+            enc.writeString("FTW");
+            enc.endDictionary();
+        });
 
-        enc.reset();
-        docID = "doc4";
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.beginDictionary(1);
-        enc.writeKey("subvalue");
-        enc.writeString("FTW");
-        enc.endDictionary();
-        enc.endDictionary();
-        body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-
-        enc.reset();
-        docID = "doc5";
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.writeBool(true);
-        enc.endDictionary();
-        body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        writeDoc("doc5"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeBool(true);
+        });
     }
 
     void writeFalselyDocs(Transaction &t) {
-        string docID = "doc6";
+        writeDoc("doc6"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.beginArray();
+            enc.endArray();
+        });
 
-        fleece::impl::Encoder enc;
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.beginArray();
-        enc.endArray();
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        writeDoc("doc7"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.beginDictionary();
+            enc.endDictionary();
+        });
 
-        enc.reset();
-        docID = "doc7";
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.beginDictionary();
-        enc.endDictionary();
-        enc.endDictionary();
-        body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-
-        enc.reset();
-        docID = "doc8";
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.writeBool(false);
-        enc.endDictionary();
-        body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+        writeDoc("doc81"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeBool(false);
+        });
     }
 
     void deleteDoc(slice docID, bool hardDelete) {

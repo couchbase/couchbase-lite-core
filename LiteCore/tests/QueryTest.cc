@@ -198,13 +198,10 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
     {
         Transaction t(store->dataFile());
-        fleece::impl::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("n");
-        enc.writeNull();
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-        store->set("null-and-void"_sl, body, t);
+        writeDoc("null-and-void"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("n");
+            enc.writeNull();
+        });
         t.commit();
     }
 
@@ -276,29 +273,19 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
         Transaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
             string docID = stringWithFormat("rec-%03d", i + 1);
-            
-            fleece::impl::Encoder enc;
-            enc.beginDictionary();
-            enc.writeKey("value");
-            enc.writeBool(i == 0);
-            enc.endDictionary();
-            alloc_slice body = enc.finish();
-            
-            store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                enc.writeKey("value");
+                enc.writeBool(i == 0);
+            });
         }
         
         // Integer 0 and 1 would have fooled ISBOOLEAN() before
         for(int i = 2; i < 4; i++) {
             string docID = stringWithFormat("rec-%03d", i + 1);
-            
-            fleece::impl::Encoder enc;
-            enc.beginDictionary();
-            enc.writeKey("value");
-            enc.writeInt(i - 2);
-            enc.endDictionary();
-            alloc_slice body = enc.finish();
-            
-            store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                enc.writeKey("value");
+                enc.writeInt(i - 2);
+            });
         }
         
         t.commit();
@@ -320,22 +307,19 @@ TEST_CASE_METHOD(QueryTest, "Query weird property names", "[Query]") {
     // For <https://github.com/couchbase/couchbase-lite-core/issues/545>
     {
         Transaction t(store->dataFile());
-        fleece::impl::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("$foo");    enc.writeInt(17);
-        enc.writeKey("?foo");    enc.writeInt(18);
-        enc.writeKey("[foo");    enc.writeInt(19);
-        enc.writeKey(".foo");    enc.writeInt(20);
-        enc.writeKey("f$o?o[o."); enc.writeInt(21);
-        enc.writeKey("oids");
-            enc.beginArray();
-                enc.beginDictionary();
-                    enc.writeKey("$oid");   enc.writeString("avoid");
-                enc.endDictionary();
-            enc.endArray();
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-        store->set("doc1"_sl, nullslice, body, DocumentFlags::kNone, t);
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("$foo");    enc.writeInt(17);
+            enc.writeKey("?foo");    enc.writeInt(18);
+            enc.writeKey("[foo");    enc.writeInt(19);
+            enc.writeKey(".foo");    enc.writeInt(20);
+            enc.writeKey("f$o?o[o."); enc.writeInt(21);
+            enc.writeKey("oids");
+                enc.beginArray();
+                    enc.beginDictionary();
+                        enc.writeKey("$oid");   enc.writeString("avoid");
+                    enc.endDictionary();
+                enc.endArray();
+        });
         t.commit();
     }
 
@@ -435,20 +419,14 @@ TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
         Transaction t(store->dataFile());
         for(int i = 0; i < 2; i++) {
             string docID = stringWithFormat("rec-%03d", i + 1);
-            
-            fleece::impl::Encoder enc;
-            enc.beginDictionary(1);
-            enc.writeKey("value");
-            enc.beginArray(i + 1);
-            for(int j = 0; j < i + 1; j++) {
-                enc.writeInt(j);
-            }
-            
-            enc.endArray();
-            enc.endDictionary();
-            alloc_slice body = enc.finish();
-            
-            store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                enc.writeKey("value");
+                enc.beginArray(i + 1);
+                for(int j = 0; j < i + 1; j++) {
+                    enc.writeInt(j);
+                }
+                enc.endArray();
+            });
         }
         
         t.commit();
@@ -467,28 +445,18 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     {
         Transaction t(store->dataFile());
         string docID = "doc1";
-        
-        fleece::impl::Encoder enc;
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.writeNull();
-        enc.writeKey("real_value");
-        enc.writeInt(1);
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-        
-        enc.reset();
-        docID = "doc2";
-        enc.beginDictionary(2);
-        enc.writeKey("value");
-        enc.writeNull();
-        enc.writeKey("atai");
-        enc.writeInt(1);
-        enc.endDictionary();
-        body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-        
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+            enc.writeKey("real_value");
+            enc.writeInt(1);
+        });
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeNull();
+            enc.writeKey("atai");
+            enc.writeInt(1);
+        });
         t.commit();
     }
     
@@ -529,34 +497,18 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     {
         Transaction t(store->dataFile());
-        string docID = "doc1";
-        
-        fleece::impl::Encoder enc;
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.writeString("awesome value");
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-        
-        enc.reset();
-        docID = "doc2";
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.writeString("cool value");
-        enc.endDictionary();
-        body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-        
-        enc.reset();
-        docID = "doc3";
-        enc.beginDictionary(1);
-        enc.writeKey("value");
-        enc.writeString("invalid");
-        enc.endDictionary();
-        body = enc.finish();
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-        
+        writeDoc("doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("awesome value");
+        });
+        writeDoc("doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("cool value");
+        });
+        writeDoc("doc3"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("value");
+            enc.writeString("invalid");
+        });
         t.commit();
     }
     
@@ -792,15 +744,12 @@ TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
         char docID[6];
         for(int i = 0; i < 20; i++) {
             sprintf(docID, "doc%02d", i);
-            fleece::impl::Encoder enc;
-            enc.beginDictionary(1);
-            enc.writeKey("identifier");
-            enc.writeInt(i >= 5 ? i >= 15 ? 3 : 2 : 1);
-            enc.writeKey("index");
-            enc.writeInt(i);
-            enc.endDictionary();
-            alloc_slice body = enc.finish();
-            store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
+            writeDoc(slice(docID), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                enc.writeKey("identifier");
+                enc.writeInt(i >= 5 ? i >= 15 ? 3 : 2 : 1);
+                enc.writeKey("index");
+                enc.writeInt(i);
+            });
         }
 
         t.commit();
@@ -1004,17 +953,10 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
     {
         Transaction t(store->dataFile());
-        string docID = "rec-001";
-
-        fleece::impl::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("num");
-        enc.writeUInt(1);
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-
+        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("num");
+            enc.writeUInt(1);
+        });
         t.commit();
     }
 
@@ -1032,19 +974,12 @@ TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
 // Test for #341, "kData fleece type unable to be queried"
 TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
      {
-        Transaction t(store->dataFile());
-        string docID = "rec-001";
-
-        fleece::impl::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("num");
-        enc.writeData("number one"_sl);
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-
-        t.commit();
+         Transaction t(store->dataFile());
+         writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+             enc.writeKey("num");
+             enc.writeData("number one"_sl);
+         });
+         t.commit();
     }
 
     auto query = store->compileQuery(json5(
@@ -1066,19 +1001,12 @@ TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query]") {
     {
         Transaction t(store->dataFile());
-        string docID = "rec-001";
-
-        fleece::impl::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("num");
-        enc.writeInt(1234);
-        enc.writeKey("string");
-        enc.writeString("FOO");
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-
+        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("num");
+            enc.writeInt(1234);
+            enc.writeKey("string");
+            enc.writeString("FOO");
+        });
         t.commit();
     }
 
@@ -1103,19 +1031,12 @@ TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     {
         Transaction t(store->dataFile());
-        string docID = "rec-001";
-
-        fleece::impl::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("num");
-        enc.writeInt(1234);
-        enc.writeKey("string");
-        enc.writeString("FOO");
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
-
-        store->set(slice(docID), nullslice, body, DocumentFlags::kNone, t);
-
+        writeDoc("rec_001"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("num");
+            enc.writeInt(1234);
+            enc.writeKey("string");
+            enc.writeString("FOO");
+        });
         t.commit();
     }
 
@@ -1159,28 +1080,20 @@ TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
             stringstream ss(docID);
             ss << i + 1;
 
-            fleece::impl::Encoder enc;
-            enc.beginDictionary();
-            enc.writeKey("num1");
-            enc.writeInt(i);
-            enc.writeKey("num2");
-            enc.writeInt(10 - i);
-            enc.endDictionary();
-            alloc_slice body = enc.finish();
-
-            store->set(slice(ss.str()), nullslice, body, DocumentFlags::kNone, t);
+            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                enc.writeKey("num1");
+                enc.writeInt(i);
+                enc.writeKey("num2");
+                enc.writeInt(10 - i);
+            });
         }
 
-        fleece::impl::Encoder enc;
-        enc.beginDictionary();
-        enc.writeKey("theone");
-        enc.writeInt(4);
-        enc.endDictionary();
-        alloc_slice body = enc.finish();
+         writeDoc("magic"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+             enc.writeKey("theone");
+             enc.writeInt(4);
+         });
 
-        store->set("magic"_sl, nullslice, body, DocumentFlags::kNone, t);
-
-        t.commit();
+         t.commit();
     }
 
     auto query = store->compileQuery(json5(
@@ -1332,21 +1245,16 @@ TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
         for(int i = 0; i < 3; i++) {
             stringstream ss(docID);
             ss << i + 1;
-
-            fleece::impl::Encoder enc;
-            enc.beginDictionary();
-			if(i > 0) {
-				enc.writeKey("callsign");
-				if(i == 1) {
-					enc.writeNull();
-				} else {
-					enc.writeString("ANA");
-				}
-			}
-            enc.endDictionary();
-            alloc_slice body = enc.finish();
-
-            store->set(slice(ss.str()), nullslice, body, DocumentFlags::kNone, t);
+            writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
+                if(i > 0) {
+                    enc.writeKey("callsign");
+                    if(i == 1) {
+                        enc.writeNull();
+                    } else {
+                        enc.writeString("ANA");
+                    }
+                }
+            });
         }
 
         t.commit();
