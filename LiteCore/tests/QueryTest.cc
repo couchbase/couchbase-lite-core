@@ -412,6 +412,32 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
 }
 
 
+TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
+    // Create a doc with a blob property:
+    {
+        Transaction t(store->dataFile());
+        writeDoc("goop"_sl, (DocumentFlags)0, t, [](Encoder &enc) {
+            enc.writeKey("text");
+            enc.beginDictionary();
+            enc.writeKey("@type"); enc.writeString("blob");
+            enc.writeKey("digest"); enc.writeString("xxxxxxx");
+            enc.endDictionary();
+        });
+        t.commit();
+    }
+
+    Retained<Query> query{ store->compileQuery(json5(
+                  "{WHAT:[ ['.text'], {'text':['.text']} ]}")) };
+    Log("%s", query->explain().c_str());
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->next());
+    auto d = e->columns()[0]->asDict();
+    REQUIRE(d);
+    CHECK(d->toJSON(true) == "{\"@type\":\"blob\",\"digest\":\"xxxxxxx\"}"_sl);
+    REQUIRE(!e->next());
+}
+
+
 #pragma mark Targeted N1QL tests
     
 TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {

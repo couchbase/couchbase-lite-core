@@ -224,7 +224,6 @@ namespace litecore {
     {
         try {
             Encoder enc;
-            enc.setSharedKeys(val->sharedKeys());
             enc.writeValue(val);
             setResultBlobFromFleeceData(ctx, enc.finish());
             return true;

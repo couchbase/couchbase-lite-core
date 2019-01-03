@@ -193,6 +193,8 @@ namespace litecore {
                         setResultBlobFromFleeceData(ctx, enc.finish());
                         break;
                     }
+                    default:
+                        Assert(false, "Invalid blob subtype");
                 }
             } else {
                 sqlite3_result_value(ctx, arg);
