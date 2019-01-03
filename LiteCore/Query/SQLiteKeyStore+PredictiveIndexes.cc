@@ -46,16 +46,19 @@ namespace litecore {
         // Create a table of the PREDICTION results:
         auto pred = MutableArray::newArray(expression);
         if (pred->count() > 3)
-            pred->remove(3, 1);
+            pred->remove(3, pred->count() - 3);
         string predTableName = createPredictionTable(pred, options);
 
-        // The final parameter is the result property to create a SQL index on:
+        // The final parameters are the result properties to create a SQL index on:
         Array::iterator i(expression);
         i += 3;
-        if (!i) {
-            error::_throw(error::InvalidParameter,
-                          "Missing result property name for predictive index");
-        }
+        
+        // If there are no result properties specified, skip creating the value index;
+        // only the PREDICTION result table will be created and used as result cache.
+        if (!i)
+            return true;
+        
+        // Create value index on the specified result properties:
         return createValueIndex(spec, predTableName, i, options);
     }
 
