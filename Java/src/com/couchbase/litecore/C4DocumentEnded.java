@@ -27,20 +27,6 @@ public class C4DocumentEnded {
     private int errorInternalInfo = 0;   // C4Error.internal_info
     private boolean errorIsTransient;
 
-    public C4DocumentEnded(String docID, String revID, int flags, long sequence,
-                           int domain, int code, int internalInfo, boolean trans) {
-
-        this.docID = docID;
-        this.revID = revID;
-        this.flags = flags;
-        this.sequence = sequence;
-        this.errorDomain = domain;
-        this.errorCode = code;
-        this.errorInternalInfo = internalInfo;
-        this.errorIsTransient = trans;
-    }
-
-
     public String getDocID() {
         return docID;
     }
@@ -84,9 +70,5 @@ public class C4DocumentEnded {
                 ", errorCode=" + errorCode +
                 ", errorInternalInfo=" + errorInternalInfo +
                 '}';
-    }
-
-    public C4DocumentEnded copy() {
-        return new C4DocumentEnded(docID, revID, flags, sequence, errorDomain, errorCode, errorInternalInfo, errorIsTransient);
     }
 }
