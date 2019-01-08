@@ -62,6 +62,7 @@ namespace litecore {
     static string sLogDirectory;
     static int sMaxCount = 0;       // For rotation
     static int64_t sMaxSize = 1024; // For rotation
+    static string sInitialMessage;  // For rotation, goes at top of each log
     static mutex sLogMutex;
 
     static const char* const kLevelNames[] = {"debug", "verbose", "info",
@@ -173,6 +174,10 @@ namespace litecore {
             auto newEncoder = new LogEncoder(*sFileOut[(int)level], level);
             newEncoder->fastForwardObjects(next);
             sLogEncoder[(int)level] = newEncoder;
+            newEncoder->log("", LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
+            newEncoder->flush(); // Make sure at least the magic bytes are present
+        } else {
+            *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl;
         }
     }
 
@@ -202,6 +207,7 @@ namespace litecore {
         }
 
         sLogDirectory = options.path;
+        sInitialMessage = initialMessage;
         if (sLogDirectory.empty()) {
             sFileMinLevel = LogLevel::None;
         } else {
@@ -216,15 +222,15 @@ namespace litecore {
                 setupEncoders();
             }
 
-            if (!initialMessage.empty()) {
+            if (!sInitialMessage.empty()) {
                 if(sLogEncoder[0]) {
                     for(auto& encoder : sLogEncoder) {
-                        encoder->log("", LogEncoder::None, "---- %s ----", initialMessage.c_str());
+                        encoder->log("", LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
                         encoder->flush(); // Make sure at least the magic bytes are present
                     }
                 } else {
                     for(auto& fout : sFileOut) {
-                        *fout << "---- " << initialMessage << " ----" << endl;
+                        *fout << "---- " << sInitialMessage << " ----" << endl;
                     }
                 }
             }

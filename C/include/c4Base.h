@@ -205,10 +205,11 @@ CBL_CORE_API extern const C4LogDomain
 
     typedef struct {
         C4LogLevel log_level;       ///< The log level that the overall logging will limit to
-        C4String base_path;    ///< The path to the binary log file base name (other elements will be added)
+        C4String base_path;         ///< The path to the binary log file base name (other elements will be added)
         int64_t max_size_bytes;     ///< The maximum size of each log file (minimum 1024)
         int32_t max_rotate_count;   ///< The maximum amount of old log files to keep
         bool use_plaintext;         ///< Disables binary encoding of the logs (not recommended)
+        C4String header;            ///< Header to print at the start of every log file
     } C4LogFileOptions;
 
 /** Registers (or unregisters) a log callback, and sets the minimum log level to report.
