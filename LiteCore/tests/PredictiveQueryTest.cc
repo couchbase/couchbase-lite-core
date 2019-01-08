@@ -192,4 +192,104 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
     PredictiveModel::unregister("8ball");
 }
 
+
+TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predict]") {
+    addNumberedDocs(1, 100);
+    {
+        Transaction t(db);
+        writeArrayDoc(101, t);      // Add a row that has no 'num' property
+        t.commit();
+    }
+    
+    Retained<EightBall> model = new EightBall();
+    model->registerAs("8ball");
+    
+    string square = "['PREDICTION()', '8ball', {number: ['.num']}, '.square']";
+    string even = "['PREDICTION()', '8ball', {number: ['.num']}, '.even']";
+    
+    for (int pass = 1; pass <= 2; ++pass) {
+        INFO("During pass #" << pass);
+        if (pass == 2) {
+            string index = "['PREDICTION()', '8ball', {number: ['.num']}, '.square', '.even']";
+            store->createIndex("nums"_sl, json5("["+index+"]"),
+                               KeyStore::kPredictiveIndex);
+            
+            // Now that it's indexed, there should be no more calls to the model:
+            model->allowCalls = false;
+        }
+        
+        // Query numbers in descending order of square-ness:
+        Retained<Query> query{ store->compileQuery(json5(
+            "{'WHAT': [['.num'], "+square+"],"
+            " 'WHERE': ['AND', ['>=', "+square+", 1], ['>=', "+even+", 1]],"
+            " 'ORDER_BY': [['DESC', ['.num']]] }" )) };
+        string explanation = query->explain();
+        Log("Explanation: %s", explanation.c_str());
+        
+        if (pass >= 2) {
+            CHECK(explanation.find("prediction(") == string::npos);
+            CHECK(explanation.find("USING INDEX nums") != string::npos);
+        }
+        
+        vector<int64_t> results;
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        while (e->next()) {
+            if (e->columns()[0]->type() == kNumber)
+                results.push_back( e->columns()[0]->asInt() );
+        }
+        CHECK(results == (vector<int64_t>({ 100, 64, 36, 16, 4 })));
+    }
+    PredictiveModel::unregister("8ball");
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") {
+    addNumberedDocs(1, 100);
+    {
+        Transaction t(db);
+        writeArrayDoc(101, t);      // Add a row that has no 'num' property
+        t.commit();
+    }
+    
+    Retained<EightBall> model = new EightBall();
+    model->registerAs("8ball");
+    
+    string square = "['PREDICTION()', '8ball', {number: ['.num']}, '.square']";
+    string even = "['PREDICTION()', '8ball', {number: ['.num']}, '.even']";
+    
+    for (int pass = 1; pass <= 2; ++pass) {
+        INFO("During pass #" << pass);
+        if (pass == 2) {
+            string index = "['PREDICTION()', '8ball', {number: ['.num']}]";
+            store->createIndex("nums"_sl, json5("["+index+"]"),
+                               KeyStore::kPredictiveIndex);
+            
+            // Now that it's indexed, there should be no more calls to the model:
+            model->allowCalls = false;
+        }
+        
+        // Query numbers in descending order of square-ness:
+        Retained<Query> query{ store->compileQuery(json5(
+            "{'WHAT': [['.num'], "+square+"],"
+            " 'WHERE': ['AND', ['>=', "+square+", 1], ['>=', "+even+", 1]],"
+            " 'ORDER_BY': [['DESC', ['.num']]] }" )) };
+        string explanation = query->explain();
+        Log("Explanation: %s", explanation.c_str());
+        
+        if (pass >= 2) {
+            CHECK(explanation.find("prediction(") == string::npos);
+            CHECK(explanation.find("USING INDEX nums") == string::npos);
+        }
+        
+        vector<int64_t> results;
+        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        while (e->next()) {
+            if (e->columns()[0]->type() == kNumber)
+                results.push_back( e->columns()[0]->asInt() );
+        }
+        CHECK(results == (vector<int64_t>({ 100, 64, 36, 16, 4 })));
+    }
+    PredictiveModel::unregister("8ball");
+}
+
 #endif // COUCHBASE_ENTERPRISE
