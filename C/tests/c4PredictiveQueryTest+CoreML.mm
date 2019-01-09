@@ -239,7 +239,9 @@ public:
     }
 
     static constexpr const char* kPrediction =
-            "['PREDICTION()', 'face', {data: ['BLOB', '.attached[0]']}, '.output']";
+            "['PREDICTION()', 'face', {data: ['.attached[0]']}, '.output']";
+    // Note: Not using the [BLOB] operator -- this tests CoreMLPredictiveModel's ability to
+    // load the blob itself.
 
     void createIndex() {
         C4Log("-------- Creating index");

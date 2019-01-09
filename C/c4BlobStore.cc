@@ -42,6 +42,8 @@ static inline C4WriteStream* external(BlobWriteStream* s)   {return (C4WriteStre
 
 bool c4blob_keyFromString(C4Slice str, C4BlobKey* outKey) noexcept {
     try {
+        if (!str.buf)
+            return false;
         blobKey key(string((char*)str.buf, str.size));
         *outKey = external(key);
         return true;

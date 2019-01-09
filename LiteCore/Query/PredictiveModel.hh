@@ -5,6 +5,7 @@
 //
 
 #pragma once
+#include "DataFile.hh"
 #include "RefCounted.hh"
 #include "c4Base.h"
 #include "fleece/slice.hh"
@@ -18,6 +19,7 @@ namespace litecore {
     class PredictiveModel : public fleece::RefCounted {
     public:
         virtual fleece::alloc_slice prediction(const fleece::impl::Dict* NONNULL,
+                                               DataFile::Delegate* NONNULL,
                                                C4Error* NONNULL) noexcept =0;
 
         void registerAs(const std::string &name);

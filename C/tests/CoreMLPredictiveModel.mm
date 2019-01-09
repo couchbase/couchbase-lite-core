@@ -18,6 +18,7 @@
 
 #include "CoreMLPredictiveModel.hh"
 #include "c4PredictiveQuery.h"
+#include "c4Document+Fleece.h"
 #include "fleece/Fleece.hh"
 #include "fleece/Fleece+CoreFoundation.h"
 #include <CoreML/CoreML.h>
@@ -36,12 +37,12 @@ namespace cbl {
 
 
     void PredictiveModel::registerWithName(const char *name) {
-        auto callback = [](void* context, FLDict input, C4Error *outError) {
+        auto callback = [](void* context, FLDict input, C4BlobStore* blobStore, C4Error *outError) {
             @autoreleasepool {
                 Encoder enc;
                 enc.beginDict();
                 auto self = (PredictiveModel*)context;
-                if (!self->predict(Dict(input), enc, outError))
+                if (!self->predict(Dict(input), blobStore, enc, outError))
                     return C4SliceResult{};
                 enc.endDict();
                 return C4SliceResult(enc.finish());
@@ -102,7 +103,11 @@ namespace cbl {
 
 
     // The main prediction function!
-    bool CoreMLPredictiveModel::predict(Dict inputDict, fleece::Encoder &enc, C4Error *outError) {
+    bool CoreMLPredictiveModel::predict(Dict inputDict,
+                                        C4BlobStore *blobStore,
+                                        fleece::Encoder &enc,
+                                        C4Error *outError)
+    {
         if (_imagePropertyName) {
             if (!_visionModel) {
                 NSError* error;
@@ -111,7 +116,8 @@ namespace cbl {
                     return reportError(outError, "Failed to create Vision model: %s",
                                        error.localizedDescription.UTF8String);
             }
-            return predictViaVision(inputDict, enc, outError);
+            NSArray* visionResults = runVisionFunction(inputDict, blobStore, outError);
+            return visionResults && decodeVisionResults(visionResults, enc, outError);
         } else {
             return predictViaCoreML(inputDict, enc, outError);
         }
@@ -152,31 +158,64 @@ namespace cbl {
     }
 
 
+    NSArray* CoreMLPredictiveModel::runVisionFunction(fleece::Dict input,
+                                                      C4BlobStore *blobStore,
+                                                      C4Error *outError)
+    {
+        // Get the image data:
+        auto value = input[_imagePropertyName];
+        slice image = value.asData();
+        alloc_slice allocedImage;
+        if (!image) {
+            // Input param is not data; assume it's a CBL blob dictionary:
+            Dict blobDict = value.asDict();
+            if (blobDict[kC4ObjectTypeProperty].asString() == C4STR(kC4ObjectType_Blob)) {
+                slice digest = blobDict["digest"_sl].asString();
+                C4BlobKey key;
+                if (c4blob_keyFromString(digest, &key)) {
+                    allocedImage = alloc_slice(c4blob_getContents(blobStore, key, outError));
+                    if (!allocedImage)
+                        return nil;
+                    image = allocedImage;
+                }
+            }
+        }
+        if (!image) {
+            reportError(nullptr, "Image input property '%.*s' missing or not a blob",
+                        FMTSLICE(_imagePropertyName));
+            return nil;
+        }
+
+        @autoreleasepool {
+            // Create a Vision handler:
+            NSData* imageData = image.uncopiedNSData();
+            auto handler = [[VNImageRequestHandler alloc] initWithData: imageData options: @{}];
+
+            // Process the model:
+            NSError* error;
+            auto request = [[VNCoreMLRequest alloc] initWithModel: _visionModel];
+            request.imageCropAndScaleOption = VNImageCropAndScaleOptionCenterCrop;
+            if (![handler performRequests: @[request] error: &error]) {
+                reportError(outError, "Image processing failed: %s",
+                            error.localizedDescription.UTF8String);
+                return nil;
+            }
+            NSArray* results = request.results;
+            if (!results)
+                reportError(nullptr, "Image processing returned no results");
+            return results;
+        }
+    }
+
+
     // Uses Vision API to generate prediction:
-    bool CoreMLPredictiveModel::predictViaVision(fleece::Dict input, Encoder &enc, C4Error *outError) {
+    bool CoreMLPredictiveModel::decodeVisionResults(NSArray* results,
+                                                 Encoder &enc,
+                                                 C4Error *outError) {
+        if (!results)
+            return false;
         if (!_model)
             return reportError(outError, "Couldn't register Vision model");
-
-        // Get the image data and create a Vision handler:
-        slice image = input[_imagePropertyName].asData();
-        if (!image) {
-            return reportError(nullptr, "Image input property '%.*s' missing or not a blob",
-                               FMTSLICE(_imagePropertyName));
-        }
-        NSData* imageData = image.uncopiedNSData();
-        auto handler = [[VNImageRequestHandler alloc] initWithData: imageData options: @{}];
-
-        // Process the model:
-        NSError* error;
-        auto request = [[VNCoreMLRequest alloc] initWithModel: _visionModel];
-        request.imageCropAndScaleOption = VNImageCropAndScaleOptionCenterCrop;
-        if (![handler performRequests: @[request] error: &error]) {
-            return reportError(outError, "Image processing failed: %s",
-                               error.localizedDescription.UTF8String);
-        }
-        auto results = request.results;
-        if (!results)
-            return reportError(nullptr, "Image processing returned no results");
 
         NSString* predictedProbabilitiesName = _model.modelDescription.predictedProbabilitiesName;
         if (predictedProbabilitiesName) {

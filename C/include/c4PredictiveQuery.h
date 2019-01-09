@@ -18,7 +18,7 @@
 //
 
 #pragma once
-#include "c4Base.h"
+#include "c4BlobStore.h"
 #include "fleece/Fleece.h"
 
 #ifdef __cplusplus
@@ -70,6 +70,8 @@ extern "C" {
             @param context  The value of the C4PredictiveModel's `context` field;
                     typically a pointer to external data needed by the implementation.
             @param input  The input dictionary from the query.
+            @param blobStore  The blob storage of the database being queried; use this to get the
+                              data of a blob whose dictionary is passed in the input.
             @param error  Store an error here on failure. It is NOT a failure for input parameters
                     to be missing or the wrong type, since this can easily happen when the
                     query reaches a document that doesn't contain input data, or if the document's
@@ -77,7 +79,10 @@ extern "C" {
                     return a null slice.
             @return  The output of the prediction function, encoded as a Fleece dictionary,
                     or as {NULL, 0} if there is no output. */
-        C4SliceResult (*prediction)(void* context, FLDict C4NONNULL input, C4Error *error);
+        C4SliceResult (*prediction)(void* context,
+                                    FLDict C4NONNULL input,
+                                    C4BlobStore* C4NONNULL blobStore,
+                                    C4Error *error);
 
         /** Called if the model is unregistered, so it can release resources. */
         void (*unregistered)(void* context);

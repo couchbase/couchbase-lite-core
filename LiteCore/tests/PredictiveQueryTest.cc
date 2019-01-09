@@ -31,11 +31,19 @@ using namespace fleece::impl;
 
 class EightBall : public PredictiveModel {
 public:
+    EightBall(DataFile *db)
+    :db(db)
+    { }
+
+    DataFile* const db;
     bool allowCalls {true};
 
-    virtual alloc_slice prediction(const Dict* input, C4Error *outError) noexcept override {
+    virtual alloc_slice prediction(const Dict* input,
+                                   DataFile::Delegate *delegate,
+                                   C4Error *outError) noexcept override {
 //        Log("8-ball input: %s", input->toJSONString().c_str());
         CHECK(allowCalls);
+        CHECK(delegate == db->delegate());
         const Value *param = input->get("number"_sl);
         if (!param || param->type() != kNumber) {
             Log("8-ball: No 'number' property; returning MISSING");
@@ -99,7 +107,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query", "[Query][Predict]") {
         t.commit();
     }
 
-    Retained<PredictiveModel> model = new EightBall();
+    Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
     Retained<Query> query{ store->compileQuery(json5(
@@ -117,7 +125,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]"
         t.commit();
     }
 
-    Retained<PredictiveModel> model = new EightBall();
+    Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
     Retained<Query> query{ store->compileQuery(json5(
@@ -131,7 +139,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]"
 
 
 TEST_CASE_METHOD(QueryTest, "Create/Delete Predictive Index", "[Query][Predict]") {
-    Retained<PredictiveModel> model = new EightBall();
+    Retained<PredictiveModel> model = new EightBall(db.get());
     model->registerAs("8ball");
 
     store->createIndex("nums"_sl, json5("[['PREDICTION()', '8ball', {number: ['.num']}, '.square']]"),
@@ -150,7 +158,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
         t.commit();
     }
 
-    Retained<EightBall> model = new EightBall();
+    Retained<EightBall> model = new EightBall(db.get());
     model->registerAs("8ball");
 
     string prediction = "['PREDICTION()', '8ball', {number: ['.num']}, '.square']";
@@ -201,7 +209,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predic
         t.commit();
     }
     
-    Retained<EightBall> model = new EightBall();
+    Retained<EightBall> model = new EightBall(db.get());
     model->registerAs("8ball");
     
     string square = "['PREDICTION()', '8ball', {number: ['.num']}, '.square']";
@@ -251,7 +259,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") 
         t.commit();
     }
     
-    Retained<EightBall> model = new EightBall();
+    Retained<EightBall> model = new EightBall(db.get());
     model->registerAs("8ball");
     
     string square = "['PREDICTION()', '8ball', {number: ['.num']}, '.square']";

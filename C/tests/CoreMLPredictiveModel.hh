@@ -34,7 +34,10 @@ namespace cbl {
 
     protected:
         /** Subclass must implement this to perform the work. */
-        virtual bool predict(fleece::Dict input, fleece::Encoder&, C4Error *error) =0;
+        virtual bool predict(fleece::Dict input,
+                             C4BlobStore *blobStore,
+                             fleece::Encoder&,
+                             C4Error *error) =0;
 
         static void encodeMLFeature(fleece::Encoder&, MLFeatureValue*);
         static bool __printflike(2, 3) reportError(C4Error *outError, const char *format, ...);
@@ -55,12 +58,17 @@ namespace cbl {
         CoreMLPredictiveModel(MLModel* C4NONNULL model);
 
     protected:
-        virtual bool predict(fleece::Dict input, fleece::Encoder&, C4Error *error) override;
+        virtual bool predict(fleece::Dict input,
+                             C4BlobStore*,
+                             fleece::Encoder&,
+                             C4Error *error) override;
         
-        bool predictViaCoreML(fleece::Dict input, fleece::Encoder&, C4Error *error);
-        bool predictViaVision(fleece::Dict input, fleece::Encoder&, C4Error *error);
-
     private:
+        bool predictViaCoreML(fleece::Dict input, fleece::Encoder&, C4Error *error);
+        NSArray* runVisionFunction(fleece::Dict input,
+                                   C4BlobStore *blobStore,
+                                   C4Error *outError);
+        bool decodeVisionResults(NSArray* visionResults, fleece::Encoder&, C4Error *error);
         MLFeatureValue* featureFromDict(NSString* name, FLValue, C4Error *outError);
         NSDictionary* convertWordsToMLDictionary(NSString*);
 

@@ -20,6 +20,7 @@
 //
 
 #include "c4PredictiveQuery.h"
+#include "Database.hh"
 #include "PredictiveModel.hh"
 
 using namespace litecore;
@@ -33,9 +34,12 @@ public:
     :_c4Model(model)
     { }
 
-    virtual alloc_slice prediction(const Dict *input, C4Error *outError) noexcept override {
+    virtual alloc_slice prediction(const Dict *input,
+                                   DataFile::Delegate *dfDelegate,
+                                   C4Error *outError) noexcept override {
         try {
-            return _c4Model.prediction(_c4Model.context, (FLDict)input, outError);
+            auto blobStore = (C4BlobStore*)((c4Database*)dfDelegate)->blobStore();
+            return _c4Model.prediction(_c4Model.context, (FLDict)input, blobStore, outError);
         } catch (const std::exception &x) {
             if (outError)
                 *outError = c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()));
