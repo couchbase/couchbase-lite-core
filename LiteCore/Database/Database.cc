@@ -122,7 +122,7 @@ namespace c4Internal {
         }
 
         // Determine the storage type and its Factory object:
-        const char *storageEngine = config.storageEngine ?: "";
+        const char *storageEngine = config.storageEngine ? config.storageEngine : "";
         DataFile::Factory *storage = DataFile::factoryNamed((string)(storageEngine));
         if (!storage)
             error::_throw(error::Unimplemented);
