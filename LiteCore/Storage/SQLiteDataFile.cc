@@ -149,8 +149,8 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path, const Options *options) {
-        return new SQLiteDataFile(path, options);
+    SQLiteDataFile* SQLiteDataFile::Factory::openFile(const FilePath &path, Delegate *delegate, const Options *options) {
+        return new SQLiteDataFile(path, delegate, options);
     }
 
 
@@ -164,8 +164,8 @@ namespace litecore {
     }
 
 
-    SQLiteDataFile::SQLiteDataFile(const FilePath &path, const Options *options)
-    :DataFile(path, options)
+    SQLiteDataFile::SQLiteDataFile(const FilePath &path, Delegate *delegate, const Options *options)
+    :DataFile(path, delegate, options)
     {
         reopen();
     }
@@ -238,10 +238,7 @@ namespace litecore {
 
         // Register collators, custom functions, and the FTS tokenizer:
         RegisterSQLiteUnicodeCollations(sqlite, _collationContexts);
-        auto proxyBlobAccessor = [this](slice digest) {
-            return blobAccessor() ? blobAccessor()(digest) : alloc_slice();
-        };
-        RegisterSQLiteFunctions(sqlite, {fleeceAccessor(), documentKeys(), proxyBlobAccessor});
+        RegisterSQLiteFunctions(sqlite, {delegate(), documentKeys()});
         int rc = register_unicodesn_tokenizer(sqlite);
         if (rc != SQLITE_OK)
             warn("Unable to register FTS tokenizer: SQLite err %d", rc);

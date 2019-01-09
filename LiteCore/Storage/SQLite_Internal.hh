@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "DataFile.hh"
+#include "SQLiteDataFile.hh"
 #include "Logging.hh"
 #include <memory>
 
@@ -58,14 +58,13 @@ namespace litecore {
 
     // What the user_data of a registered function points to
     struct fleeceFuncContext {
-        fleeceFuncContext(DataFile::FleeceAccessor a,
-                          fleece::impl::SharedKeys *sk, DataFile::BlobAccessor b)
-        :accessor(a), sharedKeys(sk), blobAccessor(b)
+        fleeceFuncContext(DataFile::Delegate *d,
+                          fleece::impl::SharedKeys *sk)
+        :delegate(d), sharedKeys(sk)
         { }
 
-        DataFile::FleeceAccessor  accessor;
-        fleece::impl::SharedKeys* sharedKeys;
-        DataFile::BlobAccessor    blobAccessor;
+        DataFile::Delegate* delegate;
+        fleece::impl::SharedKeys* const sharedKeys;
     };
 
 

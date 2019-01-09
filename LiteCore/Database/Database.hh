@@ -44,7 +44,7 @@ namespace c4Internal {
 
 
     /** A top-level LiteCore database. */
-    class Database : public RefCounted, fleece::InstanceCountedIn<Database> {
+    class Database : public RefCounted, public DataFile::Delegate, fleece::InstanceCountedIn<Database> {
     public:
         Database(const string &path, C4DatabaseConfig config);
 
@@ -52,7 +52,7 @@ namespace c4Internal {
         void deleteDatabase();
         static bool deleteDatabaseAtPath(const string &dbPath);
 
-        DataFile* dataFile()                                {return _db.get();}
+        DataFile* dataFile()                                {return _dataFile.get();}
         FilePath path() const;
         uint64_t countDocuments();
         sequence_t lastSequence()                       {return defaultKeyStore().lastSequence();}
@@ -103,7 +103,7 @@ namespace c4Internal {
 
         fleece::impl::Encoder& sharedEncoder();
 
-        fleece::impl::SharedKeys* documentKeys()                  {return _db->documentKeys();}
+        fleece::impl::SharedKeys* documentKeys()                  {return _dataFile->documentKeys();}
 
         SequenceTracker& sequenceTracker();
 
@@ -111,6 +111,9 @@ namespace c4Internal {
 
         void lockClientMutex()                              {_clientMutex.lock();}
         void unlockClientMutex()                            {_clientMutex.unlock();}
+
+        virtual slice fleeceAccessor(slice recordBody) const override;
+        virtual alloc_slice blobAccessor(slice blobKey) const override;
 
     public:
         // should be private, but called from Document
@@ -125,9 +128,6 @@ namespace c4Internal {
         static FilePath findOrCreateBundle(const string &path, bool canCreate,
                                            C4StorageEngine &outStorageEngine);
         static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
-        static DataFile* newDataFile(const FilePath &path,
-                                     const C4DatabaseConfig &config,
-                                     bool isMainDB);
         void _cleanupTransaction(bool committed);
         bool getUUIDIfExists(slice key, UUID&);
         UUID generateUUID(slice key, Transaction&, bool overwrite =false);
@@ -136,15 +136,16 @@ namespace c4Internal {
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);
 
-        unique_ptr<DataFile>        _db;                    // Underlying DataFile
+        FilePath                    _dataFilePath;          // Path of the DataFile
+        unique_ptr<DataFile>        _dataFile;              // Underlying DataFile
         Transaction*                _transaction {nullptr}; // Current Transaction, or null
         int                         _transactionLevel {0};  // Nesting level of transaction
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
-        unique_ptr<fleece::impl::Encoder> _encoder;
+        unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
         unique_ptr<SequenceTracker> _sequenceTracker;       // Doc change tracker/notifier
-        unique_ptr<BlobStore>       _blobStore;
-        uint32_t                    _maxRevTreeDepth {0};
-        recursive_mutex             _clientMutex;
+        unique_ptr<BlobStore>       _blobStore;             // Blob storage
+        uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
+        recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
     };
 
 
@@ -176,7 +177,7 @@ namespace c4Internal {
         Document* newDocumentInstance(const Record&) override;
         alloc_slice revIDFromVersion(slice version) override;
         bool isFirstGenRevID(slice revID) override;
-        static DataFile::FleeceAccessor fleeceAccessor();
+        static slice fleeceAccessor(slice docBody);
     };
 
 }

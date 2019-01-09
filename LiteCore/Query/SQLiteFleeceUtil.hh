@@ -52,8 +52,13 @@ namespace litecore {
     };
 
 
-    static inline fleece::impl::SharedKeys* getSharedKeys(sqlite3_context *ctx) {
-        return ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys;
+    static inline DataFile::Delegate* getDBDelegate(sqlite3_context *ctx) {
+        return ((fleeceFuncContext*)sqlite3_user_data(ctx))->delegate;
+    }
+
+    static inline slice fleeceAccessor(sqlite3_context *ctx, slice body) {
+        auto delegate = getDBDelegate(ctx);
+        return delegate ? delegate->fleeceAccessor(body) : body;
     }
 
     // Returns the data of a SQLite blob value as a slice

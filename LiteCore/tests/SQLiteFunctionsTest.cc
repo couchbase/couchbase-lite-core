@@ -33,25 +33,7 @@ using namespace std;
 // http://www.sqlite.org/json1.html#jeach
 
 
-static slice flip(slice s) {
-    uint8_t* bytes = (uint8_t*)s.buf;
-    for (size_t i = 0; i < s.size; ++i)
-        bytes[i] ^= 0xFF;
-    return s;
-}
-
-
-static alloc_slice mockBlob(slice digest) {
-    CHECK(digest);
-    if (digest.hasPrefix("sha1-"_sl)) {
-        return alloc_slice(digest.from(5));
-    } else {
-        return {};
-    }
-}
-
-
-class SQLiteFunctionsTest {
+class SQLiteFunctionsTest : DataFile::Delegate {
 public:
 
     static constexpr int numberOfOptions = 2;
@@ -62,18 +44,35 @@ public:
         // Run test once with shared keys, once without:
         if (which & 1)
             sharedKeys = new SharedKeys();
-        RegisterSQLiteFunctions(db.getHandle(), {flip, sharedKeys, mockBlob});
+        RegisterSQLiteFunctions(db.getHandle(), {this, sharedKeys});
         db.exec("CREATE TABLE kv (key TEXT, body BLOB)");
         insertStmt = make_unique<SQLite::Statement>(db, "INSERT INTO kv (key, body) VALUES (?, ?)");
     }
 
     void insert(const char *key, const char *json) {
         auto body = JSONConverter::convertJSON(slice(json5(json)), sharedKeys);
-        flip(body); // 'encode' the data in the database to test the accessor function
+        fleeceAccessor(body); // 'encode' the data in the database to test the accessor function
         insertStmt->bind(1, key);
         insertStmt->bind(2, body.buf, (int)body.size);
         insertStmt->exec();
         insertStmt->reset();
+    }
+
+    virtual slice fleeceAccessor(slice s) const override {
+        uint8_t* bytes = (uint8_t*)s.buf;
+        for (size_t i = 0; i < s.size; ++i)
+            bytes[i] ^= 0xFF;
+        return s;
+    }
+
+
+    virtual alloc_slice blobAccessor(slice digest) const override {
+        CHECK(digest);
+        if (digest.hasPrefix("sha1-"_sl)) {
+            return alloc_slice(digest.from(5));
+        } else {
+            return {};
+        }
     }
 
     vector<string> query(const char *query) {

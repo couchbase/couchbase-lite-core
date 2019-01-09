@@ -42,9 +42,7 @@ namespace litecore {
             return nullslice;             // No 'body' column; may be deleted doc
         Assert(type == SQLITE_BLOB);
         Assert(sqlite3_value_subtype(arg) == 0);
-        slice fleece = valueAsSlice(arg);
-        auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-        fleece = funcCtx->accessor(fleece);
+        slice fleece = fleeceAccessor(ctx, valueAsSlice(arg));
 
         if (size_t(fleece.buf) & 1) {
             // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
@@ -127,7 +125,8 @@ namespace litecore {
 
 
     QueryFleeceScope::QueryFleeceScope(sqlite3_context *ctx, sqlite3_value **argv)
-    :Scope(argAsDocBody(ctx, argv[0], _copied), getSharedKeys(ctx))
+    :Scope(argAsDocBody(ctx, argv[0], _copied),
+           ((fleeceFuncContext*)sqlite3_user_data(ctx))->sharedKeys)
     {
         if (data()) {
             root = Value::fromTrustedData(data());
@@ -265,10 +264,6 @@ namespace litecore {
 
     void RegisterSQLiteFunctions(sqlite3 *db, fleeceFuncContext context)
     {
-        if (!context.accessor)
-            context.accessor = [](slice data) {return data;};
-        if (!context.blobAccessor)
-            context.blobAccessor = [](slice digest) {return alloc_slice();};
         registerFunctionSpecs(db, context, kFleeceFunctionsSpec);
         registerFunctionSpecs(db, context, kRankFunctionsSpec);
         registerFunctionSpecs(db, context, kN1QLFunctionsSpec);
@@ -279,7 +274,7 @@ namespace litecore {
 
         // The functions registered below operate on virtual tables, not on the actual db,
         // so they should not use the db's Fleece accessor. That's why we clear it first.
-        context.accessor = [](slice data) {return data;};
+        context.delegate = nullptr;
         registerFunctionSpecs(db, context, kFleeceNullAccessorFunctionsSpec);
     }
 

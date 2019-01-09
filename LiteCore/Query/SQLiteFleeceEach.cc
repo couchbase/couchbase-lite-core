@@ -221,7 +221,7 @@ private:
             Warn("fleece_each filter called with null document! Query is likely to fail. (#379)");
             return SQLITE_OK;
         }
-        data = _vtab->context.accessor(data);
+        data = _vtab->context.delegate->fleeceAccessor(data);
         _scope = make_unique<Scope>(data, _vtab->context.sharedKeys);
         _container = Value::fromTrustedData(data);
         if (!_container) {

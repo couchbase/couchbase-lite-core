@@ -104,8 +104,9 @@ namespace litecore {
     };
 
 
-    DataFile::DataFile(const FilePath &path, const DataFile::Options *options)
+    DataFile::DataFile(const FilePath &path, Delegate *delegate, const DataFile::Options *options)
     :Logging(DBLog)
+    ,_delegate(delegate)
     ,_path(path)
     ,_options(options ? *options : Options::defaults)
     {

@@ -37,7 +37,7 @@ namespace litecore {
     class SQLiteDataFile : public DataFile {
     public:
 
-        SQLiteDataFile(const FilePath &path, const Options*);
+        SQLiteDataFile(const FilePath &path, Delegate *delegate, const Options*);
         ~SQLiteDataFile();
 
         bool isOpen() const noexcept override;
@@ -67,7 +67,7 @@ namespace litecore {
             virtual const char* cname() override {return "SQLite";}
             virtual std::string filenameExtension() override {return ".sqlite3";}
             virtual bool encryptionEnabled(EncryptionAlgorithm) override;
-            virtual SQLiteDataFile* openFile(const FilePath &, const Options* =nullptr) override;
+            virtual SQLiteDataFile* openFile(const FilePath &, Delegate*, const Options* =nullptr) override;
         protected:
             virtual bool _deleteFile(const FilePath &path, const Options* =nullptr) override;
         };

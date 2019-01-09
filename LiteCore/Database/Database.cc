@@ -98,19 +98,19 @@ namespace c4Internal {
     }
 
 
-    // subroutine of Database constructor that creates its _db
-    /*static*/ DataFile* Database::newDataFile(const FilePath &path,
-                                               const C4DatabaseConfig &config,
-                                               bool isMainDB)
+    Database::Database(const string &bundlePath,
+                       C4DatabaseConfig inConfig)
+    :_dataFilePath(findOrCreateBundle(bundlePath,
+                                      (inConfig.flags & kC4DB_Create) != 0,
+                                      inConfig.storageEngine))
+    ,config(inConfig)
     {
+        // Set up DataFile options:
         DataFile::Options options { };
-        if (isMainDB) {
-            options.keyStores.sequences = true;
-        }
+        options.keyStores.sequences = true;
         options.create = (config.flags & kC4DB_Create) != 0;
         options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
         options.useDocumentKeys = (config.flags & kC4DB_SharedKeys) != 0;
-
         options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
         if (options.encryptionAlgorithm != kNoEncryption) {
 #ifdef COUCHBASE_ENTERPRISE
@@ -121,53 +121,34 @@ namespace c4Internal {
 #endif
         }
 
-        switch (config.versioning) {
-            case kC4RevisionTrees:
-                options.fleeceAccessor = TreeDocumentFactory::fleeceAccessor();
-                break;
-            default:
-                error::_throw(error::InvalidParameter);
-        }
-
-        const char *storageEngine = config.storageEngine;
-        if (!storageEngine) {
-            storageEngine = "";
-        }
-
+        // Determine the storage type and its Factory object:
+        const char *storageEngine = config.storageEngine ?: "";
         DataFile::Factory *storage = DataFile::factoryNamed((string)(storageEngine));
         if (!storage)
             error::_throw(error::Unimplemented);
 
+        // Open the DataFile:
         try {
-            // Open the DataFile:
-            return storage->openFile(path, &options);
+            _dataFile.reset( storage->openFile(_dataFilePath, this, &options) );
         } catch (const error &x) {
-            if (x.domain == error::LiteCore && x.code == error::DatabaseTooOld) {
+            if (x.domain == error::LiteCore && x.code == error::DatabaseTooOld
+                    && UpgradeDatabaseInPlace(_dataFilePath.dir(), config)) {
                 // This is an old 1.x database; upgrade it in place, then open:
-                if (UpgradeDatabaseInPlace(path.dir(), config))
-                    return storage->openFile(path, &options);
+                _dataFile.reset( storage->openFile(_dataFilePath, this, &options) );
+            } else {
+                throw;
             }
-            throw;
         }
-    }
 
-
-    Database::Database(const string &path,
-                       C4DatabaseConfig inConfig)
-    :_db(newDataFile(findOrCreateBundle(path,
-                                        (inConfig.flags & kC4DB_Create) != 0,
-                                        inConfig.storageEngine),
-                     inConfig, true))
-    ,config(inConfig)
-    ,_encoder(new fleece::impl::Encoder())
-    {
+        _encoder.reset(new fleece::impl::Encoder());
         if (config.flags & kC4DB_SharedKeys)
             _encoder->setSharedKeys(documentKeys());
+        
         if (!(config.flags & kC4DB_NonObservable))
             _sequenceTracker.reset(new SequenceTracker());
 
         // Validate that the versioning matches what's used in the database:
-        auto &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
+        auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
         Record doc = info.get(slice("versioning"));
         if (doc.exists()) {
             if (doc.bodyAsUInt() != (uint64_t)config.versioning)
@@ -175,7 +156,7 @@ namespace c4Internal {
         } else if (config.flags & kC4DB_Create) {
             // First-time initialization:
             doc.setBodyAsUInt((uint64_t)config.versioning);
-            Transaction t(*_db);
+            Transaction t(*_dataFile);
             info.write(doc, t);
             (void)generateUUID(kPublicUUIDKey, t);
             (void)generateUUID(kPrivateUUIDKey, t);
@@ -183,8 +164,8 @@ namespace c4Internal {
         } else if (config.versioning != kC4RevisionTrees) {
             error::_throw(error::WrongFormat);
         }
-        _db->setOwner(this);
 
+        // Set up the DocumentFactory:
         DocumentFactory* factory;
         switch (config.versioning) {
 #if ENABLE_VERSION_VECTORS
@@ -194,13 +175,6 @@ namespace c4Internal {
             default:                error::_throw(error::InvalidParameter);
         }
         _documentFactory.reset(factory);
-
-        _db->setBlobAccessor([this](slice digest) {
-            blobKey key;
-            if (!key.readFromBase64(digest))
-                return alloc_slice();
-            return blobStore()->get(key).contents();
-        });
     }
 
 
@@ -215,14 +189,14 @@ namespace c4Internal {
 
     void Database::close() {
         mustNotBeInTransaction();
-        _db->close();
+        _dataFile->close();
     }
 
 
     void Database::deleteDatabase() {
         mustNotBeInTransaction();
         FilePath bundle = path().dir();
-        _db->deleteDataFile();
+        _dataFile->deleteDataFile();
         bundle.delRecursive();
     }
 
@@ -338,7 +312,7 @@ namespace c4Internal {
             throw;
         }
 
-        ((C4DatabaseConfig&)config).encryptionKey = *newKey;
+        const_cast<C4DatabaseConfig&>(config).encryptionKey = *newKey;
 
         // Finally replace the old BlobStore with the new one:
         newStore->moveTo(*realBlobStore);
@@ -349,8 +323,22 @@ namespace c4Internal {
 #pragma mark - ACCESSORS:
 
 
+    slice Database::fleeceAccessor(slice recordBody) const {
+        return TreeDocumentFactory::fleeceAccessor(recordBody);
+    }
+
+
+    // Callback that takes a base64 blob digest and returns the blob data
+    alloc_slice Database::blobAccessor(slice digest) const {
+        blobKey key;
+        if (!key.readFromBase64(digest))
+            return alloc_slice();
+        return const_cast<Database*>(this)->blobStore()->get(key).contents();
+    }
+
+
     FilePath Database::path() const {
-        return _db->filePath().dir();
+        return _dataFile->filePath().dir();
     }
 
 
@@ -361,7 +349,7 @@ namespace c4Internal {
 
     uint32_t Database::maxRevTreeDepth() {
         if (_maxRevTreeDepth == 0) {
-            auto &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
+            auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
             _maxRevTreeDepth = (uint32_t)info.get(kMaxRevTreeDepthKey).bodyAsUInt();
             if (_maxRevTreeDepth == 0)
                 _maxRevTreeDepth = kDefaultMaxRevTreeDepth;
@@ -372,11 +360,11 @@ namespace c4Internal {
     void Database::setMaxRevTreeDepth(uint32_t depth) {
         if (depth == 0)
             depth = kDefaultMaxRevTreeDepth;
-        KeyStore &info = _db->getKeyStore(DataFile::kInfoKeyStoreName);
+        KeyStore &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
         Record rec = info.get(kMaxRevTreeDepthKey);
         if (depth != rec.bodyAsUInt()) {
             rec.setBodyAsUInt(depth);
-            Transaction t(*_db);
+            Transaction t(*_dataFile);
             info.write(rec, t);
             t.commit();
         }
@@ -384,8 +372,8 @@ namespace c4Internal {
     }
 
 
-    KeyStore& Database::defaultKeyStore()                         {return _db->defaultKeyStore();}
-    KeyStore& Database::getKeyStore(const string &name) const     {return _db->getKeyStore(name);}
+    KeyStore& Database::defaultKeyStore()                         {return _dataFile->defaultKeyStore();}
+    KeyStore& Database::getKeyStore(const string &name) const     {return _dataFile->getKeyStore(name);}
 
 
     BlobStore* Database::blobStore() {
@@ -481,7 +469,7 @@ namespace c4Internal {
 
     void Database::beginTransaction() {
         if (++_transactionLevel == 1) {
-            _transaction = new Transaction(_db.get());
+            _transaction = new Transaction(_dataFile.get());
             if (_sequenceTracker) {
                 lock_guard<mutex> lock(_sequenceTracker->mutex());
                 _sequenceTracker->beginTransaction();
@@ -519,10 +507,9 @@ namespace c4Internal {
             lock_guard<mutex> lock(_sequenceTracker->mutex());
             if (committed) {
                 // Notify other Database instances on this file:
-                _db->forOtherDataFiles([&](DataFile *other) {
-                    auto otherDatabase = (Database*)other->owner();
-                    if (otherDatabase)
-                        otherDatabase->externalTransactionCommitted(*_sequenceTracker);
+                _dataFile->forOtherDataFiles([&](DataFile *other) {
+                    auto otherDatabase = (Database*)other->delegate();
+                    otherDatabase->externalTransactionCommitted(*_sequenceTracker);
                 });
             }
             _sequenceTracker->endTransaction(committed);
@@ -648,7 +635,7 @@ namespace c4Internal {
         KeyStore::ExpirationCallback cb = [=](slice docID) {
             _sequenceTracker->documentPurged(docID);
         };
-        return _db->defaultKeyStore().expireRecords(_sequenceTracker ? cb : nullptr);
+        return _dataFile->defaultKeyStore().expireRecords(_sequenceTracker ? cb : nullptr);
     }
 
 }

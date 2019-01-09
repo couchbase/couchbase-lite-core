@@ -40,12 +40,10 @@ namespace litecore {
         if (body) {
             DebugAssert(sqlite3_value_type(argv[0]) == SQLITE_BLOB);
             DebugAssert(sqlite3_value_subtype(argv[0]) == 0);
-            auto funcCtx = (fleeceFuncContext*)sqlite3_user_data(ctx);
-            
-            slice fleece = funcCtx->accessor(body);
-            setResultBlobFromFleeceData(ctx, fleece);
+            setResultBlobFromFleeceData(ctx, fleeceAccessor(ctx, body));
             return;
         }
+        // If arg isn't a blob, check if it's a tagged Fleece pointer:
         const Value *val = asFleeceValue(argv[0]);
         if (val) {
             sqlite3_result_pointer(ctx, (void*)val, kFleeceValuePointerType, nullptr);
@@ -83,9 +81,11 @@ namespace litecore {
             if (!digest)
                 return;
 
-            auto context = ((fleeceFuncContext*)sqlite3_user_data(ctx));
-            alloc_slice blob = context->blobAccessor(digest);
-            setResultBlobFromData(ctx, blob);
+            // Read the blob data:
+            auto delegate = getDBDelegate(ctx);
+            if (!delegate)
+                return;
+            setResultBlobFromData(ctx, delegate->blobAccessor(digest));
         } catch (const std::exception &x) {
             sqlite3_result_error(ctx, "unexpected error reading blob", -1);
         }

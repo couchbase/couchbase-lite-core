@@ -464,8 +464,8 @@ namespace c4Internal {
         return new TreeDocument(database(), doc);
     }
 
-    DataFile::FleeceAccessor TreeDocumentFactory::fleeceAccessor() {
-        return RawRevision::getCurrentRevBody;
+    slice TreeDocumentFactory::fleeceAccessor(slice docBody) {
+        return RawRevision::getCurrentRevBody(docBody);
     }
 
     alloc_slice TreeDocumentFactory::revIDFromVersion(slice version) {

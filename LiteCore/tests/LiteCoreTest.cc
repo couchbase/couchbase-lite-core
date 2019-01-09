@@ -225,7 +225,7 @@ FilePath DataFileTestFixture::databasePath(const string baseName) {
 
 DataFile* DataFileTestFixture::newDatabase(const FilePath &path, const DataFile::Options *options) {
     //TODO: Set up options
-    return factory().openFile(path, options);
+    return factory().openFile(path, this, options);
 }
 
 
@@ -275,4 +275,13 @@ sequence_t DataFileTestFixture::writeDoc(slice docID,
     enc.endDictionary();
     alloc_slice body = enc.finish();
     return store->set(docID, nullslice, body, flags, t);
+}
+
+
+slice DataFileTestFixture::fleeceAccessor(slice recordBody) const {
+    return recordBody;
+}
+
+alloc_slice DataFileTestFixture::blobAccessor(slice blobKey) const {
+    return {};
 }

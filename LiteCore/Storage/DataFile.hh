@@ -45,11 +45,14 @@ namespace litecore {
     class DataFile : public Logging, fleece::InstanceCountedIn<DataFile> {
     public:
 
-        // Callback that takes a record body and returns the portion of it containing Fleece data
-        typedef slice (*FleeceAccessor)(slice recordBody);
-
-        // Callback that takes a base64 blob digest and returns the blob data
-        typedef std::function<alloc_slice(slice)> BlobAccessor;
+        class Delegate {
+        public:
+            virtual ~Delegate()                         { }
+            // Callback that takes a record body and returns the portion of it containing Fleece data
+            virtual slice fleeceAccessor(slice recordBody) const =0;
+            // Callback that takes a base64 blob digest and returns the blob data
+            virtual alloc_slice blobAccessor(slice blobKey) const =0;
+        };
 
         struct Options {
             KeyStore::Capabilities keyStores;
@@ -58,12 +61,10 @@ namespace litecore {
             bool                useDocumentKeys:1;      ///< Use SharedKeys for Fleece docs
             EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
             alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
-            FleeceAccessor      fleeceAccessor;         ///< Fn to get Fleece from Record body
-
             static const Options defaults;
         };
 
-        DataFile(const FilePath &path, const Options* =nullptr);
+        DataFile(const FilePath &path, Delegate* delegate NONNULL, const Options* =nullptr);
         virtual ~DataFile();
 
         FilePath filePath() const noexcept                  {return _path;}
@@ -85,14 +86,9 @@ namespace litecore {
 
         virtual void rekey(EncryptionAlgorithm, slice newKey);
 
-        FleeceAccessor fleeceAccessor() const               {return _options.fleeceAccessor;}
-        BlobAccessor blobAccessor() const                   {return _blobAccessor;}
-        void setBlobAccessor(BlobAccessor b)                {_blobAccessor = b;}
+        Delegate* delegate() const                          {return _delegate;}
         fleece::impl::SharedKeys* documentKeys() const;
 
-
-        void* owner()                                       {return _owner;}
-        void setOwner(void* owner)                          {_owner = owner;}
 
         void forOtherDataFiles(function_ref<void(DataFile*)> fn);
 
@@ -141,7 +137,9 @@ namespace litecore {
             virtual bool encryptionEnabled(EncryptionAlgorithm) =0;
 
             /** Opens a DataFile. */
-            virtual DataFile* openFile(const FilePath &path, const Options* =nullptr) =0;
+            virtual DataFile* openFile(const FilePath &path,
+                                       Delegate *delegate,
+                                       const Options* =nullptr) =0;
 
             /** Deletes a non-open file. Returns false if it doesn't exist. */
             bool deleteFile(const FilePath &path, const Options* =nullptr);
@@ -220,6 +218,7 @@ namespace litecore {
         DataFile(const DataFile&) = delete;
         DataFile& operator=(const DataFile&) = delete;
 
+        Delegate* const         _delegate;
         Retained<Shared>        _shared;                        // Shared state of file (lock)
         FilePath const          _path;                          // Path as given (non-canonical)
         Options                 _options;                       // Option/capability flags
@@ -227,8 +226,6 @@ namespace litecore {
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
-        std::atomic<void*>      _owner {nullptr};               // App-defined object that owns me
-        BlobAccessor            _blobAccessor;
     };
 
 

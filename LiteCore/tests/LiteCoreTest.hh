@@ -91,7 +91,7 @@ private:
 };
 
 
-class DataFileTestFixture : public TestFixture {
+class DataFileTestFixture : public TestFixture, public DataFile::Delegate {
 public:
 
     static const int numberOfOptions = 1;
@@ -115,6 +115,9 @@ public:
 
     sequence_t writeDoc(slice docID, DocumentFlags, Transaction&,
                         function<void(fleece::impl::Encoder&)>);
+
+    virtual slice fleeceAccessor(slice recordBody) const override;
+    virtual alloc_slice blobAccessor(slice blobKey) const override;
 };
 
 
