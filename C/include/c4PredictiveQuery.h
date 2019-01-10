@@ -67,11 +67,15 @@ extern "C" {
         void* context;
 
         /** Called from within a query (or document indexing) to run the prediction.
+            @warning This function must be "pure": given the same input parameters it must always
+                     produce the same output (otherwise indexes or queries may be messed up).
+                     It MUST NOT alter the database or any documents, nor run a query: either of
+                     those are very likely to cause a crash.
             @param context  The value of the C4PredictiveModel's `context` field;
                     typically a pointer to external data needed by the implementation.
             @param input  The input dictionary from the query.
-            @param blobStore  The blob storage of the database being queried; use this to get the
-                              data of a blob whose dictionary is passed in the input.
+            @param database  The database being queried. DO NOT use this reference to write to
+                                documents or to run queries!
             @param error  Store an error here on failure. It is NOT a failure for input parameters
                     to be missing or the wrong type, since this can easily happen when the
                     query reaches a document that doesn't contain input data, or if the document's
@@ -81,7 +85,7 @@ extern "C" {
                     or as {NULL, 0} if there is no output. */
         C4SliceResult (*prediction)(void* context,
                                     FLDict C4NONNULL input,
-                                    C4BlobStore* C4NONNULL blobStore,
+                                    C4Database* C4NONNULL database,
                                     C4Error *error);
 
         /** Called if the model is unregistered, so it can release resources. */

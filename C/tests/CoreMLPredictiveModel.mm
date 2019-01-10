@@ -37,12 +37,12 @@ namespace cbl {
 
 
     void PredictiveModel::registerWithName(const char *name) {
-        auto callback = [](void* context, FLDict input, C4BlobStore* blobStore, C4Error *outError) {
+        auto callback = [](void* context, FLDict input, C4Database *db, C4Error *outError) {
             @autoreleasepool {
                 Encoder enc;
                 enc.beginDict();
                 auto self = (PredictiveModel*)context;
-                if (!self->predict(Dict(input), blobStore, enc, outError))
+                if (!self->predict(Dict(input), db, enc, outError))
                     return C4SliceResult{};
                 enc.endDict();
                 return C4SliceResult(enc.finish());
@@ -104,7 +104,7 @@ namespace cbl {
 
     // The main prediction function!
     bool CoreMLPredictiveModel::predict(Dict inputDict,
-                                        C4BlobStore *blobStore,
+                                        C4Database *db,
                                         fleece::Encoder &enc,
                                         C4Error *outError)
     {
@@ -116,7 +116,7 @@ namespace cbl {
                     return reportError(outError, "Failed to create Vision model: %s",
                                        error.localizedDescription.UTF8String);
             }
-            NSArray* visionResults = runVisionFunction(inputDict, blobStore, outError);
+            NSArray* visionResults = runVisionFunction(inputDict, db, outError);
             return visionResults && decodeVisionResults(visionResults, enc, outError);
         } else {
             return predictViaCoreML(inputDict, enc, outError);
@@ -159,7 +159,7 @@ namespace cbl {
 
 
     NSArray* CoreMLPredictiveModel::runVisionFunction(fleece::Dict input,
-                                                      C4BlobStore *blobStore,
+                                                      C4Database *db,
                                                       C4Error *outError)
     {
         // Get the image data:
@@ -173,6 +173,9 @@ namespace cbl {
                 slice digest = blobDict["digest"_sl].asString();
                 C4BlobKey key;
                 if (c4blob_keyFromString(digest, &key)) {
+                    auto blobStore = c4db_getBlobStore(db, outError);
+                    if (!blobStore)
+                        return nil;
                     allocedImage = alloc_slice(c4blob_getContents(blobStore, key, outError));
                     if (!allocedImage)
                         return nil;

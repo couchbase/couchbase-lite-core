@@ -38,8 +38,10 @@ public:
                                    DataFile::Delegate *dfDelegate,
                                    C4Error *outError) noexcept override {
         try {
-            auto blobStore = (C4BlobStore*)((c4Database*)dfDelegate)->blobStore();
-            return _c4Model.prediction(_c4Model.context, (FLDict)input, blobStore, outError);
+            return _c4Model.prediction(_c4Model.context,
+                                       (FLDict)input,
+                                       (c4Database*)dfDelegate,
+                                       outError);
         } catch (const std::exception &x) {
             if (outError)
                 *outError = c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError, slice(x.what()));

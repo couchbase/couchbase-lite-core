@@ -35,7 +35,7 @@ namespace cbl {
     protected:
         /** Subclass must implement this to perform the work. */
         virtual bool predict(fleece::Dict input,
-                             C4BlobStore *blobStore,
+                             C4Database *db,
                              fleece::Encoder&,
                              C4Error *error) =0;
 
@@ -59,14 +59,14 @@ namespace cbl {
 
     protected:
         virtual bool predict(fleece::Dict input,
-                             C4BlobStore*,
+                             C4Database*,
                              fleece::Encoder&,
                              C4Error *error) override;
         
     private:
         bool predictViaCoreML(fleece::Dict input, fleece::Encoder&, C4Error *error);
         NSArray* runVisionFunction(fleece::Dict input,
-                                   C4BlobStore *blobStore,
+                                   C4Database *db,
                                    C4Error *outError);
         bool decodeVisionResults(NSArray* visionResults, fleece::Encoder&, C4Error *error);
         MLFeatureValue* featureFromDict(NSString* name, FLValue, C4Error *outError);
