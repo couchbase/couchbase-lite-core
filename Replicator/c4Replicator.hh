@@ -68,16 +68,13 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         return opts.properties.data();
     }
 
+    // Appends the db name and "/_blipsync" to the Address's path, then returns the resulting URL.
     static alloc_slice effectiveURL(C4Address address, slice remoteDatabaseName) {
-        // If this is a regular WebSocket URL, append "/_blipsync" for Sync Gateway:
         slice path = address.path;
         string newPath = string(path);
         if (!path.hasSuffix("/"_sl))
             newPath += "/";
-        newPath += string(remoteDatabaseName);
-        if (slice(address.scheme) == "ws"_sl || slice(address.scheme) == "wss"_sl) {
-            newPath += "/_blipsync";
-        }
+        newPath += string(remoteDatabaseName) + "/_blipsync";
         address.path = slice(newPath);
         return Address::toURL(address);
     }

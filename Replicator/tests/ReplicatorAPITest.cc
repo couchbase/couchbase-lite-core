@@ -115,6 +115,37 @@ TEST_CASE("URL Generation") {
 }
 
 
+// Test invalid URL scheme:
+TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid Scheme", "[Push][!throws]") {
+    ExpectingExceptions x;
+    _address.scheme = "http"_sl;
+    C4Error err;
+    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
+    CHECK(err.domain == NetworkDomain);
+    CHECK(err.code == kC4NetErrInvalidURL);
+}
+
+
+// Test missing or invalid database name:
+TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[Push][!throws]") {
+    ExpectingExceptions x;
+    _remoteDBName = ""_sl;
+    C4Error err;
+    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
+    CHECK(err.domain == NetworkDomain);
+    CHECK(err.code == kC4NetErrInvalidURL);
+
+    _remoteDBName = "Invalid Name"_sl;
+    err = {};
+    CHECK(!c4repl_isValidRemote(_address, _remoteDBName, nullptr));
+    REQUIRE(!startReplicator(kC4Disabled, kC4OneShot, &err));
+    CHECK(err.domain == NetworkDomain);
+    CHECK(err.code == kC4NetErrInvalidURL);
+}
+
+
 // Test connection-refused error by connecting to a bogus port of localhost
 TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
     _address.hostname = C4STR("localhost");

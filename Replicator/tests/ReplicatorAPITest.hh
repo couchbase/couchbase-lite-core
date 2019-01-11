@@ -162,7 +162,7 @@ public:
     }
 
 
-    void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
+    bool startReplicator(C4ReplicatorMode push, C4ReplicatorMode pull, C4Error *err) {
         _callbackStatus = { };
         _numCallbacks = 0;
         memset(_numCallbacksWithLevel, 0, sizeof(_numCallbacksWithLevel));
@@ -185,11 +185,15 @@ public:
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
 
-        C4Error err;
         _repl = c4repl_new(db, _address, _remoteDBName,
                            (_remoteDBName.buf ? nullptr : (C4Database*)db2),
-                           params, &err);
-        REQUIRE(_repl);
+                           params, err);
+        return (_repl != nullptr);
+    }
+
+    void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
+        C4Error err;
+        REQUIRE(startReplicator(push, pull, &err));
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
         logState(status);
         // Sometimes Windows goes so fast that by the time

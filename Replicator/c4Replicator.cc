@@ -35,7 +35,17 @@ static bool isValidScheme(slice scheme) {
 }
 
 
-bool c4repl_isValidDatabaseName(C4String dbName) {
+static bool isValidReplicatorScheme(slice scheme) {
+    const slice kValidSchemes[] = {"ws"_sl, "wss"_sl,
+                                   kC4Replicator2Scheme, kC4Replicator2TLSScheme, nullslice};
+    for (int i=0; kValidSchemes[i]; ++i)
+        if (scheme.caseEquivalent(kValidSchemes[i]))
+            return true;
+    return false;
+}
+
+
+bool c4repl_isValidDatabaseName(C4String dbName) C4API {
     slice name = dbName;
     // Same rules as Couchbase Lite 1.x and CouchDB
     return name.size > 0 && name.size < 240
@@ -44,7 +54,24 @@ bool c4repl_isValidDatabaseName(C4String dbName) {
 }
 
 
-bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) {
+bool c4repl_isValidRemote(C4Address addr, C4String dbName, C4Error *outError) C4API {
+    slice message;
+    if (!isValidReplicatorScheme(addr.scheme))
+        message = "Invalid replication URL scheme (use ws: or wss:)"_sl;
+    else if (!c4repl_isValidDatabaseName(dbName))
+        message = "Invalid or missing remote database name"_sl;
+    else if (addr.hostname.size == 0 || addr.port == 0)
+        message = "Invalid replication URL (bad hostname or port)"_sl;
+
+    if (message) {
+        c4error_return(NetworkDomain, kC4NetErrInvalidURL, message, outError);
+        return false;
+    }
+    return true;
+}
+
+
+bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API {
     slice str = url;
 
     auto colon = str.findByteOrEnd(':');
@@ -102,7 +129,7 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) {
 }
 
 
-C4StringResult c4address_toURL(C4Address address) {
+C4StringResult c4address_toURL(C4Address address) C4API {
     stringstream s;
     s << address.scheme << "://" << address.hostname;
     if (address.port)
@@ -140,6 +167,13 @@ C4Replicator* c4repl_new(C4Database* db,
             replicator = new C4Replicator(dbCopy, otherDBCopy, params);
         } else {
             // Remote:
+            if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
+                return nullptr;
+            if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
+                Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
+                     "admin port (4985) -- this is usually a bad idea. By default this port is "
+                     "unreachable, but if opened, it would give anyone unlimited privileges.");
+            }
             replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
         }
         replicator->start();

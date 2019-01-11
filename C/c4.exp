@@ -177,6 +177,7 @@ _c4docobs_free
 
 # Replicator:
 _c4repl_isValidDatabaseName
+_c4repl_isValidRemote
 _c4repl_new
 _c4repl_newWithSocket
 _c4repl_free

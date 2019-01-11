@@ -121,7 +121,13 @@ extern "C" {
                                                    void* context);
 
     /** Checks whether a database name is valid, for purposes of appearing in a replication URL */
-    bool c4repl_isValidDatabaseName(C4String dbName);
+    bool c4repl_isValidDatabaseName(C4String dbName) C4API;
+
+    /** Checks whether the destination of a replication is valid.
+        (c4repl_new makes the same checks; this function is exposed so CBL can fail sooner.) */
+    bool c4repl_isValidRemote(C4Address remoteAddress,
+                              C4String remoteDatabaseName,
+                              C4Error *outError) C4API;
 
     /** A simple URL parser that populates a C4Address from a URL string.
         The fields of the address will point inside the url string.
@@ -134,10 +140,10 @@ extern "C" {
         @return  True on success, false on failure. */
     bool c4address_fromURL(C4String url,
                            C4Address *address C4NONNULL,
-                           C4String *dbName);
+                           C4String *dbName) C4API;
 
     /** Converts a C4Address to a URL. */
-    C4StringResult c4address_toURL(C4Address address);
+    C4StringResult c4address_toURL(C4Address address) C4API;
 
 
     /** Parameters describing a replication, used when creating a C4Replicator. */
