@@ -53,14 +53,18 @@ public:
             NSURL *url = [NSURL fileURLWithPath: asNSString(sFixturesDir + modelFilename)];
             NSError *error;
             if (required || [url checkResourceIsReachableAndReturnError: nullptr]) {
-                NSURL* compiled = [MLModel compileModelAtURL: url error: &error];
-                if (!compiled)
-                    INFO("Error" << (error.description.UTF8String ?: "none"));
-                REQUIRE(compiled);
-                auto model = [MLModel modelWithContentsOfURL: compiled error: &error];
-                if (!model)
-                    INFO("Error" << (error.description.UTF8String ?: "none"));
-                REQUIRE(model);
+                MLModel* model;
+                {
+                    ExpectingExceptions x;  // CoreML throws & catches exceptions during this
+                    NSURL* compiled = [MLModel compileModelAtURL: url error: &error];
+                    if (!compiled)
+                        INFO("Error" << (error.description.UTF8String ?: "none"));
+                    REQUIRE(compiled);
+                    model = [MLModel modelWithContentsOfURL: compiled error: &error];
+                    if (!model)
+                        INFO("Error" << (error.description.UTF8String ?: "none"));
+                    REQUIRE(model);
+                }
                 _model.reset(new cbl::CoreMLPredictiveModel(model));
                 _model->registerWithName(modelName);
             } else {
