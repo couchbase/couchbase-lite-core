@@ -66,7 +66,7 @@ namespace litecore { namespace legacy_attachments {
                 auto attachment = Value::asDict(i.value());
                 if (!attachment)
                     continue;
-                auto attDigest = attachment->get("digest"_sl);
+                auto attDigest = attachment->get(slice(kC4BlobDigestProperty));
                 const Dict *blob = nullptr;
 
                 if (key.hasPrefix("blob_"_sl) && attachment) {
@@ -83,7 +83,7 @@ namespace litecore { namespace legacy_attachments {
                 if (attDigest && blob && Document::dictIsBlob(blob)) {
                     // OK, this is a stand-in; remove it. But has its digest changed?
                     removeThese.insert(attachment);
-                    auto blobDigest = blob->get("digest"_sl);
+                    auto blobDigest = blob->get(slice(kC4BlobDigestProperty));
                     if (blobDigest && blobDigest->asString() != attDigest->asString()) {
                         // The digest is different, so remember to copy that to the blob:
                         fixBlobs.insert({blob, attachment});

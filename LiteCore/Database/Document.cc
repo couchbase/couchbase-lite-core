@@ -38,7 +38,7 @@ namespace c4Internal {
 
 
     bool Document::getBlobKey(const Dict *dict, blobKey &outKey) {
-        const Value* digest = ((const Dict*)dict)->get("digest"_sl);
+        const Value* digest = ((const Dict*)dict)->get(slice(kC4BlobDigestProperty));
         return digest && outKey.readFromBase64(digest->asString());
     }
 

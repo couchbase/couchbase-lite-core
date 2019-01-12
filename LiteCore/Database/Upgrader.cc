@@ -223,7 +223,7 @@ namespace litecore {
             for (Dict::iterator i(attsDict); i; ++i) {
                 auto meta = i.value()->asDict();
                 if (meta) {
-                    auto digest = meta->get("digest"_sl);
+                    auto digest = meta->get(slice(kC4BlobDigestProperty));
                     if (digest)
                         copyAttachment((string)digest->asString());
                 }

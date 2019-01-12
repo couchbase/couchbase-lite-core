@@ -74,7 +74,7 @@ namespace litecore {
                 return;
 
             // Get the blob's "digest" property as a string:
-            const Value *digestVal = blobDict->get("digest"_sl);
+            const Value *digestVal = blobDict->get(slice(kC4BlobDigestProperty));
             if (!digestVal)
                 return;
             slice digest = digestVal->asString();

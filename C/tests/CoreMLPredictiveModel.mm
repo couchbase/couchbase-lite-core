@@ -170,7 +170,7 @@ namespace cbl {
             // Input param is not data; assume it's a CBL blob dictionary:
             Dict blobDict = value.asDict();
             if (blobDict[kC4ObjectTypeProperty].asString() == C4STR(kC4ObjectType_Blob)) {
-                slice digest = blobDict["digest"_sl].asString();
+                slice digest = blobDict[slice(kC4BlobDigestProperty)].asString();
                 C4BlobKey key;
                 if (c4blob_keyFromString(digest, &key)) {
                     auto blobStore = c4db_getBlobStore(db, outError);

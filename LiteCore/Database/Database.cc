@@ -266,7 +266,7 @@ namespace c4Internal {
                     for (Dict::iterator i(attachments->asDict()); i; ++i) {
                         auto att = i.value()->asDict();
                         if (att) {
-                            const Value* digest = att->get("digest"_sl);
+                            const Value* digest = att->get(slice(kC4BlobDigestProperty));
                             if (digest && key.readFromBase64(digest->asString())) {
                                 usedDigests.insert(key.filename());
                             }

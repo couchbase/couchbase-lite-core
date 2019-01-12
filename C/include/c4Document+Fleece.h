@@ -42,6 +42,9 @@ extern "C" {
     /** Value of kC4ObjectTypeProperty that denotes a blob. */
     #define kC4ObjectType_Blob "blob"
 
+    /** Blob dict property containing a digest of the data. (Required if "data" is absent) */
+    #define kC4BlobDigestProperty "digest"
+
     /** Top-level document property whose value is a CBL 1.x / CouchDB attachments container. */
     #define kC4LegacyAttachmentsProperty "_attachments"
 
