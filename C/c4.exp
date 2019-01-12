@@ -4,22 +4,12 @@
 #  Created by Jens Alfke on 9/15/15.
 #  Copyright (c) 2015-2016 Couchbase. All rights reserved.
 
-_kC4SQLiteStorageEngine
-_kC4DatabaseFilenameExtension
-
-_c4_getBuildInfo
+# Couchbase Lite .NET
 _c4_getVersion
 _c4_now
 
-_kC4Cpp_DefaultLog
-_kC4DefaultLog
-_kC4DatabaseLog
-_kC4QueryLog
-_kC4SyncLog
-_kC4WebSocketLog
-_c4slice_createResult
-_c4log
-_c4vlog
+_c4log_getLevel
+_c4log_setLevel
 _c4slog
 _c4log_writeToCallback
 _c4log_writeToBinaryFile
@@ -29,18 +19,14 @@ _c4log_binaryFileLevel
 _c4log_setBinaryFileLevel
 _c4log_getDomain
 _c4log_getDomainName
-_c4log_getLevel
-_c4log_setLevel
 _c4log_warnOnErrors
+
 _c4error_make
 _c4error_getMessage
-_c4error_getDescription
-_c4error_getDescriptionC
 _c4error_mayBeTransient
 _c4error_mayBeNetworkDependent
 
 _c4db_open
-_c4db_openAgain
 _c4db_retain
 _c4db_free
 _c4db_close
@@ -59,15 +45,9 @@ _c4db_getUUIDs
 _c4db_beginTransaction
 _c4db_endTransaction
 _c4db_isInTransaction
-_c4db_createFleeceEncoder
 _c4db_getSharedFleeceEncoder
-_c4db_encodeJSON
 _c4db_getFLSharedKeys
-_c4db_lock
-_c4db_unlock
-_c4db_getRemoteDBAddress
-_c4db_getRemoteDBID
-_c4db_getRemoteDBAddress
+_c4db_encodeJSON
 
 _c4raw_free
 _c4raw_get
@@ -81,14 +61,12 @@ _c4doc_selectRevision
 _c4doc_selectCurrentRevision
 _c4doc_loadRevisionBody
 _c4doc_hasRevisionBody
-_c4doc_removeRevisionBody
 _c4doc_selectParentRevision
 _c4doc_selectNextRevision
 _c4doc_selectNextLeafRevision
 _c4doc_selectCommonAncestorRevision
 _c4doc_selectFirstPossibleAncestorOf
 _c4doc_selectNextPossibleAncestorOf
-_c4doc_getForPut
 _c4doc_put
 _c4doc_create
 _c4doc_update
@@ -99,38 +77,24 @@ _c4doc_setExpiration
 _c4doc_getExpiration
 _c4db_nextDocExpiration
 _c4db_purgeExpiredDocs
-_c4doc_bodyAsJSON
 _c4doc_isOldMetaProperty
-_c4doc_hasOldMetaProperties
-_c4doc_dictIsBlob
 _c4doc_getBlobData
 _c4doc_dictContainsBlobs
-_c4doc_blobIsCompressible
-_c4doc_encodeStrippingOldMetaProperties
-_c4doc_detachRevisionBody
-_c4doc_getRemoteAncestor
-_c4doc_setRemoteAncestor
 
 _c4rev_getGeneration
-_c4rev_flagsFromDocFlags
 
 _c4db_enumerateChanges
 _c4db_enumerateAllDocs
 _c4db_createIndex
 _c4db_deleteIndex
 _c4db_getIndexes
-_c4db_getIndexesInfo
 _c4enum_next
 _c4enum_getDocumentInfo
 _c4enum_getDocument
 _c4enum_close
 _c4enum_free
 
-_kC4DefaultEnumeratorOptions
-_kC4DefaultQueryOptions
-
 _c4queryenum_next
-_c4queryenum_getRowCount
 _c4queryenum_seek
 _c4queryenum_refresh
 _c4queryenum_close
@@ -142,17 +106,14 @@ _c4query_columnCount
 _c4query_columnTitle
 _c4query_run
 _c4query_explain
-_c4query_fullTextMatched
 
 _c4blob_keyFromString
 _c4blob_keyToString
 _c4blob_openStore
-_c4blob_freeStore
 _c4blob_deleteStore
 _c4blob_getSize
 _c4blob_getContents
 _c4blob_getFilePath
-_c4blob_computeKey
 _c4blob_openReadStream
 _c4blob_create
 _c4blob_delete
@@ -176,15 +137,11 @@ _c4dbobs_free
 _c4docobs_create
 _c4docobs_free
 
-# Replicator:
-_c4repl_isValidDatabaseName
-_c4repl_isValidRemote
 _c4repl_new
 _c4repl_newWithSocket
 _c4repl_free
 _c4repl_stop
 _c4repl_getStatus
-_c4repl_getResponseHeaders
 
 _c4socket_registerFactory
 _c4socket_fromNative
@@ -195,49 +152,21 @@ _c4socket_completedWrite
 _c4socket_received
 _c4socket_gotHTTPResponse
 
-_c4address_fromURL
-_c4address_toURL
-
-_c4db_setCookie
-_c4db_getCookies
-_c4db_clearCookies
-
-_kC4ReplicatorActivityLevelNames
-_kC4SocketOptionWSProtocols
-
-# EE Only:
 _c4pred_registerModel
 _c4pred_unregisterModel
 
-
-# Private API:
-_c4error_return
-_c4doc_getForPut
 _c4_getObjectCount
 _c4_shutdown
-_c4db_markSynced
-_c4_dumpInstances
-_gC4ExpectExceptions
 
-
-# Fleece:
 _FLSlice_Equal
 _FLSlice_Compare
-_FLSliceResult_Retain
 _FLSliceResult_Release
 _FLSlice_Copy
 
 _FLDoc_FromResultData
-_FLDoc_FromJSON
-_FLDoc_GetData
 _FLDoc_GetRoot
 _FLDoc_GetSharedKeys
-_FLDoc_Retain
 _FLDoc_Release
-
-_FLSharedKeys_Decode
-_FLSharedKeys_Retain
-_FLSharedKeys_Release
 
 _FLValue_FromData
 _FLValue_FindDoc
@@ -257,7 +186,6 @@ _FLValue_AsDict
 _FLValue_ToString
 _FLValue_ToJSON
 _FLValue_ToJSONX
-_FLValue_ToJSON5
 
 _FLData_ConvertJSON
 _FLJSON5_ToJSON
@@ -284,10 +212,8 @@ _FLDictKey_GetString
 _FLEncoder_GetExtraInfo
 _FLEncoder_SetExtraInfo
 _FLEncoder_New
-_FLEncoder_NewWithOptions
 _FLEncoder_Free
 _FLEncoder_Reset
-_FLEncoder_SetSharedKeys
 _FLEncoder_WriteNull
 _FLEncoder_WriteBool
 _FLEncoder_WriteInt
@@ -297,35 +223,85 @@ _FLEncoder_WriteDouble
 _FLEncoder_WriteString
 _FLEncoder_WriteData
 _FLEncoder_WriteValue
-_FLEncoder_WriteRaw
 _FLEncoder_BeginArray
 _FLEncoder_EndArray
 _FLEncoder_BeginDict
 _FLEncoder_WriteKey
 _FLEncoder_EndDict
-_FLEncoder_ConvertJSON
-_FLEncoder_BytesWritten
 _FLEncoder_FinishDoc
 _FLEncoder_Finish
+
+# C4Tests
+_kC4SQLiteStorageEngine
+_kC4DatabaseFilenameExtension
+
+_c4_getBuildInfo
+
+_c4log
+_c4vlog
+_kC4Cpp_DefaultLog
+_kC4DefaultLog
+_kC4DatabaseLog
+_kC4QueryLog
+_kC4SyncLog
+_kC4WebSocketLog
+
+_c4error_getDescription
+_c4error_getDescriptionC
+
+_c4db_openAgain
+_c4db_createFleeceEncoder
+_c4db_lock
+_c4db_unlock
+_c4db_getRemoteDBID
+
+_c4doc_removeRevisionBody
+_c4doc_getForPut
+_c4doc_bodyAsJSON
+_c4doc_hasOldMetaProperties
+_c4doc_encodeStrippingOldMetaProperties
+_c4doc_detachRevisionBody
+_c4doc_getRemoteAncestor
+
+_c4db_getIndexesInfo
+
+_kC4DefaultEnumeratorOptions
+_kC4DefaultQueryOptions
+
+_c4queryenum_getRowCount
+
+_c4query_fullTextMatched
+
+_c4blob_computeKey
+
+_c4repl_isValidDatabaseName
+_c4repl_isValidRemote
+_c4repl_getResponseHeaders
+
+_kC4ReplicatorActivityLevelNames
+_kC4SocketOptionWSProtocols
+
+_c4address_fromURL
+_c4address_toURL
+
+_c4error_return
+_c4db_markSynced
+_c4_dumpInstances
+_gC4ExpectExceptions
+
+_FLSliceResult_Retain
+
+_FLDoc_FromJSON
+_FLDoc_Retain
+
+_FLEncoder_NewWithOptions
+_FLEncoder_WriteRaw
+_FLEncoder_ConvertJSON
 _FLEncoder_GetError
-_FLEncoder_GetErrorMessage
 
-_FLKeyPath_New
-_FLKeyPath_Free
-_FLKeyPath_Eval
-_FLKeyPath_EvalOnce
+_FLSharedKeys_Decode
+_FLSharedKeys_Retain
+_FLSharedKeys_Release
 
-_FLData_Dump
-_FLDump
-_FLDumpData
+_FLValue_ToJSON5
 
-# Fleece CF/Obj-C:
-_FLEncoder_WriteCFObject
-_FLValue_CopyCFObject
-_FLDict_GetWithCFString
-_FLDictIterator_GetKeyAsNSString
-_FLEncoder_WriteNSObject
-_FLValue_GetNSObject
-_FLDict_GetWithNSString
-_FLCreateSharedStringsTable
-_FLErrorDomain
