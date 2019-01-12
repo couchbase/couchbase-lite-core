@@ -66,7 +66,11 @@ public:
     }
 
 
-    virtual alloc_slice blobAccessor(slice digest) const override {
+    virtual alloc_slice blobAccessor(const Dict *blob) const override {
+        auto digestProp = blob->get("digest"_sl);
+        if (!digestProp)
+            return {};
+        slice digest = digestProp->asString();
         CHECK(digest);
         if (digest.hasPrefix("sha1-"_sl)) {
             return alloc_slice(digest.from(5));

@@ -672,6 +672,16 @@ bool c4doc_dictIsBlob(FLDict dict, C4BlobKey *outKey) C4API {
 }
 
 
+C4SliceResult c4doc_getBlobData(FLDict flDict, C4BlobStore *blobStore, C4Error *outError) C4API {
+    return tryCatch<C4SliceResult>(outError, [&]{
+        alloc_slice blob = Document::getBlobData((const Dict*)flDict, (BlobStore*)blobStore);
+        if (!blob && outError)
+            *outError = {};
+        return FLSliceResult(blob);
+    });
+}
+
+
 bool c4doc_dictContainsBlobs(FLDict dict) noexcept {
     bool found = false;
     Document::findBlobReferences((Dict*)dict, [&](const Dict*) {

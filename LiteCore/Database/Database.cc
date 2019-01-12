@@ -329,11 +329,9 @@ namespace c4Internal {
 
 
     // Callback that takes a base64 blob digest and returns the blob data
-    alloc_slice Database::blobAccessor(slice digest) const {
-        blobKey key;
-        if (!key.readFromBase64(digest))
-            return alloc_slice();
-        return const_cast<Database*>(this)->blobStore()->get(key).contents();
+    alloc_slice Database::blobAccessor(const Dict *blobDict) const {
+        auto blobStore = const_cast<Database*>(this)->blobStore();
+        return Document::getBlobData(blobDict, blobStore);
     }
 
 

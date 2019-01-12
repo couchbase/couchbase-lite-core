@@ -45,6 +45,9 @@ extern "C" {
     /** Blob dict property containing a digest of the data. (Required if "data" is absent) */
     #define kC4BlobDigestProperty "digest"
 
+    /** Blob dict property containing the data itself. (Required if "digest" is absent) */
+    #define kC4BlobDataProperty "data"
+
     /** Top-level document property whose value is a CBL 1.x / CouchDB attachments container. */
     #define kC4LegacyAttachmentsProperty "_attachments"
 
@@ -80,6 +83,18 @@ extern "C" {
                           C4BlobKey *outKey C4NONNULL) C4API;
 
     bool c4doc_dictContainsBlobs(FLDict dict C4NONNULL) C4API;
+
+    /** Returns the contents of a blob dictionary, whether they're inline in the "data" property,
+        or indirectly referenced via the "digest" property.
+        @note  You can omit the C4BlobStore, but if the blob has no inline data the function will
+            give up and return a null slice (and clear the error, since this isn't a failure.)
+        @param dict  A blob dictionary.
+        @param blobStore  The database's BlobStore, or NULL to suppress loading blobs from disk.
+        @param outError  On failure, the error will be written here.
+        @return  The blob data, or null on failure. */
+    C4SliceResult c4doc_getBlobData(FLDict dict C4NONNULL,
+                                    C4BlobStore *blobStore,
+                                    C4Error *outError) C4API;
 
     /** Given a dictionary that's a reference to a blob, determines whether it's worth trying to
         compress the blob's data. This is done by examining the "encoding" and "content_type"

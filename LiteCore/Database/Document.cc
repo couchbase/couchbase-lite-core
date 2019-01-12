@@ -19,6 +19,7 @@
 #include "Document.hh"
 #include "c4Document+Fleece.h"
 #include "LegacyAttachments.hh"
+#include "BlobStore.hh"
 #include "StringUtil.hh"
 #include "DeepIterator.hh"
 
@@ -38,7 +39,7 @@ namespace c4Internal {
 
 
     bool Document::getBlobKey(const Dict *dict, blobKey &outKey) {
-        const Value* digest = ((const Dict*)dict)->get(slice(kC4BlobDigestProperty));
+        const Value* digest = dict->get(slice(kC4BlobDigestProperty));
         return digest && outKey.readFromBase64(digest->asString());
     }
 
@@ -66,6 +67,34 @@ namespace c4Internal {
             }
         }
         return true;
+    }
+
+
+    alloc_slice Document::getBlobData(const Dict *dict, BlobStore *blobStore) {
+        if (!dictIsBlob(dict))
+            error::_throw(error::InvalidParameter, "Not a blob");
+        auto dataProp = dict->get(slice(kC4BlobDataProperty));
+        if (dataProp) {
+            switch (dataProp->type()) {
+                case fleece::impl::kData:
+                    return alloc_slice(dataProp->asData());
+                case fleece::impl::kString: {
+                    alloc_slice data = dataProp->asString().decodeBase64();
+                    if (!data)
+                        error::_throw(error::CorruptData, "Blob data string is not valid Base64");
+                    return data;
+                }
+                default:
+                    error::_throw(error::CorruptData, "Blob data property has invalid type");
+            }
+        }
+        blobKey key;
+        if (!getBlobKey(dict, key))
+            error::_throw(error::CorruptData, "Blob has invalid or missing digest property");
+        if (blobStore)
+            return blobStore->get(key).contents();
+        else
+            return {};
     }
 
 

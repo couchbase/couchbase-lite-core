@@ -161,6 +161,14 @@ namespace c4Internal {
         /** Returns true if the given dictionary is a [reference to a] blob; if so, gets its key. */
         static bool dictIsBlob(const fleece::impl::Dict *dict, blobKey &outKey);
 
+        /** Returns the contents of a blob referenced by a dict. Inline data will be decoded if
+            necessary, or the "digest" property will be looked up in the BlobStore if one is
+            provided.
+            Returns a null slice if the blob data is not inline but no BlobStore is given.
+            Otherwise throws an exception if it's unable to return data. */
+        static fleece::alloc_slice getBlobData(const fleece::impl::Dict *dict NONNULL,
+                                               BlobStore*);
+
         /** Returns the dict's "digest" property decoded into a blobKey. */
         static bool getBlobKey(const fleece::impl::Dict*, blobKey &outKey);
 

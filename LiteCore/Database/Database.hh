@@ -29,6 +29,7 @@
 #include <unordered_set>
 
 namespace fleece { namespace impl {
+    class Dict;
     class Encoder;
     class SharedKeys;
 } }
@@ -113,7 +114,7 @@ namespace c4Internal {
         void unlockClientMutex()                            {_clientMutex.unlock();}
 
         virtual slice fleeceAccessor(slice recordBody) const override;
-        virtual alloc_slice blobAccessor(slice blobKey) const override;
+        virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
 
     public:
         // should be private, but called from Document

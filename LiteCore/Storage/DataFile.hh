@@ -31,6 +31,7 @@
 #endif
 
 namespace fleece { namespace impl {
+    class Dict;
     class SharedKeys;
     class PersistentSharedKeys;
 } }
@@ -50,8 +51,8 @@ namespace litecore {
             virtual ~Delegate()                         { }
             // Callback that takes a record body and returns the portion of it containing Fleece data
             virtual slice fleeceAccessor(slice recordBody) const =0;
-            // Callback that takes a base64 blob digest and returns the blob data
-            virtual alloc_slice blobAccessor(slice blobKey) const =0;
+            // Callback that takes a blob dictionary and returns the blob data
+            virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const =0;
         };
 
         struct Options {

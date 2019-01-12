@@ -169,18 +169,15 @@ namespace cbl {
         if (!image) {
             // Input param is not data; assume it's a CBL blob dictionary:
             Dict blobDict = value.asDict();
-            if (blobDict[kC4ObjectTypeProperty].asString() == C4STR(kC4ObjectType_Blob)) {
-                slice digest = blobDict[slice(kC4BlobDigestProperty)].asString();
-                C4BlobKey key;
-                if (c4blob_keyFromString(digest, &key)) {
-                    auto blobStore = c4db_getBlobStore(db, outError);
-                    if (!blobStore)
-                        return nil;
-                    allocedImage = alloc_slice(c4blob_getContents(blobStore, key, outError));
-                    if (!allocedImage)
-                        return nil;
-                    image = allocedImage;
+            if (blobDict) {
+                C4Error error;
+                auto blobStore = c4db_getBlobStore(db, &error);
+                if (!blobStore) {
+                    reportError(outError, "Unable to get BlobStore");
+                    return nil;
                 }
+                allocedImage = c4doc_getBlobData(blobDict, blobStore, &error);
+                image = allocedImage;
             }
         }
         if (!image) {

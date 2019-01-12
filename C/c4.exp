@@ -103,6 +103,7 @@ _c4doc_bodyAsJSON
 _c4doc_isOldMetaProperty
 _c4doc_hasOldMetaProperties
 _c4doc_dictIsBlob
+_c4doc_getBlobData
 _c4doc_dictContainsBlobs
 _c4doc_blobIsCompressible
 _c4doc_encodeStrippingOldMetaProperties

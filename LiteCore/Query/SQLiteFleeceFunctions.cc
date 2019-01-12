@@ -72,20 +72,17 @@ namespace litecore {
             const Dict *blobDict = scope.root->asDict();
             if (!blobDict)
                 return;
-
-            // Get the blob's "digest" property as a string:
-            const Value *digestVal = blobDict->get(slice(kC4BlobDigestProperty));
-            if (!digestVal)
-                return;
-            slice digest = digestVal->asString();
-            if (!digest)
-                return;
-
             // Read the blob data:
             auto delegate = getDBDelegate(ctx);
             if (!delegate)
                 return;
-            setResultBlobFromData(ctx, delegate->blobAccessor(digest));
+            alloc_slice data;
+            try {
+                data = delegate->blobAccessor(blobDict);
+            } catch (const std::exception &x) {
+                // ignore exception; just return 'missing'
+            }
+            setResultBlobFromData(ctx, data);
         } catch (const std::exception &x) {
             sqlite3_result_error(ctx, "unexpected error reading blob", -1);
         }

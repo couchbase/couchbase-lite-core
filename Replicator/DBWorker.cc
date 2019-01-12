@@ -869,7 +869,7 @@ namespace litecore { namespace repl {
         }
 
         // Now write _attachments:
-        enc.writeKey("_attachments"_sl);
+        enc.writeKey(slice(kC4LegacyAttachmentsProperty));
         enc.beginDict();
         // First pre-existing legacy attachments, if any:
         for (Dict::iterator i(oldAttachments); i; ++i) {
