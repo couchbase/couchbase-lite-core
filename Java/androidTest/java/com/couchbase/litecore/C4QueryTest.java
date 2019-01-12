@@ -513,8 +513,7 @@ public class C4QueryTest extends C4QueryBaseTest {
     public void testQueryRefresh() throws LiteCoreException {
         compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
         String explanation = query.explain().substring(0, 129);
-        assertEquals("SELECT key, sequence FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (_doc.flags & 1) = 0", explanation);
-
+        assertEquals("SELECT key, sequence FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (_doc.flags & 1 = 0)", explanation);
         C4QueryEnumerator e = query.run(new C4QueryOptions(), null);
         assertNotNull(e);
         C4QueryEnumerator refreshed = e.refresh();
