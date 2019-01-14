@@ -305,3 +305,6 @@ _FLSharedKeys_Release
 
 _FLValue_ToJSON5
 
+# C4Tests, Mac only
+_FLEncoder_WriteNSObject
+
