@@ -231,7 +231,7 @@ public:
 
         auto port = uint16_t(_address.port + !!admin);
         path = string("/") + (string)(slice)_remoteDBName + "/" + path;
-        C4Log("*** Server command: %s %.*s:%d/%s",
+        C4Log("*** Server command: %s %.*s:%d%s",
               method.c_str(), SPLAT(_address.hostname), port, path.c_str());
         auto r = make_unique<REST::Response>(method,
                              (string)(slice)_address.hostname,

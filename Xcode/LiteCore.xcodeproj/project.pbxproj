@@ -169,6 +169,7 @@
 		2776AA292087FF6B004ACE85 /* LegacyAttachments.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */; };
 		277BE1C9204F4D45008047C9 /* RevTreeTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277BE1C8204F4D45008047C9 /* RevTreeTest.cc */; };
 		277C14711EA8102B0075348F /* Document.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277C14701EA8102B0075348F /* Document.cc */; };
+		277FEE5821ED10FA00B60E3C /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
 		2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2783DF981D27436700F84E6E /* c4ThreadingTest.cc */; };
 		2787EB271F4C91B000DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2787EB291F4C929C00DB97B0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
@@ -1010,6 +1011,7 @@
 		277C1B231F58794100031200 /* libreadline.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libreadline.tbd; path = usr/lib/libreadline.tbd; sourceTree = SDKROOT; };
 		277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Fleece.xcodeproj; path = fleece/Fleece.xcodeproj; sourceTree = "<group>"; };
 		277D19C9194E295B008E91EB /* Error.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Error.hh; sourceTree = "<group>"; };
+		277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ReplicatorSGTest.cc; sourceTree = "<group>"; };
 		2783DF981D27436700F84E6E /* c4ThreadingTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ThreadingTest.cc; sourceTree = "<group>"; };
 		278963601D7A376900493096 /* EncryptedStream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = EncryptedStream.cc; path = ../Support/EncryptedStream.cc; sourceTree = "<group>"; };
 		278963611D7A376900493096 /* EncryptedStream.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EncryptedStream.hh; path = ../Support/EncryptedStream.hh; sourceTree = "<group>"; };
@@ -1823,6 +1825,7 @@
 				275CE1051E5B79A80084E014 /* ReplicatorLoopbackTest.cc */,
 				273613F71F1696E700ECB9DF /* ReplicatorLoopbackTest.hh */,
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
+				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
 				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
 			);
@@ -3095,6 +3098,7 @@
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
 				270AB2A02072B1EA009A4596 /* CivetWebSocket.cc in Sources */,
+				277FEE5821ED10FA00B60E3C /* ReplicatorSGTest.cc in Sources */,
 				276E02111EA9717200FEFE8A /* RESTListenerTest.cc in Sources */,
 				276E021B1EA983EE00FEFE8A /* Response.cc in Sources */,
 				2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */,
