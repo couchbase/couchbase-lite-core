@@ -102,6 +102,10 @@ public class FLEncoder {
             else if (value instanceof Long)
                 return writeInt(_handle, ((Long) value).longValue());
 
+                // Short
+            else if (value instanceof Short)
+                return writeInt(_handle, ((Short) value).longValue());
+
                 // Double
             else if (value instanceof Double)
                 return writeDouble(_handle, ((Double) value).doubleValue());
