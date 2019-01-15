@@ -104,6 +104,8 @@ namespace litecore { namespace repl {
 
         bool disableBlobSupport() const     {return _disableBlobSupport;}
 
+        void flush();
+
     protected:
         virtual std::string loggingClassName() const override {return "DBWorker";}
 

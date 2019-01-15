@@ -85,6 +85,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_stop() {
         logInfo("Told to stop!");
+        _dbActor->flush();
         _disconnect(websocket::kCodeNormal, {});
     }
 

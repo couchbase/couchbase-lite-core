@@ -1132,4 +1132,9 @@ namespace litecore { namespace repl {
         return level;
     }
 
+    void DBWorker::flush()
+    {
+        _markRevsSyncedNow();
+    }
+
 } }
