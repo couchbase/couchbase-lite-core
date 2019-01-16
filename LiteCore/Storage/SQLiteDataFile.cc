@@ -458,11 +458,13 @@ namespace litecore {
     }
 
 
-    // Returns true if an index/table exists in the database with the given type and SQL schema
+    // Returns true if an index/table exists in the database with the given type and SQL schema OR
+    // Returns true if the given sql is empty and the schema doesn't exist.
     bool SQLiteDataFile::schemaExistsWithSQL(const string &name, const string &type,
                                              const string &tableName, const string &sql) {
         string existingSQL;
-        return getSchema(name, type, tableName, existingSQL) && existingSQL == sql;
+        bool existed = getSchema(name, type, tableName, existingSQL);
+        return sql != "" ? existed && existingSQL == sql : !existed;
     }
 
     

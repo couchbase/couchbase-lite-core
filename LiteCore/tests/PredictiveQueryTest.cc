@@ -163,9 +163,9 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
 
     string prediction = "['PREDICTION()', '8ball', {number: ['.num']}, '.square']";
 
-    for (int pass = 1; pass <= 2; ++pass) {
+    for (int pass = 1; pass <= 3; ++pass) {
         INFO("During pass #" << pass);
-        if (pass == 2) {
+        if (pass > 1) {
             store->createIndex("nums"_sl, json5("["+prediction+"]"),
                                KeyStore::kPredictiveIndex);
 
@@ -181,7 +181,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
         string explanation = query->explain();
         Log("Explanation: %s", explanation.c_str());
 
-        if (pass >= 2) {
+        if (pass > 1) {
             CHECK(explanation.find("prediction(") == string::npos);
             CHECK(explanation.find("USING INDEX nums") != string::npos);
         }
@@ -215,9 +215,9 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predic
     string square = "['PREDICTION()', '8ball', {number: ['.num']}, '.square']";
     string even = "['PREDICTION()', '8ball', {number: ['.num']}, '.even']";
     
-    for (int pass = 1; pass <= 2; ++pass) {
+    for (int pass = 1; pass <= 3; ++pass) {
         INFO("During pass #" << pass);
-        if (pass == 2) {
+        if (pass > 1) {
             string index = "['PREDICTION()', '8ball', {number: ['.num']}, '.square', '.even']";
             store->createIndex("nums"_sl, json5("["+index+"]"),
                                KeyStore::kPredictiveIndex);
@@ -234,7 +234,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predic
         string explanation = query->explain();
         Log("Explanation: %s", explanation.c_str());
         
-        if (pass >= 2) {
+        if (pass > 1) {
             CHECK(explanation.find("prediction(") == string::npos);
             CHECK(explanation.find("USING INDEX nums") != string::npos);
         }
@@ -265,9 +265,9 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") 
     string square = "['PREDICTION()', '8ball', {number: ['.num']}, '.square']";
     string even = "['PREDICTION()', '8ball', {number: ['.num']}, '.even']";
     
-    for (int pass = 1; pass <= 2; ++pass) {
+    for (int pass = 1; pass <= 3; ++pass) {
         INFO("During pass #" << pass);
-        if (pass == 2) {
+        if (pass > 1) {
             string index = "['PREDICTION()', '8ball', {number: ['.num']}]";
             store->createIndex("nums"_sl, json5("["+index+"]"),
                                KeyStore::kPredictiveIndex);
@@ -284,7 +284,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") 
         string explanation = query->explain();
         Log("Explanation: %s", explanation.c_str());
         
-        if (pass >= 2) {
+        if (pass > 1) {
             CHECK(explanation.find("prediction(") == string::npos);
             CHECK(explanation.find("USING INDEX nums") == string::npos);
         }
