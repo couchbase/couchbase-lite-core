@@ -173,8 +173,11 @@ namespace litecore { namespace repl {
                 break;
             case Connection::kDisconnected:
             case Connection::kClosed:
-                // After connection closes, remain active while I wait for db to finish writes:
-                level = (_dbStatus.level == kC4Busy) ? kC4Busy : kC4Stopped;
+                // After connection closes, remain busy while I wait for db to finish writes
+                // and for myself to process any pending messages:
+                level = max(Worker::computeActivityLevel(), _dbStatus.level);
+                if (level < kC4Busy)
+                    level = kC4Stopped;
                 break;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {

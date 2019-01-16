@@ -974,11 +974,8 @@ namespace litecore { namespace repl {
     // Insert all the revisions queued for insertion, and sync the ones queued for syncing.
     void DBWorker::_insertRevisionsNow() {
         auto revs = _revsToInsert.pop();
-        if (!revs) {
-            // No insertions scheduled, only syncs, so just do those:
-            _markRevsSyncedNow();
+        if (!revs)
             return;
-        }
 
         logVerbose("Inserting %zu revs:", revs->size());
         Stopwatch st;
