@@ -44,7 +44,6 @@ namespace litecore { namespace actor {
         ,_processor(processor)
         ,_latency(latency)
         ,_capacity(capacity)
-        ,_timer(std::bind(&Batcher::scheduledPop, this))
         { }
 
         /** Adds an item to the queue, and schedules a call to the Actor if necessary.
@@ -60,21 +59,13 @@ namespace litecore { namespace actor {
             if (!_scheduled) {
                 // Schedule a pop as soon as an item is added:
                 _scheduled = true;
-                if (_latency > Timer::duration(0))
-                    _timer.fireAfter(_latency);
-                else
-                    _actor.enqueue(_processor);
+                _actor.enqueueAfter(_latency, _processor);
             }
             if (_latency > Timer::duration(0) && _capacity > 0 && _items->size() == _capacity) {
                 // I'm full -- schedule a pop NOW
                 LogVerbose(SyncLog, "Batcher scheduling immediate pop");
-                _timer.stop();
                 _actor.enqueue(_processor);
             }
-        }
-
-        void scheduledPop() {
-            _actor.enqueue(_processor);
         }
 
         /** Removes & returns all the items from  the queue, in the order they were added,
@@ -93,7 +84,6 @@ namespace litecore { namespace actor {
         Timer::duration _latency;
         size_t _capacity;
         std::mutex _mutex;
-        Timer _timer;
         Items _items;
         bool _scheduled {false};
         size_t _generation {0};
