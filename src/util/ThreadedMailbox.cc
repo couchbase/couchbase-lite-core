@@ -103,36 +103,6 @@ namespace litecore { namespace actor {
     template class Channel<std::function<void()>>;
 
 
-#pragma mark - MAILBOX PROXY
-
-
-    /*  The only purpose of this class is to handle the situation where an enqueueAfter triggers
-        after its target Actor has been deleted. It has a weak reference to a mailbox (which is
-        cleared by the mailbox's destructor.) The proxy is retained by the Timer's lambda, so
-        it can safely be called when the timer fires; it will tell its mailbox to enqueue the
-        function, unless the mailbox has been deleted. */
-    class MailboxProxy : public RefCounted {
-    public:
-        MailboxProxy(ThreadedMailbox *m)
-        :_mailbox(m)
-        { }
-
-        void detach() {
-            _mailbox = nullptr;
-        }
-
-        void enqueue(function<void()> f) {
-            ThreadedMailbox* mb = _mailbox;
-            if (mb)
-                mb->enqueue(f);
-        }
-
-    private:
-        virtual ~MailboxProxy() =default;
-        atomic<ThreadedMailbox*> _mailbox;
-    };
-
-
 #pragma mark - MAILBOX:
 
     thread_local Actor* ThreadedMailbox::sCurrentActor;
@@ -145,19 +115,11 @@ namespace litecore { namespace actor {
         Scheduler::sharedScheduler()->start();
     }
 
-
-    ThreadedMailbox::~ThreadedMailbox() {
-        if (_proxy)
-            _proxy->detach();
-    }
-
-
     void ThreadedMailbox::enqueue(std::function<void()> f) {
         retain(_actor);
         if (push(f))
             reschedule();
     }
-
 
     void ThreadedMailbox::enqueueAfter(delay_t delay, std::function<void()> f) {
         if (delay <= delay_t::zero())
@@ -165,17 +127,12 @@ namespace litecore { namespace actor {
 
         auto actor = _actor;
         retain(actor);
-        Retained<MailboxProxy> proxy;
-        {
-            std::lock_guard<mutex> lock(_mutex);
-            proxy = _proxy;
-            if (!proxy)
-                proxy = _proxy = new MailboxProxy(this);
-        }
+        _delayedEventCount++;
 
-        auto timer = new Timer([proxy, f, actor]
+        auto timer = new Timer([f, actor, this]
         { 
-            proxy->enqueue(f);
+            enqueue(f);
+            _delayedEventCount--;
             release(actor);
         });
         timer->autoDelete();

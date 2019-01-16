@@ -50,11 +50,10 @@ namespace litecore { namespace actor {
     class ThreadedMailbox : Channel<std::function<void()>> {
     public:
         ThreadedMailbox(Actor*, const std::string &name ="", ThreadedMailbox *parentMailbox =nullptr);
-        ~ThreadedMailbox();
 
         const std::string& name() const                     {return _name;}
 
-        unsigned eventCount() const                         {return (unsigned)size();}
+        unsigned eventCount() const                         {return (unsigned)size() + (unsigned)_delayedEventCount;}
 
         void enqueue(std::function<void()>);
         void enqueueAfter(delay_t delay, std::function<void()>);
@@ -71,7 +70,8 @@ namespace litecore { namespace actor {
 
         Actor* const _actor;
         std::string const _name;
-        Retained<MailboxProxy> _proxy;
+
+        int _delayedEventCount {0};
 #if DEBUG
         std::atomic_int _active {0};
 #endif
