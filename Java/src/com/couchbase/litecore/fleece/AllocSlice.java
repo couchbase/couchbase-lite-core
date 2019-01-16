@@ -19,7 +19,7 @@ package com.couchbase.litecore.fleece;
 
 public class AllocSlice {
     long _handle = 0;         // hold pointer to alloc_slice*
-    boolean _managed = false; // true -> not release native object, false -> release by free()
+    boolean _retain = false;  // true -> not release native object, false -> release by free()
 
     //-------------------------------------------------------------------------
     // public methods
@@ -28,18 +28,22 @@ public class AllocSlice {
         this(init(bytes), false);
     }
 
-    public AllocSlice(long handle, boolean managed) {
+    public AllocSlice(long handle, boolean retain) {
         if (handle == 0)
             throw new IllegalArgumentException("handle is 0");
         this._handle = handle;
-        this._managed = managed;
+        this._retain = retain;
     }
 
     public void free() {
-        if (_handle != 0L && !_managed) {
+        if (_handle != 0L && !_retain) {
             free(_handle);
             _handle = 0L;
         }
+    }
+
+    public long getHandle() {
+        return _handle;
     }
 
     public byte[] getBuf() {
@@ -48,6 +52,11 @@ public class AllocSlice {
 
     public long getSize() {
         return getSize(_handle);
+    }
+
+    public AllocSlice retain() {
+        _retain = true;
+        return this;
     }
 
     //-------------------------------------------------------------------------

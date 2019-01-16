@@ -28,6 +28,8 @@ public class C4Database implements C4Constants {
     //-------------------------------------------------------------------------
     private long handle = 0L; // hold pointer to C4Database
 
+    private boolean retain = false; // true -> not release native object, false -> release by free()
+
     //-------------------------------------------------------------------------
     // Constructor
     //-------------------------------------------------------------------------
@@ -35,7 +37,11 @@ public class C4Database implements C4Constants {
                       int flags, String storageEngine, int versioning,
                       int algorithm, byte[] encryptionKey)
             throws LiteCoreException {
-        handle = open(path, flags, storageEngine, versioning, algorithm, encryptionKey);
+        this.handle = open(path, flags, storageEngine, versioning, algorithm, encryptionKey);
+    }
+
+    public C4Database(long handle) {
+        this.handle = handle;
     }
 
     //-------------------------------------------------------------------------
@@ -45,8 +51,15 @@ public class C4Database implements C4Constants {
     // - Lifecycle
 
     public void free() {
-        free(handle);
-        handle = 0L;
+        if (!retain) {
+            free(handle);
+            handle = 0L;
+        }
+    }
+
+    public C4Database retain() {
+        retain = true;
+        return this;
     }
 
     public void close() throws LiteCoreException {

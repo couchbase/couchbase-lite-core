@@ -8,6 +8,7 @@ javah -d ./jni -classpath ./src \
 	com.couchbase.litecore.Logger \
 	com.couchbase.litecore.C4BlobKey \
 	com.couchbase.litecore.C4BlobStore \
+	com.couchbase.litecore.C4Prediction \
 	com.couchbase.litecore.C4Query \
 	com.couchbase.litecore.C4QueryEnumerator \
 	com.couchbase.litecore.C4BlobReadStream \

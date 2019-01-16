@@ -20,12 +20,12 @@ package com.couchbase.litecore.fleece;
 public class FleeceDocument {
     private MRoot _root = null;
 
-    FleeceDocument(AllocSlice fleeceData, FLSharedKeys sharedKeys, boolean mutableContainers) {
-        _root = new MRoot(fleeceData, sharedKeys, mutableContainers);
+    FleeceDocument(AllocSlice fleeceData, boolean mutableContainers) {
+        _root = new MRoot(fleeceData, mutableContainers);
     }
 
-    public static Object getObject(AllocSlice fleeceData, FLSharedKeys sharedKeys, boolean mutableContainers) {
-        MRoot root = new MRoot(fleeceData, sharedKeys, mutableContainers);
+    public static Object getObject(AllocSlice fleeceData, boolean mutableContainers) {
+        MRoot root = new MRoot(fleeceData, mutableContainers);
         return root.asNative();
     }
 

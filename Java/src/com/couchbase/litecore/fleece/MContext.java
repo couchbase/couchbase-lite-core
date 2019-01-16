@@ -22,19 +22,10 @@ public class MContext {
 
     private AllocSlice _data;
 
-    private FLSharedKeys _sharedKey;
+    public MContext() { }
 
-    public MContext() {
-
-    }
-
-    public MContext(AllocSlice data, FLSharedKeys sk) {
+    public MContext(AllocSlice data) {
         _data = data;
-        _sharedKey = sk;
-    }
-
-    public FLSharedKeys getSharedKeys() {
-        return _sharedKey;
     }
 
     public AllocSlice getData() {

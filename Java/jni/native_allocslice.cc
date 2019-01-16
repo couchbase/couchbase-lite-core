@@ -34,7 +34,8 @@ using namespace litecore::jni;
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_fleece_AllocSlice_init(JNIEnv *env, jclass clazz, jbyteArray jvalue) {
     alloc_slice *ptr = new alloc_slice;
-    *ptr = jbyteArraySlice::copy(env, jvalue);
+    if (jvalue != NULL)
+        *ptr = jbyteArraySlice::copy(env, jvalue);
     return (jlong) ptr;
 }
 

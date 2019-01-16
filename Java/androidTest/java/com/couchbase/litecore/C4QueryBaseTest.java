@@ -19,8 +19,14 @@ package com.couchbase.litecore;
 
 import android.util.Log;
 
+import com.couchbase.litecore.fleece.AllocSlice;
+import com.couchbase.litecore.fleece.Encoder;
+
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -91,10 +97,10 @@ public class C4QueryBaseTest extends C4BaseTest {
         return run(null);
     }
 
-    protected List<String> run(String bindings) throws LiteCoreException {
+    protected List<String> run(Map<String, Object> params) throws LiteCoreException {
         List<String> docIDs = new ArrayList<>();
         C4QueryOptions opts = new C4QueryOptions();
-        C4QueryEnumerator e = query.run(opts, bindings);
+        C4QueryEnumerator e = query.run(opts, encodeParameters(params));
         assertNotNull(e);
         while (e.next()) {
             docIDs.add(e.getColumns().getValueAt(0).asString());
@@ -107,10 +113,10 @@ public class C4QueryBaseTest extends C4BaseTest {
         return runFTS(null);
     }
 
-    protected List<List<List<Long>>> runFTS(String bindings) throws LiteCoreException {
+    protected List<List<List<Long>>> runFTS(Map<String, Object> params) throws LiteCoreException {
         List<List<List<Long>>> matches = new ArrayList<>();
         C4QueryOptions opts = new C4QueryOptions();
-        C4QueryEnumerator e = query.run(opts, bindings);
+        C4QueryEnumerator e = query.run(opts, encodeParameters(params));
         assertNotNull(e);
         while (e.next()) {
             List<List<Long>> match = new ArrayList<>();
@@ -120,5 +126,11 @@ public class C4QueryBaseTest extends C4BaseTest {
         }
         e.free();
         return matches;
+    }
+
+    private AllocSlice encodeParameters(Map<String, Object> params) throws LiteCoreException {
+        Encoder encoder = new Encoder();
+        encoder.write(params);
+        return encoder.finish();
     }
 }

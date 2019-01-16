@@ -59,6 +59,7 @@ set(JNI_CLASSES
     com.couchbase.litecore.C4Key
     com.couchbase.litecore.C4Listener
     com.couchbase.litecore.C4Log
+    com.couchbase.litecore.C4Prediction
     com.couchbase.litecore.C4Query
     com.couchbase.litecore.C4QueryEnumerator
     com.couchbase.litecore.C4RawDocument

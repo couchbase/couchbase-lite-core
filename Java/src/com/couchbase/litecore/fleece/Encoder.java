@@ -101,21 +101,28 @@ public class Encoder {
     }
 
     public boolean write(Map map) {
-        beginDict(map.size());
-        Iterator keys = map.keySet().iterator();
-        while (keys.hasNext()) {
-            String key = (String) keys.next();
-            writeKey(key);
-            writeObject(map.get(key));
-        }
+        if (map != null) {
+            beginDict(map.size());
+            Iterator keys = map.keySet().iterator();
+            while (keys.hasNext()) {
+                String key = (String) keys.next();
+                writeKey(key);
+                writeObject(map.get(key));
+            }
+        } else
+            beginDict(0);
         return endDict();
+
     }
 
     public boolean write(List list) {
-        beginArray(list.size());
-        for (Object item : list) {
-            writeObject(item);
-        }
+        if (list != null) {
+            beginArray(list.size());
+            for (Object item : list) {
+                writeObject(item);
+            }
+        } else
+            beginArray(0);
         return endArray();
     }
 

@@ -68,6 +68,8 @@ namespace litecore {
             // Copies the string data and releases the JNI local ref.
             void copyAndReleaseRef();
 
+            const char* cStr();
+
         private:
             static void UTF8ToModifiedUTF8(const char* input, char* output);
 
@@ -130,6 +132,10 @@ namespace litecore {
         };
 
         typedef Retained<JNIRef> JNative;
+
+        //
+
+        JNIEnv* getJNIEnv();
 
         // Creates a Java String from the contents of a C4Slice.
 

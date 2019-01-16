@@ -33,12 +33,12 @@ public class MRoot extends MCollection {
         this(context, FLValue.fromData(context.getData()), isMutable);
     }
 
-    public MRoot(AllocSlice fleeceData, FLSharedKeys sk, boolean isMutable) {
-        this(new MContext(fleeceData, sk), isMutable);
+    public MRoot(AllocSlice fleeceData, boolean isMutable) {
+        this(new MContext(fleeceData), isMutable);
     }
 
     public MRoot(AllocSlice fleeceData) {
-        this(new MContext(fleeceData, null), true);
+        this(new MContext(fleeceData), true);
     }
 
     /* Properties */

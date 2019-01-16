@@ -25,7 +25,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.couchbase.litecore.C4Constants.C4ErrorDomain.LiteCoreDomain;
 import static com.couchbase.litecore.C4Constants.C4IndexType.kC4FullTextIndex;
@@ -82,8 +84,15 @@ public class C4QueryTest extends C4QueryBaseTest {
         assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run());
 
         compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"), "", true);
-        assertEquals(Arrays.asList("0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run("{\"offset\":1,\"limit\":8}"));
-        assertEquals(Arrays.asList("0000015", "0000036", "0000043", "0000053"), run("{\"offset\":1,\"limit\":4}"));
+        Map<String, Object> params = new HashMap<>();
+        params.put("offset", 1);
+        params.put("limit", 8);
+        assertEquals(Arrays.asList("0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run(params));
+
+        params = new HashMap<>();
+        params.put("offset", 1);
+        params.put("limit", 4);
+        assertEquals(Arrays.asList("0000015", "0000036", "0000043", "0000053"), run(params));
 
         compile(json5("['AND', ['=', ['array_count()', ['.', 'contact', 'phone']], 2],['=', ['.', 'gender'], 'male']]"));
         assertEquals(Arrays.asList("0000002", "0000014", "0000017", "0000027", "0000031", "0000033", "0000038", "0000039", "0000045", "0000047",
@@ -91,11 +100,17 @@ public class C4QueryTest extends C4QueryBaseTest {
 
         // MISSING means no value is present (at that array index or dict key)
         compile(json5("['IS', ['.', 'contact', 'phone', [0]], ['MISSING']]"), "", true);
-        assertEquals(Arrays.asList("0000004", "0000006", "0000008", "0000015"), run("{\"offset\":0,\"limit\":4}"));
+        params = new HashMap<>();
+        params.put("offset", 0);
+        params.put("limit", 4);
+        assertEquals(Arrays.asList("0000004", "0000006", "0000008", "0000015"), run(params));
 
         // ...wherease null is a JSON null value
         compile(json5("['IS', ['.', 'contact', 'phone', [0]], null]"), "", true);
-        assertEquals(Arrays.asList(), run("{\"offset\":0,\"limit\":4}"));
+        params = new HashMap<>();
+        params.put("offset", 0);
+        params.put("limit", 4);
+        assertEquals(Arrays.asList(), run(params));
     }
 
     // - DB Query LIKE
@@ -135,10 +150,14 @@ public class C4QueryTest extends C4QueryBaseTest {
     @Test
     public void testDBQueryBindings() throws LiteCoreException {
         compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 1]]"));
-        assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run("{\"1\": \"CA\"}"));
+        Map<String, Object> params = new HashMap<>();
+        params.put("1", "CA");
+        assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run(params));
 
         compile(json5("['=', ['.', 'contact', 'address', 'state'], ['$', 'state']]"));
-        assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run("{\"state\": \"CA\"}"));
+        params = new HashMap<>();
+        params.put("state", "CA");
+        assertEquals(Arrays.asList("0000001", "0000015", "0000036", "0000043", "0000053", "0000064", "0000072", "0000073"), run(params));
     }
 
     // - DB Query ANY
