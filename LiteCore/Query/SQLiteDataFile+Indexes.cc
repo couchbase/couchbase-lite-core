@@ -93,8 +93,12 @@ namespace litecore {
                 bool same;
                 if (spec.type == KeyStore::kFullTextIndex)
                     same = schemaExistsWithSQL(indexTableName, "table", indexTableName, indexSQL);
-                else
+                else {
                     same = schemaExistsWithSQL(spec.name, "index", indexTableName, indexSQL);
+                    // Cache only predictive index doesn't have the index schema so the logic is reverted:
+                    if (spec.type == KeyStore::kPredictiveIndex && indexSQL == "")
+                        same = !same;
+                }
                 if (same)
                     return false;       // This is a duplicate of an existing index; do nothing
             }
