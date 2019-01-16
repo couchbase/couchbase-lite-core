@@ -167,12 +167,14 @@ C4Replicator* c4repl_new(C4Database* db,
             replicator = new C4Replicator(dbCopy, otherDBCopy, params);
         } else {
             // Remote:
-            if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
-                return nullptr;
-            if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
-                Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
-                     "admin port (4985) -- this is usually a bad idea. By default this port is "
-                     "unreachable, but if opened, it would give anyone unlimited privileges.");
+            if (!params.socketFactory) {
+                if (!c4repl_isValidRemote(serverAddress, remoteDatabaseName, outError))
+                    return nullptr;
+                if (serverAddress.port == 4985 && serverAddress.hostname != "localhost"_sl) {
+                    Warn("POSSIBLE SECURITY ISSUE: It looks like you're connecting to Sync Gateway's "
+                         "admin port (4985) -- this is usually a bad idea. By default this port is "
+                         "unreachable, but if opened, it would give anyone unlimited privileges.");
+                }
             }
             replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
         }
