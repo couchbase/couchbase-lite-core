@@ -173,7 +173,7 @@ _versioning(kC4RevisionTrees)
         C4Log("This is LiteCore %.*s ... short version %.*s", SPLAT(buildInfo), SPLAT(version));
 
         if (c4log_binaryFileLevel() == kC4LogNone) {
-            string path = TempDir() + "LiteCoreAPITests.c4log";
+            string path = TempDir() + "LiteCoreAPITests";
             C4Log("Beginning binary logging to %s", path.c_str());
             C4Error error;
             REQUIRE(c4log_writeToBinaryFile({kC4LogVerbose, c4str(path.c_str()), 16*1024, 1, false}, &error));

@@ -131,6 +131,11 @@ namespace litecore {
     static void purgeOldLogs(LogLevel level)
     {
         FilePath logDir(sLogDirectory, "");
+        if(!logDir.existsAsDir()) {
+            logDir.mkdir();
+            return;
+        }
+
         multimap<time_t, FilePath> logFiles;
         const char* levelStr = kLevelNames[(int)level];
 

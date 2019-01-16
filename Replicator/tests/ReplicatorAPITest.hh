@@ -115,7 +115,7 @@ public:
             }
         }
 
-        if (!db2) {  // i.e. this is a real WebSocket connection
+        if (!_socketFactory && !db2) {  // i.e. this is a real WebSocket connection
             if (s.level > kC4Connecting
                     || (s.level == kC4Stopped && s.error.domain == WebSocketDomain))
                 Assert(_headers);
