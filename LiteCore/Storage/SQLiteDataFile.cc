@@ -464,7 +464,10 @@ namespace litecore {
                                              const string &tableName, const string &sql) {
         string existingSQL;
         bool existed = getSchema(name, type, tableName, existingSQL);
-        return sql != "" ? existed && existingSQL == sql : !existed;
+        if (sql != "")
+            return existed && existingSQL == sql;
+        else
+            return !existed;
     }
 
     
