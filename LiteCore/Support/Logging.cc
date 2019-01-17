@@ -45,7 +45,7 @@
 #define CBL_LOG_EXTENSION ".cbllog"
 
 using namespace std;
-
+using namespace std::chrono;
 
 namespace litecore {
 
@@ -71,10 +71,11 @@ namespace litecore {
 
     static string createLogPath(LogLevel level)
     {
-        time_t result = time(nullptr);
+        int64_t millisSinceEpoch =
+            duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 
         stringstream ss;
-        ss << sLogDirectory << FilePath::kSeparator << "cbl_" << kLevelNames[(int)level] << "_" << result << CBL_LOG_EXTENSION;
+        ss << sLogDirectory << FilePath::kSeparator << "cbl_" << kLevelNames[(int)level] << "_" << millisSinceEpoch << CBL_LOG_EXTENSION;
         return ss.str();
     }
 
