@@ -78,7 +78,6 @@ _c4doc_getExpiration
 _c4db_nextDocExpiration
 _c4db_purgeExpiredDocs
 _c4doc_isOldMetaProperty
-_c4doc_getBlobData
 _c4doc_dictContainsBlobs
 
 _c4rev_getGeneration
