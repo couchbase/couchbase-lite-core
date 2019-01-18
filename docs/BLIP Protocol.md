@@ -2,12 +2,13 @@
 
 # The BLIP Protocol
 
-**Version 3.0 alpha 1**
+**Version 3.0**
 
-By [Jens Alfke](mailto:jens@mooseyard.com) (December 2017)
+By [Jens Alfke](mailto:jens@mooseyard.com) (January 2019)
 
-v3.0a2: Overhauled compression. Instead of separately compressing each message body (aside from properties), there’s now a separate compression context that’s used to sequentially compress/uncompress all frames with the Compressed flag. Also removed property tokenization.
-v2.0.1: No protocol changes; mostly just cleanup and extra details, especially about the WebSocket encoding. (It does add a confession that the "Bye" protocol for closing connections isn't actually implemented or honored by current implementations.)
+v3.0: Bumped WebSocket subprotocol string to "BLIP_v3".
+v3.0a2: Overhauled compression. Instead of separately compressing each message body (aside from properties), there’s now a separate compression context that’s used to sequentially compress/uncompress all frames with the Compressed flag. Also removed property tokenization.  
+v2.0.1: No protocol changes; mostly just cleanup and extra details, especially about the WebSocket encoding. (It does add a confession that the "Bye" protocol for closing connections isn't actually implemented or honored by current implementations.)  
 v2.0: Major update that bases the protocol on an underlying message transport (usually WebSockets), simplifies the header, and uses varint encodings.
 
 ## 1. Messages
@@ -83,8 +84,6 @@ There are currently no greetings or other preliminaries sent when the connection
 * A BLIP client opening a connection MUST request the WebSocket [subprotocol][SUBPROTOCOL] `BLIP_3`. A server supporting BLIP also MUST advertise support for this subprotocol. If one side supports BLIP but the other doesn't, BLIP messages cannot be sent; either side can close the connection or downgrade to some other WebSocket based schema.
 * BLIP messages are sent in binary WebSocket messages; text messages are not used, and receiving one is a fatal connection error.
 * Both BLIP and WebSocket use the terminology "messages" and "frames", where messages can be broken into sequences of frames. Try not to get them confused! A BLIP frame corresponds to (is sent as) a WebSocket message.
-
-> **Note:** The subprotocol value is `BLIP_3a2` in the current alpha version. It will become `BLIP_3` when version 3.0 is finalized.
 
 ### 3.2. Sending Messages
 
