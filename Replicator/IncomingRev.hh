@@ -43,7 +43,7 @@ namespace litecore { namespace repl {
         static bool shouldCompress(fleece::Dict meta);
 
         RevToInsert* rev() const                {return _rev;}
-        slice remoteSequence() const            {return _remoteSequence;}
+        alloc_slice remoteSequence() const      {return _remoteSequence;}
 
         void revisionInserted()                 {enqueue(&IncomingRev::_revisionInserted);}
 

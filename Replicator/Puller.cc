@@ -248,8 +248,8 @@ namespace litecore { namespace repl {
         auto revs = _returningRevs.pop();
         for (IncomingRev *inc : *revs) {
             auto rev = inc->rev();
-            if (rev->error.code == 0 && nonPassive())
-                completedSequence(alloc_slice(inc->remoteSequence()));
+            if (nonPassive())
+                completedSequence(inc->remoteSequence(), rev->errorIsTransient);
             finishedDocument(rev);
         }
         _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(), revs->end());
@@ -268,15 +268,21 @@ namespace litecore { namespace repl {
 
 
     // Records that a sequence has been successfully pulled.
-    void Puller::completedSequence(alloc_slice sequence) {
-        bool wasEarliest;
+    void Puller::completedSequence(alloc_slice sequence, bool withTransientError) {
         uint64_t bodySize;
-        _missingSequences.remove(sequence, wasEarliest, bodySize);
-        if (wasEarliest) {
-            _lastSequence = _missingSequences.since();
-            logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
-            if (replicator())
-                replicator()->updatePullCheckpoint(_lastSequence);
+        if (withTransientError) {
+            // If there's a transient error, don't mark this sequence as completed,
+            // but add the body size to the completed so the progress will reach 1.0
+            bodySize = _missingSequences.bodySizeOfSequence(sequence);
+        } else {
+            bool wasEarliest;
+            _missingSequences.remove(sequence, wasEarliest, bodySize);
+            if (wasEarliest) {
+                _lastSequence = _missingSequences.since();
+                logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
+                if (replicator())
+                    replicator()->updatePullCheckpoint(_lastSequence);
+            }
         }
         addProgress({bodySize, 0});
     }

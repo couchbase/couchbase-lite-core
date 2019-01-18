@@ -80,6 +80,11 @@ namespace litecore { namespace repl {
             }
         }
 
+        uint64_t bodySizeOfSequence(sequence s) {
+            auto i = _sequences.find(s);
+            return (i == _sequences.end()) ? 0 : i->second.bodySize;
+        }
+
     private:
 
         // Updates _first to point to the earliest entry in _sequences
