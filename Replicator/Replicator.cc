@@ -361,7 +361,7 @@ namespace litecore { namespace repl {
                                                     bool dbIsEmpty,
                                                     C4Error err) {
             // ...after the checkpoint is read:
-            if (status().level == kC4Stopped)
+            if (status().level == kC4Stopped || _connectionState == Connection::kDisconnected)
                 return;
             
             _checkpointDocID = checkpointID;
@@ -378,7 +378,7 @@ namespace litecore { namespace repl {
                 logInfo("No local checkpoint '%.*s'", SPLAT(checkpointID));
                 // If pulling into an empty db with no checkpoint, it's safe to skip deleted
                 // revisions as an optimization.
-                if (dbIsEmpty && _options.pull > kC4Passive)
+                if (dbIsEmpty && _options.pull > kC4Passive && _puller)
                     _puller->setSkipDeleted();
             } else {
                 logInfo("Fatal error getting local checkpoint");
