@@ -6,7 +6,7 @@
 
 By [Jens Alfke](mailto:jens@mooseyard.com) (January 2019)
 
-v3.0: Bumped WebSocket subprotocol string to "BLIP_v3".
+v3.0: Bumped WebSocket subprotocol string to "BLIP_v3".  
 v3.0a2: Overhauled compression. Instead of separately compressing each message body (aside from properties), there’s now a separate compression context that’s used to sequentially compress/uncompress all frames with the Compressed flag. Also removed property tokenization.  
 v2.0.1: No protocol changes; mostly just cleanup and extra details, especially about the WebSocket encoding. (It does add a confession that the "Bye" protocol for closing connections isn't actually implemented or honored by current implementations.)  
 v2.0: Major update that bases the protocol on an underlying message transport (usually WebSockets), simplifies the header, and uses varint encodings.
