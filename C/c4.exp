@@ -261,6 +261,7 @@ _c4doc_hasOldMetaProperties
 _c4doc_encodeStrippingOldMetaProperties
 _c4doc_detachRevisionBody
 _c4doc_getRemoteAncestor
+_c4doc_getBlobData
 
 _c4db_getIndexesInfo
 
