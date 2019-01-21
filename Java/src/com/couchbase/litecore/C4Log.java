@@ -18,7 +18,6 @@
 package com.couchbase.litecore;
 
 import com.couchbase.lite.Database;
-import com.couchbase.lite.Log;
 import com.couchbase.lite.LogDomain;
 import com.couchbase.lite.LogLevel;
 import com.couchbase.lite.Logger;
@@ -42,6 +41,7 @@ public class C4Log {
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
+
     public static native void setLevel(String domain, int level);
 
     public static native void log(String domain, int level, String message);
@@ -62,16 +62,16 @@ public class C4Log {
             domain = DomainObjects.get(domainName);
         }
 
-        Database.getLog().getConsole().log(LogLevel.values()[level], domain, message);
-        Logger customLogger = Database.getLog().getCustom();
+        Database.log.getConsole().log(LogLevel.values()[level], domain, message);
+        Logger customLogger = Database.log.getCustom();
         if(customLogger != null) {
             customLogger.log(LogLevel.values()[level], domain, message);
         }
     }
 
     private static void recalculateLevels() {
-        LogLevel callbackLevel = Database.getLog().getConsole().getLevel();
-        Logger customLogger = Database.getLog().getCustom();
+        LogLevel callbackLevel = Database.log.getConsole().getLevel();
+        Logger customLogger = Database.log.getCustom();
         if(customLogger != null && customLogger.getLevel().compareTo(callbackLevel) < 0) {
             callbackLevel = customLogger.getLevel();
         }
