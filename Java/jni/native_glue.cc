@@ -267,11 +267,11 @@ namespace litecore {
             jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
             if(getEnvStat == JNI_EDETACHED) {
                 if (gJVM->AttachCurrentThread(&env, NULL) != 0) {
-                    LOGE("ailed to attach the current thread to a Java VM)");
+                    LOGE("Failed to attach the current thread to a Java VM)");
                     return nullptr;
                 }
             } else if(getEnvStat != JNI_OK) {
-                LOGE("logCallback(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+                LOGE("Failed to get the environment: getEnvStat -> %d", getEnvStat);
                 return nullptr;
             }
             return env;
