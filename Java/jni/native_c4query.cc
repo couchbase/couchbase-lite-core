@@ -79,19 +79,21 @@ Java_com_couchbase_litecore_C4Query_columnCount(JNIEnv *env, jclass clazz, jlong
 /*
  * Class:     com_couchbase_litecore_C4Query
  * Method:    run
- * Signature: (JJJZLjava/lang/String;)J
+ * Signature: (JZJ)J
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4Query_run(JNIEnv *env, jclass clazz,
                                         jlong jquery,
                                         jboolean jrankFullText,
-                                        jstring jencodedParameters) {
+                                        jlong jparameters) {
     C4QueryOptions options = {
             (bool) jrankFullText
     };
-    jstringSlice encodedParameters(env, jencodedParameters);
+
+    alloc_slice *params = (alloc_slice *) jparameters;
     C4Error error = {};
-    C4QueryEnumerator *e = c4query_run((C4Query *) jquery, &options, encodedParameters, &error);
+    C4QueryEnumerator *e = c4query_run((C4Query *) jquery, &options,
+            (C4Slice){params->buf, params->size}, &error);
     if (!e)
         throwError(env, error);
     return (jlong) e;

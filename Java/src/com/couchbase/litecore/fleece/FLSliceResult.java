@@ -19,11 +19,23 @@ package com.couchbase.litecore.fleece;
 
 
 public class FLSliceResult {
+
+    //-------------------------------------------------------------------------
+    // Member variables
+    //-------------------------------------------------------------------------
+
     private long handle = 0; // hold pointer to FLSliceResult
+
+    private boolean retain = false;
 
     //-------------------------------------------------------------------------
     // public methods
     //-------------------------------------------------------------------------
+
+    public FLSliceResult() {
+        this.handle = init();
+    }
+
     public FLSliceResult(long handle) {
         if (handle == 0)
             throw new IllegalArgumentException("handle is 0");
@@ -31,10 +43,16 @@ public class FLSliceResult {
     }
 
     public void free() {
-        if (handle != 0L) {
+        if (!retain && handle != 0L) {
             free(handle);
             handle = 0L;
         }
+    }
+
+    // Use when the native data needs to be retained and will be freed later in the native code
+    public FLSliceResult retain() {
+        retain = true;
+        return this;
     }
 
     public long getHandle() {
@@ -52,6 +70,7 @@ public class FLSliceResult {
     //-------------------------------------------------------------------------
     // protected methods
     //-------------------------------------------------------------------------
+
     @Override
     protected void finalize() throws Throwable {
         free();
@@ -62,14 +81,12 @@ public class FLSliceResult {
     // native methods
     //-------------------------------------------------------------------------
 
-    /**
-     * Free FLArrayIterator instance
-     *
-     * @param slice (FLSliceResult)
-     */
+    static native long init();
+
     static native void free(long slice);
 
     static native byte[] getBuf(long slice);
 
     static native long getSize(long slice);
+
 }

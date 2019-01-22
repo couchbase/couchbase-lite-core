@@ -17,6 +17,8 @@
 //
 package com.couchbase.litecore;
 
+import com.couchbase.litecore.fleece.AllocSlice;
+
 public class C4Query {
     //-------------------------------------------------------------------------
     // Member Variables
@@ -50,10 +52,11 @@ public class C4Query {
         return columnCount(_handle);
     }
 
-    public C4QueryEnumerator run(C4QueryOptions options, String encodedParameters)
+    public C4QueryEnumerator run(C4QueryOptions options, AllocSlice parameters)
             throws LiteCoreException {
-        return new C4QueryEnumerator(
-                run(_handle, options.isRankFullText(), encodedParameters));
+        if (parameters == null)
+            parameters = new AllocSlice(null);
+        return new C4QueryEnumerator(run(_handle, options.isRankFullText(), parameters.getHandle()));
     }
 
     public byte[] getFullTextMatched(C4FullTextMatch match) throws LiteCoreException {
@@ -109,13 +112,11 @@ public class C4Query {
     /**
      * @param handle
      * @param rankFullText
-     * @param encodedParameters
+     * @param parameters
      * @return C4QueryEnumerator*
      * @throws LiteCoreException
      */
-    static native long run(long handle,
-                           boolean rankFullText,
-                           String encodedParameters)
+    static native long run(long handle, boolean rankFullText, /*AllocSlice*/ long parameters)
             throws LiteCoreException;
 
     /**

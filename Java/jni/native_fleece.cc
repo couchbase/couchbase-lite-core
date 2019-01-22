@@ -453,9 +453,23 @@ Java_com_couchbase_litecore_fleece_FLValue_toJSON5(JNIEnv *env, jclass clazz, jl
     FLSliceResult_Free(str);
     return res;
 }
+
 // ----------------------------------------------------------------------------
 // FLSliceResult
 // ----------------------------------------------------------------------------
+
+/*
+ * Class:     com_couchbase_litecore_fleece_FLSliceResult
+ * Method:    init
+ * Signature: ()J
+ */
+JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_fleece_FLSliceResult_init
+        (JNIEnv *env, jclass clazz) {
+    C4SliceResult *sliceResult = (C4SliceResult *) ::malloc(sizeof(C4SliceResult));
+    sliceResult->buf = NULL;
+    sliceResult->size = 0;
+    return (jlong) sliceResult;
+}
 
 /*
  * Class:     com_couchbase_litecore_fleece_FLSliceResult

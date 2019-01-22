@@ -222,6 +222,10 @@ namespace litecore {
             }
         }
 
+        const char* jstringSlice::cStr() {
+            return _slice.cString();
+        };
+
 
         // ATTN: In critical, should not call any other JNI methods.
         // http://docs.oracle.com/javase/6/docs/technotes/guides/jni/spec/functions.html
@@ -256,6 +260,21 @@ namespace litecore {
             alloc_slice slice(size);
             env->GetByteArrayRegion(jbytes, 0, size, (jbyte *) slice.buf);
             return slice;
+        }
+
+        JNIEnv* getJNIEnv() {
+            JNIEnv *env = NULL;
+            jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
+            if(getEnvStat == JNI_EDETACHED) {
+                if (gJVM->AttachCurrentThread(&env, NULL) != 0) {
+                    LOGE("Failed to attach the current thread to a Java VM)");
+                    return nullptr;
+                }
+            } else if(getEnvStat != JNI_OK) {
+                LOGE("Failed to get the environment: getEnvStat -> %d", getEnvStat);
+                return nullptr;
+            }
+            return env;
         }
 
         void throwError(JNIEnv *env, C4Error error) {

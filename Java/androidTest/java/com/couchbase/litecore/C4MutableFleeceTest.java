@@ -239,7 +239,7 @@ public class C4MutableFleeceTest extends C4BaseTest {
         map.put("dict", subMap);
 
         AllocSlice data = encode(map);
-        Object obj = FleeceDocument.getObject(data, null, true);
+        Object obj = FleeceDocument.getObject(data, true);
         assertNotNull(obj);
         assertTrue(obj instanceof Map);
         Map<String, Object> dict = (Map<String, Object>) obj;
