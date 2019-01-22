@@ -30,23 +30,14 @@ static jclass cls_C4PrediciveModel;
 static jmethodID m_prediction;
 
 static C4SliceResult prediction(void* context, FLDict input, C4Database* c4db, C4Error* error) {
-    JNative *ref = (JNative *)context;
-    jobject model = ref->get()->native();
+    jobject model = (jobject)context;
     JNIEnv* env = getJNIEnv();
-
-    if (cls_C4PrediciveModel == nullptr) {
-        cls_C4PrediciveModel = env->GetObjectClass(model);
-        m_prediction = env->GetMethodID(cls_C4PrediciveModel, "predict", "(JJ)J");
-    }
-
     jlong result = env->CallLongMethod(model, m_prediction, (jlong)input, (jlong)c4db);
     return *(C4SliceResult*)result;
 }
 
 static void unregistered(void* context) {
-    JNative *ref = (JNative *)context;
-    jobject model = ref->get()->native();
-    delete ref;
+    deleteGlobalRef((jobject)context);
 }
 
 #endif
@@ -55,11 +46,18 @@ JNIEXPORT void JNICALL Java_com_couchbase_litecore_C4Prediction_registerModel
         (JNIEnv *env, jclass jclazz, jstring jname, jobject jmodel) {
 #ifdef COUCHBASE_ENTERPRISE
     jstringSlice name(env, jname);
-    JNative *model = new JNative(new JNIRef(env, jmodel));
+
+    jobject gModel = env->NewGlobalRef(jmodel);
+    if (cls_C4PrediciveModel == nullptr) {
+        cls_C4PrediciveModel = env->GetObjectClass(gModel);
+        m_prediction = env->GetMethodID(cls_C4PrediciveModel, "predict", "(JJ)J");
+    }
+
     C4PredictiveModel predModel = {
-            .context = model,
+            .context = gModel,
             .prediction = &prediction,
             .unregistered = &unregistered };
+
     c4pred_registerModel(name.cStr(), predModel);
 #endif
 }
