@@ -413,18 +413,23 @@ namespace litecore { namespace repl {
         C4DatabaseChange c4changes[kMaxChanges];
         bool external;
         uint32_t nChanges;
+        shared_ptr<RevToSendList> changes;
+        C4SequenceNumber latestChangeSequence = _maxPushedSequence;
+
         while (true) {
             nChanges = c4dbobs_getChanges(_changeObserver, c4changes, kMaxChanges, &external);
             if (nChanges == 0)
                 break;
             logVerbose("Notified of %u db changes #%llu ... #%llu",
                        nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
+
             // Copy the changes into a vector of RevToSend:
-            auto changes = make_shared<RevToSendList>();
-            changes->reserve(nChanges);
-            C4SequenceNumber latestChangeSequence = _maxPushedSequence;
             C4DatabaseChange *c4change = c4changes;
             for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
+                if (!changes) {
+                    changes = make_shared<RevToSendList>();
+                    changes->reserve(nChanges - i);
+                }
                 C4DocumentInfo info {0, c4change->docID, c4change->revID,
                                      c4change->sequence, c4change->bodySize};
                 latestChangeSequence = info.sequence;
@@ -432,13 +437,20 @@ namespace litecore { namespace repl {
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
-            }
-            _maxPushedSequence = latestChangeSequence;
 
-            if (!changes->empty())
-                _pusher->gotChanges(move(changes), latestChangeSequence, {});
+                if (changes->size() >= kMaxChanges) {
+                    _pusher->gotChanges(move(changes), latestChangeSequence, {});
+                    _maxPushedSequence = latestChangeSequence;
+                    changes.reset();
+                }
+            }
 
             c4dbobs_releaseChanges(c4changes, nChanges);
+        }
+
+        if (changes) {
+            _pusher->gotChanges(move(changes), latestChangeSequence, {});
+            _maxPushedSequence = latestChangeSequence;
         }
     }
 
