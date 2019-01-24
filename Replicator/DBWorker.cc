@@ -470,6 +470,11 @@ namespace litecore { namespace repl {
             return false;
         }
 
+        if (rev->expiration > 0 && rev->expiration < c4_now()) {
+            logVerbose("'%.*s' is expired; not pushing it", SPLAT(rev->docID));
+            return false;
+        }
+
         bool needRemoteRevID = (_getForeignAncestors && _checkpointValid);
         if (needRemoteRevID || _options.pushFilter) {
             c4::ref<C4Document> doc;

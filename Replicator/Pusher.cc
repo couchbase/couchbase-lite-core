@@ -163,20 +163,9 @@ namespace litecore { namespace repl {
             logInfo("Found 0 changes up to #%llu", lastSequence);
             updateCheckpoint();
         } else {
-            auto now = c4_now();
             uint64_t bodySize = 0;
-            for (auto i = changes->begin(); i != changes->end();) {
-                RevToSend *rev = *i;
-                if (rev->expiration > 0 && rev->expiration < now) {
-                    logVerbose("'%.*s' is expired; not pushing it", SPLAT(rev->docID));
-                    i = changes->erase(i);      // skip expired docs
-                } else {
-                    bodySize += rev->bodySize;
-                    ++i;
-                }
-            }
-            if (changes->empty())
-                return;
+            for (auto &change : *changes)
+                bodySize += change->bodySize;
             addProgress({0, bodySize});
 
             logInfo("Read %zu local changes up to #%llu: sending '%-s' with sequences #%llu - #%llu",
