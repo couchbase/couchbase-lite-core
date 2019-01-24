@@ -410,6 +410,11 @@ namespace c4Internal {
             if (rq.save && reallySave) {
                 if (!save(rq.maxRevTreeDepth))
                     return false;
+                if (_db->dataFile()->willLog(LogLevel::Verbose)) {
+                    _db->dataFile()->_logVerbose( "%-s '%.*s' rev #%s as seq %llu",
+                        ((rq.revFlags & kRevDeleted) ? "Deleted" : "Saved"),
+                        SPLAT(rq.docID), string(newRev->revID).c_str(), _versionedDoc.sequence());
+                }
             } else {
                 _versionedDoc.updateMeta();
             }

@@ -290,7 +290,7 @@ namespace c4Internal {
 
 
     void Database::rekey(const C4EncryptionKey *newKey) {
-        LogTo(DBLog, "Rekeying database...");
+        _dataFile->_logInfo("Rekeying database...");
         C4EncryptionKey keyBuf {kC4EncryptionNone, {}};
         if (!newKey)
             newKey = &keyBuf;
@@ -316,7 +316,7 @@ namespace c4Internal {
 
         // Finally replace the old BlobStore with the new one:
         newStore->moveTo(*realBlobStore);
-        LogTo(DBLog, "Finished rekeying database!");
+        _dataFile->_logInfo("Finished rekeying database!");
     }
 
 

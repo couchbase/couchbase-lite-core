@@ -22,6 +22,7 @@
 #include "Record.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
+#include "revid.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "FleeceImpl.hh"
 #include <sstream>
@@ -236,30 +237,31 @@ namespace litecore {
                                    const sequence_t *replacingSequence,
                                    bool newSequence)
     {
+        const char *opName;
         SQLite::Statement *stmt;
         if (replacingSequence == nullptr) {
             // Default:
-            db()._logVerbose("KeyStore(%s) set %.*s", name().c_str(), SPLAT(key));
             compile(_setStmt,
                     "INSERT OR REPLACE INTO kv_@ (version, body, flags, sequence, key)"
                     " VALUES (?, ?, ?, ?, ?)");
             stmt = _setStmt.get();
+            opName = "set";
         } else if (*replacingSequence == 0) {
             // Insert only:
-            db()._logVerbose("KeyStore(%s) insert %.*s", name().c_str(), SPLAT(key));
             compile(_insertStmt,
                     "INSERT OR IGNORE INTO kv_@ (version, body, flags, sequence, key)"
                     " VALUES (?, ?, ?, ?, ?)");
             stmt = _insertStmt.get();
+            opName = "insert";
         } else {
             // Replace only:
             Assert(_capabilities.sequences);
-            db()._logVerbose("KeyStore(%s) update %.*s", name().c_str(), SPLAT(key));
             compile(_replaceStmt,
                     "UPDATE kv_@ SET version=?, body=?, flags=?, sequence=?"
                     " WHERE key=? AND sequence=?");
             stmt = _replaceStmt.get();
             stmt->bind(6, (long long)*replacingSequence);
+            opName = "update";
         }
         stmt->bindNoCopy(1, vers.buf, (int)vers.size);
         stmt->bindNoCopy(2, body.buf, (int)body.size);
@@ -279,6 +281,9 @@ namespace litecore {
             stmt->bind(4); // null
             seq = 1;
         }
+
+        if (db().willLog(LogLevel::Verbose) && name() != "default")
+            db()._logVerbose("KeyStore(%-s) %s %.*s", name().c_str(), opName, SPLAT(key));
 
         UsingStatement u(*stmt);
         if (stmt->exec() == 0)
