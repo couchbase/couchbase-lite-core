@@ -147,14 +147,16 @@ Java_com_couchbase_litecore_C4Log_setBinaryFileLevel(JNIEnv* env, jclass clazz, 
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Log_writeToBinaryFile(JNIEnv* env, jclass clazz, jstring jpath,
                                                     jint jlevel, jint jmaxrotatecount, jlong jmaxsize,
-                                                    jboolean juseplaintext) {
+                                                    jboolean juseplaintext, jstring jheader) {
     jstringSlice path(env, jpath);
+    jstringSlice header(env, jheader);
     C4LogFileOptions options {
         (C4LogLevel)jlevel,
         path,
         jmaxsize,
         jmaxrotatecount,
-        (bool)juseplaintext
+        (bool)juseplaintext,
+        header
     };
 
     C4Error err;

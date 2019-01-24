@@ -50,7 +50,7 @@ public class C4Log {
 
     public static native void setBinaryFileLevel(int level);
 
-    public static native void writeToBinaryFile(String path, int level, int maxRotateCount, long maxSize, boolean usePlaintext);
+    public static native void writeToBinaryFile(String path, int level, int maxRotateCount, long maxSize, boolean usePlaintext, String header);
 
     public static native void setCallbackLevel(int level);
 
