@@ -28,9 +28,8 @@ namespace litecore { namespace repl { namespace tuning {
 
 namespace litecore { namespace repl {
 
-    RevToSend::RevToSend(const C4DocumentInfo &info, const alloc_slice &remoteAncestor)
+    RevToSend::RevToSend(const C4DocumentInfo &info)
     :ReplicatedRev(info.docID, info.revID, info.sequence)
-    ,remoteAncestorRevID(remoteAncestor)
     ,bodySize(info.bodySize)
     ,expiration(info.expiration)
     {

@@ -24,6 +24,7 @@
 #include "fleece/Fleece.hh"
 #include "function_ref.hh"
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -89,6 +90,10 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert *rev);
 
+        void donePushingRev(const RevToSend *rev, bool completed) {
+            enqueue(&DBWorker::_donePushingRev, retained(rev), completed);
+        }
+
         void markRevSynced(ReplicatedRev *rev);
 
         void setCookie(slice setCookieHeader) {
@@ -122,7 +127,7 @@ namespace litecore { namespace repl {
         std::string _getOldCheckpoint(C4Error*);
         alloc_slice _checkpointFromID(const slice &, C4Error*);
         void _getChanges(GetChangesParams, Retained<Pusher> pusher);
-        bool addChangeToList(const C4DocumentInfo&, C4DocEnumerator*,
+        bool addChangeToList(RevToSend*, C4DocEnumerator*,
                              std::shared_ptr<RevToSendList>&);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
@@ -133,6 +138,7 @@ namespace litecore { namespace repl {
                            blip::MessageProgressCallback onProgress);
         void _setCookie(alloc_slice setCookieHeader);
 
+        void _donePushingRev(fleece::RetainedConst<RevToSend> rev, bool completed);
         void _markRevsSyncedNow();
         void _insertRevisionsNow();
         void _connectionClosed() override;
@@ -154,6 +160,8 @@ namespace litecore { namespace repl {
 
         static const size_t kMaxPossibleAncestors = 10;
 
+        using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
+
         c4::ref<C4Database> _db;
         C4BlobStore* _blobStore;
         const websocket::URL _remoteURL;
@@ -164,6 +172,7 @@ namespace litecore { namespace repl {
         Retained<Pusher> _pusher;                           // Pusher to send db changes to
         DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
         C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
+        DocIDToRevMap _pushingDocs;                         // Revs being processed by push
         bool _getForeignAncestors {false};
         bool _skipForeignChanges {false};
         

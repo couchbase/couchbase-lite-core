@@ -171,17 +171,8 @@ namespace litecore { namespace repl {
                     logVerbose("'%.*s' is expired; not pushing it", SPLAT(rev->docID));
                     i = changes->erase(i);      // skip expired docs
                 } else {
-                    auto delayedRev = _activeDocs.find(rev->docID);
-                    if (delayedRev == _activeDocs.end()) {
-                        _activeDocs.insert({rev->docID, nullptr});
-                        bodySize += rev->bodySize;
-                        ++i;
-                    } else {
-                        // This doc already has a revision being sent; wait till that one is done
-                        logDebug("Holding off on change '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
-                        delayedRev->second = rev;
-                        i = changes->erase(i);
-                    }
+                    bodySize += rev->bodySize;
+                    ++i;
                 }
             }
             if (changes->empty())
@@ -306,11 +297,12 @@ namespace litecore { namespace repl {
                         queued = true;
                     } else if (status == 304) {
                         // 304 means server has my rev already
-                        _dbWorker->markRevSynced(change);
+                        _dbWorker->donePushingRev(change, true);
                     } else {
                         logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
                                  SPLAT(change->docID), SPLAT(change->revID),
                                  SPLAT(change->remoteAncestorRevID), status);
+                        _dbWorker->donePushingRev(change, false);
                         auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
                         finishedDocumentWithError(change, err, false);
                     }
@@ -385,8 +377,6 @@ namespace litecore { namespace repl {
                 if (completed) {
                     logVerbose("Completed rev %.*s #%.*s (seq #%llu)",
                                SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
-                    if (!passive())
-                        _dbWorker->markRevSynced(rev);
                     finishedDocument(rev);
                 } else {
                     auto err = progress.reply->getError();
@@ -557,25 +547,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        auto i = _activeDocs.find(rev->docID);
-        if (i != _activeDocs.end()) {
-            Retained<RevToSend> newRev = i->second;
-            if (newRev) {
-                i->second = nullptr;
-                if (completed)
-                    newRev->remoteAncestorRevID = rev->revID;
-                logDebug("Now that '%.*s' %.*s is done, propose %.*s (parent %.*s) ...",
-                    SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
-                    SPLAT(newRev->remoteAncestorRevID));
-                addProgress({0, newRev->bodySize});
-                auto revs = make_unique<RevToSendList>();
-                revs->push_back(newRev);
-                sendChanges(move(revs));
-            } else {
-                _activeDocs.erase(i);
-                logDebug("'%.*s' %.*s is done", SPLAT(rev->docID), SPLAT(rev->revID));
-            }
-        }
+        _dbWorker->donePushingRev(rev, completed);
     }
 
 

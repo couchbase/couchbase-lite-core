@@ -157,7 +157,7 @@ namespace litecore { namespace repl {
                     level = kC4Busy;
                 else
                     level = Worker::computeActivityLevel();
-                level = max(level, max(_pushStatus.level, _pullStatus.level));
+                level = max(level, max(_pushStatus.level, max(_pullStatus.level, _dbStatus.level)));
                 if (level == kC4Idle && !isContinuous() && !isOpenServer()) {
                     // Detect that a non-continuous active push or pull replication is done:
                     logInfo("Replication complete! Closing connection");

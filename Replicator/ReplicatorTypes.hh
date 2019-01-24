@@ -66,8 +66,7 @@ namespace litecore { namespace repl {
         bool            deltaOK {false};            // Can send a delta
         std::unique_ptr<std::set<alloc_slice>> ancestorRevIDs; // Known ancestor revIDs the peer already has
 
-        RevToSend(const C4DocumentInfo &info,
-                  const alloc_slice &remoteAncestor);
+        RevToSend(const C4DocumentInfo &info);
 
         void addRemoteAncestor(slice revID);
         bool hasRemoteAncestor(slice revID) const;

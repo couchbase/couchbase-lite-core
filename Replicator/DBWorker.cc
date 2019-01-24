@@ -379,7 +379,8 @@ namespace litecore { namespace repl {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
                 latestChangeSequence = info.sequence;
-                if (addChangeToList(info, e, changes))
+                auto rev = retained(new RevToSend(info));
+                if (addChangeToList(rev, e, changes))
                     --p.limit;
             }
         }
@@ -430,15 +431,13 @@ namespace litecore { namespace repl {
                     changes = make_shared<RevToSendList>();
                     changes->reserve(nChanges - i);
                 }
-                C4DocumentInfo info {0, c4change->docID, c4change->revID,
-                                     c4change->sequence, c4change->bodySize};
-                latestChangeSequence = info.sequence;
-                addChangeToList(info, nullptr, changes);
+                latestChangeSequence = c4change->sequence;
+                auto rev = retained(new RevToSend({0, c4change->docID, c4change->revID,
+                                                   c4change->sequence, c4change->bodySize}));
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
-
-                if (changes->size() >= kMaxChanges) {
+                if (addChangeToList(rev, nullptr, changes) && changes->size() >= kMaxChanges) {
                     _pusher->gotChanges(move(changes), latestChangeSequence, {});
                     _maxPushedSequence = latestChangeSequence;
                     changes.reset();
@@ -448,7 +447,7 @@ namespace litecore { namespace repl {
             c4dbobs_releaseChanges(c4changes, nChanges);
         }
 
-        if (changes) {
+        if (changes && changes->size() > 0) {
             _pusher->gotChanges(move(changes), latestChangeSequence, {});
             _maxPushedSequence = latestChangeSequence;
         }
@@ -456,26 +455,37 @@ namespace litecore { namespace repl {
 
 
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
-    bool DBWorker::addChangeToList(const C4DocumentInfo &info,
+    bool DBWorker::addChangeToList(RevToSend *rev,
                                    C4DocEnumerator *e,
                                    shared_ptr<RevToSendList> &changes)
     {
         if (_pushDocIDs != nullptr)
-            if (_pushDocIDs->find(slice(info.docID).asString()) == _pushDocIDs->end())
+            if (_pushDocIDs->find(slice(rev->docID).asString()) == _pushDocIDs->end())
                 return false;
 
-        alloc_slice remoteRevID;
+        // _pushingDocs has an entry for each docID involved in the push process, from change
+        // detection all the way to confirmation of the upload. The value of the entry is usually
+        // null; if not, it holds a later revision of that document that should be processed
+        // after the current one is done.
+        auto active = _pushingDocs.find(rev->docID);
+        if (active != _pushingDocs.end()) {
+            // This doc already has a revision being sent; wait till that one is done
+            logDebug("Holding off on change '%.*s' %.*s till earlier rev is done",
+                     SPLAT(rev->docID), SPLAT(rev->revID));
+            active->second = rev;
+            return false;
+        }
+
         bool needRemoteRevID = (_getForeignAncestors && _checkpointValid);
         if (needRemoteRevID || _options.pushFilter) {
             c4::ref<C4Document> doc;
             C4Error error;
-            doc = e ? c4enum_getDocument(e, &error) : c4doc_get(_db, info.docID, true, &error);
+            doc = e ? c4enum_getDocument(e, &error) : c4doc_get(_db, rev->docID, true, &error);
             if (!doc) {
-                auto rev = retained(new RevToSend(info, remoteRevID));
                 finishedDocumentWithError(rev, error, false);
                 return false;   // reject rev: error getting doc
             }
-            if (slice(doc->revID) != slice(info.revID))
+            if (slice(doc->revID) != slice(rev->revID))
                 return false;   // ignore rev: there's a newer one already
 
             if (needRemoteRevID) {
@@ -483,9 +493,9 @@ namespace litecore { namespace repl {
                 Assert(_remoteDBID);
                 alloc_slice foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
                 logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
-                if (_skipForeignChanges && foreignAncestor == slice(info.revID))
+                if (_skipForeignChanges && foreignAncestor == slice(rev->revID))
                     return false;   // skip this rev: it's already on the peer
-                remoteRevID = alloc_slice(foreignAncestor);
+                rev->remoteAncestorRevID = alloc_slice(foreignAncestor);
             }
 
             if (_options.pushFilter) {
@@ -497,7 +507,8 @@ namespace litecore { namespace repl {
             }
         }
 
-        changes->push_back(new RevToSend(info, remoteRevID));
+        _pushingDocs.insert({rev->docID, nullptr});
+        changes->push_back(rev);
         return true;
     }
 
@@ -1091,6 +1102,37 @@ namespace litecore { namespace repl {
     }
 
 
+    void DBWorker::_donePushingRev(RetainedConst<RevToSend> rev, bool completed) {
+        if (completed && _options.push > kC4Passive)
+            _revsToMarkSynced.push((RevToSend*)rev.get());
+
+        auto i = _pushingDocs.find(rev->docID);
+        if (i == _pushingDocs.end()) {
+            warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
+            return;
+        }
+        Retained<RevToSend> newRev = i->second;
+        _pushingDocs.erase(i);
+        if (newRev) {
+            if (completed)
+                newRev->remoteAncestorRevID = rev->revID;
+            logDebug("Now that '%.*s' %.*s is done, propose %.*s (parent %.*s) ...",
+                     SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
+                     SPLAT(newRev->remoteAncestorRevID));
+            auto changes = make_shared<RevToSendList>();
+            if (addChangeToList(newRev, nullptr, changes)) {
+                _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
+                _pusher->gotChanges(move(changes), _maxPushedSequence, {});
+            } else {
+                logDebug("   ... nope, decided not to propose '%.*s' %.*s",
+                         SPLAT(newRev->docID), SPLAT(newRev->revID));
+            }
+        } else {
+            logDebug("Done pushing '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
+        }
+    }
+
+
     // Mark this revision as synced (i.e. the server's current revision) soon.
     // NOTE: While this is queued, calls to c4doc_getRemoteAncestor() for this document won't
     // return the correct answer, because the change hasn't been made in the database yet.
@@ -1134,9 +1176,13 @@ namespace litecore { namespace repl {
 
     Worker::ActivityLevel DBWorker::computeActivityLevel() const {
         ActivityLevel level = Worker::computeActivityLevel();
+        if (!_pushingDocs.empty())
+            level = kC4Busy;
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("activityLevel=%-s: pendingResponseCount=%d, eventCount=%d",
-                kC4ReplicatorActivityLevelNames[level], pendingResponseCount(), eventCount());
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, eventCount=%d, activeDocs=%zu",
+                    kC4ReplicatorActivityLevelNames[level],
+                    pendingResponseCount(), eventCount(),
+                    _pushingDocs.size());
         }
         return level;
     }
