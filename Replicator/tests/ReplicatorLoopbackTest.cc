@@ -590,6 +590,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Starting Empty", "[Pul
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push-Pull Starting Empty", "[Push][Pull][Continuous]") {
+    addDocsInParallel(chrono::milliseconds(1500), 100);
+    runPushPullReplication(kC4Continuous);
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Fast Push", "[Push][Continuous]") {
     addDocsInParallel(chrono::milliseconds(100), 5000);
     runPushReplication(kC4Continuous);

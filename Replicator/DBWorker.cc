@@ -417,7 +417,13 @@ namespace litecore { namespace repl {
         while (true) {
             nChanges = c4dbobs_getChanges(_changeObserver, c4changes, kMaxChanges, &external);
             if (nChanges == 0)
-                break;
+                break;        // no more changes
+            if (!external) {
+                logDebug("Notified of %u of my own db changes #%llu ... #%llu (ignoring)",
+                         nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
+                _maxPushedSequence = c4changes[nChanges-1].sequence;
+                continue;     // ignore changes I made myself
+            }
             logVerbose("Notified of %u db changes #%llu ... #%llu",
                        nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
 
