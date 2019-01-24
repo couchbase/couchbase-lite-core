@@ -359,7 +359,6 @@ namespace litecore { namespace repl {
         _pushDocIDs = p.docIDs;
         if (_maxPushedSequence == 0)
             _maxPushedSequence = p.since;
-        C4SequenceNumber latestChangeSequence = _maxPushedSequence;
 
         if (_getForeignAncestors)
             _markRevsSyncedNow();   // make sure foreign ancestors are up to date
@@ -378,16 +377,15 @@ namespace litecore { namespace repl {
             while (c4enum_next(e, &error) && p.limit > 0) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                latestChangeSequence = info.sequence;
+                _maxPushedSequence = info.sequence;
                 auto rev = retained(new RevToSend(info));
                 if (addChangeToList(rev, e, changes))
                     --p.limit;
             }
         }
-        _maxPushedSequence = latestChangeSequence;
 
         _pusher = pusher;
-        pusher->gotChanges(move(changes), latestChangeSequence, error);
+        pusher->gotChanges(move(changes), _maxPushedSequence, error);
 
         if (p.continuous && p.limit > 0 && !_changeObserver) {
             // Reached the end of history; now start observing for future changes
@@ -415,7 +413,6 @@ namespace litecore { namespace repl {
         bool external;
         uint32_t nChanges;
         shared_ptr<RevToSendList> changes;
-        C4SequenceNumber latestChangeSequence = _maxPushedSequence;
 
         while (true) {
             nChanges = c4dbobs_getChanges(_changeObserver, c4changes, kMaxChanges, &external);
@@ -431,15 +428,14 @@ namespace litecore { namespace repl {
                     changes = make_shared<RevToSendList>();
                     changes->reserve(nChanges - i);
                 }
-                latestChangeSequence = c4change->sequence;
+                _maxPushedSequence = c4change->sequence;
                 auto rev = retained(new RevToSend({0, c4change->docID, c4change->revID,
                                                    c4change->sequence, c4change->bodySize}));
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
                 if (addChangeToList(rev, nullptr, changes) && changes->size() >= kMaxChanges) {
-                    _pusher->gotChanges(move(changes), latestChangeSequence, {});
-                    _maxPushedSequence = latestChangeSequence;
+                    _pusher->gotChanges(move(changes), _maxPushedSequence, {});
                     changes.reset();
                 }
             }
@@ -447,10 +443,8 @@ namespace litecore { namespace repl {
             c4dbobs_releaseChanges(c4changes, nChanges);
         }
 
-        if (changes && changes->size() > 0) {
-            _pusher->gotChanges(move(changes), latestChangeSequence, {});
-            _maxPushedSequence = latestChangeSequence;
-        }
+        if (changes && changes->size() > 0)
+            _pusher->gotChanges(move(changes), _maxPushedSequence, {});
     }
 
 
