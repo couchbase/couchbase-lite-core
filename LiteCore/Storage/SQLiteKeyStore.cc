@@ -22,7 +22,6 @@
 #include "Record.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "revid.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
 #include "FleeceImpl.hh"
 #include <sstream>
