@@ -26,6 +26,7 @@
 #include <iostream>
 #include <mutex>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace litecore {
 
@@ -49,11 +50,6 @@ namespace litecore {
         void log(const char *domain, ObjectRef, const char *format, ...) __printflike(4, 5);
 
         void flush();
-
-        ObjectRef nextObjectRef() const { return _lastObjectRef; }
-        void fastForwardObjects(ObjectRef last);
-        ObjectRef registerObject(std::string description, ObjectRef hint);
-        void unregisterObject(ObjectRef);
 
         /** A timestamp, given as a standard time_t (seconds since 1/1/1970) plus microseconds. */
         struct Timestamp {
@@ -90,8 +86,7 @@ namespace litecore {
         int64_t _lastSaved {0};
         LogLevel _level;
         std::unordered_map<size_t, unsigned> _formats;
-        std::unordered_map<unsigned, std::string> _objects;
-        ObjectRef _lastObjectRef {ObjectRef::None};
+        std::unordered_set<unsigned> _seenObjects;
     };
 
 }

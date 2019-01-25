@@ -61,7 +61,6 @@ namespace litecore {
         _st.reset();
     }
 
-
     LogEncoder::~LogEncoder() {
         flush();
     }
@@ -95,14 +94,13 @@ namespace litecore {
         _writer.write(&_level, sizeof(_level));
         _writeStringToken(domain ? domain : "");
 
-        _writeUVarInt((unsigned)object);
-        if (object != ObjectRef::None) {
-            auto i = _objects.find(unsigned(object));
-            if (i != _objects.end() && i->second != "\x1") {
-                _writer.write(slice(i->second));
-                _writer.write("\0", 1);
-                i->second = string("\x1"); // Remove this from memory, but keep so we can track as "seen"
-            }
+        const auto objRef = (unsigned)object;
+        _writeUVarInt(objRef);
+        if (object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end()) {
+            _seenObjects.insert(objRef);
+            auto i = LogDomain::getObject(objRef);
+            _writer.write(slice(i));
+            _writer.write("\0", 1);
         }
 
         _writeStringToken(format);
@@ -238,33 +236,6 @@ namespace litecore {
         else
             _scheduleFlush();
     }
-
-    void LogEncoder::fastForwardObjects(ObjectRef last)
-    {
-        _lastObjectRef = last;
-    }
-
-    LogEncoder::ObjectRef LogEncoder::registerObject(std::string description, ObjectRef hint) {
-        lock_guard<mutex> lock(_mutex);
-
-        ObjectRef ref = hint;
-        if(ref == 0) {
-            ref = _lastObjectRef = ObjectRef(unsigned(_lastObjectRef) + 1);
-        }
-
-        if(_objects.find(unsigned(ref)) == _objects.end()) {
-            _objects[unsigned(ref)] = description;
-        }
-
-        return ref;
-    }
-
-    void LogEncoder::unregisterObject(ObjectRef obj) {
-        lock_guard<mutex> lock(_mutex);
-
-        _objects.erase(unsigned(obj));
-    }
-
 
     void LogEncoder::_writeUVarInt(uint64_t n) {
         uint8_t buf[kMaxVarintLen64];
