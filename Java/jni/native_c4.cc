@@ -142,7 +142,7 @@ Java_com_couchbase_litecore_C4Log_setBinaryFileLevel(JNIEnv* env, jclass clazz, 
 /*
  * Class:     com_couchbase_litecore_C4Log
  * Method:    writeToBinaryFile
- * Signature: (Ljava/lang/String;IIJZ)V
+ * Signature: (Ljava/lang/String;IIJZLjava/lang/String;)V
  */
 JNIEXPORT void JNICALL
 Java_com_couchbase_litecore_C4Log_writeToBinaryFile(JNIEnv* env, jclass clazz, jstring jpath,
