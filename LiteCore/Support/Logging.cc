@@ -530,13 +530,10 @@ namespace litecore {
     {
         unique_lock<mutex> lock(sLogMutex);
         unsigned objRef = ++slastObjRef;
-
-        if(sobjNames.find(objRef) == sobjNames.end()) {
-            sobjNames.insert({objRef, nickname});
-            if (sCallback && level >= _callbackLogLevel())
-            invokeCallback(*this, level, "{%s#%u}==> %s @%p",
-                nickname.c_str(), objRef, description.c_str(), object);
-        }
+        sobjNames.insert({objRef, nickname});
+        if (sCallback && level >= _callbackLogLevel())
+        invokeCallback(*this, level, "{%s#%u}==> %s @%p",
+            nickname.c_str(), objRef, description.c_str(), object);
 
         return objRef;
     }
