@@ -761,7 +761,7 @@ namespace litecore { namespace repl {
                         delta = nullslice;       // Delta is (probably) bigger than body; don't use
                 }
                 if (delta) {
-                    msg["deltaSrc"_sl] = request->remoteAncestorRevID;
+                    msg["deltaSrc"_sl] = doc->selectedRev.revID;
                     if (willLog(LogLevel::Verbose)) {
                         alloc_slice old (ancestor.toJSON(sk));
                         alloc_slice nuu (root.toJSON(sk));
@@ -1044,6 +1044,11 @@ namespace litecore { namespace repl {
                     enc.reset();
                     rev->body = nullslice;
 
+                    // Preserve rev body as the source of a future delta I may push back:
+                    if (bodyForDB.size >= tuning::kMinBodySizeForDelta && !_disableDeltaSupport)
+                        rev->flags |= kRevKeepBody;
+
+                    // Now save the revision to the db:
                     C4DocPutRequest put = {};
                     put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
                     put.docID = rev->docID;

@@ -274,6 +274,7 @@ namespace litecore { namespace repl {
             unsigned index = 0;
             for (RevToSend *change : *changes) {
                 bool queued = false;
+                change->deltaOK = _deltasOK;
                 if (proposedChanges) {
                     // Entry in "proposeChanges" response is a status code, with 0 for OK:
                     int status = (int)requests[index].asInt();
@@ -281,7 +282,6 @@ namespace litecore { namespace repl {
                         change->maxHistory = maxHistory;
                         change->legacyAttachments = legacyAttachments;
                         change->noConflicts = true;
-                        change->deltaOK = _deltasOK;
                         _revsToSend.push_back(change);
                         queued = true;
                     } else if (status == 304) {

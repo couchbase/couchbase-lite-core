@@ -1309,22 +1309,7 @@ static void mutateProperty(C4Database *db, fleece::Encoder &enc, slice docID, ma
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push", "[Push][Pull]") {
-    auto serverOpts = Replicator::Options::passive();
-
-    SECTION("Default") {
-    }
-    SECTION("NoConflicts") {
-        serverOpts.setNoIncomingConflicts();
-    }
-
-    importJSONLines(sFixturesDir + "names_100.json");
-    _expectedDocumentCount = 100;
-    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
-    compareDatabases();
-    validateCheckpoints(db, db2, "{\"local\":100}");
-
-    Log("-------- Mutate Docs --------");
+static void mutationsForDelta(C4Database *db) {
     SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
     for (int i = 1; i <= 100; i += 7) {
         char docID[20];
@@ -1333,11 +1318,60 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push", "[Push][Pull]") {
             {"birthday"_sl, "1964-11-28"_sl}, {"memberSince"_sl, {}}
         });
     }
+}
 
-    Log("-------- Second Replication --------");
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push]") {
+    auto serverOpts = Replicator::Options::passive();
+
+    SECTION("Default") {
+    }
+    SECTION("NoConflicts") {
+        serverOpts.setNoIncomingConflicts();
+    }
+
+    // Push db --> db2:
+    importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
+
+    Log("-------- Mutate Docs --------");
+    mutationsForDelta(db);
+
+    Log("-------- Second Push --------");
     _expectedDocumentCount = (100+6)/7;
     IncomingRev::gNumDeltasApplied = 0;
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    compareDatabases();
+    CHECK(IncomingRev::gNumDeltasApplied == 15);
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull]") {
+    auto serverOpts = Replicator::Options::passive();
+
+    SECTION("Default") {
+    }
+    SECTION("NoConflicts") {
+        serverOpts.setNoIncomingConflicts();
+    }
+
+    // Push db --> db2:
+    importJSONLines(sFixturesDir + "names_100.json");
+    _expectedDocumentCount = 100;
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    compareDatabases();
+    validateCheckpoints(db, db2, "{\"local\":100}");
+
+    Log("-------- Mutate Docs In db2 --------");
+    mutationsForDelta(db2);
+
+    Log("-------- Pull From db2 --------");
+    _expectedDocumentCount = (100+6)/7;
+    IncomingRev::gNumDeltasApplied = 0;
+    runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
     compareDatabases();
     CHECK(IncomingRev::gNumDeltasApplied == 15);
 }
