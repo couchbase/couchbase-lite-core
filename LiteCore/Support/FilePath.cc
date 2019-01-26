@@ -22,6 +22,7 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "PlatformIO.hh"
+#include <sqlite3.h>            // for sqlite3_temp_directory
 #include <fcntl.h>
 #include <cerrno>
 #include <dirent.h>
@@ -48,7 +49,6 @@
 #include "strlcat.h"
 #include "mkstemp.h"
 #include "mkdtemp.h"
-#include <sqlite3.h>
 #endif
 
 using namespace std;
@@ -319,27 +319,47 @@ namespace litecore {
     }
 
 
+    static FilePath sTempDirectory;
+    static mutex sTempDirMutex;
+
+
     FilePath FilePath::tempDirectory() {
+        lock_guard<mutex> lock(sTempDirMutex);
+        if (sTempDirectory._dir.empty()) {
+            // Default location of temp dir:
 #if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-        const char *tmpDir = getenv("TMPDIR");
+            const char *tmpDir = getenv("TMPDIR");
 #else
-        const char *tmpDir = sqlite3_temp_directory;
+            const char *tmpDir = sqlite3_temp_directory;
 #endif
-        
-        if(tmpDir == nullptr) {
+
+            if(tmpDir == nullptr) {
 #ifdef _MSC_VER
-            WCHAR pathBuffer[MAX_PATH + 1];
-            GetTempPathW(MAX_PATH, pathBuffer);
-            GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
-            CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
-            return FilePath(convertedPath.m_psz, "");
+                WCHAR pathBuffer[MAX_PATH + 1];
+                GetTempPathW(MAX_PATH, pathBuffer);
+                GetLongPathNameW(pathBuffer, pathBuffer, MAX_PATH);
+                CW2AEX<256> convertedPath(pathBuffer, CP_UTF8);
+                return FilePath(convertedPath.m_psz, "");
 #elif defined(ANDROID)
-            tmpDir = "/data/local/tmp";
+                tmpDir = "/data/local/tmp";
 #else
-            tmpDir = "/tmp";
+                tmpDir = "/tmp";
 #endif
+            }
+            sTempDirectory = FilePath(tmpDir, "");
         }
-        return FilePath(tmpDir, "");
+        return sTempDirectory;
+    }
+
+
+    void FilePath::setTempDirectory(const string &path) {
+        lock_guard<mutex> lock(sTempDirMutex);
+        if (!sTempDirectory._dir.empty())
+            Warn("Changing temp dir to <%s> after the previous dir <%s> has already been used",
+                 path.c_str(), sTempDirectory._dir.c_str());
+        sTempDirectory = FilePath(path, "");
+        // Tell SQLite to use this temp directory. Note that the dup'd string will be leaked.
+        sqlite3_temp_directory = strdup(path.c_str());
     }
     
     
