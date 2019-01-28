@@ -144,7 +144,7 @@ private:
     LogDomain* const _next;
 
     static unsigned slastObjRef;
-    static std::map<unsigned,std::string> sobjNames;
+    static std::map<unsigned,std::string> sObjNames;
     static LogDomain* sFirstDomain;
     static LogLevel sCallbackMinLevel;
     static LogLevel sFileMinLevel;

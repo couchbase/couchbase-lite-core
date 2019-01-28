@@ -244,14 +244,14 @@ namespace litecore {
 
 
     void LogEncoder::_writeStringToken(const char *token) {
-        auto i = _formats.find((size_t)token);
-        if (i == _formats.end()) {
-            unsigned n = (unsigned)_formats.size();
+        const auto name = _formats.find((size_t)token);
+        if (name == _formats.end()) {
+            const auto n = (unsigned)_formats.size();
             _formats.insert({(size_t)token, n});
             _writeUVarInt(n);
             _writer.write(token, strlen(token)+1);  // add the actual string the first time
         } else {
-            _writeUVarInt(i->second);
+            _writeUVarInt(name->second);
         }
     }
 

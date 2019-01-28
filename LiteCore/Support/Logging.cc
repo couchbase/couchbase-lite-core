@@ -58,7 +58,7 @@ namespace litecore {
     static bool sCallbackPreformatted = false;
     LogLevel LogDomain::sFileMinLevel = LogLevel::None;
     unsigned LogDomain::slastObjRef {0};
-    map<unsigned, string> LogDomain::sobjNames;
+    map<unsigned, string> LogDomain::sObjNames;
     static ofstream* sFileOut[5] = {}; // File per log level
     static LogEncoder* sLogEncoder[5] = {};
     static string sLogDirectory;
@@ -388,8 +388,8 @@ namespace litecore {
         if (doCallback && sCallback && level >= _callbackLogLevel()) {
             const char *objName = "?";
             if (objRef) {
-                auto i = sobjNames.find(objRef);
-                if (i != sobjNames.end())
+                auto i = sObjNames.find(objRef);
+                if (i != sObjNames.end())
                     objName = i->second.c_str();
             }
 
@@ -451,8 +451,8 @@ namespace litecore {
     {
         const char *objName = "?";
         if (objRef) {
-            auto i = sobjNames.find(objRef);
-            if (i != sobjNames.end())
+            auto i = sObjNames.find(objRef);
+            if (i != sObjNames.end())
                 objName = i->second.c_str();
         }
 
@@ -514,8 +514,9 @@ namespace litecore {
 
     string LogDomain::getObject(unsigned ref)
     {
-        const auto found = sobjNames.find(ref);
-        if(found != sobjNames.end()) {
+        unique_lock<mutex> lock(sLogMutex);
+        const auto found = sObjNames.find(ref);
+        if(found != sObjNames.end()) {
             return found->second;
         }
 
@@ -530,7 +531,7 @@ namespace litecore {
     {
         unique_lock<mutex> lock(sLogMutex);
         unsigned objRef = ++slastObjRef;
-        sobjNames.insert({objRef, nickname});
+        sObjNames.insert({objRef, nickname});
         if (sCallback && level >= _callbackLogLevel())
         invokeCallback(*this, level, "{%s#%u}==> %s @%p",
             nickname.c_str(), objRef, description.c_str(), object);
@@ -540,7 +541,7 @@ namespace litecore {
 
     void LogDomain::unregisterObject(unsigned objectRef) {
         unique_lock<mutex> lock(sLogMutex);
-        sobjNames.erase(objectRef);
+        sObjNames.erase(objectRef);
     }
 
 
