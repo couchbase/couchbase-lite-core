@@ -71,6 +71,7 @@ namespace litecore { namespace repl {
         Worker::_connectionClosed();
         _pusher = nullptr;                      // breaks ref-cycle
         _changeObserver = nullptr;
+        _pushingDocs.clear();
     }
 
 
@@ -1118,7 +1119,8 @@ namespace litecore { namespace repl {
 
         auto i = _pushingDocs.find(rev->docID);
         if (i == _pushingDocs.end()) {
-            warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
+            if (connection())
+                warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
             return;
         }
         Retained<RevToSend> newRev = i->second;
