@@ -140,7 +140,7 @@ namespace litecore { namespace repl {
 
         CloseStatus _closeStatus;
         Delegate* _delegate;
-        Retained<DBWorker> _dbActor;
+        Retained<DBWorker> _dbWorker;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;
         Connection::State _connectionState;

@@ -47,7 +47,7 @@ namespace litecore { namespace repl {
     ,_connectionState(connection()->state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_dbActor(new DBWorker(this, db, webSocket->url()))
+    ,_dbWorker(new DBWorker(this, db, webSocket->url()))
     ,_docsEnded(this, &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
@@ -56,9 +56,9 @@ namespace litecore { namespace repl {
         logInfo("%s", string(options).c_str());
 
         if (options.push != kC4Disabled)
-            _pusher = new Pusher(this, _dbActor);
+            _pusher = new Pusher(this, _dbWorker);
         if (options.pull != kC4Disabled)
-            _puller = new Puller(this, _dbActor);
+            _puller = new Puller(this, _dbWorker);
         _checkpoint.enableAutosave(options.checkpointSaveDelay(),
                                    bind(&Replicator::saveCheckpoint, this, _1));
     }
@@ -120,7 +120,7 @@ namespace litecore { namespace repl {
             _pushStatus = taskStatus;
         } else if (task == _puller) {
             _pullStatus = taskStatus;
-        } else if (task == _dbActor) {
+        } else if (task == _dbWorker) {
             _dbStatus = taskStatus;
         }
 
@@ -204,7 +204,7 @@ namespace litecore { namespace repl {
             DebugAssert(!connection());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
-            _dbActor = nullptr;
+            _dbWorker = nullptr;
         }
         if (_delegate) {
             // Notify the delegate of the current status, but not too often:
@@ -274,10 +274,10 @@ namespace litecore { namespace repl {
         if (setCookie.type() == kFLArray) {
             // Yes, there can be multiple Set-Cookie headers.
             for (Array::iterator i(setCookie.asArray()); i; ++i) {
-                _dbActor->setCookie(i.value().asString());
+                _dbWorker->setCookie(i.value().asString());
             }
         } else if (setCookie) {
-            _dbActor->setCookie(setCookie.asString());
+            _dbWorker->setCookie(setCookie.asString());
         }
         if (_delegate)
             _delegate->replicatorGotHTTPResponse(this, status, headers);
@@ -307,7 +307,7 @@ namespace litecore { namespace repl {
 
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
-        _dbActor->connectionClosed();
+        _dbWorker->connectionClosed();
         if (_pusher)
             _pusher->connectionClosed();
         if (_puller)
@@ -356,7 +356,7 @@ namespace litecore { namespace repl {
 
     // Start off by getting the local checkpoint, if this is an active replicator:
     void Replicator::getLocalCheckpoint() {
-        _dbActor->getCheckpoint(asynchronize([this](alloc_slice checkpointID,
+        _dbWorker->getCheckpoint(asynchronize([this](alloc_slice checkpointID,
                                                     alloc_slice data,
                                                     bool dbIsEmpty,
                                                     C4Error err) {
@@ -431,7 +431,7 @@ namespace litecore { namespace repl {
                 // Compare checkpoints, reset if mismatched:
                 bool valid = _checkpoint.validateWith(remoteCheckpoint);
                 if (!valid)
-                    _dbActor->checkpointIsInvalid();
+                    _dbWorker->checkpointIsInvalid();
 
                 // Now we have the checkpoints! Time to start replicating:
                 startReplicating();
@@ -488,7 +488,7 @@ namespace litecore { namespace repl {
                 _checkpointRevID = response->property("rev"_sl);
                 logInfo("Saved remote checkpoint %.*s as rev='%.*s'",
                     SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
-                _dbActor->setCheckpoint(json, asynchronize([this]{
+                _dbWorker->setCheckpoint(json, asynchronize([this]{
                     _checkpoint.saved();
                 }));
             }
