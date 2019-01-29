@@ -31,13 +31,33 @@
 class LogObject : public Logging
 {
 public:
-    LogObject()
+    LogObject(const std::string& identifier)
         : Logging(DBLog)
+    ,_identifier(identifier)
+    {
+        
+    }
+
+    LogObject(std::string&& identifier)
+        : Logging(DBLog)
+    ,_identifier(identifier)
     {
         
     }
 
     void doLog(const char *format, ...) const __printflike(2, 3) { LOGBODY(Info); }
+
+    std::string loggingClassName() const override
+    {
+        return _identifier;
+    }
+
+    unsigned getRef() const
+    {
+        return getObjectRef();
+    }
+private:
+    std::string _identifier;
 };
 
 static string dumpLog(string encoded, vector<string> levelNames) {
@@ -121,24 +141,47 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
 
 
 TEST_CASE("LogEncoder tokens", "[Log]") {
+    LogObject dummy1("Tweedledum");
+    dummy1.doLog("FOO"); // Abuse the side effect that logging this way registers the object
+    auto tweedledum = (LogEncoder::ObjectRef)dummy1.getRef();
+
+    LogObject dummy2("rattle");
+    dummy2.doLog("FOO");
+    auto rattle = (LogEncoder::ObjectRef)dummy2.getRef();
+
+    LogObject dummy3("Tweedledee");
+    dummy3.doLog("FOO");
+    auto tweedledee = (LogEncoder::ObjectRef)dummy3.getRef();
+
     stringstream out;
+    stringstream out2;
     {
         LogEncoder logger(out, LogLevel::Info);
-        size_t size = 0xabcdabcd;
-        auto tweedledum = logger.registerObject("Tweedledum", LogEncoder::ObjectRef::None);
+        LogEncoder logger2(out2, LogLevel::Verbose);
         logger.log(nullptr, tweedledum, "I'm Tweedledum");
-        auto rattle = logger.registerObject("rattle", LogEncoder::ObjectRef::None);
-        auto tweedledee = logger.registerObject("Tweedledee", LogEncoder::ObjectRef::None);
         logger.log(nullptr, tweedledee, "I'm Tweedledee");
         logger.log(nullptr, rattle, "and I'm the rattle");
+        logger2.log(nullptr, rattle, "Am I the rattle too?");
     }
     string encoded = out.str();
     string result = dumpLog(encoded, {});
 
-    regex expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
-                   TIMESTAMP "\\{1\\|Tweedledum\\} I'm Tweedledum\\n"
-                   TIMESTAMP "\\{3\\|Tweedledee\\} I'm Tweedledee\\n"
-                   TIMESTAMP "\\{2\\|rattle\\} and I'm the rattle\\n");
+    char buffer[1024];
+    snprintf(buffer, 1024, TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
+                   TIMESTAMP "\\{%u\\|Tweedledum\\} I'm Tweedledum\\n"
+                   TIMESTAMP "\\{%u\\|Tweedledee\\} I'm Tweedledee\\n"
+                   TIMESTAMP "\\{%u\\|rattle\\} and I'm the rattle\\n", tweedledum, tweedledee, rattle);
+
+    regex expected(buffer);
+    CHECK(regex_match(result, expected));
+
+    encoded = out2.str();
+    result = dumpLog(encoded, {});
+
+    // Confirm other encoders have the same ref for "rattle"
+    snprintf(buffer, 1024, TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
+                   TIMESTAMP "\\{%u\\|rattle\\} Am I the rattle too\\?\\n", rattle);
+    expected = regex(buffer);
     CHECK(regex_match(result, expected));
 }
 
@@ -178,7 +221,7 @@ TEST_CASE("Logging rollover", "[Log]") {
 
     LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 1, false };
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
-    LogObject obj;
+    LogObject obj("dummy");
     for(int i = 0; i < 1024; i++) {
         // Do a lot of logging, so that pruning also gets tested
         obj.doLog("This is line #%d in the log.", i);
@@ -227,7 +270,7 @@ TEST_CASE("Logging plaintext", "[Log]") {
 
     LogFileOptions fileOptions { tmpLogDir.canonicalPath(), LogLevel::Info, 1024, 5, true };
     LogDomain::writeEncodedLogsTo(fileOptions, "Hello");
-    LogObject obj;
+    LogObject obj("dummy");
     obj.doLog("This will be in plaintext");
 
     vector<string> infoFiles;
@@ -249,10 +292,8 @@ TEST_CASE("Logging plaintext", "[Log]") {
 
     CHECK(lines[0] == "---- Hello ----");
     auto startPos = lines[1].find('|') + 2;
-#ifdef _MSC_VER
-    CHECK(lines[1].substr(startPos) == "[DB]: {class LogObject#1} This will be in plaintext");
-#else
-    CHECK(lines[1].substr(startPos) == "[DB]: {LogObject#1} This will be in plaintext");
-#endif
+    CHECK(lines[1].find("[DB]") != string::npos);
+    CHECK(lines[1].find("{dummy#") != string::npos);
+    CHECK(lines[1].find("This will be in plaintext") != string::npos);
 }
 

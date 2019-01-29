@@ -123,8 +123,10 @@ public:
 
 private:
     friend class Logging;
+    friend class LogEncoder;
+    static std::string getObject(unsigned);
     unsigned registerObject(const void *object, const std::string &description,
-                            const std::string &nickname, LogLevel, unsigned hint);
+                            const std::string &nickname, LogLevel level);
     void unregisterObject(unsigned obj);
     void vlog(LogLevel level, unsigned obj, bool callback, const char *fmt, va_list);
 
@@ -140,9 +142,9 @@ private:
     std::atomic<LogLevel> _level;
     const char* const _name;
     LogDomain* const _next;
-    unsigned _lastObjRef {0};
-    std::map<unsigned,std::string> _objNames;
 
+    static unsigned slastObjRef;
+    static std::map<unsigned,std::string> sObjNames;
     static LogDomain* sFirstDomain;
     static LogLevel sCallbackMinLevel;
     static LogLevel sFileMinLevel;

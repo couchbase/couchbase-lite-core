@@ -57,6 +57,8 @@ namespace litecore {
     static LogDomain::Callback_t sCallback = LogDomain::defaultCallback;
     static bool sCallbackPreformatted = false;
     LogLevel LogDomain::sFileMinLevel = LogLevel::None;
+    unsigned LogDomain::slastObjRef {0};
+    map<unsigned, string> LogDomain::sObjNames;
     static ofstream* sFileOut[5] = {}; // File per log level
     static LogEncoder* sLogEncoder[5] = {};
     static string sLogDirectory;
@@ -163,10 +165,8 @@ namespace litecore {
     {
         auto encoder = sLogEncoder[(int)level];
         auto file = sFileOut[(int)level];
-        LogEncoder::ObjectRef next = LogEncoder::ObjectRef::None;
         if(encoder) {
             encoder->flush();
-            next = encoder->nextObjectRef();
         } else {
             file->flush();
         }
@@ -178,7 +178,6 @@ namespace litecore {
         sFileOut[(int)level] = new ofstream(path, ofstream::out|ofstream::trunc|ofstream::binary);
         if(encoder) {
             auto newEncoder = new LogEncoder(*sFileOut[(int)level], level);
-            newEncoder->fastForwardObjects(next);
             sLogEncoder[(int)level] = newEncoder;
             newEncoder->log("", LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
             newEncoder->flush(); // Make sure at least the magic bytes are present
@@ -389,8 +388,8 @@ namespace litecore {
         if (doCallback && sCallback && level >= _callbackLogLevel()) {
             const char *objName = "?";
             if (objRef) {
-                auto i = _objNames.find(objRef);
-                if (i != _objNames.end())
+                auto i = sObjNames.find(objRef);
+                if (i != sObjNames.end())
                     objName = i->second.c_str();
             }
 
@@ -452,8 +451,8 @@ namespace litecore {
     {
         const char *objName = "?";
         if (objRef) {
-            auto i = _objNames.find(objRef);
-            if (i != _objNames.end())
+            auto i = sObjNames.find(objRef);
+            if (i != sObjNames.end())
                 objName = i->second.c_str();
         }
 
@@ -513,33 +512,36 @@ namespace litecore {
         #endif
     }
 
+    string LogDomain::getObject(unsigned ref)
+    {
+        unique_lock<mutex> lock(sLogMutex);
+        const auto found = sObjNames.find(ref);
+        if(found != sObjNames.end()) {
+            return found->second;
+        }
+
+        return "";
+    }
+
 
     unsigned LogDomain::registerObject(const void *object,
                                        const string &description,
                                        const string &nickname,
-                                       LogLevel level,
-                                       unsigned hint)
+                                       LogLevel level)
     {
         unique_lock<mutex> lock(sLogMutex);
-        unsigned objRef;
-        if (sLogEncoder[(int)level])
-            objRef = sLogEncoder[(int)level]->registerObject(description, (LogEncoder::ObjectRef)hint);
-        else
-            objRef = hint == 0 ? ++_lastObjRef : hint;
-
-        if(_objNames.find(objRef) == _objNames.end()) {
-            _objNames.insert({objRef, nickname});
-            if (sCallback && level >= _callbackLogLevel())
-            invokeCallback(*this, level, "{%s#%u}==> %s @%p",
-                nickname.c_str(), objRef, description.c_str(), object);
-        }
+        unsigned objRef = ++slastObjRef;
+        sObjNames.insert({objRef, nickname});
+        if (sCallback && level >= _callbackLogLevel())
+        invokeCallback(*this, level, "{%s#%u}==> %s @%p",
+            nickname.c_str(), objRef, description.c_str(), object);
 
         return objRef;
     }
 
     void LogDomain::unregisterObject(unsigned objectRef) {
         unique_lock<mutex> lock(sLogMutex);
-        _objNames.erase(objectRef);
+        sObjNames.erase(objectRef);
     }
 
 
@@ -595,10 +597,13 @@ namespace litecore {
         if (!_domain.willLog(level))
             return;
 
-        string nickname = loggingClassName();
-        string identifier = classNameOf(this) + " " + loggingIdentifier();
-        const_cast<Logging*>(this)->_objectRef = _domain.registerObject(this, identifier,
-                                                                        nickname, level, _objectRef);
+        if(_objectRef == 0) {
+            string nickname = loggingClassName();
+            string identifier = classNameOf(this) + " " + loggingIdentifier();
+            const_cast<Logging*>(this)->_objectRef = _domain.registerObject(this, identifier,
+                                                                            nickname, level);
+        }
+        
         _domain.vlog(level, _objectRef, true, format, args);
     }
 

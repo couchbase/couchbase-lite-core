@@ -61,7 +61,6 @@ namespace litecore {
         _st.reset();
     }
 
-
     LogEncoder::~LogEncoder() {
         flush();
     }
@@ -95,14 +94,13 @@ namespace litecore {
         _writer.write(&_level, sizeof(_level));
         _writeStringToken(domain ? domain : "");
 
-        _writeUVarInt((unsigned)object);
-        if (object != ObjectRef::None) {
-            auto i = _objects.find(unsigned(object));
-            if (i != _objects.end() && i->second != "\x1") {
-                _writer.write(slice(i->second));
-                _writer.write("\0", 1);
-                i->second = string("\x1"); // Remove this from memory, but keep so we can track as "seen"
-            }
+        const auto objRef = (unsigned)object;
+        _writeUVarInt(objRef);
+        if (object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end()) {
+            _seenObjects.insert(objRef);
+            auto i = LogDomain::getObject(objRef);
+            _writer.write(slice(i));
+            _writer.write("\0", 1);
         }
 
         _writeStringToken(format);
@@ -239,33 +237,6 @@ namespace litecore {
             _scheduleFlush();
     }
 
-    void LogEncoder::fastForwardObjects(ObjectRef last)
-    {
-        _lastObjectRef = last;
-    }
-
-    LogEncoder::ObjectRef LogEncoder::registerObject(std::string description, ObjectRef hint) {
-        lock_guard<mutex> lock(_mutex);
-
-        ObjectRef ref = hint;
-        if(ref == 0) {
-            ref = _lastObjectRef = ObjectRef(unsigned(_lastObjectRef) + 1);
-        }
-
-        if(_objects.find(unsigned(ref)) == _objects.end()) {
-            _objects[unsigned(ref)] = description;
-        }
-
-        return ref;
-    }
-
-    void LogEncoder::unregisterObject(ObjectRef obj) {
-        lock_guard<mutex> lock(_mutex);
-
-        _objects.erase(unsigned(obj));
-    }
-
-
     void LogEncoder::_writeUVarInt(uint64_t n) {
         uint8_t buf[kMaxVarintLen64];
         _writer.write(buf, PutUVarInt(buf, n));
@@ -273,14 +244,14 @@ namespace litecore {
 
 
     void LogEncoder::_writeStringToken(const char *token) {
-        auto i = _formats.find((size_t)token);
-        if (i == _formats.end()) {
-            unsigned n = (unsigned)_formats.size();
+        const auto name = _formats.find((size_t)token);
+        if (name == _formats.end()) {
+            const auto n = (unsigned)_formats.size();
             _formats.insert({(size_t)token, n});
             _writeUVarInt(n);
             _writer.write(token, strlen(token)+1);  // add the actual string the first time
         } else {
-            _writeUVarInt(i->second);
+            _writeUVarInt(name->second);
         }
     }
 
