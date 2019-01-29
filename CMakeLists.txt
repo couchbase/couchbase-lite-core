@@ -335,12 +335,6 @@ else()
     target_link_libraries(LiteCore PRIVATE zlibstatic Ws2_32)
 endif()
 
-### JNI:
-
-if (JNI)
-    add_subdirectory(Java)
-endif()
-
 ### REST LISTENER LIBRARY:
 
 add_library(LiteCoreREST SHARED LiteCore/Support/Error.cc
