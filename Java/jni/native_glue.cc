@@ -223,9 +223,8 @@ namespace litecore {
         }
 
         const char* jstringSlice::cStr() {
-            return _slice.cString();
+            return static_cast<const char *>(_slice.buf);
         };
-
 
         // ATTN: In critical, should not call any other JNI methods.
         // http://docs.oracle.com/javase/6/docs/technotes/guides/jni/spec/functions.html
