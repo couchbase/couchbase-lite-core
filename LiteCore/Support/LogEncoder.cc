@@ -100,9 +100,13 @@ namespace litecore {
         _writeUVarInt(objRef);
         if (object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end()) {
             _seenObjects.insert(objRef);
-            auto i = objectMap.find(objRef);
-            _writer.write(slice(i));
-            _writer.write("\0", 1);
+            const auto i = objectMap.find(objRef);
+            if(i == objectMap.end()) {
+                _writer.write({"?\0", 2});
+            } else {
+                _writer.write(slice(i->second.c_str()));
+                _writer.write("\0", 1);
+            }
         }
 
         _writeStringToken(format);

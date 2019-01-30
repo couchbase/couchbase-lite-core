@@ -502,9 +502,9 @@ namespace litecore {
         #endif
     }
 
+    // Must be called from a method holding sLogMutex
     string LogDomain::getObject(unsigned ref)
     {
-        unique_lock<mutex> lock(sLogMutex);
         const auto found = sObjNames.find(ref);
         if(found != sObjNames.end()) {
             return found->second;
