@@ -134,6 +134,9 @@ namespace litecore { namespace repl {
         void _applyDelta(alloc_slice docID, alloc_slice baseRevID,
                          alloc_slice deltaJSON,
                          std::function<void(alloc_slice body, C4Error)> callback);
+        alloc_slice createRevisionDelta(C4Document *doc, RevToSend *request,
+                                        fleece::Dict root, size_t revSize,
+                                        bool sendLegacyAttachments);
         void _sendRevision(Retained<RevToSend> request,
                            blip::MessageProgressCallback onProgress);
         void _setCookie(alloc_slice setCookieHeader);

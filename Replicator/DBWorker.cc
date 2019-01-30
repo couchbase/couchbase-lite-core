@@ -329,16 +329,18 @@ namespace litecore { namespace repl {
 #pragma mark - CHANGES:
 
 
-    static Dict getDocRoot(C4Document *doc) {
+    static Dict getDocRoot(C4Document *doc, C4RevisionFlags *outFlags =nullptr) {
         slice revisionBody(doc->selectedRev.body);
         if (!revisionBody)
             return nullptr;
+        if (outFlags)
+            *outFlags = doc->selectedRev.flags;
         return Value::fromData(revisionBody, kFLTrusted).asDict();
     }
 
-    static Dict getDocRoot(C4Document *doc, slice revID) {
+    static Dict getDocRoot(C4Document *doc, slice revID, C4RevisionFlags *outFlags =nullptr) {
         if (c4doc_selectRevision(doc, revID, true, nullptr) && c4doc_loadRevisionBody(doc, nullptr))
-            return getDocRoot(doc);
+            return getDocRoot(doc, outFlags);
         return nullptr;
     }
 
@@ -743,48 +745,26 @@ namespace litecore { namespace repl {
         msg["rev"_sl] = request->revID;
         msg["sequence"_sl] = request->sequence;
         if (root) {
-            auto sk = c4db_getFLSharedKeys(_db);
-            auto revisionFlags = doc->selectedRev.flags;
-            bool sendLegacyAttachments = (request->legacyAttachments
-                                          && (revisionFlags & kRevHasAttachments)
-                                          && !_disableBlobSupport);
-            alloc_slice delta;
-            if (request->deltaOK && !sendLegacyAttachments
-                                 && !_disableDeltaSupport
-                                 && revisionBody.size >= tuning::kMinBodySizeForDelta) {
-                // Delta-encode:
-                Dict ancestor = getDeltaSourceRev(doc, *request);
-                if (ancestor) {
-                    delta = FLCreateJSONDelta(ancestor, root);
-                    if (!delta)
-                        delta = "{}"_sl;
-                    else if (delta.size > revisionBody.size * 1.2)
-                        delta = nullslice;       // Delta is (probably) bigger than body; don't use
-                }
-                if (delta) {
-                    msg["deltaSrc"_sl] = doc->selectedRev.revID;
-                    if (willLog(LogLevel::Verbose)) {
-                        alloc_slice old (ancestor.toJSON(sk));
-                        alloc_slice nuu (root.toJSON(sk));
-                        logVerbose("Encoded revision as delta, saving %zd bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
-                                   nuu.size - delta.size,
-                                   SPLAT(old), SPLAT(nuu), SPLAT(delta));
-                    }
-                }
-            }
-
             msg.noreply = !onProgress;
             if (request->noConflicts)
                 msg["noconflicts"_sl] = true;
+            auto revisionFlags = doc->selectedRev.flags;
             if (revisionFlags & kRevDeleted)
                 msg["deleted"_sl] = "1"_sl;
             string history = revHistoryString(doc, *request);
             if (!history.empty())
                 msg["history"_sl] = history;
 
-            // Write doc body (or delta) as JSON:
-                auto &bodyEncoder = msg.jsonBody();
+            auto &bodyEncoder = msg.jsonBody();
+            bool sendLegacyAttachments = (request->legacyAttachments
+                                          && (revisionFlags & kRevHasAttachments)
+                                          && !_disableBlobSupport);
+
+            // Delta compression:
+            alloc_slice delta = createRevisionDelta(doc, request, root, revisionBody.size,
+                                                    sendLegacyAttachments);
             if (delta) {
+                msg["deltaSrc"_sl] = doc->selectedRev.revID;
                 bodyEncoder.writeRaw(delta);
             } else if (root.empty()) {
                 msg.write("{}"_sl);
@@ -838,19 +818,20 @@ namespace litecore { namespace repl {
 
     // Returns the source of the delta to send for a given RevToSend
     Dict DBWorker::getDeltaSourceRev(C4Document* doc, const RevToSend &request) {
-        if (request.remoteAncestorRevID) {
-            Dict src = getDocRoot(doc, request.remoteAncestorRevID);
-            if (src)
-                return src;
-        }
-        if (request.ancestorRevIDs) {
+        C4RevisionFlags flags = 0;
+        Dict src;
+        if (request.remoteAncestorRevID)
+            src = getDocRoot(doc, request.remoteAncestorRevID, &flags);
+        if (!src && request.ancestorRevIDs) {
             for (auto revID : *request.ancestorRevIDs) {
-                Dict src = getDocRoot(doc, revID);
+                src = getDocRoot(doc, revID, &flags);
                 if (src)
-                    return src;
+                    break;
             }
         }
-        return nullptr;
+        if (src && request.legacyAttachments && (flags & kRevHasAttachments))
+            src = nullptr;         // (see #678)
+        return src;
     }
 
 
@@ -878,6 +859,50 @@ namespace litecore { namespace repl {
                 break;
         }
         return historyStream.str();
+    }
+
+
+    alloc_slice DBWorker::createRevisionDelta(C4Document *doc, RevToSend *request,
+                                              Dict root, size_t revisionSize,
+                                              bool sendLegacyAttachments)
+    {
+        auto sk = c4db_getFLSharedKeys(_db);
+        alloc_slice delta;
+        if (!request->deltaOK || _disableDeltaSupport
+                              || revisionSize < tuning::kMinBodySizeForDelta)
+            return delta;
+        Dict ancestor = getDeltaSourceRev(doc, *request);
+        if (!ancestor)
+            return delta;
+
+        Doc legacyOld, legacyNew;
+        if (sendLegacyAttachments) {
+            // If server needs legacy attachment layout, transform both revisions:
+            Encoder enc;
+            enc.setSharedKeys(sk);
+            auto revPos = c4rev_getGeneration(request->revID);
+            writeRevWithLegacyAttachments(enc, root, revPos);
+            legacyNew = enc.finishDoc();
+            root = legacyNew.root().asDict();
+
+            enc.reset();
+            writeRevWithLegacyAttachments(enc, ancestor, revPos);
+            legacyOld = enc.finishDoc();
+            ancestor = legacyNew.root().asDict();
+        }
+
+        delta = FLCreateJSONDelta(ancestor, root);
+        if (!delta || delta.size > revisionSize * 1.2)
+            return {};          // Delta failed, or is (probably) bigger than body; don't use
+
+        if (willLog(LogLevel::Verbose)) {
+            alloc_slice old (ancestor.toJSON(sk));
+            alloc_slice nuu (root.toJSON(sk));
+            logVerbose("Encoded revision as delta, saving %zd bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
+                       nuu.size - delta.size,
+                       SPLAT(old), SPLAT(nuu), SPLAT(delta));
+        }
+        return delta;
     }
 
 
