@@ -261,21 +261,6 @@ namespace litecore {
             return slice;
         }
 
-        JNIEnv* getJNIEnv() {
-            JNIEnv *env = NULL;
-            jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
-            if(getEnvStat == JNI_EDETACHED) {
-                if (gJVM->AttachCurrentThread(&env, NULL) != 0) {
-                    LOGE("Failed to attach the current thread to a Java VM)");
-                    return nullptr;
-                }
-            } else if(getEnvStat != JNI_OK) {
-                LOGE("Failed to get the environment: getEnvStat -> %d", getEnvStat);
-                return nullptr;
-            }
-            return env;
-        }
-
         void throwError(JNIEnv *env, C4Error error) {
             if (env->ExceptionOccurred())
                 return;

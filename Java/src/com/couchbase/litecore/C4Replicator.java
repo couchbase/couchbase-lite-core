@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 package com.couchbase.litecore;
 
 import android.util.Log;
@@ -42,64 +43,76 @@ public class C4Replicator {
     private static Map<Long, C4Replicator> reverseLookupTable
             = Collections.synchronizedMap(new HashMap<Long, C4Replicator>());
 
-    private static Map<Long, C4Replicator> reverseLookupTable2
-            = Collections.synchronizedMap(new HashMap<Long, C4Replicator>());
+    private static Map<Object, C4Replicator> contextToC4ReplicatorMap
+            = Collections.synchronizedMap(new HashMap<Object, C4Replicator>());
 
     //-------------------------------------------------------------------------
     // Member Variables
     //-------------------------------------------------------------------------
+
     private long handle = 0L; // hold pointer to C4Replicator
     private C4ReplicatorListener listener = null;
     private C4ReplicationFilter pushFilter =  null;
     private C4ReplicationFilter pullFilter = null;
-    private Object context = null;
+    private Object replicatorContext = null;
+    private Object socketFactoryContext = null;
 
     //-------------------------------------------------------------------------
     // Constructor
     //-------------------------------------------------------------------------
 
     C4Replicator(long db,
-                 String schema, String host, int port, String path,
+                 String schema,
+                 String host,
+                 int port,
+                 String path,
                  String remoteDatabaseName,
                  long otherLocalDB,
-                 int push, int pull,
+                 int push,
+                 int pull,
                  byte[] options,
                  C4ReplicatorListener listener,
                  C4ReplicationFilter pushFilter,
                  C4ReplicationFilter pullFilter,
                  Object replicatorContext,
-                 int socketFactoryContext,
+                 Object socketFactoryContext,
                  int framing) throws LiteCoreException {
         this.listener = listener;
-        this.context = replicatorContext; // replicator context
+        this.replicatorContext = replicatorContext;
+        this.socketFactoryContext = socketFactoryContext;
         this.pushFilter = pushFilter;
         this.pullFilter = pullFilter;
-        handle = createV2(db, schema, host, port, path, remoteDatabaseName,
+
+        contextToC4ReplicatorMap.put(replicatorContext, this);
+
+        handle = create(db, schema, host, port, path, remoteDatabaseName,
                 otherLocalDB,
                 push, pull,
-                replicatorContext.hashCode(),
-                framing,
                 socketFactoryContext,
+                framing,
+                replicatorContext,
                 pushFilter,
                 pullFilter,
                 options);
+
         reverseLookupTable.put(handle, this);
-        reverseLookupTable2.put((long)replicatorContext.hashCode(), this);
     }
 
-    C4Replicator(C4Database db, C4Socket openSocket, int push, int pull, byte[] options, Object replicatorContext) throws LiteCoreException {
-       this(db.getHandle(), openSocket.handle, push, pull, options, null, replicatorContext);
-    }
-
-    C4Replicator(long db, long openSocket, int push, int pull, byte[] options, C4ReplicatorListener listener, Object replicatorContext) throws LiteCoreException {
+    C4Replicator(long db,
+                 long openSocket,
+                 int push,
+                 int pull,
+                 byte[] options,
+                 C4ReplicatorListener listener,
+                 Object replicatorContext) throws LiteCoreException {
         this.listener = listener;
-        this.context = replicatorContext; // replicator context
+        this.replicatorContext = replicatorContext;
         handle = createWithSocket(
                 db,
                 openSocket,
                 push,
                 pull,
-                hashCode(),
+                replicatorContext,
                 options);
         reverseLookupTable.put(handle, this);
     }
@@ -109,9 +122,15 @@ public class C4Replicator {
     //-------------------------------------------------------------------------
 
     public void free() {
-        if (handle != 0L)
-            free(handle);
-        handle = 0L;
+        if (handle != 0L) {
+            free(handle, replicatorContext, socketFactoryContext);
+            handle = 0L;
+        }
+
+        if (replicatorContext != null) {
+            contextToC4ReplicatorMap.remove(this.replicatorContext);
+            replicatorContext = null;
+        }
     }
 
     public void stop() {
@@ -136,6 +155,7 @@ public class C4Replicator {
     //-------------------------------------------------------------------------
     // public static methods
     //-------------------------------------------------------------------------
+    
     public static boolean mayBeTransient(C4Error err) {
         return mayBeTransient(err.getDomain(), err.getCode(), err.getInternalInfo());
     }
@@ -161,7 +181,7 @@ public class C4Replicator {
     private static void statusChangedCallback(long handle, C4ReplicatorStatus status) {
         C4Replicator repl = reverseLookupTable.get(handle);
         if (repl != null && repl.listener != null)
-            repl.listener.statusChanged(repl, status, repl.context);
+            repl.listener.statusChanged(repl, status, repl.replicatorContext);
     }
 
     private static void documentEndedCallback(long handle, boolean pushing,
@@ -172,17 +192,17 @@ public class C4Replicator {
 
         if (repl != null && repl.listener != null) {
             repl.listener.documentEnded(repl, pushing, documentsEnded,
-                    repl.context);
+                    repl.replicatorContext);
         }
     }
 
-    private static boolean validationFunction(String docID, int flags, long dict, boolean isPush, long ctx)  {
-         C4Replicator repl = reverseLookupTable2.get(ctx);
+    private static boolean validationFunction(String docID, int flags, long dict, boolean isPush, Object context)  {
+         C4Replicator repl = contextToC4ReplicatorMap.get(context);
          if(repl != null ) {
              if(isPush && repl.pushFilter != null)
-                 return repl.pushFilter.validationFunction(docID, flags, dict, isPush, repl.context);
+                 return repl.pushFilter.validationFunction(docID, flags, dict, isPush, repl.replicatorContext);
              else if(!isPush && repl.pullFilter != null)
-                 return repl.pullFilter.validationFunction(docID, flags, dict, isPush, repl.context);
+                 return repl.pullFilter.validationFunction(docID, flags, dict, isPush, repl.replicatorContext);
          }
          return true;
     }
@@ -195,26 +215,20 @@ public class C4Replicator {
      * Creates a new replicator.
      */
     static native long create(long db,
-                              String schema, String host, int port, String path,
+                              String schema,
+                              String host,
+                              int port,
+                              String path,
                               String remoteDatabaseName,
                               long otherLocalDB,
-                              int push, int pull,
+                              int push,
+                              int pull,
+                              Object socketFactoryContext,
+                              int framing,
+                              Object replicatorContext,
+                              C4ReplicationFilter pushFilter,
+                              C4ReplicationFilter pullFilter,
                               byte[] options) throws LiteCoreException;
-
-    /**
-     * Creates a new replicator.
-     */
-    static native long createV2(long db,
-                                String schema, String host, int port, String path,
-                                String remoteDatabaseName,
-                                long otherLocalDB,
-                                int push, int pull,
-                                int socketFactoryContext,
-                                int framing,
-                                int replicatorContext,
-                                C4ReplicationFilter pushFilter,
-                                C4ReplicationFilter pullFilter,
-                                byte[] options) throws LiteCoreException;
 
     /**
      * Creates a new replicator from an already-open C4Socket. This is for use by listeners
@@ -229,12 +243,17 @@ public class C4Replicator {
      * @param options
      * @return The pointer of the newly created replicator
      */
-    static native long createWithSocket(long db, long openSocket, int push, int pull, int replicatorContext, byte[] options) throws LiteCoreException;
+    static native long createWithSocket(long db,
+                                        long openSocket,
+                                        int push,
+                                        int pull,
+                                        Object replicatorContext,
+                                        byte[] options) throws LiteCoreException;
 
     /**
      * Frees a replicator reference. If the replicator is running it will stop.
      */
-    static native void free(long replicator);
+    static native void free(long replicator, Object replicatorContext, Object socketFactoryContext);
 
     /**
      * Tells a replicator to stop.

@@ -133,10 +133,6 @@ namespace litecore {
 
         typedef Retained<JNIRef> JNative;
 
-        //
-
-        JNIEnv* getJNIEnv();
-
         // Creates a Java String from the contents of a C4Slice.
 
         jstring toJString(JNIEnv *, C4Slice);

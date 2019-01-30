@@ -30,9 +30,17 @@ static jclass cls_C4PrediciveModel;
 static jmethodID m_prediction;
 
 static C4SliceResult prediction(void* context, FLDict input, C4Database* c4db, C4Error* error) {
+    JNIEnv *env = NULL;
+    jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
+    if (getEnvStat == JNI_EDETACHED)
+        gJVM->AttachCurrentThread(&env, NULL);
+
     jobject model = (jobject)context;
-    JNIEnv* env = getJNIEnv();
     jlong result = env->CallLongMethod(model, m_prediction, (jlong)input, (jlong)c4db);
+
+    if (getEnvStat == JNI_EDETACHED)
+        gJVM->DetachCurrentThread();
+
     return *(C4SliceResult*)result;
 }
 

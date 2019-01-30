@@ -88,14 +88,13 @@ public abstract class C4Socket {
     public static Map<Long, C4Socket> reverseLookupTable
             = Collections.synchronizedMap(new HashMap<Long, C4Socket>());
 
-    // SocketFactory context's hash value and SocketFactory Class
-    public static Map<Integer, Class> socketFactory
-            = Collections.synchronizedMap(new HashMap<Integer, Class>());
+    // Map between SocketFactory Context and SocketFactory Class
+    public static Map<Object, Class> socketFactory
+            = Collections.synchronizedMap(new HashMap<Object, Class>());
 
-
-    // SocketFactory context's hash value and SocketFactory context Object
-    public static Map<Integer, Replicator> socketFactoryContext
-            = Collections.synchronizedMap(new HashMap<Integer, Replicator>());
+    // Map between SocketFactory Context and Replicator
+    public static Map<Object, Replicator> socketFactoryContext
+            = Collections.synchronizedMap(new HashMap<Object, Replicator>());
 
     //-------------------------------------------------------------------------
     // Member Variables
@@ -132,7 +131,7 @@ public abstract class C4Socket {
     // callback methods from JNI
     //-------------------------------------------------------------------------
 
-    private static void open(long socket, int socketFactoryContext, String scheme, String hostname, int port, String path, byte[] optionsFleece) {
+    private static void open(long socket, Object socketFactoryContext, String scheme, String hostname, int port, String path, byte[] optionsFleece) {
         Log.w(TAG, "C4Socket.open() socket -> " + socket);
         Class clazz = C4Socket.socketFactory.get(socketFactoryContext);
         if (clazz == null)
@@ -142,7 +141,7 @@ public abstract class C4Socket {
 
         Method method;
         try {
-            method = clazz.getMethod("socket_open", Long.TYPE, Integer.TYPE, String.class, String.class, Integer.TYPE, String.class, byte[].class);
+            method = clazz.getMethod("socket_open", Long.TYPE, Object.class, String.class, String.class, Integer.TYPE, String.class, byte[].class);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException("socket_open() method is not found in " + clazz, e);
         }
@@ -207,7 +206,6 @@ public abstract class C4Socket {
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
-    protected static native void registerFactory(); /* TODO: Removed as no usage */
 
     protected static native void gotHTTPResponse(long socket, int httpStatus, byte[] responseHeadersFleece);
 
@@ -221,7 +219,7 @@ public abstract class C4Socket {
 
     protected static native void received(long socket, byte[] data);
 
-    protected static native long fromNative(int nativeHandle, String schema, String host, int port, String path,  int framing);
+    protected static native long fromNative(Object nativeHandle, String schema, String host, int port, String path, int framing);
 
     //-------------------------------------------------------------------------
     // Protected methods

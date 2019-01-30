@@ -297,7 +297,7 @@ public class C4Database implements C4Constants {
                                          C4ReplicationFilter pushFilter,
                                          C4ReplicationFilter pullFilter,
                                          Object replicatorContext,
-                                         int socketFactoryContext,
+                                         Object socketFactoryContext,
                                          int framing)
             throws LiteCoreException {
         return new C4Replicator(handle, schema, host, port, path, remoteDatabaseName,

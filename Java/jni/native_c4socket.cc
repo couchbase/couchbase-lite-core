@@ -15,6 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #include <c4.h>
 #include <c4Socket.h>
 #include "com_couchbase_litecore_C4Socket.h"
@@ -51,7 +52,7 @@ bool litecore::jni::initC4Socket(JNIEnv *env) {
         m_C4Socket_open = env->GetStaticMethodID(
                 cls_C4Socket,
                 "open",
-                "(JILjava/lang/String;Ljava/lang/String;ILjava/lang/String;[B)V");
+                "(JLjava/lang/Object;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;[B)V");
         if (!m_C4Socket_open)
             return false;
 
@@ -100,7 +101,7 @@ socket_open(C4Socket *socket, const C4Address *addr, C4Slice options, void *sock
         env->CallStaticVoidMethod(cls_C4Socket,
                                   m_C4Socket_open,
                                   (jlong) socket,
-                                  (jint) (jlong) socketFactoryContext,
+                                  (jobject)socketFactoryContext,
                                   toJString(env, addr->scheme),
                                   toJString(env, addr->hostname),
                                   addr->port,
@@ -111,7 +112,7 @@ socket_open(C4Socket *socket, const C4Address *addr, C4Slice options, void *sock
             env->CallStaticVoidMethod(cls_C4Socket,
                                       m_C4Socket_open,
                                       (jlong) socket,
-                                      (jint) (jlong) socketFactoryContext,
+                                      (jobject)socketFactoryContext,
                                       toJString(env, addr->scheme),
                                       toJString(env, addr->hostname),
                                       addr->port,
@@ -226,6 +227,8 @@ static void socket_close(C4Socket *socket) {
     }
 }
 
+static std::vector<jobject> nativeHandles;
+
 static void socket_dispose(C4Socket *socket) {
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
@@ -234,14 +237,33 @@ static void socket_dispose(C4Socket *socket) {
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
             env->CallStaticVoidMethod(cls_C4Socket, m_C4Socket_dispose, (jlong) socket);
-            if (gJVM->DetachCurrentThread() != 0) {
-                LOGE("socket_dispose(): Failed to detach the current thread from a Java VM");
-            }
         } else {
             LOGE("socket_dispose(): Failed to attaches the current thread to a Java VM");
         }
     } else {
         LOGE("socket_dispose(): Failed to get the environment: getEnvStat -> %d", getEnvStat);
+    }
+
+    if (socket->nativeHandle != NULL) {
+        jobject handle = NULL;
+        int i = 0;
+        for (; i < nativeHandles.size(); i++) {
+            jobject h = nativeHandles[i];
+            if (h == socket->nativeHandle) {
+                handle = h;
+                break;
+            }
+        }
+        if (handle != NULL) {
+            env->DeleteGlobalRef(handle);
+            nativeHandles.erase(nativeHandles.begin() + i);
+        }
+    }
+
+    if (getEnvStat == JNI_EDETACHED) {
+        if (gJVM->DetachCurrentThread() != 0) {
+            LOGE("socket_dispose(): Failed to detach the current thread from a Java VM");
+        }
     }
 }
 
@@ -264,13 +286,6 @@ const C4SocketFactory socket_factory() {
 // com_couchbase_litecore_C4Socket
 // ----------------------------------------------------------------------------
 
-/*
- * Class:     com_couchbase_litecore_C4Socket
- * Method:    registerFactory
- * Signature: ()V
- */
-JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4Socket_registerFactory(JNIEnv *env, jclass clazz) { }
 /*
  * Class:     com_couchbase_litecore_C4Socket
  * Method:    gotHTTPResponse
@@ -357,18 +372,17 @@ Java_com_couchbase_litecore_C4Socket_received(JNIEnv *env, jclass clazz,
 /*
  * Class:     com_couchbase_litecore_C4Socket
  * Method:    fromNative
- * Signature: (ILjava/lang/String;Ljava/lang/String;ILjava/lang/String;)J
+ * Signature: (Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;I)J
  */
 JNIEXPORT jlong JNICALL
-Java_com_couchbase_litecore_C4Socket_fromNative(JNIEnv *env, jclass clazz,
-                                                jint jnativeHandle,
+Java_com_couchbase_litecore_C4Socket_fromNative(JNIEnv *env,
+                                                jclass clazz,
+                                                jobject jnativeHandle,
                                                 jstring jscheme,
                                                 jstring jhost,
                                                 jint jport,
                                                 jstring jpath,
                                                 jint jframing) {
-    void *nativeHandle = (void *) jnativeHandle;
-
     jstringSlice scheme(env, jscheme);
     jstringSlice host(env, jhost);
     jstringSlice path(env, jpath);
@@ -379,9 +393,12 @@ Java_com_couchbase_litecore_C4Socket_fromNative(JNIEnv *env, jclass clazz,
     c4Address.port = jport;
     c4Address.path = path;
 
+    jobject gNativeHandle = env->NewGlobalRef(jnativeHandle);
+    nativeHandles.push_back(gNativeHandle);
+
     C4SocketFactory socketFactory = socket_factory();
     socketFactory.framing = (C4SocketFraming)jframing;
-    socketFactory.context = nativeHandle;
-    C4Socket *c4socket = c4socket_fromNative(socketFactory, nativeHandle, &c4Address);
+    socketFactory.context = gNativeHandle;
+    C4Socket *c4socket = c4socket_fromNative(socketFactory, gNativeHandle, &c4Address);
     return (jlong) c4socket;
 }

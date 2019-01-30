@@ -32,10 +32,10 @@ using namespace litecore::jni;
 // ----------------------------------------------------------------------------
 
 // C4Replicator
-static jclass cls_C4Replicator;           // global reference
-static jmethodID m_C4Replicator_statusChangedCallback; // statusChangedCallback method
-static jmethodID m_C4Replicator_documentEndedCallback; // documentEndedCallback method
-static jmethodID m_C4Replicator_validationFunction; // validationFunction method
+static jclass cls_C4Replicator;                         // global reference
+static jmethodID m_C4Replicator_statusChangedCallback;  // statusChangedCallback method
+static jmethodID m_C4Replicator_documentEndedCallback;  // documentEndedCallback method
+static jmethodID m_C4Replicator_validationFunction;     // validationFunction method
 
 // C4ReplicatorStatus
 static jclass cls_C4ReplStatus; // global reference
@@ -86,7 +86,7 @@ bool litecore::jni::initC4Replicator(JNIEnv *env) {
 
         m_C4Replicator_validationFunction = env->GetStaticMethodID(cls_C4Replicator,
                                                                       "validationFunction",
-                                                                      "(Ljava/lang/String;IJZJ)Z");
+                                                                      "(Ljava/lang/String;IJZLjava/lang/Object;)Z");
         if (!m_C4Replicator_validationFunction)
             return false;
     }
@@ -223,6 +223,44 @@ static jobjectArray toJavaDocumentEndedArray(JNIEnv *env, int arraySize, const C
     return ds;
 }
 
+static std::vector<jobject>	contexts;
+
+static jobject storeContext(JNIEnv* env, jobject jcontext) {
+    if (jcontext == NULL)
+        return NULL;
+
+    jobject gContext = env->NewGlobalRef(jcontext);
+    contexts.push_back(gContext);
+    return gContext;
+}
+
+static void releaseContext(JNIEnv* env, jobject jcontext) {
+    if (jcontext == NULL)
+        return;
+
+    jobject storedContext = NULL;
+    jobject gContext = NULL;
+    if (jcontext != NULL)
+        gContext = env->NewGlobalRef(jcontext);
+
+    if (gContext != NULL) {
+        int i = 0;
+        for (; i < contexts.size(); i++) {
+            jobject c = contexts[i];
+            if (env->IsSameObject(c, gContext)) {
+                storedContext = c;
+                break;
+            }
+        }
+        env->DeleteGlobalRef(gContext);
+
+        if (storedContext != NULL) {
+            env->DeleteGlobalRef(storedContext);
+            contexts.erase(contexts.begin() + i);
+        }
+    }
+}
+
 /**
  * Callback a client can register, to get progress information.
  * This will be called on arbitrary background threads, and should not block.
@@ -289,27 +327,27 @@ static void documentEndedCallback(C4Replicator *repl, bool pushing, size_t numDo
     }
 }
 
-static jboolean replicationFilter(C4String docID, C4RevisionFlags flags, FLDict dict, bool isPush, jlong ctx) {
+static jboolean replicationFilter(C4String docID, C4RevisionFlags flags, FLDict dict, bool isPush, void *ctx) {
     JNIEnv *env = NULL;
     jint getEnvStat = gJVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
     bool res = false;
     if (getEnvStat == JNI_OK) {
         res = env->CallStaticBooleanMethod(cls_C4Replicator,
-                m_C4Replicator_validationFunction,
-                                  toJString(env,docID),
-                                     flags,
+                                           m_C4Replicator_validationFunction,
+                                           toJString(env,docID),
+                                           flags,
                                            (jlong)dict,
-                                     isPush,
-                                     ctx);
+                                           isPush,
+                                           (jobject)ctx);
     } else if (getEnvStat == JNI_EDETACHED) {
         if (gJVM->AttachCurrentThread(&env, NULL) == 0) {
-           res = env->CallStaticBooleanMethod(cls_C4Replicator,
-                   m_C4Replicator_validationFunction,
-                                     toJString(env,docID),
-                                        flags,
-                                              (jlong)dict,
-                                        isPush,
-                                        ctx);
+            res = env->CallStaticBooleanMethod(cls_C4Replicator,
+                                               m_C4Replicator_validationFunction,
+                                               toJString(env,docID),
+                                               flags,
+                                               (jlong)dict,
+                                               isPush,
+                                               (jobject)ctx);
             if (gJVM->DetachCurrentThread() != 0)
                 LOGE("doRequestClose(): Failed to detach the current thread from a Java VM");
         } else {
@@ -332,7 +370,7 @@ static jboolean replicationFilter(C4String docID, C4RevisionFlags flags, FLDict 
  * @param ctx
  */
 static bool validationFunction(C4String docID, C4RevisionFlags flags, FLDict dict, void *ctx) {
-    return (bool)replicationFilter(docID, flags, dict, false, (jlong) ctx);
+    return (bool)replicationFilter(docID, flags, dict, false, ctx);
 }
 
 /*
@@ -346,13 +384,13 @@ static bool validationFunction(C4String docID, C4RevisionFlags flags, FLDict dic
  * @param ctx
  */
 static bool pushFilterFunction(C4String docID, C4RevisionFlags flags, FLDict dict, void *ctx) {
-     return (bool)replicationFilter(docID, flags, dict, true, (jlong) ctx);
+     return (bool)replicationFilter(docID, flags, dict, true, ctx);
 }
 
 /*
  * Class:     com_couchbase_litecore_C4Replicator
  * Method:    create
- * Signature: (JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;JII[B)J
+ * Signature: (JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;JIILjava/lang/Object;ILjava/lang/Object;Lcom/couchbase/litecore/C4ReplicationFilter;Lcom/couchbase/litecore/C4ReplicationFilter;[B)J
  */
 JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
         JNIEnv *env,
@@ -366,66 +404,9 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_create(
         jlong jotherLocalDB,
         jint jpush,
         jint jpull,
-        jbyteArray joptions) {
-
-    LOGI("[NATIVE] C4Replicator.create()");
-
-    jstringSlice scheme(env, jscheme);
-    jstringSlice host(env, jhost);
-    jstringSlice path(env, jpath);
-    jstringSlice remoteDBName(env, jremoteDBName);
-    jbyteArraySlice options(env, joptions, false);
-
-    C4Address c4Address = {};
-    c4Address.scheme = scheme;
-    c4Address.hostname = host;
-    c4Address.port = jport;
-    c4Address.path = path;
-
-    C4ReplicatorParameters params = {};
-    params.push = (C4ReplicatorMode) jpush;
-    params.pull = (C4ReplicatorMode) jpull;
-    params.optionsDictFleece = options;
-    params.onStatusChanged = &statusChangedCallback;
-    params.pushFilter = &pushFilterFunction;
-    params.validationFunc = &validationFunction;
-    params.onDocumentsEnded = &documentEndedCallback;
-    params.callbackContext = NULL;
-
-    C4Error error;
-    C4Replicator *repl = c4repl_new((C4Database *) jdb,
-                                    c4Address,
-                                    remoteDBName,
-                                    (C4Database *) jotherLocalDB,
-                                    params,
-                                    &error);
-    if (!repl) {
-        throwError(env, error);
-        return 0;
-    }
-    return (jlong) repl;
-}
-
-/*
- * Class:     com_couchbase_litecore_C4Replicator
- * Method:    createV2
- * Signature: (JLjava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;JIIIIIZZ[B)J
- */
-JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
-        JNIEnv *env,
-        jclass clazz,
-        jlong jdb,
-        jstring jscheme,
-        jstring jhost,
-        jint jport,
-        jstring jpath,
-        jstring jremoteDBName,
-        jlong jotherLocalDB,
-        jint jpush,
-        jint jpull,
-        jint jSocketFactoryContext,
+        jobject jSocketFactoryContext,
         jint jframing,
-        jint jReplicatorContext,
+        jobject jReplicatorContext,
         jobject pushFilter,
         jobject pullFilter,
         jbyteArray joptions) {
@@ -434,8 +415,6 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
     jstringSlice path(env, jpath);
     jstringSlice remoteDBName(env, jremoteDBName);
     jbyteArraySlice options(env, joptions, false);
-    void *socketFactoryContext = (void *) jSocketFactoryContext;
-    void *replicatorContext = (void *) jReplicatorContext;
 
     C4Address c4Address = {};
     c4Address.scheme = scheme;
@@ -445,7 +424,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
 
     C4SocketFactory socketFactory = {};
     socketFactory = socket_factory();
-    socketFactory.context = socketFactoryContext;
+    socketFactory.context = storeContext(env, jSocketFactoryContext);
     socketFactory.framing = (C4SocketFraming)jframing;
 
     C4ReplicatorParameters params = {};
@@ -454,13 +433,9 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
     params.optionsDictFleece = options;
     params.onStatusChanged = &statusChangedCallback;
     params.onDocumentsEnded = &documentEndedCallback;
-    if(pushFilter) {
-        params.pushFilter = &pushFilterFunction;
-    }
-    if(pullFilter) {
-        params.validationFunc = &validationFunction;
-    }
-    params.callbackContext = replicatorContext;
+    if(pushFilter != NULL) params.pushFilter = &pushFilterFunction;
+    if(pullFilter != NULL) params.validationFunc = &validationFunction;
+    params.callbackContext = storeContext(env, jReplicatorContext);
     params.socketFactory = &socketFactory;
 
     C4Error error;
@@ -480,7 +455,7 @@ JNIEXPORT jlong JNICALL Java_com_couchbase_litecore_C4Replicator_createV2(
 /*
  * Class:     com_couchbase_litecore_C4Replicator
  * Method:    createWithSocket
- * Signature: (JJIII[B)J
+ * Signature: (JJIILjava/lang/Object;[B)J
  */
 JNIEXPORT jlong JNICALL
 Java_com_couchbase_litecore_C4Replicator_createWithSocket(JNIEnv *env,
@@ -489,19 +464,18 @@ Java_com_couchbase_litecore_C4Replicator_createWithSocket(JNIEnv *env,
                                                           jlong jopenSocket,
                                                           jint jpush,
                                                           jint jpull,
-                                                          jint jReplicatorContext,
+                                                          jobject jReplicatorContext,
                                                           jbyteArray joptions) {
     C4Database *db = (C4Database *) jdb;
     C4Socket *openSocket = (C4Socket *) jopenSocket;
     jbyteArraySlice options(env, joptions, false);
-    void *replicatorContext = (void *) jReplicatorContext;
 
     C4ReplicatorParameters params = {};
     params.push = (C4ReplicatorMode) jpush;
     params.pull = (C4ReplicatorMode) jpull;
     params.optionsDictFleece = options;
     params.onStatusChanged = &statusChangedCallback;
-    params.callbackContext = replicatorContext;
+    params.callbackContext = storeContext(env, jReplicatorContext);
 
     C4Error error;
     C4Replicator *repl = c4repl_newWithSocket(db, openSocket, params, &error);
@@ -515,10 +489,16 @@ Java_com_couchbase_litecore_C4Replicator_createWithSocket(JNIEnv *env,
 /*
  * Class:     com_couchbase_litecore_C4Replicator
  * Method:    free
- * Signature: (J)V
+ * Signature: (JLjava/lang/Object;Ljava/lang/Object;)V
  */
 JNIEXPORT void JNICALL
-Java_com_couchbase_litecore_C4Replicator_free(JNIEnv *env, jclass clazz, jlong repl) {
+Java_com_couchbase_litecore_C4Replicator_free(JNIEnv *env,
+                                              jclass clazz,
+                                              jlong repl,
+                                              jobject replicatorContext,
+                                              jobject socketFactoryContext) {
+    releaseContext(env, replicatorContext);
+    releaseContext(env, socketFactoryContext);
     c4repl_free((C4Replicator *) repl);
 }
 
