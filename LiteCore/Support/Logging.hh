@@ -123,7 +123,6 @@ public:
 
 private:
     friend class Logging;
-    friend class LogEncoder;
     static std::string getObject(unsigned);
     unsigned registerObject(const void *object, const std::string &description,
                             const std::string &nickname, LogLevel level);

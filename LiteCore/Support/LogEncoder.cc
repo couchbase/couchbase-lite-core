@@ -69,10 +69,11 @@ namespace litecore {
 #pragma mark - LOGGING:
 
 
-    void LogEncoder::log(const char *domain, ObjectRef object, const char *format, ...) {
+    void LogEncoder::log(const char *domain, const std::map<unsigned, std::string>& objectMap,
+        ObjectRef object, const char *format, ...) {
         va_list args;
         va_start(args, format);
-        vlog(domain, object, format, args);
+        vlog(domain, objectMap, object, format, args);
         va_end(args);
     }
 
@@ -81,7 +82,8 @@ namespace litecore {
         return int64_t(_st.elapsed() * kTicksPerSec);
     }
 
-    void LogEncoder::vlog(const char *domain, ObjectRef object, const char *format, va_list args) {
+    void LogEncoder::vlog(const char *domain, const map<unsigned, string> &objectMap,
+        ObjectRef object, const char *format, va_list args) {
         lock_guard<mutex> lock(_mutex);
 
         // Write the number of ticks elapsed since the last message:
@@ -98,7 +100,7 @@ namespace litecore {
         _writeUVarInt(objRef);
         if (object != ObjectRef::None && _seenObjects.find(objRef) == _seenObjects.end()) {
             _seenObjects.insert(objRef);
-            auto i = LogDomain::getObject(objRef);
+            auto i = objectMap.find(objRef);
             _writer.write(slice(i));
             _writer.write("\0", 1);
         }
