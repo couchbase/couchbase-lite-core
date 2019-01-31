@@ -77,16 +77,17 @@ TEST_CASE("LogEncoder formatting", "[Log]") {
     {
         LogEncoder logger(out, LogLevel::Info);
         size_t size = 0xabcdabcd;
-        logger.log(nullptr, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
+        map<unsigned, string> dummy;
+        logger.log(nullptr, dummy, LogEncoder::None, "Unsigned %u, Long %lu, LongLong %llu, Size %zx, Pointer %p",
                    1234567890U, 2345678901LU, 123456789123456789LLU, size, (void*)0x7fff5fbc);
         for (int sgn = -1; sgn <= 1; sgn += 2) {
             ptrdiff_t ptrdiff = 1234567890;
-            logger.log(nullptr, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
+            logger.log(nullptr, dummy, LogEncoder::None, "Int %d, Long %ld, LongLong %lld, Size %zd, Char %c",
                        1234567890*sgn, 234567890L*sgn, 123456789123456789LL*sgn, ptrdiff*sgn, '@');
         }
         const char *str = "C string";
         slice buf("hello");
-        logger.log(nullptr, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
+        logger.log(nullptr, dummy, LogEncoder::None, "String is '%s', slice is '%.*s' (hex %-.*s)", str, SPLAT(buf), SPLAT(buf));
     }
     string encoded = out.str();
     string result = dumpLog(encoded, {});
@@ -104,17 +105,18 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
     static const vector<string> kLevels = {"***", "", "", "WARNING", "ERROR"};
     stringstream out[4];
     {
+        map<unsigned, string> dummy;
         LogEncoder verbose(out[0], LogLevel::Verbose);
         LogEncoder info(out[1], LogLevel::Info);
         LogEncoder warning(out[2], LogLevel::Warning);
         LogEncoder error(out[3], LogLevel::Error);
-        info.log("Draw", LogEncoder::None, "drawing %d pictures", 2);
-        verbose.log("Paint", LogEncoder::None, "Waiting for drawings");
-        warning.log("Draw", LogEncoder::None, "made a mistake!");
-        info.log("Draw", LogEncoder::None, "redrawing %d picture(s)", 1);
-        info.log("Draw", LogEncoder::None, "Handing off to painter");
-        info.log("Paint", LogEncoder::None, "Painting");
-        error.log("Customer", LogEncoder::None, "This isn't what I asked for!");
+        info.log("Draw", dummy, LogEncoder::None, "drawing %d pictures", 2);
+        verbose.log("Paint", dummy, LogEncoder::None, "Waiting for drawings");
+        warning.log("Draw", dummy, LogEncoder::None, "made a mistake!");
+        info.log("Draw", dummy, LogEncoder::None, "redrawing %d picture(s)", 1);
+        info.log("Draw", dummy, LogEncoder::None, "Handing off to painter");
+        info.log("Paint", dummy, LogEncoder::None, "Painting");
+        error.log("Customer", dummy, LogEncoder::None, "This isn't what I asked for!");
     }
 
     static const vector<string> expectedDomains[] = {
@@ -141,47 +143,35 @@ TEST_CASE("LogEncoder levels/domains", "[Log]") {
 
 
 TEST_CASE("LogEncoder tokens", "[Log]") {
-    LogObject dummy1("Tweedledum");
-    dummy1.doLog("FOO"); // Abuse the side effect that logging this way registers the object
-    auto tweedledum = (LogEncoder::ObjectRef)dummy1.getRef();
-
-    LogObject dummy2("rattle");
-    dummy2.doLog("FOO");
-    auto rattle = (LogEncoder::ObjectRef)dummy2.getRef();
-
-    LogObject dummy3("Tweedledee");
-    dummy3.doLog("FOO");
-    auto tweedledee = (LogEncoder::ObjectRef)dummy3.getRef();
+    map<unsigned, string> objects;
+    objects.emplace(make_pair(1, "Tweedledum"));
+    objects.emplace(make_pair(2, "rattle"));
+    objects.emplace(make_pair(3, "Tweedledee"));
 
     stringstream out;
     stringstream out2;
     {
         LogEncoder logger(out, LogLevel::Info);
         LogEncoder logger2(out2, LogLevel::Verbose);
-        logger.log(nullptr, tweedledum, "I'm Tweedledum");
-        logger.log(nullptr, tweedledee, "I'm Tweedledee");
-        logger.log(nullptr, rattle, "and I'm the rattle");
-        logger2.log(nullptr, rattle, "Am I the rattle too?");
+        logger.log(nullptr, objects, (LogEncoder::ObjectRef)1, "I'm Tweedledum");
+        logger.log(nullptr, objects, (LogEncoder::ObjectRef)3, "I'm Tweedledee");
+        logger.log(nullptr, objects, (LogEncoder::ObjectRef)2, "and I'm the rattle");
+        logger2.log(nullptr, objects, (LogEncoder::ObjectRef)2, "Am I the rattle too?");
     }
     string encoded = out.str();
     string result = dumpLog(encoded, {});
-
-    char buffer[1024];
-    snprintf(buffer, 1024, TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
-                   TIMESTAMP "\\{%u\\|Tweedledum\\} I'm Tweedledum\\n"
-                   TIMESTAMP "\\{%u\\|Tweedledee\\} I'm Tweedledee\\n"
-                   TIMESTAMP "\\{%u\\|rattle\\} and I'm the rattle\\n", tweedledum, tweedledee, rattle);
-
-    regex expected(buffer);
+    regex expected(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
+                   TIMESTAMP "\\{1\\|Tweedledum\\} I'm Tweedledum\\n"
+                   TIMESTAMP "\\{3\\|Tweedledee\\} I'm Tweedledee\\n"
+                   TIMESTAMP "\\{2\\|rattle\\} and I'm the rattle\\n");
     CHECK(regex_match(result, expected));
 
     encoded = out2.str();
     result = dumpLog(encoded, {});
 
     // Confirm other encoders have the same ref for "rattle"
-    snprintf(buffer, 1024, TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
-                   TIMESTAMP "\\{%u\\|rattle\\} Am I the rattle too\\?\\n", rattle);
-    expected = regex(buffer);
+    expected = regex(TIMESTAMP "---- Logging begins on " DATESTAMP " ----\\n"
+                   TIMESTAMP "\\{2\\|rattle\\} Am I the rattle too\\?\\n");
     CHECK(regex_match(result, expected));
 }
 
@@ -189,7 +179,7 @@ TEST_CASE("LogEncoder tokens", "[Log]") {
 TEST_CASE("LogEncoder auto-flush", "[Log]") {
     stringstream out;
     LogEncoder logger(out, LogLevel::Info);
-    logger.log(nullptr, LogEncoder::None, "Hi there");
+    logger.log(nullptr, map<unsigned, string>(), LogEncoder::None, "Hi there");
 
     logger.withStream([&](ostream &s) {
         CHECK(out.str().empty());

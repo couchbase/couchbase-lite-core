@@ -179,7 +179,7 @@ namespace litecore {
         if(encoder) {
             auto newEncoder = new LogEncoder(*sFileOut[(int)level], level);
             sLogEncoder[(int)level] = newEncoder;
-            newEncoder->log("", LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
+            newEncoder->log("", map<unsigned, string>(), LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
             newEncoder->flush(); // Make sure at least the magic bytes are present
         } else {
             *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl;
@@ -230,7 +230,7 @@ namespace litecore {
             if (!sInitialMessage.empty()) {
                 if(sLogEncoder[0]) {
                     for(auto& encoder : sLogEncoder) {
-                        encoder->log("", LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
+                        encoder->log("", map<unsigned, string>(), LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
                         encoder->flush(); // Make sure at least the magic bytes are present
                     }
                 } else {
@@ -247,7 +247,7 @@ namespace litecore {
                     if (sLogMutex.try_lock()) {     // avoid deadlock on crash inside logging code
                         if (sLogEncoder[0]) {
                             for(auto& encoder : sLogEncoder) {
-                                encoder->log("", LogEncoder::None,
+                                encoder->log("", map<unsigned, string>(), LogEncoder::None,
                                              "---- END ----");
                             }
                         }
@@ -386,12 +386,7 @@ namespace litecore {
 
         // Invoke the client callback:
         if (doCallback && sCallback && level >= _callbackLogLevel()) {
-            const char *objName = "?";
-            if (objRef) {
-                auto i = sObjNames.find(objRef);
-                if (i != sObjNames.end())
-                    objName = i->second.c_str();
-            }
+            auto obj = getObject(objRef);
 
             va_list args2;
             va_copy(args2, args);
@@ -399,7 +394,7 @@ namespace litecore {
                 // Preformatted: Do the formatting myself and pass the resulting string:
                 size_t n = 0;
                 if (objRef)
-                    n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} ", objName, objRef);
+                    n = snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} ", obj.c_str(), objRef);
                 vsnprintf(&sFormatBuffer[n], sizeof(sFormatBuffer) - n, fmt, args2);
                 va_list noArgs { };
                 sCallback(*this, level, sFormatBuffer, noArgs);
@@ -407,7 +402,7 @@ namespace litecore {
                 // Not preformatted: pass the format string and va_list to the callback
                 // (prefixing the object ref # if any):
                 if (objRef) {
-                    snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} %s", objName, objRef, fmt);
+                    snprintf(sFormatBuffer, sizeof(sFormatBuffer), "{%s#%u} %s", obj.c_str(), objRef, fmt);
                     sCallback(*this, level, sFormatBuffer, args2);
                 } else {
                     sCallback(*this, level, fmt, args2);
@@ -449,22 +444,17 @@ namespace litecore {
 
     void LogDomain::dylog(LogLevel level, const char* domain, unsigned objRef, const char *fmt, va_list args)
     {
-        const char *objName = "?";
-        if (objRef) {
-            auto i = sObjNames.find(objRef);
-            if (i != sObjNames.end())
-                objName = i->second.c_str();
-        }
+        auto obj = getObject(objRef);
 
         if(sLogEncoder[(int)level]) {
-            sLogEncoder[(int)level]->vlog(domain, (LogEncoder::ObjectRef)objRef, fmt, args);
+            sLogEncoder[(int)level]->vlog(domain, sObjNames, (LogEncoder::ObjectRef)objRef, fmt, args);
         } else if(sFileOut[(int)level]) {
             static char formatBuffer[2048];
             size_t n = 0;
             LogDecoder::writeTimestamp(LogDecoder::now(), *sFileOut[(int)level]);
             LogDecoder::writeHeader(kLevels[(int)level], domain, *sFileOut[(int)level]);
             if (objRef)
-                n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", objName, objRef);
+                n = snprintf(formatBuffer, sizeof(formatBuffer), "{%s#%u} ", obj.c_str(), objRef);
             vsnprintf(&formatBuffer[n], sizeof(formatBuffer) - n, fmt, args);
             *sFileOut[(int)level] << formatBuffer << endl;
         } else {
@@ -512,15 +502,15 @@ namespace litecore {
         #endif
     }
 
+    // Must be called from a method holding sLogMutex
     string LogDomain::getObject(unsigned ref)
     {
-        unique_lock<mutex> lock(sLogMutex);
         const auto found = sObjNames.find(ref);
         if(found != sObjNames.end()) {
             return found->second;
         }
 
-        return "";
+        return "?";
     }
 
 
