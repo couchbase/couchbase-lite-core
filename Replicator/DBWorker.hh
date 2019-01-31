@@ -105,7 +105,7 @@ namespace litecore { namespace repl {
                                                    const C4BlobKey &key)>;
 
         /** Finds blob/attachment references anywhere in a document. */
-        void findBlobReferences(fleece::Dict root, const FindBlobCallback&);
+        void findBlobReferences(fleece::Dict root, bool unique, const FindBlobCallback&);
 
         bool disableBlobSupport() const     {return _disableBlobSupport;}
 
@@ -149,7 +149,6 @@ namespace litecore { namespace repl {
         void dbChanged();
 
         fleece::slice getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
-        fleece::Dict getDeltaSourceRev(C4Document*, const RevToSend&);
         static std::string revHistoryString(C4Document*, const RevToSend&);
         void writeRevWithLegacyAttachments(fleece::Encoder&,
                                            fleece::Dict rev,

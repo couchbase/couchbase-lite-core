@@ -14,6 +14,7 @@
 #include "PrebuiltCopier.hh"
 #include <chrono>
 #include "betterassert.hh"
+#include "fleece/Mutable.hh"
 
 using namespace litecore::actor;
 
@@ -1274,33 +1275,25 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
 }
 
 
-static void mutateProperty(C4Database *db, fleece::Encoder &enc, slice docID, map<slice,slice> newProps) {
+#pragma mark - DELTA:
+
+
+static void mutateDoc(C4Database *db, slice docID, function<void(Dict,Encoder&)> mutator) {
     TransactionHelper t(db);
     C4Error error;
     c4::ref<C4Document> doc = c4doc_get(db, docID, false, &error);
     REQUIRE(doc);
-    Dict body = Value::fromData(doc->selectedRev.body).asDict();
+    Dict props = Value::fromData(doc->selectedRev.body).asDict();
 
-    enc.reset();
-    enc.beginDict();
-    for (Dict::iterator i(body); i; ++i) {
-        slice keyStr = i.keyString();
-        auto newProp = newProps.find(keyStr);
-        if (newProp == newProps.end()) {
-            enc.writeKey(keyStr);
-            enc.writeValue(i.value());
-        } else if (newProp->second) {
-            enc.writeKey(keyStr);
-            enc.writeString(newProp->second);
-        }
-    }
-    enc.endDict();
+    Encoder enc(c4db_createFleeceEncoder(db));
+    mutator(props, enc);
     alloc_slice newBody = enc.finish();
 
     C4String history = doc->selectedRev.revID;
     C4DocPutRequest rq = {};
     rq.body = newBody;
     rq.docID = docID;
+    rq.revFlags = (doc->selectedRev.flags & kRevHasAttachments);
     rq.history = &history;
     rq.historyCount = 1;
     rq.save = true;
@@ -1309,26 +1302,29 @@ static void mutateProperty(C4Database *db, fleece::Encoder &enc, slice docID, ma
 }
 
 
+static void mutateDoc(C4Database *db, slice docID, function<void(MutableDict)> mutator) {
+    mutateDoc(db, docID, [&](Dict props, Encoder &enc) {
+        MutableDict newProps = props.mutableCopy(kFLDeepCopyImmutables);
+        mutator(newProps);
+        enc.writeValue(newProps);
+    });
+}
+
+
 static void mutationsForDelta(C4Database *db) {
-    SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
     for (int i = 1; i <= 100; i += 7) {
         char docID[20];
         sprintf(docID, "%07u", i);
-        mutateProperty(db, enc, slice(docID), {
-            {"birthday"_sl, "1964-11-28"_sl}, {"memberSince"_sl, {}}
+        mutateDoc(db, slice(docID), [](MutableDict props) {
+            props["birthday"_sl] = "1964-11-28"_sl;
+            props["memberSince"_sl].remove();
         });
     }
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     auto serverOpts = Replicator::Options::passive();
-
-    SECTION("Default") {
-    }
-    SECTION("NoConflicts") {
-        serverOpts.setNoIncomingConflicts();
-    }
 
     // Push db --> db2:
     importJSONLines(sFixturesDir + "names_100.json");
@@ -1349,14 +1345,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push]") {
 }
 
 
-TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull]") {
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]") {
     auto serverOpts = Replicator::Options::passive();
-
-    SECTION("Default") {
-    }
-    SECTION("NoConflicts") {
-        serverOpts.setNoIncomingConflicts();
-    }
 
     // Push db --> db2:
     importJSONLines(sFixturesDir + "names_100.json");
@@ -1374,4 +1364,88 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull]") {
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
     compareDatabases();
     CHECK(IncomingRev::gNumDeltasApplied == 15);
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][Delta][blob]") {
+    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
+
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        _expectedDocumentCount = 1;
+    }
+    Log("-------- Push To db2 --------");
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":1}");
+
+    Log("-------- Mutate Doc In db --------");
+    // Simulate modifying an attachment. In order to avoid having to save a new blob to the db,
+    // use the same digest as the 2nd blob.
+    Encoder enc;
+    mutateDoc(db, "att1"_sl, [](MutableDict rev) {
+        auto atts = rev["attached"_sl].asArray().asMutable();
+        auto blob = atts[0].asDict().asMutable();
+        blob["digest"_sl] = "sha1-rATs731fnP+PJv2Pm/WXWZsCw48=";
+        blob["content_type"_sl] = "image/jpeg";
+    });
+
+    Log("-------- Push To db2 Again --------");
+    _expectedDocumentCount = 1;
+    IncomingRev::gNumDeltasApplied = 0;
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    CHECK(IncomingRev::gNumDeltasApplied == 1);
+
+    c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
+    alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
+    CHECK(string(json) ==
+          "{\"_attachments\":{\"blob_/attached/0\":{\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27,\"revpos\":1,\"stub\":true},"
+          "\"blob_/attached/1\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10,\"revpos\":1,\"stub\":true},"
+          "\"blob_/attached/2\":{\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0,\"revpos\":1,\"stub\":true}},"
+          "\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
+          "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
+          "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}]}");
+}
+
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][Pull][Delta][blob]") {
+    auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
+
+    // Push db --> db2:
+    vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
+    vector<C4BlobKey> blobKeys;
+    {
+        TransactionHelper t(db);
+        blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
+        _expectedDocumentCount = 1;
+    }
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    validateCheckpoints(db, db2, "{\"local\":1}");
+
+    Log("-------- Mutate Doc In db2 --------");
+    // Simulate modifying an attachment. In order to avoid having to save a new blob to the db,
+    // use the same digest as the 2nd blob.
+    Encoder enc;
+    mutateDoc(db2, "att1"_sl, [](MutableDict rev) {
+        auto atts = rev["_attachments"_sl].asDict().asMutable();
+        auto blob = atts["blob_/attached/0"_sl].asDict().asMutable();
+        blob["digest"_sl] = "sha1-rATs731fnP+PJv2Pm/WXWZsCw48=";
+        blob["content_type"_sl] = "image/jpeg";
+    });
+
+    Log("-------- Pull From db2 --------");
+    _expectedDocumentCount = 1;
+    IncomingRev::gNumDeltasApplied = 0;
+    runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
+    CHECK(IncomingRev::gNumDeltasApplied == 1);
+
+    c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, nullptr);
+    alloc_slice json = c4doc_bodyAsJSON(doc, true, nullptr);
+    CHECK(string(json) ==
+          "{\"attached\":[{\"@type\":\"blob\",\"content_type\":\"image/jpeg\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":27},"
+          "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-rATs731fnP+PJv2Pm/WXWZsCw48=\",\"length\":10},"
+          "{\"@type\":\"blob\",\"content_type\":\"text/plain\",\"digest\":\"sha1-2jmj7l5rSw0yVb/vlWAYkK/YBwk=\",\"length\":0}]}");
 }

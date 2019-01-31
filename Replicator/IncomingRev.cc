@@ -131,7 +131,7 @@ namespace litecore { namespace repl {
         _rev->body = fleeceBody;
 
         // Check for blobs, and queue up requests for any I don't have yet:
-        _dbWorker->findBlobReferences(root, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
+        _dbWorker->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
             _rev->flags |= kRevHasAttachments;
             _pendingBlobs.push_back({_rev->docID,
                                      alloc_slice(FLDeepIterator_GetPathString(i)),

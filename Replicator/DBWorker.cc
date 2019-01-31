@@ -755,7 +755,6 @@ namespace litecore { namespace repl {
             if (!history.empty())
                 msg["history"_sl] = history;
 
-            auto &bodyEncoder = msg.jsonBody();
             bool sendLegacyAttachments = (request->legacyAttachments
                                           && (revisionFlags & kRevHasAttachments)
                                           && !_disableBlobSupport);
@@ -765,10 +764,11 @@ namespace litecore { namespace repl {
                                                     sendLegacyAttachments);
             if (delta) {
                 msg["deltaSrc"_sl] = doc->selectedRev.revID;
-                bodyEncoder.writeRaw(delta);
+                msg.jsonBody().writeRaw(delta);
             } else if (root.empty()) {
                 msg.write("{}"_sl);
             } else {
+                auto &bodyEncoder = msg.jsonBody();
                 if (sendLegacyAttachments)
                     writeRevWithLegacyAttachments(bodyEncoder, root,
                                                   c4rev_getGeneration(request->revID));
@@ -816,25 +816,6 @@ namespace litecore { namespace repl {
     }
 
 
-    // Returns the source of the delta to send for a given RevToSend
-    Dict DBWorker::getDeltaSourceRev(C4Document* doc, const RevToSend &request) {
-        C4RevisionFlags flags = 0;
-        Dict src;
-        if (request.remoteAncestorRevID)
-            src = getDocRoot(doc, request.remoteAncestorRevID, &flags);
-        if (!src && request.ancestorRevIDs) {
-            for (auto revID : *request.ancestorRevIDs) {
-                src = getDocRoot(doc, revID, &flags);
-                if (src)
-                    break;
-            }
-        }
-        if (src && request.legacyAttachments && (flags & kRevHasAttachments))
-            src = nullptr;         // (see #678)
-        return src;
-    }
-
-
     string DBWorker::revHistoryString(C4Document *doc, const RevToSend &request) {
         Assert(c4doc_selectRevision(doc, request.revID, true, nullptr));
         stringstream historyStream;
@@ -866,29 +847,41 @@ namespace litecore { namespace repl {
                                               Dict root, size_t revisionSize,
                                               bool sendLegacyAttachments)
     {
-        auto sk = c4db_getFLSharedKeys(_db);
         alloc_slice delta;
         if (!request->deltaOK || _disableDeltaSupport
                               || revisionSize < tuning::kMinBodySizeForDelta)
             return delta;
-        Dict ancestor = getDeltaSourceRev(doc, *request);
+
+        // Find an ancestor revision known to the server:
+        C4RevisionFlags ancestorFlags = 0;
+        Dict ancestor;
+        if (request->remoteAncestorRevID)
+            ancestor = getDocRoot(doc, request->remoteAncestorRevID, &ancestorFlags);
+        if (!ancestor && request->ancestorRevIDs) {
+            for (auto revID : *request->ancestorRevIDs) {
+                ancestor = getDocRoot(doc, revID, &ancestorFlags);
+                if (ancestor)
+                    break;
+            }
+        }
         if (!ancestor)
             return delta;
 
         Doc legacyOld, legacyNew;
         if (sendLegacyAttachments) {
-            // If server needs legacy attachment layout, transform both revisions:
+            // If server needs legacy attachment layout, transform the bodies:
             Encoder enc;
-            enc.setSharedKeys(sk);
             auto revPos = c4rev_getGeneration(request->revID);
             writeRevWithLegacyAttachments(enc, root, revPos);
             legacyNew = enc.finishDoc();
             root = legacyNew.root().asDict();
 
-            enc.reset();
-            writeRevWithLegacyAttachments(enc, ancestor, revPos);
-            legacyOld = enc.finishDoc();
-            ancestor = legacyNew.root().asDict();
+            if (ancestorFlags & kRevHasAttachments) {
+                enc.reset();
+                writeRevWithLegacyAttachments(enc, ancestor, revPos);
+                legacyOld = enc.finishDoc();
+                ancestor = legacyOld.root().asDict();
+            }
         }
 
         delta = FLCreateJSONDelta(ancestor, root);
@@ -896,8 +889,8 @@ namespace litecore { namespace repl {
             return {};          // Delta failed, or is (probably) bigger than body; don't use
 
         if (willLog(LogLevel::Verbose)) {
-            alloc_slice old (ancestor.toJSON(sk));
-            alloc_slice nuu (root.toJSON(sk));
+            alloc_slice old (ancestor.toJSON());
+            alloc_slice nuu (root.toJSON());
             logVerbose("Encoded revision as delta, saving %zd bytes:\n\told = %.*s\n\tnew = %.*s\n\tDelta = %.*s",
                        nuu.size - delta.size,
                        SPLAT(old), SPLAT(nuu), SPLAT(delta));
@@ -936,8 +929,10 @@ namespace litecore { namespace repl {
         }
 
         // Then entries for blobs found in the document:
-        findBlobReferences(root, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
+        findBlobReferences(root, false, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
             alloc_slice path(FLDeepIterator_GetJSONPointer(di));
+            if (path.hasPrefix("/_attachments/"_sl))
+                return;
             string attName = string("blob_") + string(path);
             enc.writeKey(slice(attName));
             enc.beginDict();
@@ -975,7 +970,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBWorker::findBlobReferences(Dict root, const FindBlobCallback &callback) {
+    void DBWorker::findBlobReferences(Dict root, bool unique, const FindBlobCallback &callback) {
         // This method is non-static because it references _disableBlobSupport, but it's
         // thread-safe.
         set<string> found;
@@ -983,7 +978,7 @@ namespace litecore { namespace repl {
         for (; FLDeepIterator_GetValue(i); FLDeepIterator_Next(i)) {
             C4BlobKey blobKey;
             if (isAttachment(i, &blobKey, _disableBlobSupport)) {
-                if (found.emplace((const char*)&blobKey, sizeof(blobKey)).second) {
+                if (!unique || found.emplace((const char*)&blobKey, sizeof(blobKey)).second) {
                     auto blob = Value(FLDeepIterator_GetValue(i)).asDict();
                     callback(i, blob, blobKey);
                 }
@@ -997,6 +992,14 @@ namespace litecore { namespace repl {
 #pragma mark - INSERTING & SYNCING REVISIONS:
 
 
+    static bool containsAttachmentsProperty(slice json) {
+        if (!json.find("\"_attachments\":"_sl))
+            return false;
+        Doc doc = Doc::fromJSON(json);
+        return doc.root().asDict()["_attachments"] != nullptr;
+    }
+
+
     // Applies a delta, asynchronously returning expanded Fleece -- called by IncomingRev
     void DBWorker::_applyDelta(alloc_slice docID, alloc_slice baseRevID,
                                alloc_slice deltaJSON,
@@ -1008,6 +1011,14 @@ namespace litecore { namespace repl {
         if (doc && c4doc_selectRevision(doc, baseRevID, true, &c4err)) {
             Dict srcRoot = getDocRoot(doc);
             if (srcRoot) {
+                Doc legacy;
+                if (!_disableBlobSupport && containsAttachmentsProperty(deltaJSON)) {
+                    // Delta refers to legacy attachments, so convert my base revision to have them:
+                    Encoder enc;
+                    writeRevWithLegacyAttachments(enc, srcRoot, 1);
+                    legacy = enc.finishDoc();
+                    srcRoot = legacy.root().asDict();
+                }
                 FLError flErr;
                 body = FLApplyJSONDelta(srcRoot, deltaJSON, &flErr);
                 if (!body)
