@@ -42,7 +42,7 @@ using namespace std;
 namespace litecore {
 
     // Returns a string argument as a slice, or a null slice if the argument isn't a string.
-    static inline slice stringArgument(sqlite3_value *arg) noexcept {
+    static inline slice stringSliceArgument(sqlite3_value *arg) noexcept {
         if (sqlite3_value_type(arg) != SQLITE_TEXT)
             return nullslice;
         return valueAsStringSlice(arg);
@@ -505,21 +505,24 @@ namespace litecore {
 
     // contains(string, substring) returns 1 if `string` contains `substring`, else 0
     static void contains(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg0 = stringArgument(argv[0]);
-        auto arg1 = stringArgument(argv[1]);
-        sqlite3_result_int(ctx, arg0.find(arg1).buf != nullptr);
+        auto str = stringSliceArgument(argv[0]);
+        auto substr = stringSliceArgument(argv[1]);
+        if (str)
+            sqlite3_result_int(ctx, str.find(substr).buf != nullptr);
     }
 
     // length() returns the length in characters of a string.
     static void length(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg = stringArgument(argv[0]);
-        sqlite3_result_int64(ctx, UTF8Length(arg));
+        auto str = stringSliceArgument(argv[0]);
+        if (str)
+            sqlite3_result_int64(ctx, UTF8Length(str));
     }
 
     static void changeCase(sqlite3_context* ctx, sqlite3_value **argv, bool isUpper) noexcept {
         try {
-            auto arg = stringArgument(argv[0]);
-            result_alloc_slice(ctx, UTF8ChangeCase(arg, isUpper));
+            auto str = stringSliceArgument(argv[0]);
+            if (str)
+                result_alloc_slice(ctx, UTF8ChangeCase(str, isUpper));
         } catch (const std::exception &) {
             sqlite3_result_error(ctx, "upper() or lower() caught an exception!", -1);
         }
@@ -645,54 +648,60 @@ namespace litecore {
 
 
     static void regexp_like(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg0 = stringArgument(argv[0]);
-        auto arg1 = stringArgument(argv[1]);
-        regex r((char *)arg1.buf);
-        int result = regex_search((char *)arg0.buf, r) ? 1 : 0;
-        sqlite3_result_int(ctx, result);
+        auto str = stringSliceArgument(argv[0]);
+        auto pattern = stringSliceArgument(argv[1]);
+        if (str && pattern) {
+            regex r((const char*)pattern.buf, pattern.size);
+            bool result = regex_search((const char*)str.buf, (const char*)str.end(), r);
+            sqlite3_result_int(ctx, result != 0);
+        }
     }
 
     static void regexp_position(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto arg0 = stringArgument(argv[0]);
-        auto arg1 = stringArgument(argv[1]);
-        regex r((char *)arg1.buf);
-        cmatch pattern_match;
-        if(!regex_search((char *)arg0.buf, pattern_match, r)) {
-            sqlite3_result_int64(ctx, -1);
-            return;
-        }
+        auto str = stringSliceArgument(argv[0]);
+        auto pattern = stringSliceArgument(argv[1]);
+        if (str && pattern) {
+            regex r((const char*)pattern.buf, pattern.size);
+            cmatch pattern_match;
+            if(!regex_search((const char*)str.buf, (const char*)str.end(), pattern_match, r)) {
+                sqlite3_result_int64(ctx, -1);
+                return;
+            }
 
-        sqlite3_result_int64(ctx, pattern_match.prefix().length());
+            sqlite3_result_int64(ctx, pattern_match.prefix().length());
+        }
     }
 
     static void regexp_replace(sqlite3_context* ctx, int argc, sqlite3_value **argv) noexcept {
-        auto expression = stringArgument(argv[0]).asString();
-        auto pattern = stringArgument(argv[1]);
-        auto repl = stringArgument(argv[2]).asString();
-        string result;
-        auto out = back_inserter(result);
-        int n = -1;
-        if(argc == 4) {
-            n = sqlite3_value_int(argv[3]);
-        }
-
-        regex r((char *)pattern.buf);
-        auto iter = sregex_iterator(expression.begin(), expression.end(), r);
-        auto last_iter = iter;
-        auto stop = sregex_iterator();
-        if(iter == stop) {
-            result = expression;
-        } else {
-            for(; n-- && iter != stop; ++iter) {
-                out = copy(iter->prefix().first, iter->prefix().second, out);
-                out = iter->format(out, repl);
-                last_iter = iter;
+        auto str = stringSliceArgument(argv[0]);
+        auto pattern = stringSliceArgument(argv[1]);
+        auto replacement = stringSliceArgument(argv[2]);
+        if (str && pattern && replacement) {
+            int n = -1;
+            if (argc == 4) {
+                n = sqlite3_value_int(argv[3]);
             }
 
-			out = copy(last_iter->suffix().first, last_iter->suffix().second, out);
-        }
+            regex r((const char*)pattern.buf, pattern.size);
+            string s(str);
+            auto iter = sregex_iterator(s.begin(), s.end(), r);
+            auto last_iter = iter;
+            auto stop = sregex_iterator();
+            if (iter == stop) {
+                sqlite3_result_value(ctx, argv[0]);
+            } else {
+                string result;
+                auto out = back_inserter(result);
+                for(; n-- && iter != stop; ++iter) {
+                    out = copy(iter->prefix().first, iter->prefix().second, out);
+                    out = iter->format(out, (const char*)replacement.buf, (const char*)replacement.end());
+                    last_iter = iter;
+                }
 
-        sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
+                out = copy(last_iter->suffix().first, last_iter->suffix().second, out);
+                sqlite3_result_text(ctx, result.c_str(), (int)result.size(), SQLITE_TRANSIENT);
+            }
+        }
     }
 
 
@@ -806,7 +815,7 @@ namespace litecore {
 
 
     static bool parseDateArg(sqlite3_value *arg, int64_t *outTime) {
-        auto str = stringArgument(arg);
+        auto str = stringSliceArgument(arg);
         return str && kInvalidDate != (*outTime = ParseISO8601Date(str));
     }
 
