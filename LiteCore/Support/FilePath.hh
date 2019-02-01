@@ -42,6 +42,9 @@ namespace litecore {
 
         /** Returns the system's temporary-files directory. */
         static FilePath tempDirectory();
+
+        /** Explicitly specifies a temporary-files directory, overriding the default one. */
+        static void setTempDirectory(const std::string&);
         
         /** Returns the system's temporary-files directory within the context
          *  of the provided hint path.

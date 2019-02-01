@@ -300,6 +300,18 @@ int c4_getObjectCount(void) C4API;
 void c4_dumpInstances(void) C4API;
 
 
+//////// CONFIGURATION:
+
+
+/** Specifies a directory to use for temporary files. You don't normally need to call this,
+    unless you're on a platform where it's impossible to reliably discover the location of the
+    system temporary directory (i.e. Android), or you have some other good reason to want temp
+    files stored elsewhere.
+    @note  If you do call this function, you should call it before opening any databases.
+    @note  Needless to say, the directory must already exist. */
+void c4_setTempDir(C4String path) C4API;
+
+
 #ifdef __cplusplus
 }
 #endif

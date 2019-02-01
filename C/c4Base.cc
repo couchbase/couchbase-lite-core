@@ -21,6 +21,7 @@
 #include "c4Document.h"
 #include "c4Private.h"
 
+#include "FilePath.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 
@@ -415,5 +416,10 @@ void c4_dumpInstances(void) C4API {
 #if INSTANCECOUNTED_TRACK
     fleece::InstanceCounted::dumpInstances();
 #endif
+}
+
+
+void c4_setTempDir(C4String path) C4API {
+    FilePath::setTempDirectory(slice(path).asString());
 }
 // LCOV_EXCL_STOP
