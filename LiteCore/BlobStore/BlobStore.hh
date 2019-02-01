@@ -95,6 +95,8 @@ namespace litecore {
         void write(slice) override;
         void close() override;
 
+        uint64_t bytesWritten() const                       {return _bytesWritten;}
+
         /** Derives the blobKey from the digest of the file data.
             No more data can be written after this is called. */
         blobKey computeKey() noexcept;
@@ -109,6 +111,7 @@ namespace litecore {
         BlobStore &_store;
         FilePath _tmpPath;
         std::shared_ptr<WriteStream> _writer;
+        uint64_t _bytesWritten {0};
         sha1Context _sha1ctx;
         blobKey _key;
         bool _computedKey {false};
