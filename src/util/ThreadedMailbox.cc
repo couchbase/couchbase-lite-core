@@ -135,9 +135,9 @@ namespace litecore { namespace actor {
         const auto wrappedBlock = [f, SELF]
         {
             endLatency();
-            beforeEvent(false);
+            beginBusy();
             safelyCall(f);
-            afterEvent();
+            afterEvent(false);
         };
 
         if (push(wrappedBlock))
@@ -157,30 +157,15 @@ namespace litecore { namespace actor {
             const auto wrappedBlock = [f, SELF]
             {
                 endLatency();
-                beforeEvent(true);
+                beginBusy();
                 safelyCall(f);
-                afterEvent();
+                afterEvent(true);
             };
             enqueue(wrappedBlock);
         });
 
         timer->autoDelete();
         timer->fireAfter(chrono::duration_cast<Timer::duration>(delay));
-    }
-
-    void ThreadedMailbox::beforeEvent(bool fromEnqueueAfter)
-    {
-        beginBusy();
-#if ACTORS_TRACK_STATS
-        ++_callCount;
-        if(eventCount() > _maxEventCount) {
-            _maxEventCount = eventCount();
-        }
-#endif
-
-        if(fromEnqueueAfter) {
-            --_delayedEventCount;
-        }
     }
 
     void ThreadedMailbox::safelyCall(const std::function<void()>& f) const
@@ -192,8 +177,19 @@ namespace litecore { namespace actor {
         }
     }
 
-    void ThreadedMailbox::afterEvent()
+    void ThreadedMailbox::afterEvent(bool wasDelayed)
     {
+#if ACTORS_TRACK_STATS
+        ++_callCount;
+        if(eventCount() > _maxEventCount) {
+            _maxEventCount = eventCount();
+        }
+#endif
+
+        if(wasDelayed) {
+            --_delayedEventCount;
+        }
+
         _actor->afterEvent();
         endBusy();
         release(_actor);

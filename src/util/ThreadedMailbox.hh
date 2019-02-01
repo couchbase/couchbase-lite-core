@@ -68,8 +68,7 @@ namespace litecore { namespace actor {
         
         void reschedule();
         void performNextMessage();
-        void beforeEvent(bool);
-        void afterEvent();
+        void afterEvent(bool);
         void safelyCall(const std::function<void()> &f) const;
 
         Actor* const _actor;
