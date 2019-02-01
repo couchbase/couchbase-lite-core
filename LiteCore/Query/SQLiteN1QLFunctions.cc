@@ -651,7 +651,7 @@ namespace litecore {
         auto str = stringSliceArgument(argv[0]);
         auto pattern = stringSliceArgument(argv[1]);
         if (str && pattern) {
-            regex r((const char*)pattern.buf, pattern.size);
+            regex r((const char*)pattern.buf, pattern.size, regex_constants::ECMAScript);
             bool result = regex_search((const char*)str.buf, (const char*)str.end(), r);
             sqlite3_result_int(ctx, result != 0);
         }
@@ -661,7 +661,7 @@ namespace litecore {
         auto str = stringSliceArgument(argv[0]);
         auto pattern = stringSliceArgument(argv[1]);
         if (str && pattern) {
-            regex r((const char*)pattern.buf, pattern.size);
+            regex r((const char*)pattern.buf, pattern.size, regex_constants::ECMAScript);
             cmatch pattern_match;
             if(!regex_search((const char*)str.buf, (const char*)str.end(), pattern_match, r)) {
                 sqlite3_result_int64(ctx, -1);
@@ -682,7 +682,7 @@ namespace litecore {
                 n = sqlite3_value_int(argv[3]);
             }
 
-            regex r((const char*)pattern.buf, pattern.size);
+            regex r((const char*)pattern.buf, pattern.size, regex_constants::ECMAScript);
             string s(str);
             auto iter = sregex_iterator(s.begin(), s.end(), r);
             auto last_iter = iter;
