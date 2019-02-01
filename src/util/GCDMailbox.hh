@@ -46,14 +46,15 @@ namespace litecore { namespace actor {
 
         static void startScheduler(Scheduler *)             { }
 
-        void logStats();
+        void logStats() const;
 
         static Actor* currentActor();
 
     private:
         void runEvent(void (^block)());
         void afterEvent();
-        void safelyCall(void (^block)());
+        void beforeEvent();
+        void safelyCall(void (^block)()) const;
         
         Actor *_actor;
         dispatch_queue_t _queue;
