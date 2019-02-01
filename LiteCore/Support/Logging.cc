@@ -179,7 +179,7 @@ namespace litecore {
         if(encoder) {
             auto newEncoder = new LogEncoder(*sFileOut[(int)level], level);
             sLogEncoder[(int)level] = newEncoder;
-            newEncoder->log("", map<unsigned, string>(), LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
+            newEncoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
             newEncoder->flush(); // Make sure at least the magic bytes are present
         } else {
             *sFileOut[(int)level] << "---- " << sInitialMessage << " ----" << endl;
@@ -230,7 +230,7 @@ namespace litecore {
             if (!sInitialMessage.empty()) {
                 if(sLogEncoder[0]) {
                     for(auto& encoder : sLogEncoder) {
-                        encoder->log("", map<unsigned, string>(), LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
+                        encoder->log("", {}, LogEncoder::None, "---- %s ----", sInitialMessage.c_str());
                         encoder->flush(); // Make sure at least the magic bytes are present
                     }
                 } else {
@@ -247,7 +247,7 @@ namespace litecore {
                     if (sLogMutex.try_lock()) {     // avoid deadlock on crash inside logging code
                         if (sLogEncoder[0]) {
                             for(auto& encoder : sLogEncoder) {
-                                encoder->log("", map<unsigned, string>(), LogEncoder::None,
+                                encoder->log("", {}, LogEncoder::None,
                                              "---- END ----");
                             }
                         }

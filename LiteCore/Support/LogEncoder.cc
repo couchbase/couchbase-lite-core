@@ -70,7 +70,7 @@ namespace litecore {
 
 
     void LogEncoder::log(const char *domain, const std::map<unsigned, std::string>& objectMap,
-        ObjectRef object, const char *format, ...) {
+                         ObjectRef object, const char *format, ...) {
         va_list args;
         va_start(args, format);
         vlog(domain, objectMap, object, format, args);
@@ -83,7 +83,7 @@ namespace litecore {
     }
 
     void LogEncoder::vlog(const char *domain, const map<unsigned, string> &objectMap,
-        ObjectRef object, const char *format, va_list args) {
+                          ObjectRef object, const char *format, va_list args) {
         lock_guard<mutex> lock(_mutex);
 
         // Write the number of ticks elapsed since the last message:
