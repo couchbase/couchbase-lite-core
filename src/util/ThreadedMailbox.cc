@@ -29,6 +29,20 @@ using namespace std;
 
 namespace litecore { namespace actor {
 
+#if ACTORS_TRACK_STATS
+#define beginLatency()  fleece::Stopwatch st
+#define endLatency()    _maxLatency = max(_maxLatency, (double)st.elapsed())
+#define beginBusy()     _busy.start()
+#define endBusy()       _busy.stop()
+#define SELF            this, st
+#else
+#define beginLatency()
+#define endLatency()
+#define beginBusy()
+#define endBusy()
+#define SELF            this
+#endif
+
 #pragma mark - SCHEDULER:
 
     
@@ -116,8 +130,17 @@ namespace litecore { namespace actor {
     }
 
     void ThreadedMailbox::enqueue(std::function<void()> f) {
+        beginLatency();
         retain(_actor);
-        if (push(f))
+        const auto wrappedBlock = [f, SELF]
+        {
+            endLatency();
+            beforeEvent(false);
+            safelyCall(f);
+            afterEvent();
+        };
+
+        if (push(wrappedBlock))
             reschedule();
     }
 
@@ -125,18 +148,55 @@ namespace litecore { namespace actor {
         if (delay <= delay_t::zero())
             return enqueue(f);
 
-        auto actor = _actor;
-        retain(actor);
+        beginLatency();
         _delayedEventCount++;
+        retain(_actor);
 
-        auto timer = new Timer([f, actor, this]
+        auto timer = new Timer([f, this]
         { 
-            enqueue(f);
-            _delayedEventCount--;
-            release(actor);
+            const auto wrappedBlock = [f, SELF]
+            {
+                endLatency();
+                beforeEvent(true);
+                safelyCall(f);
+                afterEvent();
+            };
+            enqueue(wrappedBlock);
         });
+
         timer->autoDelete();
         timer->fireAfter(chrono::duration_cast<Timer::duration>(delay));
+    }
+
+    void ThreadedMailbox::beforeEvent(bool fromEnqueueAfter)
+    {
+        beginBusy();
+#if ACTORS_TRACK_STATS
+        ++_callCount;
+        if(eventCount() > _maxEventCount) {
+            _maxEventCount = eventCount();
+        }
+#endif
+
+        if(fromEnqueueAfter) {
+            --_delayedEventCount;
+        }
+    }
+
+    void ThreadedMailbox::safelyCall(const std::function<void()>& f) const
+    {
+        try {
+            f();
+        } catch(std::exception& x) {
+            _actor->caughtException(x);
+        }
+    }
+
+    void ThreadedMailbox::afterEvent()
+    {
+        _actor->afterEvent();
+        endBusy();
+        release(_actor);
     }
 
 
@@ -149,23 +209,29 @@ namespace litecore { namespace actor {
         LogToAt(ActorLog, Verbose, "%s performNextMessage", _actor->actorName().c_str());
         DebugAssert(++_active == 1);     // Fail-safe check to detect 'impossible' re-entrant call
         sCurrentActor = _actor;
-        try {
-            auto &fn = front();
-            fn();
-        } catch (const std::exception &x) {
-            _actor->caughtException(x);
-        }
-        _actor->afterEvent();
+        auto &fn = front();
+        fn();
         sCurrentActor = nullptr;
         
         DebugAssert(--_active == 0);
 
         bool empty;
         popNoWaiting(empty);
-        release(_actor);
         if (!empty)
             reschedule();
     }
+
+    void ThreadedMailbox::logStats() const
+    {
+#if ACTORS_TRACK_STATS
+        LogTo(ActorLog, "%s handled %d events; max queue depth was %d; max latency was %s; busy %s (%.1f%%)",
+            _actor->actorName().c_str(), _callCount, _maxEventCount,
+            fleece::Stopwatch::formatTime(_maxLatency).c_str(),
+            fleece::Stopwatch::formatTime(_busy.elapsed()).c_str(),
+            (_busy.elapsed() / _createdAt.elapsed()) * 100.0);
+#endif
+    }
+
 
 } }
 #endif

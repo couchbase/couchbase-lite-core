@@ -24,6 +24,7 @@
 #pragma once
 #include "Channel.hh"
 #include "RefCounted.hh"
+#include "Stopwatch.hh"
 #include <atomic>
 #include <string>
 #include <thread>
@@ -60,13 +61,16 @@ namespace litecore { namespace actor {
 
         static Actor* currentActor()                        {return sCurrentActor;}
 
-        void logStats()                                     { /* TODO */ }
+        void logStats() const;
 
     private:
         friend class Scheduler;
         
         void reschedule();
         void performNextMessage();
+        void beforeEvent(bool);
+        void afterEvent();
+        void safelyCall(const std::function<void()> &f) const;
 
         Actor* const _actor;
         std::string const _name;
@@ -74,6 +78,14 @@ namespace litecore { namespace actor {
         int _delayedEventCount {0};
 #if DEBUG
         std::atomic_int _active {0};
+#endif
+
+#if ACTORS_TRACK_STATS
+        int32_t _callCount {0};
+        int32_t _maxEventCount {0};
+        double _maxLatency {0};
+        fleece::Stopwatch _createdAt {true};
+        fleece::Stopwatch _busy {false};
 #endif
         
         static thread_local Actor* sCurrentActor;
@@ -113,6 +125,8 @@ namespace litecore { namespace actor {
         Channel<ThreadedMailbox*> _queue;
         std::vector<std::thread> _threadPool;
         std::atomic_flag _started = ATOMIC_FLAG_INIT;
+
+
     };
 
     // This prevents the compiler from specializing Channel in every compilation unit:
