@@ -320,13 +320,13 @@ namespace litecore {
     }
 
 
-    static FilePath sTempDirectory;
+    static FilePath* sTempDirectory = nullptr;
     static mutex sTempDirMutex;
 
 
     FilePath FilePath::tempDirectory() {
         lock_guard<mutex> lock(sTempDirMutex);
-        if (sTempDirectory._dir.empty()) {
+        if (!sTempDirectory) {
             // Default location of temp dir:
 #if !defined(_MSC_VER) || WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
             const char *tmpDir = getenv("TMPDIR");
@@ -347,18 +347,21 @@ namespace litecore {
                 tmpDir = "/tmp";
 #endif
             }
-            sTempDirectory = FilePath(tmpDir, "");
+            sTempDirectory = new FilePath(tmpDir, "");
         }
-        return sTempDirectory;
+        return *sTempDirectory;
     }
 
 
     void FilePath::setTempDirectory(const string &path) {
         lock_guard<mutex> lock(sTempDirMutex);
-        if (!sTempDirectory._dir.empty())
+        if (sTempDirectory) {
             Warn("Changing temp dir to <%s> after the previous dir <%s> has already been used",
-                 path.c_str(), sTempDirectory._dir.c_str());
-        sTempDirectory = FilePath(path, "");
+                 path.c_str(), sTempDirectory->_dir.c_str());
+            free(sTempDirectory);
+            sTempDirectory = nullptr;
+        }
+        sTempDirectory = new FilePath(path, "");
         
 #ifdef LITECORE_IMPL
         // Tell SQLite to use this temp directory. Note that the dup'd string will be leaked.
