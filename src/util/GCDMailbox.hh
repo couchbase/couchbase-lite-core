@@ -53,7 +53,6 @@ namespace litecore { namespace actor {
     private:
         void runEvent(void (^block)());
         void afterEvent();
-        void beforeEvent();
         void safelyCall(void (^block)()) const;
         
         Actor *_actor;
