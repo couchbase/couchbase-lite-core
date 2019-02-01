@@ -19,11 +19,13 @@ package com.couchbase.litecore;
 
 
 public class C4Base {
+
     //-------------------------------------------------------------------------
     // native methods
     //-------------------------------------------------------------------------
 
-    //////// ERRORS:
-
     public static native String getMessage(int domain, int code, int internalInfo);
+
+    public static native void setTempDir(String tempDir);
+
 }

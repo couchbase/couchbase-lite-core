@@ -41,3 +41,14 @@ Java_com_couchbase_litecore_C4Base_getMessage(JNIEnv *env, jclass clazz, jint jd
     c4slice_free(msg);
     return result;
 }
+
+/*
+ * Class:     com_couchbase_litecore_C4Base
+ * Method:    setTempDir
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_couchbase_litecore_C4Base_setTempDir
+        (JNIEnv *env, jclass clazz, jstring jtempDir) {
+    jstringSlice tempDir(env, jtempDir);
+    c4_setTempDir(tempDir);
+}
