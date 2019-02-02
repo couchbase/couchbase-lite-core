@@ -17,11 +17,11 @@
 //
 
 #ifdef _MSC_VER
-#pragma comment(lib, "Dbghelp.lib")
-#pragma comment(lib, "psapi.lib")
-#include <Windows.h>
-#include <DbgHelp.h>
 #include "Error.hh"
+#include <Windows.h>
+#include <string>
+#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
+#include <DbgHelp.h>
 #include "asprintf.h"
 #include <sstream>
 #include <Psapi.h>
@@ -29,6 +29,8 @@
 #include <algorithm>
 #include <iterator>
 #include <mutex>
+#pragma comment(lib, "Dbghelp.lib")
+#pragma comment(lib, "psapi.lib")
 using namespace std;
 
 struct module_data {
@@ -66,7 +68,6 @@ namespace litecore {
     static mutex sStackWalker;
 
     /*static*/ string error::backtrace(unsigned skip) {
-        #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
         lock_guard<mutex> lock(sStackWalker);
          void* stack[50];
 		vector<module_data> modules;
@@ -110,10 +111,15 @@ namespace litecore {
         SymCleanup(process);
 
 		return out.str();
-		#else
-		return "(stack trace unavailable on Windows Store)";
-        #endif
     }
 }
+#else
+using namespace std;
+namespace litecore {
+    /*static*/ string error::backtrace(unsigned skip) {
+		return "(stack trace unavailable on Windows Store)";
+    }
+}
+#endif
 
 #endif
