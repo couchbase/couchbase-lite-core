@@ -159,8 +159,7 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
     Retained<Query> query1{ store->compileQuery(json5("{WHAT: [['.main'], ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
     Retained<Query> query2{ store->compileQuery(json5("{WHAT: [ '.main',  ['*', ['.main.num'], ['.main.num']]], WHERE: ['>', ['.main.num'], 10], FROM: [{AS: 'main'}]}")) };
 
-    CHECK(query1->columnTitles() == (vector<string>{"main", "*"}));
-    CHECK(query1->columnTitles() == (vector<string>{"main", "*"}));
+    CHECK(query1->columnTitles() == (vector<string>{ "main", "$1" }));
 
     SECTION("Just regular docs") {
     }
@@ -389,7 +388,7 @@ TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: [['[]', null, false, true, 12345, 1234.5, 'howdy', ['._id']]]}")) };
 
-    CHECK(query->columnTitles() == (vector<string>{"[]"}));
+    CHECK(query->columnTitles() == (vector<string>{"$1"}));
 
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
@@ -403,7 +402,7 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: [{n: null, f: false, t: true, i: 12345, d: 1234.5, s: 'howdy', m: ['.bogus'], id: ['._id']}]}")) };
 
-    CHECK(query->columnTitles() == (vector<string>{"{}"}));
+    CHECK(query->columnTitles() == (vector<string>{"$1"}));
 
     unique_ptr<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());

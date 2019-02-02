@@ -212,7 +212,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Column titles", "[Query][C]") {
     checkColumnTitles({"ZIP"});
     // Expressions:
     compileSelect(json5("['SELECT', {'WHAT': [['+', ['.age'], 14], ['min()', ['.n']]]}]"));
-    checkColumnTitles({"+", "min()"});
+    checkColumnTitles({"$1", "$2"});
 }
 
 

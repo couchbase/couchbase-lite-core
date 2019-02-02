@@ -681,6 +681,7 @@ namespace litecore {
     // Handles the WHAT clause (list of results)
     void QueryParser::resultOp(slice op, Array::iterator& operands) {
         int n = 0;
+        unsigned anonCount = 0;
         for (auto &i = operands; i; ++i) {
             // Write the operation/delimiter between arguments
             auto result = i.value();
@@ -701,28 +702,15 @@ namespace litecore {
 
             // Come up with a column title if there is no 'AS':
             if (title.empty()) {
-                switch (result->type()) {
-                    case kString: {
-                        title = columnTitleFromProperty(propertyFromString(result->asString()));
-                        break;
-                    }
-                    case kArray: {
-                        slice resultOp = expr[0]->asString();
-                        if (resultOp.hasPrefix('.'))
-                            title = columnTitleFromProperty(propertyFromNode(result));
-                        else
-                            title = string(resultOp);  // e.g. "max()" or "+"
-                        break;
-                    }
-                    case kDict:
-                        title = "{}";
-                        break;
-                    default:
-                        title = result->toJSON<5>().asString();
-                        break;
+                if (result->type() == kString) {
+                    title = columnTitleFromProperty(propertyFromString(result->asString()));
+                } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
+                    title = columnTitleFromProperty(propertyFromNode(result));
+                } else {
+                    title = format("$%u", ++anonCount); // default for non-properties
                 }
                 if (title.empty())
-                    title = "*";    // results from ["."], i.e. entire doc
+                    title = "*";        // for the property ".", i.e. the entire doc
             }
 
             // Make the title unique:
