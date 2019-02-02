@@ -186,6 +186,13 @@ namespace litecore { namespace actor {
         }
 #endif
 
+        // This needs to happen *before* the actor's afterEvent call because this flow
+        // needs to be protected:
+        // 1. enqueueAfter increments _delayedEventCount (eventCount() = 1)
+        // 2. After the delay, enqueueAfter calls enqueue (eventCount() = 2)
+        // 3. _delayedEventCount needs to be decremented to give the correct value
+        //    of eventCount() = 1 during the actor's afterEvent
+        // This has to be on the same thread as the mailbox so no races occur
         if(wasDelayed) {
             --_delayedEventCount;
         }
