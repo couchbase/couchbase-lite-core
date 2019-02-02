@@ -82,7 +82,7 @@ namespace litecore { namespace actor {
     }
 
 
-    void GCDMailbox::safelyCall(void (^block)()) {
+    void GCDMailbox::safelyCall(void (^block)()) const {
         try {
             block();
         } catch (const std::exception &x) {
@@ -122,7 +122,6 @@ namespace litecore { namespace actor {
             dispatch_async(_queue, wrappedBlock);
     }
 
-
     void GCDMailbox::afterEvent() {
         _actor->afterEvent();
         endBusy();
@@ -137,7 +136,7 @@ namespace litecore { namespace actor {
     }
 
 
-    void GCDMailbox::logStats() {
+    void GCDMailbox::logStats() const {
 #if ACTORS_TRACK_STATS
         LogTo(ActorLog, "%s handled %d events; max queue depth was %d; max latency was %s; busy %s (%.1f%%)",
               _actor->actorName().c_str(), _callCount, _maxEventCount,
