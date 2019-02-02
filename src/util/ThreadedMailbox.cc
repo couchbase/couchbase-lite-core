@@ -137,7 +137,7 @@ namespace litecore { namespace actor {
             endLatency();
             beginBusy();
             safelyCall(f);
-            afterEvent(false);
+            afterEvent();
         };
 
         if (push(wrappedBlock))
@@ -159,7 +159,9 @@ namespace litecore { namespace actor {
                 endLatency();
                 beginBusy();
                 safelyCall(f);
-                afterEvent(true);
+                --_delayedEventCount;
+                release(_actor); // For enqueueAfter's retain call
+                afterEvent();
             };
             enqueue(wrappedBlock);
         });
@@ -177,29 +179,17 @@ namespace litecore { namespace actor {
         }
     }
 
-    void ThreadedMailbox::afterEvent(bool wasDelayed)
+    void ThreadedMailbox::afterEvent()
     {
+        _actor->afterEvent();
+        endBusy();
+
 #if ACTORS_TRACK_STATS
         ++_callCount;
         if(eventCount() > _maxEventCount) {
             _maxEventCount = eventCount();
         }
 #endif
-
-        // This needs to happen *before* the actor's afterEvent call because this flow
-        // needs to be protected:
-        // 1. enqueueAfter increments _delayedEventCount (eventCount() = 1)
-        // 2. After the delay, enqueueAfter calls enqueue (eventCount() = 2)
-        // 3. _delayedEventCount needs to be decremented to give the correct value
-        //    of eventCount() = 1 during the actor's afterEvent
-        // This has to be on the same thread as the mailbox so no races occur
-        if(wasDelayed) {
-            --_delayedEventCount;
-        }
-
-        _actor->afterEvent();
-        endBusy();
-        release(_actor);
     }
 
 
@@ -220,6 +210,7 @@ namespace litecore { namespace actor {
 
         bool empty;
         popNoWaiting(empty);
+        release(_actor); // For enqueue's retain call
         if (!empty)
             reschedule();
     }
