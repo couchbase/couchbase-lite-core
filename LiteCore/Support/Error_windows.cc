@@ -18,25 +18,76 @@
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Dbghelp.lib")
+#pragma comment(lib, "psapi.lib")
 #include <Windows.h>
-#include <Dbghelp.h>
+#include <DbgHelp.h>
 #include "Error.hh"
 #include "asprintf.h"
 #include <sstream>
+#include <Psapi.h>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+#include <mutex>
 using namespace std;
 
+struct module_data {
+	string image_name;
+	string module_name;
+	void* base_address;
+	DWORD load_size;
+};
+
 namespace litecore {
+    class get_mod_info {
+		HANDLE process;
+		static const int buffer_length = 4096;
+	public:
+		get_mod_info(const HANDLE h) : process(h) {}
+
+		module_data operator()(HMODULE module) const {
+			module_data ret;
+			char temp[buffer_length];
+			MODULEINFO mi;
+
+			GetModuleInformation(process, module, &mi, sizeof(mi));
+			ret.base_address = mi.lpBaseOfDll;
+			ret.load_size = mi.SizeOfImage;
+
+			GetModuleFileNameExA(process, module, temp, sizeof(temp));
+			ret.image_name = temp;
+			GetModuleBaseNameA(process, module, temp, sizeof(temp));
+			ret.module_name = temp;
+			SymLoadModule64(process, nullptr, ret.image_name.c_str(), ret.module_name.c_str(), (DWORD64)ret.base_address, ret.load_size);
+			return ret;
+		}
+	};
+
+    static mutex sStackWalker;
+
     /*static*/ string error::backtrace(unsigned skip) {
         #if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-        void* stack[50];
+        lock_guard<mutex> lock(sStackWalker);
+         void* stack[50];
+		vector<module_data> modules;
+		vector<HMODULE> module_handles(1);
         const auto process = GetCurrentProcess();
         SymInitialize(process, nullptr, TRUE);
+		DWORD symOptions = SymGetOptions();
+		symOptions |= SYMOPT_LOAD_LINES | SYMOPT_UNDNAME;
+		SymSetOptions(symOptions);
+		DWORD cbNeeded;
+		EnumProcessModules(process, &module_handles[0], module_handles.size() * sizeof(HMODULE), &cbNeeded);
+		module_handles.resize(cbNeeded / sizeof(HMODULE));
+		EnumProcessModules(process, &module_handles[0], module_handles.size() * sizeof(HMODULE), &cbNeeded);
+		transform(module_handles.begin(), module_handles.end(), back_inserter(modules), get_mod_info(process));
+
         const auto captured = CaptureStackBackTrace(0, 50, stack, nullptr);
-        const auto symbol = (SYMBOL_INFO*)malloc(sizeof(SYMBOL_INFO)+1023 * sizeof(TCHAR));
-        symbol->MaxNameLen = 1024;
+        const auto symbol = (SYMBOL_INFO*)calloc(sizeof(SYMBOL_INFO)+256 * sizeof(TCHAR), 1);
+        symbol->MaxNameLen = 255;
         symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
         DWORD displacement;
-        const auto line = (IMAGEHLP_LINE64*)malloc(sizeof(IMAGEHLP_LINE64));
+        const auto line = (IMAGEHLP_LINE64*)calloc(sizeof(IMAGEHLP_LINE64), 1);
         line->SizeOfStruct = sizeof(IMAGEHLP_LINE64);
         
 		stringstream out;
