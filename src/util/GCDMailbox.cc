@@ -123,6 +123,8 @@ namespace litecore { namespace actor {
     }
 
     void GCDMailbox::afterEvent() {
+        _actor->afterEvent();
+        endBusy();
 #if ACTORS_TRACK_STATS
         ++_callCount;
         if (_eventCount > _maxEventCount) {
@@ -130,9 +132,6 @@ namespace litecore { namespace actor {
         }
 #endif
         --_eventCount;
-        
-        _actor->afterEvent();
-        endBusy();
         release(_actor);
     }
 
