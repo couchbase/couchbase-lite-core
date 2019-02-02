@@ -140,10 +140,10 @@ TEST_CASE("Cookie Parser Failure", "[cookies]") {
 }
 
 
-static const C4Address kRequest           {"blip"_sl, "www.example.com"_sl, 4984, "/db/_blipsync"_sl};
-static const C4Address kSecureRequest     {"blips"_sl, "www.example.com"_sl, 4984, "/db/_blipsync"_sl};
-static const C4Address kOtherPathRequest  {"blips"_sl, "www.example.com"_sl, 4984, "/qat/_blipsync"_sl};
-static const C4Address kOtherHostRequest  {"blip"_sl, "couchbase.com"_sl, 4984, "/beer/_blipsync"_sl};
+static const C4Address kRequest           {kC4Replicator2Scheme, "www.example.com"_sl, 4984, "/db/_blipsync"_sl};
+static const C4Address kSecureRequest     {kC4Replicator2TLSScheme, "www.example.com"_sl, 4984, "/db/_blipsync"_sl};
+static const C4Address kOtherPathRequest  {kC4Replicator2TLSScheme, "www.example.com"_sl, 4984, "/qat/_blipsync"_sl};
+static const C4Address kOtherHostRequest  {kC4Replicator2Scheme, "couchbase.com"_sl, 4984, "/beer/_blipsync"_sl};
 
 
 TEST_CASE("CookieStore", "[Cookies]") {

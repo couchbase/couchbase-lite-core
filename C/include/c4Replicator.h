@@ -30,8 +30,8 @@ extern "C" {
     /** \defgroup Replicator Replicator
         @{ */
 
-#define kC4Replicator2Scheme    C4STR("blip")
-#define kC4Replicator2TLSScheme C4STR("blips")
+#define kC4Replicator2Scheme    C4STR("ws")
+#define kC4Replicator2TLSScheme C4STR("wss")
 
     /** How to replicate, in either direction */
     typedef C4_ENUM(int32_t, C4ReplicatorMode) {

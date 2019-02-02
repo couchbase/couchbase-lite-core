@@ -36,12 +36,19 @@ static bool isValidScheme(slice scheme) {
 
 
 static bool isValidReplicatorScheme(slice scheme) {
-    const slice kValidSchemes[] = {"ws"_sl, "wss"_sl,
-                                   kC4Replicator2Scheme, kC4Replicator2TLSScheme, nullslice};
+    const slice kValidSchemes[] = {kC4Replicator2Scheme, kC4Replicator2TLSScheme, nullslice};
     for (int i=0; kValidSchemes[i]; ++i)
         if (scheme.caseEquivalent(kValidSchemes[i]))
             return true;
     return false;
+}
+
+
+static uint16_t defaultPortForScheme(slice scheme) {
+    if (scheme.caseEquivalent("ws"_sl) || scheme[scheme.size-1] != 's')
+        return 80;
+    else
+        return 443;
 }
 
 
@@ -80,7 +87,7 @@ bool c4address_fromURL(C4String url, C4Address *address, C4String *dbName) C4API
     address->scheme = slice(str.buf, colon);
     if (!isValidScheme(address->scheme))
         return false;
-    address->port = (colon[-1] == 's') ? 443 : 80;
+    address->port = defaultPortForScheme(address->scheme);
     str.setStart(colon);
     if (!str.hasPrefix("://"_sl))
         return false;

@@ -33,7 +33,7 @@ public:
     C4SyncListenerTest() {
         createDB2();
 
-        _address.scheme = C4STR("ws");
+        _address.scheme = kC4Replicator2Scheme;
         _address.hostname = C4STR("localhost");
         _address.port = config.port;
         _remoteDBName = C4STR("db2");
