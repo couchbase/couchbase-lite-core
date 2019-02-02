@@ -59,7 +59,8 @@ namespace litecore { namespace repl {
 
 
     bool Address::isSecure(const C4Address &addr) noexcept {
-        return (addr.scheme == kC4Replicator2TLSScheme || addr.scheme == "https"_sl);
+        const C4Slice wss = kC4Replicator2TLSScheme;
+        return (addr.scheme == wss || addr.scheme == "https"_sl);
     }
 
     bool Address::domainEquals(slice d1, slice d2) noexcept {
