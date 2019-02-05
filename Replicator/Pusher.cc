@@ -273,7 +273,7 @@ namespace litecore { namespace repl {
             auto requests = reply->JSONBody().asArray();
             unsigned index = 0;
             for (RevToSend *change : *changes) {
-                bool queued = false;
+                bool queued = false, synced = false;
                 change->deltaOK = _deltasOK;
                 if (proposedChanges) {
                     // Entry in "proposeChanges" response is a status code, with 0 for OK:
@@ -286,12 +286,11 @@ namespace litecore { namespace repl {
                         queued = true;
                     } else if (status == 304) {
                         // 304 means server has my rev already
-                        _dbWorker->donePushingRev(change, true);
+                        synced = true;
                     } else {
                         logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
                                  SPLAT(change->docID), SPLAT(change->revID),
                                  SPLAT(change->remoteAncestorRevID), status);
-                        _dbWorker->donePushingRev(change, false);
                         auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
                         finishedDocumentWithError(change, err, false);
                     }
@@ -313,7 +312,7 @@ namespace litecore { namespace repl {
                                SPLAT(change->docID), SPLAT(change->revID), change->sequence,
                                _revsToSend.size());
                 } else {
-                    doneWithRev(change, true);  // unqueued, so we're done with it
+                    doneWithRev(change, true, synced);  // unqueued, so we're done with it
                 }
                 ++index;
             }
@@ -350,7 +349,7 @@ namespace litecore { namespace repl {
         _dbWorker->sendRevision(rev, asynchronize([=](MessageProgress progress) {
             // message progress callback:
             if (progress.state == MessageProgress::kDisconnected) {
-                doneWithRev(rev, false);
+                doneWithRev(rev, false, false);
                 return;
             }
             if (progress.state == MessageProgress::kAwaitingReply) {
@@ -379,7 +378,7 @@ namespace litecore { namespace repl {
                     // then I've completed my duty to push it.
                     completed = !transient;
                 }
-                doneWithRev(rev, completed);
+                doneWithRev(rev, completed, completed);
                 maybeSendMoreRevs();
             }
         }));
@@ -388,7 +387,7 @@ namespace litecore { namespace repl {
 
     void Pusher::_couldntSendRevision(Retained<RevToSend> rev) {
         decrement(_revisionsInFlight);
-        doneWithRev(rev, false);
+        doneWithRev(rev, false, false);
         maybeSendMoreRevs();
     }
 
@@ -527,7 +526,7 @@ namespace litecore { namespace repl {
 #pragma mark - PROGRESS:
 
 
-    void Pusher::doneWithRev(const RevToSend *rev, bool completed) {
+    void Pusher::doneWithRev(const RevToSend *rev, bool completed, bool synced) {
         if (!passive()) {
             addProgress({rev->bodySize, 0});
             if (completed) {
@@ -536,7 +535,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        _dbWorker->donePushingRev(rev, completed);
+        _dbWorker->donePushingRev(rev, synced);
     }
 
 

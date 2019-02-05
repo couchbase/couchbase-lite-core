@@ -65,7 +65,7 @@ namespace litecore { namespace repl {
         void maybeSendMoreRevs();
         void sendRevision(Retained<RevToSend>);
         void _couldntSendRevision(Retained<RevToSend>);
-        void doneWithRev(const RevToSend*, bool successful);
+        void doneWithRev(const RevToSend*, bool successful, bool pushed);
         void updateCheckpoint();
         void handleGetAttachment(Retained<MessageIn>);
         void handleProveAttachment(Retained<MessageIn>);

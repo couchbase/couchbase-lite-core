@@ -90,8 +90,8 @@ namespace litecore { namespace repl {
 
         void insertRevision(RevToInsert *rev);
 
-        void donePushingRev(const RevToSend *rev, bool completed) {
-            enqueue(&DBWorker::_donePushingRev, retained(rev), completed);
+        void donePushingRev(const RevToSend *rev, bool synced) {
+            enqueue(&DBWorker::_donePushingRev, retained(rev), synced);
         }
 
         void markRevSynced(ReplicatedRev *rev);
@@ -141,7 +141,7 @@ namespace litecore { namespace repl {
                            blip::MessageProgressCallback onProgress);
         void _setCookie(alloc_slice setCookieHeader);
 
-        void _donePushingRev(fleece::RetainedConst<RevToSend> rev, bool completed);
+        void _donePushingRev(fleece::RetainedConst<RevToSend> rev, bool synced);
         void _markRevsSyncedNow();
         void _insertRevisionsNow();
         void _connectionClosed() override;

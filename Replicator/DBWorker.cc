@@ -1149,8 +1149,8 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBWorker::_donePushingRev(RetainedConst<RevToSend> rev, bool completed) {
-        if (completed && _options.push > kC4Passive)
+    void DBWorker::_donePushingRev(RetainedConst<RevToSend> rev, bool synced) {
+        if (synced && _options.push > kC4Passive)
             _revsToMarkSynced.push((RevToSend*)rev.get());
 
         auto i = _pushingDocs.find(rev->docID);
@@ -1162,7 +1162,7 @@ namespace litecore { namespace repl {
         Retained<RevToSend> newRev = i->second;
         _pushingDocs.erase(i);
         if (newRev) {
-            if (completed)
+            if (synced)
                 newRev->remoteAncestorRevID = rev->revID;
             logDebug("Now that '%.*s' %.*s is done, propose %.*s (parent %.*s) ...",
                      SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
