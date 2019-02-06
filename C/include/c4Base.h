@@ -43,6 +43,12 @@ typedef int64_t C4Timestamp;
 C4Timestamp c4_now(void) C4API;
 
 
+typedef struct {
+    void* pointer;
+    void (*destructor)(void*);
+} C4ExtraInfo;
+
+
 //////// SLICES:
 
 // (This is just renaming stuff from FLSlice.h)

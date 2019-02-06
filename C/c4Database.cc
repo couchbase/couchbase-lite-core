@@ -46,6 +46,7 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 
 c4Database::~c4Database() {
+    destructExtraInfo(extraInfo);
     FLEncoder_Free(_flEncoder);
 }
 
@@ -198,6 +199,15 @@ bool c4db_getUUIDs(C4Database* database, C4UUID *publicUUID, C4UUID *privateUUID
             *uuid = database->getUUID(Database::kPrivateUUIDKey);
         }
     });
+}
+
+
+C4ExtraInfo c4db_getExtraInfo(C4Database *database C4NONNULL) C4API {
+    return database->extraInfo;
+}
+
+void c4db_setExtraInfo(C4Database *database C4NONNULL, C4ExtraInfo x) C4API {
+    database->extraInfo = x;
 }
 
 

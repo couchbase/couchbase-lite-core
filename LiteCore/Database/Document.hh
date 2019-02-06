@@ -55,7 +55,9 @@ namespace c4Internal {
 
         Document(Database *database)
         :_db(database)
-        { }
+        {
+            extraInfo = { };
+        }
 
         Document(const Document&) =default;
 
@@ -181,7 +183,9 @@ namespace c4Internal {
         static bool blobIsCompressible(const fleece::impl::Dict *meta);
 
     protected:
-        virtual ~Document() { }
+        virtual ~Document() {
+            destructExtraInfo(extraInfo);
+        }
 
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;

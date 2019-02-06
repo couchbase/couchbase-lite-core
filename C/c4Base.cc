@@ -305,6 +305,14 @@ namespace c4Internal {
         return slice(s).asString();
     }
 
+    void destructExtraInfo(C4ExtraInfo &x) noexcept {
+        if (x.destructor) {
+            x.destructor(x.pointer);
+            x.destructor = nullptr;
+        }
+        x.pointer = nullptr;
+    }
+
 }
 
 

@@ -197,6 +197,8 @@ struct c4Database : public c4Internal::Database {
     bool mustBeInTransaction(C4Error *outError) noexcept;
     bool mustNotBeInTransaction(C4Error *outError) noexcept;
 
+    C4ExtraInfo extraInfo { };
+
 private:
     FLEncoder                   _flEncoder {nullptr};
 };

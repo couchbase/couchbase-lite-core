@@ -190,6 +190,8 @@ extern "C" {
                        C4UUID *publicUUID, C4UUID *privateUUID,
                        C4Error *outError) C4API;
 
+    C4ExtraInfo c4db_getExtraInfo(C4Database *database C4NONNULL) C4API;
+    void c4db_setExtraInfo(C4Database *database C4NONNULL, C4ExtraInfo) C4API;
 
     /** @} */
     /** \name Compaction

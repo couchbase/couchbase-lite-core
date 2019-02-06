@@ -67,6 +67,8 @@ extern "C" {
         C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
 
         C4Revision selectedRev;     ///< Describes the currently-selected revision
+
+        C4ExtraInfo extraInfo;      ///< For client use
     } C4Document;
 
 

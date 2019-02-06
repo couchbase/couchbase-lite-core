@@ -39,6 +39,8 @@ c4db_getLastSequence
 c4db_getMaxRevTreeDepth
 c4db_setMaxRevTreeDepth
 c4db_getUUIDs
+c4db_getExtraInfo
+c4db_setExtraInfo
 c4db_beginTransaction
 c4db_endTransaction
 c4db_isInTransaction
