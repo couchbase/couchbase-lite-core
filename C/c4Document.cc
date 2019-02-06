@@ -624,6 +624,12 @@ FLDoc c4doc_createFleeceDoc(C4Document *doc) {
 }
 
 
+C4Document* c4doc_containingValue(FLValue value) {
+    Document *doc = Document::containing((const fleece::impl::Value*)value);
+    return doc ? (C4Document*)doc : nullptr;
+}
+
+
 FLEncoder c4db_createFleeceEncoder(C4Database* db) noexcept {
     FLEncoder enc = FLEncoder_NewWithOptions(kFLEncodeFleece, 512, true);
     FLEncoder_SetSharedKeys(enc, (FLSharedKeys)db->documentKeys());

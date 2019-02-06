@@ -17,6 +17,7 @@
 //
 
 #include "c4Test.hh"
+#include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "Benchmark.hh"
 #include "fleece/Fleece.hh"
@@ -687,6 +688,27 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     }
 
     c4doc_free(doc);
+}
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Database][C]") {
+    if (!isRevTrees())
+        return;
+
+    CHECK(c4doc_containingValue((FLValue)0x12345678) == nullptr);
+
+    const auto kFleeceBody = json2fleece("{'ubu':'roi'}");
+    createRev(kDocID, kRevID, kFleeceBody);
+
+    C4Document* doc = c4doc_get(db, kDocID, true, nullptr);
+    REQUIRE(doc);
+    FLValue root = FLValue_FromData(doc->selectedRev.body, kFLTrusted);
+    REQUIRE(root);
+    CHECK(c4doc_containingValue(root) == doc);
+    FLValue ubu = FLDict_Get(FLValue_AsDict(root), "ubu"_sl);
+    CHECK(c4doc_containingValue(ubu) == doc);
+    c4doc_release(doc);
+
+    CHECK(c4doc_containingValue(root) == nullptr);
 }
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {

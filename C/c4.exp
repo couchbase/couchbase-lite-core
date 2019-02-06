@@ -80,6 +80,7 @@ _c4doc_setExpiration
 _c4doc_getExpiration
 _c4db_nextDocExpiration
 _c4db_purgeExpiredDocs
+_c4doc_containingValue
 _c4doc_isOldMetaProperty
 _c4doc_dictContainsBlobs
 

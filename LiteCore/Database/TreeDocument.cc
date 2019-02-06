@@ -74,6 +74,7 @@ namespace c4Internal {
 
 
         void init() {
+            _versionedDoc.owner = this;
             docID = _docIDBuf = _versionedDoc.docID();
             flags = (C4DocumentFlags)_versionedDoc.flags();
             if (_versionedDoc.exists())
@@ -503,6 +504,12 @@ namespace c4Internal {
         VersionedDocument _versionedDoc;
         const Rev *_selectedRev;
     };
+
+
+    Document* Document::containing(const fleece::impl::Value *value) {
+        VersionedDocument *vdoc = VersionedDocument::containing(value);
+        return vdoc ? (TreeDocument*)vdoc->owner : nullptr;
+    }
 
 
 #pragma mark - FACTORY:

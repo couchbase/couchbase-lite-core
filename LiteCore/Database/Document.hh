@@ -34,6 +34,7 @@ namespace litecore {
 namespace fleece { namespace impl {
     class Dict;
     class Doc;
+    class Value;
 } }
 
 namespace c4Internal {
@@ -152,6 +153,9 @@ namespace c4Internal {
         // STATIC UTILITY FUNCTIONS:
 
         static bool isValidDocID(slice);
+
+        /** Returns the Document instance, if any, that contains the given Fleece value. */
+        static Document* containing(const fleece::impl::Value*);
 
         /** Returns true if the given dictionary is a [reference to a] blob. */
         static bool dictIsBlob(const fleece::impl::Dict *dict);

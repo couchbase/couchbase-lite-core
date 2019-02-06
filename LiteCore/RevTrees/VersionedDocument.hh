@@ -68,6 +68,12 @@ namespace litecore {
 
         const fleece::impl::Scope& scopeFor(slice) const;
 
+        /** Given a Fleece Value, finds the VersionedDocument it belongs to. */
+        static VersionedDocument* containing(const fleece::impl::Value*);
+
+        /** A pointer for clients to use */
+        void* owner {nullptr};
+
 #if DEBUG
         void dump()          {RevTree::dump();}
 #endif
@@ -79,12 +85,23 @@ namespace litecore {
 #endif
 
     private:
+        class VersDocScope : public fleece::impl::Scope {
+        public:
+            VersDocScope(const alloc_slice &fleeceData, fleece::impl::SharedKeys* sk,
+                         VersionedDocument *document_)
+            :fleece::impl::Scope(fleeceData, sk)
+            ,document(document_)
+            { }
+
+            VersionedDocument* const document;
+        };
+
         void decode();
         void updateScope();
         alloc_slice addScope(const alloc_slice &body);
 
         KeyStore&       _store;
         Record          _rec;
-        std::deque<fleece::impl::Scope> _fleeceScopes;
+        std::deque<VersDocScope> _fleeceScopes;
     };
 }
