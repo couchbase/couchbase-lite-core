@@ -110,6 +110,8 @@ namespace litecore {
         std::string dump(bool verbose =false) const;
 #endif
 
+        static size_t kMinChangesToKeep;        // exposed for testing purposes only
+
     protected:
         typedef std::list<Entry>::const_iterator const_iterator;
 
@@ -165,15 +167,8 @@ namespace litecore {
     public:
         typedef std::function<void(DocChangeNotifier&, slice docID, sequence_t)> Callback;
 
-        DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb)
-        :tracker(t),
-         _docEntry(tracker.addDocChangeNotifier(docID, this)),
-         callback(cb)
-        { }
-
-        ~DocChangeNotifier() {
-            tracker.removeDocChangeNotifier(_docEntry, this);
-        }
+        DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb);
+        ~DocChangeNotifier();
 
         SequenceTracker &tracker;
         Callback const callback;

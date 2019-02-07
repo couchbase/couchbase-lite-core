@@ -33,6 +33,15 @@ namespace litecore {
 
     class SequenceTrackerTest : public TestFixture {     // SequenceTracker declares this class a friend
     public:
+        SequenceTrackerTest() {
+            oldMinChanges = SequenceTracker::kMinChangesToKeep;
+            SequenceTracker::kMinChangesToKeep = 2;
+        }
+
+        ~SequenceTrackerTest() {
+            SequenceTracker::kMinChangesToKeep = oldMinChanges;
+        }
+
         SequenceTracker tracker;
         sequence_t seq = 0;
 
@@ -49,7 +58,9 @@ namespace litecore {
         SequenceTracker::const_iterator end() {
             return tracker.end();
         }
-        
+
+    private:
+        size_t oldMinChanges;
     };
     
 }
@@ -203,6 +214,10 @@ TEST_CASE_METHOD(litecore::SequenceTrackerTest, "SequenceTracker DocChangeNotifi
     CHECK(countB==3);
     CHECK(countB2==1);
     CHECK(countD==1);
+
+    tracker.documentChanged("Z"_asl, "9-zz"_asl, ++seq, 999);
+
+    tracker.endTransaction(true);
 }
 
 
