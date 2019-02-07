@@ -48,8 +48,7 @@ add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
 
 if(BUILD_ENTERPRISE)
     add_definitions(-DCOUCHBASE_ENTERPRISE      # Tells LiteCore it's an EE build
-                    -DSQLITE_HAS_CODEC          # Enables SQLite encryption extension (SEE)
-                    -DSQLITE_TEMP_STORE=2)      # Don't write temp files to disk (for security)
+                    -DSQLITE_HAS_CODEC)         # Enables SQLite encryption extension (SEE)
 endif()
 
 if(MSVC)
