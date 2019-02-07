@@ -19,6 +19,7 @@
 #include "SequenceTracker.hh"
 #include "Document.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 #include <algorithm>
 #include <sstream>
 
@@ -48,7 +49,7 @@ namespace litecore {
     using namespace std;
 
 
-    static const size_t kMinChangesToKeep = 100;
+    size_t SequenceTracker::kMinChangesToKeep = 100;
 
     LogDomain ChangesLog("Changes", LogLevel::Warning);
 
@@ -261,10 +262,17 @@ namespace litecore {
         size_t nRemoved = 0;
         while (_changes.size() > kMinChangesToKeep + _numPlaceholders
                     && !_changes.front().isPlaceholder()) {
-            _byDocID.erase(_changes.front().docID);
-            _changes.erase(_changes.begin());
+            auto &entry = _changes.front();
+            if (entry.documentObservers.empty()) {
+                // Remove entry entirely if it has no observers
+                _byDocID.erase(entry.docID);
+                _changes.erase(_changes.begin());
+            } else {
+                // Move entry to idle list if it has observers
+                _idle.splice(_idle.end(), _changes, _changes.begin());
+                entry.idle = true;
+            }
             ++nRemoved;
-            //FIX: Shouldn't erase it if its documentObservers is non-empty
         }
         logVerbose("Removed %zu old entries (%zu left; idle has %zd, byDocID has %zu)",
                    nRemoved, _changes.size(), _idle.size(), _byDocID.size());
@@ -333,6 +341,25 @@ namespace litecore {
         return s.str();
     }
 #endif
+
+
+#pragma mark - DOC CHANGE NOTIFIER:
+
+
+    DocChangeNotifier::DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb)
+    :tracker(t),
+    _docEntry(tracker.addDocChangeNotifier(docID, this)),
+    callback(cb)
+    {
+        t.logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
+    }
+
+    DocChangeNotifier::~DocChangeNotifier() {
+        tracker.logVerbose("Removing doc change notifier %p from '%.*s'", this, SPLAT(_docEntry->docID));
+        tracker.removeDocChangeNotifier(_docEntry, this);
+    }
+
+
 
 
 #pragma mark - DATABASE CHANGE NOTIFIER:
