@@ -1048,6 +1048,10 @@ namespace litecore { namespace repl {
         C4Error transactionErr;
         c4::Transaction transaction(_db);
         if (transaction.begin(&transactionErr)) {
+            // Before updating docs, write all pending changes to remote ancestors, in case any
+            // of them apply to the docs we're updating:
+            _markRevsSyncedNow();
+
             SharedEncoder enc(c4db_getSharedFleeceEncoder(_db));
             
             for (RevToInsert *rev : *revs) {
@@ -1122,9 +1126,6 @@ namespace litecore { namespace repl {
                         rev->owner->revisionInserted();
                 }
             }
-
-            // Also mark revs as synced, if any, while still in the transaction:
-            _markRevsSyncedNow();
         }
 
         // Commit transaction:
