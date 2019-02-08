@@ -79,6 +79,12 @@ extern "C" {
         C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
     } C4DatabaseConfig;
 
+    /** Main database configuration struct (version 2) for use with c4db_openNamed etc.. */
+    typedef struct C4DatabaseConfig2 {
+        C4Slice parentDirectory;        ///< Directory for databases
+        C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
+    } C4DatabaseConfig2;
+
 
     /** @} */
 
@@ -96,10 +102,19 @@ extern "C" {
     /** \name Lifecycle
         @{ */
 
-    /** Opens a database. */
+    /** Returns true if a database with the given name exists in the directory. */
+    bool c4db_exists(C4String name, C4String inDirectory) C4API;
+
+
+    /** Opens a database given its full path. */
     C4Database* c4db_open(C4String path,
                           const C4DatabaseConfig *config C4NONNULL,
                           C4Error *outError) C4API;
+
+    /** Opens a database given its name (without the ".cblite2" extension) and directory. */
+    C4Database* c4db_openNamed(C4String name,
+                               const C4DatabaseConfig2 *config C4NONNULL,
+                               C4Error *outError) C4API;
 
     /** Opens a new handle to the same database file as `db`.
         The new connection is completely independent and can be used on another thread. */
@@ -115,10 +130,24 @@ extern "C" {
                    const C4DatabaseConfig* config C4NONNULL,
                    C4Error* error) C4API;
 
+    /** Copies a prebuilt database from the given source path and places it in the destination
+        directory, with the given name. If a database already exists there, it will be overwritten.
+        However if there is a failure, the original database will be restored as if nothing
+        happened.
+        @param sourcePath  The path to the database to be copied.
+        @param destinationName  The name (without filename extension) of the database to create.
+        @param config  Database configuration (including destination directory.)
+        @param error  On failure, error info will be written here.
+        @return  True on success, false on failure. */
+    bool c4db_copyNamed(C4String sourcePath,
+                        C4String destinationName,
+                        const C4DatabaseConfig2* config C4NONNULL,
+                        C4Error* error) C4API;
+
     /** Increments the reference count of the database handle. The next call to
         c4db_free() will have no effect. Therefore calls to c4db_retain must be balanced by calls
         to c4db_free, to avoid leaks. */
-    C4Database* c4db_retain(C4Database* db);
+    C4Database* c4db_retain(C4Database* db) C4API;
 
     void c4db_free(C4Database* database) C4API;
 
@@ -138,6 +167,13 @@ extern "C" {
         All C4Databases at that path must be closed first or an error will result.
         Returns false, with no error, if the database doesn't exist. */
     bool c4db_deleteAtPath(C4String dbPath, C4Error *outError) C4API;
+
+    /** Deletes the file(s) for the database with the given name in the given directory.
+        All C4Databases at that path must be closed first or an error will result.
+        Returns false, with no error, if the database doesn't exist. */
+    bool c4db_deleteNamed(C4String dbName,
+                          C4String inDirectory,
+                          C4Error *outError) C4API;
 
 
     /** Changes a database's encryption key (removing encryption if it's NULL.) */
