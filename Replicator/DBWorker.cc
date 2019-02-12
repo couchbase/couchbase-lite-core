@@ -473,8 +473,8 @@ namespace litecore { namespace repl {
         auto active = _pushingDocs.find(rev->docID);
         if (active != _pushingDocs.end()) {
             // This doc already has a revision being sent; wait till that one is done
-            logDebug("Holding off on change '%.*s' %.*s till earlier rev is done",
-                     SPLAT(rev->docID), SPLAT(rev->revID));
+            logVerbose("Holding off on change '%.*s' %.*s till earlier rev is done",
+                       SPLAT(rev->docID), SPLAT(rev->revID));
             active->second = rev;
             return false;
         }
@@ -1140,6 +1140,7 @@ namespace litecore { namespace repl {
                                 SPLAT(rev->docID), SPLAT(rev->revID));
                             rev->flags |= kRevIsConflict;
                             rev->isWarning = true;
+                            DebugAssert(put.allowConflict);
                         }
                     } else {
                         docSaved = false;
@@ -1165,10 +1166,12 @@ namespace litecore { namespace repl {
 
         // Notify all revs (that didn't already fail):
         for (auto rev : *revs) {
+            if (rev->error.code == 0) {
                 rev->error = transactionErr;
                 if (rev->owner)
                     rev->owner->revisionInserted();
             }
+        }
 
         if (transactionErr.code) {
             gotError(transactionErr);
@@ -1189,21 +1192,31 @@ namespace litecore { namespace repl {
                 warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
             return;
         }
+        
         Retained<RevToSend> newRev = i->second;
         _pushingDocs.erase(i);
         if (newRev) {
             if (synced)
                 newRev->remoteAncestorRevID = rev->revID;
-            logDebug("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
-                     SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
-                     SPLAT(newRev->remoteAncestorRevID));
+            logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
+                       SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
+                       SPLAT(newRev->remoteAncestorRevID));
+            bool ok = false;
+            if (synced && _getForeignAncestors
+                       && c4rev_getGeneration(newRev->revID) <= c4rev_getGeneration(rev->revID)) {
+                // Don't send; it'll conflict with what's on the server
+            } else {
+                // Send newRev as though it had just arrived:
                 auto changes = make_shared<RevToSendList>();
                 if (addChangeToList(newRev, nullptr, changes)) {
                     _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
                     _pusher->gotChanges(move(changes), _maxPushedSequence, {});
-            } else {
-                logDebug("   ... nope, decided not to propose '%.*s' %.*s",
-                         SPLAT(newRev->docID), SPLAT(newRev->revID));
+                    ok = true;
+                }
+            }
+            if (!ok) {
+                logVerbose("   ... nope, decided not to propose '%.*s' %.*s",
+                           SPLAT(newRev->docID), SPLAT(newRev->revID));
             }
         } else {
             logDebug("Done pushing '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
