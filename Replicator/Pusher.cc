@@ -303,10 +303,20 @@ namespace litecore { namespace repl {
                         // 304 means server has my rev already
                         synced = true;
                     } else {
+                        slice message;
+                        if (status == 409) {
+                            // 409 means a push conflict
+                            logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with newer server revision",
+                                     SPLAT(change->docID), SPLAT(change->revID),
+                                     SPLAT(change->remoteAncestorRevID));
+                            message = "conflicts with newer server revision"_sl;
+                    } else {
                         logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
                                  SPLAT(change->docID), SPLAT(change->revID),
                                  SPLAT(change->remoteAncestorRevID), status);
-                        auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
+                            message = "rejected by server"_sl;
+                        }
+                        auto err = c4error_make(WebSocketDomain, status, message);
                         finishedDocumentWithError(change, err, false);
                     }
                 } else {
