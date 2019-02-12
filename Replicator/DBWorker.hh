@@ -115,52 +115,59 @@ namespace litecore { namespace repl {
         }
 
     private:
+        static inline bool isNotFoundError(C4Error err) {
+            return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
+        }
+        static fleece::Dict getDocRoot(C4Document *doc, C4RevisionFlags *outFlags =nullptr);
+        static fleece::Dict getDocRoot(C4Document *doc, slice revID, C4RevisionFlags *outFlags =nullptr);
+        void _setCookie(alloc_slice setCookieHeader);
+        void _markRevsSyncedNow();
+        void _connectionClosed() override;
+        ActivityLevel computeActivityLevel() const override;
+
+        // Checkpoints:
         std::string remoteDBIDString() const;
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);
         void _checkpointIsInvalid();
         bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
                                   fleece::slice &checkpointID, c4::ref<C4RawDocument> &doc) const;
-
         slice effectiveRemoteCheckpointDocID(C4Error*);
         std::string effectiveRemoteCheckpointDocID(const C4UUID*, C4Error*);
         void _getCheckpoint(CheckpointCallback);
         void _setCheckpoint(alloc_slice data, std::function<void()> onComplete);
         std::string _getOldCheckpoint(C4Error*);
         alloc_slice _checkpointFromID(const slice &, C4Error*);
-        void _getChanges(GetChangesParams, Retained<Pusher> pusher);
-        bool addChangeToList(RevToSend*, C4DocEnumerator*,
-                             std::shared_ptr<RevToSendList>&);
+
+        // Pull:
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
-        void _applyDelta(Retained<RevToInsert> rev, alloc_slice baseRevID,
-                         alloc_slice deltaJSON,
-                         std::function<void(alloc_slice body, C4Error)> callback);
-        alloc_slice createRevisionDelta(C4Document *doc, RevToSend *request,
-                                        fleece::Dict root, size_t revSize,
-                                        bool sendLegacyAttachments);
-        void _sendRevision(Retained<RevToSend> request,
-                           blip::MessageProgressCallback onProgress);
-        void _setCookie(alloc_slice setCookieHeader);
-
-        void _donePushingRev(fleece::RetainedConst<RevToSend> rev, bool synced);
-        void _markRevsSyncedNow();
-        void _insertRevisionsNow();
-        void _connectionClosed() override;
-
-        void dbChanged();
-
-        fleece::slice getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
-        static std::string revHistoryString(C4Document*, const RevToSend&);
-        void writeRevWithLegacyAttachments(fleece::Encoder&,
-                                           fleece::Dict rev,
-                                           unsigned revpos);
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
         void updateRemoteRev(C4Document* NONNULL);
-        ActivityLevel computeActivityLevel() const override;
+        void _applyDelta(Retained<RevToInsert> rev, alloc_slice baseRevID,
+                         alloc_slice deltaJSON,
+                         std::function<void(alloc_slice body, C4Error)> callback);
+        void _insertRevisionsNow();
+
+        // Push:
+        void _getChanges(GetChangesParams, Retained<Pusher> pusher);
+        void dbChanged();
+        bool addChangeToList(RevToSend*, C4DocEnumerator*,
+                             std::shared_ptr<RevToSendList>&);
+        void _sendRevision(Retained<RevToSend> request,
+                           blip::MessageProgressCallback onProgress);
+        alloc_slice createRevisionDelta(C4Document *doc, RevToSend *request,
+                                        fleece::Dict root, size_t revSize,
+                                        bool sendLegacyAttachments);
+        fleece::slice getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
+        static std::string revHistoryString(C4Document*, const RevToSend&);
+        void writeRevWithLegacyAttachments(fleece::Encoder&,
+                                           fleece::Dict rev,
+                                           unsigned revpos);
+        void _donePushingRev(fleece::RetainedConst<RevToSend> rev, bool synced);
 
         static const size_t kMaxPossibleAncestors = 10;
 
