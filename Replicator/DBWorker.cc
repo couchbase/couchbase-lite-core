@@ -503,7 +503,16 @@ namespace litecore { namespace repl {
                 logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
                 if (_skipForeignChanges && foreignAncestor == slice(rev->revID))
                     return false;   // skip this rev: it's already on the peer
-                rev->remoteAncestorRevID = alloc_slice(foreignAncestor);
+                if (foreignAncestor
+                        && c4rev_getGeneration(foreignAncestor) >= c4rev_getGeneration(rev->revID)) {
+                    if (_options.pull <= kC4Passive) {
+                        error = c4error_make(WebSocketDomain, 409,
+                                             "conflicts with newer server revision"_sl);
+                        finishedDocumentWithError(rev, error, false);
+                    }
+                    return false;    // ignore rev: there's a newer one on the server
+                }
+                rev->remoteAncestorRevID = foreignAncestor;
             }
 
             if (_options.pushFilter) {
