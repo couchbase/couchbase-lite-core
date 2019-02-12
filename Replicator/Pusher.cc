@@ -310,10 +310,10 @@ namespace litecore { namespace repl {
                                      SPLAT(change->docID), SPLAT(change->revID),
                                      SPLAT(change->remoteAncestorRevID));
                             message = "conflicts with newer server revision"_sl;
-                    } else {
-                        logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
-                                 SPLAT(change->docID), SPLAT(change->revID),
-                                 SPLAT(change->remoteAncestorRevID), status);
+                        } else {
+                            logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
+                                     SPLAT(change->docID), SPLAT(change->revID),
+                                     SPLAT(change->remoteAncestorRevID), status);
                             message = "rejected by server"_sl;
                         }
                         auto err = c4error_make(WebSocketDomain, status, message);
@@ -337,7 +337,7 @@ namespace litecore { namespace repl {
                                SPLAT(change->docID), SPLAT(change->revID), change->sequence,
                                _revsToSend.size());
                 } else {
-                    doneWithRev(change, true, synced);  // unqueued, so we're done with it
+                    doneWithRev(change, true, synced);  // not queued, so we're done with it
                 }
                 ++index;
             }
@@ -386,11 +386,12 @@ namespace litecore { namespace repl {
             }
             if (progress.state == MessageProgress::kComplete) {
                 decrement(_revisionBytesAwaitingReply, progress.bytesSent);
-                bool completed = !progress.reply->isError();
-                if (completed) {
+                bool synced = !progress.reply->isError(), completed;
+                if (synced) {
                     logVerbose("Completed rev %.*s #%.*s (seq #%llu)",
                                SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                     finishedDocument(rev);
+                    completed = true;
                 } else {
                     auto err = progress.reply->getError();
                     auto c4err = blipToC4Error(err);
@@ -403,7 +404,7 @@ namespace litecore { namespace repl {
                     // then I've completed my duty to push it.
                     completed = !transient;
                 }
-                doneWithRev(rev, completed, completed);
+                doneWithRev(rev, completed, synced);
                 maybeSendMoreRevs();
             }
         }));
