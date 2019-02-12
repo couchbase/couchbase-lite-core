@@ -112,14 +112,14 @@ class TransactionHelper {
     public:
     explicit TransactionHelper(C4Database* db) {
         C4Error error;
-        REQUIRE(c4db_beginTransaction(db, &error));
+        Assert(c4db_beginTransaction(db, &error));
         _db = db;
     }
 
     ~TransactionHelper() {
         if (_db) {
             C4Error error;
-            REQUIRE(c4db_endTransaction(_db, true, &error));
+            Assert(c4db_endTransaction(_db, true, &error));
         }
     }
 
@@ -174,7 +174,7 @@ public:
     // Creates a new document revision with the given revID as a child of the current rev
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
-    static void createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice jsonBody, C4RevisionFlags flags =0);
+    static std::string createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice jsonBody, C4RevisionFlags flags =0);
     static std::string createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4RevisionFlags flags =0);
 
     static void createConflictingRev(C4Database *db,
