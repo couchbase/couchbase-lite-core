@@ -32,21 +32,6 @@
 
 namespace c4 {
 
-    // The functions the ref<> template calls to free a reference.
-    static inline void freeRef(C4Database* c)          {c4db_free(c);}
-    static inline void freeRef(C4RawDocument* c)       {c4raw_free(c);}
-    static inline void freeRef(C4Document* c)          {c4doc_free(c);}
-    static inline void freeRef(C4DocEnumerator* c)     {c4enum_free(c);}
-    static inline void freeRef(C4DatabaseObserver* c)  {c4dbobs_free(c);}
-    static inline void freeRef(C4DocumentObserver* c)  {c4docobs_free(c);}
-    static inline void freeRef(C4QueryEnumerator* c)   {c4queryenum_free(c);}
-    static inline void freeRef(C4Query* c)             {c4query_free(c);}
-    static inline void freeRef(C4ReadStream* c)        {c4stream_close(c);}
-    static inline void freeRef(C4WriteStream* c)       {c4stream_closeWriter(c);}
-    static inline void freeRef(C4Replicator* c)        {c4repl_free(c);}
-    static inline void freeRef(C4Listener* c)          {c4listener_free(c);}
-
-
     /** A simple little smart pointer that frees the C4 object when it leaves scope. */
     template <class T>
     class ref {
@@ -54,6 +39,7 @@ namespace c4 {
         ref()                       :_obj(nullptr) { }
         ref(T *t)                   :_obj(t) { }
         ref(ref &&r)                :_obj(r._obj) {r._obj = nullptr;}
+        ref(const ref &r)           :_obj(retainRef(r._obj)) { }
         ~ref()                      {freeRef(_obj);}
 
         operator T* () const        {return _obj;}
@@ -61,10 +47,24 @@ namespace c4 {
 
         ref& operator=(T *t)        {if (_obj) freeRef(_obj); _obj = t; return *this;}
         ref& operator=(ref &&r)     {_obj = r._obj; r._obj = nullptr; return *this;}
+        ref& operator=(const ref &r){*this = retainRef(r._ref);}
 
     private:
-        ref(const ref&) =delete;
-        ref& operator=(const ref&) =delete;   // would require ref-counting
+        // The functions the ref<> template calls to free a reference.
+        static inline void freeRef(C4Database* c)          {c4db_free(c);}
+        static inline void freeRef(C4RawDocument* c)       {c4raw_free(c);}
+        static inline void freeRef(C4Document* c)          {c4doc_free(c);}
+        static inline void freeRef(C4DocEnumerator* c)     {c4enum_free(c);}
+        static inline void freeRef(C4DatabaseObserver* c)  {c4dbobs_free(c);}
+        static inline void freeRef(C4DocumentObserver* c)  {c4docobs_free(c);}
+        static inline void freeRef(C4QueryEnumerator* c)   {c4queryenum_free(c);}
+        static inline void freeRef(C4Query* c)             {c4query_free(c);}
+        static inline void freeRef(C4ReadStream* c)        {c4stream_close(c);}
+        static inline void freeRef(C4WriteStream* c)       {c4stream_closeWriter(c);}
+        static inline void freeRef(C4Replicator* c)        {c4repl_free(c);}
+        static inline void freeRef(C4Listener* c)          {c4listener_free(c);}
+
+        static inline C4Database* retainRef(C4Database* c) {return c4db_retain(c);}
 
         T* _obj;
     };

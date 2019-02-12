@@ -58,7 +58,10 @@ public:
         _statusReceived = {};
         _replicatorClientFinished = _replicatorServerFinished = false;
 
-        C4Database *dbClient = db, *dbServer = db2;
+        c4::ref<C4Database> dbClient = c4db_openAgain(db, nullptr);
+        c4::ref<C4Database> dbServer = c4db_openAgain(db2, nullptr);
+        REQUIRE(dbClient);
+        REQUIRE(dbServer);
         if (opts2.push > kC4Passive || opts2.pull > kC4Passive) {
             // always make opts1 the active (client) side
             swap(dbServer, dbClient);
@@ -111,7 +114,8 @@ public:
             CHECK(_statusReceived.error.domain == _expectedError.domain);
         CHECK(asVector(_docPullErrors) == asVector(_expectedDocPullErrors));
         CHECK(asVector(_docPushErrors) == asVector(_expectedDocPushErrors));
-        CHECK(asVector(_docsFinished) == asVector(_expectedDocsFinished));
+        if (_checkDocsFinished)
+            CHECK(asVector(_docsFinished) == asVector(_expectedDocsFinished));
     }
 
     void runPushReplication(C4ReplicatorMode mode =kC4OneShot) {
@@ -125,6 +129,30 @@ public:
     void runPushPullReplication(C4ReplicatorMode mode =kC4OneShot) {
         runReplicators(Replicator::Options(mode, mode), Replicator::Options::passive());
     }
+
+
+    void stopWhenIdle() {
+        lock_guard<mutex> lock(_mutex);
+        if (!_stopOnIdle) {
+            _stopOnIdle = true;
+            if (!_checkStopWhenIdle())
+                Log(">>    Will stop replicator when idle...");
+        }
+    }
+
+    // must be holding _mutex to call this
+    bool _checkStopWhenIdle() {
+        if (_stopOnIdle && _statusReceived.level == kC4Idle) {
+            Log(">>    Stopping idle replicator...");
+            _replClient->stop();
+            return true;
+        }
+        return false;
+    }
+
+
+#pragma mark - CALLBACKS:
+
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
                                            const AllocedDict &headers) override {
@@ -156,11 +184,11 @@ public:
                 Assert(status.progress.unitsTotal     >= _statusReceived.progress.unitsTotal);
                 Assert(status.progress.documentCount  >= _statusReceived.progress.documentCount);
             }
-            _statusReceived = status;
 
-            if (_stopOnIdle && status.level == kC4Idle && (_expectedDocumentCount <= 0 || status.progress.documentCount == _expectedDocumentCount)) {
-                Log(">>    Stopping idle replicator...");
-                repl->stop();
+            {
+                lock_guard<mutex> lock(_mutex);
+                _statusReceived = status;
+                _checkStopWhenIdle();
             }
         }
 
@@ -178,25 +206,33 @@ public:
     virtual void replicatorDocumentsEnded(Replicator *repl,
                                           const vector<Retained<ReplicatedRev>> &revs) override
     {
-        Log("...%zu docs ended", revs.size()); //TEMP
-        for (auto &rev : revs) {
-            auto dir = rev->dir();
-            if (rev->error.code) {
-                // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-                char message[256];
-                c4error_getDescriptionC(rev->error, message, sizeof(message));
-                Log(">> Replicator %serror %s '%.*s': %s",
-                    (rev->errorIsTransient ? "transient " : ""),
-                    (dir == Dir::kPushing ? "pushing" : "pulling"),
-                    SPLAT(rev->docID), message);
-                if (dir == Dir::kPushing)
-                    _docPushErrors.emplace(rev->docID);
-                else
-                    _docPullErrors.emplace(rev->docID);
-            } else {
-                Log(">> Replicator %s '%.*s'",
-                    (dir == Dir::kPushing ? "pushed" : "pulled"), SPLAT(rev->docID));
-                _docsFinished.emplace(rev->docID);
+        if (repl == _replClient) {
+            // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+            for (auto &rev : revs) {
+                auto dir = rev->dir();
+                if (rev->error.code) {
+                    if (dir == Dir::kPulling && rev->error.domain == LiteCoreDomain
+                                             && rev->error.code == kC4ErrorConflict
+                                             && _conflictHandler) {
+                        Log(">> Replicator pull conflict for '%.*s'", SPLAT(rev->docID));
+                        _conflictHandler(rev);
+                    } else {
+                        char message[256];
+                        c4error_getDescriptionC(rev->error, message, sizeof(message));
+                        Log(">> Replicator %serror %s '%.*s' #%.*s: %s",
+                            (rev->errorIsTransient ? "transient " : ""),
+                            (dir == Dir::kPushing ? "pushing" : "pulling"),
+                            SPLAT(rev->docID), SPLAT(rev->revID), message);
+                        if (dir == Dir::kPushing)
+                            _docPushErrors.emplace(rev->docID);
+                        else
+                            _docPullErrors.emplace(rev->docID);
+                    }
+                } else {
+                    Log(">> Replicator %s '%.*s' #%.*s",
+                        (dir == Dir::kPushing ? "pushed" : "pulled"), SPLAT(rev->docID), SPLAT(rev->revID));
+                    _docsFinished.emplace(rev->docID);
+                }
             }
         }
     }
@@ -227,59 +263,143 @@ public:
     }
 
 
-    void runInParallel(function<void(C4Database*)> callback) {
-        C4Error error;
-        C4Database *parallelDB = c4db_openAgain(db, &error);
-        REQUIRE(parallelDB != nullptr);
+#pragma mark - CONFLICT HANDLING
 
-        _parallelThread.reset(new thread([=]() mutable {
-            callback(parallelDB);
-            c4db_free(parallelDB);
-        }));
+
+    // Installs a simple conflict handler equivalent to the one in CBL 2.0-2.5: it just picks one
+    // side and tosses the other one out.
+    void installConflictHandler() {
+        c4::ref<C4Database> resolvDB = c4db_openAgain(db, nullptr);
+        REQUIRE(resolvDB);
+        _conflictHandler = [resolvDB](ReplicatedRev *rev) {
+            // Careful: This is called on a background thread!
+            TransactionHelper t(resolvDB);
+            C4Error error;
+            // Get the local rev:
+            c4::ref<C4Document> doc = c4doc_get(resolvDB, rev->docID, true, &error);
+            REQUIRE(doc);
+            alloc_slice localRevID = doc->selectedRev.revID;
+            C4RevisionFlags localFlags = doc->selectedRev.flags;
+            slice localBody = doc->selectedRev.body;
+            // Get the remote rev:
+            REQUIRE(c4doc_selectNextLeafRevision(doc, true, false, &error));
+            alloc_slice remoteRevID = doc->selectedRev.revID;
+            C4RevisionFlags remoteFlags = doc->selectedRev.flags;
+            REQUIRE(!c4doc_selectNextLeafRevision(doc, true, false, &error));   // no 3rd branch!
+
+            bool remoteWins = false;
+
+            // Figure out which branch should win:
+            if ((localFlags & kRevDeleted) != (remoteFlags & kRevDeleted))
+                remoteWins = (localFlags & kRevDeleted) == 0;       // deletion wins conflict
+            else if (c4rev_getGeneration(localRevID) != c4rev_getGeneration(remoteRevID))
+                remoteWins = c4rev_getGeneration(localRevID) < c4rev_getGeneration(remoteRevID);
+
+            Log("Resolving conflict in '%.*s': local=#%.*s (%02X), remote=#%.*s (%02X); %s wins",
+                SPLAT(rev->docID), SPLAT(localRevID), localFlags, SPLAT(remoteRevID), remoteFlags,
+                (remoteWins ? "remote" : "local"));
+
+            // Resolve. The remote rev has to win, in that it has to stay on the main branch, to avoid
+            // conflicts with the server. But if we want the local copy to really win, we use its body:
+            slice mergedBody;
+            C4RevisionFlags mergedFlags = remoteFlags;
+            if (remoteWins) {
+                mergedBody = localBody;
+                mergedFlags = localFlags;
+            }
+            CHECK(c4doc_resolveConflict(doc, remoteRevID, localRevID,
+                                        mergedBody, mergedFlags, &error));
+            CHECK(c4doc_save(doc, 0, &error));
+        };
+    }
+
+
+#pragma mark - ADDING DOCS/REVISIONS:
+
+
+    static void sleepFor(duration interval) {
+        long ticks = interval.count();
+        if (ticks < 0) {
+            ticks = arc4random_uniform(uint32_t(-ticks))
+                   + arc4random_uniform(uint32_t(-ticks));
+            interval = duration(ticks);
+        }
+        this_thread::sleep_for(interval);
+    }
+
+    static int addDocs(C4Database *db, duration interval, int total) {
+        // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+        int docNo = 1;
+        for (int i = 1; docNo <= total; i++) {
+            this_thread::sleep_for(interval);
+            Log("-------- Creating %d docs --------", 2*i);
+            c4::Transaction t(db);
+            C4Error err;
+            Assert(t.begin(&err));
+            for (int j = 0; j < 2*i; j++) {
+                char docID[20];
+                sprintf(docID, "newdoc%d", docNo++);
+                createRev(db, c4str(docID), "1-11"_sl, kFleeceBody);
+            }
+            Assert(t.commit(&err));
+        }
+        Log("-------- Done creating docs --------");
+        return docNo - 1;
+    }
+
+    void addRevs(C4Database *db, duration interval,
+                 alloc_slice docID,
+                 int firstRev, int totalRevs, bool useFakeRevIDs)
+    {
+        const char* name = (db == this->db) ? "db" : "db2";
+        for (int i = 0; i < totalRevs; i++) {
+            // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+            int revNo = firstRev + i;
+            sleepFor(interval);
+            c4::Transaction t(db);
+            C4Error err;
+            Assert(t.begin(&err));
+            string revID;
+            if (useFakeRevIDs) {
+                revID = format("%d-ffff", revNo);
+                createRev(db, docID, slice(revID), alloc_slice(kFleeceBody));
+            } else {
+                string json = format("{\"db\":\"%p\",\"i\":%d}", db, revNo);
+                revID = createFleeceRev(db, docID, nullslice, slice(json));
+            }
+            Log("-------- %s %d: Created rev '%.*s' #%s --------", name, revNo, SPLAT(docID), revID.c_str());
+            Assert(t.commit(&err));
+        }
+        Log("-------- %s: Done creating revs --------", name);
+    }
+
+    static thread* runInParallel(function<void()> callback) {
+        C4Error error;
+        return new thread([=]() mutable {
+            callback();
+        });
     }
 
     void addDocsInParallel(duration interval, int total) {
-        runInParallel([=](C4Database *bgdb) {
-            // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-            int docNo = 1;
-            for (int i = 1; docNo <= total; i++) {
-                this_thread::sleep_for(interval);
-                Log("-------- Creating %d docs --------", 2*i);
-                c4::Transaction t(bgdb);
-                C4Error err;
-                Assert(t.begin(&err));
-                for (int j = 0; j < 2*i; j++) {
-                    char docID[20];
-                    sprintf(docID, "newdoc%d", docNo++);
-                    createRev(bgdb, c4str(docID), "1-11"_sl, kFleeceBody);
-                }
-                Assert(t.commit(&err));
-            }
-            Log("-------- Done creating docs --------");
-            _expectedDocumentCount = docNo - 1;
-            _stopOnIdle = true;
-        });
+        _parallelThread.reset(runInParallel([=]() {
+            _expectedDocumentCount = addDocs(db, interval, total);
+            sleep(1); // give replicator a moment to detect the latest docs
+            stopWhenIdle();
+        }));
     }
 
-    void addRevsInParallel(duration interval, alloc_slice docID, int firstRev, int totalRevs) {
-        runInParallel([=](C4Database *bgdb) {
-            for (int i = 0; i < totalRevs; i++) {
-                // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
-                int revNo = firstRev + i;
-                this_thread::sleep_for(interval);
-                Log("-------- Creating rev %.*s # %d --------", SPLAT(docID), revNo);
-                c4::Transaction t(bgdb);
-                C4Error err;
-                Assert(t.begin(&err));
-                char revID[20];
-                sprintf(revID, "%d-ffff", revNo);
-                createRev(bgdb, docID, c4str(revID), kFleeceBody);
-                Assert(t.commit(&err));
-            }
-            Log("-------- Done creating revs --------");
-            _stopOnIdle = true;
-        });
+    void addRevsInParallel(duration interval, alloc_slice docID, int firstRev, int totalRevs,
+                           bool useFakeRevIDs = true) {
+        _parallelThread.reset( runInParallel([=]() {
+            addRevs(db, interval, docID, firstRev, totalRevs, useFakeRevIDs);
+            sleep(1); // give replicator a moment to detect the latest revs
+            stopWhenIdle();
+        }));
     }
+
+
+#pragma mark - VALIDATION:
+
 
 #define fastREQUIRE(EXPR)  if (EXPR) ; else REQUIRE(EXPR)       // REQUIRE() is kind of expensive
 
@@ -383,7 +503,7 @@ public:
     Retained<Replicator> _replClient, _replServer;
     alloc_slice _checkpointID;
     unique_ptr<thread> _parallelThread;
-    atomic<bool> _stopOnIdle {0};
+    bool _stopOnIdle {0};
     mutex _mutex;
     condition_variable _cond;
     bool _replicatorClientFinished {false}, _replicatorServerFinished {false};
@@ -395,8 +515,10 @@ public:
     C4Error _expectedError {};
     set<string> _docPushErrors, _docPullErrors;
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;
+    bool _checkDocsFinished {true};
     multiset<string> _docsFinished, _expectedDocsFinished;
     unsigned _blobPushProgressCallbacks {0}, _blobPullProgressCallbacks {0};
     Replicator::BlobProgress _lastBlobPushProgress {}, _lastBlobPullProgress {};
+    function<void(ReplicatedRev*)> _conflictHandler;
 };
 
