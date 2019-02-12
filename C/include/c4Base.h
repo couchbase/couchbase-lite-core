@@ -111,7 +111,8 @@ typedef C4_ENUM(int32_t, C4ErrorCode) {
     kC4ErrorDatabaseTooNew,         // Database file format is newer than what I can open
     kC4ErrorBadDocID,               // Invalid document ID
     kC4ErrorCantUpgradeDatabase,/*30*/ // DB can't be upgraded (might be unsupported dev version)
-
+    kC4ErrorDeltaBaseUnknown,       // Replicator can't apply delta: base revision body is missing
+    kC4ErrorCorruptDelta,           // Replicator can't apply delta: delta data invalid
     kC4NumErrorCodesPlus1
 };
 

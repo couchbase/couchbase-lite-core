@@ -1021,10 +1021,23 @@ namespace litecore { namespace repl {
                 }
                 FLError flErr;
                 body = FLApplyJSONDelta(srcRoot, deltaJSON, &flErr);
-                if (!body)
+                if (!body) {
+                    if (flErr == kFLInvalidData)
+                        c4err = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
+                    else
                     c4err = {FleeceDomain, flErr};
+                }
             } else {
-                c4err = {LiteCoreDomain, kC4ErrorCorruptRevisionData};
+                // Don't have the body of the source revision. This might be because I'm in
+                // no-conflict mode and the peer is trying to push me a now-obsolete revision.
+                if (_options.noIncomingConflicts()) {
+                    c4err = {WebSocketDomain, 409};
+                } else {
+                    string msg = format("Couldn't apply delta: Don't have body of '%.*s' #%.*s [current is %.*s]",
+                                        SPLAT(rev->docID), SPLAT(baseRevID), SPLAT(doc->revID));
+                    warn("%s", msg.c_str());
+                    c4err = c4error_make(LiteCoreDomain, kC4ErrorDeltaBaseUnknown, slice(msg));
+                }
             }
         }
         callback(body, c4err);

@@ -123,7 +123,7 @@ namespace litecore {
             "transaction not closed",
             "unsupported operation for this database type",
             "file is not a database (or encryption key is invalid/missing)",
-            "file/data is not in the requested format", // 30
+            "file/data is not in the requested format",
             "encryption/decryption error",
             "query syntax error",
             "missing database index",
@@ -132,7 +132,9 @@ namespace litecore {
             "database is in an old file format that can't be opened",
             "database is in a newer file format than this software supports",
             "invalid document ID",
-            "database cannot be upgraded to the current version", // 39
+            "database cannot be upgraded to the current version", // 30
+            "can't apply document delta: base revision body unavailable",
+            "can't apply document delta: format is invalid",
         };
         static_assert(sizeof(kLiteCoreMessages)/sizeof(kLiteCoreMessages[0]) ==
                         error::NumLiteCoreErrorsPlus1, "Incomplete error message table");
@@ -193,30 +195,35 @@ namespace litecore {
     }
 
     static const char* websocket_errstr(int code) {
-        static const char* kWebSocketMessages[] = {
-            "normal close",                     // 1000
-            "peer going away",
-            "protocol error",
-            "unsupported data",
-            "reserved",
-            "no status code received",          // 1005
-            "connection closed abnormally",
-            "inconsistent data",
-            "policy violation",
-            "message too big",
-            "extension not negotiated",         // 1010
-            "unexpected condition",
-            nullptr,
-            nullptr,
-            nullptr,
-            "TLS handshake failed",
+        static const struct {int code; const char* message;} kWebSocketMessages[] = {
+            {400, "invalid request"},
+            {404, "not found"},
+            {404, "not found"},
+            {409, "conflict"},
+            {410, "gone"},
+            {500, "server error"},
+            {502, "remote error"},
+            {1000, "normal close"},
+            {1001, "peer going away"},
+            {1002, "protocol error"},
+            {1003, "unsupported data"},
+            {1004, "reserved"},
+            {1005, "no status code received"},
+            {1006, "connection closed abnormally"},
+            {1007, "inconsistent data"},
+            {1008, "policy violation"},
+            {1009, "message too big"},
+            {1010, "extension not negotiated"},
+            {1011, "unexpected condition"},
+            {1015, "TLS handshake failed"},
+            {0, nullptr}
         };
-        const char *str = nullptr;
-        if (code >= 1000 && code < 1000 + sizeof(kWebSocketMessages)/sizeof(char*))
-            str = kWebSocketMessages[code - 1000];
-        if (!str)
-            str = "(unknown WebSocket status)";
-        return str;
+
+        for (unsigned i = 0; kWebSocketMessages[i].message; ++i) {
+            if (kWebSocketMessages[i].code == code)
+                return kWebSocketMessages[i].message;
+        }
+        return code >= 1000 ? "(unknown WebSocket status)" : "(unknown HTTP status)";
     }
 #endif // LITECORE_IMPL
 
