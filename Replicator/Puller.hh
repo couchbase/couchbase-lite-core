@@ -40,7 +40,9 @@ namespace litecore { namespace repl {
         void revWasHandled(IncomingRev *inc);
 
     protected:
-        virtual std::string loggingClassName() const override       {return "Pull";}
+        virtual std::string loggingClassName() const override  {
+            return _options.pull >= kC4OneShot ? "Pull" : "pull";
+        }
 
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         virtual void _childChangedStatus(Worker *task, Status) override;

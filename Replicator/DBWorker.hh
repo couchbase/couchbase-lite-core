@@ -76,10 +76,10 @@ namespace litecore { namespace repl {
             enqueue(&DBWorker::_findOrRequestRevs, req, callback);
         }
 
-        void applyDelta(slice docID, slice baseRevID,
+        void applyDelta(RevToInsert *rev, slice baseRevID,
                         alloc_slice deltaJSON,
                         std::function<void(alloc_slice body, C4Error)> callback) {
-            enqueue(&DBWorker::_applyDelta, alloc_slice(docID), alloc_slice(baseRevID),
+            enqueue(&DBWorker::_applyDelta, retained(rev), alloc_slice(baseRevID),
                     deltaJSON, callback);
         }
 
@@ -110,7 +110,9 @@ namespace litecore { namespace repl {
         bool disableBlobSupport() const     {return _disableBlobSupport;}
 
     protected:
-        virtual std::string loggingClassName() const override {return "DBWorker";}
+        virtual std::string loggingClassName() const override  {
+            return _options.pull >= kC4OneShot || _options.push >= kC4OneShot ? "DBWorker" : "dbworker";
+        }
 
     private:
         std::string remoteDBIDString() const;
@@ -131,7 +133,7 @@ namespace litecore { namespace repl {
                              std::shared_ptr<RevToSendList>&);
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
-        void _applyDelta(alloc_slice docID, alloc_slice baseRevID,
+        void _applyDelta(Retained<RevToInsert> rev, alloc_slice baseRevID,
                          alloc_slice deltaJSON,
                          std::function<void(alloc_slice body, C4Error)> callback);
         alloc_slice createRevisionDelta(C4Document *doc, RevToSend *request,

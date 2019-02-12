@@ -172,6 +172,14 @@ namespace litecore { namespace repl {
                     changes->size(), lastSequence,
                     (_proposeChanges ? "proposeChanges" : "changes"),
                     changes->at(0)->sequence, _lastSequenceRead);
+#if DEBUG
+            if (willLog(LogLevel::Debug)) {
+                for (auto &change : *changes)
+                    logDebug("    - %.4llu: '%.*s' #%.*s (remote #%.*s)",
+                             change->sequence, SPLAT(change->docID), SPLAT(change->revID),
+                             SPLAT(change->remoteAncestorRevID));
+            }
+#endif
         }
 
         // Send the "changes" request, and asynchronously handle the response:
@@ -210,8 +218,15 @@ namespace litecore { namespace repl {
             enc.beginArray();
             if (_proposeChanges) {
                 enc << change->docID << change->revID;
-                if (change->remoteAncestorRevID || change->bodySize > 0)
-                    enc << change->remoteAncestorRevID;
+                slice remoteAncestorRevID = change->remoteAncestorRevID;
+                if (remoteAncestorRevID || change->bodySize > 0)
+                    enc << remoteAncestorRevID;
+                if (remoteAncestorRevID && c4rev_getGeneration(remoteAncestorRevID)
+                                                >= c4rev_getGeneration(change->revID)) {
+                    warn("Proposed rev '%.*s' #%.*s has invalid ancestor %.*s",
+                         SPLAT(change->docID), SPLAT(change->revID),
+                         SPLAT(remoteAncestorRevID));
+                }
             } else {
                 enc << change->sequence << change->docID << change->revID;
                 if (change->deleted() || change->bodySize > 0)
@@ -370,7 +385,7 @@ namespace litecore { namespace repl {
                     auto err = progress.reply->getError();
                     auto c4err = blipToC4Error(err);
                     bool transient = c4error_mayBeTransient(c4err);
-                    logError("Got error response to rev %.*s %.*s (seq #%llu): %.*s %d '%.*s'",
+                    logError("Got error response to rev '%.*s' #%.*s (seq #%llu): %.*s %d '%.*s'",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
                     finishedDocumentWithError(rev, c4err, transient);

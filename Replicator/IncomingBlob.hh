@@ -33,6 +33,11 @@ namespace litecore { namespace repl {
 
         virtual std::string loggingIdentifier() const override;
 
+    protected:
+        virtual std::string loggingClassName() const override {
+            return _options.pull >= kC4OneShot ? "IncomingBlob" : "incomingblob";
+        }
+
     private:
         void _start(PendingBlob);
         void writeToBlob(fleece::alloc_slice);

@@ -577,10 +577,12 @@ namespace litecore { namespace repl {
                 alloc_slice currentRevID;
                 int status = findProposedChange(docID, revID, parentRevID, currentRevID);
                 if (status == 0) {
+                    logDebug("    - Accepting proposed change '%.*s' #%.*s with parent %.*s",
+                             SPLAT(docID), SPLAT(revID), SPLAT(parentRevID));
                     ++requested;
                     whichRequested[i] = true;
                 } else {
-                    logInfo("Rejecting proposed change '%.*s' %.*s with parent %.*s (status %d; current rev is %.*s)",
+                    logInfo("Rejecting proposed change '%.*s' #%.*s with parent %.*s (status %d; current rev is %.*s)",
                         SPLAT(docID), SPLAT(revID), SPLAT(parentRevID), status, SPLAT(currentRevID));
                     while (itemsWritten++ < i)
                         encoder.writeInt(0);
@@ -1001,13 +1003,14 @@ namespace litecore { namespace repl {
 
 
     // Applies a delta, asynchronously returning expanded Fleece -- called by IncomingRev
-    void DBWorker::_applyDelta(alloc_slice docID, alloc_slice baseRevID,
+    void DBWorker::_applyDelta(Retained<RevToInsert> rev,
+                               alloc_slice baseRevID,
                                alloc_slice deltaJSON,
                                std::function<void(alloc_slice body, C4Error)> callback)
     {
         alloc_slice body;
         C4Error c4err;
-        c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &c4err);
+        c4::ref<C4Document> doc = c4doc_get(_db, rev->docID, true, &c4err);
         if (doc && c4doc_selectRevision(doc, baseRevID, true, &c4err)) {
             Dict srcRoot = getDocRoot(doc);
             if (srcRoot) {
@@ -1025,7 +1028,7 @@ namespace litecore { namespace repl {
                     if (flErr == kFLInvalidData)
                         c4err = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
                     else
-                    c4err = {FleeceDomain, flErr};
+                        c4err = {FleeceDomain, flErr};
                 }
             } else {
                 // Don't have the body of the source revision. This might be because I'm in
@@ -1069,7 +1072,6 @@ namespace litecore { namespace repl {
             
             for (RevToInsert *rev : *revs) {
                 // Add a revision:
-                logVerbose("    {'%.*s' #%.*s <- %.*s}", SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(rev->historyBuf));
                 vector<C4String> history;
                 history.reserve(10);
                 history.push_back(rev->revID);
@@ -1090,7 +1092,9 @@ namespace litecore { namespace repl {
                     // Server says the document is no longer accessible, i.e. it's been
                     // removed from all channels the client has access to. Purge it.
                     docSaved = c4db_purgeDoc(_db, rev->docID, &docErr);
-                    if (!docSaved && docErr.domain == LiteCoreDomain && docErr.code == kC4ErrorNotFound)
+                    if (docSaved)
+                        logVerbose("    {'%.*s' removed (purged)}", SPLAT(rev->docID));
+                    else if (docErr.domain == LiteCoreDomain && docErr.code == kC4ErrorNotFound)
                         docSaved = true;
                 } else {
                     enc.writeValue(root);
@@ -1116,6 +1120,9 @@ namespace litecore { namespace repl {
 
                     c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &docErr);
                     if (doc) {
+                        logVerbose("    {'%.*s' #%.*s <- %.*s} seq %llu",
+                                   SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(rev->historyBuf),
+                                   doc->selectedRev.sequence);
                         docSaved = true;
                         rev->sequence = doc->selectedRev.sequence;
                         if (doc->selectedRev.flags & kRevIsConflict) {
@@ -1139,7 +1146,7 @@ namespace litecore { namespace repl {
                         rev->owner->revisionInserted();
                 }
             }
-        }
+        } 
 
         // Commit transaction:
         if (transaction.active() && transaction.commit(&transactionErr))
@@ -1149,10 +1156,10 @@ namespace litecore { namespace repl {
 
         // Notify all revs (that didn't already fail):
         for (auto rev : *revs) {
-            rev->error = transactionErr;
-            if (rev->owner)
-                rev->owner->revisionInserted();
-        }
+                rev->error = transactionErr;
+                if (rev->owner)
+                    rev->owner->revisionInserted();
+            }
 
         if (transactionErr.code) {
             gotError(transactionErr);
@@ -1178,13 +1185,13 @@ namespace litecore { namespace repl {
         if (newRev) {
             if (synced)
                 newRev->remoteAncestorRevID = rev->revID;
-            logDebug("Now that '%.*s' %.*s is done, propose %.*s (parent %.*s) ...",
+            logDebug("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
                      SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
                      SPLAT(newRev->remoteAncestorRevID));
-            auto changes = make_shared<RevToSendList>();
-            if (addChangeToList(newRev, nullptr, changes)) {
-                _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
-                _pusher->gotChanges(move(changes), _maxPushedSequence, {});
+                auto changes = make_shared<RevToSendList>();
+                if (addChangeToList(newRev, nullptr, changes)) {
+                    _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
+                    _pusher->gotChanges(move(changes), _maxPushedSequence, {});
             } else {
                 logDebug("   ... nope, decided not to propose '%.*s' %.*s",
                          SPLAT(newRev->docID), SPLAT(newRev->revID));

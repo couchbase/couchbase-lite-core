@@ -50,6 +50,9 @@ namespace litecore { namespace repl {
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
 
     protected:
+        virtual std::string loggingClassName() const override  {
+            return _options.pull >= kC4OneShot ? "IncomingRev" : "incomingrev";
+        }
         ActivityLevel computeActivityLevel() const override;
 
     private:
