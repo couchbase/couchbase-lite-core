@@ -18,6 +18,10 @@
 #include <chrono>
 #include <thread>
 
+#ifndef __APPLE__
+#include "arc4random.h"
+#endif
+
 #include "c4Test.hh"
 
 
@@ -317,6 +321,7 @@ public:
 #pragma mark - ADDING DOCS/REVISIONS:
 
 
+    // Pause the current thread for an interval. If the interval is negative, it will randomize.
     static void sleepFor(duration interval) {
         long ticks = interval.count();
         if (ticks < 0) {
@@ -331,7 +336,7 @@ public:
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         int docNo = 1;
         for (int i = 1; docNo <= total; i++) {
-            this_thread::sleep_for(interval);
+            sleepFor(interval);
             Log("-------- Creating %d docs --------", 2*i);
             c4::Transaction t(db);
             C4Error err;
@@ -383,7 +388,7 @@ public:
     void addDocsInParallel(duration interval, int total) {
         _parallelThread.reset(runInParallel([=]() {
             _expectedDocumentCount = addDocs(db, interval, total);
-            sleep(1); // give replicator a moment to detect the latest docs
+            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }));
     }
@@ -392,7 +397,7 @@ public:
                            bool useFakeRevIDs = true) {
         _parallelThread.reset( runInParallel([=]() {
             addRevs(db, interval, docID, firstRev, totalRevs, useFakeRevIDs);
-            sleep(1); // give replicator a moment to detect the latest revs
+            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
             stopWhenIdle();
         }));
     }

@@ -615,6 +615,44 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][C
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Push][Continuous]") {
+    alloc_slice docID("doc");
+    auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous)
+                        .setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    installConflictHandler();
+
+    static const int intervalMs = -500;     // random interval
+    static const int iterations = 30;
+
+    atomic_int completed {0};
+    unique_ptr<thread> thread1( runInParallel([&]() {
+        addRevs(db, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
+        if (++completed == 2) {
+            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            stopWhenIdle();
+        }
+    }));
+    unique_ptr<thread> thread2( runInParallel([&]() {
+        addRevs(db2, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
+        if (++completed == 2) {
+            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            stopWhenIdle();
+        }
+    }));
+    
+    _expectedDocumentCount = -1;
+    _expectedDocPushErrors = {"doc"};
+    _checkDocsFinished = false;
+
+    runReplicators(clientOpts, serverOpts);
+    thread1->join();
+    thread2->join();
+
+    compareDatabases();
+}
+
+
 #pragma mark - ATTACHMENTS:
 
 
