@@ -328,7 +328,9 @@ namespace litecore {
     int RevTree::insertHistory(const std::vector<revidBuffer> history,
                                alloc_slice body,
                                Rev::Flags revFlags,
-                               bool markConflict) {
+                               bool allowConflict,
+                               bool markConflict,
+                               int &httpStatus) {
         Assert(history.size() > 0);
         // Find the common ancestor, if any. Along the way, preflight revision IDs:
         int i;
@@ -337,8 +339,10 @@ namespace litecore {
         size_t historyCount = history.size();
         for (i = 0; i < historyCount; i++) {
             unsigned gen = history[i].generation();
-            if (lastGen > 0 && gen != lastGen - 1)
+            if (lastGen > 0 && gen != lastGen - 1) {
+                httpStatus = 400;
                 return -1; // generation numbers not in sequence
+            }
             lastGen = gen;
 
             parent = (Rev*)get(history[i]);
@@ -346,6 +350,13 @@ namespace litecore {
                 break;
         }
         int commonAncestorIndex = i;
+
+        if (!allowConflict) {
+            if ((parent && !parent->isLeaf()) || (!parent && !_revs.empty())) {
+                httpStatus = 409;  // would create a conflict
+                return -1;
+            }
+        }
 
         if (i > 0) {
             // Insert all the new revisions in chronological order:

@@ -198,7 +198,9 @@ namespace litecore {
             put.historyCount = history.size();
             put.history = (C4String*) history.data();
             put.save = true;
-            newDoc->putExistingRevision(put);
+            C4Error error;
+            if (!newDoc->putExistingRevision(put, &error))
+                error::_throw((error::Domain)error.domain, error.code);
         }
 
 

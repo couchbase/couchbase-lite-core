@@ -240,6 +240,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][C]") {
     rq.docID = kDocID;
     rq.history = history;
     rq.historyCount = 2;
+    rq.allowConflict = true;
     rq.body = kFleeceBody3;
     rq.save = true;
     C4Error err;
@@ -483,6 +484,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     C4Slice history[2] = {kConflictRevID, kExpectedRevID};
     rq.history = history;
     rq.historyCount = 2;
+    rq.allowConflict = true;
     doc = c4doc_put(db, &rq, &commonAncestorIndex, &error);
     REQUIRE(doc != nullptr);
     CHECK((unsigned long)commonAncestorIndex == 1ul);
@@ -591,6 +593,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     rq.docID = kDocID;
     rq.history = history;
     rq.historyCount = 3;
+    rq.allowConflict = true;
     rq.body = kFleeceBody3;
     rq.save = true;
     rq.remoteDBID = 1;
