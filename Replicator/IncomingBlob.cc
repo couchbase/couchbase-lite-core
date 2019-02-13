@@ -97,9 +97,11 @@ namespace litecore { namespace repl {
             logVerbose("Opened writer  [%d open; max %d]", n, (int)sMaxOpenWriters);
 #endif
 		}
-        if (!c4stream_write(_writer, data.buf, data.size, &err))
-            return gotError(err);
-        addProgress({data.size, 0});
+        if (data.size > 0) {
+            if (!c4stream_write(_writer, data.buf, data.size, &err))
+                return gotError(err);
+            addProgress({data.size, 0});
+        }
     }
 
 
