@@ -27,9 +27,6 @@
 #include "BLIP.hh"
 #include "RevID.hh"
 #include <chrono>
-#ifndef __APPLE__
-#include "arc4random.h"
-#endif
 
 using namespace std;
 using namespace fleece;

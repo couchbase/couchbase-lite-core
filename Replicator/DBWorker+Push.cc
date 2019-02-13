@@ -26,6 +26,9 @@
 #include "c4Document+Fleece.h"
 #include "c4Replicator.h"
 #include "BLIP.hh"
+#ifndef __APPLE__
+#include "arc4random.h"
+#endif
 
 using namespace std;
 using namespace fleece;
