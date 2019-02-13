@@ -18,6 +18,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 option(CODE_COVERAGE_ENABLED "Set whether or not code coverage information should be generated" OFF)
 option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
+option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
 
 add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION        # This one's for SQLiteCpp
                 -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
@@ -88,7 +89,9 @@ if(MSVC)
 endif()
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-    add_definitions(-DLITECORE_USES_ICU=1)
+    if(NOT ${LITECORE_DISABLE_ICU})
+        add_definitions(-DLITECORE_USES_ICU=1)
+    endif()
 
     # Enable relative RPATHs for installed bits
     set (CMAKE_INSTALL_RPATH "\$ORIGIN")
@@ -289,7 +292,8 @@ endif()
 
 install (TARGETS LiteCore
          RUNTIME DESTINATION bin
-         LIBRARY DESTINATION lib)
+         LIBRARY DESTINATION lib
+         OPTIONAL)
 
 if(UNIX AND NOT APPLE)
     set(WHOLE_LIBRARY_FLAG "-Wl,--whole-archive")
