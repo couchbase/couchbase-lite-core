@@ -387,6 +387,7 @@
 		27FC81F81EAAB7C60028E38E /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		27FC81F91EAAB7C60028E38E /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
 		27FC81FF1EAAB8390028E38E /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
+		27FC8E77221399AC0083B033 /* LeafDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8E76221399AC0083B033 /* LeafDocument.cc */; };
 		27FC8DB622135BCE0083B033 /* Pusher+DB.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DB522135BCE0083B033 /* Pusher+DB.cc */; };
 		27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DBC22135BDA0083B033 /* RevFinder.cc */; };
 		27FC8E862214E4CA0083B033 /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
@@ -1244,6 +1245,7 @@
 		27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCore.xcconfig; sourceTree = "<group>"; wrapsLines = 1; };
 		27FC8DB522135BCE0083B033 /* Pusher+DB.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "Pusher+DB.cc"; sourceTree = "<group>"; };
 		27FC8DBC22135BDA0083B033 /* RevFinder.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RevFinder.cc; sourceTree = "<group>"; };
+		27FC8E76221399AC0083B033 /* LeafDocument.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LeafDocument.cc; sourceTree = "<group>"; };
 		27FDF1371DA8116A0087B4E6 /* SQLiteFleeceEach.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFleeceEach.cc; sourceTree = "<group>"; };
 		27FDF13E1DA84EE70087B4E6 /* SQLiteFleeceUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SQLiteFleeceUtil.hh; sourceTree = "<group>"; };
 		27FDF1421DAC22230087B4E6 /* SQLiteFunctionsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFunctionsTest.cc; sourceTree = "<group>"; };
@@ -1877,6 +1879,7 @@
 				277C14701EA8102B0075348F /* Document.cc */,
 				271057D61D3D70B10018247B /* Document.hh */,
 				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
+				27FC8E76221399AC0083B033 /* LeafDocument.cc */,
 				2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */,
 				2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */,
 				276683B41DC7DD2E00E3F187 /* SequenceTracker.cc */,
@@ -3072,6 +3075,8 @@
 			files = (
 				2708FE551CF4CCCE0022F721 /* main.cpp in Sources */,
 				2708FE5B1CF4D3370022F721 /* LiteCoreTest.cc in Sources */,
+				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
+				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				277BE1C9204F4D45008047C9 /* RevTreeTest.cc in Sources */,
@@ -3085,8 +3090,6 @@
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
-				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
-				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3131,25 +3134,25 @@
 			buildActionMask = 2147483647;
 			files = (
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
-				27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
 				275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */,
 				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
 				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
-				2700BB5B217005A900797537 /* CoreMLPredictiveModel.mm in Sources */,
 				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
 				27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */,
 				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
 				272850E91E9D484A009CA22F /* ReplicatorAPITest.cc in Sources */,
+				277FEE5821ED10FA00B60E3C /* ReplicatorSGTest.cc in Sources */,
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
 				270AB2A02072B1EA009A4596 /* CivetWebSocket.cc in Sources */,
-				277FEE5821ED10FA00B60E3C /* ReplicatorSGTest.cc in Sources */,
 				276E02111EA9717200FEFE8A /* RESTListenerTest.cc in Sources */,
 				276E021B1EA983EE00FEFE8A /* Response.cc in Sources */,
 				2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				27B649202065AD2B00FC12F7 /* SyncListenerTest.cc in Sources */,
+				2700BB5B217005A900797537 /* CoreMLPredictiveModel.mm in Sources */,
+				27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3310,6 +3313,7 @@
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
 				273E9F721C51612E003115A6 /* c4Database.cc in Sources */,
 				272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */,
+				27FC8E77221399AC0083B033 /* LeafDocument.cc in Sources */,
 				2769438C1DCD502A00DB2555 /* c4Observer.cc in Sources */,
 				27CE4CF22077F51000ACA225 /* Address.cc in Sources */,
 				2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */,

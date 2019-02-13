@@ -36,7 +36,7 @@ namespace litecore {
 
    class SQLiteEnumerator : public RecordEnumerator::Impl {
     public:
-        SQLiteEnumerator(SQLite::Statement *stmt, bool descending, ContentOptions content)
+        SQLiteEnumerator(SQLite::Statement *stmt, bool descending, ContentOption content)
         :_stmt(stmt),
          _content(content)
         {
@@ -58,27 +58,8 @@ namespace litecore {
 
     private:
         unique_ptr<SQLite::Statement> _stmt;
-        ContentOptions _content;
+        ContentOption _content;
     };
-
-
-    void SQLiteKeyStore::selectFrom(stringstream& in, RecordEnumerator::Options options) {
-        in << "SELECT sequence, flags, key, version";
-        if (options.contentOptions & kMetaOnly)
-            in << ", length(body)";
-        else
-            in << ", body";
-        if (hasExpiration())
-            in << ", expiration";
-        else
-            in << ", 0";
-        in << " FROM kv_" << name();
-    }
-
-    void SQLiteKeyStore::writeSQLOptions(stringstream &sql, RecordEnumerator::Options options) {
-        if (options.descending)
-            sql << " DESC";
-    }
 
 
     RecordEnumerator::Impl* SQLiteKeyStore::newEnumeratorImpl(bool bySequence,
@@ -89,7 +70,14 @@ namespace litecore {
             createSequenceIndex();
 
         stringstream sql;
-        selectFrom(sql, options);
+        const char* kBodyItem[3] = {"body", "fl_root(body)", "length(body)"};
+        sql << "SELECT sequence, flags, key, version, " << kBodyItem[options.contentOption];
+        if (hasExpiration())
+            sql << ", expiration";
+        else
+            sql << ", 0";
+        sql << " FROM kv_" << name();
+        
         bool writeAnd = false;
         if (bySequence) {
             sql << " WHERE sequence > ?";
@@ -107,12 +95,13 @@ namespace litecore {
             sql << "(flags & 4) != 0";
         }
         sql << (bySequence ? " ORDER BY sequence" : " ORDER BY key");
-        writeSQLOptions(sql, options);
+        if (options.descending)
+            sql << " DESC";
 
         auto stmt = new SQLite::Statement(db(), sql.str());        // TODO: Cache a statement
         if (bySequence)
             stmt->bind(1, (long long)since);
-        return new SQLiteEnumerator(stmt, options.descending, options.contentOptions);
+        return new SQLiteEnumerator(stmt, options.descending, options.contentOption);
     }
 
 }

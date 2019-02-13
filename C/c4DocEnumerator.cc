@@ -64,7 +64,7 @@ struct C4DocEnumerator: fleece::InstanceCounted {
         options.descending      = (c4options.flags & kC4Descending) != 0;
         options.includeDeleted  = (c4options.flags & kC4IncludeDeleted) != 0;
         if ((c4options.flags & kC4IncludeBodies) == 0)
-            options.contentOptions = kMetaOnly;
+            options.contentOption = kMetaOnly;
         return options;
     }
 

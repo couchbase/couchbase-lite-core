@@ -34,16 +34,16 @@ namespace litecore {
     const char* KeyStore::kIndexTypeName[] = {"value", "full-text", "array", "predictive"};
 
 
-    Record KeyStore::get(slice key, ContentOptions options) const {
+    Record KeyStore::get(slice key, ContentOption option) const {
         Record rec(key);
-        read(rec, options);
+        read(rec, option);
         return rec;
     }
 
-    void KeyStore::get(slice key, ContentOptions options, function_ref<void(const Record&)> fn) {
+    void KeyStore::get(slice key, ContentOption option, function_ref<void(const Record&)> fn) {
         // Subclasses can implement this differently for better memory management.
         Record rec(key);
-        read(rec, options);
+        read(rec, option);
         fn(rec);
     }
 
@@ -54,7 +54,7 @@ namespace litecore {
     void KeyStore::readBody(Record &rec) const {
         if (!rec.body()) {
             Record fullDoc = rec.sequence() ? get(rec.sequence())
-                                            : get(rec.key(), kDefaultContent);
+                                            : get(rec.key(), kEntireBody);
             rec._body = fullDoc._body;
         }
     }

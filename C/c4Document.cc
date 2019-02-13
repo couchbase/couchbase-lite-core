@@ -46,14 +46,12 @@ void c4doc_free(C4Document *doc) noexcept {
 }
 
 
-C4Document* c4doc_get(C4Database *database,
-                      C4Slice docID,
-                      bool mustExist,
-                      C4Error *outError) noexcept
+static C4Document* newDoc(bool mustExist, C4Error *outError,
+                          function_ref<Retained<Document>()> cb) noexcept
 {
     return tryCatch<C4Document*>(outError, [&]{
-        auto doc = database->documentFactory().newDocumentInstance(docID);
-        if (mustExist && !asInternal(doc)->exists()) {
+        auto doc = cb();
+        if (!doc || (mustExist && !doc->exists())) {
             doc = nullptr;
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         }
@@ -62,17 +60,35 @@ C4Document* c4doc_get(C4Database *database,
 }
 
 
+C4Document* c4doc_get(C4Database *database,
+                      C4Slice docID,
+                      bool mustExist,
+                      C4Error *outError) noexcept
+{
+    return newDoc(mustExist, outError, [=] {
+        return database->documentFactory().newDocumentInstance(docID);
+    });
+}
+
+
+C4Document* c4doc_getSingleRevision(C4Database *database,
+                                    C4Slice docID,
+                                    C4Slice revID,
+                                    bool withBody,
+                                    C4Error *outError) noexcept
+{
+    return newDoc(true, outError, [=] {
+        return database->documentFactory().newLeafDocumentInstance(docID, revID, withBody);
+    });
+}
+
+
 C4Document* c4doc_getBySequence(C4Database *database,
                                 C4SequenceNumber sequence,
                                 C4Error *outError) noexcept
 {
-    return tryCatch<C4Document*>(outError, [&]{
-        auto doc = database->documentFactory().newDocumentInstance(database->defaultKeyStore().get(sequence));
-        if (!asInternal(doc)->exists()) {
-            doc = nullptr;
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
-        }
-        return retain(doc.get());
+    return newDoc(true, outError, [=] {
+        return database->documentFactory().newDocumentInstance(database->defaultKeyStore().get(sequence));
     });
 }
 
@@ -625,8 +641,7 @@ FLDoc c4doc_createFleeceDoc(C4Document *doc) {
 
 
 C4Document* c4doc_containingValue(FLValue value) {
-    Document *doc = Document::containing((const fleece::impl::Value*)value);
-    return doc ? (C4Document*)doc : nullptr;
+    return TreeDocumentFactory::documentContaining((const fleece::impl::Value*)value);
 }
 
 

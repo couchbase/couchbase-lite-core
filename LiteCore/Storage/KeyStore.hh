@@ -62,14 +62,14 @@ namespace litecore {
 
         //////// Keys/values:
 
-        Record get(slice key, ContentOptions = kDefaultContent) const;
+        Record get(slice key, ContentOption = kEntireBody) const;
         virtual Record get(sequence_t) const =0;
 
-        virtual void get(slice key, ContentOptions, function_ref<void(const Record&)>);
+        virtual void get(slice key, ContentOption, function_ref<void(const Record&)>);
         virtual void get(sequence_t, function_ref<void(const Record&)>);
 
         /** Reads a record whose key() is already set. */
-        virtual bool read(Record &rec, ContentOptions options = kDefaultContent) const =0;
+        virtual bool read(Record &rec, ContentOption = kEntireBody) const =0;
 
         /** Reads the body of a Record that's already been read with kMetaonly.
             Does nothing if the record's body is non-null. */

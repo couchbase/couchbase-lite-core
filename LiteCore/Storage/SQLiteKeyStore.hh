@@ -39,7 +39,7 @@ namespace litecore {
         sequence_t lastSequence() const override;
 
         Record get(sequence_t) const override;
-        bool read(Record &rec, ContentOptions options) const override;
+        bool read(Record &rec, ContentOption) const override;
 
         sequence_t set(slice key, slice meta, slice value, DocumentFlags,
                        Transaction&,
@@ -92,7 +92,7 @@ namespace litecore {
         static slice columnAsSlice(const SQLite::Column &col);
         static void setRecordMetaAndBody(Record &rec,
                                          SQLite::Statement &stmt,
-                                         ContentOptions options);
+                                         ContentOption);
 
     private:
         friend class SQLiteDataFile;
@@ -102,8 +102,6 @@ namespace litecore {
         SQLiteKeyStore(SQLiteDataFile&, const std::string &name, KeyStore::Capabilities options);
         SQLiteDataFile& db() const                    {return (SQLiteDataFile&)dataFile();}
         std::string subst(const char *sqlTemplate) const;
-        void selectFrom(std::stringstream& in, const RecordEnumerator::Options options);
-        void writeSQLOptions(std::stringstream &sql, RecordEnumerator::Options options);
         void setLastSequence(sequence_t seq);
         void createTrigger(const std::string &triggerName,
                            const char *triggerSuffix,
@@ -129,8 +127,8 @@ namespace litecore {
 
         // All of these Statement pointers have to be reset in the close() method.
         std::unique_ptr<SQLite::Statement> _recCountStmt;
-        std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getMetaByKeyStmt;
-        std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getMetaBySeqStmt;
+        std::unique_ptr<SQLite::Statement> _getByKeyStmt, _getCurByKeyStmt, _getMetaByKeyStmt;
+        std::unique_ptr<SQLite::Statement> _getBySeqStmt, _getCurBySeqStmt, _getMetaBySeqStmt;
         std::unique_ptr<SQLite::Statement> _setStmt, _insertStmt, _replaceStmt, _updateBodyStmt;
         std::unique_ptr<SQLite::Statement> _delByKeyStmt, _delBySeqStmt, _delByBothStmt;
         std::unique_ptr<SQLite::Statement> _setFlagStmt;

@@ -105,6 +105,21 @@ extern "C" {
                                     C4SequenceNumber,
                                     C4Error *outError) C4API;
 
+    /** Gets a specific revision of a document.
+        ONLY that revision is available; any calls that would access other revisions will fail.
+        On the plus side, this call is quicker than \ref c4doc_get and allocates less memory.
+        @param database  The database to read from.
+        @param docID  The document ID.
+        @param revID  The revision ID, or a null slice for the current revision.
+        @param withBody  Should the body of the revision be loaded?
+        @param error  Error information is stored here.
+        @return  The document, or NULL on error. */
+    C4Document* c4doc_getSingleRevision(C4Database *database,
+                                        C4Slice docID,
+                                        C4Slice revID,
+                                        bool withBody,
+                                        C4Error *error) C4API;
+
     /** Saves changes to a C4Document.
         Must be called within a transaction.
         The revision history will be pruned to the maximum depth given. */
