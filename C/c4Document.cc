@@ -366,7 +366,7 @@ static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
     Document *idoc = asInternal(database->documentFactory().newDocumentInstance(record));
     bool ok;
     if (rq->existingRevision)
-        ok = (idoc->putExistingRevision(*rq) >= 0);
+        ok = (idoc->putExistingRevision(*rq, nullptr) >= 0);
     else
         ok = idoc->putNewRevision(*rq);
     if (!ok) {
@@ -470,7 +470,11 @@ C4Document* c4doc_put(C4Database *database,
                 doc = c4doc_get(database, rq->docID, false, outError);
                 if (!doc)
                     return nullptr;
-                commonAncestorIndex = asInternal(doc)->putExistingRevision(*rq);
+                commonAncestorIndex = asInternal(doc)->putExistingRevision(*rq, outError);
+                if (commonAncestorIndex < 0) {
+                    c4doc_free(doc);
+                    return nullptr;
+                }
 
             } else {
                 // Create new revision:

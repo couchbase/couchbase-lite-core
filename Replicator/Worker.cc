@@ -104,7 +104,7 @@ namespace litecore { namespace repl {
     Worker::~Worker() {
         if (_important)
             logStats();
-        logDebug("deleting %s [%p]", actorName().c_str(), this);
+        logDebug("destructing (%p); actorName='%s'", this, actorName().c_str());
     }
 
 

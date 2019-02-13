@@ -363,8 +363,9 @@ void C4Test::createConflictingRev(C4Database *db,
     C4Error error;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
     char buf[256];
-    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
-    REQUIRE(doc != nullptr);
+//    INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
+//    REQUIRE(doc != nullptr);        // can't use Catch on bg threads
+    Assert(doc != nullptr);
     c4doc_free(doc);
 }
 
@@ -373,7 +374,8 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
     TransactionHelper t(db);
     C4Error error;
     auto curDoc = c4doc_get(db, docID, false, &error);
-    REQUIRE(curDoc != nullptr);
+//    REQUIRE(curDoc != nullptr);        // can't use Catch on bg threads
+    Assert(curDoc != nullptr);
 
     C4Slice history[2] = {curDoc->revID};
 
@@ -387,9 +389,10 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
     auto doc = c4doc_put(db, &rq, nullptr, &error);
     if (!doc) {
         char buf[256];
-        INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
+        //INFO("Error: " << c4error_getDescriptionC(error, buf, sizeof(buf)));
     }
-    REQUIRE(doc != nullptr);
+    //REQUIRE(doc != nullptr);        // can't use Catch on bg threads
+    Assert(doc != nullptr);
     string revID((char*)doc->revID.buf, doc->revID.size);
     c4doc_free(doc);
     c4doc_free(curDoc);
@@ -397,15 +400,21 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
 }
 
 
-void C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice json,
+string C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice json,
                              C4RevisionFlags flags)
 {
     Encoder enc;
     enc.convertJSON(json);
     fleece::alloc_slice fleeceBody = enc.finish();
-    INFO("Encoder error " << enc.error());
-    REQUIRE(fleeceBody);
-    createRev(db, docID, revID, fleeceBody, flags);
+//    INFO("Encoder error " << enc.error());        // can't use Catch on bg threads
+//    REQUIRE(fleeceBody);
+    Assert(fleeceBody);
+    if (revID.buf) {
+        createRev(db, docID, revID, fleeceBody, flags);
+        return string(slice(revID));
+    } else {
+        return createNewRev(db, docID, fleeceBody, flags);
+    }
 }
 
 

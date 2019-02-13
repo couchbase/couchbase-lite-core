@@ -132,7 +132,9 @@ namespace litecore {
         int insertHistory(const std::vector<revidBuffer> history,
                           alloc_slice body,
                           Rev::Flags,
-                          bool markConflict);
+                          bool allowConflict,
+                          bool markConflict,
+                          int &httpStatus);
 
         // Sets/clears the kIsConflict flag for a Rev and its ancestors.
         void markBranchAsConflict(const Rev*, bool);

@@ -98,7 +98,9 @@ namespace litecore { namespace repl {
         }
 
     protected:
-        virtual std::string loggingClassName() const override {return "Repl";}
+        virtual std::string loggingClassName() const override  {
+            return _options.pull >= kC4OneShot || _options.push >= kC4OneShot ? "Repl" : "repl";
+        }
 
         // BLIP ConnectionDelegate API:
         virtual void onHTTPResponse(int status, const fleece::AllocedDict &headers) override

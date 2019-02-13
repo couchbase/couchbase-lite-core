@@ -85,7 +85,7 @@ namespace litecore { namespace repl {
 
         slice deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         if (deltaSrcRevID) {
-            _dbWorker->applyDelta(_rev->docID, deltaSrcRevID, _revMessage->body(),
+            _dbWorker->applyDelta(_rev, deltaSrcRevID, _revMessage->body(),
                                   asynchronize([this](alloc_slice body, C4Error err) {
                 ++gNumDeltasApplied;
                 processBody(body, err);

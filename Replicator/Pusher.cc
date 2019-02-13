@@ -172,6 +172,14 @@ namespace litecore { namespace repl {
                     changes->size(), lastSequence,
                     (_proposeChanges ? "proposeChanges" : "changes"),
                     changes->at(0)->sequence, _lastSequenceRead);
+#if DEBUG
+            if (willLog(LogLevel::Debug)) {
+                for (auto &change : *changes)
+                    logDebug("    - %.4llu: '%.*s' #%.*s (remote #%.*s)",
+                             change->sequence, SPLAT(change->docID), SPLAT(change->revID),
+                             SPLAT(change->remoteAncestorRevID));
+            }
+#endif
         }
 
         // Send the "changes" request, and asynchronously handle the response:
@@ -210,8 +218,15 @@ namespace litecore { namespace repl {
             enc.beginArray();
             if (_proposeChanges) {
                 enc << change->docID << change->revID;
-                if (change->remoteAncestorRevID || change->bodySize > 0)
-                    enc << change->remoteAncestorRevID;
+                slice remoteAncestorRevID = change->remoteAncestorRevID;
+                if (remoteAncestorRevID || change->bodySize > 0)
+                    enc << remoteAncestorRevID;
+                if (remoteAncestorRevID && c4rev_getGeneration(remoteAncestorRevID)
+                                                >= c4rev_getGeneration(change->revID)) {
+                    warn("Proposed rev '%.*s' #%.*s has invalid ancestor %.*s",
+                         SPLAT(change->docID), SPLAT(change->revID),
+                         SPLAT(remoteAncestorRevID));
+                }
             } else {
                 enc << change->sequence << change->docID << change->revID;
                 if (change->deleted() || change->bodySize > 0)
@@ -288,10 +303,20 @@ namespace litecore { namespace repl {
                         // 304 means server has my rev already
                         synced = true;
                     } else {
-                        logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
-                                 SPLAT(change->docID), SPLAT(change->revID),
-                                 SPLAT(change->remoteAncestorRevID), status);
-                        auto err = c4error_make(WebSocketDomain, status, "rejected by server"_sl);
+                        slice message;
+                        if (status == 409) {
+                            // 409 means a push conflict
+                            logInfo("Proposed rev '%.*s' #%.*s (ancestor %.*s) conflicts with newer server revision",
+                                     SPLAT(change->docID), SPLAT(change->revID),
+                                     SPLAT(change->remoteAncestorRevID));
+                            message = "conflicts with newer server revision"_sl;
+                        } else {
+                            logError("Proposed rev '%.*s' #%.*s (ancestor %.*s) rejected with status %d",
+                                     SPLAT(change->docID), SPLAT(change->revID),
+                                     SPLAT(change->remoteAncestorRevID), status);
+                            message = "rejected by server"_sl;
+                        }
+                        auto err = c4error_make(WebSocketDomain, status, message);
                         finishedDocumentWithError(change, err, false);
                     }
                 } else {
@@ -312,7 +337,7 @@ namespace litecore { namespace repl {
                                SPLAT(change->docID), SPLAT(change->revID), change->sequence,
                                _revsToSend.size());
                 } else {
-                    doneWithRev(change, true, synced);  // unqueued, so we're done with it
+                    doneWithRev(change, true, synced);  // not queued, so we're done with it
                 }
                 ++index;
             }
@@ -361,16 +386,17 @@ namespace litecore { namespace repl {
             }
             if (progress.state == MessageProgress::kComplete) {
                 decrement(_revisionBytesAwaitingReply, progress.bytesSent);
-                bool completed = !progress.reply->isError();
-                if (completed) {
+                bool synced = !progress.reply->isError(), completed;
+                if (synced) {
                     logVerbose("Completed rev %.*s #%.*s (seq #%llu)",
                                SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                     finishedDocument(rev);
+                    completed = true;
                 } else {
                     auto err = progress.reply->getError();
                     auto c4err = blipToC4Error(err);
                     bool transient = c4error_mayBeTransient(c4err);
-                    logError("Got error response to rev %.*s %.*s (seq #%llu): %.*s %d '%.*s'",
+                    logError("Got error response to rev '%.*s' #%.*s (seq #%llu): %.*s %d '%.*s'",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
                     finishedDocumentWithError(rev, c4err, transient);
@@ -378,7 +404,7 @@ namespace litecore { namespace repl {
                     // then I've completed my duty to push it.
                     completed = !transient;
                 }
-                doneWithRev(rev, completed, completed);
+                doneWithRev(rev, completed, synced);
                 maybeSendMoreRevs();
             }
         }));

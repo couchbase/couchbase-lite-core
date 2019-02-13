@@ -19,3 +19,4 @@
 
 uint32_t arc4random(void);
 void arc4random_buf(void *buffer, size_t size);
+uint32_t arc4random_uniform(uint32_t upper_bound);

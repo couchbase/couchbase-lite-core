@@ -156,7 +156,6 @@ TestFixture::TestFixture()
 :_warningsAlreadyLogged(sWarningsLogged)
 ,_objectCount(c4_getObjectCount())
 {
-    CHECK(_objectCount == 0);//TEMP
     static once_flag once;
     call_once(once, [] {
         C4StringResult version = c4_getBuildInfo();

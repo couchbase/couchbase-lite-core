@@ -186,7 +186,8 @@ namespace c4Internal {
                 rev = rev->next();
                 if (!rev)
                     return false;
-            } while (!rev->isLeaf() || (!includeDeleted && rev->isDeleted()));
+            } while (!rev->isLeaf() || rev->isClosed()
+                                    || (!includeDeleted && rev->isDeleted()));
             selectRevision(rev);
             return true;
         }
@@ -297,18 +298,20 @@ namespace c4Internal {
                 rq.revFlags = kRevDeleted | kRevClosed;
                 rq.history = &losingRevID;
                 rq.historyCount = 1;
-                putNewRevision(rq);
+                Assert(putNewRevision(rq));
             }
 
             if (mergedBody.buf) {
                 // Then add the new merged rev as a child of winningRev:
                 selectRevision(winningRev);
                 C4DocPutRequest rq = { };
-                rq.revFlags = mergedFlags & kRevDeleted;
+                rq.revFlags = mergedFlags & (kRevDeleted | kRevHasAttachments);
                 rq.body = mergedBody;
                 rq.history = &winningRevID;
                 rq.historyCount = 1;
-                putNewRevision(rq);
+                Assert(putNewRevision(rq));
+                LogTo(DBLog, "Resolved conflict, adding rev '%.*s' #%.*s",
+                      SPLAT(docID), SPLAT(selectedRev.revID));
             }
         }
 
@@ -321,7 +324,7 @@ namespace c4Internal {
         }
 
 
-        int32_t putExistingRevision(const C4DocPutRequest &rq) override {
+        int32_t putExistingRevision(const C4DocPutRequest &rq, C4Error *outError) override {
             Assert(rq.historyCount >= 1);
             int32_t commonAncestor = -1;
             loadRevisions();
@@ -330,12 +333,24 @@ namespace c4Internal {
                 revIDBuffers[i].parse(rq.history[i]);
 
             auto priorCurrentRev = _versionedDoc.currentRevision();
+            int httpStatus;
             commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
                                                          requestBody(rq),
                                                          (Rev::Flags)rq.revFlags,
-                                                         (rq.remoteDBID != 0));
-            if (commonAncestor < 0)
-                error::_throw(error::BadRevisionID); // Bad revision history (non-consecutive)
+                                                         rq.allowConflict,
+                                                         (rq.remoteDBID != 0),
+                                                         httpStatus);
+            if (commonAncestor < 0) {
+                if (outError) {
+                    if (httpStatus == 409)
+                        *outError = {LiteCoreDomain, kC4ErrorConflict};
+                    else
+                        *outError = c4error_make(LiteCoreDomain, kC4ErrorBadRevisionID,
+                                                 "Bad revision history (non-sequential)"_sl);
+                }
+                return -1;
+            }
+            
             auto newRev = _versionedDoc[revidBuffer(rq.history[0])];
             DebugAssert(newRev);
 
@@ -365,8 +380,11 @@ namespace c4Internal {
                 _versionedDoc.setLatestRevisionOnRemote(rq.remoteDBID, newRev);
             }
 
-            if (!saveNewRev(rq, newRev, (commonAncestor > 0 || rq.remoteDBID)))
+            if (!saveNewRev(rq, newRev, (commonAncestor > 0 || rq.remoteDBID))) {
+                if (outError)
+                    *outError = {LiteCoreDomain, kC4ErrorConflict};
                 return -1;
+            }
             return commonAncestor;
         }
 

@@ -128,7 +128,7 @@ namespace c4Internal {
 
         alloc_slice bodyAsJSON(bool canonical =false);
 
-        virtual int32_t putExistingRevision(const C4DocPutRequest&) =0;
+        virtual int32_t putExistingRevision(const C4DocPutRequest&, C4Error*) =0;
         virtual bool putNewRevision(const C4DocPutRequest&) =0;
 
         virtual void resolveConflict(C4String winningRevID,

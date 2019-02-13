@@ -549,7 +549,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push Of Tiny DB", "[Push][C
     createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
     _expectedDocumentCount = 2;
 
-    _stopOnIdle = true;
+    stopWhenIdle();
     auto pushOpt = Replicator::Options::pushing(kC4Continuous);
     runReplicators(pushOpt, Replicator::Options::passive());
 }
@@ -560,7 +560,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Pull Of Tiny DB", "[Pull][C
     createRev(db, "doc2"_sl, "1-aa"_sl, kFleeceBody);
     _expectedDocumentCount = 2;
 
-    _stopOnIdle = true;
+    stopWhenIdle();
     auto pullOpt = Replicator::Options::pulling(kC4Continuous);
     runReplicators(Replicator::Options::passive(), pullOpt);
 }
@@ -615,6 +615,44 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Super-Fast Push", "[Push][C
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Continuous Push From Both Sides", "[Push][Continuous]") {
+    alloc_slice docID("doc");
+    auto clientOpts = Replicator::Options(kC4Continuous, kC4Continuous)
+                        .setProperty(slice(kC4ReplicatorOptionProgressLevel), 1);
+    auto serverOpts = Replicator::Options::passive().setNoIncomingConflicts();
+    installConflictHandler();
+
+    static const int intervalMs = -500;     // random interval
+    static const int iterations = 30;
+
+    atomic_int completed {0};
+    unique_ptr<thread> thread1( runInParallel([&]() {
+        addRevs(db, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
+        if (++completed == 2) {
+            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            stopWhenIdle();
+        }
+    }));
+    unique_ptr<thread> thread2( runInParallel([&]() {
+        addRevs(db2, chrono::milliseconds(intervalMs), docID, 1, iterations, false);
+        if (++completed == 2) {
+            sleepFor(chrono::seconds(1)); // give replicator a moment to detect the latest revs
+            stopWhenIdle();
+        }
+    }));
+    
+    _expectedDocumentCount = -1;
+    _expectedDocPushErrors = {"doc"};
+    _checkDocsFinished = false;
+
+    runReplicators(clientOpts, serverOpts);
+    thread1->join();
+    thread2->join();
+
+    compareDatabases();
+}
+
+
 #pragma mark - ATTACHMENTS:
 
 
@@ -648,7 +686,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Attachments", "[Pull][blob]") {
         blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
         _expectedDocsFinished.insert("att1");
-        _expectedDocsFinished.insert("att1");   // both puller & server sides will notify
     }
 
     auto pullOpts = Replicator::Options::pulling().setProperty(C4STR(kC4ReplicatorOptionProgressLevel), 2);
@@ -847,7 +884,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Validation Failure", "[Push]") {
         return (Dict(body)["birthday"].asstring() < "1993");
     };
     _expectedDocPushErrors = set<string>{"0000052", "0000065", "0000071", "0000072"};
-    _expectedDocPullErrors = set<string>{"0000052", "0000065", "0000071", "0000072"};
     _expectedDocumentCount = 100 - 4;
     runReplicators(Replicator::Options::pushing(),
                    pullOptions);
@@ -1010,17 +1046,18 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Then Push No-Conflicts", "[Pull][
     Log("-------- Update Doc --------");
     alloc_slice body;
     {
+        TransactionHelper t(db2);
         fleece::Encoder enc(c4db_createFleeceEncoder(db2));
         enc.beginDict();
         enc.writeKey("answer"_sl);
         enc.writeInt(666);
         enc.endDict();
         body = enc.finish();
+        createRev(db2, kDocID, kRev3ID, body);
+        createRev(db2, kDocID, "4-4444"_sl, body);
+        _expectedDocumentCount = 1;
     }
 
-    createRev(db2, kDocID, kRev3ID, body);
-    createRev(db2, kDocID, "4-4444"_sl, body);
-    _expectedDocumentCount = 1;
 
     Log("-------- Second Replication db2->db --------");
     runReplicators(serverOpts,
