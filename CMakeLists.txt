@@ -397,6 +397,7 @@ add_library(Support STATIC
     LiteCore/Support/Error_android.cc
     LiteCore/Support/FilePath.cc
     LiteCore/Support/Logging_Stub.cc
+    LiteCore/Support/SecureRandomize.cc
     LiteCore/Support/StringUtil.cc
     Replicator/Address.cc
     ${PLATFORM_SRC}

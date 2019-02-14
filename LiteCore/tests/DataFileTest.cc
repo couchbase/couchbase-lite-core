@@ -22,6 +22,7 @@
 #include "FilePath.hh"
 #include "FleeceImpl.hh"
 #include "Benchmark.hh"
+#include "SecureRandomize.hh"
 #ifndef _MSC_VER
 #include <sys/stat.h>
 #endif
@@ -562,7 +563,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
 
     options.encryptionAlgorithm = kAES256;
     options.encryptionKey = alloc_slice(kEncryptionKeySize[kAES256]);
-    randomBytes(options.encryptionKey);
+    SecureRandomize(options.encryptionKey);
 
     db->rekey(options.encryptionAlgorithm, options.encryptionKey);
 
@@ -572,7 +573,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
     REQUIRE(rec.exists());
     
     // Change encryption key
-    randomBytes(options.encryptionKey);
+    SecureRandomize(options.encryptionKey);
     db->rekey(options.encryptionAlgorithm, options.encryptionKey);
     
     reopenDatabase(&options);

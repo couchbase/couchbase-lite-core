@@ -26,9 +26,7 @@
 #include "c4Document+Fleece.h"
 #include "c4Replicator.h"
 #include "BLIP.hh"
-#ifndef __APPLE__
-#include "arc4random.h"
-#endif
+#include "SecureRandomize.hh"
 
 using namespace std;
 using namespace fleece;
@@ -339,7 +337,7 @@ namespace litecore { namespace repl {
             unsigned gen = c4rev_getGeneration(revID);
             while (gen < --lastGen) {
                 char fakeID[50];
-                sprintf(fakeID, "%u-faded000%.08x%.08x", lastGen, arc4random(), arc4random());
+                sprintf(fakeID, "%u-faded000%.08x%.08x", lastGen, RandomNumber(), RandomNumber());
                 if (nWritten++ > 0)
                     historyStream << ',';
                 historyStream << fakeID;

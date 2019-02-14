@@ -27,13 +27,9 @@
 #include <stdarg.h>
 #include <mutex>
 #include <thread>
-
-#if defined(__linux__)
-    #include "arc4random.h"
-#endif
+#include "SecureRandomize.hh"
 
 #ifdef _MSC_VER
-    #include <arc4random.h>
     #undef min
 #endif
 
@@ -96,10 +92,6 @@ std::string sliceToHexDump(slice result, size_t width) {
     return hex;
 }
 
-
-void randomBytes(slice dst) {
-    arc4random_buf((void*)dst.buf, (int)dst.size);
-}
 
 namespace fleece {
     std::ostream& operator<< (std::ostream& o, slice s) {

@@ -18,11 +18,8 @@
 
 #include "c4Test.hh"
 #include "Benchmark.hh"
+#include "SecureRandomize.hh"
 #include <chrono>
-
-#ifndef __APPLE__
-#include "arc4random.h"
-#endif
 
 static const size_t kSizeOfDocument = 1000;
 static const unsigned kNumDocuments = 100000;
@@ -48,7 +45,7 @@ public:
 
         for (unsigned i = 0; i < kNumDocuments; i++) {
             char docID[50];
-            sprintf(docID, "doc-%08x-%08x-%08x-%04x", arc4random(), arc4random(), arc4random(), i);
+            sprintf(docID, "doc-%08x-%08x-%08x-%04x", litecore::RandomNumber(), litecore::RandomNumber(), litecore::RandomNumber(), i);
             char revID[50];
             sprintf(revID, "1-deadbeefcafebabe80081e50");
             char json[kSizeOfDocument+100];
