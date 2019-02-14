@@ -132,25 +132,36 @@ namespace litecore { namespace repl {
         //FIX: Map common errors to more standard domains
         if (!err.code)
             return { };
-        return {slice(error::nameOfDomain((error::Domain)err.domain)),
-                err.code,
-                alloc_slice(c4error_getMessage(err))};
+        slice blipDomain;
+        if (err.domain == WebSocketDomain && err.code < 1000)
+            blipDomain = "HTTP"_sl;
+        else
+            blipDomain = slice(error::nameOfDomain((error::Domain)err.domain));
+        return {blipDomain, err.code, alloc_slice(c4error_getMessage(err))};
     }
 
 
     C4Error Worker::blipToC4Error(const blip::Error &err) {
-        if (!err.domain)
+        if (!err.domain || err.code == 0)
             return { };
         C4ErrorDomain domain = LiteCoreDomain;
-        int code = kC4ErrorRemoteError;
-        string domainStr = err.domain.asString();
-        const char* domainCStr = domainStr.c_str();
-        for (error::Domain d = error::LiteCore; d < error::NumDomainsPlus1; d = (error::Domain)(d+1)) {
-            if (strcmp(domainCStr, error::nameOfDomain(d)) == 0) {
-                domain = (C4ErrorDomain)d;
-                code = err.code;
-                break;
+        int code = 0;
+        if (err.domain == "HTTP"_sl) {
+            domain = WebSocketDomain;
+            code = err.code;
+        } else {
+            for (error::Domain d = error::LiteCore; d < error::NumDomainsPlus1; d = (error::Domain)(d+1)) {
+                if (err.domain == slice(error::nameOfDomain(d))) {
+                    domain = (C4ErrorDomain)d;
+                    code = err.code;
+                    break;
+                }
             }
+        }
+        if (code == 0) {
+            LogToAt(SyncLog, Warning, "Received unknown error {'%.*s' %d \"%.*s\"} from server",
+                    SPLAT(err.domain), err.code, SPLAT(err.message));
+            code = kC4ErrorRemoteError;
         }
         return c4error_make(domain, code, err.message);
     }
