@@ -1,64 +1,100 @@
-cmake_minimum_required (VERSION 2.6)
+#[[
+LiteCore Static Library Tests CMake Project
+
+This project builds a test runner that links against the static LiteCore library to
+verify that the inner logic is working correctly (i.e. non exported functions, etc).
+It uses some predefined data as follows:
+
+- Everything in the 'data' directory
+- Everything in the '../../C/tests/data' directory
+- Fleece and JSON data files from '../../vendor/fleece/Tests'
+
+The test runner depends on multiple other libraries from multiple git repositories:
+
+- LiteCore static library (../..)
+- Fleece static library (../../vendor/fleece)
+- mbedcrypto static library (../../vendor/mbedtls)
+- SQLite Unicode snowball static library (../../vendor/sqlite3_unicodesn)
+- BLIP static library (../../vendor/BLIP-Cpp)
+- CivetWeb static library (../../vendor/civetweb)
+- Support static library (../../Support [partial])
+
+In addition, there are also some system dependencies that are not listed here
+]]#
+cmake_minimum_required (VERSION 3.9)
 project (CppTests)
 
+if(ANDROID OR WINDOWS_STORE)
+    # No sense building it for Android since using an Android executable is
+    # tricky and strange.  Windows Store projects are also not supported here.
+    return()
+endif()
+
+# This project is not standalone.  Point to the "root" directory
 set(TOP ${PROJECT_SOURCE_DIR}/../../)
 
-add_definitions(-DLITECORE_CPP_TESTS=1 -D_USE_MATH_DEFINES)
-
-include_directories(${TOP}LiteCore/BlobStore/ ${TOP}LiteCore/Indexes/ ${TOP}LiteCore/RevTrees/
-                    ${TOP}LiteCore/Storage/ ${TOP}LiteCore/Support/ ${TOP}LiteCore/VersionVectors/
-                    ${TOP}LiteCore/ ${TOP}REST/
-                    ${TOP}tools/
-                    ${TOP}vendor/fleece/Fleece/
-                    ${TOP}vendor/fleece/Fleece/Mutable
-                    ${TOP}vendor/fleece/Fleece/Tree
-                    ${TOP}vendor/fleece/Experimental
-                    ${TOP}vendor/fleece/vendor/catch/
-                    ${TOP}vendor/fleece/vendor/jsonsl/
-                    ${TOP}vendor/SQLiteCpp/include/
-                    ${TOP}Replicator/
-                    ${TOP}C/tests/
-                )
-
-aux_source_directory(.  TEST_SRC)
-aux_source_directory(${TOP}vendor/fleece/Tests FLEECE_TEST_SRC)
-LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/FleeceTestsMain.cc)
-if(NOT APPLE)
-    LIST(REMOVE_ITEM FLEECE_TEST_SRC ${TOP}vendor/fleece/Tests/ObjCTests.mm)
+if(MSVC)
+    include("${CMAKE_CURRENT_LIST_DIR}/cmake/platform_win.cmake")
+elseif(APPLE)
+    include("${CMAKE_CURRENT_LIST_DIR}/cmake/platform_apple.cmake")
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    include("${CMAKE_CURRENT_LIST_DIR}/cmake/platform_linux.cmake")
+else()
+    message(FATAL_ERROR "Unsupported platform ${CMAKE_SYSTEM_NAME}")
 endif()
-set(TEST_SRC ${TEST_SRC}
-             ${FLEECE_TEST_SRC}
-             ${TOP}vendor/fleece/Experimental/KeyTree.cc)
 
+set_source_files(RESULT TEST_SRC)
+
+# Copy data files to output directory
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests)
 file(COPY ../../C/tests/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 file(GLOB FLEECE_FILES "../../vendor/fleece/Tests/*.json" "../../vendor/fleece/Tests/*.json5" "../../vendor/fleece/Tests/*.fleece" "../../vendor/fleece/Tests/*.txt")
 file(COPY ${FLEECE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/vendor/fleece/Tests)
-add_executable(CppTests ${TEST_SRC} ../../Replicator/tests/ReplicatorLoopbackTest.cc
-  ../../C/tests/c4Test.cc ../../Replicator/tests/CookieStoreTest.cc
-  ../../REST/Response.cc)
+add_executable(CppTests ${TEST_SRC})
 
-target_link_libraries(CppTests  LiteCoreStatic
-                                FleeceStatic
-                                mbedcrypto
-                                SQLite3_UnicodeSN
-                                BLIPStatic
-                                CivetWeb
-                                Support)
+setup_build()
 
-if(APPLE)
-    target_link_libraries(CppTests  "-framework Foundation"
-                                    "-framework CFNetwork"
-                                    "-framework Security"
-                                    "z")
-else()
-    if(UNIX AND NOT ANDROID)
-        target_link_libraries(CppTests "${LIBCXX_LIB}" "${LIBCXXABI_LIB}" "${ICU4C_COMMON}" "${ICU4C_I18N}" z pthread dl)
-    elseif(ANDROID)
-        target_link_libraries(CppTests "atomic" "log" zlibstatic)
-    else()
-        set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
-        target_link_libraries(CppTests ws2_32 zlibstatic)
-    endif()
-endif()
+target_compile_definitions(
+    CppTests PRIVATE
+    -DLITECORE_CPP_TESTS=1
+    -D_USE_MATH_DEFINES     # Define math constants like PI
+    -DNOMINMAX              # Get rid of min/max macros that interfere with std::min/std::max
+)
 
+target_include_directories(
+    CppTests PRIVATE
+    ${TOP}vendor/BLIP-Cpp/src/util
+    ${TOP}vendor/BLIP-Cpp/include/blip_cpp
+    ${TOP}vendor/fleece/API
+    ${TOP}vendor/fleece/Experimental
+    ${TOP}vendor/fleece/Fleece/Core
+    ${TOP}vendor/fleece/Fleece/Mutable
+    ${TOP}vendor/fleece/Fleece/Support
+    ${TOP}vendor/fleece/Fleece/Tree
+    ${TOP}vendor/fleece/vendor/catch
+    ${TOP}vendor/fleece/vendor/jsonsl
+    ${TOP}vendor/SQLiteCpp/include
+    ${TOP}vendor/SQLiteCpp/sqlite3
+    ${TOP}C
+    ${TOP}C/include
+    ${TOP}C/tests
+    ${TOP}LiteCore/BlobStore
+    ${TOP}LiteCore/Database
+    ${TOP}LiteCore/RevTrees
+    ${TOP}LiteCore/Storage
+    ${TOP}LiteCore/Support
+    ${TOP}LiteCore/Query
+    ${TOP}Replicator
+    ${TOP}vendor/civetweb/include
+)
+
+target_link_libraries(
+    CppTests PRIVATE
+    LiteCoreStatic
+    FleeceStatic
+    SQLite3_UnicodeSN
+    BLIPStatic
+    CivetWeb
+    Support
+    ${LITECORE_CRYPTO_LIB}
+)

@@ -1,68 +1,81 @@
-cmake_minimum_required (VERSION 2.6)
+#[[
+LiteCore Shared Library Tests CMake Project
+
+This project builds a test runner that links against the shared LiteCore library to
+verify that the exported C API is working correctly.  It uses some predefined data
+as follows:
+
+- Everything in the 'data' directory
+- iosdb.cblite2 database from ../../LiteCore/tests/data/ios120
+
+The test runner depends on multiple other libraries from multiple git repositories:
+
+- LiteCore shared library (../..)
+- LiteCore REST shared library (../../REST)
+- CivetWeb static library (../../endor/civetweb)
+- Fleece static library (../../vendor/fleece)
+- Support static library (../../Support [partial])
+- BLIP static library (../../vendor/BLIP-Cpp) 
+
+In addition, there are also some system dependencies that are not listed here
+]]#
+cmake_minimum_required (VERSION 3.9)
 project (C4Tests)
 
-set(TOP ${PROJECT_SOURCE_DIR}/../../)
-
-add_definitions(-DC4_TESTS)
-
-include_directories(${TOP}C/include/
-                    ${TOP}C/tests/
-                    ${TOP}C/
-                    ${TOP}Replicator/tests/
-                    ${TOP}Replicator/
-                    ${TOP}REST/
-                    ${TOP}vendor/fleece/Fleece/
-                    ${TOP}vendor/civetweb/include/
-                    ${TOP}vendor/fleece/vendor/catch/
-                )
-
-FILE(GLOB TEST_SRC *.cc)
-if(APPLE)
-    FILE(GLOB TEST_SRC_MM  *.mm)
-    set(TEST_SRC ${TEST_SRC} ${TEST_SRC_MM})
-endif(APPLE)
-
-aux_source_directory(${TOP}/REST/tests  REST_TEST_SRC)
-
-set(TEST_SRC ${TEST_SRC}
-             ${REST_TEST_SRC}
-             ${TOP}/Replicator/tests/ReplicatorAPITest.cc
-             ${TOP}/Replicator/CivetWebSocket.cc
-             ${TOP}/LiteCore/tests/main.cpp
-             ${TOP}/LiteCore/Support/StringUtil.cc
-             ${TOP}/LiteCore/Support/FilePath.cc
-             ${TOP}/LiteCore/Support/Logging_Stub.cc
-             ${TOP}/REST/Response.cc)
-
-if(NOT APPLE)
-    list(FILTER TEST_SRC EXCLUDE REGEX "\\.m+$")
+if(ANDROID OR WINDOWS_STORE)
+    # No sense building it for Android since using an Android executable is
+    # tricky and strange.  Windows Store projects are also not supported here.
+    return()
 endif()
 
-add_executable(C4Tests ${TEST_SRC} )
+# This project is not standalone.  Point to the "root" directory
+set(TOP ${PROJECT_SOURCE_DIR}/../../)
 
-target_link_libraries(C4Tests PRIVATE  LiteCore LiteCoreREST CivetWeb FleeceStatic Support BLIPStatic)
+if(MSVC)
+    include("${CMAKE_CURRENT_LIST_DIR}/cmake/platform_win.cmake")
+elseif(APPLE)
+    include("${CMAKE_CURRENT_LIST_DIR}/cmake/platform_apple.cmake")
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    include("${CMAKE_CURRENT_LIST_DIR}/cmake/platform_linux.cmake")
+else()
+    message(FATAL_ERROR "Unsupported platform ${CMAKE_SYSTEM_NAME}")
+endif()
+
+set_source_files(RESULT TEST_SRC)
+add_executable(C4Tests ${TEST_SRC})
+setup_build()
+
+target_compile_definitions(
+    C4Tests PRIVATE
+    -DC4_TESTS
+)
+
+target_link_libraries(
+    C4Tests PRIVATE
+    LiteCore
+    LiteCoreREST
+    CivetWeb
+    FleeceStatic
+    Support
+    BLIPStatic
+)
+
+target_include_directories(
+    C4Tests PRIVATE
+    .
+    ${TOP}vendor/fleece/vendor/catch
+    ${TOP}vendor/fleece/API
+    ${TOP}vendor/fleece/Fleece/Support
+    ${TOP}C
+    ${TOP}Replicator
+    ${TOP}Replicator/tests
+    ${TOP}LiteCore/Support
+    ${TOP}vendor/SQLiteCpp/sqlite3
+    ${TOP}vendor/civetweb/include
+    ${TOP}vendor/BLIP-Cpp/src/util
+)
+
+# Copy data files to output directory
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/C/tests)
 file(COPY ../../LiteCore/tests/data/replacedb/ios120/iosdb.cblite2
   DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/LiteCore/tests/data/replacedb/ios120)
-
-if(MSVC)
-    set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
-    set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore
-                    ${BIN_TOP}/\$\(Configuration\)/LiteCoreREST)
-    add_custom_command(TARGET C4Tests POST_BUILD
-        COMMAND ${CMAKE_COMMAND}
-        -DFilesToCopy="${FilesToCopy}"
-        -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
-        -P ${TOP}MSVC/copy_artifacts.cmake)
-    target_link_libraries(C4Tests PUBLIC mbedcrypto)
-elseif(ANDROID)
-    target_link_libraries(C4Tests PUBLIC mbedcrypto  "log")
-elseif(APPLE)
-    if(BUILD_ENTERPRISE)
-        target_link_libraries(C4Tests PUBLIC  "-framework CoreFoundation"
-                                          "-framework CoreML"
-                                          "-framework Vision")
-    endif()
-elseif(UNIX)
-    target_link_libraries(C4Tests PUBLIC mbedcrypto  "pthread" "${LIBCXX_LIB}" "${LIBCXXABI_LIB}" dl)
-endif()
