@@ -73,8 +73,10 @@ namespace litecore { namespace repl {
                 c4enum_getDocumentInfo(e, &info);
                 _maxPushedSequence = info.sequence;
                 auto rev = retained(new RevToSend(info));
-                if (addChangeToList(rev, e, changes))
+                if (shouldPushRev(rev, e)) {
+                    changes->push_back(rev);
                     --p.limit;
+                }
             }
         }
 
@@ -134,9 +136,12 @@ namespace litecore { namespace repl {
                 // Note: we send tombstones even if the original getChanges() call specified
                 // skipDeletions. This is intentional; skipDeletions applies only to the initial
                 // dump of existing docs, not to 'live' changes.
-                if (addChangeToList(rev, nullptr, changes) && changes->size() >= kMaxChanges) {
-                    _pusher->gotChanges(move(changes), _maxPushedSequence, {});
-                    changes.reset();
+                if (shouldPushRev(rev, nullptr)) {
+                    changes->push_back(rev);
+                    if (changes->size() >= kMaxChanges) {
+                        _pusher->gotChanges(move(changes), _maxPushedSequence, {});
+                        changes.reset();
+                    }
                 }
             }
 
@@ -149,9 +154,8 @@ namespace litecore { namespace repl {
 
 
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
-    bool DBWorker::addChangeToList(RevToSend *rev,
-                                   C4DocEnumerator *e,
-                                   shared_ptr<RevToSendList> &changes)
+    bool DBWorker::shouldPushRev(RevToSend *rev,
+                                   C4DocEnumerator *e)
     {
         if (_pushDocIDs != nullptr)
             if (_pushDocIDs->find(slice(rev->docID).asString()) == _pushDocIDs->end())
@@ -216,7 +220,6 @@ namespace litecore { namespace repl {
         }
 
         _pushingDocs.insert({rev->docID, nullptr});
-        changes->push_back(rev);
         return true;
     }
 
@@ -478,7 +481,7 @@ namespace litecore { namespace repl {
         Retained<RevToSend> newRev = i->second;
         _pushingDocs.erase(i);
         if (newRev) {
-            if (synced)
+            if (synced && _getForeignAncestors)
                 newRev->remoteAncestorRevID = rev->revID;
             logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
                        SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
@@ -490,9 +493,9 @@ namespace litecore { namespace repl {
             } else {
                 // Send newRev as though it had just arrived:
                 auto changes = make_shared<RevToSendList>();
-                if (addChangeToList(newRev, nullptr, changes)) {
+                if (shouldPushRev(newRev, nullptr)) {
                     _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
-                    _pusher->gotChanges(move(changes), _maxPushedSequence, {});
+                    _pusher->gotOutOfOrderChange(newRev);
                     ok = true;
                 }
             }

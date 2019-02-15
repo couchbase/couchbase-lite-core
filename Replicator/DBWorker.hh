@@ -155,8 +155,7 @@ namespace litecore { namespace repl {
         // Push:
         void _getChanges(GetChangesParams, Retained<Pusher> pusher);
         void dbChanged();
-        bool addChangeToList(RevToSend*, C4DocEnumerator*,
-                             std::shared_ptr<RevToSendList>&);
+        bool shouldPushRev(RevToSend*, C4DocEnumerator*);
         void _sendRevision(Retained<RevToSend> request,
                            blip::MessageProgressCallback onProgress);
         alloc_slice createRevisionDelta(C4Document *doc, RevToSend *request,

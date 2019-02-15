@@ -44,6 +44,11 @@ namespace litecore { namespace repl {
             enqueue(&Pusher::_gotChanges, move(changes), lastSequence, err);
         }
 
+        void gotOutOfOrderChange(RevToSend *rev) {
+            enqueue(&Pusher::_gotOutOfOrderChange, retained(rev));
+        }
+
+
         void couldntSendRevision(RevToSend* req) {
             enqueue(&Pusher::_couldntSendRevision, retained(req));
         }
@@ -61,6 +66,7 @@ namespace litecore { namespace repl {
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
         void _gotChanges(std::shared_ptr<RevToSendList> changes, C4SequenceNumber lastSequence, C4Error err);
+        void _gotOutOfOrderChange(Retained<RevToSend>);
         void sendChanges(std::shared_ptr<RevToSendList>);
         void maybeGetMoreChanges();
         void sendChangeList(RevToSendList);

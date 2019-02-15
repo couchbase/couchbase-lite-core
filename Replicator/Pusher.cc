@@ -157,6 +157,7 @@ namespace litecore { namespace repl {
             return;
         if (err.code)
             return gotError(err);
+        DebugAssert(lastSequence >= _lastSequenceRead + changes->size());
         _lastSequenceRead = lastSequence;
         _pendingSequences.seen(lastSequence);
         if (changes->empty()) {
@@ -199,6 +200,22 @@ namespace litecore { namespace repl {
         } else {
             maybeGetMoreChanges();
         }
+    }
+
+
+    // Called when DBWorker was holding up a revision until an ancestor revision finished.
+    void Pusher::_gotOutOfOrderChange(Retained<RevToSend> change) {
+        if (!connection())
+            return;
+        logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%llu",
+                SPLAT(change->docID), SPLAT(change->revID),
+                SPLAT(change->remoteAncestorRevID),
+                (_proposeChanges ? "proposeChanges" : "changes"),
+                change->sequence);
+        _lastSequenceRead = max(_lastSequenceRead, change->sequence);
+        _pendingSequences.seen(change->sequence);
+        addProgress({0, change->bodySize});
+        sendChanges(make_shared<RevToSendList>(1, change));
     }
 
 
