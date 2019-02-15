@@ -175,7 +175,7 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        bool needRemoteRevID = (_getForeignAncestors && _checkpointValid);
+        bool needRemoteRevID = _getForeignAncestors && !rev->remoteAncestorRevID &&_checkpointValid;
         if (needRemoteRevID || _options.pushFilter) {
             c4::ref<C4Document> doc;
             C4Error error;
