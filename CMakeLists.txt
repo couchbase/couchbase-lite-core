@@ -188,10 +188,10 @@ add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
 # Mac/iOS stuff
 if (APPLE)
     # Specify that we want to use CommonCrypto:
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_CC")
+    add_definitions(-D_CRYPTO_CC)
 
-  elseif(UNIX AND NOT ANDROID)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_CRYPTO_MBEDTLS")
+else()
+    add_definitions(-D_CRYPTO_MBEDTLS)
 endif()
 
 # Generate file repo_version.h containing Git repo information, and add it to #include path:

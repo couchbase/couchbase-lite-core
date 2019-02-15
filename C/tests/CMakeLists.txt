@@ -54,12 +54,15 @@ if(MSVC)
         -DFilesToCopy="${FilesToCopy}"
         -DDestinationDirectory=${PROJECT_BINARY_DIR}/\$\(Configuration\)
         -P ${TOP}MSVC/copy_artifacts.cmake)
+    target_link_libraries(C4Tests PUBLIC mbedcrypto)
 elseif(ANDROID)
-    target_link_libraries(C4Tests PUBLIC  "log")
-elseif(APPLE AND BUILD_ENTERPRISE)
-    target_link_libraries(C4Tests PUBLIC  "-framework CoreFoundation"
+    target_link_libraries(C4Tests PUBLIC mbedcrypto  "log")
+elseif(APPLE)
+    if(BUILD_ENTERPRISE)
+        target_link_libraries(C4Tests PUBLIC  "-framework CoreFoundation"
                                           "-framework CoreML"
                                           "-framework Vision")
+    endif()
 elseif(UNIX)
-    target_link_libraries(C4Tests PUBLIC  "pthread" "${LIBCXX_LIB}" "${LIBCXXABI_LIB}" dl)
+    target_link_libraries(C4Tests PUBLIC mbedcrypto  "pthread" "${LIBCXX_LIB}" "${LIBCXXABI_LIB}" dl)
 endif()
