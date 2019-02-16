@@ -1,8 +1,24 @@
-cmake_minimum_required (VERSION 3.1)
-cmake_policy(VERSION 3.1)
-project (BLIP_Cpp)
+#[[
+BLIP-Cpp CMake Project
 
-### BUILD SETTINGS:
+This project builds a static library containing the logic for crafting and processing BLIP messages.
+These types of messages are used in Couchbase Lite replication starting with Couchbase Lite 2.0.
+
+This project produces one target, BLIPStatic, that cannot be used on its own.  It requires the Fleece
+and LiteCore libraries to be checked out along with it in the following structure:
+
+LiteCore
+|
+--vendor
+|
+----fleece
+|
+----BLIPCpp
+]]#
+
+cmake_minimum_required (VERSION 3.9)
+cmake_policy(VERSION 3.9)
+project (BLIP_Cpp)
 
 set(COMPILE_FLAGS   "${COMPILE_FLAGS}   -Wall -Werror")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -10,33 +26,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
+set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
+    $<$<CONFIG:Debug>:DEBUG>
+)
 
-### SOURCES:
-
-include_directories("include/blip_cpp"
-                    "src/blip"
-                    "src/util"
-                    "src/websocket"
-                    "vendor/zlibcomplete/lib"
-                    "../fleece/API"
-                    "../../LiteCore/Support")
-
-aux_source_directory("src/blip"                 BLIP_SRC)
-aux_source_directory("src/util"                 UTIL_SRC)
-aux_source_directory("src/websocket"            WEBSOCKET_SRC)
-aux_source_directory("vendor/zlibcomplete/lib"  ZLIBCOMPLETE_SRC)
-
-if(NOT APPLE)
-    list(REMOVE_ITEM UTIL_SRC src/util/GCDMailbox.cc)
+if(MSVC)
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/platform_win.cmake")
+elseif(APPLE)
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/platform_apple.cmake")
+elseif(ANDROID)
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/platform_android.cmake")
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+    include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/platform_linux.cmake")
+else()
+    message(FATAL_ERROR "Unsupported platform ${CMAKE_SYSTEM_NAME}!")
 endif()
 
-set(ALL_SRC_FILES ${BLIP_SRC} ${UTIL_SRC} ${WEBSOCKET_SRC} ${ZLIBCOMPLETE_SRC})
-
-### LIBRARY:
-
+set_source_files(RESULT ALL_SRC_FILES)
 add_library(BLIPStatic STATIC ${ALL_SRC_FILES})
-if(WIN32 OR ANDROID)
-    add_subdirectory("vendor/zlib")
-    include_directories("vendor/zlib")
-    include_directories("${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib")
-endif()
+setup_build()
+target_include_directories(
+    BLIPStatic PRIVATE
+    "include/blip_cpp"
+    "src/blip"
+    "src/util"
+    "src/websocket"
+    "${CMAKE_CURRENT_LIST_DIR}/../fleece/API"
+    "${CMAKE_CURRENT_LIST_DIR}/../fleece/Fleece/Support"
+    "${CMAKE_CURRENT_LIST_DIR}/../../LiteCore/Support"
+)
