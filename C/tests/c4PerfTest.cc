@@ -21,6 +21,7 @@
 #include "c4Document+Fleece.h"
 #include "Base.hh"
 #include "Benchmark.hh"
+#include "SecureRandomize.hh"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <iostream>
@@ -28,10 +29,6 @@
 #include <thread>
 #ifndef _MSC_VER
 #include <unistd.h>
-#endif
-
-#ifndef __APPLE__
-#include "arc4random.h"
 #endif
 
 using namespace fleece;
@@ -140,7 +137,7 @@ public:
         Benchmark b;
         for (size_t readNo = 0; readNo < numDocsToRead; ++readNo) {
             char docID[30];
-            sprintf(docID, "%07zu", ((unsigned)arc4random() % numDocs) + 1);
+            sprintf(docID, "%07zu", ((unsigned)litecore::RandomNumber() % numDocs) + 1);
             INFO("Reading doc " << docID);
             b.start();
             C4Error error;

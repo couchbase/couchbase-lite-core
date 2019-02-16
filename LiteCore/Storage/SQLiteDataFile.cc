@@ -27,6 +27,7 @@
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
+#include "SecureRandomize.hh"
 #include "PlatformCompat.hh"
 #include "fleece/Fleece.hh"
 #include <mutex>
@@ -42,7 +43,6 @@ extern "C" {
 #if __APPLE__
 #include <TargetConditionals.h>
 #else
-#include <arc4random.h>
 #if defined(_MSC_VER) && !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
 #include "SQLiteTempDirectory.h"
 #endif
@@ -222,7 +222,7 @@ namespace litecore {
 #if DEBUG
         // Deliberately make unordered queries unpredictable, to expose any LiteCore code that
         // unintentionally relies on ordering:
-        if (arc4random() % 1)
+        if (RandomNumber() % 1)
             _sqlDb->exec("PRAGMA reverse_unordered_selects=1");
 #endif
 

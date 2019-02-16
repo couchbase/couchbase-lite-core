@@ -14,13 +14,10 @@
 #include "LoopbackProvider.hh"
 #include "ReplicatorTuning.hh"
 #include "StringUtil.hh"
+#include "SecureRandomize.hh"
 #include <algorithm>
 #include <chrono>
 #include <thread>
-
-#ifndef __APPLE__
-#include "arc4random.h"
-#endif
 
 #include "c4Test.hh"
 
@@ -325,8 +322,7 @@ public:
     static void sleepFor(duration interval) {
         long ticks = interval.count();
         if (ticks < 0) {
-            ticks = arc4random_uniform(uint32_t(-ticks))
-                   + arc4random_uniform(uint32_t(-ticks));
+            ticks = RandomNumber(uint32_t(-ticks)) + RandomNumber(uint32_t(-ticks));
             interval = duration(ticks);
         }
         this_thread::sleep_for(interval);

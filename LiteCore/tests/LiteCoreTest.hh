@@ -50,8 +50,6 @@ static inline std::string json5(const std::string &s)      {return fleece::Conve
 std::string sliceToHex(slice);
 std::string sliceToHexDump(slice, size_t width = 16);
 
-void randomBytes(slice dst);
-
 // Some operators to make slice work with unit-testing assertions:
 // (This has to be declared before including catch.hpp, because C++ sucks)
 namespace fleece {
