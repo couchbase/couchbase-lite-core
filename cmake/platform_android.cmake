@@ -18,6 +18,9 @@ endfunction()
 
 function(setup_build)
     add_subdirectory("vendor/zlib")
-    include_directories("vendor/zlib")
-    include_directories("${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib")
+    target_include_directories(
+        BLIPStatic PRIVATE
+        "vendor/zlib"
+        "${CMAKE_CURRENT_BINARY_DIR}/vendor/zlib"
+    )
 endfunction()

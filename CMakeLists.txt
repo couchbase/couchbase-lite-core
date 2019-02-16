@@ -14,6 +14,10 @@ LiteCore
 ----fleece
 |
 ----BLIPCpp
+
+Also if on Android or Windows this library must be linked with the zlibstatic library from the
+vendor/zlib folder (the target will be automatically added on those platforms, but the final product
+must link with it via target_link_libraries)
 ]]#
 
 cmake_minimum_required (VERSION 3.9)
