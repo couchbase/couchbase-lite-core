@@ -377,7 +377,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
                     "1@binky";
             String[] history2 = {kConflictRevID, kExpectedRevID};
             doc = db.put(json2fleece("{'from':'elsewhere'}"), kDocID, 0,
-                    true, false,
+                    true, true,
                     history2, true, 0, 1);
             assertNotNull(doc);
             // NOTE: With current JNI binding, unable to check commonAncestorIndex value
@@ -521,7 +521,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
             // "Pull" a conflicting revision:
             String[] history = {"4-dddd", "3-ababab", kRev2ID};
             C4Document doc = db.put(kFleeceBody3, kDocID, 0, true,
-                    false, history, true, 0, 0);
+                    true, history, true, 0, 0);
             assertNotNull(doc);
 
             // Now check the common ancestor algorithm:
