@@ -18,6 +18,11 @@ endfunction()
 
 function(setup_build)
     add_subdirectory("vendor/zlib")
+    target_compile_definitions(
+        BLIPStatic PRIVATE
+        -DINCL_EXTRA_HTON_FUNCTIONS # Make sure htonll is defined for WebSocketProtocol.hh
+    )
+
     target_include_directories(
         BLIPStatic PRIVATE
         "vendor/zlib"
