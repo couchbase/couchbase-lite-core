@@ -17,5 +17,8 @@ function(set_source_files)
 endfunction()
 
 function(setup_build)
-    # No-op
+    target_include_directories(
+        BLIPStatic PRIVATE
+        ${LITECORE_LOCATION}/LiteCore/Unix
+    )
 endfunction()
