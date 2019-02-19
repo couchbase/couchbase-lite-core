@@ -140,6 +140,8 @@ void AssertionFailed(const char *fn, const char *file, unsigned line, const char
 void CheckError(C4Error error,
                 C4ErrorDomain expectedDomain, int expectedCode, const char *expectedMessage)
 {
+    alloc_slice desc = c4error_getDescription(error);
+    INFO("Error is " << string(desc));
     CHECK(error.domain == expectedDomain);
     CHECK(error.code == expectedCode);
     if (expectedMessage) {

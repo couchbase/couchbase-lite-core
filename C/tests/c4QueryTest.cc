@@ -388,6 +388,23 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Buried Full-text queries", "[Query][C][FTS][!
 }
 
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Aggregate Full-text query", "[Query][C][FTS]") {
+    // https://github.com/couchbase/couchbase-lite-core/issues/703
+    C4Error err;
+    REQUIRE(c4db_createIndex(db, C4STR("byStreet"), C4STR("[[\".contact.address.street\"]]"), kC4FullTextIndex, nullptr, &err));
+    query = c4query_new(db,
+            json5slice("['SELECT', { 'WHAT': [ [ 'count()', [ '.', 'uuid' ] ] ],"
+                       " 'WHERE': [ 'AND', [ 'AND', [ '=', [ '.', 'doc_type' ], 'rec' ],"
+                                                  " [ 'MATCH', 'byStreet', 'keyword' ] ],"
+                                         "[ '=', [ '.', 'pId' ], 'bfe2970b-9be6-46f6-b9a7-38c5947c27b1' ] ] } ]"),
+                        &err);
+    // Just test whether the enumerator starts without an error:
+    auto e = c4query_run(query, nullptr, nullslice, &err);
+    REQUIRE(e);
+    c4queryenum_free(e);
+}
+
+
 #pragma mark - WHAT, JOIN, etc:
 
 

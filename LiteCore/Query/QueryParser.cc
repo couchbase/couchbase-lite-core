@@ -215,47 +215,32 @@ namespace litecore {
             unsigned numMatches = findFTSProperties(where);
             require(numMatches <= _ftsTables.size(),
                     "Sorry, multiple MATCHes of the same property are not allowed");
-            if (numMatches > 0)
-                _baseResultColumns.push_back(_dbAlias + ".rowid");
         }
+
+        // Add the indexed prediction() calls to _indexJoinTables now
+        findPredictionCalls(operands);
 
         _sql << "SELECT ";
 
         // DISTINCT:
         auto distinct = getCaseInsensitive(operands, "DISTINCT"_sl);
         auto distinctVal = distinct && distinct->asBool();
-        _isAggregateQuery = _isAggregateQuery || distinctVal;
-        if (distinctVal)
+        if (distinctVal) {
             _sql << "DISTINCT ";
+            _isAggregateQuery = true;
+        }
 
         // WHAT clause:
-        // Default result columns:
         string defaultTablePrefix;
         if (_propertiesUseAliases)
             defaultTablePrefix = quoteTableName(_dbAlias) + ".";
-        int nCol = 0;
-        
-        if(!distinctVal) {
-            for (auto &col : _baseResultColumns)
-                _sql << (nCol++ ? ", " : "") << defaultTablePrefix << col;
-        }
 
-        // Write columns for the FTS match offsets (in order of appearance of the MATCH expressions)
-        for (string &ftsTable : _ftsTables) {
-            const string &alias = _indexJoinTables[ftsTable];
-            _sql << (nCol++ ? ", " : "") << "offsets(" << alias << ".\"" << ftsTable << "\")";
-        }
+        auto startPosOfWhat = _sql.tellp();
+        _1stCustomResultCol = 0;
 
-        // Add the indexed prediction() calls now
-        findPredictionCalls(operands);
-
-        _1stCustomResultCol = nCol;
-        auto nCustomCol = writeSelectListClause(operands, "WHAT"_sl, (nCol ? ", " : ""), true);
-
+        auto nCustomCol = writeSelectListClause(operands, "WHAT"_sl, "", true);
         if (nCustomCol == 0) {
             // If no return columns are specified, add the docID and sequence as defaults
-            if (nCol > 0)
-                _sql << ", ";
             _sql << defaultTablePrefix << "key, " << defaultTablePrefix << "sequence";
             _columnTitles.push_back(kDocIDProperty);
             _columnTitles.push_back(kSequenceProperty);
@@ -280,6 +265,24 @@ namespace litecore {
             _aggregatesOK = true;
             parseNode(having);
             _aggregatesOK = false;
+        }
+
+        // Now go back and prepend some WHAT columns needed for FTS:
+        if(!_isAggregateQuery && !_ftsTables.empty()) {
+            stringstream extra;
+            extra << defaultTablePrefix << _dbAlias << ".rowid";
+
+            // Write columns for the FTS match offsets (in order of appearance of the MATCH expressions)
+            for (string &ftsTable : _ftsTables) {
+                const string &alias = _indexJoinTables[ftsTable];
+                extra << ", offsets(" << alias << ".\"" << ftsTable << "\")";
+            }
+            extra << ", ";
+            string str = _sql.str();
+            str.insert(startPosOfWhat, extra.str());
+            _sql.str(str);
+            _sql.seekp(0, stringstream::end);
+            _1stCustomResultCol += 1 + _ftsTables.size();
         }
 
         // ORDER_BY clause:
