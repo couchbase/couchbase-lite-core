@@ -89,6 +89,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		27543137221F65AF00E42C1F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 27EF69AF1E282549004748DF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 27DE2E472125F2C100123597;
+			remoteInfo = actors;
+		};
 		27EF6AA51E2B0D07004748DF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 27EF69AF1E282549004748DF /* Project object */;
@@ -510,6 +517,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				27543138221F65AF00E42C1F /* PBXTargetDependency */,
 			);
 			name = blip_cpp;
 			productName = blip_cpp;
@@ -613,6 +621,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		27543138221F65AF00E42C1F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 27DE2E472125F2C100123597 /* actors */;
+			targetProxy = 27543137221F65AF00E42C1F /* PBXContainerItemProxy */;
+		};
 		27EF6AA61E2B0D07004748DF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 27EF69B61E282549004748DF /* blip_cpp */;
