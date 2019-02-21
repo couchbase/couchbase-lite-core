@@ -101,7 +101,7 @@ namespace litecore { namespace blip {
         Retained<Connection>    _connection;
         Retained<WebSocket>     _webSocket;
         unique_ptr<error>       _closingWithError;
-        actor::Batcher<BLIPIO,websocket::Message> _incomingFrames;
+        actor::ActorBatcher<BLIPIO,websocket::Message> _incomingFrames;
         MessageQueue            _outbox;
         MessageQueue            _icebox;
         bool                    _writeable {true};
