@@ -31,7 +31,6 @@ namespace litecore { namespace repl {
 
     class Pusher;
     class Puller;
-    class DBWorker;
 
 
     /** The top-level replicator object, which runs the BLIP connection.
@@ -42,6 +41,7 @@ namespace litecore { namespace repl {
 
         class Delegate;
         using CloseStatus = blip::Connection::CloseStatus;
+        using Options = litecore::repl::Options;
 
         Replicator(C4Database*,
                    websocket::WebSocket*,
@@ -140,17 +140,39 @@ namespace litecore { namespace repl {
         void notifyEndedDocuments();
         void _onBlobProgress(BlobProgress);
 
+        // Checkpoints:
+        struct CheckpointResult {
+            alloc_slice checkpointID;
+            alloc_slice data;
+            bool dbIsEmpty;
+            C4Error err;
+        };
+        CheckpointResult getCheckpoint();
+        void setCheckpoint(slice data);
+        void checkpointIsInvalid();
+        void setCookie(slice setCookieHeader);
+        std::string remoteDBIDString() const;
+        void handleGetCheckpoint(Retained<blip::MessageIn>);
+        void handleSetCheckpoint(Retained<blip::MessageIn>);
+        bool getPeerCheckpointDoc(blip::MessageIn* request, bool getting,
+                                  fleece::slice &checkpointID, c4::ref<C4RawDocument> &doc) const;
+        slice effectiveRemoteCheckpointDocID(C4Error*);
+        std::string effectiveRemoteCheckpointDocID(const C4UUID*, C4Error*);
+        std::string _getOldCheckpoint(C4Error*);
+        alloc_slice _checkpointFromID(const slice &, C4Error*);
+
+        // Member variables:
+        
         CloseStatus _closeStatus;
         Delegate* _delegate;
-        Retained<DBWorker> _dbWorker;
         Retained<Pusher> _pusher;
         Retained<Puller> _puller;
         Connection::State _connectionState;
-        Status _pushStatus {}, _pullStatus {}, _dbStatus {};
+        Status _pushStatus {}, _pullStatus {};
         fleece::Stopwatch _sinceDelegateCall;
         ActivityLevel _lastDelegateCallLevel {};
         bool _waitingToCallDelegate {false};
-        actor::Batcher<Replicator, ReplicatedRev> _docsEnded;
+        actor::ActorBatcher<Replicator, ReplicatedRev> _docsEnded;
 
         Checkpoint _checkpoint;
         alloc_slice _checkpointDocID;
@@ -159,6 +181,9 @@ namespace litecore { namespace repl {
         bool _remoteCheckpointRequested {false};
         bool _remoteCheckpointReceived {false};
         alloc_slice _checkpointJSONToSave;
+
+        const websocket::URL _remoteURL;
+        std::string _remoteCheckpointDocID;                 // docID of checkpoint
     };
 
 } }

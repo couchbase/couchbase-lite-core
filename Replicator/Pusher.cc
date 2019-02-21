@@ -18,7 +18,6 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Pusher.hh"
-#include "DBWorker.hh"
 #include "c4BlobStore.h"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -32,11 +31,11 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
-    Pusher::Pusher(Replicator *replicator, DBWorker *dbActor)
+    Pusher::Pusher(Replicator *replicator)
     :Worker(replicator, "Push")
-    ,_dbWorker(dbActor)
     ,_continuous(_options.push == kC4Continuous)
     ,_skipDeleted(_options.skipDeleted())
+    ,_disableDeltaSupport(_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
     {
         if (passive()) {
             // Passive replicator always sends "changes"
@@ -130,14 +129,13 @@ namespace litecore { namespace repl {
             increment(_changeListsInFlight); // will be decremented at start of _gotChanges
             logVerbose("Asking DB for %u changes since sequence #%llu ...",
                 _changesBatchSize, _lastSequenceRead);
-            _dbWorker->getChanges({_lastSequenceRead,
+            getChanges({_lastSequenceRead,
                                    _docIDs,
                                    _changesBatchSize,
                                    _continuous,
                                    _proposeChanges || !_proposeChangesKnown,  // getForeignAncestors
                                    _skipDeleted,                              // skipDeleted
-                                   _proposeChanges},                          // skipForeign
-                                  this);
+                                   _proposeChanges});                         // skipForeign
             // response will be to call _gotChanges
         }
     }
@@ -388,7 +386,7 @@ namespace litecore { namespace repl {
         logVerbose("Sending rev %.*s %.*s (seq #%llu) [%d/%d]",
                    SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
-        _dbWorker->sendRevision(rev, asynchronize([=](MessageProgress progress) {
+        sendRevision(rev, asynchronize([=](MessageProgress progress) {
             // message progress callback:
             if (progress.state == MessageProgress::kDisconnected) {
                 doneWithRev(rev, false, false);
@@ -443,7 +441,7 @@ namespace litecore { namespace repl {
                                               Replicator::BlobProgress &progress,
                                               C4Error *outError)
     {
-        auto blobStore = _dbWorker->blobStore();
+        auto blobStore = _db->blobStore();
         digestStr = req->property("digest"_sl);
         progress = {Dir::kPushing};
         if (!c4blob_keyFromString(digestStr, &progress.key)) {
@@ -578,7 +576,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        _dbWorker->donePushingRev(rev, synced);
+        donePushingRev(rev, synced);
     }
 
 
@@ -605,6 +603,7 @@ namespace litecore { namespace repl {
                 || _revisionsInFlight > 0
                 || _blobsInFlight > 0
                 || !_revsToSend.empty()
+                || !_pushingDocs.empty()
                 || _revisionBytesAwaitingReply > 0) {
             level = kC4Busy;
         } else if (_options.push == kC4Continuous || isOpenServer()) {
@@ -613,11 +612,11 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",
                 kC4ReplicatorActivityLevelNames[level],
                 pendingResponseCount(),
                 _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
-                _revisionBytesAwaitingReply, _revsToSend.size(), _pendingSequences.size());
+                _revisionBytesAwaitingReply, _revsToSend.size(), _pushingDocs.size(), _pendingSequences.size());
         }
         return level;
     }

@@ -19,7 +19,6 @@
 
 #include "Puller.hh"
 #include "ReplicatorTuning.hh"
-#include "DBWorker.hh"
 #include "IncomingRev.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -31,13 +30,15 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
-    Puller::Puller(Replicator *replicator, DBWorker *dbActor)
+    Puller::Puller(Replicator *replicator)
     :Worker(replicator, "Pull")
-    ,_dbActor(dbActor)
     ,_returningRevs(this, &Puller::_revsFinished)
+    ,_revsToInsert(this, &Puller::_insertRevisionsNow,
+                   tuning::kInsertionDelay, tuning::kInsertionBatchSize)
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
+    ,_disableDeltaSupport(_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
     {
         registerHandler("changes",          &Puller::handleChanges);
         registerHandler("proposeChanges",   &Puller::handleChanges);
@@ -123,7 +124,7 @@ namespace litecore { namespace repl {
 
     // Process waiting "changes" messages if not throttled:
     void Puller::handleMoreChanges() {
-        while (!_waitingChangesMessages.empty() && !_waitingForChangesCallback
+        while (!_waitingChangesMessages.empty()
                && _pendingRevMessages < tuning::kMaxPendingRevs) {
             auto req = _waitingChangesMessages.front();
             _waitingChangesMessages.pop_front();
@@ -158,37 +159,31 @@ namespace litecore { namespace repl {
             req->respondWithError({"BLIP"_sl, 409});
         } else {
             // Pass the buck to the DBWorker so it can find the missing revs & request them:
-            DebugAssert(!_waitingForChangesCallback);
-            _waitingForChangesCallback = true;
-            _dbActor->findOrRequestRevs(req, asynchronize([this,req,changes](vector<bool> which) {
-                // Callback, after response message sent:
-                _waitingForChangesCallback = false;
-                for (size_t i = 0; i < which.size(); ++i) {
-                    bool requesting = (which[i]);
-                    if (nonPassive()) {
-                        // Add sequence to _missingSequences:
-                        auto change = changes[(unsigned)i].asArray();
-                        alloc_slice sequence(change[0].toJSON());
-                        uint64_t bodySize = requesting ? max(change[4].asUnsigned(), (uint64_t)1) : 0;
-                        if (sequence)
-                            _missingSequences.add(sequence, bodySize);
-                        else
-                            warn("Empty/invalid sequence in 'changes' message");
-                        addProgress({0, bodySize});
-                        if (!requesting)
-                            completedSequence(sequence); // Not requesting, just update checkpoint
-                    }
-                    if (requesting) {
-                        increment(_pendingRevMessages);
-                        // now awaiting a handleRev call...
-                    }
-                }
+            vector<bool> which = findOrRequestRevs(req);
+            for (size_t i = 0; i < which.size(); ++i) {
+                bool requesting = (which[i]);
                 if (nonPassive()) {
-                    logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
-                               _pendingRevMessages, _missingSequences.size());
+                    // Add sequence to _missingSequences:
+                    auto change = changes[(unsigned)i].asArray();
+                    alloc_slice sequence(change[0].toJSON());
+                    uint64_t bodySize = requesting ? max(change[4].asUnsigned(), (uint64_t)1) : 0;
+                    if (sequence)
+                        _missingSequences.add(sequence, bodySize);
+                    else
+                        warn("Empty/invalid sequence in 'changes' message");
+                    addProgress({0, bodySize});
+                    if (!requesting)
+                        completedSequence(sequence); // Not requesting, just update checkpoint
                 }
-                handleMoreChanges();  // because _waitingForChangesCallback changed
-            }));
+                if (requesting) {
+                    increment(_pendingRevMessages);
+                    // now awaiting a handleRev call...
+                }
+            }
+            if (nonPassive()) {
+                logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
+                           _pendingRevMessages, _missingSequences.size());
+            }
         }
     }
 
@@ -227,7 +222,7 @@ namespace litecore { namespace repl {
         increment(_activeIncomingRevs);
         Retained<IncomingRev> inc;
         if (_spareIncomingRevs.empty()) {
-            inc = new IncomingRev(this, _dbActor);
+            inc = new IncomingRev(this);
         } else {
             inc = _spareIncomingRevs.back();
             _spareIncomingRevs.pop_back();
@@ -303,7 +298,6 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         } else if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
-                || _waitingForChangesCallback
                 || _pendingRevMessages > 0
                 || _activeIncomingRevs > 0) {
             level = kC4Busy;
@@ -314,9 +308,9 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _waitingForChangesCallback=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, _caughtUp=%d, _pendingRevMessages=%u, _activeIncomingRevs=%u",
                 kC4ReplicatorActivityLevelNames[level],
-                pendingResponseCount(), _caughtUp, _waitingForChangesCallback,
+                pendingResponseCount(), _caughtUp,
                 _pendingRevMessages, _activeIncomingRevs);
         }
         return level;

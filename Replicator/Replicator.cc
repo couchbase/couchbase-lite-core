@@ -19,7 +19,6 @@
 
 #include "Replicator.hh"
 #include "ReplicatorTuning.hh"
-#include "DBWorker.hh"
 #include "Pusher.hh"
 #include "Puller.hh"
 #include "Error.hh"
@@ -42,13 +41,16 @@ namespace litecore { namespace repl {
                            Delegate &delegate,
                            Options options)
     :Worker(new Connection(webSocket, options.properties, *this),
-            nullptr, options, "Repl")
+            nullptr,
+            options,
+            make_shared<DBAccess>(db, options.properties["disable_blob_support"_sl].asBool()),
+            "Repl")
     ,_delegate(&delegate)
     ,_connectionState(connection()->state())
     ,_pushStatus(options.push == kC4Disabled ? kC4Stopped : kC4Busy)
     ,_pullStatus(options.pull == kC4Disabled ? kC4Stopped : kC4Busy)
-    ,_dbWorker(new DBWorker(this, db, webSocket->url()))
     ,_docsEnded(this, &Replicator::notifyEndedDocuments, tuning::kMinDocEndedInterval, 100)
+    ,_remoteURL(webSocket->url())
     {
         _loggingID = string(alloc_slice(c4db_getPath(db))) + " " + _loggingID;
         _important = 2;
@@ -56,11 +58,14 @@ namespace litecore { namespace repl {
         logInfo("%s", string(options).c_str());
 
         if (options.push != kC4Disabled)
-            _pusher = new Pusher(this, _dbWorker);
+            _pusher = new Pusher(this);
         if (options.pull != kC4Disabled)
-            _puller = new Puller(this, _dbWorker);
+            _puller = new Puller(this);
         _checkpoint.enableAutosave(options.checkpointSaveDelay(),
                                    bind(&Replicator::saveCheckpoint, this, _1));
+
+        registerHandler("getCheckpoint",    &Replicator::handleGetCheckpoint);
+        registerHandler("setCheckpoint",    &Replicator::handleSetCheckpoint);
     }
 
 
@@ -78,8 +83,22 @@ namespace litecore { namespace repl {
         connection()->start();
         // Now wait for _onConnect or _onClose...
 
-        if (_options.push > kC4Passive || _options.pull > kC4Passive)
+        if (_options.push > kC4Passive || _options.pull > kC4Passive) {
+            // Get the remote DB ID:
+            string key = remoteDBIDString();
+            C4Error err;
+            C4RemoteID remoteDBID = _db->lookUpRemoteDBID(slice(key), &err);
+            if (remoteDBID) {
+                logVerbose("Remote-DB ID %u found for target <%s>", remoteDBID, key.c_str());
+            } else {
+                warn("Couldn't get remote-DB ID for target <%s>: error %d/%d",
+                     key.c_str(), err.domain, err.code);
+                gotError(err);
+                stop();
+            }
+            // Get the local checkpoint:
             getLocalCheckpoint();
+        }
     }
 
 
@@ -120,17 +139,14 @@ namespace litecore { namespace repl {
             _pushStatus = taskStatus;
         } else if (task == _puller) {
             _pullStatus = taskStatus;
-        } else if (task == _dbWorker) {
-            _dbStatus = taskStatus;
         }
 
         setProgress(_pushStatus.progress + _pullStatus.progress);
 
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("pushStatus=%-s, pullStatus=%-s, dbStatus=%-s, progress=%llu/%llu",
+            logInfo("pushStatus=%-s, pullStatus=%-s, progress=%llu/%llu",
                 kC4ReplicatorActivityLevelNames[_pushStatus.level],
                 kC4ReplicatorActivityLevelNames[_pullStatus.level],
-                kC4ReplicatorActivityLevelNames[_dbStatus.level],
                 status().progress.unitsCompleted, status().progress.unitsTotal);
         }
 
@@ -157,7 +173,7 @@ namespace litecore { namespace repl {
                     level = kC4Busy;
                 else
                     level = Worker::computeActivityLevel();
-                level = max(level, max(_pushStatus.level, max(_pullStatus.level, _dbStatus.level)));
+                level = max(level, max(_pushStatus.level, _pullStatus.level));
                 if (level == kC4Idle && !isContinuous() && !isOpenServer()) {
                     // Detect that a non-continuous active push or pull replication is done:
                     logInfo("Replication complete! Closing connection");
@@ -175,7 +191,7 @@ namespace litecore { namespace repl {
             case Connection::kClosed:
                 // After connection closes, remain busy while I wait for db to finish writes
                 // and for myself to process any pending messages:
-                level = max(Worker::computeActivityLevel(), _dbStatus.level);
+                level = Worker::computeActivityLevel();
                 if (level < kC4Busy)
                     level = kC4Stopped;
                 break;
@@ -204,7 +220,6 @@ namespace litecore { namespace repl {
             DebugAssert(!connection());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
-            _dbWorker = nullptr;
         }
         if (_delegate) {
             // Notify the delegate of the current status, but not too often:
@@ -270,14 +285,14 @@ namespace litecore { namespace repl {
                                   "Incompatible replication protocol "
                                   "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
-        auto setCookie = headers["Set-Cookie"_sl];
-        if (setCookie.type() == kFLArray) {
+        auto cookies = headers["Set-Cookie"_sl];
+        if (cookies.type() == kFLArray) {
             // Yes, there can be multiple Set-Cookie headers.
-            for (Array::iterator i(setCookie.asArray()); i; ++i) {
-                _dbWorker->setCookie(i.value().asString());
+            for (Array::iterator i(cookies.asArray()); i; ++i) {
+                setCookie(i.value().asString());
             }
-        } else if (setCookie) {
-            _dbWorker->setCookie(setCookie.asString());
+        } else if (cookies) {
+            setCookie(cookies.asString());
         }
         if (_delegate)
             _delegate->replicatorGotHTTPResponse(this, status, headers);
@@ -307,7 +322,6 @@ namespace litecore { namespace repl {
 
         // Clear connection() and notify the other agents to do the same:
         _connectionClosed();
-        _dbWorker->connectionClosed();
         if (_pusher)
             _pusher->connectionClosed();
         if (_puller)
@@ -356,39 +370,31 @@ namespace litecore { namespace repl {
 
     // Start off by getting the local checkpoint, if this is an active replicator:
     void Replicator::getLocalCheckpoint() {
-        _dbWorker->getCheckpoint(asynchronize([this](alloc_slice checkpointID,
-                                                    alloc_slice data,
-                                                    bool dbIsEmpty,
-                                                    C4Error err) {
-            // ...after the checkpoint is read:
-            if (status().level == kC4Stopped || _connectionState == Connection::kDisconnected)
-                return;
-            
-            _checkpointDocID = checkpointID;
+        auto cp = getCheckpoint();
+        _checkpointDocID = cp.checkpointID;
 
-            if (_options.properties[kC4ReplicatorResetCheckpoint].asBool()) {
-                logInfo("Ignoring local checkpoint ('reset' option is set)");
-            } else if (data) {
-                _checkpoint.decodeFrom(data);
-                auto cp = _checkpoint.sequences();
-                logInfo("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
-                    SPLAT(checkpointID), cp.local, SPLAT(cp.remote));
-                _hadLocalCheckpoint = true;
-            } else if (err.code == 0) {
-                logInfo("No local checkpoint '%.*s'", SPLAT(checkpointID));
-                // If pulling into an empty db with no checkpoint, it's safe to skip deleted
-                // revisions as an optimization.
-                if (dbIsEmpty && _options.pull > kC4Passive && _puller)
-                    _puller->setSkipDeleted();
-            } else {
-                logInfo("Fatal error getting local checkpoint");
-                gotError(err);
-                stop();
-                return;
-            }
-            
-            getRemoteCheckpoint();
-        }));
+        if (_options.properties[kC4ReplicatorResetCheckpoint].asBool()) {
+            logInfo("Ignoring local checkpoint ('reset' option is set)");
+        } else if (cp.data) {
+            _checkpoint.decodeFrom(cp.data);
+            auto seq = _checkpoint.sequences();
+            logInfo("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
+                SPLAT(cp.checkpointID), seq.local, SPLAT(seq.remote));
+            _hadLocalCheckpoint = true;
+        } else if (cp.err.code == 0) {
+            logInfo("No local checkpoint '%.*s'", SPLAT(cp.checkpointID));
+            // If pulling into an empty db with no checkpoint, it's safe to skip deleted
+            // revisions as an optimization.
+            if (cp.dbIsEmpty && _options.pull > kC4Passive && _puller)
+                _puller->setSkipDeleted();
+        } else {
+            logInfo("Fatal error getting local checkpoint");
+            gotError(cp.err);
+            stop();
+            return;
+        }
+
+        getRemoteCheckpoint();
     }
 
 
@@ -431,7 +437,7 @@ namespace litecore { namespace repl {
                 // Compare checkpoints, reset if mismatched:
                 bool valid = _checkpoint.validateWith(remoteCheckpoint);
                 if (!valid)
-                    _dbWorker->checkpointIsInvalid();
+                    _pusher->checkpointIsInvalid();
 
                 // Now we have the checkpoints! Time to start replicating:
                 startReplicating();
@@ -488,9 +494,8 @@ namespace litecore { namespace repl {
                 _checkpointRevID = response->property("rev"_sl);
                 logInfo("Saved remote checkpoint %.*s as rev='%.*s'",
                     SPLAT(_checkpointDocID), SPLAT(_checkpointRevID));
-                _dbWorker->setCheckpoint(json, asynchronize([this]{
-                    _checkpoint.saved();
-                }));
+                setCheckpoint(json);
+                _checkpoint.saved();
             }
         });
     }

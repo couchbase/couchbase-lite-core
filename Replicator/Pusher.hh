@@ -19,19 +19,20 @@
 #pragma once
 #include "Replicator.hh"
 #include "ReplicatorTuning.hh"
-#include "DBWorker.hh"
+#include "ReplicatorTypes.hh"
 #include "Actor.hh"
 #include "SequenceSet.hh"
 #include "fleece/slice.hh"
 #include "make_unique.h"
 #include <deque>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace litecore { namespace repl {
 
     class Pusher : public Worker {
     public:
-        Pusher(Replicator *replicator, DBWorker *dbActor);
+        Pusher(Replicator *replicator);
 
         // Starts an active push
         void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}
@@ -51,6 +52,10 @@ namespace litecore { namespace repl {
 
         void couldntSendRevision(RevToSend* req) {
             enqueue(&Pusher::_couldntSendRevision, retained(req));
+        }
+
+        void checkpointIsInvalid() {
+            _checkpointValid = false;
         }
 
     protected:
@@ -84,16 +89,38 @@ namespace litecore { namespace repl {
                                           C4Error *outError);
         void filterByDocIDs(fleece::Array docIDs);
 
+        using DocIDSet = std::shared_ptr<std::unordered_set<std::string>>;
+
+        struct GetChangesParams {
+            C4SequenceNumber since;
+            DocIDSet docIDs;
+            unsigned limit;
+            bool continuous, getForeignAncestors;
+            bool skipDeleted, skipForeign;
+        };
+        void getChanges(const GetChangesParams&);
+        void dbChanged();
+        bool shouldPushRev(RevToSend*, C4DocEnumerator*, C4Database*);
+        void sendRevision(RevToSend *request,
+                          blip::MessageProgressCallback onProgress);
+        void donePushingRev(const RevToSend *rev, bool synced);
+        alloc_slice createRevisionDelta(C4Document *doc, RevToSend *request,
+                                        fleece::Dict root, size_t revSize,
+                                        bool sendLegacyAttachments);
+        fleece::slice getRevToSend(C4Document*, const RevToSend&, C4Error *outError);
+        static std::string revHistoryString(C4Document*, const RevToSend&);
+
         static constexpr unsigned kDefaultChangeBatchSize = 200;  // # of changes to send in one msg
         static const unsigned kDefaultMaxHistory = 20;      // If "changes" response doesn't have one
 
-        Retained<DBWorker> _dbWorker;
         unsigned _changesBatchSize {kDefaultChangeBatchSize};   // # changes to get from db
         DocIDSet _docIDs;
         bool _continuous;
         bool _skipDeleted;
         bool _proposeChanges;
         bool _proposeChangesKnown;
+        std::atomic<bool> _checkpointValid {true};
+        bool _disableDeltaSupport;
 
         C4SequenceNumber _lastSequence {0};       // Checkpointed last-sequence
         bool _gettingChanges {false};             // Waiting for _gotChanges() call?
@@ -107,6 +134,16 @@ namespace litecore { namespace repl {
         MessageSize _revisionBytesAwaitingReply {0}; // # 'rev' message bytes sent but not replied
         unsigned _blobsInFlight {0};              // # of blobs being sent
         std::deque<Retained<RevToSend>> _revsToSend;  // Revs to send to peer but not sent yet
+
+        using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
+
+        C4BlobStore* _blobStore;
+        c4::ref<C4DatabaseObserver> _changeObserver;        // Used in continuous push mode
+        DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
+        C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
+        DocIDToRevMap _pushingDocs;                         // Revs being processed by push
+        bool _getForeignAncestors {false};
+        bool _skipForeignChanges {false};
     };
     
     

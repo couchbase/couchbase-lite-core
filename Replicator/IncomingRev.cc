@@ -18,7 +18,6 @@
 
 #include "IncomingRev.hh"
 #include "IncomingBlob.hh"
-#include "DBWorker.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
 #include "c4Document+Fleece.h"
@@ -33,10 +32,9 @@ using namespace litecore::blip;
 namespace litecore { namespace repl {
 
 
-    IncomingRev::IncomingRev(Puller *puller, DBWorker *dbWorker)
+    IncomingRev::IncomingRev(Puller *puller)
     :Worker(puller, "inc")
     ,_puller(puller)
-    ,_dbWorker(dbWorker)
     {
         _important = false;
     }
@@ -83,18 +81,18 @@ namespace litecore { namespace repl {
             return;
         }
 
+        alloc_slice body;
+        C4Error err;
         slice deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         if (deltaSrcRevID) {
-            _dbWorker->applyDelta(_rev, deltaSrcRevID, _revMessage->body(),
-                                  asynchronize([this](alloc_slice body, C4Error err) {
-                ++gNumDeltasApplied;
-                processBody(body, err);
-            }));
+            body = _puller->applyDelta(_rev, deltaSrcRevID, _revMessage->body(), &err);
+            ++gNumDeltasApplied;
         } else {
-            FLError err;
-            alloc_slice body = Doc::fromJSON(_revMessage->body(), &err).allocedData();
-            processBody(body, {FleeceDomain, err});
+            FLError flErr;
+            body = Doc::fromJSON(_revMessage->body(), &flErr).allocedData();
+            err = {FleeceDomain, flErr};
         }
+        processBody(body, err);
     }
 
 
@@ -117,7 +115,7 @@ namespace litecore { namespace repl {
 
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
-        if (c4doc_hasOldMetaProperties(root) && !_dbWorker->disableBlobSupport()) {
+        if (c4doc_hasOldMetaProperties(root) && !_db->disableBlobSupport()) {
             C4Error err;
             fleeceBody = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
             if (!fleeceBody) {
@@ -131,7 +129,7 @@ namespace litecore { namespace repl {
         _rev->body = fleeceBody;
 
         // Check for blobs, and queue up requests for any I don't have yet:
-        _dbWorker->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
+        _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
             _rev->flags |= kRevHasAttachments;
             _pendingBlobs.push_back({_rev->docID,
                                      alloc_slice(FLDeepIterator_GetPathString(i)),
@@ -158,7 +156,7 @@ namespace litecore { namespace repl {
 
 
     bool IncomingRev::fetchNextBlob() {
-        auto blobStore = _dbWorker->blobStore();
+        auto blobStore = _db->blobStore();
         while (!_pendingBlobs.empty()) {
             PendingBlob firstPending = _pendingBlobs.front();
             _pendingBlobs.erase(_pendingBlobs.begin());
@@ -196,7 +194,7 @@ namespace litecore { namespace repl {
     void IncomingRev::insertRevision() {
         Assert(_pendingBlobs.empty() && !_currentBlob);
         increment(_pendingCallbacks);
-        _dbWorker->insertRevision(_rev);
+        _puller->insertRevision(_rev);
     }
 
 

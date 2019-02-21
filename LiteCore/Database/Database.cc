@@ -33,7 +33,8 @@
 
 namespace litecore { namespace constants
 {
-    const C4Slice kLocalCheckpointStore = C4STR("checkpoints");
+    const C4Slice kLocalCheckpointStore   = C4STR("checkpoints");
+    const C4Slice kPeerCheckpointStore    = C4STR("peerCheckpoints");
     const C4Slice kPreviousPrivateUUIDKey = C4STR("previousPrivateUUID");
 }}
 

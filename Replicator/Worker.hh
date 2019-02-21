@@ -17,6 +17,8 @@
 //
 
 #pragma once
+#include "ReplicatorOptions.hh"
+#include "DBAccess.hh"
 #include "Actor.hh"
 #include "BLIPConnection.hh"
 #include "Message.hh"
@@ -26,113 +28,19 @@
 #include "c4Private.h"
 #include "fleece/Fleece.hh"
 #include "Error.hh"
-#include <chrono>
 #include <functional>
+#include <memory>
 
 
 namespace litecore { namespace repl {
     class Replicator;
     class ReplicatedRev;
 
-    /** Time duration unit: seconds, stored as 64-bit floating point. */
-    using duration = std::chrono::nanoseconds;
-
-
     extern LogDomain SyncBusyLog;
 
     /** Abstract base class of Actors used by the replicator */
     class Worker : public actor::Actor, fleece::InstanceCountedIn<Worker>, protected Logging {
     public:
-
-        /** Replication configuration options */
-        struct Options {
-            using Mode = C4ReplicatorMode;
-            using Validator = bool(*)(C4String docID, C4RevisionFlags, FLDict body, void *context);
-
-            Mode                    push                    {kC4Disabled};
-            Mode                    pull                    {kC4Disabled};
-            fleece::AllocedDict     properties;
-            Validator               pushFilter              {nullptr};
-            Validator               pullValidator           {nullptr};
-            void*                   callbackContext         {nullptr};
-
-            Options()
-            { }
-
-            Options(Mode push_, Mode pull_)
-            :push(push_), pull(pull_)
-            { }
-
-            template <class SLICE>
-            Options(Mode push_, Mode pull_, SLICE propertiesFleece)
-            :push(push_), pull(pull_), properties(propertiesFleece)
-            { }
-
-            static Options pushing(Mode mode =kC4OneShot)  {return Options(mode, kC4Disabled);}
-            static Options pulling(Mode mode =kC4OneShot)  {return Options(kC4Disabled, mode);}
-            static Options passive()                       {return Options(kC4Passive,kC4Passive);}
-
-            static constexpr unsigned kDefaultCheckpointSaveDelaySecs = 5;
-
-            duration checkpointSaveDelay() const {
-                auto secs = properties[kC4ReplicatorCheckpointInterval].asInt();
-                if (secs <= 0)
-                    secs = kDefaultCheckpointSaveDelaySecs;
-                return std::chrono::seconds(secs);
-            }
-
-            fleece::Array channels() const {return arrayProperty(kC4ReplicatorOptionChannels);}
-            fleece::Array docIDs() const   {return arrayProperty(kC4ReplicatorOptionDocIDs);}
-            fleece::Dict headers() const  {return dictProperty(kC4ReplicatorOptionExtraHeaders);}
-            fleece::slice filter() const  {return properties[kC4ReplicatorOptionFilter].asString();}
-            fleece::Dict filterParams() const
-                                      {return properties[kC4ReplicatorOptionFilterParams].asDict();}
-            bool skipDeleted() const  {return properties[kC4ReplicatorOptionSkipDeleted].asBool();}
-            bool noIncomingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
-            bool noOutgoingConflicts() const  {return properties[kC4ReplicatorOptionNoIncomingConflicts].asBool();}
-            int progressLevel() const  {return (int)properties[kC4ReplicatorOptionProgressLevel].asInt();}
-
-            fleece::Array arrayProperty(const char *name) const {
-                return properties[name].asArray();
-            }
-            fleece::Dict dictProperty(const char *name) const {
-                return properties[name].asDict();
-            }
-
-            /** Sets/clears the value of a property.
-                Warning: This rewrites the backing store of the properties, invalidating any
-                Fleece value pointers or slices previously accessed from it. */
-            template <class T>
-            Options& setProperty(fleece::slice name, T value) {
-                fleece::Encoder enc;
-                enc.beginDict();
-                if (value) {
-                    enc.writeKey(name);
-                    enc << value;
-                }
-                for (fleece::Dict::iterator i(properties); i; ++i) {
-                    slice key = i.keyString();
-                    if (key != name) {
-                        enc.writeKey(key);
-                        enc.writeValue(i.value());
-                    }
-                }
-                enc.endDict();
-                properties = fleece::AllocedDict(enc.finish());
-                return *this;
-            }
-
-            Options& setNoIncomingConflicts() {
-                return setProperty(C4STR(kC4ReplicatorOptionNoIncomingConflicts), true);
-            }
-
-            Options& setNoDeltas() {
-                return setProperty(C4STR(kC4ReplicatorOptionDisableDeltas), true);
-            }
-
-            explicit operator std::string() const;
-        };
-
         
         using slice = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
@@ -167,6 +75,7 @@ namespace litecore { namespace repl {
         Worker(blip::Connection *connection,
                Worker *parent,
                const Options &options,
+               std::shared_ptr<DBAccess>,
                const char *namePrefix);
 
         Worker(Worker *parent, const char *namePrefix);
@@ -208,6 +117,10 @@ namespace litecore { namespace repl {
         static blip::ErrorBuf c4ToBLIPError(C4Error);
         static C4Error blipToC4Error(const blip::Error&);
 
+        static inline bool isNotFoundError(C4Error err) {
+            return err.domain == LiteCoreDomain && err.code == kC4ErrorNotFound;
+        }
+
         bool isOpenClient() const               {return _connection && _connection->role() == websocket::Role::Client;}
         bool isOpenServer() const               {return _connection && _connection->role() == websocket::Role::Server;}
         bool isContinuous() const               {return _options.push == kC4Continuous
@@ -230,6 +143,7 @@ namespace litecore { namespace repl {
 
         Options _options;
         Retained<Worker> _parent;
+        std::shared_ptr<DBAccess> _db;
         uint8_t _important {1};
         std::string _loggingID;
 

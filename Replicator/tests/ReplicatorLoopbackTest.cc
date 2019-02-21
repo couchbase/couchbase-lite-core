@@ -35,7 +35,7 @@ TEST_CASE("Options password logging redaction") {
     enc.endDict();
     enc.endDict();
     alloc_slice properties = enc.finish();
-    Worker::Options opts(kC4OneShot, kC4Disabled, properties);
+    Replicator::Options opts(kC4OneShot, kC4Disabled, properties);
 
     auto str = string(opts);
     Log("Options = %s", str.c_str());
