@@ -39,10 +39,6 @@ namespace litecore { namespace repl {
         // Called only by IncomingRev
         void revWasHandled(IncomingRev *inc);
 
-        alloc_slice applyDelta(RevToInsert *rev, slice baseRevID,
-                               alloc_slice deltaJSON,
-                               C4Error *outError NONNULL);
-
         void insertRevision(RevToInsert *rev);
 
     protected:

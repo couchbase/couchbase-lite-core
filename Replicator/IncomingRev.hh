@@ -26,6 +26,7 @@
 namespace litecore { namespace repl {
     class IncomingBlob;
     class Puller;
+    class RevToInsert;
 
 
     /** Manages pulling a single document. */
@@ -57,6 +58,9 @@ namespace litecore { namespace repl {
     private:
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
+        alloc_slice applyDelta(RevToInsert *rev, slice baseRevID,
+                               alloc_slice deltaJSON,
+                               C4Error *outError NONNULL);
         void processBody(alloc_slice fleeceBody, C4Error);
         bool fetchNextBlob();
         void insertRevision();

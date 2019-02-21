@@ -85,7 +85,7 @@ namespace litecore { namespace repl {
         C4Error err;
         slice deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         if (deltaSrcRevID) {
-            body = _puller->applyDelta(_rev, deltaSrcRevID, _revMessage->body(), &err);
+            body = applyDelta(_rev, deltaSrcRevID, _revMessage->body(), &err);
             ++gNumDeltasApplied;
         } else {
             FLError flErr;
@@ -93,6 +93,58 @@ namespace litecore { namespace repl {
             err = {FleeceDomain, flErr};
         }
         processBody(body, err);
+    }
+
+
+    static bool containsAttachmentsProperty(slice json) {
+        if (!json.find("\"_attachments\":"_sl))
+            return false;
+        Doc doc = Doc::fromJSON(json);
+        return doc.root().asDict()["_attachments"] != nullptr;
+    }
+
+
+    // Applies a delta, returning expanded Fleece
+    alloc_slice IncomingRev::applyDelta(RevToInsert *rev,
+                                        slice baseRevID,
+                                        alloc_slice deltaJSON,
+                                        C4Error *outError)
+    {
+        alloc_slice body;
+        c4::ref<C4Document> doc = _db->getDoc(rev->docID, outError);
+        if (doc && c4doc_selectRevision(doc, baseRevID, true, outError)) {
+            Dict srcRoot = DBAccess::getDocRoot(doc);
+            if (srcRoot) {
+                Doc legacy;
+                if (!_db->disableBlobSupport() && containsAttachmentsProperty(deltaJSON)) {
+                    // Delta refers to legacy attachments, so convert my base revision to have them:
+                    Encoder enc;
+                    _db->writeRevWithLegacyAttachments(enc, srcRoot, 1);
+                    legacy = enc.finishDoc();
+                    srcRoot = legacy.root().asDict();
+                }
+                FLError flErr;
+                body = FLApplyJSONDelta(srcRoot, deltaJSON, &flErr);
+                if (!body) {
+                    if (flErr == kFLInvalidData)
+                        *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
+                    else
+                        *outError = {FleeceDomain, flErr};
+                }
+            } else {
+                // Don't have the body of the source revision. This might be because I'm in
+                // no-conflict mode and the peer is trying to push me a now-obsolete revision.
+                if (_options.noIncomingConflicts()) {
+                    *outError = {WebSocketDomain, 409};
+                } else {
+                    string msg = format("Couldn't apply delta: Don't have body of '%.*s' #%.*s [current is %.*s]",
+                                        SPLAT(rev->docID), SPLAT(baseRevID), SPLAT(doc->revID));
+                    warn("%s", msg.c_str());
+                    *outError = c4error_make(LiteCoreDomain, kC4ErrorDeltaBaseUnknown, slice(msg));
+                }
+            }
+        }
+        return body;
     }
 
 
