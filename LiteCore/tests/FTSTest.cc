@@ -161,3 +161,18 @@ TEST_CASE_METHOD(FTSTest, "Query Full-Text Custom stop-words", "[Query][FTS]") {
               {4, 2});
 }
 
+
+TEST_CASE_METHOD(FTSTest, "Query Full-Text Stop-words In Target", "[Query][FTS]") {
+    // Stop-words should not be removed from the target string of the MATCH. Otherwise, the
+    // MATCH in this test would turn into 'f* and *' (since "on" is a stop-word) which is invalid.
+    // https://github.com/couchbase/couchbase-lite-core/issues/626
+    createIndex({"en", true});
+    testQuery(
+        "['SELECT', {'WHERE': ['MATCH', 'sentence', 'f* AND on*'],\
+                    ORDER_BY: [['DESC', ['rank()', 'sentence']]],\
+                        WHAT: [['.sentence']]}]",
+              {1, 3},
+              {3, 3});
+}
+
+

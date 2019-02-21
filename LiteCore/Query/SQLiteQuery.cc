@@ -32,6 +32,10 @@
 #include <sstream>
 #include <iostream>
 
+extern "C" {
+#include "sqlite3_unicodesn_tokenizer.h"        // for unicodesn_tokenizerRunningQuery()
+}
+
 using namespace std;
 using namespace fleece;
 using namespace fleece::impl;
@@ -427,18 +431,27 @@ namespace litecore {
             auto sk = retained(new SharedKeys);
             enc.setSharedKeys(sk);
             enc.beginArray();
-            while (_statement->executeStep()) {
-                uint64_t missingCols = 0;
-                enc.beginArray(nCols);
-                for (int i = 0; i < nCols; ++i) {
-                    if (!encodeColumn(enc, i) && i < 64)
-                        missingCols |= (1 << i);
+
+            unicodesn_tokenizerRunningQuery(true);
+            try {
+                while (_statement->executeStep()) {
+                    uint64_t missingCols = 0;
+                    enc.beginArray(nCols);
+                    for (int i = 0; i < nCols; ++i) {
+                        if (!encodeColumn(enc, i) && i < 64)
+                            missingCols |= (1 << i);
+                    }
+                    enc.endArray();
+                    // Add an integer containing a bit-map of which columns are missing/undefined:
+                    enc.writeUInt(missingCols);
+                    ++rowCount;
                 }
-                enc.endArray();
-                // Add an integer containing a bit-map of which columns are missing/undefined:
-                enc.writeUInt(missingCols);
-                ++rowCount;
+            } catch (...) {
+                unicodesn_tokenizerRunningQuery(false);
+                throw;
             }
+            unicodesn_tokenizerRunningQuery(false);
+
             enc.endArray();
             Retained<Doc> recording = enc.finishDoc();
             return new SQLiteQueryEnumerator(_query, &_options, _lastSequence, recording,
