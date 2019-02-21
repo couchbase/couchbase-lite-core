@@ -31,7 +31,7 @@ namespace litecore { namespace actor {
 #define beginLatency()  fleece::Stopwatch st
 #define endLatency()    _maxLatency = max(_maxLatency, (double)st.elapsed())
 #define beginBusy()     _busy.start()
-#define endBusy()       _busy.stop()
+#define endBusy()       _maxBusy = max(_maxBusy, _busy.lap())
 #else
 #define beginLatency()  ({})
 #define endLatency()    ({})
@@ -138,11 +138,12 @@ namespace litecore { namespace actor {
 
     void GCDMailbox::logStats() const {
 #if ACTORS_TRACK_STATS
-        LogTo(ActorLog, "%s handled %d events; max queue depth was %d; max latency was %s; busy %s (%.1f%%)",
+        LogTo(ActorLog, "%s handled %d events; max queue depth was %d; max latency was %s; busy total %s (%.1f%%), max %s",
               _actor->actorName().c_str(), _callCount, _maxEventCount,
               fleece::Stopwatch::formatTime(_maxLatency).c_str(),
               fleece::Stopwatch::formatTime(_busy.elapsed()).c_str(),
-              (_busy.elapsed() / _createdAt.elapsed())*100.0);
+              (_busy.elapsed() / _createdAt.elapsed())*100.0,
+              fleece::Stopwatch::formatTime(_maxBusy).c_str());
 #endif
     }
 

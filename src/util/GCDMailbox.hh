@@ -19,6 +19,7 @@
 #pragma once
 #include "ThreadedMailbox.hh"
 #include "Stopwatch.hh"
+#include <atomic>
 #include <functional>
 #include <string>
 #include <dispatch/dispatch.h>
@@ -63,6 +64,7 @@ namespace litecore { namespace actor {
         int32_t _callCount {0};
         int32_t _maxEventCount {0};
         double _maxLatency {0};
+        double _maxBusy {0};
         fleece::Stopwatch _createdAt {true};
         fleece::Stopwatch _busy {false};
 #endif
