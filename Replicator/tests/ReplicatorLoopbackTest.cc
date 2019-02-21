@@ -1375,10 +1375,63 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
 
     Log("-------- Second Push --------");
     _expectedDocumentCount = (100+6)/7;
-    IncomingRev::gNumDeltasApplied = 0;
+    auto before = IncomingRev::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(IncomingRev::gNumDeltasApplied == 15);
+    CHECK(IncomingRev::gNumDeltasApplied - before == 15);
+}
+
+
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta]") {
+    static constexpr int kNumDocs = 100, kNumProps = 1000;
+    auto serverOpts = Replicator::Options::passive();
+
+    // Push db --> db2:
+    {
+        TransactionHelper t(db);
+        for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+            string docID = format("doc-%03d", docNo);
+            Encoder enc(c4db_createFleeceEncoder(db));
+            enc.beginDict();
+            for (int p = 0; p < kNumProps; ++p) {
+                enc.writeKey(format("field%03d", p));
+                enc.writeInt(arc4random());
+            }
+            enc.endDict();
+            alloc_slice body = enc.finish();
+            createNewRev(db, slice(docID), body);
+        }
+    }
+
+    _expectedDocumentCount = kNumDocs;
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    compareDatabases();
+
+    Log("-------- Mutate Docs --------");
+    {
+        TransactionHelper t(db);
+        for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+            string docID = format("doc-%03d", docNo);
+            mutateDoc(db, slice(docID), [](Dict doc, Encoder &enc) {
+                enc.beginDict();
+                for (Dict::iterator i(doc); i; ++i) {
+                    enc.writeKey(i.key());
+                    auto value = i.value().asInt();
+                    if (arc4random() % 4 == 0)
+                        value = arc4random();
+                    enc.writeInt(value);
+                }
+                enc.endDict();
+            });
+        }
+    }
+
+    Log("-------- Second Push --------");
+    _expectedDocumentCount = kNumDocs;
+    auto before = IncomingRev::gNumDeltasApplied.load();
+    runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    compareDatabases();
+    CHECK(IncomingRev::gNumDeltasApplied - before == kNumDocs);
 }
 
 
@@ -1397,10 +1450,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
 
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = (100+6)/7;
-    IncomingRev::gNumDeltasApplied = 0;
+    auto before = IncomingRev::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(IncomingRev::gNumDeltasApplied == 15);
+    CHECK(IncomingRev::gNumDeltasApplied - before == 15);
 }
 
 
@@ -1431,9 +1484,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
 
     Log("-------- Push To db2 Again --------");
     _expectedDocumentCount = 1;
-    IncomingRev::gNumDeltasApplied = 0;
+    auto before = IncomingRev::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
-    CHECK(IncomingRev::gNumDeltasApplied == 1);
+    CHECK(IncomingRev::gNumDeltasApplied - before == 1);
 
     c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
@@ -1475,9 +1528,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
 
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = 1;
-    IncomingRev::gNumDeltasApplied = 0;
+    auto before = IncomingRev::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
-    CHECK(IncomingRev::gNumDeltasApplied == 1);
+    CHECK(IncomingRev::gNumDeltasApplied - before == 1);
 
     c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc, true, nullptr);
