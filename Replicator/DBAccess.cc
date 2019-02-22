@@ -84,6 +84,14 @@ namespace litecore { namespace repl {
     }
 
 
+    alloc_slice DBAccess::getDocRemoteAncestor(C4Document *doc) {
+        if (_remoteDBID)
+            return c4doc_getRemoteAncestor(doc, _remoteDBID);
+        else
+            return {};
+    }
+
+
     static inline bool isAttachment(FLDeepIterator i, C4BlobKey *blobKey, bool noBlobs) {
         auto dict = FLValue_AsDict(FLDeepIterator_GetValue(i));
         if (!dict)

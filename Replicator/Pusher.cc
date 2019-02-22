@@ -142,7 +142,7 @@ namespace litecore { namespace repl {
 
 
     // Received a list of changes from the database [initiated in maybeGetMoreChanges]
-    void Pusher::_gotChanges(std::shared_ptr<RevToSendList> changes,
+    void Pusher::gotChanges(std::shared_ptr<RevToSendList> changes,
                              C4SequenceNumber lastSequence,
                              C4Error err)
     {
@@ -202,7 +202,7 @@ namespace litecore { namespace repl {
 
 
     // Called when DBWorker was holding up a revision until an ancestor revision finished.
-    void Pusher::_gotOutOfOrderChange(Retained<RevToSend> change) {
+    void Pusher::gotOutOfOrderChange(RevToSend* change) {
         if (!connection())
             return;
         logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%llu",
@@ -368,8 +368,9 @@ namespace litecore { namespace repl {
         while (_revisionsInFlight < tuning::kMaxRevsInFlight
                    && _revisionBytesAwaitingReply <= tuning::kMaxRevBytesAwaitingReply
                    && !_revsToSend.empty()) {
-            sendRevision(move(_revsToSend.front()));
+            Retained<RevToSend> first = move(_revsToSend.front());
             _revsToSend.pop_front();
+            sendRevision(first);
             if (_revsToSend.size() == tuning::kMaxRevsQueued - 1)
                 maybeGetMoreChanges();          // I may now be eligible to send more changes
         }
@@ -426,10 +427,10 @@ namespace litecore { namespace repl {
     }
 
 
-    void Pusher::_couldntSendRevision(Retained<RevToSend> rev) {
+    void Pusher::couldntSendRevision(RevToSend* rev) {
         decrement(_revisionsInFlight);
         doneWithRev(rev, false, false);
-        maybeSendMoreRevs();
+        enqueue(&Pusher::maybeSendMoreRevs);  // async call to avoid recursion
     }
 
 
@@ -576,7 +577,46 @@ namespace litecore { namespace repl {
             }
         }
 
-        donePushingRev(rev, synced);
+        if (synced && _options.push > kC4Passive)
+            _db->markRevSynced((RevToSend*)rev);
+
+        auto i = _pushingDocs.find(rev->docID);
+        if (i == _pushingDocs.end()) {
+            if (connection())
+                warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
+            return;
+        }
+
+        Retained<RevToSend> newRev = i->second;
+        _pushingDocs.erase(i);
+        if (newRev) {
+            if (synced && _getForeignAncestors)
+                newRev->remoteAncestorRevID = rev->revID;
+            logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
+                       SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
+                       SPLAT(newRev->remoteAncestorRevID));
+            bool ok = false;
+            if (synced && _getForeignAncestors
+                && c4rev_getGeneration(newRev->revID) <= c4rev_getGeneration(rev->revID)) {
+                // Don't send; it'll conflict with what's on the server
+            } else {
+                // Send newRev as though it had just arrived:
+                bool should = _db->use<bool>([&](C4Database *db) {
+                    return shouldPushRev(newRev, nullptr, db);
+                });
+                if (should) {
+                    _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
+                    gotOutOfOrderChange(newRev);
+                    ok = true;
+                }
+            }
+            if (!ok) {
+                logVerbose("   ... nope, decided not to propose '%.*s' %.*s",
+                           SPLAT(newRev->docID), SPLAT(newRev->revID));
+            }
+        } else {
+            logDebug("Done pushing '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
+        }
     }
 
 

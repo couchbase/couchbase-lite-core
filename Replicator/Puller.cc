@@ -232,14 +232,12 @@ namespace litecore { namespace repl {
     }
 
 
+    // Callback from an IncomingRev when it's finished (either added to db, or failed)
     void Puller::revWasHandled(IncomingRev *inc) {
         _returningRevs.push(inc);
     }
 
-
-    // Callback from an IncomingRev when it's finished (either added to db, or failed)
-    void Puller::_revsFinished()
-    {
+    void Puller::_revsFinished() {
         auto revs = _returningRevs.pop();
         for (IncomingRev *inc : *revs) {
             auto rev = inc->rev();

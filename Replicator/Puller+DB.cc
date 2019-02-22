@@ -179,9 +179,7 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        alloc_slice remoteRevID;
-        if (_db->remoteDBID())
-            remoteRevID = c4doc_getRemoteAncestor(doc, _db->remoteDBID());
+        alloc_slice remoteRevID = _db->getDocRemoteAncestor(doc);
 
         if (c4doc_selectRevision(doc, revID, false, &err)) {
             // I already have this revision. Make sure it's marked as current for this remote:

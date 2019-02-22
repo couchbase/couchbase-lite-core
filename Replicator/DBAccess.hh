@@ -48,6 +48,8 @@ namespace litecore { namespace repl {
         C4RemoteID lookUpRemoteDBID(slice key, C4Error *outError);
         C4RemoteID remoteDBID() const                   {return _remoteDBID;}
 
+        fleece::alloc_slice getDocRemoteAncestor(C4Document *doc);
+
         // Mark this revision as synced (i.e. the server's current revision) soon.
         // NOTE: While this is queued, calls to c4doc_getRemoteAncestor() for this document won't
         // return the correct answer, because the change hasn't been made in the database yet.

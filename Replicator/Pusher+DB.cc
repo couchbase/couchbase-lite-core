@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
 #pragma mark - CHANGES:
 
 
-    // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
+    // Gets the next batch of changes from the DB. Will respond by calling gotChanges.
     void Pusher::getChanges(const GetChangesParams &p)
     {
         if (!connection())
@@ -192,7 +192,7 @@ namespace litecore { namespace repl {
             if (needRemoteRevID) {
                 // For proposeChanges, find the nearest foreign ancestor of the current rev:
                 Assert(_db->remoteDBID());
-                alloc_slice foreignAncestor( c4doc_getRemoteAncestor(doc, _db->remoteDBID()) );
+                alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
                 logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
                 if (_skipForeignChanges && foreignAncestor == slice(rev->revID))
                     return false;   // skip this rev: it's already on the peer
@@ -406,50 +406,6 @@ namespace litecore { namespace repl {
                        SPLAT(old), SPLAT(nuu), SPLAT(delta));
         }
         return delta;
-    }
-
-
-    void Pusher::donePushingRev(const RevToSend *rev, bool synced) {
-        if (synced && _options.push > kC4Passive)
-            _db->markRevSynced((RevToSend*)rev);
-
-        auto i = _pushingDocs.find(rev->docID);
-        if (i == _pushingDocs.end()) {
-            if (connection())
-                warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
-            return;
-        }
-
-        Retained<RevToSend> newRev = i->second;
-        _pushingDocs.erase(i);
-        if (newRev) {
-            if (synced && _getForeignAncestors)
-                newRev->remoteAncestorRevID = rev->revID;
-            logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
-                       SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
-                       SPLAT(newRev->remoteAncestorRevID));
-            bool ok = false;
-            if (synced && _getForeignAncestors
-                       && c4rev_getGeneration(newRev->revID) <= c4rev_getGeneration(rev->revID)) {
-                // Don't send; it'll conflict with what's on the server
-            } else {
-                // Send newRev as though it had just arrived:
-                bool should = _db->use<bool>([&](C4Database *db) {
-                    return shouldPushRev(newRev, nullptr, db);
-                });
-                if (should) {
-                    _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
-                    gotOutOfOrderChange(newRev);
-                    ok = true;
-                }
-            }
-            if (!ok) {
-                logVerbose("   ... nope, decided not to propose '%.*s' %.*s",
-                           SPLAT(newRev->docID), SPLAT(newRev->revID));
-            }
-        } else {
-            logDebug("Done pushing '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
-        }
     }
 
 } }

@@ -1386,6 +1386,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
     static constexpr int kNumDocs = 100, kNumProps = 1000;
     auto serverOpts = Replicator::Options::passive();
 
+    int expectedDeltas = 0;
+    SECTION("No Deltas") {
+        serverOpts.setNoDeltas();
+    }
+    SECTION("Deltas") {
+        expectedDeltas = kNumDocs;
+    }
+
     // Push db --> db2:
     {
         TransactionHelper t(db);
@@ -1429,9 +1437,12 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
     Log("-------- Second Push --------");
     _expectedDocumentCount = kNumDocs;
     auto before = IncomingRev::gNumDeltasApplied.load();
+    Stopwatch st;
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
+    Log("##### Replication with%s deltas took %.6f sec",
+        (expectedDeltas ? "" : "out"), st.elapsed());
     compareDatabases();
-    CHECK(IncomingRev::gNumDeltasApplied - before == kNumDocs);
+    CHECK(IncomingRev::gNumDeltasApplied - before == expectedDeltas);
 }
 
 

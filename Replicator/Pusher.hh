@@ -37,23 +37,6 @@ namespace litecore { namespace repl {
         // Starts an active push
         void start(C4SequenceNumber sinceSequence)  {enqueue(&Pusher::_start, sinceSequence);}
 
-        // Sent by Replicator in response to dbGetChanges
-        void gotChanges(std::shared_ptr<RevToSendList> changes,
-                        C4SequenceNumber lastSequence,
-                        C4Error err)
-        {
-            enqueue(&Pusher::_gotChanges, move(changes), lastSequence, err);
-        }
-
-        void gotOutOfOrderChange(RevToSend *rev) {
-            enqueue(&Pusher::_gotOutOfOrderChange, retained(rev));
-        }
-
-
-        void couldntSendRevision(RevToSend* req) {
-            enqueue(&Pusher::_couldntSendRevision, retained(req));
-        }
-
         void checkpointIsInvalid() {
             _checkpointValid = false;
         }
@@ -70,14 +53,14 @@ namespace litecore { namespace repl {
         virtual ActivityLevel computeActivityLevel() const override;
         void startSending(C4SequenceNumber sinceSequence);
         void handleSubChanges(Retained<blip::MessageIn> req);
-        void _gotChanges(std::shared_ptr<RevToSendList> changes, C4SequenceNumber lastSequence, C4Error err);
-        void _gotOutOfOrderChange(Retained<RevToSend>);
+        void gotChanges(std::shared_ptr<RevToSendList> changes, C4SequenceNumber lastSequence, C4Error err);
+        void gotOutOfOrderChange(RevToSend*);
         void sendChanges(std::shared_ptr<RevToSendList>);
         void maybeGetMoreChanges();
         void sendChangeList(RevToSendList);
         void maybeSendMoreRevs();
         void sendRevision(Retained<RevToSend>);
-        void _couldntSendRevision(Retained<RevToSend>);
+        void couldntSendRevision(RevToSend*);
         void doneWithRev(const RevToSend*, bool successful, bool pushed);
         void updateCheckpoint();
         void handleGetAttachment(Retained<MessageIn>);
@@ -103,7 +86,6 @@ namespace litecore { namespace repl {
         bool shouldPushRev(RevToSend*, C4DocEnumerator*, C4Database*);
         void sendRevision(RevToSend *request,
                           blip::MessageProgressCallback onProgress);
-        void donePushingRev(const RevToSend *rev, bool synced);
         alloc_slice createRevisionDelta(C4Document *doc, RevToSend *request,
                                         fleece::Dict root, size_t revSize,
                                         bool sendLegacyAttachments);

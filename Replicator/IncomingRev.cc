@@ -265,7 +265,7 @@ namespace litecore { namespace repl {
         }
         
         if (_rev->error.code == 0 && _peerError)
-                _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
+            _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
 
         // Free up memory now that I'm done:
         Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
