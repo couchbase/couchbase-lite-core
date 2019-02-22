@@ -200,7 +200,7 @@ namespace litecore { namespace blip {
 
     private:
         void readFrame(Codec&, int mode, slice &frame, bool finalFrame);
-        void acknowledge(size_t frameSize);
+        void acknowledge(uint32_t frameSize);
 
         Retained<Connection> _connection;       // The owning BLIP connection     
         std::mutex _receiveMutex;

@@ -303,7 +303,7 @@ namespace litecore { namespace actor {
     protected:
         fleece::Retained<AsyncContext> _context;        // The AsyncProvider that owns my value
 
-        friend struct AsyncState;
+        friend class AsyncState;
     };
 
 
