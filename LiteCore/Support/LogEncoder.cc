@@ -49,7 +49,7 @@ namespace litecore {
 
     LogEncoder::LogEncoder(ostream &out, LogLevel level)
     :_out(out)
-    ,_flushTimer(bind(&LogEncoder::performScheduledFlush, this))
+    ,_flushTimer(new actor::Timer(bind(&LogEncoder::performScheduledFlush, this)))
     ,_level(level)
     {
         _writer.write(&kMagicNumber, 4);
@@ -62,7 +62,9 @@ namespace litecore {
     }
 
     LogEncoder::~LogEncoder() {
-        flush();
+        lock_guard<mutex> lock(_mutex);
+        _flushTimer.reset();
+        _flush();
     }
 
 
@@ -283,8 +285,8 @@ namespace litecore {
 
 
     void LogEncoder::_scheduleFlush() {
-        if (!_flushTimer.scheduled()) {
-            _flushTimer.fireAfter(std::chrono::microseconds(kSaveInterval));
+        if (_flushTimer && !_flushTimer->scheduled()) {
+            _flushTimer->fireAfter(std::chrono::microseconds(kSaveInterval));
         }
     }
 
@@ -297,8 +299,8 @@ namespace litecore {
         auto timeSinceSave = _timeElapsed() - _lastSaved;
         if (timeSinceSave >= kSaveInterval) {
             _flush();
-        } else {
-            _flushTimer.fireAfter(std::chrono::microseconds(kSaveInterval - timeSinceSave));
+        } else if(_flushTimer) {
+            _flushTimer->fireAfter(std::chrono::microseconds(kSaveInterval - timeSinceSave));
         }
     }
 
