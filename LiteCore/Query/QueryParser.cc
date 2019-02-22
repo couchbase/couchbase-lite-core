@@ -279,7 +279,7 @@ namespace litecore {
             }
             extra << ", ";
             string str = _sql.str();
-            str.insert(startPosOfWhat, extra.str());
+            str.insert((string::size_type)startPosOfWhat, extra.str());
             _sql.str(str);
             _sql.seekp(0, stringstream::end);
             _1stCustomResultCol += 1 + _ftsTables.size();
