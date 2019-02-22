@@ -157,7 +157,7 @@ namespace litecore { namespace blip {
 
             // Update byte count and send acknowledgement packet when appropriate:
             _rawBytesReceived += frame.size;
-            acknowledge(frame.size);
+            acknowledge((uint32_t)frame.size);
 
             auto mode = (frameFlags & kCompressed) ? Codec::Mode::SyncFlush : Codec::Mode::Raw;
 
@@ -266,7 +266,7 @@ namespace litecore { namespace blip {
     }
 
 
-    void MessageIn::acknowledge(size_t frameSize) {
+    void MessageIn::acknowledge(uint32_t frameSize) {
         _unackedBytes += frameSize;
         if (_unackedBytes >= kIncomingAckThreshold) {
             // Send an ACK after enough data has been received of this message:

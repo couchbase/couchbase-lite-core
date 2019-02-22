@@ -47,7 +47,9 @@
     #define htobe64(x) OSSwapHostToBigInt64(x)
     #define be64toh(x) OSSwapBigToHostInt64(x)
 #elif defined(_WIN32)
+#ifndef NOMINMAX
     #define NOMINMAX
+#endif
     #include <WinSock2.h>
     #include <Ws2tcpip.h>
     #include <arc4random.h>
@@ -338,7 +340,7 @@ public:
         } else if (reportedLength <= UINT16_MAX) {
             headerLength = 4;
             dst[1] = 126;
-            *((uint16_t *) &dst[2]) = htons(reportedLength);
+            *((uint16_t *) &dst[2]) = htons((uint16_t)reportedLength);
         } else {
             headerLength = 10;
             dst[1] = 127;

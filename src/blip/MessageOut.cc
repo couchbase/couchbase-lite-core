@@ -48,7 +48,7 @@ namespace litecore { namespace blip {
             // Acks have no checksum and don't go through the codec
             slice &data = _contents.dataToSend();
             dst.writeFrom(data);
-            _bytesSent += data.size;
+            _bytesSent += (uint32_t)data.size;
             return;
         }
 
@@ -61,9 +61,9 @@ namespace litecore { namespace blip {
             slice &data = _contents.dataToSend();
             if (data.size == 0)
                 break;
-            _uncompressedBytesSent += data.size;
+            _uncompressedBytesSent += (uint32_t)data.size;
             codec.write(data, dst, mode);
-            _uncompressedBytesSent -= data.size;
+            _uncompressedBytesSent -= (uint32_t)data.size;
         } while (dst.size >= 1024);
 
         if (codec.unflushedBytes() > 0)
@@ -86,8 +86,8 @@ namespace litecore { namespace blip {
 
         // Compute the (compressed) frame size, and update running totals:
         frameSize -= dst.size;
-        _bytesSent += frameSize;
-        _unackedBytes += frameSize;
+        _bytesSent += (uint32_t)frameSize;
+        _unackedBytes += (uint32_t)frameSize;
 
         // Update flags & state:
         MessageProgress::State state;
