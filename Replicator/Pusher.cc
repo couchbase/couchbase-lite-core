@@ -381,13 +381,13 @@ namespace litecore { namespace repl {
     }
 
     
-    // Tells the DBWorker to send a "rev" message containing a revision body.
+    // Send a "rev" message containing a revision body.
     void Pusher::sendRevision(Retained<RevToSend> rev) {
         increment(_revisionsInFlight);
         logVerbose("Sending rev %.*s %.*s (seq #%llu) [%d/%d]",
                    SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
-        sendRevision(rev, asynchronize([=](MessageProgress progress) {
+        sendRevision(rev, [=](MessageProgress progress) {
             // message progress callback:
             if (progress.state == MessageProgress::kDisconnected) {
                 doneWithRev(rev, false, false);
@@ -423,7 +423,7 @@ namespace litecore { namespace repl {
                 doneWithRev(rev, completed, synced);
                 maybeSendMoreRevs();
             }
-        }));
+        });
     }
 
 

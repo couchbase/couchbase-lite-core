@@ -220,6 +220,7 @@ namespace litecore { namespace repl {
             DebugAssert(!connection());  // must already have gotten _onClose() delegate callback
             _pusher = nullptr;
             _puller = nullptr;
+            _db.reset();
         }
         if (_delegate) {
             // Notify the delegate of the current status, but not too often:

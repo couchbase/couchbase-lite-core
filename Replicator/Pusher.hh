@@ -43,7 +43,7 @@ namespace litecore { namespace repl {
 
     protected:
         virtual std::string loggingClassName() const override  {
-            return _options.pull >= kC4OneShot ? "Push" : "push";
+            return _options.push >= kC4OneShot ? "Push" : "push";
         }
 
     private:

@@ -204,7 +204,7 @@ namespace litecore { namespace repl {
                 }
                 if (transaction.commit(&error)) {
                     double t = st.elapsed();
-                    logInfo("Marked %zu revs as synced-to-server in %.2fms (%.0f/sec)",
+                    logVerbose("Marked %zu revs as synced-to-server in %.2fms (%.0f/sec)",
                             revs->size(), t*1000, revs->size()/t);
                     return;
                 }

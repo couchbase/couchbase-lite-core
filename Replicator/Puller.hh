@@ -61,7 +61,9 @@ namespace litecore { namespace repl {
         void handleNoRev(Retained<MessageIn>);
         void startIncomingRev(MessageIn*);
         void _revsFinished();
-        void completedSequence(alloc_slice sequence, bool withTransientError =false);
+        void completedSequence(alloc_slice sequence,
+                               bool withTransientError =false, bool updateCheckpoint =true);
+        void updateLastSequence();
 
         void _setSkipDeleted()                  {_skipDeleted = true;}
 

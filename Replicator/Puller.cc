@@ -242,9 +242,11 @@ namespace litecore { namespace repl {
         for (IncomingRev *inc : *revs) {
             auto rev = inc->rev();
             if (nonPassive())
-                completedSequence(inc->remoteSequence(), rev->errorIsTransient);
+                completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
         }
+        if (nonPassive())
+            updateLastSequence();
         _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(), revs->end());
 
         decrement(_activeIncomingRevs, (unsigned)revs->size());
@@ -261,7 +263,7 @@ namespace litecore { namespace repl {
 
 
     // Records that a sequence has been successfully pulled.
-    void Puller::completedSequence(alloc_slice sequence, bool withTransientError) {
+    void Puller::completedSequence(alloc_slice sequence, bool withTransientError, bool shouldUpdateLastSequence) {
         uint64_t bodySize;
         if (withTransientError) {
             // If there's a transient error, don't mark this sequence as completed,
@@ -270,14 +272,21 @@ namespace litecore { namespace repl {
         } else {
             bool wasEarliest;
             _missingSequences.remove(sequence, wasEarliest, bodySize);
-            if (wasEarliest) {
-                _lastSequence = _missingSequences.since();
-                logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
-                if (replicator())
-                    replicator()->updatePullCheckpoint(_lastSequence);
-            }
+            if (wasEarliest && shouldUpdateLastSequence)
+                updateLastSequence();
         }
         addProgress({bodySize, 0});
+    }
+
+
+    void Puller::updateLastSequence() {
+        auto since = _missingSequences.since();
+        if (since != _lastSequence) {
+            _lastSequence = since;
+            logVerbose("Checkpoint now at %.*s", SPLAT(_lastSequence));
+            if (replicator())
+                replicator()->updatePullCheckpoint(_lastSequence);
+        }
     }
 
 

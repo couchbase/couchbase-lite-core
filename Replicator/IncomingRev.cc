@@ -110,6 +110,7 @@ namespace litecore { namespace repl {
                                         alloc_slice deltaJSON,
                                         C4Error *outError)
     {
+        Stopwatch st;
         alloc_slice body;
         c4::ref<C4Document> doc = _db->getDoc(rev->docID, outError);
         if (doc && c4doc_selectRevision(doc, baseRevID, true, outError)) {
@@ -143,6 +144,14 @@ namespace litecore { namespace repl {
                     *outError = c4error_make(LiteCoreDomain, kC4ErrorDeltaBaseUnknown, slice(msg));
                 }
             }
+        }
+        if (body) {
+            logVerbose("Applied %zu-byte delta in %.3fsec producing %zu-byte '%.*s' #%.*s",
+                       deltaJSON.size, st.elapsed(), body.size, SPLAT(rev->docID), SPLAT(rev->revID));
+        } else {
+            alloc_slice msg(c4error_getDescription(*outError));
+            warn("Couldn't apply delta of '%.*s' #%.*s (giving #%.*s): %.*s",
+                 SPLAT(rev->docID), SPLAT(baseRevID), SPLAT(rev->revID), SPLAT(msg));
         }
         return body;
     }
