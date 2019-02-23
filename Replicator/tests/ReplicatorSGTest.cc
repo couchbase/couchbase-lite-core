@@ -18,20 +18,28 @@
 
 #include "ReplicatorAPITest.hh"
 #include "c4Document+Fleece.h"
+#include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 
 using namespace fleece;
 
 
-// REAL-REPLICATOR (SYNC GATEWAY) TESTS
-//
-// The tests below are tagged [.SyncServer] to keep them from running during normal testing.
-// Instead, they have to be invoked manually via Catch command-line options.
-// This is because they require that an external replication server is running.
-// The default URL the tests connect to is blip://localhost:4984/scratch/, but this can be
-// overridden by setting environment vars REMOTE_HOST, REMOTE_PORT, REMOTE_DB.
-// ** The tests will erase this database (via the SG REST API.) **
+/* REAL-REPLICATOR (SYNC GATEWAY) TESTS
+
+ The tests below are tagged [.SyncServer] to keep them from running during normal testing.
+ Instead, they have to be invoked manually via the Catch command-line option `[.SyncServer]`.
+ This is because they require that an external replication server is running.
+
+ The default URL the tests connect to is blip://localhost:4984/scratch/, but this can be
+ overridden by setting environment vars REMOTE_HOST, REMOTE_PORT, REMOTE_DB.
+ WARNING: The tests will erase this database (via the SG REST API.)
+
+ Some tests connect to other databases by setting `_remoteDBName`. These have fixed contents.
+ The directory Replicator/tests/data/ contains Sync Gateway config files and Walrus data files,
+ so if you `cd` to that directory and enter `sync_gateway config.json` you should be good to go.
+ (For more details, see the README.md file in that directory.)
+ */
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[.SyncServer]") {
@@ -341,4 +349,89 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull multiply-updated", "[.SyncServer]") {
     doc = c4doc_get(db, "doc"_sl, true, nullptr);
     REQUIRE(doc);
     CHECK(doc->revID == "4-ffa3011c5ade4ec3a3ec5fe2296605ce"_sl);
+}
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]") {
+    static constexpr int kNumDocs = 1000, kNumProps = 1000;
+    flushScratchDatabase();
+    _logRemoteRequests = false;
+
+#if 1
+    {
+        // Disable delta sync:
+        Encoder enc;
+        enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
+        enc.writeBool(true);
+        enc.endDict();
+        _options = AllocedDict(enc.finish());
+    }
+#endif
+
+    C4Log("-------- Populating local db --------");
+    auto populateDB = [&]() {
+        TransactionHelper t(db);
+        srandom(123456); // start random() sequence at a known place
+        for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+            string docID = format("doc-%03d", docNo);
+            Encoder enc(c4db_createFleeceEncoder(db));
+            enc.beginDict();
+            for (int p = 0; p < kNumProps; ++p) {
+                enc.writeKey(format("field%03d", p));
+                enc.writeInt(random());
+            }
+            enc.endDict();
+            alloc_slice body = enc.finish();
+            string revID = createNewRev(db, slice(docID), body);
+        }
+    };
+    populateDB();
+
+    C4Log("-------- Pushing to SG --------");
+    replicate(kC4OneShot, kC4Disabled);
+
+    C4Log("-------- Updating docs on SG --------");
+    // Now update the docs on SG:
+    for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+        string docID = format("doc-%03d", docNo);
+        C4Error error;
+        c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
+        REQUIRE(doc);
+        Dict props = Value::fromData(doc->selectedRev.body).asDict();
+
+        JSONEncoder enc;
+        enc.beginDict();
+        enc.writeKey("_rev"_sl);
+        enc.writeString(doc->revID);
+        for (Dict::iterator i(props); i; ++i) {
+            enc.writeKey(i.keyString());
+            auto value = i.value().asInt();
+            if (random() % 8 == 0)
+                value = random();
+            enc.writeInt(value);
+        }
+        enc.endDict();
+        alloc_slice body = enc.finish();
+        sendRemoteRequest("PUT", docID, body);
+    }
+
+    {
+        C4Log("-------- Pulling changes from SG --------");
+        Stopwatch st;
+        replicate(kC4Disabled, kC4OneShot);
+        C4Log("-------- 1st pull took %.3f sec (%.0f docs/sec) --------",
+              st.elapsed(), kNumDocs/st.elapsed());
+    }
+
+    {
+        C4Log("-------- Repopulating local db --------");
+        deleteAndRecreateDB();
+        populateDB();
+        C4Log("-------- Pulling changes from SG 2nd time --------");
+        Stopwatch st;
+        replicate(kC4Disabled, kC4OneShot);
+        C4Log("-------- 2nd pull took %.3f sec (%.0f docs/sec) --------",
+              st.elapsed(), kNumDocs/st.elapsed());
+    }
 }

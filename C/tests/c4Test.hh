@@ -229,9 +229,9 @@ public:
 
     // Some handy constants to use
     static const C4Slice kDocID;    // "mydoc"
-    C4Slice kRevID;    // "1-abcdef"
-    C4Slice kRev2ID;   // "2-d00d3333"
-    C4Slice kRev3ID;
+    C4Slice kRevID;    // "1-abcd"
+    C4Slice kRev2ID;   // "2-c001d00d"
+    C4Slice kRev3ID;   // "3-deadbeef"
     static C4Slice kFleeceBody;
     static C4Slice kEmptyFleeceBody;
 
