@@ -179,7 +179,7 @@ public:
         params.pull = pull;
         params.optionsDictFleece = _options.data();
         params.pushFilter = _pushFilter;
-        params.validationFunc = onValidate;
+//        params.validationFunc = onValidate;
         params.onStatusChanged = onStateChanged;
         params.onDocumentsEnded = onDocsEnded;
         params.callbackContext = this;
@@ -231,7 +231,8 @@ public:
 
         auto port = uint16_t(_address.port + !!admin);
         path = string("/") + (string)(slice)_remoteDBName + "/" + path;
-        C4Log("*** Server command: %s %.*s:%d%s",
+        if (_logRemoteRequests)
+            C4Log("*** Server command: %s %.*s:%d%s",
               method.c_str(), SPLAT(_address.hostname), port, path.c_str());
         auto r = make_unique<REST::Response>(method,
                              (string)(slice)_address.hostname,
@@ -280,5 +281,6 @@ public:
     set<string> _docPushErrors, _docPullErrors;
     set<string> _expectedDocPushErrors, _expectedDocPullErrors;
     int _counter {0};
+    bool _logRemoteRequests {true};
 };
 
