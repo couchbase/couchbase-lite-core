@@ -80,7 +80,7 @@ namespace litecore {
         std::mutex _mutex;
         fleece::Writer _writer;
         std::ostream &_out;
-        actor::Timer _flushTimer;
+        std::unique_ptr<actor::Timer> _flushTimer;
         fleece::Stopwatch _st;
         int64_t _lastElapsed {0};
         int64_t _lastSaved {0};
