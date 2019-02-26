@@ -89,7 +89,8 @@ namespace litecore { namespace repl {
         alloc_slice             body;                   // The actual doc body (Fleece)
         const bool              noConflicts {false};    // Server is in no-conflicts mode
         Retained<IncomingRev>   owner;                  // Object that's processing this rev
-
+        alloc_slice             deltaSrcRevID;          // Source revision if body is a delta
+        
         RevToInsert(IncomingRev* owner,
                     slice docID, slice revID,
                     slice historyBuf,

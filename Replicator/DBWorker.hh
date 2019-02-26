@@ -78,7 +78,7 @@ namespace litecore { namespace repl {
 
         void applyDelta(RevToInsert *rev, slice baseRevID,
                         alloc_slice deltaJSON,
-                        std::function<void(alloc_slice body, C4Error)> callback) {
+                        std::function<void(fleece::Doc,C4Error)> callback) {
             enqueue(&DBWorker::_applyDelta, retained(rev), alloc_slice(baseRevID),
                     deltaJSON, callback);
         }
@@ -108,6 +108,8 @@ namespace litecore { namespace repl {
         void findBlobReferences(fleece::Dict root, bool unique, const FindBlobCallback&);
 
         bool disableBlobSupport() const     {return _disableBlobSupport;}
+
+        static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
 
     protected:
         virtual std::string loggingClassName() const override  {
@@ -149,7 +151,10 @@ namespace litecore { namespace repl {
         void updateRemoteRev(C4Document* NONNULL);
         void _applyDelta(Retained<RevToInsert> rev, alloc_slice baseRevID,
                          alloc_slice deltaJSON,
-                         std::function<void(alloc_slice body, C4Error)> callback);
+                         std::function<void(fleece::Doc,C4Error)> callback);
+        fleece::Doc _applyDelta(const C4Revision *baseRevision, slice deltaJSON, C4Error*);
+        C4SliceResult applyDeltaCallback(const C4Revision *baseRevision, C4Slice deltaJSON, C4Error*);
+
         void _insertRevisionsNow();
 
         // Push:

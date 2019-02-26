@@ -239,34 +239,67 @@ namespace litecore { namespace repl {
     }
 
 
-    // Applies a delta, asynchronously returning expanded Fleece -- called by IncomingRev
+    atomic<unsigned> DBWorker::gNumDeltasApplied;
+
+
+    // Applies a delta to an existing revision.
+    Doc DBWorker::_applyDelta(const C4Revision *baseRevision,
+                              slice deltaJSON,
+                              C4Error *outError)
+    {
+        Dict srcRoot = Value::fromData(baseRevision->body, kFLTrusted).asDict();
+        if (!srcRoot) {
+            if (outError) *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptRevisionData, nullslice);
+            return {};
+        }
+        Doc legacy;
+        if (!_disableBlobSupport && containsAttachmentsProperty(deltaJSON)) {
+            // Delta refers to legacy attachments, so convert my base revision to have them:
+            Encoder enc;
+            writeRevWithLegacyAttachments(enc, srcRoot, 1);
+            legacy = enc.finishDoc();
+            srcRoot = legacy.root().asDict();
+        }
+
+        Doc deltaDoc = Doc::fromJSON(deltaJSON);
+        auto delta = deltaDoc.root();
+        if (!delta) {
+            *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
+            return {};
+        }
+
+        bool useSharedKeys = c4db_isInTransaction(_db);
+        FLEncoder enc = useSharedKeys ? c4db_getSharedFleeceEncoder(_db) : FLEncoder_New();
+        FLEncodeApplyingJSONDelta(srcRoot, delta, enc);
+        ++gNumDeltasApplied;
+        FLError flErr;
+        Doc result = FLEncoder_FinishDoc(enc, &flErr);
+        if (!result) {
+            if (outError) {
+                if (flErr == kFLInvalidData)
+                    *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
+                else
+                    *outError = {FleeceDomain, flErr};
+            }
+        }
+        if (!useSharedKeys)
+            FLEncoder_Free(enc);
+        return result;
+    }
+
+
+    // Async version of _applyDelta -- called by IncomingRev
     void DBWorker::_applyDelta(Retained<RevToInsert> rev,
                                alloc_slice baseRevID,
                                alloc_slice deltaJSON,
-                               std::function<void(alloc_slice body, C4Error)> callback)
+                               std::function<void(Doc,C4Error)> callback)
     {
-        alloc_slice body;
+        Doc fleeceDoc;
         C4Error c4err;
         c4::ref<C4Document> doc = c4doc_get(_db, rev->docID, true, &c4err);
         if (doc && c4doc_selectRevision(doc, baseRevID, true, &c4err)) {
-            Dict srcRoot = getDocRoot(doc);
-            if (srcRoot) {
-                Doc legacy;
-                if (!_disableBlobSupport && containsAttachmentsProperty(deltaJSON)) {
-                    // Delta refers to legacy attachments, so convert my base revision to have them:
-                    Encoder enc;
-                    writeRevWithLegacyAttachments(enc, srcRoot, 1);
-                    legacy = enc.finishDoc();
-                    srcRoot = legacy.root().asDict();
-                }
-                FLError flErr;
-                body = FLApplyJSONDelta(srcRoot, deltaJSON, &flErr);
-                if (!body) {
-                    if (flErr == kFLInvalidData)
-                        c4err = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
-                    else
-                        c4err = {FleeceDomain, flErr};
-                }
+            if (doc->selectedRev.body.buf) {
+                fleeceDoc = _applyDelta(&doc->selectedRev, deltaJSON, &c4err);
             } else {
                 // Don't have the body of the source revision. This might be because I'm in
                 // no-conflict mode and the peer is trying to push me a now-obsolete revision.
@@ -280,7 +313,35 @@ namespace litecore { namespace repl {
                 }
             }
         }
-        callback(body, c4err);
+        callback(fleeceDoc, c4err);
+    }
+
+
+    // Callback from c4doc_put() that applies a delta, during _insertRevisionsNow()
+    C4SliceResult DBWorker::applyDeltaCallback(const C4Revision *baseRevision,
+                                               C4Slice deltaJSON,
+                                               C4Error *outError)
+    {
+        Doc doc = _applyDelta(baseRevision, deltaJSON, outError);
+        if (!doc)
+            return {};
+        alloc_slice body = doc.allocedData();
+        if (!_disableBlobSupport) {
+            // After applying the delta, remove legacy attachment properties and any other
+            // "_"-prefixed top level properties:
+            Dict root = doc.root().asDict();
+            if (c4doc_hasOldMetaProperties(root)) {
+                C4Error err;
+                FLSharedKeys sk = c4db_getFLSharedKeys(_db);
+                body = c4doc_encodeStrippingOldMetaProperties(root, sk, &err);
+                if (!body) {
+                    warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
+                    if (outError)
+                        *outError = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
+                }
+            }
+        }
+        return C4SliceResult(body);
     }
 
 
@@ -318,10 +379,6 @@ namespace litecore { namespace repl {
                     pos = comma + 1;
                 }
 
-                // rev->body is Fleece, but sadly we can't insert it directly because it doesn't
-                // use the db's SharedKeys, so all of its Dict keys are strings. Putting this into
-                // the db would cause failures looking up those keys (see #156). So re-encode:
-                Value root = Value::fromData(rev->body, kFLTrusted);
                 C4Error docErr;
                 bool docSaved;
 
@@ -334,18 +391,8 @@ namespace litecore { namespace repl {
                     else if (docErr.domain == LiteCoreDomain && docErr.code == kC4ErrorNotFound)
                         docSaved = true;
                 } else {
-                    enc.writeValue(root);
-                    alloc_slice bodyForDB = enc.finish();
-                    enc.reset();
-                    rev->body = nullslice;
-
-                    // Preserve rev body as the source of a future delta I may push back:
-                    if (bodyForDB.size >= tuning::kMinBodySizeForDelta && !_disableDeltaSupport)
-                        rev->flags |= kRevKeepBody;
-
-                    // Now save the revision to the db:
+                    // Set up the parameter block for c4doc_put():
                     C4DocPutRequest put = {};
-                    put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
                     put.docID = rev->docID;
                     put.revFlags = rev->flags;
                     put.existingRevision = true;
@@ -355,6 +402,34 @@ namespace litecore { namespace repl {
                     put.remoteDBID = _remoteDBID;
                     put.save = true;
 
+                    alloc_slice bodyForDB;
+                    if (rev->deltaSrcRevID) {
+                        // If this is a delta, put the JSON delta in the body:
+                        bodyForDB = move(rev->body);
+                        put.deltaSourceRevID = rev->deltaSrcRevID;
+                        put.deltaCB = [](void *context, const C4Revision *baseRev,
+                                         C4Slice delta, C4Error *outError) {
+                            return ((DBWorker*)context)->applyDeltaCallback(baseRev, delta, outError);
+                        };
+                        put.deltaCBContext = this;
+                        // Preserve rev body as the source of a future delta I may push back:
+                        put.revFlags |= kRevKeepBody;
+                    } else {
+                        // rev->body is Fleece, but sadly we can't insert it directly because it doesn't
+                        // use the db's SharedKeys, so all of its Dict keys are strings. Putting this into
+                        // the db would cause failures looking up those keys (see #156). So re-encode:
+                        Value root = Value::fromData(rev->body, kFLTrusted);
+                        enc.writeValue(root);
+                        bodyForDB = enc.finish();
+                        enc.reset();
+                        rev->body = nullslice;
+                        // Preserve rev body as the source of a future delta I may push back:
+                        if (bodyForDB.size >= tuning::kMinBodySizeForDelta && !_disableDeltaSupport)
+                            put.revFlags |= kRevKeepBody;
+                    }
+                    put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
+
+                    // The save!!
                     c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &docErr);
                     if (doc) {
                         logVerbose("    {'%.*s' #%.*s <- %.*s} seq %llu",

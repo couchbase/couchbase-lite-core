@@ -47,8 +47,6 @@ namespace litecore { namespace repl {
 
         void revisionInserted()                 {enqueue(&IncomingRev::_revisionInserted);}
 
-        static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
-
     protected:
         virtual std::string loggingClassName() const override  {
             return _options.pull >= kC4OneShot ? "IncomingRev" : "incomingrev";
@@ -58,7 +56,7 @@ namespace litecore { namespace repl {
     private:
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
-        void processBody(alloc_slice fleeceBody, C4Error);
+        void processBody(fleece::Doc, C4Error);
         bool fetchNextBlob();
         void insertRevision();
         void _revisionInserted();

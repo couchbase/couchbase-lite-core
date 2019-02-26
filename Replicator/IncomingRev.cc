@@ -55,6 +55,7 @@ namespace litecore { namespace repl {
                                _revMessage->boolProperty("deleted"_sl),
                                _revMessage->boolProperty("noconflicts"_sl)
                                    || _options.noIncomingConflicts());
+        _rev->deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
         _remoteSequence = _revMessage->property(slice("sequence"));
 
         _peerError = (int)_revMessage->intProperty("error"_sl);
@@ -83,32 +84,47 @@ namespace litecore { namespace repl {
             return;
         }
 
-        slice deltaSrcRevID = _revMessage->property("deltaSrc"_sl);
-        if (deltaSrcRevID) {
-            _dbWorker->applyDelta(_rev, deltaSrcRevID, _revMessage->body(),
-                                  asynchronize([this](alloc_slice body, C4Error err) {
-                ++gNumDeltasApplied;
-                processBody(body, err);
+        if (!_rev->historyBuf && c4rev_getGeneration(_rev->revID) > 1)
+            warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
+
+        auto jsonBody = _revMessage->body();
+
+        if (_rev->deltaSrcRevID == nullslice) {
+            // It's not a delta. Convert body to Fleece and process:
+            FLError err;
+            auto fleeceDoc = Doc::fromJSON(jsonBody, &err);
+            processBody(fleeceDoc, {FleeceDomain, err});
+        } else if (_options.pullValidator || _revMessage->body().contains("\"digest\""_sl)) {
+            // It's a delta, but we need the entire document body now because either it has to be
+            // passed to the validation function, or it may contain new blobs to download.
+            // So we call the DBWorker to (asynchronously) apply the delta, and then processBody():
+            logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
+                       SPLAT(_rev->docID), SPLAT(_rev->revID));
+            _dbWorker->applyDelta(_rev, _rev->deltaSrcRevID, jsonBody,
+                                  asynchronize([this](Doc fleeceDoc, C4Error err) {
+                _rev->deltaSrcRevID = nullslice;
+                processBody(fleeceDoc, err);
             }));
         } else {
-            FLError err;
-            alloc_slice body = Doc::fromJSON(_revMessage->body(), &err).allocedData();
-            processBody(body, {FleeceDomain, err});
+            // It's a delta, but it can be applied later while inserting:
+            _rev->body = jsonBody;
+            insertRevision();
         }
     }
 
 
-    void IncomingRev::processBody(alloc_slice fleeceBody, C4Error error) {
-        if (!fleeceBody) {
+    void IncomingRev::processBody(Doc fleeceDoc, C4Error error) {
+        Assert(!_rev->deltaSrcRevID);   // This method does NOT work on deltas
+        if (!fleeceDoc) {
             _rev->error = error;
             finish();
             return;
         }
 
-        // Note: fleeceBody is _not_ suitable for inserting into the
+        // Note: fleeceDoc is _not_ yet suitable for inserting into the
         // database because it doesn't use the SharedKeys, but it lets us look at the doc
         // metadata and blobs.
-        Dict root = Value::fromData(fleeceBody, kFLTrusted).asDict();
+        Dict root = fleeceDoc.root().asDict();
 
         // SG sends a fake revision with a "_removed":true property, to indicate that the doc is
         // no longer accessible (not in any channel the client has access to.)
@@ -119,16 +135,15 @@ namespace litecore { namespace repl {
         // in _attachments that are redundant with blobs elsewhere in the doc:
         if (c4doc_hasOldMetaProperties(root) && !_dbWorker->disableBlobSupport()) {
             C4Error err;
-            fleeceBody = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
-            if (!fleeceBody) {
+            _rev->body = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
+            if (!_rev->body) {
                 warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
                 _rev->error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
             }
-            root = Value::fromData(fleeceBody, kFLTrusted).asDict();
+            root = Value::fromData(_rev->body, kFLTrusted).asDict();
+        } else {
+            _rev->body = fleeceDoc.allocedData();
         }
-
-        // Populate the RevToInsert's body:
-        _rev->body = fleeceBody;
 
         // Check for blobs, and queue up requests for any I don't have yet:
         _dbWorker->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
@@ -235,9 +250,6 @@ namespace litecore { namespace repl {
             return kC4Stopped;
         }
     }
-
-
-    atomic<unsigned> IncomingRev::gNumDeltasApplied;
 
 } }
 

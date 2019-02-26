@@ -8,7 +8,7 @@
 
 #include "ReplicatorLoopbackTest.hh"
 #include "Worker.hh"
-#include "IncomingRev.hh"
+#include "DBWorker.hh"
 #include "Timer.hh"
 #include "Database.hh"
 #include "PrebuiltCopier.hh"
@@ -143,8 +143,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
     validateCheckpoints(db, db2, "{\"local\":100}");
 
     Log("-------- Second Replication --------");
-    createRev("new1"_sl, kRev2ID, kFleeceBody);
-    createRev("new2"_sl, kRev3ID, kFleeceBody);
+    createRev("new1"_sl, "1-1234"_sl, kFleeceBody);
+    createRev("new2"_sl, "1-2341"_sl, kFleeceBody);
     _expectedDocumentCount = 2;
 
     runPushReplication();
@@ -253,8 +253,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Pull", "[Pull]") {
     validateCheckpoints(db2, db, "{\"remote\":100}");
 
     Log("-------- Second Replication --------");
-    createRev("new1"_sl, kRev2ID, kFleeceBody);
-    createRev("new2"_sl, kRev3ID, kFleeceBody);
+    createRev("new1"_sl, "1-2341"_sl, kFleeceBody);
+    createRev("new2"_sl, "1-2341"_sl, kFleeceBody);
     _expectedDocumentCount = 2;
 
     runPullReplication();
@@ -1375,10 +1375,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
 
     Log("-------- Second Push --------");
     _expectedDocumentCount = (100+6)/7;
-    IncomingRev::gNumDeltasApplied = 0;
+    DBWorker::gNumDeltasApplied = 0;
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(IncomingRev::gNumDeltasApplied == 15);
+    CHECK(DBWorker::gNumDeltasApplied == 15);
 }
 
 
@@ -1397,10 +1397,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
 
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = (100+6)/7;
-    IncomingRev::gNumDeltasApplied = 0;
+    DBWorker::gNumDeltasApplied = 0;
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(IncomingRev::gNumDeltasApplied == 15);
+    CHECK(DBWorker::gNumDeltasApplied == 15);
 }
 
 
@@ -1431,9 +1431,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
 
     Log("-------- Push To db2 Again --------");
     _expectedDocumentCount = 1;
-    IncomingRev::gNumDeltasApplied = 0;
+    DBWorker::gNumDeltasApplied = 0;
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
-    CHECK(IncomingRev::gNumDeltasApplied == 1);
+    CHECK(DBWorker::gNumDeltasApplied == 1);
 
     c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
@@ -1475,9 +1475,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
 
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = 1;
-    IncomingRev::gNumDeltasApplied = 0;
+    DBWorker::gNumDeltasApplied = 0;
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
-    CHECK(IncomingRev::gNumDeltasApplied == 1);
+    CHECK(DBWorker::gNumDeltasApplied == 1);
 
     c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc, true, nullptr);
