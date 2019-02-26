@@ -18,6 +18,7 @@
 
 #include "QueryTest.hh"
 #include <time.h>
+#include <float.h>
 
 using namespace fleece::impl;
 
@@ -1385,4 +1386,62 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
         CHECK(e->columns()[0]->asString() == "rec-001"_sl);
         CHECK(!e->next());
     }
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
+    {
+        Transaction t(store->dataFile());
+        string docID = "rec-00";
+        
+        stringstream ss(docID);
+        writeDoc(slice(ss.str()), DocumentFlags::kNone, t, [=](Encoder &enc) {
+            enc.writeKey("string");
+            enc.writeString("string");
+            enc.writeKey("int_min");
+            enc.writeInt(INT64_MIN);
+            enc.writeKey("int_max");
+            enc.writeInt(INT64_MAX);
+            enc.writeKey("flt_min");
+            enc.writeDouble(FLT_MIN);
+            enc.writeKey("flt_max");
+            enc.writeDouble(FLT_MAX);
+            enc.writeKey("dbl_min");
+            enc.writeDouble(DBL_MIN);
+            enc.writeKey("dbl_max");
+            enc.writeDouble(DBL_MAX);
+            enc.writeKey("bool_true");
+            enc.writeBool(true);
+            enc.writeKey("bool_false");
+            enc.writeBool(false);
+        });
+        t.commit();
+    }
+    
+    auto query = store->compileQuery(json5(
+       "{'WHAT': [{ \
+           string: ['.string'], \
+           int_min: ['.int_min'], \
+           int_max: ['.int_max'], \
+           flt_min: ['.flt_min'], \
+           flt_max: ['.flt_max'], \
+           dbl_min: ['.dbl_min'], \
+           dbl_max: ['.dbl_max'], \
+           bool_true: ['.bool_true'], \
+           bool_false: ['.bool_false'] \
+        }]}"));
+    
+    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    REQUIRE(e->getRowCount() == 1);
+    REQUIRE(e->next());
+    REQUIRE(e->columns()[0]->asDict());
+    CHECK(e->columns()[0]->asDict()->get("string"_sl)->asString() == "string"_sl);
+    CHECK(e->columns()[0]->asDict()->get("int_min"_sl)->asInt() == INT64_MIN);
+    CHECK(e->columns()[0]->asDict()->get("int_max"_sl)->asInt() == INT64_MAX);
+    CHECK(e->columns()[0]->asDict()->get("flt_min"_sl)->asFloat() == FLT_MIN);
+    CHECK(e->columns()[0]->asDict()->get("flt_max"_sl)->asFloat() == FLT_MAX);
+    CHECK(e->columns()[0]->asDict()->get("dbl_min"_sl)->asDouble() == DBL_MIN);
+    CHECK(e->columns()[0]->asDict()->get("dbl_max"_sl)->asDouble() == DBL_MAX);
+    CHECK(e->columns()[0]->asDict()->get("bool_true"_sl)->asBool() == true);
+    CHECK(e->columns()[0]->asDict()->get("bool_false"_sl)->asBool() == false);
 }
