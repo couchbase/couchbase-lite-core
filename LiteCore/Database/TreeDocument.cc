@@ -319,8 +319,31 @@ namespace c4Internal {
 #pragma mark - INSERTING REVISIONS
 
 
-        static alloc_slice requestBody(const C4DocPutRequest &rq) {
-            return (rq.allocedBody.buf)? rq.allocedBody : alloc_slice(rq.body);
+        // Returns the body of the revision to be stored.
+        alloc_slice requestBody(const C4DocPutRequest &rq, C4Error *outError) {
+            alloc_slice body;
+            if (rq.deltaCB == nullptr) {
+                body = (rq.allocedBody.buf)? rq.allocedBody : alloc_slice(rq.body);
+                if (!body)
+                    body = alloc_slice{Dict::kEmpty, 2};
+            } else {
+                // Apply a delta via a callback:
+                if (!rq.deltaSourceRevID.buf || !selectRevision(rq.deltaSourceRevID, true)) {
+                    recordError(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                "Unknown source revision ID for delta", outError);
+                } else if (!selectedRev.body.buf) {
+                    recordError(LiteCoreDomain, kC4ErrorDeltaBaseUnknown,
+                                "Unknown source revision body for delta", outError);
+                } else {
+                    slice delta = (rq.allocedBody.buf)? slice(rq.allocedBody) : slice(rq.body);
+                    body = rq.deltaCB(rq.deltaCBContext, &selectedRev, delta, outError);
+                }
+            }
+
+            // Now validate that the body is OK:
+            if (body)
+                database()->validateRevisionBody(body);
+            return body;
         }
 
 
@@ -332,10 +355,14 @@ namespace c4Internal {
             for (size_t i = 0; i < rq.historyCount; i++)
                 revIDBuffers[i].parse(rq.history[i]);
 
+            alloc_slice body = requestBody(rq, outError);
+            if (!body)
+                return -1;
+
             auto priorCurrentRev = _versionedDoc.currentRevision();
             int httpStatus;
             commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
-                                                         requestBody(rq),
+                                                         body,
                                                          (Rev::Flags)rq.revFlags,
                                                          rq.allowConflict,
                                                          (rq.remoteDBID != 0),
@@ -393,12 +420,14 @@ namespace c4Internal {
             if (rq.remoteDBID != 0)
                 error::_throw(error::InvalidParameter, "remoteDBID cannot be used when existing=false");
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
-            revidBuffer encodedNewRevID = generateDocRevID(rq.body, selectedRev.revID, deletion);
 
-            alloc_slice body = requestBody(rq);
+            C4Error err;
+            alloc_slice body = requestBody(rq, &err);
             if (!body)
-                body = alloc_slice{Dict::kEmpty, 2};
-            
+                error::_throw((error::Domain)err.domain, err.code); //FIX: Ick.
+
+            revidBuffer encodedNewRevID = generateDocRevID(body, selectedRev.revID, deletion);
+
             int httpStatus;
             auto newRev = _versionedDoc.insert(encodedNewRevID,
                                                body,

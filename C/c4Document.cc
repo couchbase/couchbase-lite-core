@@ -349,7 +349,9 @@ static alloc_slice createDocUUID() {
 
 // Is this a PutRequest that doesn't require a Record to exist already?
 static bool isNewDocPutRequest(C4Database *database, const C4DocPutRequest *rq) {
-    if (rq->existingRevision)
+    if (rq->deltaCB)
+        return false;
+    else if (rq->existingRevision)
         return database->documentFactory().isFirstGenRevID(rq->history[rq->historyCount-1]);
     else
         return rq->historyCount == 0;
@@ -457,8 +459,6 @@ C4Document* c4doc_put(C4Database *database,
     int commonAncestorIndex = 0;
     C4Document *doc = nullptr;
     try {
-        database->validateRevisionBody(rq->body);
-
         if (rq->save && isNewDocPutRequest(database, rq)) {
             // As an optimization, write the doc assuming there is no prior record in the db:
             doc = putNewDoc(database, rq);

@@ -279,6 +279,19 @@ extern "C" {
         @{ */
 
 
+    /** Optional callback to `c4doc_put` that generates the new revision body, based on an earlier
+        revision body and the body of the `C4DocPutRequest`. It's intended for use when the new
+        revision is specified as a delta.
+        @param context  The same value given in the `C4DocPutRequest`'s `deltaCBContext` field.
+        @param baseRevision  The base revision requested in the `deltaSourceRevID`.
+        @param delta  The contents of the request's `body` or `allocedBody`.
+        @param outError  If the callback fails, store an error here if it's non-NULL.
+        @return  The body to store in the new revision, or a null slice on failure. */
+    typedef C4SliceResult (*C4DocDeltaApplier)(void *context,
+                                               const C4Revision *baseRevision,
+                                               C4Slice delta,
+                                               C4Error *outError);
+
     /** Parameters for adding a revision using c4doc_put. */
     typedef struct {
         C4String body;              ///< Revision's body
@@ -291,7 +304,12 @@ extern "C" {
         bool save;                  ///< Save the document after inserting the revision?
         uint32_t maxRevTreeDepth;   ///< Max depth of revision tree to save (or 0 for default)
         C4RemoteID remoteDBID;      ///< Identifier of remote db this rev's from (or 0 if local)
+
         C4SliceResult allocedBody;  ///< Set this instead of body if body is heap-allocated
+
+        C4DocDeltaApplier deltaCB;  ///< If non-NULL, will be called to generate the actual body
+        void *deltaCBContext;       ///< Passed to `deltaCB` callback
+        C4String deltaSourceRevID;  ///< Source rev for delta (must be valid if deltaCB is given)
     } C4DocPutRequest;
 
     /** A high-level Put operation, to insert a new or downloaded revision.
