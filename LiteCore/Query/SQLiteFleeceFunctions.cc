@@ -315,7 +315,7 @@ namespace litecore {
             enc.writeKey(key);
         switch (type) {
             case SQLITE_INTEGER: {
-                auto intVal = sqlite3_value_int(arg);
+                auto intVal = sqlite3_value_int64(arg);
                 if(sqlite3_value_subtype(arg) == kFleeceIntBoolean)
                     enc.writeBool(intVal != 0);
                 else
