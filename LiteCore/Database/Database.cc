@@ -28,6 +28,7 @@
 #include "BlobStore.hh"
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
+#include "StringUtil.hh"
 #include "make_unique.h"
 #include <functional>
 
@@ -565,11 +566,11 @@ namespace c4Internal {
 #if DEBUG
     // Validate that all dictionary keys in this value behave correctly, i.e. the keys found
     // through iteration also work for element lookup. (This tests the fix for issue #156.)
-    static void validateKeys(const Value *val) {
+    static void validateKeys(const Value *val, bool atRoot =true) {
         switch (val->type()) {
             case kArray:
                 for (Array::iterator j(val->asArray()); j; ++j)
-                    validateKeys(j.value());
+                    validateKeys(j.value(), false);
                 break;
             case kDict: {
                 const Dict *d = val->asDict();
@@ -578,7 +579,13 @@ namespace c4Internal {
                     if (!key.buf || d->get(key) != i.value())
                         error::_throw(error::CorruptRevisionData,
                                       "Document key is not properly encoded");
-                    validateKeys(i.value());
+                    if (atRoot && (key == "_id"_sl || key == "_rev"_sl || key == "_deleted"_sl))
+                        error::_throw(error::CorruptRevisionData,
+                                      "Illegal top-level key `%.*s` in document", SPLAT(key));
+                    if (i.key()->asString() && val->sharedKeys()->couldAdd(key))
+                        error::_throw(error::CorruptRevisionData,
+                                      "Key `%.*s` should have been shared-key encoded", SPLAT(key));
+                    validateKeys(i.value(), false);
                 }
                 break;
             }
@@ -597,12 +604,11 @@ namespace c4Internal {
             const Dict *root = v->asDict();
             if (!root)
                 error::_throw(error::CorruptRevisionData, "Revision body is not a Dict");
+            if (root->sharedKeys() != documentKeys())
+                error::_throw(error::CorruptRevisionData,
+                              "Revision uses wrong SharedKeys %p (db's is %p)",
+                              root->sharedKeys(), documentKeys());
             validateKeys(v);
-            for (Dict::iterator i(root, documentKeys()); i; ++i) {
-                slice key = i.keyString();
-                if (key == "_id"_sl || key == "_rev"_sl || key == "_deleted"_sl)
-                    error::_throw(error::CorruptRevisionData, "Illegal key in document");
-            }
         }
     }
 #endif

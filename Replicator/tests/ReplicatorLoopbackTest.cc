@@ -43,11 +43,7 @@ TEST_CASE("Options password logging redaction") {
 }
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt database", "[Push]") {
-    fleece::Encoder enc;
-    enc.beginDict();
-    enc.endDict();
-    alloc_slice body = enc.finish();
-    createRev("doc"_sl, kRevID, body);
+    createRev("doc"_sl, kRevID, kEmptyFleeceBody);
     _expectedDocumentCount = 1;
     runPushReplication();
 
@@ -99,11 +95,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Small Non-Empty DB", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push Empty Docs", "[Push]") {
-    fleece::Encoder enc;
-    enc.beginDict();
-    enc.endDict();
-    alloc_slice body = enc.finish();
-    createRev("doc"_sl, kRevID, body);
+    createRev("doc"_sl, kRevID, kEmptyFleeceBody);
     _expectedDocumentCount = 1;
 
     runPushReplication();
@@ -385,18 +377,21 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push expired doc", "[Pull]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull removed doc", "[Pull]") {
-    // Start with "mydoc" in both dbs with the same revs
-    createRev(db, kDocID, kRevID, kFleeceBody);
-    createRev(db2, kDocID, kRevID, kFleeceBody);
+    {
+        TransactionHelper t(db);
+        // Start with "mydoc" in both dbs with the same revs
+        createRev(db, kDocID, kRevID, kFleeceBody);
+        createRev(db2, kDocID, kRevID, kFleeceBody);
 
-    // Add the "_removed" property. (Normally this is never added to a doc; it's just returned in
-    // a fake revision body by the SG replictor, to indicate that the doc is removed from all
-    // accessible channels.)
-    fleece::Encoder enc;
-    enc.beginDict();
-    enc["_removed"_sl] = true;
-    enc.endDict();
-    createRev(db, kDocID, kRev2ID, enc.finish());
+        // Add the "_removed" property. (Normally this is never added to a doc; it's just returned in
+        // a fake revision body by the SG replictor, to indicate that the doc is removed from all
+        // accessible channels.)
+        fleece::SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
+        enc.beginDict();
+        enc["_removed"_sl] = true;
+        enc.endDict();
+        createRev(db, kDocID, kRev2ID, enc.finish());
+    }
 
     _expectedDocumentCount = 1;
     runPullReplication();
@@ -1405,6 +1400,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][Delta][blob]") {
+    // Simulate SG which requires old-school "_attachments" property:
     auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
 
     vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
@@ -1421,7 +1417,6 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
     Log("-------- Mutate Doc In db --------");
     // Simulate modifying an attachment. In order to avoid having to save a new blob to the db,
     // use the same digest as the 2nd blob.
-    Encoder enc;
     mutateDoc(db, "att1"_sl, [](MutableDict rev) {
         auto atts = rev["attached"_sl].asArray().asMutable();
         auto blob = atts[0].asDict().asMutable();
@@ -1449,9 +1444,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][Pull][Delta][blob]") {
+    // Simulate SG which requires old-school "_attachments" property:
     auto serverOpts = Replicator::Options::passive().setProperty("disable_blob_support"_sl, true);
 
-    // Push db --> db2:
     vector<string> attachments = {"Hey, this is an attachment!", "So is this", ""};
     vector<C4BlobKey> blobKeys;
     {
@@ -1459,13 +1454,13 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
         blobKeys = addDocWithAttachments("att1"_sl, attachments, "text/plain");
         _expectedDocumentCount = 1;
     }
+    Log("-------- Push Doc To db2 --------");
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     validateCheckpoints(db, db2, "{\"local\":1}");
 
     Log("-------- Mutate Doc In db2 --------");
     // Simulate modifying an attachment. In order to avoid having to save a new blob to the db,
     // use the same digest as the 2nd blob.
-    Encoder enc;
     mutateDoc(db2, "att1"_sl, [](MutableDict rev) {
         auto atts = rev["_attachments"_sl].asDict().asMutable();
         auto blob = atts["blob_/attached/0"_sl].asDict().asMutable();

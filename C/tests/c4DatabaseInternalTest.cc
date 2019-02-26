@@ -505,7 +505,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseInternalTest, "ExpectedRevIDs", "[Database][C]"
 
     // Delete a document
     doc = putDoc(docID, revID2, kC4SliceNull, kRevDeleted);
-    revID = C4STR("3-b0089cb43d39c6aba5aea3c0bd5e382dc030033d");
+    revID = C4STR("3-3ae8fab29af3a5bfbfa5a4c5fd91c58214cb0c5a");
     REQUIRE(doc->revID == revID);
     c4doc_free(doc);
     

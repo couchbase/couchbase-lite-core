@@ -207,7 +207,7 @@ _versioning(kC4RevisionTrees)
     if (!kFleeceBody.buf) {
         auto enc = FLEncoder_New();
         FLEncoder_BeginDict(enc, 1);
-        FLEncoder_WriteKey(enc, FLSTR("answer"));
+        FLEncoder_WriteKey(enc, FLSTR("ans*wer"));
         FLEncoder_WriteInt(enc, 42);
         FLEncoder_EndDict(enc);
         auto result = FLEncoder_Finish(enc, nullptr);
@@ -405,7 +405,8 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
 string C4Test::createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice json,
                              C4RevisionFlags flags)
 {
-    Encoder enc;
+    TransactionHelper t(db);
+    SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
     enc.convertJSON(json);
     fleece::alloc_slice fleeceBody = enc.finish();
 //    INFO("Encoder error " << enc.error());        // can't use Catch on bg threads
