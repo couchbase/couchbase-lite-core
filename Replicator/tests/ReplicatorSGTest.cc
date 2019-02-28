@@ -21,6 +21,7 @@
 #include "Stopwatch.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
+#include <unistd.h>
 
 using namespace fleece;
 
@@ -357,18 +358,6 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]
     flushScratchDatabase();
     _logRemoteRequests = false;
 
-#if 0
-    {
-        // Disable delta sync:
-        Encoder enc;
-        enc.beginDict();
-        enc.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
-        enc.writeBool(true);
-        enc.endDict();
-        _options = AllocedDict(enc.finish());
-    }
-#endif
-
     C4Log("-------- Populating local db --------");
     auto populateDB = [&]() {
         TransactionHelper t(db);
@@ -416,22 +405,45 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]
         sendRemoteRequest("PUT", docID, body);
     }
 
-    {
-        C4Log("-------- Pulling changes from SG --------");
-        Stopwatch st;
-        replicate(kC4Disabled, kC4OneShot);
-        C4Log("-------- 1st pull took %.3f sec (%.0f docs/sec) --------",
-              st.elapsed(), kNumDocs/st.elapsed());
-    }
+    double timeWithDelta = 0, timeWithoutDelta = 0;
+    for (int pass = 1; pass <= 3; ++pass) {
+        if (pass == 3) {
+            C4Log("-------- DISABLING DELTA SYNC --------");
+            Encoder enc;
+            enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
+            enc.writeBool(true);
+            enc.endDict();
+            _options = AllocedDict(enc.finish());
+        }
 
-    {
-        C4Log("-------- Repopulating local db --------");
+        C4Log("-------- PASS #%d: Repopulating local db --------", pass);
         deleteAndRecreateDB();
         populateDB();
-        C4Log("-------- Pulling changes from SG 2nd time --------");
+        C4Log("-------- PASS #%d: Pulling changes from SG --------", pass);
         Stopwatch st;
         replicate(kC4Disabled, kC4OneShot);
-        C4Log("-------- 2nd pull took %.3f sec (%.0f docs/sec) --------",
-              st.elapsed(), kNumDocs/st.elapsed());
+        double time = st.elapsed();
+        C4Log("-------- PASS #%d: Pull took %.3f sec (%.0f docs/sec) --------", pass, time, kNumDocs/time);
+        if (pass == 2)
+            timeWithDelta = time;
+        else if (pass == 3)
+            timeWithoutDelta = time;
+
+        int n = 0;
+        C4Error error;
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, &error);
+        while (c4enum_next(e, &error)) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            CHECK(slice(info.docID).hasPrefix("doc-"_sl));
+            CHECK(slice(info.revID).hasPrefix("2-"_sl));
+            ++n;
+        }
+        CHECK(error.code == 0);
+        CHECK(n == kNumDocs);
     }
+
+    C4Log("-------- %.3f sec with deltas, %.3f sec without; %.2fx speed",
+          timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
 }

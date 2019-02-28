@@ -73,7 +73,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_start() {
         Assert(_connectionState == Connection::kClosed);
-        Signpost::mark(Signpost::replicatorStart, uint32_t(size_t(this)));
+        Signpost::begin(Signpost::replication, uint32_t(size_t(this)));
         _connectionState = Connection::kConnecting;
         connection()->start();
         // Now wait for _onConnect or _onClose...
@@ -205,6 +205,7 @@ namespace litecore { namespace repl {
             _pusher = nullptr;
             _puller = nullptr;
             _dbWorker = nullptr;
+            Signpost::end(Signpost::replication, uint32_t(size_t(this)));
         }
         if (_delegate) {
             // Notify the delegate of the current status, but not too often:

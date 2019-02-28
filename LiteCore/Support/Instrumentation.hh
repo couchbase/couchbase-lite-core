@@ -29,9 +29,9 @@ namespace litecore {
     class Signpost {
     public:
         enum Type {
-            transaction = 1,
+            transaction = 1,            // begin/end
             get,
-            replicatorStart,
+            replication,                // begin/end
             replicatorConnect,
             replicatorDisconnect,
         };
