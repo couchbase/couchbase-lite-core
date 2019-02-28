@@ -143,8 +143,10 @@ namespace litecore {
 
 
     QueryFleeceScope::~QueryFleeceScope() {
-        if (_copied)
+        if (_copied) {
+            unregister();
             data().free();
+        }
     }
 
 

@@ -251,14 +251,23 @@ private:
 
 
     // Return true if the cursor has been moved off of the last row of output;
-    bool atEOF() noexcept {
+    bool _atEOF() noexcept {
         return (_rowid >= _rowCount);
+    }
+
+
+    int atEOF() noexcept {
+        if (!_atEOF())
+            return false;
+        // Caller is going to wipe out the blob I'm parsing, so clear my Scope first
+        _scope.reset();
+        return true;
     }
 
 
     // Return values of columns for the row at which the FleeceCursor is currently pointing.
     int column(sqlite3_context *ctx, int column) noexcept {
-        if (atEOF())
+        if (_atEOF())
             return SQLITE_ERROR;
         switch( column ) {
             case kKeyColumn:
@@ -330,6 +339,7 @@ private:
     // Advance a FleeceCursor to its next row of output.
     int next() noexcept {
         ++_rowid;
+        (void)atEOF();      // Clear _scope on EOF, before caller frees the Fleece blob
         return SQLITE_OK;
     }
 
