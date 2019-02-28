@@ -149,6 +149,7 @@ namespace litecore { namespace repl {
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
         void updateRemoteRev(C4Document* NONNULL);
+        fleece::Doc tempEncodeJSON(slice jsonBody, FLError *err);   // thread-safe
         void _applyDelta(Retained<RevToInsert> rev, alloc_slice baseRevID,
                          alloc_slice deltaJSON,
                          std::function<void(fleece::Doc,C4Error)> callback);
@@ -190,11 +191,12 @@ namespace litecore { namespace repl {
         DocIDToRevMap _pushingDocs;                         // Revs being processed by push
         bool _getForeignAncestors {false};
         bool _skipForeignChanges {false};
+
+        fleece::SharedKeys _tempSharedKeys;
+        std::mutex _tempSKMutex;
         
         actor::Batcher<DBWorker,RevToInsert> _revsToInsert; // Pending revs to be added to db
         actor::Batcher<DBWorker,ReplicatedRev> _revsToMarkSynced;     // Pending revs to be marked as synced
-        bool _insertionScheduled {false};                   // True if call to insert/sync pending
-        std::mutex _insertionQueueMutex;                    // For safe access to the above
         bool _disableBlobSupport {false};                   // for testing only
         bool _disableDeltaSupport {false};                  // From "noDeltas" replicator option
         bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?

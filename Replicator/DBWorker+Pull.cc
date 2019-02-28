@@ -231,6 +231,18 @@ namespace litecore { namespace repl {
 #pragma mark - INSERTING & SYNCING REVISIONS:
 
 
+    fleece::Doc DBWorker::tempEncodeJSON(slice jsonBody, FLError *err) {
+        lock_guard<mutex> lock(_tempSKMutex);
+        Encoder enc;
+        enc.setSharedKeys(_tempSharedKeys);
+        enc.convertJSON(jsonBody);
+        Doc doc = enc.finishDoc();
+        if (!doc && err)
+            *err = enc.error();
+        return doc;
+    }
+
+
     static bool containsAttachmentsProperty(slice json) {
         if (!json.find("\"_attachments\":"_sl))
             return false;
@@ -261,16 +273,15 @@ namespace litecore { namespace repl {
             srcRoot = legacy.root().asDict();
         }
 
-        Doc deltaDoc = Doc::fromJSON(deltaJSON);
-        auto delta = deltaDoc.root();
-        if (!delta) {
-            *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
-            return {};
+        bool useDbSharedKeys = c4db_isInTransaction(_db);
+        FLEncoder enc;
+        if (useDbSharedKeys)
+            enc = c4db_getSharedFleeceEncoder(_db);
+        else {
+            enc = FLEncoder_New();
+            FLEncoder_SetSharedKeys(enc, _tempSharedKeys);
         }
-
-        bool useSharedKeys = c4db_isInTransaction(_db);
-        FLEncoder enc = useSharedKeys ? c4db_getSharedFleeceEncoder(_db) : FLEncoder_New();
-        FLEncodeApplyingJSONDelta(srcRoot, delta, enc);
+        FLEncodeApplyingJSONDelta(srcRoot, deltaJSON, enc);
         ++gNumDeltasApplied;
         FLError flErr;
         Doc result = FLEncoder_FinishDoc(enc, &flErr);
@@ -282,7 +293,7 @@ namespace litecore { namespace repl {
                     *outError = {FleeceDomain, flErr};
             }
         }
-        if (!useSharedKeys)
+        if (!useDbSharedKeys)
             FLEncoder_Free(enc);
         return result;
     }
@@ -367,6 +378,7 @@ namespace litecore { namespace repl {
             _markRevsSyncedNow();
 
             SharedEncoder enc(c4db_getSharedFleeceEncoder(_db));
+            lock_guard<mutex> lock(_tempSKMutex);   // bodies have been encoded with _tempSharedKeys
 
             for (RevToInsert *rev : *revs) {
                 // Add a revision:

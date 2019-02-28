@@ -46,6 +46,7 @@ namespace litecore { namespace repl {
     ,_revsToInsert(this, &DBWorker::_insertRevisionsNow,
                    tuning::kInsertionDelay, tuning::kInsertionBatchSize)
     ,_revsToMarkSynced(this, &DBWorker::_markRevsSyncedNow, tuning::kInsertionDelay)
+    ,_tempSharedKeys(SharedKeys::create())
     {
         registerHandler("getCheckpoint",    &DBWorker::handleGetCheckpoint);
         registerHandler("setCheckpoint",    &DBWorker::handleSetCheckpoint);
