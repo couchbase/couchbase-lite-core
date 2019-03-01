@@ -1390,7 +1390,7 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
             enc.beginDict();
             for (int p = 0; p < kNumProps; ++p) {
                 enc.writeKey(format("field%03d", p));
-                enc.writeInt(arc4random());
+                enc.writeInt(RandomNumber());
             }
             enc.endDict();
             alloc_slice body = enc.finish();
