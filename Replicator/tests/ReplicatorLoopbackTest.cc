@@ -1412,8 +1412,8 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
                 for (Dict::iterator i(doc); i; ++i) {
                     enc.writeKey(i.key());
                     auto value = i.value().asInt();
-                    if (arc4random() % 4 == 0)
-                        value = arc4random();
+                    if (RandomNumber() % 4 == 0)
+                        value = RandomNumber();
                     enc.writeInt(value);
                 }
                 enc.endDict();
