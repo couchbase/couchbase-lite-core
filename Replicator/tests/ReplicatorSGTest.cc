@@ -363,7 +363,8 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]
         TransactionHelper t(db);
         srandom(123456); // start random() sequence at a known place
         for (int docNo = 0; docNo < kNumDocs; ++docNo) {
-            string docID = format("doc-%03d", docNo);
+            char docID[20];
+            sprintf(docID, "doc-%03d", docNo);
             Encoder enc(c4db_createFleeceEncoder(db));
             enc.beginDict();
             for (int p = 0; p < kNumProps; ++p) {
@@ -382,27 +383,36 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]
 
     C4Log("-------- Updating docs on SG --------");
     // Now update the docs on SG:
-    for (int docNo = 0; docNo < kNumDocs; ++docNo) {
-        string docID = format("doc-%03d", docNo);
-        C4Error error;
-        c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
-        REQUIRE(doc);
-        Dict props = Value::fromData(doc->selectedRev.body).asDict();
-
+    {
         JSONEncoder enc;
         enc.beginDict();
-        enc.writeKey("_rev"_sl);
-        enc.writeString(doc->revID);
-        for (Dict::iterator i(props); i; ++i) {
-            enc.writeKey(i.keyString());
-            auto value = i.value().asInt();
-            if (random() % 8 == 0)
-                value = random();
-            enc.writeInt(value);
+        enc.writeKey("docs"_sl);
+        enc.beginArray();
+        for (int docNo = 0; docNo < kNumDocs; ++docNo) {
+            char docID[20];
+            sprintf(docID, "doc-%03d", docNo);
+            C4Error error;
+            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
+            REQUIRE(doc);
+            Dict props = Value::fromData(doc->selectedRev.body).asDict();
+
+            enc.beginDict();
+            enc.writeKey("_id"_sl);
+            enc.writeString(docID);
+            enc.writeKey("_rev"_sl);
+            enc.writeString(doc->revID);
+            for (Dict::iterator i(props); i; ++i) {
+                enc.writeKey(i.keyString());
+                auto value = i.value().asInt();
+                if (random() % 8 == 0)
+                    value = random();
+                enc.writeInt(value);
+            }
+            enc.endDict();
         }
+        enc.endArray();
         enc.endDict();
-        alloc_slice body = enc.finish();
-        sendRemoteRequest("PUT", docID, body);
+        sendRemoteRequest("POST", "_bulk_docs", enc.finish());
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
