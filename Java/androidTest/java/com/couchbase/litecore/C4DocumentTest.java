@@ -348,7 +348,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
             assertNotNull(doc);
             assertEquals(kDocID, doc.getDocID());
             String kExpectedRevID = isRevTrees() ?
-                    "1-d41ffed6be0529153fd3d27b3218d9052e1c2b40" :
+                    "1-042ca1d3a1d16fd5ab2f87efc7ebbf50b7498032" :
                     "1@*";
             assertEquals(kExpectedRevID, doc.getRevID());
             assertEquals(C4DocumentFlags.kDocExists, doc.getFlags());
@@ -364,7 +364,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
             assertNotNull(doc);
             // NOTE: With current JNI binding, unable to check commonAncestorIndex value
             String kExpectedRevID2 = isRevTrees() ?
-                    "2-e388dff9126ba5a0d93c7af05bc72f3cdf450598" :
+                    "2-201796aeeaa6ddbb746d6cab141440f23412ac51" :
                     "2@*";
             assertEquals(kExpectedRevID2, doc.getRevID());
             assertEquals(C4DocumentFlags.kDocExists, doc.getFlags());
@@ -408,7 +408,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
             db.endTransaction(commit);
         }
 
-        String kExpectedRevID = isRevTrees() ? "1-d41ffed6be0529153fd3d27b3218d9052e1c2b40" : "1@*";
+        String kExpectedRevID = isRevTrees() ? "1-042ca1d3a1d16fd5ab2f87efc7ebbf50b7498032" : "1@*";
         assertEquals(kExpectedRevID, doc.getRevID());
         assertTrue(doc.exists());
         assertEquals(kExpectedRevID, doc.getSelectedRevID());
@@ -433,7 +433,7 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
             db.endTransaction(commit);
         }
 
-        String kExpectedRev2ID = isRevTrees() ? "2-e388dff9126ba5a0d93c7af05bc72f3cdf450598" : "2@*";
+        String kExpectedRev2ID = isRevTrees() ? "2-201796aeeaa6ddbb746d6cab141440f23412ac51" : "2@*";
         assertEquals(kExpectedRev2ID, doc.getRevID());
         assertTrue(doc.exists());
         assertEquals(kExpectedRev2ID, doc.getSelectedRevID());
@@ -476,13 +476,14 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
 
     @Test
     public void testDocumentConflictMerge4Win() throws LiteCoreException {
+        final byte[] mergedBody = json2fleece("{'merged':true}");
         _testDocumentConflict(new Verification() {
             @Override
             public void verify(C4Document doc) throws LiteCoreException {
-                doc.resolveConflict("4-dddd", "3-aaaaaa", "{\"merged\":true}".getBytes(), 0);
+                doc.resolveConflict("4-dddd", "3-aaaaaa", mergedBody, 0);
                 assertTrue(doc.selectCurrentRevision());
-                assertEquals("5-940fe7e020dbf8db0f82a5d764870c4b6c88ae99", doc.getSelectedRevID());
-                assertTrue(Arrays.equals("{\"merged\":true}".getBytes(), doc.getSelectedBody()));
+                assertEquals("5-8647a1d644ddc7addc279d8cbfe74978b68f067b", doc.getSelectedRevID());
+                assertTrue(Arrays.equals(mergedBody, doc.getSelectedBody()));
                 assertTrue(doc.selectParentRevision());
                 assertEquals("4-dddd", doc.getSelectedRevID());
             }
@@ -491,13 +492,14 @@ public class C4DocumentTest extends C4BaseTest implements C4Constants {
 
     @Test
     public void testDocumentConflictMerge3Win() throws LiteCoreException {
+        final byte[] mergedBody = json2fleece("{'merged':true}");
         _testDocumentConflict(new Verification() {
             @Override
             public void verify(C4Document doc) throws LiteCoreException {
-                doc.resolveConflict("3-aaaaaa", "4-dddd", "{\"merged\":true}".getBytes(), 0);
+                doc.resolveConflict("3-aaaaaa", "4-dddd", mergedBody, 0);
                 assertTrue(doc.selectCurrentRevision());
-                assertEquals("4-333ee0677b5f1e1e5064b050d417a31d2455dc30", doc.getSelectedRevID());
-                assertTrue(Arrays.equals("{\"merged\":true}".getBytes(), doc.getSelectedBody()));
+                assertEquals("4-d204defb3e1b28f0ecd78591ee04b6c1d109cb5c", doc.getSelectedRevID());
+                assertTrue(Arrays.equals(mergedBody, doc.getSelectedBody()));
                 assertTrue(doc.selectParentRevision());
                 assertEquals("3-aaaaaa", doc.getSelectedRevID());
             }

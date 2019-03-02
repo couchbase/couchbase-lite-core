@@ -120,7 +120,7 @@ public class C4BaseTest implements C4Constants {
                 encryptionAlgorithm(), encryptionKey());
 
         Map<String, Object> body = new HashMap<>();
-        body.put("answer", 42);
+        body.put("ans*wer", 42);
         kFleeceBody = createFleeceBody(body);
     }
 
