@@ -179,7 +179,9 @@ namespace litecore { namespace repl {
             case Connection::kClosed:
                 // After connection closes, remain busy while I wait for db to finish writes
                 // and for myself to process any pending messages:
-                level = max(Worker::computeActivityLevel(), _dbStatus.level);
+                level = Worker::computeActivityLevel();
+                if (_checkpointDocID)           // _don't_ wait for initial local checkpoint load
+                    level = max(level, _dbStatus.level);
                 if (level < kC4Busy)
                     level = kC4Stopped;
                 break;
