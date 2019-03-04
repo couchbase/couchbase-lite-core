@@ -230,10 +230,12 @@ _versioning(kC4RevisionTrees)
     }
 
     static C4DatabaseConfig sLastConfig = { };
-    if (config.flags != sLastConfig.flags || config.versioning != sLastConfig.versioning) {
-        fprintf(stderr, "            %s, %s\n",
+    if (config.flags != sLastConfig.flags || config.versioning != sLastConfig.versioning
+                    || config.encryptionKey.algorithm != sLastConfig.encryptionKey.algorithm) {
+        fprintf(stderr, "        --- %s, %s%s\n",
                 config.storageEngine,
-                (config.versioning==kC4RevisionTrees ? "rev-trees" : "?unknown versioning?"));
+                (config.versioning==kC4RevisionTrees ? "rev-trees" : "?unknown versioning?"),
+                (config.encryptionKey.algorithm ? ", encrypted" : ""));
         sLastConfig = config;
     }
 

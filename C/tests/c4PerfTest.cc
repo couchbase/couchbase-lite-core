@@ -21,6 +21,7 @@
 #include "c4Document+Fleece.h"
 #include "Base.hh"
 #include "Benchmark.hh"
+#include "FilePath.hh"
 #include "SecureRandomize.hh"
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -152,10 +153,15 @@ public:
 };
 
 
-N_WAY_TEST_CASE_METHOD(PerfTest, "Performance", "[Perf][C]") {
+N_WAY_TEST_CASE_METHOD(PerfTest, "Import iTunesMusicLibrary", "[Perf][C]") {
     Stopwatch st;
     auto numDocs = importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     CHECK(numDocs == 12189);
+    st.printReport("******** Importing JSON w/spaces", numDocs, "doc");
+    litecore::FilePath path(alloc_slice(c4db_getPath(db)).asString(), "db.sqlite3");
+    fprintf(stderr, "******** DB size is %llu\n", path.dataSize());
+    reopenDB();
+    readRandomDocs(numDocs, 100000);
 }
 
 
