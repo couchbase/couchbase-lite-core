@@ -599,7 +599,9 @@ namespace litecore { namespace repl {
 
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
         ActivityLevel level;
-        if (Worker::computeActivityLevel() == kC4Busy
+        if (!connection()) {
+            level = kC4Stopped;
+        } else if (Worker::computeActivityLevel() == kC4Busy
                 || (_started && !_caughtUp)
                 || _changeListsInFlight > 0
                 || _revisionsInFlight > 0

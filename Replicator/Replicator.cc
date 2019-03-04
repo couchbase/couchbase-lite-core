@@ -147,6 +147,10 @@ namespace litecore { namespace repl {
 
 
     Worker::ActivityLevel Replicator::computeActivityLevel() const {
+        // Once I've announced I've stopped, don't return any other status again:
+        if (status().level == kC4Stopped)
+            return kC4Stopped;
+
         ActivityLevel level;
         switch (_connectionState) {
             case Connection::kConnecting:

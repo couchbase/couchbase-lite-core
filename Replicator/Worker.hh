@@ -237,7 +237,7 @@ namespace litecore { namespace repl {
         Retained<blip::Connection> _connection;
         int _pendingResponseCount {0};
         int _progressNotificationLevel;
-        Status _status { };
+        Status _status {kC4Idle};
         bool _statusChanged {false};
     };
 
