@@ -118,6 +118,11 @@ namespace litecore {
                 int64_t docKey = allDocs.getColumn(0);
                 slice docID = asSlice(allDocs.getColumn(1));
 
+                if (docID.hasPrefix("_design/"_sl)) {
+                    Warn("Skipping doc '%.*s': Design docs are not supported", SPLAT(docID));
+                    continue;
+                }
+
                 Log("Importing doc '%.*s'", SPLAT(docID));
                 try {
                     unique_ptr<Document> newDoc(
