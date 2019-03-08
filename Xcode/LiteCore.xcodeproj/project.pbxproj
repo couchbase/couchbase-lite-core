@@ -435,10 +435,10 @@
 			fileType = sourcecode.java;
 			isEditable = 1;
 			outputFiles = (
-				"$(DERIVED_FILE_DIR)/Java_com_couchbase_lite_internal_core_Database.h",
+				"$(DERIVED_FILE_DIR)/Java_com_couchbase_litecore_Database.h",
 				"",
 			);
-			script = "set -e\n/usr/bin/javah -classpath $SRCROOT/../java/src -d $DERIVED_FILE_DIR com.couchbase.lite.internal.core.$INPUT_FILE_BASE";
+			script = "set -e\n/usr/bin/javah -classpath $SRCROOT/../java/src -d $DERIVED_FILE_DIR com.couchbase.litecore.$INPUT_FILE_BASE";
 		};
 		720EA3F11BA7EAD9002B8416 /* PBXBuildRule */ = {
 			isa = PBXBuildRule;
