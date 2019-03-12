@@ -254,12 +254,6 @@ install (
     OPTIONAL
 )
 
-### JNI:
-
-if (JNI)
-    add_subdirectory(Java)
-endif()
-
 ### TESTS:
 
 add_subdirectory(LiteCore/tests)
