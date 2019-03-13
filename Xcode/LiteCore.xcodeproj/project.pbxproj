@@ -100,10 +100,6 @@
 		27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27416E291E0494DF00F10F65 /* c4QueryTest.cc */; };
 		27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */; };
 		274711CA2037BE5B008E9A5A /* SecureSymmetricCrypto.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */; };
-		2749B9491EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */; };
-		2749B94D1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
-		2749B94E1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
-		2749B94F1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */; };
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		2749B9881EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
@@ -181,7 +177,6 @@
 		2796916E1ED4B2D50086565D /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		2796916F1ED4B2D50086565D /* FilePath.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27E89BA41D679542002C32B3 /* FilePath.cc */; };
 		279691711ED4B2D50086565D /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
-		279691751ED4B3130086565D /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */; };
 		279691771ED4B3720086565D /* libSupport.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279691631ED4B29E0086565D /* libSupport.a */; };
 		2796917C1ED4B5780086565D /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		279691981ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */; };
@@ -400,6 +395,7 @@
 		7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
 		728EC54E1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
+		729272F52238DC0C00E7208E /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 729272F12238DB8500E7208E /* c4ExceptionUtils.cc */; };
 		72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */; };
 		72A3AF8D1F425134001E16D4 /* PrebuiltCopier.hh in Headers */ = {isa = PBXBuildFile; fileRef = 72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */; };
 		72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72C086921CBDEB2000808CE7 /* c4DocExpiration.cc */; settings = {COMPILER_FLAGS = "-Wno-return-type-c-linkage"; }; };
@@ -912,8 +908,6 @@
 		27491C9A1E7B1001001DC54B /* c4Socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Socket.h; sourceTree = "<group>"; };
 		27491C9E1E7B2532001DC54B /* c4Socket.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Socket.cc; sourceTree = "<group>"; };
 		27491CA21E7B6A79001DC54B /* c4Socket+Internal.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "c4Socket+Internal.hh"; sourceTree = "<group>"; };
-		2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ExceptionUtils.cc; sourceTree = "<group>"; };
-		2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ExceptionUtils.hh; sourceTree = "<group>"; };
 		2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "RESTListener+Handlers.cc"; sourceTree = "<group>"; };
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
@@ -1250,6 +1244,8 @@
 		726F2B8F1EB2C36E00C1EC3C /* DefaultLogger.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DefaultLogger.cc; sourceTree = "<group>"; };
 		7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libLiteCore.dylib; path = ../build_cmake/libLiteCore.dylib; sourceTree = "<group>"; };
 		728EC54C1EC14611002C9A73 /* c4Listener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Listener.h; sourceTree = "<group>"; };
+		729272F12238DB8500E7208E /* c4ExceptionUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4ExceptionUtils.cc; sourceTree = "<group>"; };
+		729272F22238DB8500E7208E /* c4ExceptionUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4ExceptionUtils.hh; sourceTree = "<group>"; };
 		729E1C8C1FEB190900AAC625 /* wcwidth.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wcwidth.cpp; path = src/wcwidth.cpp; sourceTree = "<group>"; };
 		729E1C8D1FEB190900AAC625 /* ConvertUTF.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ConvertUTF.cpp; path = src/ConvertUTF.cpp; sourceTree = "<group>"; };
 		729E1C8E1FEB190900AAC625 /* ConvertUTF.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConvertUTF.h; path = src/ConvertUTF.h; sourceTree = "<group>"; };
@@ -1728,12 +1724,17 @@
 			isa = PBXGroup;
 			children = (
 				275A74461ED37992008CB57B /* Base.hh */,
+				729272F12238DB8500E7208E /* c4ExceptionUtils.cc */,
+				729272F22238DB8500E7208E /* c4ExceptionUtils.hh */,
 				27393A861C8A353A00829C9B /* Error.cc */,
 				277D19C9194E295B008E91EB /* Error.hh */,
 				27E89BA41D679542002C32B3 /* FilePath.cc */,
 				27E89BA51D679542002C32B3 /* FilePath.hh */,
 				27700DFD1FB642B80005D48E /* Increment.hh */,
+				27FB0C3C205B18A500987D9C /* Instrumentation.cc */,
+				27FB0C37205B177100987D9C /* Instrumentation.hh */,
 				27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */,
+				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
 				27BF033C1FB62A87003D5BB8 /* Logging */,
 				2759BD4C1DDFB15100C263B4 /* make_unique.h */,
 				273407211DEE116600EA5532 /* PlatformIO.cc */,
@@ -1742,17 +1743,14 @@
 				273E9ED31C506DB4003115A6 /* SecureDigest.hh */,
 				274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */,
 				273E9ED41C506DB4003115A6 /* SecureRandomize.hh */,
-				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
 				274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */,
+				274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */,
 				2766F9E51E64CC03008FC9E5 /* SequenceSet.hh */,
-				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
-				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
 				2763012A1F3A36BD004A1592 /* StringUtil_Apple.mm */,
 				272AEC3F1F55D87500051F0A /* StringUtil_icu.cc */,
 				272AEC431F55D87500051F0A /* StringUtil_winapi.cc */,
-				2750724418E3E52800A80C5A /* LiteCore-Prefix.pch */,
-				27FB0C37205B177100987D9C /* Instrumentation.hh */,
-				27FB0C3C205B18A500987D9C /* Instrumentation.cc */,
+				2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */,
+				2754B0C11E5F49AA00A05FD0 /* StringUtil.hh */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -1795,8 +1793,6 @@
 				273E9F7A1C516B76003115A6 /* c4Private.h */,
 				274D04261BA8A5BC00FF7C35 /* c4Internal.hh */,
 				27D74A9E1D4FF65000D806E0 /* c4Base.cc */,
-				2749B9471EAEBFFF0068DBF9 /* c4ExceptionUtils.cc */,
-				2749B9481EAEBFFF0068DBF9 /* c4ExceptionUtils.hh */,
 				2722504D1D7892610006D5A5 /* c4BlobStore.cc */,
 				2757DE561B9FC3C9002EE261 /* c4Database.cc */,
 				274A69871BED288D00D16D37 /* c4Document.cc */,
@@ -2329,7 +2325,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2749B94F1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */,
 				728EC54E1EC14611002C9A73 /* c4Listener.h in Headers */,
 				275A74D41ED3A4E1008CB57B /* Listener.hh in Headers */,
 			);
@@ -2405,7 +2400,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2749B94E1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */,
 				728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */,
 				275A74D31ED3A4E1008CB57B /* Listener.hh in Headers */,
 			);
@@ -2415,7 +2409,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2749B94D1EAEBFFF0068DBF9 /* c4ExceptionUtils.hh in Headers */,
 				27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */,
 				27D74A911D4D3F3400D806E0 /* Column.h in Headers */,
 				27D74A711D4D3DF500D806E0 /* SQLiteDataFile.hh in Headers */,
@@ -3119,7 +3112,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				279691751ED4B3130086565D /* c4ExceptionUtils.cc in Sources */,
 				27BF024A1FB62647003D5BB8 /* LibC++Debug.cc in Sources */,
 				2796916E1ED4B2D50086565D /* Error.cc in Sources */,
 				2796916F1ED4B2D50086565D /* FilePath.cc in Sources */,
@@ -3266,7 +3258,6 @@
 				278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				27FC8DB622135BCE0083B033 /* DBWorker+Push.cc in Sources */,
-				2749B9491EAEBFFF0068DBF9 /* c4ExceptionUtils.cc in Sources */,
 				27E35AC81E942D6100E103F9 /* IncomingRev.cc in Sources */,
 				276301131F2FE960004A1592 /* UnicodeCollator_ICU.cc in Sources */,
 				27E48713192171EA007D8940 /* DataFile.cc in Sources */,
@@ -3308,6 +3299,7 @@
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */,
+				729272F52238DC0C00E7208E /* c4ExceptionUtils.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */,
 				2753AFEE1EC2A2EF00C12E98 /* CivetWebSocket.cc in Sources */,
