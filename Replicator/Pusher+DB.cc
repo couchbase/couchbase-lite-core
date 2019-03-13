@@ -1,5 +1,5 @@
 //
-// DBWorker+Push.cc
+// Pusher+DB.cc
 //
 // Copyright © 2019 Couchbase. All rights reserved.
 //
@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "DBWorker.hh"
+#include "Pusher.hh"
 #include "ReplicatorTuning.hh"
 #include "Pusher.hh"
 #include "fleece/Fleece.hh"
@@ -37,17 +37,13 @@ namespace litecore { namespace repl {
 #pragma mark - CHANGES:
 
 
-    void DBWorker::getChanges(const GetChangesParams &params, Pusher *pusher) {
-        enqueue(&DBWorker::_getChanges, params, Retained<Pusher>(pusher));
-    }
-
-
-    // A request from the Pusher to send it a batch of changes. Will respond by calling gotChanges.
-    void DBWorker::_getChanges(GetChangesParams p, Retained<Pusher> pusher)
+    // Gets the next batch of changes from the DB. Will respond by calling gotChanges.
+    void Pusher::getChanges(const GetChangesParams &p)
     {
         if (!connection())
             return;
-        logVerbose("Reading up to %u local changes since #%llu", p.limit, p.since);
+        auto limit = p.limit;
+        logVerbose("Reading up to %u local changes since #%llu", limit, p.since);
         _getForeignAncestors = p.getForeignAncestors;
         _skipForeignChanges = p.skipForeign;
         _pushDocIDs = p.docIDs;
@@ -55,7 +51,7 @@ namespace litecore { namespace repl {
             _maxPushedSequence = p.since;
 
         if (_getForeignAncestors)
-            _markRevsSyncedNow();   // make sure foreign ancestors are up to date
+            _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
 
         // Run a by-sequence enumerator to find the changed docs:
         auto changes = make_shared<RevToSendList>();
@@ -65,44 +61,46 @@ namespace litecore { namespace repl {
             options.flags &= ~kC4IncludeBodies;
         if (!p.skipDeleted)
             options.flags |= kC4IncludeDeleted;
-        c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(_db, p.since, &options, &error);
-        if (e) {
-            changes->reserve(p.limit);
-            while (c4enum_next(e, &error) && p.limit > 0) {
-                C4DocumentInfo info;
-                c4enum_getDocumentInfo(e, &info);
-                _maxPushedSequence = info.sequence;
-                auto rev = retained(new RevToSend(info));
-                if (shouldPushRev(rev, e)) {
-                    changes->push_back(rev);
-                    --p.limit;
+
+        _db->use([&](C4Database* db) {
+            c4::ref<C4DocEnumerator> e = c4db_enumerateChanges(db, p.since, &options, &error);
+            if (e) {
+                changes->reserve(limit);
+                while (c4enum_next(e, &error) && limit > 0) {
+                    C4DocumentInfo info;
+                    c4enum_getDocumentInfo(e, &info);
+                    _maxPushedSequence = info.sequence;
+                    auto rev = retained(new RevToSend(info));
+                    if (shouldPushRev(rev, e, db)) {
+                        changes->push_back(rev);
+                        --limit;
+                    }
                 }
             }
-        }
 
-        _pusher = pusher;
-        pusher->gotChanges(move(changes), _maxPushedSequence, error);
+            if (p.continuous && limit > 0 && !_changeObserver) {
+                // Reached the end of history; now start observing for future changes
+                _changeObserver = c4dbobs_create(db,
+                                                 [](C4DatabaseObserver* observer, void *context) {
+                                                     auto self = (Pusher*)context;
+                                                     self->enqueue(&Pusher::dbChanged);
+                                                 },
+                                                 this);
+                logDebug("Started DB observer");
+            }
+        });
 
-        if (p.continuous && p.limit > 0 && !_changeObserver) {
-            // Reached the end of history; now start observing for future changes
-            _changeObserver = c4dbobs_create(_db,
-                                             [](C4DatabaseObserver* observer, void *context) {
-                                                 auto self = (DBWorker*)context;
-                                                 self->enqueue(&DBWorker::dbChanged);
-                                             },
-                                             this);
-            logDebug("Started DB observer");
-        }
+        gotChanges(move(changes), _maxPushedSequence, error);
     }
 
 
     // (Async) callback from the C4DatabaseObserver when the database has changed
-    void DBWorker::dbChanged() {
+    void Pusher::dbChanged() {
         if (!_changeObserver)
             return; // if replication has stopped already by the time this async call occurs
 
         if (_getForeignAncestors)
-            _markRevsSyncedNow();   // make sure foreign ancestors are up to date
+            _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
 
         static const uint32_t kMaxChanges = 100;
         C4DatabaseChange c4changes[kMaxChanges];
@@ -125,38 +123,38 @@ namespace litecore { namespace repl {
 
             // Copy the changes into a vector of RevToSend:
             C4DatabaseChange *c4change = c4changes;
-            for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
-                if (!changes) {
-                    changes = make_shared<RevToSendList>();
-                    changes->reserve(nChanges - i);
-                }
-                _maxPushedSequence = c4change->sequence;
-                auto rev = retained(new RevToSend({0, c4change->docID, c4change->revID,
-                                                   c4change->sequence, c4change->bodySize}));
-                // Note: we send tombstones even if the original getChanges() call specified
-                // skipDeletions. This is intentional; skipDeletions applies only to the initial
-                // dump of existing docs, not to 'live' changes.
-                if (shouldPushRev(rev, nullptr)) {
-                    changes->push_back(rev);
-                    if (changes->size() >= kMaxChanges) {
-                        _pusher->gotChanges(move(changes), _maxPushedSequence, {});
-                        changes.reset();
+            _db->use([&](C4Database *db) {
+                for (uint32_t i = 0; i < nChanges; ++i, ++c4change) {
+                    if (!changes) {
+                        changes = make_shared<RevToSendList>();
+                        changes->reserve(nChanges - i);
+                    }
+                    _maxPushedSequence = c4change->sequence;
+                    auto rev = retained(new RevToSend({0, c4change->docID, c4change->revID,
+                                                       c4change->sequence, c4change->bodySize}));
+                    // Note: we send tombstones even if the original getChanges() call specified
+                    // skipDeletions. This is intentional; skipDeletions applies only to the initial
+                    // dump of existing docs, not to 'live' changes.
+                    if (shouldPushRev(rev, nullptr, db)) {
+                        changes->push_back(rev);
+                        if (changes->size() >= kMaxChanges) {
+                            gotChanges(move(changes), _maxPushedSequence, {});
+                            changes.reset();
+                        }
                     }
                 }
-            }
+            });
 
             c4dbobs_releaseChanges(c4changes, nChanges);
         }
 
         if (changes && changes->size() > 0)
-            _pusher->gotChanges(move(changes), _maxPushedSequence, {});
+            gotChanges(move(changes), _maxPushedSequence, {});
     }
 
 
     // Common subroutine of _getChanges and dbChanged that adds a document to a list of Revs.
-    bool DBWorker::shouldPushRev(RevToSend *rev,
-                                   C4DocEnumerator *e)
-    {
+    bool Pusher::shouldPushRev(RevToSend *rev, C4DocEnumerator *e, C4Database *db) {
         if (_pushDocIDs != nullptr)
             if (_pushDocIDs->find(slice(rev->docID).asString()) == _pushDocIDs->end())
                 return false;
@@ -183,7 +181,7 @@ namespace litecore { namespace repl {
         if (needRemoteRevID || _options.pushFilter) {
             c4::ref<C4Document> doc;
             C4Error error;
-            doc = e ? c4enum_getDocument(e, &error) : c4doc_get(_db, rev->docID, true, &error);
+            doc = e ? c4enum_getDocument(e, &error) : c4doc_get(db, rev->docID, true, &error);
             if (!doc) {
                 finishedDocumentWithError(rev, error, false);
                 return false;   // reject rev: error getting doc
@@ -193,8 +191,8 @@ namespace litecore { namespace repl {
 
             if (needRemoteRevID) {
                 // For proposeChanges, find the nearest foreign ancestor of the current rev:
-                Assert(_remoteDBID);
-                alloc_slice foreignAncestor( c4doc_getRemoteAncestor(doc, _remoteDBID) );
+                Assert(_db->remoteDBID());
+                alloc_slice foreignAncestor = _db->getDocRemoteAncestor(doc);
                 logDebug("remoteRevID of '%.*s' is %.*s", SPLAT(doc->docID), SPLAT(foreignAncestor));
                 if (_skipForeignChanges && foreignAncestor == slice(rev->revID))
                     return false;   // skip this rev: it's already on the peer
@@ -212,7 +210,7 @@ namespace litecore { namespace repl {
 
             if (_options.pushFilter) {
                 if (!_options.pushFilter(doc->docID, doc->selectedRev.flags,
-                                         getDocRoot(doc), _options.callbackContext)) {
+                                         DBAccess::getDocRoot(doc), _options.callbackContext)) {
                     logVerbose("Doc '%.*s' rejected by push filter", SPLAT(doc->docID));
                     return false;
                 }
@@ -228,7 +226,7 @@ namespace litecore { namespace repl {
 
 
     // Sends a document revision in a "rev" request.
-    void DBWorker::_sendRevision(Retained<RevToSend> request, MessageProgressCallback onProgress) {
+    void Pusher::sendRevision(RevToSend *request, MessageProgressCallback onProgress) {
         if (!connection())
             return;
         logVerbose("Reading document '%.*s' #%.*s",
@@ -238,7 +236,7 @@ namespace litecore { namespace repl {
         C4Error c4err;
         slice revisionBody;
         Dict root;
-        c4::ref<C4Document> doc = c4doc_get(_db, request->docID, true, &c4err);
+        c4::ref<C4Document> doc = _db->getDoc(request->docID, &c4err);
         if (doc) {
             revisionBody = getRevToSend(doc, *request, &c4err);
             if (revisionBody) {
@@ -269,7 +267,7 @@ namespace litecore { namespace repl {
 
             bool sendLegacyAttachments = (request->legacyAttachments
                                           && (revisionFlags & kRevHasAttachments)
-                                          && !_disableBlobSupport);
+                                          && !_db->disableBlobSupport());
 
             // Delta compression:
             alloc_slice delta = createRevisionDelta(doc, request, root, revisionBody.size,
@@ -282,8 +280,8 @@ namespace litecore { namespace repl {
             } else {
                 auto &bodyEncoder = msg.jsonBody();
                 if (sendLegacyAttachments)
-                    writeRevWithLegacyAttachments(bodyEncoder, root,
-                                                  c4rev_getGeneration(request->revID));
+                    _db->writeRevWithLegacyAttachments(bodyEncoder, root,
+                                                       c4rev_getGeneration(request->revID));
                 else
                     bodyEncoder.writeValue(root);
             }
@@ -309,12 +307,12 @@ namespace litecore { namespace repl {
             // invoke the progress callback with a fake disconnect so the Pusher will know the
             // rev failed to send:
             if (onProgress)
-                _pusher->couldntSendRevision(request);
+                couldntSendRevision(request);
         }
     }
 
 
-    slice DBWorker::getRevToSend(C4Document* doc, const RevToSend &request, C4Error *c4err) {
+    slice Pusher::getRevToSend(C4Document* doc, const RevToSend &request, C4Error *c4err) {
         if (!c4doc_selectRevision(doc, request.revID, true, c4err))
             return nullslice;
 
@@ -328,7 +326,7 @@ namespace litecore { namespace repl {
     }
 
 
-    string DBWorker::revHistoryString(C4Document *doc, const RevToSend &request) {
+    string Pusher::revHistoryString(C4Document *doc, const RevToSend &request) {
         Assert(c4doc_selectRevision(doc, request.revID, true, nullptr));
         stringstream historyStream;
         int nWritten = 0;
@@ -355,7 +353,7 @@ namespace litecore { namespace repl {
     }
 
 
-    alloc_slice DBWorker::createRevisionDelta(C4Document *doc, RevToSend *request,
+    alloc_slice Pusher::createRevisionDelta(C4Document *doc, RevToSend *request,
                                               Dict root, size_t revisionSize,
                                               bool sendLegacyAttachments)
     {
@@ -368,10 +366,10 @@ namespace litecore { namespace repl {
         C4RevisionFlags ancestorFlags = 0;
         Dict ancestor;
         if (request->remoteAncestorRevID)
-            ancestor = getDocRoot(doc, request->remoteAncestorRevID, &ancestorFlags);
+            ancestor = DBAccess::getDocRoot(doc, request->remoteAncestorRevID, &ancestorFlags);
         if (!ancestor && request->ancestorRevIDs) {
             for (auto revID : *request->ancestorRevIDs) {
-                ancestor = getDocRoot(doc, revID, &ancestorFlags);
+                ancestor = DBAccess::getDocRoot(doc, revID, &ancestorFlags);
                 if (ancestor)
                     break;
             }
@@ -384,13 +382,13 @@ namespace litecore { namespace repl {
             // If server needs legacy attachment layout, transform the bodies:
             Encoder enc;
             auto revPos = c4rev_getGeneration(request->revID);
-            writeRevWithLegacyAttachments(enc, root, revPos);
+            _db->writeRevWithLegacyAttachments(enc, root, revPos);
             legacyNew = enc.finishDoc();
             root = legacyNew.root().asDict();
 
             if (ancestorFlags & kRevHasAttachments) {
                 enc.reset();
-                writeRevWithLegacyAttachments(enc, ancestor, revPos);
+                _db->writeRevWithLegacyAttachments(enc, ancestor, revPos);
                 legacyOld = enc.finishDoc();
                 ancestor = legacyOld.root().asDict();
             }
@@ -408,104 +406,6 @@ namespace litecore { namespace repl {
                        SPLAT(old), SPLAT(nuu), SPLAT(delta));
         }
         return delta;
-    }
-
-
-    void DBWorker::writeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root,
-                                                 unsigned revpos) {
-        enc.beginDict();
-
-        // Write existing properties except for _attachments:
-        Dict oldAttachments;
-        for (Dict::iterator i(root); i; ++i) {
-            slice key = i.keyString();
-            if (key == slice(kC4LegacyAttachmentsProperty)) {
-                oldAttachments = i.value().asDict();    // remember _attachments dict for later
-            } else {
-                enc.writeKey(key);
-                enc.writeValue(i.value());
-            }
-        }
-
-        // Now write _attachments:
-        enc.writeKey(slice(kC4LegacyAttachmentsProperty));
-        enc.beginDict();
-        // First pre-existing legacy attachments, if any:
-        for (Dict::iterator i(oldAttachments); i; ++i) {
-            slice key = i.keyString();
-            if (!key.hasPrefix("blob_"_sl)) {
-                // TODO: Should skip this entry if a blob with the same digest exists
-                enc.writeKey(key);
-                enc.writeValue(i.value());
-            }
-        }
-
-        // Then entries for blobs found in the document:
-        findBlobReferences(root, false, [&](FLDeepIterator di, FLDict blob, C4BlobKey blobKey) {
-            alloc_slice path(FLDeepIterator_GetJSONPointer(di));
-            if (path.hasPrefix("/_attachments/"_sl))
-                return;
-            string attName = string("blob_") + string(path);
-            enc.writeKey(slice(attName));
-            enc.beginDict();
-            for (Dict::iterator i(blob); i; ++i) {
-                slice key = i.keyString();
-                if (key != slice(kC4ObjectTypeProperty) && key != "stub"_sl) {
-                    enc.writeKey(key);
-                    enc.writeValue(i.value());
-                }
-            }
-            enc.writeKey("stub"_sl);
-            enc.writeBool(true);
-            enc.writeKey("revpos"_sl);
-            enc.writeInt(revpos);
-            enc.endDict();
-        });
-        enc.endDict();
-
-        enc.endDict();
-    }
-
-
-    void DBWorker::_donePushingRev(RetainedConst<RevToSend> rev, bool synced) {
-        if (synced && _options.push > kC4Passive)
-            _revsToMarkSynced.push((RevToSend*)rev.get());
-
-        auto i = _pushingDocs.find(rev->docID);
-        if (i == _pushingDocs.end()) {
-            if (connection())
-                warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
-            return;
-        }
-
-        Retained<RevToSend> newRev = i->second;
-        _pushingDocs.erase(i);
-        if (newRev) {
-            if (synced && _getForeignAncestors)
-                newRev->remoteAncestorRevID = rev->revID;
-            logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
-                       SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
-                       SPLAT(newRev->remoteAncestorRevID));
-            bool ok = false;
-            if (synced && _getForeignAncestors
-                       && c4rev_getGeneration(newRev->revID) <= c4rev_getGeneration(rev->revID)) {
-                // Don't send; it'll conflict with what's on the server
-            } else {
-                // Send newRev as though it had just arrived:
-                auto changes = make_shared<RevToSendList>();
-                if (shouldPushRev(newRev, nullptr)) {
-                    _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
-                    _pusher->gotOutOfOrderChange(newRev);
-                    ok = true;
-                }
-            }
-            if (!ok) {
-                logVerbose("   ... nope, decided not to propose '%.*s' %.*s",
-                           SPLAT(newRev->docID), SPLAT(newRev->revID));
-            }
-        } else {
-            logDebug("Done pushing '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
-        }
     }
 
 } }
