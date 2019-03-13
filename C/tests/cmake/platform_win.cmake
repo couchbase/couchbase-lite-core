@@ -18,7 +18,7 @@ endfunction()
 function(setup_build)
     set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
     set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore
-                    ${BIN_TOP}/\$\(Configuration\)/LiteCoreREST)
+                    ${BIN_TOP}/REST/\$\(Configuration\)/LiteCoreREST)
 
     target_include_directories(
         C4Tests PRIVATE
