@@ -13,7 +13,7 @@ The test runner depends on multiple other libraries from multiple git repositori
 - LiteCore shared library (../..)
 - LiteCore REST shared library (../../REST)
 - CivetWeb static library (../../endor/civetweb)
-- Fleece static library (../../vendor/fleece)
+- FleeceBase static library (../../vendor/fleece)
 - Support static library (../../Support [partial])
 - BLIP static library (../../vendor/BLIP-Cpp) 
 
@@ -55,7 +55,7 @@ target_link_libraries(
     LiteCore
     LiteCoreREST
     CivetWeb
-    FleeceStatic
+    FleeceBase
     Support
     BLIPStatic
 )
