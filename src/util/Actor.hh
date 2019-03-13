@@ -158,7 +158,7 @@ namespace litecore { namespace actor {
         friend class AsyncContext;
 
         template <class ACTOR, class ITEM>
-        friend class ActorBatcher;
+        friend class Batcher;
 
         void _waitTillCaughtUp(std::mutex*, std::condition_variable*, bool*);
 
