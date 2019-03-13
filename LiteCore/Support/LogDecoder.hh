@@ -17,8 +17,11 @@
 //
 
 #pragma once
+#include <ctime>
 #include <iostream>
 #include <map>
+#include <stdint.h>
+#include <string>
 #include <vector>
 
 namespace litecore {
@@ -26,6 +29,8 @@ namespace litecore {
     /** Decodes logs written by LogEncoder. */
     class LogDecoder {
     public:
+        static const uint8_t kMagicNumber[4];
+
         /** Initializes decoder with a stream written by a LogEncoder. */
         LogDecoder(std::istream&);
 
@@ -53,6 +58,9 @@ namespace litecore {
         /** Returns the current line's domain. */
         const std::string& domain() const       {return *_curDomain;}
 
+        uint64_t objectID() const;
+        const std::string* objectDescription() const;
+
         /** Reads the next message from the input and returns it as a string.
             You can only read each message once; calling this twice in a row will fail. */
         std::string readMessage();
@@ -66,6 +74,8 @@ namespace litecore {
         static void writeHeader(const std::string &levelName,
                                 const std::string &domainName,
                                 std::ostream&);
+
+        static constexpr uint8_t kFormatVersion = 1;
 
     private:
         uint64_t readUVarInt();
@@ -81,6 +91,9 @@ namespace litecore {
 
         int8_t _curLevel {0};
         const std::string *_curDomain {nullptr};
+        uint64_t _curObject;
+        bool _curObjectIsNew;
+        bool _putCurObjectInMessage;
         bool _readMessage;
     };
 

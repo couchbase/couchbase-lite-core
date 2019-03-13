@@ -17,13 +17,9 @@
 //
 
 #include "LogDecoder.hh"
-#include "LogEncoder.hh"
 #include "Endian.hh"
-#include "varint.hh"
-#include "PlatformCompat.hh"
 #include <exception>
 #include <sstream>
-#include <time.h>
 
 #if __APPLE__
 #include <sys/time.h>
@@ -34,6 +30,8 @@ using namespace fleece;
 
 namespace litecore {
 
+    const uint8_t LogDecoder::kMagicNumber[4] = {0xcf, 0xb2, 0xab, 0x1b};
+
     // The units we count in are microseconds.
     static constexpr unsigned kTicksPerSec = 1000000;
 
@@ -43,9 +41,9 @@ namespace litecore {
         _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
         uint8_t header[6];
         _in.read((char*)&header, sizeof(header));
-        if (memcmp(&header, &LogEncoder::kMagicNumber, 4) != 0)
+        if (memcmp(&header, &kMagicNumber, 4) != 0)
             throw runtime_error("Not a LiteCore log file");
-        if (header[4] != LogEncoder::kFormatVersion)
+        if (header[4] != kFormatVersion)
             throw runtime_error("Unsupported log format version");
         _pointerSize = header[5];
         if (_pointerSize != 4 && _pointerSize != 8)
@@ -57,8 +55,8 @@ namespace litecore {
 
     bool LogDecoder::next() {
         if (!_readMessage)
-            readMessage();
-        
+            readMessage(); // skip past the unread message
+
         _in.exceptions(istream::badbit | istream::failbit);  // turn off EOF exception temporarily
         if (!_in || _in.peek() < 0)
             return false;
@@ -67,6 +65,17 @@ namespace litecore {
         _elapsedTicks += readUVarInt();
         _curLevel = (int8_t)_in.get();
         _curDomain = &readStringToken();
+
+        _curObjectIsNew = false;
+        _putCurObjectInMessage = true;
+        _curObject = readUVarInt();
+        if (_curObject != 0) {
+            if (_objects.find(_curObject) == _objects.end()) {
+                _objects.insert({_curObject, readCString()});
+                _curObjectIsNew = true;
+            }
+        }
+
         _readMessage = false;
         return true;
     }
@@ -146,20 +155,33 @@ namespace litecore {
     }
 
 
+    uint64_t LogDecoder::objectID() const {
+        const_cast<LogDecoder*>(this)->_putCurObjectInMessage = false;
+        return _curObject;
+    }
+
+
+    const string* LogDecoder::objectDescription() const {
+        const_cast<LogDecoder*>(this)->_putCurObjectInMessage = false;
+        if (_curObject > 0) {
+            auto i = _objects.find(_curObject);
+            if (i != _objects.end())
+                return &i->second;
+        }
+        return nullptr;
+    }
+
+
     void LogDecoder::decodeMessageTo(ostream &out) {
         assert(!_readMessage);
         _readMessage = true;
 
-        // Read the object ID:
-        uint64_t objRef = readUVarInt();
-        if (objRef > 0) {
-            if (_objects.find(objRef) != _objects.end()) {
-                out << '{' << objRef << "} ";
-            } else {
-                string description = readCString();
-                _objects.insert({objRef, description});
-                out << '{' << objRef << "|" << description << "} ";
-            }
+        // Write the object ID, unless the caller's already accessed it through the API:
+        if (_putCurObjectInMessage && _curObject > 0) {
+            out << '{' << _curObject;
+            if (_curObjectIsNew)
+                out << "|" << *objectDescription();
+            out << "} ";
         }
 
         // Read the format string, then the parameters:
@@ -294,6 +316,55 @@ namespace litecore {
     }
 
 
+// Begin code extracted from varint.cc
+    struct slice {
+        const void *buf;
+        size_t size;
+    };
+
+    enum {
+        kMaxVarintLen16 = 3,
+        kMaxVarintLen32 = 5,
+        kMaxVarintLen64 = 10,
+    };
+
+    static size_t _GetUVarInt(slice buf, uint64_t *n) {
+        // NOTE: The public inline function GetUVarInt already decodes 1-byte varints,
+        // so if we get here we can assume the varint is at least 2 bytes.
+        auto pos = (const uint8_t*)buf.buf;
+        auto end = pos + std::min(buf.size, (size_t)kMaxVarintLen64);
+        uint64_t result = *pos++ & 0x7F;
+        int shift = 7;
+        while (pos < end) {
+            uint8_t byte = *pos++;
+            if (byte >= 0x80) {
+                result |= (uint64_t)(byte & 0x7F) << shift;
+                shift += 7;
+            } else {
+                result |= (uint64_t)byte << shift;
+                *n = result;
+                size_t nBytes = pos - (const uint8_t*)buf.buf;
+                if (nBytes == kMaxVarintLen64 && byte > 1)
+                    nBytes = 0; // Numeric overflow
+                return nBytes;
+            }
+        }
+        return 0; // buffer too short
+    }
+
+    static inline size_t GetUVarInt(slice buf, uint64_t *n) {
+        if (buf.size == 0)
+            return 0;
+        uint8_t byte = *(const uint8_t*)buf.buf;
+        if (byte < 0x80) {
+            *n = byte;
+            return 1;
+        }
+        return _GetUVarInt(buf, n);
+    }
+// End code extracted from varint.cc
+
+
     uint64_t LogDecoder::readUVarInt() {
         uint8_t buf[10];
         for (int i = 0; i < 10; ++i) {
@@ -303,7 +374,7 @@ namespace litecore {
             buf[i] = uint8_t(byte);
             if (byte < 0x80) {
                 uint64_t n;
-                GetUVarInt(slice(&buf, i+1), &n);
+                GetUVarInt(slice{&buf, size_t(i+1)}, &n);
                 return n;
             }
         }

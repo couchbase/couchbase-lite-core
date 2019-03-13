@@ -35,8 +35,6 @@ using namespace fleece;
 
 namespace litecore {
 
-    const uint8_t LogEncoder::kMagicNumber[4] = {0xcf, 0xb2, 0xab, 0x1b};
-
     // The units we count in are microseconds.
     static constexpr unsigned kTicksPerSec = 1000000;
 
@@ -52,8 +50,8 @@ namespace litecore {
     ,_flushTimer(new actor::Timer(bind(&LogEncoder::performScheduledFlush, this)))
     ,_level(level)
     {
-        _writer.write(&kMagicNumber, 4);
-        uint8_t header[2] = {kFormatVersion, sizeof(void*)};
+        _writer.write(&LogDecoder::kMagicNumber, 4);
+        uint8_t header[2] = {LogDecoder::kFormatVersion, sizeof(void*)};
         _writer.write(&header, sizeof(header));
         auto now = LogDecoder::now();
         _writeUVarInt(now.secs);

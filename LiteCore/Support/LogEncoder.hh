@@ -36,8 +36,6 @@ namespace litecore {
         The API is thread-safe. */
     class LogEncoder {
     public:
-        static const uint8_t kMagicNumber[4];
-
         LogEncoder(std::ostream &out, LogLevel level);
         ~LogEncoder();
 
@@ -66,16 +64,12 @@ namespace litecore {
         }
 
     private:
-        friend class LogDecoder;
-
         int64_t _timeElapsed() const;
         void _writeUVarInt(uint64_t);
         void _writeStringToken(const char *token);
         void _flush();
         void _scheduleFlush();
         void performScheduledFlush();
-
-        static constexpr uint8_t kFormatVersion = 1;
 
         std::mutex _mutex;
         fleece::Writer _writer;
