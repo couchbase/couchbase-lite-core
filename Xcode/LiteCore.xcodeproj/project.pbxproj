@@ -135,6 +135,7 @@
 		275A74D71ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
 		275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
+		275FA35222398875001C392D /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 729272F12238DB8500E7208E /* c4ExceptionUtils.cc */; };
 		275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275FF6D11E4947E1005F90DD /* c4BaseTest.cc */; };
 		2761F3F01EE9CC58006D4BB8 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
 		2761F3F21EE9CC58006D4BB8 /* CookieStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */; };
@@ -3118,6 +3119,7 @@
 				27CE4CFB207C1A7E00ACA225 /* Address.cc in Sources */,
 				2796917C1ED4B5780086565D /* Logging_Stub.cc in Sources */,
 				27FC8E862214E4CA0083B033 /* SecureRandomize.cc in Sources */,
+				275FA35222398875001C392D /* c4ExceptionUtils.cc in Sources */,
 				279691711ED4B2D50086565D /* StringUtil.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
