@@ -20,6 +20,7 @@
 #include "Endian.hh"
 #include <exception>
 #include <sstream>
+#include <cassert>
 
 #if __APPLE__
 #include <sys/time.h>
