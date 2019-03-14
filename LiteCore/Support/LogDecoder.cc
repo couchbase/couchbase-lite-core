@@ -21,6 +21,9 @@
 #include <exception>
 #include <sstream>
 #include <cassert>
+#include <chrono>
+#include <algorithm>
+#include "PlatformCompat.hh"
 
 #if __APPLE__
 #include <sys/time.h>
