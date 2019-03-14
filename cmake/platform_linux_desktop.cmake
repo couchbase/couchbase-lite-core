@@ -62,6 +62,21 @@ function(setup_globals)
     link_directories (${LIBCXX_LIBDIR})
 endfunction()
 
+function(set_litecore_source)
+    set(oneValueArgs RESULT)
+    cmake_parse_arguments(LINUX_SSS "" ${oneValueArgs} "" ${ARGN})
+     if(NOT DEFINED LINUX_SSS_RESULT)
+         message(FATAL_ERROR set_source_files_base needs to be called with RESULT)
+     endif()
+
+     set_litecore_source_linux(RESULT BASE_LITECORE_FILES)
+     set(
+         ${LINUX_SSS_RESULT}
+         ${BASE_LITECORE_FILES}
+         PARENT_SCOPE
+     )
+ endfunction()
+
 function(set_support_source)
     set(oneValueArgs RESULT)
     cmake_parse_arguments(LINUX_SSS "" ${oneValueArgs} "" ${ARGN})
