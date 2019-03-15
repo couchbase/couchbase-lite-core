@@ -94,6 +94,14 @@ namespace litecore { namespace repl {
     }
 
 
+    static bool containsAttachmentsProperty(slice json) {
+        if (!json.find("\"_attachments\":"_sl))
+            return false;
+        Doc doc = Doc::fromJSON(json);
+        return doc.root().asDict()["_attachments"] != nullptr;
+    }
+
+
     static inline bool isAttachment(FLDeepIterator i, C4BlobKey *blobKey, bool noBlobs) {
         auto dict = FLValue_AsDict(FLDeepIterator_GetValue(i));
         if (!dict)
@@ -185,23 +193,26 @@ namespace litecore { namespace repl {
     }
 
 
-    static bool containsAttachmentsProperty(slice json) {
-        if (!json.find("\"_attachments\":"_sl))
-            return false;
-        Doc doc = Doc::fromJSON(json);
-        return doc.root().asDict()["_attachments"] != nullptr;
+    SharedKeys DBAccess::tempSharedKeys() {
+        if (!_tempSharedKeys)
+            updateTempSharedKeys();
+        SharedKeys sk;
+        {
+            lock_guard<mutex> lock(_tempSharedKeysMutex);
+            sk = _tempSharedKeys;
+        }
+        return sk;
     }
 
 
     bool DBAccess::updateTempSharedKeys() {
         use([&](C4Database *db) {
             SharedKeys dbsk = c4db_getFLSharedKeys(db);
-            lock_guard<mutex> lock(_tempEncoderMutex);
+            lock_guard<mutex> lock(_tempSharedKeysMutex);
             if (!_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count()) {
                 // Copy database's sharedKeys:
                 _tempSharedKeys = SharedKeys::create(dbsk.stateData());
                 _tempSharedKeysInitialCount = dbsk.count();
-                _tempEncoder.setSharedKeys(_tempSharedKeys);
             }
         });
         return true;
@@ -209,15 +220,12 @@ namespace litecore { namespace repl {
 
 
     Doc DBAccess::tempEncodeJSON(slice jsonBody, FLError *err) {
-        if (!_tempSharedKeys)
-            updateTempSharedKeys();
-        lock_guard<mutex> lock(_tempEncoderMutex);
-
-        _tempEncoder.convertJSON(jsonBody);
-        Doc doc = _tempEncoder.finishDoc();
+        Encoder enc;
+        enc.setSharedKeys(tempSharedKeys());
+        enc.convertJSON(jsonBody);
+        Doc doc = enc.finishDoc();
         if (!doc && err)
-            *err = _tempEncoder.error();
-        _tempEncoder.reset();
+            *err = enc.error();
         return doc;
     }
 
@@ -225,14 +233,13 @@ namespace litecore { namespace repl {
     alloc_slice DBAccess::reEncodeForDatabase(Doc doc) {
         bool reEncode;
         {
-            lock_guard<mutex> lock(_tempEncoderMutex);
+            lock_guard<mutex> lock(_tempSharedKeysMutex);
             reEncode = doc.sharedKeys() != _tempSharedKeys
                         || _tempSharedKeys.count() > _tempSharedKeysInitialCount;
         }
         if (reEncode) {
             // Re-encode with database's current sharedKeys:
             return use<alloc_slice>([&](C4Database* db) {
-                lock_guard<mutex> lock(_tempEncoderMutex);
                 SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
                 enc.writeValue(doc.root());
                 alloc_slice data = enc.finish();
@@ -277,9 +284,10 @@ namespace litecore { namespace repl {
                 result = FLEncoder_FinishDoc(enc, &flErr);
             });
         } else {
-            lock_guard<mutex> lock(_tempEncoderMutex);
-            FLEncodeApplyingJSONDelta(srcRoot, deltaJSON, _tempEncoder);
-            result = FLEncoder_FinishDoc(_tempEncoder, &flErr);
+            Encoder enc;
+            enc.setSharedKeys(tempSharedKeys());
+            FLEncodeApplyingJSONDelta(srcRoot, deltaJSON, enc);
+            result = FLEncoder_FinishDoc(enc, &flErr);
         }
         ++gNumDeltasApplied;
 

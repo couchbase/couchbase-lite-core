@@ -119,17 +119,17 @@ namespace litecore { namespace repl {
         virtual std::string loggingClassName() const override;
     private:
         void markRevsSyncedLater();
+        fleece::SharedKeys tempSharedKeys();
         bool updateTempSharedKeys();
 
-        C4BlobStore* const _blobStore;
-        fleece::SharedKeys _tempSharedKeys;
-        fleece::Encoder _tempEncoder;
-        std::mutex _tempEncoderMutex;
-        unsigned _tempSharedKeysInitialCount {0};
-        C4RemoteID _remoteDBID {0};                 // ID # of remote DB in revision store
-        bool const _disableBlobSupport;
-        actor::Batcher<ReplicatedRev> _revsToMarkSynced;     // Pending revs to be marked as synced
-        actor::Timer _timer;
+        C4BlobStore* const _blobStore;                      // Database's BlobStore
+        fleece::SharedKeys _tempSharedKeys;                 // Keys used in tempEncodeJSON()
+        std::mutex _tempSharedKeysMutex;                    // Mutex for replacing _tempSharedKeys
+        unsigned _tempSharedKeysInitialCount {0};           // Count when copied from db's keys
+        C4RemoteID _remoteDBID {0};                         // ID # of remote DB in revision store
+        bool const _disableBlobSupport;                     // Does replicator support blobs?
+        actor::Batcher<ReplicatedRev> _revsToMarkSynced;    // Pending revs to be marked as synced
+        actor::Timer _timer;                                // Implements Batcher delay
     };
 
 } }
