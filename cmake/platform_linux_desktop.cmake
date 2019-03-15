@@ -84,7 +84,7 @@ function(set_support_source)
         message(FATAL_ERROR set_source_files_base needs to be called with RESULT)
     endif()
 
-    set_litecore_source_linux(RESULT LINUX_LITECORE_FILES)
+    set_support_source_linux(RESULT LINUX_LITECORE_FILES)
     set(
         ${LINUX_SSS_RESULT}
         ${LINUX_LITECORE_FILES}
