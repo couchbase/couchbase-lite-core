@@ -229,7 +229,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull Big Attachments", "[.SyncServer]")
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
-    const string originalRevID = "1-1489f923c4dca729178b3e3233458550d8dddf29";
+    const string originalRevID = "1-3cb9cfb09f3f0b5142e618553966ab73539b8888";
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
 
@@ -274,7 +274,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
 #endif
     REQUIRE(c4doc_selectCurrentRevision(doc));
     REQUIRE(c4doc_selectNextRevision(doc));
-	revID = C4STR("2-a486b2025bcea67d5456e29865cb32c3");
+	revID = C4STR("2-883a2dacc15171a466f76b9d2c39669b");
     CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     CHECK(doc->selectedRev.body.size > 0);
@@ -316,7 +316,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Update Once-Conflicted Doc", "[.SyncServer]
 
     // Verify doc is updated on SG:
     auto body = sendRemoteRequest("GET", "doc");
-	C4Slice bodySlice = C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"answer\":42}");
+	C4Slice bodySlice = C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"ans*wer\":42}");
     CHECK(C4Slice(body) == bodySlice);
 }
 
