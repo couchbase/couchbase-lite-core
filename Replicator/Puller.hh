@@ -25,11 +25,11 @@
 
 namespace litecore { namespace repl {
     class IncomingRev;
-
+    class RevToInsert;
 
     class Puller : public Worker {
     public:
-        Puller(Replicator*, DBWorker*);
+        Puller(Replicator*);
 
         void setSkipDeleted()                   {enqueue(&Puller::_setSkipDeleted);}
 
@@ -38,6 +38,8 @@ namespace litecore { namespace repl {
 
         // Called only by IncomingRev
         void revWasHandled(IncomingRev *inc);
+
+        void insertRevision(RevToInsert *rev);
 
     protected:
         virtual std::string loggingClassName() const override  {
@@ -59,23 +61,44 @@ namespace litecore { namespace repl {
         void handleNoRev(Retained<MessageIn>);
         void startIncomingRev(MessageIn*);
         void _revsFinished();
-        void completedSequence(alloc_slice sequence, bool withTransientError =false);
+        void completedSequence(alloc_slice sequence,
+                               bool withTransientError =false, bool updateCheckpoint =true);
+        void updateLastSequence();
 
         void _setSkipDeleted()                  {_skipDeleted = true;}
 
-        Retained<DBWorker> _dbActor;
+        std::vector<bool> findOrRequestRevs(Retained<blip::MessageIn> req);
+
+        bool findAncestors(slice docID, slice revID,
+                           std::vector<alloc_slice> &ancestors);
+        int findProposedChange(slice docID, slice revID, slice parentRevID,
+                               alloc_slice &outCurrentRevID);
+        void updateRemoteRev(C4Document* NONNULL);
+        C4SliceResult applyDeltaCallback(const C4Revision *baseRevision,
+                                         C4Slice deltaJSON,
+                                         C4Error *outError);
+        void _insertRevisionsNow();
+
+        static const size_t kMaxPossibleAncestors = 10;
+
         alloc_slice _lastSequence;          // Checkpointed sequence
         bool _skipDeleted {false};          // Don't pull deleted docs (on 1st pull)
         bool _caughtUp {false};             // Got all historic sequences, now up to date
         bool _fatalError {false};           // Have I gotten a fatal error?
+        bool _disableDeltaSupport;
+
         RemoteSequenceSet _missingSequences; // Known sequences I need to pull
         std::deque<Retained<MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
         std::deque<Retained<MessageIn>> _waitingRevMessages;     // Queued 'rev' messages
         std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRev objects
-        actor::Batcher<Puller,IncomingRev> _returningRevs;
-        bool _waitingForChangesCallback {false};  // Waiting for DBAgent::findOrRequestRevs?
+        actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
         unsigned _pendingRevMessages {0};   // # of 'rev' msgs expected but not yet being processed
         unsigned _activeIncomingRevs {0};   // # of IncomingRev workers running
+
+        actor::ActorBatcher<Puller,RevToInsert> _revsToInsert; // Pending revs to be added to db
+        bool _insertionScheduled {false};                   // True if call to insert/sync pending
+        std::mutex _insertionQueueMutex;                    // For safe access to the above
+        bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?
 
 #if __APPLE__
         // This helps limit the number of threads used by GCD:

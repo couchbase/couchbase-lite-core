@@ -18,7 +18,6 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Pusher.hh"
-#include "DBWorker.hh"
 #include "c4BlobStore.h"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -32,11 +31,11 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
-    Pusher::Pusher(Replicator *replicator, DBWorker *dbActor)
+    Pusher::Pusher(Replicator *replicator)
     :Worker(replicator, "Push")
-    ,_dbWorker(dbActor)
     ,_continuous(_options.push == kC4Continuous)
     ,_skipDeleted(_options.skipDeleted())
+    ,_disableDeltaSupport(_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
     {
         if (passive()) {
             // Passive replicator always sends "changes"
@@ -130,21 +129,20 @@ namespace litecore { namespace repl {
             increment(_changeListsInFlight); // will be decremented at start of _gotChanges
             logVerbose("Asking DB for %u changes since sequence #%llu ...",
                 _changesBatchSize, _lastSequenceRead);
-            _dbWorker->getChanges({_lastSequenceRead,
+            getChanges({_lastSequenceRead,
                                    _docIDs,
                                    _changesBatchSize,
                                    _continuous,
                                    _proposeChanges || !_proposeChangesKnown,  // getForeignAncestors
                                    _skipDeleted,                              // skipDeleted
-                                   _proposeChanges},                          // skipForeign
-                                  this);
+                                   _proposeChanges});                         // skipForeign
             // response will be to call _gotChanges
         }
     }
 
 
     // Received a list of changes from the database [initiated in maybeGetMoreChanges]
-    void Pusher::_gotChanges(std::shared_ptr<RevToSendList> changes,
+    void Pusher::gotChanges(std::shared_ptr<RevToSendList> changes,
                              C4SequenceNumber lastSequence,
                              C4Error err)
     {
@@ -204,7 +202,7 @@ namespace litecore { namespace repl {
 
 
     // Called when DBWorker was holding up a revision until an ancestor revision finished.
-    void Pusher::_gotOutOfOrderChange(Retained<RevToSend> change) {
+    void Pusher::gotOutOfOrderChange(RevToSend* change) {
         if (!connection())
             return;
         logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%llu",
@@ -370,8 +368,9 @@ namespace litecore { namespace repl {
         while (_revisionsInFlight < tuning::kMaxRevsInFlight
                    && _revisionBytesAwaitingReply <= tuning::kMaxRevBytesAwaitingReply
                    && !_revsToSend.empty()) {
-            sendRevision(move(_revsToSend.front()));
+            Retained<RevToSend> first = move(_revsToSend.front());
             _revsToSend.pop_front();
+            sendRevision(first);
             if (_revsToSend.size() == tuning::kMaxRevsQueued - 1)
                 maybeGetMoreChanges();          // I may now be eligible to send more changes
         }
@@ -382,13 +381,13 @@ namespace litecore { namespace repl {
     }
 
     
-    // Tells the DBWorker to send a "rev" message containing a revision body.
+    // Send a "rev" message containing a revision body.
     void Pusher::sendRevision(Retained<RevToSend> rev) {
         increment(_revisionsInFlight);
         logVerbose("Sending rev %.*s %.*s (seq #%llu) [%d/%d]",
                    SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
-        _dbWorker->sendRevision(rev, asynchronize([=](MessageProgress progress) {
+        sendRevision(rev, [=](MessageProgress progress) {
             // message progress callback:
             if (progress.state == MessageProgress::kDisconnected) {
                 doneWithRev(rev, false, false);
@@ -424,14 +423,14 @@ namespace litecore { namespace repl {
                 doneWithRev(rev, completed, synced);
                 maybeSendMoreRevs();
             }
-        }));
+        });
     }
 
 
-    void Pusher::_couldntSendRevision(Retained<RevToSend> rev) {
+    void Pusher::couldntSendRevision(RevToSend* rev) {
         decrement(_revisionsInFlight);
         doneWithRev(rev, false, false);
-        maybeSendMoreRevs();
+        enqueue(&Pusher::maybeSendMoreRevs);  // async call to avoid recursion
     }
 
 
@@ -443,7 +442,7 @@ namespace litecore { namespace repl {
                                               Replicator::BlobProgress &progress,
                                               C4Error *outError)
     {
-        auto blobStore = _dbWorker->blobStore();
+        auto blobStore = _db->blobStore();
         digestStr = req->property("digest"_sl);
         progress = {Dir::kPushing};
         if (!c4blob_keyFromString(digestStr, &progress.key)) {
@@ -578,7 +577,46 @@ namespace litecore { namespace repl {
             }
         }
 
-        _dbWorker->donePushingRev(rev, synced);
+        if (synced && _options.push > kC4Passive)
+            _db->markRevSynced((RevToSend*)rev);
+
+        auto i = _pushingDocs.find(rev->docID);
+        if (i == _pushingDocs.end()) {
+            if (connection())
+                warn("_donePushingRev('%.*s'): That docID is not active!", SPLAT(rev->docID));
+            return;
+        }
+
+        Retained<RevToSend> newRev = i->second;
+        _pushingDocs.erase(i);
+        if (newRev) {
+            if (synced && _getForeignAncestors)
+                newRev->remoteAncestorRevID = rev->revID;
+            logVerbose("Now that '%.*s' %.*s is done, propose %.*s (remote %.*s) ...",
+                       SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(newRev->revID),
+                       SPLAT(newRev->remoteAncestorRevID));
+            bool ok = false;
+            if (synced && _getForeignAncestors
+                && c4rev_getGeneration(newRev->revID) <= c4rev_getGeneration(rev->revID)) {
+                // Don't send; it'll conflict with what's on the server
+            } else {
+                // Send newRev as though it had just arrived:
+                bool should = _db->use<bool>([&](C4Database *db) {
+                    return shouldPushRev(newRev, nullptr, db);
+                });
+                if (should) {
+                    _maxPushedSequence = max(_maxPushedSequence, rev->sequence);
+                    gotOutOfOrderChange(newRev);
+                    ok = true;
+                }
+            }
+            if (!ok) {
+                logVerbose("   ... nope, decided not to propose '%.*s' %.*s",
+                           SPLAT(newRev->docID), SPLAT(newRev->revID));
+            }
+        } else {
+            logDebug("Done pushing '%.*s' %.*s", SPLAT(rev->docID), SPLAT(rev->revID));
+        }
     }
 
 
@@ -607,6 +645,7 @@ namespace litecore { namespace repl {
                 || _revisionsInFlight > 0
                 || _blobsInFlight > 0
                 || !_revsToSend.empty()
+                || !_pushingDocs.empty()
                 || _revisionBytesAwaitingReply > 0) {
             level = kC4Busy;
         } else if (_options.push == kC4Continuous || isOpenServer()) {
@@ -615,11 +654,11 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pendingSequences=%zu",
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",
                 kC4ReplicatorActivityLevelNames[level],
                 pendingResponseCount(),
                 _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,
-                _revisionBytesAwaitingReply, _revsToSend.size(), _pendingSequences.size());
+                _revisionBytesAwaitingReply, _revsToSend.size(), _pushingDocs.size(), _pendingSequences.size());
         }
         return level;
     }

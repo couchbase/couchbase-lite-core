@@ -85,8 +85,23 @@ namespace litecore { namespace repl {
 
     void RevToInsert::trim() {
         historyBuf.reset();
-        body.reset();
+        doc = nullptr;
+        deltaSrc.reset();
         owner = nullptr;
     }
+
+
+    vector<C4String> RevToInsert::history() {
+        vector<C4String> history;
+        history.reserve(10);
+        history.push_back(revID);
+        for (const void *pos=historyBuf.buf, *end = historyBuf.end(); pos < end;) {
+            auto comma = slice(pos, end).findByteOrEnd(',');
+            history.push_back(slice(pos, comma));
+            pos = comma + 1;
+        }
+        return history;
+    }
+
 
 } }

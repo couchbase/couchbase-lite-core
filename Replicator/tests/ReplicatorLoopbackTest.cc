@@ -8,7 +8,7 @@
 
 #include "ReplicatorLoopbackTest.hh"
 #include "Worker.hh"
-#include "DBWorker.hh"
+#include "DBAccess.hh"
 #include "Timer.hh"
 #include "Database.hh"
 #include "PrebuiltCopier.hh"
@@ -35,7 +35,7 @@ TEST_CASE("Options password logging redaction") {
     enc.endDict();
     enc.endDict();
     alloc_slice properties = enc.finish();
-    Worker::Options opts(kC4OneShot, kC4Disabled, properties);
+    Replicator::Options opts(kC4OneShot, kC4Disabled, properties);
 
     auto str = string(opts);
     Log("Options = %s", str.c_str());
@@ -1370,10 +1370,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
 
     Log("-------- Second Push --------");
     _expectedDocumentCount = (100+6)/7;
-    auto before = DBWorker::gNumDeltasApplied.load();
+    auto before = DBAccess::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(DBWorker::gNumDeltasApplied - before == 15);
+    CHECK(DBAccess::gNumDeltasApplied - before == 15);
 }
 
 
@@ -1423,10 +1423,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Bigger Delta Push+Push", "[Push][Delta
 
     Log("-------- Second Push --------");
     _expectedDocumentCount = kNumDocs;
-    auto before = DBWorker::gNumDeltasApplied.load();
+    auto before = DBAccess::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(DBWorker::gNumDeltasApplied - before == kNumDocs);
+    CHECK(DBAccess::gNumDeltasApplied - before == kNumDocs);
 }
 
 
@@ -1445,10 +1445,10 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Pull", "[Push][Pull][Delta]
 
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = (100+6)/7;
-    auto before = DBWorker::gNumDeltasApplied.load();
+    auto before = DBAccess::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
     compareDatabases();
-    CHECK(DBWorker::gNumDeltasApplied - before == 15);
+    CHECK(DBAccess::gNumDeltasApplied - before == 15);
 }
 
 
@@ -1479,9 +1479,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Push", "[Push][
 
     Log("-------- Push To db2 Again --------");
     _expectedDocumentCount = 1;
-    auto before = DBWorker::gNumDeltasApplied.load();
+    auto before = DBAccess::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
-    CHECK(DBWorker::gNumDeltasApplied - before == 1);
+    CHECK(DBAccess::gNumDeltasApplied - before == 1);
 
     c4::ref<C4Document> doc2 = c4doc_get(db2, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc2, true, nullptr);
@@ -1523,9 +1523,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Attachments Push+Pull", "[Push][
 
     Log("-------- Pull From db2 --------");
     _expectedDocumentCount = 1;
-    auto before = DBWorker::gNumDeltasApplied.load();
+    auto before = DBAccess::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pulling(kC4OneShot), serverOpts);
-    CHECK(DBWorker::gNumDeltasApplied - before == 1);
+    CHECK(DBAccess::gNumDeltasApplied - before == 1);
 
     c4::ref<C4Document> doc = c4doc_get(db, "att1"_sl, true, nullptr);
     alloc_slice json = c4doc_bodyAsJSON(doc, true, nullptr);

@@ -18,7 +18,6 @@
 
 #include "IncomingRev.hh"
 #include "IncomingBlob.hh"
-#include "DBWorker.hh"
 #include "Puller.hh"
 #include "StringUtil.hh"
 #include "c4Document+Fleece.h"
@@ -33,10 +32,9 @@ using namespace litecore::blip;
 namespace litecore { namespace repl {
 
 
-    IncomingRev::IncomingRev(Puller *puller, DBWorker *dbWorker)
+    IncomingRev::IncomingRev(Puller *puller)
     :Worker(puller, "inc")
     ,_puller(puller)
-    ,_dbWorker(dbWorker)
     {
         _important = false;
     }
@@ -92,22 +90,30 @@ namespace litecore { namespace repl {
         if (_rev->deltaSrcRevID == nullslice) {
             // It's not a delta. Convert body to Fleece and process:
             FLError err;
-            auto fleeceDoc = Doc::fromJSON(jsonBody, &err);
+            Doc fleeceDoc = _db->tempEncodeJSON(jsonBody, &err);
             processBody(fleeceDoc, {FleeceDomain, err});
         } else if (_options.pullValidator || _revMessage->body().contains("\"digest\""_sl)) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, or it may contain new blobs to download.
-            // So we call the DBWorker to (asynchronously) apply the delta, and then processBody():
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
                        SPLAT(_rev->docID), SPLAT(_rev->revID));
-            _dbWorker->applyDelta(_rev, _rev->deltaSrcRevID, jsonBody,
-                                  asynchronize([this](Doc fleeceDoc, C4Error err) {
-                _rev->deltaSrcRevID = nullslice;
-                processBody(fleeceDoc, err);
-            }));
+            C4Error err;
+            Doc fleeceDoc = _db->applyDelta(_rev->docID, _rev->deltaSrcRevID, jsonBody, &err);
+            if (!fleeceDoc && err.domain==LiteCoreDomain && err.code==kC4ErrorDeltaBaseUnknown) {
+                // Don't have the body of the source revision. This might be because I'm in
+                // no-conflict mode and the peer is trying to push me a now-obsolete revision.
+                if (_options.noIncomingConflicts())
+                    err = {WebSocketDomain, 409};
+                else {
+                    alloc_slice errMsg = c4error_getMessage(err);
+                    warn("%.*s", SPLAT(errMsg));
+                }
+            }
+            _rev->deltaSrcRevID = nullslice;
+            processBody(fleeceDoc, err);
         } else {
             // It's a delta, but it can be applied later while inserting:
-            _rev->body = jsonBody;
+            _rev->deltaSrc = jsonBody;
             insertRevision();
         }
     }
@@ -133,20 +139,23 @@ namespace litecore { namespace repl {
 
         // Strip out any "_"-prefixed properties like _id, just in case, and also any attachments
         // in _attachments that are redundant with blobs elsewhere in the doc:
-        if (c4doc_hasOldMetaProperties(root) && !_dbWorker->disableBlobSupport()) {
+        if (c4doc_hasOldMetaProperties(root) && !_db->disableBlobSupport()) {
             C4Error err;
-            _rev->body = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
-            if (!_rev->body) {
+            alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
+            if (body) {
+                _rev->doc = Doc(body, kFLTrusted);
+                root = _rev->doc.root().asDict();
+            } else {
                 warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
                 _rev->error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
+                root = nullptr;
             }
-            root = Value::fromData(_rev->body, kFLTrusted).asDict();
         } else {
-            _rev->body = fleeceDoc.allocedData();
+            _rev->doc = fleeceDoc;
         }
 
         // Check for blobs, and queue up requests for any I don't have yet:
-        _dbWorker->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
+        _db->findBlobReferences(root, true, [=](FLDeepIterator i, Dict blob, const C4BlobKey &key) {
             _rev->flags |= kRevHasAttachments;
             _pendingBlobs.push_back({_rev->docID,
                                      alloc_slice(FLDeepIterator_GetPathString(i)),
@@ -173,7 +182,7 @@ namespace litecore { namespace repl {
 
 
     bool IncomingRev::fetchNextBlob() {
-        auto blobStore = _dbWorker->blobStore();
+        auto blobStore = _db->blobStore();
         while (!_pendingBlobs.empty()) {
             PendingBlob firstPending = _pendingBlobs.front();
             _pendingBlobs.erase(_pendingBlobs.begin());
@@ -211,7 +220,7 @@ namespace litecore { namespace repl {
     void IncomingRev::insertRevision() {
         Assert(_pendingBlobs.empty() && !_currentBlob);
         increment(_pendingCallbacks);
-        _dbWorker->insertRevision(_rev);
+        _puller->insertRevision(_rev);
     }
 
 
@@ -230,7 +239,7 @@ namespace litecore { namespace repl {
         }
         
         if (_rev->error.code == 0 && _peerError)
-                _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
+            _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
 
         // Free up memory now that I'm done:
         Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());

@@ -85,6 +85,7 @@ bool c4db_markSynced(C4Database *database,
 
 namespace litecore { namespace constants {
     extern const C4Slice kLocalCheckpointStore;
+    extern const C4Slice kPeerCheckpointStore;
     extern const C4Slice kPreviousPrivateUUIDKey;
 }}
 
