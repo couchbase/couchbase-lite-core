@@ -90,7 +90,7 @@ namespace litecore { namespace repl {
         if (_rev->deltaSrcRevID == nullslice) {
             // It's not a delta. Convert body to Fleece and process:
             FLError err;
-            Doc fleeceDoc = Doc::fromJSON(jsonBody, &err);
+            Doc fleeceDoc = _db->tempEncodeJSON(jsonBody, &err);
             processBody(fleeceDoc, {FleeceDomain, err});
         } else if (_options.pullValidator || _revMessage->body().contains("\"digest\""_sl)) {
             // It's a delta, but we need the entire document body now because either it has to be
@@ -113,7 +113,7 @@ namespace litecore { namespace repl {
             processBody(fleeceDoc, err);
         } else {
             // It's a delta, but it can be applied later while inserting:
-            _rev->body = jsonBody;
+            _rev->deltaSrc = jsonBody;
             insertRevision();
         }
     }
@@ -141,14 +141,17 @@ namespace litecore { namespace repl {
         // in _attachments that are redundant with blobs elsewhere in the doc:
         if (c4doc_hasOldMetaProperties(root) && !_db->disableBlobSupport()) {
             C4Error err;
-            _rev->body = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
-            if (!_rev->body) {
+            alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
+            if (body) {
+                _rev->doc = Doc(body, kFLTrusted);
+                root = _rev->doc.root().asDict();
+            } else {
                 warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
                 _rev->error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
+                root = nullptr;
             }
-            root = Value::fromData(_rev->body, kFLTrusted).asDict();
         } else {
-            _rev->body = fleeceDoc.allocedData();
+            _rev->doc = fleeceDoc;
         }
 
         // Check for blobs, and queue up requests for any I don't have yet:

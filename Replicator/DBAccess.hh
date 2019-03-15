@@ -23,6 +23,8 @@ namespace litecore { namespace repl {
     class DBAccess : public access_lock<C4Database*>, public Logging {
     public:
         using slice = fleece::slice;
+        using alloc_slice = fleece::alloc_slice;
+        using Dict = fleece::Dict;
 
         DBAccess(C4Database* db, bool disableBlobSupport);
         ~DBAccess();
@@ -39,22 +41,22 @@ namespace litecore { namespace repl {
             });
         }
 
-        static fleece::Dict getDocRoot(C4Document *doc,
-                                       C4RevisionFlags *outFlags =nullptr);
+        static Dict getDocRoot(C4Document *doc,
+                               C4RevisionFlags *outFlags =nullptr);
 
-        static fleece::Dict getDocRoot(C4Document *doc, slice revID,
-                                       C4RevisionFlags *outFlags =nullptr);
+        static Dict getDocRoot(C4Document *doc, slice revID,
+                               C4RevisionFlags *outFlags =nullptr);
 
         C4RemoteID lookUpRemoteDBID(slice key, C4Error *outError);
         C4RemoteID remoteDBID() const                   {return _remoteDBID;}
 
-        fleece::alloc_slice getDocRemoteAncestor(C4Document *doc);
+        alloc_slice getDocRemoteAncestor(C4Document *doc);
 
-        // Mark this revision as synced (i.e. the server's current revision) soon.
-        // NOTE: While this is queued, calls to c4doc_getRemoteAncestor() for this document won't
-        // return the correct answer, because the change hasn't been made in the database yet.
-        // For that reason, you must ensure that markRevsSyncedNow() is called before any call
-        // to c4doc_getRemoteAncestor().
+         /** Mark this revision as synced (i.e. the server's current revision) soon.
+             NOTE: While this is queued, calls to c4doc_getRemoteAncestor() for this document won't
+             return the correct answer, because the change hasn't been made in the database yet.
+             For that reason, you must ensure that markRevsSyncedNow() is called before any call
+             to c4doc_getRemoteAncestor(). */
         void markRevSynced(ReplicatedRev *rev)          {_revsToMarkSynced.push(rev);}
 
         void markRevsSyncedNow();
@@ -64,15 +66,37 @@ namespace litecore { namespace repl {
         bool disableBlobSupport() const                 {return _disableBlobSupport;}
 
         using FindBlobCallback = fleece::function_ref<void(FLDeepIterator,
-                                                           fleece::Dict blob,
+                                                           Dict blob,
                                                            const C4BlobKey &key)>;
-        void findBlobReferences(fleece::Dict root,
-                                bool unique,
-                                const FindBlobCallback &callback);
+        /** Encodes JSON to Fleece. Uses a temporary SharedKeys, because the database's
+            SharedKeys can only be encoded with during a transaction, and the caller (IncomingRev)
+            isn't in a transaction. */
+        fleece::Doc tempEncodeJSON(slice jsonBody, FLError *err);
 
-        // Applies a delta to an existing revision.
+        /** Takes a document produced by tempEncodeJSON and re-encodes it if necessary with the
+            database's real SharedKeys, so it's suitable for saving. This can only be called
+            inside a transaction. */
+        alloc_slice reEncodeForDatabase(fleece::Doc);
+
+        /** Calls the callback inside a database transaction.
+            Callback should look like: (C4Database*,C4Error*)->bool */
+        template <class LAMBDA>
+        C4Error inTransaction(LAMBDA callback) {
+            C4Error err;
+            use([&](C4Database *db) {
+                c4::Transaction transaction(db);
+                if (transaction.begin(&err) && callback(db, &err) && transaction.commit(&err)) {
+                    updateTempSharedKeys();
+                    err = {};
+                }
+            });
+            return err;
+        }
+
+        /** Applies a delta to an existing revision. */
         fleece::Doc applyDelta(const C4Revision *baseRevision,
                                slice deltaJSON,
+                               bool useDBSharedKeys,
                                C4Error *outError);
 
         fleece::Doc applyDelta(slice docID,
@@ -80,7 +104,14 @@ namespace litecore { namespace repl {
                                slice deltaJSON,
                                C4Error *outError);
 
-        void writeRevWithLegacyAttachments(fleece::Encoder& enc, fleece::Dict root, unsigned revpos);
+        void findBlobReferences(Dict root,
+                                bool unique,
+                                const FindBlobCallback &callback);
+
+        /** Writes `root` to the encoder, transforming blobs into old-school `_attachments` dict */
+        void encodeRevWithLegacyAttachments(fleece::Encoder& enc,
+                                           Dict root,
+                                           unsigned revpos);
 
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
 
@@ -88,8 +119,13 @@ namespace litecore { namespace repl {
         virtual std::string loggingClassName() const override;
     private:
         void markRevsSyncedLater();
+        bool updateTempSharedKeys();
 
         C4BlobStore* const _blobStore;
+        fleece::SharedKeys _tempSharedKeys;
+        fleece::Encoder _tempEncoder;
+        std::mutex _tempEncoderMutex;
+        unsigned _tempSharedKeysInitialCount {0};
         C4RemoteID _remoteDBID {0};                 // ID # of remote DB in revision store
         bool const _disableBlobSupport;
         actor::Batcher<ReplicatedRev> _revsToMarkSynced;     // Pending revs to be marked as synced

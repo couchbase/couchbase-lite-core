@@ -86,9 +86,10 @@ namespace litecore { namespace repl {
     class RevToInsert : public ReplicatedRev {
     public:
         alloc_slice             historyBuf;             // Revision history (comma-delimited revIDs)
-        alloc_slice             body;                   // The actual doc body (Fleece)
+        fleece::Doc             doc;
         const bool              noConflicts {false};    // Server is in no-conflicts mode
         Retained<IncomingRev>   owner;                  // Object that's processing this rev
+        alloc_slice             deltaSrc;
         alloc_slice             deltaSrcRevID;          // Source revision if body is a delta
         
         RevToInsert(IncomingRev* owner,
@@ -99,6 +100,8 @@ namespace litecore { namespace repl {
 
         Dir dir() const override                    {return Dir::kPulling;}
         void trim() override;
+
+        std::vector<C4Slice> history();
 
         void notifyInserted();
 

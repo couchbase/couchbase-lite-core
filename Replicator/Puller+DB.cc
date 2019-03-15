@@ -236,10 +236,11 @@ namespace litecore { namespace repl {
                                              C4Slice deltaJSON,
                                              C4Error *outError)
     {
-        Doc doc = _db->applyDelta(baseRevision, deltaJSON, outError);
+        Doc doc = _db->applyDelta(baseRevision, deltaJSON, true, outError);
         if (!doc)
             return {};
         alloc_slice body = doc.allocedData();
+
         if (!_db->disableBlobSupport()) {
             // After applying the delta, remove legacy attachment properties and any other
             // "_"-prefixed top level properties:
@@ -278,117 +279,97 @@ namespace litecore { namespace repl {
         logVerbose("Inserting %zu revs:", revs->size());
         Stopwatch st;
 
-        C4Error transactionErr;
-        _db->use([&](C4Database *db) {
-            c4::Transaction transaction(db);
-            if (transaction.begin(&transactionErr)) {
-                // Before updating docs, write all pending changes to remote ancestors, in case any
-                // of them apply to the docs we're updating:
-                _db->markRevsSyncedNow();
+        C4Error transactionErr = _db->inTransaction([&](C4Database *db, C4Error*) {
+            // Before updating docs, write all pending changes to remote ancestors, in case any
+            // of them apply to the docs we're updating:
+            _db->markRevsSyncedNow();
 
-                SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
+            for (RevToInsert *rev : *revs) {
+                // Add a revision:
+                C4Error docErr;
+                bool docSaved;
 
-                for (RevToInsert *rev : *revs) {
-                    // Add a revision:
-                    vector<C4String> history;
-                    history.reserve(10);
-                    history.push_back(rev->revID);
-                    for (const void *pos=rev->historyBuf.buf, *end = rev->historyBuf.end(); pos < end;) {
-                        auto comma = slice(pos, end).findByteOrEnd(',');
-                        history.push_back(slice(pos, comma));
-                        pos = comma + 1;
-                    }
+                if (rev->flags & kRevPurged) {
+                    // Server says the document is no longer accessible, i.e. it's been
+                    // removed from all channels the client has access to. Purge it.
+                    docSaved = c4db_purgeDoc(db, rev->docID, &docErr);
+                    if (docSaved)
+                        logVerbose("    {'%.*s' removed (purged)}", SPLAT(rev->docID));
+                    else if (docErr.domain == LiteCoreDomain && docErr.code == kC4ErrorNotFound)
+                        docSaved = true;
+                } else {
+                    // Set up the parameter block for c4doc_put():
+                    vector<C4String> history = rev->history();
+                    C4DocPutRequest put = {};
+                    put.docID = rev->docID;
+                    put.revFlags = rev->flags;
+                    put.existingRevision = true;
+                    put.allowConflict = !rev->noConflicts;
+                    put.history = history.data();
+                    put.historyCount = history.size();
+                    put.remoteDBID = _db->remoteDBID();
+                    put.save = true;
 
-                    C4Error docErr;
-                    bool docSaved;
-
-                    if (rev->flags & kRevPurged) {
-                        // Server says the document is no longer accessible, i.e. it's been
-                        // removed from all channels the client has access to. Purge it.
-                        docSaved = c4db_purgeDoc(db, rev->docID, &docErr);
-                        if (docSaved)
-                            logVerbose("    {'%.*s' removed (purged)}", SPLAT(rev->docID));
-                        else if (docErr.domain == LiteCoreDomain && docErr.code == kC4ErrorNotFound)
-                            docSaved = true;
+                    alloc_slice bodyForDB;
+                    if (rev->deltaSrc) {
+                        // If this is a delta, put the JSON delta in the put-request:
+                        bodyForDB = move(rev->deltaSrc);
+                        put.deltaSourceRevID = rev->deltaSrcRevID;
+                        put.deltaCB = [](void *context, const C4Revision *baseRev,
+                                         C4Slice delta, C4Error *outError) {
+                            return ((Puller*)context)->applyDeltaCallback(baseRev, delta, outError);
+                        };
+                        put.deltaCBContext = this;
+                        // Preserve rev body as the source of a future delta I may push back:
+                        put.revFlags |= kRevKeepBody;
                     } else {
-                        // Set up the parameter block for c4doc_put():
-                        C4DocPutRequest put = {};
-                        put.docID = rev->docID;
-                        put.revFlags = rev->flags;
-                        put.existingRevision = true;
-                        put.allowConflict = !rev->noConflicts;
-                        put.history = history.data();
-                        put.historyCount = history.size();
-                        put.remoteDBID = _db->remoteDBID();
-                        put.save = true;
-
-                        alloc_slice bodyForDB;
-                        if (rev->deltaSrcRevID) {
-                            // If this is a delta, put the JSON delta in the body:
-                            bodyForDB = move(rev->body);
-                            put.deltaSourceRevID = rev->deltaSrcRevID;
-                            put.deltaCB = [](void *context, const C4Revision *baseRev,
-                                             C4Slice delta, C4Error *outError) {
-                                return ((Puller*)context)->applyDeltaCallback(baseRev, delta, outError);
-                            };
-                            put.deltaCBContext = this;
-                            // Preserve rev body as the source of a future delta I may push back:
+                        // Encode doc body using database's real sharedKeys:
+                        bodyForDB = _db->reEncodeForDatabase(rev->doc);
+                        rev->doc = nullptr;
+                        // Preserve rev body as the source of a future delta I may push back:
+                        if (bodyForDB.size >= tuning::kMinBodySizeForDelta && !_disableDeltaSupport)
                             put.revFlags |= kRevKeepBody;
-                        } else {
-                            // rev->body is Fleece, but sadly we can't insert it directly because it doesn't
-                            // use the db's SharedKeys, so all of its Dict keys are strings. Putting this into
-                            // the db would cause failures looking up those keys (see #156). So re-encode:
-                            Value root = Value::fromData(rev->body, kFLTrusted);
-                            enc.writeValue(root);
-                            bodyForDB = enc.finish();
-                            enc.reset();
-                            rev->body = nullslice;
-                            // Preserve rev body as the source of a future delta I may push back:
-                            if (bodyForDB.size >= tuning::kMinBodySizeForDelta && !_disableDeltaSupport)
-                                put.revFlags |= kRevKeepBody;
-                        }
-                        put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
-
-                        // The save!!
-                        c4::ref<C4Document> doc = c4doc_put(db, &put, nullptr, &docErr);
-                        if (doc) {
-                            logVerbose("    {'%.*s' #%.*s <- %.*s} seq %llu",
-                                       SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(rev->historyBuf),
-                                       doc->selectedRev.sequence);
-                            docSaved = true;
-                            rev->sequence = doc->selectedRev.sequence;
-                            if (doc->selectedRev.flags & kRevIsConflict) {
-                                // Note that rev was inserted but caused a conflict:
-                                logInfo("Created conflict with '%.*s' #%.*s",
-                                    SPLAT(rev->docID), SPLAT(rev->revID));
-                                rev->flags |= kRevIsConflict;
-                                rev->isWarning = true;
-                                DebugAssert(put.allowConflict);
-                            }
-                        } else {
-                            docSaved = false;
-                        }
                     }
+                    put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
-                    if (!docSaved) {
-                        alloc_slice desc = c4error_getDescription(docErr);
-                        warn("Failed to insert '%.*s' #%.*s : %.*s",
-                             SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(desc));
-                        rev->error = docErr;
-                        if (rev->owner)
-                            rev->owner->revisionInserted();
+                    // The save!!
+                    c4::ref<C4Document> doc = c4doc_put(db, &put, nullptr, &docErr);
+                    if (doc) {
+                        logVerbose("    {'%.*s' #%.*s <- %.*s} seq %llu",
+                                   SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(rev->historyBuf),
+                                   doc->selectedRev.sequence);
+                        docSaved = true;
+                        rev->sequence = doc->selectedRev.sequence;
+                        if (doc->selectedRev.flags & kRevIsConflict) {
+                            // Note that rev was inserted but caused a conflict:
+                            logInfo("Created conflict with '%.*s' #%.*s",
+                                SPLAT(rev->docID), SPLAT(rev->revID));
+                            rev->flags |= kRevIsConflict;
+                            rev->isWarning = true;
+                            DebugAssert(put.allowConflict);
+                        }
+                    } else {
+                        docSaved = false;
                     }
                 }
-            }
 
-            // Commit transaction:
-            if (transaction.active() && transaction.commit(&transactionErr))
-                transactionErr = { };
-            else
-                warn("Transaction failed!");
+                if (!docSaved) {
+                    // Notify owner of a rev that failed:
+                    alloc_slice desc = c4error_getDescription(docErr);
+                    warn("Failed to insert '%.*s' #%.*s : %.*s",
+                         SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(desc));
+                    rev->error = docErr;
+                    if (rev->owner)
+                        rev->owner->revisionInserted();
+                }
+            }
+            return true;
         });
 
-        // Notify all revs (that didn't already fail):
+        if (transactionErr.code != 0)
+            warn("Transaction failed!");
+
+        // Notify owners of all revs that didn't already fail:
         for (auto rev : *revs) {
             if (rev->error.code == 0) {
                 rev->error = transactionErr;
@@ -397,7 +378,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        if (transactionErr.code) {
+        if (transactionErr.code != 0) {
             gotError(transactionErr);
         } else {
             double t = st.elapsed();

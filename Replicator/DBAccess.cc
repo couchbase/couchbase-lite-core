@@ -43,6 +43,8 @@ namespace litecore { namespace repl {
     ,_timer(bind(&DBAccess::markRevsSyncedNow, this))
     {
         c4db_retain(db);
+        // Copy database's sharedKeys:
+        SharedKeys dbsk = c4db_getFLSharedKeys(db);
     }
 
 
@@ -126,7 +128,7 @@ namespace litecore { namespace repl {
     }
 
 
-    void DBAccess::writeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root,
+    void DBAccess::encodeRevWithLegacyAttachments(fleece::Encoder& enc, Dict root,
                                                  unsigned revpos)
     {
         enc.beginDict();
@@ -191,8 +193,64 @@ namespace litecore { namespace repl {
     }
 
 
+    bool DBAccess::updateTempSharedKeys() {
+        use([&](C4Database *db) {
+            SharedKeys dbsk = c4db_getFLSharedKeys(db);
+            lock_guard<mutex> lock(_tempEncoderMutex);
+            if (!_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count()) {
+                // Copy database's sharedKeys:
+                _tempSharedKeys = SharedKeys::create(dbsk.stateData());
+                _tempSharedKeysInitialCount = dbsk.count();
+                _tempEncoder.setSharedKeys(_tempSharedKeys);
+            }
+        });
+        return true;
+    }
+
+
+    Doc DBAccess::tempEncodeJSON(slice jsonBody, FLError *err) {
+        if (!_tempSharedKeys)
+            updateTempSharedKeys();
+        lock_guard<mutex> lock(_tempEncoderMutex);
+
+        _tempEncoder.convertJSON(jsonBody);
+        Doc doc = _tempEncoder.finishDoc();
+        if (!doc && err)
+            *err = _tempEncoder.error();
+        _tempEncoder.reset();
+        return doc;
+    }
+
+
+    alloc_slice DBAccess::reEncodeForDatabase(Doc doc) {
+        bool reEncode;
+        {
+            lock_guard<mutex> lock(_tempEncoderMutex);
+            reEncode = doc.sharedKeys() != _tempSharedKeys
+                        || _tempSharedKeys.count() > _tempSharedKeysInitialCount;
+        }
+        if (reEncode) {
+            // Re-encode with database's current sharedKeys:
+            return use<alloc_slice>([&](C4Database* db) {
+                lock_guard<mutex> lock(_tempEncoderMutex);
+                SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
+                enc.writeValue(doc.root());
+                alloc_slice data = enc.finish();
+                enc.reset();
+                return data;
+            });
+        } else {
+            // _tempSharedKeys is still compatible with database's sharedKeys, so no re-encoding.
+            // But we do need to copy the data, because the data in doc is tagged with the temp
+            // sharedKeys, and the database needs to tag the inserted data with its own.
+            return alloc_slice(doc.data());
+        }
+    }
+
+
     Doc DBAccess::applyDelta(const C4Revision *baseRevision,
                              slice deltaJSON,
+                             bool useDBSharedKeys,
                              C4Error *outError)
     {
         Dict srcRoot = Value::fromData(baseRevision->body, kFLTrusted).asDict();
@@ -205,37 +263,33 @@ namespace litecore { namespace repl {
         if (!_disableBlobSupport && containsAttachmentsProperty(deltaJSON)) {
             // Delta refers to legacy attachments, so convert my base revision to have them:
             Encoder enc;
-            writeRevWithLegacyAttachments(enc, srcRoot, 1);
+            encodeRevWithLegacyAttachments(enc, srcRoot, 1);
             legacy = enc.finishDoc();
             srcRoot = legacy.root().asDict();
         }
 
-        Doc deltaDoc = Doc::fromJSON(deltaJSON);
-        auto delta = deltaDoc.root();
-        if (!delta) {
-            *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
-            return nullptr;
+        Doc result;
+        FLError flErr;
+        if (useDBSharedKeys) {
+            use([&](C4Database *db) {
+                FLEncoder enc = c4db_getSharedFleeceEncoder(db);
+                FLEncodeApplyingJSONDelta(srcRoot, deltaJSON, enc);
+                result = FLEncoder_FinishDoc(enc, &flErr);
+            });
+        } else {
+            lock_guard<mutex> lock(_tempEncoderMutex);
+            FLEncodeApplyingJSONDelta(srcRoot, deltaJSON, _tempEncoder);
+            result = FLEncoder_FinishDoc(_tempEncoder, &flErr);
         }
+        ++gNumDeltasApplied;
 
-        return use<Doc>([&](C4Database *db)->Doc {
-            bool useSharedKeys = c4db_isInTransaction(db);
-            FLEncoder enc = useSharedKeys ? c4db_getSharedFleeceEncoder(db) : FLEncoder_New();
-            FLEncodeApplyingJSONDelta(srcRoot, deltaJSON, enc);
-            ++gNumDeltasApplied;
-            FLError flErr;
-            Doc result = FLEncoder_FinishDoc(enc, &flErr);
-            if (!result) {
-                if (outError) {
-                    if (flErr == kFLInvalidData)
-                        *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
-                    else
-                        *outError = {FleeceDomain, flErr};
-                }
-            }
-            if (!useSharedKeys)
-                FLEncoder_Free(enc);
-            return result;
-        });
+        if (!result && outError) {
+            if (flErr == kFLInvalidData)
+                *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
+            else
+                *outError = {FleeceDomain, flErr};
+        }
+        return result;
     }
 
 
@@ -248,7 +302,7 @@ namespace litecore { namespace repl {
             c4::ref<C4Document> doc = c4doc_get(db, docID, true, outError);
             if (doc && c4doc_selectRevision(doc, baseRevID, true, outError)) {
                 if (doc->selectedRev.body.buf) {
-                    return applyDelta(&doc->selectedRev, deltaJSON, outError);
+                    return applyDelta(&doc->selectedRev, deltaJSON, false, outError);
                 } else {
                     string msg = format("Couldn't apply delta: Don't have body of '%.*s' #%.*s [current is %.*s]",
                                         SPLAT(docID), SPLAT(baseRevID), SPLAT(doc->revID));

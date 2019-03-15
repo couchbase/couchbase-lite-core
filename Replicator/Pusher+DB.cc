@@ -280,7 +280,7 @@ namespace litecore { namespace repl {
             } else {
                 auto &bodyEncoder = msg.jsonBody();
                 if (sendLegacyAttachments)
-                    _db->writeRevWithLegacyAttachments(bodyEncoder, root,
+                    _db->encodeRevWithLegacyAttachments(bodyEncoder, root,
                                                        c4rev_getGeneration(request->revID));
                 else
                     bodyEncoder.writeValue(root);
@@ -382,13 +382,13 @@ namespace litecore { namespace repl {
             // If server needs legacy attachment layout, transform the bodies:
             Encoder enc;
             auto revPos = c4rev_getGeneration(request->revID);
-            _db->writeRevWithLegacyAttachments(enc, root, revPos);
+            _db->encodeRevWithLegacyAttachments(enc, root, revPos);
             legacyNew = enc.finishDoc();
             root = legacyNew.root().asDict();
 
             if (ancestorFlags & kRevHasAttachments) {
                 enc.reset();
-                _db->writeRevWithLegacyAttachments(enc, ancestor, revPos);
+                _db->encodeRevWithLegacyAttachments(enc, ancestor, revPos);
                 legacyOld = enc.finishDoc();
                 ancestor = legacyOld.root().asDict();
             }
