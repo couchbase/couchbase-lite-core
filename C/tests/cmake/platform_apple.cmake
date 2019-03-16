@@ -18,9 +18,17 @@ function(set_source_files)
 endfunction()
 
 function(setup_build)
+    target_link_libraries(
+        C4Tests PRIVATE
+        FleeceBase
+        Support
+        BLIPStatic
+        CivetWeb
+    )
+    
     if(BUILD_ENTERPRISE)
         target_link_libraries(
-            C4Tests PRIVATE  
+            C4Tests PRIVATE
             "-framework CoreML"
             "-framework Vision"
         )

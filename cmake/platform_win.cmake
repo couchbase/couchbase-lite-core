@@ -147,4 +147,13 @@ function(setup_rest_build)
     )
     target_include_directories(CivetWeb PRIVATE ../MSVC)
     target_include_directories(LiteCoreREST_Static PRIVATE ../MSVC)
+
+    # These actually cause issues on Linux due to multiply
+    # imported symbols at runtime
+    target_link_libraries(
+        LiteCoreREST PRIVATE
+        FleeceBase
+        Support
+        CivetWeb
+    )
 endfunction()

@@ -28,6 +28,10 @@ function(setup_build)
     target_link_libraries(
         C4Tests PRIVATE
         mbedcrypto
+        FleeceBase
+        Support
+        BLIPStatic
+        CivetWeb
     )
     
     add_custom_command(
