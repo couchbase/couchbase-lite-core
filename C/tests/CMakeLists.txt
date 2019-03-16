@@ -52,12 +52,7 @@ target_compile_definitions(
 
 target_link_libraries(
     C4Tests PRIVATE
-    LiteCore
     LiteCoreREST
-    CivetWeb
-    FleeceBase
-    Support
-    BLIPStatic
 )
 
 target_include_directories(

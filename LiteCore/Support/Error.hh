@@ -132,7 +132,7 @@ namespace litecore {
                          : (void)0)
 
 // DebugAssert is removed from release builds; use when 'e' test is too expensive
-#ifdef NDEBUG
+#ifndef DEBUG
 #define DebugAssert(e, ...)   do{ }while(0)
 #else
 #define DebugAssert(e, ...)   Assert(e, ##__VA_ARGS__)

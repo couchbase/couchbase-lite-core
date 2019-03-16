@@ -111,10 +111,6 @@ target_link_libraries(
     ${WHOLE_LIBRARY_FLAG} 
     LiteCoreREST_Static 
     ${NO_WHOLE_LIBRARY_FLAG} 
-    FleeceStatic 
-    BLIPStatic
-    CivetWeb
-    Support
 )
 
 target_link_libraries(
