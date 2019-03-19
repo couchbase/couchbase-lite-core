@@ -70,14 +70,15 @@ function(set_litecore_source_base)
         Replicator/CivetWebSocket.cc
         Replicator/CookieStore.cc
         Replicator/DatabaseCookies.cc
-        Replicator/DBWorker+Pull.cc
-        Replicator/DBWorker+Push.cc
-        Replicator/DBWorker.cc
+        Replicator/DBAccess.cc
         Replicator/IncomingBlob.cc
         Replicator/IncomingRev.cc
         Replicator/Puller.cc
+        Replicator/Puller+DB.cc
         Replicator/Pusher.cc
+        Replicator/Pusher+DB.cc
         Replicator/Replicator.cc
+        Replicator/Replicator+Checkpoints.cc
         Replicator/ReplicatorTypes.cc
         Replicator/Worker.cc
         LiteCore/Support/Logging.cc
