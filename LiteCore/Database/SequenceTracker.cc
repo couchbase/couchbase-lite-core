@@ -193,8 +193,10 @@ namespace litecore {
         if (!_changes.empty() || _numDocObservers > 0) {
             logInfo("addExternalTransaction from %s", other.loggingIdentifier().c_str());
             for (auto e = next(other._transaction->_placeholder); e != other._changes.end(); ++e) {
-                _lastSequence = e->sequence;
-                _documentChanged(e->docID, e->revID, e->sequence, e->bodySize);
+                if (!e->isPlaceholder()) {
+                    _lastSequence = e->sequence;
+                    _documentChanged(e->docID, e->revID, e->sequence, e->bodySize);
+                }
             }
             removeObsoleteEntries();
         }

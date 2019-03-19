@@ -194,7 +194,8 @@ namespace litecore {
                             _writeStringToken(str);
                         } else {
                             _writeUVarInt(size);
-                            _writer.write(str, size);
+                            if (size > 0)
+                                _writer.write(str, size);
                         }
                         break;
                     }

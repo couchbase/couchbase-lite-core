@@ -153,7 +153,7 @@ public:
 };
 
 
-N_WAY_TEST_CASE_METHOD(PerfTest, "Import iTunesMusicLibrary", "[Perf][C]") {
+N_WAY_TEST_CASE_METHOD(PerfTest, "Import iTunesMusicLibrary", "[Perf][C][.slow]") {
     Stopwatch st;
     auto numDocs = importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
     CHECK(numDocs == 12189);

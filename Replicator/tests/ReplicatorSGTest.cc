@@ -229,7 +229,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull Big Attachments", "[.SyncServer]")
 
 
 TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
-    const string originalRevID = "1-1489f923c4dca729178b3e3233458550d8dddf29";
+    const string originalRevID = "1-3cb9cfb09f3f0b5142e618553966ab73539b8888";
     importJSONLines(sFixturesDir + "names_100.json");
     replicate(kC4OneShot, kC4Disabled);
 
@@ -274,7 +274,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Conflict", "[.SyncServer]") {
 #endif
     REQUIRE(c4doc_selectCurrentRevision(doc));
     REQUIRE(c4doc_selectNextRevision(doc));
-	revID = C4STR("2-a486b2025bcea67d5456e29865cb32c3");
+	revID = C4STR("2-883a2dacc15171a466f76b9d2c39669b");
     CHECK(doc->selectedRev.revID == revID);
     CHECK((doc->selectedRev.flags & kRevIsConflict) != 0);
     CHECK(doc->selectedRev.body.size > 0);
@@ -316,7 +316,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Update Once-Conflicted Doc", "[.SyncServer]
 
     // Verify doc is updated on SG:
     auto body = sendRemoteRequest("GET", "doc");
-	C4Slice bodySlice = C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"answer\":42}");
+	C4Slice bodySlice = C4STR("{\"_id\":\"doc\",\"_rev\":\"3-ffff\",\"ans*wer\":42}");
     CHECK(C4Slice(body) == bodySlice);
 }
 
@@ -452,6 +452,100 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]
         }
         CHECK(error.code == 0);
         CHECK(n == kNumDocs);
+    }
+
+    C4Log("-------- %.3f sec with deltas, %.3f sec without; %.2fx speed",
+          timeWithDelta, timeWithoutDelta, timeWithoutDelta/timeWithDelta);
+}
+
+
+TEST_CASE_METHOD(ReplicatorAPITest, "Pull iTunes deltas from SG", "[.SyncServer][Delta]") {
+    flushScratchDatabase();
+    _logRemoteRequests = false;
+
+    C4Log("-------- Populating local db --------");
+    auto populateDB = [&]() {
+        TransactionHelper t(db);
+        importJSONLines(sFixturesDir + "iTunesMusicLibrary.json");
+    };
+    populateDB();
+    auto numDocs = c4db_getDocumentCount(db);
+
+    C4Log("-------- Pushing to SG --------");
+    replicate(kC4OneShot, kC4Disabled);
+
+    C4Log("-------- Updating docs on SG --------");
+    // Now update the docs on SG:
+    {
+        JSONEncoder enc;
+        enc.beginDict();
+        enc.writeKey("docs"_sl);
+        enc.beginArray();
+        for (int docNo = 0; docNo < numDocs; ++docNo) {
+            char docID[20];
+            sprintf(docID, "%07u", docNo + 1);
+            C4Error error;
+            c4::ref<C4Document> doc = c4doc_get(db, slice(docID), false, &error);
+            REQUIRE(doc);
+            Dict props = Value::fromData(doc->selectedRev.body).asDict();
+
+            enc.beginDict();
+            enc.writeKey("_id"_sl);
+            enc.writeString(docID);
+            enc.writeKey("_rev"_sl);
+            enc.writeString(doc->revID);
+            for (Dict::iterator i(props); i; ++i) {
+                enc.writeKey(i.keyString());
+                auto value = i.value();
+                if (i.keyString() == "Play Count"_sl)
+                    enc.writeInt(value.asInt() + 1);
+                else
+                    enc.writeValue(value);
+            }
+            enc.endDict();
+        }
+        enc.endArray();
+        enc.endDict();
+        sendRemoteRequest("POST", "_bulk_docs", enc.finish());
+    }
+
+    double timeWithDelta = 0, timeWithoutDelta = 0;
+    for (int pass = 1; pass <= 3; ++pass) {
+        if (pass == 3) {
+            C4Log("-------- DISABLING DELTA SYNC --------");
+            Encoder enc;
+            enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorOptionDisableDeltas));
+            enc.writeBool(true);
+            enc.endDict();
+            _options = AllocedDict(enc.finish());
+        }
+
+        C4Log("-------- PASS #%d: Repopulating local db --------", pass);
+        deleteAndRecreateDB();
+        populateDB();
+        C4Log("-------- PASS #%d: Pulling changes from SG --------", pass);
+        Stopwatch st;
+        replicate(kC4Disabled, kC4OneShot);
+        double time = st.elapsed();
+        C4Log("-------- PASS #%d: Pull took %.3f sec (%.0f docs/sec) --------", pass, time, numDocs/time);
+        if (pass == 2)
+            timeWithDelta = time;
+        else if (pass == 3)
+            timeWithoutDelta = time;
+
+        int n = 0;
+        C4Error error;
+        c4::ref<C4DocEnumerator> e = c4db_enumerateAllDocs(db, nullptr, &error);
+        while (c4enum_next(e, &error)) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            //CHECK(slice(info.docID).hasPrefix("doc-"_sl));
+            CHECK(slice(info.revID).hasPrefix("2-"_sl));
+            ++n;
+        }
+        CHECK(error.code == 0);
+        CHECK(n == numDocs);
     }
 
     C4Log("-------- %.3f sec with deltas, %.3f sec without; %.2fx speed",

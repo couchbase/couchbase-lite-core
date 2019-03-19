@@ -64,7 +64,7 @@ namespace litecore { namespace repl {
     }
 
 
-    Worker::Options::operator string() const {
+    Options::operator string() const {
         static const char* kModeNames[] = {"disabled", "passive", "one-shot", "continuous"};
         stringstream s;
         if (push != kC4Disabled)
@@ -81,6 +81,7 @@ namespace litecore { namespace repl {
     Worker::Worker(blip::Connection *connection,
                    Worker *parent,
                    const Options &options,
+                   std::shared_ptr<DBAccess> dbAccess,
                    const char *namePrefix)
     :Actor(string(namePrefix) + connection->name(),
            (parent ? parent->mailboxForChildren() : nullptr))
@@ -88,6 +89,7 @@ namespace litecore { namespace repl {
     ,_connection(connection)
     ,_parent(parent)
     ,_options(options)
+    ,_db(dbAccess)
     ,_progressNotificationLevel(options.progressLevel())
     ,_status{(connection->state() >= Connection::kConnected) ? kC4Idle : kC4Connecting}
     ,_loggingID(connection->name())
@@ -95,10 +97,8 @@ namespace litecore { namespace repl {
 
 
     Worker::Worker(Worker *parent, const char *namePrefix)
-    :Worker(parent->_connection, parent, parent->_options, namePrefix)
-    {
-
-    }
+    :Worker(parent->_connection, parent, parent->_options, parent->_db, namePrefix)
+    { }
 
 
     Worker::~Worker() {

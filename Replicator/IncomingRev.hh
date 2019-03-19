@@ -24,15 +24,15 @@
 #include <vector>
 
 namespace litecore { namespace repl {
-    class DBWorker;
     class IncomingBlob;
     class Puller;
+    class RevToInsert;
 
 
     /** Manages pulling a single document. */
     class IncomingRev : public Worker {
     public:
-        IncomingRev(Puller*, DBWorker*);
+        IncomingRev(Puller*);
 
         void handleRev(blip::MessageIn* revMessage) {
             enqueue(&IncomingRev::_handleRev, retained(revMessage));
@@ -65,7 +65,6 @@ namespace litecore { namespace repl {
 
         C4BlobStore *_blobStore;
         Puller* _puller;
-        DBWorker* _dbWorker;
         Retained<blip::MessageIn> _revMessage;
         Retained<RevToInsert> _rev;
         unsigned _pendingCallbacks {0};

@@ -1,5 +1,5 @@
 //
-// DBWorker+Pull.cc
+// Puller+DB.cc
 //
 // Copyright © 2019 Couchbase. All rights reserved.
 //
@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "DBWorker.hh"
+#include "Puller.hh"
 #include "ReplicatorTuning.hh"
 #include "IncomingRev.hh"
 #include "fleece/Fleece.hh"
@@ -37,8 +37,7 @@ namespace litecore { namespace repl {
 
     // Called by the Puller; handles a "changes" or "proposeChanges" message by checking which of
     // the changes don't exist locally, and returning a bit-vector indicating them.
-    void DBWorker::_findOrRequestRevs(Retained<MessageIn> req,
-                                     function<void(vector<bool>)> callback) {
+    vector<bool> Puller::findOrRequestRevs(Retained<MessageIn> req) {
         Signpost signpost(Signpost::get);
         // Iterate over the array in the message, seeing whether I have each revision:
         bool proposed = (req->property("Profile"_sl) == "proposeChanges"_sl);
@@ -55,12 +54,14 @@ namespace litecore { namespace repl {
         }
 
         if (!proposed)
-            _markRevsSyncedNow();   // make sure foreign ancestors are up to date
+            _db->markRevsSyncedNow();   // make sure foreign ancestors are up to date
 
         MessageBuilder response(req);
         response.compressed = true;
-        response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(_db);
-        if (!_disableBlobSupport)
+        _db->use([&](C4Database *db) {
+            response["maxHistory"_sl] = c4db_getMaxRevTreeDepth(db);
+        });
+        if (!_db->disableBlobSupport())
             response["blobs"_sl] = "true"_sl;
         if (!_disableDeltaSupport && !_announcedDeltaSupport) {
             response["deltas"_sl] = "true"_sl;
@@ -121,23 +122,22 @@ namespace litecore { namespace repl {
         }
         encoder.endArray();
 
-        if (callback)
-            callback(whichRequested);
-
         req->respond(response);
         logInfo("Responded to '%.*s' REQ#%llu w/request for %u revs",
             SPLAT(req->property("Profile"_sl)), req->number(), requested);
+
+        return whichRequested;
     }
 
 
     // Checks whether the revID (if any) is really current for the given doc.
     // Returns an HTTP-ish status code: 0=OK, 409=conflict, 500=internal error
-    int DBWorker::findProposedChange(slice docID, slice revID, slice parentRevID,
+    int Puller::findProposedChange(slice docID, slice revID, slice parentRevID,
                                      alloc_slice &outCurrentRevID)
     {
         C4Error err;
         //OPT: We don't need the document body, just its metadata, but there's no way to say that
-        c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
+        c4::ref<C4Document> doc = _db->getDoc(docID, &err);
         if (!doc) {
             if (isNotFoundError(err)) {
                 // Doc doesn't exist; it's a conflict if the peer thinks it does:
@@ -169,9 +169,9 @@ namespace litecore { namespace repl {
 
     // Returns true if revision exists; else returns false and sets ancestors to an array of
     // ancestor revisions I do have (empty if doc doesn't exist at all)
-    bool DBWorker::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
+    bool Puller::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
         C4Error err;
-        c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
+        c4::ref<C4Document> doc = _db->getDoc(docID, &err);
         if (!doc) {
             ancestors.resize(0);
             if (!isNotFoundError(err))
@@ -179,13 +179,11 @@ namespace litecore { namespace repl {
             return false;
         }
 
-        alloc_slice remoteRevID;
-        if (_remoteDBID)
-            remoteRevID = c4doc_getRemoteAncestor(doc, _remoteDBID);
+        alloc_slice remoteRevID = _db->getDocRemoteAncestor(doc);
 
         if (c4doc_selectRevision(doc, revID, false, &err)) {
             // I already have this revision. Make sure it's marked as current for this remote:
-            if (remoteRevID != revID && _remoteDBID)
+            if (remoteRevID != revID && _db->remoteDBID())
                 updateRemoteRev(doc);
             return true;
         }
@@ -212,157 +210,68 @@ namespace litecore { namespace repl {
 
 
     // Updates the doc to have the currently-selected rev marked as the remote
-    void DBWorker::updateRemoteRev(C4Document *doc) {
+    void Puller::updateRemoteRev(C4Document *doc) {
         slice revID = doc->selectedRev.revID;
         logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
-                   _remoteDBID, SPLAT(doc->docID), SPLAT(revID));
+                   _db->remoteDBID(), SPLAT(doc->docID), SPLAT(revID));
         C4Error error;
-        c4::Transaction t(_db);
-        bool ok = t.begin(&error)
-               && c4doc_setRemoteAncestor(doc, _remoteDBID, &error)
-               && c4doc_save(doc, 0, &error)
-               && t.commit(&error);
+        bool ok = _db->use<bool>([&](C4Database *db) {
+            c4::Transaction t(db);
+            return t.begin(&error)
+                   && c4doc_setRemoteAncestor(doc, _db->remoteDBID(), &error)
+                   && c4doc_save(doc, 0, &error)
+                   && t.commit(&error);
+        });
         if (!ok)
             warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
-                 _remoteDBID, SPLAT(doc->docID), SPLAT(revID), error.domain, error.code);
+                 _db->remoteDBID(), SPLAT(doc->docID), SPLAT(revID), error.domain, error.code);
     }
 
 
-#pragma mark - INSERTING & SYNCING REVISIONS:
-
-
-    fleece::Doc DBWorker::tempEncodeJSON(slice jsonBody, FLError *err) {
-        lock_guard<mutex> lock(_tempSKMutex);
-        Encoder enc;
-        enc.setSharedKeys(_tempSharedKeys);
-        enc.convertJSON(jsonBody);
-        Doc doc = enc.finishDoc();
-        if (!doc && err)
-            *err = enc.error();
-        return doc;
-    }
-
-
-    static bool containsAttachmentsProperty(slice json) {
-        if (!json.find("\"_attachments\":"_sl))
-            return false;
-        Doc doc = Doc::fromJSON(json);
-        return doc.root().asDict()["_attachments"] != nullptr;
-    }
-
-
-    atomic<unsigned> DBWorker::gNumDeltasApplied;
-
-
-    // Applies a delta to an existing revision.
-    Doc DBWorker::_applyDelta(const C4Revision *baseRevision,
-                              slice deltaJSON,
-                              C4Error *outError)
-    {
-        Dict srcRoot = Value::fromData(baseRevision->body, kFLTrusted).asDict();
-        if (!srcRoot) {
-            if (outError) *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptRevisionData, nullslice);
-            return {};
-        }
-        Doc legacy;
-        if (!_disableBlobSupport && containsAttachmentsProperty(deltaJSON)) {
-            // Delta refers to legacy attachments, so convert my base revision to have them:
-            Encoder enc;
-            writeRevWithLegacyAttachments(enc, srcRoot, 1);
-            legacy = enc.finishDoc();
-            srcRoot = legacy.root().asDict();
-        }
-
-        bool useDbSharedKeys = c4db_isInTransaction(_db);
-        FLEncoder enc;
-        if (useDbSharedKeys)
-            enc = c4db_getSharedFleeceEncoder(_db);
-        else {
-            enc = FLEncoder_New();
-            FLEncoder_SetSharedKeys(enc, _tempSharedKeys);
-        }
-        FLEncodeApplyingJSONDelta(srcRoot, deltaJSON, enc);
-        ++gNumDeltasApplied;
-        FLError flErr;
-        Doc result = FLEncoder_FinishDoc(enc, &flErr);
-        if (!result) {
-            if (outError) {
-                if (flErr == kFLInvalidData)
-                    *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptDelta, "Invalid delta"_sl);
-                else
-                    *outError = {FleeceDomain, flErr};
-            }
-        }
-        if (!useDbSharedKeys)
-            FLEncoder_Free(enc);
-        return result;
-    }
-
-
-    // Async version of _applyDelta -- called by IncomingRev
-    void DBWorker::_applyDelta(Retained<RevToInsert> rev,
-                               alloc_slice baseRevID,
-                               alloc_slice deltaJSON,
-                               std::function<void(Doc,C4Error)> callback)
-    {
-        Doc fleeceDoc;
-        C4Error c4err;
-        c4::ref<C4Document> doc = c4doc_get(_db, rev->docID, true, &c4err);
-        if (doc && c4doc_selectRevision(doc, baseRevID, true, &c4err)) {
-            if (doc->selectedRev.body.buf) {
-                fleeceDoc = _applyDelta(&doc->selectedRev, deltaJSON, &c4err);
-            } else {
-                // Don't have the body of the source revision. This might be because I'm in
-                // no-conflict mode and the peer is trying to push me a now-obsolete revision.
-                if (_options.noIncomingConflicts()) {
-                    c4err = {WebSocketDomain, 409};
-                } else {
-                    string msg = format("Couldn't apply delta: Don't have body of '%.*s' #%.*s [current is %.*s]",
-                                        SPLAT(rev->docID), SPLAT(baseRevID), SPLAT(doc->revID));
-                    warn("%s", msg.c_str());
-                    c4err = c4error_make(LiteCoreDomain, kC4ErrorDeltaBaseUnknown, slice(msg));
-                }
-            }
-        }
-        callback(fleeceDoc, c4err);
-    }
+#pragma mark - DELTAS:
 
 
     // Callback from c4doc_put() that applies a delta, during _insertRevisionsNow()
-    C4SliceResult DBWorker::applyDeltaCallback(const C4Revision *baseRevision,
-                                               C4Slice deltaJSON,
-                                               C4Error *outError)
+    C4SliceResult Puller::applyDeltaCallback(const C4Revision *baseRevision,
+                                             C4Slice deltaJSON,
+                                             C4Error *outError)
     {
-        Doc doc = _applyDelta(baseRevision, deltaJSON, outError);
+        Doc doc = _db->applyDelta(baseRevision, deltaJSON, true, outError);
         if (!doc)
             return {};
         alloc_slice body = doc.allocedData();
-        if (!_disableBlobSupport) {
+
+        if (!_db->disableBlobSupport()) {
             // After applying the delta, remove legacy attachment properties and any other
             // "_"-prefixed top level properties:
             Dict root = doc.root().asDict();
             if (c4doc_hasOldMetaProperties(root)) {
-                C4Error err;
-                FLSharedKeys sk = c4db_getFLSharedKeys(_db);
-                body = c4doc_encodeStrippingOldMetaProperties(root, sk, &err);
-                if (!body) {
-                    warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
-                    if (outError)
-                        *outError = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
-                }
+                _db->use([&](C4Database *db) {
+                    C4Error err;
+                    FLSharedKeys sk = c4db_getFLSharedKeys(db);
+                    body = c4doc_encodeStrippingOldMetaProperties(root, sk, &err);
+                    if (!body) {
+                        warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
+                        if (outError)
+                            *outError = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
+                    }
+                });
             }
         }
         return C4SliceResult(body);
     }
 
 
-    void DBWorker::insertRevision(RevToInsert *rev) {
+#pragma mark - INSERTING & SYNCING REVISIONS:
+
+
+    void Puller::insertRevision(RevToInsert *rev) {
         _revsToInsert.push(rev);
     }
 
 
     // Insert all the revisions queued for insertion, and sync the ones queued for syncing.
-    void DBWorker::_insertRevisionsNow() {
+    void Puller::_insertRevisionsNow() {
         auto revs = _revsToInsert.pop();
         if (!revs)
             return;
@@ -370,40 +279,27 @@ namespace litecore { namespace repl {
         logVerbose("Inserting %zu revs:", revs->size());
         Stopwatch st;
 
-        C4Error transactionErr;
-        c4::Transaction transaction(_db);
-        if (transaction.begin(&transactionErr)) {
+        C4Error transactionErr = _db->inTransaction([&](C4Database *db, C4Error*) {
             // Before updating docs, write all pending changes to remote ancestors, in case any
             // of them apply to the docs we're updating:
-            _markRevsSyncedNow();
-
-            SharedEncoder enc(c4db_getSharedFleeceEncoder(_db));
-            lock_guard<mutex> lock(_tempSKMutex);   // bodies have been encoded with _tempSharedKeys
+            _db->markRevsSyncedNow();
 
             for (RevToInsert *rev : *revs) {
                 // Add a revision:
-                vector<C4String> history;
-                history.reserve(10);
-                history.push_back(rev->revID);
-                for (const void *pos=rev->historyBuf.buf, *end = rev->historyBuf.end(); pos < end;) {
-                    auto comma = slice(pos, end).findByteOrEnd(',');
-                    history.push_back(slice(pos, comma));
-                    pos = comma + 1;
-                }
-
                 C4Error docErr;
                 bool docSaved;
 
                 if (rev->flags & kRevPurged) {
                     // Server says the document is no longer accessible, i.e. it's been
                     // removed from all channels the client has access to. Purge it.
-                    docSaved = c4db_purgeDoc(_db, rev->docID, &docErr);
+                    docSaved = c4db_purgeDoc(db, rev->docID, &docErr);
                     if (docSaved)
                         logVerbose("    {'%.*s' removed (purged)}", SPLAT(rev->docID));
                     else if (docErr.domain == LiteCoreDomain && docErr.code == kC4ErrorNotFound)
                         docSaved = true;
                 } else {
                     // Set up the parameter block for c4doc_put():
+                    vector<C4String> history = rev->history();
                     C4DocPutRequest put = {};
                     put.docID = rev->docID;
                     put.revFlags = rev->flags;
@@ -411,30 +307,25 @@ namespace litecore { namespace repl {
                     put.allowConflict = !rev->noConflicts;
                     put.history = history.data();
                     put.historyCount = history.size();
-                    put.remoteDBID = _remoteDBID;
+                    put.remoteDBID = _db->remoteDBID();
                     put.save = true;
 
                     alloc_slice bodyForDB;
-                    if (rev->deltaSrcRevID) {
-                        // If this is a delta, put the JSON delta in the body:
-                        bodyForDB = move(rev->body);
+                    if (rev->deltaSrc) {
+                        // If this is a delta, put the JSON delta in the put-request:
+                        bodyForDB = move(rev->deltaSrc);
                         put.deltaSourceRevID = rev->deltaSrcRevID;
                         put.deltaCB = [](void *context, const C4Revision *baseRev,
                                          C4Slice delta, C4Error *outError) {
-                            return ((DBWorker*)context)->applyDeltaCallback(baseRev, delta, outError);
+                            return ((Puller*)context)->applyDeltaCallback(baseRev, delta, outError);
                         };
                         put.deltaCBContext = this;
                         // Preserve rev body as the source of a future delta I may push back:
                         put.revFlags |= kRevKeepBody;
                     } else {
-                        // rev->body is Fleece, but sadly we can't insert it directly because it doesn't
-                        // use the db's SharedKeys, so all of its Dict keys are strings. Putting this into
-                        // the db would cause failures looking up those keys (see #156). So re-encode:
-                        Value root = Value::fromData(rev->body, kFLTrusted);
-                        enc.writeValue(root);
-                        bodyForDB = enc.finish();
-                        enc.reset();
-                        rev->body = nullslice;
+                        // Encode doc body using database's real sharedKeys:
+                        bodyForDB = _db->reEncodeForDatabase(rev->doc);
+                        rev->doc = nullptr;
                         // Preserve rev body as the source of a future delta I may push back:
                         if (bodyForDB.size >= tuning::kMinBodySizeForDelta && !_disableDeltaSupport)
                             put.revFlags |= kRevKeepBody;
@@ -442,7 +333,7 @@ namespace litecore { namespace repl {
                     put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
 
                     // The save!!
-                    c4::ref<C4Document> doc = c4doc_put(_db, &put, nullptr, &docErr);
+                    c4::ref<C4Document> doc = c4doc_put(db, &put, nullptr, &docErr);
                     if (doc) {
                         logVerbose("    {'%.*s' #%.*s <- %.*s} seq %llu",
                                    SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(rev->historyBuf),
@@ -463,6 +354,7 @@ namespace litecore { namespace repl {
                 }
 
                 if (!docSaved) {
+                    // Notify owner of a rev that failed:
                     alloc_slice desc = c4error_getDescription(docErr);
                     warn("Failed to insert '%.*s' #%.*s : %.*s",
                          SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(desc));
@@ -471,15 +363,13 @@ namespace litecore { namespace repl {
                         rev->owner->revisionInserted();
                 }
             }
-        }
+            return true;
+        });
 
-        // Commit transaction:
-        if (transaction.active() && transaction.commit(&transactionErr))
-            transactionErr = { };
-        else
+        if (transactionErr.code != 0)
             warn("Transaction failed!");
 
-        // Notify all revs (that didn't already fail):
+        // Notify owners of all revs that didn't already fail:
         for (auto rev : *revs) {
             if (rev->error.code == 0) {
                 rev->error = transactionErr;
@@ -488,7 +378,7 @@ namespace litecore { namespace repl {
             }
         }
 
-        if (transactionErr.code) {
+        if (transactionErr.code != 0) {
             gotError(transactionErr);
         } else {
             double t = st.elapsed();
