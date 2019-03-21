@@ -346,7 +346,7 @@ namespace litecore {
         _db.beginTransactionScope(this);
         if (active) {
             _db._logVerbose("begin transaction");
-            Signpost::begin(Signpost::transaction, uint32_t(size_t(this)));
+            Signpost::begin(Signpost::transaction, uintptr_t(this));
             _db._beginTransaction(this);
             _active = true;
             _db.transactionBegan(this);
@@ -359,8 +359,12 @@ namespace litecore {
         _db.transactionEnding(this, true);
         _active = false;
         _db._logVerbose("commit transaction");
+        Stopwatch st;
         _db._endTransaction(this, true);
-        Signpost::end(Signpost::transaction, uint32_t(size_t(this)));
+        auto elapsed = st.elapsed();
+        Signpost::end(Signpost::transaction, uintptr_t(this));
+        if (elapsed >= 0.1)
+            _db._logInfo("Committing transaction took %.3f sec", elapsed);
     }
 
 
@@ -370,7 +374,7 @@ namespace litecore {
         _active = false;
         _db._logVerbose("abort transaction");
         _db._endTransaction(this, false);
-        Signpost::end(Signpost::transaction, uint32_t(size_t(this)));
+        Signpost::end(Signpost::transaction, uintptr_t(this));
     }
 
 

@@ -38,7 +38,7 @@ namespace litecore { namespace repl {
 
         /* How long revisions can stay in the queue before triggering insertion into the DB,
            if the queue size hasn't reached kInsertionBatchSize yet. */
-        constexpr actor::Timer::duration kInsertionDelay = std::chrono::milliseconds(25);
+        constexpr actor::Timer::duration kInsertionDelay = std::chrono::milliseconds(20);
 
         /* Minimum document body size that will be considered for delta compression.
             (This is the size of the Fleece encoding, which is usually smaller than the JSON.)
@@ -54,13 +54,16 @@ namespace litecore { namespace repl {
         /* Maximum desirable number of incoming `rev` messages that aren't being handled yet.
             Past this number, the puller will stop handling or responding to `changes` messages,
             to attempt to stop getting more `revs`. */
-        constexpr unsigned kMaxPendingRevs = 1000;
+        constexpr unsigned kMaxPendingRevs = 200;
 
         /* Maximum number of incoming revisions to be reading/inserting at once.
             Each one is assigned an IncomingRev actor, so larger values increase memory usage
             and also parallelism (which can be bad: on Apple platforms, having too many active
             GCD dispatch queues results in lots of threads being created.) */
         constexpr unsigned kMaxActiveIncomingRevs = 100;
+
+        constexpr unsigned kMaxUnfinishedIncomingRevs = 200;
+
 
         //// Pusher:
 

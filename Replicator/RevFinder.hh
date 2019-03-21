@@ -1,0 +1,49 @@
+//
+// RevFinder.cc
+//
+//  Copyright (c) 2019 Couchbase. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+#pragma once
+#include "Replicator.hh"
+#include <vector>
+
+namespace litecore { namespace repl {
+
+    class RevFinder : public Worker {
+    public:
+        RevFinder(Replicator*);
+
+        void findOrRequestRevs(blip::MessageIn *msg,
+                               std::function<void(std::vector<bool>)> completion)
+        {
+            enqueue(&RevFinder::_findOrRequestRevs, retained(msg), completion);
+        }
+
+    private:
+        static const size_t kMaxPossibleAncestors = 10;
+
+        void _findOrRequestRevs(Retained<blip::MessageIn>,
+                                std::function<void(std::vector<bool>)> completion);
+        bool findAncestors(slice docID, slice revID,
+                           std::vector<alloc_slice> &ancestors);
+        int findProposedChange(slice docID, slice revID, slice parentRevID,
+                               alloc_slice &outCurrentRevID);
+        void updateRemoteRev(C4Document*);
+
+        bool _announcedDeltaSupport {false};                // Did I send "deltas:true" yet?
+    };
+
+} }

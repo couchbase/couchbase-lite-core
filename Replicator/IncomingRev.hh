@@ -45,7 +45,10 @@ namespace litecore { namespace repl {
         RevToInsert* rev() const                {return _rev;}
         alloc_slice remoteSequence() const      {return _remoteSequence;}
 
+        void revisionProvisionallyInserted();
         void revisionInserted()                 {enqueue(&IncomingRev::_revisionInserted);}
+
+        bool wasProvisionallyInserted() const   {return _provisionallyInserted;}
 
     protected:
         virtual std::string loggingClassName() const override  {
@@ -72,6 +75,8 @@ namespace litecore { namespace repl {
         Retained<IncomingBlob> _currentBlob;
         int _peerError {0};
         alloc_slice _remoteSequence;
+        uint32_t _serialNumber {0};
+        bool _provisionallyInserted {false};
     };
 
 } }

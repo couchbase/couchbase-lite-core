@@ -102,7 +102,6 @@ namespace litecore { namespace repl {
         bool _proposeChanges;
         bool _proposeChangesKnown;
         std::atomic<bool> _checkpointValid {true};
-        bool _disableDeltaSupport;
 
         C4SequenceNumber _lastSequence {0};       // Checkpointed last-sequence
         bool _gettingChanges {false};             // Waiting for _gotChanges() call?

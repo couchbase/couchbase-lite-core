@@ -524,15 +524,14 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Overflowed Rev Tree", "[Push]") {
     }
 
     runPullReplication();
+    compareDatabases();
+    validateCheckpoints(db2, db, "{\"remote\":50}");
 
     // Check that doc is not conflicted in db2:
     doc = c4doc_get(db2, "doc"_sl, true, nullptr);
     REQUIRE(doc);
     CHECK(doc->revID == "50-0000"_sl);
     CHECK(!c4doc_selectNextLeafRevision(doc, true, false, nullptr));
-
-    compareDatabases();
-    validateCheckpoints(db2, db, "{\"remote\":50}");
 }
 
 

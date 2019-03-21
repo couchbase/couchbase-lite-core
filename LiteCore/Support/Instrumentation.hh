@@ -30,27 +30,36 @@ namespace litecore {
     public:
         enum Type {
             transaction = 1,            // begin/end
-            get,
-            replication,                // begin/end
             replicatorConnect,
             replicatorDisconnect,
+            replication,                // begin/end
+            changesBackPressure, // 5
+            revsBackPressure,
+            handlingChanges,
+            handlingRev,
+            blipReceived,
+            blipSent,           // 10
         };
 
 #if LITECORE_SIGNPOSTS
-        static void mark(Type, uint32_t param =0);
-        static void begin(Type, uint32_t param =0);
-        static void end(Type, uint32_t param =0);
+        static void mark(Type, uintptr_t param =0, uintptr_t param2 =0);
+        static void begin(Type, uintptr_t param =0, uintptr_t param2 =0);
+        static void end(Type, uintptr_t param =0, uintptr_t param2 =0);
 
-        Signpost(Type t)            :_type(t) {begin(_type);}
-        ~Signpost()                 {end(_type);}
+        Signpost(Type t, uintptr_t param1 =0, uintptr_t param2 =0)
+        :_type(t), _param1(param1), _param2(param2)
+        {begin(_type, _param1, _param2);}
+        ~Signpost()
+        {end(_type, _param1, _param2);}
 
     private:
         Type const _type;
+        uintptr_t _param1, _param2;
 
 #else
-        static inline void mark(Type, uint32_t param =0)    { }
-        static inline void begin(Type, uint32_t param =0)   { }
-        static inline void end(Type, uint32_t param =0)     { }
+        static inline void mark(Type, uintptr_t param =0, uintptr_t param2 =0)    { }
+        static inline void begin(Type, uintptr_t param =0, uintptr_t param2 =0)   { }
+        static inline void end(Type, uintptr_t param =0, uintptr_t param2 =0)     { }
 
         Signpost(Type t)                                    { }
         ~Signpost()                                         { }

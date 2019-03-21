@@ -48,10 +48,31 @@ namespace litecore { namespace repl {
     }
 
 
+    access_lock<C4Database*>& DBAccess::insertionDB() {
+        if (!_insertionDB) {
+            use([&](C4Database *db) {
+                C4Error error;
+                C4Database *idb = c4db_openAgain(db, &error);
+                if (!idb) {
+                    logError("Couldn't open new db connection: %s", c4error_descriptionStr(error));
+                    idb = c4db_retain(db);
+                }
+                _insertionDB.reset(new access_lock<C4Database*>(move(idb)));
+            });
+        }
+        return *_insertionDB;
+    }
+
+
     DBAccess::~DBAccess() {
         use([&](C4Database *db) {
             c4db_free(db);
         });
+        if (_insertionDB) {
+            _insertionDB->use([&](C4Database *idb) {
+                c4db_free(idb);
+            });
+        }
     }
 
 
@@ -206,8 +227,10 @@ namespace litecore { namespace repl {
 
 
     bool DBAccess::updateTempSharedKeys() {
-        use([&](C4Database *db) {
-            SharedKeys dbsk = c4db_getFLSharedKeys(db);
+        auto db = _insertionDB.get();
+        if (!db) db = this;
+        db->use([&](C4Database *idb) {
+            SharedKeys dbsk = c4db_getFLSharedKeys(idb);
             lock_guard<mutex> lock(_tempSharedKeysMutex);
             if (!_tempSharedKeys || _tempSharedKeysInitialCount < dbsk.count()) {
                 // Copy database's sharedKeys:
@@ -239,8 +262,8 @@ namespace litecore { namespace repl {
         }
         if (reEncode) {
             // Re-encode with database's current sharedKeys:
-            return use<alloc_slice>([&](C4Database* db) {
-                SharedEncoder enc(c4db_getSharedFleeceEncoder(db));
+            return useForInsert<alloc_slice>([&](C4Database* idb) {
+                SharedEncoder enc(c4db_getSharedFleeceEncoder(idb));
                 enc.writeValue(doc.root());
                 alloc_slice data = enc.finish();
                 enc.reset();
@@ -278,16 +301,16 @@ namespace litecore { namespace repl {
         Doc result;
         FLError flErr;
         if (useDBSharedKeys) {
-            use([&](C4Database *db) {
-                FLEncoder enc = c4db_getSharedFleeceEncoder(db);
-                FLEncodeApplyingJSONDelta(srcRoot, deltaJSON, enc);
-                result = FLEncoder_FinishDoc(enc, &flErr);
+            useForInsert([&](C4Database *idb) {
+                SharedEncoder enc(c4db_getSharedFleeceEncoder(idb));
+                JSONDelta::apply(srcRoot, deltaJSON, enc);
+                result = enc.finishDoc(&flErr);
             });
         } else {
             Encoder enc;
             enc.setSharedKeys(tempSharedKeys());
-            FLEncodeApplyingJSONDelta(srcRoot, deltaJSON, enc);
-            result = FLEncoder_FinishDoc(enc, &flErr);
+            JSONDelta::apply(srcRoot, deltaJSON, enc);
+            result = enc.finishDoc(&flErr);
         }
         ++gNumDeltasApplied;
 
@@ -306,8 +329,8 @@ namespace litecore { namespace repl {
                              slice deltaJSON,
                              C4Error *outError)
     {
-        return use<Doc>([&](C4Database *db)->Doc {
-            c4::ref<C4Document> doc = c4doc_get(db, docID, true, outError);
+        return useForInsert<Doc>([&](C4Database *idb)->Doc {
+            c4::ref<C4Document> doc = c4doc_get(idb, docID, true, outError);
             if (doc && c4doc_selectRevision(doc, baseRevID, true, outError)) {
                 if (doc->selectedRev.body.buf) {
                     return applyDelta(&doc->selectedRev, deltaJSON, false, outError);
@@ -329,15 +352,15 @@ namespace litecore { namespace repl {
         if (!revs)
             return;
 
-        use([&](C4Database *db) {
-            Stopwatch st;
+        Stopwatch st;
+        useForInsert([&](C4Database *idb) {
             C4Error error;
-            c4::Transaction transaction(db);
+            c4::Transaction transaction(idb);
             if (transaction.begin(&error)) {
                 for (ReplicatedRev *rev : *revs) {
                     logDebug("Marking rev '%.*s' %.*s (#%llu) as synced to remote db %u",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, remoteDBID());
-                    if (!c4db_markSynced(db, rev->docID, rev->sequence, remoteDBID(), &error))
+                    if (!c4db_markSynced(idb, rev->docID, rev->sequence, remoteDBID(), &error))
                         warn("Unable to mark '%.*s' %.*s (#%llu) as synced; error %d/%d",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, error.domain, error.code);
                 }
@@ -356,6 +379,24 @@ namespace litecore { namespace repl {
     void DBAccess::markRevsSyncedLater() {
         _timer.fireAfter(tuning::kInsertionDelay);
     }
+
+
+    bool DBAccess::beginTransaction(C4Error *outError) {
+        return useForInsert<bool>([&](C4Database *idb) {
+            Assert(!_inTransaction);
+            _inTransaction = c4db_beginTransaction(idb, outError);
+            return _inTransaction;
+        });
+    }
+
+    bool DBAccess::endTransaction(bool commit, C4Error *outError) {
+        return useForInsert<bool>([&](C4Database *idb) {
+            Assert(_inTransaction);
+            _inTransaction = false;
+            return c4db_endTransaction(idb, commit, outError);
+        });
+    }
+
 
 
     atomic<unsigned> DBAccess::gNumDeltasApplied;

@@ -137,7 +137,7 @@ namespace litecore { namespace repl {
         void saveCheckpointNow();
 
         virtual void _childChangedStatus(Worker *task, Status taskStatus) override;
-        void notifyEndedDocuments();
+        void notifyEndedDocuments(int gen =actor::AnyGen);
         void _onBlobProgress(BlobProgress);
 
         // Checkpoints:

@@ -1,9 +1,19 @@
 //
 //  DBAccess.hh
-//  LiteCore
 //
-//  Created by Jens Alfke on 2/20/19.
-//  Copyright © 2019 Couchbase. All rights reserved.
+//  Copyright (c) 2019 Couchbase. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //
 
 #pragma once
@@ -28,6 +38,8 @@ namespace litecore { namespace repl {
 
         DBAccess(C4Database* db, bool disableBlobSupport);
         ~DBAccess();
+
+        DBAccess* newConnection(C4Error *outError);
 
         C4Document* getDoc(slice docID, C4Error *outError) const {
             return use<C4Document*>([&](C4Database *db) {
@@ -78,21 +90,6 @@ namespace litecore { namespace repl {
             inside a transaction. */
         alloc_slice reEncodeForDatabase(fleece::Doc);
 
-        /** Calls the callback inside a database transaction.
-            Callback should look like: (C4Database*,C4Error*)->bool */
-        template <class LAMBDA>
-        C4Error inTransaction(LAMBDA callback) {
-            C4Error err;
-            use([&](C4Database *db) {
-                c4::Transaction transaction(db);
-                if (transaction.begin(&err) && callback(db, &err) && transaction.commit(&err)) {
-                    updateTempSharedKeys();
-                    err = {};
-                }
-            });
-            return err;
-        }
-
         /** Applies a delta to an existing revision. */
         fleece::Doc applyDelta(const C4Revision *baseRevision,
                                slice deltaJSON,
@@ -115,12 +112,67 @@ namespace litecore { namespace repl {
 
         static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
 
+
+        template <class LAMBDA>
+        void useForInsert(LAMBDA callback) {
+            insertionDB().use(callback);
+        }
+
+        template <class RESULT, class LAMBDA>
+        RESULT useForInsert(LAMBDA callback) {
+            return insertionDB().use<RESULT>(callback);
+        }
+
+        /** Manages a transaction safely. The begin() method calls beginTransaction, then commit()
+            or abort() end it. If the object exits scope when it's been begun but not yet
+            ended, it aborts the transaction. */
+        class Transaction {
+        public:
+            Transaction(DBAccess &dba)
+            :_dba(dba)
+            { }
+
+            ~Transaction() {
+                if (_active)
+                    abort(nullptr);
+            }
+
+            bool begin(C4Error *error) {
+                assert(!_active);
+                if (!_dba.beginTransaction(error))
+                    return false;
+                _active = true;
+                return true;
+            }
+
+            bool end(bool commit, C4Error *error) {
+                assert(_active);
+                _active = false;
+                return _dba.endTransaction(commit, error);
+            }
+
+            bool commit(C4Error *error)     {return end(true, error);}
+            bool abort(C4Error *error)      {return end(false, error);}
+
+            bool active() const             {return _active;}
+
+        private:
+            DBAccess &_dba;
+            bool _active {false};
+        };
+
+
     protected:
         virtual std::string loggingClassName() const override;
     private:
+        friend class Transaction;
+        
         void markRevsSyncedLater();
         fleece::SharedKeys tempSharedKeys();
         bool updateTempSharedKeys();
+        bool beginTransaction(C4Error*);
+        bool endTransaction(bool commit, C4Error*);
+        access_lock<C4Database*>& insertionDB();
 
         C4BlobStore* const _blobStore;                      // Database's BlobStore
         fleece::SharedKeys _tempSharedKeys;                 // Keys used in tempEncodeJSON()
@@ -130,6 +182,8 @@ namespace litecore { namespace repl {
         bool const _disableBlobSupport;                     // Does replicator support blobs?
         actor::Batcher<ReplicatedRev> _revsToMarkSynced;    // Pending revs to be marked as synced
         actor::Timer _timer;                                // Implements Batcher delay
+        bool _inTransaction {false};
+        std::unique_ptr<access_lock<C4Database*>> _insertionDB;
     };
 
 } }

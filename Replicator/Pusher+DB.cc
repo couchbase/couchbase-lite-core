@@ -358,8 +358,8 @@ namespace litecore { namespace repl {
                                               bool sendLegacyAttachments)
     {
         alloc_slice delta;
-        if (!request->deltaOK || _disableDeltaSupport
-                              || revisionSize < tuning::kMinBodySizeForDelta)
+        if (!request->deltaOK || revisionSize < tuning::kMinBodySizeForDelta
+                              || _options.disableDeltaSupport())
             return delta;
 
         // Find an ancestor revision known to the server:

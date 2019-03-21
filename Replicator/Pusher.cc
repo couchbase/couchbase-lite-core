@@ -35,7 +35,6 @@ namespace litecore { namespace repl {
     :Worker(replicator, "Push")
     ,_continuous(_options.push == kC4Continuous)
     ,_skipDeleted(_options.skipDeleted())
-    ,_disableDeltaSupport(_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
     {
         if (passive()) {
             // Passive replicator always sends "changes"

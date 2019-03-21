@@ -112,6 +112,17 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[.SyncServer]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API Pull With Indexes", "[.SyncServer]") {
+    // Indexes slow down doc insertion, so they affect replicator performance.
+    REQUIRE(c4db_createIndex(db, C4STR("Name"),   C4STR("[[\".Name\"]]"), kC4FullTextIndex, nullptr, nullptr));
+    REQUIRE(c4db_createIndex(db, C4STR("Artist"), C4STR("[[\".Artist\"]]"), kC4ValueIndex, nullptr, nullptr));
+    REQUIRE(c4db_createIndex(db, C4STR("Year"),   C4STR("[[\".Year\"]]"), kC4ValueIndex, nullptr, nullptr));
+
+    _remoteDBName = kITunesDBName;
+    replicate(kC4Disabled, kC4OneShot);
+}
+
+
 TEST_CASE_METHOD(ReplicatorAPITest, "API Continuous Push", "[.SyncServer]") {
     importJSONLines(sFixturesDir + "names_100.json");
     _stopWhenIdle = true;

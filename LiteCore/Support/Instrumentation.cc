@@ -25,19 +25,23 @@
 namespace litecore {
 
 #if defined(__APPLE__) && LITECORE_SIGNPOSTS
-    void Signpost::mark(Type t, uint32_t param) {
+    enum Color {
+        blue, green, purple, orange, red    // used for last argument
+    };
+
+    void Signpost::mark(Type t, uintptr_t param, uintptr_t param2) {
         if (__builtin_available(macOS 10.12, iOS 10, tvOS 10, *))
-            kdebug_signpost(uint32_t(t), param, 0, 0, uint32_t(t));
+            kdebug_signpost(t, param, param2, 0, (t % 5));
     }
 
-    void Signpost::begin(Type t, uint32_t param) {
+    void Signpost::begin(Type t, uintptr_t param, uintptr_t param2) {
         if (__builtin_available(macOS 10.12, iOS 10, tvOS 10, *))
-            kdebug_signpost_start(uint32_t(t), param, 0, 0, uint32_t(t));
+            kdebug_signpost_start(t, param, param2, 0, (t % 5));
     }
 
-    void Signpost::end(Type t, uint32_t param) {
+    void Signpost::end(Type t, uintptr_t param, uintptr_t param2) {
         if (__builtin_available(macOS 10.12, iOS 10, tvOS 10, *))
-            kdebug_signpost_end(uint32_t(t), param, 0, 0, uint32_t(t));
+            kdebug_signpost_end(t, param, param2, 0, (t % 5));
     }
 #endif
 

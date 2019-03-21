@@ -18,11 +18,14 @@
 //  https://github.com/couchbase/couchbase-lite-core/wiki/Replication-Protocol
 
 #include "Puller.hh"
-#include "ReplicatorTuning.hh"
+#include "RevFinder.hh"
+#include "Inserter.hh"
 #include "IncomingRev.hh"
+#include "ReplicatorTuning.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "BLIP.hh"
+#include "Instrumentation.hh"
 #include <algorithm>
 
 using namespace std;
@@ -32,13 +35,12 @@ namespace litecore { namespace repl {
 
     Puller::Puller(Replicator *replicator)
     :Worker(replicator, "Pull")
+    ,_inserter(new Inserter(replicator))
+    ,_revFinder(new RevFinder(replicator))
     ,_returningRevs(this, &Puller::_revsFinished)
-    ,_revsToInsert(this, &Puller::_insertRevisionsNow,
-                   tuning::kInsertionDelay, tuning::kInsertionBatchSize)
 #if __APPLE__
     ,_revMailbox(nullptr, "Puller revisions")
 #endif
-    ,_disableDeltaSupport(_options.properties[kC4ReplicatorOptionDisableDeltas].asBool())
     {
         registerHandler("changes",          &Puller::handleChanges);
         registerHandler("proposeChanges",   &Puller::handleChanges);
@@ -57,6 +59,7 @@ namespace litecore { namespace repl {
         _missingSequences.clear(sinceSequence);
         logInfo("Starting pull from remote seq %.*s", SPLAT(_lastSequence));
 
+        Signpost::begin(Signpost::blipSent);
         MessageBuilder msg("subChanges"_sl);
         if (_lastSequence)
             msg["since"_sl] = _lastSequence;
@@ -105,6 +108,8 @@ namespace litecore { namespace repl {
                 gotError(progress.reply);
                 _fatalError = true;
             }
+            if (progress.state == MessageProgress::kComplete)
+                Signpost::end(Signpost::blipSent);
         });
     }
 
@@ -114,9 +119,11 @@ namespace litecore { namespace repl {
 
     // Receiving an incoming "changes" (or "proposeChanges") message
     void Puller::handleChanges(Retained<MessageIn> req) {
-        logVerbose("Received '%.*s' REQ#%llu (%zu queued; %u revs pending, %u active)",
+        logVerbose("Received '%.*s' REQ#%llu (%zu queued; %u revs pending, %u active, %u unfinished)",
                    SPLAT(req->property("Profile"_sl)), req->number(),
-                   _waitingChangesMessages.size(), _pendingRevMessages, _activeIncomingRevs);
+                   _waitingChangesMessages.size(), _pendingRevMessages,
+                   _activeIncomingRevs, _unfinishedIncomingRevs);
+        Signpost::begin(Signpost::handlingChanges, req->number());
         _waitingChangesMessages.push_back(move(req));
         handleMoreChanges();
     }
@@ -130,6 +137,17 @@ namespace litecore { namespace repl {
             _waitingChangesMessages.pop_front();
             handleChangesNow(req);
         }
+
+#ifdef LITECORE_SIGNPOSTS
+        bool backPressure = !_waitingRevMessages.empty();
+        if (_changesBackPressure != backPressure) {
+            _changesBackPressure = backPressure;
+            if (backPressure)
+                Signpost::begin(Signpost::changesBackPressure);
+            else
+                Signpost::end(Signpost::changesBackPressure);
+        }
+#endif
     }
 
 
@@ -143,10 +161,7 @@ namespace litecore { namespace repl {
         if (!changes && req->body() != "null"_sl) {
             warn("Invalid body of 'changes' message");
             req->respondWithError({"BLIP"_sl, 400, "Invalid JSON body"_sl});
-            return;
-        }
-
-        if (changes.empty()) {
+        } else if (changes.empty()) {
             // Empty array indicates we've caught up.
             logInfo("Caught up with remote changes");
             _caughtUp = true;
@@ -159,32 +174,39 @@ namespace litecore { namespace repl {
             req->respondWithError({"BLIP"_sl, 409});
         } else {
             // Pass the buck to the DBWorker so it can find the missing revs & request them:
-            vector<bool> which = findOrRequestRevs(req);
-            for (size_t i = 0; i < which.size(); ++i) {
-                bool requesting = (which[i]);
+            increment(_pendingRevFinderCalls);
+            _revFinder->findOrRequestRevs(req, asynchronize([=](vector<bool> which) {
+                decrement(_pendingRevFinderCalls);
+                for (size_t i = 0; i < which.size(); ++i) {
+                    bool requesting = (which[i]);
+                    if (nonPassive()) {
+                        // Add sequence to _missingSequences:
+                        auto change = changes[(unsigned)i].asArray();
+                        alloc_slice sequence(change[0].toJSON());
+                        uint64_t bodySize = requesting ? max(change[4].asUnsigned(), (uint64_t)1) : 0;
+                        if (sequence)
+                            _missingSequences.add(sequence, bodySize);
+                        else
+                            warn("Empty/invalid sequence in 'changes' message");
+                        addProgress({0, bodySize});
+                        if (!requesting)
+                            completedSequence(sequence); // Not requesting, just update checkpoint
+                    }
+                    if (requesting) {
+                        increment(_pendingRevMessages);
+                        // now awaiting a handleRev call...
+                    }
+                }
                 if (nonPassive()) {
-                    // Add sequence to _missingSequences:
-                    auto change = changes[(unsigned)i].asArray();
-                    alloc_slice sequence(change[0].toJSON());
-                    uint64_t bodySize = requesting ? max(change[4].asUnsigned(), (uint64_t)1) : 0;
-                    if (sequence)
-                        _missingSequences.add(sequence, bodySize);
-                    else
-                        warn("Empty/invalid sequence in 'changes' message");
-                    addProgress({0, bodySize});
-                    if (!requesting)
-                        completedSequence(sequence); // Not requesting, just update checkpoint
+                    logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
+                               _pendingRevMessages, _missingSequences.size());
                 }
-                if (requesting) {
-                    increment(_pendingRevMessages);
-                    // now awaiting a handleRev call...
-                }
-            }
-            if (nonPassive()) {
-                logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
-                           _pendingRevMessages, _missingSequences.size());
-            }
+                Signpost::end(Signpost::handlingChanges, req->number());
+            }));
+            return;
         }
+
+        Signpost::end(Signpost::handlingChanges, req->number());
     }
 
 
@@ -193,11 +215,14 @@ namespace litecore { namespace repl {
 
     // Received an incoming "rev" message, which contains a revision body to insert
     void Puller::handleRev(Retained<MessageIn> msg) {
-        if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs) {
+        if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
+                && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs) {
             startIncomingRev(msg);
         } else {
             logDebug("Delaying handling 'rev' message for '%.*s' [%zu waiting]",
                      SPLAT(msg->property("id"_sl)), _waitingRevMessages.size()+1);
+            if (_waitingRevMessages.empty())
+                Signpost::begin(Signpost::revsBackPressure);
             _waitingRevMessages.push_back(move(msg));
         }
     }
@@ -220,6 +245,7 @@ namespace litecore { namespace repl {
     void Puller::startIncomingRev(MessageIn *msg) {
         decrement(_pendingRevMessages);
         increment(_activeIncomingRevs);
+        increment(_unfinishedIncomingRevs);
         Retained<IncomingRev> inc;
         if (_spareIncomingRevs.empty()) {
             inc = new IncomingRev(this);
@@ -232,33 +258,46 @@ namespace litecore { namespace repl {
     }
 
 
+    // Callback from an IncomingRev when it's been written to the db but before the commit
+    void Puller::_revWasProvisionallyHandled() {
+        decrement(_activeIncomingRevs);
+        if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
+                    && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
+                    && !_waitingRevMessages.empty()) {
+            auto msg = _waitingRevMessages.front();
+            _waitingRevMessages.pop_front();
+            if (_waitingRevMessages.empty())
+                Signpost::end(Signpost::revsBackPressure);
+            startIncomingRev(msg);
+            handleMoreChanges();
+        }
+    }
+
     // Callback from an IncomingRev when it's finished (either added to db, or failed)
     void Puller::revWasHandled(IncomingRev *inc) {
         _returningRevs.push(inc);
     }
 
-    void Puller::_revsFinished() {
-        auto revs = _returningRevs.pop();
+    void Puller::_revsFinished(int gen) {
+        auto revs = _returningRevs.pop(gen);
         for (IncomingRev *inc : *revs) {
+            if (!inc->wasProvisionallyInserted())
+                _revWasProvisionallyHandled();
             auto rev = inc->rev();
             if (nonPassive())
                 completedSequence(inc->remoteSequence(), rev->errorIsTransient, false);
             finishedDocument(rev);
         }
+        decrement(_unfinishedIncomingRevs, (unsigned)revs->size());
+
         if (nonPassive())
             updateLastSequence();
-        _spareIncomingRevs.insert(_spareIncomingRevs.end(), revs->begin(), revs->end());
 
-        decrement(_activeIncomingRevs, (unsigned)revs->size());
-        bool any = false;
-        while (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs && !_waitingRevMessages.empty()) {
-            auto msg = _waitingRevMessages.front();
-            _waitingRevMessages.pop_front();
-            startIncomingRev(msg);
-            any = true;
-        }
-        if (!any)
-            handleMoreChanges();
+        ssize_t capacity = tuning::kMaxActiveIncomingRevs - _spareIncomingRevs.size();
+        if (capacity > 0)
+            _spareIncomingRevs.insert(_spareIncomingRevs.end(),
+                                      revs->begin(),
+                                      revs->begin() + min(size_t(capacity), revs->size()));
     }
 
 
@@ -290,6 +329,11 @@ namespace litecore { namespace repl {
     }
 
 
+    void Puller::insertRevision(RevToInsert *rev) {
+        _inserter->insertRevision(rev);
+    }
+
+
 #pragma mark - STATUS / PROGRESS:
 
 
@@ -306,7 +350,8 @@ namespace litecore { namespace repl {
         } else if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
                 || _pendingRevMessages > 0
-                || _activeIncomingRevs > 0) {
+                || _unfinishedIncomingRevs > 0
+                || _pendingRevFinderCalls > 0) {
             level = kC4Busy;
         } else if (_options.pull == kC4Continuous || isOpenServer()) {
             const_cast<Puller*>(this)->_spareIncomingRevs.clear();

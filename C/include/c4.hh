@@ -112,4 +112,8 @@ namespace c4 {
     static inline fleece::Doc getFleeceDoc(C4Document *doc) {
         return fleece::Doc(c4doc_createFleeceDoc(doc), false);
     }
+
+
+#define c4error_descriptionStr(ERR)     alloc_slice(c4error_getDescription(ERR)).asString().c_str()
+    
 }

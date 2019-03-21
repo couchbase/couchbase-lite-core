@@ -78,7 +78,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_start() {
         Assert(_connectionState == Connection::kClosed);
-        Signpost::begin(Signpost::replication, uint32_t(size_t(this)));
+        Signpost::begin(Signpost::replication, uintptr_t(this));
         _connectionState = Connection::kConnecting;
         connection()->start();
         // Now wait for _onConnect or _onClose...
@@ -225,7 +225,7 @@ namespace litecore { namespace repl {
             _pusher = nullptr;
             _puller = nullptr;
             _db.reset();
-            Signpost::end(Signpost::replication, uint32_t(size_t(this)));
+            Signpost::end(Signpost::replication, uintptr_t(this));
         }
         if (_delegate) {
             // Notify the delegate of the current status, but not too often:
@@ -269,8 +269,8 @@ namespace litecore { namespace repl {
     }
 
 
-    void Replicator::notifyEndedDocuments() {
-        auto docs = _docsEnded.pop();
+    void Replicator::notifyEndedDocuments(int gen) {
+        auto docs = _docsEnded.pop(gen);
         if (docs && !docs->empty() && _delegate)
             _delegate->replicatorDocumentsEnded(this, *docs);
     }
@@ -307,7 +307,7 @@ namespace litecore { namespace repl {
 
     void Replicator::_onConnect() {
         logInfo("Connected!");
-        Signpost::mark(Signpost::replicatorConnect, uint32_t(size_t(this)));
+        Signpost::mark(Signpost::replicatorConnect, uintptr_t(this));
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
             if (_options.push > kC4Passive || _options.pull > kC4Passive)
@@ -319,7 +319,7 @@ namespace litecore { namespace repl {
     void Replicator::_onClose(Connection::CloseStatus status, Connection::State state) {
         logInfo("Connection closed with %-s %d: \"%.*s\" (state=%d)",
             status.reasonName(), status.code, SPLAT(status.message), _connectionState);
-        Signpost::mark(Signpost::replicatorDisconnect, uint32_t(size_t(this)));
+        Signpost::mark(Signpost::replicatorDisconnect, uintptr_t(this));
 
         bool closedByPeer = (_connectionState != Connection::kClosing);
         _connectionState = state;
@@ -415,10 +415,12 @@ namespace litecore { namespace repl {
         logVerbose("Requesting remote checkpoint");
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = _checkpointDocID;
+        Signpost::begin(Signpost::blipSent);
         sendRequest(msg, [this](MessageProgress progress) {
             // ...after the checkpoint is received:
             if (progress.state != MessageProgress::kComplete)
                 return;
+            Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
             Checkpoint remoteCheckpoint;
 
@@ -484,9 +486,11 @@ namespace litecore { namespace repl {
         msg["client"_sl] = _checkpointDocID;
         msg["rev"_sl] = _checkpointRevID;
         msg << json;
+        Signpost::begin(Signpost::blipSent);
         sendRequest(msg, [=](MessageProgress progress) {
             if (progress.state != MessageProgress::kComplete)
                 return;
+            Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
             if (response->isError()) {
                 gotError(response);

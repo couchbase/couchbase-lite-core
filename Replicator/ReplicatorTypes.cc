@@ -83,10 +83,15 @@ namespace litecore { namespace repl {
     }
 
 
-    void RevToInsert::trim() {
-        historyBuf.reset();
+    void RevToInsert::trimBody() {
         doc = nullptr;
+        historyBuf.reset();
         deltaSrc.reset();
+        deltaSrcRevID.reset();
+    }
+
+    void RevToInsert::trim() {
+        trimBody();
         owner = nullptr;
     }
 

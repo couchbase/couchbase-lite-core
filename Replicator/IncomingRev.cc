@@ -21,6 +21,7 @@
 #include "Puller.hh"
 #include "StringUtil.hh"
 #include "c4Document+Fleece.h"
+#include "Instrumentation.hh"
 #include "BLIP.hh"
 #include <deque>
 #include <set>
@@ -37,11 +38,15 @@ namespace litecore { namespace repl {
     ,_puller(puller)
     {
         _important = false;
+        static atomic<uint32_t> sRevSignpostCount {0};
+        _serialNumber = ++sRevSignpostCount;
     }
 
 
     // Read the 'rev' message, on my actor thread:
     void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
+        Signpost::begin(Signpost::handlingRev, _serialNumber);
+
         DebugAssert(!_revMessage);
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
 
@@ -85,14 +90,17 @@ namespace litecore { namespace repl {
         if (!_rev->historyBuf && c4rev_getGeneration(_rev->revID) > 1)
             warn("Server sent no history with '%.*s' #%.*s", SPLAT(_rev->docID), SPLAT(_rev->revID));
 
-        auto jsonBody = _revMessage->body();
+        auto jsonBody = _revMessage->extractBody();
+
+        if (_revMessage->noReply())
+            _revMessage = nullptr;
 
         if (_rev->deltaSrcRevID == nullslice) {
             // It's not a delta. Convert body to Fleece and process:
             FLError err;
             Doc fleeceDoc = _db->tempEncodeJSON(jsonBody, &err);
             processBody(fleeceDoc, {FleeceDomain, err});
-        } else if (_options.pullValidator || _revMessage->body().contains("\"digest\""_sl)) {
+        } else if (_options.pullValidator || jsonBody.contains("\"digest\""_sl)) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, or it may contain new blobs to download.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",
@@ -220,7 +228,14 @@ namespace litecore { namespace repl {
     void IncomingRev::insertRevision() {
         Assert(_pendingBlobs.empty() && !_currentBlob);
         increment(_pendingCallbacks);
+        //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);
+    }
+
+
+    void IncomingRev::revisionProvisionallyInserted() {
+        _provisionallyInserted = true;
+        _puller->revWasProvisionallyHandled();
     }
 
 
@@ -231,19 +246,20 @@ namespace litecore { namespace repl {
 
 
     void IncomingRev::finish() {
-        if (!_revMessage->noReply()) {
+        if (_revMessage) {
             MessageBuilder response(_revMessage);
             if (_rev->error.code != 0)
                 response.makeError(c4ToBLIPError(_rev->error));
             _revMessage->respond(response);
+            _revMessage = nullptr;
         }
-        
+        Signpost::end(Signpost::handlingRev, _serialNumber);
+
         if (_rev->error.code == 0 && _peerError)
             _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
 
         // Free up memory now that I'm done:
         Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
-        _revMessage = nullptr;
         _currentBlob = nullptr;
         _pendingBlobs.clear();
         _rev->trim();

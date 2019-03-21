@@ -1,5 +1,5 @@
 //
-// Puller+DB.cc
+// RevFinder.cc
 //
 // Copyright © 2019 Couchbase. All rights reserved.
 //
@@ -16,7 +16,7 @@
 // limitations under the License.
 //
 
-#include "Puller.hh"
+#include "RevFinder.hh"
 #include "ReplicatorTuning.hh"
 #include "IncomingRev.hh"
 #include "fleece/Fleece.hh"
@@ -34,11 +34,16 @@ using namespace litecore::blip;
 
 namespace litecore { namespace repl {
 
+    RevFinder::RevFinder(Replicator *replicator)
+    :Worker(replicator, "RevFinder")
+    { }
+
 
     // Called by the Puller; handles a "changes" or "proposeChanges" message by checking which of
     // the changes don't exist locally, and returning a bit-vector indicating them.
-    vector<bool> Puller::findOrRequestRevs(Retained<MessageIn> req) {
-        Signpost signpost(Signpost::get);
+    void RevFinder::_findOrRequestRevs(Retained<MessageIn> req,
+                                       std::function<void(std::vector<bool>)> completion)
+    {
         // Iterate over the array in the message, seeing whether I have each revision:
         bool proposed = (req->property("Profile"_sl) == "proposeChanges"_sl);
         auto changes = req->JSONBody().asArray();
@@ -63,7 +68,7 @@ namespace litecore { namespace repl {
         });
         if (!_db->disableBlobSupport())
             response["blobs"_sl] = "true"_sl;
-        if (!_disableDeltaSupport && !_announcedDeltaSupport) {
+        if ( !_announcedDeltaSupport && !_options.disableDeltaSupport()) {
             response["deltas"_sl] = "true"_sl;
             _announcedDeltaSupport = true;
         }
@@ -126,13 +131,13 @@ namespace litecore { namespace repl {
         logInfo("Responded to '%.*s' REQ#%llu w/request for %u revs",
             SPLAT(req->property("Profile"_sl)), req->number(), requested);
 
-        return whichRequested;
+        completion(move(whichRequested));
     }
 
 
     // Checks whether the revID (if any) is really current for the given doc.
     // Returns an HTTP-ish status code: 0=OK, 409=conflict, 500=internal error
-    int Puller::findProposedChange(slice docID, slice revID, slice parentRevID,
+    int RevFinder::findProposedChange(slice docID, slice revID, slice parentRevID,
                                      alloc_slice &outCurrentRevID)
     {
         C4Error err;
@@ -169,7 +174,7 @@ namespace litecore { namespace repl {
 
     // Returns true if revision exists; else returns false and sets ancestors to an array of
     // ancestor revisions I do have (empty if doc doesn't exist at all)
-    bool Puller::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
+    bool RevFinder::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
         C4Error err;
         c4::ref<C4Document> doc = _db->getDoc(docID, &err);
         if (!doc) {
@@ -188,8 +193,9 @@ namespace litecore { namespace repl {
             return true;
         }
 
+        bool disableDeltaSupport = _options.disableDeltaSupport();
         auto addAncestor = [&]() {
-            if (_disableDeltaSupport || c4doc_hasRevisionBody(doc))  // need body for deltas
+            if (disableDeltaSupport || c4doc_hasRevisionBody(doc))  // need body for deltas
                 ancestors.emplace_back(doc->selectedRev.revID);
         };
 
@@ -210,7 +216,7 @@ namespace litecore { namespace repl {
 
 
     // Updates the doc to have the currently-selected rev marked as the remote
-    void Puller::updateRemoteRev(C4Document *doc) {
+    void RevFinder::updateRemoteRev(C4Document *doc) {
         slice revID = doc->selectedRev.revID;
         logInfo("Updating remote #%u's rev of '%.*s' to %.*s",
                    _db->remoteDBID(), SPLAT(doc->docID), SPLAT(revID));
@@ -226,166 +232,5 @@ namespace litecore { namespace repl {
             warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
                  _db->remoteDBID(), SPLAT(doc->docID), SPLAT(revID), error.domain, error.code);
     }
-
-
-#pragma mark - DELTAS:
-
-
-    // Callback from c4doc_put() that applies a delta, during _insertRevisionsNow()
-    C4SliceResult Puller::applyDeltaCallback(const C4Revision *baseRevision,
-                                             C4Slice deltaJSON,
-                                             C4Error *outError)
-    {
-        Doc doc = _db->applyDelta(baseRevision, deltaJSON, true, outError);
-        if (!doc)
-            return {};
-        alloc_slice body = doc.allocedData();
-
-        if (!_db->disableBlobSupport()) {
-            // After applying the delta, remove legacy attachment properties and any other
-            // "_"-prefixed top level properties:
-            Dict root = doc.root().asDict();
-            if (c4doc_hasOldMetaProperties(root)) {
-                _db->use([&](C4Database *db) {
-                    C4Error err;
-                    FLSharedKeys sk = c4db_getFLSharedKeys(db);
-                    body = c4doc_encodeStrippingOldMetaProperties(root, sk, &err);
-                    if (!body) {
-                        warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
-                        if (outError)
-                            *outError = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
-                    }
-                });
-            }
-        }
-        return C4SliceResult(body);
-    }
-
-
-#pragma mark - INSERTING & SYNCING REVISIONS:
-
-
-    void Puller::insertRevision(RevToInsert *rev) {
-        _revsToInsert.push(rev);
-    }
-
-
-    // Insert all the revisions queued for insertion, and sync the ones queued for syncing.
-    void Puller::_insertRevisionsNow() {
-        auto revs = _revsToInsert.pop();
-        if (!revs)
-            return;
-
-        logVerbose("Inserting %zu revs:", revs->size());
-        Stopwatch st;
-
-        C4Error transactionErr = _db->inTransaction([&](C4Database *db, C4Error*) {
-            // Before updating docs, write all pending changes to remote ancestors, in case any
-            // of them apply to the docs we're updating:
-            _db->markRevsSyncedNow();
-
-            for (RevToInsert *rev : *revs) {
-                // Add a revision:
-                C4Error docErr;
-                bool docSaved;
-
-                if (rev->flags & kRevPurged) {
-                    // Server says the document is no longer accessible, i.e. it's been
-                    // removed from all channels the client has access to. Purge it.
-                    docSaved = c4db_purgeDoc(db, rev->docID, &docErr);
-                    if (docSaved)
-                        logVerbose("    {'%.*s' removed (purged)}", SPLAT(rev->docID));
-                    else if (docErr.domain == LiteCoreDomain && docErr.code == kC4ErrorNotFound)
-                        docSaved = true;
-                } else {
-                    // Set up the parameter block for c4doc_put():
-                    vector<C4String> history = rev->history();
-                    C4DocPutRequest put = {};
-                    put.docID = rev->docID;
-                    put.revFlags = rev->flags;
-                    put.existingRevision = true;
-                    put.allowConflict = !rev->noConflicts;
-                    put.history = history.data();
-                    put.historyCount = history.size();
-                    put.remoteDBID = _db->remoteDBID();
-                    put.save = true;
-
-                    alloc_slice bodyForDB;
-                    if (rev->deltaSrc) {
-                        // If this is a delta, put the JSON delta in the put-request:
-                        bodyForDB = move(rev->deltaSrc);
-                        put.deltaSourceRevID = rev->deltaSrcRevID;
-                        put.deltaCB = [](void *context, const C4Revision *baseRev,
-                                         C4Slice delta, C4Error *outError) {
-                            return ((Puller*)context)->applyDeltaCallback(baseRev, delta, outError);
-                        };
-                        put.deltaCBContext = this;
-                        // Preserve rev body as the source of a future delta I may push back:
-                        put.revFlags |= kRevKeepBody;
-                    } else {
-                        // Encode doc body using database's real sharedKeys:
-                        bodyForDB = _db->reEncodeForDatabase(rev->doc);
-                        rev->doc = nullptr;
-                        // Preserve rev body as the source of a future delta I may push back:
-                        if (bodyForDB.size >= tuning::kMinBodySizeForDelta && !_disableDeltaSupport)
-                            put.revFlags |= kRevKeepBody;
-                    }
-                    put.allocedBody = {(void*)bodyForDB.buf, bodyForDB.size};
-
-                    // The save!!
-                    c4::ref<C4Document> doc = c4doc_put(db, &put, nullptr, &docErr);
-                    if (doc) {
-                        logVerbose("    {'%.*s' #%.*s <- %.*s} seq %llu",
-                                   SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(rev->historyBuf),
-                                   doc->selectedRev.sequence);
-                        docSaved = true;
-                        rev->sequence = doc->selectedRev.sequence;
-                        if (doc->selectedRev.flags & kRevIsConflict) {
-                            // Note that rev was inserted but caused a conflict:
-                            logInfo("Created conflict with '%.*s' #%.*s",
-                                SPLAT(rev->docID), SPLAT(rev->revID));
-                            rev->flags |= kRevIsConflict;
-                            rev->isWarning = true;
-                            DebugAssert(put.allowConflict);
-                        }
-                    } else {
-                        docSaved = false;
-                    }
-                }
-
-                if (!docSaved) {
-                    // Notify owner of a rev that failed:
-                    alloc_slice desc = c4error_getDescription(docErr);
-                    warn("Failed to insert '%.*s' #%.*s : %.*s",
-                         SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(desc));
-                    rev->error = docErr;
-                    if (rev->owner)
-                        rev->owner->revisionInserted();
-                }
-            }
-            return true;
-        });
-
-        if (transactionErr.code != 0)
-            warn("Transaction failed!");
-
-        // Notify owners of all revs that didn't already fail:
-        for (auto rev : *revs) {
-            if (rev->error.code == 0) {
-                rev->error = transactionErr;
-                if (rev->owner)
-                    rev->owner->revisionInserted();
-            }
-        }
-
-        if (transactionErr.code != 0) {
-            gotError(transactionErr);
-        } else {
-            double t = st.elapsed();
-            logInfo("Inserted %zu revs in %.2fms (%.0f/sec)", revs->size(), t*1000, revs->size()/t);
-        }
-    }
-
-
 
 } }

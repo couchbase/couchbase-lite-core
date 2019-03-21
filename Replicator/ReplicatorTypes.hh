@@ -100,6 +100,7 @@ namespace litecore { namespace repl {
 
         Dir dir() const override                    {return Dir::kPulling;}
         void trim() override;
+        void trimBody();
 
         std::vector<C4Slice> history();
 
