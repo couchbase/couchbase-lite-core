@@ -1,0 +1,11 @@
+# 'Fork' app integration with Github issues
+#
+# (note that '\' need to be escaped).
+
+[issuetracker "GitHub"]
+  regex = "#(\\d\\d+)"
+  url = "https://github.com/couchbase/couchbase-lite-core/issues/$1"
+
+[issuetracker "Github cross-project"]
+  regex = "([-\\w]+)/([-\\w]+)#(\\d+)\\b"
+  url = "https://github.com/$1/$2/issues/$3"
