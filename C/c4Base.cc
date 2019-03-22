@@ -373,6 +373,12 @@ void c4log_setLevel(C4LogDomain c4Domain, C4LogLevel level) noexcept {
 }
 
 
+bool c4log_willLog(C4LogDomain c4Domain, C4LogLevel level) C4API {
+    auto domain = (LogDomain*)c4Domain;
+    return domain->willLog((LogLevel)level);
+}
+
+
 void c4log_warnOnErrors(bool warn) noexcept {
     error::sWarnOnError = warn;
 }

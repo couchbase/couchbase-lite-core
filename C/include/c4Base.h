@@ -249,6 +249,14 @@ const char* c4log_getDomainName(C4LogDomain C4NONNULL) C4API;
 /** Returns the current log level of a domain, the minimum level of message it will log. */
 C4LogLevel c4log_getLevel(C4LogDomain C4NONNULL) C4API;
 
+/** Returns true if logging to this domain at this level will have an effect.
+    This is called by the C4Log macros (below), to skip the possibly-expensive evaluation of
+    parameters if nothing will be logged anyway.
+    (This is not the same as comparing c4log_getLevel, because even if the domain's level
+    indicates it would log, logging could still be suppressed by the global callbackLevel or
+    binaryFileLevel.) */
+bool c4log_willLog(C4LogDomain C4NONNULL, C4LogLevel) C4API;
+
 /** Changes the level of the given log domain.
     This setting is global to the entire process.
     Logging is further limited by the levels assigned to the current callback and/or binary file.
@@ -274,7 +282,7 @@ void c4slog(C4LogDomain domain C4NONNULL, C4LogLevel level, C4String msg) C4API;
 
 // Convenient aliases for c4log:
 #define C4LogToAt(DOMAIN, LEVEL, FMT, ...)        \
-        {if (c4log_getLevel(DOMAIN) <= LEVEL)   \
+        {if (c4log_willLog(DOMAIN, LEVEL))   \
             c4log(DOMAIN, LEVEL, FMT, ## __VA_ARGS__);}
 #define C4Debug(FMT, ...)           C4LogToAt(kC4DefaultLog, kC4LogDebug,   FMT, ## __VA_ARGS__)
 #define C4Log(FMT, ...)             C4LogToAt(kC4DefaultLog, kC4LogInfo,    FMT, ## __VA_ARGS__)

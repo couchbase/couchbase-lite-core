@@ -16,6 +16,7 @@ c4log_setBinaryFileLevel
 c4log_getDomain
 c4log_getDomainName
 c4log_warnOnErrors
+c4log_willLog
 
 c4error_make
 c4error_getMessage
