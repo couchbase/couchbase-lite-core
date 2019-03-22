@@ -34,29 +34,23 @@ namespace litecore { namespace repl {
     public:
         IncomingRev(Puller*);
 
+        // Called by the Puller:
         void handleRev(blip::MessageIn* revMessage) {
             enqueue(&IncomingRev::_handleRev, retained(revMessage));
         }
-
-        bool nonPassive() const                 {return _options.pull > kC4Passive;}
-
-        static bool shouldCompress(fleece::Dict meta);
-
         RevToInsert* rev() const                {return _rev;}
         alloc_slice remoteSequence() const      {return _remoteSequence;}
+        bool wasProvisionallyInserted() const   {return _provisionallyInserted;}
 
+        // Called by the Inserter:
         void revisionProvisionallyInserted();
         void revisionInserted()                 {enqueue(&IncomingRev::_revisionInserted);}
 
-        bool wasProvisionallyInserted() const   {return _provisionallyInserted;}
-
     protected:
-        virtual std::string loggingClassName() const override  {
-            return _options.pull >= kC4OneShot ? "IncomingRev" : "incomingrev";
-        }
         ActivityLevel computeActivityLevel() const override;
 
     private:
+        bool nonPassive() const                 {return _options.pull > kC4Passive;}
         void _handleRev(Retained<blip::MessageIn>);
         void gotDeltaSrc(alloc_slice deltaSrcBody);
         void processBody(fleece::Doc, C4Error);

@@ -19,6 +19,8 @@
 #pragma once
 #include "c4Socket.h"
 
+/** SocketFactory that uses the civetweb HTTP/WebSocket library.
+    Used by LiteCore unit tests and the `cblite` command-line tool. */
 extern const C4SocketFactory C4CivetWebSocketFactory;
 
 void RegisterC4CivetWebSocketFactory();

@@ -22,10 +22,14 @@
 
 namespace litecore { namespace repl {
 
+    /** Used by Puller to check which revisions in a "revs" message are new and should be
+        pulled, and send the response to the message. */
     class RevFinder : public Worker {
     public:
         RevFinder(Replicator*);
 
+        /** Asynchronously processes a "revs" message, sends the response, and calls the
+            completion handler with a bit-vector indicating which revs were requested. */
         void findOrRequestRevs(blip::MessageIn *msg,
                                std::function<void(std::vector<bool>)> completion)
         {

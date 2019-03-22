@@ -108,6 +108,14 @@ namespace litecore { namespace repl {
     }
 
 
+    string Worker::loggingClassName() const  {
+        string className = Logging::loggingClassName();
+        if (_options.pull < kC4OneShot)
+            toLowercase(className);
+        return className;
+    }
+
+
     void Worker::sendRequest(blip::MessageBuilder& builder, MessageProgressCallback callback) {
         if (callback) {
             increment(_pendingResponseCount);

@@ -30,6 +30,7 @@ namespace litecore { namespace repl {
     class Inserter;
     class RevFinder;
 
+    /** Top-level object managing the pull side of replication (receiving revisions.) */
     class Puller : public Worker {
     public:
         Puller(Replicator*);
@@ -46,10 +47,6 @@ namespace litecore { namespace repl {
         void insertRevision(RevToInsert *rev);
 
     protected:
-        virtual std::string loggingClassName() const override  {
-            return _options.pull >= kC4OneShot ? "Pull" : "pull";
-        }
-
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
         virtual void _childChangedStatus(Worker *task, Status) override;
         virtual ActivityLevel computeActivityLevel() const override;

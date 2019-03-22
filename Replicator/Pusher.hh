@@ -30,6 +30,7 @@
 
 namespace litecore { namespace repl {
 
+    /** Top-level object managing the push side of replication (sending revisions.) */
     class Pusher : public Worker {
     public:
         Pusher(Replicator *replicator);
@@ -39,11 +40,6 @@ namespace litecore { namespace repl {
 
         void checkpointIsInvalid() {
             _checkpointValid = false;
-        }
-
-    protected:
-        virtual std::string loggingClassName() const override  {
-            return _options.push >= kC4OneShot ? "Push" : "push";
         }
 
     private:

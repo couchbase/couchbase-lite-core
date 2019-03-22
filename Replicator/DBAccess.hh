@@ -29,7 +29,7 @@
 namespace litecore { namespace repl {
     class ReplicatedRev;
 
-    /** Thread-safe access to a C4Database */
+    /** Thread-safe access to a C4Database. */
     class DBAccess : public access_lock<C4Database*>, public Logging {
     public:
         using slice = fleece::slice;
@@ -39,29 +39,39 @@ namespace litecore { namespace repl {
         DBAccess(C4Database* db, bool disableBlobSupport);
         ~DBAccess();
 
-        DBAccess* newConnection(C4Error *outError);
+        /** Looks up the remote DB identifier of this replication. */
+        C4RemoteID lookUpRemoteDBID(slice key, C4Error *outError);
 
+        /** Returns the remote DB identifier of this replication, once it's been looked up. */
+        C4RemoteID remoteDBID() const                   {return _remoteDBID;}
+
+        // (The "use" method is inherited from access_lock)
+
+        //////// DOCUMENTS:
+
+        /** Gets a document by ID */
         C4Document* getDoc(slice docID, C4Error *outError) const {
             return use<C4Document*>([&](C4Database *db) {
                 return c4doc_get(db, docID, true, outError);
             });
         }
 
+        /** Gets a RawDocument. */
         C4RawDocument* getRawDoc(slice storeID, slice docID, C4Error *outError) const {
             return use<C4RawDocument*>([&](C4Database *db) {
                 return c4raw_get(db, storeID, docID, outError);
             });
         }
 
+        /** Gets the Fleece root dict, and flags, of the current rev of a document. */
         static Dict getDocRoot(C4Document *doc,
                                C4RevisionFlags *outFlags =nullptr);
 
+        /** Gets the Fleece root dict, and flags, of a revision of a document. */
         static Dict getDocRoot(C4Document *doc, slice revID,
                                C4RevisionFlags *outFlags =nullptr);
 
-        C4RemoteID lookUpRemoteDBID(slice key, C4Error *outError);
-        C4RemoteID remoteDBID() const                   {return _remoteDBID;}
-
+        /** Returns the remote ancestor revision ID of a document. */
         alloc_slice getDocRemoteAncestor(C4Document *doc);
 
          /** Mark this revision as synced (i.e. the server's current revision) soon.
@@ -71,15 +81,46 @@ namespace litecore { namespace repl {
              to c4doc_getRemoteAncestor(). */
         void markRevSynced(ReplicatedRev *rev)          {_revsToMarkSynced.push(rev);}
 
+        /** Synchronously fulfills all markRevSynced requests. */
         void markRevsSyncedNow();
+
+        //////// DELTAS:
+
+        /** Applies a delta to an existing revision. */
+        fleece::Doc applyDelta(const C4Revision *baseRevision,
+                               slice deltaJSON,
+                               bool useDBSharedKeys,
+                               C4Error *outError);
+
+        /** Reads a document revision and applies a delta to it. */
+        fleece::Doc applyDelta(slice docID,
+                               slice baseRevID,
+                               slice deltaJSON,
+                               C4Error *outError);
+
+        //////// BLOBS / ATTACHMENTS:
 
         /** The blob store is thread-safe so it can be accessed directly. */
         C4BlobStore* blobStore() const                  {return _blobStore;}
+
+        /** True if the DB should store `_attachments` properties */
         bool disableBlobSupport() const                 {return _disableBlobSupport;}
 
         using FindBlobCallback = fleece::function_ref<void(FLDeepIterator,
                                                            Dict blob,
                                                            const C4BlobKey &key)>;
+        /** Finds all blob references in the dict, at any depth. */
+        void findBlobReferences(Dict root,
+                                bool unique,
+                                const FindBlobCallback &callback);
+
+        /** Writes `root` to the encoder, transforming blobs into old-school `_attachments` dict */
+        void encodeRevWithLegacyAttachments(fleece::Encoder& enc,
+                                           Dict root,
+                                           unsigned revpos);
+
+        //////// INSERTION:
+
         /** Encodes JSON to Fleece. Uses a temporary SharedKeys, because the database's
             SharedKeys can only be encoded with during a transaction, and the caller (IncomingRev)
             isn't in a transaction. */
@@ -90,34 +131,13 @@ namespace litecore { namespace repl {
             inside a transaction. */
         alloc_slice reEncodeForDatabase(fleece::Doc);
 
-        /** Applies a delta to an existing revision. */
-        fleece::Doc applyDelta(const C4Revision *baseRevision,
-                               slice deltaJSON,
-                               bool useDBSharedKeys,
-                               C4Error *outError);
-
-        fleece::Doc applyDelta(slice docID,
-                               slice baseRevID,
-                               slice deltaJSON,
-                               C4Error *outError);
-
-        void findBlobReferences(Dict root,
-                                bool unique,
-                                const FindBlobCallback &callback);
-
-        /** Writes `root` to the encoder, transforming blobs into old-school `_attachments` dict */
-        void encodeRevWithLegacyAttachments(fleece::Encoder& enc,
-                                           Dict root,
-                                           unsigned revpos);
-
-        static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
-
-
+        /** Equivalent of "use()", but accesses the database handle used for insertion. */
         template <class LAMBDA>
         void useForInsert(LAMBDA callback) {
             insertionDB().use(callback);
         }
 
+        /** Equivalent of "use()", but accesses the database handle used for insertion. */
         template <class RESULT, class LAMBDA>
         RESULT useForInsert(LAMBDA callback) {
             return insertionDB().use<RESULT>(callback);
@@ -154,16 +174,13 @@ namespace litecore { namespace repl {
             bool commit(C4Error *error)     {return end(true, error);}
             bool abort(C4Error *error)      {return end(false, error);}
 
-            bool active() const             {return _active;}
-
         private:
             DBAccess &_dba;
             bool _active {false};
         };
 
+        static std::atomic<unsigned> gNumDeltasApplied;  // For unit tests only
 
-    protected:
-        virtual std::string loggingClassName() const override;
     private:
         friend class Transaction;
         
@@ -182,8 +199,8 @@ namespace litecore { namespace repl {
         bool const _disableBlobSupport;                     // Does replicator support blobs?
         actor::Batcher<ReplicatedRev> _revsToMarkSynced;    // Pending revs to be marked as synced
         actor::Timer _timer;                                // Implements Batcher delay
-        bool _inTransaction {false};
-        std::unique_ptr<access_lock<C4Database*>> _insertionDB;
+        bool _inTransaction {false};                        // True while in a transaction
+        std::unique_ptr<access_lock<C4Database*>> _insertionDB; // DB handle to use for insertions
     };
 
 } }

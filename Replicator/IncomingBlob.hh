@@ -23,6 +23,7 @@
 
 namespace litecore { namespace repl {
 
+    /** Pulls a single blob. Invoked by IncomingRev. */
     class IncomingBlob : public Worker {
     public:
         IncomingBlob(Worker *parent, C4BlobStore*);
@@ -32,11 +33,6 @@ namespace litecore { namespace repl {
         }
 
         virtual std::string loggingIdentifier() const override;
-
-    protected:
-        virtual std::string loggingClassName() const override {
-            return _options.pull >= kC4OneShot ? "IncomingBlob" : "incomingblob";
-        }
 
     private:
         void _start(PendingBlob);

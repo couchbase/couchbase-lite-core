@@ -82,6 +82,8 @@ namespace litecore { namespace repl {
 
         ~Worker();
 
+        virtual std::string loggingClassName() const override;
+
         virtual actor::Mailbox* mailboxForChildren() {
             return _parent ? _parent->mailboxForChildren() : nullptr;
         }

@@ -76,11 +76,6 @@ namespace litecore { namespace repl {
     }
 
 
-    std::string DBAccess::loggingClassName() const {
-        return "DBAccess";
-    }
-
-
     C4RemoteID DBAccess::lookUpRemoteDBID(slice key, C4Error *outError) {
         Assert(_remoteDBID == 0);
         use([&](C4Database *db) {

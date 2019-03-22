@@ -24,12 +24,12 @@ namespace litecore { namespace repl {
     class Replicator;
     class RevToInsert;
 
-
+    /** Inserts revisions into the database in batches. */
     class Inserter : public Worker {
     public:
         Inserter(Replicator*);
 
-        void insertRevision(RevToInsert *rev);
+        void insertRevision(RevToInsert*);
 
     private:
         void _insertRevisionsNow(int gen);
