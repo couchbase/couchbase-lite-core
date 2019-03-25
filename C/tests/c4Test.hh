@@ -147,7 +147,8 @@ public:
 #endif
 
     static std::string sFixturesDir;            // directory where test files live
-    
+    static const std::string kDatabaseName;
+
     C4Test(int testOption);
     ~C4Test();
 

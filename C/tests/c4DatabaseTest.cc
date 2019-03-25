@@ -91,6 +91,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]"
 
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Info", "[Database][C]") {
+    CHECK(c4db_exists(slice(kDatabaseName), slice(TempDir())));
     REQUIRE(c4db_getDocumentCount(db) == 0);
     REQUIRE(c4db_getLastSequence(db) == 0);
     C4Error err;
@@ -622,4 +623,48 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     CHECK(c4db_getDocumentCount(nudb) == 1);
     REQUIRE(c4db_delete(nudb, &error));
     c4db_free(nudb);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Database][C]") {
+    C4DatabaseConfig2 config = {};
+    config.parentDirectory = slice(TempDir());
+    const string db2Name = kDatabaseName + "_2";
+    C4Error error;
+
+    c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error);
+    REQUIRE(error.code == 0);
+    CHECK(!c4db_exists(slice(db2Name), config.parentDirectory));
+    C4Database *db2 = c4db_openNamed(slice(db2Name), &config, &error);
+    REQUIRE(db2);
+    alloc_slice db2Path = c4db_getPath(db2);
+    CHECK(c4db_exists(slice(db2Name), config.parentDirectory));
+
+    C4ExtraInfo xtra = {};
+    xtra.pointer = this;
+    static void* sExpectedPointer;
+    static bool sXtraDestructed;
+    sExpectedPointer = this;
+    sXtraDestructed = false;
+    xtra.destructor = [](void *ptr) {
+        REQUIRE(ptr == sExpectedPointer);
+        REQUIRE(!sXtraDestructed);
+        sXtraDestructed = true;
+    };
+    c4db_setExtraInfo(db2, xtra);
+    CHECK(!sXtraDestructed);
+    CHECK(c4db_getExtraInfo(db2).pointer == this);
+    CHECK(c4db_close(db2, &error));
+    CHECK(!sXtraDestructed);
+    c4db_release(db2);
+    CHECK(sXtraDestructed);
+
+    const string copiedDBName = kDatabaseName + "_copy";
+    c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, &error);
+    REQUIRE(error.code == 0);
+    REQUIRE(c4db_copyNamed(db2Path, slice(copiedDBName), &config, &error));
+    CHECK(c4db_exists(slice(copiedDBName), config.parentDirectory));
+    REQUIRE(c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, &error));
+
+    REQUIRE(c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error));
 }

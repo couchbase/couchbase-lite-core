@@ -91,6 +91,7 @@ bool c4Database::mustNotBeInTransaction(C4Error *outError) noexcept {
 
 
 static FilePath dbPath(C4String name, C4String parentDir) {
+    Assert(name.buf != nullptr && parentDir.buf != nullptr);
     return FilePath(string(slice(parentDir)), string(slice(name)))
                 .withExtension(kC4DatabaseFilenameExtension);
 }
