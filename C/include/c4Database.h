@@ -82,6 +82,7 @@ extern "C" {
     /** Main database configuration struct (version 2) for use with c4db_openNamed etc.. */
     typedef struct C4DatabaseConfig2 {
         C4Slice parentDirectory;        ///< Directory for databases
+        C4DatabaseFlags flags;          ///< Create, ReadOnly, NoUpgrade (AutoCompact & SharedKeys always set)
         C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
     } C4DatabaseConfig2;
 

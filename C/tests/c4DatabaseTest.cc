@@ -629,6 +629,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Database][C]") {
     C4DatabaseConfig2 config = {};
     config.parentDirectory = slice(TempDir());
+    config.flags = kC4DB_Create;
     const string db2Name = kDatabaseName + "_2";
     C4Error error;
 

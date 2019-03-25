@@ -99,7 +99,7 @@ static FilePath dbPath(C4String name, C4String parentDir) {
 
 static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 *config2) {
     return C4DatabaseConfig {
-        kC4DB_Create | kC4DB_AutoCompact | kC4DB_SharedKeys,
+        config2->flags | kC4DB_AutoCompact | kC4DB_SharedKeys,
         NULL,
         kC4RevisionTrees,
         config2->encryptionKey
