@@ -1,6 +1,8 @@
 include("${CMAKE_CURRENT_LIST_DIR}/platform_unix.cmake")
 
 function(setup_globals_linux)
+    setup_globals_unix()
+
     set(LITECORE_CRYPTO_LIB mbedcrypto CACHE INTERNAL "")
     add_definitions(-D_CRYPTO_MBEDTLS)
 

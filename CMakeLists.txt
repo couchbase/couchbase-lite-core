@@ -161,9 +161,10 @@ setup_support_build()
 ### LITECORE LIBRARY:
 
 set_litecore_source(RESULT ALL_SRC_FILES)
-add_library(LiteCoreStatic STATIC ${ALL_SRC_FILES})
+add_library(LiteCoreCompile OBJECT ${ALL_SRC_FILES})
+add_library(LiteCoreStatic STATIC $<TARGET_OBJECTS:LiteCoreCompile>)
 target_compile_definitions(
-    LiteCoreStatic PRIVATE 
+    LiteCoreCompile PRIVATE 
     -DLITECORE_IMPL
     -DSQLITE_DEFAULT_WAL_SYNCHRONOUS=1  # Default to NORMAL sync mode on SQLite (safe with WAL mode)
     -DSQLITE_LIKE_DOESNT_MATCH_BLOBS    # Optimize SQLite "like" queries
@@ -186,13 +187,13 @@ target_compile_definitions(
 
 if(BUILD_ENTERPRISE)
     target_compile_definitions(
-        LiteCoreStatic PRIVATE
+        LiteCoreCompile PRIVATE
         -DSQLITE_HAS_CODEC              # Enables SQLite encryption extension (SEE)
     )   
 endif()
 
 target_include_directories(
-    LiteCoreStatic PRIVATE
+    LiteCoreCompile PRIVATE
     vendor/fleece/API
     vendor/fleece/Fleece/Core
     vendor/fleece/Fleece/Mutable
@@ -215,14 +216,13 @@ target_include_directories(
 )
 
 if(WIN32)
-    add_library(LiteCore SHARED MSVC/SQLiteTempDirectory.cc) #No-op for non-UWP
+    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreCompile> MSVC/SQLiteTempDirectory.cc) #No-op for non-UWP
     target_include_directories(
         LiteCore PRIVATE
         vendor/SQLiteCpp/sqlite3
     )
 else()
-    file(WRITE empty.cpp)
-    add_library(LiteCore SHARED empty.cpp)
+    add_library(LiteCore SHARED $<TARGET_OBJECTS:LiteCoreCompile>)
 endif()
 
 # Library flags defined in platform_linux
@@ -230,7 +230,6 @@ endif()
 set(
     LITECORE_LIBRARIES_PRIVATE  
     ${WHOLE_LIBRARY_FLAG}
-    LiteCoreStatic
     FleeceStatic
     ${NO_WHOLE_LIBRARY_FLAG}
     Support
