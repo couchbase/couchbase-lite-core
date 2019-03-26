@@ -1,10 +1,8 @@
 include(${CMAKE_CURRENT_LIST_DIR}/platform_base.cmake)
 
 function(setup_globals_unix)
-    string(REPLACE "-Os" "-Oz" TMP ${CMAKE_C_FLAGS_MINSIZEREL})
-    set(CMAKE_C_FLAGS_MINSIZEREL "${TMP} -g" CACHE INTERNAL "")
-    string(REPLACE "-Os" "-Oz" TMP ${CMAKE_CXX_FLAGS_MINSIZEREL})
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "${TMP} -g" CACHE INTERNAL "")
+    set(CMAKE_C_FLAGS_MINSIZEREL "-Oz -DNDEBUG -g" CACHE INTERNAL "")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "-Oz -DNDEBUG -g" CACHE INTERNAL "")
 endfunction()
 
 function(setup_litecore_build_unix)
