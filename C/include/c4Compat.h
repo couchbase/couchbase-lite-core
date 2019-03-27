@@ -20,6 +20,10 @@
 #ifdef _MSC_VER
 #define C4INLINE __forceinline
 #define C4NONNULL
+#elif defined(__GNUC__) && !defined(__clang__)
+#define C4INLINE inline
+//gcc supports only __attribute((nonnull)) for whole function, so
+#define C4NONNULL /**/
 #else
 #define C4INLINE inline
 #define C4NONNULL __attribute((nonnull))
