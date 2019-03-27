@@ -1,6 +1,8 @@
 include("${CMAKE_CURRENT_LIST_DIR}/platform_unix.cmake")
 
 function(setup_globals)
+    setup_globals_unix()
+
     # Use CommonCrypto for things like hashing and random numbers
     add_definitions(-D_CRYPTO_CC)
     set(LITECORE_CRYPTO_LIB "-framework Security" CACHE INTERNAL "")

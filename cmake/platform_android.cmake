@@ -9,7 +9,7 @@ function(setup_globals)
 
     # See: https://github.com/android-ndk/ndk/issues/289
     # Work around an NDK issue that links things like exception handlers in the incorrect order
-    set(LITECORE_SHARED_LINKER_FLAGS "${LITECORE_SHARED_LINKER_FLAGS} -Wl,--exclude-libs,libgcc.a" CACHE INTERNAL "")
+    set(LITECORE_SHARED_LINKER_FLAGS "-Wl,--exclude-libs,libgcc.a" CACHE INTERNAL "")
 endfunction()
 
 function(set_litecore_source)
