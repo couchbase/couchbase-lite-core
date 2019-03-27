@@ -129,8 +129,8 @@ namespace litecore {
                          options->language);
                 }
             }
-            if (options->ignoreDiacritics) {
-                sql << " \"remove_diacritics=1\"";
+            if (!options->ignoreDiacritics) {
+                sql << " \"remove_diacritics=0\"";
             }
         }
     }
