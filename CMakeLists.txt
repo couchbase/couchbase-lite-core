@@ -36,8 +36,8 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
         - platform_win_store
 ]]#
 
-cmake_minimum_required (VERSION 3.1)
-cmake_policy(VERSION 3.1)
+cmake_minimum_required (VERSION 3.9)
+cmake_policy(VERSION 3.9)
 
 if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
