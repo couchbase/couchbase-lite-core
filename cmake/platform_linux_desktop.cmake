@@ -95,7 +95,7 @@ endfunction()
 function(setup_litecore_build)
     setup_litecore_build_linux()
     
-    if(NOT ${LITECORE_DISABLE_ICU})
+    if(NOT LITECORE_DISABLE_ICU)
         target_compile_definitions(
             LiteCoreStatic PRIVATE
             -DLITECORE_USES_ICU=1
