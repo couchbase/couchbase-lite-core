@@ -404,6 +404,42 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Aggregate Full-text query", "[Query][C][FTS]"
     c4queryenum_free(e);
 }
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Full-text query with accents", "[Query][C][FTS]") {
+    // https://github.com/couchbase/couchbase-lite-core/issues/723
+    C4Error err;
+    C4IndexOptions options = {
+       nullptr, false, false, nullptr
+    };
+
+    REQUIRE(c4db_createIndex(db, C4STR("nameFTSIndex"), C4STR("[[\".content\"]]"), kC4FullTextIndex, &options, &err));
+
+    {
+        TransactionHelper t(db);
+
+        C4SliceResult bodyContent = c4db_encodeJSON(db, C4STR(u8"{\"content\": \"Hâkimler\"}"), &err);
+        REQUIRE(bodyContent.buf != nullptr);
+        createNewRev(db, C4STR("1"), (C4Slice)bodyContent);
+        c4slice_free(bodyContent);
+
+        bodyContent = c4db_encodeJSON(db, C4STR("{\"content\": \"Hakimler\"}"), &err);
+        REQUIRE(bodyContent.buf != nullptr);
+        createNewRev(db, C4STR("2"), (C4Slice)bodyContent);
+        c4slice_free(bodyContent);
+
+        bodyContent = c4db_encodeJSON(db, C4STR("{\"content\": \"foo\"}"), &err);
+        REQUIRE(bodyContent.buf != nullptr);
+        createNewRev(db, C4STR("3"), (C4Slice)bodyContent);
+        c4slice_free(bodyContent);
+    }
+
+    C4Slice queryStr = C4STR("{\"WHERE\": [\"MATCH\",\"nameFTSIndex\",\"'hâkimler'\"], \"WHAT\": [[\".\"]]}");
+    query = c4query_new(db, queryStr, &err);
+    auto e = c4query_run(query, nullptr, nullslice, &err);
+    REQUIRE(e);
+    CHECK(c4queryenum_getRowCount(e, &err) == 1);
+    c4queryenum_free(e);
+}
+
 
 #pragma mark - WHAT, JOIN, etc:
 
