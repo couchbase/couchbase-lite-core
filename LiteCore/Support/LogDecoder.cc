@@ -21,6 +21,7 @@
 #include <exception>
 #include <sstream>
 #include <cassert>
+#include <cstring>
 #include <chrono>
 #include <algorithm>
 #include "PlatformCompat.hh"
