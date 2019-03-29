@@ -324,7 +324,8 @@ namespace litecore { namespace repl {
                         put.revFlags |= kRevKeepBody;
                     } else {
                         // Encode doc body using database's real sharedKeys:
-                        bodyForDB = _db->reEncodeForDatabase(rev->doc);
+                        if (rev->doc)
+                            bodyForDB = _db->reEncodeForDatabase(rev->doc);
                         rev->doc = nullptr;
                         // Preserve rev body as the source of a future delta I may push back:
                         if (bodyForDB.size >= tuning::kMinBodySizeForDelta && !_disableDeltaSupport)
