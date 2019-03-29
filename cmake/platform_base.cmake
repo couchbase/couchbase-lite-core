@@ -73,13 +73,14 @@ function(set_litecore_source_base)
         Replicator/DBAccess.cc
         Replicator/IncomingBlob.cc
         Replicator/IncomingRev.cc
-        Replicator/Puller.cc
-        Replicator/Puller+DB.cc
+        Replicator/Inserter.cc
+        Replicator/Puller.cc 
         Replicator/Pusher.cc
         Replicator/Pusher+DB.cc
         Replicator/Replicator.cc
         Replicator/Replicator+Checkpoints.cc
         Replicator/ReplicatorTypes.cc
+        Replicator/RevFinder.cc
         Replicator/Worker.cc
         LiteCore/Support/Logging.cc
         LiteCore/Support/DefaultLogger.cc
