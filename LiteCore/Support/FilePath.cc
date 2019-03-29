@@ -362,11 +362,6 @@ namespace litecore {
             sTempDirectory = nullptr;
         }
         sTempDirectory = new FilePath(path, "");
-        
-#ifdef LITECORE_IMPL
-        // Tell SQLite to use this temp directory. Note that the dup'd string will be leaked.
-        sqlite3_temp_directory = cbl_strdup(path.c_str());
-#endif
     }
     
     
