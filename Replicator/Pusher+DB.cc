@@ -43,7 +43,7 @@ namespace litecore { namespace repl {
         if (!connection())
             return;
         auto limit = p.limit;
-        logVerbose("Reading up to %u local changes since #%llu", limit, p.since);
+        logVerbose("Reading up to %u local changes since #%" PRIu64, limit, p.since);
         _getForeignAncestors = p.getForeignAncestors;
         _skipForeignChanges = p.skipForeign;
         _pushDocIDs = p.docIDs;
@@ -118,7 +118,7 @@ namespace litecore { namespace repl {
                 _maxPushedSequence = c4changes[nChanges-1].sequence;
                 continue;     // ignore changes I made myself
             }
-            logVerbose("Notified of %u db changes #%llu ... #%llu",
+            logVerbose("Notified of %u db changes #%" PRIu64 " ... #%" PRIu64,
                        nChanges, c4changes[0].sequence, c4changes[nChanges-1].sequence);
 
             // Copy the changes into a vector of RevToSend:

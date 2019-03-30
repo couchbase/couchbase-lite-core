@@ -24,6 +24,7 @@
 #include <string>
 #include <stdarg.h>
 #include <stdint.h>
+#include <inttypes.h> //for stdint.h fmt specifiers
 
 /*
     This is a configurable console-logging facility that lets logging be turned on and off independently for various subsystems or areas of the code. It's used similarly to printf:
@@ -74,8 +75,8 @@ struct LogFileOptions
 class LogDomain {
 public:
     LogDomain(const char *name, LogLevel level =LogLevel::Info)
-    :_name(name),
-     _level(level),
+    :_level(level),
+     _name(name),
      _next(sFirstDomain)
     {
         sFirstDomain = this;

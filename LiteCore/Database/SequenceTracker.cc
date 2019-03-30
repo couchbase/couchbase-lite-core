@@ -60,7 +60,7 @@ namespace litecore {
 
 
     void SequenceTracker::beginTransaction() {
-        logInfo("begin transaction at #%llu", _lastSequence);
+        logInfo("begin transaction at #%" PRIu64, _lastSequence);
         auto notifier = new DatabaseChangeNotifier(*this, nullptr);
         Assert(!inTransaction());
         _transaction.reset(notifier);
@@ -73,7 +73,7 @@ namespace litecore {
         Assert(inTransaction());
 
         if (commit) {
-            logInfo("commit: sequences #%llu -- #%llu", _preTransactionLastSequence, _lastSequence);
+            logInfo("commit: sequences #%" PRIu64 " -- #%" PRIu64, _preTransactionLastSequence, _lastSequence);
             // Bump their committedSequences:
             for (auto entry = next(_transaction->_placeholder); entry != _changes.end(); ++entry) {
                 if (!entry->isPlaceholder()) {
@@ -82,7 +82,7 @@ namespace litecore {
             }
 
         } else {
-            logInfo("abort: from seq #%llu back to #%llu", _lastSequence, _preTransactionLastSequence);
+            logInfo("abort: from seq #%" PRIu64 " back to #%" PRIu64, _lastSequence, _preTransactionLastSequence);
             _lastSequence = _preTransactionLastSequence;
 
             // Revert their committedSequences:
@@ -387,7 +387,7 @@ namespace litecore {
     ,_placeholder(tracker.addPlaceholderAfter(this, afterSeq))
     {
         if (callback)
-            logInfo("Created, starting after #%lld", afterSeq);
+            logInfo("Created, starting after #%" PRIu64, afterSeq);
     }
 
 
