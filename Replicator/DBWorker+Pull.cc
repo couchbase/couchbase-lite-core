@@ -310,7 +310,12 @@ namespace litecore { namespace repl {
         c4::ref<C4Document> doc = c4doc_get(_db, rev->docID, true, &c4err);
         if (doc && c4doc_selectRevision(doc, baseRevID, true, &c4err)) {
             if (doc->selectedRev.body.buf) {
-                fleeceDoc = _applyDelta(&doc->selectedRev, deltaJSON, &c4err);
+                c4::Transaction t(_db);
+                bool began = t.begin(&c4err);
+                if(began) {
+                    fleeceDoc = _applyDelta(&doc->selectedRev, deltaJSON, &c4err);
+                    t.end(fleeceDoc != nullptr, &c4err);
+                }
             } else {
                 // Don't have the body of the source revision. This might be because I'm in
                 // no-conflict mode and the peer is trying to push me a now-obsolete revision.
