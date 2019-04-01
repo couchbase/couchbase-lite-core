@@ -1350,6 +1350,7 @@ static void mutationsForDelta(C4Database *db) {
         mutateDoc(db, slice(docID), [](MutableDict props) {
             props["birthday"_sl] = "1964-11-28"_sl;
             props["memberSince"_sl].remove();
+            props["aNewProperty"_sl] = "!!!!";
         });
     }
 }
@@ -1369,11 +1370,27 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Delta Push+Push", "[Push][Delta]") {
     mutationsForDelta(db);
 
     Log("-------- Second Push --------");
+    atomic<int> validationCount {0};
+    SECTION("No filter") {
+    }
+    SECTION("With filter") {
+        // Using a pull filter forces deltas to be applied earlier, before rev insertion.
+        serverOpts.callbackContext = &validationCount;
+        serverOpts.pullValidator = [](FLString docID, C4RevisionFlags flags, FLDict body, void *context)->bool {
+            assert_always(flags == 0);      // can't use CHECK on a bg thread
+            ++(*(atomic<int>*)context);
+            return true;
+        };
+    }
+
     _expectedDocumentCount = (100+6)/7;
     auto before = DBWorker::gNumDeltasApplied.load();
     runReplicators(Replicator::Options::pushing(kC4OneShot), serverOpts);
     compareDatabases();
     CHECK(DBWorker::gNumDeltasApplied - before == 15);
+
+    if (serverOpts.pullValidator)
+        CHECK(validationCount == _expectedDocumentCount);
 }
 
 
