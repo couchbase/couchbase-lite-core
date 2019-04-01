@@ -284,15 +284,22 @@ namespace litecore { namespace repl {
             return {};
         }
 
-        Doc legacy;
-        if (!_disableBlobSupport && containsAttachmentsProperty(deltaJSON)) {
-            // Delta refers to legacy attachments, so convert my base revision to have them:
+        bool useLegacyAttachments = !_disableBlobSupport && containsAttachmentsProperty(deltaJSON);
+        Doc reEncodedDoc;
+        if (useLegacyAttachments || !useDBSharedKeys) {
             Encoder enc;
-            encodeRevWithLegacyAttachments(enc, srcRoot, 1);
-            legacy = enc.finishDoc();
-            srcRoot = legacy.root().asDict();
+            enc.setSharedKeys(_tempSharedKeys);
+            if (useLegacyAttachments) {
+                // Delta refers to legacy attachments, so convert my base revision to have them:
+                encodeRevWithLegacyAttachments(enc, srcRoot, 1);
+            } else {
+                // Can't use DB SharedKeys, so re-encode to temp encoder
+                enc.writeValue(srcRoot);
+            }
+            reEncodedDoc = enc.finishDoc();
+            srcRoot = reEncodedDoc.root().asDict();
         }
-
+        
         Doc result;
         FLError flErr;
         if (useDBSharedKeys) {
