@@ -21,7 +21,7 @@
 #include "RefCounted.hh"
 #include "fleece/Fleece.hh"
 #include <functional>
-#include <strstream>
+#include <ostream>
 #include <memory>
 #include <mutex>
 

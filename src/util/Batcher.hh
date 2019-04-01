@@ -19,6 +19,7 @@
 #pragma once
 #include "Actor.hh"
 #include "Timer.hh"
+#include <climits>
 #include <functional>
 #include <memory>
 #include <mutex>

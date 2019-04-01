@@ -23,7 +23,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
-#include <strstream>
+#include <ostream>
 
 using namespace std;
 using namespace fleece;

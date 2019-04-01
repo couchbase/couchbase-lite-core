@@ -18,6 +18,7 @@
 
 #pragma once
 #include "RefCounted.hh"
+#include <cassert>
 #include <functional>
 
 namespace litecore { namespace actor {
