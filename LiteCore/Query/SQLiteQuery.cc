@@ -112,7 +112,7 @@ namespace litecore {
             if (_matchedTextStatement->executeStep())
                 matchedText = alloc_slice( ((SQLiteKeyStore&)keyStore()).columnAsSlice(_matchedTextStatement->getColumn(term.keyIndex)) );
             else
-                Warn("FTS index %s has no row for docid %llu", expr.c_str(), term.dataSource);
+                Warn("FTS index %s has no row for docid %" PRIu64, expr.c_str(), term.dataSource);
             _matchedTextStatement->reset();
             return matchedText;
         }

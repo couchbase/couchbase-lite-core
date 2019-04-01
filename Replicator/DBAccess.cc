@@ -356,7 +356,7 @@ namespace litecore { namespace repl {
                     logDebug("Marking rev '%.*s' %.*s (#%llu) as synced to remote db %u",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, remoteDBID());
                     if (!c4db_markSynced(idb, rev->docID, rev->sequence, remoteDBID(), &error))
-                        warn("Unable to mark '%.*s' %.*s (#%llu) as synced; error %d/%d",
+                        warn("Unable to mark '%.*s' %.*s (#%" PRIu64 ") as synced; error %d/%d",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence, error.domain, error.code);
                 }
                 if (transaction.commit(&error)) {

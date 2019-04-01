@@ -297,7 +297,7 @@ namespace litecore {
     bool SQLiteKeyStore::del(slice key, Transaction&, sequence_t seq) {
         Assert(key);
         SQLite::Statement *stmt;
-        db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %llu",
+        db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %" PRIu64,
                         _name.c_str(), SPLAT(key), seq);
         if (seq) {
             stmt = &compile(_delByBothStmt, "DELETE FROM kv_@ WHERE key=? AND sequence=?");
@@ -383,7 +383,7 @@ namespace litecore {
         _setExpStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
         bool ok = _setExpStmt->exec() > 0;
         if (ok)
-            db()._logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %lld",
+            db()._logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %" PRId64,
                             _name.c_str(), SPLAT(key), expTime);
         return ok;
     }
@@ -410,7 +410,7 @@ namespace litecore {
                 return 0;
             next = _nextExpStmt->getColumn(0);
         }
-        db()._logVerbose("Next expiration time is %lld", next);
+        db()._logVerbose("Next expiration time is %" PRId64, next);
         return next;
     }
 
@@ -432,7 +432,7 @@ namespace litecore {
             }
         }
         if (!none) {
-            expired = db().exec(format("DELETE FROM kv_%s WHERE expiration <= %lld",
+            expired = db().exec(format("DELETE FROM kv_%s WHERE expiration <= %" PRId64,
                                        name().c_str(), t));
         }
         db()._logInfo("Purged %u expired documents", expired);

@@ -48,7 +48,7 @@ namespace litecore { namespace repl {
     void IncomingBlob::_start(PendingBlob blob) {
         Assert(!_writer);
         _blob = blob;
-        logVerbose("Requesting blob (%llu bytes, compress=%d)", _blob.length, _blob.compressible);
+        logVerbose("Requesting blob (%" PRIu64 " bytes, compress=%d)", _blob.length, _blob.compressible);
 
         addProgress({0, _blob.length});
 
@@ -107,7 +107,7 @@ namespace litecore { namespace repl {
 
     void IncomingBlob::finishBlob() {
         alloc_slice digest = c4blob_keyToString(_blob.key);
-        logVerbose("Finished receiving blob %.*s (%llu bytes)", SPLAT(digest), _blob.length);
+        logVerbose("Finished receiving blob %.*s (%" PRIu64 " bytes)", SPLAT(digest), _blob.length);
         C4Error err;
         if (!c4stream_install(_writer, &_blob.key, &err))
             gotError(err);
@@ -127,7 +127,7 @@ namespace litecore { namespace repl {
                 _blob.key,
                 status().progress.unitsCompleted,
                 status().progress.unitsTotal};
-            logVerbose("progress: %llu / %llu", prog.bytesCompleted, prog.bytesTotal);
+            logVerbose("progress: %" PRIu64 " / %" PRIu64, prog.bytesCompleted, prog.bytesTotal);
             replicator()->onBlobProgress(prog);
         }
     }

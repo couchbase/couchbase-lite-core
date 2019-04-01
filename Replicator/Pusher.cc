@@ -74,7 +74,7 @@ namespace litecore { namespace repl {
 
     // Begins active push, starting from the next sequence after sinceSequence
     void Pusher::_start(C4SequenceNumber sinceSequence) {
-        logInfo("Starting %spush from local seq #%llu",
+        logInfo("Starting %spush from local seq #%" PRIu64,
             (_continuous ? "continuous " : ""), sinceSequence+1);
         _started = true;
         _pendingSequences.clear(sinceSequence);
@@ -92,7 +92,7 @@ namespace litecore { namespace repl {
         auto since = max(req->intProperty("since"_sl), 0l);
         _continuous = req->boolProperty("continuous"_sl);
         _skipDeleted = req->boolProperty("activeOnly"_sl);
-        logInfo("Peer is pulling %schanges from seq #%llu",
+        logInfo("Peer is pulling %schanges from seq #%" PRIu64,
             (_continuous ? "continuous " : ""), _lastSequence);
 
         auto filter = req->property("filter"_sl);
@@ -126,7 +126,7 @@ namespace litecore { namespace repl {
                              && _revsToSend.size() < tuning::kMaxRevsQueued) {
             _gettingChanges = true;
             increment(_changeListsInFlight); // will be decremented at start of _gotChanges
-            logVerbose("Asking DB for %u changes since sequence #%llu ...",
+            logVerbose("Asking DB for %u changes since sequence #%" PRIu64 " ...",
                 _changesBatchSize, _lastSequenceRead);
             getChanges({_lastSequenceRead,
                                    _docIDs,
@@ -158,7 +158,7 @@ namespace litecore { namespace repl {
         _lastSequenceRead = lastSequence;
         _pendingSequences.seen(lastSequence);
         if (changes->empty()) {
-            logInfo("Found 0 changes up to #%llu", lastSequence);
+            logInfo("Found 0 changes up to #%" PRIu64, lastSequence);
             updateCheckpoint();
         } else {
             uint64_t bodySize = 0;
@@ -166,7 +166,7 @@ namespace litecore { namespace repl {
                 bodySize += change->bodySize;
             addProgress({0, bodySize});
 
-            logInfo("Read %zu local changes up to #%llu: sending '%-s' with sequences #%llu - #%llu",
+            logInfo("Read %zu local changes up to #%" PRIu64 ": sending '%-s' with sequences #%" PRIu64 " - #%" PRIu64,
                     changes->size(), lastSequence,
                     (_proposeChanges ? "proposeChanges" : "changes"),
                     changes->at(0)->sequence, _lastSequenceRead);
@@ -186,7 +186,7 @@ namespace litecore { namespace repl {
 
         if (changeCount < _changesBatchSize) {
             if (!_caughtUp) {
-                logInfo("Caught up, at lastSequence #%llu", _lastSequenceRead);
+                logInfo("Caught up, at lastSequence #%" PRIu64, _lastSequenceRead);
                 _caughtUp = true;
                 if (changeCount > 0 && passive()) {
                     // The protocol says catching up is signaled by an empty changes list, so send
@@ -204,7 +204,7 @@ namespace litecore { namespace repl {
     void Pusher::gotOutOfOrderChange(RevToSend* change) {
         if (!connection())
             return;
-        logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%llu",
+        logInfo("Read delayed local change '%.*s' #%.*s (remote #%.*s): sending '%-s' with sequence #%" PRIu64,
                 SPLAT(change->docID), SPLAT(change->revID),
                 SPLAT(change->remoteAncestorRevID),
                 (_proposeChanges ? "proposeChanges" : "changes"),
@@ -269,7 +269,7 @@ namespace litecore { namespace repl {
 
             // Got reply to the "changes" or "proposeChanges":
             if (!changes->empty()) {
-                logInfo("Got response for %zu local changes (sequences from %llu)",
+                logInfo("Got response for %zu local changes (sequences from %" PRIu64 ")",
                     changes->size(), changes->front()->sequence);
             }
             decrement(_changeListsInFlight);
@@ -347,7 +347,7 @@ namespace litecore { namespace repl {
                 }
 
                 if (queued) {
-                    logVerbose("Queueing rev '%.*s' #%.*s (seq #%llu) [%zu queued]",
+                    logVerbose("Queueing rev '%.*s' #%.*s (seq #%" PRIu64 ") [%zu queued]",
                                SPLAT(change->docID), SPLAT(change->revID), change->sequence,
                                _revsToSend.size());
                 } else {
@@ -383,7 +383,7 @@ namespace litecore { namespace repl {
     // Send a "rev" message containing a revision body.
     void Pusher::sendRevision(Retained<RevToSend> rev) {
         increment(_revisionsInFlight);
-        logVerbose("Sending rev %.*s %.*s (seq #%llu) [%d/%d]",
+        logVerbose("Sending rev %.*s %.*s (seq #%" PRIu64 ") [%d/%d]",
                    SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                    _revisionsInFlight, tuning::kMaxRevsInFlight);
         sendRevision(rev, [=](MessageProgress progress) {
@@ -403,7 +403,7 @@ namespace litecore { namespace repl {
                 decrement(_revisionBytesAwaitingReply, progress.bytesSent);
                 bool synced = !progress.reply->isError(), completed;
                 if (synced) {
-                    logVerbose("Completed rev %.*s #%.*s (seq #%llu)",
+                    logVerbose("Completed rev %.*s #%.*s (seq #%" PRIu64 ")",
                                SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence);
                     finishedDocument(rev);
                     completed = true;
@@ -411,7 +411,7 @@ namespace litecore { namespace repl {
                     auto err = progress.reply->getError();
                     auto c4err = blipToC4Error(err);
                     bool transient = c4error_mayBeTransient(c4err);
-                    logError("Got error response to rev '%.*s' #%.*s (seq #%llu): %.*s %d '%.*s'",
+                    logError("Got error response to rev '%.*s' #%.*s (seq #%" PRIu64 "): %.*s %d '%.*s'",
                              SPLAT(rev->docID), SPLAT(rev->revID), rev->sequence,
                              SPLAT(err.domain), err.code, SPLAT(err.message));
                     finishedDocumentWithError(rev, c4err, transient);
@@ -468,7 +468,7 @@ namespace litecore { namespace repl {
             increment(_blobsInFlight);
             MessageBuilder reply(req);
             reply.compressed = req->boolProperty("compress"_sl);
-            logVerbose("Sending blob %.*s (length=%lld, compress=%d)",
+            logVerbose("Sending blob %.*s (length=%" PRId64 ", compress=%d)",
                        SPLAT(digest), c4stream_getLength(blob, nullptr), reply.compressed);
             Retained<Replicator> repl = replicator();
             auto lastNotifyTime = actor::Timer::clock::now();
@@ -624,9 +624,9 @@ namespace litecore { namespace repl {
         auto lastSeq = firstPending ? firstPending - 1 : _pendingSequences.maxEver();
         if (lastSeq > _lastSequence) {
             if (lastSeq / 1000 > _lastSequence / 1000)
-                logInfo("Checkpoint now at #%llu", lastSeq);
+                logInfo("Checkpoint now at #%" PRIu64, lastSeq);
             else
-                logVerbose("Checkpoint now at #%llu", lastSeq);
+                logVerbose("Checkpoint now at #%" PRIu64, lastSeq);
             _lastSequence = lastSeq;
             if (replicator())
                 replicator()->updatePushCheckpoint(_lastSequence);
@@ -653,7 +653,7 @@ namespace litecore { namespace repl {
             level = kC4Stopped;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%llu, revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",
+            logInfo("activityLevel=%-s: pendingResponseCount=%d, caughtUp=%d, changeLists=%u, revsInFlight=%u, blobsInFlight=%u, awaitingReply=%" PRIu64 ", revsToSend=%zu, pushingDocs=%zu, pendingSequences=%zu",
                 kC4ReplicatorActivityLevelNames[level],
                 pendingResponseCount(),
                 _caughtUp, _changeListsInFlight, _revisionsInFlight, _blobsInFlight,

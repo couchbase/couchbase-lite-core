@@ -164,7 +164,7 @@ namespace litecore { namespace repl {
                 c4::ref<C4Document> doc = c4doc_put(db, &put, nullptr, outError);
                 if (!doc)
                     return false;
-                logVerbose("    {'%.*s' #%.*s <- %.*s} seq %llu",
+                logVerbose("    {'%.*s' #%.*s <- %.*s} seq %" PRIu64,
                            SPLAT(rev->docID), SPLAT(rev->revID), SPLAT(rev->historyBuf),
                            doc->selectedRev.sequence);
                 rev->sequence = doc->selectedRev.sequence;

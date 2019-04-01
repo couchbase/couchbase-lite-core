@@ -155,7 +155,7 @@ namespace litecore { namespace repl {
     void Puller::handleChangesNow(Retained<MessageIn> req) {
         slice reqType = req->property("Profile"_sl);
         bool proposed = (reqType == "proposeChanges"_sl);
-        logVerbose("Handling '%.*s' REQ#%llu", SPLAT(reqType), req->number());
+        logVerbose("Handling '%.*s' REQ#%" PRIu64, SPLAT(reqType), req->number());
 
         auto changes = req->JSONBody().asArray();
         if (!changes && req->body() != "null"_sl) {
