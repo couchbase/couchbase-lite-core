@@ -5,6 +5,10 @@ function(set_litecore_source_base)
         message(FATAL_ERROR set_source_files_base needs to be called with RESULT)
     endif()
 
+    set(LITECORE_SHARED_LINKER_FLAGS "" CACHE INTERNAL "")
+    set(LITECORE_C_FLAGS "" CACHE INTERNAL "")
+    SET(LITECORE_CXX_FLAGS "" CACHE INTERNAL "")
+
     # Error.cc will be added here *and* in Support because the Support version is a stub
     # That goes through the C API of LiteCore.  If the stub were compiled into LiteCore
     # itself, that's an infinite recursive call
