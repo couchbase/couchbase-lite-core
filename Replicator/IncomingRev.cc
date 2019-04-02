@@ -156,7 +156,8 @@ namespace litecore { namespace repl {
             } else {
                 warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
                 _rev->error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
-                root = nullptr;
+                finish();
+                return;
             }
         } else {
             _rev->doc = fleeceDoc;
@@ -227,6 +228,8 @@ namespace litecore { namespace repl {
     // Asks the DBAgent to insert the revision, then sends the reply and notifies the Puller.
     void IncomingRev::insertRevision() {
         Assert(_pendingBlobs.empty() && !_currentBlob);
+        Assert(_rev->error.code == 0);
+        Assert(_rev->deltaSrc || _rev->doc);
         increment(_pendingCallbacks);
         //Signpost::mark(Signpost::gotRev, _serialNumber);
         _puller->insertRevision(_rev);
