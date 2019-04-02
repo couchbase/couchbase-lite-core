@@ -10,7 +10,7 @@ function(setup_litecore_build_unix)
     set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS -Wno-return-type-c-linkage)
 
     # Enable Link-Time Optimization, AKA Inter-Procedure Optimization
-    if(NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
+    if(NOT ANDROID AND NOT ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug"))
         include(CheckIPOSupported)
         check_ipo_supported(RESULT LTOAvailable)
     endif()

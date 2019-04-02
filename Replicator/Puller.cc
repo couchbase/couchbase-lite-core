@@ -123,7 +123,7 @@ namespace litecore { namespace repl {
                    SPLAT(req->property("Profile"_sl)), req->number(),
                    _waitingChangesMessages.size(), _pendingRevMessages,
                    _activeIncomingRevs, _unfinishedIncomingRevs);
-        Signpost::begin(Signpost::handlingChanges, req->number());
+        Signpost::begin(Signpost::handlingChanges, (uintptr_t)req->number());
         _waitingChangesMessages.push_back(move(req));
         handleMoreChanges();
     }
@@ -201,12 +201,12 @@ namespace litecore { namespace repl {
                     logVerbose("Now waiting for %u 'rev' messages; %zu known sequences pending",
                                _pendingRevMessages, _missingSequences.size());
                 }
-                Signpost::end(Signpost::handlingChanges, req->number());
+                Signpost::end(Signpost::handlingChanges, (uintptr_t)req->number());
             }));
             return;
         }
 
-        Signpost::end(Signpost::handlingChanges, req->number());
+        Signpost::end(Signpost::handlingChanges, (uintptr_t)req->number());
     }
 
 
