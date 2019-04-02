@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Actor.hh"
+#include "Logging.hh"
 #include "Timer.hh"
 #include <climits>
 #include <functional>
@@ -27,22 +28,21 @@
 
 namespace litecore { namespace actor {
 
-    /** A simple queue that adds objects one at a time and sends them to an Actor in a batch. */
-    template <class ACTOR, class ITEM>
+    static constexpr int AnyGen = INT_MAX;
+
+    
+    /** A simple queue that adds objects one at a time and sends them to its target in a batch. */
+    template <class ITEM>
     class Batcher {
     public:
         using Items = std::unique_ptr<std::vector<Retained<ITEM>>>;
 
-        typedef void (ACTOR::*Processor)();
-
-        /** Constructs a Batcher. Typically done in the Actor subclass's constructor.
-            @param actor  The Actor that owns this queue.
-            @param processor  The Actor method that should be called to process the queue.
-            @param latency  How long to wait before calling the processor, after the first item
-                            is added to the queue. */
-        Batcher(ACTOR *actor, Processor processor, Timer::duration latency ={}, size_t capacity = 0)
-        :_actor(*actor)
-        ,_processor(processor)
+        Batcher(std::function<void(int gen)> processNow,
+                std::function<void(int gen)> processLater,
+                Timer::duration latency ={},
+                size_t capacity = 0)
+        :_processNow(processNow)
+        ,_processLater(processLater)
         ,_latency(latency)
         ,_capacity(capacity)
         { }
@@ -60,34 +60,61 @@ namespace litecore { namespace actor {
             if (!_scheduled) {
                 // Schedule a pop as soon as an item is added:
                 _scheduled = true;
-                _actor.enqueueAfter(_latency, _processor);
+                _processLater(_generation);
             }
             if (_latency > Timer::duration(0) && _capacity > 0 && _items->size() == _capacity) {
                 // I'm full -- schedule a pop NOW
                 LogVerbose(SyncLog, "Batcher scheduling immediate pop");
-                _actor.enqueue(_processor);
+                _processNow(_generation);
             }
         }
+
 
         /** Removes & returns all the items from  the queue, in the order they were added,
             or nullptr if nothing has been added to the queue.
             Thread-safe. */
-        Items pop() {
+        Items pop(int gen =AnyGen) {
             std::lock_guard<std::mutex> lock(_mutex);
 
+            if (gen < _generation)
+                return {};
             _scheduled = false;
+            ++_generation;
             return move(_items);
         }
 
     private:
-        ACTOR& _actor;
-        Processor _processor;
+        std::function<void(int gen)> _processNow, _processLater;
         Timer::duration _latency;
         size_t _capacity;
         std::mutex _mutex;
         Items _items;
+        int _generation {0};
         bool _scheduled {false};
-        size_t _generation {0};
+    };
+
+
+
+    /** A simple queue that adds objects one at a time and sends them to an Actor in a batch. */
+    template <class ACTOR, class ITEM>
+    class ActorBatcher : public Batcher<ITEM> {
+    public:
+        typedef void (ACTOR::*Processor)(int gen);
+
+        /** Constructs an ActorBatcher. Typically done in the Actor subclass's constructor.
+            @param actor  The Actor that owns this queue.
+            @param processor  The Actor method that should be called to process the queue.
+            @param latency  How long to wait before calling the processor, after the first item
+                            is added to the queue. */
+        ActorBatcher(ACTOR *actor,
+                     Processor processor,
+                     Timer::duration latency ={},
+                     size_t capacity = 0)
+        :Batcher<ITEM>([=](int gen) {actor->enqueue(processor, gen);},
+                       [=](int gen) {actor->enqueueAfter(latency, processor, gen);},
+                       latency,
+                       capacity)
+        { }
     };
 
 } }

@@ -24,6 +24,7 @@
 #include "fleece/Fleece.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
+#include "Instrumentation.hh"
 #include <algorithm>
 #include <assert.h>
 #include <sstream>
@@ -262,6 +263,8 @@ namespace litecore { namespace blip {
         sendProgress(state == kEnd ? MessageProgress::kComplete : MessageProgress::kReceivingReply,
                      _outgoingSize, bodyBytesReceived,
                      (includeThis ? this : nullptr));
+        if (state == kEnd)
+            Signpost::mark(Signpost::blipReceived, 0, number());
         return state;
     }
 
