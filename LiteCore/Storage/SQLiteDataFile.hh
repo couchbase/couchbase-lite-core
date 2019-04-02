@@ -41,7 +41,6 @@ namespace litecore {
         ~SQLiteDataFile();
 
         bool isOpen() const noexcept override;
-        void close() override;
         void compact() override;
         void optimize();
 
@@ -78,6 +77,7 @@ namespace litecore {
     protected:
         std::string loggingClassName() const override       {return "DB";}
         void logKeyStoreOp(SQLiteKeyStore&, const char *op, slice key);
+        void _close() override;
         void reopen() override;
         void rekey(EncryptionAlgorithm, slice newKey) override;
         void _beginTransaction(Transaction*) override;
