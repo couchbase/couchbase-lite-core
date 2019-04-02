@@ -112,7 +112,7 @@ namespace c4Internal {
         options.keyStores.sequences = true;
         options.create = (config.flags & kC4DB_Create) != 0;
         options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
-        options.useDocumentKeys = (config.flags & kC4DB_SharedKeys) != 0;
+        options.useDocumentKeys = true;
         options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
         if (options.encryptionAlgorithm != kNoEncryption) {
 #ifdef COUCHBASE_ENTERPRISE
@@ -143,7 +143,7 @@ namespace c4Internal {
         }
 
         _encoder.reset(new fleece::impl::Encoder());
-        if (config.flags & kC4DB_SharedKeys)
+        if (options.useDocumentKeys)
             _encoder->setSharedKeys(documentKeys());
         
         if (!(config.flags & kC4DB_NonObservable))

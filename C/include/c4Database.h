@@ -40,7 +40,7 @@ extern "C" {
         kC4DB_ReadOnly      = 2,    ///< Open file read-only
         kC4DB_AutoCompact   = 4,    ///< Enable auto-compaction
 //      kC4DB_Bundled       = 8,    // OBSOLETE; all dbs are now bundled
-        kC4DB_SharedKeys    = 0x10, ///< Enable shared-keys optimization at creation time
+        kC4DB_SharedKeys    = 0x10, // OBSOLETE; shared keys are always used
         kC4DB_NoUpgrade     = 0x20, ///< Disable upgrading an older-version database
         kC4DB_NonObservable = 0x40, ///< Disable c4DatabaseObserver
     };

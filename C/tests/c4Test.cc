@@ -190,7 +190,7 @@ _versioning(kC4RevisionTrees)
     objectCount = c4_getObjectCount();
 
     C4DatabaseConfig config = { };
-    config.flags = kC4DB_Create | kC4DB_SharedKeys;
+    config.flags = kC4DB_Create;
     config.storageEngine = _storage;
     config.versioning = _versioning;
 
