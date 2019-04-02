@@ -264,16 +264,23 @@ namespace litecore { namespace repl {
             if (outError) *outError = c4error_make(LiteCoreDomain, kC4ErrorCorruptRevisionData, nullslice);
             return {};
         }
-        Doc legacy;
-        if (!_disableBlobSupport && containsAttachmentsProperty(deltaJSON)) {
-            // Delta refers to legacy attachments, so convert my base revision to have them:
+        bool useDbSharedKeys = c4db_isInTransaction(_db);
+        bool useLegacyAttachments = !_disableBlobSupport && containsAttachmentsProperty(deltaJSON);
+        Doc reEncodedDoc;
+        if (useLegacyAttachments || !useDbSharedKeys) {
             Encoder enc;
-            writeRevWithLegacyAttachments(enc, srcRoot, 1);
-            legacy = enc.finishDoc();
-            srcRoot = legacy.root().asDict();
+            enc.setSharedKeys(_tempSharedKeys);
+            if (useLegacyAttachments) {
+                // Delta refers to legacy attachments, so convert my base revision to have them:
+                writeRevWithLegacyAttachments(enc, srcRoot, 1);
+            } else {
+                // Can't use DB SharedKeys, so re-encode to temp encoder
+                enc.writeValue(srcRoot);
+            }
+            reEncodedDoc = enc.finishDoc();
+            srcRoot = reEncodedDoc.root().asDict();
         }
 
-        bool useDbSharedKeys = c4db_isInTransaction(_db);
         FLEncoder enc;
         if (useDbSharedKeys)
             enc = c4db_getSharedFleeceEncoder(_db);
