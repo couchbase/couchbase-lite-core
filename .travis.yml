@@ -20,3 +20,4 @@ before_script:
   - clang --version
 script:
   - ./build_cmake/scripts/build_unix.sh
+  - cd build_cmake/unix && ../scripts/test_unix.sh > tests.log 2>&1
