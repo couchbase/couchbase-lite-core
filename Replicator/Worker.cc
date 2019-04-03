@@ -254,7 +254,7 @@ namespace litecore { namespace repl {
         bool changed = _statusChanged;
         _statusChanged = false;
         if (changed && _important) {
-            logVerbose("progress +%" PRIu64 "/+%llu, %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64 " docs",
+            logVerbose("progress +%" PRIu64 "/+%" PRIu64 ", %" PRIu64 " docs -- now %" PRIu64 " / %" PRIu64 ", %" PRIu64 " docs",
                        _status.progressDelta.unitsCompleted, _status.progressDelta.unitsTotal,
                        _status.progressDelta.documentCount,
                        _status.progress.unitsCompleted, _status.progress.unitsTotal,
