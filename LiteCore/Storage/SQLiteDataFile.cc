@@ -250,8 +250,8 @@ namespace litecore {
     }
 
 
-    void SQLiteDataFile::close() {
-        DataFile::close(); // closes all the KeyStores
+    // Called by DataFile::close (the public method)
+    void SQLiteDataFile::_close() {
         _getLastSeqStmt.reset();
         _setLastSeqStmt.reset();
         if (_sqlDb) {
