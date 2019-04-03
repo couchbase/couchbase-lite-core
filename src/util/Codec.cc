@@ -106,7 +106,7 @@ namespace litecore { namespace blip {
         Assert(mode > Mode::Raw);
         int result = _flate(&_z, (int)mode);
         logInfo("    %s(in %u, out %u, mode %d)-> %d; read %ld bytes, wrote %ld bytes",
-            operation, inSize, outSize, mode, result,
+            operation, inSize, outSize, (int)mode, result,
             (long)(_z.next_in - (uint8_t*)input.buf),
             (long)(_z.next_out - (uint8_t*)output.buf));
         if (!kZlibRawDeflate)

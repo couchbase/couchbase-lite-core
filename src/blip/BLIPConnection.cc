@@ -161,7 +161,7 @@ namespace litecore { namespace blip {
     protected:
 
         ~BLIPIO() {
-            LogTo(SyncLog, "BLIP sent %zu msgs (%llu bytes), rcvd %llu msgs (%llu bytes) in %.3f sec. Max outbox depth was %zu, avg %.2f",
+            LogTo(SyncLog, "BLIP sent %zu msgs (%" PRIu64 " bytes), rcvd %" PRIu64 " msgs (%" PRIu64 " bytes) in %.3f sec. Max outbox depth was %zu, avg %.2f",
                   _countOutboxDepth, _totalBytesWritten,
                   _numRequestsReceived, _totalBytesRead,
                   _timeOpen.elapsed(),
@@ -243,7 +243,7 @@ namespace litecore { namespace blip {
             Adds a new message to the outgoing queue and wakes up the queue. */
         void _queueMessage(Retained<MessageOut> msg) {
             if (!_webSocket || _closingWithError) {
-                logInfo("Can't send %s #%llu; socket is closed",
+                logInfo("Can't send %s #%" PRIu64 "; socket is closed",
                     kMessageTypeNames[msg->type()], msg->number());
                 msg->disconnected();
                 return;
@@ -290,7 +290,7 @@ namespace litecore { namespace blip {
 
         /** Adds an outgoing message to the icebox (until an ACK arrives.) */
         void freezeMessage(MessageOut *msg) {
-            logVerbose("Freezing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
+            logVerbose("Freezing %s #%" PRIu64 "", kMessageTypeNames[msg->type()], msg->number());
             DebugAssert(!_outbox.contains(msg));
             DebugAssert(!_icebox.contains(msg));
             _icebox.push_back(msg);
@@ -299,7 +299,7 @@ namespace litecore { namespace blip {
 
         /** Removes an outgoing message from the icebox and re-queues it (after ACK arrives.) */
         void thawMessage(MessageOut *msg) {
-            logVerbose("Thawing %s #%llu", kMessageTypeNames[msg->type()], msg->number());
+            logVerbose("Thawing %s #%" PRIu64 "", kMessageTypeNames[msg->type()], msg->number());
             LITECORE_UNUSED bool removed = _icebox.remove(msg);
             DebugAssert(removed);
             requeue(msg, true);
@@ -348,7 +348,7 @@ namespace litecore { namespace blip {
                     slice frame(_frameBuf.get(), out.buf);
                     bytesWritten += frame.size;
 
-                    logVerbose("    Sending frame: %s #%llu %c%c%c%c, bytes %u--%u",
+                    logVerbose("    Sending frame: %s #%" PRIu64 " %c%c%c%c, bytes %u--%u",
                                kMessageTypeNames[frameFlags & kTypeMask], msg->number(),
                                (frameFlags & kMoreComing ? 'M' : '-'),
                                (frameFlags & kUrgent ? 'U' : '-'),
@@ -401,7 +401,7 @@ namespace litecore { namespace blip {
                     if (!ReadUVarInt(&payload, &msgNo) || !ReadUVarInt(&payload, &flagsInt))
                         throw runtime_error("Illegal BLIP frame header");
                     auto flags = (FrameFlags)flagsInt;
-                    logVerbose("Received frame: %s #%llu %c%c%c%c, length %5ld",
+                    logVerbose("Received frame: %s #%" PRIu64 " %c%c%c%c, length %5ld",
                                kMessageTypeNames[flags & kTypeMask], msgNo,
                                (flags & kMoreComing ? 'M' : '-'),
                                (flags & kUrgent ? 'U' : '-'),
@@ -482,7 +482,7 @@ namespace litecore { namespace blip {
             if (!msg) {
                 msg = _icebox.findMessage(msgNo, onResponse);
                 if (!msg) {
-                    //logVerbose("Received ACK of non-current message (%s #%llu)",
+                    //logVerbose("Received ACK of non-current message (%s #%" PRIu64 ")",
                     //      (onResponse ? "RES" : "REQ"), msgNo);
                     return;
                 }
@@ -518,7 +518,7 @@ namespace litecore { namespace blip {
                 if (flags & kMoreComing)
                     _pendingRequests.emplace(msgNo, msg);
             } else {
-                throw runtime_error(format("BLIP protocol error: Bad incoming REQ #%llu (%s)",
+                throw runtime_error(format("BLIP protocol error: Bad incoming REQ #%" PRIu64 " (%s)",
                          msgNo, (msgNo <= _numRequestsReceived ? "already finished" : "too high")));
             }
             return msg;
@@ -534,7 +534,7 @@ namespace litecore { namespace blip {
                 if (!(flags & kMoreComing))
                     _pendingResponses.erase(i);
             } else {
-                throw runtime_error(format("BLIP protocol error: Bad incoming RES #%llu (%s)",
+                throw runtime_error(format("BLIP protocol error: Bad incoming RES #%" PRIu64 " (%s)",
                        msgNo, (msgNo <= _lastMessageNo ? "no request waiting" : "too high")));
             }
             return msg;
@@ -689,7 +689,7 @@ namespace litecore { namespace blip {
     void Connection::closed(CloseStatus status) {
         logInfo("Closed with %-s %d: %.*s",
               status.reasonName(), status.code,
-              (int)status.message.size, status.message.buf);
+              SPLAT(status.message));
         _state = status.isNormal() ? kClosed : kDisconnected;
         _closeStatus = status;
         delegate().onClose(status, _state);

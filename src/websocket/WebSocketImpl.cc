@@ -414,7 +414,7 @@ namespace litecore { namespace websocket {
 
             _timeConnected.stop();
             double t = _timeConnected.elapsed();
-            logInfo("sent %llu bytes, rcvd %llu, in %.3f sec (%.0f/sec, %.0f/sec)",
+            logInfo("sent %" PRIu64 " bytes, rcvd %" PRIu64 ", in %.3f sec (%.0f/sec, %.0f/sec)",
                 _bytesSent, _bytesReceived, t,
                 _bytesSent/t, _bytesReceived/t);
         }

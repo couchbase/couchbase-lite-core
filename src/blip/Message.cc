@@ -264,7 +264,7 @@ namespace litecore { namespace blip {
                      _outgoingSize, bodyBytesReceived,
                      (includeThis ? this : nullptr));
         if (state == kEnd)
-            Signpost::mark(Signpost::blipReceived, 0, number());
+            Signpost::mark(Signpost::blipReceived, 0, static_cast<uintptr_t>(number()));
         return state;
     }
 
