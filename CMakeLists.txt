@@ -61,6 +61,7 @@ set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS
 option(CODE_COVERAGE_ENABLED "Set whether or not code coverage information should be generated" OFF)
 option(BUILD_ENTERPRISE "Set whether or not to build enterprise edition" OFF)
 option(LITECORE_DISABLE_ICU "Disables ICU linking" OFF)
+option(DISABLE_LTO_BUILD "Disable build with Link-time optimization" OFF)
 
 add_definitions(
     -DCMAKE                             # Let the source know this is a CMAKE build
