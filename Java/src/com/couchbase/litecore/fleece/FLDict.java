@@ -42,10 +42,10 @@ public class FLDict {
         FLDictIterator itr = new FLDictIterator();
         try {
             itr.begin(this);
-            String key;
-            while ((key = itr.getKeyString()) != null) {
-                Object value = itr.getValue().asObject();
-                results.put(key, value);
+            FLValue value;
+            while ((value = itr.getValue()) != null) {
+                String key = itr.getKeyString();
+                results.put(key, value.asObject());
                 if (!itr.next())
                     break;
             }
