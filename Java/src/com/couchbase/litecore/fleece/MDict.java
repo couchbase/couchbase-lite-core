@@ -87,8 +87,8 @@ public class MDict extends MCollection implements Iterable<String> {
             FLDictIterator itr = new FLDictIterator();
             try {
                 itr.begin(_dict);
-                String key;
-                while ((key = itr.getKeyString()) != null) {
+                while (itr.getValue() != null) {
+                    String key = itr.getKeyString();
                     _map.put(key, MValue.EMPTY);
                     if (!itr.next())
                         break;
@@ -138,8 +138,8 @@ public class MDict extends MCollection implements Iterable<String> {
             try {
                 itr.begin(_dict);
                 if (itr.getCount() > 0) {
-                    String key;
-                    while ((key = itr.getKeyString()) != null) {
+                    while (itr.getValue() != null) {
+                        String key = itr.getKeyString();
                         if (!_map.containsKey(key))
                             keys.add(key);
                         if (!itr.next())
@@ -223,11 +223,12 @@ public class MDict extends MCollection implements Iterable<String> {
                 FLDictIterator itr = new FLDictIterator();
                 try {
                     itr.begin(_dict);
-                    String key;
-                    while ((key = itr.getKeyString()) != null) {
+                    FLValue value;
+                    while ((value = itr.getValue()) != null) {
+                        String key = itr.getKeyString();
                         if (!_map.containsKey(key)) {
                             enc.writeKey(key);
-                            enc.writeValue(itr.getValue());
+                            enc.writeValue(value);
                         }
                         if (!itr.next())
                             break;
