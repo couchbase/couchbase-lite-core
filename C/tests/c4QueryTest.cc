@@ -774,6 +774,20 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {
     }
 }
 
+N_WAY_TEST_CASE_METHOD(QueryTest, "Database alias column names", "[Query][C][!throws]") {
+    // https://github.com/couchbase/couchbase-lite-core/issues/750
+
+    C4Error err;
+    string queryText = "{'WHAT':[['.main.'],['.secondary.']],'FROM':[{'AS':'main'},{'AS':'secondary','ON':['=',['.main.number1'],['.secondary.theone']]}]}";
+    FLSliceResult queryStr = FLJSON5_ToJSON({queryText.data(), queryText.size()}, nullptr);
+    query = c4query_new(db, (C4Slice)queryStr, &err);
+    FLSlice expected1 = FLSTR("main");
+    FLSlice expected2 = FLSTR("secondary");
+    CHECK(c4query_columnTitle(query, 0) == expected1);
+    CHECK(c4query_columnTitle(query, 1) == expected2);
+    FLSliceResult_Free(queryStr);
+}
+
 #pragma mark - COLLATION:
 
 class CollatedQueryTest : public QueryTest {
