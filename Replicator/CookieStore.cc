@@ -52,29 +52,48 @@ namespace litecore { namespace repl {
     static void adjust_for_overflow(struct tm* inputTime)
     {
         if(sizeof(time_t) > 4 || inputTime->tm_year < 138) {
+            // Don't do anything if time_t is big enough or if the year is 2037 or earlier
             return;
         }
 
+        // February and later is out of bounds
+        // January needs more analysis
         if(inputTime->tm_mon > 0) {
             cap_to_max(inputTime);
             return;
         }
 
-        if(inputTime->tm_mday > 19) {
-            cap_to_max(inputTime);
+        // January 20 and later is out of bounds, January 18 and earlier is normal
+        // January 19 needs more analysis
+        if(inputTime->tm_mday != 19) {
+            if(inputTime->tm_mday > 19) {
+                cap_to_max(inputTime);
+            }
+
             return;
         }
 
-        if(inputTime->tm_hour > 3) {
-            cap_to_max(inputTime);
+        // January 19 4:00 and later is out of bounds, January 19 2:59 and earlier is normal
+        // January 19 3:00 - 3:59 needs more analysis
+        if(inputTime->tm_hour != 3) {
+            if(inputTime->tm_hour > 3) {
+                cap_to_max(inputTime);
+            }
+
             return;
         }
 
-        if(inputTime->tm_min > 14) {
-            cap_to_max(inputTime);
+        // January 19 3:15 and later is out of bounds, January 19 3:13 and earlier is normal
+        // January 19 3:14 needs more analysis
+        if(inputTime->tm_min != 14) {
+            if(inputTime->tm_min > 14) {
+                cap_to_max(inputTime);
+            }
+
             return;
         }
 
+        // January 19 3:14:08 and later is out of bounds, everything else is normal
         if(inputTime->tm_sec > 7) {
             cap_to_max(inputTime);
         }
