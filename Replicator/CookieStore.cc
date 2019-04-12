@@ -36,8 +36,54 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
+    static void cap_to_max(struct tm* inputTime) {
+        Warn("Received a struct tm that overflows 32-bit time_t!  Capping the value...");
+        inputTime->tm_year = 138;
+        inputTime->tm_mon = 0;
+        inputTime->tm_mday = 19;
+        inputTime->tm_yday = 19;
+        inputTime->tm_wday = 2;
+        inputTime->tm_hour = 3;
+        inputTime->tm_min = 14;
+        inputTime->tm_sec = 7;
+        inputTime->tm_isdst = 0;
+    }
+
+    static void adjust_for_overflow(struct tm* inputTime)
+    {
+        if(sizeof(time_t) > 4 || inputTime->tm_year < 138) {
+            return;
+        }
+
+        if(inputTime->tm_mon > 0) {
+            cap_to_max(inputTime);
+            return;
+        }
+
+        if(inputTime->tm_mday > 19) {
+            cap_to_max(inputTime);
+            return;
+        }
+
+        if(inputTime->tm_hour > 3) {
+            cap_to_max(inputTime);
+            return;
+        }
+
+        if(inputTime->tm_min > 14) {
+            cap_to_max(inputTime);
+            return;
+        }
+
+        if(inputTime->tm_sec > 7) {
+            cap_to_max(inputTime);
+        }
+    }
+
     static void offset_to_gmt(struct tm* inputTime)
     {
+        adjust_for_overflow(inputTime);
+
         // Get the raw time_t from the local time
         time_t rawtime = mktime(inputTime);
         struct tm* ptm;

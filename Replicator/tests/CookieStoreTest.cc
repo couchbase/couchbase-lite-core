@@ -87,7 +87,12 @@ TEST_CASE("Cookie Parser", "[cookies]") {
         CHECK(c);
         CHECK(c.name == "x");
         CHECK(c.value == "y");
-        CHECK(c.expires == 4084683494);
+        if(sizeof(time_t) == 4) {
+            CHECK(c.expires == 2147483647);
+        } else {
+            CHECK(c.expires == 4084683494);
+        }
+
         CHECK(c.domain == "example.com");
         CHECK(c.path == "");
         CHECK(c.persistent());
