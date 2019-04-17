@@ -470,9 +470,6 @@ namespace litecore {
                             require(on, "FROM item needs an ON clause to be a join");
                         }
 
-                        // Substitute CROSS for INNER join to work around SQLite loop-ordering (#379)
-                        _sql << " " << kJoinTypeNames[ (joinType == kInner) ? kCross : joinType ];
-
                         _sql << " JOIN " << _tableName << " AS \"" << alias << "\"";
 
                         _sql << " ON ";
