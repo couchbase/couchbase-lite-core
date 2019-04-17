@@ -213,14 +213,14 @@ namespace litecore {
     enum JoinType {
         kInvalidJoin = -1,
         kInner = 0,
-        kOuter,
+        kLeft,
         kLeftOuter,
         kCross
     };
 
     static const char* const kJoinTypeNames[] = {
         "INNER",
-        "OUTER",
+        "LEFT",
         "LEFT OUTER",
         "CROSS",
         nullptr // End of data
