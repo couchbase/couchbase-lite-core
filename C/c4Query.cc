@@ -22,8 +22,10 @@
 #include "Database.hh"
 #include "DataFile.hh"
 #include "Query.hh"
+#include "n1ql_parser.hh"
 #include "Record.hh"
 #include "InstanceCounted.hh"
+#include "StringUtil.hh"
 #include "FleeceImpl.hh"
 #include <math.h>
 #include <limits.h>
@@ -193,6 +195,24 @@ C4SliceResult c4query_fullTextMatched(C4Query *query,
     return tryCatch<C4SliceResult>(outError, [&]{
         return C4SliceResult(query->query()->getMatchedText(*(Query::FullTextTerm*)term));
     });
+}
+
+
+C4SliceResult c4query_translateN1QL(C4String n1ql,
+                                    unsigned* outErrorPosition,
+                                    C4Error *outError) C4API
+{
+    unsigned errPos;
+    fleece::MutableDict result = n1ql::parse(string(slice(n1ql)), &errPos);
+    if (result) {
+        return C4SliceResult(result.toJSON(false, true));
+    } else {
+        recordError(LiteCoreDomain, kC4ErrorInvalidQuery,
+                    format("N1QL syntax error near character %d", errPos+1), outError);
+        if (outErrorPosition)
+            *outErrorPosition = errPos;
+        return {};
+    }
 }
 
 

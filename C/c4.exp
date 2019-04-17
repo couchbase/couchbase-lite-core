@@ -106,6 +106,7 @@ _c4query_columnCount
 _c4query_columnTitle
 _c4query_run
 _c4query_explain
+_c4query_translateN1QL
 
 _c4blob_keyFromString
 _c4blob_keyToString
