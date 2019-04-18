@@ -470,6 +470,7 @@ namespace litecore {
                             require(on, "FROM item needs an ON clause to be a join");
                         }
 
+                        _sql << " " << kJoinTypeNames[ joinType ];
                         _sql << " JOIN " << _tableName << " AS \"" << alias << "\"";
 
                         _sql << " ON ";
