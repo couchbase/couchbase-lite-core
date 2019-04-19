@@ -72,6 +72,17 @@ extern "C" {
     FLString c4query_columnTitle(C4Query* C4NONNULL, unsigned column) C4API;
 
 
+    /** Translates a N1QL query to the JSON syntax recognized by \ref c4query_new.
+        @param n1ql  The N1QL query string (trailing semicolon optional.)
+        @param outErrorPosition  If parsing fails, the approximate index in the input string at
+                    which the error occurred will be written here (if non-NULL.)
+        @param outError  If parsing fails, an error will be stored here (if non-NULL.)
+        @return  On success, the JSON query; on failure, a NULL slice. */
+    C4SliceResult c4query_translateN1QL(C4String n1ql,
+                                        unsigned* outErrorPosition,
+                                        C4Error *outError) C4API;
+
+
     //////// RUNNING QUERIES:
 
 
