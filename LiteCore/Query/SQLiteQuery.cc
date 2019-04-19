@@ -225,13 +225,17 @@ namespace litecore {
             return _rows->count() / 2;  // (every other row is a column bitmap)
         }
 
-        virtual void seek(uint64_t rowIndex) override {
+        virtual void seek(int64_t rowIndex) override {
+            _first = false;
+            if (rowIndex < 0) {
+                rowIndex = 0;
+                _first = true;
+            }
             rowIndex *= 2;
             if (rowIndex >= _rows->count())
                 error::_throw(error::InvalidParameter);
             _iter = Array::iterator(_rows);
             _iter += (uint32_t)rowIndex;
-            _first = false;
         }
 
         bool next() override {

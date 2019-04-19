@@ -90,7 +90,10 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, fleece::InstanceCounted
 
     void seek(uint64_t rowIndex) {
         enumerator().seek(rowIndex);
-        populatePublicFields();
+        if (rowIndex >= 0)
+            populatePublicFields();
+        else
+            clearPublicFields();
     }
 
     void clearPublicFields() {
@@ -212,7 +215,7 @@ bool c4queryenum_next(C4QueryEnumerator *e,
 
 
 bool c4queryenum_seek(C4QueryEnumerator *e,
-                      uint64_t rowIndex,
+                      int64_t rowIndex,
                       C4Error *outError) noexcept
 {
     return tryCatch<bool>(outError, [&]{
