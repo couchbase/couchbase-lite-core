@@ -198,7 +198,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser ANY", "[Query]") {
           == "SELECT \"person\".key, \"person\".sequence FROM kv_default AS \"person\" WHERE ((fl_contains(\"person\".body, 'names', 'Smith'))) AND (\"person\".flags & 1 = 0)");
     CHECK(parseWhere("['SELECT', {FROM: [{AS: 'person'}, {AS: 'book', 'ON': 1}],\
                                  WHERE: ['ANY', 'X', ['.', 'book', 'keywords'], ['=', ['?', 'X'], 'horror']]}]")
-          == "SELECT \"person\".key, \"person\".sequence FROM kv_default AS \"person\" CROSS JOIN kv_default AS \"book\" ON (1) AND (\"book\".flags & 1 = 0) WHERE ((fl_contains(\"book\".body, 'keywords', 'horror'))) AND (\"person\".flags & 1 = 0)");
+          == "SELECT \"person\".key, \"person\".sequence FROM kv_default AS \"person\" INNER JOIN kv_default AS \"book\" ON (1) AND (\"book\".flags & 1 = 0) WHERE ((fl_contains(\"book\".body, 'keywords', 'horror'))) AND (\"person\".flags & 1 = 0)");
 
     // Non-property calls:
     CHECK(parseWhere("['ANY', 'X', ['pi()'], ['=', ['?X'], 'Smith']]")
@@ -306,7 +306,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query]") {
                   FROM: [{as: 'book'}, \
                          {as: 'library', 'on': ['=', ['.book.library'], ['.library._id']]}],\
                  WHERE: ['=', ['.book.author'], ['$AUTHOR']]}")
-          == "SELECT fl_result(fl_value(\"book\".body, 'title')), fl_result(fl_value(\"library\".body, 'name')), fl_result(fl_root(\"library\".body)) FROM kv_default AS \"book\" CROSS JOIN kv_default AS \"library\" ON (fl_value(\"book\".body, 'library') = \"library\".key) AND (\"library\".flags & 1 = 0) WHERE (fl_value(\"book\".body, 'author') = $_AUTHOR) AND (\"book\".flags & 1 = 0)");
+          == "SELECT fl_result(fl_value(\"book\".body, 'title')), fl_result(fl_value(\"library\".body, 'name')), fl_result(fl_root(\"library\".body)) FROM kv_default AS \"book\" INNER JOIN kv_default AS \"library\" ON (fl_value(\"book\".body, 'library') = \"library\".key) AND (\"library\".flags & 1 = 0) WHERE (fl_value(\"book\".body, 'author') = $_AUTHOR) AND (\"book\".flags & 1 = 0)");
 
     // Multiple JOINs (#363):
     CHECK(parse("{'WHAT':[['.','session','appId'],['.','user','username'],['.','session','emoId']],\
@@ -314,7 +314,7 @@ TEST_CASE_METHOD(QueryParserTest, "QueryParser Join", "[Query]") {
                            {'as':'user','on':['=',['.','session','emoId'],['.','user','emoId']]},\
                            {'as':'licence','on':['=',['.','session','licenceID'],['.','licence','id']]}],\
                  'WHERE':['AND',['AND',['=',['.','session','type'],'session'],['=',['.','user','type'],'user']],['=',['.','licence','type'],'licence']]}")
-          == "SELECT fl_result(fl_value(\"session\".body, 'appId')), fl_result(fl_value(\"user\".body, 'username')), fl_result(fl_value(\"session\".body, 'emoId')) FROM kv_default AS \"session\" CROSS JOIN kv_default AS \"user\" ON (fl_value(\"session\".body, 'emoId') = fl_value(\"user\".body, 'emoId')) AND (\"user\".flags & 1 = 0) CROSS JOIN kv_default AS \"licence\" ON (fl_value(\"session\".body, 'licenceID') = fl_value(\"licence\".body, 'id')) AND (\"licence\".flags & 1 = 0) WHERE ((fl_value(\"session\".body, 'type') = 'session' AND fl_value(\"user\".body, 'type') = 'user') AND fl_value(\"licence\".body, 'type') = 'licence') AND (\"session\".flags & 1 = 0)");
+          == "SELECT fl_result(fl_value(\"session\".body, 'appId')), fl_result(fl_value(\"user\".body, 'username')), fl_result(fl_value(\"session\".body, 'emoId')) FROM kv_default AS \"session\" INNER JOIN kv_default AS \"user\" ON (fl_value(\"session\".body, 'emoId') = fl_value(\"user\".body, 'emoId')) AND (\"user\".flags & 1 = 0) INNER JOIN kv_default AS \"licence\" ON (fl_value(\"session\".body, 'licenceID') = fl_value(\"licence\".body, 'id')) AND (\"licence\".flags & 1 = 0) WHERE ((fl_value(\"session\".body, 'type') = 'session' AND fl_value(\"user\".body, 'type') = 'user') AND fl_value(\"licence\".body, 'type') = 'licence') AND (\"session\".flags & 1 = 0)");
 }
 
 
