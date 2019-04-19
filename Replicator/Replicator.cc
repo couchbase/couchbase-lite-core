@@ -144,7 +144,7 @@ namespace litecore { namespace repl {
         setProgress(_pushStatus.progress + _pullStatus.progress);
 
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
-            logInfo("pushStatus=%-s, pullStatus=%-s, progress=%llu/%llu",
+            logInfo("pushStatus=%-s, pullStatus=%-s, progress=%" PRIu64 "/%" PRIu64 "",
                 kC4ReplicatorActivityLevelNames[_pushStatus.level],
                 kC4ReplicatorActivityLevelNames[_pullStatus.level],
                 status().progress.unitsCompleted, status().progress.unitsTotal);
@@ -365,7 +365,7 @@ namespace litecore { namespace repl {
 
     // This only gets called if none of the registered handlers were triggered.
     void Replicator::_onRequestReceived(Retained<MessageIn> msg) {
-        warn("Received unrecognized BLIP request #%llu with Profile '%.*s', %zu bytes",
+        warn("Received unrecognized BLIP request #%" PRIu64 " with Profile '%.*s', %zu bytes",
                 msg->number(), SPLAT(msg->property("Profile"_sl)), msg->body().size);
         msg->notHandled();
     }
@@ -384,7 +384,7 @@ namespace litecore { namespace repl {
         } else if (cp.data) {
             _checkpoint.decodeFrom(cp.data);
             auto seq = _checkpoint.sequences();
-            logInfo("Local checkpoint '%.*s' is [%llu, '%.*s']; getting remote ...",
+            logInfo("Local checkpoint '%.*s' is [%" PRIu64 ", '%.*s']; getting remote ...",
                 SPLAT(cp.checkpointID), seq.local, SPLAT(seq.remote));
             _hadLocalCheckpoint = true;
         } else if (cp.err.code == 0) {
@@ -435,7 +435,7 @@ namespace litecore { namespace repl {
                 _checkpointRevID = response->property("rev"_sl);
                 if (willLog()) {
                     auto gotcp = remoteCheckpoint.sequences();
-                    logInfo("Received remote checkpoint: [%llu, '%.*s'] rev='%.*s'",
+                    logInfo("Received remote checkpoint: [%" PRIu64 ", '%.*s'] rev='%.*s'",
                         gotcp.local, SPLAT(gotcp.remote), SPLAT(_checkpointRevID));
                 }
             }

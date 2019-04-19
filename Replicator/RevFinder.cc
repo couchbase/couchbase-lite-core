@@ -128,7 +128,7 @@ namespace litecore { namespace repl {
         encoder.endArray();
 
         req->respond(response);
-        logInfo("Responded to '%.*s' REQ#%llu w/request for %u revs",
+        logInfo("Responded to '%.*s' REQ#%" PRIu64 " w/request for %u revs",
             SPLAT(req->property("Profile"_sl)), req->number(), requested);
 
         completion(move(whichRequested));

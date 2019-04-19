@@ -78,7 +78,7 @@ namespace litecore {
 
         /** Closes the database. Do not call any methods on this object afterwards,
             except isOpen() or mustBeOpen(), before deleting it. */
-        virtual void close();
+        void close();
 
         /** Closes the database and deletes its file. */
         void deleteDataFile();
@@ -171,9 +171,12 @@ namespace litecore {
 
     protected:
         virtual std::string loggingIdentifier() const override;
-        
+
         /** Reopens database after it's been closed. */
         virtual void reopen();
+
+        /** Override to close the actual database. (Called by close())*/
+        virtual void _close() =0;
 
         /** Override to instantiate a KeyStore object. */
         virtual KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) =0;

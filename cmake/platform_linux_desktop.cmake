@@ -4,7 +4,7 @@ function(setup_globals)
     setup_globals_linux()
 
     # Enable relative RPATHs for installed bits
-    set (CMAKE_INSTALL_RPATH "\$ORIGIN")
+    set (CMAKE_INSTALL_RPATH "\$ORIGIN" PARENT_SCOPE)
 
     if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")

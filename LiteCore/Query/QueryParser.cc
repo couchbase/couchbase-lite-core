@@ -470,9 +470,7 @@ namespace litecore {
                             require(on, "FROM item needs an ON clause to be a join");
                         }
 
-                        // Substitute CROSS for INNER join to work around SQLite loop-ordering (#379)
-                        _sql << " " << kJoinTypeNames[ (joinType == kInner) ? kCross : joinType ];
-
+                        _sql << " " << kJoinTypeNames[ joinType ];
                         _sql << " JOIN " << _tableName << " AS \"" << alias << "\"";
 
                         _sql << " ON ";
@@ -671,12 +669,17 @@ namespace litecore {
     }
 
 
-    static string columnTitleFromProperty(const string &property) {
+    static string columnTitleFromProperty(const string &property, bool useAlias) {
         if (property[0] == '_') {
             return property.substr(1);
         } else {
             auto dot = property.rfind('.');
-            return (dot == string::npos) ? property : property.substr(dot+1);
+            auto nonAliasReturn = (dot == string::npos) ? property : property.substr(dot+1);
+            if(!useAlias || !nonAliasReturn.empty() || dot == string::npos) {
+                return nonAliasReturn;
+            }
+
+            return property.substr(0, dot);
         }
     }
 
@@ -706,9 +709,9 @@ namespace litecore {
             // Come up with a column title if there is no 'AS':
             if (title.empty()) {
                 if (result->type() == kString) {
-                    title = columnTitleFromProperty(propertyFromString(result->asString()));
+                    title = columnTitleFromProperty(propertyFromString(result->asString()), _propertiesUseAliases);
                 } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
-                    title = columnTitleFromProperty(propertyFromNode(result));
+                    title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseAliases);
                 } else {
                     title = format("$%u", ++anonCount); // default for non-properties
                 }

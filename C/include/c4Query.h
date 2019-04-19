@@ -157,12 +157,18 @@ extern "C" {
     /** Jumps to a specific row. Not all query enumerators may support this (but the current
         implementation does.)
         @param e  The query enumerator
-        @param rowIndex  The number of the row, starting at 0
+        @param rowIndex  The number of the row, starting at 0, or -1 to restart before first row
         @param outError  On failure, an error will be stored here (probably kC4ErrorUnsupported.)
         @return  True on success, false on failure. */
     bool c4queryenum_seek(C4QueryEnumerator *e C4NONNULL,
-                          uint64_t rowIndex,
+                          int64_t rowIndex,
                           C4Error *outError) C4API;
+
+    /** Restarts the enumeration, as though it had just been created: the next call to
+        \ref c4queryenum_next will read the first row, and so on from there. */
+    static inline bool c4queryenum_restart(C4QueryEnumerator *e C4NONNULL,
+                                           C4Error *outError) C4API
+    { return c4queryenum_seek(e, -1, outError); }
 
     /** Checks whether the query results have changed since this enumerator was created;
         if so, returns a new enumerator. Otherwise returns NULL. */

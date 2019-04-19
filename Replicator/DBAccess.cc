@@ -51,13 +51,15 @@ namespace litecore { namespace repl {
     access_lock<C4Database*>& DBAccess::insertionDB() {
         if (!_insertionDB) {
             use([&](C4Database *db) {
-                C4Error error;
-                C4Database *idb = c4db_openAgain(db, &error);
-                if (!idb) {
-                    logError("Couldn't open new db connection: %s", c4error_descriptionStr(error));
-                    idb = c4db_retain(db);
+                if (!_insertionDB) {
+                    C4Error error;
+                    C4Database *idb = c4db_openAgain(db, &error);
+                    if (!idb) {
+                        logError("Couldn't open new db connection: %s", c4error_descriptionStr(error));
+                        idb = c4db_retain(db);
+                    }
+                    _insertionDB.reset(new access_lock<C4Database*>(move(idb)));
                 }
-                _insertionDB.reset(new access_lock<C4Database*>(move(idb)));
             });
         }
         return *_insertionDB;

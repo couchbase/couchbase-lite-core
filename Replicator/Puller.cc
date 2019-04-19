@@ -119,7 +119,7 @@ namespace litecore { namespace repl {
 
     // Receiving an incoming "changes" (or "proposeChanges") message
     void Puller::handleChanges(Retained<MessageIn> req) {
-        logVerbose("Received '%.*s' REQ#%llu (%zu queued; %u revs pending, %u active, %u unfinished)",
+        logVerbose("Received '%.*s' REQ#%" PRIu64 " (%zu queued; %u revs pending, %u active, %u unfinished)",
                    SPLAT(req->property("Profile"_sl)), req->number(),
                    _waitingChangesMessages.size(), _pendingRevMessages,
                    _activeIncomingRevs, _unfinishedIncomingRevs);
