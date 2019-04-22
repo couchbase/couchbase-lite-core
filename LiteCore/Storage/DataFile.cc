@@ -322,6 +322,17 @@ namespace litecore {
 #pragma mark - TRANSACTION:
 
     
+    void DataFile::addPreTransactionObserver(PreTransactionObserver *obs) {
+        _preTransactionObservers.push_back(obs);
+    }
+
+    void DataFile::removePreTransactionObserver(PreTransactionObserver *obs) {
+        auto i = find(_preTransactionObservers.begin(), _preTransactionObservers.end(), obs);
+        if (i != _preTransactionObservers.end())
+            _preTransactionObservers.erase(i);
+    }
+
+
     void DataFile::beginTransactionScope(Transaction* t) {
         Assert(!_inTransaction);
         checkOpen();
@@ -330,6 +341,9 @@ namespace litecore {
     }
 
     void DataFile::transactionBegan(Transaction*) {
+        auto observers = move(_preTransactionObservers);
+        for (auto &obs : observers)
+            obs->preTransaction();
         if (documentKeys())
             _documentKeys->transactionBegan();
     }

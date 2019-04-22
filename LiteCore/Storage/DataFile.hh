@@ -60,6 +60,12 @@ namespace litecore {
             virtual void externalTransactionCommitted(const SequenceTracker &sourceTracker) { }
         };
 
+        class PreTransactionObserver {
+        public:
+            virtual void preTransaction() =0;
+            virtual ~PreTransactionObserver() {}
+        };
+
         struct Options {
             KeyStore::Capabilities keyStores;
             bool                create         :1;      ///< Should the db be created if it doesn't exist?
@@ -113,6 +119,9 @@ namespace litecore {
 
 
         void forOtherDataFiles(function_ref<void(DataFile*)> fn);
+
+        void addPreTransactionObserver(PreTransactionObserver*);
+        void removePreTransactionObserver(PreTransactionObserver*);
 
         /** Private API to run a raw (e.g. SQL) query, for diagnostic purposes only */
         virtual fleece::alloc_slice rawQuery(const std::string &query) =0;
@@ -259,6 +268,7 @@ namespace litecore {
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         mutable Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         std::unordered_set<Query*> _queries;                    // Query objects
+        std::vector<PreTransactionObserver*> _preTransactionObservers;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };

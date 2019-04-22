@@ -555,7 +555,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS Aggregate", "[Query][C][FTS]") 
                                          "[ '=', [ '.', 'pId' ], 'bfe2970b-9be6-46f6-b9a7-38c5947c27b1' ] ] } ]"),
                         &err);
     // Just test whether the enumerator starts without an error:
-    auto e = c4query_run(query, nullptr, nullslice, &err);
+    auto e = c4query_run(query, &_options, nullslice, &err);
     REQUIRE(e);
     c4queryenum_release(e);
 }
@@ -608,7 +608,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query FTS with accents", "[Query][C][FTS]
 
     C4Slice queryStr = C4STR("{\"WHERE\": [\"MATCH\",\"nameFTSIndex\",\"'hâkimler'\"], \"WHAT\": [[\".\"]]}");
     query = c4query_new(db, queryStr, &err);
-    auto e = c4query_run(query, nullptr, nullslice, &err);
+    auto e = c4query_run(query, &_options, nullslice, &err);
     REQUIRE(e);
     CHECK(c4queryenum_getRowCount(e, &err) == 1);
     c4queryenum_release(e);
@@ -628,7 +628,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT", "[Query][C]") {
     REQUIRE(c4query_columnCount(query) == 2);
 
     C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    auto e = c4query_run(query, &_options, kC4SliceNull, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);
     REQUIRE(e);
     int i = 0;
@@ -653,7 +653,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT returning object", "[Query][C]
     REQUIRE(c4query_columnCount(query) == 1);
 
     C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    auto e = c4query_run(query, &_options, kC4SliceNull, &error);
     if (!e)
         INFO("c4query_run got error " << error.domain << "/" << error.code);
     REQUIRE(e);
@@ -676,7 +676,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query WHAT returning object", "[Query][C]
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Aggregate", "[Query][C]") {
     compileSelect(json5("{WHAT: [['min()', ['.name.last']], ['max()', ['.name.last']]]}"));
     C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    auto e = c4query_run(query, &_options, kC4SliceNull, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);
     REQUIRE(e);
     int i = 0;
@@ -702,7 +702,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Grouped", "[Query][C]") {
                                 ['max()', ['.name.last']]],\
                      GROUP_BY: [['.contact.address.state']]}"));
     C4Error error {};
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    auto e = c4query_run(query, &_options, kC4SliceNull, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);
     REQUIRE(e);
     int i = 0;
@@ -736,7 +736,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Join", "[Query][C]") {
                          WHERE: ['>=', ['length()', ['.person.name.first']], 9],\
                       ORDER_BY: [['.person.name.first']]}"));
     C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    auto e = c4query_run(query, &_options, kC4SliceNull, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);
     REQUIRE(e);
     int i = 0;
@@ -789,6 +789,13 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query UNNEST", "[Query][C]") {
     }
 }
 
+static int curDocNum(C4QueryEnumerator *e) {
+    C4Error error;
+    REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
+    slice docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
+    return stoi(string(docID));
+}
+
 N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") {
     for (int withIndex = 0; withIndex <= 1; ++withIndex) {
         if (withIndex) {
@@ -819,28 +826,61 @@ N_WAY_TEST_CASE_METHOD(NestedQueryTest, "C4Query UNNEST objects", "[Query][C]") 
 }
 
 N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query Seek", "[Query][C]") {
-    compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
-    C4Error error;
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
-    REQUIRE(e);
-    REQUIRE(c4queryenum_next(e, &error));
-    REQUIRE(FLArrayIterator_GetCount(&e->columns) > 0);
-    FLString docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
-    REQUIRE(docID == "0000001"_sl);
-    REQUIRE(c4queryenum_next(e, &error));
-    REQUIRE(c4queryenum_seek(e, 0, &error));
-    docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
-    REQUIRE(docID == "0000001"_sl);
-    REQUIRE(c4queryenum_seek(e, 7, &error));
-    docID = FLValue_AsString(FLArrayIterator_GetValueAt(&e->columns, 0));
-    REQUIRE(docID == "0000073"_sl);
-    {
-        ExpectingExceptions ex;
-        REQUIRE(!c4queryenum_seek(e, 100, &error));
+    compile(json5("true"));
+    for (int numNexts = 0; numNexts < 10; numNexts += 4) {
+        for (int seekTo = -1; seekTo <= 101; ++seekTo) {
+            if (_options.oneShot && (seekTo+5) / 5 < (numNexts+5) / 5)
+                continue;
+            C4Log("**** Another test...");
+            C4Error error;
+            auto e = c4query_run(query, &_options, kC4SliceNull, &error);
+            REQUIRE(e);
+
+            C4Log("**** %d `next`s", numNexts);
+            if (numNexts > 0) {
+                for (int i = 0; i < numNexts; ++i)
+                    REQUIRE(c4queryenum_next(e, &error));
+                REQUIRE(curDocNum(e) == numNexts);
+            }
+
+            C4Log("**** ...then seek to %d", seekTo);
+            if (seekTo < 100) {
+                REQUIRE(c4queryenum_seek(e, seekTo, &error));
+                if (seekTo == -1)
+                    REQUIRE(c4queryenum_next(e, &error));
+                REQUIRE(curDocNum(e) == max(seekTo, 0) + 1);
+            } else {
+                ExpectingExceptions ex;
+                REQUIRE(!c4queryenum_seek(e, 100, &error));
+                CHECK(error.code == kC4ErrorInvalidParameter);
+                CHECK(error.domain == LiteCoreDomain);
+            }
+            c4queryenum_release(e);
+        }
     }
-    
-    CHECK(error.code == kC4ErrorInvalidParameter);
-    CHECK(error.domain == LiteCoreDomain);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "DB Query while changing database", "[Query][C]") {
+    int changeDBBeforeRow = 25;
+    compile(json5("true"));
+    C4Error error;
+    auto e = c4query_run(query, &_options, kC4SliceNull, &error);
+    REQUIRE(e);
+    int row = 0;
+
+    while (true) {
+        if (row == changeDBBeforeRow) {
+            C4Log("Now modifying the database");
+            createRev("0000999"_sl, kRevID, kEmptyFleeceBody);
+            createNewRev(db, "0000014"_sl, nullslice, kRevDeleted);
+        }
+        if (!c4queryenum_next(e, &error))
+            break;
+        REQUIRE(curDocNum(e) == ++row);
+    }
+    REQUIRE(row == 100);
+    createRev("0000444"_sl, kRevID, kEmptyFleeceBody);
     c4queryenum_release(e);
 }
 
@@ -860,7 +900,9 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query parser error messages", "[Query][C]
     CheckError(error, LiteCoreDomain, kC4ErrorInvalidQuery, "Wrong number of arguments to =");
 }
 
-N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
+N_WAY_TEST_CASE_METHOD(C4QueryTest, "Query refresh", "[Query][C][!throws]") {
+    if (_options.oneShot)
+        return;
     compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
     C4Error error;
     
@@ -869,7 +911,7 @@ N_WAY_TEST_CASE_METHOD(C4QueryTest, "C4Query refresh", "[Query][C][!throws]") {
     c4slice_free(explanation);
     CHECK(litecore::hasPrefix(explanationString, "SELECT fl_result(_doc.key) FROM kv_default AS _doc WHERE (fl_value(_doc.body, 'contact.address.state') = 'CA') AND (_doc.flags & 1 = 0)"));
     
-    auto e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+    auto e = c4query_run(query, &_options, kC4SliceNull, &error);
     REQUIRE(e);
     auto refreshed = c4queryenum_refresh(e, &error);
     REQUIRE(!refreshed);
@@ -1061,7 +1103,7 @@ public:
 
     vector<string> run() {
         C4Error error;
-        c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, kC4SliceNull, &error);
+        c4::ref<C4QueryEnumerator> e = c4query_run(query, &_options, kC4SliceNull, &error);
         if (!e)
             INFO("c4query_run got error " << error.domain << "/" << error.code);
         REQUIRE(e);

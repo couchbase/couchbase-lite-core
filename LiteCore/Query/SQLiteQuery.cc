@@ -16,6 +16,9 @@
 // limitations under the License.
 //
 
+// THIS FILE HAS NOT MERGED THE CHANGES FROM feature/one-shot-query!
+// THE SOURCE FILE FROM THE BRANCH IS AT SQLiteQuery_ONESHOT.cc
+
 #include "SQLiteKeyStore.hh"
 #include "SQLiteDataFile.hh"
 #include "SQLite_Internal.hh"
