@@ -77,10 +77,9 @@ public:
 
     void checkQueryError(const char *queryStr, const char *expectedErrorMessage) {
         compileSelect(json5(queryStr));
-        C4QueryOptions options = kC4DefaultQueryOptions;
         C4Error error = {};
         ExpectingExceptions x;
-        auto e = c4query_run(query, &options, nullslice, &error);
+        auto e = c4query_run(query, &_options, nullslice, &error);
         CHECK(!e);
         char errbuf[256];
         C4Log("Error is %s", c4error_getDescriptionC(error, errbuf, sizeof(errbuf)));
@@ -310,7 +309,7 @@ TEST_CASE_METHOD(CoreMLFaceTest, "CoreML face similarity query", "[Query][Predic
     // Get the vector of one document:
     compileSelect(json5("{WHAT: [" + string(kPrediction) + "], WHERE: ['=', ['._id'], 'lennon-2']}"));
     C4Error error;
-    c4::ref<C4QueryEnumerator> e = c4query_run(query, &kC4DefaultQueryOptions, nullslice, &error);
+    c4::ref<C4QueryEnumerator> e = c4query_run(query, &_options, nullslice, &error);
     INFO("c4query_run got error " << error.domain << "/" << error.code);
     REQUIRE(e);
     bool ok = (c4queryenum_next(e, &error));

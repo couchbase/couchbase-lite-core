@@ -22,9 +22,14 @@ using namespace fleece;
 
 class C4QueryTest : public C4Test {
 public:
+    static const int numberOfOptions = 2;       // seekable, one-shot
+
     C4QueryTest(int which, string filename)
-    :C4Test(which)
+    :C4Test(0)
+    ,_options(kC4DefaultQueryOptions)
     {
+        _options.oneShot = (which == 0);
+        fprintf(stderr, "        --- %s query mode\n", (_options.oneShot ? "one-shot" : "buffered"));
         if (!filename.empty())
             importJSONLines(sFixturesDir + filename);
     }
@@ -77,7 +82,7 @@ public:
         REQUIRE(query);
         C4QueryOptions options = kC4DefaultQueryOptions;
         C4Error error;
-        auto e = c4query_run(query, &options, c4str(bindings), &error);
+        auto e = c4query_run(query, &_options, c4str(bindings), &error);
         INFO("c4query_run got error " << error.domain << "/" << error.code);
         REQUIRE(e);
         vector<Collected> results;
@@ -179,6 +184,7 @@ public:
 
 protected:
     C4Query *query {nullptr};
+    C4QueryOptions _options;
 };
 
 

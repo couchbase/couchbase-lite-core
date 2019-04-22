@@ -78,11 +78,12 @@ extern "C" {
 
     /** Options for running queries. */
     typedef struct {
-        bool rankFullText;      ///< Should full-text results be ranked by relevance?
+        bool obsolete_rankFullText;      // obsolete
+        bool oneShot;           ///< No buffering of query results; minimal memory use and lower latency, but disables seek and refresh.
     } C4QueryOptions;
 
 
-    /** Default query options. Has skip=0, limit=UINT_MAX, rankFullText=true. */
+    /** Default query options. Has oneShot=false. */
 	CBL_CORE_API extern const C4QueryOptions kC4DefaultQueryOptions;
 
 
@@ -175,7 +176,7 @@ extern "C" {
                           C4Error *outError) C4API;
 
     /** Restarts the enumeration, as though it had just been created: the next call to
-        \ref c4queryenum_next will read the first row, and so on from there. */
+        \ref c4queryenum_next will read the first row, and so on. [Equivalent to seek(-1).] */
     static inline bool c4queryenum_restart(C4QueryEnumerator *e C4NONNULL,
                                            C4Error *outError) C4API
     { return c4queryenum_seek(e, -1, outError); }

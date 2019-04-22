@@ -83,6 +83,7 @@ namespace litecore {
             alloc_slice const paramBindings;
             sequence_t const  afterSequence {0};
             uint64_t const purgeCount {0};
+			bool oneShot {false};
         };
 
         virtual QueryEnumerator* createEnumerator(const Options* =nullptr) =0;
