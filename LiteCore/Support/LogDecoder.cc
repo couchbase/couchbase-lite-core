@@ -43,18 +43,22 @@ namespace litecore {
     LogDecoder::LogDecoder(std::istream &in)
     :_in(in)
     {
-        _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
-        uint8_t header[6];
-        _in.read((char*)&header, sizeof(header));
-        if (memcmp(&header, &kMagicNumber, 4) != 0)
-            throw runtime_error("Not a LiteCore log file");
-        if (header[4] != kFormatVersion)
-            throw runtime_error("Unsupported log format version");
-        _pointerSize = header[5];
-        if (_pointerSize != 4 && _pointerSize != 8)
-            throw runtime_error("This log file seems to be damaged");
-        _startTime = time_t(readUVarInt());
-        _readMessage = true;
+        try {
+            _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
+            uint8_t header[6];
+            _in.read((char*)&header, sizeof(header));
+            if (memcmp(&header, &kMagicNumber, 4) != 0)
+                throw runtime_error("Not a LiteCore log file");
+            if (header[4] != kFormatVersion)
+                throw runtime_error("Unsupported log format version");
+            _pointerSize = header[5];
+            if (_pointerSize != 4 && _pointerSize != 8)
+                throw runtime_error("This log file seems to be damaged");
+            _startTime = time_t(readUVarInt());
+            _readMessage = true;
+        } catch (std::ios_base::failure &x) {
+            reraise(x);
+        }
     }
 
 
@@ -62,27 +66,31 @@ namespace litecore {
         if (!_readMessage)
             readMessage(); // skip past the unread message
 
-        _in.exceptions(istream::badbit | istream::failbit);  // turn off EOF exception temporarily
-        if (!_in || _in.peek() < 0)
-            return false;
-        _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
+        try {
+            _in.exceptions(istream::badbit | istream::failbit);  // turn off EOF exception temporarily
+            if (!_in || _in.peek() < 0)
+                return false;
+            _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
 
-        _elapsedTicks += readUVarInt();
-        _curLevel = (int8_t)_in.get();
-        _curDomain = &readStringToken();
+            _elapsedTicks += readUVarInt();
+            _curLevel = (int8_t)_in.get();
+            _curDomain = &readStringToken();
 
-        _curObjectIsNew = false;
-        _putCurObjectInMessage = true;
-        _curObject = readUVarInt();
-        if (_curObject != 0) {
-            if (_objects.find(_curObject) == _objects.end()) {
-                _objects.insert({_curObject, readCString()});
-                _curObjectIsNew = true;
+            _curObjectIsNew = false;
+            _putCurObjectInMessage = true;
+            _curObject = readUVarInt();
+            if (_curObject != 0) {
+                if (_objects.find(_curObject) == _objects.end()) {
+                    _objects.insert({_curObject, readCString()});
+                    _curObjectIsNew = true;
+                }
             }
-        }
 
-        _readMessage = false;
-        return true;
+            _readMessage = false;
+            return true;
+        } catch (std::ios_base::failure &x) {
+            reraise(x);
+        }
     }
 
 
@@ -178,120 +186,124 @@ namespace litecore {
 
 
     void LogDecoder::decodeMessageTo(ostream &out) {
-        assert(!_readMessage);
-        _readMessage = true;
+        try {
+            assert(!_readMessage);
+            _readMessage = true;
 
-        // Write the object ID, unless the caller's already accessed it through the API:
-        if (_putCurObjectInMessage && _curObject > 0) {
-            out << '{' << _curObject;
-            if (_curObjectIsNew)
-                out << "|" << *objectDescription();
-            out << "} ";
-        }
+            // Write the object ID, unless the caller's already accessed it through the API:
+            if (_putCurObjectInMessage && _curObject > 0) {
+                out << '{' << _curObject;
+                if (_curObjectIsNew)
+                    out << "|" << *objectDescription();
+                out << "} ";
+            }
 
-        // Read the format string, then the parameters:
-        const char *format = readStringToken().c_str();
-        for (const char *c = format; *c != '\0'; ++c) {
-            if (*c != '%') {
-                out << *c;
-            } else {
-                bool minus = false;
-                bool dotStar = false;
-                ++c;
-                if (*c == '-') {
-                    minus = true;
+            // Read the format string, then the parameters:
+            const char *format = readStringToken().c_str();
+            for (const char *c = format; *c != '\0'; ++c) {
+                if (*c != '%') {
+                    out << *c;
+                } else {
+                    bool minus = false;
+                    bool dotStar = false;
                     ++c;
-                }
-                c += strspn(c, "#0- +'");
-                while (isdigit(*c))
-                    ++c;
-                if (*c == '.') {
-                    ++c;
-                    if (*c == '*') {
-                        dotStar = true;
+                    if (*c == '-') {
+                        minus = true;
                         ++c;
-                    } else {
-                        while (isdigit(*c))
+                    }
+                    c += strspn(c, "#0- +'");
+                    while (isdigit(*c))
+                        ++c;
+                    if (*c == '.') {
+                        ++c;
+                        if (*c == '*') {
+                            dotStar = true;
                             ++c;
+                        } else {
+                            while (isdigit(*c))
+                                ++c;
+                        }
                     }
-                }
-                c += strspn(c, "hljtzq");
+                    c += strspn(c, "hljtzq");
 
-                switch(*c) {
-                    case 'c':
-                    case 'd':
-                    case 'i': {
-                        bool negative = _in.get() > 0;
-                        int64_t param = readUVarInt();
-                        if (negative)
-                            param = -param;
-                        if (*c == 'c')
-                            out.put(char(param));
-                        else
+                    switch(*c) {
+                        case 'c':
+                        case 'd':
+                        case 'i': {
+                            bool negative = _in.get() > 0;
+                            int64_t param = readUVarInt();
+                            if (negative)
+                                param = -param;
+                            if (*c == 'c')
+                                out.put(char(param));
+                            else
+                                out << param;
+                            break;
+                        }
+                        case 'x': case 'X':
+                            out << hex << readUVarInt() << dec;
+                            break;
+                        case 'u': {
+                            out << readUVarInt();
+                            break;
+                        }
+                        case 'e': case 'E':
+                        case 'f': case 'F':
+                        case 'g': case 'G':
+                        case 'a': case 'A': {
+                            littleEndianDouble param;
+                            _in.read((char*)&param, sizeof(param));
                             out << param;
-                        break;
-                    }
-                    case 'x': case 'X':
-                        out << hex << readUVarInt() << dec;
-                        break;
-                    case 'u': {
-                        out << readUVarInt();
-                        break;
-                    }
-                    case 'e': case 'E':
-                    case 'f': case 'F':
-                    case 'g': case 'G':
-                    case 'a': case 'A': {
-                        littleEndianDouble param;
-                        _in.read((char*)&param, sizeof(param));
-                        out << param;
-                        break;
-                    }
-                    case '@':
-                    case 's': {
-                        if (minus && !dotStar) {
-                            out << readStringToken();
-                        } else {
-                            size_t size = (size_t)readUVarInt();
-                            char buf[200];
-                            while (size > 0) {
-                                auto n = min(size, sizeof(buf));
-                                _in.read(buf, n);
-                                if (minus) {
-                                    for (size_t i = 0; i < n; ++i) {
-                                        char hex[3];
-                                        sprintf(hex, "%02x", uint8_t(buf[i]));
-                                        out << hex;
+                            break;
+                        }
+                        case '@':
+                        case 's': {
+                            if (minus && !dotStar) {
+                                out << readStringToken();
+                            } else {
+                                size_t size = (size_t)readUVarInt();
+                                char buf[200];
+                                while (size > 0) {
+                                    auto n = min(size, sizeof(buf));
+                                    _in.read(buf, n);
+                                    if (minus) {
+                                        for (size_t i = 0; i < n; ++i) {
+                                            char hex[3];
+                                            sprintf(hex, "%02x", uint8_t(buf[i]));
+                                            out << hex;
+                                        }
+                                    } else {
+                                        out.write(buf, n);
                                     }
-                                } else {
-                                    out.write(buf, n);
+                                    size -= n;
                                 }
-                                size -= n;
                             }
+                            break;
                         }
-                        break;
-                    }
-                    case 'p': {
-                        out << "0x" << hex;
-                        if (_pointerSize == 8) {
-                            uint64_t ptr;
-                            _in.read((char*)&ptr, sizeof(ptr));
-                            out << ptr;
-                        } else {
-                            uint32_t ptr;
-                            _in.read((char*)&ptr, sizeof(ptr));
-                            out << ptr;
+                        case 'p': {
+                            out << "0x" << hex;
+                            if (_pointerSize == 8) {
+                                uint64_t ptr;
+                                _in.read((char*)&ptr, sizeof(ptr));
+                                out << ptr;
+                            } else {
+                                uint32_t ptr;
+                                _in.read((char*)&ptr, sizeof(ptr));
+                                out << ptr;
+                            }
+                            out << dec;
+                            break;
                         }
-                        out << dec;
-                        break;
+                        case '%':
+                            out << '%';
+                            break;
+                        default:
+                            throw invalid_argument("Unknown type in LogDecoder format string");
                     }
-                    case '%':
-                        out << '%';
-                        break;
-                    default:
-                        throw invalid_argument("Unknown type in LogDecoder format string");
                 }
             }
+        } catch (std::ios_base::failure &x) {
+            reraise(x);
         }
     }
 
@@ -318,6 +330,24 @@ namespace litecore {
         if (c < 0)
             throw runtime_error("Unexpected EOF in log data");
         return str;
+    }
+
+
+    void LogDecoder::reraise(const std::ios_base::failure &x) {
+        if (_in.good())
+            throw x;                                // exception isn't on _in, so pass it on
+        auto state = _in.rdstate();
+        _in.clear();
+        const char *message;
+        if (state & ios_base::eofbit)
+            message = "unexpected EOF in log";
+        else if (state & ios_base::failbit)
+            message = "error decoding log";
+        else
+            message = "I/O error reading log";
+        char what[50];
+        sprintf(what, "%s at %lld", message, (long long)_in.tellg());
+        throw error(what);
     }
 
 
