@@ -226,14 +226,15 @@ namespace litecore {
         }
 
         virtual void seek(int64_t rowIndex) override {
-            _first = false;
+            rowIndex *= 2;
             if (rowIndex < 0) {
                 rowIndex = 0;
                 _first = true;
+            } else {
+                if (rowIndex >= _rows->count())
+                    error::_throw(error::InvalidParameter);
+                _first = false;
             }
-            rowIndex *= 2;
-            if (rowIndex >= _rows->count())
-                error::_throw(error::InvalidParameter);
             _iter = Array::iterator(_rows);
             _iter += (uint32_t)rowIndex;
         }
