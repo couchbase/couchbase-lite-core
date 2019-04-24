@@ -1079,17 +1079,16 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     CHECK(e->columns()[0]->toJSONString() == "1234");
     CHECK(e->columns()[1]->toJSONString() == "\"FOO\"");
 
-    Query::Options opts;
-    opts.paramBindings = R"({"lim": -1})"_sl;
+    Query::Options opts(R"({"lim": -1})"_sl);
     query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': ['$lim']}"));
     e.reset(query->createEnumerator(&opts));
     CHECK(e->getRowCount() == 0);
 
-    opts.paramBindings = R"({"lim": 100, "skip": -1})"_sl;
+    Query::Options opts2(R"({"lim": 100, "skip": -1})"_sl);
     query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': ['$lim'], 'OFFSET': ['$skip']}"));
-    e.reset(query->createEnumerator(&opts));
+    e.reset(query->createEnumerator(&opts2));
     CHECK(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->toJSONString() == "1234");

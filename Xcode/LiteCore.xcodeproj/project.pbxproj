@@ -78,6 +78,7 @@
 		272B1BE11FB13B7400F56620 /* stopwordset.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BDF1FB13B7400F56620 /* stopwordset.cc */; };
 		272B1BE21FB13B7400F56620 /* stopwordset.h in Headers */ = {isa = PBXBuildFile; fileRef = 272B1BE01FB13B7400F56620 /* stopwordset.h */; };
 		272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
+		272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00E9226FC15D00E62F72 /* BackgroundDB.cc */; };
 		272F009F226A738700E62F72 /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
 		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
@@ -880,6 +881,8 @@
 		272B1BE01FB13B7400F56620 /* stopwordset.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwordset.h; sourceTree = "<group>"; };
 		272B1BE91FB1477800F56620 /* stopwords_en.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_en.h; sourceTree = "<group>"; };
 		272B1BEA1FB1513100F56620 /* FTSTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FTSTest.cc; sourceTree = "<group>"; };
+		272F00E3226FC15D00E62F72 /* BackgroundDB.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BackgroundDB.hh; sourceTree = "<group>"; };
+		272F00E9226FC15D00E62F72 /* BackgroundDB.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BackgroundDB.cc; sourceTree = "<group>"; };
 		273407211DEE116600EA5532 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
 		273407221DEE116600EA5532 /* PlatformIO.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PlatformIO.hh; sourceTree = "<group>"; };
 		2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-framework_Release.xcconfig"; sourceTree = "<group>"; };
@@ -1888,6 +1891,8 @@
 			children = (
 				27F7A0BD1D5E2BAB00447BC6 /* Database.hh */,
 				27E3DD571DB8524300F2872D /* Database.cc */,
+				272F00E9226FC15D00E62F72 /* BackgroundDB.cc */,
+				272F00E3226FC15D00E62F72 /* BackgroundDB.hh */,
 				277C14701EA8102B0075348F /* Document.cc */,
 				271057D61D3D70B10018247B /* Document.hh */,
 				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
@@ -3367,6 +3372,7 @@
 				27E609A21951E4C000202B72 /* RecordEnumerator.cc in Sources */,
 				2761F3F01EE9CC58006D4BB8 /* CookieStore.cc in Sources */,
 				93CD01121E933BE100AFB3FA /* c4Replicator.cc in Sources */,
+				272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */,
 				27D74A801D4D3F2300D806E0 /* Exception.cpp in Sources */,
 				273E9F731C51612E003115A6 /* c4Document.cc in Sources */,
 				2763012B1F3A36BD004A1592 /* StringUtil_Apple.mm in Sources */,

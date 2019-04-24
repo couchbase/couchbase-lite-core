@@ -112,6 +112,7 @@ _c4queryenum_free
 
 _c4query_new
 _c4query_free
+_c4query_setParameters
 _c4query_columnCount
 _c4query_columnTitle
 _c4query_run
@@ -148,6 +149,8 @@ _c4dbobs_releaseChanges
 _c4dbobs_free
 _c4docobs_create
 _c4docobs_free
+_c4queryobs_create
+_c4queryobs_free
 
 _c4repl_new
 _c4repl_newWithSocket

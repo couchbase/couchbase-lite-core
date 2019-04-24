@@ -21,6 +21,7 @@
 #include "KeyStore.hh"
 #include "FleeceImpl.hh"
 #include "Error.hh"
+#include <atomic>
 
 namespace litecore {
     class QueryEnumerator;
@@ -41,6 +42,7 @@ namespace litecore {
 
 
         KeyStore& keyStore() const                                      {return _keyStore;}
+        alloc_slice expression() const                                  {return _expression;}
 
         virtual unsigned columnCount() const noexcept =0;
         
@@ -50,21 +52,36 @@ namespace litecore {
 
         virtual std::string explain() =0;
 
+
         struct Options {
-            alloc_slice paramBindings;
+            Options() { }
+            
+            Options(const Options &o)
+            :paramBindings(o.paramBindings), afterSequence(o.afterSequence) { }
+
+            template <class T>
+            Options(T bindings, sequence_t afterSeq =0)
+            :paramBindings(bindings), afterSequence(afterSeq) { }
+
+            Options after(sequence_t afterSeq) const {return Options(paramBindings, afterSeq);}
+
+            alloc_slice const paramBindings;
+            sequence_t const  afterSequence {0};
         };
 
         virtual QueryEnumerator* createEnumerator(const Options* =nullptr) =0;
 
     protected:
-        Query(KeyStore &keyStore) noexcept
+        Query(KeyStore &keyStore, slice expression) noexcept
         :_keyStore(keyStore)
+        ,_expression(expression)
         { }
         
         virtual ~Query() =default;
 
     private:
         KeyStore &_keyStore;
+        alloc_slice _expression;
     };
 
 
@@ -74,6 +91,10 @@ namespace litecore {
         using FullTextTerms = std::vector<Query::FullTextTerm>;
 
         virtual ~QueryEnumerator() =default;
+
+        Query* query() const                                    {return _query;}
+        const Query::Options& options() const                   {return _options;}
+        sequence_t lastSequence() const                         {return _lastSequence;}
 
         virtual bool next() =0;
 
@@ -88,11 +109,22 @@ namespace litecore {
         virtual bool hasFullText() const                        {return false;}
         virtual const FullTextTerms& fullTextTerms()            {return _fullTextTerms;}
 
-        /** If the query results have changed since `currentEnumerator`, returns a new enumerator
+        /** If the query results have changed since I was created, returns a new enumerator
             that will return the new results. Otherwise returns null. */
         virtual QueryEnumerator* refresh() =0;
 
+        virtual bool obsoletedBy(const QueryEnumerator*) =0;
+
     protected:
+        QueryEnumerator(Query *query NONNULL, const Query::Options *options, sequence_t lastSeq)
+        :_query(query)
+        ,_options(options ? *options : Query::Options{})
+        ,_lastSequence(lastSeq)
+        { }
+
+        Retained<Query> _query;
+        Query::Options _options;
+        std::atomic<sequence_t> _lastSequence;       // DB's lastSequence at the time the query ran
         // The implementation of fullTextTerms() should populate this and return a reference:
         FullTextTerms _fullTextTerms;
     };

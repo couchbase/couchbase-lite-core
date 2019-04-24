@@ -139,6 +139,34 @@ extern "C" {
     void c4docobs_free(C4DocumentObserver*) C4API;
 
     /** @} */
+
+
+    /** \name Document Observer
+     @{ */
+
+    /** A query-observer reference. */
+    typedef struct c4QueryObserver C4QueryObserver;
+
+    /** Callback invoked by a query observer. */
+    typedef void (*C4QueryObserverCallback)(C4QueryObserver* C4NONNULL,
+                                            C4QueryEnumerator*,
+                                            C4Error,
+                                            void *context);
+
+    /** Creates a new query observer, with a callback that will be invoked when the query
+        results change, with an enumerator containing the new results.
+        The callback won't be invoked immediately after a change, and won't be invoked after
+        every change, to avoid performance problems. */
+    C4QueryObserver* c4queryobs_create(C4Query *query C4NONNULL,
+                                       C4QueryObserverCallback callback,
+                                       void *context) C4API;
+
+    /** Stops an observer and frees the resources it's using.
+        It is safe to pass NULL to this call. */
+    void c4queryobs_free(C4QueryObserver*) C4API;
+
+    /** @} */
+
     /** @} */
 #ifdef __cplusplus
 }

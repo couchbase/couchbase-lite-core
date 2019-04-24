@@ -18,6 +18,7 @@
 
 #include "c4QueryTest.hh"
 #include "StringUtil.hh"
+#include <thread>
 
 
 static bool operator==(C4FullTextMatch a, C4FullTextMatch b) {
@@ -700,37 +701,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
     auto refreshed = c4queryenum_refresh(e, &error);
     REQUIRE(!refreshed);
     
-    {
-        TransactionHelper t(db);
-    
-        C4Error c4err;
-        FLEncoder enc = c4db_getSharedFleeceEncoder(db);
-        FLEncoder_BeginDict(enc, 2);
-        FLEncoder_WriteKey(enc, FLSTR("custom"));
-        FLEncoder_WriteBool(enc, true);
-        FLEncoder_WriteKey(enc, FLSTR("contact"));
-        FLEncoder_BeginDict(enc, 1);
-        FLEncoder_WriteKey(enc, FLSTR("address"));
-        FLEncoder_BeginDict(enc, 1);
-        FLEncoder_WriteKey(enc, FLSTR("state"));
-        FLEncoder_WriteString(enc, FLSTR("CA"));
-        FLEncoder_EndDict(enc);
-        FLEncoder_EndDict(enc);
-        FLEncoder_EndDict(enc);
-        
-        FLSliceResult body = FLEncoder_Finish(enc, nullptr);
-        REQUIRE(body.buf);
-        
-        // Save document:
-        C4DocPutRequest rq = {};
-        rq.docID = C4STR("added_later");
-        rq.allocedBody = body;
-        rq.save = true;
-        C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
-        REQUIRE(doc != nullptr);
-        c4doc_free(doc);
-        FLSliceResult_Free(body);
-    }
+    addCaliforniaPerson();
     
     refreshed = c4queryenum_refresh(e, &error);
     REQUIRE(refreshed);
@@ -741,6 +712,54 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
     
     c4queryenum_free(e);
     c4queryenum_free(refreshed);
+}
+
+N_WAY_TEST_CASE_METHOD(QueryTest, "Query observer", "[Query][C][!throws]") {
+    compile(json5("['=', ['.', 'contact', 'address', 'state'], 'CA']"));
+    C4Error error;
+
+    struct State {
+        int count = 0;
+        c4::ref<C4QueryEnumerator> e;
+        C4Error err;
+    };
+
+    auto callback = [](C4QueryObserver *obs, C4QueryEnumerator *e, C4Error err, void *context) {
+        C4Log("---- Query observer called! enum=%p, err={%d/%d}", e, err.domain, err.code);
+        auto state = (State*)context;
+        CHECK(state->count == 0);
+        ++state->count;
+        state->e = c4queryenum_retain(e);
+        state->err = err;
+    };
+    State state;
+    c4::ref<C4QueryObserver> obs = c4queryobs_create(query, callback, &state);
+    CHECK(obs);
+
+    C4Log("---- Waiting for query observer...");
+    while (state.count == 0)
+        this_thread::sleep_for(chrono::milliseconds(100));
+
+    C4Log("Checking query observer...");
+    CHECK(state.count == 1);
+    CHECK(state.err.code == 0);
+    REQUIRE(state.e);
+    CHECK(c4queryenum_getRowCount(state.e, &error) == 8);
+    state.count = 0;
+    state.e = nullptr;
+    state.err = {};
+
+    addCaliforniaPerson();
+
+    C4Log("---- Waiting for 2nd call of query observer...");
+    while (state.count == 0)
+        this_thread::sleep_for(chrono::milliseconds(100));
+
+    C4Log("---- Checking query observer again...");
+    CHECK(state.count == 1);
+    CHECK(state.err.code == 0);
+    REQUIRE(state.e);
+    CHECK(c4queryenum_getRowCount(state.e, &error) == 9);
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {

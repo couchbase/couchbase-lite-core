@@ -39,6 +39,7 @@ namespace fleece { namespace impl {
 namespace litecore {
 
     class Transaction;
+    class SequenceTracker;
 
 
     /** A database file, primarily a container of KeyStores which store the actual data.
@@ -82,6 +83,9 @@ namespace litecore {
 
         /** Closes the database and deletes its file. */
         void deleteDataFile();
+
+        /** Opens another instance on the same file. */
+        DataFile* openAnother(Delegate* NONNULL);
 
         virtual void compact() =0;
 

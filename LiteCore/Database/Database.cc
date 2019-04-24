@@ -21,6 +21,7 @@
 #include "c4Internal.hh"
 #include "c4Document.h"
 #include "c4Document+Fleece.h"
+#include "BackgroundDB.hh"
 #include "DataFile.hh"
 #include "Record.hh"
 #include "SequenceTracker.hh"
@@ -125,18 +126,18 @@ namespace c4Internal {
 
         // Determine the storage type and its Factory object:
         const char *storageEngine = config.storageEngine ? config.storageEngine : "";
-        DataFile::Factory *storage = DataFile::factoryNamed((string)(storageEngine));
-        if (!storage)
+        DataFile::Factory *storageFactory = DataFile::factoryNamed((string)(storageEngine));
+        if (!storageFactory)
             error::_throw(error::Unimplemented);
 
         // Open the DataFile:
         try {
-            _dataFile.reset( storage->openFile(_dataFilePath, this, &options) );
+            _dataFile.reset( storageFactory->openFile(_dataFilePath, this, &options) );
         } catch (const error &x) {
             if (x.domain == error::LiteCore && x.code == error::DatabaseTooOld
                     && UpgradeDatabaseInPlace(_dataFilePath.dir(), config)) {
                 // This is an old 1.x database; upgrade it in place, then open:
-                _dataFile.reset( storage->openFile(_dataFilePath, this, &options) );
+                _dataFile.reset( storageFactory->openFile(_dataFilePath, this, &options) );
             } else {
                 throw;
             }
@@ -191,12 +192,14 @@ namespace c4Internal {
 
     void Database::close() {
         mustNotBeInTransaction();
+        closeBackgroundDatabase();
         _dataFile->close();
     }
 
 
     void Database::deleteDatabase() {
         mustNotBeInTransaction();
+        closeBackgroundDatabase();
         FilePath bundle = path().dir();
         _dataFile->deleteDataFile();
         bundle.delRecursive();
@@ -296,6 +299,7 @@ namespace c4Internal {
             newKey = &keyBuf;
 
         mustNotBeInTransaction();
+        closeBackgroundDatabase();
 
         // Create a new BlobStore and copy/rekey the blobs into it:
         BlobStore *realBlobStore = blobStore();
@@ -402,6 +406,21 @@ namespace c4Internal {
     }
 
 
+    BackgroundDB* Database::backgroundDatabase() {
+        if (!_bgDatabase)
+            _bgDatabase = new BackgroundDB(this);
+        return _bgDatabase;
+    }
+
+
+    void Database::closeBackgroundDatabase() {
+        if (_bgDatabase) {
+            _bgDatabase->close();
+            _bgDatabase = nullptr;
+        }
+    }
+
+
 #pragma mark - UUIDS:
 
 
@@ -460,11 +479,6 @@ namespace c4Internal {
 #pragma mark - TRANSACTIONS:
 
 
-    // NOTE: The lock order is always: first _transactionMutex, then _mutex.
-    // The transaction methods below acquire _transactionMutex;
-    // so do not call them if _mutex is already locked (after WITH_LOCK) or deadlock may occur!
-
-
     void Database::beginTransaction() {
         if (++_transactionLevel == 1) {
             _transaction = new Transaction(_dataFile.get());
@@ -506,8 +520,9 @@ namespace c4Internal {
             if (committed) {
                 // Notify other Database instances on this file:
                 _dataFile->forOtherDataFiles([&](DataFile *other) {
-                    auto otherDatabase = (Database*)other->delegate();
-                    otherDatabase->externalTransactionCommitted(*_sequenceTracker);
+                    auto db = dynamic_cast<Database*>(other->delegate());
+                    if (db)
+                        db->externalTransactionCommitted(*_sequenceTracker);
                 });
             }
             _sequenceTracker->endTransaction(committed);

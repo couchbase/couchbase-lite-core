@@ -133,6 +133,38 @@ public:
         CHECK(titles == expectedTitles);
     }
 
+    void addCaliforniaPerson() {
+        TransactionHelper t(db);
+
+        C4Error c4err;
+        FLEncoder enc = c4db_getSharedFleeceEncoder(db);
+        FLEncoder_BeginDict(enc, 2);
+        FLEncoder_WriteKey(enc, FLSTR("custom"));
+        FLEncoder_WriteBool(enc, true);
+        FLEncoder_WriteKey(enc, FLSTR("contact"));
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_WriteKey(enc, FLSTR("address"));
+        FLEncoder_BeginDict(enc, 1);
+        FLEncoder_WriteKey(enc, FLSTR("state"));
+        FLEncoder_WriteString(enc, FLSTR("CA"));
+        FLEncoder_EndDict(enc);
+        FLEncoder_EndDict(enc);
+        FLEncoder_EndDict(enc);
+
+        FLSliceResult body = FLEncoder_Finish(enc, nullptr);
+        REQUIRE(body.buf);
+
+        // Save document:
+        C4DocPutRequest rq = {};
+        rq.docID = C4STR("added_later");
+        rq.allocedBody = body;
+        rq.save = true;
+        C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
+        REQUIRE(doc != nullptr);
+        c4doc_free(doc);
+        FLSliceResult_Free(body);
+    }
+
 protected:
     C4Query *query {nullptr};
 };

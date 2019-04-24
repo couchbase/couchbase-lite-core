@@ -18,21 +18,33 @@
 
 #include "c4Internal.hh"
 #include "c4Query.h"
+#include "c4Observer.h"
+#include "c4ExceptionUtils.hh"
 
 #include "Database.hh"
+#include "BackgroundDB.hh"
 #include "DataFile.hh"
 #include "Query.hh"
 #include "n1ql_parser.hh"
 #include "Record.hh"
+#include "SequenceTracker.hh"
+#include "Timer.hh"
 #include "InstanceCounted.hh"
 #include "StringUtil.hh"
 #include "FleeceImpl.hh"
+#include <list>
 #include <math.h>
 #include <limits.h>
 #include <mutex>
 
+using namespace std;
+using namespace std::placeholders;
 using namespace litecore;
 using namespace fleece::impl;
+
+
+// How long an observed query waits after a DB change before re-running
+static constexpr actor::Timer::duration kLatency = chrono::milliseconds(500);
 
 
 #pragma mark COMMON CODE:
@@ -40,22 +52,6 @@ using namespace fleece::impl;
 
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
     true
-};
-
-
-// This is the same as C4Query
-struct c4Query : fleece::InstanceCounted {
-    c4Query(Database *db, C4Slice queryExpression)
-    :_database(db),
-     _query(db->defaultKeyStore().compileQuery(queryExpression))
-    { }
-
-    Database* database() const      {return _database;}
-    Query* query() const            {return _query.get();}
-
-private:
-    Retained<Database> _database;
-    Retained<Query> _query;
 };
 
 
@@ -68,10 +64,6 @@ struct C4QueryEnumeratorImpl : public C4QueryEnumerator, fleece::InstanceCounted
     {
         clearPublicFields();
     }
-
-    C4QueryEnumeratorImpl(C4Query *query, const Query::Options *options)
-    :C4QueryEnumeratorImpl(query->database(), query->query()->createEnumerator(options))
-    { }
 
     QueryEnumerator& enumerator() const {
         if (!_enum)
@@ -132,11 +124,123 @@ private:
     bool _hasFullText;
 };
 
-
 static C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumeratorImpl*)e;}
 
 
-#pragma mark - QUERY:
+// This is the same as C4QueryObserver
+struct c4QueryObserver : fleece::InstanceCounted {
+    c4QueryObserver(C4Query *query, C4QueryObserverCallback callback, void* context)
+    :_query(c4query_retain(query)), _callback(callback), _context(context)
+    { }
+
+    void operator() (C4QueryEnumerator *e, C4Error err) noexcept {
+        _callback(this, e, err, _context);
+    }
+
+    ~c4QueryObserver() {
+        c4query_release(_query);
+    }
+
+    C4Query* const                  _query;
+    C4QueryObserverCallback const   _callback;
+    void* const                     _context;
+};
+
+
+// This is the same as C4Query
+struct c4Query : fleece::InstanceCounted {
+    c4Query(Database *db, C4Slice queryExpression)
+    :_database(db)
+    ,_query(db->defaultKeyStore().compileQuery(queryExpression))
+    ,_refreshTimer(bind(&c4Query::timerFired, this))
+    { }
+
+    Database* database() const              {return _database;}
+    Query* query() const                    {return _query.get();}
+    alloc_slice parameters() const          {return _parameters;}
+    void setParameters(slice parameters)    {_parameters = parameters;}
+
+    QueryEnumerator* createEnumerator(const C4QueryOptions *c4options, slice encodedParameters) {
+        Query::Options options(encodedParameters ? encodedParameters : _parameters);
+        return _query->createEnumerator(&options);
+    }
+
+    c4QueryObserver* createObserver(C4QueryObserverCallback callback, void *context) {
+        if (_observers.empty())
+            beginObserving();
+        _observers.emplace_back(this, callback, context);
+        return &_observers.back();
+    }
+
+    void freeObserver(c4QueryObserver *obs) {
+        _observers.remove_if([obs](const c4QueryObserver &o) {return &o == obs;});
+        if (_observers.empty())
+            endObserving();
+    }
+
+    void callObservers(QueryEnumerator *e, const error &err) {
+        C4QueryEnumerator *c4e = new C4QueryEnumeratorImpl(_database, e);
+        C4Error c4err;
+        recordException(err, &c4err);
+        for (auto &obs : _observers)
+            obs(c4e, c4err);
+        c4queryenum_free(c4e);
+    }
+
+    void beginObserving() {
+        // The first time we just run the query directly (in the background):
+        _database->backgroundDatabase()->runQuery(_query, _parameters,
+            [&](std::shared_ptr<QueryEnumerator> e, error err) {
+                // When it's ready, notify the observers:
+                callObservers(e.get(), err);
+                if (e.get()) {
+                    _currentEnumerator = e;
+                    // And set up a database observer to listen for changes:
+                    _dbNotifier.reset(new DatabaseChangeNotifier(_database->sequenceTracker(),
+                                                                 bind(&c4Query::dbChanged, this, _1),
+                                                                 e->lastSequence()));
+                }
+            });
+    }
+
+    void dbChanged(DatabaseChangeNotifier&) {
+        _refreshTimer.fireAfter(kLatency);
+    }
+
+    void timerFired() {
+        _database->backgroundDatabase()->refreshQuery(_currentEnumerator.get(),
+              [&](std::shared_ptr<QueryEnumerator> e, error err) {
+                  if (e || err.code != 0) {
+                      // When the query result changes, or on error, notify the observers:
+                      callObservers(e.get(), err);
+                  }
+                  if (e)
+                      _currentEnumerator = e;
+                  // Read (and ignore) changes from notifier, so it can fire again:
+                  bool external;
+                  while (_dbNotifier->readChanges(nullptr, 1000, external))
+                      ;
+              });
+    }
+
+    void endObserving() {
+        _dbNotifier.reset();
+    }
+
+private:
+    Retained<Database> _database;
+    Retained<Query> _query;
+    alloc_slice _parameters;
+
+    shared_ptr<QueryEnumerator> _currentEnumerator;
+    std::list<c4QueryObserver> _observers;
+    unique_ptr<DatabaseChangeNotifier> _dbNotifier;
+    sequence_t _lastSequence {0};
+    actor::Timer _refreshTimer;
+};
+
+
+#pragma mark - QUERY API:
 
 
 C4Query* c4query_new(C4Database *database,
@@ -167,15 +271,19 @@ FLString c4query_columnTitle(C4Query *query, unsigned column) C4API {
 }
 
 
+void c4query_setParameters(C4Query *query, C4String encodedParameters) C4API {
+    query->setParameters(encodedParameters);
+}
+
+
 C4QueryEnumerator* c4query_run(C4Query *query,
                                const C4QueryOptions *c4options,
                                C4Slice encodedParameters,
                                C4Error *outError) noexcept
 {
     return tryCatch<C4QueryEnumerator*>(outError, [&]{
-        Query::Options options;
-        options.paramBindings = encodedParameters;
-        return new C4QueryEnumeratorImpl(query, &options);
+        return new C4QueryEnumeratorImpl(query->database(),
+                                         query->createEnumerator(c4options, encodedParameters));
     });
 }
 
@@ -219,7 +327,7 @@ C4SliceResult c4query_translateN1QL(C4String n1ql,
 }
 
 
-#pragma mark - QUERY ENUMERATOR:
+#pragma mark - QUERY ENUMERATOR API:
 
 
 bool c4queryenum_next(C4QueryEnumerator *e,
@@ -275,6 +383,20 @@ void c4queryenum_close(C4QueryEnumerator *e) noexcept {
 void c4queryenum_free(C4QueryEnumerator *e) noexcept {
     delete asInternal(e);
 }
+
+
+#pragma mark - QUERY OBSERVER API:
+
+
+C4QueryObserver* c4queryobs_create(C4Query *query, C4QueryObserverCallback cb, void *ctx) C4API {
+    return query->createObserver(cb, ctx);
+}
+
+void c4queryobs_free(C4QueryObserver* obs) C4API {
+    if (obs)
+        obs->_query->freeObserver(obs);
+}
+
 
 
 #pragma mark - INDEXES:

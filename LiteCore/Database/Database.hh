@@ -37,6 +37,7 @@ namespace fleece { namespace impl {
 namespace litecore {
     class SequenceTracker;
     class BlobStore;
+    class BackgroundDB;
 }
 
 
@@ -117,14 +118,17 @@ namespace c4Internal {
         virtual slice fleeceAccessor(slice recordBody) const override;
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
 
+        BackgroundDB* backgroundDatabase();
+        void closeBackgroundDatabase();
+
     public:
         // should be private, but called from Document
         void documentSaved(Document* NONNULL);
+        virtual void externalTransactionCommitted(const SequenceTracker&);
 
     protected:
         virtual ~Database();
         void mustNotBeInTransaction();
-        void externalTransactionCommitted(const SequenceTracker&);
 
     private:
         static FilePath findOrCreateBundle(const string &path, bool canCreate,
@@ -148,6 +152,7 @@ namespace c4Internal {
         unique_ptr<BlobStore>       _blobStore;             // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
         recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
+        Retained<BackgroundDB>      _bgDatabase;            // for background operations
     };
 
 
