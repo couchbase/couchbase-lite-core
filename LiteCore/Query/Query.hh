@@ -86,11 +86,9 @@ namespace litecore {
 
 
     /** Iterator/enumerator of query results. Abstract class created by Query::createEnumerator. */
-    class QueryEnumerator {
+    class QueryEnumerator : public RefCounted {
     public:
         using FullTextTerms = std::vector<Query::FullTextTerm>;
-
-        virtual ~QueryEnumerator() =default;
 
         Query* query() const                                    {return _query;}
         const Query::Options& options() const                   {return _options;}
@@ -121,6 +119,7 @@ namespace litecore {
         ,_options(options ? *options : Query::Options{})
         ,_lastSequence(lastSeq)
         { }
+        virtual ~QueryEnumerator() =default;
 
         Retained<Query> _query;
         Query::Options _options;

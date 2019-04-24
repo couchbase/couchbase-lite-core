@@ -29,7 +29,7 @@ namespace litecore {
 
         void inTransactionDo(Task task)     {enqueue(&BackgroundDB::_inTransactionDo, task);}
 
-        using RefreshQueryCallback = std::function<void(std::shared_ptr<QueryEnumerator>, error)>;
+        using RefreshQueryCallback = std::function<void(Retained<QueryEnumerator>, error)>;
 
         void runQuery(Query*, Query::Options, RefreshQueryCallback);
         void refreshQuery(QueryEnumerator*, RefreshQueryCallback);

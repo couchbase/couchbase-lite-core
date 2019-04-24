@@ -93,9 +93,9 @@ namespace litecore {
     {
         enqueue(&BackgroundDB::_refreshQuery,
                 query->expression(), options,
-                (RefreshQueryCallback)[=](std::shared_ptr<QueryEnumerator> newQE, error err) {
+                (RefreshQueryCallback)[=](Retained<QueryEnumerator> newQE, error err) {
                     if (qe && newQE && !qe->obsoletedBy(newQE.get()))
-                        newQE.reset();      // unchanged
+                        newQE = nullptr;      // unchanged
                     callback(newQE, err);
                 });
     }
@@ -107,7 +107,7 @@ namespace litecore {
         try {
             // Have to recompile the query to get a statement in the bg database:
             Retained<Query> query = _bgDataFile->defaultKeyStore().compileQuery(expression);
-            shared_ptr<QueryEnumerator> qe( query->createEnumerator(&options) );
+            Retained<QueryEnumerator> qe( query->createEnumerator(&options) );
             callback(qe, error(error::LiteCore, 0));
         } catch (const exception &x) {
             callback(nullptr, error::convertException(x));

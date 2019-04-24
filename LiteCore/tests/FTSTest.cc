@@ -64,7 +64,7 @@ public:
         Retained<Query> query{ store->compileQuery(json5(queryStr)) };
         REQUIRE(query != nullptr);
         unsigned row = 0;
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
         while (e->next()) {
             auto cols = e->columns();
             REQUIRE(cols.count() == 1);

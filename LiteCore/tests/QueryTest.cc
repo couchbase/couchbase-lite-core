@@ -108,7 +108,7 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
     for (int pass = 0; pass < 2; ++pass) {
         Stopwatch st;
         int i = 30;
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
         while (e->next()) {
             auto cols = e->columns();
             REQUIRE(e->columns().count() == 2);
@@ -142,7 +142,7 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query]") {
     CHECK(query->columnCount() == 2);
     CHECK(query->columnTitles() == (vector<string>{"num", "square"}));
     int num = 11;
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     while (e->next()) {
         string expectedDocID = stringWithFormat("rec-%03d", num);
         auto cols = e->columns();
@@ -173,8 +173,8 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT All", "[Query]") {
     }
 
     int num = 11;
-    unique_ptr<QueryEnumerator> e(query1->createEnumerator());
-    unique_ptr<QueryEnumerator> e2(query1->createEnumerator());
+    Retained<QueryEnumerator> e(query1->createEnumerator());
+    Retained<QueryEnumerator> e2(query1->createEnumerator());
     while (e->next() && e2->next()) {
         string expectedDocID = stringWithFormat("rec-%03d", num);
         auto cols = e->columns();
@@ -206,7 +206,7 @@ TEST_CASE_METHOD(QueryTest, "Query null value", "[Query]") {
     }
 
     Retained<Query> query{ store->compileQuery(json5("{WHAT: [['.n'], ['.']]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
     auto cols = e->columns();
     REQUIRE(cols.count() == 2);
@@ -225,7 +225,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
                      "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
     CHECK(query->columnCount() == 2);
     int num = 11;
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     while (e->next())
         ++num;
     REQUIRE(num == 101);
@@ -258,7 +258,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
         t.commit();
     }
 
-    unique_ptr<QueryEnumerator> e2(e->refresh());
+    Retained<QueryEnumerator> e2(e->refresh());
     REQUIRE(e2 != nullptr);
 
     num = 11;
@@ -294,7 +294,7 @@ TEST_CASE_METHOD(QueryTest, "Query boolean", "[Query]") {
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: ['._id'], WHERE: ['ISBOOLEAN()', ['.value']]}")) };
     CHECK(query->columnTitles() == (vector<string>{"id"}));
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     int i = 1;
     while (e->next()) {
@@ -361,7 +361,7 @@ TEST_CASE_METHOD(QueryTest, "Query object properties", "[Query]") {
 
     Retained<Query> query{ store->compileQuery(json5("['=', 'FTW', ['_.subvalue', ['.value']]]")) };
 
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "doc4"_sl);
     CHECK(!e->next());
@@ -373,7 +373,7 @@ TEST_CASE_METHOD(QueryTest, "Query array index", "[Query]") {
 
     Retained<Query> query{ store->compileQuery(json5("['=', 'five', ['_.[0]', ['.numbers']]]")) };
 
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     int i = 0;
     while (e->next()) {
         slice docID = e->columns()[0]->asString();
@@ -391,7 +391,7 @@ TEST_CASE_METHOD(QueryTest, "Query array literal", "[Query]") {
 
     CHECK(query->columnTitles() == (vector<string>{"$1"}));
 
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
     CHECK(e->columns()[0]->toJSONString() == "[null,false,true,12345,1234.5,\"howdy\",\"rec-001\"]");
     CHECK(!e->next());
@@ -405,7 +405,7 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal", "[Query]") {
 
     CHECK(query->columnTitles() == (vector<string>{"$1"}));
 
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
     CHECK(e->columns()[0]->toJSON<5>() == "{d:1234.5,f:false,i:12345,id:\"rec-001\",n:null,s:\"howdy\",t:true}"_sl);
     CHECK(!e->next());
@@ -429,7 +429,7 @@ TEST_CASE_METHOD(QueryTest, "Query dict literal with blob", "[Query]") {
     Retained<Query> query{ store->compileQuery(json5(
                   "{WHAT:[ ['.text'], {'text':['.text']} ]}")) };
     Log("%s", query->explain().c_str());
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
     auto d = e->columns()[0]->asDict();
     REQUIRE(d);
@@ -460,7 +460,7 @@ TEST_CASE_METHOD(QueryTest, "Query array length", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
         "{WHAT: ['._id'], WHERE: ['>', ['ARRAY_LENGTH()', ['.value']], 1]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "rec-002"_sl);
@@ -488,7 +488,7 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSING()', ['.bogus'], ['.value']], null]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
@@ -497,21 +497,21 @@ TEST_CASE_METHOD(QueryTest, "Query missing and null", "[Query]") {
     
     query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.atai'], ['.value']], 1]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc2"_sl);
     
     query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFNULL()', ['.real_value'], ['.atai']], 1]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
 
     query =store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['=', ['IFMISSINGORNULL()', ['.real_value'], ['.atai']], 1]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
@@ -540,7 +540,7 @@ TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['REGEXP_CONTAINS()', ['.value'], '.*? value']}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
@@ -549,7 +549,7 @@ TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     
     query = store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['REGEXP_LIKE()', ['.value'], '.*? value']}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
@@ -558,14 +558,14 @@ TEST_CASE_METHOD(QueryTest, "Query regex", "[Query]") {
     
     query = store->compileQuery(json5(
         "{'WHAT': ['._id'], WHERE: ['>', ['REGEXP_POSITION()', ['.value'], '[ ]+value'], 4]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "doc1"_sl);
     
     query = store->compileQuery(json5(
        "{'WHAT': [['REGEXP_REPLACE()', ['.value'], '.*?value', 'nothing']]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 3);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asString() == "nothing"_sl);
@@ -585,7 +585,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: ['ISARRAY()', ['.value']]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "array"_sl);
@@ -593,7 +593,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     
     query = store->compileQuery(json5(
         "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: ['ISNUMBER()', ['.value']]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "number"_sl);
@@ -602,7 +602,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     
     query = store->compileQuery(json5(
         "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: ['ISSTRING()', ['.value']]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "string"_sl);
@@ -611,7 +611,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     
     query = store->compileQuery(json5(
         "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: ['ISOBJECT()', ['.value']]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "object"_sl);
@@ -619,7 +619,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     
     query = store->compileQuery(json5(
         "{'WHAT': [['TYPE()', ['.value']], ['._id'], ['.value']], WHERE: ['ISBOOLEAN()', ['.value']]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "boolean"_sl);
@@ -628,7 +628,7 @@ TEST_CASE_METHOD(QueryTest, "Query type check", "[Query]") {
     
     query = store->compileQuery(json5(
         "{'WHAT': [['TYPE()', ['.value']], ['._id']], WHERE: ['ISATOM()', ['.value']]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 3);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "string"_sl);
@@ -652,7 +652,7 @@ TEST_CASE_METHOD(QueryTest, "Query toboolean", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TOBOOLEAN()', ['.value']]]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 8);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asBool());
@@ -683,7 +683,7 @@ TEST_CASE_METHOD(QueryTest, "Query toatom", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TOATOM()', ['.value']]]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 8);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 1);
@@ -713,10 +713,10 @@ TEST_CASE_METHOD(QueryTest, "Query tonumber", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
     "{'WHAT': [['TONUMBER()', ['.value']]]}")) };
-    unique_ptr<QueryEnumerator> e;
+    Retained<QueryEnumerator> e;
     {
         ExpectingExceptions x;      // tonumber() will internally throw/catch an exception while indexing
-        e.reset(query->createEnumerator());
+        e = (query->createEnumerator());
     }
     REQUIRE(e->getRowCount() == 5);
     REQUIRE(e->next());
@@ -742,7 +742,7 @@ TEST_CASE_METHOD(QueryTest, "Query tostring", "[Query]") {
     
     Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': [['TOSTRING()', ['.value']]]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 8);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->type() == kNull);
@@ -784,7 +784,7 @@ TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
 
     Retained<Query> query{ store->compileQuery(json5(
         "{'WHAT': ['.identifier', ['COUNT()', ['.index']]], 'GROUP_BY': ['.identifier'], 'HAVING': ['=', ['.identifier'], 1]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 1);
@@ -792,7 +792,7 @@ TEST_CASE_METHOD(QueryTest, "Query HAVING", "[Query]") {
 
     query = store->compileQuery(json5(
         "{'WHAT': ['.identifier', ['COUNT()', ['.index']]], 'GROUP_BY': ['.identifier'], 'HAVING': ['!=', ['.identifier'], 1]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
 
     REQUIRE(e->getRowCount() == 2);
     REQUIRE(e->next());
@@ -814,14 +814,14 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
 
     auto query = store->compileQuery(json5(
         "{'WHAT': [['e()']]}"));
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == M_E);
 
     query = store->compileQuery(json5(
         "{'WHAT': [['pi()']]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asDouble() == M_PI);
@@ -853,7 +853,7 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
     for(int i = 0; i < what.size(); i++) {
         query = store->compileQuery(json5(
         "{'WHAT': " + what[i] + "}"));
-        e.reset(query->createEnumerator());
+        e = (query->createEnumerator());
         REQUIRE(e->getRowCount() == 1);
         REQUIRE(e->next());
         CHECK(e->columns()[0]->asDouble() == results[i]);
@@ -861,7 +861,7 @@ TEST_CASE_METHOD(QueryTest, "Query Functions", "[Query]") {
 
     query = store->compileQuery(json5(
         "{'WHAT': [['sign()', ['.num']]]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 1);
@@ -988,7 +988,7 @@ TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
 
     auto query = store->compileQuery(json5(
         "{'WHAT': ['.num']}"));
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asUnsigned() == 1U);
@@ -1010,14 +1010,14 @@ TEST_CASE_METHOD(QueryTest, "Query data type", "[Query]") {
 
     auto query = store->compileQuery(json5(
         "{'WHAT': ['.num']}"));
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asData() == "number one"_sl);
 
     query = store->compileQuery(json5(
         "{'WHAT': [['type()', ['.num']]]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asString() == "binary"_sl);
@@ -1038,7 +1038,7 @@ TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query]") {
 
     auto query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string']}"));
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->next());
     CHECK(e->missingColumns() == 0);
     CHECK(e->columns()[0]->toJSONString() == "1234");
@@ -1046,7 +1046,7 @@ TEST_CASE_METHOD(QueryTest, "Missing columns", "[Query]") {
 
     query = store->compileQuery(json5(
         "{'WHAT': ['.bogus', '.num', '.nope', '.string', '.gone']}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->next());
     CHECK(e->missingColumns() == 0x15);       // binary 10101, i.e. cols 0, 2, 4 are missing
     CHECK(e->columns()[1]->toJSONString() == "1234");
@@ -1068,12 +1068,12 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
 
     auto query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': -1}"));
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     CHECK(e->getRowCount() == 0);
 
     query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': 100, 'OFFSET': -1}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     CHECK(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->toJSONString() == "1234");
@@ -1082,13 +1082,13 @@ TEST_CASE_METHOD(QueryTest, "Negative Limit / Offset", "[Query]") {
     Query::Options opts(R"({"lim": -1})"_sl);
     query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': ['$lim']}"));
-    e.reset(query->createEnumerator(&opts));
+    e = (query->createEnumerator(&opts));
     CHECK(e->getRowCount() == 0);
 
     Query::Options opts2(R"({"lim": 100, "skip": -1})"_sl);
     query = store->compileQuery(json5(
         "{'WHAT': ['.num', '.string'], 'LIMIT': ['$lim'], 'OFFSET': ['$skip']}"));
-    e.reset(query->createEnumerator(&opts2));
+    e = (query->createEnumerator(&opts2));
     CHECK(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->toJSONString() == "1234");
@@ -1123,14 +1123,14 @@ TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
 
     auto query = store->compileQuery(json5(
         "{'WHAT': [['.main.num1']], 'FROM': [{'AS':'main'}, {'AS':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']]}]}"));
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 4);
 
     query = store->compileQuery(json5(
         "{'WHAT': [['.main.num1'], ['.secondary.theone']], 'FROM': [{'AS':'main'}, {'AS':'secondary', 'ON': ['=', ['.main.num1'], ['.secondary.theone']], 'JOIN':'LEFT OUTER'}]}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 11);
     e->seek(4);
     CHECK(e->columns()[0]->asInt() == 4);
@@ -1142,7 +1142,7 @@ TEST_CASE_METHOD(QueryTest, "Query JOINs", "[Query]") {
     // NEED TO DEFINE THIS BEHAVIOR.  WHAT IS THE CORRECT RESULT?  THE BELOW FAILS!
     /*query = store->compileQuery(json5(
         "{'WHAT': [['.main.num1'], ['.secondary.num2']], 'FROM': [{'AS':'main'}, {'AS':'secondary', 'JOIN':'CROSS'}], 'ORDER_BY': ['.secondary.num2']}"));
-    e.reset(query->createEnumerator());
+    e = (query->createEnumerator());
     REQUIRE(e->getRowCount() == 100);
     for(int i = 0; i < 100; i++) {
         REQUIRE(e->next());
@@ -1157,7 +1157,7 @@ protected:
     Retained<Query> query;
 
     void checkQuery(int docNo, int expectedRowCount) {
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
         CHECK(e->getRowCount() == expectedRowCount);
         while (e->next()) {
             auto cols = e->columns();
@@ -1287,7 +1287,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
 
 	auto query = store->compileQuery(json5(
         "{'WHAT': [['COUNT()','.'], ['.callsign']], 'WHERE':['IS NOT', ['.callsign'], null]}"));
-	unique_ptr<QueryEnumerator> e(query->createEnumerator());
+	Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 1);
@@ -1295,7 +1295,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
 
 	query = store->compileQuery(json5(
         "{'WHAT': [['COUNT()','.'], ['.callsign']], 'WHERE':['IS', ['.callsign'], null]}"));
-	e.reset(query->createEnumerator());
+	e = (query->createEnumerator());
 	REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     CHECK(e->columns()[0]->asInt() == 1);
@@ -1303,7 +1303,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
 
 	query = store->compileQuery(json5(
         "{'WHAT': [['.callsign']]}"));
-	e.reset(query->createEnumerator());
+	e = (query->createEnumerator());
 	CHECK(e->getRowCount() == 3); // Make sure there are actually three docs!
 }
 
@@ -1315,7 +1315,7 @@ TEST_CASE_METHOD(QueryTest, "Query NULL check", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
     Retained<Query> query{ store->compileQuery(json5(
           "{WHAT: ['.num', ['*', ['.num'], ['.num']]], WHERE: ['>', ['.num'], 10]}")) };
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     e->next();
     query = nullptr;
 
@@ -1323,7 +1323,7 @@ TEST_CASE_METHOD(QueryTest, "Query finalized after db deleted", "[Query]") {
 
     // Now free the query enum, which will free the sqlite_stmt, triggering a SQLite warning
     // callback about the database file being unlinked:
-    e.reset();
+    e = nullptr;
 
     // Assert that the callback did not log a warning:
     CHECK(warningsLogged() == 0);
@@ -1354,7 +1354,7 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
     {
         Retained<Query> query{ store->compileQuery(json5(
             "{WHAT: ['._id'], WHERE: ['.expiration']}")) };
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
         CHECK(!e->next());
     }
 
@@ -1364,7 +1364,7 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
     {
         Retained<Query> query{ store->compileQuery(json5(
             "{WHAT: ['._expiration'], ORDER_BY: [['._id']]}")) };
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
         CHECK(e->next());
         CHECK(e->columns()[0]->asInt() == now - 10000);
         CHECK(e->next());
@@ -1380,7 +1380,7 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
 
         Query::Options options { alloc_slice(format("{\"NOW\": %lld}", (long long)now)) };
         
-        unique_ptr<QueryEnumerator> e(query->createEnumerator(&options));
+        Retained<QueryEnumerator> e(query->createEnumerator(&options));
         CHECK(e->next());
         CHECK(e->columns()[0]->asString() == "rec-001"_sl);
         CHECK(!e->next());
@@ -1430,7 +1430,7 @@ TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
            bool_false: ['.bool_false'] \
         }]}"));
     
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     REQUIRE(e->getRowCount() == 1);
     REQUIRE(e->next());
     REQUIRE(e->columns()[0]->asDict());
