@@ -4118,7 +4118,7 @@ static int n1ql_input(yycontext *ctx, char *buf, size_t max_size) {
 }
 
 
-MutableDict parse(const string &input, unsigned *errPos) {
+FLMutableDict parse(const string &input, unsigned *errPos) {
     MutableDict result;
     std::stringstream stream(input, std::ios_base::in);
     yycontext ctx = { };
@@ -4131,7 +4131,7 @@ MutableDict parse(const string &input, unsigned *errPos) {
         *errPos = (unsigned) ctx.__maxpos;
     }
     yyrelease(&ctx);
-    return result;
+    return (FLMutableDict) FLValue_Retain(result);
 }
 
 } }

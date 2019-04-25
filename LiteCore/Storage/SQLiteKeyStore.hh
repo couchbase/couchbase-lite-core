@@ -79,7 +79,7 @@ namespace litecore {
         RecordEnumerator::Impl* newEnumeratorImpl(bool bySequence,
                                                   sequence_t since,
                                                   RecordEnumerator::Options) override;
-        Retained<Query> compileQuery(slice expression) override;
+        Retained<Query> compileQuery(slice expression, QueryLanguage) override;
 
         SQLite::Statement* compile(const std::string &sql) const;
         SQLite::Statement& compile(const std::unique_ptr<SQLite::Statement>& ref,

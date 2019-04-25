@@ -31,6 +31,13 @@ namespace litecore {
     class Query : public RefCounted {
     public:
 
+        class parseError : public error {
+        public:
+            parseError(const char *message, int errPos);
+
+            const int errorPosition;
+        };
+
         /** Info about a match of a full-text query term */
         struct FullTextTerm {
             uint64_t dataSource;              ///< Opaque identifier of where text is stored
