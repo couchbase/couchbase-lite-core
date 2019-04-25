@@ -84,7 +84,7 @@ struct C4QueryEnumeratorImpl : public RefCounted,
         return true;
     }
 
-    void seek(uint64_t rowIndex) {
+    void seek(int64_t rowIndex) {
         enumerator().seek(rowIndex);
         if (rowIndex >= 0)
             populatePublicFields();
