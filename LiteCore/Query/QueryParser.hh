@@ -91,9 +91,9 @@ namespace litecore {
         enum aliasType {
             kDBAlias,
             kJoinAlias,
+            kResultAlias,
             kUnnestVirtualTableAlias,
-            kUnnestTableAlias,
-            kResultAlias
+            kUnnestTableAlias
         };
 
         QueryParser(const delegate &delegate, const std::string& tableName, const std::string& bodyColumnName)
@@ -195,7 +195,7 @@ namespace litecore {
         std::string _bodyColumnName;                // Column holding doc bodies
         std::map<std::string, aliasType> _aliases;  // "AS..." aliases for db/joins/unnests
         std::string _dbAlias;                       // Alias of the db itself, "_doc" by default
-        bool _propertiesUseAliases {false};         // Must properties include alias as prefix?
+        bool _propertiesUseSourcePrefix {false};    // Must properties include alias as prefix?
         std::vector<std::string> _columnTitles;     // Pretty names of result columns
         std::stringstream _sql;                     // The SQL being generated
         const fleece::impl::Value* _curNode;        // Current node being parsed
