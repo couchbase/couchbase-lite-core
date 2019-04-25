@@ -32,6 +32,13 @@ namespace litecore {
     class Query : public RefCounted {
     public:
 
+        class parseError : public error {
+        public:
+            parseError(const char *message, int errPos);
+
+            const int errorPosition;
+        };
+
         /** Info about a match of a full-text query term */
         struct FullTextTerm {
             uint64_t dataSource;              ///< Opaque identifier of where text is stored
@@ -43,6 +50,7 @@ namespace litecore {
 
         KeyStore& keyStore() const                                      {return _keyStore;}
         alloc_slice expression() const                                  {return _expression;}
+        QueryLanguage language() const                                  {return _language;}
 
         virtual unsigned columnCount() const noexcept =0;
         
@@ -72,9 +80,10 @@ namespace litecore {
         virtual QueryEnumerator* createEnumerator(const Options* =nullptr) =0;
 
     protected:
-        Query(KeyStore &keyStore, slice expression) noexcept
+        Query(KeyStore &keyStore, slice expression, QueryLanguage language) noexcept
         :_keyStore(keyStore)
         ,_expression(expression)
+        ,_language(language)
         { }
         
         virtual ~Query() =default;
@@ -82,6 +91,7 @@ namespace litecore {
     private:
         KeyStore &_keyStore;
         alloc_slice _expression;
+        QueryLanguage _language;
     };
 
 

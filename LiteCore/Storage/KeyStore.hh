@@ -30,6 +30,13 @@ namespace litecore {
     class Transaction;
     class Query;
 
+
+    enum class QueryLanguage {          // Values MUST match C4QueryLanguage in c4Query.h
+        kJSON,
+        kN1QL,
+    };
+
+
     /** A container of key/value mappings. Keys and values are opaque blobs.
         The value is divided into 'meta' and 'body'; the body can optionally be omitted when
         reading, to save time/space. There is also a 'sequence' number that's assigned every time
@@ -76,7 +83,7 @@ namespace litecore {
         virtual void readBody(Record &rec) const;
 
         /** Creates a database query object. */
-        virtual Retained<Query> compileQuery(slice expr);
+        virtual Retained<Query> compileQuery(slice expr, QueryLanguage =QueryLanguage::kJSON) =0;
 
 
         //////// Writing:
@@ -101,7 +108,7 @@ namespace litecore {
         bool del(const Record &rec, Transaction &t)                 {return del(rec.key(), t);}
 
         /** Sets a flag of a record, without having to read/write the Record. */
-        virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&);
+        virtual bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&) =0;
 
 
         //////// Expiration:
@@ -157,13 +164,13 @@ namespace litecore {
         };
 
         virtual bool supportsIndexes(IndexType) const                   {return false;}
-        virtual bool createIndex(const IndexSpec&, const IndexOptions* = nullptr);
+        virtual bool createIndex(const IndexSpec&, const IndexOptions* = nullptr) =0;
         bool createIndex(slice name,
                          slice expressionJSON,
                          IndexType =kValueIndex,
                          const IndexOptions* = nullptr); // convenience method
-        virtual void deleteIndex(slice name);
-        virtual std::vector<IndexSpec> getIndexes() const;
+        virtual void deleteIndex(slice name) =0;
+        virtual std::vector<IndexSpec> getIndexes() const =0;
 
         // public for complicated reasons; clients should never call it
         virtual ~KeyStore()                             { }

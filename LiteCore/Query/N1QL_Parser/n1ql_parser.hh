@@ -17,13 +17,12 @@
 //
 
 #pragma once
-#include "fleece/Fleece.hh"
-#include "fleece/Mutable.hh"
+#include "fleece/Fleece.h"
 #include <string>
 
 namespace litecore { namespace n1ql {
 
     // Entry point of the N1QL parser (implementation at the bottom of n1ql.leg)
-    fleece::MutableDict parse(const std::string &input, unsigned *errPos);
+    FLMutableDict parse(const std::string &input, unsigned *errPos);
 
 } }

@@ -151,9 +151,9 @@ struct c4QueryObserver : fleece::InstanceCounted {
 
 // This is the same as C4Query
 struct c4Query : public RefCounted, fleece::InstanceCounted {
-    c4Query(Database *db, C4Slice queryExpression)
+    c4Query(Database *db, C4QueryLanguage language, C4Slice queryExpression)
     :_database(db)
-    ,_query(db->defaultKeyStore().compileQuery(queryExpression))
+    ,_query(db->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))
     ,_refreshTimer(bind(&c4Query::timerFired, this))
     { }
 
@@ -247,13 +247,27 @@ private:
 #pragma mark - QUERY API:
 
 
-C4Query* c4query_new(C4Database *database,
-                     C4Slice expression,
-                     C4Error *outError) noexcept
+C4Query* c4query_new2(C4Database *database,
+                      C4QueryLanguage language,
+                      C4Slice expression,
+                      int *outErrorPos,
+                      C4Error *outError) noexcept
 {
+    if (outErrorPos)
+        *outErrorPos = -1;
     return tryCatch<C4Query*>(outError, [&]{
-        return retain(new c4Query(database, expression));
+        try {
+            return retain(new c4Query(database, language, expression));
+        } catch (Query::parseError &x) {
+            if (outErrorPos)
+                *outErrorPos = x.errorPosition;
+            throw;
+        }
     });
+}
+
+C4Query* c4query_new(C4Database *database C4NONNULL, C4String expression, C4Error *error) C4API {
+    return c4query_new2(database, kC4JSONQuery, expression, nullptr, error);
 }
 
 
@@ -315,24 +329,6 @@ C4SliceResult c4query_fullTextMatched(C4Query *query,
     return tryCatch<C4SliceResult>(outError, [&]{
         return C4SliceResult(query->query()->getMatchedText(*(Query::FullTextTerm*)term));
     });
-}
-
-
-C4SliceResult c4query_translateN1QL(C4String n1ql,
-                                    unsigned* outErrorPosition,
-                                    C4Error *outError) C4API
-{
-    unsigned errPos;
-    fleece::MutableDict result = n1ql::parse(string(slice(n1ql)), &errPos);
-    if (result) {
-        return C4SliceResult(result.toJSON(false, true));
-    } else {
-        recordError(LiteCoreDomain, kC4ErrorInvalidQuery,
-                    format("N1QL syntax error near character %d", errPos+1), outError);
-        if (outErrorPosition)
-            *outErrorPosition = errPos;
-        return {};
-    }
 }
 
 

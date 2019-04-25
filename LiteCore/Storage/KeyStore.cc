@@ -71,33 +71,12 @@ namespace litecore {
         rec.updateSequence(seq);
     }
 
-    bool KeyStore::setDocumentFlag(slice key, sequence_t sequence, DocumentFlags, Transaction&) {
-        error::_throw(error::Unimplemented);
-    }
-
-    bool KeyStore::createIndex(const IndexSpec&, const IndexOptions*) {
-        error::_throw(error::Unimplemented);
-    }
-
     bool KeyStore::createIndex(slice name,
                                slice expressionJSON,
                                IndexType type,
                                const IndexOptions* options)
     {
         return createIndex({string(name), type, alloc_slice(expressionJSON)}, options);
-    }
-
-
-    void KeyStore::deleteIndex(slice name) {
-        error::_throw(error::Unimplemented);
-    }
-    
-    vector<KeyStore::IndexSpec> KeyStore::getIndexes() const {
-        error::_throw(error::Unimplemented);
-    }
-
-    Retained<Query> KeyStore::compileQuery(slice expressionJSON) {
-        error::_throw(error::Unimplemented);
     }
 
     expiration_t KeyStore::now() noexcept {

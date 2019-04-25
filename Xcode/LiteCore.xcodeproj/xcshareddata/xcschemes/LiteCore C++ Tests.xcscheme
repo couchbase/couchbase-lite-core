@@ -75,6 +75,14 @@
             argument = "-r list"
             isEnabled = "YES">
          </CommandLineArgument>
+         <CommandLineArgument
+            argument = "[Query]"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "[N1QL]"
+            isEnabled = "YES">
+         </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>
          <AdditionalOption

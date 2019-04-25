@@ -19,10 +19,18 @@
 #include "Query.hh"
 #include "KeyStore.hh"
 #include "Logging.hh"
+#include "StringUtil.hh"
 
 
 namespace litecore {
 
     LogDomain QueryLog("Query");
+
+    Query::parseError::parseError(const char *message, int errPos)
+    :error(error::LiteCore, error::InvalidQuery,
+           format("%s near character %d", message, errPos+1))
+    ,errorPosition(errPos)
+    { }
+
 
 }

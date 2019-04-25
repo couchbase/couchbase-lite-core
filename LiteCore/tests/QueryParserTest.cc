@@ -16,66 +16,38 @@
 // limitations under the License.
 //
 
-#include "QueryParser.hh"
-#include "Error.hh"
+#include "QueryParserTest.hh"
 #include "FleeceImpl.hh"
-#include <string>
+#include "Error.hh"
 #include <vector>
 #include <iostream>
-#include "LiteCoreTest.hh"
-
-using namespace std;
-using namespace fleece::impl;
 
 
-class QueryParserTest : public TestFixture, public QueryParser::delegate {
-public:
-    QueryParserTest() { }
+string QueryParserTest::parse(FLValue val) {
+    QueryParser qp(*this);
+    qp.parse((const fleece::impl::Value*)val);
+    return qp.SQL();
+}
 
-    virtual std::string tableName() const override {
-        return "kv_default";
-    }
-    virtual std::string FTSTableName(const std::string &property) const override {
-        return tableName() + "::" + property;
-    }
-    virtual std::string unnestedTableName(const std::string &property) const override {
-        return tableName() + ":unnest:" + property;
-    }
-    virtual bool tableExists(const string &tableName) const override {
-        return tablesExist;
-    }
-#ifdef COUCHBASE_ENTERPRISE
-    virtual std::string predictiveTableName(const std::string &property) const override {
-        return tableName() + ":predict:" + property;
-    }
-#endif
+string QueryParserTest::parse(string json) {
+    alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
+    return parse((FLValue)fleece::impl::Value::fromTrustedData(fleece));
+}
 
-protected:
-    string parse(string json) {
-        QueryParser qp(*this);
-        alloc_slice fleece = JSONConverter::convertJSON(json5(json));
-        qp.parse(Value::fromTrustedData(fleece));
-        return qp.SQL();
-    }
+string QueryParserTest::parseWhere(string json) {
+    QueryParser qp(*this);
+    alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
+    qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));
+    return qp.SQL();
+}
 
-    string parseWhere(string json) {
-        QueryParser qp(*this);
-        alloc_slice fleece = JSONConverter::convertJSON(json5(json));
-        qp.parseJustExpression(Value::fromTrustedData(fleece));
-        return qp.SQL();
-    }
-
-    void mustFail(string json) {
-        QueryParser qp(*this);
-        alloc_slice fleece = JSONConverter::convertJSON(json5(json));
-        ExpectException(error::LiteCore, error::InvalidQuery, [&]{
-            qp.parseJustExpression(Value::fromTrustedData(fleece));
-        });
-    }
-
-    bool tablesExist {false};
-
-};
+void QueryParserTest::mustFail(string json) {
+    QueryParser qp(*this);
+    alloc_slice fleece = fleece::impl::JSONConverter::convertJSON(json5(json));
+    ExpectException(error::LiteCore, error::InvalidQuery, [&]{
+        qp.parseJustExpression(fleece::impl::Value::fromTrustedData(fleece));
+    });
+}
 
 
 TEST_CASE_METHOD(QueryParserTest, "QueryParser basic", "[Query]") {

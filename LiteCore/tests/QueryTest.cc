@@ -135,10 +135,17 @@ TEST_CASE_METHOD(QueryTest, "Query SELECT", "[Query]") {
 }
 
 
-TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query]") {
+TEST_CASE_METHOD(QueryTest, "Query SELECT WHAT", "[Query][N1QL]") {
     addNumberedDocs();
-    Retained<Query> query{ store->compileQuery(json5(
-        "{WHAT: ['.num', ['AS', ['*', ['.num'], ['.num']], 'square']], WHERE: ['>', ['.num'], 10]}")) };
+    Retained<Query> query;
+    SECTION("JSON") {
+        query = store->compileQuery(json5(
+            "{WHAT: ['.num', ['AS', ['*', ['.num'], ['.num']], 'square']], WHERE: ['>', ['.num'], 10]}"));
+    }
+    SECTION("N1QL") {
+        query = store->compileQuery("SELECT num, num*num AS square WHERE num > 10"_sl,
+                                    QueryLanguage::kN1QL);
+    }
     CHECK(query->columnCount() == 2);
     CHECK(query->columnTitles() == (vector<string>{"num", "square"}));
     int num = 11;
@@ -1443,4 +1450,23 @@ TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
     CHECK(e->columns()[0]->asDict()->get("dbl_max"_sl)->asDouble() == DBL_MAX);
     CHECK(e->columns()[0]->asDict()->get("bool_true"_sl)->asBool() == true);
     CHECK(e->columns()[0]->asDict()->get("bool_false"_sl)->asBool() == false);
+}
+
+
+TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query]") {
+    addNumberedDocs();
+    Retained<Query> query{ store->compileQuery("SELECT num, num*num WHERE num >= 30 and num <= 40 ORDER BY num"_sl,
+                                               QueryLanguage::kN1QL) };
+    CHECK(query->columnCount() == 2);
+    int num = 30;
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    while (e->next()) {
+        string expectedDocID = stringWithFormat("rec-%03d", num);
+        auto cols = e->columns();
+        REQUIRE(cols.count() == 2);
+        REQUIRE(cols[0]->asInt() == num);
+        REQUIRE(cols[1]->asInt() == num * num);
+        ++num;
+    }
+    REQUIRE(num == 41);
 }

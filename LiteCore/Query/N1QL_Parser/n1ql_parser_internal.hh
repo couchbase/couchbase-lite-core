@@ -21,6 +21,7 @@
 
 #pragma once
 #include "n1ql_parser.hh"
+#include "fleece/Mutable.hh"
 #include "Any.hh"
 #include "PlatformIO.hh"
 #include <sstream>

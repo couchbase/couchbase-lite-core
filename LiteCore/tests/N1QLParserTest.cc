@@ -16,43 +16,44 @@
 // limitations under the License.
 //
 
-#include "c4Test.hh"
-#include "c4Query.h"
+#include "QueryParserTest.hh"
+#include "n1ql_parser.hh"
+#include "StringUtil.hh"
+#include "fleece/Mutable.hh"
 #include <iostream>
 
 
 using namespace std;
+using namespace litecore;
+using namespace fleece;
 
-class N1QLParserTestFixture : C4Test {
-public:
-    N1QLParserTestFixture() :C4Test(0) { }
-
+class N1QLParserTest : QueryParserTest {
 protected:
+
     string translate(const char *n1ql) {
-        std::cerr << n1ql << "  -->  " ;
+        cerr << n1ql << "\n-->  " ;
         C4Error error;
         unsigned errorPos;
-        alloc_slice json = c4query_translateN1QL(c4str(n1ql), &errorPos, &error);
-        string result;
-        char message[256];
-        if (json) {
-            result = string(json);
-            size_t pos;
-            while (string::npos != (pos = result.find('"')))
-                result[pos] = '\'';
-            std::cerr << result << "\n";
-            C4Query *query = c4query_new(db, json, &error);
-            if (!query) INFO(c4error_getDescriptionC(error, message, sizeof(message)));
-            CHECK(query);
-            c4query_free(query);
-        } else {
-            std::cerr << "!! " << c4error_getDescriptionC(error, message, sizeof(message)) << "\n";
+
+        FLValue dict = (FLValue) n1ql::parse(n1ql, &errorPos);
+        if (!dict) {
+            cerr << string(max(errorPos,5u)-5, ' ') << "^--syntax error\n";
+            return "";
         }
-        return result;
+
+        string jsonResult = string(alloc_slice(FLValue_ToJSONX((FLValue)dict, false, true)));
+        replace(jsonResult, '"', '\'');     // save the tests from having to escape tons of quotes
+        cerr << jsonResult << "\n";
+
+        string sql = parse(dict);
+        cerr << "-->  " << sql << "\n";
+        
+        FLValue_Release(dict);
+        return jsonResult;
     }
 };
 
-TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL literals", "[Query][N1QL][C]") {
+TEST_CASE_METHOD(N1QLParserTest, "N1QL literals", "[Query][N1QL][C]") {
     CHECK(translate("SELECT FALSE") == "{'WHAT':[false]}");
     CHECK(translate("SELECT TRUE") == "{'WHAT':[true]}");
     CHECK(translate("SELECT NULL") == "{'WHAT':[null]}");
@@ -84,7 +85,7 @@ TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL literals", "[Query][N1QL][C]") {
     CHECK(translate("SELECT {x:17, \"null\": null,empty:{} , str:'hi'||'there'}") == "{'WHAT':[{'empty':{},'null':null,'str':['||','hi','there'],'x':17}]}");
 }
 
-TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL properties", "[Query][N1QL][C]") {
+TEST_CASE_METHOD(N1QLParserTest, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("select foo") == "{'WHAT':[['.foo']]}");
     CHECK(translate("select foo.bar") == "{'WHAT':[['.foo.bar']]}");
     CHECK(translate("select foo. bar . baz") == "{'WHAT':[['.foo.bar.baz']]}");
@@ -111,7 +112,7 @@ TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL properties", "[Query][N1QL][C]") {
     CHECK(translate("select $var") == "{'WHAT':[['$var']]}");
 }
 
-TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL expressions", "[Query][N1QL][C]") {
+TEST_CASE_METHOD(N1QLParserTest, "N1QL expressions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT -x") == "{'WHAT':[['-',['.x']]]}");
     CHECK(translate("SELECT NOT x") == "{'WHAT':[['NOT',['.x']]]}");
     
@@ -159,7 +160,7 @@ TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL expressions", "[Query][N1QL][C]") 
     CHECK(translate("SELECT {x:17}.xx[0].yy") == "{'WHAT':[['_.',{'x':17},'.xx[0].yy']]}");
 }
 
-TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL functions", "[Query][N1QL][C]") {
+TEST_CASE_METHOD(N1QLParserTest, "N1QL functions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT squee()") == "");   // unknown name
 
     CHECK(translate("SELECT pi()") == "{'WHAT':[['pi()']]}");
@@ -171,13 +172,13 @@ TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL functions", "[Query][N1QL][C]") {
     CHECK(translate("SELECT count(db.*)") == "{'WHAT':[['count()',['.db.']]]}");
 }
 
-TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL collation", "[Query][N1QL][C]") {
+TEST_CASE_METHOD(N1QLParserTest, "N1QL collation", "[Query][N1QL][C]") {
     CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE") == "{'WHAT':[['COLLATE',{'CASE':false},['=',['.name'],'fred']]]}");
     CHECK(translate("SELECT (name = 'fred') COLLATE UNICODE CASE NODIACRITICS") == "{'WHAT':[['COLLATE',{'CASE':true,'DIACRITICS':false,'UNICODE':true},['=',['.name'],'fred']]]}");
     CHECK(translate("SELECT (name = 'fred') COLLATE NOCASE FRED") == "");
 }
 
-TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL SELECT", "[Query][N1QL][C]") {
+TEST_CASE_METHOD(N1QLParserTest, "N1QL SELECT", "[Query][N1QL][C]") {
     CHECK(translate("SELECT foo bar") == "");
     CHECK(translate("SELECT from where true") == "");
     CHECK(translate("SELECT \"from\" where true") == "{'WHAT':[['.from']],'WHERE':true}");
@@ -203,7 +204,7 @@ TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL SELECT", "[Query][N1QL][C]") {
 //    CHECK(translate("SELECT 17 NOT IN (SELECT value WHERE type='prime')") == "{'WHAT':[['NOT IN',17,['SELECT',{'WHAT':[['.value']],'WHERE':['=',['.type'],'prime']}]]]}");
 }
 
-TEST_CASE_METHOD(N1QLParserTestFixture, "N1QL JOIN", "[Query][N1QL][C]") {
+TEST_CASE_METHOD(N1QLParserTest, "N1QL JOIN", "[Query][N1QL][C]") {
     CHECK(translate("SELECT 0 FROM db") == "{'FROM':[{'AS':'db'}],'WHAT':[0]}");
     CHECK(translate("SELECT file.name FROM db AS file") == "{'FROM':[{'AS':'file'}],'WHAT':[['.file.name']]}");
     CHECK(translate("SELECT db.name FROM db JOIN db AS other ON other.key = db.key")
