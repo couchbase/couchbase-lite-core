@@ -77,10 +77,18 @@ namespace litecore {
 
         static constexpr uint8_t kFormatVersion = 1;
 
+        /** Exception thrown from \ref next, \ref readMessage, or \ref decodeMessageTo
+            if an I/O error or unexpected EOF occurs on the input stream. */
+        class error : public std::runtime_error {
+        public:
+            explicit error(const char *msg)         :runtime_error(msg) { }
+        };
+
     private:
         uint64_t readUVarInt();
         const std::string& readStringToken();
         std::string readCString();
+        [[noreturn]] void reraise(const std::ios_base::failure&);
 
         std::istream &_in;
         size_t _pointerSize;
