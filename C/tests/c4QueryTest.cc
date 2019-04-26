@@ -735,22 +735,23 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query observer", "[Query][C][!throws]") {
     C4Error error;
 
     struct State {
+        C4Query *query;
+        c4::ref<C4QueryObserver> obs;
         int count = 0;
-        c4::ref<C4QueryEnumerator> e;
-        C4Error err;
     };
 
-    auto callback = [](C4QueryObserver *obs, C4QueryEnumerator *e, C4Error err, void *context) {
-        C4Log("---- Query observer called! enum=%p, err={%d/%d}", e, err.domain, err.code);
+    auto callback = [](C4QueryObserver *obs, C4Query *query, void *context) {
+        C4Log("---- Query observer called!");
         auto state = (State*)context;
+        CHECK(query == state->query);
+        CHECK(obs == state->obs);
         CHECK(state->count == 0);
         ++state->count;
-        state->e = c4queryenum_retain(e);
-        state->err = err;
     };
     State state;
-    c4::ref<C4QueryObserver> obs = c4queryobs_create(query, callback, &state);
-    CHECK(obs);
+    state.query = query;
+    state.obs = c4queryobs_create(query, callback, &state);
+    CHECK(state.obs);
 
     C4Log("---- Waiting for query observer...");
     while (state.count == 0)
@@ -758,12 +759,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query observer", "[Query][C][!throws]") {
 
     C4Log("Checking query observer...");
     CHECK(state.count == 1);
-    CHECK(state.err.code == 0);
-    REQUIRE(state.e);
-    CHECK(c4queryenum_getRowCount(state.e, &error) == 8);
+    auto e = c4queryobs_getEnumerator(state.obs, &error);
+    REQUIRE(e);
+    CHECK(c4queryenum_getRowCount(e, &error) == 8);
     state.count = 0;
-    state.e = nullptr;
-    state.err = {};
 
     addCaliforniaPerson();
 
@@ -773,9 +772,10 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query observer", "[Query][C][!throws]") {
 
     C4Log("---- Checking query observer again...");
     CHECK(state.count == 1);
-    CHECK(state.err.code == 0);
-    REQUIRE(state.e);
-    CHECK(c4queryenum_getRowCount(state.e, &error) == 9);
+    auto e2 = c4queryobs_getEnumerator(state.obs, &error);
+    REQUIRE(e2);
+    CHECK(e2 != e);
+    CHECK(c4queryenum_getRowCount(e2, &error) == 9);
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "Delete index", "[Query][C][!throws]") {

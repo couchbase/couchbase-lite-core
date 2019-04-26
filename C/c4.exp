@@ -153,6 +153,7 @@ _c4docobs_create
 _c4docobs_free
 _c4queryobs_create
 _c4queryobs_free
+_c4queryobs_getEnumerator
 
 _c4repl_new
 _c4repl_newWithSocket

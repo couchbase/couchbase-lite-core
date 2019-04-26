@@ -43,16 +43,19 @@ using namespace litecore;
 using namespace fleece::impl;
 
 
+#define LOCK(MUTEX)     lock_guard<mutex> _lock(const_cast<mutex&>(MUTEX))
+
+
 // How long an observed query waits after a DB change before re-running
 static constexpr actor::Timer::duration kLatency = chrono::milliseconds(500);
-
-
-#pragma mark COMMON CODE:
 
 
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
     true
 };
+
+
+#pragma mark QUERY ENUMERATOR:
 
 
 // Extension of C4QueryEnumerator
@@ -120,6 +123,8 @@ struct C4QueryEnumeratorImpl : public RefCounted,
         _enum = nullptr;
     }
 
+    bool usesEnumerator(QueryEnumerator *e) const     {return e == _enum;}
+
 private:
     Retained<Database> _database;
     Retained<QueryEnumerator> _enum;
@@ -129,24 +134,51 @@ private:
 static C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {return (C4QueryEnumeratorImpl*)e;}
 
 
-// This is the same as C4QueryObserver
-struct c4QueryObserver : fleece::InstanceCounted {
+#pragma mark - QUERY OBSERVER:
+
+
+// This is the same as C4QueryObserver.
+// Instances are not directly heap-allocated; they're managed by a std::list (c4Query::observers).
+class c4QueryObserver : fleece::InstanceCounted {
+public:
     c4QueryObserver(C4Query *query, C4QueryObserverCallback callback, void* context)
     :_query(c4query_retain(query)), _callback(callback), _context(context)
     { }
 
-    void operator() (C4QueryEnumerator *e, C4Error err) noexcept {
-        _callback(this, e, err, _context);
+    ~c4QueryObserver()              {c4query_release(_query);}
+
+    C4Query* query() const          {return _query;}
+
+    // called on a background thread
+    void notify(C4QueryEnumeratorImpl *e, C4Error err) noexcept {
+        {
+            LOCK(_mutex);
+            _currentEnumerator = e;
+            _currentError = err;
+        }
+        _callback(this, _query, _context);
     }
 
-    ~c4QueryObserver() {
-        c4query_release(_query);
+    C4QueryEnumerator* currentEnumerator(C4Error *outError) {
+        LOCK(_mutex);
+        _lastEnumerator = _currentEnumerator;   // keep it alive till the next call
+        if (!_currentEnumerator && outError)
+            *outError = _currentError;
+        return _currentEnumerator;
     }
 
+private:
     C4Query* const                  _query;
     C4QueryObserverCallback const   _callback;
     void* const                     _context;
+    mutex                           _mutex;
+    Retained<C4QueryEnumeratorImpl> _lastEnumerator;
+    Retained<C4QueryEnumeratorImpl> _currentEnumerator;
+    C4Error                         _currentError {};
 };
+
+
+#pragma mark - QUERY:
 
 
 // This is the same as C4Query
@@ -168,6 +200,7 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
     }
 
     c4QueryObserver* createObserver(C4QueryObserverCallback callback, void *context) {
+        LOCK(_mutex);
         if (_observers.empty())
             beginObserving();
         _observers.emplace_back(this, callback, context);
@@ -175,29 +208,20 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
     }
 
     void freeObserver(c4QueryObserver *obs) {
+        LOCK(_mutex);
         _observers.remove_if([obs](const c4QueryObserver &o) {return &o == obs;});
         if (_observers.empty())
             endObserving();
-    }
-
-    void callObservers(QueryEnumerator *e, const error &err) {
-        Retained<C4QueryEnumeratorImpl> c4e;
-        if (e)
-            c4e = new C4QueryEnumeratorImpl(_database, e);
-        C4Error c4err;
-        recordException(err, &c4err);
-
-        for (auto &obs : _observers)
-            obs(c4e, c4err);
     }
 
     void beginObserving() {
         // The first time we just run the query directly (in the background):
         _database->backgroundDatabase()->runQuery(_query, _parameters,
             [&](Retained<QueryEnumerator> e, error err) {
-                // When it's ready, notify the observers:
+                // (on a background thread) When it's ready, notify the observers:
                 callObservers(e, err);
                 if (e) {
+                    LOCK(_mutex);
                     _currentEnumerator = e;
                     // And set up a database observer to listen for changes:
                     _dbNotifier.reset(new DatabaseChangeNotifier(_database->sequenceTracker(),
@@ -207,19 +231,27 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
             });
     }
 
+    void endObserving() {
+        _dbNotifier.reset();
+        _currentEnumerator = nullptr;
+        _refreshTimer.stop();
+    }
+
+    // called on a background thread
     void dbChanged(DatabaseChangeNotifier&) {
         _refreshTimer.fireAfter(kLatency);
     }
 
+    // called on a background thread
     void timerFired() {
         _database->backgroundDatabase()->refreshQuery(_currentEnumerator,
               [&](Retained<QueryEnumerator> e, error err) {
                   if (e || err.code != 0) {
-                      // When the query result changes, or on error, notify the observers:
+                      // When the query result changes, or on error, update & notify the observers:
+                      LOCK(_mutex);
+                      _currentEnumerator = e;
                       callObservers(e, err);
                   }
-                  if (e)
-                      _currentEnumerator = e;
                   // Read (and ignore) changes from notifier, so it can fire again:
                   bool external;
                   while (_dbNotifier->readChanges(nullptr, 1000, external))
@@ -227,8 +259,16 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
               });
     }
 
-    void endObserving() {
-        _dbNotifier.reset();
+    // called on a background thread (with the mutex locked)
+    void callObservers(QueryEnumerator *e, const error &err) {
+        Retained<C4QueryEnumeratorImpl> c4e;
+        if (e)
+            c4e = new C4QueryEnumeratorImpl(_database, e);
+        C4Error c4err;
+        recordException(err, &c4err);
+
+        for (auto &obs : _observers)
+            obs.notify(c4e, c4err);
     }
 
 private:
@@ -236,6 +276,7 @@ private:
     Retained<Query> _query;
     alloc_slice _parameters;
 
+    mutex _mutex;
     Retained<QueryEnumerator> _currentEnumerator;
     std::list<c4QueryObserver> _observers;
     unique_ptr<DatabaseChangeNotifier> _dbNotifier;
@@ -404,10 +445,12 @@ C4QueryObserver* c4queryobs_create(C4Query *query, C4QueryObserverCallback cb, v
 
 void c4queryobs_free(C4QueryObserver* obs) C4API {
     if (obs)
-        obs->_query->freeObserver(obs);
+        obs->query()->freeObserver(obs);
 }
 
-
+C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs, C4Error *outError) C4API {
+    return obs->currentEnumerator(outError);
+}
 
 #pragma mark - INDEXES:
 

@@ -141,7 +141,7 @@ extern "C" {
     /** @} */
 
 
-    /** \name Document Observer
+    /** \name Query Observer
      @{ */
 
     /** A query-observer reference. */
@@ -149,8 +149,7 @@ extern "C" {
 
     /** Callback invoked by a query observer. */
     typedef void (*C4QueryObserverCallback)(C4QueryObserver* C4NONNULL,
-                                            C4QueryEnumerator*,
-                                            C4Error,
+                                            C4Query* C4NONNULL,
                                             void *context);
 
     /** Creates a new query observer, with a callback that will be invoked when the query
@@ -160,6 +159,16 @@ extern "C" {
     C4QueryObserver* c4queryobs_create(C4Query *query C4NONNULL,
                                        C4QueryObserverCallback callback,
                                        void *context) C4API;
+
+    /** Returns the current query results, or NULL and the current error; then forgets the results.
+        When the observer is created, the results are initially NULL until the query finishes
+        running in the background.
+        Once the observer callback is called, the results are available.
+        @param obs  The query observer.
+        @param error  If the last evaluation of the query failed, the error will be stored here.
+        @return  The current query results, or NULL if the last evaluation of the query failed. */
+    C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs C4NONNULL,
+                                                C4Error *error) C4API;
 
     /** Stops an observer and frees the resources it's using.
         It is safe to pass NULL to this call. */
