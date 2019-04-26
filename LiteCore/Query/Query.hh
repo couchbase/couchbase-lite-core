@@ -100,7 +100,6 @@ namespace litecore {
     public:
         using FullTextTerms = std::vector<Query::FullTextTerm>;
 
-        Query* query() const                                    {return _query;}
         const Query::Options& options() const                   {return _options;}
         sequence_t lastSequence() const                         {return _lastSequence;}
 
@@ -119,19 +118,17 @@ namespace litecore {
 
         /** If the query results have changed since I was created, returns a new enumerator
             that will return the new results. Otherwise returns null. */
-        virtual QueryEnumerator* refresh() =0;
+        virtual QueryEnumerator* refresh(Query *query) =0;
 
         virtual bool obsoletedBy(const QueryEnumerator*) =0;
 
     protected:
-        QueryEnumerator(Query *query NONNULL, const Query::Options *options, sequence_t lastSeq)
-        :_query(query)
-        ,_options(options ? *options : Query::Options{})
+        QueryEnumerator(const Query::Options *options, sequence_t lastSeq)
+        :_options(options ? *options : Query::Options{})
         ,_lastSequence(lastSeq)
         { }
         virtual ~QueryEnumerator() =default;
 
-        Retained<Query> _query;
         Query::Options _options;
         std::atomic<sequence_t> _lastSequence;       // DB's lastSequence at the time the query ran
         // The implementation of fullTextTerms() should populate this and return a reference:

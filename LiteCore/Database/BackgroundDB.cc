@@ -46,7 +46,11 @@ namespace litecore {
     }
 
 
-    void BackgroundDB::_inTransactionDo(Task task) {
+    void BackgroundDB::_doTask(Task task) {
+        task(_bgDataFile.get());
+    }
+
+    void BackgroundDB::_inTransactionDo(TransactionTask task) {
         Transaction t(_bgDataFile);
         SequenceTracker sequenceTracker;
         sequenceTracker.beginTransaction();
@@ -79,39 +83,45 @@ namespace litecore {
     }
 
 
-    void BackgroundDB::runQuery(Query *query, Query::Options options, RefreshQueryCallback callback) {
-        refreshQuery(query, options, nullptr, callback);
+
+
+    BackgroundQuerier::BackgroundQuerier(c4Internal::Database *db, Query *query)
+    :_backgroundDB(db->backgroundDatabase())
+    ,_expression(query->expression())
+    ,_language(query->language())
+    { }
+
+
+    void BackgroundQuerier::run(Query::Options options, Callback callback) {
+        run(options, nullptr, callback);
     }
 
-    void BackgroundDB::refreshQuery(QueryEnumerator *qe, RefreshQueryCallback callback) {
-        refreshQuery(qe->query(), qe->options(), qe, callback);
+    void BackgroundQuerier::refresh(QueryEnumerator *qe, Callback callback) {
+        run(qe->options(), retained(qe), callback);
     }
 
-    void BackgroundDB::refreshQuery(Query *query, Query::Options options,
-                                    QueryEnumerator *qe,
-                                    RefreshQueryCallback callback)
+    void BackgroundQuerier::run(Query::Options options,
+                                Retained<QueryEnumerator> qe,
+                                Callback callback)
     {
-        enqueue(&BackgroundDB::_refreshQuery,
-                query->expression(), options,
-                (RefreshQueryCallback)[=](Retained<QueryEnumerator> newQE, error err) {
-                    if (qe && newQE && !qe->obsoletedBy(newQE.get()))
-                        newQE = nullptr;      // unchanged
-                    callback(newQE, err);
-                });
-    }
+        _backgroundDB->doTask([=](DataFile *df) {
+            // ---- running on the background thread ----
+            try {
+                // Create my own Query object associated with the Backgrounder's DataFile:
+                if (!_query) {
+                    _query = df->defaultKeyStore().compileQuery(_expression, _language);
+                    _expression = nullslice;
+                }
 
-    void BackgroundDB::_refreshQuery(alloc_slice expression,
-                                     Query::Options options,
-                                     RefreshQueryCallback callback)
-    {
-        try {
-            // Have to recompile the query to get a statement in the bg database:
-            Retained<Query> query = _bgDataFile->defaultKeyStore().compileQuery(expression);
-            Retained<QueryEnumerator> qe( query->createEnumerator(&options) );
-            callback(qe, error(error::LiteCore, 0));
-        } catch (const exception &x) {
-            callback(nullptr, error::convertException(x));
-        }
+                Retained<QueryEnumerator> newQE( _query->createEnumerator(&options) );
+                if (qe && newQE && !qe->obsoletedBy(newQE.get()))
+                    newQE = nullptr;      // unchanged
+                callback(newQE, error(error::LiteCore, 0));
+
+            } catch (const exception &x) {
+                callback(nullptr, error::convertException(x));
+            }
+        });
     }
 
 }

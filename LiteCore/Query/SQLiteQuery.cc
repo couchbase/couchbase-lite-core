@@ -199,10 +199,12 @@ namespace litecore {
                               Doc *recording,
                               unsigned long long rowCount,
                               double elapsedTime)
-        :QueryEnumerator(query, options, lastSequence)
+        :QueryEnumerator(options, lastSequence)
         ,Logging(QueryLog)
         ,_recording(recording)
         ,_iter(_recording->asArray())
+        ,_1stCustomResultColumn(query->_1stCustomResultColumn)
+        ,_hasFullText(!query->_ftsTables.empty())
         {
             logInfo("Created on {Query#%u} with %llu rows (%zu bytes) in %.3fms",
                 query->objectRef(), rowCount, recording->data().size, elapsedTime*1000);
@@ -210,10 +212,6 @@ namespace litecore {
 
         ~SQLiteQueryEnumerator() {
             logInfo("Deleted");
-        }
-
-        SQLiteQuery* sqliteQuery() const {
-            return (SQLiteQuery*)_query.get();
         }
 
         virtual int64_t getRowCount() const override {
@@ -253,7 +251,7 @@ namespace litecore {
 
         Array::iterator columns() const noexcept override {
             Array::iterator i(_iter[0u]->asArray());
-            i += sqliteQuery()->_1stCustomResultColumn;
+            i += _1stCustomResultColumn;
             return i;
         }
 
@@ -274,10 +272,11 @@ namespace litecore {
             }
         }
 
-        QueryEnumerator* refresh() override {
+        QueryEnumerator* refresh(Query *query) override {
             auto newOptions = _options.after(_lastSequence);
+            auto sqliteQuery = (SQLiteQuery*)query;
             unique_ptr<SQLiteQueryEnumerator> newEnum(
-                (SQLiteQueryEnumerator*)sqliteQuery()->createEnumerator(&newOptions) );
+                (SQLiteQueryEnumerator*)sqliteQuery->createEnumerator(&newOptions) );
             if (obsoletedBy(newEnum.get())) {
                 // Results have changed, so return new enumerator:
                 return newEnum.release();
@@ -286,7 +285,7 @@ namespace litecore {
         }
 
         bool hasFullText() const override {
-            return !sqliteQuery()->_ftsTables.empty();
+            return _hasFullText;
         }
 
         const FullTextTerms& fullTextTerms() override {
@@ -314,6 +313,8 @@ namespace litecore {
     private:
         Retained<Doc> _recording;
         Array::iterator _iter;
+        unsigned _1stCustomResultColumn;    // Column index of the 1st column declared in JSON
+        bool _hasFullText;
         bool _first {true};
     };
 

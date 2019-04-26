@@ -61,9 +61,11 @@ CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
 // Extension of C4QueryEnumerator
 struct C4QueryEnumeratorImpl : public RefCounted,
                                public C4QueryEnumerator,
-                               fleece::InstanceCountedIn<C4QueryEnumerator> {
-    C4QueryEnumeratorImpl(Database *database, QueryEnumerator *e)
+                               fleece::InstanceCountedIn<C4QueryEnumerator>
+{
+    C4QueryEnumeratorImpl(Database *database, Query *query, QueryEnumerator *e)
     :_database(database)
+    ,_query(query)
     ,_enum(e)
     ,_hasFullText(_enum->hasFullText())
     {
@@ -112,9 +114,9 @@ struct C4QueryEnumeratorImpl : public RefCounted,
     }
 
     C4QueryEnumeratorImpl* refresh() {
-        QueryEnumerator* newEnum = enumerator().refresh();
+        QueryEnumerator* newEnum = enumerator().refresh(_query);
         if (newEnum)
-            return retain(new C4QueryEnumeratorImpl(_database, newEnum));
+            return retain(new C4QueryEnumeratorImpl(_database, _query, newEnum));
         else
             return nullptr;
     }
@@ -127,6 +129,7 @@ struct C4QueryEnumeratorImpl : public RefCounted,
 
 private:
     Retained<Database> _database;
+    Retained<Query> _query;
     Retained<QueryEnumerator> _enum;
     bool _hasFullText;
 };
@@ -194,10 +197,16 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
     alloc_slice parameters() const          {return _parameters;}
     void setParameters(slice parameters)    {_parameters = parameters;}
 
-    QueryEnumerator* createEnumerator(const C4QueryOptions *c4options, slice encodedParameters) {
+    Retained<C4QueryEnumeratorImpl> createEnumerator(const C4QueryOptions *c4options, slice encodedParameters) {
         Query::Options options(encodedParameters ? encodedParameters : _parameters);
-        return _query->createEnumerator(&options);
+        return wrapEnumerator( _query->createEnumerator(&options) );
     }
+
+    Retained<C4QueryEnumeratorImpl> wrapEnumerator(QueryEnumerator *e) {
+        return e ? new C4QueryEnumeratorImpl(_database, _query, e) : nullptr;
+    }
+
+    //// Observing:
 
     c4QueryObserver* createObserver(C4QueryObserverCallback callback, void *context) {
         LOCK(_mutex);
@@ -214,9 +223,12 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
             endObserving();
     }
 
+    // called with mutex locked
     void beginObserving() {
         // The first time we just run the query directly (in the background):
-        _database->backgroundDatabase()->runQuery(_query, _parameters,
+        if (!_bgQuerier)
+            _bgQuerier.reset( new BackgroundQuerier(_database, _query) );
+        _bgQuerier->run(_parameters,
             [&](Retained<QueryEnumerator> e, error err) {
                 // (on a background thread) When it's ready, notify the observers:
                 callObservers(e, err);
@@ -231,10 +243,12 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
             });
     }
 
+    // called with mutex locked
     void endObserving() {
         _dbNotifier.reset();
         _currentEnumerator = nullptr;
         _refreshTimer.stop();
+        _bgQuerier.reset();
     }
 
     // called on a background thread
@@ -244,7 +258,10 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
 
     // called on a background thread
     void timerFired() {
-        _database->backgroundDatabase()->refreshQuery(_currentEnumerator,
+        LOCK(_mutex);
+        if (!_bgQuerier)
+            return;
+        _bgQuerier->refresh(_currentEnumerator,
               [&](Retained<QueryEnumerator> e, error err) {
                   if (e || err.code != 0) {
                       // When the query result changes, or on error, update & notify the observers:
@@ -261,9 +278,7 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
 
     // called on a background thread (with the mutex locked)
     void callObservers(QueryEnumerator *e, const error &err) {
-        Retained<C4QueryEnumeratorImpl> c4e;
-        if (e)
-            c4e = new C4QueryEnumeratorImpl(_database, e);
+        Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(e);
         C4Error c4err;
         recordException(err, &c4err);
 
@@ -277,6 +292,7 @@ private:
     alloc_slice _parameters;
 
     mutex _mutex;
+    unique_ptr<BackgroundQuerier> _bgQuerier;
     Retained<QueryEnumerator> _currentEnumerator;
     std::list<c4QueryObserver> _observers;
     unique_ptr<DatabaseChangeNotifier> _dbNotifier;
@@ -346,8 +362,7 @@ C4QueryEnumerator* c4query_run(C4Query *query,
                                C4Error *outError) noexcept
 {
     return tryCatch<C4QueryEnumerator*>(outError, [&]{
-        return retain(new C4QueryEnumeratorImpl(query->database(),
-                                         query->createEnumerator(c4options, encodedParameters)));
+        return retain(query->createEnumerator(c4options, encodedParameters).get());
     });
 }
 

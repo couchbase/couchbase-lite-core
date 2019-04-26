@@ -25,27 +25,41 @@ namespace litecore {
 
         void close()                        {enqueue(&BackgroundDB::_close); waitTillCaughtUp();}
 
-        using Task = std::function<bool(DataFile*, SequenceTracker*)>;
+        using Task = std::function<void(DataFile*)>;
+        using TransactionTask = std::function<bool(DataFile*, SequenceTracker*)>;
 
-        void inTransactionDo(Task task)     {enqueue(&BackgroundDB::_inTransactionDo, task);}
-
-        using RefreshQueryCallback = std::function<void(Retained<QueryEnumerator>, error)>;
-
-        void runQuery(Query*, Query::Options, RefreshQueryCallback);
-        void refreshQuery(QueryEnumerator*, RefreshQueryCallback);
+        void doTask(Task task)              {enqueue(&BackgroundDB::_doTask, task);}
+        void inTransactionDo(TransactionTask task)
+                                            {enqueue(&BackgroundDB::_inTransactionDo, task);}
 
     private:
         slice fleeceAccessor(slice recordBody) const override;
         alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
         void _close();
-        void _inTransactionDo(Task);
-        void refreshQuery(Query *query, Query::Options,
-                          QueryEnumerator*, RefreshQueryCallback);
-        void _refreshQuery(alloc_slice expression, Query::Options options,
-                           RefreshQueryCallback callback);
+        void _doTask(Task);
+        void _inTransactionDo(TransactionTask);
 
         Retained<c4Internal::Database> _database;
         std::unique_ptr<DataFile> _bgDataFile;
+    };
+
+
+    class BackgroundQuerier {
+    public:
+        BackgroundQuerier(c4Internal::Database *db, Query *query);
+
+        using Callback = std::function<void(Retained<QueryEnumerator>, error)>;
+
+        void run(Query::Options, Callback);
+        void refresh(QueryEnumerator*, Callback);
+
+    private:
+        void run(Query::Options, Retained<QueryEnumerator>, Callback);
+
+        Retained<BackgroundDB> _backgroundDB;
+        alloc_slice _expression;
+        QueryLanguage _language;
+        Retained<Query> _query;
     };
 
 }
