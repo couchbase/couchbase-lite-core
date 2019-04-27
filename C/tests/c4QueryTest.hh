@@ -133,7 +133,7 @@ public:
         CHECK(titles == expectedTitles);
     }
 
-    void addCaliforniaPerson() {
+    void addPersonInState(const char *docID, const char *state) {
         TransactionHelper t(db);
 
         C4Error c4err;
@@ -146,7 +146,7 @@ public:
         FLEncoder_WriteKey(enc, FLSTR("address"));
         FLEncoder_BeginDict(enc, 1);
         FLEncoder_WriteKey(enc, FLSTR("state"));
-        FLEncoder_WriteString(enc, FLSTR("CA"));
+        FLEncoder_WriteString(enc, FLStr(state));
         FLEncoder_EndDict(enc);
         FLEncoder_EndDict(enc);
         FLEncoder_EndDict(enc);
@@ -156,7 +156,7 @@ public:
 
         // Save document:
         C4DocPutRequest rq = {};
-        rq.docID = C4STR("added_later");
+        rq.docID = slice(docID);
         rq.allocedBody = body;
         rq.save = true;
         C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);

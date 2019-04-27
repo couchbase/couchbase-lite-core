@@ -261,6 +261,8 @@ namespace litecore {
 
 
         virtual bool obsoletedBy(const QueryEnumerator *otherE) override {
+            if (!otherE)
+                return false;
             auto other = dynamic_cast<const SQLiteQueryEnumerator*>(otherE);
             if (!other || other->lastSequence() <= _lastSequence) {
                 return false;

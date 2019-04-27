@@ -22,12 +22,10 @@
 #include "c4ExceptionUtils.hh"
 
 #include "Database.hh"
-#include "BackgroundDB.hh"
+#include "LiveQuerier.hh"
 #include "DataFile.hh"
 #include "Query.hh"
-#include "n1ql_parser.hh"
 #include "Record.hh"
-#include "SequenceTracker.hh"
 #include "Timer.hh"
 #include "InstanceCounted.hh"
 #include "StringUtil.hh"
@@ -38,16 +36,11 @@
 #include <mutex>
 
 using namespace std;
-using namespace std::placeholders;
 using namespace litecore;
 using namespace fleece::impl;
 
 
 #define LOCK(MUTEX)     lock_guard<mutex> _lock(const_cast<mutex&>(MUTEX))
-
-
-// How long an observed query waits after a DB change before re-running
-static constexpr actor::Timer::duration kLatency = chrono::milliseconds(500);
 
 
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
@@ -185,11 +178,10 @@ private:
 
 
 // This is the same as C4Query
-struct c4Query : public RefCounted, fleece::InstanceCounted {
+struct c4Query : public RefCounted, fleece::InstanceCounted, LiveQuerier::Delegate {
     c4Query(Database *db, C4QueryLanguage language, C4Slice queryExpression)
     :_database(db)
     ,_query(db->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))
-    ,_refreshTimer(bind(&c4Query::timerFired, this))
     { }
 
     Database* database() const              {return _database;}
@@ -210,8 +202,10 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
 
     c4QueryObserver* createObserver(C4QueryObserverCallback callback, void *context) {
         LOCK(_mutex);
-        if (_observers.empty())
-            beginObserving();
+        if (_observers.empty()) {
+            _bgQuerier = new LiveQuerier(_database, _query, true, this);
+            _bgQuerier->run(_parameters);
+        }
         _observers.emplace_back(this, callback, context);
         return &_observers.back();
     }
@@ -219,71 +213,20 @@ struct c4Query : public RefCounted, fleece::InstanceCounted {
     void freeObserver(c4QueryObserver *obs) {
         LOCK(_mutex);
         _observers.remove_if([obs](const c4QueryObserver &o) {return &o == obs;});
-        if (_observers.empty())
-            endObserving();
+        if (_observers.empty()) {
+            _bgQuerier->stop();
+            _bgQuerier = nullptr;
+        }
     }
 
-    // called with mutex locked
-    void beginObserving() {
-        // The first time we just run the query directly (in the background):
-        if (!_bgQuerier)
-            _bgQuerier.reset( new BackgroundQuerier(_database, _query) );
-        _bgQuerier->run(_parameters,
-            [&](Retained<QueryEnumerator> e, error err) {
-                // (on a background thread) When it's ready, notify the observers:
-                callObservers(e, err);
-                if (e) {
-                    LOCK(_mutex);
-                    _currentEnumerator = e;
-                    // And set up a database observer to listen for changes:
-                    _dbNotifier.reset(new DatabaseChangeNotifier(_database->sequenceTracker(),
-                                                                 bind(&c4Query::dbChanged, this, _1),
-                                                                 e->lastSequence()));
-                }
-            });
-    }
-
-    // called with mutex locked
-    void endObserving() {
-        _dbNotifier.reset();
-        _currentEnumerator = nullptr;
-        _refreshTimer.stop();
-        _bgQuerier.reset();
-    }
-
-    // called on a background thread
-    void dbChanged(DatabaseChangeNotifier&) {
-        _refreshTimer.fireAfter(kLatency);
-    }
-
-    // called on a background thread
-    void timerFired() {
+    // called on a background thread!
+    void liveQuerierUpdated(QueryEnumerator *qe, C4Error err) override {
+        Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(qe);
         LOCK(_mutex);
         if (!_bgQuerier)
             return;
-        _bgQuerier->refresh(_currentEnumerator,
-              [&](Retained<QueryEnumerator> e, error err) {
-                  if (e || err.code != 0) {
-                      // When the query result changes, or on error, update & notify the observers:
-                      LOCK(_mutex);
-                      _currentEnumerator = e;
-                      callObservers(e, err);
-                  }
-                  // Read (and ignore) changes from notifier, so it can fire again:
-                  bool external;
-                  while (_dbNotifier->readChanges(nullptr, 1000, external))
-                      ;
-              });
-    }
-
-    // called on a background thread (with the mutex locked)
-    void callObservers(QueryEnumerator *e, const error &err) {
-        Retained<C4QueryEnumeratorImpl> c4e = wrapEnumerator(e);
-        C4Error c4err;
-        recordException(err, &c4err);
-
         for (auto &obs : _observers)
-            obs.notify(c4e, c4err);
+            obs.notify(c4e, err);
     }
 
 private:
@@ -292,12 +235,8 @@ private:
     alloc_slice _parameters;
 
     mutex _mutex;
-    unique_ptr<BackgroundQuerier> _bgQuerier;
-    Retained<QueryEnumerator> _currentEnumerator;
+    Retained<LiveQuerier> _bgQuerier;
     std::list<c4QueryObserver> _observers;
-    unique_ptr<DatabaseChangeNotifier> _dbNotifier;
-    sequence_t _lastSequence {0};
-    actor::Timer _refreshTimer;
 };
 
 

@@ -237,7 +237,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
         ++num;
     REQUIRE(num == 101);
 
-    CHECK(e->refresh() == nullptr);
+    CHECK(e->refresh(query) == nullptr);
 
     // Add a doc that doesn't alter the query:
     {
@@ -245,7 +245,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
         writeNumberedDoc(-1, nullslice, t);
         t.commit();
     }
-    CHECK(e->refresh() == nullptr);
+    CHECK(e->refresh(query) == nullptr);
 
 #if 0 //FIX: This doesn't work yet, because the doc's sequence and revID are in the query results,
       // and those do change...
@@ -255,7 +255,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
         writeNumberedDoc(20, "howdy"_sl, t);
         t.commit();
     }
-    CHECK(e->refresh() == nullptr);
+    CHECK(e->refresh(query) == nullptr);
 #endif
 
     // Delete one of the docs in the query -- this does trigger a refresh:
@@ -265,7 +265,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
         t.commit();
     }
 
-    Retained<QueryEnumerator> e2(e->refresh());
+    Retained<QueryEnumerator> e2(e->refresh(query));
     REQUIRE(e2 != nullptr);
 
     num = 11;

@@ -147,9 +147,17 @@ extern "C" {
     /** A query-observer reference. */
     typedef struct c4QueryObserver C4QueryObserver;
 
-    /** Callback invoked by a query observer. */
-    typedef void (*C4QueryObserverCallback)(C4QueryObserver* C4NONNULL,
-                                            C4Query* C4NONNULL,
+    /** Callback invoked by a query observer, notifying that the query results have changed.
+        The actual enumerator is not passed to the callback, but can be retrieved by calling
+        \ref c4queryobs_getEnumerator.
+        @warning  This function is called on a random background thread! Be careful of thread
+        safety. Do not spend too long in this callback or other observers may be delayed.
+        It's best to do nothing except schedule a call on your preferred thread/queue.
+        @param observer  The observer triggering the callback.
+        @param query  The C4Query that the observer belongs to.
+        @param context  The `context` parameter you passed to \ref c4queryobs_create. */
+    typedef void (*C4QueryObserverCallback)(C4QueryObserver *observer C4NONNULL,
+                                            C4Query *query C4NONNULL,
                                             void *context);
 
     /** Creates a new query observer, with a callback that will be invoked when the query

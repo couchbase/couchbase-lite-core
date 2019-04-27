@@ -20,20 +20,28 @@
 #include "DataFile.hh"
 #include "Database.hh"
 #include "SequenceTracker.hh"
-#include "Query.hh"
-#include "make_unique.h"
+#include "c4ExceptionUtils.hh"
 
 namespace litecore {
+    using namespace actor;
+    using namespace std::placeholders;
+
 
     BackgroundDB::BackgroundDB(Database *db)
-    :_database(db)
-    ,_bgDataFile(db->dataFile()->openAnother(this))
+    :access_lock(db->dataFile()->openAnother(this))
+    ,_database(db)
     { }
 
 
-    void BackgroundDB::_close() {
-        _bgDataFile->close();
-        _bgDataFile.reset();
+    void BackgroundDB::close() {
+        useAndSet([=](DataFile* &df) {
+            delete df;
+            df = nullptr;
+        });
+    }
+
+    BackgroundDB::~BackgroundDB() {
+        close();
     }
 
 
@@ -46,81 +54,37 @@ namespace litecore {
     }
 
 
-    void BackgroundDB::_doTask(Task task) {
-        task(_bgDataFile.get());
-    }
+    void BackgroundDB::useInTransaction(TransactionTask task) {
+        use([=](DataFile* dataFile) {
+            Transaction t(dataFile);
+            SequenceTracker sequenceTracker;
+            sequenceTracker.beginTransaction();
 
-    void BackgroundDB::_inTransactionDo(TransactionTask task) {
-        Transaction t(_bgDataFile);
-        SequenceTracker sequenceTracker;
-        sequenceTracker.beginTransaction();
-        
-        bool commit;
-        try {
-            commit = task(_bgDataFile.get(), &sequenceTracker);
-        } catch (const exception &x) {
-            t.abort();
-            sequenceTracker.endTransaction(false);
-            throw;
-        }
-
-        if (!commit) {
-            t.abort();
-            sequenceTracker.endTransaction(false);
-            return;
-        }
-
-        t.commit();
-
-        // Notify other Database instances of any changes:
-        lock_guard<mutex> lock(sequenceTracker.mutex());
-        _bgDataFile->forOtherDataFiles([&](DataFile *other) {
-            auto db = dynamic_cast<Database*>(other->delegate());
-            if (db)
-                db->externalTransactionCommitted(sequenceTracker);
-        });
-        sequenceTracker.endTransaction(true);
-    }
-
-
-
-
-    BackgroundQuerier::BackgroundQuerier(c4Internal::Database *db, Query *query)
-    :_backgroundDB(db->backgroundDatabase())
-    ,_expression(query->expression())
-    ,_language(query->language())
-    { }
-
-
-    void BackgroundQuerier::run(Query::Options options, Callback callback) {
-        run(options, nullptr, callback);
-    }
-
-    void BackgroundQuerier::refresh(QueryEnumerator *qe, Callback callback) {
-        run(qe->options(), retained(qe), callback);
-    }
-
-    void BackgroundQuerier::run(Query::Options options,
-                                Retained<QueryEnumerator> qe,
-                                Callback callback)
-    {
-        _backgroundDB->doTask([=](DataFile *df) {
-            // ---- running on the background thread ----
+            bool commit;
             try {
-                // Create my own Query object associated with the Backgrounder's DataFile:
-                if (!_query) {
-                    _query = df->defaultKeyStore().compileQuery(_expression, _language);
-                    _expression = nullslice;
-                }
-
-                Retained<QueryEnumerator> newQE( _query->createEnumerator(&options) );
-                if (qe && newQE && !qe->obsoletedBy(newQE.get()))
-                    newQE = nullptr;      // unchanged
-                callback(newQE, error(error::LiteCore, 0));
-
+                commit = task(dataFile, &sequenceTracker);
             } catch (const exception &x) {
-                callback(nullptr, error::convertException(x));
+                t.abort();
+                sequenceTracker.endTransaction(false);
+                throw;
             }
+
+            if (!commit) {
+                t.abort();
+                sequenceTracker.endTransaction(false);
+                return;
+            }
+
+            t.commit();
+
+            // Notify other Database instances of any changes:
+            lock_guard<mutex> lock(sequenceTracker.mutex());
+            dataFile->forOtherDataFiles([&](DataFile *other) {
+                auto db = dynamic_cast<Database*>(other->delegate());
+                if (db)
+                    db->externalTransactionCommitted(sequenceTracker);
+            });
+            sequenceTracker.endTransaction(true);
         });
     }
 

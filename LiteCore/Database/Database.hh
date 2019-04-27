@@ -152,7 +152,7 @@ namespace c4Internal {
         unique_ptr<BlobStore>       _blobStore;             // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
         recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
-        Retained<BackgroundDB>      _bgDatabase;            // for background operations
+        unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
     };
 
 

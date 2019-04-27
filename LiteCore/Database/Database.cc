@@ -407,16 +407,16 @@ namespace c4Internal {
 
 
     BackgroundDB* Database::backgroundDatabase() {
-        if (!_bgDatabase)
-            _bgDatabase = new BackgroundDB(this);
-        return _bgDatabase;
+        if (!_backgroundDB)
+            _backgroundDB.reset(new BackgroundDB(this));
+        return _backgroundDB.get();
     }
 
 
     void Database::closeBackgroundDatabase() {
-        if (_bgDatabase) {
-            _bgDatabase->close();
-            _bgDatabase = nullptr;
+        if (_backgroundDB) {
+            _backgroundDB->close();
+            _backgroundDB = nullptr;
         }
     }
 

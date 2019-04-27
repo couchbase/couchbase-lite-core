@@ -80,6 +80,7 @@
 		272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272B1BEA1FB1513100F56620 /* FTSTest.cc */; };
 		272F009F226A738700E62F72 /* ReplicatorSGTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */; };
 		272F00EA226FC15E00E62F72 /* BackgroundDB.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00E9226FC15D00E62F72 /* BackgroundDB.cc */; };
+		272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272F00F52273D45000E62F72 /* LiveQuerier.cc */; };
 		273407231DEE116600EA5532 /* PlatformIO.cc in Sources */ = {isa = PBXBuildFile; fileRef = 273407211DEE116600EA5532 /* PlatformIO.cc */; };
 		273407251DEE116600EA5532 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273407221DEE116600EA5532 /* PlatformIO.hh */; };
 		2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F619206ABEB000C982FF /* ReplicatorTypes.cc */; };
@@ -883,6 +884,8 @@
 		272B1BEA1FB1513100F56620 /* FTSTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FTSTest.cc; sourceTree = "<group>"; };
 		272F00E3226FC15D00E62F72 /* BackgroundDB.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BackgroundDB.hh; sourceTree = "<group>"; };
 		272F00E9226FC15D00E62F72 /* BackgroundDB.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BackgroundDB.cc; sourceTree = "<group>"; };
+		272F00F42273D45000E62F72 /* LiveQuerier.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LiveQuerier.hh; sourceTree = "<group>"; };
+		272F00F52273D45000E62F72 /* LiveQuerier.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LiveQuerier.cc; sourceTree = "<group>"; };
 		273407211DEE116600EA5532 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
 		273407221DEE116600EA5532 /* PlatformIO.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PlatformIO.hh; sourceTree = "<group>"; };
 		2734F60D206978F100C982FF /* LiteCore-framework_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-framework_Release.xcconfig"; sourceTree = "<group>"; };
@@ -1895,6 +1898,8 @@
 				27E3DD571DB8524300F2872D /* Database.cc */,
 				272F00E9226FC15D00E62F72 /* BackgroundDB.cc */,
 				272F00E3226FC15D00E62F72 /* BackgroundDB.hh */,
+				272F00F42273D45000E62F72 /* LiveQuerier.hh */,
+				272F00F52273D45000E62F72 /* LiveQuerier.cc */,
 				277C14701EA8102B0075348F /* Document.cc */,
 				271057D61D3D70B10018247B /* Document.hh */,
 				275CED441D3ECE9B001DE46C /* TreeDocument.cc */,
@@ -3386,6 +3391,7 @@
 				2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */,
 				93CD010D1E933BE100AFB3FA /* Replicator.cc in Sources */,
 				72C086941CBDEB2000808CE7 /* c4DocExpiration.cc in Sources */,
+				272F00F62273D45000E62F72 /* LiveQuerier.cc in Sources */,
 				729272F52238DC0C00E7208E /* c4ExceptionUtils.cc in Sources */,
 				278963671D7B7E7D00493096 /* Stream.cc in Sources */,
 				27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */,

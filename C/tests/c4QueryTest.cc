@@ -717,7 +717,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query][C][!throws]") {
     auto refreshed = c4queryenum_refresh(e, &error);
     REQUIRE(!refreshed);
     
-    addCaliforniaPerson();
+    addPersonInState("added_later", "CA");
     
     refreshed = c4queryenum_refresh(e, &error);
     REQUIRE(refreshed);
@@ -764,7 +764,13 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Query observer", "[Query][C][!throws]") {
     CHECK(c4queryenum_getRowCount(e, &error) == 8);
     state.count = 0;
 
-    addCaliforniaPerson();
+    addPersonInState("after1", "AL");
+
+    C4Log("---- Checking that query observer doesn't fire...");
+    this_thread::sleep_for(chrono::milliseconds(1000));
+    REQUIRE(state.count == 0);
+
+    addPersonInState("after2", "CA");
 
     C4Log("---- Waiting for 2nd call of query observer...");
     while (state.count == 0)
