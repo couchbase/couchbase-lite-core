@@ -155,7 +155,7 @@ namespace litecore {
         _dbAlias.clear();
         _columnTitles.clear();
         _1stCustomResultCol = 0;
-        _isAggregateQuery = _aggregatesOK = _propertiesUseAliases = _checkedExpiration = false;
+        _isAggregateQuery = _aggregatesOK = _propertiesUseSourcePrefix = _checkedExpiration = false;
 
         _aliases.insert({_dbAlias, kDBAlias});
     }
@@ -243,7 +243,7 @@ namespace litecore {
 
         // WHAT clause:
         string defaultTablePrefix;
-        if (_propertiesUseAliases)
+        if (_propertiesUseSourcePrefix)
             defaultTablePrefix = quoteTableName(_dbAlias) + ".";
 
         auto startPosOfWhat = _sql.tellp();
@@ -398,7 +398,7 @@ namespace litecore {
         if (from) {
             for (Array::iterator i(requiredArray(from, "FROM value")); i; ++i) {
                 if (first)
-                    _propertiesUseAliases = true;
+                    _propertiesUseSourcePrefix = true;
                 auto entry = requiredDict(i.value(), "FROM item");
                 string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
                                               "AS in FROM item").asString();
@@ -719,9 +719,9 @@ namespace litecore {
             // Come up with a column title if there is no 'AS':
             if (title.empty()) {
                 if (result->type() == kString) {
-                    title = columnTitleFromProperty(Path(result->asString()), _propertiesUseAliases);
+                    title = columnTitleFromProperty(Path(result->asString()), _propertiesUseSourcePrefix);
                 } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
-                    title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseAliases);
+                    title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseSourcePrefix);
                 } else {
                     title = format("$%u", ++anonCount); // default for non-properties
                 }
@@ -1226,7 +1226,7 @@ namespace litecore {
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
         string alias, tablePrefix;
-        if (_propertiesUseAliases) {
+        if (_propertiesUseSourcePrefix) {
             // Interpret the first component of the property as a db alias:
             require(property[0].isKey(), "Property path can't start with array index");
             alias = string(property[0].keyStr());
@@ -1294,7 +1294,7 @@ namespace litecore {
         require(slice(spec) != kDocIDProperty && slice(spec) != kSequenceProperty,
                 "can't use '%s' on an UNNEST", spec.c_str());
         string tablePrefix;
-        if (_propertiesUseAliases)
+        if (_propertiesUseSourcePrefix)
             tablePrefix = quoteTableName(alias) + ".";
 
         if (type == kUnnestVirtualTableAlias) {
@@ -1428,7 +1428,7 @@ namespace litecore {
             if (maxItems > 0 && ++item > maxItems)
                 break;
             alloc_slice json = i.value()->toJSON(true);
-            if (_propertiesUseAliases) {
+            if (_propertiesUseSourcePrefix) {
                 // Strip ".doc" from property paths if necessary:
                 string s = json.asString();
                 replace(s, "[\"." + _dbAlias + ".", "[\".");
@@ -1449,7 +1449,7 @@ namespace litecore {
             // It's a property path
             require(path.find('"') == string::npos,
                     "invalid property path for array index");
-            if (_propertiesUseAliases) {
+            if (_propertiesUseSourcePrefix) {
                 string dbAliasPrefix = _dbAlias + ".";
                 if (hasPrefix(path, dbAliasPrefix))
                     path = path.substr(dbAliasPrefix.size());
