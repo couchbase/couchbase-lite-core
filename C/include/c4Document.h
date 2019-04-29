@@ -287,19 +287,27 @@ extern "C" {
     /** Sets an expiration date on a document.  After this time the
         document will be purged from the database.
         @param db The database to set the expiration date in
-        @param docId The ID of the document to set the expiration date for
+        @param docID The ID of the document to set the expiration date for
         @param timestamp The timestamp of the expiration date, in milliseconds since 1/1/1970.
                     A value of 0 indicates that the expiration should be cancelled.
         @param outError Information about any error that occurred
         @return true on sucess, false on failure */
     bool c4doc_setExpiration(C4Database *db C4NONNULL,
-                             C4String docId,
+                             C4String docID,
                              C4Timestamp timestamp,
                              C4Error *outError) C4API;
 
     /** Returns the expiration time of a document, if one has been set, else 0.
-        (The units are milliseconds since 1/1/1970.) */
-    C4Timestamp c4doc_getExpiration(C4Database *db C4NONNULL, C4String docId) C4API;
+        @param db  The database to set the expiration date in
+        @param docID  The ID of the document to check
+        @param outError Information about any error that occurred
+        @return The timestamp of the expiration date, in milliseconds since 1/1/1970,
+                    or 0 if the document does not expire,
+                    or -1 if an error occurred. */
+    C4Timestamp c4doc_getExpiration(C4Database *db,
+                                    C4Slice docID,
+                                    C4Error *outError) C4API;
+
 
     /** @} */
 
