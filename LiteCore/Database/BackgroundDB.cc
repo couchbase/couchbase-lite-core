@@ -34,7 +34,7 @@ namespace litecore {
 
 
     void BackgroundDB::close() {
-        useAndSet([=](DataFile* &df) {
+        use([=](DataFile* &df) {
             delete df;
             df = nullptr;
         });

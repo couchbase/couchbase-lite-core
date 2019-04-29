@@ -20,23 +20,31 @@ namespace litecore {
         { }
 
         template <class LAMBDA>
+        void use(LAMBDA callback) {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
+            callback(_contents);
+        }
+
+        // Returns result. Has to be called as `use<actualResultClass>(...)`
+        template <class RESULT, class LAMBDA>
+        RESULT use(LAMBDA callback) {
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
+            return callback(_contents);
+        }
+
+        // const versions:
+
+        template <class LAMBDA>
         void use(LAMBDA callback) const {
             std::lock_guard<std::recursive_mutex> lock(const_cast<std::recursive_mutex&>(_mutex));
             callback(_contents);
         }
 
+        // Returns result. Has to be called as `use<actualResultClass>(...)`
         template <class RESULT, class LAMBDA>
         RESULT use(LAMBDA callback) const {
             std::lock_guard<std::recursive_mutex> lock(const_cast<std::recursive_mutex&>(_mutex));
             return callback(_contents);
-        }
-
-    protected:
-        // Internal version of use() that's non-const, so callback is allowed to change _contents.
-        template <class LAMBDA>
-        void useAndSet(LAMBDA callback) {
-            std::lock_guard<std::recursive_mutex> lock(const_cast<std::recursive_mutex&>(_mutex));
-            callback(_contents);
         }
 
     private:
