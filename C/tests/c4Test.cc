@@ -100,21 +100,19 @@ ostream& operator<< (ostream &out, C4Error error) {
 }
 
 
-std::string json5(std::string str) {
+fleece::alloc_slice json5slice(std::string str) {
+    FLStringResult errorMsg = {};
+    size_t errorPos = 0;
     FLError err;
-    FLSliceResult json = FLJSON5_ToJSON({str.data(), str.size()}, &err);
+    FLSliceResult json = FLJSON5_ToJSON(slice(str), &errorMsg, &errorPos, &err);
+    INFO("JSON5 error: " << string(alloc_slice(errorMsg)) << ", input was: " << str);
     REQUIRE(json.buf);
-    std::string result((char*)json.buf, json.size);
-    FLSliceResult_Free(json);
-    return result;
+    return json;
 }
 
 
-fleece::alloc_slice json5slice(std::string str) {
-    FLError err;
-    FLSliceResult json = FLJSON5_ToJSON({str.data(), str.size()}, &err);
-    REQUIRE(json.buf);
-    return json;
+std::string json5(std::string str) {
+    return string(json5slice(str));
 }
 
 

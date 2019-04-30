@@ -795,7 +795,7 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "Database alias column names", "[Query][C][!th
 
     C4Error err;
     string queryText = "{'WHAT':[['.main.'],['.secondary.']],'FROM':[{'AS':'main'},{'AS':'secondary','ON':['=',['.main.number1'],['.secondary.theone']]}]}";
-    FLSliceResult queryStr = FLJSON5_ToJSON({queryText.data(), queryText.size()}, nullptr);
+    FLSliceResult queryStr = FLJSON5_ToJSON({queryText.data(), queryText.size()}, nullptr, nullptr, nullptr);
     query = c4query_new(db, (C4Slice)queryStr, &err);
     FLSlice expected1 = FLSTR("main");
     FLSlice expected2 = FLSTR("secondary");
