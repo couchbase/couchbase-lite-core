@@ -32,24 +32,33 @@ extern "C" {
     //////// DATABASE QUERIES:
 
 
+    /** Supported query languages. */
+    typedef C4_ENUM(uint32_t, C4QueryLanguage) {
+        kC4JSONQuery,   ///< JSON query schema as documented in wiki
+        kC4N1QLQuery,   ///< N1QL syntax
+    };
+
+
     /** Opaque handle to a compiled query. */
     typedef struct c4Query C4Query;
 
     
-    /** Compiles a query from an expression given as JSON. (The current syntax is based
-        on Cloudant's, but this is a placeholder and will be changing.)
+    /** Compiles a query from an expression given as JSON.
         The expression is a predicate that describes which documents should be returned.
         A separate, optional sort expression describes the ordering of the results.
-
-        NOTE: Queries are only supported on SQLite-based databases.
-        Queries are currently not supported on databases whose documents use revision trees.
         @param database  The database to be queried.
         @param expression  JSON data describing the query. (Schema is documented elsewhere.)
+        @param outErrorPos  If non-NULL, then on a parse error the approximate byte offset in the
+                        input expression will be stored here (or -1 if not known/applicable.)
         @param error  Error will be written here if the function fails.
         @result  A new C4Query, or NULL on failure. */
-    C4Query* c4query_new(C4Database *database C4NONNULL,
-                         C4String expression,
-                         C4Error *error) C4API;
+    C4Query* c4query_new2(C4Database *database C4NONNULL,
+                          C4QueryLanguage language,
+                          C4String expression,
+                          int *outErrorPos,
+                          C4Error *error) C4API;
+
+    C4Query* c4query_new(C4Database* C4NONNULL, C4String, C4Error*) C4API;  // for backward compatibility
 
     /** Frees a query.  It is legal to pass NULL. */
     void c4query_free(C4Query*) C4API;

@@ -101,6 +101,7 @@ _c4queryenum_close
 _c4queryenum_free
 
 _c4query_new
+_c4query_new2
 _c4query_free
 _c4query_columnCount
 _c4query_columnTitle

@@ -22,9 +22,11 @@
 #include "Logging.hh"
 #include "Query.hh"
 #include "QueryParser.hh"
+#include "n1ql_parser.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "FleeceImpl.hh"
+#include "MutableDict.hh"
 #include "Path.hh"
 #include "Stopwatch.hh"
 #include "SQLiteCpp/SQLiteCpp.h"
@@ -37,7 +39,6 @@ extern "C" {
 }
 
 using namespace std;
-using namespace fleece;
 using namespace fleece::impl;
 
 namespace litecore {
@@ -54,14 +55,30 @@ namespace litecore {
 
     class SQLiteQuery : public Query, Logging {
     public:
-        SQLiteQuery(SQLiteKeyStore &keyStore, slice selectorExpression)
+        SQLiteQuery(SQLiteKeyStore &keyStore, slice queryStr, QueryLanguage language)
         :Query(keyStore)
         ,Logging(QueryLog)
-        ,_json(selectorExpression)
         {
-            logInfo("Compiling JSON query: %.*s", SPLAT(selectorExpression));
+            static constexpr const char* kLanguageName[] = {"JSON", "N1QL"};
+            logInfo("Compiling %s query: %.*s", kLanguageName[(int)language], SPLAT(queryStr));
+
+            switch (language) {
+                case QueryLanguage::kJSON:
+                    _json = queryStr;
+                    break;
+                case QueryLanguage::kN1QL: {
+                    unsigned errPos;
+                    FLMutableDict result = n1ql::parse(string(queryStr), &errPos);
+                    if (!result)
+                        throw Query::parseError("N1QL syntax error", errPos);
+                    _json = ((MutableDict*)result)->toJSON(true);
+                    FLMutableDict_Release(result);
+                    break;
+                }
+            }
+
             QueryParser qp(keyStore);
-            qp.parseJSON(selectorExpression);
+            qp.parseJSON(_json);
 
             _parameters = qp.parameters();
             for (auto p = _parameters.begin(); p != _parameters.end();) {
@@ -426,7 +443,7 @@ namespace litecore {
         // Collects all the (remaining) rows into a Fleece array of arrays,
         // and returns an enumerator impl that will replay them.
         SQLiteQueryEnumerator* fastForward() {
-            Stopwatch st;
+            fleece::Stopwatch st;
             int nCols = _statement->getColumnCount();
             uint64_t rowCount = 0;
             // Give this encoder its own SharedKeys instead of using the database's DocumentKeys,
@@ -472,8 +489,8 @@ namespace litecore {
 
 
     // The factory method that creates a SQLite Query.
-    Retained<Query> SQLiteKeyStore::compileQuery(slice selectorExpression) {
-        return new SQLiteQuery(*this, selectorExpression);
+    Retained<Query> SQLiteKeyStore::compileQuery(slice selectorExpression, QueryLanguage language) {
+        return new SQLiteQuery(*this, selectorExpression, language);
     }
 
 

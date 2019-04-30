@@ -22,8 +22,10 @@
 #include "Database.hh"
 #include "DataFile.hh"
 #include "Query.hh"
+#include "n1ql_parser.hh"
 #include "Record.hh"
 #include "InstanceCounted.hh"
+#include "StringUtil.hh"
 #include "FleeceImpl.hh"
 #include <math.h>
 #include <limits.h>
@@ -43,9 +45,9 @@ CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
 
 // This is the same as C4Query
 struct c4Query : fleece::InstanceCounted {
-    c4Query(Database *db, C4Slice queryExpression)
+    c4Query(Database *db, C4QueryLanguage language, C4Slice queryExpression)
     :_database(db),
-     _query(db->defaultKeyStore().compileQuery(queryExpression))
+    _query(db->defaultKeyStore().compileQuery(queryExpression, (QueryLanguage)language))
     { }
 
     Database* database() const      {return _database;}
@@ -137,13 +139,27 @@ static C4QueryEnumeratorImpl* asInternal(C4QueryEnumerator *e) {return (C4QueryE
 #pragma mark - QUERY:
 
 
-C4Query* c4query_new(C4Database *database,
-                     C4Slice expression,
-                     C4Error *outError) noexcept
+C4Query* c4query_new2(C4Database *database,
+                      C4QueryLanguage language,
+                      C4Slice expression,
+                      int *outErrorPos,
+                      C4Error *outError) noexcept
 {
+    if (outErrorPos)
+        *outErrorPos = -1;
     return tryCatch<C4Query*>(outError, [&]{
-        return new c4Query(database, expression);
+        try {
+            return new c4Query(database, language, expression);
+        } catch (Query::parseError &x) {
+            if (outErrorPos)
+                *outErrorPos = x.errorPosition;
+            throw;
+        }
     });
+}
+
+C4Query* c4query_new(C4Database *database C4NONNULL, C4String expression, C4Error *error) C4API {
+    return c4query_new2(database, kC4JSONQuery, expression, nullptr, error);
 }
 
 
@@ -199,7 +215,7 @@ C4SliceResult c4query_fullTextMatched(C4Query *query,
 }
 
 
-#pragma mark - QUERY ENUMERATOR:
+#pragma mark - QUERY ENUMERATOR API:
 
 
 bool c4queryenum_next(C4QueryEnumerator *e,

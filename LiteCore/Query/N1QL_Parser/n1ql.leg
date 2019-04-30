@@ -1,0 +1,452 @@
+#
+#  n1ql.leg
+#
+# Copyright (c) 2019 Couchbase, Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# Grammar file for N1QL parser
+# To be compiled by the 'leg' tool with Jens's modifications -- <http://github.com/snej/peg/>:
+#     leg -o n1ql.cc n1ql.leg
+# The output file must be compiled as C++!
+
+%{
+#include "n1ql_parser_internal.hh"
+
+namespace litecore { namespace n1ql {
+%}
+
+
+n1ql =
+    _ s:selectStatement _ !.            { $$ = s;}
+
+
+######## SELECT STATEMENT:
+
+
+selectStatement =
+    select:SELECT _                     { select = MutableDict::newDict(); }
+        (d:DISTINCT                     { setAny(select, "DISTINCT"_sl, true); }
+         | ALL)?
+        sr:selectResults _              { setAny(select, "WHAT"_sl, sr); }
+        (f:from _                       { setAny(select, "FROM"_sl, f); }
+            )?
+        (WHERE w:expression             { setAny(select, "WHERE"_sl, w); }
+            )?
+        (g:groupBy _                    { setAny(select, "GROUP_BY"_sl, g); }
+            (h:having                   { setAny(select, "HAVING"_sl, h); }
+            )? )?
+        (o:orderBy _                    { setAny(select, "ORDER_BY"_sl, o); }
+            )?
+        (LIMIT l:expression             { setAny(select, "LIMIT"_sl, l); }
+            )?
+        (OFFSET off:expression          { setAny(select, "OFFSET"_sl, off); }
+            )?
+        (_ ';')?
+                                        { $$ = select; }
+
+selectResults =
+    sr:selectResult                     { sr = arrayWith(sr); }
+      (_ ',' _ sr2:selectResult         { appendAny(sr, sr2);  }
+      )*                                { $$ = sr; }
+
+selectResult =
+    x:expression (_ AS ca:columnAlias )?
+                                        { assert(!x.isNull());
+                                          if (ca.isNull())
+                                            $$ = x;
+                                          else
+                                            $$ = op("AS", x, ca); }
+
+from =
+    FROM d:dataSource                   { d = arrayWith(d);}
+        (j:join                         { appendAny(d, j);}
+         )*                             { $$ = d;}
+
+dataSource =
+    n:databaseName (AS? a:databaseAlias )?  { $$ = dictWith("AS"_sl, a.isNull() ? n : a);}
+
+join =
+    o:joinOperator _ s:dataSource _     { setAny(s, "JOIN"_sl, o); }
+        ( ON c:expression               { setAny(s, "ON"_sl, c); }
+        )?                              { $$ = s; }
+
+joinOperator =
+    <( LEFT (OUTER)? | INNER | CROSS )?> JOIN
+                                        { string join = trim(yytext);
+                                          $$ = join.empty() ? string("INNER") : join;}
+
+groupBy =
+    GROUP BY x:expression               { x = arrayWith(x);}
+        ( _ ',' _ x2:expression         { appendAny(x, x2);}
+        )*                              { $$ = x;}
+
+having =
+    HAVING expression
+
+orderBy =
+    ORDER BY o:ordering                 { o = arrayWith(o); }
+        ( _ ',' _ o2:ordering           { appendAny(o, o2); }
+        )*                              { $$ = o; }
+
+ordering =
+    x:expression
+        ( _ o:order                     { x = op(o, x);}
+        )?                              { $$ = x; }
+
+order =
+    <( ASC | DESC )>                    { $$ = trim(yytext);}
+
+columnAlias     = IDENTIFIER
+dataSourceName  = IDENTIFIER
+databaseName    = IDENTIFIER
+databaseAlias   = IDENTIFIER
+
+
+######## EXPRESSIONS:
+
+
+expression =
+    expr8
+
+
+caseExpression =
+    CASE (!WHEN val:expression)?        { val = op("CASE", (val.isNull() ? Any(nullValue) : val));}
+    (WHEN when:expression THEN then:expression
+                                        { appendAny(val, when);
+                                          appendAny(val, then);
+                                        }
+        )+
+    (ELSE elsex:expression              { appendAny(val, elsex);}
+        )? END                          {  $$ = val; }
+
+
+anyEveryExpression =
+    a:anyEvery _ v:variableName _ IN _ e:expression _ SATISFIES _ s:expression END
+                                        { if (s.is<MutableArray>())
+                                            substituteVariable(v, s);
+                                          auto oper = op(a);
+                                          appendAny(oper, v);
+                                          appendAny(oper, e);
+                                          appendAny(oper, s);
+                                          $$ = oper; }
+anyEvery =
+    anyOrSome AND EVERY                 { $$ = string("ANY AND EVERY");}
+  | anyOrSome                           { $$ = string("ANY");}
+  | EVERY                               { $$ = string("EVERY");}
+
+anyOrSome = ANY | SOME
+
+variableName    = IDENTIFIER
+
+
+######## BINARY (mostly) OPERATORS:
+
+
+# Every level of operator precedence needs its own grammar rule, to ensure that operations
+# are grouped correctly. The precedence levels here are taken from the SQLite documentation.
+# Level 8 is the lowest, level 0 the highest.
+
+expr8 =
+    x:expr7 (_ op:OP_PREC_8 _ r:expr7   { x = binaryOp(x, op, r);}
+             )*                         { $$ = x}
+expr7 =
+    x:expr6 (_ op:OP_PREC_7 _ r:expr6   { x = binaryOp(x, op, r);}
+             )*                         { $$ = x}
+expr6 =
+    x:expr5 NOT NULL                    { $$ = op("IS NOT", x, nullValue); }
+  | inExpression
+  | likeOrMatchExpression
+  | betweenExpression
+  | x:expr5 (_ o:OP_PREC_6 _ r:expr5    { x = binaryOp(x, o, r);}
+             )*                         { $$ = x}
+expr5 =
+    x:expr4 (_ op:OP_PREC_5 _ r:expr4   { x = binaryOp(x, op, r);}
+             )*                         { $$ = x}
+expr4 =
+    x:expr3 (_ op:OP_PREC_4 _ r:expr3   { x = binaryOp(x, op, r);}
+             )*                         { $$ = x}
+expr3 =
+    x:expr2 (_ op:OP_PREC_3 _ r:expr2   { x = binaryOp(x, op, r);}
+             )*                         { $$ = x}
+expr2 =
+    x:expr1 (_ op:OP_PREC_2 _ r:expr1   { x = binaryOp(x, op, r);}
+             )*                         { $$ = x}
+expr1 =
+    x:expr0 (_ op:OP_PREC_1 _ r:expr0   { x = binaryOp(x, op, r);}
+             )*                         { $$ = x}
+
+likeOrMatchExpression =
+    x:expr5 _ (n:NOT)? o:likeOrMatch r:expr5 { auto b = binaryOp(x, o, r);
+                                          if (n.isNotNull())  b = op("NOT", b);
+                                          $$ = b; }
+likeOrMatch = <(LIKE | MATCH)>          { $$ = trim(yytext);}
+
+betweenExpression =
+    x:expr5 (n:NOT)? BETWEEN min:expr5 AND max:expr5
+                                        { auto b = op("BETWEEN", x, min, max);
+                                          if (n.isNotNull())  b = op("NOT", b);
+                                          $$ = b; }
+
+OP_PREC_8 = OR                          { $$ = string("OR");}
+OP_PREC_7 = AND                         { $$ = string("AND");}
+OP_PREC_6 = ('=='|'=')                  { $$ = string("=");}
+          | ('<>'|'!=')                 { $$ = string("!=");}
+          | (IS NOT)                    { $$ = string("IS NOT");}
+          | IS                          { $$ = string("IS");}
+OP_PREC_5 = <('<='|'<'|'>='|'>')>       { $$ = trim(yytext);}
+OP_PREC_4 = <('<<'|'>>'|'&'|'|')>       { $$ = trim(yytext);}
+OP_PREC_3 = <[-+]>                      { $$ = trim(yytext);}
+OP_PREC_2 = <[*/%]>                     { $$ = trim(yytext);}
+OP_PREC_1 = <'||'>                      { $$ = trim(yytext);}
+
+
+######## IN and NOT IN:
+
+
+inExpression =
+    x:expr5 i:IN_OR_NOT
+        (s:selectExpr                  &{false} # TODO: Support in LiteCore   { $$ = op(i, x, s); }
+        | p:parenExprs                  { $$ = op(i, x, insertAny(p, 0, string("[]"))); }
+        )
+
+IN_OR_NOT =
+    NOT IN                              { $$ = string("NOT IN");}
+  | IN                                  { $$ = string("IN");}
+
+selectExpr =
+    '(' s:selectStatement ')'           { $$ = op("SELECT", s); }
+
+
+######## HIGHEST-PRIORITY EXPRESSIONS:
+
+
+expr0 =
+    x:baseExpr '.' p:propertyPath       { $$ = op("_.", x, p);}
+  | x:baseExpr
+        (_ COLLATE c:collation          { x = collateOp(x, c); }
+            ( _ c2:collation            { extendCollate(x, c2); }
+             )*
+         )?                             { $$ = x; }
+
+collation =
+    <("NO"i? ("UNICODE"i | "CASE"i | "DIACRITICS"i)> WB)  { $$ = string(yytext); }
+
+baseExpr =
+    literal
+  | arrayLiteral
+  | dictLiteral
+  | o:OP_PREFIX _ r:baseExpr            { $$ = unaryOp(o, r);}
+  | EXISTS s:selectExpr                 { $$ = op("EXISTS", s); }
+  | caseExpression
+  | anyEveryExpression
+  | '$' IDENTIFIER                      { $$ = op(string("$") + yytext); }
+  | function
+  | meta
+  | property
+  | '(' _ expression _ ')'
+
+OP_PREFIX =
+    <('-'|'+'|'~'|NOT)>                 { $$ = trim(yytext);}
+
+
+######## PROPERTIES:
+
+
+meta =
+    ds:dataSourceName _ '.' _ META '.' _ <metaProperty>
+                                        { $$ = op(string(".") + ds.as<string>()
+                                                + "._" + yytext);}
+  | META '.' _ <metaProperty>           { $$ = op(string("._") + yytext);}
+
+metaProperty =
+    "id" | "sequence" | "deleted" | "expiration"
+
+property =
+    '*'                                 { $$ = op(".");}
+  | a:databaseAlias '.' _ '*'           { $$ = op("." + a.as<string>() + ".");}
+  | p:propertyPath                      { $$ = op(p);}
+
+propertyPath =
+    p:propertyName                      { p = quoteProperty(p); }
+        (('.' _ p2:propertyName         { p = concatProperty(p, p2);}
+         ) |
+         ('[' _ i:INT_LITERAL _ ']' _   { p = concatIndex(p, i);}
+         )
+        )*                              { $$ = p;}
+
+propertyName
+    = !META IDENTIFIER
+
+
+######## FUNCTIONS:
+
+
+function =
+    f:functionName e:parenExprs         { $$ = insertAny(e, 0, f.as<string>() + "()");}
+
+functionName    =
+    IDENTIFIER                         &{isFunction(yytext)}
+
+parenExprs =
+    f:_ '('                             { f = MutableArray::newArray();}
+        ( e:expression                  { appendAny(f, e);}
+        (_ ',' _ e2:expression          { appendAny(f, e2);}
+        )* )? ')'                       { $$ = f;}
+
+
+######## IDENTIFIERS & KEYWORDS:
+
+
+# In N1QL, unlike SQL, `"` delimits a string, while "`" is used to quote identifiers.
+IDENTIFIER =
+  <[a-zA-Z_] [a-zA-Z0-9_$]*>           &{!isReservedWord(yytext)}
+        _                               { $$ = string(yytext);}
+  | "`"  <( [^`] | "``"   )*> "`"  _    { $$ = unquote(yytext, '`');}
+
+
+# Note: the 'i' suffix on strings makes them case-insensitive.
+# This feature is not in the stock peg-1.1.8 distribution, but is in the one on Github.
+
+ALL       = "ALL"i         WB
+AND       = "AND"i         WB
+ANY       = "ANY"i         WB
+AS        = "AS"i          WB
+ASC       = "ASC"i         WB
+BETWEEN   = "BETWEEN"i     WB
+BY        = "BY"i          WB
+CASE      = "CASE"i        WB
+COLLATE   = "COLLATE"i     WB
+CROSS     = "CROSS"i       WB
+DESC      = "DESC"i        WB
+DISTINCT  = "DISTINCT"i    WB
+ELSE      = "ELSE"i        WB
+END       = "END"i         WB
+EVERY     = "EVERY"i       WB
+EXISTS    = "EXISTS"i      WB
+FALSE     = "FALSE"i       WB
+FROM      = "FROM"i        WB
+GROUP     = "GROUP"i       WB
+HAVING    = "HAVING"i      WB
+IN        = "IN"i          WB
+INNER     = "INNER"i       WB
+IS        = "IS"i          WB
+JOIN      = "JOIN"i        WB
+LEFT      = "LEFT"i        WB
+LIKE      = "LIKE"i        WB
+LIMIT     = "LIMIT"i       WB
+MATCH     = "MATCH"i       WB
+META      = "META"i        WB
+MISSING   = "MISSING"i     WB
+NOT       = "NOT"i         WB
+NULL      = "NULL"i        WB
+OFFSET    = "OFFSET"i      WB
+ON        = "ON"i          WB
+OR        = "OR"i          WB
+ORDER     = "ORDER"i       WB
+OUTER     = "OUTER"i       WB
+SATISFIES = "SATISFIES"i   WB
+SELECT    = "SELECT"i      WB
+SOME      = "SOME"i        WB
+THEN      = "THEN"i        WB
+TRUE      = "TRUE"i        WB
+WHEN      = "WHEN"i        WB
+WHERE     = "WHERE"i       WB
+
+
+######## COMPOUND LITERALS:
+
+
+arrayLiteral =
+    '[' _ (
+        e:expression                    { e = op("[]", e); }
+        ( _ ',' _ e2:expression         { appendAny(e, e2); }
+         )*
+    )? ']'                              { $$ = e.isNull() ? Any(op("[]")) : e;}
+
+
+dictLiteral =
+    '{' _ (
+        k:STRING_LITERAL ':' _ e:expression           { e = dictWith(slice(k.as<string>()), e); }
+        ( _ ',' _ k:STRING_LITERAL ':' _ v:expression { setAny(e, slice(k.as<string>()), v); }
+         )*
+    )? '}'                              { $$ = e.isNull() ? Any(MutableDict::newDict()) : e;}
+
+
+######## LITERALS:
+
+
+literal =
+    FLOAT_LITERAL
+  | INT_LITERAL
+  | BOOLEAN_LITERAL
+  | STRING_LITERAL
+  | NULL                                { $$ = nullValue; }
+  | MISSING                             { $$ = op("MISSING");}
+
+BOOLEAN_LITERAL =
+    TRUE                                { $$ = true;}
+  | FALSE                               { $$ = false;}
+
+FLOAT_LITERAL =
+    <'-'? (('.' DIGIT+) | (DIGIT+ ('.' DIGIT*)?)) ( [Ee] [-+]? DIGIT+ )?> WB
+                                        { double d;
+                                          sscanf(yytext, "%lf", &d);
+                                          $$ = d; }
+INT_LITERAL =
+    <'-'? DIGIT+> WB                    { $$ = (long long)atoi(yytext);}
+
+DIGIT = [0-9]
+
+
+# In N1QL, unlike SQL, strings can be double-quoted as well as single-quoted.
+STRING_LITERAL =
+    "'" <( [^'] | "''" )*> "'" _        { $$ = unquote(yytext, '\'');}
+  | "\"" <( [^"] | "\"\"" )*> "\"" _    { $$ = unquote(yytext, '"');}
+
+
+WB = ![a-zA-Z0-9_] _       # Word break + optional whitespace
+_  = [ \t\r\n]*            # Optional whitespace
+
+
+%%
+//////// PARSER ENTRY POINT (C++):
+
+
+#undef __
+
+
+static int n1ql_input(yycontext *ctx, char *buf, size_t max_size) {
+    ctx->stream->get(buf, max_size+1, -1);
+    return (int) ctx->stream->gcount();
+}
+
+
+FLMutableDict parse(const string &input, unsigned *errPos) {
+    MutableDict result;
+    std::stringstream stream(input, std::ios_base::in);
+    yycontext ctx = { };
+    ctx.stream = &stream;
+
+    bool ok = parse(&ctx) != 0;
+    if (ok) {
+        result = ctx.__;
+    } else {
+        *errPos = (unsigned) ctx.__maxpos;
+    }
+    yyrelease(&ctx);
+    return (FLMutableDict) FLValue_Retain(result);
+}
+
+} }
