@@ -48,6 +48,7 @@ function(set_litecore_source_base)
         LiteCore/Query/SQLiteN1QLFunctions.cc
         LiteCore/Query/SQLitePredictionFunction.cc
         LiteCore/Query/SQLiteQuery.cc
+        LiteCore/Query/N1QL_Parser/n1ql.cc
         LiteCore/RevTrees/RawRevTree.cc
         LiteCore/RevTrees/RevID.cc
         LiteCore/RevTrees/RevTree.cc

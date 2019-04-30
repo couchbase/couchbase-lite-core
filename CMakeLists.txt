@@ -201,6 +201,7 @@ target_include_directories(
     LiteCore/BlobStore
     LiteCore/Database
     LiteCore/Query
+    LiteCore/Query/N1QL_Parser
     LiteCore/RevTrees
     LiteCore/Storage
     LiteCore/Support
