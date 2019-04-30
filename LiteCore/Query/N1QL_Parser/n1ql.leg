@@ -38,7 +38,7 @@ n1ql =
 selectStatement =
     select:SELECT _                     { select = MutableDict::newDict(); }
         (d:DISTINCT                     { setAny(select, "DISTINCT"_sl, true); }
-            )?
+         | ALL)?
         sr:selectResults _              { setAny(select, "WHAT"_sl, sr); }
         (f:from _                       { setAny(select, "FROM"_sl, f); }
             )?
@@ -50,8 +50,9 @@ selectStatement =
         (o:orderBy _                    { setAny(select, "ORDER_BY"_sl, o); }
             )?
         (LIMIT l:expression             { setAny(select, "LIMIT"_sl, l); }
-            ( _ OFFSET off:expression   { setAny(select, "OFFSET"_sl, off); }
-            )? )?
+            )?
+        (OFFSET off:expression          { setAny(select, "OFFSET"_sl, off); }
+            )?
         (_ ';')?
                                         { $$ = select; }
 
@@ -74,7 +75,7 @@ from =
          )*                             { $$ = d;}
 
 dataSource =
-    n:databaseName (AS a:databaseAlias )?  { $$ = dictWith("AS"_sl, a.isNull() ? n : a);}
+    n:databaseName (AS? a:databaseAlias )?  { $$ = dictWith("AS"_sl, a.isNull() ? n : a);}
 
 join =
     o:joinOperator _ s:dataSource _     { setAny(s, "JOIN"_sl, o); }
@@ -117,9 +118,7 @@ databaseAlias   = IDENTIFIER
 
 
 expression =
-    caseExpression
-  | anyEveryExpression
-  | expr8
+    expr8
 
 
 caseExpression =
@@ -134,7 +133,7 @@ caseExpression =
 
 
 anyEveryExpression =
-    a:anyEvery _ v:variableName _ IN _ e:expression _ SATISFIES _ s:expression
+    a:anyEvery _ v:variableName _ IN _ e:expression _ SATISFIES _ s:expression END
                                         { if (s.is<MutableArray>())
                                             substituteVariable(v, s);
                                           auto oper = op(a);
@@ -142,11 +141,12 @@ anyEveryExpression =
                                           appendAny(oper, e);
                                           appendAny(oper, s);
                                           $$ = oper; }
-
 anyEvery =
-    ANY                                 { $$ = string("ANY");}
+    anyOrSome AND EVERY                 { $$ = string("ANY AND EVERY");}
+  | anyOrSome                           { $$ = string("ANY");}
   | EVERY                               { $$ = string("EVERY");}
-  | ANY AND EVERY                       { $$ = string("ANY AND EVERY");}
+
+anyOrSome = ANY | SOME
 
 variableName    = IDENTIFIER
 
@@ -167,7 +167,8 @@ expr7 =
 expr6 =
     x:expr5 NOT NULL                    { $$ = op("IS NOT", x, nullValue); }
   | inExpression
-  | x:expr5 BETWEEN min:expr5 AND max:expr5  { $$ = op("BETWEEN", x, min, max);}
+  | likeOrMatchExpression
+  | betweenExpression
   | x:expr5 (_ o:OP_PREC_6 _ r:expr5    { x = binaryOp(x, o, r);}
              )*                         { $$ = x}
 expr5 =
@@ -186,12 +187,24 @@ expr1 =
     x:expr0 (_ op:OP_PREC_1 _ r:expr0   { x = binaryOp(x, op, r);}
              )*                         { $$ = x}
 
+likeOrMatchExpression =
+    x:expr5 _ (n:NOT)? o:likeOrMatch r:expr5 { auto b = binaryOp(x, o, r);
+                                          if (n.isNotNull())  b = op("NOT", b);
+                                          $$ = b; }
+likeOrMatch = <(LIKE | MATCH)>          { $$ = trim(yytext);}
+
+betweenExpression =
+    x:expr5 (n:NOT)? BETWEEN min:expr5 AND max:expr5
+                                        { auto b = op("BETWEEN", x, min, max);
+                                          if (n.isNotNull())  b = op("NOT", b);
+                                          $$ = b; }
+
 OP_PREC_8 = OR                          { $$ = string("OR");}
 OP_PREC_7 = AND                         { $$ = string("AND");}
 OP_PREC_6 = ('=='|'=')                  { $$ = string("=");}
           | ('<>'|'!=')                 { $$ = string("!=");}
           | (IS NOT)                    { $$ = string("IS NOT");}
-          | <(IS|LIKE|MATCH)>           { $$ = trim(yytext);}
+          | IS                          { $$ = string("IS");}
 OP_PREC_5 = <('<='|'<'|'>='|'>')>       { $$ = trim(yytext);}
 OP_PREC_4 = <('<<'|'>>'|'&'|'|')>       { $$ = trim(yytext);}
 OP_PREC_3 = <[-+]>                      { $$ = trim(yytext);}
@@ -235,13 +248,17 @@ baseExpr =
   | arrayLiteral
   | dictLiteral
   | o:OP_PREFIX _ r:baseExpr            { $$ = unaryOp(o, r);}
+  | EXISTS s:selectExpr                 { $$ = op("EXISTS", s); }
+  | caseExpression
+  | anyEveryExpression
   | '$' IDENTIFIER                      { $$ = op(string("$") + yytext); }
   | function
   | meta
   | property
   | '(' _ expression _ ')'
 
-OP_PREFIX = <('-'|'+'|'~'|NOT)>         { $$ = trim(yytext);}
+OP_PREFIX =
+    <('-'|'+'|'~'|NOT)>                 { $$ = trim(yytext);}
 
 
 ######## PROPERTIES:
@@ -265,7 +282,7 @@ propertyPath =
     p:propertyName                      { p = quoteProperty(p); }
         (('.' _ p2:propertyName         { p = concatProperty(p, p2);}
          ) |
-         ('[' _ i:INT_LITERAL _ ']'     { p = concatIndex(p, i);}
+         ('[' _ i:INT_LITERAL _ ']' _   { p = concatIndex(p, i);}
          )
         )*                              { $$ = p;}
 
@@ -292,15 +309,17 @@ parenExprs =
 ######## IDENTIFIERS & KEYWORDS:
 
 
+# In N1QL, unlike SQL, `"` delimits a string, while "`" is used to quote identifiers.
 IDENTIFIER =
-  <[a-zA-Z_] [a-zA-Z_0-9]*>            &{!isReservedWord(yytext)}
+  <[a-zA-Z_] [a-zA-Z0-9_$]*>           &{!isReservedWord(yytext)}
         _                               { $$ = string(yytext);}
-  | "\"" <( [^"] | "\"\"" )*> "\"" _    { $$ = unquote(yytext, '"');}
+  | "`"  <( [^`] | "``"   )*> "`"  _    { $$ = unquote(yytext, '`');}
 
 
 # Note: the 'i' suffix on strings makes them case-insensitive.
 # This feature is not in the stock peg-1.1.8 distribution, but is in the one on Github.
 
+ALL       = "ALL"i         WB
 AND       = "AND"i         WB
 ANY       = "ANY"i         WB
 AS        = "AS"i          WB
@@ -315,6 +334,7 @@ DISTINCT  = "DISTINCT"i    WB
 ELSE      = "ELSE"i        WB
 END       = "END"i         WB
 EVERY     = "EVERY"i       WB
+EXISTS    = "EXISTS"i      WB
 FALSE     = "FALSE"i       WB
 FROM      = "FROM"i        WB
 GROUP     = "GROUP"i       WB
@@ -338,6 +358,7 @@ ORDER     = "ORDER"i       WB
 OUTER     = "OUTER"i       WB
 SATISFIES = "SATISFIES"i   WB
 SELECT    = "SELECT"i      WB
+SOME      = "SOME"i        WB
 THEN      = "THEN"i        WB
 TRUE      = "TRUE"i        WB
 WHEN      = "WHEN"i        WB
@@ -357,8 +378,8 @@ arrayLiteral =
 
 dictLiteral =
     '{' _ (
-        k:IDENTIFIER ':' _ e:expression             { e = dictWith(slice(k.as<string>()), e); }
-        ( _ ',' _ k:IDENTIFIER ':' _ v:expression   { setAny(e, slice(k.as<string>()), v); }
+        k:STRING_LITERAL ':' _ e:expression           { e = dictWith(slice(k.as<string>()), e); }
+        ( _ ',' _ k:STRING_LITERAL ':' _ v:expression { setAny(e, slice(k.as<string>()), v); }
          )*
     )? '}'                              { $$ = e.isNull() ? Any(MutableDict::newDict()) : e;}
 
@@ -389,8 +410,10 @@ INT_LITERAL =
 DIGIT = [0-9]
 
 
+# In N1QL, unlike SQL, strings can be double-quoted as well as single-quoted.
 STRING_LITERAL =
     "'" <( [^'] | "''" )*> "'" _        { $$ = unquote(yytext, '\'');}
+  | "\"" <( [^"] | "\"\"" )*> "\"" _    { $$ = unquote(yytext, '"');}
 
 
 WB = ![a-zA-Z0-9_] _       # Word break + optional whitespace
