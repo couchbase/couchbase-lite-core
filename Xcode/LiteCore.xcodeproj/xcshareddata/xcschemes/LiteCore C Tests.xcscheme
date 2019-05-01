@@ -81,7 +81,7 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "&quot;Query N1QL&quot;"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
       <AdditionalOptions>

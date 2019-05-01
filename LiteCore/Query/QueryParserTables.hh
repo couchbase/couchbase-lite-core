@@ -83,6 +83,7 @@ namespace litecore {
 
         {"SELECT"_sl,  1, 1,  1,  &QueryParser::selectOp},
 
+        {"ASC"_sl,     1, 1,  2,  &QueryParser::postfixOp},
         {"DESC"_sl,    1, 1,  2,  &QueryParser::postfixOp},
 
         {nullslice,    0, 0, 99,  &QueryParser::fallbackOp} // fallback; must come last in list

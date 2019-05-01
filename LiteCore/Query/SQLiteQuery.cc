@@ -62,24 +62,23 @@ namespace litecore {
             static constexpr const char* kLanguageName[] = {"JSON", "N1QL"};
             logInfo("Compiling %s query: %.*s", kLanguageName[(int)language], SPLAT(queryStr));
 
-            alloc_slice queryJSON;
             switch (language) {
                 case QueryLanguage::kJSON:
-                    queryJSON = queryStr;
+                    _json = queryStr;
                     break;
                 case QueryLanguage::kN1QL: {
                     unsigned errPos;
                     FLMutableDict result = n1ql::parse(string(queryStr), &errPos);
                     if (!result)
                         throw Query::parseError("N1QL syntax error", errPos);
-                    queryJSON = ((MutableDict*)result)->toJSON(true);
+                    _json = ((MutableDict*)result)->toJSON(true);
                     FLMutableDict_Release(result);
                     break;
                 }
             }
 
             QueryParser qp(keyStore);
-            qp.parseJSON(queryJSON);
+            qp.parseJSON(_json);
 
             _parameters = qp.parameters();
             for (auto p = _parameters.begin(); p != _parameters.end();) {
