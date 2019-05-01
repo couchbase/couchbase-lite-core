@@ -422,11 +422,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorNotFound);
 
-    CHECK(c4doc_getExpiration(db, docID)  == expire);
-    CHECK(c4doc_getExpiration(db, docID2) == expire);
-    CHECK(c4doc_getExpiration(db, docID3) == 0);
-    CHECK(c4doc_getExpiration(db, docID4) == expire + 100*secs);
-    CHECK(c4doc_getExpiration(db, "nonexistent"_sl) == 0);
+    CHECK(c4doc_getExpiration(db, docID, nullptr)  == expire);
+    CHECK(c4doc_getExpiration(db, docID2, nullptr) == expire);
+    CHECK(c4doc_getExpiration(db, docID3, nullptr) == 0);
+    CHECK(c4doc_getExpiration(db, docID4, nullptr) == expire + 100*secs);
+    CHECK(c4doc_getExpiration(db, "nonexistent"_sl, nullptr) == 0);
+
     CHECK(c4db_nextDocExpiration(db) == expire);
 
     // Wait for the expiration time to pass:
@@ -450,11 +451,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
     time_t expire = c4_now() + 2*secs;
     C4Error err;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
-    REQUIRE(c4doc_getExpiration(db, docID) == expire);
+    REQUIRE(c4doc_getExpiration(db, docID, nullptr) == expire);
     CHECK(c4db_nextDocExpiration(db) == expire);
 
     REQUIRE(c4doc_setExpiration(db, docID, 0, &err));
-    CHECK(c4doc_getExpiration(db, docID) == 0);
+    CHECK(c4doc_getExpiration(db, docID, nullptr) == 0);
     CHECK(c4db_nextDocExpiration(db) == 0);
     CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
 }
