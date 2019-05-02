@@ -60,6 +60,7 @@ namespace litecore {
             bool                create         :1;      ///< Should the db be created if it doesn't exist?
             bool                writeable      :1;      ///< If false, db is opened read-only
             bool                useDocumentKeys:1;      ///< Use SharedKeys for Fleece docs
+            bool                upgradeable    :1;      ///< DB schema can be upgraded
             EncryptionAlgorithm encryptionAlgorithm;    ///< What encryption (if any)
             alloc_slice         encryptionKey;          ///< Encryption key, if encrypting
             static const Options defaults;
