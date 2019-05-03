@@ -32,6 +32,7 @@ namespace litecore {
 
     #define AES256_AVAILABLE 1
 
+    /** AES256 encryption/decryption. */
     size_t AES256(bool encrypt,        // true=encrypt, false=decrypt
                   slice key,           // pointer to 32-byte key
                   slice iv,            // pointer to 16-byte initialization vector
@@ -39,7 +40,10 @@ namespace litecore {
                   slice dst,           // output buffer & capacity
                   slice src);          // input data
 
-    // TODO: Combine these into a single Encrypt() function that takes an algorithm parameter.
+    /** Converts a password string into a key using PBKDF2. */
+    bool DeriveKeyFromPassword(slice password,
+                               void *outKey,
+                               size_t keyLength);
 
 #else
 #define AES256_AVAILABLE 0

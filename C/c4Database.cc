@@ -30,6 +30,7 @@
 #include "SecureRandomize.hh"
 #include "FilePath.hh"
 #include "Error.hh"
+#include "SecureSymmetricCrypto.hh"
 #include "StringUtil.hh"
 #include "PrebuiltCopier.hh"
 #include <thread>
@@ -87,6 +88,14 @@ bool c4Database::mustNotBeInTransaction(C4Error *outError) noexcept {
 
 
 #pragma mark - C API:
+
+
+bool c4key_setPassword(C4EncryptionKey *key, C4String password, C4EncryptionAlgorithm alg) C4API {
+    bool ok = (password.buf && alg != kC4EncryptionNone
+                && litecore::DeriveKeyFromPassword(password, key->bytes, kEncryptionKeySize[alg]));
+    key->algorithm = ok ? alg : kC4EncryptionNone;
+    return ok;
+}
 
 
 C4Database* c4db_open(C4Slice path,

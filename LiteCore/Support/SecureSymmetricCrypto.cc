@@ -21,13 +21,19 @@
 #include "Logging.hh"
 
 #if defined(_CRYPTO_CC)
-    #include <CommonCrypto/CommonCryptor.h>
+    #include <CommonCrypto/CommonCrypto.h>
 #elif defined(_CRYPTO_MBEDTLS)
     #include <mbedtls/cipher.h>
+    #include <mbedtls/pkcs5.h>
 #endif
 
 
 namespace litecore {
+    using namespace fleece;
+
+    // Parameters for PBDKF2 key derivation:
+    static constexpr slice kPBKDFSalt = "Salty McNaCl"_sl;
+    static constexpr int kPBKDFRounds = 64000;
 
 #if defined(_CRYPTO_CC)
 
@@ -59,9 +65,26 @@ namespace litecore {
         return outSize;
     }
 
+
+    bool DeriveKeyFromPassword(slice password,
+                               void *outKey,
+                               size_t keyLength)
+    {
+        int status = CCKeyDerivationPBKDF(kCCPBKDF2,
+                                          (const char*)password.buf, password.size,
+                                          (const uint8_t*)kPBKDFSalt.buf, kPBKDFSalt.size,
+                                          kCCPRFHmacAlgSHA256,
+                                          kPBKDFRounds,
+                                          (uint8_t*)outKey, keyLength);
+        return (status == noErr);
+    }
+
+
 #elif defined(_CRYPTO_MBEDTLS)
 
-	size_t AES(size_t key_size,
+    // Cross-platform implementation using mbedTLS library:
+
+	static size_t AES(size_t key_size,
 			   mbedtls_cipher_type_t cipher,
 		       bool encrypt,
                slice key,
@@ -89,13 +112,14 @@ namespace litecore {
         }
 
         size_t out_len = dst.size;
-        mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char*)key.buf, key_size * 8, encrypt ? MBEDTLS_ENCRYPT : MBEDTLS_DECRYPT);
+        mbedtls_cipher_setkey(&cipher_ctx, (const unsigned char*)key.buf, (int)key_size * 8, encrypt ? MBEDTLS_ENCRYPT : MBEDTLS_DECRYPT);
         mbedtls_cipher_crypt(&cipher_ctx, (const unsigned char*)iv.buf, iv.size, (const unsigned char*)src.buf, src.size,
                              (unsigned char*)dst.buf, &out_len);
 
         mbedtls_cipher_free(&cipher_ctx);
         return out_len;
     }
+
 
     size_t AES256(bool encrypt,
                   slice key,
@@ -105,6 +129,28 @@ namespace litecore {
                   slice src)
     {
         return AES(kAES256KeySize, MBEDTLS_CIPHER_AES_256_CBC, encrypt, key, iv, padding, dst, src);
+    }
+
+
+    bool DeriveKeyFromPassword(slice password,
+                               void *outKey,
+                               size_t keyLength)
+    {
+        const mbedtls_md_info_t *digestType = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+        if (!digestType)
+            return false;
+        mbedtls_md_context_t ctx;
+        mbedtls_md_init(&ctx);
+        int status = mbedtls_md_setup(&ctx, digestType, 1);
+        if (status != 0)
+            return false;
+        status = mbedtls_pkcs5_pbkdf2_hmac(&ctx,
+                                       (const unsigned char*)password.buf, password.size,
+                                       (const unsigned char*)kPBKDFSalt.buf, kPBKDFSalt.size,
+                                       kPBKDFRounds,
+                                       (int)keyLength, (unsigned char*)outKey);
+        mbedtls_md_free(&ctx);
+        return (status == 0);
     }
 
 #endif

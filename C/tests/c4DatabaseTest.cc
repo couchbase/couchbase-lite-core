@@ -222,6 +222,18 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]")
     REQUIRE(error.code == (int)kC4ErrorNotFound);
 }
 
+
+TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
+    C4EncryptionKey key = {};
+    REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
+    REQUIRE(!c4key_setPassword(&key, "password123"_sl, kC4EncryptionNone));
+
+    REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
+    CHECK(key.algorithm == kC4EncryptionAES256);
+    CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() ==
+          "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909");
+}
+
 #ifdef COUCHBASE_ENTERPRISE
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][Encryption][blob][C]") {
     createNumberedDocs(99);
