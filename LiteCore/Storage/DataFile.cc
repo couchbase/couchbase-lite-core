@@ -100,7 +100,7 @@ namespace litecore {
 
     const DataFile::Options DataFile::Options::defaults = DataFile::Options {
         {true},                 // sequences
-        true, true, true        // create, writeable, useDocumentKeys
+        true, true, true, true  // create, writeable, useDocumentKeys, upgradeable
     };
 
 

@@ -165,6 +165,7 @@ public:
     // Caller is responsible for closing & deleting this database when the test finishes.
     C4Database* createDatabase(const std::string &nameSuffix);
 
+    void closeDB();
     void reopenDB();
     void reopenDBReadOnly();
     void deleteDatabase();

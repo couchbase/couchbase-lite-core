@@ -125,7 +125,9 @@ namespace litecore {
     private:
         friend class SQLiteKeyStore;
 
-        bool decrypt();
+        void reopenSQLiteHandle();
+        void decrypt();
+        bool _decrypt(EncryptionAlgorithm, slice key);
         int _exec(const std::string &sql);
 
         bool indexTableExists();
