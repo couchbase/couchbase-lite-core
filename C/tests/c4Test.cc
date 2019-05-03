@@ -286,12 +286,18 @@ C4Database* C4Test::createDatabase(const string &nameSuffix) {
 }
 
 
-void C4Test::reopenDB() {
-    auto config = *c4db_getConfig(db);
+void C4Test::closeDB() {
     C4Error error;
     REQUIRE(c4db_close(db, &error));
     c4db_free(db);
     db = nullptr;
+}
+
+
+void C4Test::reopenDB() {
+    auto config = *c4db_getConfig(db);
+    closeDB();
+    C4Error error;
     db = c4db_open(databasePath(), &config, &error);
     REQUIRE(db);
 }

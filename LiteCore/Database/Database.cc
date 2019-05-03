@@ -112,6 +112,7 @@ namespace c4Internal {
         options.keyStores.sequences = true;
         options.create = (config.flags & kC4DB_Create) != 0;
         options.writeable = (config.flags & kC4DB_ReadOnly) == 0;
+        options.upgradeable = (config.flags & kC4DB_NoUpgrade) == 0;
         options.useDocumentKeys = true;
         options.encryptionAlgorithm = (EncryptionAlgorithm)config.encryptionKey.algorithm;
         if (options.encryptionAlgorithm != kNoEncryption) {

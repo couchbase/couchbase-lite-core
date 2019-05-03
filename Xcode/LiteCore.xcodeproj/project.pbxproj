@@ -61,6 +61,7 @@
 		270C7D4D2022914C00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
+		271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
 		272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850A91E9AF53B009CA22F /* Upgrader.cc */; };
@@ -853,6 +854,7 @@
 		27139B1F18F8E9750021A9A3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		27139B3018F8E9750021A9A3 /* LiteCore Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LiteCore Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		271507F1212259DE005FE6E8 /* c4Compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Compat.h; sourceTree = "<group>"; };
+		271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseEncryptionTest.cc; sourceTree = "<group>"; };
 		2722504A1D7884110006D5A5 /* c4BlobStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStore.h; sourceTree = "<group>"; };
 		2722504D1D7892610006D5A5 /* c4BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStore.cc; sourceTree = "<group>"; };
 		272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStoreTest.cc; sourceTree = "<group>"; };
@@ -1462,6 +1464,7 @@
 		2700BB612170117F00797537 /* EE */ = {
 			isa = PBXGroup;
 			children = (
+				271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */,
 				27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */,
 				2700BB59217005A900797537 /* CoreMLPredictiveModel.hh */,
 				2700BB5A217005A900797537 /* CoreMLPredictiveModel.mm */,
@@ -3165,6 +3168,7 @@
 				2769438F1DD0ED3F00DB2555 /* c4ObserverTest.cc in Sources */,
 				27416E2A1E0494DF00F10F65 /* c4QueryTest.cc in Sources */,
 				2783DF991D27436700F84E6E /* c4ThreadingTest.cc in Sources */,
+				271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */,
 				272850E91E9D484A009CA22F /* ReplicatorAPITest.cc in Sources */,
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,

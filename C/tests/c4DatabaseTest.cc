@@ -223,58 +223,6 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]")
 }
 
 
-TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
-    C4EncryptionKey key = {};
-    REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
-    REQUIRE(!c4key_setPassword(&key, "password123"_sl, kC4EncryptionNone));
-
-    REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
-    CHECK(key.algorithm == kC4EncryptionAES256);
-    CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() ==
-          "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909");
-}
-
-#ifdef COUCHBASE_ENTERPRISE
-N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][Encryption][blob][C]") {
-    createNumberedDocs(99);
-
-    // Add blob to the store:
-    C4Slice blobToStore = C4STR("This is a blob to store in the store!");
-    C4BlobKey blobKey;
-    C4Error error;
-    auto blobStore = c4db_getBlobStore(db, &error);
-    REQUIRE(blobStore);
-    REQUIRE(c4blob_create(blobStore, blobToStore, nullptr, &blobKey, &error));
-
-    C4SliceResult blobResult = c4blob_getContents(blobStore, blobKey, &error);
-    CHECK(blobResult == blobToStore);
-    c4slice_free(blobResult);
-
-    // If we're on the unencrypted pass, encrypt the db. Otherwise decrypt it:
-    C4EncryptionKey newKey = {kC4EncryptionNone, {}};
-    if (c4db_getConfig(db)->encryptionKey.algorithm == kC4EncryptionNone) {
-        newKey.algorithm = kC4EncryptionAES256;
-        memcpy(newKey.bytes, "a different key than default....", kC4EncryptionKeySizeAES256);
-        REQUIRE(c4db_rekey(db, &newKey, &error));
-    } else {
-        REQUIRE(c4db_rekey(db, nullptr, &error));
-    }
-
-    // Verify the db works:
-    REQUIRE(c4db_getDocumentCount(db) == 99);
-    REQUIRE(blobStore);
-    blobResult = c4blob_getContents(blobStore, blobKey, &error);
-    CHECK(blobResult == blobToStore);
-    c4slice_free(blobResult);
-
-    // Check that db can be reopened with the new key:
-    REQUIRE(c4db_getConfig(db)->encryptionKey.algorithm == newKey.algorithm);
-    REQUIRE(memcmp(c4db_getConfig(db)->encryptionKey.bytes, newKey.bytes, 32) == 0);
-    reopenDB();
-}
-#endif
-
-
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
     setupAllDocs();
     C4Error error;

@@ -178,15 +178,8 @@ namespace litecore {
 
     void SQLiteDataFile::reopen() {
         DataFile::reopen();
-        int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
-        if (options().create)
-            sqlFlags |= SQLite::OPEN_CREATE;
-        _sqlDb = make_unique<SQLite::Database>(filePath().path().c_str(),
-                                               sqlFlags,
-                                               kBusyTimeoutSecs * 1000);
-
-        if (!decrypt())
-            error::_throw(error::UnsupportedEncryption);
+        reopenSQLiteHandle();
+        decrypt();
 
         withFileLock([this]{
             // http://www.sqlite.org/pragma.html
@@ -245,6 +238,16 @@ namespace litecore {
     }
 
 
+    void SQLiteDataFile::reopenSQLiteHandle() {
+        int sqlFlags = options().writeable ? SQLite::OPEN_READWRITE : SQLite::OPEN_READONLY;
+        if (options().create)
+            sqlFlags |= SQLite::OPEN_CREATE;
+        _sqlDb = make_unique<SQLite::Database>(filePath().path().c_str(),
+                                               sqlFlags,
+                                               kBusyTimeoutSecs * 1000);
+    }
+
+
     bool SQLiteDataFile::isOpen() const noexcept {
         return _sqlDb != nullptr;
     }
@@ -281,10 +284,10 @@ namespace litecore {
     }
 
 
-    bool SQLiteDataFile::decrypt() {
+    void SQLiteDataFile::decrypt() {
         auto alg = options().encryptionAlgorithm;
         if (!factory().encryptionEnabled(alg))
-            return false;
+            error::_throw(error::UnsupportedEncryption);
 #ifdef COUCHBASE_ENTERPRISE
         // Set the encryption key in SQLite:
         slice key;
@@ -293,6 +296,36 @@ namespace litecore {
             if (key.buf == nullptr || key.size != kEncryptionKeySize[alg])
                 error::_throw(error::InvalidParameter);
         }
+        bool success = _decrypt(alg, key);
+#if __APPLE__
+        if (!success && alg == kAES256) {
+            // If using AES256, retry with AES128 for backward compatibility with earlier versions:
+            logInfo("Retrying decryption with AES128...");
+            reopenSQLiteHandle();
+            success = _decrypt(kAES128, slice(key.buf, kEncryptionKeySize[kAES128]));
+            if (success) {
+                logInfo("Success! Database is decrypted.");
+                if (options().writeable && options().upgradeable) {
+                    // Now rekey with the full AES256 key:
+                    logInfo("Rekeying db to full AES256 encryption; this may take time...");
+                    int rc = sqlite3_rekey_v2(_sqlDb->getHandle(), nullptr, key.buf, (int)key.size);
+                    if (rc != SQLITE_OK) {
+                        logError("Rekeying to AES256 failed (err %d); continuing with existing db", rc);
+                    }
+                }
+            }
+        }
+#endif
+        if (!success)
+            error::_throw(error::NotADatabaseFile);
+#endif
+    }
+
+
+#ifdef COUCHBASE_ENTERPRISE
+    // Returns true on success, false if key is not valid; other errors thrown as exceptions.
+    bool SQLiteDataFile::_decrypt(EncryptionAlgorithm alg, slice key) {
+        static const char* kAlgorithmName[3] = {"no encryption", "AES256", "AES128"};
         // Calling sqlite3_key_v2 even with a null key (no encryption) reserves space in the db
         // header for a nonce, which will enable secure rekeying in the future.
         int rc = sqlite3_key_v2(_sqlDb->getHandle(), nullptr, key.buf, (int)key.size);
@@ -301,11 +334,22 @@ namespace litecore {
                           "Unable to set encryption key (SQLite error %d)", rc);
         }
 
-        // Verify that encryption key is correct (or db is unencrypted, if no key given):
-        _exec("SELECT count(*) FROM sqlite_master");
-#endif
-        return true;
+        // Since sqlite3_key_v2() does NOT attempt to read the database, we must do our own
+        // verification that the encryption key is correct (or db is unencrypted, if no key given):
+        rc = sqlite3_exec(_sqlDb->getHandle(), "SELECT count(*) FROM sqlite_master",
+                          NULL, NULL, NULL);
+        switch (rc) {
+            case SQLITE_OK:
+                return true;
+            case SQLITE_NOTADB:
+                logError("Could not decrypt database with %s", kAlgorithmName[alg]);
+                return false;
+            default:
+                logError("Could not read database (err %d) using %s", rc, kAlgorithmName[alg]);
+                error::_throw(error::SQLite, rc);
+        }
     }
+#endif
 
 
     void SQLiteDataFile::rekey(EncryptionAlgorithm alg, slice newKey) {
