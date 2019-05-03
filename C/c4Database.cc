@@ -30,6 +30,7 @@
 #include "SecureRandomize.hh"
 #include "FilePath.hh"
 #include "Error.hh"
+#include "SecureSymmetricCrypto.hh"
 #include "StringUtil.hh"
 #include "PrebuiltCopier.hh"
 #include <thread>
@@ -109,6 +110,14 @@ static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 *config2) {
 
 bool c4db_exists(C4String name, C4String inDirectory) C4API {
     return dbPath(name, inDirectory).exists();
+}
+
+
+bool c4key_setPassword(C4EncryptionKey *key, C4String password, C4EncryptionAlgorithm alg) C4API {
+    bool ok = (password.buf && alg != kC4EncryptionNone
+                && litecore::DeriveKeyFromPassword(password, key->bytes, kEncryptionKeySize[alg]));
+    key->algorithm = ok ? alg : kC4EncryptionNone;
+    return ok;
 }
 
 
