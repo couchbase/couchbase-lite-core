@@ -348,7 +348,7 @@ public:
         }
 
         int flags = 0;
-        dst[0] = (flags & SND_NO_FIN ? 0 : 128) | (compressed ? SND_COMPRESSED : 0);
+        dst[0] = char((flags & SND_NO_FIN ? 0 : 128) | (compressed ? SND_COMPRESSED : 0));
         if (!(flags & SND_CONTINUATION)) {
             dst[0] |= opCode;
         }
@@ -425,13 +425,21 @@ public:
                 } else if (payloadLength(frame) == 126) {
                     if (length < MEDIUM_MESSAGE_HEADER) {
                         break;
-                    } else if(consumeMessage<MEDIUM_MESSAGE_HEADER, uint16_t>(ntohs(*(uint16_t *) &src[2]), src, length, frame, user)) {
+                    }
+                    uint16_t n;
+                    memcpy(&n, &src[2], sizeof(n));
+                    if(consumeMessage<MEDIUM_MESSAGE_HEADER, uint16_t>(ntohs(n), src, length, frame, user)) {
                         return;
                     }
-                } else if (length < LONG_MESSAGE_HEADER) {
-                    break;
-                } else if (consumeMessage<LONG_MESSAGE_HEADER, uint64_t>(be64toh(*(uint64_t *) &src[2]), src, length, frame, user)) {
-                    return;
+                } else {
+                    if (length < LONG_MESSAGE_HEADER) {
+                        break;
+                    }
+                    uint64_t n;
+                    memcpy(&n, &src[2], sizeof(n));
+                    if (consumeMessage<LONG_MESSAGE_HEADER, uint64_t>(be64toh(n), src, length, frame, user)) {
+                        return;
+                    }
                 }
             }
             if (length) {
