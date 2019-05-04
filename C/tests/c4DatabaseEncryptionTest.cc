@@ -56,6 +56,17 @@ static alloc_slice copyFixtureDB(const string &name) {
 }
 
 
+TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
+    C4EncryptionKey key = {};
+    REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
+    REQUIRE(!c4key_setPassword(&key, "password123"_sl, kC4EncryptionNone));
+
+    REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
+    CHECK(key.algorithm == kC4EncryptionAES256);
+    CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() ==
+          "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909");
+}
+
 N_WAY_TEST_CASE_METHOD(C4EncryptionTest, "Database Wrong Key", "[Database][Encryption][C]") {
     createNumberedDocs(99);
 
@@ -150,27 +161,9 @@ TEST_CASE("Database Open Older Encrypted", "[Database][Encryption][C]") {
 
 #ifdef __APPLE__
 
-#include <CommonCrypto/CommonCrypto.h>
-
-
-// This matches the key derivation in CBLEncryptionKey.m
-static C4EncryptionKey deriveKey(slice password) {
-    static constexpr slice kDefaultSalt = "Salty McNaCl"_sl;
-    static constexpr int kDefaultPBKDFRounds = 64000;
-
-    C4EncryptionKey key = {kC4EncryptionAES256};
-    int status = CCKeyDerivationPBKDF(kCCPBKDF2,
-                                      (const char*)password.buf, password.size,
-                                      (const uint8_t*)kDefaultSalt.buf, kDefaultSalt.size,
-                                      kCCPRFHmacAlgSHA256, kDefaultPBKDFRounds,
-                                      key.bytes, kC4EncryptionKeySizeAES256);
-    REQUIRE(status == noErr);
-    return key;
-}
-
-
 TEST_CASE("Database Upgrade AES128", "[Database][Encryption][C]") {
-    auto key = deriveKey("password123"_sl);
+    C4EncryptionKey key;
+    c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256);
     testOpeningEncryptedDBFixture("encrypted_databases/Mac_2.1_AES128.cblite2", key.bytes);
 }
 
