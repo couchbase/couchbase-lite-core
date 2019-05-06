@@ -46,6 +46,7 @@ namespace litecore { namespace websocket {
                       const fleece::AllocedDict &options,
                       bool framing);
 
+        virtual void connect() override;
         virtual bool send(fleece::slice message, bool binary =true) override;
         virtual void close(int status =kCodeNormal, fleece::slice message =fleece::nullslice) override;
 
@@ -91,6 +92,8 @@ namespace litecore { namespace websocket {
         void schedulePing();
         void sendPing();
         void receivedPong();
+        void startResponseTimer(std::chrono::seconds timeout);
+        void timedOut();
 
         fleece::AllocedDict _options;
         bool _framing;
@@ -105,6 +108,9 @@ namespace litecore { namespace websocket {
         bool _closeSent {false}, _closeReceived {false};    // Close message sent or received?
         fleece::alloc_slice _closeMessage;                  // The encoded close request message
         std::unique_ptr<actor::Timer> _pingTimer;
+        std::unique_ptr<actor::Timer> _responseTimer;
+        std::chrono::seconds _curTimeout;
+        bool _timedOut {false};
         int _opToSend;
         fleece::alloc_slice _msgToSend;
 

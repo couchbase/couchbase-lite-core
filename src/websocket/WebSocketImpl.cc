@@ -32,7 +32,17 @@ namespace litecore { namespace websocket {
 
     static constexpr size_t kSendBufferSize = 64 * 1024;
 
-    static constexpr int kDefaultHeartbeatInterval = 5 * 60;
+    // Timeout for WebSocket connection (until HTTP response received)
+    static constexpr auto kConnectTimeout = chrono::seconds(15);
+
+    // Default interval at which to send PING messages (configurable via options)
+    static constexpr auto kDefaultHeartbeatInterval = chrono::seconds(5 * 60);
+
+    // Timeout for disconnecting if no PONG response received
+    static constexpr auto kPongTimeout  = chrono::seconds(10);
+
+    // Timeout for disconnecting if no CLOSE response received
+    static constexpr auto kCloseTimeout =  chrono::seconds(5);
 
     
     class MessageImpl : public Message {
@@ -62,6 +72,7 @@ namespace litecore { namespace websocket {
     ,Logging(WSLogDomain)
     ,_options(options)
     ,_framing(framing)
+    ,_responseTimer(new actor::Timer(bind(&WebSocketImpl::timedOut, this)))
     {
         if (framing) {
             if (role == Role::Server)
@@ -80,19 +91,27 @@ namespace litecore { namespace websocket {
     }
 
 
+    void WebSocketImpl::connect() {
+        startResponseTimer(kConnectTimeout);
+    }
+
+
     void WebSocketImpl::gotHTTPResponse(int status, const fleece::AllocedDict &headersFleece) {
         delegate().onWebSocketGotHTTPResponse(status, headersFleece);
     }
 
     void WebSocketImpl::onConnect() {
+        _responseTimer->stop();
         _timeConnected.start();
         delegate().onWebSocketConnect();
 
         // Initialize ping timer. (This is the first time it's accessed, and this method is only
         // called once, so no locking is needed.)
-        if (heartbeatInterval() > 0) {
-            _pingTimer.reset(new actor::Timer(bind(&WebSocketImpl::sendPing, this)));
-            schedulePing();
+        if (_framing) {
+            if (heartbeatInterval() > 0) {
+                _pingTimer.reset(new actor::Timer(bind(&WebSocketImpl::sendPing, this)));
+                schedulePing();
+            }
         }
     }
 
@@ -183,8 +202,7 @@ namespace litecore { namespace websocket {
                 msgToSend = move(_msgToSend);
                 // Compute # of bytes consumed: just the framing data, not any partial or
                 // delivered messages. (Trust me, the math works.)
-                completedBytes = data.size - _deliveredBytes -
-                                                (_curMessageLength - prevMessageLength);
+                completedBytes = data.size + prevMessageLength - _curMessageLength - _deliveredBytes;
             }
         }
         if (!_framing)
@@ -273,12 +291,13 @@ namespace litecore { namespace websocket {
         if (heartbeat.type() == kFLNumber)
             return (int)heartbeat.asInt();
         else
-            return kDefaultHeartbeatInterval;
+            return (int)kDefaultHeartbeatInterval.count();
     }
 
 
     void WebSocketImpl::schedulePing() {
-        _pingTimer->fireAfter(chrono::seconds(heartbeatInterval()));
+        if (!_closeSent)
+            _pingTimer->fireAfter(chrono::seconds(heartbeatInterval()));
     }
 
 
@@ -288,17 +307,36 @@ namespace litecore { namespace websocket {
             lock_guard<mutex> lock(_mutex);
             if (!_pingTimer)
                 return;
-            logInfo("Sending PING");
             schedulePing();
+            startResponseTimer(kPongTimeout);
             // exit scope to release the lock -- this is needed before calling sendOp,
             // which acquires the lock itself
         }
+        logInfo("Sending PING");
         sendOp(nullslice, PING);
     }
 
 
     void WebSocketImpl::receivedPong() {
         logInfo("Received PONG");
+        _responseTimer->stop();
+    }
+
+
+    void WebSocketImpl::startResponseTimer(chrono::seconds timeoutSecs) {
+        _curTimeout = timeoutSecs;
+        if (_responseTimer)
+            _responseTimer->fireAfter(timeoutSecs);
+    }
+
+
+    void WebSocketImpl::timedOut() {
+        logError("No response received after %lld sec -- disconnecting", _curTimeout.count());
+        _timedOut = true;
+        if (_framing)
+            closeSocket();
+        else
+            requestClose(504, "Timed out"_sl);
     }
 
 
@@ -324,6 +362,7 @@ namespace litecore { namespace websocket {
                 closeMsg.shorten(size);
                 _closeSent = true;
                 _closeMessage = closeMsg;
+                startResponseTimer(kCloseTimeout);
             }
             sendOp(closeMsg, uWS::CLOSE);
         } else {
@@ -355,6 +394,7 @@ namespace litecore { namespace websocket {
             _opToSend = CLOSE;
         }
         _pingTimer.reset();
+        _responseTimer.reset();
         return true;
     }
 
@@ -379,6 +419,11 @@ namespace litecore { namespace websocket {
             lock_guard<mutex> lock(_mutex);
 
             _pingTimer.reset();
+            _responseTimer.reset();
+
+            if (_timedOut && status.reason == kWebSocketClose)
+                status = {kNetworkError, kNetErrTimeout};
+
             if (_framing) {
                 bool clean = (status.code == 0
                               || (status.reason == kWebSocketClose && status.code == kCodeNormal));
