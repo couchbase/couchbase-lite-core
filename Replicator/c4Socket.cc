@@ -106,6 +106,7 @@ namespace litecore { namespace repl {
 
 
     void C4SocketImpl::connect() {
+        WebSocketImpl::connect();
         if (_factory.open) {
             Address c4addr(url());
             _factory.open(this, &c4addr, options().data(), _factory.context);
