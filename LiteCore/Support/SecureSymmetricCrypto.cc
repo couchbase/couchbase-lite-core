@@ -19,6 +19,9 @@
 #include "SecureSymmetricCrypto.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#ifdef __APPLE__
+#include <MacTypes.h>
+#endif
 
 #if defined(_CRYPTO_CC)
     #include <CommonCrypto/CommonCrypto.h>
