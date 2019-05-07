@@ -64,7 +64,7 @@ static MutableDict setAny(MutableDict dict, slice key, const Any &value) {
             || value.with<Value>([&](const Value &v)            {dict.set(key, v);})
             || value.with<string>([&](const string &v)          {dict.set(key, v.c_str());})
             || value.with<const char*>([&](const char *v)       {dict.set(key, v);})
-            || value.with<long long>([&](const long long &v)    {dict.set(key, v);})
+            || value.with<long long>([&](const long long &v)    {dict.set(key, (int64_t)v);})
             || value.with<double>([&](const double &v)          {dict.set(key, v);})
             || value.with<bool>([&](const bool &v)              {dict.set(key, v);})
             || value.with<Null>([&](const Null &v)              {dict.set(key, v);}))
