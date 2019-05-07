@@ -20,10 +20,10 @@ namespace litecore { namespace qp {
 #pragma mark - CONSTANTS:
 
     // Magic property names to reference doc metadata:
-    constexpr const char* kDocIDProperty        = "_id";
-    constexpr const char* kSequenceProperty     = "_sequence";
-    constexpr const char* kDeletedProperty      = "_deleted";
-    constexpr const char* kExpirationProperty   = "_expiration";
+    constexpr slice kDocIDProperty        = "_id"_sl;
+    constexpr slice kSequenceProperty     = "_sequence"_sl;
+    constexpr slice kDeletedProperty      = "_deleted"_sl;
+    constexpr slice kExpirationProperty   = "_expiration"_sl;
 
 
     // Names of the SQLite functions we register for working with Fleece data,
@@ -70,9 +70,8 @@ namespace litecore { namespace qp {
     const Dict* requiredDict(const Value *v, const char *what);
     slice requiredString(const Value *v, const char *what);
 
-    string propertyFromString(slice str);
-    string propertyFromOperands(Array::iterator &operands, bool skipDot =false);
-    string propertyFromNode(const Value *node, char prefix ='.');
+    Path propertyFromOperands(Array::iterator &operands, bool skipDot =false);
+    Path propertyFromNode(const Value *node, char prefix ='.');
 
     unsigned findNodes(const Value *root, fleece::slice op, unsigned argCount,
                        function_ref<void(const Array*)> callback);

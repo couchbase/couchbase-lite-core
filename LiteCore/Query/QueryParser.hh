@@ -161,13 +161,13 @@ namespace litecore {
 
         void writeDictLiteral(const fleece::impl::Dict*);
         bool writeNestedPropertyOpIfAny(fleece::slice fnName, fleece::impl::Array::iterator &operands);
-        void writePropertyGetter(slice fn, std::string property,
+        void writePropertyGetter(slice fn, fleece::impl::Path &&property,
                                  const fleece::impl::Value *param =nullptr);
         void writeFunctionGetter(slice fn, const fleece::impl::Value *source,
                                  const fleece::impl::Value *param =nullptr);
-        void writeUnnestPropertyGetter(slice fn, const std::string &property,
+        void writeUnnestPropertyGetter(slice fn, fleece::impl::Path &property,
                                        const std::string &alias, aliasType);
-        void writeEachExpression(const std::string &property);
+        void writeEachExpression(fleece::impl::Path &&property);
         void writeEachExpression(const fleece::impl::Value *arrayExpr);
         void writeSQLString(slice str)              {writeSQLString(_sql, str);}
         void writeArgList(fleece::impl::Array::iterator& operands);

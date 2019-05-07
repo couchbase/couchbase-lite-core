@@ -23,6 +23,7 @@
 #include "QueryParser+Private.hh"
 #include "FleeceImpl.hh"
 #include "StringUtil.hh"
+#include "Path.hh"
 
 using namespace std;
 using namespace fleece;
@@ -72,7 +73,7 @@ namespace litecore {
         if (node->count() >= 4) {
             slice property = requiredString(node->get(3), "PREDICTION() property name");
             _sql << kUnnestedValueFnName << "(" << alias << ".body, ";
-            writeSQLString(_sql, propertyFromString(property));
+            writeSQLString(_sql, string(Path(property)));
             _sql << ")";
         } else {
             _sql << kRootFnName << "(" << alias << ".body)";
