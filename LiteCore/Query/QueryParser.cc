@@ -139,6 +139,13 @@ namespace litecore {
             return string("\"") + name + "\"";
     }
 
+    static string unescapeAlias(const string& alias) {
+        string unescaped = alias;
+        unescaped.erase(remove(unescaped.begin(), unescaped.end(), '\\'), unescaped.end());
+        unescaped.erase(remove(unescaped.begin(), unescaped.end(), '"'), unescaped.end());
+        return unescaped;
+    }
+
     
 #pragma mark - QUERY PARSER TOP LEVEL:
 
@@ -706,8 +713,9 @@ namespace litecore {
             if (expr && expr[0]->asString().caseEquivalent("AS"_sl)) {
                 // Handle 'AS':
                 require(expr.count() == 3, "'AS' must have two operands");
-                title = string(requiredString(expr[2], "'AS' alias"));
+                title = unescapeAlias(string(requiredString(expr[2], "'AS' alias")));
                 result = expr[1];
+                _aliases.insert({title, kResultAlias});
             }
 
             if (n++ > 0)
@@ -727,6 +735,9 @@ namespace litecore {
                 }
                 if (title.empty())
                     title = "*";        // for the property ".", i.e. the entire doc
+            } else {
+                _sql << " AS ";
+                writeSQLString(title);
             }
 
             // Make the title unique:
@@ -1225,19 +1236,30 @@ namespace litecore {
 
     // Writes a call to a Fleece SQL function, including the closing ")".
     void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
-        string alias, tablePrefix;
+        string tablePrefix;
+        string alias;
+        auto iType = _aliases.end();
+        if(!property.empty()) {
+            alias = string(property[0].keyStr());
+            iType = _aliases.find(alias);
+        }
+
+        // Check for result alias before 'alias' gets reassigned below
         if (_propertiesUseSourcePrefix) {
             // Interpret the first component of the property as a db alias:
             require(property[0].isKey(), "Property path can't start with array index");
-            alias = string(property[0].keyStr());
             property.drop(1);
         } else {
             alias = _dbAlias;
         }
+
         if (!alias.empty())
             tablePrefix = quoteTableName(alias) + ".";
 
-        auto iType = _aliases.find(alias);
+        if(iType == _aliases.end()) {
+            iType = _aliases.find(alias);
+        }
+
         require(iType != _aliases.end(),
                 "property '%s.%s' does not begin with a declared 'AS' alias",
                 alias.c_str(), string(property).c_str());
@@ -1247,6 +1269,26 @@ namespace litecore {
             return;
         }
 
+        if(iType->second == kResultAlias && property[0].keyStr().asString() == iType->first) {
+            // If the property in question is identified as an alias, emit that instead of
+            // a standard getter since otherwise it will probably be wrong (i.e. doc["alias"]
+            // vs alias -> doc["path"]["to"]["value"])
+            if(property.size() == 1) {
+                // Simple case, the alias is being used as-is
+                // Note: no need to check for string equality since two cases are now true
+                // 1. property starts with iType->first 2. lengths are equal
+                _sql << string(property);
+                return;
+            }
+
+            // More complicated case.  A subpath of an alias that points to
+            // a collection type (e.g. alias = {"foo": "bar"}, and want to
+            // ORDER BY alias.foo
+            property.drop(1);
+            _sql << "fl_nested_value(\"" << iType->first << "\", '" << string(property) << "')";
+            return;
+        } 
+        
         if (property.size() == 1) {
             // Check if this is a document metadata property:
             slice meta = property[0].keyStr();
