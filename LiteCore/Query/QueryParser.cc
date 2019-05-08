@@ -161,38 +161,49 @@ namespace litecore {
     }
 
 
+    static void handleFleeceException(const FleeceException &x) {
+        switch (x.code) {
+            case PathSyntaxError:   fail("Invalid property path: %s", x.what());
+            case JSONError:         fail("JSON parse error: %s", x.what());
+            default:                throw;
+        }
+    }
+
+
     void QueryParser::parseJSON(slice expressionJSON) {
         Retained<Doc> doc;
         try {
             doc = Doc::fromJSON(expressionJSON);
-        } catch (FleeceException x) {
-            fail("JSON parse error: %s", x.what());
-        }
+        } catch (const FleeceException &x) {handleFleeceException(x);}
         return parse(doc->root());
     }
     
     
     void QueryParser::parse(const Value *expression) {
         reset();
-        if (expression->asDict()) {
-            // Given a dict; assume it's the operands of a SELECT:
-            writeSelect(expression->asDict());
-        } else {
-            const Array *a = expression->asArray();
-            if (a && a->count() > 0 && a->get(0)->asString() == "SELECT"_sl) {
-                // Given an entire SELECT statement:
-                parseNode(expression);
+        try {
+            if (expression->asDict()) {
+                // Given a dict; assume it's the operands of a SELECT:
+                writeSelect(expression->asDict());
             } else {
-                // Given some other expression; treat it as a WHERE clause of an implicit SELECT:
-                writeSelect(expression, Dict::kEmpty);
+                const Array *a = expression->asArray();
+                if (a && a->count() > 0 && a->get(0)->asString() == "SELECT"_sl) {
+                    // Given an entire SELECT statement:
+                    parseNode(expression);
+                } else {
+                    // Given some other expression; treat it as a WHERE clause of an implicit SELECT:
+                    writeSelect(expression, Dict::kEmpty);
+                }
             }
-        }
+        } catch (const FleeceException &x) {handleFleeceException(x);}
     }
 
 
     void QueryParser::parseJustExpression(const Value *expression) {
         reset();
-        parseNode(expression);
+        try {
+            parseNode(expression);
+        } catch (const FleeceException &x) {handleFleeceException(x);}
     }
 
 
@@ -242,8 +253,8 @@ namespace litecore {
         if (nCustomCol == 0) {
             // If no return columns are specified, add the docID and sequence as defaults
             _sql << defaultTablePrefix << "key, " << defaultTablePrefix << "sequence";
-            _columnTitles.push_back(kDocIDProperty);
-            _columnTitles.push_back(kSequenceProperty);
+            _columnTitles.push_back(string(kDocIDProperty));
+            _columnTitles.push_back(string(kSequenceProperty));
         }
 
         // FROM clause:
@@ -350,17 +361,19 @@ namespace litecore {
                                        bool isUnnestedTable)
     {
         reset();
-        if (isUnnestedTable)
-            _aliases[_dbAlias] = kUnnestTableAlias;
-        _sql << "CREATE INDEX \"" << name << "\" ON " << _tableName << " ";
-        if (expressionsIter.count() > 0) {
-            writeColumnList(expressionsIter);
-        } else {
-            // No expressions; index the entire body (this is used with unnested/array tables):
-            Assert(isUnnestedTable);
-            _sql << '(' << kUnnestedValueFnName << "(" << _bodyColumnName << "))";
-        }
-        // TODO: Add 'WHERE' clause for use with SQLite 3.15+
+        try {
+            if (isUnnestedTable)
+                _aliases[_dbAlias] = kUnnestTableAlias;
+            _sql << "CREATE INDEX \"" << name << "\" ON " << _tableName << " ";
+            if (expressionsIter.count() > 0) {
+                writeColumnList(expressionsIter);
+            } else {
+                // No expressions; index the entire body (this is used with unnested/array tables):
+                Assert(isUnnestedTable);
+                _sql << '(' << kUnnestedValueFnName << "(" << _bodyColumnName << "))";
+            }
+            // TODO: Add 'WHERE' clause for use with SQLite 3.15+
+        } catch (const FleeceException &x) {handleFleeceException(x);}
     }
 
 
@@ -620,7 +633,7 @@ namespace litecore {
     // a column-list ('FROM', 'ORDER BY', creating index, etc.) where it's a property path.
     void QueryParser::parseStringLiteral(slice str) {
         if (_context.back() == &kColumnListOperation || _context.back() == &kResultListOperation) {
-            writePropertyGetter(kValueFnName, propertyFromString(str));
+            writePropertyGetter(kValueFnName, Path(str));
         } else {
             writeSQLString(str);
         }
@@ -669,17 +682,14 @@ namespace litecore {
     }
 
 
-    static string columnTitleFromProperty(const string &property, bool useAlias) {
-        if (property[0] == '_') {
-            return property.substr(1);
+    static string columnTitleFromProperty(const Path &property, bool useAlias) {
+        if (property.empty())
+            return "*";
+        string first(property[0].keyStr());
+        if (first[0] == '_') {
+            return first.substr(1);         // meta property
         } else {
-            auto dot = property.rfind('.');
-            auto nonAliasReturn = (dot == string::npos) ? property : property.substr(dot+1);
-            if(!useAlias || !nonAliasReturn.empty() || dot == string::npos) {
-                return nonAliasReturn;
-            }
-
-            return property.substr(0, dot);
+            return string(property[property.size()-1].keyStr());
         }
     }
 
@@ -709,7 +719,7 @@ namespace litecore {
             // Come up with a column title if there is no 'AS':
             if (title.empty()) {
                 if (result->type() == kString) {
-                    title = columnTitleFromProperty(propertyFromString(result->asString()), _propertiesUseAliases);
+                    title = columnTitleFromProperty(Path(result->asString()), _propertiesUseAliases);
                 } else if (result->type() == kArray && expr[0]->asString().hasPrefix('.')) {
                     title = columnTitleFromProperty(propertyFromNode(result), _propertiesUseAliases);
                 } else {
@@ -867,7 +877,7 @@ namespace litecore {
 
         if (op.caseEquivalent("ANY"_sl) && predicate->count() == 3
                                         && predicate->get(0)->asString() == "="_sl
-                                        && propertyFromNode(predicate->get(1), '?') == var) {
+                                        && string(propertyFromNode(predicate->get(1), '?')) == var) {
             // If predicate is `var = value`, generate `fl_contains(array, value)` instead
             writeFunctionGetter(kContainsFnName, arraySource, predicate->get(2));
             return;
@@ -927,7 +937,7 @@ namespace litecore {
 
 
     void QueryParser::blobOp(slice op, Array::iterator& operands) {
-        writePropertyGetter(kBlobFnName, propertyFromString(requiredString(operands[0], "blob path")));
+        writePropertyGetter(kBlobFnName, Path(requiredString(operands[0], "blob path")));
     }
 
 
@@ -952,36 +962,28 @@ namespace litecore {
     // Handles variables used in ANY/EVERY predicates
     void QueryParser::variableOp(slice op, Array::iterator& operands) {
         // Concatenate the op and operands as a path:
-        string var;
+        Path path;
         if (op.size > 1) {
             op.moveStart(1);
-            var = op.asString();
+            path += Path(op.asString());
         }
         if (operands.count() > 0) {
-            if (!var.empty())
-                var += '.';
-            var += propertyFromOperands(operands);
+            path += propertyFromOperands(operands);
         }
 
         // Split the path into variable name and property:
-        string property;
-        auto dot = var.find('.');
-        if (dot != string::npos) {
-            property = var.substr(dot + 1);
-            var = var.substr(0, dot);
-            if (hasPrefix(property, "$"))
-                property.insert(0, 1, '\\');
-        }
+        string var(path[0].keyStr());
+        path.drop(1);
 
         require(isValidIdentifier(var), "Invalid variable name '%.*s'", SPLAT(op));
         require(_variables.count(var) > 0, "No such variable '%.*s'", SPLAT(op));
 
         // Now generate the function call:
-        if (property.empty()) {
+        if (path.empty()) {
             _sql << '_' << var << ".value";
         } else {
             _sql << kNestedValueFnName << "(_" << var << ".body, ";
-            writeSQLString(_sql, slice(property));
+            writeSQLString(_sql, slice(string(path)));
             _sql << ")";
         }
     }
@@ -1046,7 +1048,7 @@ namespace litecore {
         _context.back() = &operation;
 
         if (op.hasPrefix('.')) {
-            writePropertyGetter(kValueFnName, propertyFromString(op));
+            writePropertyGetter(kValueFnName, Path(op));
         } else if (op.hasPrefix("_."_sl)) {
             objectPropertyOp(op, operands);
         } else if (op.hasPrefix('$')) {
@@ -1142,20 +1144,9 @@ namespace litecore {
 
 
     namespace qp {
-        string propertyFromString(slice str) {
-            require(str.hasPrefix('.'),
-                    "Invalid property name '%.*s'; must start with '.'", SPLAT(str));
-            str.moveStart(1);
-            auto property = str.asString();
-            if (str.hasPrefix('$'))
-                property.insert(0, 1, '\\');
-            return property;
-        }
-
-
         // Concatenates property operands to produce the property path string
-        string propertyFromOperands(Array::iterator &operands, bool skipDotPrefix) {
-            stringstream pathStr;
+        Path propertyFromOperands(Array::iterator &operands, bool firstIsEncoded) {
+            Path path;
             int n = 0;
             for (auto &i = operands; i; ++i,++n) {
                 auto arr = i.value()->asArray();
@@ -1163,26 +1154,25 @@ namespace litecore {
                     require(n > 0, "Property path can't start with an array index");
                     require(arr->count() == 1, "Property array index must have exactly one item");
                     require(arr->get(0)->isInteger(), "Property array index must be an integer");
-                    Path::writeIndex(pathStr, (int)arr->get(0)->asInt());
+                    path.addIndex( (int)arr->get(0)->asInt() );
                 } else {
                     slice name = i.value()->asString();
                     require(name, "Invalid JSON value in property path");
-                    if (skipDotPrefix) {
-                        name.moveStart(1);
-                        pathStr.write((const char*)name.buf, name.size);
+                    if (firstIsEncoded) {
+                        name.moveStart(1);              // skip '.', '?', '$'
+                        path.addComponents(name);
                     } else {
-                        Path::writeProperty(pathStr, name, n==0);
+                        path.addProperty(name);
                     }
-                    require(name.size > 0, "Property name must not be empty");
                 }
-                skipDotPrefix = false;
+                firstIsEncoded = false;
             }
-            return pathStr.str();
+            return path;
         }
 
 
         // Returns the property represented by a node, or "" if it's not a property node
-        string propertyFromNode(const Value *node, char prefix) {
+        Path propertyFromNode(const Value *node, char prefix) {
             Array::iterator i(node->asArray());
             if (i.count() >= 1) {
                 auto op = i[0]->asString();
@@ -1193,7 +1183,7 @@ namespace litecore {
                     return propertyFromOperands(i, !justDot);
                 }
             }
-            return "";              // not a valid property node
+            return Path();              // not a valid property node
         }
     }
 
@@ -1203,16 +1193,16 @@ namespace litecore {
     bool QueryParser::writeNestedPropertyOpIfAny(slice fnName, Array::iterator &operands) {
         if (operands.count() == 0 )
             return false;
-        auto property = propertyFromNode(operands[0]);
+        Path property = propertyFromNode(operands[0]);
         if (property.empty())
             return false;
-        writePropertyGetter(fnName, property);
+        writePropertyGetter(fnName, move(property));
         return true;
     }
 
 
     void QueryParser::writeFunctionGetter(slice fn, const Value *source, const Value *param) {
-        string property = propertyFromNode(source);
+        Path property = propertyFromNode(source);
         if (property.empty()) {
             _sql << fn << "(";
             parseNode(source);
@@ -1222,7 +1212,7 @@ namespace litecore {
             }
             _sql << ")";
         } else {
-            writePropertyGetter(fn, property, param);
+            writePropertyGetter(fn, move(property), param);
         }
     }
 
@@ -1234,24 +1224,13 @@ namespace litecore {
 
 
     // Writes a call to a Fleece SQL function, including the closing ")".
-    void QueryParser::writePropertyGetter(slice fn, string property, const Value *param) {
+    void QueryParser::writePropertyGetter(slice fn, Path &&property, const Value *param) {
         string alias, tablePrefix;
         if (_propertiesUseAliases) {
             // Interpret the first component of the property as a db alias:
-            auto dot = property.find('.');
-            string rest;
-            if (dot == string::npos) {
-                dot = property.size();
-            } else {
-                rest = property.substr(dot+1);
-            }
-            alias = property.substr(0, dot);
-
-            // Make sure there isn't a bracket (array index) before the dot:
-            auto bra = property.find('[');
-            require(bra == string::npos || dot < bra,
-                    "Missing database alias name in property '%s'", property.c_str());
-            property = rest;
+            require(property[0].isKey(), "Property path can't start with array index");
+            alias = string(property[0].keyStr());
+            property.drop(1);
         } else {
             alias = _dbAlias;
         }
@@ -1261,50 +1240,59 @@ namespace litecore {
         auto iType = _aliases.find(alias);
         require(iType != _aliases.end(),
                 "property '%s.%s' does not begin with a declared 'AS' alias",
-                alias.c_str(), property.c_str());
+                alias.c_str(), string(property).c_str());
         if (iType->second >= kUnnestVirtualTableAlias) {
             // The alias is to an UNNEST. This needs to be written specially:
             writeUnnestPropertyGetter(fn, property, alias, iType->second);
             return;
         }
 
-        if (property == kDocIDProperty) {
-            writeMetaProperty(fn, tablePrefix, "key");
-        } else if (property == kSequenceProperty) {
-            writeMetaProperty(fn, tablePrefix, "sequence");
-        } else if (property == kExpirationProperty) {
-            writeMetaProperty(fn, tablePrefix, "expiration");
-            _checkedExpiration = true;
-        } else if (property == kDeletedProperty) {
-            require(fn == kValueFnName, "can't use '_deleted' in this context");
-            writeDeletionTest(alias, true);
-            _checkedDeleted = true;     // note that the query has tested _deleted
-        } else {
-            // It's more efficent to get the doc root with fl_root than with fl_value:
-            if (property == "" && fn == kValueFnName)
-                fn = kRootFnName;
-
-            // Write the function call:
-            _sql << fn << "(" << tablePrefix << _bodyColumnName;
-            if(!property.empty()) {
-                _sql << ", ";
-                writeSQLString(_sql, slice(property));
+        if (property.size() == 1) {
+            // Check if this is a document metadata property:
+            slice meta = property[0].keyStr();
+            if (meta == kDocIDProperty) {
+                writeMetaProperty(fn, tablePrefix, "key");
+                return;
+            } else if (meta == kSequenceProperty) {
+                writeMetaProperty(fn, tablePrefix, "sequence");
+                return;
+            } else if (meta == kExpirationProperty) {
+                writeMetaProperty(fn, tablePrefix, "expiration");
+                _checkedExpiration = true;
+                return;
+            } else if (meta == kDeletedProperty) {
+                require(fn == kValueFnName, "can't use '_deleted' in this context");
+                writeDeletionTest(alias, true);
+                _checkedDeleted = true;     // note that the query has tested _deleted
+                return;
             }
-            if (param) {
-                _sql << ", ";
-                parseNode(param);
-            }
-            _sql << ")";
         }
+
+        // It's more efficent to get the doc root with fl_root than with fl_value:
+        if (property.empty() && fn == kValueFnName)
+            fn = kRootFnName;
+
+        // Write the function call:
+        _sql << fn << "(" << tablePrefix << _bodyColumnName;
+        if(!property.empty()) {
+            _sql << ", ";
+            writeSQLString(_sql, string(property));
+        }
+        if (param) {
+            _sql << ", ";
+            parseNode(param);
+        }
+        _sql << ")";
     }
 
 
-    void QueryParser::writeUnnestPropertyGetter(slice fn, const string &property,
+    void QueryParser::writeUnnestPropertyGetter(slice fn, Path &property,
                                                 const string &alias, aliasType type)
     {
         require(fn == kValueFnName, "can't use an UNNEST alias in this context");
-        require(property != kDocIDProperty && property != kSequenceProperty,
-                "can't use '%s' on an UNNEST", property.c_str());
+        string spec(property);
+        require(slice(spec) != kDocIDProperty && slice(spec) != kSequenceProperty,
+                "can't use '%s' on an UNNEST", spec.c_str());
         string tablePrefix;
         if (_propertiesUseAliases)
             tablePrefix = quoteTableName(alias) + ".";
@@ -1314,14 +1302,14 @@ namespace litecore {
                 _sql << tablePrefix << "value";
             } else {
                 _sql << kNestedValueFnName << "(" << tablePrefix << "body, ";
-                writeSQLString(_sql, slice(property));
+                writeSQLString(_sql, slice(spec));
                 _sql << ")";
             }
         } else {
             _sql << kUnnestedValueFnName << "(" << tablePrefix << "body";
             if (!property.empty()) {
                 _sql << ", ";
-                writeSQLString(_sql, slice(property));
+                writeSQLString(_sql, slice(spec));
             }
             _sql << ")";
         }
@@ -1329,7 +1317,7 @@ namespace litecore {
 
 
     // Writes an 'fl_each()' call representing a virtual table for the array at the given property
-    void QueryParser::writeEachExpression(const string &property) {
+    void QueryParser::writeEachExpression(Path &&property) {
         require(!property.empty(), "array expressions only support a property as their source");
 #if 0
         // Is the property an existing UNNEST alias?
@@ -1345,7 +1333,7 @@ namespace litecore {
             _sql << i->second;                              // write existing table alias
         else
 #endif
-        writePropertyGetter(kEachFnName, property);     // write fl_each()
+        writePropertyGetter(kEachFnName, move(property));     // write fl_each()
     }
 
     // Writes an 'fl_each()' call representing a virtual table for the array at the given property
@@ -1419,7 +1407,7 @@ namespace litecore {
     string QueryParser::FTSColumnName(const Value *expression) {
         slice op = requiredArray(expression, "FTS index expression")->get(0)->asString();
         require(op.hasPrefix('.'), "FTS index expression must be a property");
-        string property = propertyFromNode(expression);
+        string property(propertyFromNode(expression));
         require(!property.empty(), "invalid property expression");
         return property;
     }
@@ -1456,7 +1444,7 @@ namespace litecore {
 
     // Returns the index table name for an unnested array property.
     string QueryParser::unnestedTableName(const Value *arrayExpr) const {
-        string path = propertyFromNode(arrayExpr);
+        string path(propertyFromNode(arrayExpr));
         if (!path.empty()) {
             // It's a property path
             require(path.find('"') == string::npos,
