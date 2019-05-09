@@ -1240,11 +1240,11 @@ namespace litecore {
         string alias;
         auto iType = _aliases.end();
         if(!property.empty()) {
+            // Check for result alias before 'alias' gets reassigned below
             alias = string(property[0].keyStr());
             iType = _aliases.find(alias);
         }
 
-        // Check for result alias before 'alias' gets reassigned below
         if (_propertiesUseSourcePrefix) {
             // Interpret the first component of the property as a db alias:
             require(property[0].isKey(), "Property path can't start with array index");
