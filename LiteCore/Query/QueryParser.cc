@@ -370,27 +370,10 @@ namespace litecore {
 
 
     void QueryParser::writeWhereClause(const Value *where) {
-        _checkedDeleted = false;
-        _sql << " WHERE ";
         if (where) {
-            _sql << "(";
+            _sql << " WHERE ";
             parseNode(where);
-            _sql << ")";
         }
-        if (!_checkedDeleted) {
-            if (where)
-                _sql << " AND ";
-            writeDeletionTest(_dbAlias);
-        }
-    }
-
-
-    void QueryParser::writeDeletionTest(const string &alias, bool isDeleted) {
-        _sql << "(";
-        if (!alias.empty())
-            _sql << sqlIdentifier(alias) << '.';
-        _sql << "flags & " << (unsigned)DocumentFlags::kDeleted
-             << (isDeleted ? " != 0)" : " = 0)");
     }
 
 
@@ -564,16 +547,10 @@ namespace litecore {
                         _sql << " " << kJoinTypeNames[ joinType ] << " JOIN "
                              << sqlIdentifier(entry.tableName)
                              << " AS " << sqlIdentifier(entry.alias) << " ON ";
-                        _checkedDeleted = false;
                         if (entry.on) {
                             _sql << "(";
                             parseNode(entry.on);
                             _sql << ")";
-                        }
-                        if (!_checkedDeleted) {
-                            if (entry.on)
-                                _sql << " AND ";
-                            writeDeletionTest(entry.alias);
                         }
                         break;
                     }
@@ -1262,8 +1239,9 @@ namespace litecore {
                 writeMetaProperty(kValueFnName, tablePrefix, "key");
                 break;
             case mkDeleted:
-                writeDeletionTest(dbAlias, true);
-                _checkedDeleted = true;     // note that the query has tested _deleted
+                _sql << "0";
+//                writeDeletionTest(dbAlias, true);
+//                _checkedDeleted = true;     // note that the query has tested _deleted
                 break;
             case mkRevisionId:
                 _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";
@@ -1584,9 +1562,10 @@ namespace litecore {
                 return;
             } else if (meta == kDeletedProperty) {
                 require(fn == kValueFnName, "can't use '_deleted' in this context");
-                writeDeletionTest(alias, true);
-                _checkedDeleted = true;     // note that the query has tested _deleted
-                return;
+                fail("Sorry, the '_deleted' property isn't currently available"); //FIXME
+//                writeDeletionTest(alias, true);
+//                _checkedDeleted = true;     // note that the query has tested _deleted
+//                return;
             } else if (meta == kRevIDProperty) {
                 _sql << kVersionFnName << "(" << tablePrefix << "version" << ")";
                 return;

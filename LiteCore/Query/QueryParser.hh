@@ -159,7 +159,6 @@ namespace litecore {
                                        bool aggregatesOK =false);
 
         void writeWhereClause(const Value *where);
-        void writeDeletionTest(const string &alias, bool isDeleted = false);
 
         void addAlias(const string &alias, aliasType, const string &tableName);
         struct FromAttributes;
@@ -243,7 +242,6 @@ namespace litecore {
         unsigned _1stCustomResultCol {0};        // Index of 1st result after _baseResultColumns
         bool _aggregatesOK {false};              // Are aggregate fns OK to call?
         bool _isAggregateQuery {false};          // Is this an aggregate query?
-        bool _checkedDeleted {false};            // Has query accessed _deleted meta-property?
         bool _checkedExpiration {false};         // Has query accessed _expiration meta-property?
         Collation _collation;                    // Collation in use during parse
         bool _collationUsed {true};              // Emitted SQL "COLLATION" yet?

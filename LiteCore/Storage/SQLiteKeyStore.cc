@@ -54,9 +54,9 @@ namespace litecore {
     }
 
 
-    SQLiteKeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
+    KeyStore& SQLiteDataFile::keyStoreFromTable(slice tableName) {
         Assert(tableName == "kv_default" || tableName.hasPrefix("kv_coll_"));
-        return (SQLiteKeyStore&)getKeyStore(tableName.from(3));
+        return getKeyStore(tableName.from(3));
     }
 
 
@@ -140,20 +140,33 @@ namespace litecore {
     }
 
 
+    void SQLiteKeyStore::shareSequencesWith(KeyStore &source) {
+        _sequencesOwner = dynamic_cast<SQLiteKeyStore*>(&source);
+    }
+
+
     sequence_t SQLiteKeyStore::lastSequence() const {
-        if (_lastSequence >= 0)
-            return _lastSequence;
-        sequence_t seq = db().lastSequence(_name);
-        if (db().inTransaction())
-            _lastSequence = seq;
-        return seq;
+        if (_sequencesOwner) {
+            return _sequencesOwner->lastSequence();
+        } else {
+            if (_lastSequence >= 0)
+                return _lastSequence;
+            sequence_t seq = db().lastSequence(_name);
+            if (db().inTransaction())
+                _lastSequence = seq;
+            return seq;
+        }
     }
 
     
     void SQLiteKeyStore::setLastSequence(sequence_t seq) {
-        if (_capabilities.sequences) {
-            _lastSequence = seq;
-            _lastSequenceChanged = true;
+        if (_sequencesOwner) {
+            _sequencesOwner->setLastSequence(seq);
+        } else {
+            if (_capabilities.sequences) {
+                _lastSequence = seq;
+                _lastSequenceChanged = true;
+            }
         }
     }
 
@@ -178,6 +191,7 @@ namespace litecore {
 
     void SQLiteKeyStore::transactionWillEnd(bool commit) {
         if (_lastSequenceChanged) {
+            Assert(!_sequencesOwner);
             if (commit)
                 db().setLastSequence(*this, _lastSequence);
             _lastSequenceChanged = false;
@@ -205,6 +219,11 @@ namespace litecore {
                 return;
             }
         }
+    }
+
+
+    /*static*/ slice SQLiteKeyStore::columnAsSlice(const SQLite::Column &col) {
+        return slice(col.getBlob(), col.getBytes());
     }
 
 
@@ -414,13 +433,15 @@ namespace litecore {
     }
 
 
+#if ENABLE_DELETE_KEY_STORES
     void SQLiteKeyStore::erase() {
         ExclusiveTransaction t(db());
         db().exec(string("DELETE FROM kv_"+name()));
         setLastSequence(0);
         t.commit();
     }
-
+#endif
+    
 
     void SQLiteKeyStore::createTrigger(string_view triggerName,
                                        string_view triggerSuffix,

@@ -131,7 +131,7 @@ namespace litecore {
             // This number is just used for before/after comparisons, so
             // return the total last-sequence of all used KeyStores
             return std::accumulate(_keyStores.begin(), _keyStores.end(), 0,
-                                   [](sequence_t total, const SQLiteKeyStore *ks) {
+                                   [](sequence_t total, const KeyStore *ks) {
                 return total + ks->lastSequence();
             });
         }
@@ -141,7 +141,7 @@ namespace litecore {
             // This number is just used for before/after comparisons, so
             // return the total purge-count of all used KeyStores
             return std::accumulate(_keyStores.begin(), _keyStores.end(), 0,
-                                   [](uint64_t total, const SQLiteKeyStore *ks) {
+                                   [](uint64_t total, const KeyStore *ks) {
                 return total + ks->purgeCount();
             });
         }
@@ -222,7 +222,7 @@ namespace litecore {
         shared_ptr<SQLite::Statement> _statement;           // Compiled SQLite statement
         unique_ptr<SQLite::Statement> _matchedTextStatement;// Gets the matched text
         vector<string> _columnTitles;                       // Titles of columns
-        vector<SQLiteKeyStore*> _keyStores;
+        vector<KeyStore*> _keyStores;
     };
 
 

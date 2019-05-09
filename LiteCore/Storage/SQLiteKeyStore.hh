@@ -72,8 +72,6 @@ namespace litecore {
 
         void moveTo(slice key, KeyStore &dst, ExclusiveTransaction&, slice newKey = nullslice) override;
 
-        void erase() override;
-
         virtual bool setExpiration(slice key, expiration_t) override;
         virtual expiration_t getExpiration(slice key) override;
         virtual expiration_t nextExpiration() override;
@@ -93,7 +91,9 @@ namespace litecore {
         void createBlobsIndex();
 
         /// Adds the `expiration` column to the table. Called only by SQLiteQuery.
-        void addExpiration();
+        void addExpiration() override;
+
+        void shareSequencesWith(KeyStore&) override;
 
     protected:
         virtual bool mayHaveExpiration() override;
@@ -104,7 +104,7 @@ namespace litecore {
         std::unique_ptr<SQLite::Statement> compile(const char *sql) const;
         SQLite::Statement& compileCached(const std::string &sqlTemplate) const;
 
-        void transactionWillEnd(bool commit);
+        void transactionWillEnd(bool commit) override;
 
         void close() override;
         void reopen() override;
@@ -116,6 +116,8 @@ namespace litecore {
                                          ContentOption,
                                          bool setKey,
                                          bool setSequence);
+
+        static slice columnAsSlice(const SQLite::Column&);
 
     private:
         friend class SQLiteDataFile;
@@ -161,6 +163,7 @@ namespace litecore {
         mutable std::atomic<uint64_t> _purgeCount {0};
         bool _hasExpirationColumn {false};
         bool _uncommittedExpirationColumn {false};
+        SQLiteKeyStore* _sequencesOwner {nullptr};
         Existence _existence;
     };
 
