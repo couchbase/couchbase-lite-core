@@ -249,6 +249,24 @@ bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexc
     return false;
 }
 
+std::vector<C4DocumentInfo> c4db_unresolvedDocs(C4Database *db, C4Error *outError) noexcept {
+    std::vector<C4DocumentInfo> docs;
+    try {
+        C4Error error = {};
+        C4EnumeratorOptions eOptions = kC4DefaultEnumeratorOptions;
+        eOptions.flags &= ~kC4IncludeNonConflicted;
+        eOptions.flags &= ~kC4IncludeBodies;
+        eOptions.flags &= kC4IncludeDeleted;
+        C4DocEnumerator *e = c4db_enumerateAllDocs(db, &eOptions, &error);
+        while(c4enum_next(e, &error)) {
+            C4DocumentInfo doc;
+            c4enum_getDocumentInfo(e, &doc);
+            docs.push_back(doc);
+        }
+    } catchError(outError)
+    return docs;
+}
+
 
 bool c4_shutdown(C4Error *outError) noexcept {
     return tryCatch(outError, [] {

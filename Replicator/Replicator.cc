@@ -82,6 +82,35 @@ namespace litecore { namespace repl {
         _connectionState = Connection::kConnecting;
         connection()->start();
         // Now wait for _onConnect or _onClose...
+        
+        // 1. get the docs from database
+        C4Error c4error = {};
+        std::vector<C4DocumentInfo> docs = c4db_unresolvedDocs(_db, c4error);
+        
+        
+        // 2. iterate through the docs and convert them to replicatedRev's
+        std::vector<C4DocumentInfo>::iterator info;
+        std::vector<Retained<ReplicatedRev>> docsEnded;
+        for (info = docs.begin(); info < docs.end(); info++) {
+
+// tried to use the RevToInsert, but it requires IncomingRev, historyBuf: rest of the info we can supply!
+            
+//
+//            RevToInsert(
+//            <#IncomingRev *owner#>,
+//            <#slice docID#>,
+//            <#slice revID#>,
+//            <#slice historyBuf#>,
+//            <#bool deleted#>,
+//            <#bool noConflicts#>)
+
+// Seems like the RevToSend is easily created from C4DocumentInfo, but not right.
+            auto rev = retained(new RevToSend(*info));
+            docsEnded.push_back(rev);
+        }
+        
+        // 3. callback the _delegate->replicatorDocumentsEnded(this, *docs);
+        _delegate->replicatorDocumentsEnded(this, docsEnded);
 
         if (_options.push > kC4Passive || _options.pull > kC4Passive) {
             // Get the remote DB ID:

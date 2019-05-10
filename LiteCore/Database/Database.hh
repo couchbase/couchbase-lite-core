@@ -90,6 +90,9 @@ namespace c4Internal {
 
         bool purgeDocument(slice docID);
         int64_t purgeExpiredDocs();
+        
+        // NOT USING NOW!!!
+        unordered_set<string> unresolvedDocs();
 
 #if DEBUG
         void validateRevisionBody(slice body);

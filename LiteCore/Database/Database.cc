@@ -644,4 +644,10 @@ namespace c4Internal {
         return _dataFile->defaultKeyStore().expireRecords(_sequenceTracker ? cb : nullptr);
     }
 
+    // NOT USING NOW!!!
+    unordered_set<string> Database::unresolvedDocs() {
+        unordered_set<string> docIDs;
+        // though about enumerating the documents from here, but the c4db instance is not here but up! 
+        return docIDs;
+    }
 }

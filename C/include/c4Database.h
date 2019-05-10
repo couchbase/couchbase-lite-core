@@ -184,6 +184,8 @@ extern "C" {
     /** Purges all documents that have expired.
         @return  The number of documents purged, or -1 on error. */
     int64_t c4db_purgeExpiredDocs(C4Database *db, C4Error*) C4API;
+    
+    std::vector<C4DocumentInfo> c4db_unresolvedDocs(C4Database *db, C4Error*) C4API;
 
     /** Returns the number of revisions of a document that are tracked. (Defaults to 20.) */
     uint32_t c4db_getMaxRevTreeDepth(C4Database *database C4NONNULL) C4API;
