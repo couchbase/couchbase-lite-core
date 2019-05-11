@@ -73,6 +73,8 @@ namespace litecore { namespace repl {
 
         /** Returns the remote ancestor revision ID of a document. */
         alloc_slice getDocRemoteAncestor(C4Document *doc);
+        
+        C4DocEnumerator* unresolvedDocsEnumerator(C4Error *outError);
 
          /** Mark this revision as synced (i.e. the server's current revision) soon.
              NOTE: While this is queued, calls to c4doc_getRemoteAncestor() for this document won't

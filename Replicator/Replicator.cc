@@ -82,11 +82,19 @@ namespace litecore { namespace repl {
         _connectionState = Connection::kConnecting;
         connection()->start();
         // Now wait for _onConnect or _onClose...
+        
+        C4Error err = { };
+        C4DocEnumerator* e = _db->unresolvedDocsEnumerator(&err);
+        while(c4enum_next(e, &err)) {
+            C4DocumentInfo info;
+            c4enum_getDocumentInfo(e, &info);
+            auto rev = retained(new RevToSend(info));
+            _docsEnded.push(rev);
+        }
 
         if (_options.push > kC4Passive || _options.pull > kC4Passive) {
             // Get the remote DB ID:
             string key = remoteDBIDString();
-            C4Error err;
             C4RemoteID remoteDBID = _db->lookUpRemoteDBID(slice(key), &err);
             if (remoteDBID) {
                 logVerbose("Remote-DB ID %u found for target <%s>", remoteDBID, key.c_str());

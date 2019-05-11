@@ -110,6 +110,20 @@ namespace litecore { namespace repl {
         else
             return {};
     }
+    
+    
+    C4DocEnumerator* DBAccess::unresolvedDocsEnumerator(C4Error *outError) {
+        C4DocEnumerator* e;
+        use([&](C4Database *db) {
+            C4Error error = {};
+            C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+            options.flags &= ~kC4IncludeNonConflicted;
+            options.flags &= ~kC4IncludeBodies;
+            options.flags &= kC4IncludeDeleted;
+            e = c4db_enumerateAllDocs(db, &options, &error);
+        });
+        return e;
+    }
 
 
     static bool containsAttachmentsProperty(slice json) {
