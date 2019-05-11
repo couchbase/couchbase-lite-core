@@ -982,6 +982,15 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
     } );
 }
 
+TEST_CASE_METHOD(QueryTest, "Query date diff", "[Query]") {
+    testExpressions( {
+        {"['date_diff_str()', '2018-01-31T00:00:01.5Z', '2018-01-31T00:00:00Z', 'millisecond']", int64_t(1500ll)},
+        {"['date_diff_str()', '2018-01-31T00:00:01.5Z', '2018-01-31T00:00:00Z', 'second']", int64_t(1ll)},
+        {"['date_diff_str()', '2018-01-31T00:01:01.5Z', '2018-01-31T00:00:00Z', 'second']", int64_t(61ll)},
+        {"['date_diff_str()', '2018-01-31T00:01:01.5Z', '2018-01-31T00:00:00Z', 'minute']", int64_t(1ll)},
+    });
+}
+
 
 TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
     {

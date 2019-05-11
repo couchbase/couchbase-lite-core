@@ -29,6 +29,7 @@
 #include <regex>
 #include <cmath>
 #include <string>
+#include "date.h"
 
 #ifdef _MSC_VER
 #undef min
@@ -38,6 +39,8 @@
 using namespace fleece;
 using namespace fleece::impl;
 using namespace std;
+using namespace std::chrono;
+using namespace date;
 
 namespace litecore {
 
@@ -824,6 +827,135 @@ namespace litecore {
         setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, asUTC));
     }
 
+    static void doDateDiff(sqlite3_context* ctx, const int64_t left, const int64_t right, const slice part) {
+        DateComponent date_component;
+        if(!part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid) {
+            return;
+        }
+
+        const milliseconds ms_left(left);
+        const milliseconds ms_right(right);
+        const system_clock::time_point t_left(ms_left);
+        const system_clock::time_point t_right(ms_right);
+        const auto diff = t_left - t_right;
+
+        switch(date_component) {
+            case kDateComponentMillisecond:
+                sqlite3_result_int64(ctx, duration_cast<milliseconds>(diff).count());
+                break;
+            case kDateComponentSecond:
+                sqlite3_result_int64(ctx, duration_cast<seconds>(diff).count());
+                break;
+            case kDateComponentMinute:
+                sqlite3_result_int64(ctx, duration_cast<minutes>(diff).count());
+                break;
+            case kDateComponentHour:
+                sqlite3_result_int64(ctx, duration_cast<hours>(diff).count());
+                break;
+            case kDateComponentDay:
+                sqlite3_result_int64(ctx, duration_cast<days>(diff).count());
+                break;
+            case kDateComponentWeek:
+                sqlite3_result_int64(ctx, duration_cast<weeks>(diff).count());
+                break;
+            case kDateComponentMonth:
+            case kDateComponentQuarter:
+            {
+                auto value = duration_cast<months>(diff).count();
+                if(date_component == kDateComponentQuarter) {
+                    value /= 4;
+                }
+
+                sqlite3_result_int64(ctx, value);
+                break;
+            }
+            case kDateComponentYear:
+            case kDateComponentDecade:
+            case kDateComponentCentury:
+            case kDateComponentMillennium:
+            {
+                auto value = duration_cast<years>(diff).count();
+
+                if(date_component == kDateComponentDecade) {
+                    value /= 10;
+                } else if(date_component == kDateComponentCentury) {
+                    value /= 100;
+                } else if(date_component == kDateComponentMillennium) {
+                    value /= 1000;
+                }
+
+                sqlite3_result_int64(ctx, value);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    static void doDateAdd(sqlite3_context* ctx, const int64_t start_millis, const int64_t amount, const slice part) {
+        DateComponent date_component;
+        if(!part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid) {
+            return;
+        }
+
+        const milliseconds ms(start_millis);
+        system_clock::time_point start(ms);
+
+        switch(date_component) {
+            case kDateComponentMillisecond:
+                start += milliseconds(amount);
+                break;
+            case kDateComponentSecond:
+                start += seconds(amount);
+                break;
+            case kDateComponentMinute:
+                start += minutes(amount);
+                break;
+            case kDateComponentHour:
+                start += hours(amount);
+                break;
+            case kDateComponentDay:
+                start += days(amount);
+                break;
+            case kDateComponentWeek:
+                start += weeks(amount);
+                break;
+            case kDateComponentMonth:
+            case kDateComponentQuarter:
+            {
+                auto value = months(amount);
+                if(date_component == kDateComponentQuarter) {
+                    value *= 4;
+                }
+
+                start += value;
+                break;
+            }
+            case kDateComponentYear:
+            case kDateComponentDecade:
+            case kDateComponentCentury:
+            case kDateComponentMillennium:
+            {
+                auto value = years(amount);
+
+                if(date_component == kDateComponentDecade) {
+                    value *= 10;
+                } else if(date_component == kDateComponentCentury) {
+                    value *= 100;
+                } else if(date_component == kDateComponentMillennium) {
+                    value *= 1000;
+                }
+
+                start += value;
+                break;
+            }
+            default:
+                return;
+        }
+
+        sqlite3_result_int64(ctx, duration_cast<milliseconds>(start.time_since_epoch()).count());
+    }
+
     static void millis_to_utc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
         if (isNumericNoError(argv[0])) {
             int64_t millis = sqlite3_value_int64(argv[0]);
@@ -848,6 +980,45 @@ namespace litecore {
         int64_t millis;
         if (parseDateArg(argv[0], &millis))
             setResultDateString(ctx, millis, true);
+    }
+
+    static void date_diff_str(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        int64_t millis_left, millis_right;
+        DateComponent date_component;
+        if(!parseDateArg(argv[0], &millis_left) || 
+           !parseDateArg(argv[1], &millis_right)) {
+            return;
+        }
+
+        doDateDiff(ctx, millis_left, millis_right, stringSliceArgument(argv[2]));
+    }
+
+    static void date_diff_millis(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if(!isNumericNoError(argv[0]) || !isNumericNoError(argv[1])) {
+            return;
+        }
+
+        const auto millis_left = sqlite3_value_int64(argv[0]);
+        const auto millis_right = sqlite3_value_int64(argv[1]);
+        doDateDiff(ctx, millis_left, millis_right, stringSliceArgument(argv[2]));
+    }
+
+    static void date_add_str(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        int64_t start;
+        if(!parseDateArg(argv[0], &start) || !isNumericNoError(argv[1])) {
+            return;
+        }
+
+        const auto amount = sqlite3_value_int64(argv[1]);
+        doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
+    }
+
+    static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if(!isNumericNoError(argv[0]) || !isNumericNoError(argv[1])) {
+            return;
+        }
+
+        doDateAdd(ctx, sqlite3_value_int64(argv[0]), sqlite3_value_int64(argv[1]), stringSliceArgument(argv[2]));
     }
 
 
@@ -1282,6 +1453,10 @@ namespace litecore {
         { "millis_to_utc",     1, millis_to_utc },
         { "str_to_millis",     1, str_to_millis },
         { "str_to_utc",        1, str_to_utc },
+        { "date_diff_str",     3, date_diff_str },
+        { "date_diff_millis",  3, date_diff_millis },
+        { "date_add_str",      3, date_add_str },
+        { "date_add_millis",   3, date_add_millis },
 
         { }
     };

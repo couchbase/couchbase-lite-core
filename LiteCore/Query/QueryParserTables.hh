@@ -131,10 +131,14 @@ namespace litecore {
         {"nullif"_sl,           2, 2, "N1QL_nullif"_sl},
 
         // Dates/times:
-        { "millis_to_str"_sl,   1, 1 },
-        { "millis_to_utc"_sl,   1, 1 },
-        { "str_to_millis"_sl,   1, 1 },
-        { "str_to_utc"_sl,      1, 1 },
+        { "millis_to_str"_sl,    1, 1 },
+        { "millis_to_utc"_sl,    1, 1 },
+        { "str_to_millis"_sl,    1, 1 },
+        { "str_to_utc"_sl,       1, 1 },
+        { "date_diff_str"_sl,    3, 3 },
+        { "date_diff_millis"_sl, 3, 3 },
+        { "date_add_str"_sl,     3, 3 },
+        { "date_add_millis"_sl,  3, 3 },
 
         // Math:
         {"abs"_sl,              1, 1},
