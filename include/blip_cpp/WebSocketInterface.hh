@@ -71,6 +71,7 @@ namespace litecore { namespace websocket {
         kNetErrTLSClientCertRejected, // 10
         kNetErrTLSCertUnknownRoot,
         kNetErrInvalidRedirect,
+        kNetErrUnknown,              // Unknown error
     };
 
     enum class Role {
@@ -176,5 +177,9 @@ namespace litecore { namespace websocket {
         /** The socket has room to send more messages. */
         virtual void onWebSocketWriteable() { }
     };
+
+
+    /** Utility function to get an HTTP header from a Dict by its case-insensitive name. */
+    fleece::Value GetHeader(fleece::Dict headers, fleece::slice name);
 
 } }
