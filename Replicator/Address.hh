@@ -19,6 +19,7 @@
 #pragma once
 #include "c4Socket.h"
 #include "PlatformCompat.hh"
+#include <fleece/slice.hh>
 
 struct c4Database;
 

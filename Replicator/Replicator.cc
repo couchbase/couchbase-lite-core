@@ -286,12 +286,12 @@ namespace litecore { namespace repl {
 
 
     void Replicator::_onHTTPResponse(int status, fleece::AllocedDict headers) {
-        if (status == 101 && !headers["Sec-WebSocket-Protocol"]) {
+        if (status == 101 && !websocket::GetHeader(headers, "Sec-WebSocket-Protocol"_sl)) {
             gotError(c4error_make(WebSocketDomain, kWebSocketCloseProtocolError,
                                   "Incompatible replication protocol "
                                   "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
-        auto cookies = headers["Set-Cookie"_sl];
+        auto cookies = websocket::GetHeader(headers, "Set-Cookie"_sl);
         if (cookies.type() == kFLArray) {
             // Yes, there can be multiple Set-Cookie headers.
             for (Array::iterator i(cookies.asArray()); i; ++i) {

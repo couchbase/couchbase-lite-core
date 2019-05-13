@@ -19,3 +19,6 @@
 [submodule "vendor/mbedtls"]
 	path = vendor/mbedtls
 	url = https://github.com/ARMmbed/mbedtls.git
+[submodule "vendor/libwebsockets"]
+	path = vendor/libwebsockets
+	url = https://libwebsockets.org/repo/libwebsockets

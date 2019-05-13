@@ -10,7 +10,7 @@
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "c4.hh"
-#include "CivetWebSocket.hh"
+#include "LWSWebSocket.hh"
 #include "Response.hh"
 #include "make_unique.h"
 #include <iostream>
@@ -42,7 +42,7 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
-        RegisterC4CivetWebSocketFactory();
+        RegisterC4LWSWebSocketFactory();
         // Environment variables can also override the default address above:
         const char *hostname = getenv("REMOTE_HOST");
         if (hostname)
@@ -90,12 +90,18 @@ public:
     }
 
     void logState(C4ReplicatorStatus status) {
-        char message[200];
-        c4error_getDescriptionC(status.error, message, sizeof(message));
-        C4Log("*** C4Replicator state: %-s, progress=%llu/%llu, error=%s",
-              kC4ReplicatorActivityLevelNames[status.level],
-              status.progress.unitsCompleted, status.progress.unitsTotal,
-              message);
+        if (status.error.code) {
+            char message[200];
+            c4error_getDescriptionC(status.error, message, sizeof(message));
+            C4Log("*** C4Replicator state: %-s, progress=%llu/%llu, error=%s",
+                  kC4ReplicatorActivityLevelNames[status.level],
+                  status.progress.unitsCompleted, status.progress.unitsTotal,
+                  message);
+        } else {
+            C4Log("*** C4Replicator state: %-s, progress=%llu/%llu",
+                  kC4ReplicatorActivityLevelNames[status.level],
+                  status.progress.unitsCompleted, status.progress.unitsTotal);
+        }
     }
 
     void stateChanged(C4Replicator *r, C4ReplicatorStatus s) {
