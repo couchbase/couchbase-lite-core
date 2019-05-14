@@ -90,7 +90,7 @@ namespace litecore { namespace repl {
             while(c4enum_next(e, &err)) {
                 C4DocumentInfo info;
                 c4enum_getDocumentInfo(e, &info);
-                auto rev = retained(new RevToInsert(nil,            /* incoming rev */
+                auto rev = retained(new RevToInsert(nullptr,        /* incoming rev */
                                                     info.docID,
                                                     info.revID,
                                                     nullslice,      /* history buf */
