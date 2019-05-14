@@ -1307,39 +1307,52 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
 
 
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflict]") {
-    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
-    _expectedDocumentCount = 1;
+    createFleeceRev(db, C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    createFleeceRev(db, C4STR("non-conflict"), C4STR("1-22222222"), C4STR("{}"));
+    createFleeceRev(db, C4STR("db-deleted"), C4STR("1-33333333"), C4STR("{}"));
+    createFleeceRev(db, C4STR("db2-deleted"), C4STR("1-44444444"), C4STR("{}"));
+    _expectedDocumentCount = 4;
     
-    // Push db to db2, so both will have the doc:
+    // Push db to db2, so both will have docs:
     runPushReplication();
-    validateCheckpoints(db, db2, "{\"local\":1}");
     
-    // Update the doc differently in each db:
-    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
-    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+    // Update the docs differently in each db:
+    createFleeceRev(db, C4STR("conflict"), C4STR("2-12121212"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db2, C4STR("conflict"), C4STR("2-13131313"), C4STR("{\"db\": 2}"));
+    createFleeceRev(db, C4STR("db-deleted"), C4STR("2-32323232"), C4STR("{\"db\":2}"), kRevDeleted);
+    createFleeceRev(db2, C4STR("db-deleted"), C4STR("2-31313131"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db, C4STR("db2-deleted"), C4STR("2-41414141"), C4STR("{\"db\": 1}"));
+    createFleeceRev(db2, C4STR("db2-deleted"), C4STR("2-42424242"), C4STR("{\"db\":2}"), kRevDeleted);
     
-    c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
-    REQUIRE(c4doc_selectParentRevision(doc));
-    
-    // Now pull to db from db2, creating a conflict:
+    // Now pull to db from db2, creating conflicts:
     C4Log("-------- Pull db <- db2 --------");
-    _expectedDocPullErrors = set<string>{"conflict"};
+    _expectedDocPullErrors = set<string>{"conflict", "db-deleted", "db2-deleted"};
+    _expectedDocumentCount = 3;
     runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
-    validateCheckpoints(db, db2, "{\"local\":1,\"remote\":2}");
+    validateCheckpoints(db, db2, "{\"local\":4,\"remote\":7}");
     
     C4Error err = {};
     std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(db, false);
     C4DocEnumerator* e = acc->unresolvedDocsEnumerator(&err);
     
-    C4Slice revID = C4STR("2-2a2a2a2a");
+    // verify only returns the conflicted documents, including the deleted onces.
+    vector<C4Slice> revIDs = {C4STR("2-12121212"), C4STR("2-32323232"), C4STR("2-41414141")};
+    int count = 0;
     while(c4enum_next(e, &err)) {
         C4DocumentInfo info;
         c4enum_getDocumentInfo(e, &info);
-        CHECK(info.revID == revID);
+        CHECK(info.revID == revIDs[count]);
         CHECK((info.flags & kDocConflicted) == kDocConflicted);
-        CHECK((info.flags & kDocDeleted) != kDocDeleted);
+        if (info.docID == C4STR("conflict")) {
+            CHECK((info.flags & kDocDeleted) != kDocDeleted);
+        } else {
+            CHECK((info.flags & kDocDeleted) == kDocDeleted);
+        }
+        count++;
     }
     c4enum_free(e);
+    // TODO: This fails, since the `db2-deleted` is not showing up in the `unresolved`
+    CHECK(count == 3);
 }
 
 
