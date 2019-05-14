@@ -166,6 +166,11 @@
 		2771A0B722862AC900B18E0A /* libmbedtls.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A0B422862AC900B18E0A /* libmbedtls.a */; };
 		2771A0B822862AC900B18E0A /* libmbedx509.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A0B522862AC900B18E0A /* libmbedx509.a */; };
 		2771A0B922862B2A00B18E0A /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
+		2771A0CF228B4CD700B18E0A /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
+		2771A0DB228B5A4100B18E0A /* LWSContext.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2771A0D9228B5A4100B18E0A /* LWSContext.hh */; };
+		2771A0DC228B5A4100B18E0A /* LWSContext.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771A0DA228B5A4100B18E0A /* LWSContext.cc */; };
+		2771A0DF228B5F7900B18E0A /* LWSUtil.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2771A0DD228B5F7900B18E0A /* LWSUtil.hh */; };
+		2771A0E0228B5F7900B18E0A /* LWSUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771A0DE228B5F7900B18E0A /* LWSUtil.cc */; };
 		2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */; };
@@ -1145,6 +1150,10 @@
 		2771A0B322862AC800B18E0A /* libmbedcrypto.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedcrypto.a; path = build/library/libmbedcrypto.a; sourceTree = "<group>"; };
 		2771A0B422862AC900B18E0A /* libmbedtls.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedtls.a; path = build/library/libmbedtls.a; sourceTree = "<group>"; };
 		2771A0B522862AC900B18E0A /* libmbedx509.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedx509.a; path = build/library/libmbedx509.a; sourceTree = "<group>"; };
+		2771A0D9228B5A4100B18E0A /* LWSContext.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSContext.hh; sourceTree = "<group>"; };
+		2771A0DA228B5A4100B18E0A /* LWSContext.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSContext.cc; sourceTree = "<group>"; };
+		2771A0DD228B5F7900B18E0A /* LWSUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSUtil.hh; sourceTree = "<group>"; };
+		2771A0DE228B5F7900B18E0A /* LWSUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSUtil.cc; sourceTree = "<group>"; };
 		2771B00E1FB23DD800C6B794 /* stopwords_fr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_fr.h; sourceTree = "<group>"; };
 		2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+Indexes.cc"; sourceTree = "<group>"; };
 		2773FCF41E6783A000108780 /* Checkpoint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Checkpoint.cc; sourceTree = "<group>"; };
@@ -1468,6 +1477,7 @@
 				2771A0B2228626FD00B18E0A /* libLiteCoreWebSocket.a in Frameworks */,
 				279691771ED4B3720086565D /* libSupport.a in Frameworks */,
 				270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */,
+				2771A0CF228B4CD700B18E0A /* Security.framework in Frameworks */,
 				2700BB53216FF2DB00797537 /* CoreML.framework in Frameworks */,
 				27098AB821714AB0002751DA /* Vision.framework in Frameworks */,
 			);
@@ -2293,6 +2303,19 @@
 			path = mbedtls;
 			sourceTree = "<group>";
 		};
+		2771A0E1228B76D000B18E0A /* LibWebSocket-based */ = {
+			isa = PBXGroup;
+			children = (
+				2771A0DA228B5A4100B18E0A /* LWSContext.cc */,
+				2771A0D9228B5A4100B18E0A /* LWSContext.hh */,
+				27719FE92284E94D00B18E0A /* LWSWebSocket.cc */,
+				27719FE82284E94D00B18E0A /* LWSWebSocket.hh */,
+				2771A0DE228B5F7900B18E0A /* LWSUtil.cc */,
+				2771A0DD228B5F7900B18E0A /* LWSUtil.hh */,
+			);
+			name = "LibWebSocket-based";
+			sourceTree = "<group>";
+		};
 		277B956122459796005B7E79 /* API implementation */ = {
 			isa = PBXGroup;
 			children = (
@@ -2306,8 +2329,7 @@
 				2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */,
 				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
 				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
-				27719FE92284E94D00B18E0A /* LWSWebSocket.cc */,
-				27719FE82284E94D00B18E0A /* LWSWebSocket.hh */,
+				2771A0E1228B76D000B18E0A /* LibWebSocket-based */,
 			);
 			name = "API implementation";
 			sourceTree = "<group>";
@@ -2702,6 +2724,8 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2771A0DF228B5F7900B18E0A /* LWSUtil.hh in Headers */,
+				2771A0DB228B5A4100B18E0A /* LWSContext.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3534,6 +3558,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2771A0E0228B5F7900B18E0A /* LWSUtil.cc in Sources */,
+				2771A0DC228B5A4100B18E0A /* LWSContext.cc in Sources */,
 				2771A0A72286257800B18E0A /* LWSWebSocket.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
