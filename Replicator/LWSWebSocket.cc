@@ -164,17 +164,24 @@ namespace litecore { namespace websocket {
             i.path = path.c_str();
             i.host = i.address;
             i.origin = i.address;
-            if (_address.isSecure())
-                i.ssl_connection = LCCSCF_USE_SSL;
             i.protocol = kProtocols[0].name;
             i.pwsi = &_client;                  // LWS will fill this in when it connects
             i.opaque_user_data = this;
+
+            if (_address.isSecure()) {
+                i.ssl_connection = LCCSCF_USE_SSL;
+                if (pinnedServerCert())
+                    i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
+            }
+
             (void) lws_client_connect_via_info(&i);
         }
 
 
         void completedReceive(size_t byteCount) {
             synchronized([&]{
+                if (!_client)
+                    return;
                 _unreadBytes -= byteCount;
                 LogDebug("Completed receive of %6zd bytes  (now %6zd pending)",
                          byteCount, ssize_t(_unreadBytes));
@@ -206,6 +213,7 @@ namespace litecore { namespace websocket {
             memcpy((void*)&frame[1], &status, sizeof(status));
 
             synchronized([&]{
+                Assert(_client);
                 _outbox.push_back(frame);
                 if (_outbox.size() == 1)
                     lws_callback_on_writable(_client); // Will trigger LWS_CALLBACK_CLIENT_WRITEABLE
@@ -240,6 +248,8 @@ namespace litecore { namespace websocket {
                     break;
                 case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
                     LogDebug("**** LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER");
+                    if (_address.isSecure() && !onVerifyTLS())
+                        return -1;
                     if (!onSendCustomHeaders(in, len))
                         return -1;
                     break;
@@ -283,10 +293,18 @@ namespace litecore { namespace websocket {
                                  void *user, void *in, size_t len)
         {
             auto self = (LWSWebSocket*) lws_get_opaque_user_data(wsi);
-            if (self)
+            if (self) {
                 return self->callback(wsi, reason, user, in, len);
-            else
+            } else {
+                switch (reason) {
+                    case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS:
+                        LogDebug("**** LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS");
+                        return 0;
+                    default:
+                        LogDebug("**** LWS CALLBACK %d (no client)", reason);
+                }
                 return lws_callback_http_dummy(wsi, reason, user, in, len);
+            }
         }
 
 
@@ -297,6 +315,40 @@ namespace litecore { namespace websocket {
 
 
 #pragma mark - HANDLERS:
+
+
+        bool onVerifyTLS() {
+            // If client gave a pinned TLS cert, compare it with the actual server cert
+            if (!pinnedServerCert())
+                return true;
+
+            LogDebug("Verifying server TLS cert against pinned cert...");
+            alloc_slice pinnedKey = pinnedServerCertPublicKey();
+            if (!pinnedKey) {
+                closeC4Socket(NetworkDomain, kC4NetErrTLSCertUntrusted,
+                              "Cannot read pinned TLS certificate in replicator configuration"_sl);
+                return false;
+            }
+
+            char big[1024];
+            auto &result = *(lws_tls_cert_info_results*)big;
+            if (0 != lws_tls_peer_cert_info(_client, LWS_TLS_CERT_INFO_OPAQUE_PUBLIC_KEY,
+                                            &result,
+                                            sizeof(big) - sizeof(result) + sizeof(result.ns.name))){
+                closeC4Socket(NetworkDomain, kC4NetErrTLSCertUntrusted,
+                              "Cannot read server TLS certificate"_sl);
+                return false;
+            }
+            slice serverKey(&result.ns.name, result.ns.len);
+            Log("Server public key = %.*s", SPLAT(serverKey));
+            Log("Pinned key = %.*s", SPLAT(pinnedKey));
+            if (serverKey != pinnedKey) {
+                closeC4Socket(NetworkDomain, kC4NetErrTLSCertUntrusted,
+                              "Server TLS certificate does not match pinned cert"_sl);
+                return false;
+            }
+            return true;
+        }
 
 
         // Returns false if libwebsocket wouldn't let us write all the headers
@@ -332,8 +384,8 @@ namespace litecore { namespace websocket {
                     if (!addHeader("Authorization:", slice("Basic " + cred)))
                         return false;
                 } else {
-                    c4socket_closed(_c4socket, c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
-                                                            "Unsupported auth type"_sl));
+                    closeC4Socket(WebSocketDomain, 401,
+                                  "Unsupported auth type in replicator configuration"_sl);
                     return false;
                 }
             }
@@ -463,7 +515,10 @@ namespace litecore { namespace websocket {
 
         void onConnectionError(slice errorMessage) {
             static constexpr struct {slice string; C4ErrorDomain domain; int code;} kMessages[] = {
-                {"HS: ws upgrade unauthorized"_sl, WebSocketDomain, 401},
+                {"connect failed"_sl,                 POSIXDomain,     ECONNREFUSED},
+                {"ws upgrade unauthorized"_sl,        WebSocketDomain, 401},
+                {"CA is not trusted"_sl,              NetworkDomain,   kC4NetErrTLSCertUnknownRoot },
+                {"server's cert didn't look good"_sl, NetworkDomain,   kC4NetErrTLSCertUntrusted },
                 { }
             };
 
@@ -473,44 +528,97 @@ namespace litecore { namespace websocket {
             if (status || headers)
                 c4socket_gotHTTPResponse(_c4socket, status, headers);
 
-            C4Error closeStatus = {};
-            if (status >= 300) {
-                closeStatus = c4error_make(WebSocketDomain, status, slice(statusMessage));
-            } else if (errorMessage) {
-                // LWS does not provide any sort of error code, so just look up the string:
-                for (int i = 0; kMessages[i].string; ++i) {
-                    if (errorMessage == kMessages[i].string) {
-                        closeStatus = c4error_make(kMessages[i].domain, kMessages[i].code, errorMessage);
+            C4ErrorDomain domain = WebSocketDomain;
+            if (status < 300) {
+                domain = NetworkDomain;
+                status = kC4NetErrUnknown;
+                if (errorMessage) {
+                    // LWS does not provide any sort of error code, so just look up the string:
+                    for (int i = 0; kMessages[i].string; ++i) {
+                        if (errorMessage.containsBytes(kMessages[i].string)) {
+                            domain = kMessages[i].domain;
+                            status = kMessages[i].code;
+                            statusMessage = string(errorMessage);
+                            break;
+                        }
                     }
+                } else {
+                    statusMessage = "unknown error";
                 }
-            } else {
-                errorMessage = "unknown error"_sl;
+                if (domain == NetworkDomain && status == kC4NetErrUnknown)
+                    C4LogToAt(kC4WebSocketLog, kC4LogWarning,
+                              "No error code mapping for libwebsocket message '%.*s'",
+                              SPLAT(errorMessage));
             }
 
-            if (!closeStatus.code)
-                closeStatus = c4error_make(NetworkDomain, kC4NetErrUnknown, errorMessage);
-            Log("Connection error: %.*s", SPLAT(errorMessage));
-            c4socket_closed(_c4socket, closeStatus);
+            closeC4Socket(domain, status, slice(statusMessage));
         }
 
 
         void onClosed() {
-            C4Error closeStatus;
             synchronized([&]() {
                 if (_sentCloseFrame) {
                     Log("Connection closed");
-                    closeStatus = {WebSocketDomain, kWebSocketCloseNormal};
+                    closeC4Socket(WebSocketDomain, kWebSocketCloseNormal, nullslice);
                 } else {
                     Log("Server unexpectedly closed connection");
-                    closeStatus = c4error_make(WebSocketDomain, kWebSocketCloseAbnormal,
+                    closeC4Socket(WebSocketDomain, kWebSocketCloseAbnormal,
                                                "Server unexpectedly closed connection"_sl);
                 }
             });
-            c4socket_closed(_c4socket, closeStatus);
+        }
+
+
+        void closeC4Socket(C4ErrorDomain domain, int code, C4String message) {
+            if (_c4socket) {
+                if (code != 0) {
+                    C4LogToAt(kC4WebSocketLog, kC4LogError, "Closing with error: %.*s", SPLAT(message));
+                } else {
+                    Log("Calling c4socket_closed()");
+                }
+                c4socket_closed(_c4socket, c4error_make(domain, code, message));
+                _c4socket = nullptr;
+            }
         }
 
 
 #pragma mark - UTILITIES:
+
+
+        slice pinnedServerCert() {
+            return _options[kC4ReplicatorOptionPinnedServerCert].asData();
+        }
+
+
+        alloc_slice pinnedServerCertPublicKey() {
+            slice pinnedCert = pinnedServerCert();
+            if (!pinnedCert)
+                return {};
+
+            alloc_slice paddedPinnedCert;
+            if (pinnedCert[pinnedCert.size - 1] != 0) {
+                paddedPinnedCert = alloc_slice(pinnedCert.size + 1);
+                memcpy((void*)paddedPinnedCert.buf, pinnedCert.buf, pinnedCert.size);
+                const_cast<uint8_t&>(paddedPinnedCert[pinnedCert.size]) = 0;
+                pinnedCert = paddedPinnedCert;
+            }
+
+            lws_x509_cert* xPinned = nullptr;
+            if (0 != lws_x509_create(&xPinned))
+                return {};
+
+            alloc_slice key;
+            char big[1024];
+            auto &info = *(lws_tls_cert_info_results*)big;
+            if (0 == lws_x509_parse_from_pem(xPinned, pinnedCert.buf, pinnedCert.size) &&
+                0 == lws_x509_info(xPinned, LWS_TLS_CERT_INFO_OPAQUE_PUBLIC_KEY,
+                                   &info,
+                                   sizeof(big) - sizeof(info) + sizeof(info.ns.name))) {
+                    key = alloc_slice(&info.ns.name, info.ns.len);
+            }
+            lws_x509_destroy(&xPinned);
+            return key;
+        }
 
 
         int decodeHTTPStatus(string *message =nullptr) {
