@@ -1306,6 +1306,43 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Doc Notifications", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflict]") {
+    createFleeceRev(db,  C4STR("conflict"), C4STR("1-11111111"), C4STR("{}"));
+    _expectedDocumentCount = 1;
+    
+    // Push db to db2, so both will have the doc:
+    runPushReplication();
+    validateCheckpoints(db, db2, "{\"local\":1}");
+    
+    // Update the doc differently in each db:
+    createFleeceRev(db,  C4STR("conflict"), C4STR("2-2a2a2a2a"), C4STR("{\"db\":1}"));
+    createFleeceRev(db2, C4STR("conflict"), C4STR("2-2b2b2b2b"), C4STR("{\"db\":2}"));
+    
+    c4::ref<C4Document> doc = c4doc_get(db, C4STR("conflict"), true, nullptr);
+    REQUIRE(c4doc_selectParentRevision(doc));
+    
+    // Now pull to db from db2, creating a conflict:
+    C4Log("-------- Pull db <- db2 --------");
+    _expectedDocPullErrors = set<string>{"conflict"};
+    runReplicators(Replicator::Options::pulling(), Replicator::Options::passive());
+    validateCheckpoints(db, db2, "{\"local\":1,\"remote\":2}");
+    
+    C4Error err = {};
+    std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(db, false);
+    C4DocEnumerator* e = acc->unresolvedDocsEnumerator(&err);
+    
+    C4Slice revID = C4STR("2-2a2a2a2a");
+    while(c4enum_next(e, &err)) {
+        C4DocumentInfo info;
+        c4enum_getDocumentInfo(e, &info);
+        CHECK(info.revID == revID);
+        CHECK((info.flags & kDocConflicted) == kDocConflicted);
+        CHECK((info.flags & kDocDeleted) != kDocDeleted);
+    }
+    c4enum_free(e);
+}
+
+
 #pragma mark - DELTA:
 
 
