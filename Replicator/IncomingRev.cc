@@ -100,7 +100,7 @@ namespace litecore { namespace repl {
             FLError err;
             Doc fleeceDoc = _db->tempEncodeJSON(jsonBody, &err);
             processBody(fleeceDoc, {FleeceDomain, err});
-        } else if (_options.pullValidator || jsonBody.contains("\"digest\""_sl)) {
+        } else if (_options.pullValidator || jsonBody.containsBytes("\"digest\""_sl)) {
             // It's a delta, but we need the entire document body now because either it has to be
             // passed to the validation function, or it may contain new blobs to download.
             logVerbose("Need to apply delta immediately for '%.*s' #%.*s ...",

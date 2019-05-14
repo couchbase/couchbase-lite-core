@@ -101,7 +101,7 @@ namespace litecore {
 
     const fleece::impl::Scope& VersionedDocument::scopeFor(slice s) const {
         for (auto &scope : _fleeceScopes) {
-            if (scope.data().contains(s))
+            if (scope.data().containsAddressRange(s))
                 return scope;
         }
         error::_throw(error::AssertionFailed, "VersionedDocument has no scope for slice");

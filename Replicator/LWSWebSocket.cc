@@ -58,6 +58,13 @@ namespace litecore { namespace websocket {
     /** Singleton that manages the libwebsocket context and event thread. */
     class LWSContext {
     public:
+        static void initialize(const struct lws_protocols protocols[]) {
+            if (!instance)
+                instance = new LWSContext(protocols);
+        }
+
+        static LWSContext* instance;
+
         LWSContext(const struct lws_protocols protocols[]) {
             // Configure libwebsocket logging:
             int flags = LLL_ERR  | LLL_WARN | LLL_NOTICE | LLL_INFO;
@@ -90,8 +97,6 @@ namespace litecore { namespace websocket {
             if (_context)
                 lws_context_destroy(_context);
         }
-
-        static LWSContext* instance;
 
     private:
         static void logCallback(int level, const char *message) {
@@ -139,15 +144,14 @@ namespace litecore { namespace websocket {
             DebugAssert(!_client);
         }
 
-        //// Called by the C4Socket, via the C4SocketFactory callbacks:
+        //// Called by the C4Socket, via the C4SocketFactory callbacks below:
 
         void open() {
             Assert(!_client);
             Log("LWSWebSocket connecting to <%.*s>...", SPLAT(_address.url()));
 
             // Create LWS context:
-            if (!LWSContext::instance)
-                LWSContext::instance = new LWSContext(kProtocols);
+            LWSContext::initialize(kProtocols);
 
             // Create LWS client and connect:
             string hostname(slice(_address.hostname));
@@ -193,6 +197,8 @@ namespace litecore { namespace websocket {
             _sendFrame(LWS_WRITE_CLOSE, (lws_close_status)status, message);
         }
 
+    private:
+
         void _sendFrame(enum lws_write_protocol opcode, lws_close_status status, slice body) {
             alloc_slice frame(LWS_PRE + body.size);
             memcpy((void*)&frame[LWS_PRE], body.buf, body.size);
@@ -206,8 +212,6 @@ namespace litecore { namespace websocket {
             });
         }
 
-
-    private:
 
 #pragma mark - LIBWEBSOCKETS CALLBACK:
 
@@ -308,8 +312,11 @@ namespace litecore { namespace websocket {
                 int i = lws_add_http_header_by_name(_client, (const uint8_t*)header,
                                                     (const uint8_t*)value.buf, int(value.size),
                                                     dst, end);
-                if (i != 0)
+                if (i != 0) {
+                    C4LogToAt(kC4WebSocketLog, kC4LogError,
+                              "libwebsockets wouldn't let me add enough HTTP headers");
                     return false;
+                }
                 LogDebug("Added header:  %s %.*s", header, SPLAT(value));
                 return true;
             };
