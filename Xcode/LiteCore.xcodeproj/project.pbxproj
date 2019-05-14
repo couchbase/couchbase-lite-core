@@ -1154,6 +1154,8 @@
 		2771A0DA228B5A4100B18E0A /* LWSContext.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSContext.cc; sourceTree = "<group>"; };
 		2771A0DD228B5F7900B18E0A /* LWSUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSUtil.hh; sourceTree = "<group>"; };
 		2771A0DE228B5F7900B18E0A /* LWSUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSUtil.cc; sourceTree = "<group>"; };
+		2771A0EC228B832400B18E0A /* build_mbedtls.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build_mbedtls.sh; sourceTree = SOURCE_ROOT; };
+		2771A0ED228B832400B18E0A /* build_libwebsockets.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build_libwebsockets.sh; sourceTree = SOURCE_ROOT; };
 		2771B00E1FB23DD800C6B794 /* stopwords_fr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_fr.h; sourceTree = "<group>"; };
 		2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+Indexes.cc"; sourceTree = "<group>"; };
 		2773FCF41E6783A000108780 /* Checkpoint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Checkpoint.cc; sourceTree = "<group>"; };
@@ -2306,6 +2308,8 @@
 		2771A0E1228B76D000B18E0A /* LibWebSocket-based */ = {
 			isa = PBXGroup;
 			children = (
+				2771A0ED228B832400B18E0A /* build_libwebsockets.sh */,
+				2771A0EC228B832400B18E0A /* build_mbedtls.sh */,
 				2771A0DA228B5A4100B18E0A /* LWSContext.cc */,
 				2771A0D9228B5A4100B18E0A /* LWSContext.hh */,
 				27719FE92284E94D00B18E0A /* LWSWebSocket.cc */,
@@ -2955,6 +2959,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2771A0A0228624C100B18E0A /* Build configuration list for PBXNativeTarget "LiteCoreWebSocket" */;
 			buildPhases = (
+				2771A0EB228B80BB00B18E0A /* ShellScript */,
 				2771A094228624C000B18E0A /* Headers */,
 				2771A095228624C000B18E0A /* Sources */,
 				2771A096228624C000B18E0A /* Frameworks */,
@@ -3449,6 +3454,24 @@
 			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"";
 			showEnvVarsInLog = 0;
 		};
+		2771A0EB228B80BB00B18E0A /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "$SRCROOT/build_mbedtls.sh\n$SRCROOT/build_libwebsockets.sh\n";
+			showEnvVarsInLog = 0;
+		};
 		27E6739E1EC8D958008F50C4 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -3558,9 +3581,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2771A0E0228B5F7900B18E0A /* LWSUtil.cc in Sources */,
 				2771A0DC228B5A4100B18E0A /* LWSContext.cc in Sources */,
 				2771A0A72286257800B18E0A /* LWSWebSocket.cc in Sources */,
+				2771A0E0228B5F7900B18E0A /* LWSUtil.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
