@@ -83,13 +83,26 @@ namespace litecore { namespace repl {
         connection()->start();
         // Now wait for _onConnect or _onClose...
         
+        // handle the unresolved docs
         C4Error err = { };
         C4DocEnumerator* e = _db->unresolvedDocsEnumerator(&err);
-        while(c4enum_next(e, &err)) {
-            C4DocumentInfo info;
-            c4enum_getDocumentInfo(e, &info);
-            auto rev = retained(new RevToSend(info));
-            _docsEnded.push(rev);
+        if (e) {
+            while(c4enum_next(e, &err)) {
+                C4DocumentInfo info;
+                c4enum_getDocumentInfo(e, &info);
+                auto rev = retained(new RevToInsert(nil,            /* incoming rev */
+                                                    info.docID,
+                                                    info.revID,
+                                                    nullslice,      /* history buf */
+                                                    info.flags & kDocDeleted,
+                                                    !(info.flags & kDocConflicted)));
+                rev->error = c4error_make(LiteCoreDomain, kC4ErrorConflict, {});
+                _docsEnded.push(rev);
+            }
+            c4enum_free(e);
+        } else {
+            warn("Couldn't get unresolved docs enumerator: error %d/%d", err.domain, err.code);
+            gotError(err);
         }
 
         if (_options.push > kC4Passive || _options.pull > kC4Passive) {
