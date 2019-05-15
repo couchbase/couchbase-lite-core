@@ -181,7 +181,16 @@ namespace c4Internal {
 
     Database::~Database() {
         Assert(_transactionLevel == 0,
-               "Database being dealloced while in a transaction");
+               "Database being destructed while in a transaction");
+        // Close DataFile, which will stop me from getting externalTransactionCommitted calls.
+        // Acquire the SequenceTracker's mutex first, so if any external transaction is being
+        // processed on another thread it'll have a chance to finish.
+        if (_sequenceTracker) {
+            lock_guard<mutex> lock(_sequenceTracker->mutex());
+            _dataFile->close();
+        } else {
+            _dataFile->close();
+        }
     }
 
 
@@ -521,7 +530,8 @@ namespace c4Internal {
     void Database::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
         if (_sequenceTracker) {
             lock_guard<mutex> lock(_sequenceTracker->mutex());
-            _sequenceTracker->addExternalTransaction(sourceTracker);
+            if (_dataFile)
+                _sequenceTracker->addExternalTransaction(sourceTracker);
         }
     }
 
