@@ -129,6 +129,15 @@ namespace litecore {
 
 
     void DataFile::close() {
+        // https://github.com/couchbase/couchbase-lite-core/issues/776
+        // Need to fulfill two opposing conditions simultaneously
+        // 1. The date file must remain in shared until it is fully closed
+        //    so that delete operations will not delete it while it is being
+        //    closed.
+        // 2. The data file must indicate that it is no longer valid so that
+        //    other classes with interest in the data file do not continue to
+        //    operate on it
+        _closeSignaled = true;
         for (auto& i : _keyStores) {
             i.second->close();
         }
