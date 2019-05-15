@@ -1228,6 +1228,7 @@ TEST_CASE_METHOD(QueryTest, "Query date add string", "[Query]") {
             {"['date_add_str()', '2018-01-01T00:00:00Z', 61, 'minute']", "2018-01-01T01:01:00Z"},
             {"['date_add_str()', '2018-01-01T00:00:00Z', 25, 'hour']", "2018-01-02T01:00:00Z"},
             {"['date_add_str()', '2018-01-01T00:00:00Z', 31, 'day']", "2018-02-01T00:00:00Z"},
+            {"['date_add_str()', '2018-02-27T00:00:00Z', 1, 'week']", "2018-03-06T00:00:00Z"},
             {"['date_add_str()', '2018-01-01T00:00:00Z', 12, 'month']", "2019-01-01T00:00:00Z"},
             {"['date_add_str()', '2018-01-01T00:00:01.500Z', -1500, 'millisecond']", "2018-01-01T00:00:00Z"},
             {"['date_add_str()', '2018-01-01T00:01:01Z', -61, 'second']", "2018-01-01T00:00:00Z"},
@@ -1240,9 +1241,15 @@ TEST_CASE_METHOD(QueryTest, "Query date add string", "[Query]") {
 
     SECTION("Special cases") {
         testExpressions( {
+            // Leap year
             {"['date_add_str()', '2018-02-28T00:00:00Z', 1, 'day']", "2018-03-01T00:00:00Z"},
             {"['date_add_str()', '2016-02-28T00:00:00Z', 1, 'day']", "2016-02-29T00:00:00Z"},
+            
+            // Keep time offset
             {"['date_add_str()', '2016-01-01T00:00:00-07:00', 1, 'day']", "2016-01-02T00:00:00-07:00"},
+
+            // Short month            
+            {"['date_add_str()', '2018-02-15T00:00:00Z', 1, 'month']", "2018-03-15T00:00:00Z"},
 
             // Questionable result, but matches N1QL server
             {"['date_add_str()', '2018-01-31T00:00:00Z', 1, 'month']", "2018-03-03T00:00:00Z"},
