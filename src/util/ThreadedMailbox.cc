@@ -17,9 +17,9 @@
 //
 
 #include "ThreadedMailbox.hh"
-
 #ifndef ACTORS_USE_GCD
 #include "Actor.hh"
+#include "ThreadUtil.hh"
 #include "Error.hh"
 #include "Timer.hh"
 #include "Logging.hh"
@@ -85,17 +85,9 @@ namespace litecore { namespace actor {
 
     void Scheduler::task(unsigned taskID) {
         LogToAt(ActorLog, Verbose, "   task %d starting", taskID);
-#ifndef _MSC_VER
-        {
-            char name[100];
-            sprintf(name, "LiteCore Scheduler #%u", taskID);
-#ifdef __APPLE__
-            pthread_setname_np(name);
-#else
-            pthread_setname_np(pthread_self(), name);
-#endif
-        }
-#endif
+        char name[100];
+        sprintf(name, "Scheduler #%u (Couchbase Lite Core)", taskID);
+        SetThreadName(name);
         ThreadedMailbox *mailbox;
         while ((mailbox = _queue.pop()) != nullptr) {
             LogToAt(ActorLog, Verbose, "   task %d calling Actor<%p>", taskID, mailbox);

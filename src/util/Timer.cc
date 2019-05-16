@@ -17,6 +17,7 @@
 //
 
 #include "Timer.hh"
+#include "ThreadUtil.hh"
 #include <vector>
 
 using namespace std;
@@ -36,13 +37,7 @@ namespace litecore { namespace actor {
 
     // Body of the manager's background thread. Waits for timers and calls their callbacks.
     void Timer::Manager::run() {
-#ifndef _MSC_VER
-#if __APPLE__
-        pthread_setname_np("LiteCore Timer");
-#else
-        pthread_setname_np(pthread_self(), "LiteCore Timer");
-#endif
-#endif
+        SetThreadName("Timer (Couchbase Lite Core)");
         unique_lock<mutex> lock(_mutex);
         while(true) {
             auto earliest = _schedule.begin();

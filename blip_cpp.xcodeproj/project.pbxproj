@@ -118,6 +118,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		271BA51D228DD67500D49D13 /* ThreadUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ThreadUtil.hh; sourceTree = "<group>"; };
 		2726F62D207E9F0B007F2D02 /* Batcher.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Batcher.hh; sourceTree = "<group>"; };
 		272850711E95BCCF009CA22F /* MessageOut.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MessageOut.cc; sourceTree = "<group>"; };
 		272850721E95BCCF009CA22F /* MessageOut.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MessageOut.hh; sourceTree = "<group>"; };
@@ -335,6 +336,7 @@
 				2726F62D207E9F0B007F2D02 /* Batcher.hh */,
 				27EF6A661E2858E7004748DF /* Channel.cc */,
 				27EF6A671E2858E7004748DF /* Channel.hh */,
+				271BA51D228DD67500D49D13 /* ThreadUtil.hh */,
 				2773FCFF1E69FD9100108780 /* Timer.cc */,
 				2773FD001E69FD9100108780 /* Timer.hh */,
 				27AE22B81FBE559100C40EB9 /* Codec.hh */,
@@ -568,6 +570,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 27EF69AE1E282549004748DF;
