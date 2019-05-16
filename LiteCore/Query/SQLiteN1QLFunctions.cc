@@ -863,8 +863,8 @@ namespace litecore {
         return year_day.count();
     }
 
-    inline system_clock::time_point to_time_point(DateTime& dt) {
-        const auto millis = ToMillis(dt);
+    inline system_clock::time_point to_time_point(DateTime& dt, bool no_tz = false) {
+        const auto millis = ToMillis(dt, no_tz);
         return system_clock::time_point(milliseconds(millis));
     }
 
@@ -883,14 +883,14 @@ namespace litecore {
         return outTime->validYMD || outTime->validHMS;
     }
 
-    static void setResultDateString(sqlite3_context* ctx, int64_t millis, bool asUTC) {
+    static void setResultDateString(sqlite3_context* ctx, int64_t millis, bool asUTC, const DateTime* format) {
         char buf[kFormattedISO8601DateMaxSize];
-        setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, asUTC));
+        setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, asUTC, format));
     }
 
-    static void setResultDateString(sqlite3_context* ctx, int64_t millis, int tz_offset) {
+    static void setResultDateString(sqlite3_context* ctx, int64_t millis, int tz_offset, const DateTime* format) {
         char buf[kFormattedISO8601DateMaxSize];
-        setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, tz_offset));
+        setResultTextFromSlice(ctx, FormatISO8601Date(buf, millis, tz_offset, format));
     }
 
     static int64_t diffPart(const DateTime& t1, const DateTime& t2, const DateDiff& diff, DateComponent part) {
@@ -962,8 +962,8 @@ namespace litecore {
             return;
         }
 
-        auto tp_left = to_time_point(left);
-        auto tp_right = to_time_point(right);
+        auto tp_left = to_time_point(left, true);
+        auto tp_right = to_time_point(right, true);
         auto sign = 1;
         if(tp_left < tp_right) {
             swap(tp_left, tp_right);
@@ -977,7 +977,7 @@ namespace litecore {
             left.h - right.h,
             left.m - right.m,
             int64_t(left.s) - int64_t(right.s),
-            ((left.s - int64_t(left.s)) - (right.s - int64_t(right.s))) * 1000
+            int64_t(((left.s - int64_t(left.s)) - (right.s - int64_t(right.s))) * 1000)
         };
 
         auto result = diffPart(left, right, diff, date_component);
@@ -1038,16 +1038,22 @@ namespace litecore {
     }
 
     static void millis_to_utc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        DateTime format;
+        bool valid = argc > 1 && parseDateArgRaw(argv[1], &format);
+
         if (isNumericNoError(argv[0])) {
             int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, true);
+            setResultDateString(ctx, millis, true, valid ? &format : nullptr);
         }
     }
 
     static void millis_to_str(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        DateTime format;
+        bool valid = argc > 1 && parseDateArgRaw(argv[1], &format);
+
         if (isNumericNoError(argv[0])) {
             int64_t millis = sqlite3_value_int64(argv[0]);
-            setResultDateString(ctx, millis, false);
+            setResultDateString(ctx, millis, false, valid ? &format : nullptr);
         }
     }
 
@@ -1058,9 +1064,11 @@ namespace litecore {
     }
 
     static void str_to_utc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
-        int64_t millis;
-        if (parseDateArg(argv[0], &millis))
-            setResultDateString(ctx, millis, true);
+        DateTime dt;
+        if (parseDateArgRaw(argv[0], &dt)) {
+            DateTime format = dt; // ToMillis modifies dt
+            setResultDateString(ctx, ToMillis(dt), true, &format);
+        }
     }
 
     static void date_diff_str(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
@@ -1091,7 +1099,8 @@ namespace litecore {
 
         const auto amount = sqlite3_value_int64(argv[1]);
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
-        setResultDateString(ctx, result, start.tz);
+        DateTime format = start;
+        setResultDateString(ctx, result, start.tz, &format);
     }
 
     static void date_add_millis(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
@@ -1104,7 +1113,6 @@ namespace litecore {
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
         sqlite3_result_int64(ctx, result);
     }
-
 
 #pragma mark - TYPE TESTS & CONVERSIONS:
 
@@ -1534,7 +1542,9 @@ namespace litecore {
         { "trunc",             2, fl_trunc },
 
         { "millis_to_str",     1, millis_to_str },
+        { "millis_to_str",     2, millis_to_str },
         { "millis_to_utc",     1, millis_to_utc },
+        { "millis_to_utc",     2, millis_to_utc },
         { "str_to_millis",     1, str_to_millis },
         { "str_to_utc",        1, str_to_utc },
         { "date_diff_str",     3, date_diff_str },

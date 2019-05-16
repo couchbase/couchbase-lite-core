@@ -914,9 +914,9 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
     auto diffHour = (int)(diffTotal / 60.0);
     auto diffMinute = diffTotal % 60;
     
-    auto expected1 = local_to_utc("2018-10-%02dT%02d:%02d:00Z", 23, 0, 0, diffHour, diffMinute);
-    auto expected2 = local_to_utc("2018-10-%02dT%02d:%02d:00Z", 23, 18, 33, diffHour, diffMinute);
-    auto expected3 = local_to_utc("2018-10-%02dT%02d:%02d:01Z", 23, 18, 33, diffHour, diffMinute);
+    auto expected1 = local_to_utc("2018-10-%02d", 23, 0, 0, diffHour, diffMinute);
+    auto expected2 = local_to_utc("2018-10-%02dT%02d:%02d:00", 23, 18, 33, diffHour, diffMinute);
+    auto expected3 = local_to_utc("2018-10-%02dT%02d:%02d:01", 23, 18, 33, diffHour, diffMinute);
     
     testExpressions( {
         {"['str_to_utc()', null]",                            "null"},
@@ -924,9 +924,13 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
         {"['str_to_utc()', '']",                              "null"},
         {"['str_to_utc()', 'x']",                             "null"},
         {"['str_to_utc()', '2018-10-23']",                    expected1},
+        
+        // Mismatches with N1QL (doesn't allow omitted seconds)
         {"['str_to_utc()', '2018-10-23T18:33']",              expected2},
         {"['str_to_utc()', '2018-10-23T18:33:01']",           expected3},
         {"['str_to_utc()', '2018-10-23T18:33:01Z']",          "2018-10-23T18:33:01Z"},
+        
+        // Mismatches with N1QL (doesn't allow -0700)
         {"['str_to_utc()', '2018-10-23T11:33:01-0700']",      "2018-10-23T18:33:01Z"},
         {"['str_to_utc()', '2018-10-23T11:33:01+03:30']",     "2018-10-23T08:03:01Z"},
         {"['str_to_utc()', '2018-10-23T18:33:01.123Z']",      "2018-10-23T18:33:01.123Z"},
@@ -972,6 +976,14 @@ TEST_CASE_METHOD(QueryTest, "Query Date Functions", "[Query]") {
         {"['millis_to_utc()', 1540319581000]",                "2018-10-23T18:33:01Z"},
         {"['millis_to_utc()', 1540319581123]",                "2018-10-23T18:33:01.123Z"},
         {"['millis_to_utc()', 1540319581999]",                "2018-10-23T18:33:01.999Z"},
+        {"['millis_to_utc()', 1540319581999, 'invalid']",     "2018-10-23T18:33:01.999Z"},
+        {"['millis_to_utc()', 1540319581999, '1111-11-11']",  "2018-10-23"},
+        {"['millis_to_utc()', 1540319581999, '11:11:11']",    "18:33:01.999"},
+        {"['millis_to_utc()', 1540319581999, '11:11:11Z']",   "18:33:01.999Z"},
+        {"['millis_to_utc()', 1540319581999, '11:11:11+09:00']","18:33:01.999Z"},
+        {"['millis_to_utc()', 1540319581999, '1111-11-11 11:11:11+09:00']","2018-10-23 18:33:01.999Z"},
+        {"['millis_to_utc()', 1540319581999, '1111-11-11T11:11:11+09:00']","2018-10-23T18:33:01.999Z"},
+        {"['millis_to_utc()', 1540319581999, '1111-11-11   T 11:11:11+09:00']","2018-10-23T18:33:01.999Z"},
 
         // It's hard to test millis_to_str directly, because the result depends on the
         // local time zone...
@@ -995,10 +1007,10 @@ TEST_CASE_METHOD(QueryTest, "Query date diff string", "[Query]") {
             {"['date_diff_str()', '2018-01-31T01:01:00.5Z', '2018-01-31T00:00:00Z', 'minute']", int64_t(61ll)},
             {"['date_diff_str()', '2018-01-31T01:00:01.5Z', '2018-01-31T00:00:00Z', 'hour']", int64_t(1ll)},
             {"['date_diff_str()', '2018-02-01T01:00:00.5Z', '2018-01-31T00:00:00Z', 'hour']", int64_t(25ll)},
-            {"['date_diff_str()', '2018-01-02T01:00:01.5Z', 1514764800000, 'day']", int64_t(1ll)},
+            {"['date_diff_str()', '2018-01-02T01:00:01.5Z', '2018-01-01T00:00:00Z', 'day']", int64_t(1ll)},
             {"['date_diff_str()', '2018-03-01T01:00:01.5Z', '2018-02-01T00:00:00Z', 'day']", int64_t(28ll)},
             {"['date_diff_str()', '2016-03-01T01:00:01.5Z', '2016-02-01T00:00:00Z', 'day']", int64_t(29ll)},
-            {"['date_diff_str()', '2018-02-01T01:00:00.5Z', 1514764800000, 'day']", int64_t(31ll)},
+            {"['date_diff_str()', '2018-02-01T01:00:00.5Z', '2018-01-01T00:00:00Z', 'day']", int64_t(31ll)},
             {"['date_diff_str()', '2018-01-01T01:00:01.5Z', '2017-01-01T00:00:00Z', 'day']", int64_t(365ll)},
             {"['date_diff_str()', '2017-01-01T01:00:01.5Z', '2016-01-01T00:00:00Z', 'day']", int64_t(366ll)},
             {"['date_diff_str()', '2017-01-08T01:00:01.5Z', '2017-01-01T00:00:00Z', 'week']", int64_t(1ll)},
@@ -1028,10 +1040,10 @@ TEST_CASE_METHOD(QueryTest, "Query date diff string", "[Query]") {
             {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T01:01:00.5Z', 'minute']", int64_t(-61ll)},
             {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-01-31T01:00:01.5Z', 'hour']", int64_t(-1ll)},
             {"['date_diff_str()', '2018-01-31T00:00:00Z', '2018-02-01T01:00:00.5Z', 'hour']", int64_t(-25ll)},
-            {"['date_diff_str()', 1514764800000, '2018-01-02T01:00:01.5Z', 'day']", int64_t(-1ll)},
+            {"['date_diff_str()', '2018-01-01T00:00:00Z', '2018-01-02T01:00:01.5Z', 'day']", int64_t(-1ll)},
             {"['date_diff_str()', '2018-02-01T00:00:00Z', '2018-03-01T01:00:01.5Z', 'day']", int64_t(-28ll)},
             {"['date_diff_str()', '2016-02-01T00:00:00Z', '2016-03-01T01:00:01.5Z', 'day']", int64_t(-29ll)},
-            {"['date_diff_str()', 1514764800000, '2018-02-01T01:00:00.5Z', 'day']", int64_t(-31ll)},
+            {"['date_diff_str()', '2018-01-01T00:00:00Z', '2018-02-01T01:00:00.5Z', 'day']", int64_t(-31ll)},
             {"['date_diff_str()', '2017-01-01T00:00:00Z', '2018-01-01T01:00:01.5Z', 'day']", int64_t(-365ll)},
             {"['date_diff_str()', '2016-01-01T00:00:00Z', '2017-01-01T01:00:01.5Z', 'day']", int64_t(-366ll)},
             {"['date_diff_str()', '2017-01-01T00:00:00Z', '2017-01-08T01:00:01.5Z', 'week']", int64_t(-1ll)},
