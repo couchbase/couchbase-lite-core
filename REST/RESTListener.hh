@@ -92,8 +92,8 @@ namespace litecore { namespace REST {
         using HandlerMethod = void(RESTListener::*)(RequestResponse&);
         using DBHandlerMethod = void(RESTListener::*)(RequestResponse&, C4Database*);
 
-        void addHandler(Server::Method, const char *uri, HandlerMethod);
-        void addDBHandler(Server::Method, const char *uri, DBHandlerMethod);
+        void addHandler(Method, const char *uri, HandlerMethod);
+        void addDBHandler(Method, const char *uri, DBHandlerMethod);
 
         static std::string serverNameAndVersion();
         static std::string kServerName;

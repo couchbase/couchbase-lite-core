@@ -335,7 +335,7 @@ namespace litecore { namespace REST {
         string docID = rq.path(1);                       // will be empty for POST
 
         // Parse the body:
-        bool deleting = (rq.method() == "DELETE"_sl);
+        bool deleting = (rq.method() == Method::DELETE);
         Dict body = rq.bodyAsJSON().asDict();
         if (!body) {
             if (!deleting || rq.body())

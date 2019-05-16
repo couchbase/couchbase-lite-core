@@ -31,7 +31,6 @@
 		2700BB75217905FE00797537 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		2700BB76217906D200797537 /* c4.c in Sources */ = {isa = PBXBuildFile; fileRef = 2757DE5A1B9FC5C7002EE261 /* c4.c */; };
 		2700BB772179070900797537 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
-		2700BDF61ED4FA32006B8AFF /* libSupport.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279691631ED4B29E0086565D /* libSupport.a */; };
 		2701C22C1C4DA4D2006D7A99 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
 		2705154D1D8CBE6C00D62D05 /* c4Query.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2705154C1D8CBE6C00D62D05 /* c4Query.cc */; };
 		270515591D907F6200D62D05 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
@@ -52,15 +51,17 @@
 		27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098ABF2175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc */; };
 		27098AC421752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */; };
 		270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
-		270BEE2420647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */; };
 		270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */; };
-		270C6B6A1EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */; };
 		270C6B8C1EBA2CD600E73415 /* LogEncoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B891EBA2CD600E73415 /* LogEncoder.cc */; };
 		270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B901EBA2D5600E73415 /* LogEncoderTest.cc */; };
-		270C7D4D2022914C00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		27139B3118F8E9750021A9A3 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 275072AB18E4A68E00A80C5A /* XCTest.framework */; };
 		271BA454227B691500D49D13 /* c4DatabaseEncryptionTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */; };
+		271BA50E228B99B800D49D13 /* LWSHTTPClient.hh in Headers */ = {isa = PBXBuildFile; fileRef = 271BA50C228B99B800D49D13 /* LWSHTTPClient.hh */; };
+		271BA50F228B99B800D49D13 /* LWSHTTPClient.cc in Sources */ = {isa = PBXBuildFile; fileRef = 271BA50D228B99B800D49D13 /* LWSHTTPClient.cc */; };
+		271BA515228CE20B00D49D13 /* civetUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* civetUtils.cc */; };
+		271BA51B228DD3EB00D49D13 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
+		271BA51C228DD43A00D49D13 /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
 		272850AB1E9AF53B009CA22F /* Upgrader.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272850A91E9AF53B009CA22F /* Upgrader.cc */; };
@@ -83,12 +84,10 @@
 		2734F61A206ABEB000C982FF /* ReplicatorTypes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2734F619206ABEB000C982FF /* ReplicatorTypes.cc */; };
 		27393A871C8A353A00829C9B /* Error.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27393A861C8A353A00829C9B /* Error.cc */; };
 		273E555F1F79B364000182F1 /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
-		273E55631F79B3A7000182F1 /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
 		273E55641F79B4BA000182F1 /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
 		273E55651F79B516000182F1 /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
 		273E55661F79B535000182F1 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		273E55671F79B564000182F1 /* libSupport.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279691631ED4B29E0086565D /* libSupport.a */; };
-		273E55681F79B587000182F1 /* libLiteCoreREST.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D410E1EA5558100D8DD9D /* libLiteCoreREST.dylib */; };
 		273E9EC41C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
 		273E9EC51C506C60003115A6 /* c4DocEnumerator.h in Headers */ = {isa = PBXBuildFile; fileRef = 273E9EC11C506C60003115A6 /* c4DocEnumerator.h */; };
 		273E9ED81C506DB4003115A6 /* SecureDigest.hh in Headers */ = {isa = PBXBuildFile; fileRef = 273E9ED31C506DB4003115A6 /* SecureDigest.hh */; };
@@ -101,7 +100,6 @@
 		27456AFD1DC9507D00A38B20 /* SequenceTrackerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27456AFC1DC9507D00A38B20 /* SequenceTrackerTest.cc */; };
 		274711CA2037BE5B008E9A5A /* SecureSymmetricCrypto.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274711C92037BE5A008E9A5A /* SecureSymmetricCrypto.cc */; };
 		2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
-		2749B9881EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2749B9861EB298360068DBF9 /* RESTListener+Handlers.cc */; };
 		274D03E21BA732FC00FF7C35 /* JavaVM.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 274D03E11BA732FC00FF7C35 /* JavaVM.framework */; };
 		274D03E51BA7332000FF7C35 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		274D03E61BA7333000FF7C35 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
@@ -119,18 +117,14 @@
 		274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274EDDF91DA322D4003AD158 /* QueryParserTest.cc */; };
 		27513A5D1A687EF80055DC40 /* sqlite3_unicodesn_tokenizer.c in Sources */ = {isa = PBXBuildFile; fileRef = 27513A591A687E770055DC40 /* sqlite3_unicodesn_tokenizer.c */; };
 		275313392065844800463E74 /* RESTSyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */; };
-		2753133E2065844900463E74 /* RESTSyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */; };
 		2753AF721EBD190600C12E98 /* LogDecoder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270C6B871EBA2CD600E73415 /* LogDecoder.cc */; };
 		2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		2753AFC91EC0F4E900C12E98 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		2753B00D1EC39E5D00C12E98 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
 		2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		275A74D11ED3A4E1008CB57B /* Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74CF1ED3A4E1008CB57B /* Listener.cc */; };
-		275A74D21ED3A4E1008CB57B /* Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74CF1ED3A4E1008CB57B /* Listener.cc */; };
 		275A74D31ED3A4E1008CB57B /* Listener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275A74D01ED3A4E1008CB57B /* Listener.hh */; };
-		275A74D41ED3A4E1008CB57B /* Listener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275A74D01ED3A4E1008CB57B /* Listener.hh */; };
 		275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
-		275A74D71ED3AA11008CB57B /* c4Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74D51ED3AA11008CB57B /* c4Listener.cc */; };
 		275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275BF37F1F61CD800051374A /* c4DatabaseInternalTest.cc */; };
 		275CED451D3ECE9B001DE46C /* TreeDocument.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275CED441D3ECE9B001DE46C /* TreeDocument.cc */; };
 		275E4CCC22417D13006C5B71 /* Inserter.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275E4CCB22417D13006C5B71 /* Inserter.cc */; };
@@ -153,11 +147,7 @@
 		276D152C1DFB878C00543B1B /* c4ObserverTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2769438E1DD0ED3F00DB2555 /* c4ObserverTest.cc */; };
 		276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D153E1DFF53F500543B1B /* SQLiteEnumerator.cc */; };
 		276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D15401DFF541000543B1B /* SQLiteQuery.cc */; };
-		276E02111EA9717200FEFE8A /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
-		276E02121EA9802A00FEFE8A /* libLiteCoreREST.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D410E1EA5558100D8DD9D /* libLiteCoreREST.dylib */; };
-		276E02141EA980D900FEFE8A /* civetUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* civetUtils.cc */; };
 		276E021B1EA983EE00FEFE8A /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
-		276E021C1EA9875E00FEFE8A /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE68D2267A02500B681AC /* N1QLParserTest.cc */; };
 		2771A0A62286256C00B18E0A /* libwebsockets.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27719FE62284E8AD00B18E0A /* libwebsockets.a */; };
 		2771A0A72286257800B18E0A /* LWSWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27719FE92284E94D00B18E0A /* LWSWebSocket.cc */; };
@@ -165,12 +155,11 @@
 		2771A0B622862AC900B18E0A /* libmbedcrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A0B322862AC800B18E0A /* libmbedcrypto.a */; };
 		2771A0B722862AC900B18E0A /* libmbedtls.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A0B422862AC900B18E0A /* libmbedtls.a */; };
 		2771A0B822862AC900B18E0A /* libmbedx509.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A0B522862AC900B18E0A /* libmbedx509.a */; };
-		2771A0B922862B2A00B18E0A /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
 		2771A0CF228B4CD700B18E0A /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2771A0DB228B5A4100B18E0A /* LWSContext.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2771A0D9228B5A4100B18E0A /* LWSContext.hh */; };
 		2771A0DC228B5A4100B18E0A /* LWSContext.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771A0DA228B5A4100B18E0A /* LWSContext.cc */; };
-		2771A0DF228B5F7900B18E0A /* LWSUtil.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2771A0DD228B5F7900B18E0A /* LWSUtil.hh */; };
-		2771A0E0228B5F7900B18E0A /* LWSUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771A0DE228B5F7900B18E0A /* LWSUtil.cc */; };
+		2771A0DF228B5F7900B18E0A /* LWSProtocol.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2771A0DD228B5F7900B18E0A /* LWSProtocol.hh */; };
+		2771A0E0228B5F7900B18E0A /* LWSProtocol.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771A0DE228B5F7900B18E0A /* LWSProtocol.cc */; };
 		2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */; };
@@ -193,19 +182,11 @@
 		279691771ED4B3720086565D /* libSupport.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279691631ED4B29E0086565D /* libSupport.a */; };
 		2796917C1ED4B5780086565D /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		279691981ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */; };
-		279691991ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
 		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */; };
 		279D40F91EA533D900D8DD9D /* civetUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D40F61EA533D900D8DD9D /* civetUtils.hh */; };
-		279D41021EA54AD500D8DD9D /* civetweb.c in Sources */ = {isa = PBXBuildFile; fileRef = 272851171EA44992009CA22F /* civetweb.c */; };
-		279D411B1EA557A800D8DD9D /* RESTListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851201EA4537A009CA22F /* RESTListener.cc */; };
-		279D411C1EA557A800D8DD9D /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
-		279D411D1EA557A800D8DD9D /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
-		279D41231EA557E100D8DD9D /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */; };
-		279D41241EA557E500D8DD9D /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
-		279D41251EA5580A00D8DD9D /* libfleeceStatic.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FA09BC1D70ADE8005888AA /* libfleeceStatic.a */; };
 		27A924981D9B316D00086206 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A924971D9B316D00086206 /* main.m */; };
 		27A9249B1D9B316D00086206 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249A1D9B316D00086206 /* AppDelegate.m */; };
 		27A9249E1D9B316D00086206 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249D1D9B316D00086206 /* ViewController.m */; };
@@ -227,7 +208,6 @@
 		27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */; };
 		27B341271D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B341251D9C7A90009FFA0B /* SQLiteFleeceFunctions.cc */; };
 		27B341291D9C7A90009FFA0B /* SQLite_Internal.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27B341261D9C7A90009FFA0B /* SQLite_Internal.hh */; };
-		27B649202065AD2B00FC12F7 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */; };
 		27B64938206971FC00FC12F7 /* LiteCore.h in Headers */ = {isa = PBXBuildFile; fileRef = 27B64936206971FC00FC12F7 /* LiteCore.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		27B6493B206971FC00FC12F7 /* LiteCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27B64934206971FB00FC12F7 /* LiteCore.framework */; };
 		27B6493C206971FC00FC12F7 /* LiteCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 27B64934206971FB00FC12F7 /* LiteCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -394,10 +374,8 @@
 		27FA99E01917EF9600912F96 /* libTokenizer.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF807419142C2500A327B9 /* libTokenizer.a */; };
 		27FB0C3D205B18A500987D9C /* Instrumentation.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FB0C3C205B18A500987D9C /* Instrumentation.cc */; };
 		27FC81F61EAAB7C60028E38E /* RESTListener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851201EA4537A009CA22F /* RESTListener.cc */; };
-		27FC81F71EAAB7C60028E38E /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
 		27FC81F81EAAB7C60028E38E /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		27FC81F91EAAB7C60028E38E /* Request.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272851271EA46421009CA22F /* Request.cc */; };
-		27FC81FF1EAAB8390028E38E /* libcivetweb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */; };
 		27FC8DB622135BCE0083B033 /* Pusher+DB.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DB522135BCE0083B033 /* Pusher+DB.cc */; };
 		27FC8DBD22135BDA0083B033 /* RevFinder.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27FC8DBC22135BDA0083B033 /* RevFinder.cc */; };
 		27FC8E862214E4CA0083B033 /* SecureRandomize.cc in Sources */ = {isa = PBXBuildFile; fileRef = 274D5BA31DF8D90100BDAF9D /* SecureRandomize.cc */; };
@@ -408,7 +386,6 @@
 		7280F7F11E3AC9A600E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 7280F7F01E3AC9A600E3F097 /* libLiteCore.dylib */; };
 		728EC54D1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
-		728EC54E1EC14611002C9A73 /* c4Listener.h in Headers */ = {isa = PBXBuildFile; fileRef = 728EC54C1EC14611002C9A73 /* c4Listener.h */; };
 		729272F52238DC0C00E7208E /* c4ExceptionUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 729272F12238DB8500E7208E /* c4ExceptionUtils.cc */; };
 		72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */ = {isa = PBXBuildFile; fileRef = 72A3AF871F424EC0001E16D4 /* PrebuiltCopier.cc */; };
 		72A3AF8D1F425134001E16D4 /* PrebuiltCopier.hh in Headers */ = {isa = PBXBuildFile; fileRef = 72A3AF881F424EC0001E16D4 /* PrebuiltCopier.hh */; };
@@ -472,13 +449,6 @@
 			remoteGlobalIDString = 27EF80F91917EEC600A327B9;
 			remoteInfo = "LiteCore static";
 		};
-		2700BDF71ED4FA49006B8AFF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 279691621ED4B29E0086565D;
-			remoteInfo = Support;
-		};
 		2700BDF91ED4FA78006B8AFF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -521,20 +491,6 @@
 			remoteGlobalIDString = 279691621ED4B29E0086565D;
 			remoteInfo = Support;
 		};
-		273E556B1F79B5A1000182F1 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 279D410D1EA5558100D8DD9D;
-			remoteInfo = "LiteCoreREST dylib";
-		};
-		273E556D1F79B5BE000182F1 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 279D40FD1EA54A9D00D8DD9D;
-			remoteInfo = civetweb;
-		};
 		27410EA9198BFD97007EE67C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -555,13 +511,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
-		};
-		276E02151EA9832700FEFE8A /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 279D410D1EA5558100D8DD9D;
-			remoteInfo = LiteCoreREST;
 		};
 		2771A0B0228626DE00B18E0A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -611,20 +560,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
-		};
-		279D411F1EA557D600D8DD9D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 279D40FD1EA54A9D00D8DD9D;
-			remoteInfo = civetweb;
-		};
-		279D41211EA557DB00D8DD9D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
-			remoteInfo = "LiteCore dylib";
 		};
 		27B64939206971FC00FC12F7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -682,13 +617,6 @@
 			remoteGlobalIDString = 272E5A4A1BF7FE5600848580;
 			remoteInfo = Test;
 		};
-		27DF4C281ECCD76200EE6B8D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
-			remoteInfo = Fleece;
-		};
 		27DF7D8F1F4289E60022F3DF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
@@ -744,13 +672,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = 270FA25B1BF53CAD005DCB13;
 			remoteInfo = Fleece;
-		};
-		27FC82001EAAB8420028E38E /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 2750723318E3E52800A80C5A /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 279D40FD1EA54A9D00D8DD9D;
-			remoteInfo = civetweb;
 		};
 		93CD01181E933C0600AFB3FA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -863,6 +784,8 @@
 		27139B3018F8E9750021A9A3 /* LiteCore Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LiteCore Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		271507F1212259DE005FE6E8 /* c4Compat.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4Compat.h; sourceTree = "<group>"; };
 		271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseEncryptionTest.cc; sourceTree = "<group>"; };
+		271BA50C228B99B800D49D13 /* LWSHTTPClient.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSHTTPClient.hh; sourceTree = "<group>"; };
+		271BA50D228B99B800D49D13 /* LWSHTTPClient.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSHTTPClient.cc; sourceTree = "<group>"; };
 		2722504A1D7884110006D5A5 /* c4BlobStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStore.h; sourceTree = "<group>"; };
 		2722504D1D7892610006D5A5 /* c4BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStore.cc; sourceTree = "<group>"; };
 		272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStoreTest.cc; sourceTree = "<group>"; };
@@ -1152,8 +1075,8 @@
 		2771A0B522862AC900B18E0A /* libmbedx509.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedx509.a; path = build/library/libmbedx509.a; sourceTree = "<group>"; };
 		2771A0D9228B5A4100B18E0A /* LWSContext.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSContext.hh; sourceTree = "<group>"; };
 		2771A0DA228B5A4100B18E0A /* LWSContext.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSContext.cc; sourceTree = "<group>"; };
-		2771A0DD228B5F7900B18E0A /* LWSUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSUtil.hh; sourceTree = "<group>"; };
-		2771A0DE228B5F7900B18E0A /* LWSUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSUtil.cc; sourceTree = "<group>"; };
+		2771A0DD228B5F7900B18E0A /* LWSProtocol.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSProtocol.hh; sourceTree = "<group>"; };
+		2771A0DE228B5F7900B18E0A /* LWSProtocol.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSProtocol.cc; sourceTree = "<group>"; };
 		2771A0EC228B832400B18E0A /* build_mbedtls.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build_mbedtls.sh; sourceTree = SOURCE_ROOT; };
 		2771A0ED228B832400B18E0A /* build_libwebsockets.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build_libwebsockets.sh; sourceTree = SOURCE_ROOT; };
 		2771B00E1FB23DD800C6B794 /* stopwords_fr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_fr.h; sourceTree = "<group>"; };
@@ -1190,10 +1113,8 @@
 		279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFTSRankFunction.cc; sourceTree = "<group>"; };
 		279D40F51EA533D900D8DD9D /* civetUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = civetUtils.cc; sourceTree = "<group>"; };
 		279D40F61EA533D900D8DD9D /* civetUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = civetUtils.hh; sourceTree = "<group>"; };
-		279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libcivetweb.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		279D41041EA54D2600D8DD9D /* civetweb.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = civetweb.pch; sourceTree = "<group>"; };
 		279D41051EA54DB700D8DD9D /* civetweb.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = civetweb.xcconfig; sourceTree = "<group>"; };
-		279D410E1EA5558100D8DD9D /* libLiteCoreREST.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCoreREST.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		279D41191EA555E900D8DD9D /* dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = dylib.xcconfig; sourceTree = "<group>"; };
 		279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib.xcconfig"; sourceTree = "<group>"; };
 		279D41281EA55A8D00D8DD9D /* c4REST.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4REST.exp; sourceTree = "<group>"; };
@@ -1471,11 +1392,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2771A0B922862B2A00B18E0A /* libcivetweb.a in Frameworks */,
 				27DE2EE72125FAD600123597 /* libfleeceBase.a in Frameworks */,
 				27DE2E862125F32700123597 /* libactors.a in Frameworks */,
 				274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */,
-				276E02121EA9802A00FEFE8A /* libLiteCoreREST.dylib in Frameworks */,
+				271BA51B228DD3EB00D49D13 /* libLiteCoreREST-static.a in Frameworks */,
 				2771A0B2228626FD00B18E0A /* libLiteCoreWebSocket.a in Frameworks */,
 				279691771ED4B3720086565D /* libSupport.a in Frameworks */,
 				270C7D522022916D00FF86D3 /* CoreFoundation.framework in Frameworks */,
@@ -1503,25 +1423,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		279D40FB1EA54A9D00D8DD9D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		279D410B1EA5558100D8DD9D /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				2700BDF61ED4FA32006B8AFF /* libSupport.a in Frameworks */,
-				279D41251EA5580A00D8DD9D /* libfleeceStatic.a in Frameworks */,
-				279D41241EA557E500D8DD9D /* libcivetweb.a in Frameworks */,
-				279D41231EA557E100D8DD9D /* libLiteCore.dylib in Frameworks */,
-				270C7D4D2022914C00FF86D3 /* CoreFoundation.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		27A924911D9B316D00086206 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -1535,9 +1436,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				273E55681F79B587000182F1 /* libLiteCoreREST.dylib in Frameworks */,
 				273E55671F79B564000182F1 /* libSupport.a in Frameworks */,
-				273E55631F79B3A7000182F1 /* libcivetweb.a in Frameworks */,
 				272850F21E9D4FB1009CA22F /* libfleeceStatic.a in Frameworks */,
 				7280F7F21E3AC9BB00E3F097 /* libLiteCore.dylib in Frameworks */,
 			);
@@ -1585,7 +1484,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				27FC81FF1EAAB8390028E38E /* libcivetweb.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1868,8 +1766,6 @@
 				2708FE521CF4CC880022F721 /* LiteCoreCppTests */,
 				27A924941D9B316D00086206 /* LiteCore-iOS.app */,
 				27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */,
-				279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */,
-				279D410E1EA5558100D8DD9D /* libLiteCoreREST.dylib */,
 				27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */,
 				279691631ED4B29E0086565D /* libSupport.a */,
 				93FA3F481EE21A4D00D15CF5 /* LiteCoreServ-iOS.app */,
@@ -2312,10 +2208,12 @@
 				2771A0EC228B832400B18E0A /* build_mbedtls.sh */,
 				2771A0DA228B5A4100B18E0A /* LWSContext.cc */,
 				2771A0D9228B5A4100B18E0A /* LWSContext.hh */,
+				2771A0DE228B5F7900B18E0A /* LWSProtocol.cc */,
+				2771A0DD228B5F7900B18E0A /* LWSProtocol.hh */,
 				27719FE92284E94D00B18E0A /* LWSWebSocket.cc */,
 				27719FE82284E94D00B18E0A /* LWSWebSocket.hh */,
-				2771A0DE228B5F7900B18E0A /* LWSUtil.cc */,
-				2771A0DD228B5F7900B18E0A /* LWSUtil.hh */,
+				271BA50C228B99B800D49D13 /* LWSHTTPClient.hh */,
+				271BA50D228B99B800D49D13 /* LWSHTTPClient.cc */,
 			);
 			name = "LibWebSocket-based";
 			sourceTree = "<group>";
@@ -2728,8 +2626,9 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2771A0DF228B5F7900B18E0A /* LWSUtil.hh in Headers */,
+				2771A0DF228B5F7900B18E0A /* LWSProtocol.hh in Headers */,
 				2771A0DB228B5A4100B18E0A /* LWSContext.hh in Headers */,
+				271BA50E228B99B800D49D13 /* LWSHTTPClient.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2737,22 +2636,6 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		279D40FC1EA54A9D00D8DD9D /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		279D410C1EA5558100D8DD9D /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				728EC54E1EC14611002C9A73 /* c4Listener.h in Headers */,
-				275A74D41ED3A4E1008CB57B /* Listener.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2945,7 +2828,6 @@
 			);
 			dependencies = (
 				274D04221BA892C500FF7C35 /* PBXTargetDependency */,
-				276E02161EA9832700FEFE8A /* PBXTargetDependency */,
 				2771A0B1228626DE00B18E0A /* PBXTargetDependency */,
 				2700BDFA1ED4FA78006B8AFF /* PBXTargetDependency */,
 				27F370811DC025930096F717 /* PBXTargetDependency */,
@@ -2990,44 +2872,6 @@
 			productReference = 279691631ED4B29E0086565D /* libSupport.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		279D40FD1EA54A9D00D8DD9D /* civetweb */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 279D40FF1EA54A9D00D8DD9D /* Build configuration list for PBXNativeTarget "civetweb" */;
-			buildPhases = (
-				279D40FA1EA54A9D00D8DD9D /* Sources */,
-				279D40FB1EA54A9D00D8DD9D /* Frameworks */,
-				279D40FC1EA54A9D00D8DD9D /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = civetweb;
-			productName = civetweb;
-			productReference = 279D40FE1EA54A9D00D8DD9D /* libcivetweb.a */;
-			productType = "com.apple.product-type.library.static";
-		};
-		279D410D1EA5558100D8DD9D /* LiteCoreREST dylib */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 279D41161EA5558100D8DD9D /* Build configuration list for PBXNativeTarget "LiteCoreREST dylib" */;
-			buildPhases = (
-				279D410A1EA5558100D8DD9D /* Sources */,
-				279D410B1EA5558100D8DD9D /* Frameworks */,
-				279D410C1EA5558100D8DD9D /* Headers */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				2700BDF81ED4FA49006B8AFF /* PBXTargetDependency */,
-				27DF4C291ECCD76200EE6B8D /* PBXTargetDependency */,
-				279D41221EA557DB00D8DD9D /* PBXTargetDependency */,
-				279D41201EA557D600D8DD9D /* PBXTargetDependency */,
-			);
-			name = "LiteCoreREST dylib";
-			productName = LiteCoreREST;
-			productReference = 279D410E1EA5558100D8DD9D /* libLiteCoreREST.dylib */;
-			productType = "com.apple.product-type.library.dynamic";
-		};
 		27A924931D9B316D00086206 /* LiteCore-iOS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 27A924B31D9B316D00086206 /* Build configuration list for PBXNativeTarget "LiteCore-iOS" */;
@@ -3060,8 +2904,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				273E556E1F79B5BE000182F1 /* PBXTargetDependency */,
-				273E556C1F79B5A1000182F1 /* PBXTargetDependency */,
 				273E556A1F79B59C000182F1 /* PBXTargetDependency */,
 				27DF7D921F428A510022F3DF /* PBXTargetDependency */,
 				272850E51E9CABD2009CA22F /* PBXTargetDependency */,
@@ -3157,7 +2999,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				27FC82011EAAB8420028E38E /* PBXTargetDependency */,
 			);
 			name = "LiteCoreREST static";
 			productName = "LiteCoreREST static";
@@ -3233,14 +3074,6 @@
 						CreatedOnToolsVersion = 8.3.2;
 						ProvisioningStyle = Automatic;
 					};
-					279D40FD1EA54A9D00D8DD9D = {
-						CreatedOnToolsVersion = 8.3;
-						ProvisioningStyle = Automatic;
-					};
-					279D410D1EA5558100D8DD9D = {
-						CreatedOnToolsVersion = 8.3;
-						ProvisioningStyle = Automatic;
-					};
 					27A924931D9B316D00086206 = {
 						CreatedOnToolsVersion = 8.0;
 						DevelopmentTeam = N2Q372V7W2;
@@ -3298,7 +3131,6 @@
 				720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */,
 				27B64933206971FB00FC12F7 /* LiteCore framework */,
 				27FC81E71EAAB0D90028E38E /* LiteCoreREST static */,
-				279D410D1EA5558100D8DD9D /* LiteCoreREST dylib */,
 				2771A097228624C000B18E0A /* LiteCoreWebSocket */,
 				279691621ED4B29E0086565D /* Support */,
 				2708FE3E1CF4CC880022F721 /* LiteCoreCppTests */,
@@ -3306,7 +3138,6 @@
 				274D03D21BA732B000FF7C35 /* LiteCoreJNI */,
 				27DF7D621F4236500022F3DF /* SQLite */,
 				27EF807319142C2500A327B9 /* Tokenizer */,
-				279D40FD1EA54A9D00D8DD9D /* civetweb */,
 				27139B2F18F8E9750021A9A3 /* LiteCore XCTests */,
 				27A924931D9B316D00086206 /* LiteCore-iOS */,
 				93FA3F471EE21A4D00D15CF5 /* LiteCoreServ-iOS */,
@@ -3556,6 +3387,7 @@
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
 				27C77302216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
+				271BA515228CE20B00D49D13 /* civetUtils.cc in Sources */,
 				275BF3811F61CD9D0051374A /* c4DatabaseInternalTest.cc in Sources */,
 				27E0CA9E1DBEAA130089A9C0 /* c4DocumentTest.cc in Sources */,
 				272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */,
@@ -3568,11 +3400,9 @@
 				2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */,
 				270515611D91C2AE00D62D05 /* c4PerfTest.cc in Sources */,
 				277FEE5821ED10FA00B60E3C /* ReplicatorSGTest.cc in Sources */,
-				276E02111EA9717200FEFE8A /* RESTListenerTest.cc in Sources */,
 				276E021B1EA983EE00FEFE8A /* Response.cc in Sources */,
 				2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
-				27B649202065AD2B00FC12F7 /* SyncListenerTest.cc in Sources */,
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3582,8 +3412,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				2771A0DC228B5A4100B18E0A /* LWSContext.cc in Sources */,
+				271BA51C228DD43A00D49D13 /* Server.cc in Sources */,
+				271BA50F228B99B800D49D13 /* LWSHTTPClient.cc in Sources */,
 				2771A0A72286257800B18E0A /* LWSWebSocket.cc in Sources */,
-				2771A0E0228B5F7900B18E0A /* LWSUtil.cc in Sources */,
+				2771A0E0228B5F7900B18E0A /* LWSProtocol.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3599,33 +3431,6 @@
 				27FC8E862214E4CA0083B033 /* SecureRandomize.cc in Sources */,
 				275FA35222398875001C392D /* c4ExceptionUtils.cc in Sources */,
 				279691711ED4B2D50086565D /* StringUtil.cc in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		279D40FA1EA54A9D00D8DD9D /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				276E02141EA980D900FEFE8A /* civetUtils.cc in Sources */,
-				279D41021EA54AD500D8DD9D /* civetweb.c in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		279D410A1EA5558100D8DD9D /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				275A74D71ED3AA11008CB57B /* c4Listener.cc in Sources */,
-				275A74D21ED3A4E1008CB57B /* Listener.cc in Sources */,
-				2753133E2065844900463E74 /* RESTSyncListener_stub.cc in Sources */,
-				279D411B1EA557A800D8DD9D /* RESTListener.cc in Sources */,
-				279691991ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */,
-				270BEE2420647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */,
-				270C6B6A1EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */,
-				2749B9881EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */,
-				279D411C1EA557A800D8DD9D /* Server.cc in Sources */,
-				279D411D1EA557A800D8DD9D /* Request.cc in Sources */,
-				276E021C1EA9875E00FEFE8A /* Response.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3829,7 +3634,6 @@
 				270BEE2320647E8A005E8BE8 /* CivetC4Socket_stub.cc in Sources */,
 				270C6B691EB7DDAD00E73415 /* RESTListener+Replicate.cc in Sources */,
 				2749B9871EB298360068DBF9 /* RESTListener+Handlers.cc in Sources */,
-				27FC81F71EAAB7C60028E38E /* Server.cc in Sources */,
 				27FC81F91EAAB7C60028E38E /* Request.cc in Sources */,
 				27FC81F81EAAB7C60028E38E /* Response.cc in Sources */,
 			);
@@ -3863,11 +3667,6 @@
 			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
 			targetProxy = 2700BB73217905F000797537 /* PBXContainerItemProxy */;
 		};
-		2700BDF81ED4FA49006B8AFF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 279691621ED4B29E0086565D /* Support */;
-			targetProxy = 2700BDF71ED4FA49006B8AFF /* PBXContainerItemProxy */;
-		};
 		2700BDFA1ED4FA78006B8AFF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 279691621ED4B29E0086565D /* Support */;
@@ -3893,16 +3692,6 @@
 			target = 279691621ED4B29E0086565D /* Support */;
 			targetProxy = 273E55691F79B59C000182F1 /* PBXContainerItemProxy */;
 		};
-		273E556C1F79B5A1000182F1 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 279D410D1EA5558100D8DD9D /* LiteCoreREST dylib */;
-			targetProxy = 273E556B1F79B5A1000182F1 /* PBXContainerItemProxy */;
-		};
-		273E556E1F79B5BE000182F1 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 279D40FD1EA54A9D00D8DD9D /* civetweb */;
-			targetProxy = 273E556D1F79B5BE000182F1 /* PBXContainerItemProxy */;
-		};
 		27410EAA198BFD97007EE67C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
@@ -3917,11 +3706,6 @@
 			isa = PBXTargetDependency;
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 274D04211BA892C500FF7C35 /* PBXContainerItemProxy */;
-		};
-		276E02161EA9832700FEFE8A /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 279D410D1EA5558100D8DD9D /* LiteCoreREST dylib */;
-			targetProxy = 276E02151EA9832700FEFE8A /* PBXContainerItemProxy */;
 		};
 		2771A0B1228626DE00B18E0A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -3953,16 +3737,6 @@
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 2797BCB51C10F76F00E5C991 /* PBXContainerItemProxy */;
 		};
-		279D41201EA557D600D8DD9D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 279D40FD1EA54A9D00D8DD9D /* civetweb */;
-			targetProxy = 279D411F1EA557D600D8DD9D /* PBXContainerItemProxy */;
-		};
-		279D41221EA557DB00D8DD9D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
-			targetProxy = 279D41211EA557DB00D8DD9D /* PBXContainerItemProxy */;
-		};
 		27B6493A206971FC00FC12F7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 27B64933206971FB00FC12F7 /* LiteCore framework */;
@@ -3982,11 +3756,6 @@
 			isa = PBXTargetDependency;
 			name = Test;
 			targetProxy = 27DE2EEE2126212800123597 /* PBXContainerItemProxy */;
-		};
-		27DF4C291ECCD76200EE6B8D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = Fleece;
-			targetProxy = 27DF4C281ECCD76200EE6B8D /* PBXContainerItemProxy */;
 		};
 		27DF7D901F4289E60022F3DF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -4012,11 +3781,6 @@
 			isa = PBXTargetDependency;
 			name = Fleece;
 			targetProxy = 27FA09C91D70BA3C005888AA /* PBXContainerItemProxy */;
-		};
-		27FC82011EAAB8420028E38E /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 279D40FD1EA54A9D00D8DD9D /* civetweb */;
-			targetProxy = 27FC82001EAAB8420028E38E /* PBXContainerItemProxy */;
 		};
 		93CD01191E933C0600AFB3FA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -4212,13 +3976,6 @@
 			};
 			name = "Debug-EE";
 		};
-		2791EA1F2032745700BD813C /* Debug-EE */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */;
-			buildSettings = {
-			};
-			name = "Debug-EE";
-		};
 		2791EA202032745700BD813C /* Debug-EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
@@ -4258,13 +4015,6 @@
 		2791EA282032745700BD813C /* Debug-EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
-			buildSettings = {
-			};
-			name = "Debug-EE";
-		};
-		2791EA292032745700BD813C /* Debug-EE */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 279D41051EA54DB700D8DD9D /* civetweb.xcconfig */;
 			buildSettings = {
 			};
 			name = "Debug-EE";
@@ -4438,13 +4188,6 @@
 			};
 			name = "Release-EE";
 		};
-		2791EA332032746700BD813C /* Release-EE */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */;
-			buildSettings = {
-			};
-			name = "Release-EE";
-		};
 		2791EA342032746700BD813C /* Release-EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
@@ -4484,13 +4227,6 @@
 		2791EA3C2032746700BD813C /* Release-EE */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 273E9FBF1C519A1B003115A6 /* Tokenizer.xcconfig */;
-			buildSettings = {
-			};
-			name = "Release-EE";
-		};
-		2791EA3D2032746700BD813C /* Release-EE */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 279D41051EA54DB700D8DD9D /* civetweb.xcconfig */;
 			buildSettings = {
 			};
 			name = "Release-EE";
@@ -4634,34 +4370,6 @@
 		2796916D1ED4B29E0086565D /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */;
-			buildSettings = {
-			};
-			name = Release;
-		};
-		279D41001EA54A9D00D8DD9D /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 279D41051EA54DB700D8DD9D /* civetweb.xcconfig */;
-			buildSettings = {
-			};
-			name = Debug;
-		};
-		279D41011EA54A9D00D8DD9D /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 279D41051EA54DB700D8DD9D /* civetweb.xcconfig */;
-			buildSettings = {
-			};
-			name = Release;
-		};
-		279D41171EA5558100D8DD9D /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */;
-			buildSettings = {
-			};
-			name = Debug;
-		};
-		279D41181EA5558100D8DD9D /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */;
 			buildSettings = {
 			};
 			name = Release;
@@ -5108,28 +4816,6 @@
 				2791EA202032745700BD813C /* Debug-EE */,
 				2796916D1ED4B29E0086565D /* Release */,
 				2791EA342032746700BD813C /* Release-EE */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		279D40FF1EA54A9D00D8DD9D /* Build configuration list for PBXNativeTarget "civetweb" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				279D41001EA54A9D00D8DD9D /* Debug */,
-				2791EA292032745700BD813C /* Debug-EE */,
-				279D41011EA54A9D00D8DD9D /* Release */,
-				2791EA3D2032746700BD813C /* Release-EE */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		279D41161EA5558100D8DD9D /* Build configuration list for PBXNativeTarget "LiteCoreREST dylib" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				279D41171EA5558100D8DD9D /* Debug */,
-				2791EA1F2032745700BD813C /* Debug-EE */,
-				279D41181EA5558100D8DD9D /* Release */,
-				2791EA332032746700BD813C /* Release-EE */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

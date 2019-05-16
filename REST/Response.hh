@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "RefCounted.hh"
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "c4Base.h"
@@ -25,7 +26,6 @@
 #include <memory>
 #include <sstream>
 
-struct mg_connection;
 
 namespace litecore { namespace REST {
 
@@ -63,10 +63,15 @@ namespace litecore { namespace REST {
         static std::string urlEncode(const std::string&);
 
     protected:
-        Body(mg_connection*);
+        Body() = default;
+        Body(fleece::Doc headers, fleece::alloc_slice body)
+        :_headers(headers), _body(body)
+        { }
 
-        mg_connection* const _conn;
-        bool _gotBody {false};
+        void setHeaders(fleece::Doc doc)            {_headers = doc;}
+        void setBody(fleece::alloc_slice body)      {_body = body;}
+
+        fleece::Doc _headers;
         fleece::alloc_slice _body;
         bool _gotBodyFleece {false};
         fleece::Doc _bodyFleece;
@@ -90,16 +95,24 @@ namespace litecore { namespace REST {
                  const std::map<std::string, std::string> &headers,
                  fleece::slice body =fleece::nullslice);
 
-        ~Response();
+        explicit operator bool() const      {return _error.code == 0;}
 
-        explicit operator bool() const      {return _conn != nullptr;}
+        C4Error error() const               {return _error;}
+        HTTPStatus status() const           {return _status;}
+        std::string statusMessage() const   {return _statusMessage;}
 
-        HTTPStatus status() const;
-        std::string statusMessage() const;
+    protected:
+        void setStatus(int status, const std::string &msg) {
+            _status = (HTTPStatus)status;
+            _statusMessage = msg;
+        }
 
     private:
-        std::string _errorMessage;
-        int _errorCode;
+        HTTPStatus _status {HTTPStatus::undefined};
+        std::string _statusMessage;
+        C4Error _error {};
+
+        friend class LWSHTTPClient;
     };
 
 } }

@@ -13,14 +13,18 @@
 // libwebsocket opaque structs:
 struct lws;
 struct lws_context;
-struct lws_protocols;
+struct lws_http_mount;
+struct lws_vhost;
 
 namespace litecore { namespace websocket {
+
+    class LWSProtocol;
+
 
     /** Singleton that manages the libwebsocket context and event thread. */
     class LWSContext {
     public:
-        static void initialize(const ::lws_protocols protocols[]);
+        static void initialize();
 
         // null until initialize() is called
         static LWSContext* instance;
@@ -29,13 +33,23 @@ namespace litecore { namespace websocket {
 
         ::lws_context* context() const         {return _context;}
 
-        ::lws* connect(const repl::Address &_address,
-                       const char *protocol,
-                       fleece::slice pinnedServerCert,
-                       void* opaqueUserData);
+        static constexpr const char* kBLIPProtocol = "BLIP_3+CBMobile_2";
+        static constexpr const char* kHTTPClientProtocol = "HTTPClient";
+        static constexpr const char* kHTTPServerProtocol = "HTTPServer";
+
+        ::lws* connectClient(LWSProtocol *protocolInstance,
+                             const char *protocolName,
+                             const repl::Address &address,
+                             fleece::slice pinnedServerCert,
+                             const char *method = nullptr);
+
+        lws_vhost* startServer(LWSProtocol *protocolInstance,
+                               uint16_t port,
+                               const char *hostname,
+                               const lws_http_mount *mounts);
 
     private:
-        LWSContext(const struct lws_protocols protocols[]);
+        LWSContext();
         static void logCallback(int level, const char *message);
         static fleece::alloc_slice getSystemRootCertsPEM();
 

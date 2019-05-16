@@ -22,38 +22,48 @@
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
 #include "c4ListenerInternal.hh"
-#include "civetweb.h"
+#include "libwebsockets.h"
+#include "LWSContext.hh"
 
 using namespace std;
 
 namespace litecore { namespace REST {
+    using namespace litecore::websocket;
 
-    Server::Server(const char **options, void *owner)
+
+    Server::Server(uint16_t port, const char *hostname, void *owner)
     :_owner(owner)
     {
-		static once_flag f;
-		call_once(f, [=] {
-			// Initialize the library (otherwise Windows crashes)
-			mg_init_library(0);
-		});
+        lws_http_mount mount = {};
+        mount.mountpoint = "/";
+        mount.mountpoint_len = 1;
+        mount.protocol = LWSContext::kHTTPServerProtocol;
+        mount.origin_protocol = LWSMPRO_CALLBACK;
 
-        mg_callbacks cb { };
-        cb.log_message = [](const struct mg_connection *, const char *message) {
-            c4log(RESTLog, kC4LogInfo, "%s", message);
-            return -1; // disable default logging
-        };
-        cb.log_access = [](const struct mg_connection *, const char *message) {
-            c4log(RESTLog, kC4LogInfo, "%s", message);
-            return -1; // disable default logging
-        };
-        _context = mg_start(&cb, this, options);
-        if (!_context)
+        LWSContext::initialize();
+        _vhost = LWSContext::instance->startServer(this, port, hostname, &mount);
+        if (!_vhost)
             error::_throw(error::UnexpectedError, "Couldn't start civetweb server");
     }
 
     Server::~Server() {
-        if (_context)
-            mg_stop(_context);
+        if (_vhost)
+            lws_vhost_destroy(_vhost);      //??? Is this thread-safe?
+    }
+
+
+    int Server::dispatch(lws *client, int reason, void *user, void *in, size_t len) {
+        switch ((lws_callback_reasons)reason) {
+            case LWS_CALLBACK_HTTP:
+                return onRequest(slice(in, len)) ? 0 : -1;
+            default:
+                return LWSProtocol::dispatch(client, reason, user, in, len);
+        }
+    }
+
+
+    void Server::onConnectionError(C4Error error) {
+        // TODO ???
     }
 
 
@@ -74,26 +84,23 @@ namespace litecore { namespace REST {
             handlers.methods[method] = h;
             bool inserted;
             tie(i, inserted) = _handlers.insert({uriStr, handlers});
-            mg_set_request_handler(_context, uri, &handleRequest, &i->second);
         }
         i->second.methods[method] = h;
     }
 
 
-    int Server::handleRequest(struct mg_connection *conn, void *cbdata) {
+    bool Server::onRequest(slice uri) {
         try {
-            const char *m = mg_get_request_info(conn)->request_method;
-            Method method;
-            if (strcmp(m, "GET") == 0)
-                method = GET;
-            else if (strcmp(m, "PUT") == 0)
-                method = PUT;
-            else if (strcmp(m, "DELETE") == 0)
-            method = DELETE;
-            else if (strcmp(m, "POST") == 0)
-                method = POST;
-            else
-                return 0;
+#if 1
+            uint8_t buf[2048], *start = &buf[0], *p = start, *end = &buf[sizeof(buf) - 1];
+            if (0 != lws_add_http_common_headers(_client, 20, "text/plain", LWS_ILLEGAL_HTTP_CONTENT_LEN, &p, end))
+                return false;
+            if (lws_finalize_write_http_header(_client, start, &p, end))
+                return 1;
+            lws_callback_on_writable(_client);
+            return true;
+#else
+            Method method = GET;    // FIX
 
             auto handlers = (URIHandlers*)cbdata;
             Handler handler;
@@ -106,7 +113,7 @@ namespace litecore { namespace REST {
                 extraHeaders = handlers->server->_extraHeaders;
             }
 
-            RequestResponse rq(conn);
+            RequestResponse rq(method, uri, encodeHTTPHeaders());
             rq.addHeaders(extraHeaders);
             if (!handler)
                 rq.respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
@@ -114,10 +121,10 @@ namespace litecore { namespace REST {
                 (handler(rq));
             rq.finish();
             return int(rq.status());
+#endif
         } catch (const std::exception &x) {
             C4Warn("HTTP handler caught C++ exception: %s", x.what());
-            mg_send_http_error(conn, 500, "Internal exception");
-            return 500;
+            return 0 == lws_return_http_status(_client, 500, "Internal exception");
         }
     }
 

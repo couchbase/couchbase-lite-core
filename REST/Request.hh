@@ -23,12 +23,22 @@
 
 namespace litecore { namespace REST {
 
+    enum class Method {
+        DEFAULT,
+        GET,
+        PUT,
+        DELETE,
+        POST,
+
+        kNumMethods
+    };
+
     /** Incoming HTTP request; read-only */
     class Request : public Body {
     public:
-        fleece::slice method() const;
+        Method method() const                   {return _method;}
 
-        fleece::slice path() const;
+        fleece::slice path() const              {return _path;}
         std::string path(int i) const;
 
         std::string query(const char *param) const;
@@ -38,15 +48,19 @@ namespace litecore { namespace REST {
     protected:
         friend class Server;
         
-        Request(mg_connection *conn)
-        :Body(conn) { }
+        Request(Method, fleece::slice path, fleece::slice queries,
+                fleece::Doc headers, fleece::alloc_slice body);
+
+        Method _method;
+        fleece::alloc_slice _path, _queries;
     };
 
 
     /** Incoming HTTP request, with methods for composing a response */
     class RequestResponse : public Request {
     public:
-        RequestResponse(mg_connection*);
+        RequestResponse(Method, fleece::slice path, fleece::slice queries,
+                        fleece::Doc headers, fleece::alloc_slice body);
 
         static HTTPStatus errorToStatus(C4Error);
         void respondWithStatus(HTTPStatus, const char *message =nullptr);
@@ -88,6 +102,7 @@ namespace litecore { namespace REST {
         void sendHeaders();
 
         HTTPStatus _status {HTTPStatus::OK};
+        std::string _statusMessage;
         std::stringstream _headers;
         bool _sentStatus {false};
         bool _sentHeaders {false};

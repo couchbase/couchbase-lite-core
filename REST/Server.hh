@@ -17,14 +17,15 @@
 //
 
 #pragma once
+#include "LWSProtocol.hh"
+#include "Request.hh"
 #include "c4Base.h"
 #include <array>
 #include <map>
 #include <mutex>
 #include <functional>
 
-struct mg_context;
-struct mg_connection;
+struct lws_vhost;
 
 namespace litecore { namespace REST {
     class RequestResponse;
@@ -32,9 +33,11 @@ namespace litecore { namespace REST {
 
 
     /** HTTP server, using CivetWeb. */
-    class Server {
+    class Server : public websocket::LWSProtocol {
     public:
-        Server(const char **options, void *owner =nullptr);
+        Server(uint16_t port,
+               const char *hostname,
+               void *owner =nullptr);
 
         ~Server();
 
@@ -42,33 +45,24 @@ namespace litecore { namespace REST {
 
         void setExtraHeaders(const std::map<std::string, std::string> &headers);
 
-        enum Method {
-            DEFAULT,
-            GET,
-            PUT,
-            DELETE,
-            POST,
-
-            kNumMethods
-        };
-
         using Handler = std::function<void(RequestResponse&)>;
 
         void addHandler(Method, const char *uri, const Handler &h);
 
-        mg_context* mgContext() const               {return _context;}
+    protected:
+        virtual int dispatch(lws*, int callback_reason, void *user, void *in, size_t len) override;
+        void onConnectionError(C4Error error) override;
+        bool onRequest(fleece::slice uri);
 
     private:
-        static int handleRequest(mg_connection *conn, void *cbdata);
-
         struct URIHandlers {
             Server* server;
-            std::array<Handler, kNumMethods> methods;
+            std::array<Handler, size_t(Method::kNumMethods)> methods;
         };
 
         void* const _owner;
         std::mutex _mutex;
-        mg_context* _context;
+        lws_vhost* _vhost {nullptr};
         std::map<std::string, URIHandlers> _handlers;
         std::map<std::string, std::string> _extraHeaders;
     };

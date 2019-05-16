@@ -20,7 +20,6 @@
 #include "civetUtils.hh"
 #include "c4.h"
 #include "PlatformIO.hh"
-#include "civetweb.h"
 #include <assert.h>
 
 
@@ -137,7 +136,7 @@ namespace litecore { namespace REST {
         // data is "var1=val1&var2=val2...". Find variable first
         for (p = data; p + name_len < e; p++) {
             if ((p == data || p[-1] == '&') && p[name_len] == '='
-                && !mg_strncasecmp(name, p, name_len) && 0 == occurrence--) {
+                && !strncasecmp(name, p, name_len) && 0 == occurrence--) {
 
                 // Point p to variable value
                 p += name_len + 1;

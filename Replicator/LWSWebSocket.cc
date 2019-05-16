@@ -18,7 +18,7 @@
 
 #include "LWSWebSocket.hh"
 #include "LWSContext.hh"
-#include "LWSUtil.hh"
+#include "LWSProtocol.hh"
 #include "c4Replicator.h"
 #include "c4ExceptionUtils.hh"
 #include "Address.hh"
@@ -28,7 +28,6 @@
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/slice.hh"
-
 #include "libwebsockets.h"
 
 #include <deque>
@@ -55,7 +54,7 @@ namespace litecore { namespace websocket {
     static constexpr size_t kMaxUnreadBytes = 100 * 1024;
 
 
-    class LWSWebSocket : public RefCounted {
+    class LWSWebSocket : public LWSProtocol {
     public:
 
         LWSWebSocket(C4Socket *socket, const C4Address &to, const AllocedDict &options)
@@ -63,11 +62,6 @@ namespace litecore { namespace websocket {
         ,_address(to)
         ,_options(options)
         { }
-
-
-        ~LWSWebSocket() {
-            DebugAssert(!_client);
-        }
 
 
 #pragma mark - C4SOCKET CALLBACKS:
@@ -112,8 +106,12 @@ namespace litecore { namespace websocket {
         void open() {
             Assert(!_client);
             Log("LWSWebSocket connecting to <%.*s>...", SPLAT(_address.url()));
-            LWSContext::initialize(kProtocols);
-            LWSContext::instance->connect(_address, kProtocols[0].name, pinnedServerCert(), this);
+            LWSContext::initialize();
+            auto client = LWSContext::instance->connectClient(this, LWSContext::kBLIPProtocol,
+                                                              _address, pinnedServerCert());
+            if (!client)
+                closeC4Socket(LiteCoreDomain, kC4ErrorUnexpectedError,
+                              "Could not open libwebsockets connection"_sl);
         }
 
 
@@ -170,26 +168,9 @@ namespace litecore { namespace websocket {
 
 
         // Dispatch events sent by libwebsockets.
-        int dispatch(lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
-            switch (reason) {
-                    // Client lifecycle:
-                case LWS_CALLBACK_WSI_CREATE:
-                    LogDebug("**** LWS_CALLBACK_WSI_CREATE");
-                  if (!_client)
-                      _client = wsi;
-                    retain(this);
-                    break;
-                case LWS_CALLBACK_WSI_DESTROY:
-                    LogDebug("**** LWS_CALLBACK_WSI_DESTROY");
-                    _client = nullptr;
-                    release(this);
-                    break;
-
+        int dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override {
+            switch ((lws_callback_reasons)reason) {
                     // Connecting:
-                case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-                    LogDebug("**** LWS_CALLBACK_CLIENT_CONNECTION_ERROR");
-                    onConnectionError(slice(in, len));
-                    break;
                 case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
                     LogDebug("**** LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER");
                     if (_address.isSecure() && !onVerifyTLS())
@@ -224,34 +205,10 @@ namespace litecore { namespace websocket {
                     onClosed();
                     break;
                 default:
-                    if (reason < 31 || reason > 36)
-                        LogDebug("**** CALLBACK #%d", reason);
                     break;
             }
-            return lws_callback_http_dummy(wsi, reason, user, in, len);
+            return LWSProtocol::dispatch(wsi, reason, user, in, len);
         }
-
-
-        static int callback(lws *wsi, enum lws_callback_reasons reason,
-                                 void *user, void *in, size_t len)
-        {
-            try {
-                auto self = (LWSWebSocket*) lws_get_opaque_user_data(wsi);
-                if (self) {
-                    return self->dispatch(wsi, reason, user, in, len);
-                } else {
-                    LogDebug("**** LWS CALLBACK %d (no client)", reason);
-                    return lws_callback_http_dummy(wsi, reason, user, in, len);
-                }
-            } catchError(nullptr);
-            return -1;
-        }
-
-
-        constexpr static const lws_protocols kProtocols[] = {
-            { "BLIP_3+CBMobile_2", callback, 0, 0},
-            { NULL, NULL, 0, 0 }
-        };
 
 
 #pragma mark - HANDLERS:
@@ -270,7 +227,7 @@ namespace litecore { namespace websocket {
                 return false;
             }
 
-            alloc_slice serverKey = LWS::getPeerCertPublicKey(_client);
+            alloc_slice serverKey = getPeerCertPublicKey();
             if (!serverKey) {
                 closeC4Socket(NetworkDomain, kC4NetErrTLSCertUntrusted,
                               "Cannot read server TLS certificate"_sl);
@@ -304,8 +261,7 @@ namespace litecore { namespace websocket {
                     auto user = auth[kC4ReplicatorAuthUserName].asString();
                     auto pass = auth[kC4ReplicatorAuthPassword].asString();
                     string cred = slice(format("%.*s:%.*s", SPLAT(user), SPLAT(pass))).base64String();
-                    if (!LWS::addRequestHeader(_client, dst, end,
-                                               "Authorization:", slice("Basic " + cred)))
+                    if (!addRequestHeader(dst, end, "Authorization:", slice("Basic " + cred)))
                         return false;
                 } else {
                     closeC4Socket(WebSocketDomain, 401,
@@ -317,7 +273,7 @@ namespace litecore { namespace websocket {
             // Add cookie header:
             slice cookies = _options[kC4ReplicatorOptionCookies].asString();
             if (cookies) {
-                if (!LWS::addRequestHeader(_client, dst, end, "Cookie:", cookies))
+                if (!addRequestHeader(dst, end, "Cookie:", cookies))
                     return false;
             }
 
@@ -325,8 +281,7 @@ namespace litecore { namespace websocket {
             Dict::iterator header(_options[kC4ReplicatorOptionExtraHeaders].asDict());
             for (; header; ++header) {
                 string headerStr = string(header.keyString()) + ':';
-                if (!LWS::addRequestHeader(_client, dst, end,
-                                           headerStr.c_str(), header.value().asString()))
+                if (!addRequestHeader(dst, end, headerStr.c_str(), header.value().asString()))
                     return false;
             }
             return true;
@@ -340,9 +295,11 @@ namespace litecore { namespace websocket {
 
 
         void gotResponse() {
-            int status = LWS::decodeHTTPStatus(_client).first;
-            if (status > 0)
-                c4socket_gotHTTPResponse(_c4socket, status, LWS::encodeHTTPHeaders(_client));
+            int status = decodeHTTPStatus().first;
+            if (status > 0) {
+                alloc_slice headers = encodeHTTPHeaders().allocedData();
+                c4socket_gotHTTPResponse(_c4socket, status, headers);
+            }
         }
 
 
@@ -445,9 +402,9 @@ namespace litecore { namespace websocket {
         }
 
 
-        void onConnectionError(slice errorMessage) {
+        void onConnectionError(C4Error error) override {
             gotResponse();
-            closeC4Socket(LWS::getConnectionError(_client, errorMessage));
+            closeC4Socket(error);
         }
 
 
@@ -459,7 +416,7 @@ namespace litecore { namespace websocket {
                 } else {
                     Log("Server unexpectedly closed connection");
                     closeC4Socket(WebSocketDomain, kWebSocketCloseAbnormal,
-                                               "Server unexpectedly closed connection"_sl);
+                                  "Server unexpectedly closed connection"_sl);
                 }
             });
         }
@@ -471,11 +428,12 @@ namespace litecore { namespace websocket {
 
         void closeC4Socket(C4Error status) {
             if (_c4socket) {
-                if (status.code != 0) {
+                if (status.code == 0 || (status.code == kWebSocketCloseNormal
+                                         && status.domain == WebSocketDomain)) {
+                    Log("Calling c4socket_closed()");
+                } else {
                     alloc_slice message(c4error_getMessage(status));
                     C4LogToAt(kC4WebSocketLog, kC4LogError, "Closing with error: %.*s", SPLAT(message));
-                } else {
-                    Log("Calling c4socket_closed()");
                 }
                 c4socket_closed(_c4socket, status);
                 _c4socket = nullptr;
@@ -493,24 +451,13 @@ namespace litecore { namespace websocket {
 
         alloc_slice pinnedServerCertPublicKey() {
             slice pinnedCert = pinnedServerCert();
-            return pinnedCert ? LWS::getCertPublicKey(pinnedCert) : alloc_slice();
+            return pinnedCert ? getCertPublicKey(pinnedCert) : alloc_slice();
         }
 
-
-        template <class BLOCK>
-        void synchronized(BLOCK block) {
-            lock_guard<mutex> _lock(_mutex);
-            block();
-        }
-
-
-        mutex _mutex;                       // For synchronization
 
         C4Socket* _c4socket;                // The C4Socket I support
         litecore::repl::Address _address;   // Address to connect to
         AllocedDict _options;               // Replicator options
-
-        lws* _client {nullptr};             // libwebsockets opaque client reference
 
         ssize_t _unreadBytes {0};           // # bytes received but not yet handled by replicator
         bool _readsThrottled {false};       // True if libwebsocket flow control is stopping reads
@@ -522,8 +469,6 @@ namespace litecore { namespace websocket {
         bool _sentCloseFrame {false};       // Did I send a CLOSE message yet?
     };
 
-
-    const lws_protocols LWSWebSocket::kProtocols[2];
 
 } }
 

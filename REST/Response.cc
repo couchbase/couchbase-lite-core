@@ -17,23 +17,26 @@
 //
 
 #include "Response.hh"
+#include "LWSHTTPClient.hh"
+#include "c4Socket.h"
 #include "Writer.hh"
 #include "StringUtil.hh"
 #include "civetUtils.hh"
-#include "civetweb.h"
 
 using namespace std;
 using namespace fleece;
 
 namespace litecore { namespace REST {
-
-    Body::Body(mg_connection *conn)
-    :_conn(conn)
-    { }
+    using namespace litecore::websocket;
 
 
-    slice Body::header(const char *header) const {
-        return slice(mg_get_header(_conn, header));
+    slice Body::header(const char *name) const {
+        slice header(name);
+        Dict headers = _headers.root().asDict();
+        for (Dict::iterator i(headers); i; ++i)
+            if (i.keyString().caseEquivalent(header))
+                return i.value().asString();
+        return nullslice;
     }
     
     
@@ -56,29 +59,12 @@ namespace litecore { namespace REST {
     bool Body::hasContentType(slice contentType) const {
         slice actualType = header("Content-Type");
         return actualType.size >= contentType.size
-        && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
-        && (actualType.size == contentType.size || actualType[contentType.size] == ';');
+            && memcmp(actualType.buf, contentType.buf, contentType.size) == 0
+            && (actualType.size == contentType.size || actualType[contentType.size] == ';');
     }
 
 
     alloc_slice Body::body() const {
-        if (!_gotBody) {
-            fleece::Writer writer;
-            int bytesRead;
-            do {
-                char buf[1024];
-                bytesRead = mg_read(_conn, buf, sizeof(buf));
-                if (bytesRead > 0)
-                    writer.write(buf, bytesRead);
-            } while (bytesRead > 0);
-            if (bytesRead < 0)
-                return {};
-            alloc_slice body = writer.finish();
-            if (body.size == 0)
-                body.reset();
-            const_cast<Body*>(this)->_body = body;
-            const_cast<Body*>(this)->_gotBody = true;
-        }
         return _body;
     }
 
@@ -100,42 +86,23 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE:
 
 
-    static mg_connection* sendRequest(const std::string &method,
-                                      const std::string &hostname,
-                                      uint16_t port,
-                                      const std::string &uri,
-                                      const std::map<std::string, std::string> &headers,
-                                      fleece::slice body,
-                                      string &errorMessage,
-                                      int &errorCode)
-    {
-        stringstream hdrs;
-        if (!headers.empty()) {
-            for (auto &header : headers)
-                hdrs << header.first << ": " << header.second << "\r\n";
-            hdrs << "Content-Length: " << body.size << "\r\n";
-        }
-        char errorBuf[256];
-        mg_error error {errorBuf, sizeof(errorBuf), 0};
-        auto conn = mg_download(hostname.c_str(), port, false, &error,
-                                "%s %s HTTP/1.0\r\n%s\r\n%.*s",
-                                method.c_str(), uri.c_str(), hdrs.str().c_str(), SPLAT(body));
-        if (!conn) {
-            errorMessage = string(errorBuf);
-            errorCode = error.code;
-        }
-        return conn;
-    }
-
-
     Response::Response(const std::string &method,
                        const std::string &hostname,
                        uint16_t port,
                        const std::string &uri,
                        const std::map<std::string, std::string> &headers,
                        fleece::slice body)
-    :Body(sendRequest(method, hostname, port, uri, headers, body, _errorMessage, _errorCode))
-    { }
+    {
+        C4Address address = {};
+        address.scheme = "http"_sl;
+        address.hostname = slice(hostname);
+        address.port = port;
+        address.path = slice(uri);
+        
+        Retained<LWSHTTPClient> conn = new LWSHTTPClient(*this, address, method.c_str(),
+                                                         alloc_slice(body));
+        _error = conn->run();
+    }
 
 
     Response::Response(const string &method,
@@ -145,28 +112,5 @@ namespace litecore { namespace REST {
                        slice body)
     :Response(method, hostname, port, uri, {}, body)
     { }
-
-
-    Response::~Response() {
-        if (_conn)
-            mg_close_connection(_conn);
-    }
-
-    HTTPStatus Response::status() const {
-        if (_conn)
-            return (HTTPStatus) stoi(string(mg_get_request_info(_conn)->request_uri));
-        else
-            return HTTPStatus::undefined;
-    }
-
-    std::string Response::statusMessage() const {
-        if (_conn)
-            return string(mg_get_request_info(_conn)->http_version);
-        else if (!_errorMessage.empty())
-            return _errorMessage;
-        else 
-            return format("%s (errno %d)", strerror(_errorCode), _errorCode);
-    }
-
 
 } }

@@ -43,6 +43,12 @@ using namespace fleece;
  */
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API HTTP request", "[.SyncServer]") {
+    alloc_slice result = sendRemoteRequest("GET", "");
+    C4Log("Response: %.*s", SPLAT(result));
+}
+
+
 TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
     replicate(kC4OneShot, kC4Disabled, false);

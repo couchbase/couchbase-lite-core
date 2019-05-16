@@ -1,5 +1,5 @@
 //
-// LWSUtil.cc
+// LWSProtocol.cc
 //
 // Copyright © 2019 Couchbase. All rights reserved.
 //
@@ -16,17 +16,55 @@
 // limitations under the License.
 //
 
-#include "LWSUtil.hh"
+#include "LWSProtocol.hh"
+#include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
+#include "c4ExceptionUtils.hh"
 #include "fleece/Fleece.hh"
+#include "libwebsockets.h"
 #include <errno.h>
 
-namespace litecore { namespace websocket { namespace LWS {
+#define WSLogDomain (*(LogDomain*)kC4WebSocketLog)
+
+namespace litecore { namespace websocket {
     using namespace std;
     using namespace fleece;
 
-    alloc_slice getCertPublicKey(slice certPEM) {
+
+    LWSProtocol::~LWSProtocol() {
+        DebugAssert(!_client);
+    }
+
+    int LWSProtocol::dispatch(lws *client, int reason, void *user, void *in, size_t len) {
+        switch ((lws_callback_reasons)reason) {
+                // Client lifecycle:
+            case LWS_CALLBACK_WSI_CREATE:
+                LogDebug(WSLogDomain, "**** LWS_CALLBACK_WSI_CREATE");
+                if (!_client)
+                    _client = client;
+                retain(this);
+                break;
+            case LWS_CALLBACK_WSI_DESTROY:
+                LogDebug(WSLogDomain, "**** LWS_CALLBACK_WSI_DESTROY");
+                _client = nullptr;
+                release(this);
+                break;
+            case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
+                LogDebug(WSLogDomain, "**** LWS_CALLBACK_CLIENT_CONNECTION_ERROR");
+                onConnectionError(getConnectionError(slice(in, len)));
+                break;
+            }
+            default:
+                if (reason < 31 || reason > 36)
+                    LogDebug(WSLogDomain, "**** CALLBACK #%d", reason);
+                break;
+        }
+        return lws_callback_http_dummy(client, (lws_callback_reasons)reason, user, in, len);
+    }
+
+
+    alloc_slice LWSProtocol::getCertPublicKey(slice certPEM) {
         alloc_slice paddedPinnedCert;
         if (certPEM[certPEM.size - 1] != 0) {
             paddedPinnedCert = alloc_slice(certPEM.size + 1);
@@ -53,10 +91,10 @@ namespace litecore { namespace websocket { namespace LWS {
     }
 
 
-    alloc_slice getPeerCertPublicKey(lws *client) {
+    alloc_slice LWSProtocol::getPeerCertPublicKey() {
         char big[1024];
         auto &result = *(lws_tls_cert_info_results*)big;
-        if (0 != lws_tls_peer_cert_info(client, LWS_TLS_CERT_INFO_OPAQUE_PUBLIC_KEY,
+        if (0 != lws_tls_peer_cert_info(_client, LWS_TLS_CERT_INFO_OPAQUE_PUBLIC_KEY,
                                         &result,
                                         sizeof(big) - sizeof(result) + sizeof(result.ns.name))){
             return {};
@@ -65,8 +103,8 @@ namespace litecore { namespace websocket { namespace LWS {
     }
 
 
-    bool addRequestHeader(lws *_client, uint8_t* *dst, uint8_t *end,
-                          const char *header, slice value)
+    bool LWSProtocol::addRequestHeader(uint8_t* *dst, uint8_t *end,
+                                       const char *header, slice value)
     {
         int i = lws_add_http_header_by_name(_client, (const uint8_t*)header,
                                             (const uint8_t*)value.buf, int(value.size),
@@ -82,9 +120,9 @@ namespace litecore { namespace websocket { namespace LWS {
     }
 
 
-    pair<int,string> decodeHTTPStatus(lws *client) {
+    pair<int,string> LWSProtocol::decodeHTTPStatus() {
         char buf[32];
-        if (lws_hdr_copy(client, buf, sizeof(buf) - 1, WSI_TOKEN_HTTP) < 0)
+        if (lws_hdr_copy(_client, buf, sizeof(buf) - 1, WSI_TOKEN_HTTP) < 0)
             return {};
         string message;
         auto space = strchr(buf, ' ');
@@ -111,47 +149,64 @@ namespace litecore { namespace websocket { namespace LWS {
     }
 
 
-    alloc_slice encodeHTTPHeaders(lws *client) {
+    string LWSProtocol::getHeader(int /*lws_token_indexes*/ tokenIndex) {
+        char buf[1024];
+        int size = lws_hdr_copy(_client, buf, sizeof(buf),
+                                lws_token_indexes(tokenIndex));
+        if (size < 0) {
+            Log("Warning: HTTP response header token%d is too long", tokenIndex);
+            return "";
+        }
+        return string(buf, size);
+    }
+
+
+    string LWSProtocol::getHeaderFragment(int /*lws_token_indexes*/ tokenIndex, unsigned index) {
+        char buf[1024];
+        int size = lws_hdr_copy_fragment(_client, buf, sizeof(buf),
+                                         lws_token_indexes(tokenIndex), index);
+        return string(buf, max(size, 0));
+    }
+
+
+    Doc LWSProtocol::encodeHTTPHeaders() {
         // libwebsockets makes it kind of a pain to get the HTTP headers...
         Encoder headers;
         headers.beginDict();
 
-        char buf[1024];
         bool any = false;
         // Enumerate over all the HTTP headers libwebsockets knows about.
         // Sadly, this skips over any nonstandard headers. LWS has no API for enumerating them.
         for (auto token = WSI_TOKEN_HOST; ; token = (enum lws_token_indexes)(token + 1)) {
             if (token == WSI_TOKEN_HTTP)
                 continue;
-            auto headerStr = (const char*) lws_token_to_string(token);
-            if (!headerStr)
+            auto headerName = (const char*) lws_token_to_string(token);
+            if (!headerName)
                 break;
-            if (!*headerStr)
+            if (!*headerName)
                 continue;
 
-            int size = lws_hdr_copy(client, buf, sizeof(buf), token);
-            if (size < 0)
-                Log("Warning: HTTP response header %s is too long", headerStr);
-            if (size <= 0)
+            string value = getHeader(token);
+            if (value.empty())
                 continue;
 
-            string header = headerStr;
+            string header = headerName;
             normalizeHeaderCase(header);
 
             //LogDebug("      %s: %.*s", header, size, buf);
             headers.writeKey(slice(header));
-            headers.writeString(slice(buf, size));
+            headers.writeString(value);
             any = true;
         }
 
         headers.endDict();
         if (!any)
-            return {};
-        return headers.finish();
+            return Doc();
+        return headers.finishDoc();
     }
 
 
-    C4Error getConnectionError(lws *client, slice lwsErrorMessage) {
+    C4Error LWSProtocol::getConnectionError(slice lwsErrorMessage) {
         // Maps substrings of LWS error messages to C4Errors:
         static constexpr struct {slice string; C4ErrorDomain domain; int code;} kMessages[] = {
             {"connect failed"_sl,                 POSIXDomain,     ECONNREFUSED},
@@ -164,7 +219,7 @@ namespace litecore { namespace websocket { namespace LWS {
 
         int status;
         string statusMessage;
-        tie(status,statusMessage) = decodeHTTPStatus(client);
+        tie(status,statusMessage) = decodeHTTPStatus();
 
         C4ErrorDomain domain = WebSocketDomain;
         if (status < 300) {
@@ -191,4 +246,4 @@ namespace litecore { namespace websocket { namespace LWS {
         return c4error_make(domain, status, slice(statusMessage));
     }
 
-} } }
+} } 

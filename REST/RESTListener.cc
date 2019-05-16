@@ -56,16 +56,16 @@ namespace litecore { namespace REST {
     ,_allowCreateDB(config.allowCreateDBs && _directory)
     ,_allowDeleteDB(config.allowDeleteDBs)
     {
-        auto portStr = to_string(config.port ? config.port : kDefaultPort);
-        const char* options[] {
-            "listening_ports",          portStr.c_str(),
+        __unused const char* options[] {    // TODO
             "enable_keep_alive",        "yes",
             "keep_alive_timeout_ms",    kKeepAliveTimeoutMS,
             "num_threads",              kMaxConnections,
             "decode_url",               "no",   // otherwise it decodes escaped slashes
             nullptr
         };
-        _server.reset(new Server(options, this));
+        _server.reset(new Server((config.port ? config.port : kDefaultPort),
+                                 nullptr,
+                                 this));
         _server->setExtraHeaders({{"Server", serverNameAndVersion()}});
 
         if (config.apis & kC4RESTAPI) {
@@ -74,29 +74,29 @@ namespace litecore { namespace REST {
             };
 
             // Root:
-            addHandler(Server::GET, "/$", &RESTListener::handleGetRoot);
+            addHandler(Method::GET, "/$", &RESTListener::handleGetRoot);
 
             // Top-level special handlers:
-            addHandler(Server::GET, "/_all_dbs$",       &RESTListener::handleGetAllDBs);
-            addHandler(Server::GET, "/_active_tasks$",  &RESTListener::handleActiveTasks);
-            addHandler(Server::POST, "/_replicate$",    &RESTListener::handleReplicate);
-            _server->addHandler(Server::DEFAULT, "/_",  notFound);
+            addHandler(Method::GET, "/_all_dbs$",       &RESTListener::handleGetAllDBs);
+            addHandler(Method::GET, "/_active_tasks$",  &RESTListener::handleActiveTasks);
+            addHandler(Method::POST, "/_replicate$",    &RESTListener::handleReplicate);
+            _server->addHandler(Method::DEFAULT, "/_",  notFound);
 
             // Database:
-            addDBHandler(Server::GET,   "/*$|/*/$", &RESTListener::handleGetDatabase);
-            addHandler  (Server::PUT,   "/*$|/*/$", &RESTListener::handleCreateDatabase);
-            addDBHandler(Server::DELETE,"/*$|/*/$", &RESTListener::handleDeleteDatabase);
-            addDBHandler(Server::POST,  "/*$|/*/$", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/*$|/*/$", &RESTListener::handleGetDatabase);
+            addHandler  (Method::PUT,   "/*$|/*/$", &RESTListener::handleCreateDatabase);
+            addDBHandler(Method::DELETE,"/*$|/*/$", &RESTListener::handleDeleteDatabase);
+            addDBHandler(Method::POST,  "/*$|/*/$", &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:
-            addDBHandler(Server::GET, "/*/_all_docs$", &RESTListener::handleGetAllDocs);
-            addDBHandler(Server::POST, "/*/_bulk_docs$", &RESTListener::handleBulkDocs);
-            _server->addHandler(Server::DEFAULT, "/*/_", notFound);
+            addDBHandler(Method::GET, "/*/_all_docs$", &RESTListener::handleGetAllDocs);
+            addDBHandler(Method::POST, "/*/_bulk_docs$", &RESTListener::handleBulkDocs);
+            _server->addHandler(Method::DEFAULT, "/*/_", notFound);
 
             // Document:
-            addDBHandler(Server::GET,   "/*/*$", &RESTListener::handleGetDoc);
-            addDBHandler(Server::PUT,   "/*/*$", &RESTListener::handleModifyDoc);
-            addDBHandler(Server::DELETE,"/*/*$", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/*/*$", &RESTListener::handleGetDoc);
+            addDBHandler(Method::PUT,   "/*/*$", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::DELETE,"/*/*$", &RESTListener::handleModifyDoc);
         }
     }
 
@@ -219,12 +219,12 @@ namespace litecore { namespace REST {
 #pragma mark - UTILITIES:
 
 
-    void RESTListener::addHandler(Server::Method method, const char *uri, HandlerMethod handler) {
+    void RESTListener::addHandler(Method method, const char *uri, HandlerMethod handler) {
         using namespace std::placeholders;
         _server->addHandler(method, uri, bind(handler, this, _1));
     }
 
-    void RESTListener::addDBHandler(Server::Method method, const char *uri, DBHandlerMethod handler) {
+    void RESTListener::addDBHandler(Method method, const char *uri, DBHandlerMethod handler) {
         _server->addHandler(method, uri, [this,handler](RequestResponse &rq) {
             c4::ref<C4Database> db = databaseFor(rq);
             if (db) {

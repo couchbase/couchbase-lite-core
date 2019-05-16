@@ -17,14 +17,20 @@
 //
 
 #include "LWSContext.hh"
+#include "LWSProtocol.hh"
 #include "Address.hh"
+#include "Logging.hh"
 #include "StringUtil.hh"
+#include "ThreadUtil.hh"
+#include "c4ExceptionUtils.hh"
 
 #ifdef TARGET_OS_OSX
 #include <Security/Security.h>
 #endif
 
 #include "libwebsockets.h"
+
+#define WSLogDomain (*(LogDomain*)kC4WebSocketLog)
 
 namespace litecore { namespace websocket {
     using namespace std;
@@ -40,13 +46,31 @@ namespace litecore { namespace websocket {
     static constexpr short kDefaultPingIntervalSecs = 5 * 60;
 
 
-    /** Singleton that manages the libwebsocket context and event thread. */
-    void LWSContext::initialize(const struct lws_protocols protocols[]) {
+    constexpr const char* LWSContext::kBLIPProtocol;
+    constexpr const char* LWSContext::kHTTPClientProtocol;
+
+
+    static int protocolCallback(lws *wsi, enum lws_callback_reasons reason,
+                                void *user, void *in, size_t len);
+
+    constexpr static const lws_protocols kProtocols[] = {
+        { LWSContext::kBLIPProtocol,        &protocolCallback, 0, 0},
+        { LWSContext::kHTTPClientProtocol,  &protocolCallback, 0, 0},
+        { NULL, NULL, 0, 0 }
+    };
+
+    constexpr static const lws_protocols kServerProtocols[] = {
+        { LWSContext::kHTTPServerProtocol,  &protocolCallback, 0, 0},
+        { NULL, NULL, 0, 0 }
+    };
+
+
+    void LWSContext::initialize() {
         if (!instance)
-            instance = new LWSContext(protocols);
+            instance = new LWSContext();
     }
 
-    LWSContext::LWSContext(const struct lws_protocols protocols[]) {
+    LWSContext::LWSContext() {
         // Configure libwebsocket logging:
         int flags = LLL_ERR  | LLL_WARN | LLL_NOTICE | LLL_INFO;
 #if DEBUG
@@ -55,9 +79,11 @@ namespace litecore { namespace websocket {
         lws_set_log_level(flags, &logCallback);
 
         struct lws_context_creation_info info = {};
-        info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-        info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
-        info.protocols = protocols;
+        info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
+                       //LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
+                       LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
+        info.port = CONTEXT_PORT_NO_LISTEN;
+        info.protocols = kProtocols;
         info.vhost_name = "LiteCore";  // if we ran a server, this would have to be the hostname
         info.timeout_secs = kTimeoutSecs;
         info.ws_ping_pong_interval = kDefaultPingIntervalSecs;
@@ -74,6 +100,7 @@ namespace litecore { namespace websocket {
             return;
 
         _thread.reset( new thread([&]() {
+            SetThreadName("WebSocket dispatch (Couchbase Lite Core)");
             while (true) {
                 lws_service(_context, 999999);  // TODO: How/when to stop this
             }
@@ -81,31 +108,70 @@ namespace litecore { namespace websocket {
     }
 
 
-    lws* LWSContext::connect(const litecore::repl::Address &_address,
-                             const char *protocol,
-                             slice pinnedServerCert,
-                             void* opaqueUserData) {
+    lws* LWSContext::connectClient(LWSProtocol *protocolInstance,
+                                   const char *protocolName,
+                                   const repl::Address &address,
+                                   fleece::slice pinnedServerCert,
+                                   const char *method)
+    {
         // Create LWS client and connect:
-        string hostname(slice(_address.hostname));
-        string path(slice(_address.path));
+        string hostname(slice(address.hostname));
+        string path(slice(address.path));
 
         struct lws_client_connect_info i = {};
         i.context = LWSContext::instance->context();
-        i.port = _address.port;
+        i.opaque_user_data = protocolInstance;
+        i.port = address.port;
         i.address = hostname.c_str();
-        i.path = path.c_str();
         i.host = i.address;
         i.origin = i.address;
-        i.protocol = protocol;
-        i.opaque_user_data = opaqueUserData;
+        i.path = path.c_str();
+        i.local_protocol_name = protocolName;
 
-        if (_address.isSecure()) {
+        if (method) {
+            i.method = method;
+        } else {
+            i.protocol = protocolName;  // WebSocket protocol to request on server
+        }
+
+        if (address.isSecure()) {
             i.ssl_connection = LCCSCF_USE_SSL;
             if (pinnedServerCert)
                 i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
         }
 
         return lws_client_connect_via_info(&i);
+    }
+
+
+    lws_vhost* LWSContext::startServer(LWSProtocol *protocolInstance,
+                                       uint16_t port,
+                                       const char *hostname,
+                                       const lws_http_mount *mounts)
+    {
+        struct lws_context_creation_info i = {};
+        i.user = protocolInstance;
+        i.port = port;
+        i.protocols = kServerProtocols;
+        i.mounts = mounts;
+        i.vhost_name = hostname;
+        return lws_create_vhost(_context, &i);
+    }
+
+
+    static int protocolCallback(lws *wsi, enum lws_callback_reasons reason,
+                                void *user, void *in, size_t len)
+    {
+        try {
+            auto protocol = (LWSProtocol*) lws_get_opaque_user_data(wsi);
+            if (protocol) {
+                return protocol->dispatch(wsi, reason, user, in, len);
+            } else {
+                LogDebug(WSLogDomain, "**** LWS CALLBACK %d (no client)", reason);
+                return lws_callback_http_dummy(wsi, reason, user, in, len);
+            }
+        } catchError(nullptr);
+        return -1;
     }
 
 
@@ -151,5 +217,6 @@ namespace litecore { namespace websocket {
 
 
     LWSContext* LWSContext::instance = nullptr;
+
 
 } }

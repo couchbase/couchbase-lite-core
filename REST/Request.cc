@@ -18,10 +18,10 @@
 
 #include "Request.hh"
 #include "Writer.hh"
-#include "civetUtils.hh"
-#include "civetweb.h"
+#include "LWSContext.hh"
 #include "PlatformIO.hh"
 #include "Error.hh"
+#include "civetUtils.hh"
 #include <stdarg.h>
 
 using namespace std;
@@ -32,18 +32,17 @@ namespace litecore { namespace REST {
 #pragma mark - REQUEST:
 
 
-    slice Request::method() const {
-        return slice(mg_get_request_info(_conn)->request_method);
-    }
-
-
-    slice Request::path() const {
-        return slice(mg_get_request_info(_conn)->request_uri);
-    }
+    Request::Request(Method method, fleece::slice path, fleece::slice queries,
+                     fleece::Doc headers, fleece::alloc_slice body)
+    :Body(headers, body)
+    ,_method(method)
+    ,_path(path)
+    ,_queries(queries)
+    { }
 
     
     string Request::path(int i) const {
-        slice path(mg_get_request_info(_conn)->request_uri);
+        slice path = _path;
         Assert(path[0] == '/');
         path.moveStart(1);
         for (; i > 0; --i) {
@@ -60,12 +59,10 @@ namespace litecore { namespace REST {
     }
 
     
-    std::string Request::query(const char *param) const {
-        std::string result;
-        auto query = mg_get_request_info(_conn)->query_string;
-        if (!query)
-            return string();
-        litecore::REST::getParam(query, strlen(query), param, result, 0);
+    string Request::query(const char *param) const {
+        string result;
+        if (_queries)
+            litecore::REST::getParam((const char*)_queries.buf, _queries.size, param, result, 0);
         return result;
     }
 
@@ -90,8 +87,9 @@ namespace litecore { namespace REST {
 #pragma mark - REQUESTRESPONSE:
 
 
-    RequestResponse::RequestResponse(mg_connection *conn)
-    :Request(conn)
+    RequestResponse::RequestResponse(Method method, fleece::slice path, fleece::slice queries,
+                                     fleece::Doc headers, fleece::alloc_slice body)
+    :Request(method, path, queries, headers, body)
     {
         char date[50];
         time_t curtime = time(NULL);
@@ -102,10 +100,8 @@ namespace litecore { namespace REST {
 
     void RequestResponse::setStatus(HTTPStatus status, const char *message) {
         Assert(!_sentStatus);
-        if (!message)
-            message = mg_get_response_code_text(_conn, int(status));
-        mg_printf(_conn, "HTTP/1.1 %d %s\r\n", status, message);
         _status = status;
+        _statusMessage = message;
         _sentStatus = true;
     }
 
@@ -116,12 +112,12 @@ namespace litecore { namespace REST {
             json.writeKey("ok"_sl);
             json.writeBool(true);
         } else {
-            const char *defaultMessage = mg_get_response_code_text(_conn, int(status));
+            //const char *defaultMessage = mg_get_response_code_text(_conn, int(status));
             json.writeKey("status"_sl);
             json.writeInt(int(status));
-            json.writeKey("error"_sl);
-            json.writeString(defaultMessage);
-            if (message && 0 != strcasecmp(message, defaultMessage)) {
+            //json.writeKey("error"_sl);
+            //json.writeString(defaultMessage);
+            if (message /*&& 0 != strcasecmp(message, defaultMessage)*/) {
                 json.writeKey("reason"_sl);
                 json.writeString(message);
             }
@@ -233,20 +229,6 @@ namespace litecore { namespace REST {
     }
 
 
-    void RequestResponse::sendHeaders() {
-        if (!_sentHeaders) {
-            if (!_sentStatus)
-                setStatus(HTTPStatus::OK, "OK");
-
-            _headers << "\r\n";
-            auto str = _headers.str();
-            mg_write(_conn, str.data(), str.size());
-            _headers.clear();
-            _sentHeaders = true;
-        }
-    }
-
-
     void RequestResponse::write(slice content) {
         if (!_sentHeaders) {
             if (!_chunked)
@@ -255,10 +237,10 @@ namespace litecore { namespace REST {
         }
         _contentSent += content.size;
         if (_chunked) {
-            mg_send_chunk(_conn, (const char*)content.buf, (unsigned)content.size);
+            //mg_send_chunk(_conn, (const char*)content.buf, (unsigned)content.size);
         } else {
             Assert(_contentLength >= 0);
-            mg_write(_conn, content.buf, content.size);
+            //mg_write(_conn, content.buf, content.size);
         }
     }
 
@@ -291,8 +273,8 @@ namespace litecore { namespace REST {
             setContentLength(0);
         sendHeaders();
         if (_chunked) {
-            mg_send_chunk(_conn, nullptr, 0);
-            mg_write(_conn, "\r\n", 2);
+            //mg_send_chunk(_conn, nullptr, 0);
+            //mg_write(_conn, "\r\n", 2);
         } else {
             Assert(_contentLength == _contentSent);
         }

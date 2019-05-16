@@ -167,6 +167,7 @@ _FLSliceResult_Release
 _FLSlice_Copy
 
 _FLDoc_FromResultData
+_FLDoc_GetAllocedData
 _FLDoc_GetRoot
 _FLDoc_GetSharedKeys
 _FLDoc_Release
