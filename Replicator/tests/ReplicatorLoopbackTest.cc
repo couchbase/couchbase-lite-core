@@ -1335,24 +1335,23 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "UnresolvedDocs", "[Push][Pull][Conflic
     std::shared_ptr<DBAccess> acc = make_shared<DBAccess>(db, false);
     C4DocEnumerator* e = acc->unresolvedDocsEnumerator(&err);
     
-    // verify only returns the conflicted documents, including the deleted onces.
-    vector<C4Slice> revIDs = {C4STR("2-12121212"), C4STR("2-32323232"), C4STR("2-41414141")};
-    int count = 0;
-    while(c4enum_next(e, &err)) {
+    // verify only returns the conflicted documents, including the deleted ones.
+    vector<C4Slice> docIDs = {"conflict"_sl,   "db-deleted"_sl, "db2-deleted"_sl};
+    vector<C4Slice> revIDs = {"2-12121212"_sl, "2-32323232"_sl, "2-41414141"_sl};
+    vector<bool> deleteds =  {false,           true,            false};
+
+    for (int count = 0; count < 3; ++count) {
+        REQUIRE(c4enum_next(e, &err));
         C4DocumentInfo info;
         c4enum_getDocumentInfo(e, &info);
+        CHECK(info.docID == docIDs[count]);
         CHECK(info.revID == revIDs[count]);
         CHECK((info.flags & kDocConflicted) == kDocConflicted);
-        if (info.docID == C4STR("conflict")) {
-            CHECK((info.flags & kDocDeleted) != kDocDeleted);
-        } else {
-            CHECK((info.flags & kDocDeleted) == kDocDeleted);
-        }
-        count++;
+        bool deleted = ((info.flags & kDocDeleted) != 0);
+        CHECK(deleted == deleteds[count]);
     }
+    CHECK(!c4enum_next(e, &err));
     c4enum_free(e);
-    // TODO: This fails, since the `db2-deleted` is not showing up in the `unresolved`
-    CHECK(count == 3);
 }
 
 

@@ -149,6 +149,19 @@ namespace litecore {
         }
     }
 
+    bool Rev::isActive() const {
+        // "Active" revs contribute to conflicts, or rather, a conflict is when there is more than
+        // one active rev.
+        // Traditionally (back to CouchDB) an active rev is one that's a leaf and not a deletion.
+        // Deleted revs are excluded because they are used to cap conflicting branches, so they
+        // shouldn't create conflicts themselves.
+        // However, with no-conflicts servers in CBL 2, we do want to allow a conflict between a
+        // live and a deleted document. So we treat a deletion as active if it's the server's
+        // current revision.
+        return isLeaf() && (!isDeleted() || isLatestRemoteRevision());
+    }
+
+
     slice Rev::body() const {
         slice body = _body;
         if ((size_t)body.buf & 1) {
@@ -186,6 +199,10 @@ namespace litecore {
             rev = rev->parent;
         } while (rev);
         return false;
+    }
+
+    bool Rev::isLatestRemoteRevision() const {
+        return owner->isLatestRemoteRevision(this);
     }
 
     bool RevTree::isBodyOfRevisionAvailable(const Rev* rev) const {
@@ -566,6 +583,14 @@ namespace litecore {
 
 #pragma mark - ETC.
 
+
+    bool RevTree::isLatestRemoteRevision(const Rev *rev) const {
+        for (auto &r : _remoteRevs) {
+            if (r.second == rev)
+                return true;
+        }
+        return false;
+    }
 
     const Rev* RevTree::latestRevisionOnRemote(RemoteID remote) {
         Assert(remote != kNoRemoteID);
