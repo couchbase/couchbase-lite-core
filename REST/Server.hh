@@ -17,7 +17,7 @@
 //
 
 #pragma once
-#include "LWSProtocol.hh"
+#include "LWSServer.hh"
 #include "Request.hh"
 #include "c4Base.h"
 #include <array>
@@ -25,15 +25,18 @@
 #include <mutex>
 #include <functional>
 
+struct lws_http_mount;
 struct lws_vhost;
 
 namespace litecore { namespace REST {
-    class RequestResponse;
     class Request;
+    class LWSResponder;
+
+    using RequestResponse = LWSResponder;
 
 
     /** HTTP server, using CivetWeb. */
-    class Server : public websocket::LWSProtocol {
+    class Server : public websocket::LWSServer {
     public:
         Server(uint16_t port,
                const char *hostname,
@@ -50,9 +53,7 @@ namespace litecore { namespace REST {
         void addHandler(Method, const char *uri, const Handler &h);
 
     protected:
-        virtual int dispatch(lws*, int callback_reason, void *user, void *in, size_t len) override;
-        void onConnectionError(C4Error error) override;
-        bool onRequest(fleece::slice uri);
+        virtual void dispatchResponder(LWSResponder*) override;
 
     private:
         struct URIHandlers {
@@ -62,6 +63,7 @@ namespace litecore { namespace REST {
 
         void* const _owner;
         std::mutex _mutex;
+        std::unique_ptr<lws_http_mount> _mount;
         lws_vhost* _vhost {nullptr};
         std::map<std::string, URIHandlers> _handlers;
         std::map<std::string, std::string> _extraHeaders;

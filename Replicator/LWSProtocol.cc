@@ -17,6 +17,7 @@
 //
 
 #include "LWSProtocol.hh"
+#include "LWSUtil.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
@@ -32,6 +33,16 @@ namespace litecore { namespace websocket {
     using namespace fleece;
 
 
+    static constexpr size_t kWriteChunkSize = 1024;
+
+
+    LWSProtocol::LWSProtocol(lws *connection)
+    :_client(connection)
+    {
+        retain(this);
+    }
+
+
     LWSProtocol::~LWSProtocol() {
         DebugAssert(!_client);
     }
@@ -40,13 +51,14 @@ namespace litecore { namespace websocket {
         switch ((lws_callback_reasons)reason) {
                 // Client lifecycle:
             case LWS_CALLBACK_WSI_CREATE:
-                LogDebug(WSLogDomain, "**** LWS_CALLBACK_WSI_CREATE");
-                if (!_client)
+                LogDebug(WSLogDomain, "**** LWS_CALLBACK_WSI_CREATE (wsi=%p)", client);
+                Assert(!_client);
+                //if (!_client)
                     _client = client;
                 retain(this);
                 break;
             case LWS_CALLBACK_WSI_DESTROY:
-                LogDebug(WSLogDomain, "**** LWS_CALLBACK_WSI_DESTROY");
+                LogDebug(WSLogDomain, "**** LWS_CALLBACK_WSI_DESTROY (wsi=%p)", client);
                 _client = nullptr;
                 release(this);
                 break;
@@ -57,7 +69,7 @@ namespace litecore { namespace websocket {
             }
             default:
                 if (reason < 31 || reason > 36)
-                    LogDebug(WSLogDomain, "**** CALLBACK #%d", reason);
+                    LogDebug(WSLogDomain, "**** %s", LWSCallbackName(reason));
                 break;
         }
         return lws_callback_http_dummy(client, (lws_callback_reasons)reason, user, in, len);
@@ -149,6 +161,10 @@ namespace litecore { namespace websocket {
     }
 
 
+    bool LWSProtocol::hasHeader(int /*lws_token_indexes*/ tokenIndex) {
+        return lws_hdr_total_length(_client, lws_token_indexes(tokenIndex)) > 0;
+    }
+
     string LWSProtocol::getHeader(int /*lws_token_indexes*/ tokenIndex) {
         char buf[1024];
         int size = lws_hdr_copy(_client, buf, sizeof(buf),
@@ -193,7 +209,7 @@ namespace litecore { namespace websocket {
             string header = headerName;
             normalizeHeaderCase(header);
 
-            //LogDebug("      %s: %.*s", header, size, buf);
+            LogDebug(WSLogDomain, "      %s: %s", header.c_str(), value.c_str());
             headers.writeKey(slice(header));
             headers.writeString(value);
             any = true;
@@ -245,5 +261,29 @@ namespace litecore { namespace websocket {
         }
         return c4error_make(domain, status, slice(statusMessage));
     }
+
+
+    void LWSProtocol::setDataToSend(fleece::alloc_slice data) {
+        Assert(!_dataToSend);
+        _dataToSend = data;
+        _unsent = _dataToSend;
+    }
+
+
+    bool LWSProtocol::sendMoreData() {
+        slice chunk = _unsent.read(kWriteChunkSize);
+        lws_write_protocol type;
+        if (_unsent.size > 0) {
+            type = LWS_WRITE_HTTP;
+            lws_callback_on_writable(_client);
+        } else {
+            type = LWS_WRITE_HTTP_FINAL;
+            _dataToSend = nullslice;
+            _unsent = nullslice;
+        }
+        LogDebug(WSLogDomain, "Writing %zu bytes", chunk.size);
+        return 0 ==  lws_write(_client, (uint8_t*)chunk.buf, chunk.size, type);
+    }
+
 
 } } 

@@ -22,7 +22,7 @@
 #include "c4Private.h"
 #include "c4Document+Fleece.h"
 #include "Server.hh"
-#include "Request.hh"
+#include "LWSResponder.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include <functional>

@@ -50,66 +50,12 @@ namespace litecore { namespace REST {
         
         Request(Method, fleece::slice path, fleece::slice queries,
                 fleece::Doc headers, fleece::alloc_slice body);
-
-        Method _method;
-        fleece::alloc_slice _path, _queries;
-    };
-
-
-    /** Incoming HTTP request, with methods for composing a response */
-    class RequestResponse : public Request {
-    public:
-        RequestResponse(Method, fleece::slice path, fleece::slice queries,
+        Request() { }
+        void setRequest(Method, fleece::slice path, fleece::slice queries,
                         fleece::Doc headers, fleece::alloc_slice body);
 
-        static HTTPStatus errorToStatus(C4Error);
-        void respondWithStatus(HTTPStatus, const char *message =nullptr);
-        void respondWithError(C4Error);
-
-        void setStatus(HTTPStatus status, const char *message);
-
-        HTTPStatus status() const                             {return _status;}
-
-        void setHeader(const char *header, const char *value);
-
-        void setHeader(const char *header, int64_t value) {
-            setHeader(header, std::to_string(value).c_str());
-        }
-
-        void addHeaders(std::map<std::string, std::string>);
-
-        // If you call write() more than once, you must first call setContentLength or setChunked.
-        void setContentLength(uint64_t length);
-        void setChunked();
-        void uncacheable();
-
-        void write(fleece::slice);
-        void write(const char *content)                     {write(fleece::slice(content));}
-        void printf(const char *format, ...) __printflike(2, 3);
-
-        fleece::JSONEncoder& jsonEncoder();
-
-        void writeStatusJSON(HTTPStatus status, const char *message =nullptr);
-        void writeErrorJSON(C4Error);
-
-        void finish();
-
-    protected:
-        friend class Server;
-        friend class CivetC4Socket;
-
-    private:
-        void sendHeaders();
-
-        HTTPStatus _status {HTTPStatus::OK};
-        std::string _statusMessage;
-        std::stringstream _headers;
-        bool _sentStatus {false};
-        bool _sentHeaders {false};
-        bool _chunked {false};
-        int64_t _contentLength {-1};
-        int64_t _contentSent {0};
-        std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;
+        Method _method {Method::DEFAULT};
+        fleece::alloc_slice _path, _queries;
     };
 
 } }

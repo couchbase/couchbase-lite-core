@@ -13,12 +13,14 @@
 // libwebsocket opaque structs:
 struct lws;
 struct lws_context;
+struct lws_context_creation_info;
 struct lws_http_mount;
 struct lws_vhost;
 
 namespace litecore { namespace websocket {
 
     class LWSProtocol;
+    class LWSServer;
 
 
     /** Singleton that manages the libwebsocket context and event thread. */
@@ -43,7 +45,7 @@ namespace litecore { namespace websocket {
                              fleece::slice pinnedServerCert,
                              const char *method = nullptr);
 
-        lws_vhost* startServer(LWSProtocol *protocolInstance,
+        lws_vhost* startServer(LWSServer *server,
                                uint16_t port,
                                const char *hostname,
                                const lws_http_mount *mounts);
@@ -52,7 +54,9 @@ namespace litecore { namespace websocket {
         LWSContext();
         static void logCallback(int level, const char *message);
         static fleece::alloc_slice getSystemRootCertsPEM();
+        void startEventLoop();
 
+        std::unique_ptr<lws_context_creation_info> _info;
         ::lws_context*               _context {nullptr};
         std::unique_ptr<std::thread> _thread;
     };

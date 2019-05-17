@@ -38,8 +38,6 @@ namespace litecore { namespace REST {
 
     private:
         Response& _response;
-        fleece::alloc_slice _requestBody;
-        fleece::slice _unsentBody;
         C4Error _error {};
         fleece::Writer _responseData;
         std::condition_variable _condition;

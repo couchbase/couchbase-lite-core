@@ -36,16 +36,11 @@ namespace litecore { namespace REST {
     using namespace litecore::websocket;
 
 
-    static constexpr size_t kWriteChunkSize = 1024;
-
-
     LWSHTTPClient::LWSHTTPClient(Response &response,
                                  const C4Address &address,
                                  const char *method,
                                  alloc_slice requestBody)
     :_response(response)
-    ,_requestBody(requestBody)
-    ,_unsentBody(requestBody)
     {
         LWSContext::initialize();
         auto client = LWSContext::instance->connectClient(this,
@@ -57,6 +52,8 @@ namespace litecore { namespace REST {
                                   "Could not open libwebsockets connection"_sl);
             _finished = true;
         }
+
+        setDataToSend(requestBody);
     }
 
 
@@ -112,7 +109,7 @@ namespace litecore { namespace REST {
 
     bool LWSHTTPClient::onSendHeaders() {
         //TODO: Write the headers!
-        if (_requestBody) {
+        if (hasDataToSend()) {
             lws_client_http_body_pending(_client, 1);
             lws_callback_on_writable(_client);
         }
@@ -121,18 +118,13 @@ namespace litecore { namespace REST {
 
 
     bool LWSHTTPClient::onWriteRequest() {
-        slice chunk = _unsentBody.read(kWriteChunkSize);
-        lws_write_protocol type;
-        if (_unsentBody.size > 0) {
-            type = LWS_WRITE_HTTP;
+        if (!sendMoreData())
+            return false;
+        if (hasDataToSend())
             lws_callback_on_writable(_client);
-        } else {
-            type = LWS_WRITE_HTTP_FINAL;
+        else
             lws_client_http_body_pending(_client, 0);
-            _requestBody = nullslice;
-        }
-        LogDebug("Writing %zu bytes", chunk.size);
-        return 0 ==  lws_write(_client, (uint8_t*)chunk.buf, chunk.size, type);
+        return true;
     }
 
 
