@@ -139,6 +139,16 @@ namespace litecore {
         { "date_diff_millis"_sl, 3, 3 },
         { "date_add_str"_sl,     3, 3 },
         { "date_add_millis"_sl,  3, 3 },
+        { "clock_local"_sl,      0, 1 },
+        { "clock_millis"_sl,     0, 0 },
+        { "clock_utc"_sl,        0, 1 },
+        { "date_format_str"_sl,  2, 2 },
+        { "date_part_millis"_sl, 2, 2 },
+        { "date_part_str"_sl,    2, 2 },
+        
+        // Needs a bit more work (see SQLiteNQ1LFunctions.cc)
+        /*{ "date_range_millis"_sl,3, 4 },
+        { "date_range_str"_sl,   3, 4 },*/
 
         // Math:
         {"abs"_sl,              1, 1},

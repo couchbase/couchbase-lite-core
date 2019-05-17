@@ -1125,6 +1125,10 @@ TEST_CASE_METHOD(QueryTest, "Query date diff millis", "[Query]") {
             // NOTE: Windows cannot handle higher than year 3000
             {"['date_diff_millis()', 29923779601500, -1672531200000, 'millennium']", int64_t(1ll)}
         });
+
+        testExpressions( {
+            {"['date_diff_millis()', 4678822801500, 1483228800000, 'diurnal rotation']", "null"},
+        });
     }
 
     SECTION("Negative") {
@@ -1193,6 +1197,7 @@ TEST_CASE_METHOD(QueryTest, "Query date diff millis", "[Query]") {
 TEST_CASE_METHOD(QueryTest, "Query date add string", "[Query]") {
     SECTION("Basic") {
         testExpressions( {
+            {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'diurnal rotation']", "null"},
             {"['date_add_str()', '2018-01-01T00:00:00Z', 1, 'millisecond']", "2018-01-01T00:00:00.001Z"},
             {"['date_add_str()', '2018-01-01T00:00:00Z', 10, 'millisecond']", "2018-01-01T00:00:00.010Z"},
             {"['date_add_str()', '2018-01-01T00:00:00Z', 100, 'millisecond']", "2018-01-01T00:00:00.100Z"},
@@ -1313,6 +1318,118 @@ TEST_CASE_METHOD(QueryTest, "Query date add millis", "[Query]") {
     }
 }
 
+TEST_CASE_METHOD(QueryTest, "Query date format", "[Query]") {
+    // Mismatch with N1QL: default year is 0 on N1QL, 2000 here
+    // Calculate offset
+    time_t rawtime = 1540252800; // 2018-10-23 midnight GMT
+    struct tm gbuf;
+    struct tm lbuf;
+    gmtime_r(&rawtime, &gbuf);
+    localtime_r(&rawtime, &lbuf);
+    time_t gmt = mktime(&gbuf);
+    auto diff = (int)difftime(rawtime, gmt);
+    if(lbuf.tm_isdst > 0) {
+        // mktime uses GMT, but we want UTC which is unaffected
+        // by DST
+        diff += 3600;
+    }
+    
+    auto diffTotal = (int)(diff / 60.0);
+    auto diffHour = (int)(diffTotal / 60.0);
+    auto diffMinute = diffTotal % 60;
+    string offsetStr = diffTotal == 0 ? "Z" : diffTotal < 0 ? 
+        format("-%02d:%02d", abs(diffHour), abs(diffMinute)) 
+        : format("+%02d:%02d", abs(diffHour), abs(diffMinute));
+
+    testExpressions( {
+        {"['date_format_str()', '2018-07-04', '1111-11-11']", "2018-07-04" },
+        {"['date_format_str()', '2018-07-04', '11:11:11']", "00:00:00" },
+        {"['date_format_str()', '2018-07-04', '11:11:11Z']", string("00:00:00") + offsetStr },
+        {"['date_format_str()', '2018-07-04', '11:11:11+09:00']", string("00:00:00") + offsetStr },
+        {"['date_format_str()', '2018-07-04', '1111-11-11T11:11:11']", "2018-07-04T00:00:00" },
+        {"['date_format_str()', '2018-07-04', '1111-11-11T11:11:11Z']", string("2018-07-04T00:00:00") + offsetStr },        
+        {"['date_format_str()', '2018-07-04', '1111-11-11T11:11:11+09:00']", string("2018-07-04T00:00:00") + offsetStr },
+        {"['date_format_str()', '2018-07-04', '1111-11-11 11:11:11']", "2018-07-04 00:00:00" },
+        {"['date_format_str()', '2018-07-04', '1111-11-11 11:11:11Z']", string("2018-07-04 00:00:00") + offsetStr },        
+        {"['date_format_str()', '2018-07-04', '1111-11-11 11:11:11+09:00']", string("2018-07-04 00:00:00") + offsetStr },
+        {"['date_format_str()', '01:02:03.456Z', '1111-11-11']", "2000-01-01" },
+        {"['date_format_str()', '01:02:03.456Z', '11:11:11']", "01:02:03.456" },
+        {"['date_format_str()', '01:02:03.456Z', '11:11:11Z']", "01:02:03.456Z" },
+        {"['date_format_str()', '01:02:03.456Z', '11:11:11+09:00']", "01:02:03.456Z" },
+        {"['date_format_str()', '01:02:03.456Z', '1111-11-11T11:11:11']", "2000-01-01T01:02:03.456" },
+        {"['date_format_str()', '01:02:03.456Z', '1111-11-11T11:11:11Z']", "2000-01-01T01:02:03.456Z" },        
+        {"['date_format_str()', '01:02:03.456Z', '1111-11-11T11:11:11+09:00']", "2000-01-01T01:02:03.456Z" },
+        {"['date_format_str()', '01:02:03.456Z', '1111-11-11 11:11:11']", "2000-01-01 01:02:03.456" },
+        {"['date_format_str()', '01:02:03.456Z', '1111-11-11 11:11:11Z']", "2000-01-01 01:02:03.456Z" },        
+        {"['date_format_str()', '01:02:03.456Z', '1111-11-11 11:11:11+09:00']", "2000-01-01 01:02:03.456Z" },
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '1111-11-11']", "2018-07-04" },
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '11:11:11']", "01:02:03.456" },
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '11:11:11Z']", "01:02:03.456+09:00" },
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '11:11:11+09:00']", "01:02:03.456+09:00" },
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '1111-11-11T11:11:11']", "2018-07-04T01:02:03.456" },
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '1111-11-11T11:11:11Z']", "2018-07-04T01:02:03.456+09:00" },        
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '1111-11-11T11:11:11+09:00']", "2018-07-04T01:02:03.456+09:00" },
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '1111-11-11 11:11:11']", "2018-07-04 01:02:03.456" },
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '1111-11-11 11:11:11Z']", "2018-07-04 01:02:03.456+09:00" },        
+        {"['date_format_str()', '2018-07-04T01:02:03.456+09:00', '1111-11-11 11:11:11+09:00']", "2018-07-04 01:02:03.456+09:00" },
+    });
+}
+
+TEST_CASE_METHOD(QueryTest, "Query date part", "[Query]") {
+    testExpressions( {
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'millisecond']", int64_t(456) },
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'second']", int64_t(3)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'minute']", int64_t(2)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'hour']", int64_t(1)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'day']", int64_t(4)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'week']", int64_t(27)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'month']", int64_t(7)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'quarter']", int64_t(3)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'year']", int64_t(2018)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'decade']", int64_t(201)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'century']", int64_t(21)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'millennium']", int64_t(3)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'iso_year']", int64_t(2018)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'iso_week']", int64_t(27)},        
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'iso_dow']", int64_t(3)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'doy']", int64_t(185)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'day_of_year']", int64_t(185)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'dow']", int64_t(3)},
+        {"['date_part_str()', '2018-07-04T01:02:03.456Z', 'day_of_week']", int64_t(3)},
+
+        // Note where ISO year differs
+        {"['date_part_str()', '2017-01-01T01:02:03.456Z', 'iso_year']", int64_t(2016)},
+        {"['date_part_str()', '2017-01-01T01:02:03.456Z', 'iso_week']", int64_t(52)},
+        {"['date_part_str()', '2017-01-01T01:02:03.456Z', 'year']", int64_t(2017)},
+        {"['date_part_str()', '2017-01-01T01:02:03.456Z', 'week']", int64_t(1)},
+
+        {"['date_part_millis()', 1530666123456, 'millisecond']", int64_t(456) },
+        {"['date_part_millis()', 1530666123456, 'second']", int64_t(3)},
+        {"['date_part_millis()', 1530666123456, 'minute']", int64_t(2)},
+        {"['date_part_millis()', 1530666123456, 'hour']", int64_t(1)},
+        {"['date_part_millis()', 1530666123456, 'day']", int64_t(4)},
+        {"['date_part_millis()', 1530666123456, 'week']", int64_t(27)},
+        {"['date_part_millis()', 1530666123456, 'month']", int64_t(7)},
+        {"['date_part_millis()', 1530666123456, 'quarter']", int64_t(3)},
+        {"['date_part_millis()', 1530666123456, 'year']", int64_t(2018)},
+        {"['date_part_millis()', 1530666123456, 'decade']", int64_t(201)},
+        {"['date_part_millis()', 1530666123456, 'century']", int64_t(21)},
+        {"['date_part_millis()', 1530666123456, 'millennium']", int64_t(3)},
+        {"['date_part_millis()', 1530666123456, 'iso_year']", int64_t(2018)},
+        {"['date_part_millis()', 1530666123456, 'iso_week']", int64_t(27)},        
+        {"['date_part_millis()', 1530666123456, 'iso_dow']", int64_t(3)},
+        {"['date_part_millis()', 1530666123456, 'doy']", int64_t(185)},
+        {"['date_part_millis()', 1530666123456, 'day_of_year']", int64_t(185)},
+        {"['date_part_millis()', 1530666123456, 'dow']", int64_t(3)},
+        {"['date_part_millis()', 1530666123456, 'day_of_week']", int64_t(3)},
+
+        // Note where ISO year differs
+        {"['date_part_millis()', 1483232523456, 'iso_year']", int64_t(2016)},
+        {"['date_part_millis()', 1483232523456, 'iso_week']", int64_t(52)},
+        {"['date_part_millis()', 1483232523456, 'year']", int64_t(2017)},
+        {"['date_part_millis()', 1483232523456, 'week']", int64_t(1)},
+    });
+}
 TEST_CASE_METHOD(QueryTest, "Query unsigned", "[Query]") {
     {
         Transaction t(store->dataFile());

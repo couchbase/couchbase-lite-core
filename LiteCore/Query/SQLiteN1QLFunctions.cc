@@ -30,6 +30,7 @@
 #include <cmath>
 #include <string>
 #include "date.h"
+#include "iso_week.h"
 
 #ifdef _MSC_VER
 #undef min
@@ -863,6 +864,24 @@ namespace litecore {
         return year_day.count();
     }
 
+    inline int iso_year(const system_clock::time_point &t) {
+        const auto daypoint = floor<iso_week::days>(t);
+        const iso_week::year_weeknum_weekday iso_date = daypoint;
+        return int(iso_date.year());
+    }
+
+    inline unsigned iso_week(const system_clock::time_point &t) {
+        const auto daypoint = floor<iso_week::days>(t);
+        const iso_week::year_weeknum_weekday iso_date = daypoint;
+        return unsigned(iso_date.weeknum());
+    }
+
+    inline unsigned iso_dow(const system_clock::time_point &t) {
+        const auto daypoint = floor<iso_week::days>(t);
+        const iso_week::year_weeknum_weekday iso_date = daypoint;
+        return unsigned(iso_date.weekday());
+    }
+
     inline system_clock::time_point to_time_point(DateTime& dt, bool no_tz = false) {
         const auto millis = ToMillis(dt, no_tz);
         return system_clock::time_point(milliseconds(millis));
@@ -953,12 +972,14 @@ namespace litecore {
             {
                 return diff.year / 1000;
             }
+            default:
+                return -1;
         }
     }
 
     static void doDateDiff(sqlite3_context* ctx, DateTime left, DateTime right, const slice part) {
         DateComponent date_component;
-        if(!part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid) {
+        if(!part || (date_component = ParseDateComponent(part)) >= kDateComponentExtendedMarker) {
             return;
         }
 
@@ -988,7 +1009,7 @@ namespace litecore {
 
     static int64_t doDateAdd(sqlite3_context* ctx, const DateTime& start, const int64_t amount, const slice part) {
         DateComponent date_component;
-        if(!part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid) {
+        if(!part || (date_component = ParseDateComponent(part)) >= kDateComponentExtendedMarker) {
             return -1;
         }
 
@@ -1032,9 +1053,134 @@ namespace litecore {
             case kDateComponentMillennium:
                 ymd += millenniums(amount);
                 break;
+            default:
+                return -1;
         }
 
         return (sys_days(ymd) + tod).time_since_epoch().count();
+    }
+
+    static int64_t doDatePart(DateTime& time, const slice part) {
+        DateComponent date_component;
+        if(!part || (date_component = ParseDateComponent(part)) == kDateComponentInvalid) {
+            return -1;
+        }
+
+        switch(date_component) {
+            case kDateComponentMillisecond:
+                return round((time.s - int64_t(time.s)) * 1000);
+            case kDateComponentSecond:
+                return int64_t(time.s);
+            case kDateComponentMinute:
+                return time.m;
+            case kDateComponentHour:
+                return time.h;
+            case kDateComponentDay:
+                return time.D;
+            case kDateComponentWeek:
+                return doy(to_time_point(time)) / 7 + 1;
+            case kDateComponentMonth:
+                return time.M;
+            case kDateComponentQuarter:
+                return getQuarter(time);
+            case kDateComponentYear:
+                return time.Y;
+            case kDateComponentDecade:
+                return time.Y / 10;
+            case kDateComponentCentury:
+                return time.Y / 100 + 1;
+            case kDateComponentMillennium:
+                return time.Y / 1000 + 1;
+            case kDateComponentIsoYear:
+                return int64_t(iso_year(to_time_point(time)));
+            case kDateComponentIsoWeek:
+                return int64_t(iso_week(to_time_point(time)));
+            case kDateComponentIsoDayOfWeek:
+                return int64_t(iso_dow(to_time_point(time)));
+            case kDateComponentDayOfYear:
+                return doy(to_time_point(time));
+            case kDateComponentDayOfWeek:
+            {
+                const auto ymd = year(time.Y)/time.M/time.D;
+                const auto weekday = year_month_weekday(ymd).weekday_indexed().weekday();
+                return (weekday - Sunday).count();
+            }
+            default:
+                return -1;
+        }
+    }
+
+    static void doDateRange(sqlite3_context* ctx, DateTime& start, DateTime& end, int64_t amount, const slice part, bool millis) {
+        DateComponent date_component;
+        if(!part || (date_component = ParseDateComponent(part)) >= kDateComponentExtendedMarker) {
+            return;
+        }
+
+        const auto ymd_end = year(end.Y)/end.M/end.D;
+        const auto tod_end = hours(end.h) + minutes(end.m) + milliseconds(int64_t(end.s * 1000));
+        const auto tp_end = sys_days{ymd_end} + tod_end;
+        auto ymd = year(start.Y)/start.M/start.D;
+        auto tod = hours(start.h) + minutes(start.m) + milliseconds(int64_t(start.s * 1000));
+        const auto format = start;
+
+        Encoder enc;
+        enc.beginArray();
+        char date_buffer[kFormattedISO8601DateMaxSize];
+        auto tp_current = sys_days{ymd} + tod;
+        while(tp_current <= tp_end) {
+            if(millis) {
+                enc.writeInt(duration_cast<milliseconds>(tp_current.time_since_epoch()).count());
+            } else {
+                FormatISO8601Date(date_buffer, tp_current.time_since_epoch().count(), start.tz, &format);
+                enc.writeString(date_buffer);
+            }
+
+            switch(date_component) {
+                case kDateComponentMillisecond:
+                    tod += milliseconds(amount);
+                    break;
+                case kDateComponentSecond:
+                    tod += seconds(amount);
+                    break;
+                case kDateComponentMinute:
+                    tod += minutes(amount);
+                    break;
+                case kDateComponentHour:
+                    tod += hours(amount);
+                    break;
+                case kDateComponentDay:
+                    tod += days(amount);
+                    break;
+                case kDateComponentWeek:
+                    tod += weeks(amount);
+                    break;
+                case kDateComponentMonth:
+                    ymd += months(amount);
+                    break;
+                case kDateComponentQuarter:
+                    ymd += quarters(amount);
+                    break;
+                case kDateComponentYear:
+                    ymd += years(amount);
+                    break;
+                case kDateComponentDecade:
+                    ymd += decades(amount);
+                    break;
+                case kDateComponentCentury:
+                    ymd += centuries(amount);
+                    break;
+                case kDateComponentMillennium:
+                    ymd += millenniums(amount);
+                    break;
+                default:
+                    return;
+            }
+
+            tp_current = sys_days{ymd} + tod;
+        }
+
+        enc.endArray();
+        setResultBlobFromFleeceData(ctx, enc.finish());
     }
 
     static void millis_to_utc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
@@ -1099,6 +1245,10 @@ namespace litecore {
 
         const auto amount = sqlite3_value_int64(argv[1]);
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
+        if(result == -1) {
+            return;
+        }
+
         DateTime format = start;
         setResultDateString(ctx, result, start.tz, &format);
     }
@@ -1112,6 +1262,85 @@ namespace litecore {
         const auto amount = sqlite3_value_int64(argv[1]);
         const auto result = doDateAdd(ctx, start, amount, stringSliceArgument(argv[2]));
         sqlite3_result_int64(ctx, result);
+    }
+
+    static void clock_local(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        DateTime format;
+        bool valid = argc > 0 && parseDateArgRaw(argv[0], &format);
+        const auto now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+        setResultDateString(ctx, now, false, valid ? &format : nullptr);
+    }
+
+    static void clock_millis(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        const auto now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+        sqlite3_result_int64(ctx, now);
+    }
+
+    static void clock_utc(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        DateTime format;
+        bool valid = argc > 0 && parseDateArgRaw(argv[0], &format);
+        const auto now = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
+        setResultDateString(ctx, now, true, valid ? &format : nullptr);
+    }
+
+    static void date_format_str(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        DateTime dt, format;
+        if(!parseDateArgRaw(argv[0], &dt) || !parseDateArgRaw(argv[1], &format)) {
+            return;
+        }
+
+        const auto millis = ToMillis(dt);
+        setResultDateString(ctx, millis, dt.tz, &format);
+    }
+
+    static void date_part_millis(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if(!isNumericNoError(argv[0])) {
+            return;
+        }
+
+        auto dt = FromMillis(sqlite3_value_int64(argv[0]));
+        const auto result = doDatePart(dt, stringSliceArgument(argv[1]));
+        if(result == -1) {
+            return;
+        }
+
+        sqlite3_result_int64(ctx, result);
+    }
+
+    static void date_part_str(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        DateTime dt;
+        if(!parseDateArgRaw(argv[0], &dt)) {
+            return;
+        }
+
+        const auto result = doDatePart(dt, stringSliceArgument(argv[1]));
+        if(result == -1) {
+            return;
+        }
+
+        sqlite3_result_int64(ctx, result);
+    }
+
+    static void date_range_millis(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        if(!isNumericNoError(argv[0])|| !isNumericNoError(argv[1])) {
+            return;
+        }
+
+        auto start = FromMillis(sqlite3_value_int64(argv[0]));
+        auto end = FromMillis(sqlite3_value_int64(argv[1]));
+
+        const int64_t amount = argc > 3 ? sqlite3_value_int64(argv[3]) : 1;
+        doDateRange(ctx, start, end, amount, stringSliceArgument(argv[2]), true);
+    }
+
+    static void date_range_str(sqlite3_context* ctx, int argc, sqlite3_value **argv) {
+        DateTime start, end;
+        if(!parseDateArgRaw(argv[0], &start) || !parseDateArgRaw(argv[1], &end)) {
+            return;
+        }
+
+        const int64_t amount = argc > 3 ? sqlite3_value_int64(argv[3]) : 1;
+        doDateRange(ctx, start, end, amount, stringSliceArgument(argv[2]), false);
     }
 
 #pragma mark - TYPE TESTS & CONVERSIONS:
@@ -1551,6 +1780,20 @@ namespace litecore {
         { "date_diff_millis",  3, date_diff_millis },
         { "date_add_str",      3, date_add_str },
         { "date_add_millis",   3, date_add_millis },
+        { "clock_local",       0, clock_local },
+        { "clock_local",       1, clock_local },
+        { "clock_millis",      0, clock_millis },
+        { "clock_utc",         0, clock_utc },
+        { "clock_utc",         1, clock_utc },
+        { "date_format_str",   2, date_format_str},
+        { "date_part_millis",  2, date_part_millis },
+        { "date_part_str",     2, date_part_str },
+
+        // Needs work for checking invalid ranges, as well as negative steps
+       /* { "date_range_millis", 3, date_range_millis },   
+        { "date_range_millis", 4, date_range_millis },   
+        { "date_range_str",    3, date_range_str },   
+        { "date_range_str",    4, date_range_str },*/
 
         { }
     };
