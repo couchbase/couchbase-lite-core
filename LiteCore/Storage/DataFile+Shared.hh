@@ -84,7 +84,7 @@ namespace litecore {
         void forOpenDataFiles(DataFile *except, function_ref<void(DataFile*)> fn) {
             unique_lock<mutex> lock(_mutex);
             for (auto df : _dataFiles)
-                if (df != except)
+                if (df != except && !df->isClosing())
                     fn(df);
         }
 
