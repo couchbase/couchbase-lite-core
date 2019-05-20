@@ -95,7 +95,7 @@ namespace litecore { namespace repl {
                                                     info.revID,
                                                     nullslice,      /* history buf */
                                                     info.flags & kDocDeleted,
-                                                    !(info.flags & kDocConflicted)));
+                                                    false));
                 rev->error = c4error_make(LiteCoreDomain, kC4ErrorConflict, {});
                 _docsEnded.push(rev);
             }
