@@ -236,7 +236,7 @@ namespace litecore {
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
-        bool                    _closeSignaled {false};         // Have I been asked to close?
+        std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };
 
 

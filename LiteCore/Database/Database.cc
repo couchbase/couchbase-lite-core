@@ -182,6 +182,11 @@ namespace c4Internal {
     Database::~Database() {
         Assert(_transactionLevel == 0,
                "Database being destructed while in a transaction");
+
+        // Eagerly close the data file to ensure that no other instances will
+        // be trying to use me as a delegate (for example in externalTransactionCommitted)
+        // after I'm already in an invalid state
+        _dataFile->close();
     }
 
 
