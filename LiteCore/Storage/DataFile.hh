@@ -72,7 +72,8 @@ namespace litecore {
         FilePath filePath() const noexcept                  {return _path;}
         const Options& options() const noexcept             {return _options;}
 
-        virtual bool isOpen() const noexcept =0;
+        bool isClosing() const noexcept                     {return _closeSignaled;}
+        virtual bool isOpen() const noexcept = 0;
 
         /** Throws an exception if the database is closed. */
         void checkOpen() const;
@@ -236,6 +237,7 @@ namespace litecore {
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
+        std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };
 
 
