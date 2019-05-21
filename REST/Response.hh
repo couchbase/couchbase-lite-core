@@ -92,7 +92,7 @@ namespace litecore { namespace REST {
                  const std::string &hostname,
                  uint16_t port,
                  const std::string &uri,
-                 const std::map<std::string, std::string> &headers,
+                 fleece::Doc headers,
                  fleece::slice body =fleece::nullslice);
 
         explicit operator bool() const      {return _error.code == 0;}

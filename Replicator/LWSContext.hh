@@ -6,6 +6,7 @@
 
 #pragma once
 #include "Address.hh"
+#include "Channel.hh"
 #include "fleece/slice.hh"
 #include <memory>
 #include <thread>
@@ -39,16 +40,24 @@ namespace litecore { namespace websocket {
         static constexpr const char* kHTTPClientProtocol = "HTTPClient";
         static constexpr const char* kHTTPServerProtocol = "HTTPServer";
 
-        ::lws* connectClient(LWSProtocol *protocolInstance,
-                             const char *protocolName,
-                             const repl::Address &address,
-                             fleece::slice pinnedServerCert,
-                             const char *method = nullptr);
 
-        lws_vhost* startServer(LWSServer *server,
-                               uint16_t port,
-                               const char *hostname,
-                               const lws_http_mount *mounts);
+        void connectClient(LWSProtocol *protocolInstance,
+                           const char *protocolName,
+                           const repl::Address &address,
+                           fleece::slice pinnedServerCert,
+                           const char *method = nullptr);
+
+        void startServer(LWSServer *server,
+                         uint16_t port,
+                         const char *hostname,
+                         const lws_http_mount *mounts);
+
+        const char *className() const noexcept      {return "LWSContext";}
+
+        void dequeue();
+
+    protected:
+        void enqueue(std::function<void()> fn);
 
     private:
         LWSContext();
@@ -56,9 +65,21 @@ namespace litecore { namespace websocket {
         static fleece::alloc_slice getSystemRootCertsPEM();
         void startEventLoop();
 
+        void _connectClient(LWSProtocol *protocolInstance,
+                            const std::string &protocolName,
+                            repl::Address address,
+                            fleece::alloc_slice pinnedServerCert,
+                            const std::string &method);
+        void _startServer(LWSServer *server,
+                          uint16_t port,
+                          const std::string &hostname,
+                          const lws_http_mount *mounts);
+
+
         std::unique_ptr<lws_context_creation_info> _info;
         ::lws_context*               _context {nullptr};
         std::unique_ptr<std::thread> _thread;
+        actor::Channel<std::function<void()>> _enqueued;
     };
 
 } }

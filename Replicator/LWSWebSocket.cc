@@ -19,16 +19,15 @@
 #include "LWSWebSocket.hh"
 #include "LWSContext.hh"
 #include "LWSProtocol.hh"
+#include "LWSUtil.hh"
 #include "c4Replicator.h"
 #include "c4ExceptionUtils.hh"
 #include "Address.hh"
 #include "Error.hh"
-#include "Logging.hh"
 #include "RefCounted.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include "fleece/slice.hh"
-#include "libwebsockets.h"
 
 #include <deque>
 #include <mutex>
@@ -36,11 +35,6 @@
 
 using namespace std;
 using namespace fleece;
-
-#undef Log
-#undef LogDebug
-#define Log(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogInfo, "LWSWebSocket: " MSG, ##__VA_ARGS__)
-#define LogDebug(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogDebug, "LWSWebSocket: " MSG, ##__VA_ARGS__)
 
 
 #define LWS_WRITE_CLOSE lws_write_protocol(4)
@@ -62,6 +56,8 @@ namespace litecore { namespace websocket {
         ,_address(to)
         ,_options(options)
         { }
+
+        virtual const char *className() const noexcept override      {return "LWSWebSocket";}
 
 
 #pragma mark - C4SOCKET CALLBACKS:
@@ -107,11 +103,8 @@ namespace litecore { namespace websocket {
             Assert(!_client);
             Log("LWSWebSocket connecting to <%.*s>...", SPLAT(_address.url()));
             LWSContext::initialize();
-            auto client = LWSContext::instance->connectClient(this, LWSContext::kBLIPProtocol,
-                                                              _address, pinnedServerCert());
-            if (!client)
-                closeC4Socket(LiteCoreDomain, kC4ErrorUnexpectedError,
-                              "Could not open libwebsockets connection"_sl);
+            LWSContext::instance->connectClient(this, LWSContext::kBLIPProtocol,
+                                                _address, pinnedServerCert());
         }
 
 
@@ -157,8 +150,7 @@ namespace litecore { namespace websocket {
             synchronized([&]{
                 if (_client) {
                     _outbox.push_back(frame);
-                    if (_outbox.size() == 1)
-                        lws_callback_on_writable(_client); // triggers LWS_CALLBACK_CLIENT_WRITEABLE
+                    callbackOnWriteable(); // triggers LWS_CALLBACK_CLIENT_WRITEABLE
                 }
             });
         }
@@ -168,26 +160,26 @@ namespace litecore { namespace websocket {
 
 
         // Dispatch events sent by libwebsockets.
-        int dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override {
+        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override {
             switch ((lws_callback_reasons)reason) {
                     // Connecting:
                 case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
-                    LogDebug("**** LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER");
-                    if (_address.isSecure() && !onVerifyTLS())
-                        return -1;
-                    if (!onSendCustomHeaders(in, len))
-                        return -1;
+                    LogVerbose("**** LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER");
+                    if (_address.isSecure() && !onVerifyTLS()) {
+                        setDispatchResult(-1);
+                        return;
+                    }
+                    onSendCustomHeaders(in, len);
                     break;
                 case LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH:
-                    LogDebug("**** LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH");
+                    LogVerbose("**** LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH");
                     onConnected();
                     break;
 
                     // Read/write:
                 case LWS_CALLBACK_CLIENT_WRITEABLE:
                     LogDebug("**** LWS_CALLBACK_CLIENT_WRITEABLE");
-                    if (!onWriteable())
-                        return -1;
+                    onWriteable();
                     break;
                 case LWS_CALLBACK_CLIENT_RECEIVE:
                     onReceivedMessage(slice(in, len));
@@ -195,19 +187,18 @@ namespace litecore { namespace websocket {
 
                     // Close:
                 case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE:
-                    // "If you return 0 lws will echo the close and then close the
-                    // connection.  If you return nonzero lws will just close the
-                    // connection."
-                    LogDebug("**** LWS_CALLBACK_WS_PEER_INITIATED_CLOSE");
-                    return onCloseRequest(slice(in, len)) ? 0 : 1;
+                    LogVerbose("**** LWS_CALLBACK_WS_PEER_INITIATED_CLOSE");
+                    onCloseRequest(slice(in, len));
+                    break;
                 case LWS_CALLBACK_CLIENT_CLOSED:
-                    LogDebug("**** LWS_CALLBACK_CLIENT_CLOSED");
+                    LogVerbose("**** LWS_CALLBACK_CLIENT_CLOSED");
                     onClosed();
                     break;
+                    
                 default:
+                    LWSProtocol::dispatch(wsi, reason, user, in, len);
                     break;
             }
-            return LWSProtocol::dispatch(wsi, reason, user, in, len);
         }
 
 
@@ -219,7 +210,7 @@ namespace litecore { namespace websocket {
             if (!pinnedServerCert())
                 return true;
 
-            LogDebug("Verifying server TLS cert against pinned cert...");
+            LogVerbose("Verifying server TLS cert against pinned cert...");
             alloc_slice pinnedKey = pinnedServerCertPublicKey();
             if (!pinnedKey) {
                 closeC4Socket(NetworkDomain, kC4NetErrTLSCertUntrusted,
@@ -291,6 +282,7 @@ namespace litecore { namespace websocket {
         void onConnected() {
             gotResponse();
             c4socket_opened(_c4socket);
+            callbackOnWriteable();
         }
 
 
@@ -303,7 +295,7 @@ namespace litecore { namespace websocket {
         }
 
 
-        bool onWriteable() {
+        void onWriteable() {
             // Pop first message from outbox queue:
             alloc_slice msg;
             bool more;
@@ -313,9 +305,11 @@ namespace litecore { namespace websocket {
                     _outbox.pop_front();
                     more = !_outbox.empty();
                 }
+                LogDebug("onWriteable: %zu bytes to send; %zu msgs remaining",
+                         msg.size, _outbox.size());
             });
             if (!msg)
-                return true;
+                return;
 
             auto opcode = (enum lws_write_protocol) msg[0];
             slice payload = msg;
@@ -324,9 +318,10 @@ namespace litecore { namespace websocket {
             if (opcode != LWS_WRITE_CLOSE) {
                 // Regular WebSocket message:
                 int m = lws_write(_client, (uint8_t*)payload.buf, payload.size, opcode);
-                if (m < payload.size) {
+                if (m < 0) {
                     Log("ERROR %d writing to ws socket\n", m);
-                    return false;
+                    check(m);
+                    return;
                 }
 
                 // Notify C4Socket that it was written:
@@ -335,10 +330,9 @@ namespace litecore { namespace websocket {
                 // Schedule another onWriteable call if there are more messages:
                 if (more) {
                     synchronized([&]{
-                        lws_callback_on_writable(_client);
+                        callbackOnWriteable();
                     });
                 }
-                return true;
 
             } else {
                 // I'm initiating closing the socket. Set the status/reason to go in the CLOSE msg:
@@ -348,9 +342,9 @@ namespace litecore { namespace websocket {
                 });
                 lws_close_status status;
                 memcpy(&status, &msg[1], sizeof(status));
-                LogDebug("Writing CLOSE message, status %d, msg '%.*s'", status, SPLAT(payload));
+                LogVerbose("Writing CLOSE message, status %d, msg '%.*s'", status, SPLAT(payload));
                 lws_close_reason(_client, status, (uint8_t*)payload.buf, payload.size);
-                return false;
+                setDispatchResult(-1); // tells libwebsockets to close the connection
             }
         }
 
@@ -390,21 +384,35 @@ namespace litecore { namespace websocket {
 
 
         // Peer initiating close. Returns true if I should send back a CLOSE message
-        bool onCloseRequest(slice body) {
-            // https://tools.ietf.org/html/rfc6455#section-7
-            LogDebug("Received close request");
+        void onCloseRequest(slice body) {
+            // libwebsockets doc: "If you return 0 lws will echo the close and then close the
+            // connection.  If you return nonzero lws will just close the
+            // connection."
+            // Protocol spec: https://tools.ietf.org/html/rfc6455#section-7
+            LogVerbose("Received close request");
             bool sendCloseFrame;
             synchronized([&]() {
                 sendCloseFrame = !_sentCloseFrame;
                 _sentCloseFrame = true;
             });
-            return sendCloseFrame;
+            setDispatchResult(sendCloseFrame);
         }
 
 
         void onConnectionError(C4Error error) override {
             gotResponse();
             closeC4Socket(error);
+        }
+
+
+        virtual void onDestroy() override {
+            synchronized([&]() {
+                if (_c4socket) {
+                    Log("Server unexpectedly closed connection");
+                    closeC4Socket(NetworkDomain, kC4NetErrUnknown,
+                                  "Server unexpectedly closed socket"_sl);
+                }
+            });
         }
 
 
@@ -433,7 +441,7 @@ namespace litecore { namespace websocket {
                     Log("Calling c4socket_closed()");
                 } else {
                     alloc_slice message(c4error_getMessage(status));
-                    C4LogToAt(kC4WebSocketLog, kC4LogError, "Closing with error: %.*s", SPLAT(message));
+                    LogError("Closing with error: %.*s", SPLAT(message));
                 }
                 c4socket_closed(_c4socket, status);
                 _c4socket = nullptr;

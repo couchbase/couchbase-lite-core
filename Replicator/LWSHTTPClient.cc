@@ -19,15 +19,8 @@
 #include "LWSHTTPClient.hh"
 #include "LWSContext.hh"
 #include "LWSProtocol.hh"
-#include "WebSocketInterface.hh"
+#include "LWSUtil.hh"
 #include "Writer.hh"
-#include "libwebsockets.h"
-
-
-#undef Log
-#undef LogDebug
-#define Log(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogInfo, "LWSHTTPClient: " MSG, ##__VA_ARGS__)
-#define LogDebug(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogDebug, "LWSHTTPClient: " MSG, ##__VA_ARGS__)
 
 
 namespace litecore { namespace REST {
@@ -36,24 +29,23 @@ namespace litecore { namespace REST {
     using namespace litecore::websocket;
 
 
-    LWSHTTPClient::LWSHTTPClient(Response &response,
-                                 const C4Address &address,
-                                 const char *method,
-                                 alloc_slice requestBody)
+    LWSHTTPClient::LWSHTTPClient(Response &response)
     :_response(response)
-    {
-        LWSContext::initialize();
-        auto client = LWSContext::instance->connectClient(this,
-                                                          LWSContext::kHTTPClientProtocol,
-                                                          litecore::repl::Address(address),
-                                                          nullslice, method);
-        if (!client) {
-            _error = c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError,
-                                  "Could not open libwebsockets connection"_sl);
-            _finished = true;
-        }
+    { }
 
+
+    void LWSHTTPClient::connect(const C4Address &address,
+                                const char *method,
+                                fleece::Doc headers,
+                                alloc_slice requestBody)
+    {
+        _requestHeaders = headers;
         setDataToSend(requestBody);
+        LWSContext::initialize();
+        LWSContext::instance->connectClient(this,
+                                            LWSContext::kHTTPClientProtocol,
+                                            litecore::repl::Address(address),
+                                            nullslice, method);
     }
 
 
@@ -72,31 +64,35 @@ namespace litecore { namespace REST {
 
 
     // Dispatch events sent by libwebsockets.
-    int LWSHTTPClient::dispatch(lws *wsi, int reason, void *user, void *in, size_t len)
+    void LWSHTTPClient::dispatch(lws *wsi, int reason, void *user, void *in, size_t len)
     {
         switch ((lws_callback_reasons)reason) {
             case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
                 LogDebug("**** LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER");
-                return onSendHeaders() ? 0 : -1;
+                onSendHeaders(in, len);
+                break;
             case LWS_CALLBACK_CLIENT_HTTP_WRITEABLE:
                 LogDebug("**** LWS_CALLBACK_CLIENT_HTTP_WRITEABLE");
-                return onWriteRequest();
+                onWriteRequest();
+                break;
             case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
                 LogDebug("**** LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP");
                 onResponseAvailable();
-                return 0;
+                break;
             case LWS_CALLBACK_RECEIVE_CLIENT_HTTP:
                 LogDebug("**** LWS_CALLBACK_RECEIVE_CLIENT_HTTP");
-                return onDataAvailable() ? 0 : -1;
+                onDataAvailable();
+                break;
             case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
                 onRead(slice(in, len));
-                return 0;
+                break;
+            case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
             case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-                onCompleted();
-                return 0;
+                onCompleted(reason);
+                break;
 
             default:
-                return LWSProtocol::dispatch(wsi, reason, user, in, len);
+                LWSProtocol::dispatch(wsi, reason, user, in, len);
         }
     }
 
@@ -107,23 +103,32 @@ namespace litecore { namespace REST {
     }
 
 
-    bool LWSHTTPClient::onSendHeaders() {
-        //TODO: Write the headers!
+    bool LWSHTTPClient::onSendHeaders(void *in, size_t len) {
+        auto dst = (uint8_t**)in;
+        uint8_t *end = *dst + len;
+        auto dict = _requestHeaders.root().asDict();
+        for (Dict::iterator i(dict); i; ++i) {
+            string name = string(i.keyString()) + ':';
+            addRequestHeader(dst, end, name.c_str(), i.value().asString());
+        }
+
         if (hasDataToSend()) {
-            lws_client_http_body_pending(_client, 1);
-            lws_callback_on_writable(_client);
+            addContentLengthHeader(dst, end, dataToSend().size);
+            lws_client_http_body_pending(_client, true);
+            callbackOnWriteable();
         }
         return true;
     }
 
 
     bool LWSHTTPClient::onWriteRequest() {
-        if (!sendMoreData())
+        if (!sendMoreData(false))
             return false;
-        if (hasDataToSend())
-            lws_callback_on_writable(_client);
-        else
-            lws_client_http_body_pending(_client, 0);
+        if (hasDataToSend()) {
+            callbackOnWriteable();
+        } else {
+            lws_client_http_body_pending(_client, false);
+        }
         return true;
     }
 
@@ -138,12 +143,13 @@ namespace litecore { namespace REST {
     }
 
 
-    bool LWSHTTPClient::onDataAvailable() {
+    void LWSHTTPClient::onDataAvailable() {
         char buffer[1024 + LWS_PRE];
         char *start = buffer + LWS_PRE;
         int len = sizeof(buffer) - LWS_PRE;
         // this will call back into the event loop with LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ...
-        return lws_http_client_read(_client, &start, &len) == 0;
+        if (lws_http_client_read(_client, &start, &len) != 0)
+            setDispatchResult(-1);
     }
 
 
@@ -153,11 +159,18 @@ namespace litecore { namespace REST {
     }
 
 
-    void LWSHTTPClient::onCompleted() {
-        _response.setBody(_responseData.finish());
-        LogDebug("**** LWS_CALLBACK_COMPLETED_CLIENT_HTTP: %zd-byte response body",
-                 _response.body().size);
-        notifyFinished();
+    void LWSHTTPClient::onCompleted(int reason) {
+        if (!_finished) {
+            _response.setBody(_responseData.finish());
+            LogDebug("**** %-s: %zd-byte response body",
+                     LWSCallbackName(reason), _response.body().size);
+            setDispatchResult(-1); // close connection
+            notifyFinished();
+        }
     }
+
+
+    const char * LWSHTTPClient::className() const noexcept      {return "LWSHTTPClient";}
+
 
 } }

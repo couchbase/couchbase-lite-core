@@ -23,22 +23,26 @@
 
 namespace litecore { namespace REST {
 
-    enum class Method {
-        DEFAULT,
-        GET,
-        PUT,
-        DELETE,
-        POST,
+    enum Method: unsigned {
+        None        = 0,
 
-        kNumMethods
+        GET         = 1,
+        PUT         = 2,
+        DELETE      = 4,
+        POST        = 8,
+        OPTIONS     = 16,
+
+        ALL         = UINT_MAX
     };
+
+    using Methods = Method;
 
     /** Incoming HTTP request; read-only */
     class Request : public Body {
     public:
         Method method() const                   {return _method;}
 
-        fleece::slice path() const              {return _path;}
+        std::string path() const                {return _path;}
         std::string path(int i) const;
 
         std::string query(const char *param) const;
@@ -48,14 +52,15 @@ namespace litecore { namespace REST {
     protected:
         friend class Server;
         
-        Request(Method, fleece::slice path, fleece::slice queries,
+        Request(Method, std::string path, fleece::slice queries,
                 fleece::Doc headers, fleece::alloc_slice body);
         Request() { }
-        void setRequest(Method, fleece::slice path, fleece::slice queries,
+        void setRequest(Method, std::string path, fleece::slice queries,
                         fleece::Doc headers, fleece::alloc_slice body);
 
-        Method _method {Method::DEFAULT};
-        fleece::alloc_slice _path, _queries;
+        Method _method {Method::None};
+        std::string _path;
+        fleece::alloc_slice _queries;
     };
 
 } }

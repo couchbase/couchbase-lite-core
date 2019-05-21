@@ -40,16 +40,16 @@ namespace litecore { namespace REST {
     }
     
     
-    std::string Body::urlDecode(const std::string &str) {
-        std::string result;
+    string Body::urlDecode(const string &str) {
+        string result;
         result.reserve(str.size());
         litecore::REST::urlDecode(str.data(), str.size(), result, false);
         return result;
     }
 
 
-    std::string Body::urlEncode(const std::string &str) {
-        std::string result;
+    string Body::urlEncode(const string &str) {
+        string result;
         result.reserve(str.size() + 16);
         litecore::REST::urlEncode(str.data(), str.size(), result, false);
         return result;
@@ -86,12 +86,12 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE:
 
 
-    Response::Response(const std::string &method,
-                       const std::string &hostname,
+    Response::Response(const string &method,
+                       const string &hostname,
                        uint16_t port,
-                       const std::string &uri,
-                       const std::map<std::string, std::string> &headers,
-                       fleece::slice body)
+                       const string &uri,
+                       Doc headers,
+                       slice body)
     {
         C4Address address = {};
         address.scheme = "http"_sl;
@@ -99,8 +99,8 @@ namespace litecore { namespace REST {
         address.port = port;
         address.path = slice(uri);
         
-        Retained<LWSHTTPClient> conn = new LWSHTTPClient(*this, address, method.c_str(),
-                                                         alloc_slice(body));
+        Retained<LWSHTTPClient> conn = new LWSHTTPClient(*this);
+        conn->connect(address, method.c_str(), headers, alloc_slice(body));
         _error = conn->run();
     }
 
@@ -110,7 +110,7 @@ namespace litecore { namespace REST {
                        uint16_t port,
                        const string &uri,
                        slice body)
-    :Response(method, hostname, port, uri, {}, body)
+    :Response(method, hostname, port, uri, nullptr, body)
     { }
 
 } }

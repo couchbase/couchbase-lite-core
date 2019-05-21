@@ -28,14 +28,20 @@ namespace litecore { namespace websocket {
 
         virtual void dispatchResponder(REST::LWSResponder*) =0;
 
+        virtual const char *className() const noexcept      {return "LWSServer";}
+
     protected:
         virtual ~LWSServer();
         virtual bool createResponder(lws *client);
         
     private:
+        void createdVHost(lws_vhost*);
+
         std::mutex _mutex;
         std::unique_ptr<lws_http_mount> _mount;
         lws_vhost* _vhost {nullptr};
+
+        friend class LWSContext;
     };
 
 } }

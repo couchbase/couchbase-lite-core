@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// <https://github.com/civetweb/civetweb/blob/master/docs/UserManual.md#configuration-options>
 
 #include "RESTListener.hh"
 #include "c4.hh"
@@ -69,34 +68,28 @@ namespace litecore { namespace REST {
         _server->setExtraHeaders({{"Server", serverNameAndVersion()}});
 
         if (config.apis & kC4RESTAPI) {
-            auto notFound =  [](RequestResponse &rq) {
-                rq.respondWithStatus(HTTPStatus::NotFound, "Not Found");
-            };
-
             // Root:
-            addHandler(Method::GET, "/$", &RESTListener::handleGetRoot);
+            addHandler(Method::GET, "/", &RESTListener::handleGetRoot);
 
             // Top-level special handlers:
-            addHandler(Method::GET, "/_all_dbs$",       &RESTListener::handleGetAllDBs);
-            addHandler(Method::GET, "/_active_tasks$",  &RESTListener::handleActiveTasks);
-            addHandler(Method::POST, "/_replicate$",    &RESTListener::handleReplicate);
-            _server->addHandler(Method::DEFAULT, "/_",  notFound);
+            addHandler(Method::GET,     "/_all_dbs",       &RESTListener::handleGetAllDBs);
+            addHandler(Method::GET,     "/_active_tasks",  &RESTListener::handleActiveTasks);
+            addHandler(Method::POST,    "/_replicate",    &RESTListener::handleReplicate);
 
             // Database:
-            addDBHandler(Method::GET,   "/*$|/*/$", &RESTListener::handleGetDatabase);
-            addHandler  (Method::PUT,   "/*$|/*/$", &RESTListener::handleCreateDatabase);
-            addDBHandler(Method::DELETE,"/*$|/*/$", &RESTListener::handleDeleteDatabase);
-            addDBHandler(Method::POST,  "/*$|/*/$", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/[!_]*|/[!_]*/", &RESTListener::handleGetDatabase);
+            addHandler  (Method::PUT,   "/[!_]*|/[!_]*/", &RESTListener::handleCreateDatabase);
+            addDBHandler(Method::DELETE,"/[!_]*|/[!_]*/", &RESTListener::handleDeleteDatabase);
+            addDBHandler(Method::POST,  "/[!_]*|/[!_]*/", &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:
-            addDBHandler(Method::GET, "/*/_all_docs$", &RESTListener::handleGetAllDocs);
-            addDBHandler(Method::POST, "/*/_bulk_docs$", &RESTListener::handleBulkDocs);
-            _server->addHandler(Method::DEFAULT, "/*/_", notFound);
+            addDBHandler(Method::GET,   "/[!_]*/_all_docs", &RESTListener::handleGetAllDocs);
+            addDBHandler(Method::POST,  "/[!_]*/_bulk_docs", &RESTListener::handleBulkDocs);
 
             // Document:
-            addDBHandler(Method::GET,   "/*/*$", &RESTListener::handleGetDoc);
-            addDBHandler(Method::PUT,   "/*/*$", &RESTListener::handleModifyDoc);
-            addDBHandler(Method::DELETE,"/*/*$", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/[!_]*/[!_]*", &RESTListener::handleGetDoc);
+            addDBHandler(Method::PUT,   "/[!_]*/[!_]*", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::DELETE,"/[!_]*/[!_]*", &RESTListener::handleModifyDoc);
         }
     }
 

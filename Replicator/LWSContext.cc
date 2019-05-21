@@ -21,7 +21,6 @@
 #include "LWSServer.hh"
 #include "LWSUtil.hh"
 #include "Address.hh"
-#include "Logging.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
 #include "c4ExceptionUtils.hh"
@@ -30,9 +29,6 @@
 #include <Security/Security.h>
 #endif
 
-#include "libwebsockets.h"
-
-#define WSLogDomain (*(LogDomain*)kC4WebSocketLog)
 
 namespace litecore { namespace websocket {
     using namespace std;
@@ -77,41 +73,80 @@ namespace litecore { namespace websocket {
 
     LWSContext::LWSContext() {
         // Configure libwebsocket logging:
-        int flags = LLL_ERR  | LLL_WARN | LLL_NOTICE | LLL_INFO;
+        auto logLevel = c4log_getLevel(kC4WebSocketLog);
+        int flags = LLL_ERR | LLL_WARN | LLL_NOTICE;
+        if (logLevel <= kC4LogDebug) {
+            flags |= LLL_INFO;
+            flags |= LLL_DEBUG;
+        }
         lws_set_log_level(flags, &logCallback);
 
         _info.reset(new lws_context_creation_info);
         memset(_info.get(), 0, sizeof(*_info));
+        _info->user = this;
         _info->options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
-                       LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
-                       LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
+                         //LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
+                         LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
         _info->port = CONTEXT_PORT_NO_LISTEN;
         _info->protocols = kProtocols;
         _info->vhost_name = "LiteCore";  // if we ran a server, this would have to be the hostname
         _info->timeout_secs = kTimeoutSecs;
         _info->ws_ping_pong_interval = kDefaultPingIntervalSecs;
 
+#if 0 //TEMP
 #ifdef LWS_WITH_MBEDTLS
         // mbedTLS does not have a list of root CA certs, so get the system list for it:
         alloc_slice systemRootCertsPEM = getSystemRootCertsPEM();
         _info->client_ssl_ca_mem = systemRootCertsPEM.buf;
         _info->client_ssl_ca_mem_len = (unsigned)systemRootCertsPEM.size;
 #endif
+#endif
 
         _context = lws_create_context(_info.get());
         if (!_context)
             return;
-        LogDebug(WSLogDomain, "Created lws_context %p", _context);
+        LogDebug("Created lws_context %p", _context);
         startEventLoop();
     }
 
 
-    lws* LWSContext::connectClient(LWSProtocol *protocolInstance,
+    void LWSContext::enqueue(function<void()> fn) {
+        _enqueued.push(fn);
+        lws_cancel_service(_context);  // triggers LWS_CALLBACK_EVENT_WAIT_CANCELLE
+    }
+
+
+    void LWSContext::dequeue() {
+        bool empty;
+        auto fn = _enqueued.popNoWaiting(empty);
+        if (fn) {
+            LogDebug("(dequeue)");
+            fn();
+        } else {
+            LogDebug("(dequeue ... nothing to do)");
+        }
+    }
+
+
+    void LWSContext::connectClient(LWSProtocol *protocolInstance,
                                    const char *protocolName,
                                    const repl::Address &address,
                                    fleece::slice pinnedServerCert,
                                    const char *method)
     {
+        enqueue(bind(&LWSContext::_connectClient, this,
+                     protocolInstance, string(protocolName), address,
+                     alloc_slice(pinnedServerCert), (method ? string(method) :"")));
+    }
+
+
+    void LWSContext::_connectClient(LWSProtocol *protocolInstance,
+                                    const std::string &protocolName,
+                                    repl::Address address,
+                                    fleece::alloc_slice pinnedServerCert,
+                                    const string &method)
+    {
+        Log("LWSContext::_connectClient");
         // Create LWS client and connect:
         string hostname(slice(address.hostname));
         string path(slice(address.path));
@@ -124,12 +159,12 @@ namespace litecore { namespace websocket {
         info.host = info.address;
         info.origin = info.address;
         info.path = path.c_str();
-        info.local_protocol_name = protocolName;
+        info.local_protocol_name = protocolName.c_str();
 
-        if (method) {
-            info.method = method;
+        if (method.empty()) {
+            info.protocol = protocolName.c_str();  // WebSocket protocol to request on server
         } else {
-            info.protocol = protocolName;  // WebSocket protocol to request on server
+            info.method = method.c_str();
         }
 
         if (address.isSecure()) {
@@ -139,15 +174,24 @@ namespace litecore { namespace websocket {
         }
 
         lws* client = lws_client_connect_via_info(&info);
-        LogDebug(WSLogDomain, "Created lws %p for %s", client, protocolName);
-        return client;
+        LogDebug("Created lws %p for %s", client, protocolName.c_str());
+        protocolInstance->clientCreated(client);
     }
 
 
-    lws_vhost* LWSContext::startServer(LWSServer *serverInstance,
-                                       uint16_t port,
-                                       const char *hostname,
-                                       const lws_http_mount *mounts)
+    void LWSContext::startServer(LWSServer *server,
+                           uint16_t port,
+                           const char *hostname,
+                           const lws_http_mount *mounts)
+    {
+
+    }
+
+
+    void LWSContext::_startServer(LWSServer *serverInstance,
+                                  uint16_t port,
+                                  const string &hostname,
+                                  const lws_http_mount *mounts)
     {
         _info->user = serverInstance;
         _info->port = port;
@@ -155,8 +199,8 @@ namespace litecore { namespace websocket {
         _info->mounts = mounts;
         _info->vhost_name = kHTTPServerProtocol;
         lws_vhost *vhost = lws_create_vhost(_context, _info.get());
-        LogDebug(WSLogDomain, "Created vhost %p for %s", vhost, hostname);
-        return vhost;
+        LogDebug("Created vhost %p for %s", vhost, hostname.c_str());
+        serverInstance->createdVHost(vhost);
     }
 
 
@@ -171,7 +215,7 @@ namespace litecore { namespace websocket {
             case LLL_ERR:    c4level = kC4LogError; break;
             case LLL_WARN:   c4level = kC4LogWarning; break;
             case LLL_NOTICE: c4level = kC4LogInfo; break;
-            case LLL_INFO:   c4level = kC4LogInfo; break;
+            case LLL_INFO:   c4level = kC4LogVerbose; break;
             default:         c4level = kC4LogDebug; break;
         }
         C4LogToAt(kC4WebSocketLog, c4level, "libwebsocket: %.*s", SPLAT(msg));
@@ -182,7 +226,7 @@ namespace litecore { namespace websocket {
         // Create the thread running the context's LWS event loop:
         _thread.reset( new thread([&]() {
             SetThreadName("WebSocket dispatch (Couchbase Lite Core)");
-            LogDebug(WSLogDomain, "Libwebsocket event loop starting...");
+            LogDebug("Libwebsocket event loop starting...");
             while (true) {
                 lws_service(_context, 999999);  // TODO: How/when to stop this
             }
@@ -190,16 +234,24 @@ namespace litecore { namespace websocket {
     }
 
 
+    static const char* className() {return "LWSContext";}
+
+
     static int protocolCallback(lws *wsi, enum lws_callback_reasons reason,
                                 void *user, void *in, size_t len)
     {
         try {
+            if (reason == LWS_CALLBACK_EVENT_WAIT_CANCELLED) {
+                auto context = (LWSContext*)lws_context_user(lws_get_context(wsi));
+                context->dequeue();
+            }
+
             auto protocol = (LWSProtocol*) lws_get_opaque_user_data(wsi);
             if (protocol) {
-                return protocol->dispatch(wsi, reason, user, in, len);
+                return protocol->_mainDispatch(wsi, reason, user, in, len);
             } else {
                 if (reason != LWS_CALLBACK_EVENT_WAIT_CANCELLED)
-                    LogDebug(WSLogDomain, "**** %s (no client; wsi=%p, user=%p)",
+                    LogDebug("**** %-s (no client; wsi=%p, user=%p)",
                              LWSCallbackName(reason), wsi, user);
                 return lws_callback_http_dummy(wsi, reason, user, in, len);
             }
@@ -222,7 +274,7 @@ namespace litecore { namespace websocket {
                 return server->dispatch(wsi, reason, user, in, len);
             } else {
                 if (reason != LWS_CALLBACK_EVENT_WAIT_CANCELLED)
-                    LogDebug(WSLogDomain, "**** %s (no vhost protocol; wsi=%p, user=%p)",
+                    LogDebug("**** %-s (no vhost protocol; wsi=%p, user=%p)",
                              LWSCallbackName(reason), wsi, user);
                 return lws_callback_http_dummy(wsi, reason, user, in, len);
             }

@@ -240,11 +240,18 @@ public:
         if (_logRemoteRequests)
             C4Log("*** Server command: %s %.*s:%d%s",
               method.c_str(), SPLAT(_address.hostname), port, path.c_str());
+
+        Encoder enc;
+        enc.beginDict();
+        enc["Content-Type"_sl] = "application/json";
+        enc.endDict();
+        auto headers = enc.finish();
+
         auto r = make_unique<REST::Response>(method,
                              (string)(slice)_address.hostname,
                              port,
                              path,
-                             map<string,string>{{"Content-Type", "application/json"}},
+                             headers,
                              body);
         REQUIRE(r);
         INFO("Status: " << (int)r->status() << " " << r->statusMessage());

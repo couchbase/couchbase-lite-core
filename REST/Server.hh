@@ -24,6 +24,7 @@
 #include <map>
 #include <mutex>
 #include <functional>
+#include <vector>
 
 struct lws_http_mount;
 struct lws_vhost;
@@ -50,22 +51,27 @@ namespace litecore { namespace REST {
 
         using Handler = std::function<void(RequestResponse&)>;
 
-        void addHandler(Method, const char *uri, const Handler &h);
+        // Patterns use glob syntax: <http://man7.org/linux/man-pages/man7/glob.7.html>
+        // Multiple patterns can be joined with a "|".
+        // Patterns are tested in the order the handlers are added, and the first match is used.
+        void addHandler(Methods, const std::string &pattern, const Handler&);
 
     protected:
+        struct URIRule {
+            Methods     methods;
+            std::string pattern;
+            Handler     handler;
+        };
+
+        URIRule* findRule(Method method, const std::string &path);
         virtual void dispatchResponder(LWSResponder*) override;
 
     private:
-        struct URIHandlers {
-            Server* server;
-            std::array<Handler, size_t(Method::kNumMethods)> methods;
-        };
-
         void* const _owner;
         std::mutex _mutex;
         std::unique_ptr<lws_http_mount> _mount;
         lws_vhost* _vhost {nullptr};
-        std::map<std::string, URIHandlers> _handlers;
+        std::vector<URIRule> _rules;
         std::map<std::string, std::string> _extraHeaders;
     };
 

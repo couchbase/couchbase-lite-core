@@ -1126,8 +1126,6 @@
 		279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFTSRankFunction.cc; sourceTree = "<group>"; };
 		279D40F51EA533D900D8DD9D /* civetUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = civetUtils.cc; sourceTree = "<group>"; };
 		279D40F61EA533D900D8DD9D /* civetUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = civetUtils.hh; sourceTree = "<group>"; };
-		279D41041EA54D2600D8DD9D /* civetweb.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = civetweb.pch; sourceTree = "<group>"; };
-		279D41051EA54DB700D8DD9D /* civetweb.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = civetweb.xcconfig; sourceTree = "<group>"; };
 		279D41191EA555E900D8DD9D /* dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = dylib.xcconfig; sourceTree = "<group>"; };
 		279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib.xcconfig"; sourceTree = "<group>"; };
 		279D41281EA55A8D00D8DD9D /* c4REST.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4REST.exp; sourceTree = "<group>"; };
@@ -1601,7 +1599,6 @@
 				272851281EA46421009CA22F /* Request.hh */,
 				279D40F51EA533D900D8DD9D /* civetUtils.cc */,
 				279D40F61EA533D900D8DD9D /* civetUtils.hh */,
-				279D41041EA54D2600D8DD9D /* civetweb.pch */,
 				275A74D51ED3AA11008CB57B /* c4Listener.cc */,
 				279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */,
 				275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */,
@@ -1648,7 +1645,6 @@
 				2705155F1D90A29F00D62D05 /* Tests.xcconfig */,
 				2777146C1C5D6BDB003C0287 /* static_lib.xcconfig */,
 				279D41191EA555E900D8DD9D /* dylib.xcconfig */,
-				279D41051EA54DB700D8DD9D /* civetweb.xcconfig */,
 				2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */,
 				27FC81F51EAAB57B0028E38E /* LiteCore.xcconfig */,
 				273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */,
@@ -2225,15 +2221,15 @@
 				2771A0DD228B5F7900B18E0A /* LWSProtocol.hh */,
 				27719FE92284E94D00B18E0A /* LWSWebSocket.cc */,
 				27719FE82284E94D00B18E0A /* LWSWebSocket.hh */,
-				271BA50C228B99B800D49D13 /* LWSHTTPClient.hh */,
 				271BA50D228B99B800D49D13 /* LWSHTTPClient.cc */,
-				278BC9CA228E192F0055FF09 /* LWSServer.hh */,
+				271BA50C228B99B800D49D13 /* LWSHTTPClient.hh */,
 				278BC9CB228E192F0055FF09 /* LWSServer.cc */,
-				278BC9CF228E1D620055FF09 /* LWSResponder.hh */,
+				278BC9CA228E192F0055FF09 /* LWSServer.hh */,
 				278BC9D0228E1D620055FF09 /* LWSResponder.cc */,
-				278BC9C5228DF3D50055FF09 /* lws_callback_names.h */,
-				278BC9C6228DF4340055FF09 /* LWSUtil.hh */,
+				278BC9CF228E1D620055FF09 /* LWSResponder.hh */,
 				278BC9C7228DF4340055FF09 /* LWSUtil.cc */,
+				278BC9C6228DF4340055FF09 /* LWSUtil.hh */,
+				278BC9C5228DF3D50055FF09 /* lws_callback_names.h */,
 			);
 			name = "LibWebSocket-based";
 			sourceTree = "<group>";

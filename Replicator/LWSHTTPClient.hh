@@ -17,26 +17,32 @@ namespace litecore { namespace REST {
     class LWSHTTPClient : public websocket::LWSProtocol {
     public:
 
-        LWSHTTPClient(Response&,
-                      const C4Address &address,
-                      const char *method NONNULL,
-                      fleece::alloc_slice requestBody = {});
+        LWSHTTPClient(Response&);
 
+        void connect(const C4Address &address,
+                     const char *method NONNULL,
+                     fleece::Doc headers,
+                     fleece::alloc_slice requestBody = {});
+
+        // blocks until finished
         C4Error run();
 
+        virtual const char *className() const noexcept override;
+
     protected:
-        int dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
         void onConnectionError(C4Error error) override;
-        bool onSendHeaders();
+        bool onSendHeaders(void *in, size_t len);
         bool onWriteRequest();
         void onResponseAvailable();
-        bool onDataAvailable();
+        void onDataAvailable();
         void onRead(fleece::slice data);
-        void onCompleted();
+        void onCompleted(int reason);
         void waitTilFinished();
         void notifyFinished();
 
     private:
+        fleece::Doc _requestHeaders;
         Response& _response;
         C4Error _error {};
         fleece::Writer _responseData;

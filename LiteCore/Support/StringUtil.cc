@@ -45,6 +45,20 @@ namespace litecore {
     }
 
 
+    void split(const std::string &str, const std::string &separator,
+               function_ref<void(const std::string&)> callback)
+    {
+        auto end = str.size();
+        string::size_type pos, next;
+        for (pos = 0; pos < end; pos = next + separator.size()) {
+            next = str.find(separator, pos);
+            if (next == string::npos)
+                break;
+            callback( str.substr(pos, next-pos) );
+        }
+        callback( str.substr(pos) );
+    }
+
     stringstream& join(stringstream &s, const std::vector<std::string> &strings, const char *separator) {
         int n = 0;
         for (const string &str : strings) {

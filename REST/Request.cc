@@ -32,7 +32,7 @@ namespace litecore { namespace REST {
 #pragma mark - REQUEST:
 
 
-    Request::Request(Method method, fleece::slice path, fleece::slice queries,
+    Request::Request(Method method, string path, fleece::slice queries,
                      fleece::Doc headers, fleece::alloc_slice body)
     :Body(headers, body)
     ,_method(method)
@@ -41,7 +41,7 @@ namespace litecore { namespace REST {
     { }
 
 
-    void Request::setRequest(Method method, fleece::slice path, fleece::slice queries,
+    void Request::setRequest(Method method, string path, fleece::slice queries,
                              fleece::Doc headers, fleece::alloc_slice body)
     {
         setHeaders(headers);

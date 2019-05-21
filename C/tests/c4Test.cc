@@ -178,6 +178,7 @@ _versioning(kC4RevisionTrees)
             C4Error error;
             REQUIRE(c4log_writeToBinaryFile({kC4LogVerbose, c4str(path.c_str()), 16*1024, 1, false}, &error));
         }
+        //c4log_setBinaryFileLevel(kC4LogDebug);
         if (getenv("LiteCoreTestsQuiet"))
             c4log_setCallbackLevel(kC4LogWarning);
     });

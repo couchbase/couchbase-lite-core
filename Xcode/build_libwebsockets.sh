@@ -5,7 +5,7 @@
 cd "$SRCROOT/../vendor/libwebsockets"
 mkdir -p build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug \
+cmake .. -DCMAKE_BUILD_TYPE=Debug  -DLWS_WITH_ASAN=1 \
          -DLWS_WITHOUT_SERVER=0 \
          -DLWS_WITH_HTTP2=0 \
          -DLWS_WITH_SHARED=0 \

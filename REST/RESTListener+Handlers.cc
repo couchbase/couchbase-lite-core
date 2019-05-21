@@ -220,7 +220,6 @@ namespace litecore { namespace REST {
 
         // Splice the _id and _rev into the start of the JSON:
         rq.setHeader("Content-Type", "application/json");
-        rq.setChunked();    // OPT: Buffer this and write in one go
         rq.write("{\"_id\":\"");
         rq.write(docID);
         rq.write("\",\"_rev\":\"");

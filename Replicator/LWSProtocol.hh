@@ -17,20 +17,29 @@ namespace litecore { namespace websocket {
 
     class LWSProtocol : public fleece::RefCounted {
     public:
+        int _mainDispatch(lws*, int callback_reason, void *user, void *in, size_t len);
 
-        virtual int dispatch(lws*, int callback_reason, void *user, void *in, size_t len);
+        virtual const char *className() const noexcept =0;
 
     protected:
         LWSProtocol() { }
         LWSProtocol(lws *connection);
         virtual ~LWSProtocol();
+
+        virtual void dispatch(lws*, int callback_reason, void *user, void *in, size_t len);
+
+        void setDispatchResult(int result)          {_dispatchResult = result;}
         
+        bool check(int status);
+
+        virtual void onDestroy()                    { }
         virtual void onConnectionError(C4Error) =0;
 
         std::pair<int,std::string> decodeHTTPStatus();
 
         bool addRequestHeader(uint8_t* *dst, uint8_t *end,
                               const char *header, fleece::slice value);
+        bool addContentLengthHeader(uint8_t* *dst, uint8_t *end, uint64_t contentLength);
 
         bool hasHeader(int /*lws_token_indexes*/ tokenIndex);
         std::string getHeader(int /*lws_token_indexes*/ tokenIndex);
@@ -42,9 +51,14 @@ namespace litecore { namespace websocket {
         fleece::alloc_slice getCertPublicKey(fleece::slice certPEM);
         fleece::alloc_slice getPeerCertPublicKey();
 
+        void callbackOnWriteable();
+
+        // This function may be called from other threads
         void setDataToSend(fleece::alloc_slice);
+        
+        fleece::slice dataToSend() const        {return _unsent;}
         bool hasDataToSend() const              {return _unsent.size > 0;}
-        bool sendMoreData();
+        bool sendMoreData(bool asServer);
 
         template <class BLOCK>
         void synchronized(BLOCK block) {
@@ -52,12 +66,17 @@ namespace litecore { namespace websocket {
             block();
         }
 
-
         std::mutex _mutex;                       // For synchronization
         ::lws* _client {nullptr};
+        int _dispatchResult;
+
+    private:
+        void clientCreated(::lws* client);
 
         fleece::alloc_slice _dataToSend;
         fleece::slice _unsent;
+
+        friend class LWSContext;
     };
 
 } }

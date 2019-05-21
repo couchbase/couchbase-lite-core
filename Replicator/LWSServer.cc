@@ -21,13 +21,6 @@
 #include "LWSContext.hh"
 #include "LWSUtil.hh"
 #include "Error.hh"
-#include "libwebsockets.h"
-
-
-#undef Log
-#undef LogDebug
-#define Log(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogInfo, "LWSServer: " MSG, ##__VA_ARGS__)
-#define LogDebug(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogDebug, "LWSServer: " MSG, ##__VA_ARGS__)
 
 
 namespace litecore { namespace websocket {
@@ -42,9 +35,7 @@ namespace litecore { namespace websocket {
         _mount->origin_protocol = LWSMPRO_CALLBACK;
 
         LWSContext::initialize();
-        _vhost = LWSContext::instance->startServer(this, port, hostname, _mount.get());
-        if (!_vhost)
-            error::_throw(error::UnexpectedError, "Couldn't start LWSServer");
+        LWSContext::instance->startServer(this, port, hostname, _mount.get());
     }
 
 
@@ -54,13 +45,20 @@ namespace litecore { namespace websocket {
     }
 
 
+    void LWSServer::createdVHost(lws_vhost *vhost) {
+        _vhost = vhost;
+        if (!vhost)
+            Warn("Unable to create libwebsockets vhost!");
+    }
+
+
     int LWSServer::dispatch(lws *client, int reason, void *user, void *in, size_t len) {
         switch ((lws_callback_reasons)reason) {
             case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED:
                 return createResponder(client) ? 0 : -1;
             default:
                 if (reason < 31 || reason > 36)
-                    LogDebug("**** %s", LWSCallbackName(reason));
+                    LogDebug("**** %-s", LWSCallbackName(reason));
                 return lws_callback_http_dummy(client, (lws_callback_reasons)reason, user, in, len);
         }
     }

@@ -16,11 +16,15 @@ namespace litecore { namespace websocket {
 
 namespace litecore { namespace REST {
 
-    /** Manages the server side of a connection. */
+    /** Represents a client HTTP request, and the response to the request. */
     class LWSResponder : public websocket::LWSProtocol, public Request {
     public:
 
+        /** Initialize on a new incoming connection. Will read the incoming request,
+            then call LWSServer::dispatchResponder with itself as the parameter. */
         LWSResponder(websocket::LWSServer*, lws *connection);
+
+        virtual const char *className() const noexcept override      {return "LWSResponder";}
 
         // Response status:
 
@@ -45,9 +49,7 @@ namespace litecore { namespace REST {
 
         // Response body:
 
-        // If you call write() more than once, you must first call setContentLength or setChunked.
         void setContentLength(uint64_t length);
-        void setChunked();
         void uncacheable();
 
         void write(fleece::slice);
@@ -63,38 +65,33 @@ namespace litecore { namespace REST {
         void finish();
 
     protected:
-        int dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
         void onConnectionError(C4Error error) override;
-
         Method getMethod();
 
     private:
-        bool onRequestReady(fleece::slice uri);
-        bool sendHeaders();
-        bool onWriteRequest();
+        void sendStatus();
+        void onRequestReady(fleece::slice uri);
+        void sendHeaders();
+        void onWriteRequest();
 
         websocket::LWSServer* _server;
-        Method _requestMethod;
-        fleece::alloc_slice _requestURI;
-        fleece::Doc _requestHeaders;
-
-        fleece::alloc_slice _responseHeaders;
-        uint8_t *_responseHeadersPos {nullptr};
-
-        fleece::Writer _responseData;
-        fleece::alloc_slice _responseBody;
-        fleece::slice _unsentBody;
         C4Error _error {};
-        std::condition_variable _condition;
-        bool _finished {false};
 
-        HTTPStatus _status {HTTPStatus::OK};
-        std::string _statusMessage;
-        bool _sentStatus {false};
-        bool _chunked {false};
-        int64_t _contentLength {-1};
-        int64_t _contentSent {0};
-        std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;
+        HTTPStatus _status {HTTPStatus::OK};        // Response status code
+        std::string _statusMessage;                 // Response custom status message
+        bool _sentStatus {false};                   // Sent the response line yet?
+
+        int64_t _contentLength {-1};                // Content-Length, once it's set
+        fleece::alloc_slice _responseHeaders;       // Buffer where LWS writes response headers
+        uint8_t *_responseHeadersPos {nullptr};     // Current pos in buffer
+
+        fleece::Writer _responseWriter;             // Output stream for response body
+        std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;  // Used for writing JSON to response
+        fleece::alloc_slice _responseBody;          // Finished response body
+        fleece::slice _unsentBody;                  // Unsent portion of _responseBody
+        bool _finished {false};                     // Finished configuring the response?
+
     };
 
 } }

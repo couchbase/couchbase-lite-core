@@ -19,10 +19,12 @@
 #pragma once
 #include "fleece/slice.hh"
 #include "PlatformCompat.hh"
+#include "function_ref.hh"
 #include <stdarg.h>
 #include <string>
 #include <vector>
 #include <sstream>
+
 #if defined __ANDROID__ && !defined __clang__
 // gcc for android is not fully c++11 compliant, so we define the missing functions here
 namespace std  {
@@ -59,6 +61,10 @@ namespace litecore {
 
     /** Like vsprintf(), but returns a std::string */
     std::string vformat(const char *fmt NONNULL, va_list);
+
+    void split(const std::string &str,
+               const std::string &separator,
+               fleece::function_ref<void(const std::string&)> callback);
 
     /** Returns the strings in the vector concatenated together,
         with the separator (if non-null) between them. */

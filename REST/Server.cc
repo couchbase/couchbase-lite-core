@@ -20,21 +20,17 @@
 #include "LWSResponder.hh"
 #include "Request.hh"
 #include "Error.hh"
+#include "StringUtil.hh"
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
 #include "c4ListenerInternal.hh"
 #include "libwebsockets.h"
 #include "LWSContext.hh"
-
-using namespace std;
-
-#undef Log
-#undef LogDebug
-#define Log(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogInfo, "Server: " MSG, ##__VA_ARGS__)
-#define LogDebug(MSG, ...)  C4LogToAt(kC4WebSocketLog, kC4LogDebug, "Server: " MSG, ##__VA_ARGS__)
+#include <fnmatch.h>                //TODO: Windows support? (it is in POSIX...)
 
 
 namespace litecore { namespace REST {
+    using namespace std;
     using namespace litecore::websocket;
 
 
@@ -53,39 +49,39 @@ namespace litecore { namespace REST {
     }
 
 
-    void Server::addHandler(Method method, const char *uri, const Handler &h) {
+    void Server::addHandler(Methods methods, const string &patterns, const Handler &handler) {
         lock_guard<mutex> lock(_mutex);
+        split(patterns, "|", [&](const string &pattern) {
+            _rules.push_back({methods, pattern, handler});
+        });
+    }
 
-        string uriStr(uri);
-        auto i = _handlers.find(uriStr);
-        if (i == _handlers.end()) {
-            URIHandlers handlers;
-            handlers.server = this;
-            handlers.methods[unsigned(method)] = h;
-            bool inserted;
-            tie(i, inserted) = _handlers.insert({uriStr, handlers});
+
+    Server::URIRule* Server::findRule(Method method, const string &path) {
+        lock_guard<mutex> lock(_mutex);
+        for (auto &rule : _rules) {
+            if ((rule.methods & method)
+                    && 0 == fnmatch(rule.pattern.c_str(), path.c_str(), FNM_PATHNAME))
+                return &rule;
         }
-        i->second.methods[unsigned(method)] = h;
+        return nullptr;
     }
 
 
     void Server::dispatchResponder(LWSResponder *rq) {
         try{
-            Handler handler;
-            map<string, string> extraHeaders;
-            {
-                lock_guard<mutex> lock(handlers->server->_mutex);
-                handler = handlers->methods[method];
-                if (!handler)
-                    handler = handlers->methods[DEFAULT];
-                extraHeaders = handlers->server->_extraHeaders;
-            }
-
-            if (!handler)
+            string pathStr(rq->path());
+            auto rule = findRule(rq->method(), pathStr);
+            if (rule) {
+                C4Log("Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
+                rule->handler(*rq);
+            } else if (nullptr != (rule = findRule(Methods::ALL, pathStr))) {
+                C4Log("Wrong method for rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
                 rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
-            else
-                (handler(*rq));
-            rq->finish();
+            } else {
+                C4Log("No rule matched path %s", pathStr.c_str());
+                rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
+            }
         } catch (const std::exception &x) {
             C4Warn("HTTP handler caught C++ exception: %s", x.what());
             rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");

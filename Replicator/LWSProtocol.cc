@@ -19,14 +19,11 @@
 #include "LWSProtocol.hh"
 #include "LWSUtil.hh"
 #include "Error.hh"
-#include "Logging.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include "fleece/Fleece.hh"
-#include "libwebsockets.h"
 #include <errno.h>
 
-#define WSLogDomain (*(LogDomain*)kC4WebSocketLog)
 
 namespace litecore { namespace websocket {
     using namespace std;
@@ -47,32 +44,66 @@ namespace litecore { namespace websocket {
         DebugAssert(!_client);
     }
 
-    int LWSProtocol::dispatch(lws *client, int reason, void *user, void *in, size_t len) {
+
+    void LWSProtocol::clientCreated(::lws* client) {
+        if (client) {
+            _client = client;
+        } else {
+            onConnectionError(c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError,
+                                           "libwebsockets unable to create client"_sl));
+        }
+    }
+
+
+    int LWSProtocol::_mainDispatch(lws* client, int reason, void *user, void *in, size_t len) {
+        Retained<LWSProtocol> retainMe = this;  // prevent destruction during dispatch
+        _dispatchResult = 0;
+        dispatch(client, reason, user, in, len);
+        return _dispatchResult;
+    }
+
+    void LWSProtocol::dispatch(lws *client, int reason, void *user, void *in, size_t len) {
+        if (_dispatchResult != 0)
+            return;
+
         switch ((lws_callback_reasons)reason) {
                 // Client lifecycle:
             case LWS_CALLBACK_WSI_CREATE:
-                LogDebug(WSLogDomain, "**** LWS_CALLBACK_WSI_CREATE (wsi=%p)", client);
+                LogVerbose("**** LWS_CALLBACK_WSI_CREATE (wsi=%p)", client);
                 Assert(!_client);
                 //if (!_client)
                     _client = client;
                 retain(this);
                 break;
             case LWS_CALLBACK_WSI_DESTROY:
-                LogDebug(WSLogDomain, "**** LWS_CALLBACK_WSI_DESTROY (wsi=%p)", client);
+                LogVerbose("**** LWS_CALLBACK_WSI_DESTROY (wsi=%p)", client);
+                Assert(client == _client);
+                onDestroy();
                 _client = nullptr;
                 release(this);
                 break;
             case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
-                LogDebug(WSLogDomain, "**** LWS_CALLBACK_CLIENT_CONNECTION_ERROR");
+                LogVerbose("**** LWS_CALLBACK_CLIENT_CONNECTION_ERROR");
                 onConnectionError(getConnectionError(slice(in, len)));
                 break;
             }
             default:
                 if (reason < 31 || reason > 36)
-                    LogDebug(WSLogDomain, "**** %s", LWSCallbackName(reason));
+                    LogVerbose("**** %-s (default)", LWSCallbackName(reason));
                 break;
         }
-        return lws_callback_http_dummy(client, (lws_callback_reasons)reason, user, in, len);
+        
+        if (_dispatchResult == 0)
+            check(lws_callback_http_dummy(client, (lws_callback_reasons)reason, user, in, len));
+    }
+
+
+    bool LWSProtocol::check(int status) {
+        if (status == 0)
+            return true;
+        LogVerbose("    LWSProtocol::check(%d) -- failure(?)", status);
+        setDispatchResult(status);
+        return false;
     }
 
 
@@ -118,17 +149,24 @@ namespace litecore { namespace websocket {
     bool LWSProtocol::addRequestHeader(uint8_t* *dst, uint8_t *end,
                                        const char *header, slice value)
     {
-        int i = lws_add_http_header_by_name(_client, (const uint8_t*)header,
-                                            (const uint8_t*)value.buf, int(value.size),
-                                            dst, end);
-        if (i != 0) {
-            C4LogToAt(kC4WebSocketLog, kC4LogError,
-                      "libwebsockets wouldn't let me add enough HTTP headers");
+        DebugAssert(header[strlen(header)-1] == ':');
+        if (!check(lws_add_http_header_by_name(_client,
+                                               (const uint8_t*)header,
+                                               (const uint8_t*)value.buf, int(value.size),
+                                               dst, end))) {
+            LogError("libwebsockets wouldn't let me add enough HTTP headers");
             return false;
         }
-        C4LogToAt(kC4WebSocketLog, kC4LogDebug,
-                  "Added header:  %s %.*s", header, SPLAT(value));
+        LogVerbose("Added header:  %s %.*s", header, SPLAT(value));
         return true;
+    }
+
+
+    bool LWSProtocol::addContentLengthHeader(uint8_t* *dst, uint8_t *end,
+                                             uint64_t contentLength)
+    {
+        LogVerbose("Added header:  Content-Length: %llu", contentLength);
+        return check(lws_add_http_header_content_length(_client, contentLength, dst, end));
     }
 
 
@@ -209,7 +247,7 @@ namespace litecore { namespace websocket {
             string header = headerName;
             normalizeHeaderCase(header);
 
-            LogDebug(WSLogDomain, "      %s: %s", header.c_str(), value.c_str());
+            LogVerbose("      %s: %s", header.c_str(), value.c_str());
             headers.writeKey(slice(header));
             headers.writeString(value);
             any = true;
@@ -255,34 +293,58 @@ namespace litecore { namespace websocket {
                 statusMessage = "unknown error";
             }
             if (domain == NetworkDomain && status == kC4NetErrUnknown)
-                C4LogToAt(kC4WebSocketLog, kC4LogWarning,
-                          "No error code mapping for libwebsocket message '%.*s'",
-                          SPLAT(lwsErrorMessage));
+                Warn("No error code mapping for libwebsocket message '%.*s'",
+                     SPLAT(lwsErrorMessage));
         }
         return c4error_make(domain, status, slice(statusMessage));
     }
 
 
-    void LWSProtocol::setDataToSend(fleece::alloc_slice data) {
-        Assert(!_dataToSend);
-        _dataToSend = data;
-        _unsent = _dataToSend;
+    void LWSProtocol::callbackOnWriteable() {
+        int status = lws_callback_on_writable(_client);
+        if (status < 0)
+            Warn("lws_callback_on_writable returned %d! (this=%p, wsi=%p)", status, this, _client);
     }
 
 
-    bool LWSProtocol::sendMoreData() {
-        slice chunk = _unsent.read(kWriteChunkSize);
-        lws_write_protocol type;
-        if (_unsent.size > 0) {
-            type = LWS_WRITE_HTTP;
-            lws_callback_on_writable(_client);
-        } else {
-            type = LWS_WRITE_HTTP_FINAL;
-            _dataToSend = nullslice;
-            _unsent = nullslice;
-        }
-        LogDebug(WSLogDomain, "Writing %zu bytes", chunk.size);
-        return 0 ==  lws_write(_client, (uint8_t*)chunk.buf, chunk.size, type);
+    void LWSProtocol::setDataToSend(fleece::alloc_slice data) {
+        synchronized([&](){
+            Assert(!_dataToSend);
+            _dataToSend = data;
+            _unsent = _dataToSend;
+            if (_client && _unsent.size > 0)
+                callbackOnWriteable();
+        });
+    }
+
+
+    bool LWSProtocol::sendMoreData(bool asServer) {
+        bool ok = true;
+        synchronized([&](){
+            slice chunk = _unsent.readAtMost(kWriteChunkSize);
+            lws_write_protocol type = LWS_WRITE_HTTP;
+            if (_unsent.size > 0) {
+                Log("--Writing %zu bytes", chunk.size);
+            } else {
+                Log("--Writing final %zu bytes", chunk.size);
+                if (asServer)
+                    type = LWS_WRITE_HTTP_FINAL;
+            }
+            //LogDebug("    %.*s", SPLAT(chunk));
+
+            if (lws_write(_client, (uint8_t*)chunk.buf, chunk.size, type) < 0) {
+                Log("  --lws_write failed!");
+                ok = false;
+            }
+
+            if (_unsent.size > 0) {
+                callbackOnWriteable();
+            } else {
+                _dataToSend = nullslice;
+                _unsent = nullslice;
+            }
+        });
+        return ok;
     }
 
 
