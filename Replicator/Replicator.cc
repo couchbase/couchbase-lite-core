@@ -83,7 +83,27 @@ namespace litecore { namespace repl {
         connection()->start();
         // Now wait for _onConnect or _onClose...
         
-        // handle the unresolved docs
+        _findExistingConflicts();
+
+        if (_options.push > kC4Passive || _options.pull > kC4Passive) {
+            // Get the remote DB ID:
+            C4Error err;
+            string key = remoteDBIDString();
+            C4RemoteID remoteDBID = _db->lookUpRemoteDBID(slice(key), &err);
+            if (remoteDBID) {
+                logVerbose("Remote-DB ID %u found for target <%s>", remoteDBID, key.c_str());
+            } else {
+                warn("Couldn't get remote-DB ID for target <%s>: error %d/%d",
+                     key.c_str(), err.domain, err.code);
+                gotError(err);
+                stop();
+            }
+            // Get the local checkpoint:
+            getLocalCheckpoint();
+        }
+    }
+    
+    void Replicator::_findExistingConflicts() {
         C4Error err;
         C4DocEnumerator* e = _db->unresolvedDocsEnumerator(&err);
         if (e) {
@@ -103,22 +123,6 @@ namespace litecore { namespace repl {
         } else {
             warn("Couldn't get unresolved docs enumerator: error %d/%d", err.domain, err.code);
             gotError(err);
-        }
-
-        if (_options.push > kC4Passive || _options.pull > kC4Passive) {
-            // Get the remote DB ID:
-            string key = remoteDBIDString();
-            C4RemoteID remoteDBID = _db->lookUpRemoteDBID(slice(key), &err);
-            if (remoteDBID) {
-                logVerbose("Remote-DB ID %u found for target <%s>", remoteDBID, key.c_str());
-            } else {
-                warn("Couldn't get remote-DB ID for target <%s>: error %d/%d",
-                     key.c_str(), err.domain, err.code);
-                gotError(err);
-                stop();
-            }
-            // Get the local checkpoint:
-            getLocalCheckpoint();
         }
     }
 
