@@ -84,7 +84,7 @@ namespace litecore { namespace repl {
         // Now wait for _onConnect or _onClose...
         
         // handle the unresolved docs
-        C4Error err = { };
+        C4Error err;
         C4DocEnumerator* e = _db->unresolvedDocsEnumerator(&err);
         if (e) {
             while(c4enum_next(e, &err)) {
