@@ -87,8 +87,8 @@ namespace litecore { namespace repl {
 
         if (_options.push > kC4Passive || _options.pull > kC4Passive) {
             // Get the remote DB ID:
-            C4Error err;
             string key = remoteDBIDString();
+            C4Error err;
             C4RemoteID remoteDBID = _db->lookUpRemoteDBID(slice(key), &err);
             if (remoteDBID) {
                 logVerbose("Remote-DB ID %u found for target <%s>", remoteDBID, key.c_str());
