@@ -16,7 +16,8 @@ namespace litecore { namespace websocket {
 
 namespace litecore { namespace REST {
 
-    /** Represents an incoming client HTTP request, and the response to the request. */
+    /** Represents an _incoming_ HTTP request received by a LWSServer,
+        and the response to the request. */
     class LWSResponder : public websocket::LWSProtocol, public Request {
     public:
 

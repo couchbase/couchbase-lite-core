@@ -172,7 +172,7 @@
 		278963621D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
 		278963641D7A376900493096 /* EncryptedStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278963611D7A376900493096 /* EncryptedStream.hh */; };
 		278963671D7B7E7D00493096 /* Stream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963661D7B7E7D00493096 /* Stream.cc */; };
-		278BC9C4228DE92C0055FF09 /* civetUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* civetUtils.cc */; };
+		278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* netUtils.cc */; };
 		278BC9C8228DF4340055FF09 /* LWSUtil.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BC9C6228DF4340055FF09 /* LWSUtil.hh */; };
 		278BC9C9228DF4340055FF09 /* LWSUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BC9C7228DF4340055FF09 /* LWSUtil.cc */; };
 		278BC9CC228E192F0055FF09 /* LWSServer.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BC9CA228E192F0055FF09 /* LWSServer.hh */; };
@@ -192,7 +192,7 @@
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
 		279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */; };
-		279D40F91EA533D900D8DD9D /* civetUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D40F61EA533D900D8DD9D /* civetUtils.hh */; };
+		279D40F91EA533D900D8DD9D /* netUtils.hh in Headers */ = {isa = PBXBuildFile; fileRef = 279D40F61EA533D900D8DD9D /* netUtils.hh */; };
 		27A924981D9B316D00086206 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A924971D9B316D00086206 /* main.m */; };
 		27A9249B1D9B316D00086206 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249A1D9B316D00086206 /* AppDelegate.m */; };
 		27A9249E1D9B316D00086206 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 27A9249D1D9B316D00086206 /* ViewController.m */; };
@@ -802,10 +802,6 @@
 		272850AA1E9AF53B009CA22F /* Upgrader.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Upgrader.hh; sourceTree = "<group>"; };
 		272850B41E9BE361009CA22F /* UpgraderTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UpgraderTest.cc; sourceTree = "<group>"; };
 		272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = CppTests.xcconfig; sourceTree = "<group>"; };
-		272851161EA44961009CA22F /* civetweb.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = civetweb.h; path = include/civetweb.h; sourceTree = "<group>"; };
-		272851171EA44992009CA22F /* civetweb.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = civetweb.c; path = src/civetweb.c; sourceTree = "<group>"; };
-		272851181EA44992009CA22F /* handle_form.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = handle_form.inl; path = src/handle_form.inl; sourceTree = "<group>"; };
-		272851191EA44992009CA22F /* md5.inl */ = {isa = PBXFileReference; lastKnownFileType = text; name = md5.inl; path = src/md5.inl; sourceTree = "<group>"; };
 		272851201EA4537A009CA22F /* RESTListener.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTListener.cc; sourceTree = "<group>"; };
 		272851211EA4537A009CA22F /* RESTListener.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RESTListener.hh; sourceTree = "<group>"; };
 		272851271EA46421009CA22F /* Request.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Request.cc; sourceTree = "<group>"; };
@@ -1124,11 +1120,10 @@
 		279976311E94AAD000B27639 /* IncomingBlob.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = IncomingBlob.cc; sourceTree = "<group>"; };
 		279976321E94AAD000B27639 /* IncomingBlob.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = IncomingBlob.hh; sourceTree = "<group>"; };
 		279C18EF1DF2051600D3221D /* SQLiteFTSRankFunction.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SQLiteFTSRankFunction.cc; sourceTree = "<group>"; };
-		279D40F51EA533D900D8DD9D /* civetUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = civetUtils.cc; sourceTree = "<group>"; };
-		279D40F61EA533D900D8DD9D /* civetUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = civetUtils.hh; sourceTree = "<group>"; };
+		279D40F51EA533D900D8DD9D /* netUtils.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = netUtils.cc; sourceTree = "<group>"; };
+		279D40F61EA533D900D8DD9D /* netUtils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = netUtils.hh; sourceTree = "<group>"; };
 		279D41191EA555E900D8DD9D /* dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = dylib.xcconfig; sourceTree = "<group>"; };
 		279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib.xcconfig"; sourceTree = "<group>"; };
-		279D41281EA55A8D00D8DD9D /* c4REST.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4REST.exp; sourceTree = "<group>"; };
 		279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib_Release.xcconfig"; sourceTree = "<group>"; };
 		279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreServ.xcconfig; sourceTree = "<group>"; };
 		27A16314201FC2A500C18D9C /* DataFile+Shared.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "DataFile+Shared.hh"; sourceTree = "<group>"; };
@@ -1582,6 +1577,31 @@
 			name = "Other Frameworks";
 			sourceTree = "<group>";
 		};
+		271BA53122960DF900D49D13 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+				2771A0DA228B5A4100B18E0A /* LWSContext.cc */,
+				2771A0D9228B5A4100B18E0A /* LWSContext.hh */,
+				2771A0DE228B5F7900B18E0A /* LWSProtocol.cc */,
+				2771A0DD228B5F7900B18E0A /* LWSProtocol.hh */,
+				27719FE92284E94D00B18E0A /* LWSWebSocket.cc */,
+				27719FE82284E94D00B18E0A /* LWSWebSocket.hh */,
+				271BA50D228B99B800D49D13 /* LWSHTTPClient.cc */,
+				271BA50C228B99B800D49D13 /* LWSHTTPClient.hh */,
+				278BC9CB228E192F0055FF09 /* LWSServer.cc */,
+				278BC9CA228E192F0055FF09 /* LWSServer.hh */,
+				278BC9D0228E1D620055FF09 /* LWSResponder.cc */,
+				278BC9CF228E1D620055FF09 /* LWSResponder.hh */,
+				278BC9C7228DF4340055FF09 /* LWSUtil.cc */,
+				278BC9C6228DF4340055FF09 /* LWSUtil.hh */,
+				278BC9C5228DF3D50055FF09 /* lws_callback_names.h */,
+				2771A0ED228B832400B18E0A /* build_libwebsockets.sh */,
+				2771A0EC228B832400B18E0A /* build_mbedtls.sh */,
+			);
+			name = Networking;
+			path = ../Networking;
+			sourceTree = "<group>";
+		};
 		272851111EA44902009CA22F /* REST */ = {
 			isa = PBXGroup;
 			children = (
@@ -1597,29 +1617,17 @@
 				276E021A1EA983EE00FEFE8A /* Response.hh */,
 				272851271EA46421009CA22F /* Request.cc */,
 				272851281EA46421009CA22F /* Request.hh */,
-				279D40F51EA533D900D8DD9D /* civetUtils.cc */,
-				279D40F61EA533D900D8DD9D /* civetUtils.hh */,
+				279D40F51EA533D900D8DD9D /* netUtils.cc */,
+				279D40F61EA533D900D8DD9D /* netUtils.hh */,
 				275A74D51ED3AA11008CB57B /* c4Listener.cc */,
 				279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */,
 				275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */,
-				279D41281EA55A8D00D8DD9D /* c4REST.exp */,
 				270BEE1C20647E8A005E8BE8 /* EE */,
 				276E020F1EA9712700FEFE8A /* tests */,
 				2750735B1F4B5EDB003D2CCE /* CMakeLists.txt */,
 			);
 			name = REST;
 			path = ../REST;
-			sourceTree = "<group>";
-		};
-		272851151EA44921009CA22F /* civetweb */ = {
-			isa = PBXGroup;
-			children = (
-				272851161EA44961009CA22F /* civetweb.h */,
-				272851171EA44992009CA22F /* civetweb.c */,
-				272851181EA44992009CA22F /* handle_form.inl */,
-				272851191EA44992009CA22F /* md5.inl */,
-			);
-			path = civetweb;
 			sourceTree = "<group>";
 		};
 		273E9F7C1C518678003115A6 /* Rev-Trees */ = {
@@ -1748,6 +1756,7 @@
 				2757DE551B9FC34E002EE261 /* C API */,
 				27E4871019217187007D8940 /* LiteCore */,
 				27CCC7CA1E525E6D00CE1989 /* Replicator */,
+				271BA53122960DF900D49D13 /* Networking */,
 				272851111EA44902009CA22F /* REST */,
 				275607791BA22E5700F58218 /* Java */,
 				275072AD18E4A68E00A80C5A /* Objective-C Tests */,
@@ -2210,30 +2219,6 @@
 			path = mbedtls;
 			sourceTree = "<group>";
 		};
-		2771A0E1228B76D000B18E0A /* LibWebSocket-based */ = {
-			isa = PBXGroup;
-			children = (
-				2771A0ED228B832400B18E0A /* build_libwebsockets.sh */,
-				2771A0EC228B832400B18E0A /* build_mbedtls.sh */,
-				2771A0DA228B5A4100B18E0A /* LWSContext.cc */,
-				2771A0D9228B5A4100B18E0A /* LWSContext.hh */,
-				2771A0DE228B5F7900B18E0A /* LWSProtocol.cc */,
-				2771A0DD228B5F7900B18E0A /* LWSProtocol.hh */,
-				27719FE92284E94D00B18E0A /* LWSWebSocket.cc */,
-				27719FE82284E94D00B18E0A /* LWSWebSocket.hh */,
-				271BA50D228B99B800D49D13 /* LWSHTTPClient.cc */,
-				271BA50C228B99B800D49D13 /* LWSHTTPClient.hh */,
-				278BC9CB228E192F0055FF09 /* LWSServer.cc */,
-				278BC9CA228E192F0055FF09 /* LWSServer.hh */,
-				278BC9D0228E1D620055FF09 /* LWSResponder.cc */,
-				278BC9CF228E1D620055FF09 /* LWSResponder.hh */,
-				278BC9C7228DF4340055FF09 /* LWSUtil.cc */,
-				278BC9C6228DF4340055FF09 /* LWSUtil.hh */,
-				278BC9C5228DF3D50055FF09 /* lws_callback_names.h */,
-			);
-			name = "LibWebSocket-based";
-			sourceTree = "<group>";
-		};
 		277B956122459796005B7E79 /* API implementation */ = {
 			isa = PBXGroup;
 			children = (
@@ -2247,7 +2232,6 @@
 				2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */,
 				278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */,
 				278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */,
-				2771A0E1228B76D000B18E0A /* LibWebSocket-based */,
 			);
 			name = "API implementation";
 			sourceTree = "<group>";
@@ -2382,7 +2366,6 @@
 				277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */,
 				27719FE52284E84300B18E0A /* libwebsockets */,
 				2771A01F2284EA9F00B18E0A /* mbedtls */,
-				272851151EA44921009CA22F /* civetweb */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
 				27D74A731D4D3F0700D806E0 /* SQLiteCpp */,
 			);
@@ -2753,7 +2736,7 @@
 				274EDDF81DA30B43003AD158 /* QueryParser.hh in Headers */,
 				27098AA8216C2108002751DA /* PredictiveModel.hh in Headers */,
 				272850AD1E9AF53B009CA22F /* Upgrader.hh in Headers */,
-				279D40F91EA533D900D8DD9D /* civetUtils.hh in Headers */,
+				279D40F91EA533D900D8DD9D /* netUtils.hh in Headers */,
 				272851301EA46475009CA22F /* Server.hh in Headers */,
 				274EDDEE1DA2F488003AD158 /* SQLiteKeyStore.hh in Headers */,
 				272851241EA4537A009CA22F /* RESTListener.hh in Headers */,
@@ -3438,7 +3421,7 @@
 				2771A0A72286257800B18E0A /* LWSWebSocket.cc in Sources */,
 				278BC9CE228E1C460055FF09 /* LWSServer.cc in Sources */,
 				2771A0E0228B5F7900B18E0A /* LWSProtocol.cc in Sources */,
-				278BC9C4228DE92C0055FF09 /* civetUtils.cc in Sources */,
+				278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

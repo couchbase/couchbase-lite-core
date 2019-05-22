@@ -20,6 +20,7 @@
 
 namespace litecore { namespace websocket {
 
+    // Derived from the declaration of `enum lws_callback_reasons` in lws-callbacks.h
     static const char* kCallbackName[102] = {
         /* 0*/ "LWS_CALLBACK_ESTABLISHED",
         /* 1*/ "LWS_CALLBACK_CLIENT_CONNECTION_ERROR",

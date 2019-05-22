@@ -20,6 +20,7 @@ namespace litecore { namespace REST {
 
 namespace litecore { namespace websocket {
 
+    /** Abstract base class class of servers/listeners based on libwebsockets. */
     class LWSServer : public fleece::RefCounted {
     public:
         LWSServer();

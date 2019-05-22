@@ -48,6 +48,7 @@ namespace litecore { namespace websocket {
     static constexpr size_t kMaxUnreadBytes = 100 * 1024;
 
 
+    /** A WebSocket client connection. */
     class LWSWebSocket : public LWSProtocol {
     public:
 

@@ -14,6 +14,7 @@
 
 namespace litecore { namespace REST {
 
+    /** An HTTP client connection. (The Response class presents a higher level interface.) */
     class LWSHTTPClient : public websocket::LWSProtocol {
     public:
 

@@ -1,5 +1,5 @@
 //
-// civetUtils.hh
+// netUtils.hh
 //
 // Copyright (c) 2017 Couchbase, Inc All rights reserved.
 //

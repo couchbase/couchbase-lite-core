@@ -21,7 +21,7 @@
 #include "LWSContext.hh"
 #include "PlatformIO.hh"
 #include "Error.hh"
-#include "civetUtils.hh"
+#include "netUtils.hh"
 #include <stdarg.h>
 
 using namespace std;

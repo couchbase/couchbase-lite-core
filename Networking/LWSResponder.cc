@@ -20,7 +20,7 @@
 #include "LWSServer.hh"
 #include "LWSUtil.hh"
 #include "Error.hh"
-#include "civetUtils.hh"
+#include "netUtils.hh"
 
 
 namespace litecore { namespace REST {

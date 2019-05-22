@@ -21,7 +21,7 @@
 #include "c4Socket.h"
 #include "Writer.hh"
 #include "StringUtil.hh"
-#include "civetUtils.hh"
+#include "netUtils.hh"
 
 using namespace std;
 using namespace fleece;
