@@ -546,7 +546,12 @@ bool c4doc_save(C4Document *doc,
     try {
         if (maxRevTreeDepth == 0)
             maxRevTreeDepth = asInternal(doc)->database()->maxRevTreeDepth();
-        ((TreeDocument*)idoc)->save(maxRevTreeDepth);
+        
+        if (!((TreeDocument*)idoc)->save(maxRevTreeDepth)) {
+            if (outError)
+                *outError = {LiteCoreDomain, kC4ErrorConflict};
+            return false;
+        }
         return true;
     } catchError(outError)
     return false;
