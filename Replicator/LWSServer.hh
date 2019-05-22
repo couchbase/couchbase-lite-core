@@ -22,7 +22,10 @@ namespace litecore { namespace websocket {
 
     class LWSServer : public fleece::RefCounted {
     public:
-        LWSServer(uint16_t port, const char *hostname);
+        LWSServer();
+
+        void start(uint16_t port, const char *hostname =nullptr);
+        void stop();
         
         virtual int dispatch(lws*, int callback_reason, void *user, void *in, size_t len);
 
@@ -36,8 +39,11 @@ namespace litecore { namespace websocket {
         
     private:
         void createdVHost(lws_vhost*);
+        void notifyStarted(bool started);
 
         std::mutex _mutex;
+        std::condition_variable _condition;
+        bool _started {false};
         std::unique_ptr<lws_http_mount> _mount;
         lws_vhost* _vhost {nullptr};
 

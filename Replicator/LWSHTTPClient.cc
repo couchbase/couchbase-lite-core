@@ -34,6 +34,11 @@ namespace litecore { namespace REST {
     { }
 
 
+    LWSHTTPClient::~LWSHTTPClient() {
+        C4LogToAt(kC4WebSocketLog, kC4LogDebug, "~LWSHTTPClient %p", this);
+    }
+
+
     void LWSHTTPClient::connect(const C4Address &address,
                                 const char *method,
                                 fleece::Doc headers,
@@ -103,7 +108,7 @@ namespace litecore { namespace REST {
     }
 
 
-    bool LWSHTTPClient::onSendHeaders(void *in, size_t len) {
+    void LWSHTTPClient::onSendHeaders(void *in, size_t len) {
         auto dst = (uint8_t**)in;
         uint8_t *end = *dst + len;
         auto dict = _requestHeaders.root().asDict();
@@ -112,24 +117,22 @@ namespace litecore { namespace REST {
             addRequestHeader(dst, end, name.c_str(), i.value().asString());
         }
 
-        if (hasDataToSend()) {
-            addContentLengthHeader(dst, end, dataToSend().size);
+        auto contentLength = dataToSend().size;
+        addContentLengthHeader(dst, end, contentLength);
+        if (contentLength > 0) {
             lws_client_http_body_pending(_client, true);
             callbackOnWriteable();
         }
-        return true;
     }
 
 
-    bool LWSHTTPClient::onWriteRequest() {
-        if (!sendMoreData(false))
-            return false;
+    void LWSHTTPClient::onWriteRequest() {
+        sendMoreData(false);
         if (hasDataToSend()) {
             callbackOnWriteable();
         } else {
             lws_client_http_body_pending(_client, false);
         }
-        return true;
     }
 
 

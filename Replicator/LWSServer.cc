@@ -24,8 +24,9 @@
 
 
 namespace litecore { namespace websocket {
+    using namespace std;
 
-    LWSServer::LWSServer(uint16_t port, const char *hostname)
+    LWSServer::LWSServer()
     :_mount(new lws_http_mount)
     {
         memset(_mount.get(), 0, sizeof(*_mount));
@@ -33,15 +34,34 @@ namespace litecore { namespace websocket {
         _mount->mountpoint_len = 1;
         _mount->protocol = LWSContext::kHTTPServerProtocol;
         _mount->origin_protocol = LWSMPRO_CALLBACK;
-
-        LWSContext::initialize();
-        LWSContext::instance->startServer(this, port, hostname, _mount.get());
     }
 
 
     LWSServer::~LWSServer() {
-        if (_vhost)
-            lws_vhost_destroy(_vhost);      //??? Is this thread-safe?
+        DebugAssert(!_vhost);
+    }
+
+
+    void LWSServer::start(uint16_t port, const char *hostname) {
+        Assert(!_started);
+
+        retain(this);       // balanced by release on LWS_CALLBACK_PROTOCOL_DESTROY
+        LWSContext::initialize();
+        LWSContext::instance->startServer(this, port, hostname, _mount.get());
+
+        unique_lock<mutex> lock(_mutex);
+        _condition.wait(lock, [&]() {return _started;});
+    }
+
+
+    void LWSServer::stop() {
+        if (!_started)
+            return;
+        
+        LWSContext::instance->stop(this);
+
+        unique_lock<mutex> lock(_mutex);
+        _condition.wait(lock, [&]() {return !_started;});
     }
 
 
@@ -54,12 +74,32 @@ namespace litecore { namespace websocket {
 
     int LWSServer::dispatch(lws *client, int reason, void *user, void *in, size_t len) {
         switch ((lws_callback_reasons)reason) {
+            case LWS_CALLBACK_PROTOCOL_INIT:
+                LogDebug("**** LWS_CALLBACK_PROTOCOL_INIT (lws=%p)", client);
+                notifyStarted(true);
+                return 0;
             case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED:
+                LogDebug("**** LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED (lws=%p)", client);
                 return createResponder(client) ? 0 : -1;
+            case LWS_CALLBACK_PROTOCOL_DESTROY:
+                LogDebug("**** LWS_CALLBACK_PROTOCOL_DESTROY");
+                _vhost = nullptr;
+                notifyStarted(false);
+                release(this);
+                return 0;
             default:
-                if (reason < 31 || reason > 36)
+                if (reason != LWS_CALLBACK_EVENT_WAIT_CANCELLED && (reason < 31 || reason > 36))
                     LogDebug("**** %-s", LWSCallbackName(reason));
-                return lws_callback_http_dummy(client, (lws_callback_reasons)reason, user, in, len);
+                return 0;
+        }
+    }
+
+
+    void LWSServer::notifyStarted(bool started) {
+        if (started != _started) {
+            unique_lock<mutex> lock(_mutex);
+            _started = started;
+            _condition.notify_all();
         }
     }
 

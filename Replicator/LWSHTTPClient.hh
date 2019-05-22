@@ -30,10 +30,11 @@ namespace litecore { namespace REST {
         virtual const char *className() const noexcept override;
 
     protected:
+        virtual ~LWSHTTPClient();
         void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
         void onConnectionError(C4Error error) override;
-        bool onSendHeaders(void *in, size_t len);
-        bool onWriteRequest();
+        void onSendHeaders(void *in, size_t len);
+        void onWriteRequest();
         void onResponseAvailable();
         void onDataAvailable();
         void onRead(fleece::slice data);

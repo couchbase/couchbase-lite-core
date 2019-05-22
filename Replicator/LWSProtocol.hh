@@ -44,6 +44,7 @@ namespace litecore { namespace websocket {
         bool hasHeader(int /*lws_token_indexes*/ tokenIndex);
         std::string getHeader(int /*lws_token_indexes*/ tokenIndex);
         std::string getHeaderFragment(int /*lws_token_indexes*/ tokenIndex, unsigned index);
+        int64_t getContentLengthHeader();
         fleece::Doc encodeHTTPHeaders();
 
         C4Error getConnectionError(fleece::slice lwsErrorMessage);
@@ -58,7 +59,7 @@ namespace litecore { namespace websocket {
         
         fleece::slice dataToSend() const        {return _unsent;}
         bool hasDataToSend() const              {return _unsent.size > 0;}
-        bool sendMoreData(bool asServer);
+        void sendMoreData(bool asServer);
 
         template <class BLOCK>
         void synchronized(BLOCK block) {

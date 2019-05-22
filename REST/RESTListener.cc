@@ -34,8 +34,8 @@ using namespace fleece;
 namespace litecore { namespace REST {
 
     static constexpr uint16_t kDefaultPort = 4984;
-    static constexpr const char* kKeepAliveTimeoutMS = "1000";
-    static constexpr const char* kMaxConnections = "8";
+    //static constexpr const char* kKeepAliveTimeoutMS = "1000";
+    //static constexpr const char* kMaxConnections = "8";
 
     static int kTaskExpirationTime = 10;
 
@@ -55,16 +55,7 @@ namespace litecore { namespace REST {
     ,_allowCreateDB(config.allowCreateDBs && _directory)
     ,_allowDeleteDB(config.allowDeleteDBs)
     {
-        __unused const char* options[] {    // TODO
-            "enable_keep_alive",        "yes",
-            "keep_alive_timeout_ms",    kKeepAliveTimeoutMS,
-            "num_threads",              kMaxConnections,
-            "decode_url",               "no",   // otherwise it decodes escaped slashes
-            nullptr
-        };
-        _server.reset(new Server((config.port ? config.port : kDefaultPort),
-                                 nullptr,
-                                 this));
+        _server = new Server();
         _server->setExtraHeaders({{"Server", serverNameAndVersion()}});
 
         if (config.apis & kC4RESTAPI) {
@@ -72,29 +63,32 @@ namespace litecore { namespace REST {
             addHandler(Method::GET, "/", &RESTListener::handleGetRoot);
 
             // Top-level special handlers:
-            addHandler(Method::GET,     "/_all_dbs",       &RESTListener::handleGetAllDBs);
-            addHandler(Method::GET,     "/_active_tasks",  &RESTListener::handleActiveTasks);
-            addHandler(Method::POST,    "/_replicate",    &RESTListener::handleReplicate);
+            addHandler(Method::GET,     "/_all_dbs",         &RESTListener::handleGetAllDBs);
+            addHandler(Method::GET,     "/_active_tasks",    &RESTListener::handleActiveTasks);
+            addHandler(Method::POST,    "/_replicate",       &RESTListener::handleReplicate);
 
             // Database:
-            addDBHandler(Method::GET,   "/[!_]*|/[!_]*/", &RESTListener::handleGetDatabase);
-            addHandler  (Method::PUT,   "/[!_]*|/[!_]*/", &RESTListener::handleCreateDatabase);
-            addDBHandler(Method::DELETE,"/[!_]*|/[!_]*/", &RESTListener::handleDeleteDatabase);
-            addDBHandler(Method::POST,  "/[!_]*|/[!_]*/", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/[!_]*|/[!_]*/",    &RESTListener::handleGetDatabase);
+            addHandler  (Method::PUT,   "/[!_]*|/[!_]*/",    &RESTListener::handleCreateDatabase);
+            addDBHandler(Method::DELETE,"/[!_]*|/[!_]*/",    &RESTListener::handleDeleteDatabase);
+            addDBHandler(Method::POST,  "/[!_]*|/[!_]*/",    &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:
-            addDBHandler(Method::GET,   "/[!_]*/_all_docs", &RESTListener::handleGetAllDocs);
+            addDBHandler(Method::GET,   "/[!_]*/_all_docs",  &RESTListener::handleGetAllDocs);
             addDBHandler(Method::POST,  "/[!_]*/_bulk_docs", &RESTListener::handleBulkDocs);
 
             // Document:
-            addDBHandler(Method::GET,   "/[!_]*/[!_]*", &RESTListener::handleGetDoc);
-            addDBHandler(Method::PUT,   "/[!_]*/[!_]*", &RESTListener::handleModifyDoc);
-            addDBHandler(Method::DELETE,"/[!_]*/[!_]*", &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/[!_]*/[!_]*",      &RESTListener::handleGetDoc);
+            addDBHandler(Method::PUT,   "/[!_]*/[!_]*",      &RESTListener::handleModifyDoc);
+            addDBHandler(Method::DELETE,"/[!_]*/[!_]*",      &RESTListener::handleModifyDoc);
         }
+        _server->start(config.port ? config.port : kDefaultPort);
     }
 
 
     RESTListener::~RESTListener() {
+        if (_server)
+            _server->stop();
     }
 
 

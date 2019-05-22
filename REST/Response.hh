@@ -40,13 +40,18 @@ namespace litecore { namespace REST {
         Forbidden = 403,
         NotFound = 404,
         MethodNotAllowed = 405,
+        NotAcceptable = 406,
         Conflict = 409,
+        Gone = 410,
         PreconditionFailed = 412,
         Locked = 423,
         ServerError = 500,
         NotImplemented = 501,
         GatewayError = 502,
     };
+
+    const char* StatusMessage(HTTPStatus);
+
 
     /** An incoming HTTP body. */
     class Body {

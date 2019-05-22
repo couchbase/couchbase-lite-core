@@ -77,7 +77,7 @@ namespace litecore { namespace websocket {
         int flags = LLL_ERR | LLL_WARN | LLL_NOTICE;
         if (logLevel <= kC4LogDebug) {
             flags |= LLL_INFO;
-            flags |= LLL_DEBUG;
+            //flags |= LLL_DEBUG;
         }
         lws_set_log_level(flags, &logCallback);
 
@@ -93,13 +93,11 @@ namespace litecore { namespace websocket {
         _info->timeout_secs = kTimeoutSecs;
         _info->ws_ping_pong_interval = kDefaultPingIntervalSecs;
 
-#if 0 //TEMP
 #ifdef LWS_WITH_MBEDTLS
         // mbedTLS does not have a list of root CA certs, so get the system list for it:
         alloc_slice systemRootCertsPEM = getSystemRootCertsPEM();
         _info->client_ssl_ca_mem = systemRootCertsPEM.buf;
         _info->client_ssl_ca_mem_len = (unsigned)systemRootCertsPEM.size;
-#endif
 #endif
 
         _context = lws_create_context(_info.get());
@@ -119,12 +117,8 @@ namespace litecore { namespace websocket {
     void LWSContext::dequeue() {
         bool empty;
         auto fn = _enqueued.popNoWaiting(empty);
-        if (fn) {
-            LogDebug("(dequeue)");
+        if (fn)
             fn();
-        } else {
-            LogDebug("(dequeue ... nothing to do)");
-        }
     }
 
 
@@ -140,13 +134,14 @@ namespace litecore { namespace websocket {
     }
 
 
-    void LWSContext::_connectClient(LWSProtocol *protocolInstance,
+    void LWSContext::_connectClient(Retained<LWSProtocol> protocolInstance,
                                     const std::string &protocolName,
                                     repl::Address address,
                                     fleece::alloc_slice pinnedServerCert,
                                     const string &method)
     {
-        Log("LWSContext::_connectClient");
+        Log("_connectClient %s %p",
+            protocolInstance->className(), protocolInstance.get());
         // Create LWS client and connect:
         string hostname(slice(address.hostname));
         string path(slice(address.path));
@@ -184,23 +179,44 @@ namespace litecore { namespace websocket {
                            const char *hostname,
                            const lws_http_mount *mounts)
     {
-
+        enqueue(bind(&LWSContext::_startServer, this,
+                     server, port, string(hostname ? hostname : ""), mounts));
     }
 
 
-    void LWSContext::_startServer(LWSServer *serverInstance,
+    static void finalizeServer(lws_vhost *vhost, void* serverInstance) {
+        C4LogToAt(kC4WebSocketLog, kC4LogDebug, "Finalized LWSServer %p, vhost %p", serverInstance, vhost);
+    }
+
+
+    void LWSContext::_startServer(Retained<LWSServer> serverInstance,
                                   uint16_t port,
                                   const string &hostname,
                                   const lws_http_mount *mounts)
     {
+        Log("_startServer %s %p on port %u",
+            serverInstance->className(), serverInstance.get(), port);
         _info->user = serverInstance;
         _info->port = port;
         _info->protocols = kServerProtocols;
         _info->mounts = mounts;
         _info->vhost_name = kHTTPServerProtocol;
+        _info->finalize = &finalizeServer;
+        _info->finalize_arg = serverInstance;
         lws_vhost *vhost = lws_create_vhost(_context, _info.get());
-        LogDebug("Created vhost %p for %s", vhost, hostname.c_str());
+        LogDebug("Created vhost %p for '%s'", vhost, hostname.c_str());
         serverInstance->createdVHost(vhost);
+    }
+
+
+    void LWSContext::stop(LWSServer *serverInstance) {
+        enqueue(bind(&LWSContext::_stop, this, serverInstance));
+    }
+
+    void LWSContext::_stop(Retained<LWSServer> serverInstance) {
+        LogDebug("Stopping %s %p ...", serverInstance->className(), serverInstance.get());
+        lws_vhost_destroy(serverInstance->_vhost);
+        Log("Stopped %s %p", serverInstance->className(), serverInstance.get());
     }
 
 
@@ -228,7 +244,9 @@ namespace litecore { namespace websocket {
             SetThreadName("WebSocket dispatch (Couchbase Lite Core)");
             LogDebug("Libwebsocket event loop starting...");
             while (true) {
-                lws_service(_context, 999999);  // TODO: How/when to stop this
+                lws_service(_context, 1000);
+                // FIXME: The timeout should be longer than 1sec, but long timeouts can lead to
+                // long delays in libwebsocket: https://github.com/warmcat/libwebsockets/issues/1582
             }
         }));
     }

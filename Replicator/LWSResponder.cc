@@ -37,7 +37,12 @@ namespace litecore { namespace REST {
     ,_server(server)
     {
         lws_set_opaque_user_data(connection, this);
-        LogVerbose("Created LWSResponder on wsi %p", connection);
+        LogVerbose("Created %p on wsi %p", this, connection);
+    }
+
+
+    LWSResponder::~LWSResponder() {
+        C4LogToAt(kC4WebSocketLog, kC4LogDebug, "~LWSResponder %p", this);
     }
 
 
@@ -46,9 +51,19 @@ namespace litecore { namespace REST {
     {
         switch ((lws_callback_reasons)reason) {
             case LWS_CALLBACK_HTTP:
+                LogDebug("**** LWS_CALLBACK_HTTP");
                 onRequestReady(slice(in, len));
                 break;
+            case LWS_CALLBACK_HTTP_BODY:
+                LogDebug("**** LWS_CALLBACK_HTTP_BODY");
+                onRequestBody(slice(in, len));
+                break;
+            case LWS_CALLBACK_HTTP_BODY_COMPLETION:
+                LogDebug("**** LWS_CALLBACK_HTTP_BODY_COMPLETION");
+                onRequestBodyComplete();
+                break;
             case LWS_CALLBACK_HTTP_WRITEABLE:
+                LogDebug("**** LWS_CALLBACK_HTTP_WRITEABLE");
                 onWriteRequest();
                 return;
             default:
@@ -57,12 +72,56 @@ namespace litecore { namespace REST {
     }
 
 
+    void LWSResponder::onRequestBody(slice body) {
+        _requestBody.emplace_back(body);
+    }
+
+
+    void LWSResponder::onRequestBodyComplete() {
+        alloc_slice body;
+        switch (_requestBody.size()) {
+            case 0:
+                return;
+            case 1:
+                body = _requestBody[0];
+                break;
+            default: {
+                size_t size = 0;
+                for (auto &chunk : _requestBody)
+                    size += chunk.size;
+                body = alloc_slice(size);
+                auto dst = (uint8_t*)body.buf;
+                for (auto &chunk : _requestBody) {
+                    memcpy(dst, chunk.buf, chunk.size);
+                    dst += chunk.size;
+                }
+            }
+        }
+        _requestBody.clear();
+        setBody(body);
+        LogVerbose("Received %zu-byte request body", body.size);
+
+        dispatch();
+    }
+
+
     void LWSResponder::onRequestReady(slice uri) {
         setRequest(getMethod(), string("/") + string(uri), nullslice, encodeHTTPHeaders(), {});
+        Log("%d %s", method(), path().c_str());
+
+        string queries = getHeader(WSI_TOKEN_HTTP_URI_ARGS);
+        if (!queries.empty())
+            _queries = queries;
 
         _responseHeaders = alloc_slice(kHeadersMaxSize);
         _responseHeadersPos = (uint8_t*)_responseHeaders.buf;
 
+        if (getContentLengthHeader() == 0)
+            dispatch();
+    }
+
+
+    void LWSResponder::dispatch() {
         _server->dispatchResponder(this);
         finish();
         _server = nullptr;
@@ -75,18 +134,12 @@ namespace litecore { namespace REST {
 
 
     Method LWSResponder::getMethod() {
-        if (hasHeader(WSI_TOKEN_GET_URI))
-            return Method::GET;
-        else if (hasHeader(WSI_TOKEN_PUT_URI))
-            return Method::PUT;
-        else if (hasHeader(WSI_TOKEN_DELETE_URI))
-            return Method::DELETE;
-        else if (hasHeader(WSI_TOKEN_POST_URI))
-            return Method::POST;
-        else if (hasHeader(WSI_TOKEN_OPTIONS_URI))
-            return Method::OPTIONS;
-        else
-            return Method::None;
+        if (hasHeader(WSI_TOKEN_GET_URI))           return Method::GET;
+        else if (hasHeader(WSI_TOKEN_PUT_URI))      return Method::PUT;
+        else if (hasHeader(WSI_TOKEN_DELETE_URI))   return Method::DELETE;
+        else if (hasHeader(WSI_TOKEN_POST_URI))     return Method::POST;
+        else if (hasHeader(WSI_TOKEN_OPTIONS_URI))  return Method::OPTIONS;
+        else                                        return Method::None;
     }
 
 
@@ -127,10 +180,12 @@ namespace litecore { namespace REST {
         } else {
             json.writeKey("status"_sl);
             json.writeInt(int(status));
-            //const char *defaultMessage = mg_get_response_code_text(_conn, int(status));
-            //json.writeKey("error"_sl);
-            //json.writeString(defaultMessage);
-            if (message /*&& 0 != strcasecmp(message, defaultMessage)*/) {
+            const char *defaultMessage = StatusMessage(status);
+            if (defaultMessage) {
+                json.writeKey("error"_sl);
+                json.writeString(defaultMessage);
+            }
+            if (message && defaultMessage && 0 != strcasecmp(message, defaultMessage)) {
                 json.writeKey("reason"_sl);
                 json.writeString(message);
             }
@@ -238,6 +293,9 @@ namespace litecore { namespace REST {
 
 
     void LWSResponder::sendHeaders() {
+        if (_jsonEncoder)
+            setHeader("Content-Type", "application/json");
+
         check(lws_finalize_write_http_header(_client,
                                              (uint8_t*)_responseHeaders.buf,
                                              &_responseHeadersPos,
@@ -276,10 +334,8 @@ namespace litecore { namespace REST {
 
 
     fleece::JSONEncoder& LWSResponder::jsonEncoder() {
-        if (!_jsonEncoder) {
-            setHeader("Content-Type", "application/json");
+        if (!_jsonEncoder)
             _jsonEncoder.reset(new fleece::JSONEncoder);
-        }
         return *_jsonEncoder;
     }
 
@@ -310,8 +366,10 @@ namespace litecore { namespace REST {
     // Handles LWS_CALLBACK_HTTP_WRITEABLE
     void LWSResponder::onWriteRequest() {
         sendMoreData(true);
-        if (!hasDataToSend())
-            check(lws_http_transaction_completed(_client));
+        if (!hasDataToSend()) {
+            if (lws_http_transaction_completed(_client))
+                setDispatchResult(1);       // to close connection
+        }
     }
 
 } }

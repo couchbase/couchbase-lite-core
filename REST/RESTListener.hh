@@ -125,7 +125,7 @@ namespace litecore { namespace REST {
 
         std::unique_ptr<FilePath> _directory;
         const bool _allowCreateDB, _allowDeleteDB;
-        std::unique_ptr<Server> _server;
+        Retained<Server> _server;
         std::mutex _mutex;
         std::set<Retained<Task>> _tasks;
         unsigned _nextTaskID {1};

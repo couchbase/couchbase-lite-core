@@ -107,6 +107,49 @@ namespace litecore { namespace websocket {
     }
 
 
+    C4Error LWSProtocol::getConnectionError(slice lwsErrorMessage) {
+        // Maps substrings of LWS error messages to C4Errors:
+        static constexpr struct {slice string; C4ErrorDomain domain; int code;} kMessages[] = {
+            {"connect failed"_sl,                 POSIXDomain,     ECONNREFUSED},
+            {"ws upgrade unauthorized"_sl,        WebSocketDomain, 401},
+            {"CA is not trusted"_sl,              NetworkDomain,   kC4NetErrTLSCertUnknownRoot },
+            {"server's cert didn't look good"_sl, NetworkDomain,   kC4NetErrTLSCertUntrusted },
+            // TODO: Add more entries
+            { }
+        };
+
+        int status;
+        string statusMessage;
+        tie(status,statusMessage) = decodeHTTPStatus();
+
+        C4ErrorDomain domain = WebSocketDomain;
+        if (status < 300) {
+            domain = NetworkDomain;
+            status = kC4NetErrUnknown;
+            if (lwsErrorMessage) {
+                // LWS does not provide any sort of error code, so just look up the string:
+                for (int i = 0; kMessages[i].string; ++i) {
+                    if (lwsErrorMessage.containsBytes(kMessages[i].string)) {
+                        domain = kMessages[i].domain;
+                        status = kMessages[i].code;
+                        statusMessage = string(lwsErrorMessage);
+                        break;
+                    }
+                }
+            } else {
+                statusMessage = "unknown error";
+            }
+            if (domain == NetworkDomain && status == kC4NetErrUnknown)
+                Warn("No error code mapping for libwebsocket message '%.*s'",
+                     SPLAT(lwsErrorMessage));
+        }
+        return c4error_make(domain, status, slice(statusMessage));
+    }
+
+
+#pragma mark - CERTIFICATES:
+
+
     alloc_slice LWSProtocol::getCertPublicKey(slice certPEM) {
         alloc_slice paddedPinnedCert;
         if (certPEM[certPEM.size - 1] != 0) {
@@ -144,6 +187,9 @@ namespace litecore { namespace websocket {
         }
         return alloc_slice(&result.ns.name, result.ns.len);
     }
+
+
+#pragma mark - HTTP HEADERS:
 
 
     bool LWSProtocol::addRequestHeader(uint8_t* *dst, uint8_t *end,
@@ -223,6 +269,15 @@ namespace litecore { namespace websocket {
     }
 
 
+    int64_t LWSProtocol::getContentLengthHeader() {
+        char buf[30];
+        int size = lws_hdr_copy(_client, buf, sizeof(buf), WSI_TOKEN_HTTP_CONTENT_LENGTH);
+        if (size <= 0)
+            return -1;
+        return strtol(buf, nullptr, 10);
+    }
+
+
     Doc LWSProtocol::encodeHTTPHeaders() {
         // libwebsockets makes it kind of a pain to get the HTTP headers...
         Encoder headers;
@@ -260,44 +315,7 @@ namespace litecore { namespace websocket {
     }
 
 
-    C4Error LWSProtocol::getConnectionError(slice lwsErrorMessage) {
-        // Maps substrings of LWS error messages to C4Errors:
-        static constexpr struct {slice string; C4ErrorDomain domain; int code;} kMessages[] = {
-            {"connect failed"_sl,                 POSIXDomain,     ECONNREFUSED},
-            {"ws upgrade unauthorized"_sl,        WebSocketDomain, 401},
-            {"CA is not trusted"_sl,              NetworkDomain,   kC4NetErrTLSCertUnknownRoot },
-            {"server's cert didn't look good"_sl, NetworkDomain,   kC4NetErrTLSCertUntrusted },
-            // TODO: Add more entries
-            { }
-        };
-
-        int status;
-        string statusMessage;
-        tie(status,statusMessage) = decodeHTTPStatus();
-
-        C4ErrorDomain domain = WebSocketDomain;
-        if (status < 300) {
-            domain = NetworkDomain;
-            status = kC4NetErrUnknown;
-            if (lwsErrorMessage) {
-                // LWS does not provide any sort of error code, so just look up the string:
-                for (int i = 0; kMessages[i].string; ++i) {
-                    if (lwsErrorMessage.containsBytes(kMessages[i].string)) {
-                        domain = kMessages[i].domain;
-                        status = kMessages[i].code;
-                        statusMessage = string(lwsErrorMessage);
-                        break;
-                    }
-                }
-            } else {
-                statusMessage = "unknown error";
-            }
-            if (domain == NetworkDomain && status == kC4NetErrUnknown)
-                Warn("No error code mapping for libwebsocket message '%.*s'",
-                     SPLAT(lwsErrorMessage));
-        }
-        return c4error_make(domain, status, slice(statusMessage));
-    }
+#pragma mark - SENDING DATA:
 
 
     void LWSProtocol::callbackOnWriteable() {
@@ -318,8 +336,7 @@ namespace litecore { namespace websocket {
     }
 
 
-    bool LWSProtocol::sendMoreData(bool asServer) {
-        bool ok = true;
+    void LWSProtocol::sendMoreData(bool asServer) {
         synchronized([&](){
             slice chunk = _unsent.readAtMost(kWriteChunkSize);
             lws_write_protocol type = LWS_WRITE_HTTP;
@@ -334,7 +351,7 @@ namespace litecore { namespace websocket {
 
             if (lws_write(_client, (uint8_t*)chunk.buf, chunk.size, type) < 0) {
                 Log("  --lws_write failed!");
-                ok = false;
+                setDispatchResult(-1);
             }
 
             if (_unsent.size > 0) {
@@ -344,7 +361,6 @@ namespace litecore { namespace websocket {
                 _unsent = nullslice;
             }
         });
-        return ok;
     }
 
 

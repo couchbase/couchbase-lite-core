@@ -16,7 +16,7 @@ namespace litecore { namespace websocket {
 
 namespace litecore { namespace REST {
 
-    /** Represents a client HTTP request, and the response to the request. */
+    /** Represents an incoming client HTTP request, and the response to the request. */
     class LWSResponder : public websocket::LWSProtocol, public Request {
     public:
 
@@ -65,18 +65,24 @@ namespace litecore { namespace REST {
         void finish();
 
     protected:
+        virtual ~LWSResponder();
         void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
         void onConnectionError(C4Error error) override;
         Method getMethod();
 
     private:
-        void sendStatus();
+        void onRequestBody(fleece::slice);
+        void onRequestBodyComplete();
         void onRequestReady(fleece::slice uri);
+        void dispatch();
+        void sendStatus();
         void sendHeaders();
         void onWriteRequest();
 
         websocket::LWSServer* _server;
         C4Error _error {};
+
+        std::vector<fleece::alloc_slice> _requestBody;
 
         HTTPStatus _status {HTTPStatus::OK};        // Response status code
         std::string _statusMessage;                 // Response custom status message

@@ -7,6 +7,7 @@
 #pragma once
 #include "Address.hh"
 #include "Channel.hh"
+#include "RefCounted.hh"
 #include "fleece/slice.hh"
 #include <memory>
 #include <thread>
@@ -52,6 +53,8 @@ namespace litecore { namespace websocket {
                          const char *hostname,
                          const lws_http_mount *mounts);
 
+        void stop(LWSServer*);
+
         const char *className() const noexcept      {return "LWSContext";}
 
         void dequeue();
@@ -65,15 +68,16 @@ namespace litecore { namespace websocket {
         static fleece::alloc_slice getSystemRootCertsPEM();
         void startEventLoop();
 
-        void _connectClient(LWSProtocol *protocolInstance,
+        void _connectClient(fleece::Retained<LWSProtocol>,
                             const std::string &protocolName,
                             repl::Address address,
                             fleece::alloc_slice pinnedServerCert,
                             const std::string &method);
-        void _startServer(LWSServer *server,
+        void _startServer(fleece::Retained<LWSServer>,
                           uint16_t port,
                           const std::string &hostname,
                           const lws_http_mount *mounts);
+        void _stop(fleece::Retained<LWSServer>);
 
 
         std::unique_ptr<lws_context_creation_info> _info;

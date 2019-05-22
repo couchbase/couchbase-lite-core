@@ -36,16 +36,10 @@ namespace litecore { namespace REST {
     using RequestResponse = LWSResponder;
 
 
-    /** HTTP server, using CivetWeb. */
+    /** HTTP server, using libwebsockets. */
     class Server : public websocket::LWSServer {
     public:
-        Server(uint16_t port,
-               const char *hostname,
-               void *owner =nullptr);
-
-        ~Server();
-
-        void* owner() const                         {return _owner;}
+        Server();
 
         void setExtraHeaders(const std::map<std::string, std::string> &headers);
 
@@ -56,6 +50,8 @@ namespace litecore { namespace REST {
         // Patterns are tested in the order the handlers are added, and the first match is used.
         void addHandler(Methods, const std::string &pattern, const Handler&);
 
+        void stop();
+
     protected:
         struct URIRule {
             Methods     methods;
@@ -65,9 +61,9 @@ namespace litecore { namespace REST {
 
         URIRule* findRule(Method method, const std::string &path);
         virtual void dispatchResponder(LWSResponder*) override;
+        ~Server() = default;
 
     private:
-        void* const _owner;
         std::mutex _mutex;
         std::unique_ptr<lws_http_mount> _mount;
         lws_vhost* _vhost {nullptr};

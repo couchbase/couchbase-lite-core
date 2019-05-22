@@ -34,13 +34,8 @@ namespace litecore { namespace REST {
     using namespace litecore::websocket;
 
 
-    Server::Server(uint16_t port, const char *hostname, void *owner)
-    :LWSServer(port, hostname)
-    ,_owner(owner)
+    Server::Server()
     { }
-
-    Server::~Server() {
-    }
 
 
     void Server::setExtraHeaders(const std::map<std::string, std::string> &headers) {
@@ -58,7 +53,7 @@ namespace litecore { namespace REST {
 
 
     Server::URIRule* Server::findRule(Method method, const string &path) {
-        lock_guard<mutex> lock(_mutex);
+        //lock_guard<mutex> lock(_mutex);       // called from dispatchResponder which locks
         for (auto &rule : _rules) {
             if ((rule.methods & method)
                     && 0 == fnmatch(rule.pattern.c_str(), path.c_str(), FNM_PATHNAME))
@@ -69,6 +64,7 @@ namespace litecore { namespace REST {
 
 
     void Server::dispatchResponder(LWSResponder *rq) {
+        lock_guard<mutex> lock(_mutex);
         try{
             string pathStr(rq->path());
             auto rule = findRule(rq->method(), pathStr);
@@ -86,6 +82,15 @@ namespace litecore { namespace REST {
             C4Warn("HTTP handler caught C++ exception: %s", x.what());
             rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
         }
+    }
+
+
+    void Server::stop() {
+        {
+            lock_guard<mutex> lock(_mutex);
+            _rules.clear();
+        }
+        LWSServer::stop();
     }
 
 } }
