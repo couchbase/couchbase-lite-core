@@ -46,12 +46,13 @@ namespace litecore {
         bool isNew() const          {return (flags & kNew) != 0;}
         bool isConflict() const     {return (flags & kIsConflict) != 0;}
         bool isClosed() const       {return (flags & kClosed) != 0;}
-        bool isActive() const       {return isLeaf() && !isDeleted();}
+        bool isActive() const;
 
         unsigned index() const;
         const Rev* next() const;       // next by order in array, i.e. descending priority
         std::vector<const Rev*> history() const;
         bool isAncestorOf(const Rev* NONNULL) const;
+        bool isLatestRemoteRevision() const;
 
         bool operator< (const Rev& rev) const;
 
@@ -169,6 +170,7 @@ namespace litecore {
 
     protected:
         virtual bool isBodyOfRevisionAvailable(const Rev* r NONNULL) const;
+        bool isLatestRemoteRevision(const Rev* NONNULL) const;
         virtual alloc_slice readBodyOfRevision(const Rev* r NONNULL) const;
         virtual alloc_slice copyBody(slice body);
         virtual alloc_slice copyBody(const alloc_slice &body);
