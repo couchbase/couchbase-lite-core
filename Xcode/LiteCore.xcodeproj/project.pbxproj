@@ -2843,7 +2843,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2771A0A0228624C100B18E0A /* Build configuration list for PBXNativeTarget "LiteCoreWebSocket" */;
 			buildPhases = (
-				2771A0EB228B80BB00B18E0A /* ShellScript */,
+				2771A0EB228B80BB00B18E0A /* Build mbedTLS */,
+				271BA53222961BC500D49D13 /* Build libwebsockets */,
 				2771A094228624C000B18E0A /* Headers */,
 				2771A095228624C000B18E0A /* Sources */,
 				2771A096228624C000B18E0A /* Frameworks */,
@@ -3253,6 +3254,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		271BA53222961BC500D49D13 /* Build libwebsockets */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build libwebsockets";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "$SRCROOT/build_libwebsockets.sh\n";
+			showEnvVarsInLog = 0;
+		};
 		275BF36C1F5F67940051374A /* Generate repo_version.h */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -3287,7 +3307,7 @@
 			shellScript = "source \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_OUTPUT_FILE_0\"";
 			showEnvVarsInLog = 0;
 		};
-		2771A0EB228B80BB00B18E0A /* ShellScript */ = {
+		2771A0EB228B80BB00B18E0A /* Build mbedTLS */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -3296,13 +3316,14 @@
 			);
 			inputPaths = (
 			);
+			name = "Build mbedTLS";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
-			shellScript = "$SRCROOT/build_mbedtls.sh\n$SRCROOT/build_libwebsockets.sh\n";
+			shellScript = "$SRCROOT/build_mbedtls.sh\n";
 			showEnvVarsInLog = 0;
 		};
 		27E6739E1EC8D958008F50C4 /* ShellScript */ = {
