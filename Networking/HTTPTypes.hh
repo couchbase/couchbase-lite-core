@@ -49,4 +49,6 @@ namespace litecore { namespace REST {
 
     using Methods = Method;
 
+    const char* MethodName(Method);
+
 } }

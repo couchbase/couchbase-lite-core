@@ -169,4 +169,15 @@ namespace litecore { namespace REST {
         return nullptr;
     }
 
+
+    const char* MethodName(Method method) {
+        const char* kMethodNames[] = {"GET", "PUT", "DELETE", "POST", "OPTIONS"};
+        int shift = -1;
+        for (auto m = (unsigned)method; m != 0; m >>= 1)
+            ++shift;
+        if (shift < 0 || shift >= 5)
+            return "??";
+        return kMethodNames[shift];
+    }
+
 }}

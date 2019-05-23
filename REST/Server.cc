@@ -69,6 +69,7 @@ namespace litecore { namespace REST {
 
 
     void Server::dispatchRequest(RequestResponse *rq) {
+        C4Log("%s %s", MethodName(rq->method()), rq->path().c_str());
         lock_guard<mutex> lock(_mutex);
         try{
             string pathStr(rq->path());
