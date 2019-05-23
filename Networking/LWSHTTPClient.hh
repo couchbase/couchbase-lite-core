@@ -12,13 +12,13 @@
 #include "Writer.hh"
 #include <string>
 
-namespace litecore { namespace REST {
+namespace litecore { namespace net {
 
     /** An HTTP client connection. (The Response class presents a higher level interface.) */
-    class LWSHTTPClient : public websocket::LWSProtocol {
+    class LWSHTTPClient : public LWSProtocol {
     public:
 
-        LWSHTTPClient(Response&);
+        LWSHTTPClient(REST::Response&);
 
         void connect(const C4Address &address,
                      const char *method NONNULL,
@@ -45,7 +45,7 @@ namespace litecore { namespace REST {
 
     private:
         fleece::Doc _requestHeaders;
-        Response& _response;
+        REST::Response& _response;
         C4Error _error {};
         fleece::Writer _responseData;
         std::condition_variable _condition;

@@ -792,6 +792,7 @@
 		271BA453227B691500D49D13 /* c4DatabaseEncryptionTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = c4DatabaseEncryptionTest.cc; sourceTree = "<group>"; };
 		271BA50C228B99B800D49D13 /* LWSHTTPClient.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSHTTPClient.hh; sourceTree = "<group>"; };
 		271BA50D228B99B800D49D13 /* LWSHTTPClient.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSHTTPClient.cc; sourceTree = "<group>"; };
+		271BA53C2297008200D49D13 /* HTTPTypes.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPTypes.hh; sourceTree = "<group>"; };
 		2722504A1D7884110006D5A5 /* c4BlobStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4BlobStore.h; sourceTree = "<group>"; };
 		2722504D1D7892610006D5A5 /* c4BlobStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStore.cc; sourceTree = "<group>"; };
 		272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BlobStoreTest.cc; sourceTree = "<group>"; };
@@ -991,7 +992,6 @@
 		2771A01B2284EA5200B18E0A /* lws-timeout-timer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "lws-timeout-timer.h"; sourceTree = "<group>"; };
 		2771A01C2284EA5200B18E0A /* lws-jwk.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "lws-jwk.h"; sourceTree = "<group>"; };
 		2771A01D2284EA5200B18E0A /* libwebsockets.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libwebsockets.h; sourceTree = "<group>"; };
-		2771A01E2284EA7900B18E0A /* lws_config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = lws_config.h; path = build/lws_config.h; sourceTree = "<group>"; };
 		2771A0232284EB1D00B18E0A /* pem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = pem.h; sourceTree = "<group>"; };
 		2771A0242284EB1D00B18E0A /* check_config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = check_config.h; sourceTree = "<group>"; };
 		2771A0252284EB1D00B18E0A /* error.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = error.h; sourceTree = "<group>"; };
@@ -1102,7 +1102,6 @@
 		278963611D7A376900493096 /* EncryptedStream.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = EncryptedStream.hh; path = ../Support/EncryptedStream.hh; sourceTree = "<group>"; };
 		278963651D7B3E0E00493096 /* Stream.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; name = Stream.hh; path = ../Support/Stream.hh; sourceTree = "<group>"; };
 		278963661D7B7E7D00493096 /* Stream.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Stream.cc; sourceTree = "<group>"; };
-		278BC9C5228DF3D50055FF09 /* lws_callback_names.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lws_callback_names.h; sourceTree = "<group>"; };
 		278BC9C6228DF4340055FF09 /* LWSUtil.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSUtil.hh; sourceTree = "<group>"; };
 		278BC9C7228DF4340055FF09 /* LWSUtil.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSUtil.cc; sourceTree = "<group>"; };
 		278BC9CA228E192F0055FF09 /* LWSServer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSServer.hh; sourceTree = "<group>"; };
@@ -1592,9 +1591,11 @@
 				278BC9CA228E192F0055FF09 /* LWSServer.hh */,
 				278BC9D0228E1D620055FF09 /* LWSResponder.cc */,
 				278BC9CF228E1D620055FF09 /* LWSResponder.hh */,
+				271BA53C2297008200D49D13 /* HTTPTypes.hh */,
 				278BC9C7228DF4340055FF09 /* LWSUtil.cc */,
 				278BC9C6228DF4340055FF09 /* LWSUtil.hh */,
-				278BC9C5228DF3D50055FF09 /* lws_callback_names.h */,
+				279D40F51EA533D900D8DD9D /* netUtils.cc */,
+				279D40F61EA533D900D8DD9D /* netUtils.hh */,
 				2771A0ED228B832400B18E0A /* build_libwebsockets.sh */,
 				2771A0EC228B832400B18E0A /* build_mbedtls.sh */,
 			);
@@ -1617,8 +1618,6 @@
 				276E021A1EA983EE00FEFE8A /* Response.hh */,
 				272851271EA46421009CA22F /* Request.cc */,
 				272851281EA46421009CA22F /* Request.hh */,
-				279D40F51EA533D900D8DD9D /* netUtils.cc */,
-				279D40F61EA533D900D8DD9D /* netUtils.hh */,
 				275A74D51ED3AA11008CB57B /* c4Listener.cc */,
 				279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */,
 				275A74DF1ED4A05C008CB57B /* c4ListenerInternal.hh */,
@@ -2038,7 +2037,6 @@
 		27719FE52284E84300B18E0A /* libwebsockets */ = {
 			isa = PBXGroup;
 			children = (
-				2771A01E2284EA7900B18E0A /* lws_config.h */,
 				27719FEC2284EA5200B18E0A /* include */,
 				27719FE62284E8AD00B18E0A /* libwebsockets.a */,
 			);

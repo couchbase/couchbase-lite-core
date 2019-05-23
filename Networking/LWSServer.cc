@@ -23,7 +23,7 @@
 #include "Error.hh"
 
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
     using namespace std;
 
     LWSServer::LWSServer()
@@ -49,6 +49,7 @@ namespace litecore { namespace websocket {
         LWSContext::initialize();
         LWSContext::instance->startServer(this, port, hostname, _mount.get());
 
+        // Block till server starts:
         unique_lock<mutex> lock(_mutex);
         _condition.wait(lock, [&]() {return _started;});
     }
@@ -60,6 +61,7 @@ namespace litecore { namespace websocket {
         
         LWSContext::instance->stop(this);
 
+        // Block till server stops:
         unique_lock<mutex> lock(_mutex);
         _condition.wait(lock, [&]() {return !_started;});
     }
@@ -76,7 +78,7 @@ namespace litecore { namespace websocket {
         switch ((lws_callback_reasons)reason) {
             case LWS_CALLBACK_PROTOCOL_INIT:
                 LogDebug("**** LWS_CALLBACK_PROTOCOL_INIT (lws=%p)", client);
-                notifyStarted(true);
+                notifyStartStop(true);
                 return 0;
             case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED:
                 LogDebug("**** LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED (lws=%p)", client);
@@ -84,7 +86,7 @@ namespace litecore { namespace websocket {
             case LWS_CALLBACK_PROTOCOL_DESTROY:
                 LogDebug("**** LWS_CALLBACK_PROTOCOL_DESTROY");
                 _vhost = nullptr;
-                notifyStarted(false);
+                notifyStartStop(false);
                 release(this);
                 return 0;
             default:
@@ -95,18 +97,12 @@ namespace litecore { namespace websocket {
     }
 
 
-    void LWSServer::notifyStarted(bool started) {
+    void LWSServer::notifyStartStop(bool started) {
         if (started != _started) {
             unique_lock<mutex> lock(_mutex);
             _started = started;
             _condition.notify_all();
         }
-    }
-
-
-    bool LWSServer::createResponder(lws *client) {
-        (void) new REST::LWSResponder(this, client);
-        return true;
     }
 
 

@@ -18,24 +18,13 @@
 
 #pragma once
 #include "Response.hh"
+#include "HTTPTypes.hh"
+#include "LWSResponder.hh"
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
 
 namespace litecore { namespace REST {
-
-    enum Method: unsigned {
-        None        = 0,
-
-        GET         = 1,
-        PUT         = 2,
-        DELETE      = 4,
-        POST        = 8,
-        OPTIONS     = 16,
-
-        ALL         = UINT_MAX
-    };
-
-    using Methods = Method;
+    class Server;
 
     /** Incoming HTTP request; read-only */
     class Request : public Body {
@@ -55,12 +44,29 @@ namespace litecore { namespace REST {
         Request(Method, std::string path, fleece::slice queries,
                 fleece::Doc headers, fleece::alloc_slice body);
         Request() { }
-        void setRequest(Method, std::string path, fleece::slice queries,
-                        fleece::Doc headers, fleece::alloc_slice body);
 
         Method _method {Method::None};
         std::string _path;
         fleece::alloc_slice _queries;
+    };
+
+
+    /** Incoming HTTP request (inherited from Request),
+        with setters to send the response (inherited from LWSResponder). */
+    class RequestResponse : public Request, public net::LWSResponder {
+    protected:
+        RequestResponse(Server *server, lws *client);
+        virtual void onRequest(Method,
+                               std::string path,
+                               fleece::slice queries,
+                               fleece::Doc headers) override;
+        virtual void onRequestBody(fleece::alloc_slice) override;
+        virtual void onRequestComplete() override;
+
+    private:
+        fleece::Retained<Server> _server;
+        
+        friend class Server;
     };
 
 } }

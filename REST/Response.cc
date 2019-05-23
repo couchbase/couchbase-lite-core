@@ -27,35 +27,7 @@ using namespace std;
 using namespace fleece;
 
 namespace litecore { namespace REST {
-    using namespace litecore::websocket;
-
-
-    const char* StatusMessage(HTTPStatus code) {
-        static const struct {HTTPStatus code; const char* message;} kMessages[] = {
-            {HTTPStatus::OK, "OK"},
-            {HTTPStatus::Created, "Created"},
-            {HTTPStatus::NoContent, "No Content"},
-            {HTTPStatus::BadRequest, "Invalid Request"},
-            {HTTPStatus::Unauthorized, "Unauthorized"},
-            {HTTPStatus::Forbidden, "Forbidden"},
-            {HTTPStatus::NotFound, "Not Found"},
-            {HTTPStatus::MethodNotAllowed, "Method Not Allowed"},
-            {HTTPStatus::NotAcceptable, "Not Acceptable"},
-            {HTTPStatus::Conflict, "Conflict"},
-            {HTTPStatus::Gone, "Gone"},
-            {HTTPStatus::PreconditionFailed, "Precondition Failed"},
-            {HTTPStatus::ServerError, "Internal Server Error"},
-            {HTTPStatus::NotImplemented, "Not Implemented"},
-            {HTTPStatus::GatewayError, "Bad Gateway"},
-            {HTTPStatus::undefined, nullptr}
-        };
-
-        for (unsigned i = 0; kMessages[i].message; ++i) {
-            if (kMessages[i].code == code)
-                return kMessages[i].message;
-        }
-        return nullptr;
-    }
+    using namespace litecore::net;
 
 
     slice Body::header(const char *name) const {
@@ -127,7 +99,7 @@ namespace litecore { namespace REST {
         address.port = port;
         address.path = slice(uri);
         
-        Retained<LWSHTTPClient> conn = new LWSHTTPClient(*this);
+        Retained<net::LWSHTTPClient> conn = new LWSHTTPClient(*this);
         conn->connect(address, method.c_str(), headers, alloc_slice(body));
         _error = conn->run();
     }

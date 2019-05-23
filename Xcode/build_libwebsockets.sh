@@ -52,5 +52,6 @@ then
     echo "No change in lws_config.h"
 else
     echo "Copying lws_config.h to $DERIVED_SOURCES_DIR"
+    mkdir -p "$DERIVED_SOURCES_DIR"
     cp include/lws_config.h "$DERIVED_SOURCES_DIR/lws_config.h"
 fi

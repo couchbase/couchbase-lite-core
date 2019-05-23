@@ -6,24 +6,27 @@
 
 #pragma once
 #include "LWSProtocol.hh"
-#include "Request.hh"
+#include "HTTPTypes.hh"
 #include "Writer.hh"
 #include <map>
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
     class LWSServer;
 } }
 
-namespace litecore { namespace REST {
+namespace litecore { namespace net {
 
     /** Represents an _incoming_ HTTP request received by a LWSServer,
         and the response to the request. */
-    class LWSResponder : public websocket::LWSProtocol, public Request {
+    class LWSResponder : public LWSProtocol {
     public:
+
+        using HTTPStatus = REST::HTTPStatus;
+        using Method = REST::Method;
 
         /** Initialize on a new incoming connection. Will read the incoming request,
             then call LWSServer::dispatchResponder with itself as the parameter. */
-        LWSResponder(websocket::LWSServer*, lws *connection);
+        LWSResponder(lws *connection);
 
         virtual const char *className() const noexcept override      {return "LWSResponder";}
 
@@ -67,20 +70,30 @@ namespace litecore { namespace REST {
 
     protected:
         virtual ~LWSResponder();
+
+        // Request line & headers received
+        virtual void onRequest(Method,
+                               std::string path,
+                               fleece::slice queries,
+                               fleece::Doc headers) =0;
+        // Request body received
+        virtual void onRequestBody(fleece::alloc_slice) =0;
+
+        //
+        virtual void onRequestComplete() =0;
+
         void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
-        void onConnectionError(C4Error error) override;
-        Method getMethod();
 
     private:
+        void onURIReceived(fleece::slice uri);
         void onRequestBody(fleece::slice);
         void onRequestBodyComplete();
-        void onRequestReady(fleece::slice uri);
-        void dispatch();
+        void onConnectionError(C4Error error) override;
         void sendStatus();
         void sendHeaders();
         void onWriteRequest();
+        Method getMethod();
 
-        websocket::LWSServer* _server;
         C4Error _error {};
 
         std::vector<fleece::alloc_slice> _requestBody;

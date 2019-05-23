@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "HTTPTypes.hh"
 #include "RefCounted.hh"
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
@@ -26,32 +27,11 @@
 #include <memory>
 #include <sstream>
 
+namespace litecore { namespace net {
+    class LWSHTTPClient;
+} }
 
 namespace litecore { namespace REST {
-
-    enum class HTTPStatus : int {
-        undefined = -1,
-        OK = 200,
-        Created = 201,
-        NoContent = 204,
-        NotModified = 304,
-        BadRequest = 400,
-        Unauthorized = 401,
-        Forbidden = 403,
-        NotFound = 404,
-        MethodNotAllowed = 405,
-        NotAcceptable = 406,
-        Conflict = 409,
-        Gone = 410,
-        PreconditionFailed = 412,
-        Locked = 423,
-        ServerError = 500,
-        NotImplemented = 501,
-        GatewayError = 502,
-    };
-
-    const char* StatusMessage(HTTPStatus);
-
 
     /** An incoming HTTP body. */
     class Body {
@@ -117,7 +97,7 @@ namespace litecore { namespace REST {
         std::string _statusMessage;
         C4Error _error {};
 
-        friend class LWSHTTPClient;
+        friend class litecore::net::LWSHTTPClient;
     };
 
 } }

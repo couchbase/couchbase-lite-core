@@ -17,6 +17,7 @@
 //
 
 #include "Request.hh"
+#include "Server.hh"
 #include "Writer.hh"
 #include "LWSContext.hh"
 #include "PlatformIO.hh"
@@ -39,17 +40,6 @@ namespace litecore { namespace REST {
     ,_path(path)
     ,_queries(queries)
     { }
-
-
-    void Request::setRequest(Method method, string path, fleece::slice queries,
-                             fleece::Doc headers, fleece::alloc_slice body)
-    {
-        setHeaders(headers);
-        setBody(body);
-        _method = method;
-        _path = path;
-        _queries = queries;
-    }
 
 
     string Request::path(int i) const {
@@ -93,5 +83,41 @@ namespace litecore { namespace REST {
             return defaultValue;
         return val != "false" && val != "0";        // same behavior as Obj-C CBL 1.x
     }
+
+
+
+
+    RequestResponse::RequestResponse(Server *server, lws *client)
+    :LWSResponder(client)
+    ,_server(server)
+    { }
+
+
+    void RequestResponse::onRequest(Method method,
+                           std::string path,
+                           fleece::slice queries,
+                           fleece::Doc headers)
+    {
+        setHeaders(headers);
+        _method = method;
+        _path = path;
+        _queries = queries;
+    }
+
+
+    void RequestResponse::onRequestBody(fleece::alloc_slice body) {
+        setBody(body);
+    }
+
+
+    void RequestResponse::onRequestComplete() {
+        _server->dispatchRequest(this);
+        finish();
+        _server = nullptr;
+    }
+
+
+
+
 
 } }

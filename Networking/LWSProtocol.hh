@@ -13,14 +13,16 @@
 
 struct lws;
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
 
     /** Abstract base class of network connections based on libwebsockets.
         A wrapper around a `lws` object. */
     class LWSProtocol : public fleece::RefCounted {
     public:
+        // Entry point for libwebsockets events.
         int _mainDispatch(lws*, int callback_reason, void *user, void *in, size_t len);
 
+        // Used for logging: every subclass should override this to return its class name.
         virtual const char *className() const noexcept =0;
 
     protected:

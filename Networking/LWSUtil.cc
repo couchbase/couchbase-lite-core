@@ -17,9 +17,11 @@
 //
 
 #include "LWSUtil.hh"
+#include "HTTPTypes.hh"
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
 
+#if DEBUG
     // Derived from the declaration of `enum lws_callback_reasons` in lws-callbacks.h
     static const char* kCallbackName[102] = {
         /* 0*/ "LWS_CALLBACK_ESTABLISHED",
@@ -133,5 +135,38 @@ namespace litecore { namespace websocket {
         else
             return "??";
     }
+#endif // DEBUG
 
 } }
+
+
+namespace litecore { namespace REST {
+
+    static const struct {HTTPStatus code; const char* message;} kHTTPStatusMessages[] = {
+        {HTTPStatus::OK,                 "OK"},
+        {HTTPStatus::Created,            "Created"},
+        {HTTPStatus::NoContent,          "No Content"},
+        {HTTPStatus::BadRequest,         "Invalid Request"},
+        {HTTPStatus::Unauthorized,       "Unauthorized"},
+        {HTTPStatus::Forbidden,          "Forbidden"},
+        {HTTPStatus::NotFound,           "Not Found"},
+        {HTTPStatus::MethodNotAllowed,   "Method Not Allowed"},
+        {HTTPStatus::NotAcceptable,      "Not Acceptable"},
+        {HTTPStatus::Conflict,           "Conflict"},
+        {HTTPStatus::Gone,               "Gone"},
+        {HTTPStatus::PreconditionFailed, "Precondition Failed"},
+        {HTTPStatus::ServerError,        "Internal Server Error"},
+        {HTTPStatus::NotImplemented,     "Not Implemented"},
+        {HTTPStatus::GatewayError,       "Bad Gateway"},
+        {HTTPStatus::undefined,          nullptr}
+    };
+
+    const char* StatusMessage(HTTPStatus code) {
+        for (unsigned i = 0; kHTTPStatusMessages[i].message; ++i) {
+            if (kHTTPStatusMessages[i].code == code)
+                return kHTTPStatusMessages[i].message;
+        }
+        return nullptr;
+    }
+
+}}

@@ -15,8 +15,10 @@
 #define Warn(MSG, ...)       C4LogToAt(kC4WebSocketLog, kC4LogWarning, "%s: " MSG, className(), ##__VA_ARGS__)
 
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
 
+#if DEBUG
     const char* LWSCallbackName(int /*lws_callback_reasons*/ reason);
-
+#endif
+    
 } }

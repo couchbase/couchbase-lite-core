@@ -25,7 +25,7 @@
 #include <errno.h>
 
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
     using namespace std;
     using namespace fleece;
 
@@ -89,7 +89,7 @@ namespace litecore { namespace websocket {
             }
             default:
                 if (reason < 31 || reason > 36)
-                    LogVerbose("**** %-s (default)", LWSCallbackName(reason));
+                    LogDebug("**** %-s (default)", LWSCallbackName(reason));
                 break;
         }
         

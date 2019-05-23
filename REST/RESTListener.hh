@@ -32,10 +32,7 @@
 namespace litecore { namespace REST {
     using fleece::RefCounted;
     using fleece::Retained;
-    class Request;
     class Server;
-    class LWSResponder;
-    using RequestResponse = LWSResponder;
 
     class RESTListener : public Listener {
     public:

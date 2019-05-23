@@ -40,7 +40,7 @@ using namespace fleece;
 #define LWS_WRITE_CLOSE lws_write_protocol(4)
 
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
 
     // Max number of bytes read that haven't been handled by the replicator yet.
     // Beyond this point, we turn on backpressure (flow-control) in libwebsockets
@@ -482,7 +482,7 @@ namespace litecore { namespace websocket {
 } }
 
 
-using namespace litecore::websocket;
+using namespace litecore::net;
 
 
 #pragma mark - C4 SOCKET FACTORY:

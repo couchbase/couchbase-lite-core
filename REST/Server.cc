@@ -17,7 +17,6 @@
 //
 
 #include "Server.hh"
-#include "LWSResponder.hh"
 #include "Request.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -31,7 +30,7 @@
 
 namespace litecore { namespace REST {
     using namespace std;
-    using namespace litecore::websocket;
+    using namespace litecore::net;
 
 
     Server::Server()
@@ -63,7 +62,13 @@ namespace litecore { namespace REST {
     }
 
 
-    void Server::dispatchResponder(LWSResponder *rq) {
+    bool Server::createResponder(lws *client) {
+        (void) new RequestResponse(this, client);
+        return true;
+    }
+
+
+    void Server::dispatchRequest(RequestResponse *rq) {
         lock_guard<mutex> lock(_mutex);
         try{
             string pathStr(rq->path());

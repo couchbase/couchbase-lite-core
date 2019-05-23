@@ -29,15 +29,14 @@
 struct lws_http_mount;
 struct lws_vhost;
 
-namespace litecore { namespace REST {
-    class Request;
+namespace litecore { namespace net {
     class LWSResponder;
+} }
 
-    using RequestResponse = LWSResponder;
-
+namespace litecore { namespace REST {
 
     /** HTTP server, using libwebsockets. */
-    class Server : public websocket::LWSServer {
+    class Server : public net::LWSServer {
     public:
         Server();
 
@@ -50,6 +49,8 @@ namespace litecore { namespace REST {
         // Patterns are tested in the order the handlers are added, and the first match is used.
         void addHandler(Methods, const std::string &pattern, const Handler&);
 
+        void dispatchRequest(RequestResponse*);
+
         void stop();
 
     protected:
@@ -60,7 +61,7 @@ namespace litecore { namespace REST {
         };
 
         URIRule* findRule(Method method, const std::string &path);
-        virtual void dispatchResponder(LWSResponder*) override;
+        virtual bool createResponder(lws *client) override;
         ~Server() = default;
 
     private:

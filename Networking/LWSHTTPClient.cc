@@ -23,10 +23,10 @@
 #include "Writer.hh"
 
 
-namespace litecore { namespace REST {
+namespace litecore { namespace net {
     using namespace std;
     using namespace fleece;
-    using namespace litecore::websocket;
+    using namespace litecore::REST;
 
 
     LWSHTTPClient::LWSHTTPClient(Response &response)

@@ -20,21 +20,21 @@
 #include "LWSServer.hh"
 #include "LWSUtil.hh"
 #include "Error.hh"
+#include "StringUtil.hh"
 #include "netUtils.hh"
 
 
-namespace litecore { namespace REST {
+namespace litecore { namespace net {
     using namespace std;
     using namespace fleece;
-    using namespace litecore::websocket;
+    using namespace REST;
 
 
     static constexpr size_t kHeadersMaxSize = 10000;
 
 
-    LWSResponder::LWSResponder(LWSServer *server, lws *connection)
+    LWSResponder::LWSResponder(lws *connection)
     :LWSProtocol(connection)
-    ,_server(server)
     {
         lws_set_opaque_user_data(connection, this);
         LogVerbose("Created %p on wsi %p", this, connection);
@@ -52,7 +52,7 @@ namespace litecore { namespace REST {
         switch ((lws_callback_reasons)reason) {
             case LWS_CALLBACK_HTTP:
                 LogDebug("**** LWS_CALLBACK_HTTP");
-                onRequestReady(slice(in, len));
+                onURIReceived(slice(in, len));
                 break;
             case LWS_CALLBACK_HTTP_BODY:
                 LogDebug("**** LWS_CALLBACK_HTTP_BODY");
@@ -78,6 +78,7 @@ namespace litecore { namespace REST {
 
 
     void LWSResponder::onRequestBodyComplete() {
+        // Concatenate all the chunks in the _requestBody vector:
         alloc_slice body;
         switch (_requestBody.size()) {
             case 0:
@@ -98,33 +99,23 @@ namespace litecore { namespace REST {
             }
         }
         _requestBody.clear();
-        setBody(body);
         LogVerbose("Received %zu-byte request body", body.size);
-
-        dispatch();
+        onRequestBody(body);
+        onRequestComplete();
     }
 
 
-    void LWSResponder::onRequestReady(slice uri) {
-        setRequest(getMethod(), string("/") + string(uri), nullslice, encodeHTTPHeaders(), {});
-        Log("%d %s", method(), path().c_str());
-
-        string queries = getHeader(WSI_TOKEN_HTTP_URI_ARGS);
-        if (!queries.empty())
-            _queries = queries;
-
+    void LWSResponder::onURIReceived(slice uri) {
         _responseHeaders = alloc_slice(kHeadersMaxSize);
         _responseHeadersPos = (uint8_t*)_responseHeaders.buf;
 
+        onRequest(getMethod(),
+                  string("/") + string(uri),
+                  getHeader(WSI_TOKEN_HTTP_URI_ARGS),
+                  encodeHTTPHeaders());
+
         if (getContentLengthHeader() == 0)
-            dispatch();
-    }
-
-
-    void LWSResponder::dispatch() {
-        _server->dispatchResponder(this);
-        finish();
-        _server = nullptr;
+            onRequestComplete();
     }
 
 

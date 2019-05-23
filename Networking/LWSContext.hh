@@ -19,7 +19,7 @@ struct lws_context_creation_info;
 struct lws_http_mount;
 struct lws_vhost;
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
 
     class LWSProtocol;
     class LWSServer;

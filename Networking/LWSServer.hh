@@ -13,12 +13,12 @@ struct lws;
 struct lws_http_mount;
 struct lws_vhost;
 
-namespace litecore { namespace REST {
+namespace litecore { namespace net {
     class LWSResponder;
 } }
 
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
 
     /** Abstract base class class of servers/listeners based on libwebsockets. */
     class LWSServer : public fleece::RefCounted {
@@ -27,20 +27,20 @@ namespace litecore { namespace websocket {
 
         void start(uint16_t port, const char *hostname =nullptr);
         void stop();
-        
-        virtual int dispatch(lws*, int callback_reason, void *user, void *in, size_t len);
 
-        virtual void dispatchResponder(REST::LWSResponder*) =0;
+        virtual int dispatch(lws*, int callback_reason, void *user, void *in, size_t len);
 
         virtual const char *className() const noexcept      {return "LWSServer";}
 
     protected:
         virtual ~LWSServer();
-        virtual bool createResponder(lws *client);
+
+        // Called when there's an incoming connection; should create a LWSResponder on it.
+        virtual bool createResponder(lws *client) =0;
         
     private:
         void createdVHost(lws_vhost*);
-        void notifyStarted(bool started);
+        void notifyStartStop(bool started);
 
         std::mutex _mutex;
         std::condition_variable _condition;

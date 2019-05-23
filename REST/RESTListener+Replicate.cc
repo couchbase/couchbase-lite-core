@@ -22,7 +22,6 @@
 #include "c4Document+Fleece.h"
 #include "c4ListenerInternal.hh"
 #include "Server.hh"
-#include "LWSResponder.hh"
 #include "RefCounted.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"

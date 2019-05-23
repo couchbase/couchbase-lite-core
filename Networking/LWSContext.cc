@@ -30,7 +30,7 @@
 #endif
 
 
-namespace litecore { namespace websocket {
+namespace litecore { namespace net {
     using namespace std;
     using namespace fleece;
 
