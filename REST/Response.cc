@@ -99,8 +99,8 @@ namespace litecore { namespace REST {
         address.port = port;
         address.path = slice(uri);
         
-        Retained<net::LWSHTTPClient> conn = new LWSHTTPClient(*this);
-        conn->connect(address, method.c_str(), headers, alloc_slice(body));
+        Retained<net::LWSHTTPClient> conn = new LWSHTTPClient();
+        conn->connect(this, address, method.c_str(), headers, alloc_slice(body));
         _error = conn->run();
     }
 

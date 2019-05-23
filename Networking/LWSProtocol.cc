@@ -71,8 +71,7 @@ namespace litecore { namespace net {
             case LWS_CALLBACK_WSI_CREATE:
                 LogVerbose("**** LWS_CALLBACK_WSI_CREATE (wsi=%p)", client);
                 Assert(!_client);
-                //if (!_client)
-                    _client = client;
+                _client = client;
                 retain(this);
                 break;
             case LWS_CALLBACK_WSI_DESTROY:
@@ -81,7 +80,7 @@ namespace litecore { namespace net {
                 onDestroy();
                 _client = nullptr;
                 release(this);
-                break;
+                return;
             case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
                 LogVerbose("**** LWS_CALLBACK_CLIENT_CONNECTION_ERROR");
                 onConnectionError(getConnectionError(slice(in, len)));

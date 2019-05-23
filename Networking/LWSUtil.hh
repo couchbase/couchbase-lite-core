@@ -10,10 +10,14 @@
 
 #define Log(MSG, ...)        C4LogToAt(kC4WebSocketLog, kC4LogInfo,    "%s: " MSG, className(), ##__VA_ARGS__)
 #define LogVerbose(MSG, ...) C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "%s: " MSG, className(), ##__VA_ARGS__)
-#define LogDebug(MSG, ...)   C4LogToAt(kC4WebSocketLog, kC4LogDebug,   "%s: " MSG, className(), ##__VA_ARGS__)
 #define LogError(MSG, ...)   C4LogToAt(kC4WebSocketLog, kC4LogError,   "%s: " MSG, className(), ##__VA_ARGS__)
 #define Warn(MSG, ...)       C4LogToAt(kC4WebSocketLog, kC4LogWarning, "%s: " MSG, className(), ##__VA_ARGS__)
 
+#if DEBUG
+#define LogDebug(MSG, ...)   C4LogToAt(kC4WebSocketLog, kC4LogDebug,   "%s: " MSG, className(), ##__VA_ARGS__)
+#else
+#define LogDebug(MSG, ...)   { }
+#endif
 
 namespace litecore { namespace net {
 

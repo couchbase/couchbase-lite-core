@@ -116,16 +116,16 @@ namespace litecore { namespace REST {
         name_len = strlen(name);
         e = data + data_len;
 
-        // data is "var1=val1&var2=val2...". Find variable first
+        // data is "var1=val1,var2=val2...". Find variable first
         for (p = data; p + name_len < e; p++) {
-            if ((p == data || p[-1] == '&') && p[name_len] == '='
+            if ((p == data || p[-1] == ',') && p[name_len] == '='
                 && !strncasecmp(name, p, name_len) && 0 == occurrence--) {
 
                 // Point p to variable value
                 p += name_len + 1;
 
                 // Point s to the end of the value
-                s = (const char *)memchr(p, '&', (size_t)(e - p));
+                s = (const char *)memchr(p, ',', (size_t)(e - p));
                 if (s == NULL) {
                     s = e;
                 }

@@ -22,18 +22,18 @@ namespace litecore { namespace net {
         // Entry point for libwebsockets events.
         int _mainDispatch(lws*, int callback_reason, void *user, void *in, size_t len);
 
-        // Used for logging: every subclass should override this to return its class name.
-        virtual const char *className() const noexcept =0;
-
     protected:
         LWSProtocol() { }
         LWSProtocol(lws *connection);
         virtual ~LWSProtocol();
 
+        // Override to handle LWS events. Call super if you don't handle the event.
         virtual void dispatch(lws*, int callback_reason, void *user, void *in, size_t len);
 
+        // Call from within dispatch() to set a nonzero return value from the LWS callback
         void setDispatchResult(int result)          {_dispatchResult = result;}
-        
+
+        // Calls setDispatchResult if status is nonzero
         bool check(int status);
 
         virtual void onDestroy()                    { }
@@ -71,15 +71,18 @@ namespace litecore { namespace net {
             block();
         }
 
-        std::mutex _mutex;                       // For synchronization
-        ::lws* _client {nullptr};
-        int _dispatchResult;
+        std::mutex  _mutex;                     // For synchronization
+        ::lws*      _client {nullptr};          // libwebsockets client handle
+
+        // Used for logging: every subclass should override this to return its class name.
+        virtual const char *className() const noexcept =0;
 
     private:
         void clientCreated(::lws* client);
 
+        int                 _dispatchResult;
         fleece::alloc_slice _dataToSend;
-        fleece::slice _unsent;
+        fleece::slice       _unsent;
 
         friend class LWSContext;
     };

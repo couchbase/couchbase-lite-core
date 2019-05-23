@@ -103,9 +103,8 @@ namespace litecore { namespace net {
         void open() {
             Assert(!_client);
             Log("LWSWebSocket connecting to <%.*s>...", SPLAT(_address.url()));
-            LWSContext::initialize();
-            LWSContext::instance->connectClient(this, LWSContext::kBLIPProtocol,
-                                                _address, pinnedServerCert());
+            LWSContext::instance().connectClient(this, LWSContext::kBLIPClientProtocol,
+                                                 _address, pinnedServerCert());
         }
 
 

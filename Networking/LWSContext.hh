@@ -28,42 +28,36 @@ namespace litecore { namespace net {
     /** Singleton that manages the libwebsocket context and event thread. */
     class LWSContext {
     public:
-        static void initialize();
+        // Single instance
+        static LWSContext& instance();
 
-        // null until initialize() is called
-        static LWSContext* instance;
-
-        bool isOpen()                          {return _context != nullptr;}
-
-        ::lws_context* context() const         {return _context;}
-
-        static constexpr const char* kBLIPProtocol = "BLIP_3+CBMobile_2";
+        // Protocol names for connectClient and startServer:
+        static constexpr const char* kBLIPClientProtocol = "BLIP_3+CBMobile_2";
         static constexpr const char* kHTTPClientProtocol = "HTTPClient";
         static constexpr const char* kHTTPServerProtocol = "HTTPServer";
 
-
-        void connectClient(LWSProtocol *protocolInstance,
-                           const char *protocolName,
+        void connectClient(LWSProtocol *protocolInstance NONNULL,
+                           const char *protocolName NONNULL,
                            const repl::Address &address,
                            fleece::slice pinnedServerCert,
                            const char *method = nullptr);
 
-        void startServer(LWSServer *server,
+        void startServer(LWSServer *server NONNULL,
                          uint16_t port,
                          const char *hostname,
-                         const lws_http_mount *mounts);
+                         const lws_http_mount *mounts NONNULL);
 
-        void stop(LWSServer*);
+        void stop(LWSServer* NONNULL);
 
-        const char *className() const noexcept      {return "LWSContext";}
-
-        void dequeue();
+        void dequeue(); // internal use only
 
     protected:
         void enqueue(std::function<void()> fn);
+        const char *className() const noexcept      {return "LWSContext";}  // for logging
 
     private:
         LWSContext();
+        static void initLogging();
         static void logCallback(int level, const char *message);
         static fleece::alloc_slice getSystemRootCertsPEM();
         void startEventLoop();
@@ -80,10 +74,10 @@ namespace litecore { namespace net {
         void _stop(fleece::Retained<LWSServer>);
 
 
-        std::unique_ptr<lws_context_creation_info> _info;
-        ::lws_context*               _context {nullptr};
-        std::unique_ptr<std::thread> _thread;
-        actor::Channel<std::function<void()>> _enqueued;
+        std::unique_ptr<lws_context_creation_info>  _info;
+        lws_context*                                _context {nullptr};
+        std::unique_ptr<std::thread>                _thread;
+        actor::Channel<std::function<void()>>       _enqueued;
     };
 
 } }

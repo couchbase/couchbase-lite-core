@@ -17,18 +17,16 @@ namespace litecore { namespace net {
     /** An HTTP client connection. (The Response class presents a higher level interface.) */
     class LWSHTTPClient : public LWSProtocol {
     public:
+        LWSHTTPClient() =default;
 
-        LWSHTTPClient(REST::Response&);
-
-        void connect(const C4Address &address,
+        void connect(REST::Response* NONNULL,
+                     const C4Address &address,
                      const char *method NONNULL,
                      fleece::Doc headers,
                      fleece::alloc_slice requestBody = {});
 
         // blocks until finished
         C4Error run();
-
-        virtual const char *className() const noexcept override;
 
     protected:
         virtual ~LWSHTTPClient();
@@ -43,13 +41,15 @@ namespace litecore { namespace net {
         void waitTilFinished();
         void notifyFinished();
 
+        virtual const char *className() const noexcept override;
+
     private:
-        fleece::Doc _requestHeaders;
-        REST::Response& _response;
-        C4Error _error {};
-        fleece::Writer _responseData;
+        fleece::Doc             _requestHeaders;
+        REST::Response*         _response;
+        C4Error                 _error {};
+        fleece::Writer          _responseData;
         std::condition_variable _condition;
-        bool _finished {false};
+        bool                    _finished {false};
     };
 
 } }

@@ -149,7 +149,9 @@ namespace litecore { namespace REST {
         bool includeDocs = rq.boolQuery("include_docs");
         if (includeDocs)
             options.flags |= kC4IncludeBodies;
-        // TODO: Implement startkey, endkey, skip, limit, etc.
+        int64_t skip = rq.intQuery("skip", 0);
+        int64_t limit = rq.intQuery("limit", INT64_MAX);
+        // TODO: Implement startkey, endkey, etc.
 
         // Create enumerator:
         C4Error err;
@@ -163,6 +165,10 @@ namespace litecore { namespace REST {
         json.writeKey("rows"_sl);
         json.beginArray();
         while (c4enum_next(e, &err)) {
+            if (skip-- > 0)
+                continue;
+            else if (limit-- <= 0)
+                break;
             C4DocumentInfo info;
             c4enum_getDocumentInfo(e, &info);
             json.beginDict();

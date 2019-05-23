@@ -44,7 +44,7 @@ namespace litecore { namespace net {
     static constexpr short kDefaultPingIntervalSecs = 5 * 60;
 
 
-    constexpr const char* LWSContext::kBLIPProtocol;
+    constexpr const char* LWSContext::kBLIPClientProtocol;
     constexpr const char* LWSContext::kHTTPClientProtocol;
 
 
@@ -54,7 +54,7 @@ namespace litecore { namespace net {
                                 void *user, void *in, size_t len);
 
     constexpr static const lws_protocols kProtocols[] = {
-        { LWSContext::kBLIPProtocol,        &protocolCallback, 0, 0},
+        { LWSContext::kBLIPClientProtocol,        &protocolCallback, 0, 0},
         { LWSContext::kHTTPClientProtocol,  &protocolCallback, 0, 0},
         { NULL, NULL, 0, 0 }
     };
@@ -65,21 +65,25 @@ namespace litecore { namespace net {
     };
 
 
-    void LWSContext::initialize() {
-        if (!instance)
-            instance = new LWSContext();
+#pragma mark - CONTEXT INSTANCE & THREAD:
+
+
+    static LWSContext* sInstance;
+
+    static C4LogDomain sLWSLog;
+
+
+    LWSContext& LWSContext::instance() {
+        static once_flag once;
+        call_once(once, []() {
+            sInstance = new LWSContext();
+        });
+        return *sInstance;
     }
     
 
     LWSContext::LWSContext() {
-        // Configure libwebsocket logging:
-        auto logLevel = c4log_getLevel(kC4WebSocketLog);
-        int flags = LLL_ERR | LLL_WARN | LLL_NOTICE;
-        if (logLevel <= kC4LogDebug) {
-            flags |= LLL_INFO;
-            //flags |= LLL_DEBUG;
-        }
-        lws_set_log_level(flags, &logCallback);
+        initLogging();
 
         _info.reset(new lws_context_creation_info);
         memset(_info.get(), 0, sizeof(*_info));
@@ -108,6 +112,20 @@ namespace litecore { namespace net {
     }
 
 
+    void LWSContext::startEventLoop() {
+        // Create the thread running the context's LWS event loop:
+        _thread.reset( new thread([&]() {
+            SetThreadName("WebSocket dispatch (Couchbase Lite Core)");
+            LogDebug("Libwebsocket event loop starting...");
+            while (true) {
+                lws_service(_context, 1000);
+                // FIXME: The timeout should be longer than 1sec, but long timeouts can lead to
+                // long delays in libwebsocket: https://github.com/warmcat/libwebsockets/issues/1582
+            }
+        }));
+    }
+
+
     void LWSContext::enqueue(function<void()> fn) {
         _enqueued.push(fn);
         lws_cancel_service(_context);  // triggers LWS_CALLBACK_EVENT_WAIT_CANCELLE
@@ -122,6 +140,9 @@ namespace litecore { namespace net {
     }
 
 
+#pragma mark - CONNECTING AND SERVING:
+
+
     void LWSContext::connectClient(LWSProtocol *protocolInstance,
                                    const char *protocolName,
                                    const repl::Address &address,
@@ -132,7 +153,6 @@ namespace litecore { namespace net {
                      protocolInstance, string(protocolName), address,
                      alloc_slice(pinnedServerCert), (method ? string(method) :"")));
     }
-
 
     void LWSContext::_connectClient(Retained<LWSProtocol> protocolInstance,
                                     const std::string &protocolName,
@@ -147,7 +167,7 @@ namespace litecore { namespace net {
         string path(slice(address.path));
 
         struct lws_client_connect_info info = {};
-        info.context = LWSContext::instance->context();
+        info.context = _context;
         info.opaque_user_data = protocolInstance;
         info.port = address.port;
         info.address = hostname.c_str();
@@ -175,19 +195,13 @@ namespace litecore { namespace net {
 
 
     void LWSContext::startServer(LWSServer *server,
-                           uint16_t port,
-                           const char *hostname,
-                           const lws_http_mount *mounts)
+                                 uint16_t port,
+                                 const char *hostname,
+                                 const lws_http_mount *mounts)
     {
         enqueue(bind(&LWSContext::_startServer, this,
                      server, port, string(hostname ? hostname : ""), mounts));
     }
-
-
-    static void finalizeServer(lws_vhost *vhost, void* serverInstance) {
-        C4LogToAt(kC4WebSocketLog, kC4LogDebug, "Finalized LWSServer %p, vhost %p", serverInstance, vhost);
-    }
-
 
     void LWSContext::_startServer(Retained<LWSServer> serverInstance,
                                   uint16_t port,
@@ -201,7 +215,6 @@ namespace litecore { namespace net {
         _info->protocols = kServerProtocols;
         _info->mounts = mounts;
         _info->vhost_name = kHTTPServerProtocol;
-        _info->finalize = &finalizeServer;
         _info->finalize_arg = serverInstance;
         lws_vhost *vhost = lws_create_vhost(_context, _info.get());
         LogDebug("Created vhost %p for '%s'", vhost, hostname.c_str());
@@ -220,39 +233,42 @@ namespace litecore { namespace net {
     }
 
 
-    void LWSContext::logCallback(int level, const char *message) {
-        slice msg(message);
-        if (msg.size > 0 && msg[msg.size-1] == '\n')
-            msg.setSize(msg.size-1);
-        if (msg.size == 0)
-            return;
-        C4LogLevel c4level;
-        switch(level) {
-            case LLL_ERR:    c4level = kC4LogError; break;
-            case LLL_WARN:   c4level = kC4LogWarning; break;
-            case LLL_NOTICE: c4level = kC4LogInfo; break;
-            case LLL_INFO:   c4level = kC4LogVerbose; break;
-            default:         c4level = kC4LogDebug; break;
-        }
-        C4LogToAt(kC4WebSocketLog, c4level, "libwebsocket: %.*s", SPLAT(msg));
-    }
+#pragma mark - CALLBACKS:
 
 
-    void LWSContext::startEventLoop() {
-        // Create the thread running the context's LWS event loop:
-        _thread.reset( new thread([&]() {
-            SetThreadName("WebSocket dispatch (Couchbase Lite Core)");
-            LogDebug("Libwebsocket event loop starting...");
-            while (true) {
-                lws_service(_context, 1000);
-                // FIXME: The timeout should be longer than 1sec, but long timeouts can lead to
-                // long delays in libwebsocket: https://github.com/warmcat/libwebsockets/issues/1582
+    void LWSContext::initLogging() {
+        // Configure libwebsocket logging:
+        sLWSLog = c4log_getDomain("libwebsockets", true);
+        auto logLevel = c4log_getLevel(sLWSLog);
+        int flags = LLL_ERR | LLL_WARN | LLL_NOTICE;
+        if (logLevel <= kC4LogInfo)
+            flags |= LLL_NOTICE;
+        if (logLevel <= kC4LogVerbose)
+            flags |= LLL_INFO;
+        if (logLevel <= kC4LogDebug)
+            flags |= LLL_DEBUG;
+
+        lws_set_log_level(flags, [](int level, const char *message) {
+            slice msg(message);
+            if (msg.size > 0 && msg[msg.size-1] == '\n')
+                msg.setSize(msg.size-1);
+            if (msg.size == 0)
+                return;
+            C4LogLevel c4level;
+            switch(level) {
+                case LLL_ERR:    c4level = kC4LogError;   break;
+                case LLL_WARN:   c4level = kC4LogWarning; break;
+                case LLL_NOTICE: c4level = kC4LogInfo;    break;
+                case LLL_INFO:   c4level = kC4LogVerbose; break;
+                default:         c4level = kC4LogDebug;   break;
             }
-        }));
+            C4LogToAt(sLWSLog, c4level, "%.*s", SPLAT(msg));
+        });
     }
 
 
-    static const char* className() {return "LWSContext";}
+    // Define className() to make the logging macros work in the static functions below:
+    LITECORE_UNUSED static const char* className() {return "LWSContext";}
 
 
     static int protocolCallback(lws *wsi, enum lws_callback_reasons reason,
@@ -301,6 +317,9 @@ namespace litecore { namespace net {
     }
 
 
+#pragma mark - PLATFORM SPECIFIC:
+
+
 #ifdef LWS_WITH_MBEDTLS
 #ifdef TARGET_OS_OSX
     // Sadly, SecTrustCopyAnchorCertificates() is not available on iOS...
@@ -322,9 +341,6 @@ namespace litecore { namespace net {
     alloc_slice LWSContext::getSystemRootCertsPEM() { return {}; }
 #endif
 #endif
-
-
-    LWSContext* LWSContext::instance = nullptr;
 
 
 } }

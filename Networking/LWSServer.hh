@@ -30,14 +30,14 @@ namespace litecore { namespace net {
 
         virtual int dispatch(lws*, int callback_reason, void *user, void *in, size_t len);
 
-        virtual const char *className() const noexcept      {return "LWSServer";}
-
     protected:
         virtual ~LWSServer();
 
         // Called when there's an incoming connection; should create a LWSResponder on it.
         virtual bool createResponder(lws *client) =0;
-        
+
+        virtual const char *className() const noexcept      {return "LWSServer";}
+
     private:
         void createdVHost(lws_vhost*);
         void notifyStartStop(bool started);

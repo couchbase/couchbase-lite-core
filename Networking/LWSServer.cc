@@ -46,8 +46,7 @@ namespace litecore { namespace net {
         Assert(!_started);
 
         retain(this);       // balanced by release on LWS_CALLBACK_PROTOCOL_DESTROY
-        LWSContext::initialize();
-        LWSContext::instance->startServer(this, port, hostname, _mount.get());
+        LWSContext::instance().startServer(this, port, hostname, _mount.get());
 
         // Block till server starts:
         unique_lock<mutex> lock(_mutex);
@@ -59,7 +58,7 @@ namespace litecore { namespace net {
         if (!_started)
             return;
         
-        LWSContext::instance->stop(this);
+        LWSContext::instance().stop(this);
 
         // Block till server stops:
         unique_lock<mutex> lock(_mutex);

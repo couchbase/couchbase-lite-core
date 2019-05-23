@@ -28,8 +28,6 @@ namespace litecore { namespace net {
             then call LWSServer::dispatchResponder with itself as the parameter. */
         LWSResponder(lws *connection);
 
-        virtual const char *className() const noexcept override      {return "LWSResponder";}
-
         // Response status:
 
         void respondWithStatus(HTTPStatus, const char *message =nullptr);
@@ -83,6 +81,8 @@ namespace litecore { namespace net {
         virtual void onRequestComplete() =0;
 
         void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+
+        virtual const char *className() const noexcept override      {return "LWSResponder";}
 
     private:
         void onURIReceived(fleece::slice uri);

@@ -29,28 +29,28 @@ namespace litecore { namespace net {
     using namespace litecore::REST;
 
 
-    LWSHTTPClient::LWSHTTPClient(Response &response)
-    :_response(response)
-    { }
-
-
     LWSHTTPClient::~LWSHTTPClient() {
         C4LogToAt(kC4WebSocketLog, kC4LogDebug, "~LWSHTTPClient %p", this);
     }
 
 
-    void LWSHTTPClient::connect(const C4Address &address,
+    void LWSHTTPClient::connect(REST::Response *response,
+                                const C4Address &address,
                                 const char *method,
                                 fleece::Doc headers,
                                 alloc_slice requestBody)
     {
+        _response = response;
         _requestHeaders = headers;
         setDataToSend(requestBody);
-        LWSContext::initialize();
-        LWSContext::instance->connectClient(this,
-                                            LWSContext::kHTTPClientProtocol,
-                                            litecore::repl::Address(address),
-                                            nullslice, method);
+
+        _error = {};
+        _responseData.reset();
+        _finished = false;
+        LWSContext::instance().connectClient(this,
+                                             LWSContext::kHTTPClientProtocol,
+                                             litecore::repl::Address(address),
+                                             nullslice, method);
     }
 
 
@@ -104,6 +104,7 @@ namespace litecore { namespace net {
 
     void LWSHTTPClient::onConnectionError(C4Error error) {
         _error = error;
+        _responseData.reset();
         notifyFinished();
     }
 
@@ -128,11 +129,10 @@ namespace litecore { namespace net {
 
     void LWSHTTPClient::onWriteRequest() {
         sendMoreData(false);
-        if (hasDataToSend()) {
+        if (hasDataToSend())
             callbackOnWriteable();
-        } else {
+        else
             lws_client_http_body_pending(_client, false);
-        }
     }
 
 
@@ -141,8 +141,8 @@ namespace litecore { namespace net {
         string message;
         tie(status, message) = decodeHTTPStatus();
         LogDebug("Got response: %d %s", status, message.c_str());
-        _response.setStatus(status, message);
-        _response.setHeaders(encodeHTTPHeaders());
+        _response->setStatus(status, message);
+        _response->setHeaders(encodeHTTPHeaders());
     }
 
 
@@ -164,9 +164,10 @@ namespace litecore { namespace net {
 
     void LWSHTTPClient::onCompleted(int reason) {
         if (!_finished) {
-            _response.setBody(_responseData.finish());
+            _response->setBody(_responseData.finish());
             LogDebug("**** %-s: %zd-byte response body",
-                     LWSCallbackName(reason), _response.body().size);
+                     LWSCallbackName(reason), _response->body().size);
+            _response = nullptr;
             setDispatchResult(-1); // close connection
             notifyFinished();
         }

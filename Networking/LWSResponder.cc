@@ -109,12 +109,14 @@ namespace litecore { namespace net {
         _responseHeaders = alloc_slice(kHeadersMaxSize);
         _responseHeadersPos = (uint8_t*)_responseHeaders.buf;
 
-        onRequest(getMethod(),
+        auto method = getMethod();
+        onRequest(method,
                   string("/") + string(uri),
                   getHeader(WSI_TOKEN_HTTP_URI_ARGS),
                   encodeHTTPHeaders());
 
-        if (getContentLengthHeader() == 0)
+        auto contentLength = getContentLengthHeader();
+        if (contentLength == 0 || (contentLength < 0 && method == Method::GET))
             onRequestComplete();
     }
 
@@ -308,7 +310,7 @@ namespace litecore { namespace net {
 
     void LWSResponder::write(slice content) {
         Assert(!_finished);
-        Log("Write: `%.*s`", SPLAT(content));
+        LogDebug("Write: `%.*s`", SPLAT(content));
         _responseWriter.write(content);
     }
 
