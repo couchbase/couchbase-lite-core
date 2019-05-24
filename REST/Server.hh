@@ -49,11 +49,11 @@ namespace litecore { namespace REST {
         // Patterns are tested in the order the handlers are added, and the first match is used.
         void addHandler(Methods, const std::string &pattern, const Handler&);
 
-        void dispatchRequest(RequestResponse*);
-
         void stop();
 
     protected:
+        virtual void dispatchRequest(net::LWSResponder*) override;
+
         struct URIRule {
             Methods     methods;
             std::string pattern;
@@ -66,8 +66,8 @@ namespace litecore { namespace REST {
 
     private:
         std::mutex _mutex;
-        std::unique_ptr<lws_http_mount> _mount;
-        lws_vhost* _vhost {nullptr};
+//        std::unique_ptr<lws_http_mount> _mount;
+//        lws_vhost* _vhost {nullptr};
         std::vector<URIRule> _rules;
         std::map<std::string, std::string> _extraHeaders;
     };

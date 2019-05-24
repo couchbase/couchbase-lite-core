@@ -92,8 +92,8 @@ extern "C" {
         The `providesWebSockets` flag indicates whether this factory provides a WebSocket
         implementation or just a raw TCP socket. */
     typedef struct {
-        /** This should be set to `true` if the socket factory acts as a stream of messages,
-            `false` if it's a byte stream. */
+        /** This should be set to `kC4NoFraming` if the socket factory acts as a stream of messages,
+            `kC4WebSocketClientFraming` or `kC4WebSocketServerFraming` if it's a byte stream. */
         C4SocketFraming framing;
 
         /** An arbitrary value that will be passed to the `open` callback. */

@@ -1108,6 +1108,7 @@
 		278BC9CB228E192F0055FF09 /* LWSServer.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSServer.cc; sourceTree = "<group>"; };
 		278BC9CF228E1D620055FF09 /* LWSResponder.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSResponder.hh; sourceTree = "<group>"; };
 		278BC9D0228E1D620055FF09 /* LWSResponder.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSResponder.cc; sourceTree = "<group>"; };
+		278BC9EF22975A4C0055FF09 /* c4LibWebSocketFactory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = c4LibWebSocketFactory.h; sourceTree = "<group>"; };
 		278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DatabaseCookies.cc; sourceTree = "<group>"; };
 		278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DatabaseCookies.hh; sourceTree = "<group>"; };
 		2791EA1320326F7100BD813C /* SQLiteChooser.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = SQLiteChooser.c; sourceTree = "<group>"; };
@@ -1585,6 +1586,7 @@
 				2771A0DD228B5F7900B18E0A /* LWSProtocol.hh */,
 				27719FE92284E94D00B18E0A /* LWSWebSocket.cc */,
 				27719FE82284E94D00B18E0A /* LWSWebSocket.hh */,
+				278BC9EF22975A4C0055FF09 /* c4LibWebSocketFactory.h */,
 				271BA50D228B99B800D49D13 /* LWSHTTPClient.cc */,
 				271BA50C228B99B800D49D13 /* LWSHTTPClient.hh */,
 				278BC9CB228E192F0055FF09 /* LWSServer.cc */,

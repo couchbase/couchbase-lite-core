@@ -17,10 +17,86 @@
 //
 
 #pragma once
+#include "LWSProtocol.hh"
+#include "Address.hh"
 #include "c4Socket.h"
+#include "fleece/Fleece.hh"
+#include <deque>
 
-/** SocketFactory that uses libwebsockets.
-    Used by LiteCore unit tests and the `cblite` command-line tool. */
-extern const C4SocketFactory C4LWSWebSocketFactory;
+namespace litecore { namespace net {
 
-void RegisterC4LWSWebSocketFactory();
+    /** A WebSocket client connection. */
+    class LWSWebSocket : public LWSProtocol {
+    public:
+
+        // C4SocketFactory callbacks:
+        static void sock_write(C4Socket *sock, C4SliceResult allocatedData);
+        static void sock_completedReceive(C4Socket *sock, size_t byteCount);
+        static void sock_requestClose(C4Socket *sock, int status, C4String message);
+        static void sock_dispose(C4Socket *sock);
+
+    protected:
+        LWSWebSocket(C4Socket*);
+
+        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+        void write(const fleece::alloc_slice &message);
+        void requestClose(int status, fleece::slice message);
+        void completedReceive(size_t byteCount);
+        void _sendFrame(uint8_t opcode, int status, fleece::slice body);
+        void onConnected();
+        void gotResponse();
+        void onWriteable();
+        void onReceivedMessage(fleece::slice data);
+        void onCloseRequest(fleece::slice body);
+        void onConnectionError(C4Error error) override;
+        virtual void onDestroy() override;
+        void onClosed();
+        void closeC4Socket(C4ErrorDomain domain, int code, C4String message);
+        void closeC4Socket(C4Error status);
+
+    private:
+        C4Socket*   _c4socket;                  // The C4Socket I support
+        ssize_t     _unreadBytes {0};           // # bytes received but not yet handled by repl
+        bool        _readsThrottled {false};    // True if libwebsocket flow control stopping reads
+        std::deque<fleece::alloc_slice> _outbox;// Messages waiting to be sent [w/padding]
+        fleece::alloc_slice _incomingMessage;   // Buffer for assembling fragmented messages
+        size_t      _incomingMessageLength {0}; // Current length of message in _incomingMessage
+        bool        _sentCloseFrame {false};    // Did I send a CLOSE message yet?
+    };
+
+
+    class LWSClientWebSocket : public LWSWebSocket {
+    public:
+        LWSClientWebSocket(C4Socket *socket,
+                           const C4Address &to,
+                           const fleece::AllocedDict &options);
+
+        static void sock_open(C4Socket *sock, const C4Address *c4To, FLSlice optionsFleece, void*);
+
+    protected:
+        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+        virtual const char *className() const noexcept override      {return "LWSClientWebSocket";}
+    private:
+        void open();
+        bool onVerifyTLS();
+        bool onSendCustomHeaders(void *in, size_t len);
+        fleece::slice pinnedServerCert();
+        fleece::alloc_slice pinnedServerCertPublicKey();
+
+        litecore::repl::Address _address;       // Address to connect to
+        fleece::AllocedDict _options;           // Replicator options
+    };
+
+
+    class LWSServerWebSocket : public LWSWebSocket {
+    public:
+        LWSServerWebSocket(lws*, const C4Address *from);
+
+    protected:
+        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+        virtual const char *className() const noexcept override      {return "LWSServerWebSocket";}
+
+    private:
+    };
+
+} }

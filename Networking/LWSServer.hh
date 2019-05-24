@@ -36,6 +36,8 @@ namespace litecore { namespace net {
         // Called when there's an incoming connection; should create a LWSResponder on it.
         virtual bool createResponder(lws *client) =0;
 
+        virtual void dispatchRequest(LWSResponder*) =0;
+
         virtual const char *className() const noexcept      {return "LWSServer";}
 
     private:
@@ -45,10 +47,11 @@ namespace litecore { namespace net {
         std::mutex _mutex;
         std::condition_variable _condition;
         bool _started {false};
-        std::unique_ptr<lws_http_mount> _mount;
+        lws_http_mount* _mounts {nullptr};
         lws_vhost* _vhost {nullptr};
 
         friend class LWSContext;
+        friend class LWSResponder;
     };
 
 } }

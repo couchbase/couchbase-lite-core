@@ -33,8 +33,9 @@ namespace litecore { namespace net {
     static constexpr size_t kHeadersMaxSize = 10000;
 
 
-    LWSResponder::LWSResponder(lws *connection)
+    LWSResponder::LWSResponder(LWSServer *server, lws *connection)
     :LWSProtocol(connection)
+    ,_server(server)
     {
         lws_set_opaque_user_data(connection, this);
         LogVerbose("Created %p on wsi %p", this, connection);
@@ -66,6 +67,10 @@ namespace litecore { namespace net {
                 LogDebug("**** LWS_CALLBACK_HTTP_WRITEABLE");
                 onWriteRequest();
                 return;
+            case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
+                LogDebug("**** LWS_CALLBACK_HTTP_CONFIRM_UPGRADE");
+                if (!onWebSocketUpgrade({in, len}))
+                    setDispatchResult(-1);      // TODO: Respond with error (and return 1)
             default:
                 LWSProtocol::dispatch(wsi, reason, user, in, len);
         }
@@ -118,6 +123,13 @@ namespace litecore { namespace net {
         auto contentLength = getContentLengthHeader();
         if (contentLength == 0 || (contentLength < 0 && method == Method::GET))
             onRequestComplete();
+    }
+
+
+    void LWSResponder::onRequestComplete() {
+        _server->dispatchRequest(this);
+        finish();
+        _server = nullptr;
     }
 
 

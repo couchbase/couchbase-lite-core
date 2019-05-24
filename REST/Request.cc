@@ -88,8 +88,7 @@ namespace litecore { namespace REST {
 
 
     RequestResponse::RequestResponse(Server *server, lws *client)
-    :LWSResponder(client)
-    ,_server(server)
+    :LWSResponder(server, client)
     { }
 
 
@@ -108,16 +107,5 @@ namespace litecore { namespace REST {
     void RequestResponse::onRequestBody(fleece::alloc_slice body) {
         setBody(body);
     }
-
-
-    void RequestResponse::onRequestComplete() {
-        _server->dispatchRequest(this);
-        finish();
-        _server = nullptr;
-    }
-
-
-
-
 
 } }

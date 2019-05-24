@@ -61,11 +61,7 @@ namespace litecore { namespace REST {
                                fleece::slice queries,
                                fleece::Doc headers) override;
         virtual void onRequestBody(fleece::alloc_slice) override;
-        virtual void onRequestComplete() override;
 
-    private:
-        fleece::Retained<Server> _server;
-        
         friend class Server;
     };
 

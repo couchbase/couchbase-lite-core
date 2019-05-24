@@ -27,18 +27,25 @@ namespace litecore { namespace net {
     using namespace std;
 
     LWSServer::LWSServer()
-    :_mount(new lws_http_mount)
-    {
-        memset(_mount.get(), 0, sizeof(*_mount));
-        _mount->mountpoint = "/";
-        _mount->mountpoint_len = 1;
-        _mount->protocol = LWSContext::kHTTPServerProtocol;
-        _mount->origin_protocol = LWSMPRO_CALLBACK;
+    :_mounts(new lws_http_mount[2])
+    { 
+        memset(_mounts, 0, 2*sizeof(_mounts[0]));
+        _mounts[0].mountpoint = "/_ws";
+        _mounts[0].mountpoint_len = 3;
+        _mounts[0].protocol = LWSContext::kHTTPServerProtocol;
+        _mounts[0].origin_protocol = LWSMPRO_CALLBACK;
+        _mounts[0].mount_next = &_mounts[1];
+
+        _mounts[1].mountpoint = "/";
+        _mounts[1].mountpoint_len = 1;
+        _mounts[1].protocol = LWSContext::kHTTPServerProtocol;
+        _mounts[1].origin_protocol = LWSMPRO_CALLBACK;
     }
 
 
     LWSServer::~LWSServer() {
         DebugAssert(!_vhost);
+        delete[] _mounts;
     }
 
 
@@ -46,7 +53,7 @@ namespace litecore { namespace net {
         Assert(!_started);
 
         retain(this);       // balanced by release on LWS_CALLBACK_PROTOCOL_DESTROY
-        LWSContext::instance().startServer(this, port, hostname, _mount.get());
+        LWSContext::instance().startServer(this, port, hostname, _mounts);
 
         // Block till server starts:
         unique_lock<mutex> lock(_mutex);

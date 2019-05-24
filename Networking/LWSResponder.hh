@@ -26,7 +26,7 @@ namespace litecore { namespace net {
 
         /** Initialize on a new incoming connection. Will read the incoming request,
             then call LWSServer::dispatchResponder with itself as the parameter. */
-        LWSResponder(lws *connection);
+        LWSResponder(LWSServer*, lws *connection);
 
         // Response status:
 
@@ -69,20 +69,21 @@ namespace litecore { namespace net {
     protected:
         virtual ~LWSResponder();
 
-        // Request line & headers received
+        // Request line & headers received.
         virtual void onRequest(Method,
                                std::string path,
                                fleece::slice queries,
                                fleece::Doc headers) =0;
-        // Request body received
+
+        // Request body received.
         virtual void onRequestBody(fleece::alloc_slice) =0;
 
-        //
-        virtual void onRequestComplete() =0;
+        // Client wants to make a WebSocket connection; return true to allow / false to reject.
+        virtual bool onWebSocketUpgrade(fleece::slice protocol)     {return false;}
 
         void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
 
-        virtual const char *className() const noexcept override      {return "LWSResponder";}
+        virtual const char *className() const noexcept override     {return "LWSResponder";}
 
     private:
         void onURIReceived(fleece::slice uri);
@@ -92,8 +93,10 @@ namespace litecore { namespace net {
         void sendStatus();
         void sendHeaders();
         void onWriteRequest();
+        void onRequestComplete();
         Method getMethod();
 
+        fleece::Retained<LWSServer> _server;
         C4Error _error {};
 
         std::vector<fleece::alloc_slice> _requestBody;
