@@ -23,7 +23,7 @@ namespace litecore { namespace net {
         int _mainDispatch(lws*, int callback_reason, void *user, void *in, size_t len);
 
     protected:
-        LWSProtocol() { }
+        LWSProtocol()                               :LWSProtocol(nullptr) { }
         LWSProtocol(lws *connection);
         virtual ~LWSProtocol();
 

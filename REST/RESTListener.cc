@@ -32,7 +32,6 @@ using namespace fleece;
 
 namespace litecore { namespace REST {
 
-    static constexpr uint16_t kDefaultPort = 4984;
     //static constexpr const char* kKeepAliveTimeoutMS = "1000";
     //static constexpr const char* kMaxConnections = "8";
 
@@ -80,6 +79,9 @@ namespace litecore { namespace REST {
             addDBHandler(Method::GET,   "/[!_]*/[!_]*",      &RESTListener::handleGetDoc);
             addDBHandler(Method::PUT,   "/[!_]*/[!_]*",      &RESTListener::handleModifyDoc);
             addDBHandler(Method::DELETE,"/[!_]*/[!_]*",      &RESTListener::handleModifyDoc);
+        }
+        if (config.apis & kC4SyncAPI) {
+            addDBHandler(Method::UPGRADE,"/[!_]*/_blipsync", &RESTListener::handleSync);
         }
         _server->start(config.port ? config.port : kDefaultPort);
     }

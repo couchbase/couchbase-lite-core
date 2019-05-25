@@ -18,6 +18,7 @@
 
 #include "LWSWebSocket.hh"
 #include "LWSContext.hh"
+#include "LWSServer.hh"
 #include "LWSUtil.hh"
 #include "c4LibWebSocketFactory.h"
 #include "c4ExceptionUtils.hh"
@@ -44,22 +45,56 @@ namespace litecore { namespace net {
     static constexpr size_t kMaxUnreadBytes = 100 * 1024;
 
 
-    LWSWebSocket::LWSWebSocket(C4Socket *socket)
-    :_c4socket(socket)
-    { }
+    LWSWebSocket::LWSWebSocket(lws *client, C4Socket* s)
+    :LWSProtocol(client)
+    {
+        setC4Socket(s);
+    }
 
 
     LWSClientWebSocket::LWSClientWebSocket(C4Socket *socket, const C4Address &to, const AllocedDict &options)
-    :LWSWebSocket(socket)
+    :LWSWebSocket(nullptr, socket)
     ,_address(to)
     ,_options(options)
     { }
 
 
-    LWSServerWebSocket::LWSServerWebSocket(lws *client, const C4Address *fromAddress)
-    :LWSWebSocket(c4socket_fromNative(C4LWSWebSocketFactory, this, fromAddress))
+    LWSServerWebSocket::LWSServerWebSocket(lws *client, LWSServer *server)
+    :LWSWebSocket(client, nullptr)
+    ,_server(server)
     {
-        _client = client;
+        createC4Socket();
+        LogVerbose("Created %p on wsi %p", this, client);
+    }
+
+
+    LWSServerWebSocket::~LWSServerWebSocket() {
+        C4LogToAt(kC4WebSocketLog, kC4LogDebug, "DESTRUCT LWSServerWebSocket %p", this);
+    }
+
+
+    void LWSServerWebSocket::upgraded(bool upgraded) {
+        if (upgraded) {
+            lws_set_opaque_user_data(_client, this);
+        } else {
+            closeC4Socket(LiteCoreDomain, kC4ErrorUnexpectedError, nullslice);
+            _client = nullptr;
+            release(this);
+        }
+    }
+
+
+    void LWSWebSocket::setC4Socket(C4Socket* s) {
+        if (s) {
+            Assert(!_c4socket);
+            retain(this);   // makes nativeHandle a strong reference
+            _c4socket = s;
+            _c4socket->nativeHandle = this;
+        } else if (_c4socket) {
+            _c4socket->nativeHandle = nullptr;
+            _c4socket = nullptr;
+            release(this);
+        }
     }
 
 
@@ -73,8 +108,6 @@ namespace litecore { namespace net {
 
     void LWSClientWebSocket::sock_open(C4Socket *sock, const C4Address *c4To, FLSlice optionsFleece, void*) {
         auto self = new LWSClientWebSocket(sock, *c4To, AllocedDict((slice)optionsFleece));
-        sock->nativeHandle = self;
-        retain(self);  // Makes nativeHandle a strong ref; balanced by release in _onClosed
         self->open();
     }
 
@@ -97,8 +130,8 @@ namespace litecore { namespace net {
 
 
     void LWSWebSocket::sock_dispose(C4Socket *sock) {
-        release(internal(sock));        // balances retain in sock_open
-        sock->nativeHandle = nullptr;
+        if (internal(sock))
+            internal(sock)->setC4Socket(nullptr);
     }
 
 
@@ -107,6 +140,7 @@ namespace litecore { namespace net {
         Log("LWSWebSocket connecting to <%.*s>...", SPLAT(_address.url()));
         LWSContext::instance().connectClient(this, LWSContext::kBLIPClientProtocol,
                                              _address, pinnedServerCert());
+        _c4socket->nativeHandle = this;
     }
 
 
@@ -198,7 +232,7 @@ namespace litecore { namespace net {
         switch ((lws_callback_reasons)reason) {
                 // Connecting:
             case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
-                LogVerbose("**** LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER");
+                LogCallback();
                 if (_address.isSecure() && !onVerifyTLS()) {
                     setDispatchResult(-1);
                     return;
@@ -206,9 +240,28 @@ namespace litecore { namespace net {
                 onSendCustomHeaders(in, len);
                 break;
             case LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH:
-                LogVerbose("**** LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH");
+                LogCallback();
                 onConnected();
                 break;
+            case LWS_CALLBACK_CLIENT_ESTABLISHED:
+                break;
+            default:
+                LWSWebSocket::dispatch(wsi, reason, user, in, len);
+        }
+    }
+
+
+    void LWSServerWebSocket::dispatch(lws *wsi, int reason, void *user, void *in, size_t len) {
+        switch ((lws_callback_reasons)reason) {
+#if 0
+            case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
+                LogVerbose("**** LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION protocol='%s'", in);
+                break;
+            case LWS_CALLBACK_ESTABLISHED:
+                LogCallback();
+                onClientConnected();
+                break;
+#endif
             default:
                 LWSWebSocket::dispatch(wsi, reason, user, in, len);
         }
@@ -292,20 +345,48 @@ namespace litecore { namespace net {
     }
 
 
-    void LWSWebSocket::onConnected() {
+    void LWSClientWebSocket::onConnected() {
         gotResponse();
         c4socket_opened(_c4socket);
         callbackOnWriteable();
     }
 
 
-    void LWSWebSocket::gotResponse() {
+    void LWSClientWebSocket::gotResponse() {
         int status = decodeHTTPStatus().first;
         if (status > 0) {
             alloc_slice headers = encodeHTTPHeaders().allocedData();
             c4socket_gotHTTPResponse(_c4socket, status, headers);
         }
     }
+
+
+    void LWSServerWebSocket::createC4Socket() {
+        // Get peer's IP address:
+        char ipBuf[100];
+        lws_get_peer_simple(_client, ipBuf, sizeof(ipBuf)-1);
+        C4Address peerAddress = {};
+        peerAddress.scheme = kC4Replicator2Scheme;      //FIX: Use TLS scheme if TLS
+        peerAddress.hostname = slice(ipBuf);
+        peerAddress.port = 0;                           //FIX: Any way to get this?
+        // Create C4Socket attached to me now:
+        auto factory = C4LWSWebSocketFactory;
+        factory.open = nullptr;
+        setC4Socket( c4socket_fromNative(factory, this, &peerAddress) );
+
+        LogVerbose("Created C4Socket %p", _c4socket);
+    }
+
+
+#if 0
+    void LWSServerWebSocket::onClientConnected() {
+        createC4Socket();
+        if (!_server->dispatchWebSocket(this)) {
+            lws_close_reason(_client, LWS_CLOSE_STATUS_POLICY_VIOLATION, nullptr, 0);
+            setDispatchResult(-1); // tells libwebsockets to close the connection
+        }
+    }
+#endif
 
 
     void LWSWebSocket::onWriteable() {
@@ -413,8 +494,13 @@ namespace litecore { namespace net {
 
 
     void LWSWebSocket::onConnectionError(C4Error error) {
-        gotResponse();
         closeC4Socket(error);
+    }
+
+
+    void LWSClientWebSocket::onConnectionError(C4Error error) {
+        gotResponse();
+        LWSWebSocket::onConnectionError(error);
     }
 
 
@@ -457,7 +543,7 @@ namespace litecore { namespace net {
                 LogError("Closing with error: %.*s", SPLAT(message));
             }
             c4socket_closed(_c4socket, status);
-            _c4socket = nullptr;
+            setC4Socket(nullptr);
         }
     }
 
@@ -486,11 +572,11 @@ using namespace litecore::net;
 
 const C4SocketFactory C4LWSWebSocketFactory {
     kC4NoFraming,
-    nullptr,
+    nullptr, // .context (unused)
     &LWSClientWebSocket::sock_open,
     &LWSWebSocket::sock_write,
     &LWSWebSocket::sock_completedReceive,
-    nullptr,
+    nullptr, // .close (will not be called since I do no framing)
     &LWSWebSocket::sock_requestClose,
     &LWSWebSocket::sock_dispose
 };

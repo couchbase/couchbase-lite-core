@@ -18,12 +18,14 @@
 
 #pragma once
 #include "LWSProtocol.hh"
-#include "Address.hh"
 #include "c4Socket.h"
+#include "Address.hh"
+#include "Error.hh"
 #include "fleece/Fleece.hh"
 #include <deque>
 
 namespace litecore { namespace net {
+    class LWSServer;
 
     /** A WebSocket client connection. */
     class LWSWebSocket : public LWSProtocol {
@@ -36,15 +38,14 @@ namespace litecore { namespace net {
         static void sock_dispose(C4Socket *sock);
 
     protected:
-        LWSWebSocket(C4Socket*);
+        LWSWebSocket(lws *client, C4Socket* s);
 
+        void setC4Socket(C4Socket* s);
         void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
         void write(const fleece::alloc_slice &message);
         void requestClose(int status, fleece::slice message);
         void completedReceive(size_t byteCount);
         void _sendFrame(uint8_t opcode, int status, fleece::slice body);
-        void onConnected();
-        void gotResponse();
         void onWriteable();
         void onReceivedMessage(fleece::slice data);
         void onCloseRequest(fleece::slice body);
@@ -54,8 +55,9 @@ namespace litecore { namespace net {
         void closeC4Socket(C4ErrorDomain domain, int code, C4String message);
         void closeC4Socket(C4Error status);
 
+    protected:
+        C4Socket*   _c4socket {nullptr};        // The C4Socket I support
     private:
-        C4Socket*   _c4socket;                  // The C4Socket I support
         ssize_t     _unreadBytes {0};           // # bytes received but not yet handled by repl
         bool        _readsThrottled {false};    // True if libwebsocket flow control stopping reads
         std::deque<fleece::alloc_slice> _outbox;// Messages waiting to be sent [w/padding]
@@ -80,6 +82,9 @@ namespace litecore { namespace net {
         void open();
         bool onVerifyTLS();
         bool onSendCustomHeaders(void *in, size_t len);
+        void onConnected();
+        void gotResponse();
+        void onConnectionError(C4Error error) override;
         fleece::slice pinnedServerCert();
         fleece::alloc_slice pinnedServerCertPublicKey();
 
@@ -90,13 +95,24 @@ namespace litecore { namespace net {
 
     class LWSServerWebSocket : public LWSWebSocket {
     public:
-        LWSServerWebSocket(lws*, const C4Address *from);
+        LWSServerWebSocket(lws* NONNULL, LWSServer* NONNULL);
+        ~LWSServerWebSocket();
+
+        std::string path() const                                    {return _path;}
+        C4Socket* c4Socket() const                                  {return _c4socket;}
+
+        void upgraded(bool);
 
     protected:
+//        void onClientConnected();
         void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
         virtual const char *className() const noexcept override      {return "LWSServerWebSocket";}
 
     private:
+        void createC4Socket();
+
+        LWSServer* _server;
+        std::string _path;
     };
 
 } }

@@ -36,7 +36,8 @@ namespace litecore { namespace net {
     LWSProtocol::LWSProtocol(lws *connection)
     :_client(connection)
     {
-        retain(this);
+        if (_client)
+            retain(this);
     }
 
 

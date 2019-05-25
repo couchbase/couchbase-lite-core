@@ -25,6 +25,7 @@
 #include "c4ListenerInternal.hh"
 #include "libwebsockets.h"
 #include "LWSContext.hh"
+#include "LWSWebSocket.hh"
 #include <fnmatch.h>                //TODO: Windows support? (it is in POSIX...)
 
 

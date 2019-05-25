@@ -135,6 +135,12 @@ namespace litecore { namespace net {
         else
             return "??";
     }
+
+
+    void _LogCallback(const char *className, int reason) {
+        C4LogToAt(kC4WebSocketLog, kC4LogDebug,   "%s: **** %s",
+                  className, LWSCallbackName(reason));
+    }
 #endif // DEBUG
 
 } }
@@ -171,11 +177,11 @@ namespace litecore { namespace REST {
 
 
     const char* MethodName(Method method) {
-        const char* kMethodNames[] = {"GET", "PUT", "DELETE", "POST", "OPTIONS"};
+        const char* kMethodNames[6] = {"GET", "PUT", "DELETE", "POST", "OPTIONS", "UPGRADE"};
         int shift = -1;
         for (auto m = (unsigned)method; m != 0; m >>= 1)
             ++shift;
-        if (shift < 0 || shift >= 5)
+        if (shift < 0 || shift >= 6)
             return "??";
         return kMethodNames[shift];
     }

@@ -15,10 +15,6 @@ struct lws_vhost;
 
 namespace litecore { namespace net {
     class LWSResponder;
-} }
-
-
-namespace litecore { namespace net {
 
     /** Abstract base class class of servers/listeners based on libwebsockets. */
     class LWSServer : public fleece::RefCounted {
@@ -52,6 +48,7 @@ namespace litecore { namespace net {
 
         friend class LWSContext;
         friend class LWSResponder;
+        friend class LWSServerWebSocket;
     };
 
 } }

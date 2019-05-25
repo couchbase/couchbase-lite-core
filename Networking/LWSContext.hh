@@ -34,7 +34,7 @@ namespace litecore { namespace net {
         // Protocol names for connectClient and startServer:
         static constexpr const char* kBLIPClientProtocol = "BLIP_3+CBMobile_2";
         static constexpr const char* kHTTPClientProtocol = "HTTPClient";
-        static constexpr const char* kHTTPServerProtocol = "HTTPServer";
+        static constexpr const char* kHTTPServerProtocol = kBLIPClientProtocol;
 
         void connectClient(LWSProtocol *protocolInstance NONNULL,
                            const char *protocolName NONNULL,
@@ -78,6 +78,8 @@ namespace litecore { namespace net {
         lws_context*                                _context {nullptr};
         std::unique_ptr<std::thread>                _thread;
         actor::Channel<std::function<void()>>       _enqueued;
+
+        fleece::alloc_slice _systemRootCertsPEM;
     };
 
 } }

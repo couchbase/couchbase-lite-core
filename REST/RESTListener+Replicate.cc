@@ -322,4 +322,10 @@ namespace litecore { namespace REST {
         rq.setStatus(statusCode, message.c_str());
     }
 
+
+    void RESTListener::handleSync(RequestResponse &rq, C4Database*) {
+        rq.setStatus(HTTPStatus::NotImplemented, nullptr);
+    }
+
+
 } }

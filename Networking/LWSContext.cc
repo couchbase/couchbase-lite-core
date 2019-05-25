@@ -54,7 +54,7 @@ namespace litecore { namespace net {
                                 void *user, void *in, size_t len);
 
     constexpr static const lws_protocols kProtocols[] = {
-        { LWSContext::kBLIPClientProtocol,        &protocolCallback, 0, 0},
+        { LWSContext::kBLIPClientProtocol,  &protocolCallback, 0, 0},
         { LWSContext::kHTTPClientProtocol,  &protocolCallback, 0, 0},
         { NULL, NULL, 0, 0 }
     };
@@ -99,9 +99,9 @@ namespace litecore { namespace net {
 
 #ifdef LWS_WITH_MBEDTLS
         // mbedTLS does not have a list of root CA certs, so get the system list for it:
-        alloc_slice systemRootCertsPEM = getSystemRootCertsPEM();
-        _info->client_ssl_ca_mem = systemRootCertsPEM.buf;
-        _info->client_ssl_ca_mem_len = (unsigned)systemRootCertsPEM.size;
+        _systemRootCertsPEM = getSystemRootCertsPEM();
+        _info->client_ssl_ca_mem = _systemRootCertsPEM.buf;
+        _info->client_ssl_ca_mem_len = (unsigned)_systemRootCertsPEM.size;
 #endif
 
         _context = lws_create_context(_info.get());
@@ -324,8 +324,10 @@ namespace litecore { namespace net {
 #ifdef TARGET_OS_OSX
     // Sadly, SecTrustCopyAnchorCertificates() is not available on iOS...
     alloc_slice LWSContext::getSystemRootCertsPEM() {
+        ++gC4ExpectExceptions;
         CFArrayRef roots;
         OSStatus err = SecTrustCopyAnchorCertificates(&roots);
+        --gC4ExpectExceptions;
         if (err)
             return {};
         CFDataRef pemData = nullptr;

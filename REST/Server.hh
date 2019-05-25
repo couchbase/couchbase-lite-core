@@ -35,7 +35,7 @@ namespace litecore { namespace net {
 
 namespace litecore { namespace REST {
 
-    /** HTTP server, using libwebsockets. */
+    /** HTTP server, extending LWSServer to add configurable URI handlers. */
     class Server : public net::LWSServer {
     public:
         Server();
@@ -52,7 +52,7 @@ namespace litecore { namespace REST {
         void stop();
 
     protected:
-        virtual void dispatchRequest(net::LWSResponder*) override;
+        virtual void dispatchRequest(net::LWSResponder* NONNULL) override;
 
         struct URIRule {
             Methods     methods;
@@ -66,8 +66,6 @@ namespace litecore { namespace REST {
 
     private:
         std::mutex _mutex;
-//        std::unique_ptr<lws_http_mount> _mount;
-//        lws_vhost* _vhost {nullptr};
         std::vector<URIRule> _rules;
         std::map<std::string, std::string> _extraHeaders;
     };

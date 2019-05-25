@@ -18,10 +18,16 @@
 
 #include "LWSResponder.hh"
 #include "LWSServer.hh"
+#include "LWSWebSocket.hh"
 #include "LWSUtil.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "netUtils.hh"
+
+
+// Private libwebsockets function //FIXME don't use internals
+extern "C" int lws_http_get_uri_and_method(struct lws *wsi, char **puri_ptr, int *puri_len);
+
 
 
 namespace litecore { namespace net {
@@ -68,9 +74,9 @@ namespace litecore { namespace net {
                 onWriteRequest();
                 return;
             case LWS_CALLBACK_HTTP_CONFIRM_UPGRADE:
-                LogDebug("**** LWS_CALLBACK_HTTP_CONFIRM_UPGRADE");
-                if (!onWebSocketUpgrade({in, len}))
-                    setDispatchResult(-1);      // TODO: Respond with error (and return 1)
+                LogDebug("**** LWS_CALLBACK_HTTP_CONFIRM_UPGRADE: protocol '%s'", in);
+                onWebSocketUpgradeRequest({in, len});
+                break;
             default:
                 LWSProtocol::dispatch(wsi, reason, user, in, len);
         }
@@ -114,15 +120,37 @@ namespace litecore { namespace net {
         _responseHeaders = alloc_slice(kHeadersMaxSize);
         _responseHeadersPos = (uint8_t*)_responseHeaders.buf;
 
+        string uriStr(uri);
+        if (!hasPrefix(uriStr, "/"))
+            uriStr = '/' + uriStr;
+
         auto method = getMethod();
         onRequest(method,
-                  string("/") + string(uri),
+                  uriStr,
                   getHeader(WSI_TOKEN_HTTP_URI_ARGS),
                   encodeHTTPHeaders());
 
         auto contentLength = getContentLengthHeader();
-        if (contentLength == 0 || (contentLength < 0 && method == Method::GET))
+        if (contentLength == 0 || (contentLength < 0 && method != Method::PUT &&
+                                                        method != Method::POST))
             onRequestComplete();
+    }
+
+
+    void LWSResponder::onWebSocketUpgradeRequest(fleece::slice protocol) {
+        _upgrading = true;
+        char *uri;
+        int uriLen;
+        lws_http_get_uri_and_method(_client, &uri, &uriLen);
+        onURIReceived({uri, size_t(uriLen)});
+    }
+
+
+    Retained<LWSServerWebSocket> LWSResponder::upgradeToWebSocket() {
+        Assert(_upgrading);
+        if (!_upgradedWS)
+            _upgradedWS = new LWSServerWebSocket(_client, _server);
+        return _upgradedWS;
     }
 
 
@@ -139,7 +167,8 @@ namespace litecore { namespace net {
 
 
     Method LWSResponder::getMethod() {
-        if (hasHeader(WSI_TOKEN_GET_URI))           return Method::GET;
+        if (_upgrading)                             return Method::UPGRADE;
+        else if (hasHeader(WSI_TOKEN_GET_URI))      return Method::GET;
         else if (hasHeader(WSI_TOKEN_PUT_URI))      return Method::PUT;
         else if (hasHeader(WSI_TOKEN_DELETE_URI))   return Method::DELETE;
         else if (hasHeader(WSI_TOKEN_POST_URI))     return Method::POST;
@@ -348,6 +377,21 @@ namespace litecore { namespace net {
     void LWSResponder::finish() {
         if (_finished)
             return;
+
+        if (_upgradedWS) {
+            bool upgraded = (_status <= HTTPStatus::OK);
+            _upgradedWS->upgraded(upgraded);
+            _upgradedWS = nullptr;
+            if (upgraded) {
+                // Upgrade successful -- detach myself from libwebsockets:
+                _client = nullptr;
+                _finished = true;
+                return;
+            } else {
+                // Upgrade failed; after returning status, LWS will disconnect:
+                setDispatchResult(1);
+            }
+        }
 
         if (_jsonEncoder) {
             alloc_slice json = _jsonEncoder->finish();

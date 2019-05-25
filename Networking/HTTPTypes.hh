@@ -44,6 +44,8 @@ namespace litecore { namespace REST {
         POST        = 8,
         OPTIONS     = 16,
 
+        UPGRADE     = 32,       // represents a WebSocket upgrade request
+
         ALL         = UINT_MAX
     };
 

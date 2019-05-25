@@ -32,6 +32,8 @@ namespace litecore { namespace REST {
     public:
         using Config = C4ListenerConfig;
 
+        static constexpr uint16_t kDefaultPort = 4984;
+
         virtual ~Listener() =default;
 
         /** Determines whether a database name is valid for use as a URI path component.

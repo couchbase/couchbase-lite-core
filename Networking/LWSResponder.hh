@@ -12,9 +12,7 @@
 
 namespace litecore { namespace net {
     class LWSServer;
-} }
-
-namespace litecore { namespace net {
+    class LWSServerWebSocket;
 
     /** Represents an _incoming_ HTTP request received by a LWSServer,
         and the response to the request. */
@@ -63,6 +61,8 @@ namespace litecore { namespace net {
         void writeStatusJSON(HTTPStatus status, const char *message =nullptr);
         void writeErrorJSON(C4Error);
 
+        fleece::Retained<LWSServerWebSocket> upgradeToWebSocket();
+
         // Must be called after everything's written:
         void finish();
 
@@ -78,9 +78,6 @@ namespace litecore { namespace net {
         // Request body received.
         virtual void onRequestBody(fleece::alloc_slice) =0;
 
-        // Client wants to make a WebSocket connection; return true to allow / false to reject.
-        virtual bool onWebSocketUpgrade(fleece::slice protocol)     {return false;}
-
         void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
 
         virtual const char *className() const noexcept override     {return "LWSResponder";}
@@ -93,6 +90,7 @@ namespace litecore { namespace net {
         void sendStatus();
         void sendHeaders();
         void onWriteRequest();
+        void onWebSocketUpgradeRequest(fleece::slice protocol);
         void onRequestComplete();
         Method getMethod();
 
@@ -113,6 +111,8 @@ namespace litecore { namespace net {
         std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;  // Used for writing JSON to response
         fleece::alloc_slice _responseBody;          // Finished response body
         fleece::slice _unsentBody;                  // Unsent portion of _responseBody
+        bool _upgrading {false};
+        fleece::Retained<LWSServerWebSocket> _upgradedWS;   // WebSocket I'm upgrading to
         bool _finished {false};                     // Finished configuring the response?
 
     };

@@ -93,6 +93,8 @@ namespace litecore { namespace REST {
         void addHandler(Method, const char *uri, HandlerMethod);
         void addDBHandler(Method, const char *uri, DBHandlerMethod);
 
+        virtual void handleSync(RequestResponse&, C4Database*);
+
         static std::string serverNameAndVersion();
         static std::string kServerName;
 

@@ -23,6 +23,10 @@ namespace litecore { namespace net {
 
 #if DEBUG
     const char* LWSCallbackName(int /*lws_callback_reasons*/ reason);
+    void _LogCallback(const char *className, int reason);
+    #define LogCallback() _LogCallback(className(), reason)
+#else
+    #define LogCallback()
 #endif
     
 } }
