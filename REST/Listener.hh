@@ -62,7 +62,6 @@ namespace litecore { namespace REST {
         std::vector<std::string> databaseNames();
 
     protected:
-
         Listener();
 
         std::mutex _mutex;

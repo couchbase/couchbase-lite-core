@@ -34,16 +34,19 @@ namespace litecore { namespace REST {
     using fleece::Retained;
     class Server;
 
+
+    /** Listener subclass that serves (some of) the venerable CouchDB REST API.
+        The HTTP work is done by a Server object (a subclass of LWSServer.) */
     class RESTListener : public Listener {
     public:
         RESTListener(const Config&);
         ~RESTListener();
 
+        /** Given a database name (from a URI path) returns the filesystem path to the database. */
         bool pathFromDatabaseName(const std::string &name, FilePath &outPath);
 
         /** Opens a database and makes it visible via the REST API.
-            If the name is an empty string, a default name will be used based on the
-            filename. */
+            If the name is an empty string, a default name will be used based on the filename. */
         bool openDatabase(std::string name,
                           const FilePath&,
                           const C4DatabaseConfig*,
@@ -75,6 +78,7 @@ namespace litecore { namespace REST {
             time_t _timeStarted {0};
         };
 
+        /** The currently-running tasks. */
         std::vector<Retained<Task>> tasks();
 
     protected:

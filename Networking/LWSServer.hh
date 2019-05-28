@@ -22,7 +22,8 @@ namespace litecore { namespace net {
         LWSServer();
 
         void start(uint16_t port, const char *hostname =nullptr);
-        void stop();
+        
+        virtual void stop();
 
         C4Address address() const;
 

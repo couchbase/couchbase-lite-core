@@ -41,13 +41,13 @@ namespace litecore { namespace REST {
     protected:
         friend class Server;
         
-        Request(Method, std::string path, fleece::slice queries,
+        Request(Method, const std::string &path, const std::string &queries,
                 fleece::Doc headers, fleece::alloc_slice body);
         Request() { }
 
         Method _method {Method::None};
         std::string _path;
-        fleece::alloc_slice _queries;
+        std::string _queries;
     };
 
 
@@ -57,8 +57,8 @@ namespace litecore { namespace REST {
     protected:
         RequestResponse(Server *server, lws *client);
         virtual void onRequest(Method,
-                               std::string path,
-                               fleece::slice queries,
+                               const std::string &path,
+                               const std::string &queries,
                                fleece::Doc headers) override;
         virtual void onRequestBody(fleece::alloc_slice) override;
 

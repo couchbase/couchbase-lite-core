@@ -40,22 +40,6 @@ namespace litecore { namespace REST {
     }
     
     
-    string Body::urlDecode(const string &str) {
-        string result;
-        result.reserve(str.size());
-        litecore::REST::urlDecode(str.data(), str.size(), result, false);
-        return result;
-    }
-
-
-    string Body::urlEncode(const string &str) {
-        string result;
-        result.reserve(str.size() + 16);
-        litecore::REST::urlEncode(str.data(), str.size(), result, false);
-        return result;
-    }
-
-
     bool Body::hasContentType(slice contentType) const {
         slice actualType = header("Content-Type");
         return actualType.size >= contentType.size

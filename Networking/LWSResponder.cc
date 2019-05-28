@@ -22,7 +22,6 @@
 #include "LWSUtil.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "netUtils.hh"
 
 
 // Private libwebsockets function //FIXME don't use internals
@@ -198,10 +197,14 @@ namespace litecore { namespace net {
                                          (uint8_t*)_responseHeaders.end()));
         _sentStatus = true;
 
-        // Now add the Date header:
+        // Add the 'Date:' header:
         char date[50];
-        time_t curtime = time(NULL);
-        gmt_time_string(date, sizeof(date), &curtime);
+        time_t t = time(NULL);
+        struct tm tm;
+        if (gmtime_r(&t, &tm))
+            strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S GMT", &tm);
+        else
+            strlcpy(date, "Thu, 01 Jan 1970 00:00:00 GMT", sizeof(date));
         setHeader("Date", date);
     }
 

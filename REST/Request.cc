@@ -33,7 +33,7 @@ namespace litecore { namespace REST {
 #pragma mark - REQUEST:
 
 
-    Request::Request(Method method, string path, fleece::slice queries,
+    Request::Request(Method method, const string &path, const string &queries,
                      fleece::Doc headers, fleece::alloc_slice body)
     :Body(headers, body)
     ,_method(method)
@@ -56,15 +56,13 @@ namespace litecore { namespace REST {
         if (slash == path.buf)
             return "";
         auto component = slice(path.buf, slash).asString();
-        return urlDecode(component);
+        return URLDecode(component);
     }
 
     
     string Request::query(const char *param) const {
-        string result;
-        if (_queries)
-            litecore::REST::getParam((const char*)_queries.buf, _queries.size, param, result, 0);
-        return result;
+        // For some reason the query string we get from libwebsockets uses ',' not '&'
+        return getURLQueryParam(_queries, param);
     }
 
     int64_t Request::intQuery(const char *param, int64_t defaultValue) const {
@@ -93,9 +91,9 @@ namespace litecore { namespace REST {
 
 
     void RequestResponse::onRequest(Method method,
-                           std::string path,
-                           fleece::slice queries,
-                           fleece::Doc headers)
+                                    const string &path,
+                                    const string &queries,
+                                    fleece::Doc headers)
     {
         setHeaders(headers);
         _method = method;

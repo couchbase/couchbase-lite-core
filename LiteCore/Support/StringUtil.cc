@@ -27,6 +27,35 @@ namespace litecore {
     using namespace std;
     using namespace fleece;
 
+    
+#if defined(__ANDROID__) || defined(__GLIBC__) || defined(_MSC_VER)
+    // digittoint is a BSD function, not available on Android, Linux, etc.
+    int digittoint(char ch) {
+        int d = ch - '0';
+        if ((unsigned) d < 10) {
+            return d;
+        }
+        d = ch - 'a';
+        if ((unsigned) d < 6) {
+            return d + 10;
+        }
+        d = ch - 'A';
+        if ((unsigned) d < 6) {
+            return d + 10;
+        }
+        return 0;
+    }
+
+
+    void strlcpy(char *dst, const char *src, size_t n) {
+        for (; *src != '\0' && n > 1; n--) {
+            *dst++ = *src++;
+        }
+        *dst = '\0';
+    }
+#endif // defined(__ANDROID__) || defined(__GLIBC__)
+
+
     std::string format(const char *fmt, ...) {
         va_list args;
         va_start(args, fmt);

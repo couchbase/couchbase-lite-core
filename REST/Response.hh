@@ -43,10 +43,6 @@ namespace litecore { namespace REST {
         fleece::alloc_slice body() const;
         fleece::Value bodyAsJSON() const;
 
-        // Utilities:
-        static std::string urlDecode(const std::string&);
-        static std::string urlEncode(const std::string&);
-
     protected:
         Body() = default;
         Body(fleece::Doc headers, fleece::alloc_slice body)

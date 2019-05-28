@@ -71,8 +71,8 @@ namespace litecore { namespace net {
 
         // Request line & headers received.
         virtual void onRequest(Method,
-                               std::string path,
-                               fleece::slice queries,
+                               const std::string &path,
+                               const std::string &queries,
                                fleece::Doc headers) =0;
 
         // Request body received.

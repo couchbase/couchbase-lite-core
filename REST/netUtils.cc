@@ -19,124 +19,102 @@
 
 #include "netUtils.hh"
 #include "c4.h"
-#include "PlatformIO.hh"
+#include "StringUtil.hh"
 #include <assert.h>
+#include <time.h>
 
 
 namespace litecore { namespace REST {
+    using namespace std;
+    using namespace fleece;
+    
 
-
-    void mg_strlcpy(char *dst, const char *src, size_t n)
-    {
-        for (; *src != '\0' && n > 1; n--) {
-            *dst++ = *src++;
-        }
-        *dst = '\0';
-    }
-
-    /* Convert time_t to a string. According to RFC2616, Sec 14.18, this must be
-     * included in all responses other than 100, 101, 5xx. */
-    void gmt_time_string(char *buf, size_t buf_len, time_t *t)
-    {
-        struct tm *tm;
-
-        tm = ((t != NULL) ? gmtime(t) : NULL);
-        if (tm != NULL) {
-            strftime(buf, buf_len, "%a, %d %b %Y %H:%M:%S GMT", tm);
-        } else {
-            mg_strlcpy(buf, "Thu, 01 Jan 1970 00:00:00 GMT", buf_len);
-            buf[buf_len - 1] = '\0';
-        }
-    }
-
-
-    void urlDecode(const char *src,
-                    size_t src_len,
-                    std::string &dst,
-                    bool is_form_url_encoded)
-    {
-        int i, j, a, b;
-#define HEXTOI(x) (isdigit(x) ? x - '0' : x - 'W')
-
-        dst.clear();
-        for (i = j = 0; i < (int)src_len; i++, j++) {
-            if (i < (int)src_len - 2 && src[i] == '%'
-                && isxdigit(*(const unsigned char *)(src + i + 1))
-                && isxdigit(*(const unsigned char *)(src + i + 2))) {
-                a = tolower(*(const unsigned char *)(src + i + 1));
-                b = tolower(*(const unsigned char *)(src + i + 2));
-                dst.push_back((char)((HEXTOI(a) << 4) | HEXTOI(b)));
+    string URLDecode(slice src, bool isFormURLEncoded) {
+        string dst;
+        dst.reserve(src.size);
+        for (size_t i = 0; i < src.size; i++) {
+            if (i < src.size - 2 && src[i] == '%' && isxdigit(src[i + 1]) && isxdigit(src[i + 2])) {
+                int a = digittoint(src[i + 1]);
+                int b = digittoint(src[i + 2]);
+                dst.push_back((char)((a << 4) | b));
                 i += 2;
-            } else if (is_form_url_encoded && src[i] == '+') {
+            } else if (isFormURLEncoded && src[i] == '+') {
                 dst.push_back(' ');
             } else {
                 dst.push_back(src[i]);
             }
         }
+        return dst;
     }
 
 
-    void urlEncode(const char *src,
-                    size_t src_len,
-                    std::string &dst,
-                    bool append)
+    static void urlEncode(const unsigned char *src,
+                          size_t src_len,
+                          std::string &dst,
+                          bool append)
     {
         static const char *dont_escape = "._-$,;~()";
         static const char *hex = "0123456789abcdef";
 
-        if (!append)
+        if (!append) {
             dst.clear();
+            dst.reserve(src_len);
+        }
 
         for (; src_len > 0; src++, src_len--) {
-            if (isalnum(*(const unsigned char *)src)
-                || strchr(dont_escape, *(const unsigned char *)src) != NULL) {
+            if (isalnum(*src) || strchr(dont_escape, *src) != NULL) {
                 dst.push_back(*src);
             } else {
                 dst.push_back('%');
-                dst.push_back(hex[(*(const unsigned char *)src) >> 4]);
-                dst.push_back(hex[(*(const unsigned char *)src) & 0xf]);
+                dst.push_back(hex[(*src) >> 4]);
+                dst.push_back(hex[(*src) & 0xf]);
             }
         }
     }
 
 
-    bool getParam(const char *data,
-                   size_t data_len,
-                   const char *name,
-                   std::string &dst,
-                   size_t occurrence)
-    {
-        const char *p, *e, *s;
-        size_t name_len;
+    string URLEncode(slice str) {
+        string result;
+        urlEncode((const unsigned char*)str.buf, str.size, result, false);
+        return result;
+    }
 
-        dst.clear();
+
+    string getURLQueryParam(slice queries,
+                            const char *name,
+                            char delimiter,
+                            size_t occurrence)
+    {
+        auto data = (const char *)queries.buf;
+        size_t data_len = queries.size;
+        const char *end = data + data_len;
+
+        string dst;
         if (data == NULL || name == NULL || data_len == 0) {
-            return false;
+            return dst;
         }
-        name_len = strlen(name);
-        e = data + data_len;
+        size_t name_len = strlen(name);
 
         // data is "var1=val1,var2=val2...". Find variable first
-        for (p = data; p + name_len < e; p++) {
-            if ((p == data || p[-1] == ',') && p[name_len] == '='
-                && !strncasecmp(name, p, name_len) && 0 == occurrence--) {
+        for (const char *p = data; p + name_len < end; p++) {
+            if ((p == data || p[-1] == delimiter) && p[name_len] == '='
+                    && !strncasecmp(name, p, name_len) && 0 == occurrence--) {
 
                 // Point p to variable value
                 p += name_len + 1;
 
                 // Point s to the end of the value
-                s = (const char *)memchr(p, ',', (size_t)(e - p));
+                const char *s = (const char *)memchr(p, delimiter, (size_t)(end - p));
                 if (s == NULL) {
-                    s = e;
+                    s = end;
                 }
                 assert(s >= p);
 
                 // Decode variable into destination buffer
-                urlDecode(p, (int)(s - p), dst, true);
-                return true;
+                return URLDecode(slice(p, s - p), true);
             }
         }
-        return false;
+        return dst;
     }
 
 } }

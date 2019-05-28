@@ -17,26 +17,17 @@
 //
 
 #pragma once
-#include <stdlib.h>
-#include <time.h>
-#include <string>
+#include "fleece/slice.hh"
 
 namespace litecore { namespace REST {
 
-    void mg_strlcpy(char *dst, const char *src, size_t n);
-    void gmt_time_string(char *buf, size_t buf_len, time_t *t);
-    void urlDecode(const char *src,
-                   size_t src_len,
-                   std::string &dst,
-                   bool is_form_url_encoded);
-    void urlEncode(const char *src,
-                   size_t src_len,
-                   std::string &dst,
-                   bool append);
-    bool getParam(const char *data,
-                  size_t data_len,
-                  const char *name,
-                  std::string &dst,
-                  size_t occurrence);
+    std::string URLDecode(fleece::slice str, bool isFormURLEncoded =true);
+    
+    std::string URLEncode(fleece::slice str);
+    
+    std::string getURLQueryParam(fleece::slice queries,
+                                 const char *name,
+                                 char delimiter = '&',
+                                 size_t occurrence =0);
 
 } }
