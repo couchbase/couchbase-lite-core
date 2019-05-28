@@ -69,7 +69,7 @@ namespace litecore { namespace net {
 
 
     // Dispatch events sent by libwebsockets.
-    void LWSHTTPClient::dispatch(lws *wsi, int reason, void *user, void *in, size_t len)
+    void LWSHTTPClient::onEvent(lws *wsi, int reason, void *user, void *in, size_t len)
     {
         switch ((lws_callback_reasons)reason) {
             case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
@@ -97,7 +97,7 @@ namespace litecore { namespace net {
                 break;
 
             default:
-                LWSProtocol::dispatch(wsi, reason, user, in, len);
+                LWSProtocol::onEvent(wsi, reason, user, in, len);
         }
     }
 
@@ -152,7 +152,7 @@ namespace litecore { namespace net {
         int len = sizeof(buffer) - LWS_PRE;
         // this will call back into the event loop with LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ...
         if (lws_http_client_read(_client, &start, &len) != 0)
-            setDispatchResult(-1);
+            setEventResult(-1);
     }
 
 
@@ -168,7 +168,7 @@ namespace litecore { namespace net {
             LogDebug("**** %-s: %zd-byte response body",
                      LWSCallbackName(reason), _response->body().size);
             _response = nullptr;
-            setDispatchResult(-1); // close connection
+            setEventResult(-1); // close connection
             notifyFinished();
         }
     }

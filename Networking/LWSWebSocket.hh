@@ -27,7 +27,7 @@
 namespace litecore { namespace net {
     class LWSServer;
 
-    /** A WebSocket client connection. */
+    /** Abstract superclass of WebSocket connections. */
     class LWSWebSocket : public LWSProtocol {
     public:
 
@@ -41,7 +41,7 @@ namespace litecore { namespace net {
         LWSWebSocket(lws *client, C4Socket* s);
 
         void setC4Socket(C4Socket* s);
-        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+        void onEvent(lws *wsi, int reason, void *user, void *in, size_t len) override;
         void write(const fleece::alloc_slice &message);
         void requestClose(int status, fleece::slice message);
         void completedReceive(size_t byteCount);
@@ -67,6 +67,8 @@ namespace litecore { namespace net {
     };
 
 
+
+    /** A client-side WebSocket connection. */
     class LWSClientWebSocket : public LWSWebSocket {
     public:
         LWSClientWebSocket(C4Socket *socket,
@@ -76,7 +78,7 @@ namespace litecore { namespace net {
         static void sock_open(C4Socket *sock, const C4Address *c4To, FLSlice optionsFleece, void*);
 
     protected:
-        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+        void onEvent(lws *wsi, int reason, void *user, void *in, size_t len) override;
         virtual const char *className() const noexcept override      {return "LWSClientWebSocket";}
     private:
         void open();
@@ -93,26 +95,23 @@ namespace litecore { namespace net {
     };
 
 
+
+    /** A server-side WebSocket connection (incoming from a peer.) */
     class LWSServerWebSocket : public LWSWebSocket {
     public:
         LWSServerWebSocket(lws* NONNULL, LWSServer* NONNULL);
         ~LWSServerWebSocket();
 
-        std::string path() const                                    {return _path;}
         C4Socket* c4Socket() const                                  {return _c4socket;}
 
-        void upgraded(bool);
+        void upgraded();
+        void canceled();
 
     protected:
-//        void onClientConnected();
-        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
-        virtual const char *className() const noexcept override      {return "LWSServerWebSocket";}
+        virtual const char *className() const noexcept override     {return "LWSServerWebSocket";}
 
     private:
         void createC4Socket();
-
-        LWSServer* _server;
-        std::string _path;
     };
 
 } }

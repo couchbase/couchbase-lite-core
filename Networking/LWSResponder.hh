@@ -78,7 +78,7 @@ namespace litecore { namespace net {
         // Request body received.
         virtual void onRequestBody(fleece::alloc_slice) =0;
 
-        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+        void onEvent(lws *wsi, int reason, void *user, void *in, size_t len) override;
 
         virtual const char *className() const noexcept override     {return "LWSResponder";}
 

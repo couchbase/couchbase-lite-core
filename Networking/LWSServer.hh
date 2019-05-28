@@ -24,7 +24,9 @@ namespace litecore { namespace net {
         void start(uint16_t port, const char *hostname =nullptr);
         void stop();
 
-        virtual int dispatch(lws*, int callback_reason, void *user, void *in, size_t len);
+        C4Address address() const;
+
+        virtual int onEvent(lws*, int callback_reason, void *user, void *in, size_t len);
 
     protected:
         virtual ~LWSServer();

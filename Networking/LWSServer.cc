@@ -25,6 +25,7 @@
 
 namespace litecore { namespace net {
     using namespace std;
+    using namespace fleece;
 
     LWSServer::LWSServer()
     :_mounts(new lws_http_mount[2])
@@ -80,7 +81,18 @@ namespace litecore { namespace net {
     }
 
 
-    int LWSServer::dispatch(lws *client, int reason, void *user, void *in, size_t len) {
+    C4Address LWSServer::address() const {
+        C4Address addr;
+        addr.scheme = kC4Replicator2Scheme;      // TODO: Use TLSScheme if TLS
+        addr.hostname = slice(lws_canonical_hostname(LWSContext::instance().context()));
+        addr.port = (uint16_t) lws_get_vhost_listen_port(_vhost);
+        addr.path = "/"_sl;
+        return addr;
+
+    }
+
+
+    int LWSServer::onEvent(lws *client, int reason, void *user, void *in, size_t len) {
         switch ((lws_callback_reasons)reason) {
             case LWS_CALLBACK_PROTOCOL_INIT:
                 LogDebug("**** LWS_CALLBACK_PROTOCOL_INIT (lws=%p)", client);

@@ -56,15 +56,15 @@ namespace litecore { namespace net {
     }
 
 
-    int LWSProtocol::_mainDispatch(lws* client, int reason, void *user, void *in, size_t len) {
+    int LWSProtocol::_eventCallback(lws* client, int reason, void *user, void *in, size_t len) {
         Retained<LWSProtocol> retainMe = this;  // prevent destruction during dispatch
-        _dispatchResult = 0;
-        dispatch(client, reason, user, in, len);
-        return _dispatchResult;
+        _eventResult = 0;
+        onEvent(client, reason, user, in, len);
+        return _eventResult;
     }
 
-    void LWSProtocol::dispatch(lws *client, int reason, void *user, void *in, size_t len) {
-        if (_dispatchResult != 0)
+    void LWSProtocol::onEvent(lws *client, int reason, void *user, void *in, size_t len) {
+        if (_eventResult != 0)
             return;
 
         switch ((lws_callback_reasons)reason) {
@@ -93,7 +93,7 @@ namespace litecore { namespace net {
                 break;
         }
         
-        if (_dispatchResult == 0)
+        if (_eventResult == 0)
             check(lws_callback_http_dummy(client, (lws_callback_reasons)reason, user, in, len));
     }
 
@@ -102,7 +102,7 @@ namespace litecore { namespace net {
         if (status == 0)
             return true;
         LogVerbose("    LWSProtocol::check(%d) -- failure(?)", status);
-        setDispatchResult(status);
+        setEventResult(status);
         return false;
     }
 
@@ -110,15 +110,16 @@ namespace litecore { namespace net {
     C4Error LWSProtocol::getConnectionError(slice lwsErrorMessage) {
         // Maps substrings of LWS error messages to C4Errors:
         static constexpr struct {slice string; C4ErrorDomain domain; int code;} kMessages[] = {
-            {"connect failed"_sl,                 POSIXDomain,     ECONNREFUSED},
-            {"ws upgrade unauthorized"_sl,        WebSocketDomain, 401},
-            {"CA is not trusted"_sl,              NetworkDomain,   kC4NetErrTLSCertUnknownRoot },
-            {"server's cert didn't look good"_sl, NetworkDomain,   kC4NetErrTLSCertUntrusted },
+            {"connect failed"_sl,                 POSIXDomain,      ECONNREFUSED},
+            {"ws upgrade unauthorized"_sl,        WebSocketDomain,  401},
+            {"CA is not trusted"_sl,              NetworkDomain,    kC4NetErrTLSCertUnknownRoot },
+            {"server's cert didn't look good"_sl, NetworkDomain,    kC4NetErrTLSCertUntrusted },
+            {"getaddrinfo failed"_sl,             NetworkDomain,    kC4NetErrUnknownHost},
             // TODO: Add more entries
             { }
         };
 
-        int status;
+        int status = -1;
         string statusMessage;
         tie(status,statusMessage) = decodeHTTPStatus();
 
@@ -218,7 +219,7 @@ namespace litecore { namespace net {
 
     pair<int,string> LWSProtocol::decodeHTTPStatus() {
         char buf[32];
-        if (lws_hdr_copy(_client, buf, sizeof(buf) - 1, WSI_TOKEN_HTTP) < 0)
+        if (!_client || lws_hdr_copy(_client, buf, sizeof(buf) - 1, WSI_TOKEN_HTTP) < 0)
             return {};
         string message;
         auto space = strchr(buf, ' ');
@@ -351,7 +352,7 @@ namespace litecore { namespace net {
 
             if (lws_write(_client, (uint8_t*)chunk.buf, chunk.size, type) < 0) {
                 Log("  --lws_write failed!");
-                setDispatchResult(-1);
+                setEventResult(-1);
             }
 
             if (_unsent.size > 0) {

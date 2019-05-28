@@ -27,6 +27,9 @@ using namespace fleece;
 using namespace litecore::REST;
 
 
+#ifdef COUCHBASE_ENTERPRISE
+
+
 static string to_str(FLSlice s) {
     return string((char*)s.buf, s.size);
 }
@@ -324,3 +327,5 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][C]") {
     CHECK(doc["status"].asInt() == 404);
     CHECK(doc["error"].asString() == "Not Found"_sl);
 }
+
+#endif // COUCHBASE_ENTERPRISE

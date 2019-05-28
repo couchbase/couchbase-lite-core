@@ -32,6 +32,8 @@ namespace litecore { namespace REST {
         GatewayError = 502,
     };
 
+    static inline bool IsSuccess(HTTPStatus s)          {return int(s) < 300;}
+
     const char* StatusMessage(HTTPStatus);
 
 

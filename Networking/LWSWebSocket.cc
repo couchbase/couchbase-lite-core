@@ -61,10 +61,19 @@ namespace litecore { namespace net {
 
     LWSServerWebSocket::LWSServerWebSocket(lws *client, LWSServer *server)
     :LWSWebSocket(client, nullptr)
-    ,_server(server)
     {
-        createC4Socket();
-        LogVerbose("Created %p on wsi %p", this, client);
+        // Get peer's IP address:
+        C4Address peerAddress = server->address();
+        char ipBuf[100];
+        lws_get_peer_simple(_client, ipBuf, sizeof(ipBuf)-1);
+        peerAddress.hostname = slice(ipBuf);
+
+        // Create C4Socket attached to me now:
+        auto factory = C4LWSWebSocketFactory;
+        factory.open = nullptr;
+        setC4Socket( c4socket_fromNative(factory, this, &peerAddress) );
+
+        LogVerbose("Created %p on wsi %p,  C4Socket %p", this, client, _c4socket);
     }
 
 
@@ -73,14 +82,15 @@ namespace litecore { namespace net {
     }
 
 
-    void LWSServerWebSocket::upgraded(bool upgraded) {
-        if (upgraded) {
-            lws_set_opaque_user_data(_client, this);
-        } else {
-            closeC4Socket(LiteCoreDomain, kC4ErrorUnexpectedError, nullslice);
-            _client = nullptr;
-            release(this);
-        }
+    void LWSServerWebSocket::upgraded() {
+        lws_set_opaque_user_data(_client, this);
+    }
+
+
+    void LWSServerWebSocket::canceled() {
+        closeC4Socket(LiteCoreDomain, kC4ErrorUnexpectedError, nullslice);
+        _client = nullptr;
+        release(this);
     }
 
 
@@ -176,9 +186,9 @@ namespace litecore { namespace net {
                                   int /*lws_close_status*/ status,
                                   slice body)
     {
-        // LWS requires that the first LWS_PRE bytes of a message be blank so it can fill them
+        // LWS requires that a message be prefixed with LWS_PRE writeable bytes, so it can fill them
         // in with WebSocket frame headers. So pad the message.
-        // Then store the opcode and status code in the empty space, for use by onWriteable():
+        // Then store the opcode and status code in the padding, for use by onWriteable():
         alloc_slice frame(LWS_PRE + body.size);
         memcpy((void*)&frame[LWS_PRE], body.buf, body.size);
         (uint8_t&)frame[0] = opcode;
@@ -187,7 +197,7 @@ namespace litecore { namespace net {
         synchronized([&]{
             if (_client) {
                 _outbox.push_back(frame);
-                callbackOnWriteable(); // triggers LWS_CALLBACK_CLIENT_WRITEABLE
+                callbackOnWriteable(); // triggers LWS_CALLBACK_CLIENT_WRITEABLE and onWriteable()
             }
         });
     }
@@ -197,7 +207,7 @@ namespace litecore { namespace net {
 
 
     // Dispatch events sent by libwebsockets.
-    void LWSWebSocket::dispatch(lws *wsi, int reason, void *user, void *in, size_t len) {
+    void LWSWebSocket::onEvent(lws *wsi, int reason, void *user, void *in, size_t len) {
         switch ((lws_callback_reasons)reason) {
                 // Read/write:
             case LWS_CALLBACK_CLIENT_WRITEABLE:
@@ -222,19 +232,19 @@ namespace litecore { namespace net {
                 break;
 
             default:
-                LWSProtocol::dispatch(wsi, reason, user, in, len);
+                LWSProtocol::onEvent(wsi, reason, user, in, len);
                 break;
         }
     }
 
 
-    void LWSClientWebSocket::dispatch(lws *wsi, int reason, void *user, void *in, size_t len) {
+    void LWSClientWebSocket::onEvent(lws *wsi, int reason, void *user, void *in, size_t len) {
         switch ((lws_callback_reasons)reason) {
                 // Connecting:
             case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
                 LogCallback();
                 if (_address.isSecure() && !onVerifyTLS()) {
-                    setDispatchResult(-1);
+                    setEventResult(-1);
                     return;
                 }
                 onSendCustomHeaders(in, len);
@@ -246,24 +256,7 @@ namespace litecore { namespace net {
             case LWS_CALLBACK_CLIENT_ESTABLISHED:
                 break;
             default:
-                LWSWebSocket::dispatch(wsi, reason, user, in, len);
-        }
-    }
-
-
-    void LWSServerWebSocket::dispatch(lws *wsi, int reason, void *user, void *in, size_t len) {
-        switch ((lws_callback_reasons)reason) {
-#if 0
-            case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:
-                LogVerbose("**** LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION protocol='%s'", in);
-                break;
-            case LWS_CALLBACK_ESTABLISHED:
-                LogCallback();
-                onClientConnected();
-                break;
-#endif
-            default:
-                LWSWebSocket::dispatch(wsi, reason, user, in, len);
+                LWSWebSocket::onEvent(wsi, reason, user, in, len);
         }
     }
 
@@ -361,34 +354,6 @@ namespace litecore { namespace net {
     }
 
 
-    void LWSServerWebSocket::createC4Socket() {
-        // Get peer's IP address:
-        char ipBuf[100];
-        lws_get_peer_simple(_client, ipBuf, sizeof(ipBuf)-1);
-        C4Address peerAddress = {};
-        peerAddress.scheme = kC4Replicator2Scheme;      //FIX: Use TLS scheme if TLS
-        peerAddress.hostname = slice(ipBuf);
-        peerAddress.port = 0;                           //FIX: Any way to get this?
-        // Create C4Socket attached to me now:
-        auto factory = C4LWSWebSocketFactory;
-        factory.open = nullptr;
-        setC4Socket( c4socket_fromNative(factory, this, &peerAddress) );
-
-        LogVerbose("Created C4Socket %p", _c4socket);
-    }
-
-
-#if 0
-    void LWSServerWebSocket::onClientConnected() {
-        createC4Socket();
-        if (!_server->dispatchWebSocket(this)) {
-            lws_close_reason(_client, LWS_CLOSE_STATUS_POLICY_VIOLATION, nullptr, 0);
-            setDispatchResult(-1); // tells libwebsockets to close the connection
-        }
-    }
-#endif
-
-
     void LWSWebSocket::onWriteable() {
         // Pop first message from outbox queue:
         alloc_slice msg;
@@ -438,7 +403,7 @@ namespace litecore { namespace net {
             memcpy(&status, &msg[1], sizeof(status));
             LogVerbose("Writing CLOSE message, status %d, msg '%.*s'", status, SPLAT(payload));
             lws_close_reason(_client, (lws_close_status)status, (uint8_t*)payload.buf, payload.size);
-            setDispatchResult(-1); // tells libwebsockets to close the connection
+            setEventResult(-1); // tells libwebsockets to close the connection
         }
     }
 
@@ -489,7 +454,7 @@ namespace litecore { namespace net {
             sendCloseFrame = !_sentCloseFrame;
             _sentCloseFrame = true;
         });
-        setDispatchResult(sendCloseFrame);
+        setEventResult(sendCloseFrame);
     }
 
 

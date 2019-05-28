@@ -254,6 +254,8 @@ public:
                              headers,
                              body);
         REQUIRE(r);
+        if (r->error().code)
+            FAIL("Error: " << c4error_descriptionStr(r->error()));
         INFO("Status: " << (int)r->status() << " " << r->statusMessage());
         REQUIRE(r->status() >= REST::HTTPStatus::OK);
         REQUIRE(r->status() <= REST::HTTPStatus::Created);

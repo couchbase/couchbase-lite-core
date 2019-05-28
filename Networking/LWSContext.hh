@@ -49,6 +49,8 @@ namespace litecore { namespace net {
 
         void stop(LWSServer* NONNULL);
 
+        lws_context* context() const                {return _context;}
+
         void dequeue(); // internal use only
 
     protected:

@@ -54,7 +54,7 @@ namespace litecore { namespace net {
 
 
     // Dispatch events sent by libwebsockets.
-    void LWSResponder::dispatch(lws *wsi, int reason, void *user, void *in, size_t len)
+    void LWSResponder::onEvent(lws *wsi, int reason, void *user, void *in, size_t len)
     {
         switch ((lws_callback_reasons)reason) {
             case LWS_CALLBACK_HTTP:
@@ -78,7 +78,7 @@ namespace litecore { namespace net {
                 onWebSocketUpgradeRequest({in, len});
                 break;
             default:
-                LWSProtocol::dispatch(wsi, reason, user, in, len);
+                LWSProtocol::onEvent(wsi, reason, user, in, len);
         }
     }
 
@@ -379,17 +379,20 @@ namespace litecore { namespace net {
             return;
 
         if (_upgradedWS) {
-            bool upgraded = (_status <= HTTPStatus::OK);
-            _upgradedWS->upgraded(upgraded);
-            _upgradedWS = nullptr;
-            if (upgraded) {
+            // This is a WebSocket upgrade request; handle success/failure:
+            if (IsSuccess(_status)) {
                 // Upgrade successful -- detach myself from libwebsockets:
+                _upgradedWS->upgraded();
+                _upgradedWS = nullptr;
                 _client = nullptr;
                 _finished = true;
-                return;
+                return; // LWSServerWebSocket is taking over, so don't do any more
             } else {
                 // Upgrade failed; after returning status, LWS will disconnect:
-                setDispatchResult(1);
+                _upgradedWS->canceled();
+                _upgradedWS = nullptr;
+                setEventResult(1);
+                // Keep going, to send the error response...
             }
         }
 
@@ -417,7 +420,7 @@ namespace litecore { namespace net {
         sendMoreData(true);
         if (!hasDataToSend()) {
             if (lws_http_transaction_completed(_client))
-                setDispatchResult(1);       // to close connection
+                setEventResult(1);       // to close connection
         }
     }
 

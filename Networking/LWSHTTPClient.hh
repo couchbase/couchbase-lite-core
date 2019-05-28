@@ -30,7 +30,7 @@ namespace litecore { namespace net {
 
     protected:
         virtual ~LWSHTTPClient();
-        void dispatch(lws *wsi, int reason, void *user, void *in, size_t len) override;
+        void onEvent(lws *wsi, int reason, void *user, void *in, size_t len) override;
         void onConnectionError(C4Error error) override;
         void onSendHeaders(void *in, size_t len);
         void onWriteRequest();

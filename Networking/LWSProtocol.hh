@@ -19,19 +19,20 @@ namespace litecore { namespace net {
         A wrapper around a `lws` object. */
     class LWSProtocol : public fleece::RefCounted {
     public:
-        // Entry point for libwebsockets events.
-        int _mainDispatch(lws*, int callback_reason, void *user, void *in, size_t len);
+        // Entry point for libwebsockets events. Calls onEvent().
+        int _eventCallback(lws*, int callback_reason, void *user, void *in, size_t len);
 
     protected:
         LWSProtocol()                               :LWSProtocol(nullptr) { }
         LWSProtocol(lws *connection);
         virtual ~LWSProtocol();
 
-        // Override to handle LWS events. Call super if you don't handle the event.
-        virtual void dispatch(lws*, int callback_reason, void *user, void *in, size_t len);
+        // Override to handle LWS events. Call inherited method if you don't handle the event.
+        // Call setEventResult() or check() to return nonzero from callback.
+        virtual void onEvent(lws*, int callback_reason, void *user, void *in, size_t len);
 
-        // Call from within dispatch() to set a nonzero return value from the LWS callback
-        void setDispatchResult(int result)          {_dispatchResult = result;}
+        // Call from within onEvent() to set a nonzero return value from the LWS callback
+        void setEventResult(int result)             {_eventResult = result;}
 
         // Calls setDispatchResult if status is nonzero
         bool check(int status);
@@ -80,7 +81,7 @@ namespace litecore { namespace net {
     private:
         void clientCreated(::lws* client);
 
-        int                 _dispatchResult;
+        int                 _eventResult;
         fleece::alloc_slice _dataToSend;
         fleece::slice       _unsent;
 

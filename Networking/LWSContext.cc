@@ -282,7 +282,7 @@ namespace litecore { namespace net {
 
             auto protocol = (LWSProtocol*) lws_get_opaque_user_data(wsi);
             if (protocol) {
-                return protocol->_mainDispatch(wsi, reason, user, in, len);
+                return protocol->_eventCallback(wsi, reason, user, in, len);
             } else {
                 if (reason != LWS_CALLBACK_EVENT_WAIT_CANCELLED)
                     LogDebug("**** %-s (no client; wsi=%p, user=%p)",
@@ -305,7 +305,7 @@ namespace litecore { namespace net {
             auto vhost = lws_get_vhost(wsi);
             auto server = vhost ? (LWSServer*) lws_get_vhost_user(vhost) : nullptr;
             if (server) {
-                return server->dispatch(wsi, reason, user, in, len);
+                return server->onEvent(wsi, reason, user, in, len);
             } else {
                 if (reason != LWS_CALLBACK_EVENT_WAIT_CANCELLED)
                     LogDebug("**** %-s (no vhost protocol; wsi=%p, user=%p)",
