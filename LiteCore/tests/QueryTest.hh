@@ -157,7 +157,7 @@ protected:
 
     int64_t rowsInQuery(string json) {
         Retained<Query> query = store->compileQuery(json);
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
         return e->getRowCount();
     }
 
@@ -170,7 +170,7 @@ protected:
         for(auto &test : tests) {
             INFO("Testing " << test.first);
             auto query = store->compileQuery(json5("{'WHAT': [" + test.first + "]}"));
-            unique_ptr<QueryEnumerator> e(query->createEnumerator());
+            Retained<QueryEnumerator> e(query->createEnumerator());
             REQUIRE(e->getRowCount() == 1);
             REQUIRE(e->next());
             CHECK(e->columns()[0]->toString() == slice(test.second));

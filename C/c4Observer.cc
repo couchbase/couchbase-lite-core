@@ -38,13 +38,16 @@ struct c4DatabaseObserver : fleece::InstanceCounted {
 
 
     void dispatchCallback(DatabaseChangeNotifier&) {
+        _inCallback = true;
         _callback(this, _context);
+        _inCallback = false;
     }
 
     Retained<Database> _db;
     DatabaseChangeNotifier _notifier;
     C4DatabaseObserverCallback _callback;
     void *_context;
+    bool _inCallback {false};
     //NOTE: Order of members is important! _notifier needs to appear after _db so that it will be
     // destructed *before* _db; this ensures that the Database's SequenceTracker is still in
     // existence when the notifier removes itself from it.
@@ -71,7 +74,9 @@ uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
                   "C4DatabaseChange doesn't match SequenceTracker::Change");
     memset(outChanges, 0, maxChanges * sizeof(C4DatabaseChange));
     return tryCatch<uint32_t>(nullptr, [&]{
-        lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
+        unique_lock<mutex> lock(obs->_notifier.tracker.mutex(), defer_lock_t{});
+        if (!obs->_inCallback)
+            lock.lock();
         return (uint32_t) obs->_notifier.readChanges((SequenceTracker::Change*)outChanges,
                                                      maxChanges,
                                                      *outExternal);

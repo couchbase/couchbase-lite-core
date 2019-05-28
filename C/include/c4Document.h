@@ -67,6 +67,8 @@ extern "C" {
         C4SequenceNumber sequence;  ///< Sequence at which doc was last updated
 
         C4Revision selectedRev;     ///< Describes the currently-selected revision
+
+        C4ExtraInfo extraInfo;      ///< For client use
     } C4Document;
 
 
@@ -78,20 +80,45 @@ extern "C" {
         @{ */
 
 
+    #define kC4GeneratedIDLength 23
+
+    /** Generates a random 23-byte C string suitable for use as a unique new document ID.
+        @param buffer  Where to write the string.
+        @param bufferSize  Size of the buffer (must be at least kC4GeneratedIDLength + 1)
+        @return  A pointer to the string in the buffer, or NULL if the buffer is too small. */
+    char* c4doc_generateID(char *buffer C4NONNULL, size_t bufferSize) C4API;
+
     /** Gets a document from the database. If there's no such document, the behavior depends on
         the mustExist flag. If it's true, NULL is returned. If it's false, a valid but empty
         C4Document is returned, that doesn't yet exist in the database (but will be added when
         saved.)
-        The current revision is selected (if the document exists.) */
+        The current revision is selected (if the document exists.)
+        You must call `c4doc_release()` when finished with the document. */
     C4Document* c4doc_get(C4Database *database C4NONNULL,
                           C4String docID,
                           bool mustExist,
                           C4Error *outError) C4API;
 
-    /** Gets a document from the database given its sequence number. */
+    /** Gets a document from the database given its sequence number.
+        You must call `c4doc_release()` when finished with the document.  */
     C4Document* c4doc_getBySequence(C4Database *database C4NONNULL,
                                     C4SequenceNumber,
                                     C4Error *outError) C4API;
+
+    /** Gets a specific revision of a document.
+        ONLY that revision is available; any calls that would access other revisions will fail.
+        On the plus side, this call is quicker than \ref c4doc_get and allocates less memory.
+        @param database  The database to read from.
+        @param docID  The document ID.
+        @param revID  The revision ID, or a null slice for the current revision.
+        @param withBody  Should the body of the revision be loaded?
+        @param error  Error information is stored here.
+        @return  The document, or NULL on error. */
+    C4Document* c4doc_getSingleRevision(C4Database *database,
+                                        C4Slice docID,
+                                        C4Slice revID,
+                                        bool withBody,
+                                        C4Error *error) C4API;
 
     /** Saves changes to a C4Document.
         Must be called within a transaction.
@@ -100,8 +127,13 @@ extern "C" {
                     uint32_t maxRevTreeDepth,
                     C4Error *outError) C4API;
 
-    /** Frees a C4Document. */
+    /** Increments the ref-count of a C4Document. */
+    C4Document* c4doc_retain(C4Document *doc) C4API;
+
     void c4doc_free(C4Document *doc) C4API;
+
+    /** Decrements the ref-count of a C4Document, freeing it when it reaches zero. */
+    static inline void c4doc_release(C4Document *doc)    {c4doc_free(doc);}
 
     /** @} */
     
@@ -255,19 +287,27 @@ extern "C" {
     /** Sets an expiration date on a document.  After this time the
         document will be purged from the database.
         @param db The database to set the expiration date in
-        @param docId The ID of the document to set the expiration date for
+        @param docID The ID of the document to set the expiration date for
         @param timestamp The timestamp of the expiration date, in milliseconds since 1/1/1970.
                     A value of 0 indicates that the expiration should be cancelled.
         @param outError Information about any error that occurred
         @return true on sucess, false on failure */
     bool c4doc_setExpiration(C4Database *db C4NONNULL,
-                             C4String docId,
+                             C4String docID,
                              C4Timestamp timestamp,
                              C4Error *outError) C4API;
 
     /** Returns the expiration time of a document, if one has been set, else 0.
-        (The units are milliseconds since 1/1/1970.) */
-    C4Timestamp c4doc_getExpiration(C4Database *db C4NONNULL, C4String docId) C4API;
+        @param db  The database to set the expiration date in
+        @param docID  The ID of the document to check
+        @param outError Information about any error that occurred
+        @return The timestamp of the expiration date, in milliseconds since 1/1/1970,
+                    or 0 if the document does not expire,
+                    or -1 if an error occurred. */
+    C4Timestamp c4doc_getExpiration(C4Database *db,
+                                    C4Slice docID,
+                                    C4Error *outError) C4API;
+
 
     /** @} */
 

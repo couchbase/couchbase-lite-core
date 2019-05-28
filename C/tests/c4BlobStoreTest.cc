@@ -246,12 +246,15 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encrypti
     C4Error error;
     C4WriteStream *stream = c4blob_openWriteStream(store, &error);
     REQUIRE(stream);
+    CHECK(c4stream_bytesWritten(stream) == 0);
 
     for (int i = 0; i < 1000; i++) {
         char buf[100];
         sprintf(buf, "This is line %03d.\n", i);
         REQUIRE(c4stream_write(stream, buf, strlen(buf), &error));
     }
+
+    CHECK(c4stream_bytesWritten(stream) == 18*1000);
 
     // Get the blob key, and install it:
     C4BlobKey key = c4stream_computeBlobKey(stream);
@@ -265,7 +268,7 @@ N_WAY_TEST_CASE_METHOD(BlobStoreTest, "write blob with stream", "[blob][Encrypti
 
     // Read it back using the key:
     C4SliceResult contents = c4blob_getContents(store, key, &error);
-    CHECK(contents.size == 18000);
+    CHECK(contents.size == 18*1000);
     c4slice_free(contents);
 
     // Read it back random-access:

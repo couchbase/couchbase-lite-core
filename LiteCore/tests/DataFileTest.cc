@@ -145,7 +145,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
     for (int metaOnly=0; metaOnly <= 1; ++metaOnly) {
         INFO("Enumerate over all docs, metaOnly=" << metaOnly);
         RecordEnumerator::Options opts;
-        opts.contentOptions = metaOnly ? kMetaOnly : kDefaultContent;
+        opts.contentOption = metaOnly ? kMetaOnly : kEntireBody;
 
         {
             int i = 1;

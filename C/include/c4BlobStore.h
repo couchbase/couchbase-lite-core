@@ -178,7 +178,13 @@ extern "C" {
     C4WriteStream* c4blob_openWriteStream(C4BlobStore* C4NONNULL, C4Error*) C4API;
 
     /** Writes data to a stream. */
-    bool c4stream_write(C4WriteStream*, const void *bytes, size_t length, C4Error*) C4API;
+    bool c4stream_write(C4WriteStream* C4NONNULL,
+                        const void *bytes C4NONNULL,
+                        size_t length,
+                        C4Error*) C4API;
+
+    /** Returns the number of bytes written to the stream. */
+    uint64_t c4stream_bytesWritten(C4WriteStream* C4NONNULL);
 
     /** Computes the blob-key (digest) of the data written to the stream. This should only be
         called after writing the entire data. No more data can be written after this call. */

@@ -76,8 +76,10 @@ namespace litecore {
         // If statements are left open, closing the database will fail with a "db busy" error...
         _recCountStmt.reset();
         _getByKeyStmt.reset();
+        _getCurByKeyStmt.reset();
         _getMetaByKeyStmt.reset();
         _getBySeqStmt.reset();
+        _getCurBySeqStmt.reset();
         _getMetaBySeqStmt.reset();
         _setStmt.reset();
         _insertStmt.reset();
@@ -181,51 +183,72 @@ namespace litecore {
     // Gets flags from col 1, version from col 3, and body (or its length) from col 4
     /*static*/ void SQLiteKeyStore::setRecordMetaAndBody(Record &rec,
                                                          SQLite::Statement &stmt,
-                                                         ContentOptions options)
+                                                         ContentOption content)
     {
         rec.setExists();
         rec.setFlags((DocumentFlags)(int)stmt.getColumn(1));
         rec.setVersion(columnAsSlice(stmt.getColumn(3)));
-        if (options & kMetaOnly)
+        if (content == kMetaOnly)
             rec.setUnloadedBodySize((ssize_t)stmt.getColumn(4));
         else
             rec.setBody(columnAsSlice(stmt.getColumn(4)));
     }
     
 
-    bool SQLiteKeyStore::read(Record &rec, ContentOptions options) const {
-        auto &stmt = (options & kMetaOnly)
-            ? compile(_getMetaByKeyStmt,
-                      "SELECT sequence, flags, 0, version, length(body) FROM kv_@ WHERE key=?")
-            : compile(_getByKeyStmt,
-                      "SELECT sequence, flags, 0, version, body FROM kv_@ WHERE key=?");
-        stmt.bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
-        UsingStatement u(stmt);
-        if (!stmt.executeStep())
+    bool SQLiteKeyStore::read(Record &rec, ContentOption content) const {
+        SQLite::Statement *stmt;
+        switch (content) {
+            case kMetaOnly:
+                stmt = &compile(_getMetaByKeyStmt,
+                        "SELECT sequence, flags, 0, version, length(body) FROM kv_@ WHERE key=?");
+                break;
+            case kCurrentRevOnly:
+                stmt = &compile(_getCurByKeyStmt,
+                        "SELECT sequence, flags, 0, version, fl_root(body) FROM kv_@ WHERE key=?");
+                break;
+            case kEntireBody:
+                stmt = &compile(_getByKeyStmt,
+                        "SELECT sequence, flags, 0, version, body FROM kv_@ WHERE key=?");
+                break;
+        }
+        stmt->bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
+        UsingStatement u(*stmt);
+        if (!stmt->executeStep())
             return false;
 
-        sequence_t seq = (int64_t)stmt.getColumn(0);
+        sequence_t seq = (int64_t)stmt->getColumn(0);
         rec.updateSequence(seq);
-        setRecordMetaAndBody(rec, stmt, options);
+        setRecordMetaAndBody(rec, *stmt, content);
         return true;
     }
 
 
-    Record SQLiteKeyStore::get(sequence_t seq /*, ContentOptions options*/) const {
-        constexpr ContentOptions options = kDefaultContent;  // this used to be a param but not used
+    Record SQLiteKeyStore::get(sequence_t seq /*, ContentOptions content*/) const {
+        constexpr ContentOption content = kEntireBody;  // this used to be a param but not used
         Assert(_capabilities.sequences);
         Record rec;
-        auto &stmt = (options & kMetaOnly)
-            ? compile(_getMetaBySeqStmt,
-                      "SELECT 0, flags, key, version, length(body) FROM kv_@ WHERE sequence=?")
-            : compile(_getBySeqStmt,
-                      "SELECT 0, flags, key, version, body FROM kv_@ WHERE sequence=?");
-        UsingStatement u(stmt);
-        stmt.bind(1, (long long)seq);
-        if (stmt.executeStep()) {
-            rec.setKey(columnAsSlice(stmt.getColumn(2)));
+        SQLite::Statement *stmt;
+        switch (content) {
+            case kMetaOnly:
+                stmt = &compile(_getMetaBySeqStmt,
+                        "SELECT 0, flags, key, version, length(body) FROM kv_@ WHERE sequence=?");
+                break;
+            case kCurrentRevOnly:
+                stmt = &compile(_getCurBySeqStmt,
+                        "SELECT 0, flags, key, version, fl_root(body) FROM kv_@ WHERE sequence=?");
+                break;
+            case kEntireBody:
+                stmt = &compile(_getBySeqStmt,
+                        "SELECT 0, flags, key, version, body FROM kv_@ WHERE sequence=?");
+                break;
+        }
+
+        UsingStatement u(*stmt);
+        stmt->bind(1, (long long)seq);
+        if (stmt->executeStep()) {
+            rec.setKey(columnAsSlice(stmt->getColumn(2)));
             rec.updateSequence(seq);
-            setRecordMetaAndBody(rec, stmt, options);
+            setRecordMetaAndBody(rec, *stmt, content);
         }
         return rec;
     }

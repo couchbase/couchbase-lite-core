@@ -47,6 +47,8 @@ namespace c4Internal {
     C4SliceResult sliceResult(const string&);
 
     string toString(C4Slice);
+
+    void destructExtraInfo(C4ExtraInfo&) noexcept;
 }
 
 using namespace c4Internal;

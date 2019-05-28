@@ -60,8 +60,14 @@ extern "C" {
 
     C4Query* c4query_new(C4Database* C4NONNULL, C4String, C4Error*) C4API;  // for backward compatibility
 
-    /** Frees a query.  It is legal to pass NULL. */
+    /** Increments the reference count of a C4Query. */
+    C4Query* c4query_retain(C4Query*) C4API;
+
+    /** Deprecated synonym for \ref c4query_release. */
     void c4query_free(C4Query*) C4API;
+
+    /** Decrements the ref-count; at zero, closes and frees the C4Query. */
+    static inline void c4query_release(C4Query* q)    {c4query_free(q);}
 
     /** Returns a string describing the implementation of the compiled query.
         This is intended to be read by a developer for purposes of optimizing the query, especially
@@ -125,14 +131,23 @@ extern "C" {
     } C4QueryEnumerator;
 
 
+    /** Sets the parameter values to use when running the query, if no parameters are given to
+        \ref c4query_run.
+        @param query  The compiled query to run.
+        @param encodedParameters  JSON- or Fleece-encoded dictionary whose keys correspond
+                to the named parameters in the query expression, and values correspond to the
+                values to bind. Any unbound parameters will be `null`. */
+    void c4query_setParameters(C4Query *query C4NONNULL,
+                               C4String encodedParameters) C4API;
+
+
     /** Runs a compiled query.
         NOTE: Queries will run much faster if the appropriate properties are indexed.
         Indexes must be created explicitly by calling `c4db_createIndex`.
         @param query  The compiled query to run.
         @param options  Query options; only `skip` and `limit` are currently recognized.
-        @param encodedParameters  Optional JSON- or Fleece-encoded dictionary whose keys correspond
-                to the named parameters in the query expression, and values correspond to the
-                values to bind. Any unbound parameters will be `null`.
+        @param encodedParameters  Options parameter values; if this parameter is not NULL,
+                        it overrides the parameters assigned by \ref c4query_setParameters.
         @param outError  On failure, will be set to the error status.
         @return  An enumerator for reading the rows, or NULL on error. */
     C4QueryEnumerator* c4query_run(C4Query *query C4NONNULL,
@@ -186,10 +201,17 @@ extern "C" {
 
     /** Closes an enumerator without freeing it. This is optional, but can be used to free up
         resources if the enumeration has not reached its end, but will not be freed for a while. */
-    void c4queryenum_close(C4QueryEnumerator *e) C4API;
+    void c4queryenum_close(C4QueryEnumerator*) C4API;
 
-    /** Frees a query enumerator. */
-    void c4queryenum_free(C4QueryEnumerator *e) C4API;
+    /** Increments the reference count of a C4QueryEnumerator. */
+    C4QueryEnumerator* c4queryenum_retain(C4QueryEnumerator*) C4API;
+
+    /** Deprecated synonym for \ref c4queryenum_release. */
+    void c4queryenum_free(C4QueryEnumerator*) C4API;
+
+    /** Decrements the ref-count; at zero, closes and frees the C4QueryEnumerator. */
+    static inline void c4queryenum_release(C4QueryEnumerator *q)    {c4queryenum_free(q);}
+
 
     /** @} */
 

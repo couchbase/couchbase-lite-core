@@ -70,7 +70,7 @@ protected:
     }
 
     void verifyDoc(slice docID, slice bodyJSON, vector<slice> revIDs) {
-        unique_ptr<Document> doc1( db->documentFactory().newDocumentInstance(docID) );
+        Retained<Document> doc1( db->documentFactory().newDocumentInstance(docID) );
         CHECK(doc1->exists());
         CHECK(doc1->bodyAsJSON() == bodyJSON);
         int i = 0;

@@ -35,8 +35,28 @@
 using namespace fleece::impl;
 
 
+C4Document* c4doc_retain(C4Document *doc) noexcept {
+    retain((Document*)doc);
+    return doc;
+}
+
+
 void c4doc_free(C4Document *doc) noexcept {
-    delete (Document*)doc;
+   release((Document*)doc);
+}
+
+
+static C4Document* newDoc(bool mustExist, C4Error *outError,
+                          function_ref<Retained<Document>()> cb) noexcept
+{
+    return tryCatch<C4Document*>(outError, [&]{
+        auto doc = cb();
+        if (!doc || (mustExist && !doc->exists())) {
+            doc = nullptr;
+            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+        }
+        return retain(doc.get());
+    });
 }
 
 
@@ -45,14 +65,20 @@ C4Document* c4doc_get(C4Database *database,
                       bool mustExist,
                       C4Error *outError) noexcept
 {
-    return tryCatch<C4Document*>(outError, [&]{
-        auto doc = database->documentFactory().newDocumentInstance(docID);
-        if (mustExist && !asInternal(doc)->exists()) {
-            delete doc;
-            doc = nullptr;
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
-        }
-        return doc;
+    return newDoc(mustExist, outError, [=] {
+        return database->documentFactory().newDocumentInstance(docID);
+    });
+}
+
+
+C4Document* c4doc_getSingleRevision(C4Database *database,
+                                    C4Slice docID,
+                                    C4Slice revID,
+                                    bool withBody,
+                                    C4Error *outError) noexcept
+{
+    return newDoc(true, outError, [=] {
+        return database->documentFactory().newLeafDocumentInstance(docID, revID, withBody);
     });
 }
 
@@ -61,14 +87,8 @@ C4Document* c4doc_getBySequence(C4Database *database,
                                 C4SequenceNumber sequence,
                                 C4Error *outError) noexcept
 {
-    return tryCatch<C4Document*>(outError, [&]{
-        auto doc = database->documentFactory().newDocumentInstance(database->defaultKeyStore().get(sequence));
-        if (!asInternal(doc)->exists()) {
-            delete doc;
-            doc = nullptr;
-            recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
-        }
-        return doc;
+    return newDoc(true, outError, [=] {
+        return database->documentFactory().newDocumentInstance(database->defaultKeyStore().get(sequence));
     });
 }
 
@@ -312,7 +332,8 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
         }
 
         // Slow path: Load the doc and update the remote-ancestor info in the rev tree:
-        unique_ptr<Document> doc(asInternal(c4doc_get(database, docID, true, outError)));
+        Retained<Document> doc(asInternal(c4doc_get(database, docID, true, outError)));
+        release(doc.get());     // balances the +1 ref returned by c4doc_get()
         if (!doc)
             return false;
         bool found = false;
@@ -331,19 +352,24 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
 #pragma mark - SAVING:
 
 
-static alloc_slice createDocUUID() {
+char* c4doc_generateID(char *docID, size_t bufferSize) noexcept {
+    if (bufferSize < kC4GeneratedIDLength + 1)
+        return nullptr;
     static const char kBase64[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                    "0123456789-_";
-    const unsigned kLength = 22; // 22 random base64 chars = 132 bits of entropy
-    uint8_t r[kLength];
+    "0123456789-_";
+    uint8_t r[kC4GeneratedIDLength - 1];
     SecureRandomize({r, sizeof(r)});
-
-    alloc_slice docIDSlice(1+kLength);
-    char *docID = (char*)docIDSlice.buf;
-    docID[0] = '-';
-    for (unsigned i = 0; i < kLength; ++i)
+    docID[0] = '~';
+    for (unsigned i = 0; i < sizeof(r); ++i)
         docID[i+1] = kBase64[r[i] % 64];
-    return docIDSlice;
+    docID[kC4GeneratedIDLength] = '\0';
+    return docID;
+}
+
+
+static alloc_slice createDocUUID() {
+    char docID[kC4GeneratedIDLength + 1];
+    return alloc_slice(c4doc_generateID(docID, sizeof(docID)));
 }
 
 
@@ -365,17 +391,15 @@ static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
     Record record(rq->docID);
     if (!rq->docID.buf)
         record.setKey(createDocUUID());
-    Document *idoc = asInternal(database->documentFactory().newDocumentInstance(record));
+    Retained<Document> idoc = database->documentFactory().newDocumentInstance(record);
     bool ok;
     if (rq->existingRevision)
         ok = (idoc->putExistingRevision(*rq, nullptr) >= 0);
     else
         ok = idoc->putNewRevision(*rq);
-    if (!ok) {
-        delete idoc;
-        return nullptr;
-    }
-    return idoc;
+    if (!ok)
+        idoc = nullptr;
+    return retain(idoc.get());
 }
 
 
@@ -390,7 +414,6 @@ C4Document* c4doc_getForPut(C4Database *database,
 {
     if (!database->mustBeInTransaction(outError))
         return nullptr;
-    Document *idoc = nullptr;
     try {
         alloc_slice newDocID;
         if (!docID.buf) {
@@ -398,7 +421,7 @@ C4Document* c4doc_getForPut(C4Database *database,
             docID = newDocID;
         }
 
-        idoc = asInternal(database->documentFactory().newDocumentInstance(docID));
+        Retained<Document> idoc = database->documentFactory().newDocumentInstance(docID);
         int code = 0;
 
         if (parentRevID.buf) {
@@ -423,10 +446,9 @@ C4Document* c4doc_getForPut(C4Database *database,
         if (code)
             recordError(LiteCoreDomain, code, outError);
         else
-            return idoc;
+            return retain(idoc.get());
 
     } catchError(outError)
-    delete idoc;
     return nullptr;
 }
 
@@ -615,6 +637,11 @@ using namespace fleece;
 
 FLDoc c4doc_createFleeceDoc(C4Document *doc) {
     return (FLDoc) retain(asInternal(doc)->fleeceDoc().get());
+}
+
+
+C4Document* c4doc_containingValue(FLValue value) {
+    return TreeDocumentFactory::documentContaining((const fleece::impl::Value*)value);
 }
 
 
