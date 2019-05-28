@@ -19,13 +19,14 @@
 #pragma once
 
 #include "c4Database.h"
+#include "c4Query.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-    /** \defgroup Observer  Database and Document Observers
+    /** \defgroup Observer  Database, Document, Query Observers
         @{ */
 
     /** \name Database Observer

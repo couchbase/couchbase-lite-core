@@ -5,6 +5,7 @@
 //
 
 #pragma once
+#include "c4Base.h"
 #include "Actor.hh"
 #include "Query.hh"
 #include "Logging.hh"

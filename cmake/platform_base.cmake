@@ -25,9 +25,12 @@ function(set_litecore_source_base)
         C/c4Query.cc
         LiteCore/BlobStore/BlobStore.cc
         LiteCore/BlobStore/Stream.cc
+        LiteCore/Database/BackgroundDB.cc
         LiteCore/Database/Database.cc
         LiteCore/Database/Document.cc
+        LiteCore/Database/LeafDocument.cc
         LiteCore/Database/LegacyAttachments.cc
+        LiteCore/Database/LiveQuerier.cc
         LiteCore/Database/PrebuiltCopier.cc
         LiteCore/Database/SequenceTracker.cc
         LiteCore/Database/TreeDocument.cc
