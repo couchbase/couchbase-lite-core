@@ -149,16 +149,16 @@ namespace litecore { namespace repl {
         // in _attachments that are redundant with blobs elsewhere in the doc:
         if (c4doc_hasOldMetaProperties(root) && !_db->disableBlobSupport()) {
             C4Error err;
-            alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, nullptr, &err);
-            if (body) {
-                _rev->doc = Doc(body, kFLTrusted);
-                root = _rev->doc.root().asDict();
-            } else {
+            auto sk = fleeceDoc.sharedKeys();
+            alloc_slice body = c4doc_encodeStrippingOldMetaProperties(root, sk, &err);
+            if (!body) {
                 warn("Failed to strip legacy attachments: error %d/%d", err.domain, err.code);
                 _rev->error = c4error_make(WebSocketDomain, 500, "invalid legacy attachments"_sl);
                 finish();
                 return;
             }
+            _rev->doc = Doc(body, kFLTrusted, sk);
+            root = _rev->doc.root().asDict();
         } else {
             _rev->doc = fleeceDoc;
         }
