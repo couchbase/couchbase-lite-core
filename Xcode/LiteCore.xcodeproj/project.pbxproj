@@ -62,7 +62,6 @@
 		271BA51B228DD3EB00D49D13 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		271BA51C228DD43A00D49D13 /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
 		271BA53022945CD800D49D13 /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
-		271BA55A22987B0000D49D13 /* SyncListener_stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */; };
 		271BA56022987E2D00D49D13 /* SyncListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B6491F2065AD2B00FC12F7 /* SyncListenerTest.cc */; };
 		2722504E1D7892610006D5A5 /* c4BlobStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2722504D1D7892610006D5A5 /* c4BlobStore.cc */; };
 		272250511D78F07E0006D5A5 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
@@ -779,7 +778,6 @@
 		27098AC321752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+PredictiveIndexes.cc"; sourceTree = "<group>"; };
 		270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RESTSyncListener_stub.cc; sourceTree = "<group>"; };
 		270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CivetC4Socket_stub.cc; sourceTree = "<group>"; };
-		270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SyncListener_stub.cc; sourceTree = "<group>"; };
 		270BEE29206483C0005E8BE8 /* Listener */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Listener; path = "../../../couchbase-lite-core-EE/Listener"; sourceTree = "<group>"; };
 		270C6B681EB7DDAD00E73415 /* RESTListener+Replicate.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "RESTListener+Replicate.cc"; sourceTree = "<group>"; };
 		270C6B871EBA2CD600E73415 /* LogDecoder.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LogDecoder.cc; sourceTree = "<group>"; };
@@ -1538,7 +1536,6 @@
 			children = (
 				270BEE1E20647E8A005E8BE8 /* CivetC4Socket_stub.cc */,
 				270BEE1D20647E8A005E8BE8 /* RESTSyncListener_stub.cc */,
-				270BEE1F20647E8A005E8BE8 /* SyncListener_stub.cc */,
 				270BEE29206483C0005E8BE8 /* Listener */,
 			);
 			path = EE;
@@ -3655,7 +3652,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				271BA55A22987B0000D49D13 /* SyncListener_stub.cc in Sources */,
 				275A74D61ED3AA11008CB57B /* c4Listener.cc in Sources */,
 				275A74D11ED3A4E1008CB57B /* Listener.cc in Sources */,
 				275313392065844800463E74 /* RESTSyncListener_stub.cc in Sources */,
