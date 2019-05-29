@@ -210,6 +210,8 @@ namespace litecore {
                 stmt = &compile(_getByKeyStmt,
                         "SELECT sequence, flags, 0, version, body FROM kv_@ WHERE key=?");
                 break;
+            default:
+                return false;
         }
         stmt->bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
         UsingStatement u(*stmt);
