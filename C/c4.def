@@ -16,7 +16,6 @@ c4log_setBinaryFileLevel
 c4log_getDomain
 c4log_getDomainName
 c4log_warnOnErrors
-c4log_willLog
 
 c4error_make
 c4error_getMessage
@@ -52,7 +51,6 @@ c4raw_free
 c4raw_get
 c4raw_put
 
-c4doc_generateID
 c4doc_retain
 c4doc_free
 c4doc_get
@@ -247,23 +245,34 @@ kC4QueryLog
 kC4SyncLog
 kC4WebSocketLog
 
+c4log_willLog
+
 c4error_getDescription
 c4error_getDescriptionC
 
+c4key_setPassword
+
+c4db_copyNamed
+c4db_deleteNamed
 c4db_openAgain
+c4db_openNamed
 c4db_createFleeceEncoder
 c4db_lock
 c4db_unlock
 c4db_getRemoteDBID
+c4db_exists
 
 c4doc_removeRevisionBody
 c4doc_getForPut
 c4doc_bodyAsJSON
 c4doc_hasOldMetaProperties
+c4doc_containingValue
 c4doc_encodeStrippingOldMetaProperties
 c4doc_detachRevisionBody
 c4doc_getRemoteAncestor
 c4doc_getBlobData
+c4doc_getSingleRevision
+c4doc_generateID
 
 c4db_getIndexesInfo
 
@@ -274,7 +283,13 @@ c4queryenum_getRowCount
 
 c4query_fullTextMatched
 
+c4queryobs_create
+c4queryobs_getEnumerator
+c4queryobs_free
+
 c4blob_computeKey
+
+c4stream_bytesWritten
 
 c4repl_isValidDatabaseName
 c4repl_isValidRemote

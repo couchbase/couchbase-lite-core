@@ -305,7 +305,7 @@ extern "C" {
                     or 0 if the document does not expire,
                     or -1 if an error occurred. */
     C4Timestamp c4doc_getExpiration(C4Database *db,
-                                    C4Slice docID,
+                                    C4String docID,
                                     C4Error *outError) C4API;
 
 
