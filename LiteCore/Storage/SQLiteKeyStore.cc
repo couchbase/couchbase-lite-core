@@ -243,6 +243,8 @@ namespace litecore {
                 stmt = &compile(_getBySeqStmt,
                         "SELECT 0, flags, key, version, body FROM kv_@ WHERE sequence=?");
                 break;
+            default:
+                error::_throw(error::UnexpectedError);
         }
 
         UsingStatement u(*stmt);
