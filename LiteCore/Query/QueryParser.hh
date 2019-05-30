@@ -130,6 +130,7 @@ namespace litecore {
         void writeWhereClause(const fleece::impl::Value *where);
         void writeDeletionTest(const std::string &alias, bool isDeleted = false);
 
+        void addAlias(const std::string &alias, aliasType);
         void parseFromClause(const fleece::impl::Value *from);
         void writeFromClause(const fleece::impl::Value *from);
         int parseJoinType(fleece::slice);

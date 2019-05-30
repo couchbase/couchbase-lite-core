@@ -1494,6 +1494,14 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
         expectedResults.emplace_back("uber_doc2"_sl);
     }
 
+    SECTION("WHERE alias with special name") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict'], 'name.with [special]']], \
+            WHERE: ['=', ['.name\\\\.with \\\\[special\\\\].key1'], 1]}"));
+        expectedResults.emplace_back("uber_doc1"_sl);
+    }
+
     SECTION("WHERE key on alias") {
         q = store->compileQuery(json5(
             "{WHAT: ['._id', \
@@ -1522,8 +1530,8 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
     SECTION("ORDER BY key on alias") {
         q = store->compileQuery(json5(
             "{WHAT: ['._id', \
-            ['AS', ['.dict'], 'answer']], \
-            ORDER_BY: [['DESC', ['.answer.key1']]]}"));
+            ['AS', ['.dict'], 'name.with [special]']], \
+            ORDER_BY: [['DESC', ['.name\\\\.with \\\\[special\\\\].key1']]]}"));
         expectedResults.emplace_back("uber_doc2"_sl);
         expectedResults.emplace_back("uber_doc1"_sl);
     }

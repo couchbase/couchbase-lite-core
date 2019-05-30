@@ -95,6 +95,10 @@ namespace litecore {
         return isAlphanumericOrUnderscore(str) && !isdigit(str[0]);
     }
 
+    static bool isValidAlias(const string& alias) {
+        return alias.find('"') == string::npos && alias.find('\\') == string::npos;
+    }
+
     static const Value* getCaseInsensitive(const Dict *dict, slice key) {
         for (Dict::iterator i(dict); i; ++i)
             if (i.key()->asString().caseEquivalent(key))
@@ -139,14 +143,7 @@ namespace litecore {
             return string("\"") + name + "\"";
     }
 
-    static string unescapeAlias(const string& alias) {
-        string unescaped = alias;
-        unescaped.erase(remove(unescaped.begin(), unescaped.end(), '\\'), unescaped.end());
-        unescaped.erase(remove(unescaped.begin(), unescaped.end(), '"'), unescaped.end());
-        return unescaped;
-    }
 
-    
 #pragma mark - QUERY PARSER TOP LEVEL:
 
 
@@ -399,6 +396,15 @@ namespace litecore {
 #pragma mark - "FROM" / "JOIN" clauses:
 
 
+    void QueryParser::addAlias(const string &alias, aliasType type) {
+        require(isValidAlias(alias),
+                "Invalid AS identifier '%s'", alias.c_str());
+        require(_aliases.find(alias) == _aliases.end(),
+                "duplicate AS identifier '%s'", alias.c_str());
+        _aliases.insert({alias, type});
+    }
+
+
     void QueryParser::parseFromClause(const Value *from) {
         _aliases.clear();
         bool first = true;
@@ -409,9 +415,6 @@ namespace litecore {
                 auto entry = requiredDict(i.value(), "FROM item");
                 string alias = requiredString(getCaseInsensitive(entry, "AS"_sl),
                                               "AS in FROM item").asString();
-                require(isAlphanumericOrUnderscore(alias), "AS value");
-                require(_aliases.find(alias) == _aliases.end(),
-                        "duplicate AS identifier '%s'", alias.c_str());
 
                 // Determine the alias type:
                 auto unnest = getCaseInsensitive(entry, "UNNEST"_sl);
@@ -432,7 +435,7 @@ namespace litecore {
                     else
                         type = kUnnestVirtualTableAlias;
                 }
-                _aliases.insert({alias, type});
+                addAlias(alias, type);
                 first = false;
             }
         }
@@ -507,6 +510,9 @@ namespace litecore {
                         }
                         break;
                     }
+                    default:
+                        Assert(false, "Impossible alias type");
+                        break;
                 }
             }
         } else {
@@ -713,9 +719,9 @@ namespace litecore {
             if (expr && expr[0]->asString().caseEquivalent("AS"_sl)) {
                 // Handle 'AS':
                 require(expr.count() == 3, "'AS' must have two operands");
-                title = unescapeAlias(string(requiredString(expr[2], "'AS' alias")));
+                title = string(requiredString(expr[2], "'AS' alias"));
+                addAlias(title, kResultAlias);
                 result = expr[1];
-                _aliases.insert({title, kResultAlias});
             }
 
             if (n++ > 0)
@@ -736,8 +742,7 @@ namespace litecore {
                 if (title.empty())
                     title = "*";        // for the property ".", i.e. the entire doc
             } else {
-                _sql << " AS ";
-                writeSQLString(title);
+                _sql << " AS \"" << title << '"';
             }
 
             // Make the title unique:
@@ -1275,8 +1280,6 @@ namespace litecore {
             // vs alias -> doc["path"]["to"]["value"])
             if(property.size() == 1) {
                 // Simple case, the alias is being used as-is
-                // Note: no need to check for string equality since two cases are now true
-                // 1. property starts with iType->first 2. lengths are equal
                 _sql << string(property);
                 return;
             }
