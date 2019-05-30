@@ -57,7 +57,7 @@ extern "C" {
     FLDoc c4doc_createFleeceDoc(C4Document* NONNULL);
 
     /** Returns the C4Document, if any, that contains the given Fleece value. */
-    C4Document* c4doc_containingValue(FLValue value NONNULL);
+    C4Document* c4doc_containingValue(FLValue value C4NONNULL);
 
 
     /** Returns true if this is the name of a 1.x metadata property ("_id", "_rev", "_deleted".)
