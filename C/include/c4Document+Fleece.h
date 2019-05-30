@@ -54,7 +54,7 @@ extern "C" {
 
     /** Returns a Fleece document reference created from the selected revision.
         Caller must release the reference! */
-    FLDoc c4doc_createFleeceDoc(C4Document* NONNULL);
+    FLDoc c4doc_createFleeceDoc(C4Document* C4NONNULL);
 
     /** Returns the C4Document, if any, that contains the given Fleece value. */
     C4Document* c4doc_containingValue(FLValue value C4NONNULL);
