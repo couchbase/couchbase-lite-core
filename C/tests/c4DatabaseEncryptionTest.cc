@@ -143,7 +143,7 @@ static void testOpeningEncryptedDBFixture(const char *dbPath, const void *key) {
 
 
 TEST_CASE("Database Open Older Encrypted", "[Database][Encryption][C]") {
-    testOpeningEncryptedDBFixture("encrypted_databases/Mac_2.5_AES256.cblite2",
+    testOpeningEncryptedDBFixture("encrypted_databases/Mac_2.5_AES256.cblite2/",
                                   "a different key than default....");
 }
 
