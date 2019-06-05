@@ -1545,7 +1545,7 @@ TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
         expectedResults.emplace_back("uber_doc1"_sl);
     }
 
-    unique_ptr<QueryEnumerator> e(q->createEnumerator());
+    Retained<QueryEnumerator> e(q->createEnumerator());
     REQUIRE(e->getRowCount() == expectedResults.size());
     for (const auto& expectedResult : expectedResults) {
         REQUIRE(e->next());
