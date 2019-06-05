@@ -74,9 +74,7 @@ uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
                   "C4DatabaseChange doesn't match SequenceTracker::Change");
     memset(outChanges, 0, maxChanges * sizeof(C4DatabaseChange));
     return tryCatch<uint32_t>(nullptr, [&]{
-        unique_lock<mutex> lock(obs->_notifier.tracker.mutex(), defer_lock_t{});
-        if (!obs->_inCallback)
-            lock.lock();
+        lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
         return (uint32_t) obs->_notifier.readChanges((SequenceTracker::Change*)outChanges,
                                                      maxChanges,
                                                      *outExternal);
