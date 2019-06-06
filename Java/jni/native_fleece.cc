@@ -319,24 +319,7 @@ Java_com_couchbase_litecore_fleece_FLValue_asDouble(JNIEnv *env, jclass clazz, j
 JNIEXPORT jstring JNICALL
 Java_com_couchbase_litecore_fleece_FLValue_asString(JNIEnv *env, jclass clazz, jlong jvalue) {
     FLString str = FLValue_AsString((FLValue) jvalue);
-    const char* newBytes;
-    ssize_t len = UTF8ToModifiedUTF8((const char*)str.buf, &newBytes, str.size);
-    if(len == -1) {
-        jclass c = env->FindClass("java/lang/OutOfMemoryError");
-        env->ThrowNew(c, "Out of memory in FLValue_AsString");
-        return nullptr;
-    }
-
-    C4Slice endStr {str.buf, str.size};
-    if(newBytes != nullptr) {
-        endStr.buf = newBytes;
-        endStr.size = len;
-    }
-
-    jstring retVal = toJString(env, endStr);
-    free((void *)newBytes);
-
-    return retVal;
+    return toJString(env, str);
 }
 
 /*

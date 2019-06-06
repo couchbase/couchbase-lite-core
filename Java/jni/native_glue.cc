@@ -19,140 +19,95 @@
 #include "native_glue.hh"
 #include <queue>
 #include <new>
+#include <codecvt>
+#include <locale>
 
 using namespace litecore;
 using namespace litecore::jni;
 using namespace std;
 
-namespace litecore { namespace jni {
-        void UTF8CharToModifiedUTF8(const char *input, char *output);
-        void ModifiedUTF8ToUTF8(char* input);
-        void ModifiedUTF8CharToUTF8(char* input);
+namespace litecore {
+    namespace jni {
+        std::string JstringToUTF8(JNIEnv *env, jstring jstr);
+        jstring UTF8ToJstring(JNIEnv *env, char *s, size_t size);
     }
 }
 
-void litecore::jni::UTF8CharToModifiedUTF8(const char *input, char *output) {
-    char c = input[0];
-    char c1 = input[1] & 0x3F;
-    char c2 = input[2] & 0x3F;
-    char c3 = input[3] & 0x3F;
+// Java uses Modified-UTF-8, not UTF-8: Attempting to decode a real UTF-8 string will cause a failure that looks like:
+//   art/runtime/check_jni.cc:65] JNI DETECTED ERROR IN APPLICATION: input is not valid Modified UTF-8: illegal start byte ...
+//   art/runtime/check_jni.cc:65]     string: ...
+//   art/runtime/check_jni.cc:65]     in call to NewStringUTF
+// See:
+//   https://stackoverflow.com/questions/35519823/jni-detected-error-in-application-input-is-not-valid-modified-utf-8-illegal-st
+// The strategy here is to use standard C functions to convert the UTF-8 directly to UTF-16, which Java handles nicely.
+// The following two functions are taken from this repo:
+//   https://github.com/incanus/android-jni/blob/master/app/src/main/jni/JNI.cpp#L57-L86
+jstring litecore::jni::UTF8ToJstring(JNIEnv *env, char *s, size_t size) {
+    std::u16string ustr;
+    try { ustr = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>().from_bytes(s, s + size); }
+    catch (const std::bad_alloc &x) {
+        C4Error error = {LiteCoreDomain, kC4ErrorMemoryError, 0};
+        throwError(env, error);
+        return NULL;
+    }
+    catch (const std::exception &x) {
+        C4Error error = {LiteCoreDomain, kC4ErrorCorruptData, 0};
+        throwError(env, error);
+        return NULL;
+    }
 
-    int unicodePoint = ((c & 0x07) << 18) | (c1 << 12) | (c2 << 6) | c3;
-    unicodePoint -= 0x10000;
+    auto jstr = env->NewString(reinterpret_cast<const jchar *>(ustr.c_str()), ustr.size());
+    if (jstr == nullptr) {
+        C4Error error = {LiteCoreDomain, kC4ErrorMemoryError, 0};
+        throwError(env, error);
+        return NULL;
+    }
 
-    int surrogates[2] { 0xD800 | (unicodePoint >> 10), 0xDC00 | (unicodePoint & 0x3FF) };
-
-    output[0] = (surrogates[0]>>12 & 0x0F) | 0xE0;
-    output[1] = (surrogates[0]>>6  & 0x3F) | 0x80;
-    output[2] = (surrogates[0]     & 0x3F) | 0x80;
-    output[3] = (surrogates[1]>>12 & 0x0F) | 0xE0;
-    output[4] = (surrogates[1]>>6  & 0x3F) | 0x80;
-    output[5] = (surrogates[1]     & 0x3F) | 0x80;
+    return jstr;
 }
 
-ssize_t litecore::jni::UTF8ToModifiedUTF8(const char* input, const char** output, size_t len){
-    // https://github.com/android-ndk/ndk/issues/283
-    size_t extraBytes = 0;
-    const auto unsignedInput = (const uint8_t *)input;
 
-    // Need to figure out the actual length since each
-    // 4-bytes of real UTF-8 is 6 bytes of modified UTF-8
-    // but convert the bytes while we are at it
-    for(size_t i = 0; i < len; i++) {
-        if(unsignedInput[i] >= 0xF0) {
-            // 0xF0 and above marks 4-byte sequences
-            extraBytes += 2;
-
-            // 3 + 1 from next loop iteration = 4 bytes advance
-            i += 3;
-        }
+std::string litecore::jni::JstringToUTF8(JNIEnv *env, jstring jstr) {
+    jsize len = env->GetStringLength(jstr);
+    if (len < 0) {
+        C4Error error = {LiteCoreDomain, kC4ErrorInvalidParameter, 0};
+        throwError(env, error);
+        return std::string();
     }
 
-    if(extraBytes == 0) {
-        // No modifications necessary
-        *output = nullptr;
-        return len;
+    const jchar *chars = env->GetStringChars(jstr, nullptr);
+    if (chars == nullptr) {
+        C4Error error = {LiteCoreDomain, kC4ErrorMemoryError, 0};
+        throwError(env, error);
+        return std::string();
     }
 
-    size_t newStrLen = len + extraBytes;
-    char* newBytes = (char *)malloc(newStrLen);
-    if(newBytes == nullptr) {
-        *output = nullptr;
-        return -1;
+    std::string str;
+    try {
+        str = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>()
+                .to_bytes(reinterpret_cast<const char16_t *>(chars), reinterpret_cast<const char16_t *>(chars + len));
+    }
+    catch (const std::exception &x) {
+        env->ReleaseStringChars(jstr, chars);
+
+        C4Error error = {LiteCoreDomain, kC4ErrorMemoryError, 0};
+        throwError(env, error);
+
+        return std::string();
     }
 
-    int offset = 0;
-    for(size_t i = 0; i < len; i++) {
-        if(unsignedInput[i] >= 0xF0) {
-            UTF8CharToModifiedUTF8(input + i, newBytes + i + offset);
-            i += 3;
-            offset += 2;
-        } else {
-            newBytes[i+offset] = unsignedInput[i];
-        }
-    }
+    env->ReleaseStringChars(jstr, chars);
 
-    *output = newBytes;
-    return newStrLen;
-}
-
-void litecore::jni::ModifiedUTF8CharToUTF8(char *input) {
-    char c = input[0];
-    char c1 = input[1] & 0x3F;
-    char c2 = input[2] & 0x3F;
-    char d = input[3];
-    char d1 = input[4] & 0x3F;
-    char d2 = input[5] & 0x3F;
-
-    int surrogate[2] = { ((c & 0x0F) << 12) | (c1 << 6) | c2, ((d & 0x0F) << 12) | (d1 << 6) | d2 };
-    int codePoint = ((surrogate[0] - 0xD800) << 10) + (surrogate[1] - 0xDC00) + 0x10000;
-
-    input[0] = 0xF0 | (codePoint  >> 18);
-    input[1] = 0x80 | ((codePoint >> 12) & 0x3F);
-    input[2] = 0x80 | ((codePoint >> 6) & 0x3F);
-    input[3] = 0x80 | ((codePoint & 0x3F));
-}
-
-void litecore::jni::ModifiedUTF8ToUTF8(char *input) {
-    size_t len = 0;
-    size_t i = 0;
-    bool needsModify = false;
-    for(i = 0; input[i] != 0; i++) {
-        if(input[i] == '\xed') {
-            // According to https://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/types.html#wp16542
-            // modified UTF-8 for codepoints > FFFF will always start with 0xED
-            needsModify = true;
-            ModifiedUTF8CharToUTF8(&input[i]);
-            i += 5;
-        }
-    }
-
-    if(!needsModify) {
-        return;
-    }
-
-    len = i;
-    size_t j = 0;
-    for(i = 0; input[i] != 0; i++) {
-        if((uint8_t)input[i] >= 0xF0) {
-            i+= 3;
-            size_t j;
-            for(j = i + 1; j < len - 2; j++) {
-                input[j] = input[j+2];
-            }
-
-            input[j] = 0;
-        }
-    }
+    return str;
 }
 
 /*
  * Will be called by JNI when the library is loaded
  *
  * NOTE:
- *  All resources allocated here are never released by application
- *  we rely on system to free all global refs when it goes away,
- *  the pairing function JNI_OnUnload() never get called at all.
+ *  Resources allocated here are never explicitly released.
+ *  We rely on system to free all global refs when it goes away,
+ *  the pairing function JNI_OnUnload() will never get called at all.
  */
 JNIEXPORT jint JNICALL
 JNI_OnLoad(JavaVM *jvm, void *reserved) {
@@ -188,41 +143,15 @@ namespace litecore {
             }
         }
 
-        jstringSlice::jstringSlice(JNIEnv *env, jstring js)
-                : _env(nullptr) {
+        jstringSlice::jstringSlice(JNIEnv *env, jstring js) {
             assert(env != nullptr);
             if (js != nullptr) {
-                jboolean isCopy;
-                _jstr = js;
-                _env = env;
-
-                char *cstr = (char *)env->GetStringUTFChars(js, &isCopy);
-                assert(isCopy);
-                ModifiedUTF8ToUTF8(cstr);
-                if (!cstr)
-                    return; // Would it be better to throw an exception?
-                _slice = slice(cstr);
+                _str = JstringToUTF8(env, js);
+                _slice = slice(_str);
             }
         }
 
-        jstringSlice::~jstringSlice() {
-            if (_env)
-                _env->ReleaseStringUTFChars(_jstr, (const char *) _slice.buf);
-            else if (_slice.buf)
-                free((void *) _slice.buf);        // detached
-        }
-
-        void jstringSlice::copyAndReleaseRef() {
-            if (_env) {
-                auto cstr = (const char *) _slice.buf;
-                _slice = _slice.copy();
-                _env->ReleaseStringUTFChars(_jstr, cstr);
-                _env->DeleteLocalRef(_jstr);
-                _env = nullptr;
-            }
-        }
-
-        const char* jstringSlice::cStr() {
+        const char *jstringSlice::cStr() {
             return static_cast<const char *>(_slice.buf);
         };
 
@@ -266,8 +195,7 @@ namespace litecore {
                 return;
             jclass xclass = env->FindClass("com/couchbase/litecore/LiteCoreException");
             assert(xclass); // if we can't even throw an exception, we're really fuxored
-            jmethodID m = env->GetStaticMethodID(xclass, "throwException",
-                                                 "(IILjava/lang/String;)V");
+            jmethodID m = env->GetStaticMethodID(xclass, "throwException", "(IILjava/lang/String;)V");
             assert(m);
 
             C4SliceResult msgSlice = c4error_getMessage(error);
@@ -280,9 +208,7 @@ namespace litecore {
         jstring toJString(JNIEnv *env, C4Slice s) {
             if (s.buf == nullptr)
                 return nullptr;
-            std::string utf8Buf((char *) s.buf, s.size);
-            // NOTE: This return value will be taken care by JVM. So not necessary to free by our self
-            return env->NewStringUTF(utf8Buf.c_str());
+            return UTF8ToJstring(env, (char *) s.buf, s.size);
         }
 
         jstring toJString(JNIEnv *env, C4SliceResult s) {

@@ -83,8 +83,11 @@ public class FLValue {
         return asDouble(handle);
     }
 
+    // ??? If we are out of memory or the string cannot be decoded, we just lose it
     public String asString() {
-        return asString(handle);
+        try { return asString(handle); }
+        catch (LiteCoreException ignore) {}
+        return null;
     }
 
     public FLDict asFLDict() {
@@ -271,7 +274,7 @@ public class FLValue {
      * @param value FLValue
      * @return String
      */
-    static native String asString(long value);
+    static native String asString(long value) throws LiteCoreException;
 
     /**
      * Returns the exact contents of a data value, or null for all other types.
