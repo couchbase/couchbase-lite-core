@@ -21,6 +21,7 @@
 #include "DataFile.hh"
 #include "Record.hh"
 #include "SharedKeys.hh"
+#include <mutex>
 
 namespace litecore {
     using namespace fleece;
@@ -36,6 +37,7 @@ namespace litecore {
 
     protected:
         virtual bool read() override {
+            lock_guard<mutex> lock(_mutex);
             Record r = _keyStore.get("SharedKeys"_sl);
             return loadFrom(r.body());
         }
@@ -44,6 +46,7 @@ namespace litecore {
         }
 
     private:
+        std::mutex _mutex;
         DataFile &_db;
         KeyStore &_keyStore;
     };
