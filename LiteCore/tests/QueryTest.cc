@@ -1452,6 +1452,106 @@ TEST_CASE_METHOD(QueryTest, "Query Dictionary Literal", "[Query]") {
     CHECK(e->columns()[0]->asDict()->get("bool_false"_sl)->asBool() == false);
 }
 
+TEST_CASE_METHOD(QueryTest, "Test result alias", "[Query]") {
+    Transaction t(store->dataFile());
+    writeDoc("uber_doc1"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("dict");
+        enc.beginDictionary(2);
+        enc.writeKey("key1");
+        enc.writeInt(1);
+        enc.writeKey("key2");
+        enc.writeInt(2);
+        enc.endDictionary();
+        enc.writeKey("arr");
+        enc.beginArray(2);
+        enc.writeInt(1);
+        enc.writeInt(2);
+        enc.endArray();
+    });
+
+    writeDoc("uber_doc2"_sl, DocumentFlags::kNone, t, [=](Encoder &enc) {
+        enc.writeKey("dict");
+        enc.beginDictionary(2);
+        enc.writeKey("key1");
+        enc.writeInt(2);
+        enc.writeKey("key2");
+        enc.writeInt(1);
+        enc.endDictionary();
+        enc.writeKey("arr");
+        enc.beginArray(2);
+        enc.writeInt(2);
+        enc.writeInt(1);
+        enc.endArray();
+    });
+
+    Retained<Query> q;
+    vector<slice> expectedResults;
+    SECTION("WHERE alias as-is") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict.key2'], 'answer']], \
+            WHERE: ['=', ['.answer'], 1]}"));
+        expectedResults.emplace_back("uber_doc2"_sl);
+    }
+
+    SECTION("WHERE alias with special name") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict'], 'name.with [special]']], \
+            WHERE: ['=', ['.name\\\\.with \\\\[special\\\\].key1'], 1]}"));
+        expectedResults.emplace_back("uber_doc1"_sl);
+    }
+
+    SECTION("WHERE key on alias") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict'], 'answer']], \
+            WHERE: ['=', ['.answer.key1'], 1]}"));
+        expectedResults.emplace_back("uber_doc1"_sl);
+    }
+
+    SECTION("WHERE index on alias") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.arr'], 'answer']], \
+            WHERE: ['=', ['.answer[1]'], 1]}"));
+        expectedResults.emplace_back("uber_doc2"_sl);
+    }
+
+    SECTION("ORDER BY alias as-is") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict.key2'], 'answer']], \
+            ORDER_BY: [['.answer']]}"));
+        expectedResults.emplace_back("uber_doc2"_sl);
+        expectedResults.emplace_back("uber_doc1"_sl);
+    }
+
+    SECTION("ORDER BY key on alias") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.dict'], 'name.with [special]']], \
+            ORDER_BY: [['DESC', ['.name\\\\.with \\\\[special\\\\].key1']]]}"));
+        expectedResults.emplace_back("uber_doc2"_sl);
+        expectedResults.emplace_back("uber_doc1"_sl);
+    }
+
+    SECTION("ORDER BY index on alias") {
+        q = store->compileQuery(json5(
+            "{WHAT: ['._id', \
+            ['AS', ['.arr'], 'answer']], \
+            ORDER_BY: [['.answer[1]']]}"));
+        expectedResults.emplace_back("uber_doc2"_sl);
+        expectedResults.emplace_back("uber_doc1"_sl);
+    }
+
+    Retained<QueryEnumerator> e(q->createEnumerator());
+    REQUIRE(e->getRowCount() == expectedResults.size());
+    for (const auto& expectedResult : expectedResults) {
+        REQUIRE(e->next());
+        CHECK(e->columns()[0]->asString() == expectedResult);
+    }
+}
 
 TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query]") {
     addNumberedDocs();
