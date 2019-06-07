@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Bucket
+   uuid = "16E1FF26-2234-4FA7-B7EB-68222C520142"
    type = "4"
    version = "2.0">
    <Breakpoints>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.SymbolicBreakpoint">
          <BreakpointContent
+            uuid = "9123C3AE-2BA1-44B2-9916-5EDAF6321D77"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             condition = "!C4ExpectingExceptions()"
@@ -14,6 +16,7 @@
             moduleName = "">
             <Locations>
                <Location
+                  uuid = "9123C3AE-2BA1-44B2-9916-5EDAF6321D77 - ce786678157addf5"
                   shouldBeEnabled = "Yes"
                   ignoreCount = "0"
                   continueAfterRunningActions = "No"
@@ -23,6 +26,39 @@
                   offsetFromSymbolStart = "0">
                </Location>
             </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.SanitizerBreakpoint">
+         <BreakpointContent
+            uuid = "CE45407F-F4FD-4633-8773-AFC49C0F47B7"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            breakpointStackSelectionBehavior = "1"
+            type = "2">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.SanitizerBreakpoint">
+         <BreakpointContent
+            uuid = "FCEF2C0A-F90B-4DCB-805A-3ED38710997A"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            breakpointStackSelectionBehavior = "1"
+            type = "4">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.SanitizerBreakpoint">
+         <BreakpointContent
+            uuid = "6856E59E-5095-43E5-A7AB-67205245E51A"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            breakpointStackSelectionBehavior = "1"
+            type = "1">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
