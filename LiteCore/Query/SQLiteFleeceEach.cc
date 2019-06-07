@@ -222,7 +222,22 @@ private:
             return SQLITE_OK;
         }
         data = _vtab->context.delegate->fleeceAccessor(data);
-        _scope = make_unique<Scope>(data, _vtab->context.sharedKeys);
+        
+        if (size_t(data.buf) & 1) {
+            // Fleece data at odd addresses used to be allowed, and CBL 2.0/2.1 didn't 16-bit-align
+            // revision data, so it could occur. Now that it's not allowed, we have to work around
+            // this by copying the data to an even address. (#787)
+            // NOTE: This same problem is already solved by QueryFleeceScope, but it requires
+            // a sqlite3_context*, which we don't have here ... refactoring that class to be
+            // useable here too would be more code change than I want to introduce right now
+            // while fixing this bug, but would be good for long-term cleanup.
+            alloc_slice copiedFleeceData(data);
+            _scope = make_unique<Scope>(copiedFleeceData, _vtab->context.sharedKeys);
+            data = copiedFleeceData;
+        } else {
+            _scope = make_unique<Scope>(data, _vtab->context.sharedKeys);
+        }
+        
         _container = Value::fromTrustedData(data);
         if (!_container) {
             Warn("Invalid Fleece data in SQLite table");
