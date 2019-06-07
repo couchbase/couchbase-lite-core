@@ -20,6 +20,7 @@
 #include "KeyStore.hh"
 #include "QueryParser.hh"
 #include "FleeceImpl.hh"
+#include <mutex>
 
 namespace SQLite {
     class Column;
@@ -138,6 +139,7 @@ namespace litecore {
         bool _lastSequenceChanged {false};
         int64_t _lastSequence {-1};
         bool _hasExpirationColumn {false};
+        std::mutex _stmtMutex;
     };
 
 }

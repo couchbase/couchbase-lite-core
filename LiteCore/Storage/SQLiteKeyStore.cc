@@ -213,14 +213,18 @@ namespace litecore {
             default:
                 return false;
         }
-        stmt->bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
-        UsingStatement u(*stmt);
-        if (!stmt->executeStep())
-            return false;
 
-        sequence_t seq = (int64_t)stmt->getColumn(0);
-        rec.updateSequence(seq);
-        setRecordMetaAndBody(rec, *stmt, content);
+        {
+            lock_guard<mutex> lock(const_cast<SQLiteKeyStore*>(this)->_stmtMutex);
+            stmt->bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
+            UsingStatement u(*stmt);
+            if (!stmt->executeStep())
+                return false;
+
+            sequence_t seq = (int64_t)stmt->getColumn(0);
+            rec.updateSequence(seq);
+            setRecordMetaAndBody(rec, *stmt, content);
+        }
         return true;
     }
 
