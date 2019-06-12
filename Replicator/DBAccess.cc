@@ -255,10 +255,18 @@ namespace litecore { namespace repl {
     Doc DBAccess::tempEncodeJSON(slice jsonBody, FLError *err) {
         Encoder enc;
         enc.setSharedKeys(tempSharedKeys());
-        enc.convertJSON(jsonBody);
-        Doc doc = enc.finishDoc();
-        if (!doc && err)
+        if(!enc.convertJSON(jsonBody)) {
             *err = enc.error();
+            WarnError("Fleece encoder convertJSON failed (%d)", *err);
+            return {};
+        }
+
+        Doc doc = enc.finishDoc();
+        if (!doc && err) {
+            WarnError("Fleece encoder finishDoc failed (%d)", *err);
+            *err = enc.error();
+        }
+
         return doc;
     }
 
