@@ -104,6 +104,9 @@ namespace litecore { namespace repl {
     }
     
     void Replicator::_findExistingConflicts() {
+        if (_options.pull <= kC4Passive) // only check in pull mode
+            return;
+        
         C4Error err;
         C4DocEnumerator* e = _db->unresolvedDocsEnumerator(&err);
         if (e) {
