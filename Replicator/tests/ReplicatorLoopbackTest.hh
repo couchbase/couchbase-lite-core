@@ -170,6 +170,8 @@ public:
                                          const Replicator::Status &status) override
     {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+        unique_lock<mutex> lock(_mutex);
+
         if (repl == _replClient) {
             Assert(_gotResponse);
             ++_statusChangedCalls;
@@ -187,18 +189,15 @@ public:
             }
 
             {
-                lock_guard<mutex> lock(_mutex);
                 _statusReceived = status;
                 _checkStopWhenIdle();
             }
         }
 
+        bool &finished = (repl == _replClient) ? _replicatorClientFinished : _replicatorServerFinished;
+        Assert(!finished);
         if (status.level == kC4Stopped) {
-            unique_lock<mutex> lock(_mutex);
-            if (repl == _replClient)
-                _replicatorClientFinished = true;
-            else
-                _replicatorServerFinished = true;
+            finished = true;
             if (_replicatorClientFinished && _replicatorServerFinished)
                 _cond.notify_all();
         }
@@ -209,6 +208,8 @@ public:
     {
         if (repl == _replClient) {
             // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+            unique_lock<mutex> lock(_mutex);
+            Assert(!_replicatorClientFinished);
             for (auto &rev : revs) {
                 auto dir = rev->dir();
                 if (rev->error.code) {
@@ -241,6 +242,7 @@ public:
     virtual void replicatorBlobProgress(Replicator *repl,
                                         const Replicator::BlobProgress &p) override
     {
+        unique_lock<mutex> lock(_mutex);
         if (p.dir == Dir::kPushing) {
             ++_blobPushProgressCallbacks;
             _lastBlobPushProgress = p;
@@ -257,6 +259,7 @@ public:
 
     virtual void replicatorConnectionClosed(Replicator* repl, const CloseStatus &status) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
+        unique_lock<mutex> lock(_mutex);
         if (repl == _replClient) {
             Log(">> Replicator closed with code=%d/%d, message=%.*s",
                 status.reason, status.code, SPLAT(status.message));
