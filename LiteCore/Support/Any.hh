@@ -25,6 +25,7 @@
  */
 
 // A standard C++ class loosely modeled after boost::Any.
+// The API is *NOT* identical to C++17's std::any!
 
 #pragma once
 #include <typeinfo>

@@ -59,9 +59,7 @@ namespace litecore {
     bool SQLiteKeyStore::createIndex(const IndexSpec &spec,
                                      const IndexOptions *options) {
         validateIndexName(spec.name);
-        alloc_slice expressionFleece;
-        const Array *params;
-        tie(expressionFleece, params) = parseIndexExpr(spec.expressionJSON, spec.type);
+        auto [expressionFleece, params] = parseIndexExpr(spec.expressionJSON, spec.type);
 
         Stopwatch st;
         Transaction t(db());

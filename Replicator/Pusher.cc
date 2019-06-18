@@ -23,7 +23,6 @@
 #include "StringUtil.hh"
 #include "SecureDigest.hh"
 #include "BLIP.hh"
-#include "make_unique.h"
 #include <algorithm>
 
 using namespace std;

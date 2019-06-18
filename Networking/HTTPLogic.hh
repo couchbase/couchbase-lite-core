@@ -9,8 +9,8 @@
 #include "Headers.hh"
 #include "Address.hh"
 #include "c4Base.h"
-#include "Optional.hh"
 #include "fleece/Fleece.hh"
+#include <optional>
 
 namespace litecore { namespace net {
     class ClientSocket;
@@ -63,12 +63,12 @@ namespace litecore { namespace net {
         // -------- Proxies:
 
         /// Specifies a proxy server to use.
-        void setProxy(nonstd::optional<ProxySpec> p);
-        nonstd::optional<ProxySpec> proxy()                         {return _proxy;}
+        void setProxy(std::optional<ProxySpec> p);
+        std::optional<ProxySpec> proxy()                            {return _proxy;}
 
         /// Specifies a default proxy server to use for _all_ future requests.
-        static void setDefaultProxy(nonstd::optional<ProxySpec> p)  {sDefaultProxy = p;}
-        nonstd::optional<ProxySpec> defaultProxy()                  {return sDefaultProxy;}
+        static void setDefaultProxy(std::optional<ProxySpec> p)     {sDefaultProxy = p;}
+        std::optional<ProxySpec> defaultProxy()                     {return sDefaultProxy;}
 
         // -------- Request:
 
@@ -130,7 +130,7 @@ namespace litecore { namespace net {
 
         /// If the current disposition is \ref kAuthenticate,
         /// this method will return the details of the auth challenge.
-        nonstd::optional<AuthChallenge> authChallenge()     {return _authChallenge;}
+        std::optional<AuthChallenge> authChallenge()    {return _authChallenge;}
 
         /// Convenience method that uses an HTTPClientSocket to send the request and receive the
         /// response.
@@ -172,10 +172,10 @@ namespace litecore { namespace net {
         alloc_slice _userAgent;                         // Value of User-Agent header to send
         alloc_slice _authHeader;                        // Value of Authorization header to send
         CookieProvider* _cookieProvider {nullptr};      // HTTP cookie storage
-        nonstd::optional<ProxySpec> _proxy;             // Proxy settings
-        nonstd::optional<Address> _proxyAddress;        // Proxy converted to Address
+        std::optional<ProxySpec> _proxy;                // Proxy settings
+        std::optional<Address> _proxyAddress;           // Proxy converted to Address
 
-        static nonstd::optional<ProxySpec> sDefaultProxy; // Default proxy settings
+        static std::optional<ProxySpec> sDefaultProxy; // Default proxy settings
 
         C4Error _error {};                              // Fatal error from last request
         HTTPStatus _httpStatus {HTTPStatus::undefined}; // HTTP status of last request
@@ -183,7 +183,7 @@ namespace litecore { namespace net {
         websocket::Headers _responseHeaders;            // Response headers
         unsigned _redirectCount {0};                    // Number of redirects handled so far
         bool _authChallenged {false};                   // Received an HTTP auth challenge yet?
-        nonstd::optional<AuthChallenge> _authChallenge; // Latest HTTP auth challenge
+        std::optional<AuthChallenge> _authChallenge;    // Latest HTTP auth challenge
         Disposition _lastDisposition {kSuccess};        // Disposition of last request sent
 
         bool _isWebSocket;                              // Making a WebSocket connection?

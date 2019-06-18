@@ -15,7 +15,6 @@
 #include "Certificate.hh"
 #include "c4Test.hh"
 #include "StringUtil.hh"
-#include "make_unique.h"
 #include <algorithm>
 #include <chrono>
 #include <iostream>

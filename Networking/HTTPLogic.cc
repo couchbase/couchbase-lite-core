@@ -36,7 +36,7 @@ namespace litecore { namespace net {
     static constexpr unsigned kMaxRedirects = 10;
 
 
-    nonstd::optional<ProxySpec> HTTPLogic::sDefaultProxy;
+    optional<ProxySpec> HTTPLogic::sDefaultProxy;
 
 
     HTTPLogic::HTTPLogic(const Address &address,
@@ -67,7 +67,7 @@ namespace litecore { namespace net {
     }
 
 
-    void HTTPLogic::setProxy(nonstd::optional<ProxySpec> p) {
+    void HTTPLogic::setProxy(optional<ProxySpec> p) {
         _proxy = p;
         if (_proxy)
             _proxyAddress = Address(*_proxy);

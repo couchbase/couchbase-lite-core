@@ -20,7 +20,6 @@
 #include "IncomingRev.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
-#include "make_unique.h"
 #include <sstream>
 
 using namespace std;

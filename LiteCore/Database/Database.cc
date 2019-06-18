@@ -30,7 +30,6 @@
 #include "Upgrader.hh"
 #include "SecureRandomize.hh"
 #include "StringUtil.hh"
-#include "make_unique.h"
 #include <functional>
 
 namespace litecore { namespace constants

@@ -23,7 +23,6 @@
 #include "Actor.hh"
 #include "SequenceSet.hh"
 #include "fleece/slice.hh"
-#include "make_unique.h"
 #include <deque>
 #include <unordered_map>
 #include <unordered_set>

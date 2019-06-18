@@ -20,7 +20,6 @@
 
 #include "fleece/slice.hh"
 #include "PlatformCompat.hh"
-#include "make_unique.h"
 #include "function_ref.hh"
 #include "RefCounted.hh"
 
