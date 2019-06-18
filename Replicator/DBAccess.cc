@@ -110,6 +110,19 @@ namespace litecore { namespace repl {
         else
             return {};
     }
+    
+    
+    C4DocEnumerator* DBAccess::unresolvedDocsEnumerator(C4Error *outError) {
+        C4DocEnumerator* e;
+        use([&](C4Database *db) {
+            C4EnumeratorOptions options = kC4DefaultEnumeratorOptions;
+            options.flags &= ~kC4IncludeBodies;
+            options.flags &= ~kC4IncludeNonConflicted;
+            options.flags |= kC4IncludeDeleted;
+            e = c4db_enumerateAllDocs(db, &options, outError);
+        });
+        return e;
+    }
 
 
     static bool containsAttachmentsProperty(slice json) {
@@ -242,10 +255,18 @@ namespace litecore { namespace repl {
     Doc DBAccess::tempEncodeJSON(slice jsonBody, FLError *err) {
         Encoder enc;
         enc.setSharedKeys(tempSharedKeys());
-        enc.convertJSON(jsonBody);
-        Doc doc = enc.finishDoc();
-        if (!doc && err)
+        if(!enc.convertJSON(jsonBody)) {
             *err = enc.error();
+            WarnError("Fleece encoder convertJSON failed (%d)", *err);
+            return {};
+        }
+
+        Doc doc = enc.finishDoc();
+        if (!doc && err) {
+            WarnError("Fleece encoder finishDoc failed (%d)", *err);
+            *err = enc.error();
+        }
+
         return doc;
     }
 

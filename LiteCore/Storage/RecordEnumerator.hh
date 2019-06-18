@@ -26,9 +26,10 @@ namespace litecore {
 
     class KeyStore;
 
-    enum ContentOptions {
-        kDefaultContent = 0,
-        kMetaOnly = 0x01
+    enum ContentOption {
+        kEntireBody,
+        kCurrentRevOnly,
+        kMetaOnly,
     };
 
     /** KeyStore enumerator/iterator that returns a range of Records.
@@ -46,9 +47,9 @@ namespace litecore {
             bool           descending     :1;   ///< Reverse order? (Start must be
             bool           includeDeleted :1;   ///< Include deleted records?
             bool           onlyBlobs      :1;   ///< Only include records which contain linked binary data
-            ContentOptions contentOptions :4;   ///< Load record bodies?
+            ContentOption  contentOption  :4;   ///< Load record bodies?
 
-            /** Default options have all flags false, and kDefaultContent */
+            /** Default options have all flags false, and kEntireBody */
             Options();
         };
 

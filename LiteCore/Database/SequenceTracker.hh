@@ -191,7 +191,7 @@ namespace litecore {
     class DatabaseChangeNotifier : public Logging {
     public:
         /** A callback that will be invoked _once_ when new changes arrive. After that, calling
-            `changes` will reset the state so the callback can be called again. */
+            `readChanges` will reset the state so the callback can be called again. */
         typedef std::function<void(DatabaseChangeNotifier&)> Callback;
 
         DatabaseChangeNotifier(SequenceTracker&, Callback, sequence_t afterSeq =UINT64_MAX);

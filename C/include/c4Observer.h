@@ -19,13 +19,14 @@
 #pragma once
 
 #include "c4Database.h"
+#include "c4Query.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-    /** \defgroup Observer  Database and Document Observers
+    /** \defgroup Observer  Database, Document, Query Observers
         @{ */
 
     /** \name Database Observer
@@ -139,6 +140,51 @@ extern "C" {
     void c4docobs_free(C4DocumentObserver*) C4API;
 
     /** @} */
+
+
+    /** \name Query Observer
+     @{ */
+
+    /** A query-observer reference. */
+    typedef struct c4QueryObserver C4QueryObserver;
+
+    /** Callback invoked by a query observer, notifying that the query results have changed.
+        The actual enumerator is not passed to the callback, but can be retrieved by calling
+        \ref c4queryobs_getEnumerator.
+        @warning  This function is called on a random background thread! Be careful of thread
+        safety. Do not spend too long in this callback or other observers may be delayed.
+        It's best to do nothing except schedule a call on your preferred thread/queue.
+        @param observer  The observer triggering the callback.
+        @param query  The C4Query that the observer belongs to.
+        @param context  The `context` parameter you passed to \ref c4queryobs_create. */
+    typedef void (*C4QueryObserverCallback)(C4QueryObserver *observer C4NONNULL,
+                                            C4Query *query C4NONNULL,
+                                            void *context);
+
+    /** Creates a new query observer, with a callback that will be invoked when the query
+        results change, with an enumerator containing the new results.
+        The callback won't be invoked immediately after a change, and won't be invoked after
+        every change, to avoid performance problems. */
+    C4QueryObserver* c4queryobs_create(C4Query *query C4NONNULL,
+                                       C4QueryObserverCallback callback,
+                                       void *context) C4API;
+
+    /** Returns the current query results, or NULL and the current error; then forgets the results.
+        When the observer is created, the results are initially NULL until the query finishes
+        running in the background.
+        Once the observer callback is called, the results are available.
+        @param obs  The query observer.
+        @param error  If the last evaluation of the query failed, the error will be stored here.
+        @return  The current query results, or NULL if the last evaluation of the query failed. */
+    C4QueryEnumerator* c4queryobs_getEnumerator(C4QueryObserver *obs C4NONNULL,
+                                                C4Error *error) C4API;
+
+    /** Stops an observer and frees the resources it's using.
+        It is safe to pass NULL to this call. */
+    void c4queryobs_free(C4QueryObserver*) C4API;
+
+    /** @} */
+
     /** @} */
 #ifdef __cplusplus
 }

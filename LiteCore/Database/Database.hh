@@ -32,10 +32,12 @@ namespace fleece { namespace impl {
     class Dict;
     class Encoder;
     class SharedKeys;
+    class Value;
 } }
 namespace litecore {
     class SequenceTracker;
     class BlobStore;
+    class BackgroundDB;
 }
 
 
@@ -116,14 +118,17 @@ namespace c4Internal {
         virtual slice fleeceAccessor(slice recordBody) const override;
         virtual alloc_slice blobAccessor(const fleece::impl::Dict*) const override;
 
+        BackgroundDB* backgroundDatabase();
+        void closeBackgroundDatabase();
+
     public:
         // should be private, but called from Document
         void documentSaved(Document* NONNULL);
+        virtual void externalTransactionCommitted(const SequenceTracker&);
 
     protected:
         virtual ~Database();
         void mustNotBeInTransaction();
-        void externalTransactionCommitted(const SequenceTracker&);
 
     private:
         static FilePath findOrCreateBundle(const string &path, bool canCreate,
@@ -147,6 +152,7 @@ namespace c4Internal {
         unique_ptr<BlobStore>       _blobStore;             // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
         recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
+        unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations
     };
 
 
@@ -160,8 +166,10 @@ namespace c4Internal {
         Database* database() const          {return _db;}
 
         virtual ~DocumentFactory() { }
-        virtual Document* newDocumentInstance(C4Slice docID) =0;
-        virtual Document* newDocumentInstance(const Record&) =0;
+        virtual Retained<Document> newDocumentInstance(C4Slice docID) =0;
+        virtual Retained<Document> newDocumentInstance(const Record&) =0;
+        virtual Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID, bool withBody) =0;
+
         virtual alloc_slice revIDFromVersion(slice version) =0;
         virtual bool isFirstGenRevID(slice revID)               {return false;}
 
@@ -174,11 +182,21 @@ namespace c4Internal {
     class TreeDocumentFactory : public DocumentFactory {
     public:
         TreeDocumentFactory(Database *db)   :DocumentFactory(db) { }
-        Document* newDocumentInstance(C4Slice docID) override;
-        Document* newDocumentInstance(const Record&) override;
+        Retained<Document> newDocumentInstance(C4Slice docID) override;
+        Retained<Document> newDocumentInstance(const Record&) override;
+        Retained<Document> newLeafDocumentInstance(C4Slice docID, C4Slice revID, bool withBody) override;
         alloc_slice revIDFromVersion(slice version) override;
         bool isFirstGenRevID(slice revID) override;
         static slice fleeceAccessor(slice docBody);
+        
+        static Document* documentContaining(const fleece::impl::Value *value) {
+            auto doc = treeDocumentContaining(value);
+            return doc ? doc : leafDocumentContaining(value);
+        }
+
+    private:
+        static Document* treeDocumentContaining(const fleece::impl::Value *value);
+        static Document* leafDocumentContaining(const fleece::impl::Value *value);
     };
 
 }
@@ -196,6 +214,8 @@ struct c4Database : public c4Internal::Database {
     bool mustUseVersioning(C4DocumentVersioning, C4Error*) noexcept;
     bool mustBeInTransaction(C4Error *outError) noexcept;
     bool mustNotBeInTransaction(C4Error *outError) noexcept;
+
+    C4ExtraInfo extraInfo { };
 
 private:
     FLEncoder                   _flEncoder {nullptr};

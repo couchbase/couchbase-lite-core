@@ -172,6 +172,7 @@ namespace litecore {
     void BlobWriteStream::write(slice data) {
         Assert(!_computedKey, "Attempted to write after computing digest");
         _writer->write(data);
+        _bytesWritten += data.size;
         sha1_add(&_sha1ctx, data.buf, data.size);
     }
 

@@ -17,11 +17,29 @@
 //
 
 #include "c4Test.hh"
+#include "c4Document+Fleece.h"
 #include "c4Private.h"
 #include "Benchmark.hh"
 #include "fleece/Fleece.hh"
 
 using namespace fleece;
+
+
+TEST_CASE("Generate docID", "[Database][C]") {
+    char buf[kC4GeneratedIDLength + 1];
+    CHECK(c4doc_generateID(buf, 0) == nullptr);
+    CHECK(c4doc_generateID(buf, kC4GeneratedIDLength) == nullptr);
+    for (int pass = 0; pass < 10; ++pass) {
+        REQUIRE(c4doc_generateID(buf, sizeof(buf)) == buf);
+        C4Log("docID = '%s'", buf);
+        REQUIRE(strlen(buf) == kC4GeneratedIDLength);
+        CHECK(buf[0] == '~');
+        for (int i = 1; i < strlen(buf); ++i) {
+            bool validChar = isalpha(buf[i]) || isdigit(buf[i]) || buf[i] == '_' || buf[i] == '-';
+            CHECK(validChar);
+        }
+    }
+}
 
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Invalid docID", "[Database][C]") {
@@ -100,6 +118,20 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     REQUIRE(error.code == (int)kC4ErrorNotFound);
     c4doc_free(doc);
 
+    // Test c4doc_getSingleRevision, which also fails:
+    doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, false, &error);
+    REQUIRE(!doc);
+    REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
+    REQUIRE(error.code == (int)kC4ErrorNotFound);
+    doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, true, &error);
+    REQUIRE(!doc);
+    REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
+    REQUIRE(error.code == (int)kC4ErrorNotFound);
+    doc = c4doc_getSingleRevision(db, kDocID, kRevID, true, &error);
+    REQUIRE(!doc);
+    REQUIRE((uint32_t)error.domain == (uint32_t)LiteCoreDomain);
+    REQUIRE(error.code == (int)kC4ErrorNotFound);
+
     // Now get the doc with mustExist=false, which returns an empty doc:
     doc = c4doc_get(db, kDocID, false, &error);
     REQUIRE(doc != nullptr);
@@ -165,6 +197,42 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateVersionedDoc", "[Database][C]") {
     CHECK(doc == nullptr);
     CHECK(error.domain == LiteCoreDomain);
     CHECK(error.code == kC4ErrorNotFound);
+
+    // Test c4doc_getSingleRevision (without body):
+    doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, false, &error);
+    REQUIRE(doc != nullptr);
+    REQUIRE(doc->sequence == 1);
+    REQUIRE(doc->flags == kDocExists);
+    REQUIRE(doc->docID == kDocID);
+    REQUIRE(doc->revID == kRevID);
+    REQUIRE(doc->selectedRev.revID == kRevID);
+    REQUIRE(doc->selectedRev.sequence == 1);
+    REQUIRE(doc->selectedRev.body == kC4SliceNull);
+    c4doc_free(doc);
+
+    // Test c4doc_getSingleRevision (with body):
+    doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, true, &error);
+    REQUIRE(doc != nullptr);
+    REQUIRE(doc->sequence == 1);
+    REQUIRE(doc->flags == kDocExists);
+    REQUIRE(doc->docID == kDocID);
+    REQUIRE(doc->revID == kRevID);
+    REQUIRE(doc->selectedRev.revID == kRevID);
+    REQUIRE(doc->selectedRev.sequence == 1);
+    REQUIRE(doc->selectedRev.body == kFleeceBody);
+    c4doc_free(doc);
+
+    // Test c4doc_getSingleRevision (with specific rev):
+    doc = c4doc_getSingleRevision(db, kDocID, kRevID, true, &error);
+    REQUIRE(doc != nullptr);
+    REQUIRE(doc->sequence == 1);
+    REQUIRE(doc->flags == kDocExists);
+    REQUIRE(doc->docID == kDocID);
+    REQUIRE(doc->revID == kRevID);
+    REQUIRE(doc->selectedRev.revID == kRevID);
+    REQUIRE(doc->selectedRev.sequence == 1);
+    REQUIRE(doc->selectedRev.body == kFleeceBody);
+    c4doc_free(doc);
 }
 
 
@@ -208,6 +276,30 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
         REQUIRE(doc->selectedRev.body == kFleeceBody2);
         c4doc_free(doc);
 
+        // Test c4doc_getSingleRevision (with body):
+        doc = c4doc_getSingleRevision(db, kDocID, kC4SliceNull, true, &error);
+        REQUIRE(doc != nullptr);
+        REQUIRE(doc->sequence == 3);
+        REQUIRE(doc->flags == kDocExists);
+        REQUIRE(doc->docID == kDocID);
+        REQUIRE(doc->revID == kRev3ID);
+        REQUIRE(doc->selectedRev.revID == kRev3ID);
+        REQUIRE(doc->selectedRev.sequence == 3);
+        REQUIRE(doc->selectedRev.body == kFleeceBody3);
+        c4doc_free(doc);
+
+        // Test c4doc_getSingleRevision (with specific revision):
+        doc = c4doc_getSingleRevision(db, kDocID, kRev2ID, true, &error);
+        REQUIRE(doc != nullptr);
+        REQUIRE(doc->sequence == 3);
+        REQUIRE(doc->flags == kDocExists);
+        REQUIRE(doc->docID == kDocID);
+        REQUIRE(doc->revID == kRev3ID);
+        REQUIRE(doc->selectedRev.revID == kRev2ID);
+        REQUIRE(doc->selectedRev.sequence == 2);
+        REQUIRE(doc->selectedRev.body == kFleeceBody2);
+        c4doc_free(doc);
+
         // Purge doc
         {
             TransactionHelper t(db);
@@ -225,6 +317,42 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document CreateMultipleRevisions", "[Database][C
         CHECK(error.code == kC4ErrorNotFound);
     }
     c4doc_free(doc);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document Get Single Revision", "[Document][C]") {
+    if (!isRevTrees()) return;
+
+    createRev(kDocID, kRevID, kEmptyFleeceBody);
+    createRev(kDocID, kRev2ID, kEmptyFleeceBody);
+    createRev(kDocID, kRev3ID, kFleeceBody);
+
+    C4Error error;
+    for (int withBody = false; withBody <= true; ++withBody) {
+        C4Document *doc = c4doc_getSingleRevision(db, kDocID, nullslice, withBody, &error);
+        REQUIRE(doc);
+        CHECK(doc->sequence == 3);
+        CHECK(doc->flags == kDocExists);
+        CHECK(doc->docID == kDocID);
+        CHECK(doc->revID == kRev3ID);
+        CHECK(doc->selectedRev.revID == kRev3ID);
+        CHECK(doc->selectedRev.sequence == 3);
+        if (withBody)
+            CHECK(doc->selectedRev.body == kFleeceBody);
+        else
+            CHECK(doc->selectedRev.body == nullslice);
+        c4doc_free(doc);
+    }
+
+    C4Document *doc = c4doc_getSingleRevision(db, kDocID, "99-ffff"_sl, true, &error);
+    CHECK(!doc);
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorNotFound);
+
+    doc = c4doc_getSingleRevision(db, "missing"_sl, nullslice, true, &error);
+    CHECK(!doc);
+    CHECK(error.domain == LiteCoreDomain);
+    CHECK(error.code == kC4ErrorNotFound);
 }
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Purge", "[Database][C]") {
@@ -495,7 +623,7 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Put", "[Database][C]") {
     
     auto latestBody = c4doc_detachRevisionBody(doc);
     CHECK(latestBody == rq.body);
-    CHECK(!doc->selectedRev.body.buf);
+    CHECK(latestBody.buf != doc->selectedRev.body.buf);
     c4doc_free(doc);
 }
 
@@ -670,6 +798,49 @@ N_WAY_TEST_CASE_METHOD(C4Test, "Document Conflict", "[Database][C]") {
     }
 
     c4doc_free(doc);
+}
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Document from Fleece", "[Database][C]") {
+    if (!isRevTrees())
+        return;
+
+    CHECK(c4doc_containingValue((FLValue)0x12345678) == nullptr);
+
+    const auto kFleeceBody = json2fleece("{'ubu':'roi'}");
+    createRev(kDocID, kRevID, kFleeceBody);
+
+    C4Document* doc = c4doc_get(db, kDocID, true, nullptr);
+    REQUIRE(doc);
+    FLValue root = FLValue_FromData(doc->selectedRev.body, kFLTrusted);
+    REQUIRE(root);
+    CHECK(c4doc_containingValue(root) == doc);
+    FLValue ubu = FLDict_Get(FLValue_AsDict(root), "ubu"_sl);
+    CHECK(c4doc_containingValue(ubu) == doc);
+    c4doc_release(doc);
+
+    CHECK(c4doc_containingValue(root) == nullptr);
+}
+
+N_WAY_TEST_CASE_METHOD(C4Test, "Leaf Document from Fleece", "[Database][C]") {
+    if (!isRevTrees())
+        return;
+
+    CHECK(c4doc_containingValue((FLValue)0x12345678) == nullptr);
+
+    const auto kFleeceBody = json2fleece("{'ubu':'roi'}");
+    createRev(kDocID, kRevID, kFleeceBody);
+
+    C4Document* doc = c4doc_getSingleRevision(db, kDocID, nullslice, true, nullptr);
+    REQUIRE(doc);
+    CHECK(doc->selectedRev.revID == kRevID);
+    FLValue root = FLValue_FromData(doc->selectedRev.body, kFLTrusted);
+    REQUIRE(root);
+    CHECK(c4doc_containingValue(root) == doc);
+    FLValue ubu = FLDict_Get(FLValue_AsDict(root), "ubu"_sl);
+    CHECK(c4doc_containingValue(ubu) == doc);
+    c4doc_release(doc);
+
+    CHECK(c4doc_containingValue(root) == nullptr);
 }
 
 N_WAY_TEST_CASE_METHOD(C4Test, "Document Legacy Properties", "[Database][C]") {

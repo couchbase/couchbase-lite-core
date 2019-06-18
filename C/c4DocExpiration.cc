@@ -47,10 +47,12 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, C4Timestamp timestamp, C
 }
 
 
-C4Timestamp c4doc_getExpiration(C4Database *db, C4Slice docID) C4API {
-    return tryCatch<uint64_t>(nullptr, [=]{
-        return db->defaultKeyStore().getExpiration(docID);
+C4Timestamp c4doc_getExpiration(C4Database *db, C4Slice docID, C4Error *outError) C4API {
+    C4Timestamp expiration = -1;
+    tryCatch(outError, [&]{
+        expiration = db->defaultKeyStore().getExpiration(docID);
     });
+    return expiration;
 }
 
 

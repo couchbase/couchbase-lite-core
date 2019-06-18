@@ -66,4 +66,6 @@ namespace c4Internal {
     // into `outError`, and returns false.
     NOINLINE bool tryCatch(C4Error *error, fleece::function_ref<void()> fn) noexcept;
 
+    #define c4error_descriptionStr(ERR)     alloc_slice(c4error_getDescription(ERR)).asString().c_str()
+
 }

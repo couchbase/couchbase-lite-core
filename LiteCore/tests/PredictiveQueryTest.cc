@@ -74,13 +74,13 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query unregistered", "[Query][Predict]")
     Retained<Query> query{ store->compileQuery(json5(
                                 "{'WHAT': [['PREDICTION()', '8ball', {number: ['.num']}]]}")) };
     ExpectException(error::SQLite, 1, [&]{
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
     });
 }
 
 
 static void testResults(Query *query) {
-    unique_ptr<QueryEnumerator> e(query->createEnumerator());
+    Retained<QueryEnumerator> e(query->createEnumerator());
     int docNo = 0;
     while (e->next()) {
         ++docNo;
@@ -131,7 +131,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query invalid input", "[Query][Predict]"
     Retained<Query> query{ store->compileQuery(json5(
                                 "{'WHAT': [['.value'], ['PREDICTION()', '8ball', ['.value']]]}")) };
     ExpectException(error::SQLite, 1, [&]() {
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
     });
 
     PredictiveModel::unregister("8ball");
@@ -187,7 +187,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query indexed", "[Query][Predict]") {
         }
 
         vector<int64_t> results;
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
         while (e->next()) {
             if (e->columns()[0]->type() == kNumber)
                 results.push_back( e->columns()[0]->asInt() );
@@ -240,7 +240,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query compound indexed", "[Query][Predic
         }
         
         vector<int64_t> results;
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
         while (e->next()) {
             if (e->columns()[0]->type() == kNumber)
                 results.push_back( e->columns()[0]->asInt() );
@@ -290,7 +290,7 @@ TEST_CASE_METHOD(QueryTest, "Predictive Query cached only", "[Query][Predict]") 
         }
         
         vector<int64_t> results;
-        unique_ptr<QueryEnumerator> e(query->createEnumerator());
+        Retained<QueryEnumerator> e(query->createEnumerator());
         while (e->next()) {
             if (e->columns()[0]->type() == kNumber)
                 results.push_back( e->columns()[0]->asInt() );

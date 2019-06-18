@@ -99,6 +99,13 @@ namespace litecore { namespace repl {
             // It's not a delta. Convert body to Fleece and process:
             FLError err;
             Doc fleeceDoc = _db->tempEncodeJSON(jsonBody, &err);
+            if(!fleeceDoc) {
+                warn("Incoming rev failed to encode (Fleece error %d)", err);
+                _rev->error = c4error_make(FleeceDomain, (int)err, "Incoming rev failed to encode"_sl);
+                finish();
+                return;
+            }
+
             processBody(fleeceDoc, {FleeceDomain, err});
         } else if (_options.pullValidator || jsonBody.containsBytes("\"digest\""_sl)) {
             // It's a delta, but we need the entire document body now because either it has to be

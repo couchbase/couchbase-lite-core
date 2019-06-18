@@ -91,6 +91,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database ErrorMessages", "[Database][C]"
 
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Info", "[Database][C]") {
+    CHECK(c4db_exists(slice(kDatabaseName), slice(TempDir())));
     REQUIRE(c4db_getDocumentCount(db) == 0);
     REQUIRE(c4db_getLastSequence(db) == 0);
     C4Error err;
@@ -221,6 +222,58 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CreateRawDoc", "[Database][C]")
     REQUIRE(error.domain == LiteCoreDomain);
     REQUIRE(error.code == (int)kC4ErrorNotFound);
 }
+
+
+TEST_CASE("Database Key Derivation", "[Database][Encryption][C]") {
+    C4EncryptionKey key = {};
+    REQUIRE(!c4key_setPassword(&key, nullslice, kC4EncryptionAES256));
+    REQUIRE(!c4key_setPassword(&key, "password123"_sl, kC4EncryptionNone));
+
+    REQUIRE(c4key_setPassword(&key, "password123"_sl, kC4EncryptionAES256));
+    CHECK(key.algorithm == kC4EncryptionAES256);
+    CHECK(slice(key.bytes, sizeof(key.bytes)).hexString() ==
+          "ad3470ce03363552b20a4a70a4aec02cb7439f6202e75b231ab57f2d5e716909");
+}
+
+#ifdef COUCHBASE_ENTERPRISE
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Rekey", "[Database][Encryption][blob][C]") {
+    createNumberedDocs(99);
+
+    // Add blob to the store:
+    C4Slice blobToStore = C4STR("This is a blob to store in the store!");
+    C4BlobKey blobKey;
+    C4Error error;
+    auto blobStore = c4db_getBlobStore(db, &error);
+    REQUIRE(blobStore);
+    REQUIRE(c4blob_create(blobStore, blobToStore, nullptr, &blobKey, &error));
+
+    C4SliceResult blobResult = c4blob_getContents(blobStore, blobKey, &error);
+    CHECK(blobResult == blobToStore);
+    c4slice_free(blobResult);
+
+    // If we're on the unencrypted pass, encrypt the db. Otherwise decrypt it:
+    C4EncryptionKey newKey = {kC4EncryptionNone, {}};
+    if (c4db_getConfig(db)->encryptionKey.algorithm == kC4EncryptionNone) {
+        newKey.algorithm = kC4EncryptionAES256;
+        memcpy(newKey.bytes, "a different key than default....", kC4EncryptionKeySizeAES256);
+        REQUIRE(c4db_rekey(db, &newKey, &error));
+    } else {
+        REQUIRE(c4db_rekey(db, nullptr, &error));
+    }
+
+    // Verify the db works:
+    REQUIRE(c4db_getDocumentCount(db) == 99);
+    REQUIRE(blobStore);
+    blobResult = c4blob_getContents(blobStore, blobKey, &error);
+    CHECK(blobResult == blobToStore);
+    c4slice_free(blobResult);
+
+    // Check that db can be reopened with the new key:
+    REQUIRE(c4db_getConfig(db)->encryptionKey.algorithm == newKey.algorithm);
+    REQUIRE(memcmp(c4db_getConfig(db)->encryptionKey.bytes, newKey.bytes, 32) == 0);
+    reopenDB();
+}
+#endif
 
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database AllDocs", "[Database][C]") {
@@ -381,11 +434,12 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
     CHECK(err.domain == LiteCoreDomain);
     CHECK(err.code == kC4ErrorNotFound);
 
-    CHECK(c4doc_getExpiration(db, docID)  == expire);
-    CHECK(c4doc_getExpiration(db, docID2) == expire);
-    CHECK(c4doc_getExpiration(db, docID3) == 0);
-    CHECK(c4doc_getExpiration(db, docID4) == expire + 100*secs);
-    CHECK(c4doc_getExpiration(db, "nonexistent"_sl) == 0);
+    CHECK(c4doc_getExpiration(db, docID, nullptr)  == expire);
+    CHECK(c4doc_getExpiration(db, docID2, nullptr) == expire);
+    CHECK(c4doc_getExpiration(db, docID3, nullptr) == 0);
+    CHECK(c4doc_getExpiration(db, docID4, nullptr) == expire + 100*secs);
+    CHECK(c4doc_getExpiration(db, "nonexistent"_sl, nullptr) == 0);
+
     CHECK(c4db_nextDocExpiration(db) == expire);
 
     // Wait for the expiration time to pass:
@@ -409,11 +463,11 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
     time_t expire = c4_now() + 2*secs;
     C4Error err;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
-    REQUIRE(c4doc_getExpiration(db, docID) == expire);
+    REQUIRE(c4doc_getExpiration(db, docID, nullptr) == expire);
     CHECK(c4db_nextDocExpiration(db) == expire);
 
     REQUIRE(c4doc_setExpiration(db, docID, 0, &err));
-    CHECK(c4doc_getExpiration(db, docID) == 0);
+    CHECK(c4doc_getExpiration(db, docID, nullptr) == 0);
     CHECK(c4db_nextDocExpiration(db) == 0);
     CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
 }
@@ -582,4 +636,49 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database copy", "[Database][C]") {
     CHECK(c4db_getDocumentCount(nudb) == 1);
     REQUIRE(c4db_delete(nudb, &error));
     c4db_free(nudb);
+}
+
+
+N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Config2 And ExtraInfo", "[Database][C]") {
+    C4DatabaseConfig2 config = {};
+    config.parentDirectory = slice(TempDir());
+    config.flags = kC4DB_Create;
+    const string db2Name = kDatabaseName + "_2";
+    C4Error error;
+
+    c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error);
+    REQUIRE(error.code == 0);
+    CHECK(!c4db_exists(slice(db2Name), config.parentDirectory));
+    C4Database *db2 = c4db_openNamed(slice(db2Name), &config, &error);
+    REQUIRE(db2);
+    alloc_slice db2Path = c4db_getPath(db2);
+    CHECK(c4db_exists(slice(db2Name), config.parentDirectory));
+
+    C4ExtraInfo xtra = {};
+    xtra.pointer = this;
+    static void* sExpectedPointer;
+    static bool sXtraDestructed;
+    sExpectedPointer = this;
+    sXtraDestructed = false;
+    xtra.destructor = [](void *ptr) {
+        REQUIRE(ptr == sExpectedPointer);
+        REQUIRE(!sXtraDestructed);
+        sXtraDestructed = true;
+    };
+    c4db_setExtraInfo(db2, xtra);
+    CHECK(!sXtraDestructed);
+    CHECK(c4db_getExtraInfo(db2).pointer == this);
+    CHECK(c4db_close(db2, &error));
+    CHECK(!sXtraDestructed);
+    c4db_release(db2);
+    CHECK(sXtraDestructed);
+
+    const string copiedDBName = kDatabaseName + "_copy";
+    c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, &error);
+    REQUIRE(error.code == 0);
+    REQUIRE(c4db_copyNamed(db2Path, slice(copiedDBName), &config, &error));
+    CHECK(c4db_exists(slice(copiedDBName), config.parentDirectory));
+    REQUIRE(c4db_deleteNamed(slice(copiedDBName), config.parentDirectory, &error));
+
+    REQUIRE(c4db_deleteNamed(slice(db2Name), config.parentDirectory, &error));
 }

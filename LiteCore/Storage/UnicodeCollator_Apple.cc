@@ -91,12 +91,12 @@ namespace litecore {
         }
 
 
-        int result = CFStringCompareWithOptionsAndLocale(cfstr1, cfstr2,
-                                                         CFRange{0, CFStringGetLength(cfstr1)},
-                                                         ctx.flags, ctx.localeRef);
+        auto result = CFStringCompareWithOptionsAndLocale(cfstr1, cfstr2,
+                                                          CFRange{0, CFStringGetLength(cfstr1)},
+                                                          ctx.flags, ctx.localeRef);
         CFRelease(cfstr1);
         CFRelease(cfstr2);
-        return result;
+        return int(result);
     }
 
 

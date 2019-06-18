@@ -30,6 +30,16 @@
 #include <assert.h>
 
 
+// C4Error equality tests:
+// (These have to be in the global namespace, because C4Error is...)
+static inline bool operator== (C4Error a, C4Error b) {
+    return a.code == b.code && a.domain == b.domain;
+}
+static inline bool operator!= (C4Error a, C4Error b) {
+    return !(a == b);
+}
+
+
 namespace c4 {
 
     /** A simple little smart pointer that frees the C4 object when it leaves scope. */
@@ -57,14 +67,18 @@ namespace c4 {
         static inline void freeRef(C4DocEnumerator* c)     {c4enum_free(c);}
         static inline void freeRef(C4DatabaseObserver* c)  {c4dbobs_free(c);}
         static inline void freeRef(C4DocumentObserver* c)  {c4docobs_free(c);}
-        static inline void freeRef(C4QueryEnumerator* c)   {c4queryenum_free(c);}
-        static inline void freeRef(C4Query* c)             {c4query_free(c);}
+        static inline void freeRef(C4Query* c)             {c4query_release(c);}
+        static inline void freeRef(C4QueryEnumerator* c)   {c4queryenum_release(c);}
+        static inline void freeRef(C4QueryObserver* c)     {c4queryobs_free(c);}
         static inline void freeRef(C4ReadStream* c)        {c4stream_close(c);}
         static inline void freeRef(C4WriteStream* c)       {c4stream_closeWriter(c);}
         static inline void freeRef(C4Replicator* c)        {c4repl_free(c);}
         static inline void freeRef(C4Listener* c)          {c4listener_free(c);}
 
         static inline C4Database* retainRef(C4Database* c) {return c4db_retain(c);}
+        static inline C4Document* retainRef(C4Document* c) {return c4doc_retain(c);}
+        static inline C4Query*    retainRef(C4Query* c)    {return c4query_retain(c);}
+        static inline C4QueryEnumerator* retainRef(C4QueryEnumerator* c) {return c4queryenum_retain(c);}
 
         T* _obj;
     };

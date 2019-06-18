@@ -39,6 +39,7 @@ namespace fleece { namespace impl {
 namespace litecore {
 
     class Transaction;
+    class SequenceTracker;
 
 
     /** A database file, primarily a container of KeyStores which store the actual data.
@@ -72,7 +73,8 @@ namespace litecore {
         FilePath filePath() const noexcept                  {return _path;}
         const Options& options() const noexcept             {return _options;}
 
-        virtual bool isOpen() const noexcept =0;
+        bool isClosing() const noexcept                     {return _closeSignaled;}
+        virtual bool isOpen() const noexcept = 0;
 
         /** Throws an exception if the database is closed. */
         void checkOpen() const;
@@ -83,6 +85,9 @@ namespace litecore {
 
         /** Closes the database and deletes its file. */
         void deleteDataFile();
+
+        /** Opens another instance on the same file. */
+        DataFile* openAnother(Delegate* NONNULL);
 
         virtual void compact() =0;
 
@@ -236,6 +241,7 @@ namespace litecore {
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
+        std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };
 
 

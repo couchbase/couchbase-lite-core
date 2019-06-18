@@ -79,6 +79,24 @@ extern "C" {
         C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
     } C4DatabaseConfig;
 
+    /** Main database configuration struct (version 2) for use with c4db_openNamed etc.. */
+    typedef struct C4DatabaseConfig2 {
+        C4Slice parentDirectory;        ///< Directory for databases
+        C4DatabaseFlags flags;          ///< Create, ReadOnly, NoUpgrade (AutoCompact & SharedKeys always set)
+        C4EncryptionKey encryptionKey;  ///< Encryption to use creating/opening the db
+    } C4DatabaseConfig2;
+
+
+    /** Stores a password into a C4EncryptionKey, by using the key-derivation algorithm PBKDF2
+        to securely convert the password into a raw binary key.
+        @param encryptionKey  The raw key will be stored here.
+        @param password  The password string.
+        @param alg  The encryption algorithm to use. Must not be kC4EncryptionNone.
+        @return  True on success, false on failure */
+    bool c4key_setPassword(C4EncryptionKey *encryptionKey C4NONNULL,
+                           C4String password,
+                           C4EncryptionAlgorithm alg) C4API;
+
 
     /** Stores a password into a C4EncryptionKey, by using the key-derivation algorithm PBKDF2
         to securely convert the password into a raw binary key.
@@ -107,10 +125,19 @@ extern "C" {
     /** \name Lifecycle
         @{ */
 
-    /** Opens a database. */
+    /** Returns true if a database with the given name exists in the directory. */
+    bool c4db_exists(C4String name, C4String inDirectory) C4API;
+
+
+    /** Opens a database given its full path. */
     C4Database* c4db_open(C4String path,
                           const C4DatabaseConfig *config C4NONNULL,
                           C4Error *outError) C4API;
+
+    /** Opens a database given its name (without the ".cblite2" extension) and directory. */
+    C4Database* c4db_openNamed(C4String name,
+                               const C4DatabaseConfig2 *config C4NONNULL,
+                               C4Error *outError) C4API;
 
     /** Opens a new handle to the same database file as `db`.
         The new connection is completely independent and can be used on another thread. */
@@ -126,28 +153,50 @@ extern "C" {
                    const C4DatabaseConfig* config C4NONNULL,
                    C4Error* error) C4API;
 
+    /** Copies a prebuilt database from the given source path and places it in the destination
+        directory, with the given name. If a database already exists there, it will be overwritten.
+        However if there is a failure, the original database will be restored as if nothing
+        happened.
+        @param sourcePath  The path to the database to be copied.
+        @param destinationName  The name (without filename extension) of the database to create.
+        @param config  Database configuration (including destination directory.)
+        @param error  On failure, error info will be written here.
+        @return  True on success, false on failure. */
+    bool c4db_copyNamed(C4String sourcePath,
+                        C4String destinationName,
+                        const C4DatabaseConfig2* config C4NONNULL,
+                        C4Error* error) C4API;
+
     /** Increments the reference count of the database handle. The next call to
         c4db_free() will have no effect. Therefore calls to c4db_retain must be balanced by calls
         to c4db_free, to avoid leaks. */
-    C4Database* c4db_retain(C4Database* db);
+    C4Database* c4db_retain(C4Database* db) C4API;
 
-    /** Frees a database handle, closing the database first if it's still open.
-        (More precisely, this decrements the handle's reference count. The handle is only freed
-        if the count reaches zero, which it will unless c4db_retain has previously been called.) */
     void c4db_free(C4Database* database) C4API;
 
+    /** Decrements the ref-count of a C4Database,
+        closing and freeing it if the ref-count hits zero. */
+    static inline void c4db_release(C4Database* db)    {c4db_free(db);}
+
     /** Closes the database. Does not free the handle, although any operation other than
-        c4db_free() will fail with an error. */
+        c4db_release() will fail with an error. */
     bool c4db_close(C4Database* database, C4Error *outError) C4API;
 
     /** Closes the database and deletes the file/bundle. Does not free the handle, although any
-        operation other than c4db_free() will fail with an error. */
+        operation other than c4db_release() will fail with an error. */
     bool c4db_delete(C4Database* database C4NONNULL, C4Error *outError) C4API;
 
     /** Deletes the file(s) for the database at the given path.
         All C4Databases at that path must be closed first or an error will result.
         Returns false, with no error, if the database doesn't exist. */
     bool c4db_deleteAtPath(C4String dbPath, C4Error *outError) C4API;
+
+    /** Deletes the file(s) for the database with the given name in the given directory.
+        All C4Databases at that path must be closed first or an error will result.
+        Returns false, with no error, if the database doesn't exist. */
+    bool c4db_deleteNamed(C4String dbName,
+                          C4String inDirectory,
+                          C4Error *outError) C4API;
 
 
     /** Changes a database's encryption key (removing encryption if it's NULL.) */
@@ -200,6 +249,8 @@ extern "C" {
                        C4UUID *publicUUID, C4UUID *privateUUID,
                        C4Error *outError) C4API;
 
+    C4ExtraInfo c4db_getExtraInfo(C4Database *database C4NONNULL) C4API;
+    void c4db_setExtraInfo(C4Database *database C4NONNULL, C4ExtraInfo) C4API;
 
     /** @} */
     /** \name Compaction

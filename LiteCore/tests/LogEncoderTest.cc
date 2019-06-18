@@ -281,7 +281,6 @@ TEST_CASE("Logging plaintext", "[Log]") {
     }
 
     CHECK(lines[0] == "---- Hello ----");
-    auto startPos = lines[1].find('|') + 2;
     CHECK(lines[1].find("[DB]") != string::npos);
     CHECK(lines[1].find("{dummy#") != string::npos);
     CHECK(lines[1].find("This will be in plaintext") != string::npos);

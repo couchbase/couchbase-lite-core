@@ -22,6 +22,7 @@
 #include "Database.hh"
 #include "DataFile.hh"
 #include "BlobStore.hh"
+#include "RevID.hh"
 #include "InstanceCounted.hh"
 #include "RefCounted.hh"
 #include "Logging.hh"
@@ -34,31 +35,32 @@ namespace litecore {
 namespace fleece { namespace impl {
     class Dict;
     class Doc;
+    class Value;
 } }
 
 namespace c4Internal {
     class TreeDocument;
-    class VectorDocument;
 
 
     /** A versioned LiteCore document.
         This is an abstract base class whose concrete subclasses are TreeDocument (rev-trees) 
         and VectorDocument (version-vectors).
         Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
-    class Document : public C4Document, fleece::InstanceCountedIn<Document> {
+    class Document : public RefCounted, public C4Document, fleece::InstanceCountedIn<Document> {
     public:
-        alloc_slice _docIDBuf;
+        alloc_slice const _docIDBuf;
         alloc_slice _revIDBuf;
         alloc_slice _selectedRevIDBuf;
-        alloc_slice _loadedBody;
 
-        Document(Database *database)
+        Document(Database *database, slice docID_)
         :_db(database)
-        { }
+        ,_docIDBuf(docID_)
+        {
+            docID = _docIDBuf;
+            extraInfo = { };
+       }
 
         Document(const Document&) =default;
-
-        virtual ~Document() { }
 
         // Returns a new Document object identical to this one (doesn't copy the doc in the db!)
         virtual Document* copy() =0;
@@ -95,10 +97,14 @@ namespace c4Internal {
 
         virtual bool selectCurrentRevision() noexcept {
             // By default just fill in what we know about the current revision:
-            selectedRev.revID = revID;
-            selectedRev.sequence = sequence;
-            selectedRev.flags = currentRevFlagsFromDocFlags(flags);
-            selectedRev.body = kC4SliceNull;
+            if (exists()) {
+                selectedRev.revID = revID;
+                selectedRev.sequence = sequence;
+                selectedRev.flags = currentRevFlagsFromDocFlags(flags);
+                selectedRev.body = kC4SliceNull;
+            } else {
+                clearSelectedRevision();
+            }
             return false;
         }
 
@@ -106,7 +112,7 @@ namespace c4Internal {
         virtual bool selectNextRevision() =0;
         virtual bool selectNextLeafRevision(bool includeDeleted) =0;
         virtual bool selectCommonAncestorRevision(slice revID1, slice revID2) {
-            error::_throw(error::UnsupportedOperation);
+            failUnsupported();
         }
         virtual alloc_slice remoteAncestorRevID(C4RemoteID) =0;
         virtual void setRemoteAncestorRevID(C4RemoteID) =0;
@@ -115,13 +121,7 @@ namespace c4Internal {
         virtual bool loadSelectedRevBody() =0; // can throw; returns false if compacted away
 
         virtual alloc_slice detachSelectedRevBody() {
-            auto result = _loadedBody;
-            if (result.buf)
-                _loadedBody = nullslice;
-            else
-                result = selectedRev.body; // will copy
-            selectedRev.body = kC4SliceNull;
-            return result;
+            return alloc_slice(selectedRev.body); // will copy
         }
 
         virtual Retained<fleece::impl::Doc> fleeceDoc() =0;
@@ -134,12 +134,13 @@ namespace c4Internal {
         virtual void resolveConflict(C4String winningRevID,
                                      C4String losingRevID,
                                      C4Slice mergedBody,
-                                     C4RevisionFlags mergedFlags) {
-            error::_throw(error::UnsupportedOperation);
+                                     C4RevisionFlags mergedFlags)
+        {
+            failUnsupported();
         }
 
         virtual int32_t purgeRevision(C4Slice revID) {
-            error::_throw(error::Unimplemented);
+            failUnsupported();
         }
 
         virtual bool removeSelectedRevBody() noexcept {
@@ -147,13 +148,16 @@ namespace c4Internal {
         }
 
         // Returns false on conflict
-        virtual bool save(unsigned maxRevTreeDepth =0) {return true;}
+        virtual bool save(unsigned maxRevTreeDepth =0) =0;
 
         void requireValidDocID();   // Throws if invalid
 
         // STATIC UTILITY FUNCTIONS:
 
         static bool isValidDocID(slice);
+
+        /** Returns the Document instance, if any, that contains the given Fleece value. */
+        static C4Document* containing(const fleece::impl::Value*);
 
         /** Returns true if the given dictionary is a [reference to a] blob. */
         static bool dictIsBlob(const fleece::impl::Dict *dict);
@@ -179,13 +183,28 @@ namespace c4Internal {
         static bool blobIsCompressible(const fleece::impl::Dict *meta);
 
     protected:
+        virtual ~Document() {
+            destructExtraInfo(extraInfo);
+        }
+
+        void setRevID(revid id) {
+            if (id.size > 0)
+                _revIDBuf = id.expanded();
+            else
+                _revIDBuf = nullslice;
+            revID = _revIDBuf;
+        }
+
         void clearSelectedRevision() noexcept {
             _selectedRevIDBuf = nullslice;
             selectedRev.revID = {};
             selectedRev.flags = (C4RevisionFlags)0;
             selectedRev.sequence = 0;
             selectedRev.body = kC4SliceNull;
-            _loadedBody = nullslice;
+        }
+
+        [[noreturn]] void failUnsupported() {
+            error::_throw(error::UnsupportedOperation);
         }
 
         Retained<Database> _db;

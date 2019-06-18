@@ -158,6 +158,9 @@ string C4Test::sFixturesDir = "../C/tests/data/";
 string C4Test::sFixturesDir = "C/tests/data/";
 #endif
 
+const string C4Test::kDatabaseName = "cbl_core_test";
+
+
 C4Test::C4Test(int testOption)
 :_storage(kC4SQLiteStorageEngine),
 #if ENABLE_VERSION_VECTORS
@@ -238,7 +241,7 @@ _versioning(kC4RevisionTrees)
         sLastConfig = config;
     }
 
-    _dbPath = TempDir() + "cbl_core_test.cblite2";
+    _dbPath = TempDir() + kDatabaseName + kC4DatabaseFilenameExtension;
 
     C4Error error;
     if (!c4db_deleteAtPath(databasePath(), &error))
@@ -273,8 +276,8 @@ C4Test::~C4Test() {
 C4Database* C4Test::createDatabase(const string &nameSuffix) {
     REQUIRE(!nameSuffix.empty());
     string dbPath = fleece::slice(databasePath()).asString();
-    Assert(litecore::hasSuffix(dbPath, ".cblite2"));
-    dbPath.replace(dbPath.size()-8, 8, "_" + nameSuffix + ".cblite2");
+    Assert(litecore::hasSuffix(dbPath, kC4DatabaseFilenameExtension));
+    dbPath.replace(dbPath.size()-8, 8, "_" + nameSuffix + kC4DatabaseFilenameExtension);
     auto dbPathSlice = c4str(dbPath.c_str());
 
     auto config = c4db_getConfig(db);

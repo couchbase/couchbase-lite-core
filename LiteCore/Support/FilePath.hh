@@ -113,8 +113,8 @@ namespace litecore {
 
         /////// FILESYSTEM OPERATIONS:
 
-        bool exists() const;
-        bool existsAsDir() const;
+        bool exists() const noexcept;
+        bool existsAsDir() const noexcept;
         void mustExistAsDir() const;
 
         /** Returns the size of the file in bytes, or -1 if the file does not exist. */

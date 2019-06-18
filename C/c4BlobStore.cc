@@ -228,6 +228,11 @@ bool c4stream_write(C4WriteStream* stream, const void *bytes, size_t length, C4E
 }
 
 
+uint64_t c4stream_bytesWritten(C4WriteStream* stream) {
+    return asInternal(stream)->bytesWritten();
+}
+
+
 C4BlobKey c4stream_computeBlobKey(C4WriteStream* stream) noexcept {
     return external( asInternal(stream)->computeKey() );
 }

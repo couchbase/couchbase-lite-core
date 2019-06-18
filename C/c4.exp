@@ -30,12 +30,16 @@ _c4error_mayBeNetworkDependent
 _c4key_setPassword
 
 _c4db_open
+_c4db_openNamed
 _c4db_retain
 _c4db_free
 _c4db_close
 _c4db_copy
+_c4db_copyNamed
 _c4db_delete
 _c4db_deleteAtPath
+_c4db_deleteNamed
+_c4db_exists
 _c4db_compact
 _c4db_rekey
 _c4db_getPath
@@ -45,6 +49,8 @@ _c4db_getLastSequence
 _c4db_getMaxRevTreeDepth
 _c4db_setMaxRevTreeDepth
 _c4db_getUUIDs
+_c4db_getExtraInfo
+_c4db_setExtraInfo
 _c4db_beginTransaction
 _c4db_endTransaction
 _c4db_isInTransaction
@@ -56,9 +62,12 @@ _c4raw_free
 _c4raw_get
 _c4raw_put
 
+_c4doc_generateID
+_c4doc_retain
 _c4doc_free
 _c4doc_get
 _c4doc_getBySequence
+_c4doc_getSingleRevision
 _c4db_purgeDoc
 _c4doc_selectRevision
 _c4doc_selectCurrentRevision
@@ -80,6 +89,7 @@ _c4doc_setExpiration
 _c4doc_getExpiration
 _c4db_nextDocExpiration
 _c4db_purgeExpiredDocs
+_c4doc_containingValue
 _c4doc_isOldMetaProperty
 _c4doc_dictContainsBlobs
 
@@ -100,11 +110,14 @@ _c4queryenum_next
 _c4queryenum_seek
 _c4queryenum_refresh
 _c4queryenum_close
+_c4queryenum_retain
 _c4queryenum_free
 
 _c4query_new
 _c4query_new2
+_c4query_retain
 _c4query_free
+_c4query_setParameters
 _c4query_columnCount
 _c4query_columnTitle
 _c4query_run
@@ -129,6 +142,7 @@ _c4stream_seek
 _c4stream_close
 
 _c4stream_write
+_c4stream_bytesWritten
 _c4stream_computeBlobKey
 _c4stream_install
 _c4stream_closeWriter
@@ -139,6 +153,9 @@ _c4dbobs_releaseChanges
 _c4dbobs_free
 _c4docobs_create
 _c4docobs_free
+_c4queryobs_create
+_c4queryobs_free
+_c4queryobs_getEnumerator
 
 _c4repl_new
 _c4repl_newWithSocket

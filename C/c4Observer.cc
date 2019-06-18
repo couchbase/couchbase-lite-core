@@ -38,13 +38,16 @@ struct c4DatabaseObserver : fleece::InstanceCounted {
 
 
     void dispatchCallback(DatabaseChangeNotifier&) {
+        _inCallback = true;
         _callback(this, _context);
+        _inCallback = false;
     }
 
     Retained<Database> _db;
     DatabaseChangeNotifier _notifier;
     C4DatabaseObserverCallback _callback;
     void *_context;
+    bool _inCallback {false};
     //NOTE: Order of members is important! _notifier needs to appear after _db so that it will be
     // destructed *before* _db; this ensures that the Database's SequenceTracker is still in
     // existence when the notifier removes itself from it.

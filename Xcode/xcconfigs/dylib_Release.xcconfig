@@ -1,0 +1,14 @@
+//
+//  dylib_Release.xcconfig
+//  LiteCore
+//
+//  Created by Jens Alfke on 3/25/19.
+//  Copyright © 2019 Couchbase. All rights reserved.
+//
+
+#include "dylib.xcconfig"
+
+DEPLOYMENT_POSTPROCESSING   = YES
+STRIP_STYLE                 = non-global
+STRIP_INSTALLED_PRODUCT     = YES                   // Strip debug symbols
+LD_GENERATE_MAP_FILE        = YES                   // Generate link map, to analyze code size

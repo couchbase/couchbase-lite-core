@@ -524,12 +524,12 @@ namespace litecore {
     }
 
 
-    bool FilePath::exists() const {
+    bool FilePath::exists() const noexcept {
         struct stat s;
         return stat_u8(path().c_str(), &s) == 0;
     }
 
-    bool FilePath::existsAsDir() const {
+    bool FilePath::existsAsDir() const noexcept {
         struct stat s;
         return stat_u8(path().c_str(), &s) == 0 && S_ISDIR(s.st_mode);
     }

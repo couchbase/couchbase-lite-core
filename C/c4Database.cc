@@ -47,6 +47,7 @@ CBL_CORE_API C4StorageEngine const kC4SQLiteStorageEngine   = "SQLite";
 
 
 c4Database::~c4Database() {
+    destructExtraInfo(extraInfo);
     FLEncoder_Free(_flEncoder);
 }
 
@@ -90,6 +91,28 @@ bool c4Database::mustNotBeInTransaction(C4Error *outError) noexcept {
 #pragma mark - C API:
 
 
+static FilePath dbPath(C4String name, C4String parentDir) {
+    Assert(name.buf != nullptr && parentDir.buf != nullptr);
+    return FilePath(string(slice(parentDir)), string(slice(name)))
+                .withExtension(kC4DatabaseFilenameExtension);
+}
+
+
+static C4DatabaseConfig newToOldConfig(const C4DatabaseConfig2 *config2) {
+    return C4DatabaseConfig {
+        config2->flags | kC4DB_AutoCompact | kC4DB_SharedKeys,
+        NULL,
+        kC4RevisionTrees,
+        config2->encryptionKey
+    };
+}
+
+
+bool c4db_exists(C4String name, C4String inDirectory) C4API {
+    return dbPath(name, inDirectory).exists();
+}
+
+
 bool c4key_setPassword(C4EncryptionKey *key, C4String password, C4EncryptionAlgorithm alg) C4API {
     bool ok = (password.buf && alg != kC4EncryptionNone
                 && litecore::DeriveKeyFromPassword(password, key->bytes, kEncryptionKeySize[alg]));
@@ -108,7 +131,17 @@ C4Database* c4db_open(C4Slice path,
 }
 
 
-C4Database* c4db_retain(C4Database* db) {
+C4Database* c4db_openNamed(C4String name,
+                           const C4DatabaseConfig2 *config C4NONNULL,
+                           C4Error *outError) C4API
+{
+    FilePath path = dbPath(name, config->parentDirectory);
+    C4DatabaseConfig oldConfig = newToOldConfig(config);
+    return c4db_open(slice(path), &oldConfig, outError);
+}
+
+
+C4Database* c4db_retain(C4Database* db) C4API {
     return retain(db);
 }
 
@@ -120,6 +153,7 @@ C4Database* c4db_openAgain(C4Database* db,
     return c4db_open({path.data(), path.size()}, c4db_getConfig(db), outError);
 }
 
+
 bool c4db_copy(C4String sourcePath, C4String destinationPath, const C4DatabaseConfig* config,
                C4Error *error) noexcept {
     return tryCatch(error, [=] {
@@ -127,6 +161,17 @@ bool c4db_copy(C4String sourcePath, C4String destinationPath, const C4DatabaseCo
         FilePath to(slice(destinationPath).asString());
         return CopyPrebuiltDB(from, to, config);
     });
+}
+
+
+bool c4db_copyNamed(C4String sourcePath,
+                    C4String destinationName,
+                    const C4DatabaseConfig2* config C4NONNULL,
+                    C4Error* error) C4API
+{
+    FilePath destinationPath = dbPath(destinationName, config->parentDirectory);
+    C4DatabaseConfig oldConfig = newToOldConfig(config);
+    return c4db_copy(sourcePath, slice(destinationPath), &oldConfig, error);
 }
 
 
@@ -151,6 +196,15 @@ bool c4db_deleteAtPath(C4Slice dbPath, C4Error *outError) noexcept {
     if (outError)
         *outError = {};     // deleteDatabaseAtPath may return false w/o throwing an exception
     return tryCatch<bool>(outError, bind(&Database::deleteDatabaseAtPath, toString(dbPath)));
+}
+
+
+bool c4db_deleteNamed(C4String dbName,
+                      C4String inDirectory,
+                      C4Error *outError) C4API
+{
+    FilePath path = dbPath(dbName, inDirectory);
+    return c4db_deleteAtPath(slice(path), outError);
 }
 
 
@@ -207,6 +261,15 @@ bool c4db_getUUIDs(C4Database* database, C4UUID *publicUUID, C4UUID *privateUUID
             *uuid = database->getUUID(Database::kPrivateUUIDKey);
         }
     });
+}
+
+
+C4ExtraInfo c4db_getExtraInfo(C4Database *database C4NONNULL) C4API {
+    return database->extraInfo;
+}
+
+void c4db_setExtraInfo(C4Database *database C4NONNULL, C4ExtraInfo x) C4API {
+    database->extraInfo = x;
 }
 
 
