@@ -53,7 +53,7 @@ namespace litecore {
     class Record {
     public:
         Record()                              { }
-        explicit Record(slice key);
+        explicit Record(slice_NONNULL key);
         explicit Record(alloc_slice key);
         Record(const Record&);
         Record(Record&&) noexcept;

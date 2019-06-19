@@ -23,7 +23,7 @@ using namespace std;
 
 namespace litecore {
 
-    Record::Record(slice key)
+    Record::Record(slice_NONNULL key)
     :Record()
     {
         setKey(key);

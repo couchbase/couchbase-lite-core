@@ -262,7 +262,7 @@ namespace litecore {
     }
 
 
-    sequence_t SQLiteKeyStore::set(slice key, slice vers, slice body, DocumentFlags flags,
+    sequence_t SQLiteKeyStore::set(slice_NONNULL key, slice vers, slice body, DocumentFlags flags,
                                    Transaction&,
                                    const sequence_t *replacingSequence,
                                    bool newSequence)
@@ -325,7 +325,7 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::del(slice key, Transaction&, sequence_t seq) {
+    bool SQLiteKeyStore::del(slice_NONNULL key, Transaction&, sequence_t seq) {
         Assert(key);
         SQLite::Statement *stmt;
         db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %" PRIu64,
@@ -342,7 +342,7 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::setDocumentFlag(slice key, sequence_t seq, DocumentFlags flags,
+    bool SQLiteKeyStore::setDocumentFlag(slice_NONNULL key, sequence_t seq, DocumentFlags flags,
                                          Transaction&)
     {
         compile(_setFlagStmt, "UPDATE kv_@ SET flags=(flags | ?) WHERE key=? AND sequence=?");
@@ -402,7 +402,7 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::setExpiration(slice key, expiration_t expTime) {
+    bool SQLiteKeyStore::setExpiration(slice_NONNULL key, expiration_t expTime) {
         Assert(expTime >= 0, "Invalid (negative) expiration time");
         addExpiration();
         compile(_setExpStmt, "UPDATE kv_@ SET expiration=? WHERE key=?");
@@ -420,7 +420,7 @@ namespace litecore {
     }
 
 
-    expiration_t SQLiteKeyStore::getExpiration(slice key) {
+    expiration_t SQLiteKeyStore::getExpiration(slice_NONNULL key) {
         if (!hasExpiration())
             return 0;
         compile(_getExpStmt, "SELECT expiration FROM kv_@ WHERE key=?");

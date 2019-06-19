@@ -79,7 +79,7 @@ namespace c4Internal {
 
         virtual bool selectCurrentRevision() noexcept override {
             Document::selectCurrentRevision();
-            selectedRev.body = _fleeceDoc ? _fleeceDoc->allocedData() : nullslice;
+            selectedRev.body = _fleeceDoc ? _fleeceDoc->allocedData() : alloc_slice();
             return exists();
         }
 

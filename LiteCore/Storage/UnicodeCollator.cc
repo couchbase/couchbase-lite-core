@@ -76,7 +76,7 @@ namespace litecore {
         unicodeAware = true;
         caseSensitive = (caseFlag != 'C');
         diacriticSensitive = (diacFlag != 'D');
-        localeName = (scanned >= 3) ? alloc_slice(locale) : nullslice;
+        localeName = (scanned >= 3) ? alloc_slice(locale) : slice();
         return true;
     }
 

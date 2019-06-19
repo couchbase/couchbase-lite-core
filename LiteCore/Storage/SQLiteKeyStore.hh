@@ -42,19 +42,19 @@ namespace litecore {
         Record get(sequence_t) const override;
         bool read(Record &rec, ContentOption) const override;
 
-        sequence_t set(slice key, slice meta, slice value, DocumentFlags,
+        sequence_t set(slice_NONNULL key, slice meta, slice value, DocumentFlags,
                        Transaction&,
                        const sequence_t *replacingSequence =nullptr,
                        bool newSequence =true) override;
 
-        bool del(slice key, Transaction&, sequence_t s) override;
+        bool del(slice_NONNULL key, Transaction&, sequence_t s) override;
 
-        bool setDocumentFlag(slice key, sequence_t, DocumentFlags, Transaction&) override;
+        bool setDocumentFlag(slice_NONNULL key, sequence_t, DocumentFlags, Transaction&) override;
 
         void erase() override;
 
-        virtual bool setExpiration(slice key, expiration_t) override;
-        virtual expiration_t getExpiration(slice key) override;
+        virtual bool setExpiration(slice_NONNULL key, expiration_t) override;
+        virtual expiration_t getExpiration(slice_NONNULL key) override;
         virtual expiration_t nextExpiration() override;
         virtual unsigned expireRecords(ExpirationCallback =nullptr) override;
 

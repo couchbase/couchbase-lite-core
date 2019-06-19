@@ -28,6 +28,7 @@
 namespace litecore {
     using fleece::slice;
     using fleece::alloc_slice;
+    using fleece::slice_NONNULL;
     using fleece::nullslice;
     using fleece::function_ref;
     using fleece::RefCounted;
