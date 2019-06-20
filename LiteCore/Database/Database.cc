@@ -149,7 +149,7 @@ namespace c4Internal {
             _encoder->setSharedKeys(documentKeys());
         
         if (!(config.flags & kC4DB_NonObservable))
-            _sequenceTracker.reset(new SequenceTracker());
+            _sequenceTracker.reset(new access_lock<SequenceTracker>());
 
         // Validate that the versioning matches what's used in the database:
         auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
@@ -405,7 +405,7 @@ namespace c4Internal {
     }
 
 
-    SequenceTracker& Database::sequenceTracker() {
+    access_lock<SequenceTracker>& Database::sequenceTracker() {
         if (!_sequenceTracker)
             error::_throw(error::UnsupportedOperation);
         return *_sequenceTracker;
@@ -489,8 +489,9 @@ namespace c4Internal {
         if (++_transactionLevel == 1) {
             _transaction = new Transaction(_dataFile.get());
             if (_sequenceTracker) {
-                lock_guard<mutex> lock(_sequenceTracker->mutex());
-                _sequenceTracker->beginTransaction();
+                _sequenceTracker->use([](SequenceTracker &st) {
+                    st.beginTransaction();
+                });
             }
         }
     }
@@ -522,16 +523,17 @@ namespace c4Internal {
     // The cleanup part of endTransaction
     void Database::_cleanupTransaction(bool committed) {
         if (_sequenceTracker) {
-            lock_guard<mutex> lock(_sequenceTracker->mutex());
-            if (committed) {
-                // Notify other Database instances on this file:
-                _dataFile->forOtherDataFiles([&](DataFile *other) {
-                    auto db = dynamic_cast<Database*>(other->delegate());
-                    if (db)
-                        db->externalTransactionCommitted(*_sequenceTracker);
-                });
-            }
-            _sequenceTracker->endTransaction(committed);
+            _sequenceTracker->use([&](SequenceTracker &st) {
+                if (committed) {
+                    // Notify other Database instances on this file:
+                    _dataFile->forOtherDataFiles([&](DataFile *other) {
+                        auto db = dynamic_cast<Database*>(other->delegate());
+                        if (db)
+                            db->externalTransactionCommitted(st);
+                    });
+                }
+                st.endTransaction(committed);
+            });
         }
         delete _transaction;
         _transaction = nullptr;
@@ -540,8 +542,9 @@ namespace c4Internal {
 
     void Database::externalTransactionCommitted(const SequenceTracker &sourceTracker) {
         if (_sequenceTracker) {
-            lock_guard<mutex> lock(_sequenceTracker->mutex());
-            _sequenceTracker->addExternalTransaction(sourceTracker);
+            _sequenceTracker->use([&](SequenceTracker &st) {
+                st.addExternalTransaction(sourceTracker);
+            });
         }
     }
 
@@ -636,12 +639,13 @@ namespace c4Internal {
 
     void Database::documentSaved(Document* doc) {
         if (_sequenceTracker) {
-            lock_guard<mutex> lock(_sequenceTracker->mutex());
-            Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
-            _sequenceTracker->documentChanged(doc->_docIDBuf,
-                                              doc->_selectedRevIDBuf,
-                                              doc->selectedRev.sequence,
-                                              doc->selectedRev.body.size);
+            _sequenceTracker->use([doc](SequenceTracker &st) {
+                Assert(doc->selectedRev.sequence == doc->sequence); // The new revision must be selected
+                st.documentChanged(doc->_docIDBuf,
+                                   doc->_selectedRevIDBuf,
+                                   doc->selectedRev.sequence,
+                                   doc->selectedRev.body.size);
+            });
         }
     }
 
@@ -649,17 +653,25 @@ namespace c4Internal {
     bool Database::purgeDocument(slice docID) {
         if (!defaultKeyStore().del(docID, transaction()))
             return false;
-        if (_sequenceTracker.get())
-            _sequenceTracker->documentPurged(docID);
+        if (_sequenceTracker) {
+            _sequenceTracker->use([&](SequenceTracker &st) {
+                st.documentPurged(docID);
+            });
+        }
         return true;
     }
 
 
     int64_t Database::purgeExpiredDocs() {
-        KeyStore::ExpirationCallback cb = [=](slice docID) {
-            _sequenceTracker->documentPurged(docID);
-        };
-        return _dataFile->defaultKeyStore().expireRecords(_sequenceTracker ? cb : nullptr);
+        if (_sequenceTracker) {
+            return _sequenceTracker->use<int64_t>([&](SequenceTracker &st) {
+                return _dataFile->defaultKeyStore().expireRecords([&](slice docID) {
+                    st.documentPurged(docID);
+                });
+            });
+        } else {
+            return _dataFile->defaultKeyStore().expireRecords(nullptr);
+        }
     }
 
 }

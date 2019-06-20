@@ -24,6 +24,7 @@
 #include "DataFile.hh"
 #include "FilePath.hh"
 #include "InstanceCounted.hh"
+#include "access_lock.hh"
 #include <memory>
 #include <mutex>
 #include <unordered_set>
@@ -108,7 +109,7 @@ namespace c4Internal {
 
         fleece::impl::SharedKeys* documentKeys()                  {return _dataFile->documentKeys();}
 
-        SequenceTracker& sequenceTracker();
+        access_lock<SequenceTracker>& sequenceTracker();
 
         BlobStore* blobStore();
 
@@ -124,7 +125,7 @@ namespace c4Internal {
     public:
         // should be private, but called from Document
         void documentSaved(Document* NONNULL);
-        virtual void externalTransactionCommitted(const SequenceTracker&);
+        void externalTransactionCommitted(const SequenceTracker&);
 
     protected:
         virtual ~Database();
@@ -148,7 +149,7 @@ namespace c4Internal {
         int                         _transactionLevel {0};  // Nesting level of transaction
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
         unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
-        unique_ptr<SequenceTracker> _sequenceTracker;       // Doc change tracker/notifier
+        unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;       // Doc change tracker/notifier
         unique_ptr<BlobStore>       _blobStore;             // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
         recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
