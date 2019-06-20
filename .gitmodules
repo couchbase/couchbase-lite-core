@@ -18,4 +18,4 @@
 	url = https://github.com/ARMmbed/mbedtls.git
 [submodule "vendor/libwebsockets"]
 	path = vendor/libwebsockets
-	url = https://libwebsockets.org/repo/libwebsockets
+	url = https://github.com/couchbasedeps/libwebsockets.git
