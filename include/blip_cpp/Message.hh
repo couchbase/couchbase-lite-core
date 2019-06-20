@@ -176,7 +176,7 @@ namespace litecore { namespace blip {
         void notHandled();
 
         void dump(std::ostream& out, bool withBody) {
-            Message::dump(_properties, (withBody ? _body : fleece::nullslice), out);
+            Message::dump(_properties, (withBody ? _body : fleece::alloc_slice()), out);
         }
 
     protected:
