@@ -78,7 +78,6 @@ namespace litecore {
             t.commit();
 
             // Notify other Database instances of any changes:
-            lock_guard<mutex> lock(sequenceTracker.mutex());
             dataFile->forOtherDataFiles([&](DataFile *other) {
                 auto db = dynamic_cast<Database*>(other->delegate());
                 if (db)

@@ -97,11 +97,11 @@ namespace litecore {
 
         sequence_t after = _currentEnumerator ? _currentEnumerator->lastSequence() : 0;
         sequence_t lastSequence = 0;
-        {
-            lock_guard<mutex> lock(_database->sequenceTracker().mutex());
+
+        _database->sequenceTracker().use([&](SequenceTracker &st) {
             if (_dbNotifier == nullptr) {
                 // Start the db change notifier:
-                _dbNotifier.reset(new DatabaseChangeNotifier(_database->sequenceTracker(),
+                _dbNotifier.reset(new DatabaseChangeNotifier(st,
                                                              bind(&LiveQuerier::dbChanged, this, _1),
                                                              after));
                 logVerbose("Started DB change notifier after sequence %lld", after);
@@ -115,7 +115,7 @@ namespace litecore {
             size_t n;
             while ((n = _dbNotifier->readChanges(changes, 100, external)) > 0)
                 lastSequence = changes[n-1].sequence;
-        }
+        });
 
         if (lastSequence > after && _currentEnumerator) {
             logVerbose("Hm, DB has changed to %lld already; triggering another run", lastSequence);
@@ -129,8 +129,9 @@ namespace litecore {
             _query = nullptr;
         });
         _currentEnumerator = nullptr;
-        lock_guard<mutex> lock(_database->sequenceTracker().mutex());
-        _dbNotifier.reset();
+        _database->sequenceTracker().use([&](SequenceTracker &st) {
+            _dbNotifier.reset();
+        });
     }
 
 

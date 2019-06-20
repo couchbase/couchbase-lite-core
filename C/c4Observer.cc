@@ -26,12 +26,14 @@ using namespace std::placeholders;
 
 
 struct c4DatabaseObserver : fleece::InstanceCounted {
-    c4DatabaseObserver(C4Database *db, C4SequenceNumber since,
-                       C4DatabaseObserverCallback callback, void *context)
+    c4DatabaseObserver(C4Database *db,
+                        SequenceTracker &sequenceTracker,
+                        C4SequenceNumber since,
+                        C4DatabaseObserverCallback callback, void *context)
     :_db(db),
      _callback(callback),
      _context(context),
-     _notifier(db->sequenceTracker(),
+     _notifier(sequenceTracker,
                bind(&c4DatabaseObserver::dispatchCallback, this, _1),
                since)
     { }
@@ -59,8 +61,9 @@ C4DatabaseObserver* c4dbobs_create(C4Database *db,
                                    void *context) noexcept
 {
     return tryCatch<C4DatabaseObserver*>(nullptr, [&]{
-        lock_guard<mutex> lock(db->sequenceTracker().mutex());
-        return new c4DatabaseObserver(db, UINT64_MAX, callback, context);
+        return db->sequenceTracker().use<C4DatabaseObserver*>([&](SequenceTracker &st) {
+            return new c4DatabaseObserver(db, st, UINT64_MAX, callback, context);
+        });
     });
 }
 
@@ -74,16 +77,17 @@ uint32_t c4dbobs_getChanges(C4DatabaseObserver *obs,
                   "C4DatabaseChange doesn't match SequenceTracker::Change");
     memset(outChanges, 0, maxChanges * sizeof(C4DatabaseChange));
     return tryCatch<uint32_t>(nullptr, [&]{
-        lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
-        return (uint32_t) obs->_notifier.readChanges((SequenceTracker::Change*)outChanges,
+        return obs->_db->sequenceTracker().use<uint32_t>([&](SequenceTracker &st) {
+            return (uint32_t) obs->_notifier.readChanges((SequenceTracker::Change*)outChanges,
                                                      maxChanges,
                                                      *outExternal);
-        // This is slightly sketchy because SequenceTracker::Change contains alloc_slices, whereas
-        // C4DatabaseChange contains slices. The result is that the docID and revID memory will be
-        // temporarily leaked, since the alloc_slice destructors won't be called.
-        // For this purpose we have c4dbobs_releaseChanges(), which does the same sleight of hand
-        // on the array but explicitly destructs each Change object, ensuring its alloc_slices are
-        // destructed and the backing store's ref-count goes back to what it was originally.
+            // This is slightly sketchy because SequenceTracker::Change contains alloc_slices, whereas
+            // C4DatabaseChange contains slices. The result is that the docID and revID memory will be
+            // temporarily leaked, since the alloc_slice destructors won't be called.
+            // For this purpose we have c4dbobs_releaseChanges(), which does the same sleight of hand
+            // on the array but explicitly destructs each Change object, ensuring its alloc_slices are
+            // destructed and the backing store's ref-count goes back to what it was originally.
+        });
     });
 }
 
@@ -99,8 +103,9 @@ void c4dbobs_releaseChanges(C4DatabaseChange changes[], uint32_t numChanges) noe
 void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
     if (obs) {
         Retained<Database> retainDB((Database*)obs->_db);   // keep db from being deleted too early
-        lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
-        delete obs;
+        retainDB->sequenceTracker().use([&](SequenceTracker &st) {
+            delete obs;
+        });
     }
 }
 
@@ -109,12 +114,15 @@ void c4dbobs_free(C4DatabaseObserver* obs) noexcept {
 
 
 struct c4DocumentObserver : fleece::InstanceCounted {
-    c4DocumentObserver(C4Database *db, C4Slice docID,
-                       C4DocumentObserverCallback callback, void *context)
+    c4DocumentObserver(C4Database *db,
+                        SequenceTracker &sequenceTracker,
+                        C4Slice docID,
+                        C4DocumentObserverCallback callback,
+                        void *context)
     :_db(db),
      _callback(callback),
      _context(context),
-     _notifier(db->sequenceTracker(),
+     _notifier(sequenceTracker,
                docID,
                bind(&c4DocumentObserver::dispatchCallback, this, _1, _2, _3))
     { }
@@ -138,16 +146,18 @@ C4DocumentObserver* c4docobs_create(C4Database *db,
                                     void *context) noexcept
 {
     return tryCatch<C4DocumentObserver*>(nullptr, [&]{
-        lock_guard<mutex> lock(db->sequenceTracker().mutex());
-        return new c4DocumentObserver(db, docID, callback, context);
+        return db->sequenceTracker().use<C4DocumentObserver*>([&](SequenceTracker &st) {
+            return new c4DocumentObserver(db, st, docID, callback, context);
+        });
     });
 }
 
 
 void c4docobs_free(C4DocumentObserver* obs) noexcept {
     if (obs) {
-        Retained<Database> db(obs->_db);        // keep db alive until obs is safely deleted
-        lock_guard<mutex> lock(obs->_notifier.tracker.mutex());
-        delete obs;
+        Retained<Database> retainDB(obs->_db);        // keep db alive until obs is safely deleted
+        retainDB->sequenceTracker().use([&](SequenceTracker &st) {
+            delete obs;
+        });
     }
 }

@@ -666,22 +666,28 @@ namespace litecore {
     }
 
     void FilePath::moveTo(const string &to) const {
+        int result = rename_u8(path().c_str(), to.c_str());
 #ifdef _MSC_VER
-        int result = chmod_u8(to.c_str(), 0600);
-        if (result != 0) {
-            if (errno != ENOENT) {
-                error::_throwErrno();
+        // While unix will automatically overwrite the target,
+        // Windows will not
+        int loopCount = 0;
+        while(result != 0 && errno == EEXIST) {
+            if(loopCount++ == 10) {
+                WarnError("Unable to move blob after 10 attempts, giving up...")
+                error::_throw(error::POSIX, EEXIST);
             }
-        } else {
+
+            check(chmod_u8(to.c_str(), 0600));
             if ((FilePath(to).isDir())) {
                 check(rmdir_u8(to.c_str()));
-            }
-            else {
+            }  else {
                 check(unlink_u8(to.c_str()));
             }
+
+            result = rename_u8(path().c_str(), to.c_str());
         }
 #endif
-        check(rename_u8(path().c_str(), to.c_str()));
+        check(result);
     }
 
 

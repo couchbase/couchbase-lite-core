@@ -15,6 +15,9 @@ namespace litecore {
     template <class T>
     class access_lock {
     public:
+        access_lock()
+        { }
+        
         access_lock(T &&contents)
         :_contents(std::move(contents))
         { }

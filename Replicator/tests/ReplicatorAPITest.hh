@@ -108,10 +108,13 @@ public:
         lock_guard<mutex> lock(_mutex);
 
         Assert(r == _repl);      // can't call REQUIRE on a background thread
+        logState(s);
         _callbackStatus = s;
         ++_numCallbacks;
+        Assert(_numCallbacksWithLevel[(int)kC4Stopped] == 0);   // Stopped must be the final state
         _numCallbacksWithLevel[(int)s.level]++;
-        logState(_callbackStatus);
+        if (s.level == kC4Busy)
+            Assert(s.error.code == 0);                          // Busy state shouldn't have error
 
         if (!_headers) {
             _headers = AllocedDict(alloc_slice(c4repl_getResponseHeaders(_repl)));
@@ -219,7 +222,7 @@ public:
             if (!db2)
                 CHECK(_headers);
         }
-        CHECK(_numCallbacksWithLevel[kC4Stopped] > 0);
+        CHECK(_numCallbacksWithLevel[kC4Stopped] == 1);
         CHECK(_callbackStatus.level == status.level);
         CHECK(_callbackStatus.error.domain == status.error.domain);
         CHECK(_callbackStatus.error.code == status.error.code);

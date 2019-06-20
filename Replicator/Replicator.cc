@@ -192,7 +192,8 @@ namespace litecore { namespace repl {
 
     Worker::ActivityLevel Replicator::computeActivityLevel() const {
         // Once I've announced I've stopped, don't return any other status again:
-        if (status().level == kC4Stopped)
+        auto currentLevel = status().level;
+        if (currentLevel == kC4Stopped)
             return kC4Stopped;
 
         ActivityLevel level;
@@ -221,11 +222,13 @@ namespace litecore { namespace repl {
                 break;
             case Connection::kDisconnected:
             case Connection::kClosed:
-                // After connection closes, remain busy while I wait for db to finish writes
-                // and for myself to process any pending messages:
+                // After connection closes, remain Busy (or Connecting) while I wait for db to
+                // finish writes and for myself to process any pending messages; then go to Stopped.
                 level = Worker::computeActivityLevel();
                 if (level < kC4Busy)
                     level = kC4Stopped;
+                else if (currentLevel == kC4Connecting)
+                    level = kC4Connecting;
                 break;
         }
         if (SyncBusyLog.effectiveLevel() <= LogLevel::Info) {
