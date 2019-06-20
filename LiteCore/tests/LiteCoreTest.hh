@@ -24,6 +24,7 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "JSON5.hh"
+#include "DocID.hh"
 #include "c4Base.h"
 #include <functional>
 
@@ -54,6 +55,19 @@ std::string sliceToHexDump(slice, size_t width = 16);
 // (This has to be declared before including catch.hpp, because C++ sucks)
 namespace fleece {
     std::ostream& operator<< (std::ostream& o, slice s);
+}
+
+
+namespace litecore {
+    inline DocID operator "" _id (const char *str, size_t length) {
+        return DocID(slice(str, length));
+    }
+    inline alloc_slice operator "" _rev (const char *str, size_t length) {
+        return alloc_slice(str, length);
+    }
+    inline bool operator== (const DocID &docID, slice s) {
+        return docID.asSlice() == s;
+    }
 }
 
 

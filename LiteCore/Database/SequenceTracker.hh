@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Base.hh"
+#include "DocID.hh"
 #include "Error.hh"
 #include "Logging.hh"
 #include <list>
@@ -53,13 +54,13 @@ namespace litecore {
         void endTransaction(bool commit);
 
         /** Document implementation calls this to register the change with the Notifier. */
-        void documentChanged(const alloc_slice &docID,
+        void documentChanged(const DocID &docID,
                              const alloc_slice &revID,
                              sequence_t sequence,
                              uint64_t bodySize);
 
         /** Document implementation calls this to register the change with the Notifier. */
-        void documentPurged(slice docID);
+        void documentPurged(const DocID &docID);
 
         /** Copy the other tracker's transaction's changes into myself as committed & external */
         void addExternalTransaction(const SequenceTracker &from);
@@ -68,7 +69,7 @@ namespace litecore {
 
         /** Tracks a document's current sequence. */
         struct Entry {
-            alloc_slice const               docID;
+            DocID const                     docID;
             sequence_t                      sequence {0};
 
             // Document entry (when docID != nullslice):
@@ -82,20 +83,19 @@ namespace litecore {
             // Placeholder entry (when docID == nullslice):
             DatabaseChangeNotifier* const   databaseObserver {nullptr};
 
-            Entry(const alloc_slice &d, alloc_slice r, sequence_t s, uint32_t bs)
-            :docID(d), revID(r), sequence(s), bodySize(bs), idle(false), external(false) {
-                DebugAssert(docID != nullslice);
-            }
+            Entry(const DocID &d, alloc_slice r, sequence_t s, uint32_t bs)
+            :docID(d), revID(r), sequence(s), bodySize(bs), idle(false), external(false)
+            { }
             Entry(DatabaseChangeNotifier *o)
             :databaseObserver(o) { }    // placeholder
 
-            bool isPlaceholder() const          {return docID.buf == nullptr;}
+            bool isPlaceholder() const          {return docID.c_str() == nullptr;}
             bool isPurge() const                {return sequence == 0 && !isPlaceholder();}
             bool isIdle() const                 {return idle && !isPlaceholder();}
         };
 
         struct Change {
-            alloc_slice docID;
+            DocID docID;
             alloc_slice revID;
             sequence_t sequence;
             uint32_t bodySize;
@@ -133,7 +133,7 @@ namespace litecore {
         size_t readChanges(const_iterator placeholder,
                            Change changes[], size_t maxChanges,
                            bool &external);
-        const_iterator addDocChangeNotifier(slice docID, DocChangeNotifier*);
+        const_iterator addDocChangeNotifier(const DocID &docID, DocChangeNotifier*);
         void removeDocChangeNotifier(const_iterator, DocChangeNotifier*);
         void removeObsoleteEntries();
 
@@ -142,7 +142,7 @@ namespace litecore {
         friend class DocChangeNotifier;
         friend class SequenceTrackerTest;
 
-        void _documentChanged(const alloc_slice &docID,
+        void _documentChanged(const DocID &docID,
                               const alloc_slice &revID,
                               sequence_t sequence,
                               uint64_t bodySize);
@@ -165,15 +165,15 @@ namespace litecore {
     /** Tracks changes to a single document and calls a client callback. */
     class DocChangeNotifier {
     public:
-        typedef std::function<void(DocChangeNotifier&, slice docID, sequence_t)> Callback;
+        typedef std::function<void(DocChangeNotifier&, DocID docID, sequence_t)> Callback;
 
-        DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb);
+        DocChangeNotifier(SequenceTracker &t, const DocID &docID, Callback cb);
         ~DocChangeNotifier();
 
         SequenceTracker &tracker;
         Callback const callback;
 
-        slice docID() const             {return _docEntry->docID;}
+        const DocID& docID() const      {return _docEntry->docID;}
         sequence_t sequence() const     {return _docEntry->sequence;}
 
     protected:

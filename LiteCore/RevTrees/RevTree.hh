@@ -19,6 +19,7 @@
 #pragma once
 #include "PlatformCompat.hh"
 #include "fleece/slice.hh"
+#include "DocID.hh"
 #include "RevID.hh"
 #include <deque>
 #include <unordered_map>

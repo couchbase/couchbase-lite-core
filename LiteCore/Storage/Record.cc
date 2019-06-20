@@ -23,17 +23,9 @@ using namespace std;
 
 namespace litecore {
 
-    Record::Record(slice_NONNULL key)
-    :Record()
-    {
-        setKey(key);
-    }
-
-    Record::Record(alloc_slice key)
-    :Record()
-    {
-        setKey(key);
-    }
+    Record::Record(DocID key)
+    :_key(key)
+    { }
 
     Record::Record(const Record &d)
     :_key(d._key),
@@ -65,7 +57,7 @@ namespace litecore {
 
     void Record::clear() noexcept {
         clearMetaAndBody();
-        setKey(nullslice);
+        setKey(DocID());
     }
 
     uint64_t Record::bodyAsUInt() const noexcept {

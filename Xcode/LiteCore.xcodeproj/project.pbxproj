@@ -988,6 +988,7 @@
 		275E4CCA22417D13006C5B71 /* Inserter.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Inserter.hh; sourceTree = "<group>"; };
 		275E4CCB22417D13006C5B71 /* Inserter.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Inserter.cc; sourceTree = "<group>"; };
 		275E4CD42241C763006C5B71 /* RevFinder.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RevFinder.hh; sourceTree = "<group>"; };
+		275E6B6422BB05210032362A /* DocID.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DocID.hh; sourceTree = "<group>"; };
 		275FF6661E42A90C005F90DD /* QueryParserTables.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryParserTables.hh; sourceTree = "<group>"; };
 		275FF6D11E4947E1005F90DD /* c4BaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BaseTest.cc; sourceTree = "<group>"; };
 		2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStore.cc; sourceTree = "<group>"; };
@@ -2098,6 +2099,7 @@
 		27D74A5F1D4C063A00D806E0 /* Storage */ = {
 			isa = PBXGroup;
 			children = (
+				275E6B6422BB05210032362A /* DocID.hh */,
 				27C319EC1A143F5D00A89EDC /* KeyStore.cc */,
 				27C319ED1A143F5D00A89EDC /* KeyStore.hh */,
 				27E48711192171EA007D8940 /* DataFile.cc */,

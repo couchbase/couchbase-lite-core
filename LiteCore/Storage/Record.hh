@@ -18,6 +18,7 @@
 
 #pragma once
 #include "Base.hh"
+#include "DocID.hh"
 
 namespace litecore {
 
@@ -52,13 +53,11 @@ namespace litecore {
         and some extra metadata like flags and a sequence number. */
     class Record {
     public:
-        Record()                              { }
-        explicit Record(slice_NONNULL key);
-        explicit Record(alloc_slice key);
+        explicit Record(DocID key);
         Record(const Record&);
         Record(Record&&) noexcept;
 
-        const alloc_slice& key() const          {return _key;}
+        const DocID& key() const                {return _key;}
         const alloc_slice& version() const      {return _version;}
         const alloc_slice& body() const         {return _body;}
 
@@ -73,8 +72,7 @@ namespace litecore {
 
         bool exists() const                     {return _exists;}
 
-        template <typename T>
-            void setKey(const T &key)           {_key = key;}
+        void setKey(const DocID &key)           {_key = key;}
         template <typename T>
             void setVersion(const T &vers)      {_version = vers;}
         template <typename T>
@@ -102,7 +100,8 @@ namespace litecore {
         friend class Transaction;
         friend class RecordEnumerator;
 
-        alloc_slice     _key, _version, _body;  // The key, metadata and body of the record
+        DocID           _key;
+        alloc_slice     _version, _body;        // The key, metadata and body of the record
         size_t          _bodySize {0};          // Size of body, if body wasn't loaded
         sequence_t      _sequence {0};          // Sequence number (if KeyStore supports sequences)
         expiration_t    _expiration {0};        // Expiration time (only set by RecordEnumerator)

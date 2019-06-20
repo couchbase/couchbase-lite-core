@@ -216,7 +216,7 @@ namespace litecore {
 
         {
             lock_guard<mutex> lock(const_cast<SQLiteKeyStore*>(this)->_stmtMutex);
-            stmt->bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
+            stmt->bindNoCopy(1, rec.key().c_str(), (int)rec.key().size());
             UsingStatement u(*stmt);
             if (!stmt->executeStep())
                 return false;
@@ -232,7 +232,6 @@ namespace litecore {
     Record SQLiteKeyStore::get(sequence_t seq /*, ContentOptions content*/) const {
         constexpr ContentOption content = kEntireBody;  // this used to be a param but not used
         Assert(_capabilities.sequences);
-        Record rec;
         SQLite::Statement *stmt;
         switch (content) {
             case kMetaOnly:
@@ -253,16 +252,16 @@ namespace litecore {
 
         UsingStatement u(*stmt);
         stmt->bind(1, (long long)seq);
-        if (stmt->executeStep()) {
-            rec.setKey(columnAsSlice(stmt->getColumn(2)));
-            rec.updateSequence(seq);
-            setRecordMetaAndBody(rec, *stmt, content);
-        }
+        if (!stmt->executeStep())
+            return Record(DocID(""));
+        Record rec(DocID(columnAsSlice(stmt->getColumn(2))));
+        rec.updateSequence(seq);
+        setRecordMetaAndBody(rec, *stmt, content);
         return rec;
     }
 
 
-    sequence_t SQLiteKeyStore::set(slice_NONNULL key, slice vers, slice body, DocumentFlags flags,
+    sequence_t SQLiteKeyStore::set(const DocID &key, slice vers, slice body, DocumentFlags flags,
                                    Transaction&,
                                    const sequence_t *replacingSequence,
                                    bool newSequence)
@@ -296,7 +295,7 @@ namespace litecore {
         stmt->bindNoCopy(1, vers.buf, (int)vers.size);
         stmt->bindNoCopy(2, body.buf, (int)body.size);
         stmt->bind(3, (int)flags);
-        stmt->bindNoCopy(5, (const char*)key.buf, (int)key.size);
+        stmt->bindNoCopy(5, key.c_str(), (int)key.size());
 
         sequence_t seq = 0;
         if (_capabilities.sequences) {
@@ -313,7 +312,7 @@ namespace litecore {
         }
 
         if (db().willLog(LogLevel::Verbose) && name() != "default")
-            db()._logVerbose("KeyStore(%-s) %s %.*s", name().c_str(), opName, SPLAT(key));
+            db()._logVerbose("KeyStore(%-s) %s %s", name().c_str(), opName, key.c_str());
 
         UsingStatement u(*stmt);
         if (stmt->exec() == 0)
@@ -325,30 +324,29 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::del(slice_NONNULL key, Transaction&, sequence_t seq) {
-        Assert(key);
+    bool SQLiteKeyStore::del(const DocID &key, Transaction&, sequence_t seq) {
         SQLite::Statement *stmt;
-        db()._logVerbose("SQLiteKeyStore(%s) del key '%.*s' seq %" PRIu64,
-                        _name.c_str(), SPLAT(key), seq);
+        db()._logVerbose("SQLiteKeyStore(%s) del key '%s' seq %" PRIu64,
+                        _name.c_str(), key.c_str(), seq);
         if (seq) {
             stmt = &compile(_delByBothStmt, "DELETE FROM kv_@ WHERE key=? AND sequence=?");
             stmt->bind(2, (long long)seq);
         } else {
             stmt = &compile(_delByKeyStmt, "DELETE FROM kv_@ WHERE key=?");
         }
-        stmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
+        stmt->bindNoCopy(1, key.c_str(), (int)key.size());
         UsingStatement u(*stmt);
         return stmt->exec() > 0;
     }
 
 
-    bool SQLiteKeyStore::setDocumentFlag(slice_NONNULL key, sequence_t seq, DocumentFlags flags,
+    bool SQLiteKeyStore::setDocumentFlag(const DocID &key, sequence_t seq, DocumentFlags flags,
                                          Transaction&)
     {
         compile(_setFlagStmt, "UPDATE kv_@ SET flags=(flags | ?) WHERE key=? AND sequence=?");
         UsingStatement u(*_setFlagStmt);
         _setFlagStmt->bind      (1, (unsigned)flags);
-        _setFlagStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
+        _setFlagStmt->bindNoCopy(2, key.c_str(), (int)key.size());
         _setFlagStmt->bind      (3, (long long)seq);
         return _setFlagStmt->exec() > 0;
     }
@@ -402,7 +400,7 @@ namespace litecore {
     }
 
 
-    bool SQLiteKeyStore::setExpiration(slice_NONNULL key, expiration_t expTime) {
+    bool SQLiteKeyStore::setExpiration(const DocID &key, expiration_t expTime) {
         Assert(expTime >= 0, "Invalid (negative) expiration time");
         addExpiration();
         compile(_setExpStmt, "UPDATE kv_@ SET expiration=? WHERE key=?");
@@ -411,21 +409,21 @@ namespace litecore {
             _setExpStmt->bind(1, (long long)expTime);
         else
             _setExpStmt->bind(1); // null
-        _setExpStmt->bindNoCopy(2, (const char*)key.buf, (int)key.size);
+        _setExpStmt->bindNoCopy(2, key.c_str(), (int)key.size());
         bool ok = _setExpStmt->exec() > 0;
         if (ok)
-            db()._logVerbose("SQLiteKeyStore(%s) set expiration of '%.*s' to %" PRId64,
-                            _name.c_str(), SPLAT(key), expTime);
+            db()._logVerbose("SQLiteKeyStore(%s) set expiration of '%s' to %" PRId64,
+                            _name.c_str(), key.c_str(), expTime);
         return ok;
     }
 
 
-    expiration_t SQLiteKeyStore::getExpiration(slice_NONNULL key) {
+    expiration_t SQLiteKeyStore::getExpiration(const DocID &key) {
         if (!hasExpiration())
             return 0;
         compile(_getExpStmt, "SELECT expiration FROM kv_@ WHERE key=?");
         UsingStatement u(*_getExpStmt);
-        _getExpStmt->bindNoCopy(1, (const char*)key.buf, (int)key.size);
+        _getExpStmt->bindNoCopy(1, key.c_str(), (int)key.size());
         if (!_getExpStmt->executeStep())
             return 0;
         return _getExpStmt->getColumn(0);
@@ -459,7 +457,7 @@ namespace litecore {
             none = true;
             while (_findExpStmt->executeStep()) {
                 none = false;
-                callback(columnAsSlice(_findExpStmt->getColumn(0)));
+                callback(DocID(columnAsSlice(_findExpStmt->getColumn(0))));
             }
         }
         if (!none) {

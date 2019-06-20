@@ -261,7 +261,7 @@ TEST_CASE_METHOD(QueryTest, "Query refresh", "[Query]") {
     // Delete one of the docs in the query -- this does trigger a refresh:
     {
         Transaction t(db);
-        store->set("rec-030"_sl, "2-ffff"_sl, nullslice, DocumentFlags::kDeleted, t);
+        store->set(DocID("rec-030"), "2-ffff"_sl, nullslice, DocumentFlags::kDeleted, t);
         t.commit();
     }
 
@@ -1200,15 +1200,15 @@ protected:
         checkQuery(88, 4);
 
         Log("-------- Purging a doc --------");
-        deleteDoc("rec-091"_sl, true);
+        deleteDoc(DocID("rec-091"), true);
         checkQuery(88, 3);
 
         Log("-------- Soft-deleting a doc --------");
-        deleteDoc("rec-090"_sl, false);
+        deleteDoc(DocID("rec-090"), false);
         checkQuery(88, 2);
 
         Log("-------- Un-deleting a doc --------");
-        undeleteDoc("rec-090"_sl);
+        undeleteDoc(DocID("rec-090"));
         checkQuery(88, 3);
     }
 };
@@ -1365,8 +1365,8 @@ TEST_CASE_METHOD(QueryTest, "Query expiration", "[Query]") {
         CHECK(!e->next());
     }
 
-    store->setExpiration("rec-001"_sl, now - 10000);
-    store->setExpiration("rec-003"_sl, now + 10000);
+    store->setExpiration(DocID("rec-001"), now - 10000);
+    store->setExpiration(DocID("rec-003"), now + 10000);
 
     {
         Retained<Query> query{ store->compileQuery(json5(

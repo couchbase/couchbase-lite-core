@@ -90,7 +90,7 @@ namespace c4Internal {
         KeyStore& defaultKeyStore();
         KeyStore& getKeyStore(const string &name) const;
 
-        bool purgeDocument(slice docID);
+        bool purgeDocument(const DocID &docID);
         int64_t purgeExpiredDocs();
 
 #if DEBUG
@@ -99,8 +99,8 @@ namespace c4Internal {
         void validateRevisionBody(slice body)   { }
 #endif
 
-        Record getRawDocument(const std::string &storeName, slice key);
-        void putRawDocument(const string &storeName, slice key, slice meta, slice body);
+        Record getRawDocument(const std::string &storeName, const DocID &key);
+        void putRawDocument(const string &storeName, const DocID &key, slice meta, slice body);
 
         DocumentFactory& documentFactory()                  {return *_documentFactory;}
 
@@ -135,7 +135,7 @@ namespace c4Internal {
                                            C4StorageEngine &outStorageEngine);
         static bool deleteDatabaseFileAtPath(const string &dbPath, C4StorageEngine);
         void _cleanupTransaction(bool committed);
-        bool getUUIDIfExists(slice key, UUID&);
+        bool getUUIDIfExists(const DocID &key, UUID&);
         UUID generateUUID(slice key, Transaction&, bool overwrite =false);
 
         std::unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey);

@@ -36,11 +36,11 @@ namespace litecore {
 
     protected:
         virtual bool read() override {
-            Record r = _keyStore.get("SharedKeys"_sl);
+            Record r = _keyStore.get(DocID("SharedKeys"_sl));
             return loadFrom(r.body());
         }
         virtual void write(slice encodedData) override {
-            _keyStore.set("SharedKeys"_sl, encodedData, _db.transaction());
+            _keyStore.set(DocID("SharedKeys"_sl), encodedData, _db.transaction());
         }
 
     private:

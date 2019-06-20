@@ -115,13 +115,13 @@ struct c4DocumentObserver : fleece::InstanceCounted {
      _callback(callback),
      _context(context),
      _notifier(db->sequenceTracker(),
-               docID,
+               DocID(docID),
                bind(&c4DocumentObserver::dispatchCallback, this, _1, _2, _3))
     { }
 
 
-    void dispatchCallback(DocChangeNotifier&, slice docID, sequence_t sequence) {
-        _callback(this, docID, sequence, _context);
+    void dispatchCallback(DocChangeNotifier&, DocID docID, sequence_t sequence) {
+        _callback(this, docID.asSlice(), sequence, _context);
     }
 
     Retained<Database> _db;

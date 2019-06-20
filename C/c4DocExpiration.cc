@@ -34,11 +34,11 @@ C4Timestamp c4_now(void) C4API {
 }
 
 
-bool c4doc_setExpiration(C4Database *db, C4Slice docId, C4Timestamp timestamp, C4Error *outError) C4API {
+bool c4doc_setExpiration(C4Database *db, C4Slice docID, C4Timestamp timestamp, C4Error *outError) C4API {
     if (!c4db_beginTransaction(db, outError))
         return false;
     bool ok = tryCatch<bool>(outError, [=]{
-        if (db->defaultKeyStore().setExpiration(docId, timestamp))
+        if (db->defaultKeyStore().setExpiration(DocID(docID), timestamp))
             return true;
         recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
         return false;
@@ -50,7 +50,7 @@ bool c4doc_setExpiration(C4Database *db, C4Slice docId, C4Timestamp timestamp, C
 C4Timestamp c4doc_getExpiration(C4Database *db, C4Slice docID, C4Error *outError) C4API {
     C4Timestamp expiration = -1;
     tryCatch(outError, [&]{
-        expiration = db->defaultKeyStore().getExpiration(docID);
+        expiration = db->defaultKeyStore().getExpiration(DocID(docID));
     });
     return expiration;
 }

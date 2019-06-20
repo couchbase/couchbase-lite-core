@@ -45,6 +45,7 @@ namespace litecore {
     RecordEnumerator::RecordEnumerator(KeyStore &store,
                                        Options options)
     :_store(&store)
+    ,_record(DocID())
     {
         LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s%s) --> %p",
               store.name().c_str(), (options.descending ? " desc" : ""), this);
@@ -56,6 +57,7 @@ namespace litecore {
                                        sequence_t since,
                                        Options options)
     :_store(&store)
+    ,_record(DocID())
     {
         LogToAt(EnumLog, Debug, "enum: RecordEnumerator(%s, #%llu --) --> %p",
                 store.name().c_str(), (unsigned long long)since, this);
@@ -82,7 +84,7 @@ namespace litecore {
                 close();
                 return false;
             }
-            LogToAt(EnumLog, Debug, "enum:     --> [%s]", _record.key().hexCString());
+            LogToAt(EnumLog, Debug, "enum:     --> [%s]", _record.key().asSlice().hexCString());
             return true;
         }
     }

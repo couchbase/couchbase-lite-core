@@ -62,7 +62,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "Delete DB", "[DataFile]") {
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile CreateDoc", "[DataFile]") {
-    alloc_slice key("key");
+    DocID key("key");
     {
         Transaction t(db);
         store->set(key, "value"_sl, t);
@@ -79,16 +79,17 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
     {
         //WORKAROUND: Add a rec before the main transaction so it doesn't start at sequence 0
         Transaction t(db);
-        store->set("a"_sl, "A"_sl, t);
+        store->set(DocID("a"), "A"_sl, t);
         t.commit();
     }
 
     unique_ptr<DataFile> aliased_db { newDatabase(db->filePath()) };
-    REQUIRE(aliased_db->defaultKeyStore().get("a"_sl).body() == alloc_slice("A"));
+    REQUIRE(aliased_db->defaultKeyStore().get(DocID("a")).body() == alloc_slice("A"));
 
+    DocID recDocID("rec");
     {
         Transaction t(db);
-        Record rec("rec"_sl);
+        Record rec(recDocID);
         rec.setVersion("m-e-t-a"_sl);
         rec.setBody("THIS IS THE BODY"_sl);
         store->write(rec, t);
@@ -109,21 +110,21 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile SaveDocs", "[DataFile]") 
         REQUIRE(rec.body() == doc_alias.body());
 
         // Record shouldn't exist outside transaction yet:
-        REQUIRE(aliased_db->defaultKeyStore().get("rec"_sl).sequence() == 0);
+        REQUIRE(aliased_db->defaultKeyStore().get(recDocID).sequence() == 0);
         t.commit();
     }
 
-    REQUIRE(store->get("rec"_sl).sequence() == 3);
-    REQUIRE(aliased_db->defaultKeyStore().get("rec"_sl).sequence() == 3);
+    REQUIRE(store->get(recDocID).sequence() == 3);
+    REQUIRE(aliased_db->defaultKeyStore().get(recDocID).sequence() == 3);
 }
 
 static void createNumberedDocs(KeyStore *store) {
     Transaction t(store->dataFile());
     for (int i = 1; i <= 100; i++) {
-        string docID = stringWithFormat("rec-%03d", i);
-        sequence_t seq = store->set(slice(docID), slice(docID), t);
+        DocID docID(stringWithFormat("rec-%03d", i));
+        sequence_t seq = store->set(docID, slice(docID), t);
         REQUIRE(seq == (sequence_t)i);
-        REQUIRE(store->get(slice(docID)).body() == alloc_slice(docID));
+        REQUIRE(store->get(docID).body() == alloc_slice(docID));
     }
     t.commit();
 }
@@ -152,7 +153,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocs", "[DataFil
             RecordEnumerator e(*store, opts);
             for (; e.next(); ++i) {
                 string expectedDocID = stringWithFormat("rec-%03d", i);
-                REQUIRE(e->key() == alloc_slice(expectedDocID));
+                REQUIRE(e->key() == slice(expectedDocID));
                 REQUIRE(e->sequence() == (sequence_t)i);
                 REQUIRE(e->bodySize() > 0); // even metaOnly should set the body size
             }
@@ -183,22 +184,23 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile EnumerateDocsDescending",
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile AbortTransaction", "[DataFile]") {
+    DocID aDocID("a"), xDocID("x");
     // Initial record:
     {
         Transaction t(db);
-        store->set("a"_sl, "A"_sl, t);
+        store->set(aDocID, "A"_sl, t);
         t.commit();
     }
     {
         Transaction t(db);
-        store->set("x"_sl, "X"_sl, t);
-        store->set("a"_sl, "Z"_sl, t);
-        REQUIRE(store->get("a"_sl).body() == alloc_slice("Z"));
-        REQUIRE(store->get("a"_sl).body() == alloc_slice("Z"));
+        store->set(xDocID, "X"_sl, t);
+        store->set(aDocID, "Z"_sl, t);
+        REQUIRE(store->get(aDocID).body() == alloc_slice("Z"));
+        REQUIRE(store->get(aDocID).body() == alloc_slice("Z"));
         t.abort();
     }
-    REQUIRE(store->get("a"_sl).body() == alloc_slice("A"));
-    REQUIRE(store->get("x"_sl).sequence() == 0);
+    REQUIRE(store->get(aDocID).body() == alloc_slice("A"));
+    REQUIRE(store->get(xDocID).sequence() == 0);
 }
 
 
@@ -212,15 +214,15 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
     for (unsigned t = 1; t <= kNTransactions; t++) {
         Transaction trans(db);
         for (unsigned d = 1; d <= kNDocs; d++) {
-            string docID = stringWithFormat("%03lu.%03lu", (unsigned long)t, (unsigned long)d);
-            store->set(slice(docID), "some record content goes here"_sl, trans);
+            DocID docID(stringWithFormat("%03lu.%03lu", (unsigned long)t, (unsigned long)d));
+            store->set(docID, "some record content goes here"_sl, trans);
         }
         trans.commit();
     }
 
     int i = 0;
     for (RecordEnumerator iter(db2->defaultKeyStore()); iter.next(); ) {
-        slice key = (*iter).key();
+        auto key = (*iter).key();
         //INFO("key = %s", key);
         unsigned t = (i / kNDocs) + 1;
         unsigned d = (i % kNDocs) + 1;
@@ -232,7 +234,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile TransactionsThenIterate",
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]") {
-    slice key("a");
+    DocID key("a");
     {
         Transaction t(db);
         store->set(key, "A"_sl, t);
@@ -251,7 +253,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteKey", "[DataFile]")
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]") {
-    slice key("a");
+    DocID key("a");
     {
         Transaction t(db);
         store->set(key, "A"_sl, t);
@@ -273,7 +275,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDoc", "[DataFile]")
 
 // Tests workaround for ForestDB bug MB-18753
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile DeleteDocAndReopen", "[DataFile]") {
-    slice key("a");
+    DocID key("a");
     {
         Transaction t(db);
         store->set(key, "A"_sl, t);
@@ -311,7 +313,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreInfo", "[DataFile
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
-    alloc_slice key("key");
+    DocID key("key");
     {
         Transaction t(db);
         s.set(key, "value"_sl, t);
@@ -329,7 +331,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreWrite", "[DataFil
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Conditional Write", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
-    alloc_slice key("key");
+    DocID key("key");
     sequence_t oldSeq = 0;
     sequence_t newSeq;
     {
@@ -361,7 +363,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Conditional Write", "[Dat
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFile]") {
     KeyStore &s = db->getKeyStore("store");
-    alloc_slice key("key");
+    DocID key("key");
 //    {
 //        Transaction t(db);
 //        t(s).set(key, "value"_sl);
@@ -376,7 +378,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreDelete", "[DataFi
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[DataFile][!throws]") {
     KeyStore &s = db->getKeyStore("store");
-    alloc_slice key("key");
+    DocID key("key");
     db->close();
     ExpectException(error::LiteCore, error::NotOpen, [&]{
         Record rec = s.get(key);
@@ -385,9 +387,10 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile KeyStoreAfterClose", "[Da
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!throws]") {
+    DocID key("key");
     {
         Transaction t(db);
-        store->set("key"_sl, "value"_sl, t);
+        store->set(key, "value"_sl, t);
         t.commit();
     }
     // Reopen db as read-only:
@@ -396,13 +399,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile ReadOnly", "[DataFile][!t
     options.create = false;
     reopenDatabase(&options);
 
-    auto rec = store->get("key"_sl);
+    auto rec = store->get(key);
     REQUIRE(rec.exists());
 
     // Attempt to change a rec:
     ExpectException(error::LiteCore, error::NotWriteable, [&]{
         Transaction t(db);
-        store->set("key"_sl, "somethingelse"_sl, t);
+        store->set(key, "somethingelse"_sl, t);
         t.commit();
     });
 
@@ -419,8 +422,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Compact", "[DataFile]") {
     {
         Transaction t(db);
         for (int i = 1; i <= 100; i += 3) {
-            auto docID = stringWithFormat("rec-%03d", i);
-            Record rec = store->get((slice)docID);
+            DocID docID(stringWithFormat("rec-%03d", i));
+            Record rec = store->get(docID);
             store->del(rec, t);
         }
         t.commit();
@@ -520,6 +523,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Open Unencrypted With Key
 
 
 N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][Encryption][!throws]") {
+    DocID key("k");
     REQUIRE(factory().encryptionEnabled(kAES256));
     DataFile::Options options = db->options();
     options.encryptionAlgorithm = kAES256;
@@ -531,13 +535,13 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Encryption", "[DataFile][
             // Create encrypted db:
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
             Transaction t(*encryptedDB);
-            encryptedDB->defaultKeyStore().set("k"_sl, "value"_sl, t);
+            encryptedDB->defaultKeyStore().set(key, "value"_sl, t);
             t.commit();
         }
         {
             // Reopen with correct key:
             unique_ptr<DataFile> encryptedDB { newDatabase(dbPath, &options) };
-            auto rec = encryptedDB->defaultKeyStore().get("k"_sl);
+            auto rec = encryptedDB->defaultKeyStore().get(key);
             REQUIRE(rec.body() == alloc_slice("value"));
         }
         {
@@ -569,7 +573,8 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
 
     reopenDatabase(&options);
 
-    Record rec = store->get((slice)"rec-001");
+    DocID rec001Key("rec-001");
+    Record rec = store->get(rec001Key);
     REQUIRE(rec.exists());
     
     // Change encryption key
@@ -578,7 +583,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
     
     reopenDatabase(&options);
     
-    Record rec2 = store->get((slice)"rec-001");
+    Record rec2 = store->get(rec001Key);
     REQUIRE(rec2.exists());
     
     // Remove encryption
@@ -588,7 +593,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
     
     reopenDatabase(&options);
     
-    Record rec3 = store->get((slice)"rec-001");
+    Record rec3 = store->get(rec001Key);
     REQUIRE(rec3.exists());
     
     // No-op, adding no encryption to a database with no encryption
@@ -596,7 +601,7 @@ N_WAY_TEST_CASE_METHOD (DataFileTestFixture, "DataFile Rekey", "[DataFile][Encry
     
     reopenDatabase(&options);
     
-    Record rec4 = store->get((slice)"rec-001");
+    Record rec4 = store->get(rec001Key);
     REQUIRE(rec4.exists());
 }
 

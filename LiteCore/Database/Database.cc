@@ -153,7 +153,7 @@ namespace c4Internal {
 
         // Validate that the versioning matches what's used in the database:
         auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
-        Record doc = info.get(slice("versioning"));
+        Record doc = info.get(DocID("versioning"));
         if (doc.exists()) {
             if (doc.bodyAsUInt() != (uint64_t)config.versioning)
                 error::_throw(error::WrongFormat);
@@ -358,7 +358,7 @@ namespace c4Internal {
     uint32_t Database::maxRevTreeDepth() {
         if (_maxRevTreeDepth == 0) {
             auto &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
-            _maxRevTreeDepth = (uint32_t)info.get(kMaxRevTreeDepthKey).bodyAsUInt();
+            _maxRevTreeDepth = (uint32_t)info.get(DocID(kMaxRevTreeDepthKey)).bodyAsUInt();
             if (_maxRevTreeDepth == 0)
                 _maxRevTreeDepth = kDefaultMaxRevTreeDepth;
         }
@@ -369,7 +369,7 @@ namespace c4Internal {
         if (depth == 0)
             depth = kDefaultMaxRevTreeDepth;
         KeyStore &info = _dataFile->getKeyStore(DataFile::kInfoKeyStoreName);
-        Record rec = info.get(kMaxRevTreeDepthKey);
+        Record rec = info.get(DocID(kMaxRevTreeDepthKey));
         if (depth != rec.bodyAsUInt()) {
             rec.setBodyAsUInt(depth);
             Transaction t(*_dataFile);
@@ -430,7 +430,7 @@ namespace c4Internal {
 #pragma mark - UUIDS:
 
 
-    bool Database::getUUIDIfExists(slice key, UUID &uuid) {
+    bool Database::getUUIDIfExists(const DocID &key, UUID &uuid) {
         auto &store = getKeyStore(toString(kC4InfoStore));
         Record r = store.get(key);
         if (!r.exists() || r.body().size < sizeof(UUID))
@@ -440,7 +440,8 @@ namespace c4Internal {
     }
 
     // must be called within a transaction
-    Database::UUID Database::generateUUID(slice key, Transaction &t, bool overwrite) {
+    Database::UUID Database::generateUUID(slice uuidKey, Transaction &t, bool overwrite) {
+        DocID key(uuidKey);
         UUID uuid;
         if (overwrite || !getUUIDIfExists(key, uuid)) {
             auto &store = getKeyStore(toString(kC4InfoStore));
@@ -451,12 +452,13 @@ namespace c4Internal {
         return uuid;
     }
 
-    Database::UUID Database::getUUID(slice key) {
+    Database::UUID Database::getUUID(slice uuidKey) {
+        DocID key(uuidKey);
         UUID uuid;
         if (!getUUIDIfExists(key, uuid)) {
             beginTransaction();
             try {
-                uuid = generateUUID(key, transaction());
+                uuid = generateUUID(uuidKey, transaction());
             } catch (...) {
                 endTransaction(false);
                 throw;
@@ -471,7 +473,7 @@ namespace c4Internal {
         try {
             UUID previousPrivate = getUUID(kPrivateUUIDKey);
             auto &store = getKeyStore(toString(kC4InfoStore));
-            store.set(constants::kPreviousPrivateUUIDKey, {&previousPrivate, sizeof(UUID)}, transaction());
+            store.set(DocID(constants::kPreviousPrivateUUIDKey), {&previousPrivate, sizeof(UUID)}, transaction());
             generateUUID(kPublicUUIDKey, transaction(), true);
             generateUUID(kPrivateUUIDKey, transaction(), true);
         } catch (...) {
@@ -562,12 +564,12 @@ namespace c4Internal {
 #pragma mark - DOCUMENTS:
 
     
-    Record Database::getRawDocument(const string &storeName, slice key) {
+    Record Database::getRawDocument(const string &storeName, const DocID &key) {
         return getKeyStore(storeName).get(key);
     }
 
 
-    void Database::putRawDocument(const string &storeName, slice key, slice meta, slice body) {
+    void Database::putRawDocument(const string &storeName, const DocID &key, slice meta, slice body) {
         KeyStore &localDocs = getKeyStore(storeName);
         auto &t = transaction();
         if (body.buf || meta.buf)
@@ -646,8 +648,8 @@ namespace c4Internal {
     }
 
 
-    bool Database::purgeDocument(slice docID) {
-        if (!defaultKeyStore().del(docID, transaction()))
+    bool Database::purgeDocument(const DocID &docID) {
+        if (!defaultKeyStore().del(DocID(docID), transaction()))
             return false;
         if (_sequenceTracker.get())
             _sequenceTracker->documentPurged(docID);
@@ -656,7 +658,7 @@ namespace c4Internal {
 
 
     int64_t Database::purgeExpiredDocs() {
-        KeyStore::ExpirationCallback cb = [=](slice docID) {
+        KeyStore::ExpirationCallback cb = [=](const DocID &docID) {
             _sequenceTracker->documentPurged(docID);
         };
         return _dataFile->defaultKeyStore().expireRecords(_sequenceTracker ? cb : nullptr);

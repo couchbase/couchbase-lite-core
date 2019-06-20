@@ -221,7 +221,7 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
             }
 
             // Look up the doc in the db, and the remote URL in the doc:
-            Record doc = db->getRawDocument(toString(kC4InfoStore), slice(kRemoteDBURLsDoc));
+            Record doc = db->getRawDocument(toString(kC4InfoStore), DocID(kRemoteDBURLsDoc));
             const Dict *remotes = nullptr;
             C4RemoteID remoteID = 0;
             if (doc.exists()) {
@@ -259,7 +259,7 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
                 alloc_slice body = enc.finish();
 
                 // Save the doc:
-                db->putRawDocument(toString(kC4InfoStore), slice(kRemoteDBURLsDoc), nullslice, body);
+                db->putRawDocument(toString(kC4InfoStore), DocID(kRemoteDBURLsDoc), nullslice, body);
                 db->endTransaction(true);
                 inTransaction = false;
                 return remoteID;
@@ -278,7 +278,7 @@ C4RemoteID c4db_getRemoteDBID(C4Database *db, C4String remoteAddress, bool canCr
 C4SliceResult c4db_getRemoteDBAddress(C4Database *db, C4RemoteID remoteID) C4API {
     using namespace fleece;
     return tryCatch<C4SliceResult>(nullptr, [&]{
-        Record doc = db->getRawDocument(toString(kC4InfoStore), slice(kRemoteDBURLsDoc));
+        Record doc = db->getRawDocument(toString(kC4InfoStore), DocID(kRemoteDBURLsDoc));
         if (doc.exists()) {
             auto body = Value::fromData(doc.body());
             if (body) {
@@ -324,7 +324,7 @@ bool c4db_markSynced(C4Database *database, C4String docID, C4SequenceNumber sequ
             // Shortcut: can set kSynced flag on the record to mark that the current revision is
             // synced to remote #1. But the call will return false if the sequence no longer
             // matches, i.e this revision is no longer current. Then have to take the slow approach.
-            if (database->defaultKeyStore().setDocumentFlag(docID, sequence,
+            if (database->defaultKeyStore().setDocumentFlag(DocID(docID), sequence,
                                                             DocumentFlags::kSynced,
                                                             database->transaction())) {
                 return true;
@@ -367,9 +367,9 @@ char* c4doc_generateID(char *docID, size_t bufferSize) noexcept {
 }
 
 
-static alloc_slice createDocUUID() {
+static DocID createDocUUID() {
     char docID[kC4GeneratedIDLength + 1];
-    return alloc_slice(c4doc_generateID(docID, sizeof(docID)));
+    return DocID(c4doc_generateID(docID, sizeof(docID)));
 }
 
 
@@ -388,7 +388,7 @@ static bool isNewDocPutRequest(C4Database *database, const C4DocPutRequest *rq) 
 static Document* putNewDoc(C4Database *database, const C4DocPutRequest *rq)
 {
     DebugAssert(rq->save, "putNewDoc optimization works only if rq->save is true");
-    Record record(rq->docID);
+    Record record(DocID(rq->docID));
     if (!rq->docID.buf)
         record.setKey(createDocUUID());
     Retained<Document> idoc = database->documentFactory().newDocumentInstance(record);
@@ -415,10 +415,10 @@ C4Document* c4doc_getForPut(C4Database *database,
     if (!database->mustBeInTransaction(outError))
         return nullptr;
     try {
-        alloc_slice newDocID;
+        DocID newDocID;
         if (!docID.buf) {
             newDocID = createDocUUID();
-            docID = newDocID;
+            docID = slice(newDocID);
         }
 
         Retained<Document> idoc = database->documentFactory().newDocumentInstance(docID);

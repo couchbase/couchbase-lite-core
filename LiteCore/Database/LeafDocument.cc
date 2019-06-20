@@ -41,7 +41,7 @@ namespace c4Internal {
 
     class LeafDocument : public Document {
     public:
-        LeafDocument(Database *database, slice docID_, slice revID_, bool withBody)
+        LeafDocument(Database *database, const DocID &docID_, slice revID_, bool withBody)
         :Document(database, docID_)
         {
             ContentOption options = withBody ? kCurrentRevOnly : kMetaOnly;
@@ -63,7 +63,6 @@ namespace c4Internal {
                 failUnsupported();              //TODO: Implement loading non-current revisions
             selectCurrentRevision();
         }
-
 
         virtual Document* copy() override {
             return new LeafDocument(*this);
@@ -128,7 +127,7 @@ namespace c4Internal {
                 doc = nullptr;
             return doc;
         } else {
-            return new LeafDocument(database(), docID, revID, withBody);
+            return new LeafDocument(database(), DocID(docID), revID, withBody);
         }
     }
 

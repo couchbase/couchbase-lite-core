@@ -40,7 +40,7 @@ namespace c4Internal {
 
     class TreeDocument : public Document {
     public:
-        TreeDocument(Database* database, C4Slice docID)
+        TreeDocument(Database* database, const DocID &docID)
         :Document(database, docID),
          _versionedDoc(database->defaultKeyStore(), docID),
          _selectedRev(nullptr)
@@ -503,7 +503,7 @@ namespace c4Internal {
 
 
     Retained<Document> TreeDocumentFactory::newDocumentInstance(C4Slice docID) {
-        return new TreeDocument(database(), docID);
+        return new TreeDocument(database(), DocID(docID));
     }
 
     Retained<Document> TreeDocumentFactory::newDocumentInstance(const Record &doc) {

@@ -126,7 +126,7 @@ protected:
         });
     }
 
-    void deleteDoc(slice docID, bool hardDelete) {
+    void deleteDoc(DocID docID, bool hardDelete) {
         Transaction t(store->dataFile());
         if (hardDelete) {
             store->del(docID, t);
@@ -139,7 +139,7 @@ protected:
         t.commit();
     }
 
-    void undeleteDoc(slice docID) {
+    void undeleteDoc(DocID docID) {
         Transaction t(store->dataFile());
         Record doc = store->get(docID);
         CHECK(doc.exists());

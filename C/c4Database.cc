@@ -304,7 +304,7 @@ void c4db_unlock(C4Database *db) C4API {
 
 bool c4db_purgeDoc(C4Database *database, C4Slice docID, C4Error *outError) noexcept {
     try {
-        if (database->purgeDocument(docID))
+        if (database->purgeDocument(DocID(docID)))
             return true;
         else
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
@@ -347,13 +347,13 @@ C4RawDocument* c4raw_get(C4Database* database,
                          C4Error *outError) noexcept
 {
     return tryCatch<C4RawDocument*>(outError, [&]{
-        Record r = database->getRawDocument(toString(storeName), key);
+        Record r = database->getRawDocument(toString(storeName), DocID(key));
         if (!r.exists()) {
             recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
             return (C4RawDocument*)nullptr;
         }
         auto rawDoc = new C4RawDocument;
-        rawDoc->key = r.key().copy();
+        rawDoc->key = r.key().asSlice().copy();
         rawDoc->meta = r.version().copy();
         rawDoc->body = r.body().copy();
         return rawDoc;
@@ -372,7 +372,7 @@ bool c4raw_put(C4Database* database,
         return false;
     bool commit = tryCatch(outError,
                                  bind(&Database::putRawDocument, database, toString(storeName),
-                                      key, meta, body));
+                                      DocID(key), meta, body));
     c4db_endTransaction(database, commit, outError);
     return commit;
 }

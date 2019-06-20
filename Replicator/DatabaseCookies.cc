@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
     {
         auto object = db->dataFile()->sharedObject("CookieStore");
         if (!object) {
-            alloc_slice data = _db->getRawDocument(kInfoKeyStore, kCookieStoreDocID).body();
+            alloc_slice data = _db->getRawDocument(kInfoKeyStore, DocID(kCookieStoreDocID)).body();
             object = db->dataFile()->addSharedObject("CookieStore", new CookieStore(data));
         }
         _store = (CookieStore*)object.get();
@@ -47,7 +47,7 @@ namespace litecore { namespace repl {
         _db->beginTransaction();
         try {
             alloc_slice data = _store->encode();
-            _db->putRawDocument(kInfoKeyStore, kCookieStoreDocID, nullslice, data);
+            _db->putRawDocument(kInfoKeyStore, DocID(kCookieStoreDocID), nullslice, data);
             _store->clearChanged();
             _db->endTransaction(true);
         } catch (...) {

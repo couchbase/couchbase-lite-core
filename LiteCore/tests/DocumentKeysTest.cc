@@ -43,7 +43,7 @@ public:
     }
 
     void createDoc(const char *docID, const char *json, Transaction &t) {
-        store->set(slice(docID), convertJSON(json), t);
+        store->set(DocID(docID), convertJSON(json), t);
     }
 
 };
@@ -79,8 +79,9 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
     Dict::key bar("bar"_sl);
     Dict::key zog("zog"_sl);
 
+    DocID doc1ID("doc1"), doc2ID("doc2"), doc3ID("doc3");
     {
-        Record r = store->get("doc1"_sl);
+        Record r = store->get(doc1ID);
         REQUIRE(r.exists());
         Retained<Doc> doc = new Doc(r.body(), Doc::kTrusted, db->documentKeys());
         const Dict *root = doc->asDict();
@@ -92,7 +93,7 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
         REQUIRE(root->get(zog) == nullptr);
     }
     {
-        Record r = store->get("doc2"_sl);
+        Record r = store->get(doc2ID);
         REQUIRE(r.exists());
         Retained<Doc> doc = new Doc(r.body(), Doc::kTrusted, db->documentKeys());
         const Dict *root = doc->asDict();
@@ -116,7 +117,7 @@ TEST_CASE_METHOD(DocumentKeysTestFixture, "Create docs", "[SharedKeys]") {
 
     // Check that the pre-existing Dict::key for zog works now:
     {
-        Record r = store->get("doc3"_sl);
+        Record r = store->get(doc3ID);
         REQUIRE(r.exists());
         Retained<Doc> doc = new Doc(r.body(), Doc::kTrusted, db->documentKeys());
         const Dict *root = doc->asDict();

@@ -35,7 +35,7 @@ namespace litecore {
     class VersionedDocument : public RevTree {
     public:
 
-        VersionedDocument(KeyStore&, slice docID);
+        VersionedDocument(KeyStore&, const DocID&);
         VersionedDocument(KeyStore&, const Record&);
 
         VersionedDocument(const VersionedDocument&);
@@ -47,7 +47,7 @@ namespace litecore {
         /** Returns false if the record was loaded metadata-only. Revision accessors will fail. */
         bool revsAvailable() const {return !_unknown;}
 
-        const alloc_slice& docID() const {return _rec.key();}
+        const DocID& docID() const  {return _rec.key();}
         revid revID() const         {return revid(_rec.version());}
         DocumentFlags flags() const {return _rec.flags();}
         bool isDeleted() const      {return (flags() & DocumentFlags::kDeleted) != 0;}

@@ -48,15 +48,15 @@ namespace c4Internal {
         Note: Its parent 'class' C4Document is the public struct declared in c4Document.h. */
     class Document : public RefCounted, public C4Document, fleece::InstanceCountedIn<Document> {
     public:
-        alloc_slice const _docIDBuf;
+        DocID const _docIDBuf;
         alloc_slice _revIDBuf;
         alloc_slice _selectedRevIDBuf;
 
-        Document(Database *database, slice docID_)
+        Document(Database *database, const DocID &docID_)
         :_db(database)
         ,_docIDBuf(docID_)
         {
-            docID = _docIDBuf;
+            docID = _docIDBuf.asSlice();
             extraInfo = { };
        }
 

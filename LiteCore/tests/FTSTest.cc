@@ -48,7 +48,7 @@ public:
                 enc.endDictionary();
                 alloc_slice body = enc.finish();
 
-                store->set(slice(docID), body, t);
+                store->set(DocID(docID), body, t);
             }
             t.commit();
         }

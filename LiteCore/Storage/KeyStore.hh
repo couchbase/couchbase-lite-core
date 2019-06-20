@@ -19,6 +19,7 @@
 #pragma once
 #include "Base.hh"
 #include "RefCounted.hh"
+#include "DocID.hh"
 #include "RecordEnumerator.hh"
 #include "function_ref.hh"
 #include <functional>
@@ -69,10 +70,10 @@ namespace litecore {
 
         //////// Keys/values:
 
-        Record get(slice_NONNULL key, ContentOption = kEntireBody) const;
+        Record get(const DocID &key, ContentOption = kEntireBody) const;
         virtual Record get(sequence_t) const =0;
 
-        virtual void get(slice_NONNULL key, ContentOption, function_ref<void(const Record&)>);
+        virtual void get(const DocID &key, ContentOption, function_ref<void(const Record&)>);
         virtual void get(sequence_t, function_ref<void(const Record&)>);
 
         /** Reads a record whose key() is already set. */
@@ -91,24 +92,24 @@ namespace litecore {
         /** Core write method. If replacingSequence is not null, will only update the
             record if its existing sequence matches. (Or if the record doesn't already
             exist, in the case where *replacingSequence == 0.) */
-        virtual sequence_t set(slice_NONNULL key, slice version, slice value,
+        virtual sequence_t set(const DocID &key, slice version, slice value,
                                DocumentFlags,
                                Transaction&,
                                const sequence_t *replacingSequence =nullptr,
                                bool newSequence =true) =0;
 
-        sequence_t set(slice_NONNULL key, slice value, Transaction &t,
+        sequence_t set(const DocID &key, slice value, Transaction &t,
                        const sequence_t *replacingSequence =nullptr) {
             return set(key, nullslice, value, DocumentFlags::kNone, t, replacingSequence);
         }
 
         void write(Record&, Transaction&, const sequence_t *replacingSequence =nullptr);
 
-        virtual bool del(slice_NONNULL key, Transaction&, sequence_t replacingSequence =0) =0;
+        virtual bool del(const DocID &key, Transaction&, sequence_t replacingSequence =0) =0;
         bool del(const Record &rec, Transaction &t)                 {return del(rec.key(), t);}
 
         /** Sets a flag of a record, without having to read/write the Record. */
-        virtual bool setDocumentFlag(slice_NONNULL key, sequence_t, DocumentFlags, Transaction&) =0;
+        virtual bool setDocumentFlag(const DocID &key, sequence_t, DocumentFlags, Transaction&) =0;
 
 
         //////// Expiration:
@@ -118,15 +119,15 @@ namespace litecore {
 
         /** Sets a record's expiration time. Zero means 'never'.
             @return  true if the time was set, false if no record with that key exists. */
-        virtual bool setExpiration(slice_NONNULL key, expiration_t) =0;
+        virtual bool setExpiration(const DocID &key, expiration_t) =0;
 
         /** Returns a record's expiration time, or zero if it doesn't expire. */
-        virtual expiration_t getExpiration(slice_NONNULL key) =0;
+        virtual expiration_t getExpiration(const DocID &key) =0;
 
         /** Returns the nearest future time at which a record will expire, or 0 if none. */
         virtual expiration_t nextExpiration() =0;
 
-        using ExpirationCallback = std::function<void(slice docID)>;
+        using ExpirationCallback = std::function<void(const DocID &docID)>;
 
         /** Deletes all records whose expiration time is in the past.
             @return  The number of records deleted */

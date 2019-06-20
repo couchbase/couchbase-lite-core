@@ -265,7 +265,7 @@ sequence_t DataFileTestFixture::writeDoc(slice docID,
     writeProperties(enc);
     enc.endDictionary();
     alloc_slice body = enc.finish();
-    return store->set(docID, nullslice, body, flags, t);
+    return store->set(DocID(docID), nullslice, body, flags, t);
 }
 
 

@@ -34,9 +34,6 @@ namespace litecore {
     using fleece::RefCounted;
     using fleece::Retained;
 
-    // Database sequence number
-    typedef uint64_t sequence_t;
-
     enum EncryptionAlgorithm : uint8_t {
         kNoEncryption = 0,      /**< No encryption (default) */
         kAES256,                /**< AES with 256-bit key */

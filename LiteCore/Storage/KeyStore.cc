@@ -34,13 +34,13 @@ namespace litecore {
     const char* KeyStore::kIndexTypeName[] = {"value", "full-text", "array", "predictive"};
 
 
-    Record KeyStore::get(slice_NONNULL key, ContentOption option) const {
+    Record KeyStore::get(const DocID &key, ContentOption option) const {
         Record rec(key);
         read(rec, option);
         return rec;
     }
 
-    void KeyStore::get(slice_NONNULL key, ContentOption option, function_ref<void(const Record&)> fn) {
+    void KeyStore::get(const DocID &key, ContentOption option, function_ref<void(const Record&)> fn) {
         // Subclasses can implement this differently for better memory management.
         Record rec(key);
         read(rec, option);

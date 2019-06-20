@@ -31,7 +31,7 @@ namespace litecore {
     using namespace fleece;
     using namespace fleece::impl;
 
-    VersionedDocument::VersionedDocument(KeyStore& store, slice docID)
+    VersionedDocument::VersionedDocument(KeyStore& store, const DocID &docID)
     :_store(store), _rec(docID)
     {
         read();

@@ -105,26 +105,25 @@ namespace litecore {
     }
 
 
-    void SequenceTracker::documentChanged(const alloc_slice &docID,
+    void SequenceTracker::documentChanged(const DocID &docID,
                                           const alloc_slice &revID,
                                           sequence_t sequence,
                                           uint64_t bodySize)
     {
-        Assert(docID && revID && sequence > _lastSequence);
+        Assert(revID && sequence > _lastSequence);
         Assert(inTransaction());
         _lastSequence = sequence;
         _documentChanged(docID, revID, sequence, bodySize);
     }
 
 
-    void SequenceTracker::documentPurged(slice docID) {
-        Assert(docID);
+    void SequenceTracker::documentPurged(const DocID &docID) {
         Assert(inTransaction());
-        _documentChanged(alloc_slice(docID), {}, 0, 0);
+        _documentChanged(docID, {}, 0, 0);
     }
 
 
-    void SequenceTracker::_documentChanged(const alloc_slice &docID,
+    void SequenceTracker::_documentChanged(const DocID &docID,
                                            const alloc_slice &revID,
                                            sequence_t sequence,
                                            uint64_t bodySize)
@@ -132,7 +131,7 @@ namespace litecore {
         auto shortBodySize = (uint32_t)min(bodySize, (uint64_t)UINT32_MAX);
         bool listChanged = true;
         Entry *entry;
-        auto i = _byDocID.find(docID);
+        auto i = _byDocID.find(docID.asSlice());
         if (i != _byDocID.end()) {
             // Move existing entry to the end of the list:
             entry = &*i->second;
@@ -155,7 +154,7 @@ namespace litecore {
             // or create a new entry at the end:
             _changes.emplace_back(docID, revID, sequence, shortBodySize);
             iterator change = prev(_changes.end());
-            _byDocID[change->docID] = change;
+            _byDocID[change->docID.asSlice()] = change;
             entry = &*change;
         }
 
@@ -281,7 +280,7 @@ namespace litecore {
             auto &entry = _changes.front();
             if (entry.documentObservers.empty()) {
                 // Remove entry entirely if it has no observers
-                _byDocID.erase(entry.docID);
+                _byDocID.erase(entry.docID.asSlice());
                 _changes.erase(_changes.begin());
             } else {
                 // Move entry to idle list if it has observers
@@ -296,17 +295,17 @@ namespace litecore {
 
 
     SequenceTracker::const_iterator
-    SequenceTracker::addDocChangeNotifier(slice docID, DocChangeNotifier* notifier) {
+    SequenceTracker::addDocChangeNotifier(const DocID &docID, DocChangeNotifier* notifier) {
         iterator entry;
         // Find the entry for the document:
-        auto i = _byDocID.find(docID);
+        auto i = _byDocID.find(docID.asSlice());
         if (i != _byDocID.end()) {
             entry = i->second;
         } else {
             // Document isn't known yet; create an entry and put it in the _idle list
-            entry = _idle.emplace(_idle.end(), alloc_slice(docID), alloc_slice(), 0, 0);
+            entry = _idle.emplace(_idle.end(), docID, alloc_slice(), 0, 0);
             entry->idle = true;
-            _byDocID[entry->docID] = entry;
+            _byDocID[entry->docID.asSlice()] = entry;
         }
         entry->documentObservers.push_back(notifier);
         ++_numDocObservers;
@@ -321,7 +320,7 @@ namespace litecore {
         observers.erase(i);
         --_numDocObservers;
         if (observers.empty() && entry->isIdle()) {
-            _byDocID.erase(entry->docID);
+            _byDocID.erase(entry->docID.asSlice());
             Assert(!_idle.empty());
             _idle.erase(entry);
         }
@@ -362,16 +361,16 @@ namespace litecore {
 #pragma mark - DOC CHANGE NOTIFIER:
 
 
-    DocChangeNotifier::DocChangeNotifier(SequenceTracker &t, slice docID, Callback cb)
+    DocChangeNotifier::DocChangeNotifier(SequenceTracker &t, const DocID &docID, Callback cb)
     :tracker(t),
     _docEntry(tracker.addDocChangeNotifier(docID, this)),
     callback(cb)
     {
-        t._logVerbose("Added doc change notifier %p for '%.*s'", this, SPLAT(docID));
+        t._logVerbose("Added doc change notifier %p for '%s'", this, docID.c_str());
     }
 
     DocChangeNotifier::~DocChangeNotifier() {
-        tracker._logVerbose("Removing doc change notifier %p from '%.*s'", this, SPLAT(_docEntry->docID));
+        tracker._logVerbose("Removing doc change notifier %p from '%s'", this, _docEntry->docID.c_str());
         tracker.removeDocChangeNotifier(_docEntry, this);
     }
 

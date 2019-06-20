@@ -87,7 +87,7 @@ struct C4DocEnumerator: fleece::InstanceCounted {
     bool getDocInfo(C4DocumentInfo *outInfo) {
         if (!_e)
             return false;
-        outInfo->docID = _e.record().key();
+        outInfo->docID = _e.record().key().asSlice();
         outInfo->revID = _docRevID;
         outInfo->flags = _docFlags;
         outInfo->sequence = _e.record().sequence();

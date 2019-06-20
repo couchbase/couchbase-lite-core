@@ -59,8 +59,6 @@ namespace litecore {
                          sequence_t since,
                          Options options = Options());
 
-        RecordEnumerator(RecordEnumerator&& e) noexcept         {*this = std::move(e);}
-
         RecordEnumerator& operator=(RecordEnumerator&& e) noexcept {
             _store = e._store;
             _impl = move(e._impl);
@@ -79,8 +77,8 @@ namespace litecore {
         const Record& record() const      {return _record;}
 
         // Can treat an enumerator as a record pointer:
-        operator const Record*() const    {return _record.key().buf ? &_record : nullptr;}
-        const Record* operator->() const  {return _record.key().buf ? &_record : nullptr;}
+        operator const Record*() const    {return _record.exists() ? &_record : nullptr;}
+        const Record* operator->() const  {return _record.exists() ? &_record : nullptr;}
 
         /** Internal implementation of enumerator; each storage type must subclass it. */
         class Impl {
