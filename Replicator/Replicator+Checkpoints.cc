@@ -241,11 +241,14 @@ namespace litecore { namespace repl {
     void Replicator::handleSetCheckpoint(Retained<MessageIn> request) {
         char newRevBuf[30];
         alloc_slice rev;
+        bool needsResponse = false;
         _db->use([&](C4Database *db) {
             C4Error err;
             c4::Transaction t(db);
-            if (!t.begin(&err))
+            if (!t.begin(&err)) {
                 request->respondWithError(c4ToBLIPError(err));
+                return;
+            }
 
             // Get the existing raw doc so we can check its revID:
             slice checkpointID;
@@ -271,8 +274,10 @@ namespace litecore { namespace repl {
             }
 
             // Check for conflict:
-            if (request->property("rev"_sl) != actualRev)
-                return request->respondWithError({"HTTP"_sl, 409, "revision ID mismatch"_sl});
+            if (request->property("rev"_sl) != actualRev) {
+                request->respondWithError({"HTTP"_sl, 409, "revision ID mismatch"_sl});
+                return;
+            }
 
             // Generate new revID:
             rev = slice(newRevBuf, sprintf(newRevBuf, "%lu-cc", ++generation));
@@ -281,9 +286,18 @@ namespace litecore { namespace repl {
             if (!c4raw_put(db, constants::kPeerCheckpointStore,
                            checkpointID, rev, request->body(), &err)
                     || !t.commit(&err)) {
-                return request->respondWithError(c4ToBLIPError(err));
+                request->respondWithError(c4ToBLIPError(err));
+                return;
             }
+
+            needsResponse = true;
         });
+
+        // In other words, an error response was generated above if this
+        // is false
+        if(!needsResponse) {
+            return;
+        }
 
         // Success!
         MessageBuilder response(request);
