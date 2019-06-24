@@ -150,7 +150,7 @@ public:
             auto doc = docs[i];
             if (doc->error.code) {
                 c4error_getDescriptionC(doc->error, message, sizeof(message));
-                C4Log(">> Replicator %serror %s '%.*s': %s",
+                C4Warn(">> Replicator %serror %s '%.*s': %s",
                       (doc->errorIsTransient ? "transient " : ""),
                       (pushing ? "pushing" : "pulling"),
                       SPLAT(doc->docID), message);

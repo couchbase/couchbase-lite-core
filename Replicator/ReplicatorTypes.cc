@@ -18,7 +18,10 @@
 
 #include "ReplicatorTypes.hh"
 #include "IncomingRev.hh"
+#include "SecureRandomize.hh"
+#include "StringUtil.hh"
 #include "make_unique.h"
+#include <sstream>
 
 using namespace std;
 
@@ -27,6 +30,9 @@ namespace litecore { namespace repl { namespace tuning {
 }}}
 
 namespace litecore { namespace repl {
+
+#pragma mark - REVTOSEND:
+
 
     RevToSend::RevToSend(const C4DocumentInfo &info)
     :ReplicatedRev(info.docID, info.revID, info.sequence)
@@ -62,6 +68,62 @@ namespace litecore { namespace repl {
         remoteAncestorRevID.reset();
         ancestorRevIDs.reset();
     }
+
+
+    string RevToSend::historyString(C4Document *doc) {
+        int nWritten = 0;
+        stringstream historyStream;
+        stringstream::pos_type lastPos = 0;
+
+        auto append = [&](slice revID) {
+            lastPos = historyStream.tellp();
+            if (nWritten++ > 0)
+                historyStream << ',';
+            historyStream.write((const char*)revID.buf, revID.size);
+        };
+
+        auto removeLast = [&]() {
+            string buf = historyStream.str();
+            buf.resize(lastPos);
+            historyStream.str(buf);
+            historyStream.seekp(lastPos);
+            --nWritten;
+        };
+
+        // Go back through history, starting with the desired rev's parent, until we either reach
+        // a rev known to the peer or we run out of history. Do not write more than `maxHistory`
+        // revisions, but always write the rev known to the peer if there is one.
+        // There may be gaps in the history (non-consecutive generations) if revs have been pruned.
+        // If sending these, make up random revIDs for them since they don't matter.
+        Assert(c4doc_selectRevision(doc, revID, true, nullptr));
+        unsigned lastGen = c4rev_getGeneration(doc->selectedRev.revID);
+        while (c4doc_selectParentRevision(doc)) {
+            slice revID = doc->selectedRev.revID;
+            unsigned gen = c4rev_getGeneration(revID);
+            while (gen < --lastGen && nWritten < maxHistory) {
+                // We don't have this revision (the history got deeper than the local db's
+                // maxRevTreeDepth), so make up a random revID. The server probably won't care.
+                append(slice(format("%u-faded000%.08x%.08x",
+                                    lastGen, RandomNumber(), RandomNumber())));
+            }
+            lastGen = gen;
+
+            if (hasRemoteAncestor(revID)) {
+                // Always write the common ancestor, making room if necessary:
+                if (nWritten == maxHistory)
+                    removeLast();
+                append(revID);
+                break;
+            } else {
+                if (nWritten < maxHistory)
+                    append(revID);
+            }
+        }
+        return historyStream.str();
+    }
+
+
+#pragma mark - REVTOINSERT:
 
 
     RevToInsert::~RevToInsert()
