@@ -140,7 +140,9 @@ namespace litecore {
         // Sets/clears the kIsConflict flag for a Rev and its ancestors.
         void markBranchAsConflict(const Rev*, bool);
 
+        void setPruneDepth(unsigned depth)              {_pruneDepth = depth;}
         unsigned prune(unsigned maxDepth);
+        unsigned prune()                                {return prune(_pruneDepth);}
 
         void keepBody(const Rev* NONNULL);
         void removeBody(const Rev* NONNULL);
@@ -197,6 +199,7 @@ namespace litecore {
         std::deque<Rev>          _revsStorage;          // Actual storage of the Rev objects
         std::vector<alloc_slice> _insertedData;         // Storage for new revids
         RemoteRevMap             _remoteRevs;           // Tracks current rev for a remote DB URL
+        unsigned                 _pruneDepth {UINT_MAX};// Tree depth to prune to
     };
 
 }

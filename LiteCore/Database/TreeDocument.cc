@@ -75,6 +75,7 @@ namespace c4Internal {
 
         void init() {
             _versionedDoc.owner = this;
+            _versionedDoc.setPruneDepth(_db->maxRevTreeDepth());
             flags = (C4DocumentFlags)_versionedDoc.flags();
             if (_versionedDoc.exists())
                 flags = (C4DocumentFlags)(flags | kDocExists);
@@ -232,11 +233,12 @@ namespace c4Internal {
             return new Doc(_versionedDoc.scopeFor(body), body, Doc::kTrusted);
         }
 
-        bool save(unsigned maxRevTreeDepth) override {
+        bool save(unsigned maxRevTreeDepth =0) override {
             requireValidDocID();
-            if (maxRevTreeDepth == 0)
-                maxRevTreeDepth = _db->maxRevTreeDepth();
-            _versionedDoc.prune(maxRevTreeDepth);
+            if (maxRevTreeDepth > 0)
+                _versionedDoc.prune(maxRevTreeDepth);
+            else
+                _versionedDoc.prune();
             switch (_versionedDoc.save(_db->transaction())) {
                 case litecore::VersionedDocument::kConflict:
                     return false;
@@ -353,6 +355,9 @@ namespace c4Internal {
             if (!body)
                 return -1;
 
+            if (rq.maxRevTreeDepth > 0)
+                _versionedDoc.setPruneDepth(rq.maxRevTreeDepth);
+
             auto priorCurrentRev = _versionedDoc.currentRevision();
             int httpStatus;
             commonAncestor = _versionedDoc.insertHistory(revIDBuffers,
@@ -415,6 +420,9 @@ namespace c4Internal {
                 error::_throw(error::InvalidParameter, "remoteDBID cannot be used when existing=false");
             bool deletion = (rq.revFlags & kRevDeleted) != 0;
 
+            if (rq.maxRevTreeDepth > 0)
+                _versionedDoc.setPruneDepth(rq.maxRevTreeDepth);
+
             C4Error err;
             alloc_slice body = requestBody(rq, &err);
             if (!body)
@@ -449,7 +457,7 @@ namespace c4Internal {
         bool saveNewRev(const C4DocPutRequest &rq, const Rev *newRev NONNULL, bool reallySave =true) {
             selectRevision(newRev);
             if (rq.save && reallySave) {
-                if (!save(rq.maxRevTreeDepth))
+                if (!save())
                     return false;
                 if (_db->dataFile()->willLog(LogLevel::Verbose)) {
                     _db->dataFile()->_logVerbose( "%-s '%.*s' rev #%s as seq %" PRIu64,

@@ -357,8 +357,17 @@ namespace litecore {
         for (i = 0; i < historyCount; i++) {
             unsigned gen = history[i].generation();
             if (lastGen > 0 && gen != lastGen - 1) {
-                httpStatus = 400;
-                return -1; // generation numbers not in sequence
+                // Generation numbers not in sequence:
+                if (gen < lastGen && i >= _pruneDepth - 1) {
+                    // As a special case, allow this gap in the history as long as it's at a depth
+                    // that's going to be pruned away anyway. This allows very long histories to
+                    // be represented in short form by skipping revs in the middle.
+                    ;
+                } else {
+                    // Otherwise this is an error.
+                    httpStatus = 400;
+                    return -1;
+                }
             }
             lastGen = gen;
 

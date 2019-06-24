@@ -145,6 +145,28 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Incremental Push", "[Push]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push 5000 Changes", "[Push]") {
+    string revID;
+    {
+        TransactionHelper t(db);
+        revID = createNewRev(db, "Doc"_sl, nullslice, kFleeceBody);
+    }
+    _expectedDocumentCount = 1;
+    runPushReplication();
+
+    Log("-------- Mutations --------");
+    {
+        TransactionHelper t(db);
+        for (int i = 2; i <= 5000; ++i)
+            revID = createNewRev(db, "Doc"_sl, slice(revID), kFleeceBody);
+    }
+
+    Log("-------- Second Replication --------");
+    runPushReplication();
+    compareDatabases();
+}
+
+
 TEST_CASE_METHOD(ReplicatorLoopbackTest, "Pull Resetting Checkpoint", "[Pull]") {
     createRev("eenie"_sl, kRevID, kFleeceBody);
     createRev("meenie"_sl, kRevID, kFleeceBody);
