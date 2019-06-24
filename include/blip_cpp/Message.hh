@@ -214,6 +214,7 @@ namespace litecore { namespace blip {
         alloc_slice _bodyAsFleece;              // Body re-encoded into Fleece [lazy]
         const MessageSize _outgoingSize {0};
         bool _complete {false};
+        bool _responded {false};
     };
 
 } }

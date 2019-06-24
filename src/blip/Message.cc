@@ -348,6 +348,8 @@ namespace litecore { namespace blip {
             _connection->warn("Ignoring attempt to respond to a noReply message");
             return;
         }
+        Assert(!_responded);
+        _responded = true;
         if (mb.type == kRequestType)
             mb.type = kResponseType;
         Retained<MessageOut> message = new MessageOut(_connection, mb, _number);
