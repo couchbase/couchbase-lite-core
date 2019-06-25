@@ -322,7 +322,7 @@ namespace litecore { namespace net {
 
 
 #ifdef LWS_WITH_MBEDTLS
-#ifdef TARGET_OS_OSX
+#if TARGET_OS_OSX
     // Sadly, SecTrustCopyAnchorCertificates() is not available on iOS...
     alloc_slice LWSContext::getSystemRootCertsPEM() {
         ++gC4ExpectExceptions;

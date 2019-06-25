@@ -918,6 +918,10 @@
 		275E4CCA22417D13006C5B71 /* Inserter.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Inserter.hh; sourceTree = "<group>"; };
 		275E4CCB22417D13006C5B71 /* Inserter.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Inserter.cc; sourceTree = "<group>"; };
 		275E4CD42241C763006C5B71 /* RevFinder.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = RevFinder.hh; sourceTree = "<group>"; };
+		275E6B9B22C29EDB0032362A /* build_setup.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build_setup.sh; sourceTree = SOURCE_ROOT; };
+		275E6B9D22C2A3860032362A /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
+		275E6BBE22C2A3860032362A /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		275E6BC022C2A3860032362A /* ios.toolchain.cmake */ = {isa = PBXFileReference; lastKnownFileType = text; path = ios.toolchain.cmake; sourceTree = "<group>"; };
 		275FF6661E42A90C005F90DD /* QueryParserTables.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryParserTables.hh; sourceTree = "<group>"; };
 		275FF6D11E4947E1005F90DD /* c4BaseTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4BaseTest.cc; sourceTree = "<group>"; };
 		2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStore.cc; sourceTree = "<group>"; };
@@ -1605,6 +1609,7 @@
 				271BA53C2297008200D49D13 /* HTTPTypes.hh */,
 				278BC9C7228DF4340055FF09 /* LWSUtil.cc */,
 				278BC9C6228DF4340055FF09 /* LWSUtil.hh */,
+				275E6B9B22C29EDB0032362A /* build_setup.sh */,
 				2771A0ED228B832400B18E0A /* build_libwebsockets.sh */,
 				2771A0EC228B832400B18E0A /* build_mbedtls.sh */,
 			);
@@ -1964,6 +1969,16 @@
 				27CCC7E31E52965200CE1989 /* Pusher.hh */,
 			);
 			name = Push;
+			sourceTree = "<group>";
+		};
+		275E6B9C22C2A3860032362A /* ios-cmake */ = {
+			isa = PBXGroup;
+			children = (
+				275E6B9D22C2A3860032362A /* LICENSE.md */,
+				275E6BBE22C2A3860032362A /* README.md */,
+				275E6BC022C2A3860032362A /* ios.toolchain.cmake */,
+			);
+			path = "ios-cmake";
 			sourceTree = "<group>";
 		};
 		276683B31DC7DCBC00E3F187 /* Database */ = {
@@ -2379,6 +2394,7 @@
 			children = (
 				27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */,
 				277CB6251D0DED5E00702E56 /* Fleece.xcodeproj */,
+				275E6B9C22C2A3860032362A /* ios-cmake */,
 				27719FE52284E84300B18E0A /* libwebsockets */,
 				2771A01F2284EA9F00B18E0A /* mbedtls */,
 				27EF7FFA1914296D00A327B9 /* sqlite3-unicodesn */,
@@ -3339,7 +3355,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
 			shellScript = "$SRCROOT/build_mbedtls.sh\n";
-			showEnvVarsInLog = 0;
 		};
 		27E6739E1EC8D958008F50C4 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

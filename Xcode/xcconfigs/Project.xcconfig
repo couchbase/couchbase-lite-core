@@ -24,6 +24,7 @@ TVOS_DEPLOYMENT_TARGET                             = 9.0
 ONLY_ACTIVE_ARCH                                   = NO
 SKIP_INSTALL                                       = YES
 SUPPORTED_PLATFORMS                                = macosx iphoneos iphonesimulator appletvos appletvsimulator
+VALID_ARCHS                                        = arm64 armv7 armv7a x86_64
 
 CODE_SIGN_IDENTITY                                 =
 VERSION_INFO_PREFIX                                =

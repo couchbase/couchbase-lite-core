@@ -2,13 +2,11 @@
 # This script builds the libwebsockets submodule.
 # It's run by Xcode when building the target LiteCoreWebSocket.
 
-# Create the CMake build directory:
-CMAKE_BUILD_DIR="$PER_VARIANT_OBJECT_FILE_DIR/libwebsockets"
-mkdir -p "$CMAKE_BUILD_DIR"
-cd "$CMAKE_BUILD_DIR"
+source "$SRCROOT/build_setup.sh" libwebsockets
 
 # Set up the CMake build options:
-CMAKE_OPTS="-DLWS_WITHOUT_SERVER=0 \
+CMAKE_OPTS="$CMAKE_OPTS \
+           -DLWS_WITHOUT_SERVER=0 \
            -DLWS_WITH_HTTP2=0 \
            -DLWS_WITH_SHARED=0 \
            -DLWS_WITH_LEJP=0 \

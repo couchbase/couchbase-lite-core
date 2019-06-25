@@ -19,3 +19,6 @@
 [submodule "vendor/libwebsockets"]
 	path = vendor/libwebsockets
 	url = https://github.com/couchbasedeps/libwebsockets.git
+[submodule "vendor/ios-cmake"]
+	path = vendor/ios-cmake
+	url = https://github.com/leetal/ios-cmake.git
