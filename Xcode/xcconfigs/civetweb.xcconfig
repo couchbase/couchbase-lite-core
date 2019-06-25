@@ -19,6 +19,6 @@ RUN_CLANG_STATIC_ANALYZER    = NO
 CLANG_ANALYZER_DEADCODE_DEADSTORES = NO
 CLANG_ANALYZER_SECURITY_INSECUREAPI_STRCPY = NO
 
-WARNING_CFLAGS               = $(inherited) -Wno-unknown-warning-option
+WARNING_CFLAGS               = $(inherited) -Wno-unknown-warning-option -Wno-atomic-implicit-seq-cst
 
 CLANG_WARN_UNGUARDED_AVAILABILITY = NO
