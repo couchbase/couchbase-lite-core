@@ -6,6 +6,7 @@
 
 #pragma once
 #include "RefCounted.hh"
+#include "c4Socket.h"
 #include <mutex>
 #include <memory>
 

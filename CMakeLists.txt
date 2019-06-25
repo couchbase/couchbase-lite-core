@@ -7,7 +7,7 @@ targets that result from this project:
 
 BLIPStatic - The BLIP communication library for crafting messages that can be sent over a provided connection
 C4Tests - A test runner that runs tests based on the shared library
-CivetWeb - A C++ implementation of the websocket client and server protocol (non-secure only)
+libwebsocket - A C++ implementation of the websocket client and server protocol
 CppTests - A test runner that runs test based on the static library
 FleeceStatic - The Fleece serialization library for saving data to a binary format
 LiteCore - The shared LiteCore library
@@ -106,12 +106,28 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LITECORE_CXX_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LITECORE_SHARED_LINKER_FLAGS}")
 set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LITECORE_STATIC_LINKER_FLAGS}")
 set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # For SQLite3_UnicodeSN
+option(LWS_WITH_MBEDTLS "" ON)
+option(LWS_WITHOUT_TESTAPPS "" ON)
+option(LWS_WITH_SHARED "" OFF)
+option(LWS_WITH_EXPORT_LWSTARGETS "" OFF)
+set(LWS_MBEDTLS_INCLUDE_DIRS vendor/mbedtls/include)
+set(LWS_MBEDTLS_LIBRARIES)
+list(APPEND LWS_MBEDTLS_LIBRARIES mbedtls)
+list(APPEND LWS_MBEDTLS_LIBRARIES mbedx509)
+list(APPEND LWS_MBEDTLS_LIBRARIES mbedcrypto)
 
+include_directories(${PROJECT_BINARY_DIR}/vendor/libwebsockets)
 add_subdirectory(REST                       EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/BLIP-Cpp            EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
+add_subdirectory(vendor/libwebsockets       EXCLUDE_FROM_ALL)
+
+target_include_directories(
+    websockets PRIVATE
+    vendor/mbedtls/include
+)
 
 # Generate file repo_version.h containing Git repo information, and add it to #include path:
 set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
@@ -205,15 +221,17 @@ target_include_directories(
     LiteCore/RevTrees
     LiteCore/Storage
     LiteCore/Support
-    vendor/mbedtls/include
     C
     C/include 
+    Replicator
+    REST
     vendor/BLIP-Cpp/include/blip_cpp
     vendor/BLIP-Cpp/src/util
     vendor/SQLiteCpp/sqlite3
     vendor/SQLiteCpp/include
     vendor/sqlite3-unicodesn
-    vendor/civetweb/include
+    vendor/mbedtls/include
+    vendor/libwebsockets/include
 )
 
 if(WIN32)
@@ -240,7 +258,7 @@ set(
     Support
     SQLite3_UnicodeSN
     BLIPStatic
-    CivetWeb
+    websockets
     ${LITECORE_CRYPTO_LIB}
 )
 

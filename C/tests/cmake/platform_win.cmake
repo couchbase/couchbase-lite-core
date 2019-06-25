@@ -31,7 +31,6 @@ function(setup_build)
         FleeceBase
         Support
         BLIPStatic
-        CivetWeb
     )
     
     add_custom_command(

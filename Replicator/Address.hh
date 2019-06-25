@@ -38,7 +38,7 @@ namespace litecore { namespace repl {
         alloc_slice url() const                             {return _url;}
         operator alloc_slice () const                       {return _url;}
 
-        bool isSecure() const noexcept                      {return isSecure(*this);}
+        bool isSecure() const noexcept                      {return isSecure(*(C4Address*)this);}
 
         // Static utility functions:
         static alloc_slice toURL(const C4Address&) noexcept;

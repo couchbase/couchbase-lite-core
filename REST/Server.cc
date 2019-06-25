@@ -26,8 +26,13 @@
 #include "libwebsockets.h"
 #include "LWSContext.hh"
 #include "LWSWebSocket.hh"
-#include <fnmatch.h>                //TODO: Windows support? (it is in POSIX...)
-
+#include "PlatformCompat.hh"
+#ifdef _MSC_VER
+#include <shlwapi.h>
+#define FNM_PATHNAME ""
+#else
+#include <fnmatch.h>
+#endif
 
 namespace litecore { namespace REST {
     using namespace std;

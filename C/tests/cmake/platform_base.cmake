@@ -20,9 +20,14 @@ function(set_source_files_base)
         ${TOP}REST/tests/RESTListenerTest.cc
         ${TOP}REST/tests/SyncListenerTest.cc
         ${TOP}Replicator/tests/ReplicatorAPITest.cc
-        ${TOP}Replicator/CivetWebSocket.cc
         ${TOP}REST/Response.cc
         ${TOP}LiteCore/tests/main.cpp
+        ${TOP}Networking/LWSWebSocket.cc
+        ${TOP}Networking/LWSProtocol.cc
+        ${TOP}Networking/LWSHttpClient.cc
+        ${TOP}Networking/LWSContext.cc
+        ${TOP}Networking/LWSServer.cc
+        ${TOP}Networking/LWSUtil.cc
         PARENT_SCOPE
     )
 endfunction()

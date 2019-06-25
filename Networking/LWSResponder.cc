@@ -22,7 +22,13 @@
 #include "LWSUtil.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
+#include "PlatformIO.hh"
 
+#ifdef _MSC_VER
+#pragma push_macro("DELETE") // Interferes with Method::DELETE
+#undef DELETE
+#include "asprintf.h"
+#endif
 
 // Private libwebsockets function //FIXME don't use internals
 extern "C" int lws_http_get_uri_and_method(struct lws *wsi, char **puri_ptr, int *puri_len);
@@ -428,3 +434,7 @@ namespace litecore { namespace net {
     }
 
 } }
+
+#ifdef _MSC_VER
+#pragma pop_macro("DELETE")
+#endif

@@ -75,6 +75,5 @@ function(setup_rest_build)
         LiteCoreREST PRIVATE
         FleeceBase
         Support
-        CivetWeb
     )
 endfunction()

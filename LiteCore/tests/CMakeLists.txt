@@ -78,6 +78,7 @@ target_include_directories(
     ${TOP}C
     ${TOP}C/include
     ${TOP}C/tests
+	${TOP}Networking
     ${TOP}LiteCore/BlobStore
     ${TOP}LiteCore/Database
     ${TOP}LiteCore/RevTrees
@@ -85,7 +86,7 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}LiteCore/Query
     ${TOP}Replicator
-    ${TOP}vendor/civetweb/include
+    ${TOP}vendor/libwebsockets/include
 )
 
 target_link_libraries(
@@ -94,7 +95,7 @@ target_link_libraries(
     FleeceStatic
     SQLite3_UnicodeSN
     BLIPStatic
-    CivetWeb
+    websockets
     Support
     ${LITECORE_CRYPTO_LIB}
 )

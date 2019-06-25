@@ -19,6 +19,7 @@
 
 #include "netUtils.hh"
 #include "c4.h"
+#include "PlatformIO.hh"
 #include "StringUtil.hh"
 #include <assert.h>
 #include <time.h>

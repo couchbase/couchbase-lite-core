@@ -310,6 +310,7 @@ FLSliceResult_Retain
 
 FLDoc_FromJSON
 FLDoc_Retain
+FLDoc_GetAllocedData
 
 FLEncoder_NewWithOptions
 FLEncoder_WriteRaw

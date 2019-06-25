@@ -71,11 +71,17 @@ function(set_litecore_source_base)
         vendor/SQLiteCpp/src/Exception.cpp
         vendor/SQLiteCpp/src/Statement.cpp
         vendor/SQLiteCpp/src/Transaction.cpp
+        Networking/LWSContext.cc
+        Networking/LWSHTTPClient.cc
+        Networking/LWSProtocol.cc
+        Networking/LWSResponder.cc
+        Networking/LWSServer.cc
+        Networking/LWSUtil.cc
+        Networking/LWSWebSocket.cc
         Replicator/Address.cc
         Replicator/c4Replicator.cc
         Replicator/c4Socket.cc
         Replicator/Checkpoint.cc
-        Replicator/CivetWebSocket.cc
         Replicator/CookieStore.cc
         Replicator/DatabaseCookies.cc
         Replicator/DBAccess.cc

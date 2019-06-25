@@ -145,11 +145,6 @@ function(setup_rest_build)
         "/def:${CMAKE_CURRENT_SOURCE_DIR}/c4REST.def"
     )
 
-    target_compile_definitions(
-        CivetWeb PRIVATE 
-        -D_WIN32_WINNT=0x0A00 # (_WIN32_WINNT_WIN10) Needed for some extra Win32 functions that were added in Win7+
-    )
-    target_include_directories(CivetWeb PRIVATE ../MSVC)
     target_include_directories(LiteCoreREST_Static PRIVATE ../MSVC)
 
     # These actually cause issues on Linux due to multiply
@@ -158,6 +153,5 @@ function(setup_rest_build)
         LiteCoreREST PRIVATE
         FleeceBase
         Support
-        CivetWeb
     )
 endfunction()

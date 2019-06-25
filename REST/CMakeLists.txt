@@ -18,58 +18,29 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 
-### SUBMODULE (CivetWeb):
-
-# Civetweb has been modified so heavily that at this point it is easier
-# to just make a new target here
-set(
-    CIVETWEB_SRC
-    ../vendor/civetweb/src/civetweb.c
-    civetUtils.cc
-)
-                 
-add_library(CivetWeb STATIC ${CIVETWEB_SRC})
-target_compile_definitions(
-    CivetWeb PRIVATE
-    -DUSE_WEBSOCKET                     # Enables CivetWeb WebSocket support
-    -DNO_FILES                          # No file system support in CivetWeb (unneeded)
-    -DNO_CGI                            # No CGI support in CivetWeb (unneeded)
-    -DNO_CACHING                        # No file caching support in CivetWeb (unneeded)
-    -DUSE_IPV6                          # Enable IPv6 support in CivetWeb
-)
-
-target_include_directories(
-    CivetWeb PRIVATE
-    ../vendor/fleece/API
-    ../vendor/fleece/Fleece/Support
-    ../vendor/civetweb/include
-    ../C/include
-    ../LiteCore/Support
-)
-
 ### SOURCES:
 
 set(
     ALL_SRC_FILES
     c4Listener+RESTFactory.cc
     c4Listener.cc
-    civetUtils.cc
     Listener.cc
+    netUtils.cc
     Request.cc
     Response.cc
     RESTListener+Handlers.cc
     RESTListener+Replicate.cc
     RESTListener.cc
     Server.cc
+    EE/RESTSyncListener_stub.cc
+    ../Networking/LWSProtocol.cc
+    ../Networking/LWSResponder.cc
+    ../Networking/LWSUtil.cc
+    ../Networking/LWSWebSocket.cc
+    ../Networking/LWSServer.cc
+    ../Networking/LWSContext.cc
+    ../Networking/LWSHttpClient.cc
 )
-
-if(BUILD_ENTERPRISE)
-    set(ALL_SRC_FILES 
-        ${ALL_SRC_FILES}
-        EE/CivetC4Socket_stub.cc
-        EE/RESTSyncListener_stub.cc
-    )
-endif()
 
 ### STATIC LIBRARY:
 
@@ -79,10 +50,14 @@ target_include_directories(
     .
     ../C/include
     ../C
-    ../vendor/civetweb/include
     ../vendor/fleece/API
     ../vendor/fleece/Fleece/Support
+    ../vendor/BLIP-Cpp/src/util
     ../LiteCore/Support
+    ../Networking
+    ../Replicator
+    ../vendor/libwebsockets/include
+    ../vendor/mbedtls/include
 )
 if(BUILD_ENTERPRISE)
     target_include_directories(
@@ -111,6 +86,7 @@ target_link_libraries(
     ${WHOLE_LIBRARY_FLAG} 
     LiteCoreREST_Static 
     ${NO_WHOLE_LIBRARY_FLAG} 
+    websockets
 )
 
 target_link_libraries(

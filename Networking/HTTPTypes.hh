@@ -9,6 +9,11 @@
 #pragma once
 #include <limits.h>
 
+#ifdef _MSC_VER
+#pragma push_macro("DELETE")
+#undef DELETE
+#endif
+
 namespace litecore { namespace REST {
 
     enum class HTTPStatus : int {
@@ -36,7 +41,6 @@ namespace litecore { namespace REST {
 
     const char* StatusMessage(HTTPStatus);
 
-
     enum Method: unsigned {
         None        = 0,
 
@@ -56,3 +60,7 @@ namespace litecore { namespace REST {
     const char* MethodName(Method);
 
 } }
+
+#ifdef _MSC_VER
+#pragma pop_macro("DELETE")
+#endif

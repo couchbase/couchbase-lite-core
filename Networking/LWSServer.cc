@@ -21,6 +21,7 @@
 #include "LWSContext.hh"
 #include "LWSUtil.hh"
 #include "Error.hh"
+#include "c4Replicator.h"
 
 
 namespace litecore { namespace net {

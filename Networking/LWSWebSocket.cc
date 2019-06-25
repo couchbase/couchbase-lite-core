@@ -227,7 +227,9 @@ namespace litecore { namespace net {
                 break;
             case LWS_CALLBACK_CLIENT_CLOSED:
             case LWS_CALLBACK_CLOSED:
+#if DEBUG
                 LogVerbose("**** %-s", LWSCallbackName(reason));
+#endif
                 onClosed();
                 break;
 
