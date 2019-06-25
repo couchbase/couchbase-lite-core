@@ -140,18 +140,5 @@ function(setup_support_build)
 endfunction()
 
 function(setup_rest_build)
-    set_target_properties(
-        LiteCoreREST PROPERTIES LINK_FLAGS
-        "/def:${CMAKE_CURRENT_SOURCE_DIR}/c4REST.def"
-    )
-
     target_include_directories(LiteCoreREST_Static PRIVATE ../MSVC)
-
-    # These actually cause issues on Linux due to multiply
-    # imported symbols at runtime
-    target_link_libraries(
-        LiteCoreREST PRIVATE
-        FleeceBase
-        Support
-    )
 endfunction()

@@ -25,6 +25,7 @@
 #include <mutex>
 #include <functional>
 #include <vector>
+#include <regex>
 
 struct lws_http_mount;
 struct lws_vhost;
@@ -60,6 +61,7 @@ namespace litecore { namespace REST {
         struct URIRule {
             Methods     methods;
             std::string pattern;
+            std::regex  regex;
             Handler     handler;
         };
 

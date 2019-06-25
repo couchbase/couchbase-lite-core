@@ -52,7 +52,7 @@ namespace litecore { namespace REST {
     void Server::addHandler(Methods methods, const string &patterns, const Handler &handler) {
         lock_guard<mutex> lock(_mutex);
         split(patterns, "|", [&](const string &pattern) {
-            _rules.push_back({methods, pattern, handler});
+            _rules.push_back({methods, pattern, regex(pattern.c_str()), handler});
         });
     }
 
@@ -61,7 +61,7 @@ namespace litecore { namespace REST {
         //lock_guard<mutex> lock(_mutex);       // called from dispatchResponder which locks
         for (auto &rule : _rules) {
             if ((rule.methods & method)
-                    && 0 == fnmatch(rule.pattern.c_str(), path.c_str(), FNM_PATHNAME))
+                    && regex_match(path.c_str(), rule.regex))
                 return &rule;
         }
         return nullptr;

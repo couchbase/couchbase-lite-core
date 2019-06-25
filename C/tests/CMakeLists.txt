@@ -52,7 +52,9 @@ target_compile_definitions(
 
 target_link_libraries(
     C4Tests PRIVATE
-    LiteCoreREST
+    LiteCore
+    LiteCoreREST_Static
+    LiteCoreWebSocket
     websockets
 )
 
@@ -65,6 +67,7 @@ target_include_directories(
     ${TOP}C
     ${TOP}Replicator
     ${TOP}Replicator/tests
+    ${TOP}REST
     ${TOP}Networking
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3

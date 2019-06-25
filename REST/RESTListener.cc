@@ -66,22 +66,22 @@ namespace litecore { namespace REST {
             addHandler(Method::POST,    "/_replicate",       &RESTListener::handleReplicate);
 
             // Database:
-            addDBHandler(Method::GET,   "/[!_]*|/[!_]*/",    &RESTListener::handleGetDatabase);
-            addHandler  (Method::PUT,   "/[!_]*|/[!_]*/",    &RESTListener::handleCreateDatabase);
-            addDBHandler(Method::DELETE,"/[!_]*|/[!_]*/",    &RESTListener::handleDeleteDatabase);
-            addDBHandler(Method::POST,  "/[!_]*|/[!_]*/",    &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleGetDatabase);
+            addHandler  (Method::PUT,   "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleCreateDatabase);
+            addDBHandler(Method::DELETE,"/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleDeleteDatabase);
+            addDBHandler(Method::POST,  "/[^_][^/]*|/[^_][^/]*/",    &RESTListener::handleModifyDoc);
 
             // Database-level special handlers:
-            addDBHandler(Method::GET,   "/[!_]*/_all_docs",  &RESTListener::handleGetAllDocs);
-            addDBHandler(Method::POST,  "/[!_]*/_bulk_docs", &RESTListener::handleBulkDocs);
+            addDBHandler(Method::GET,   "/[^_][^/]*/_all_docs",  &RESTListener::handleGetAllDocs);
+            addDBHandler(Method::POST,  "/[^_][^/]*/_bulk_docs", &RESTListener::handleBulkDocs);
 
             // Document:
-            addDBHandler(Method::GET,   "/[!_]*/[!_]*",      &RESTListener::handleGetDoc);
-            addDBHandler(Method::PUT,   "/[!_]*/[!_]*",      &RESTListener::handleModifyDoc);
-            addDBHandler(Method::DELETE,"/[!_]*/[!_]*",      &RESTListener::handleModifyDoc);
+            addDBHandler(Method::GET,   "/[^_][^/]*/[^_].*",      &RESTListener::handleGetDoc);
+            addDBHandler(Method::PUT,   "/[^_][^/]*/[^_].*",      &RESTListener::handleModifyDoc);
+            addDBHandler(Method::DELETE,"/[^_][^/]*/[^_].*",      &RESTListener::handleModifyDoc);
         }
         if (config.apis & kC4SyncAPI) {
-            addDBHandler(Method::UPGRADE,"/[!_]*/_blipsync", &RESTListener::handleSync);
+            addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", &RESTListener::handleSync);
         }
         _server->start(config.port ? config.port : kDefaultPort);
     }

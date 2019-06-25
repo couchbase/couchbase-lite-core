@@ -17,11 +17,15 @@ endfunction()
 
 function(setup_build)
     set(BIN_TOP "${PROJECT_BINARY_DIR}/../..")
-    set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore
-                    ${BIN_TOP}/REST/\$\(Configuration\)/LiteCoreREST)
+    set(FilesToCopy ${BIN_TOP}/\$\(Configuration\)/LiteCore)
 
     target_include_directories(
         C4Tests PRIVATE
+        ${TOP}MSVC
+    )
+
+    target_include_directories(
+        LiteCoreWebSocket PRIVATE
         ${TOP}MSVC
     )
 

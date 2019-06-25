@@ -106,8 +106,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LITECORE_CXX_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LITECORE_SHARED_LINKER_FLAGS}")
 set(CMAKE_STATIC_LINKER_FLAGS "${CMAKE_STATIC_LINKER_FLAGS} ${LITECORE_STATIC_LINKER_FLAGS}")
 set(SQLITE3_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/vendor/SQLiteCpp/sqlite3) # For SQLite3_UnicodeSN
+option(LWS_WITHOUT_SERVER "" OFF)
+option(LWS_WITH_HTTP2 "" OFF)
+option(LWS_WITH_LEJP OFF)
+option(LWS_WITH_STRUCT_JSON OFF)
 option(LWS_WITH_MBEDTLS "" ON)
 option(LWS_WITHOUT_TESTAPPS "" ON)
+option(LWS_WITHOUT_TEST_CLIENT "" ON)
+option(LWS_WITHOUT_TEST_SERVER "" ON)
+option(LWS_WITHOUT_TEST_SERVER_EXTPOLL "" ON)
 option(LWS_WITH_SHARED "" OFF)
 option(LWS_WITH_EXPORT_LWSTARGETS "" OFF)
 set(LWS_MBEDTLS_INCLUDE_DIRS vendor/mbedtls/include)
@@ -175,6 +182,37 @@ target_include_directories(
 )
 setup_support_build()
 
+### WebSocket LIBRARY:
+
+set(
+    LC_WEBSOCKET_SRC
+    Networking/LWSContext.cc
+    Networking/LWSHTTPClient.cc
+    Networking/LWSProtocol.cc
+    Networking/LWSResponder.cc
+    Networking/LWSServer.cc
+    Networking/LWSUtil.cc
+    Networking/LWSWebSocket.cc
+    REST/netUtils.cc
+    REST/Server.cc
+)
+add_library(LiteCoreWebSocket STATIC ${LC_WEBSOCKET_SRC})
+target_include_directories(
+    LiteCoreWebSocket PRIVATE
+    Replicator
+    REST
+    C/include
+    C
+    Networking
+    LiteCore/Support
+    vendor/BLIP-Cpp/src/util
+    vendor/fleece/Fleece/Support
+    vendor/fleece/API
+    vendor/libwebsockets/include
+    vendor/libwebsockets/include/websockets
+    vendor/mbedtls/include
+)
+
 ### LITECORE LIBRARY:
 
 set_litecore_source(RESULT ALL_SRC_FILES)
@@ -199,6 +237,7 @@ target_compile_definitions(
     -DSQLITE_ENABLE_FTS4                # Build FTS versions 3 and 4
     -DSQLITE_ENABLE_FTS3_PARENTHESIS    # Allow AND and NOT support in FTS parser
     -DSQLITE_ENABLE_FTS3_TOKENIZER      # Allow LiteCore to define a tokenizer
+    
 )
 
 if(BUILD_ENTERPRISE)

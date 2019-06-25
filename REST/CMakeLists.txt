@@ -33,13 +33,6 @@ set(
     RESTListener.cc
     Server.cc
     EE/RESTSyncListener_stub.cc
-    ../Networking/LWSProtocol.cc
-    ../Networking/LWSResponder.cc
-    ../Networking/LWSUtil.cc
-    ../Networking/LWSWebSocket.cc
-    ../Networking/LWSServer.cc
-    ../Networking/LWSContext.cc
-    ../Networking/LWSHttpClient.cc
 )
 
 ### STATIC LIBRARY:
@@ -66,32 +59,5 @@ if(BUILD_ENTERPRISE)
         ../vendor/BLIP-Cpp/include/blip_cpp
     )
 endif()
-
-### SHARED LIBRARY:
-
-add_library(LiteCoreREST SHARED ../LiteCore/Support/Logging_Stub.cc)
-target_include_directories(
-    LiteCoreREST PRIVATE
-    ../vendor/fleece/API
-    ../vendor/fleece/Fleece/Support
-)
-
-target_include_directories(
-    LiteCoreREST INTERFACE
-    ${CMAKE_CURRENT_LIST_DIR}
-)
-
-target_link_libraries(
-    LiteCoreREST PRIVATE 
-    ${WHOLE_LIBRARY_FLAG} 
-    LiteCoreREST_Static 
-    ${NO_WHOLE_LIBRARY_FLAG} 
-    websockets
-)
-
-target_link_libraries(
-    LiteCoreREST PUBLIC
-    LiteCore 
-)
 
 setup_rest_build()

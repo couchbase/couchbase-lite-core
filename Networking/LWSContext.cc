@@ -24,6 +24,7 @@
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
 #include "c4ExceptionUtils.hh"
+#include <libwebsockets.h>
 
 #ifdef TARGET_OS_OSX
 #include <Security/Security.h>
