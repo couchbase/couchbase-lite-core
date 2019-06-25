@@ -20,6 +20,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <queue>
+#include "Error.hh"
 
 namespace litecore { namespace actor {
 
