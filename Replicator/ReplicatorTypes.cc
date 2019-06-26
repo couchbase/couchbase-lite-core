@@ -73,10 +73,10 @@ namespace litecore { namespace repl {
     string RevToSend::historyString(C4Document *doc) {
         int nWritten = 0;
         stringstream historyStream;
-        stringstream::pos_type lastPos = 0;
+        string::size_type lastPos = 0;
 
         auto append = [&](slice revID) {
-            lastPos = historyStream.tellp();
+            lastPos = (string::size_type)historyStream.tellp();
             if (nWritten++ > 0)
                 historyStream << ',';
             historyStream.write((const char*)revID.buf, revID.size);
