@@ -86,12 +86,14 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}LiteCore/Query
     ${TOP}Replicator
+    ${TOP}REST
     ${TOP}vendor/libwebsockets/include
 )
 
 target_link_libraries(
     CppTests PRIVATE
     LiteCoreStatic
+    LiteCoreWebSocket
     FleeceStatic
     SQLite3_UnicodeSN
     BLIPStatic
