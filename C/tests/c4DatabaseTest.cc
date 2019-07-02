@@ -408,7 +408,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")
 {
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
-    time_t expire = c4_now() + 2*secs;
+    C4Timestamp expire = c4_now() + 2*secs;
     C4Error err;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &err));
     REQUIRE(c4doc_getExpiration(db, docID, nullptr) == expire);
@@ -433,7 +433,7 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired Multiple Instances", "[
     C4Slice docID = C4STR("expire_me");
     createRev(docID, kRevID, kFleeceBody);
 
-    uint64_t expire = c4_now() + 1*secs;
+    C4Timestamp expire = c4_now() + 1*secs;
     REQUIRE(c4doc_setExpiration(db, docID, expire, &error));
 
     CHECK(c4db_nextDocExpiration(db2) == expire);
