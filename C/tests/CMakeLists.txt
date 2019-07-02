@@ -55,7 +55,11 @@ target_link_libraries(
     LiteCore
     LiteCoreREST_Static
     LiteCoreWebSocket
+    Support
+    BLIPStatic
+    FleeceBase
     websockets
+    mbedcrypto
 )
 
 target_include_directories(

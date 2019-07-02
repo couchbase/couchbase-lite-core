@@ -36,9 +36,6 @@ namespace litecore { namespace repl {
         bool                errorIsTransient {false};
 
         const C4DocumentEnded* asDocumentEnded() const  {
-            static_assert(offsetof(ReplicatedRev, errorIsTransient) - offsetof(ReplicatedRev, docID) ==
-                          offsetof(C4DocumentEnded, errorIsTransient) - offsetof(C4DocumentEnded, docID),
-                          "ReplicatedRev doesn't match C4DocumentEnded");
             return (const C4DocumentEnded*)&docID;
         }
 
@@ -58,5 +55,16 @@ namespace litecore { namespace repl {
 
         ~ReplicatedRev() =default;
     };
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+#endif
+    static_assert(offsetof(ReplicatedRev, errorIsTransient) - offsetof(ReplicatedRev, docID) ==
+                  offsetof(C4DocumentEnded, errorIsTransient) - offsetof(C4DocumentEnded, docID),
+                  "ReplicatedRev doesn't match C4DocumentEnded");
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 } }

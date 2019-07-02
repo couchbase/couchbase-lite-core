@@ -20,6 +20,7 @@
 #include "PlatformCompat.hh"
 #include "fleece/slice.hh"
 #include "RevID.hh"
+#include <climits>
 #include <deque>
 #include <unordered_map>
 #include <vector>

@@ -32,4 +32,11 @@ function(setup_build)
         pthread
         dl
     )
+
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^armv[67]")
+        target_link_libraries(
+            CppTests PRIVATE
+            atomic
+        )
+    endif()
 endfunction()

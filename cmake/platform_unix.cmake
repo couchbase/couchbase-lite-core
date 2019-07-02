@@ -22,4 +22,20 @@ function(setup_litecore_build_unix)
         set_property(TARGET BLIPStatic       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
         set_property(TARGET Support       PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
+
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "^armv[67]")
+        # C/C++ atomic operations on ARM6/7 emit calls to functions in libatomic
+        target_link_libraries(
+            LiteCore PRIVATE
+            atomic
+        )
+    endif()
+
+    if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+        # List of symbols to export from LiteCore:
+        target_link_libraries(
+            LiteCore PRIVATE
+            "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/C/c4exports.gnu"
+        )
+    endif()
 endfunction()
