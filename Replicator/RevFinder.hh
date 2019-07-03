@@ -21,6 +21,7 @@
 #include <vector>
 
 namespace litecore { namespace repl {
+    class DocIDMultiset;
 
     /** Used by Puller to check which revisions in a "revs" message are new and should be
         pulled, and send the response to the message. */
@@ -31,15 +32,17 @@ namespace litecore { namespace repl {
         /** Asynchronously processes a "revs" message, sends the response, and calls the
             completion handler with a bit-vector indicating which revs were requested. */
         void findOrRequestRevs(blip::MessageIn *msg,
+                               DocIDMultiset *incomingDocs NONNULL,
                                std::function<void(std::vector<bool>)> completion)
         {
-            enqueue(&RevFinder::_findOrRequestRevs, retained(msg), completion);
+            enqueue(&RevFinder::_findOrRequestRevs, retained(msg), incomingDocs, completion);
         }
 
     private:
         static const size_t kMaxPossibleAncestors = 10;
 
         void _findOrRequestRevs(Retained<blip::MessageIn>,
+                                DocIDMultiset *incomingDocs,
                                 std::function<void(std::vector<bool>)> completion);
         bool findAncestors(slice docID, slice revID,
                            std::vector<alloc_slice> &ancestors);

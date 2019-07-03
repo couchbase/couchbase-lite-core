@@ -42,6 +42,7 @@ namespace litecore { namespace repl {
     // Called by the Puller; handles a "changes" or "proposeChanges" message by checking which of
     // the changes don't exist locally, and returning a bit-vector indicating them.
     void RevFinder::_findOrRequestRevs(Retained<MessageIn> req,
+                                       DocIDMultiset *incomingDocs,
                                        std::function<void(std::vector<bool>)> completion)
     {
         // Iterate over the array in the message, seeing whether I have each revision:
@@ -81,8 +82,10 @@ namespace litecore { namespace repl {
         for (auto item : changes) {
             ++i;
             // Look up each revision in the `req` list:
+            // "proposeChanges" entry: [docID, revID, parentRevID?, bodySize?]
+            // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
             auto change = item.asArray();
-            slice docID = change[proposed ? 0 : 1].asString();
+            alloc_slice docID( change[proposed ? 0 : 1].asString() );
             slice revID = change[proposed ? 1 : 2].asString();
             if (docID.size == 0 || revID.size == 0) {
                 warn("Invalid entry in 'changes' message");
@@ -90,18 +93,20 @@ namespace litecore { namespace repl {
             }
 
             if (proposed) {
-                // "proposeChanges" entry: [docID, revID, parentRevID?, bodySize?]
+                // Proposed change (peer is LiteCore)
                 slice parentRevID = change[2].asString();
                 if (parentRevID.size == 0)
                     parentRevID = nullslice;
                 alloc_slice currentRevID;
                 int status = findProposedChange(docID, revID, parentRevID, currentRevID);
                 if (status == 0) {
+                    // Accept rev by (lazily) appending a 0:
                     logDebug("    - Accepting proposed change '%.*s' #%.*s with parent %.*s",
                              SPLAT(docID), SPLAT(revID), SPLAT(parentRevID));
                     ++requested;
                     whichRequested[i] = true;
                 } else {
+                    // Reject rev by appending status code:
                     logInfo("Rejecting proposed change '%.*s' #%.*s with parent %.*s (status %d; current rev is %.*s)",
                         SPLAT(docID), SPLAT(revID), SPLAT(parentRevID), status, SPLAT(currentRevID));
                     while (itemsWritten++ < i)
@@ -110,14 +115,17 @@ namespace litecore { namespace repl {
                 }
 
             } else {
-                // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
-                if (!findAncestors(docID, revID, ancestors)) {
+                // Non-proposed change (peer is SG):
+                ancestors.clear();
+                if (incomingDocs->contains(docID) || !findAncestors(docID, revID, ancestors)) {
                     // I don't have this revision, so request it:
                     ++requested;
                     whichRequested[i] = true;
+                    incomingDocs->add(docID);
 
                     while (itemsWritten++ < i)
                         encoder.writeInt(0);
+                    // Append array of ancestor revs I do have:
                     encoder.beginArray();
                     for (slice ancestor : ancestors)
                         encoder.writeString(ancestor);
@@ -200,7 +208,6 @@ namespace litecore { namespace repl {
         };
 
         // Revision isn't found, but look for ancestors. Start with the common ancestor:
-        ancestors.resize(0);
         if (c4doc_selectRevision(doc, remoteRevID, true, &err))
             addAncestor();
 

@@ -173,9 +173,11 @@ namespace litecore { namespace repl {
             // In conflict-free mode the protocol requires the pusher send "proposeChanges" instead
             req->respondWithError({"BLIP"_sl, 409});
         } else {
-            // Pass the buck to the DBWorker so it can find the missing revs & request them:
+            // Pass the buck to the RevFinder so it can find the missing revs & request them...
             increment(_pendingRevFinderCalls);
-            _revFinder->findOrRequestRevs(req, asynchronize([=](vector<bool> which) {
+            _revFinder->findOrRequestRevs(req, &_incomingDocIDs,
+                                          asynchronize([=](vector<bool> which) {
+                // ... after the RevFinder returns:
                 decrement(_pendingRevFinderCalls);
                 for (size_t i = 0; i < which.size(); ++i) {
                     bool requesting = (which[i]);
@@ -229,6 +231,7 @@ namespace litecore { namespace repl {
 
 
     void Puller::handleNoRev(Retained<MessageIn> msg) {
+        _incomingDocIDs.remove(alloc_slice(msg->property("id"_sl)));
         decrement(_pendingRevMessages);
         slice sequence(msg->property("sequence"_sl));
         if (sequence)
@@ -275,6 +278,7 @@ namespace litecore { namespace repl {
 
     // Callback from an IncomingRev when it's finished (either added to db, or failed)
     void Puller::revWasHandled(IncomingRev *inc) {
+        _incomingDocIDs.remove(inc->rev()->docID);       // this is thread-safe
         _returningRevs.push(inc);
     }
 
