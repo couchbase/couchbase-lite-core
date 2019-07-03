@@ -9,6 +9,7 @@
 #include "Channel.hh"
 #include "RefCounted.hh"
 #include "fleece/slice.hh"
+#include <functional>
 #include <memory>
 #include <thread>
 

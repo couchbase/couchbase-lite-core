@@ -10,6 +10,7 @@
 #include "c4Socket.h"
 #include "fleece/Fleece.hh"
 #include "Writer.hh"
+#include <condition_variable>
 #include <string>
 
 namespace litecore { namespace net {
