@@ -83,6 +83,10 @@ namespace litecore { namespace repl {
                     deltaJSON, callback);
         }
 
+        void couldntPull(slice docID) {
+            enqueue(&DBWorker::_couldntPull, alloc_slice(docID));
+        }
+
         void sendRevision(RevToSend *request,
                           blip::MessageProgressCallback onProgress) {
             enqueue(&DBWorker::_sendRevision, retained(request), onProgress);
@@ -144,7 +148,7 @@ namespace litecore { namespace repl {
         // Pull:
         void _findOrRequestRevs(Retained<blip::MessageIn> req,
                                 std::function<void(std::vector<bool>)> callback);
-        bool findAncestors(slice docID, slice revID,
+        bool findAncestors(const alloc_slice &docID, slice revID,
                            std::vector<alloc_slice> &ancestors);
         int findProposedChange(slice docID, slice revID, slice parentRevID,
                                alloc_slice &outCurrentRevID);
@@ -155,7 +159,7 @@ namespace litecore { namespace repl {
                          std::function<void(fleece::Doc,C4Error)> callback);
         fleece::Doc _applyDelta(const C4Revision *baseRevision, slice deltaJSON, C4Error*);
         C4SliceResult applyDeltaCallback(const C4Revision *baseRevision, C4Slice deltaJSON, C4Error*);
-
+        void _couldntPull(alloc_slice docID);
         void _insertRevisionsNow();
 
         // Push:
@@ -177,6 +181,7 @@ namespace litecore { namespace repl {
         static const size_t kMaxPossibleAncestors = 10;
 
         using DocIDToRevMap = std::unordered_map<alloc_slice, Retained<RevToSend>, fleece::sliceHash>;
+        using IncomingDocSet = std::unordered_set<alloc_slice, fleece::sliceHash>;
 
         c4::ref<C4Database> _db;
         C4BlobStore* _blobStore;
@@ -189,6 +194,7 @@ namespace litecore { namespace repl {
         DocIDSet _pushDocIDs;                               // Optional set of doc IDs to push
         C4SequenceNumber _maxPushedSequence {0};            // Latest seq that's been pushed
         DocIDToRevMap _pushingDocs;                         // Revs being processed by push
+        IncomingDocSet _pullingDocs;                        // Docs being processed by pull
         bool _getForeignAncestors {false};
         bool _skipForeignChanges {false};
 

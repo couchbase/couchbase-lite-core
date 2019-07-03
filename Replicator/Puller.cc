@@ -210,6 +210,7 @@ namespace litecore { namespace repl {
 
     void Puller::handleNoRev(Retained<MessageIn> msg) {
         decrement(_pendingRevMessages);
+        _dbActor->couldntPull(msg->property("id"_sl));
         slice sequence(msg->property("sequence"_sl));
         if (sequence)
             completedSequence(alloc_slice(sequence));
