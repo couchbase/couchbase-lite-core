@@ -60,7 +60,7 @@ namespace litecore { namespace repl {
         bool fetchNextBlob();
         void insertRevision();
         void _revisionInserted();
-        void finish();
+        void finish(bool afterInsertion =false);
         virtual void _childChangedStatus(Worker *task, Status status) override;
 
         C4BlobStore *_blobStore;

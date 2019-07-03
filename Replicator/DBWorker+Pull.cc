@@ -105,10 +105,12 @@ namespace litecore { namespace repl {
 
             } else {
                 // "changes" entry: [sequence, docID, revID, deleted?, bodySize?]
-                if (!findAncestors(docID, revID, ancestors)) {
+                alloc_slice allocedDocID(docID);
+                if (!findAncestors(allocedDocID, revID, ancestors)) {
                     // I don't have this revision, so request it:
                     ++requested;
                     whichRequested[i] = true;
+                    _pullingDocs.insert(allocedDocID);
 
                     while (itemsWritten++ < i)
                         encoder.writeInt(0);
@@ -169,7 +171,7 @@ namespace litecore { namespace repl {
 
     // Returns true if revision exists; else returns false and sets ancestors to an array of
     // ancestor revisions I do have (empty if doc doesn't exist at all)
-    bool DBWorker::findAncestors(slice docID, slice revID, vector<alloc_slice> &ancestors) {
+    bool DBWorker::findAncestors(const alloc_slice &docID, slice revID, vector<alloc_slice> &ancestors) {
         C4Error err;
         c4::ref<C4Document> doc = c4doc_get(_db, docID, true, &err);
         if (!doc) {
@@ -190,12 +192,22 @@ namespace litecore { namespace repl {
             return true;
         }
 
+        // Revision isn't found ...
+        if (!_disableDeltaSupport && _pullingDocs.find(docID) != _pullingDocs.end()) {
+            // I'm already pulling some other revision of this document. Don't send back any revIDs
+            // as ancestors, because by the time I receive this rev I don't know what the doc's
+            // current revision will be; it may or may not have been updated. (CBL-136)
+            logVerbose("Note: Got change '%.*s' #%.*s while already handling earlier rev",
+                       SPLAT(docID), SPLAT(revID));
+            return false;
+        }
+
         auto addAncestor = [&]() {
             if (_disableDeltaSupport || c4doc_hasRevisionBody(doc))  // need body for deltas
                 ancestors.emplace_back(doc->selectedRev.revID);
         };
 
-        // Revision isn't found, but look for ancestors. Start with the common ancestor:
+        // Look for ancestors. Start with the common ancestor:
         ancestors.resize(0);
         if (c4doc_selectRevision(doc, remoteRevID, true, &err))
             addAncestor();
@@ -225,6 +237,11 @@ namespace litecore { namespace repl {
         if (!ok)
             warn("Failed to update remote #%u's rev of '%.*s' to %.*s: %d/%d",
                  _remoteDBID, SPLAT(doc->docID), SPLAT(revID), error.domain, error.code);
+    }
+
+
+    void DBWorker::_couldntPull(alloc_slice docID) {
+        _pullingDocs.erase(docID);
     }
 
 
@@ -477,6 +494,8 @@ namespace litecore { namespace repl {
                     if (rev->owner)
                         rev->owner->revisionInserted();
                 }
+
+                _pullingDocs.erase(rev->docID);
             }
         }
 

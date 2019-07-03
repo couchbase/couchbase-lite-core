@@ -217,20 +217,23 @@ namespace litecore { namespace repl {
 
     void IncomingRev::_revisionInserted() {
         decrement(_pendingCallbacks);
-        finish();
+        finish(true);
     }
 
 
-    void IncomingRev::finish() {
+    void IncomingRev::finish(bool afterInsertion) {
         if (!_revMessage->noReply()) {
             MessageBuilder response(_revMessage);
             if (_rev->error.code != 0)
                 response.makeError(c4ToBLIPError(_rev->error));
             _revMessage->respond(response);
         }
-        
+
         if (_rev->error.code == 0 && _peerError)
-                _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
+            _rev->error = c4error_make(WebSocketDomain, 502, "Peer failed to send revision"_sl);
+
+        if (_rev->error.code && !afterInsertion)
+            _dbWorker->couldntPull(_rev->docID);    // tell dbWorker to forget it
 
         // Free up memory now that I'm done:
         Assert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
