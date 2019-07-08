@@ -8,6 +8,7 @@
 
 #include "XcodeWarnings.xcconfig"
 
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unknown-warning-option  // ignore unknown warning flags
 CLANG_WARN_DOCUMENTATION_COMMENTS = NO
 CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO
 GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = NO
@@ -46,7 +47,5 @@ ENABLE_STRICT_OBJC_MSGSEND                         = YES
 GCC_C_LANGUAGE_STANDARD                            = c99
 GCC_ENABLE_OBJC_EXCEPTIONS                         = YES
 GCC_NO_COMMON_BLOCKS                               = YES
-
-WARNING_CFLAGS                                     = -Woverriding-method-mismatch -Weffc++
 
 COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from complaining
