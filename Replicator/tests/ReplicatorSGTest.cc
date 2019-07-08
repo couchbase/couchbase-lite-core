@@ -106,7 +106,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[.SyncServer]") {
 #endif
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API Push 5000 Changes", "[Push]") {
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push 5000 Changes", "[.SyncServer]") {
     string revID;
     {
         TransactionHelper t(db);
