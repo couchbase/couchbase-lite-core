@@ -910,7 +910,6 @@
 		273E9FAA1C519A1B003115A6 /* LiteCore static.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore static.xcconfig"; sourceTree = "<group>"; };
 		273E9FAD1C519A1B003115A6 /* LiteCore XCTests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore XCTests.xcconfig"; sourceTree = "<group>"; };
 		273E9FB01C519A1B003115A6 /* LiteCore-dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "LiteCore-dylib.xcconfig"; sourceTree = "<group>"; };
-		273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreJNI.xcconfig; sourceTree = "<group>"; };
 		273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = C4Tests.xcconfig; sourceTree = "<group>"; };
 		273E9FBA1C519A1B003115A6 /* Project_Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Debug.xcconfig; sourceTree = "<group>"; };
 		273E9FBB1C519A1B003115A6 /* Project_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project_Release.xcconfig; sourceTree = "<group>"; };
@@ -930,7 +929,7 @@
 		274A116A1D7F484000E97A62 /* SecureSymmetricCrypto.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SecureSymmetricCrypto.hh; sourceTree = "<group>"; };
 		274A69871BED288D00D16D37 /* c4Document.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Document.cc; sourceTree = "<group>"; };
 		274A69881BED288D00D16D37 /* c4Document.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = c4Document.h; sourceTree = "<group>"; };
-		274D03D31BA732B000FF7C35 /* libLiteCoreJNI.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libLiteCoreJNI.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		274D03D31BA732B000FF7C35 /* LiteCoreJNI.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = LiteCoreJNI.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		274D03E11BA732FC00FF7C35 /* JavaVM.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaVM.framework; path = System/Library/Frameworks/JavaVM.framework; sourceTree = SDKROOT; };
 		274D03EC1BA734A300FF7C35 /* native_glue.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = native_glue.cc; sourceTree = "<group>"; };
 		274D03ED1BA734A300FF7C35 /* native_glue.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = native_glue.hh; sourceTree = "<group>"; };
@@ -1064,7 +1063,6 @@
 		279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib.xcconfig"; sourceTree = "<group>"; };
 		279D41281EA55A8D00D8DD9D /* c4REST.exp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.exports; path = c4REST.exp; sourceTree = "<group>"; };
 		279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "REST-dylib_Release.xcconfig"; sourceTree = "<group>"; };
-		279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreServ.xcconfig; sourceTree = "<group>"; };
 		27A16314201FC2A500C18D9C /* DataFile+Shared.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = "DataFile+Shared.hh"; sourceTree = "<group>"; };
 		27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = "libc++.tbd"; path = "usr/lib/libc++.tbd"; sourceTree = SDKROOT; };
 		27A924941D9B316D00086206 /* LiteCore-iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "LiteCore-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1608,8 +1606,6 @@
 				279D411A1EA5569D00D8DD9D /* REST-dylib.xcconfig */,
 				279D41291EA55B3D00D8DD9D /* REST-dylib_Release.xcconfig */,
 				27FC81F31EAAB1000028E38E /* REST-static.xcconfig */,
-				279D41541EA6E70200D8DD9D /* LiteCoreServ.xcconfig */,
-				273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */,
 				273E9FB61C519A1B003115A6 /* C4Tests.xcconfig */,
 				272850EC1E9D4B7D009CA22F /* CppTests.xcconfig */,
 				273E9FBC1C519A1B003115A6 /* Project.xcconfig */,
@@ -1720,7 +1716,7 @@
 				27139B3018F8E9750021A9A3 /* LiteCore Tests.xctest */,
 				27EF807419142C2500A327B9 /* libTokenizer.a */,
 				27EF81121917EEC600A327B9 /* libLiteCore-static.a */,
-				274D03D31BA732B000FF7C35 /* libLiteCoreJNI.dylib */,
+				274D03D31BA732B000FF7C35 /* LiteCoreJNI.dylib */,
 				274D04081BA75E1C00FF7C35 /* C4Tests */,
 				720EA3F51BA7EAD9002B8416 /* libLiteCore.dylib */,
 				2708FE521CF4CC880022F721 /* LiteCoreCppTests */,
@@ -2597,7 +2593,7 @@
 			);
 			name = LiteCoreJNI;
 			productName = CBForestJNI;
-			productReference = 274D03D31BA732B000FF7C35 /* libLiteCoreJNI.dylib */;
+			productReference = 274D03D31BA732B000FF7C35 /* LiteCoreJNI.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
 		274D04071BA75E1C00FF7C35 /* C4Tests */ = {
@@ -3735,14 +3731,12 @@
 		};
 		274D03DA1BA732B100FF7C35 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */;
 			buildSettings = {
 			};
 			name = Debug;
 		};
 		274D03DB1BA732B100FF7C35 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */;
 			buildSettings = {
 			};
 			name = Release;
@@ -3834,7 +3828,6 @@
 		};
 		2791EA262032745700BD813C /* Debug-EE */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */;
 			buildSettings = {
 			};
 			name = "Debug-EE";
@@ -4060,7 +4053,6 @@
 		};
 		2791EA3A2032746700BD813C /* Release-EE */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 273E9FB31C519A1B003115A6 /* LiteCoreJNI.xcconfig */;
 			buildSettings = {
 			};
 			name = "Release-EE";
