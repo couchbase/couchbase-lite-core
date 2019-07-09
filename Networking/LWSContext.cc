@@ -21,9 +21,12 @@
 #include "LWSServer.hh"
 #include "LWSUtil.hh"
 #include "Address.hh"
+#include "FilePath.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
 #include "c4ExceptionUtils.hh"
+#include <fstream>
+#include <sstream>
 #include <libwebsockets.h>
 
 #ifdef TARGET_OS_OSX
@@ -101,8 +104,12 @@ namespace litecore { namespace net {
 #ifdef LWS_WITH_MBEDTLS
         // mbedTLS does not have a list of root CA certs, so get the system list for it:
         _systemRootCertsPEM = getSystemRootCertsPEM();
-        _info->client_ssl_ca_mem = _systemRootCertsPEM.buf;
-        _info->client_ssl_ca_mem_len = (unsigned)_systemRootCertsPEM.size;
+        if (_systemRootCertsPEM.empty()) {
+            Warn("No system CA certs found; can't verify server certs");
+        } else {
+            _info->client_ssl_ca_mem = _systemRootCertsPEM.data();
+            _info->client_ssl_ca_mem_len = (unsigned)_systemRootCertsPEM.size();
+        }
 #endif
 
         _context = lws_create_context(_info.get());
@@ -323,8 +330,10 @@ namespace litecore { namespace net {
 
 #ifdef LWS_WITH_MBEDTLS
 #if TARGET_OS_OSX
-    // Sadly, SecTrustCopyAnchorCertificates() is not available on iOS...
-    alloc_slice LWSContext::getSystemRootCertsPEM() {
+
+    // Read system root CA certs on macOS.
+    // (Sadly, SecTrustCopyAnchorCertificates() is not available on iOS)
+    string LWSContext::getSystemRootCertsPEM() {
         ++gC4ExpectExceptions;
         CFArrayRef roots;
         OSStatus err = SecTrustCopyAnchorCertificates(&roots);
@@ -336,12 +345,63 @@ namespace litecore { namespace net {
         CFRelease(roots);
         if (err)
             return {};
-        alloc_slice pem(CFDataGetBytePtr(pemData), CFDataGetLength(pemData));
+        string pem((const char*)CFDataGetBytePtr(pemData), CFDataGetLength(pemData));
         CFRelease(pemData);
         return pem;
     }
+
+#elif !defined(_WIN32)
+
+    // Read system root CA certs on Linux using OpenSSL's cert directory
+    string LWSContext::getSystemRootCertsPEM() {
+        static constexpr const char* kCertsDir  = "/etc/ssl/certs/";
+        static constexpr const char* kCertsFile = "ca-certificates.crt";
+
+        try {
+            stringstream certs;
+            char buf[1024];
+            // Subroutine to append a file to the `certs` stream:
+            auto readFile = [&](const FilePath &file) {
+                ifstream in(file.path());
+                char lastChar = '\n';
+                while (in) {
+                    in.read(buf, sizeof(buf));
+                    auto n = in.gcount();
+                    if (n > 0) {
+                        certs.write(buf, n);
+                        lastChar = buf[n-1];
+                    }
+                }
+                if (lastChar != '\n')
+                    certs << '\n';
+            };
+
+            FilePath certsDir(kCertsDir);
+            if (certsDir.existsAsDir()) {
+                FilePath certsFile(certsDir, kCertsFile);
+                if (certsFile.exists()) {
+                    // If there is a file containing all the certs, just read it:
+                    readFile(certsFile);
+                } else {
+                    // Otherwise concatenate all the certs found in the dir:
+                    certsDir.forEachFile([&](const FilePath &file) {
+                        string ext = file.extension();
+                        if (ext == ".pem" || ext == ".crt")
+                            readFile(file);
+                    });
+                }
+                Log("Read system root certificates");
+            }
+            return certs.str();
+
+        } catch (const exception &x) {
+            LogError("C++ exception reading system root certificates: %s", x.what());
+            return "";
+        }
+    }
+
 #else
-    alloc_slice LWSContext::getSystemRootCertsPEM() { return {}; }
+    string LWSContext::getSystemRootCertsPEM() { return ""; }
 #endif
 #endif
 

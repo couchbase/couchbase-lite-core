@@ -11,6 +11,7 @@
 #include "fleece/slice.hh"
 #include <functional>
 #include <memory>
+#include <string>
 #include <thread>
 
 // libwebsocket opaque structs:
@@ -62,7 +63,7 @@ namespace litecore { namespace net {
         LWSContext();
         static void initLogging();
         static void logCallback(int level, const char *message);
-        static fleece::alloc_slice getSystemRootCertsPEM();
+        std::string getSystemRootCertsPEM();
         void startEventLoop();
 
         void _connectClient(fleece::Retained<LWSProtocol>,
@@ -82,7 +83,7 @@ namespace litecore { namespace net {
         std::unique_ptr<std::thread>                _thread;
         actor::Channel<std::function<void()>>       _enqueued;
 
-        fleece::alloc_slice _systemRootCertsPEM;
+        std::string _systemRootCertsPEM;
     };
 
 } }
