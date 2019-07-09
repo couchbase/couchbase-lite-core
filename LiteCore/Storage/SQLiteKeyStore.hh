@@ -137,9 +137,9 @@ namespace litecore {
 
         bool _createdSeqIndex {false};     // Created by-seq index yet?
         bool _lastSequenceChanged {false};
-        int64_t _lastSequence {-1};
+        mutable int64_t _lastSequence {-1};
         bool _hasExpirationColumn {false};
-        std::mutex _stmtMutex;
+        mutable std::mutex _stmtMutex;
     };
 
 }

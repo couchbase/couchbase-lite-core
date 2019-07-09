@@ -358,7 +358,7 @@ namespace litecore { namespace repl {
                 || _pendingRevFinderCalls > 0) {
             level = kC4Busy;
         } else if (_options.pull == kC4Continuous || isOpenServer()) {
-            const_cast<Puller*>(this)->_spareIncomingRevs.clear();
+            _spareIncomingRevs.clear();
             level = kC4Idle;
         } else {
             level = kC4Stopped;

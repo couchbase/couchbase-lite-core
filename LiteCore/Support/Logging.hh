@@ -236,7 +236,7 @@ private:
         friend class LogDomain;
         static void rotateLog(LogLevel level);
 
-        unsigned _objectRef {0};
+        mutable unsigned _objectRef {0};
     };
 
 #define _logAt(LEVEL, FMT, ...) do { \

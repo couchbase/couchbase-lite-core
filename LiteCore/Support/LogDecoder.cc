@@ -169,13 +169,13 @@ namespace litecore {
 
 
     uint64_t LogDecoder::objectID() const {
-        const_cast<LogDecoder*>(this)->_putCurObjectInMessage = false;
+        _putCurObjectInMessage = false;
         return _curObject;
     }
 
 
     const string* LogDecoder::objectDescription() const {
-        const_cast<LogDecoder*>(this)->_putCurObjectInMessage = false;
+        _putCurObjectInMessage = false;
         if (_curObject > 0) {
             auto i = _objects.find(_curObject);
             if (i != _objects.end())

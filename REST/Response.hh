@@ -66,10 +66,10 @@ namespace litecore { namespace REST {
         Body(mg_connection*);
 
         mg_connection* const _conn;
-        bool _gotBody {false};
-        fleece::alloc_slice _body;
-        bool _gotBodyFleece {false};
-        fleece::Doc _bodyFleece;
+        mutable bool _gotBody {false};
+        mutable fleece::alloc_slice _body;
+        mutable bool _gotBodyFleece {false};
+        mutable fleece::Doc _bodyFleece;
     };
 
 

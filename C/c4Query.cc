@@ -40,7 +40,7 @@ using namespace litecore;
 using namespace fleece::impl;
 
 
-#define LOCK(MUTEX)     lock_guard<mutex> _lock(const_cast<mutex&>(MUTEX))
+#define LOCK(MUTEX)     lock_guard<mutex> _lock(MUTEX)
 
 
 CBL_CORE_API const C4QueryOptions kC4DefaultQueryOptions = {
@@ -167,7 +167,7 @@ private:
     C4Query* const                  _query;
     C4QueryObserverCallback const   _callback;
     void* const                     _context;
-    mutex                           _mutex;
+    mutable mutex                   _mutex;
     Retained<C4QueryEnumeratorImpl> _lastEnumerator;
     Retained<C4QueryEnumeratorImpl> _currentEnumerator;
     C4Error                         _currentError {};
@@ -234,7 +234,7 @@ private:
     Retained<Query> _query;
     alloc_slice _parameters;
 
-    mutex _mutex;
+    mutable mutex _mutex;
     Retained<LiveQuerier> _bgQuerier;
     std::list<c4QueryObserver> _observers;
 };

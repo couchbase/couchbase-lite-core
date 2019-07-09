@@ -112,7 +112,7 @@ namespace litecore { namespace REST {
         }
 
         virtual bool finished() const override {
-            Lock lock(const_cast<ReplicationTask*>(this)->_mutex);
+            Lock lock(_mutex);
             return _finalResult != HTTPStatus::undefined;
         }
 
@@ -229,7 +229,7 @@ namespace litecore { namespace REST {
 
         alloc_slice _source, _target;
         bool _bidi, _continuous, _push;
-        Mutex _mutex;
+        mutable Mutex _mutex;
         condition_variable_any _cv;
         c4::ref<C4Replicator> _repl;
         C4ReplicatorStatus _status;

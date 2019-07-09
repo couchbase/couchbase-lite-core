@@ -81,7 +81,7 @@ namespace litecore { namespace repl {
         std::deque<Retained<MessageIn>> _waitingChangesMessages; // Queued 'changes' messages
         std::deque<Retained<MessageIn>> _waitingRevMessages;     // Queued 'rev' messages
         DocIDMultiset _incomingDocIDs;      // docIDs currently being requested/inserted
-        std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRev objects
+        mutable std::vector<Retained<IncomingRev>> _spareIncomingRevs;   // Cache of IncomingRevs
         actor::ActorBatcher<Puller,IncomingRev> _returningRevs;
         Retained<Inserter> _inserter;
         Retained<RevFinder> _revFinder;

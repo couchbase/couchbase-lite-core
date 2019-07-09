@@ -237,9 +237,9 @@ namespace litecore {
         Retained<Shared>        _shared;                        // Shared state of file (lock)
         FilePath const          _path;                          // Path as given (non-canonical)
         Options                 _options;                       // Option/capability flags
-        KeyStore*               _defaultKeyStore {nullptr};     // The default KeyStore
+        mutable KeyStore*       _defaultKeyStore {nullptr};     // The default KeyStore
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
-        Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
+        mutable Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };

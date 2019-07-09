@@ -590,8 +590,7 @@ namespace litecore {
         if(_objectRef == 0) {
             string nickname = loggingClassName();
             string identifier = classNameOf(this) + " " + loggingIdentifier();
-            const_cast<Logging*>(this)->_objectRef = _domain.registerObject(this, identifier,
-                                                                            nickname, level);
+            _objectRef = _domain.registerObject(this, identifier, nickname, level);
         }
         
         _domain.vlog(level, _objectRef, true, format, args);

@@ -76,8 +76,8 @@ namespace litecore { namespace REST {
             alloc_slice body = writer.finish();
             if (body.size == 0)
                 body.reset();
-            const_cast<Body*>(this)->_body = body;
-            const_cast<Body*>(this)->_gotBody = true;
+            _body = body;
+            _gotBody = true;
         }
         return _body;
     }
@@ -88,10 +88,9 @@ namespace litecore { namespace REST {
             if (hasContentType("application/json"_sl)) {
                 alloc_slice b = body();
                 if (b)
-                    const_cast<Body*>(this)->_bodyFleece =
-                    Doc::fromJSON(b, nullptr);
+                    _bodyFleece = Doc::fromJSON(b, nullptr);
             }
-            const_cast<Body*>(this)->_gotBodyFleece = true;
+            _gotBodyFleece = true;
         }
         return _bodyFleece.root();
     }
