@@ -305,7 +305,7 @@ namespace litecore { namespace blip {
 
 
     bool MessageIn::isComplete() const {
-        lock_guard<mutex> lock(const_cast<MessageIn*>(this)->_receiveMutex);
+        lock_guard<mutex> lock(_receiveMutex);
         return _complete;
     }
 
@@ -314,7 +314,7 @@ namespace litecore { namespace blip {
 
 
     alloc_slice MessageIn::body() const {
-        lock_guard<mutex> lock(const_cast<MessageIn*>(this)->_receiveMutex);
+        lock_guard<mutex> lock(_receiveMutex);
         return _body;
     }
 

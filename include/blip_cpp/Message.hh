@@ -203,7 +203,7 @@ namespace litecore { namespace blip {
         void acknowledge(uint32_t frameSize);
 
         Retained<Connection> _connection;       // The owning BLIP connection     
-        std::mutex _receiveMutex;
+        mutable std::mutex _receiveMutex;
         MessageSize _rawBytesReceived {0};
         std::unique_ptr<fleece::JSONEncoder> _in; // Accumulates body data (not JSON)
         uint32_t _propertiesSize {0};           // Length of properties in bytes

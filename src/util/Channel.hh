@@ -63,7 +63,7 @@ namespace litecore { namespace actor {
         void close();
 
     protected:
-        std::mutex _mutex;
+        mutable std::mutex _mutex;
         
     private:
         T pop(bool &empty, bool wait);
@@ -109,7 +109,7 @@ namespace litecore { namespace actor {
 
     template <class T>
     const T& Channel<T>::front() const {
-        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(_mutex));
+        std::unique_lock<std::mutex> lock(_mutex);
         DebugAssert(!_queue.empty());
         return _queue.front();
     }
@@ -117,7 +117,7 @@ namespace litecore { namespace actor {
 
     template <class T>
     size_t Channel<T>::size() const {
-        std::unique_lock<std::mutex> lock(const_cast<std::mutex&>(_mutex));
+        std::unique_lock<std::mutex> lock(_mutex);
         return _queue.size();
     }
 

@@ -199,7 +199,7 @@ namespace litecore { namespace blip {
 #endif
             unsigned bytes;
             int bits;
-            check(deflatePending(const_cast<z_stream*>(&_z), &bytes, &bits));
+            check(deflatePending(&_z, &bytes, &bits));
             return bytes + (bits > 0);
 #ifdef __APPLE__
         } else {

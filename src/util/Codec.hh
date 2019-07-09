@@ -88,7 +88,7 @@ namespace litecore { namespace blip {
                    Mode, size_t maxInput =SIZE_MAX);
         void check(int) const;
 
-        ::z_stream _z { };
+        mutable ::z_stream _z { };
         FlateFunc const _flate;
     };
 
