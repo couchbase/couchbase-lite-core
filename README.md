@@ -37,7 +37,7 @@ All platform implementations of Couchbase Lite (from 2.0 onward) are built atop 
 * Pluggable storage engines:
     * SQLite is available by default
     * Others could be added by implementing C++ `DataFile`, `KeyStore`, `Query` interfaces
-* Command-line `cblite` tool
+* Command-line `cblite` tool (moved to [mobile tools repo](https://github.com/couchbaselabs/couchbase-mobile-tools))
     * Easy database inspection, document lookups and queries
     * Can run replications (push and/or pull)
     * Can serve the REST API over HTTP
