@@ -127,6 +127,7 @@ _c4blob_keyFromString
 _c4blob_keyToString
 _c4blob_openStore
 _c4blob_deleteStore
+_c4blob_freeStore
 _c4blob_getSize
 _c4blob_getContents
 _c4blob_getFilePath
@@ -178,6 +179,8 @@ _c4pred_unregisterModel
 _c4_getObjectCount
 _c4_shutdown
 
+_c4_setTempDir
+
 _FLSlice_Equal
 _FLSlice_Compare
 _FLSliceResult_Release
@@ -222,6 +225,7 @@ _FLDict_Count
 _FLDict_Get
 _FLDict_GetWithKey
 _FLDictIterator_Begin
+_FLDictIterator_GetCount
 _FLDictIterator_GetKey
 _FLDictIterator_GetKeyString
 _FLDictIterator_GetValue
