@@ -9,6 +9,8 @@ These are all C++ classes, and are all considered internal to LiteCore. Their AP
 * Some, but not all, of these classes are reference-counted (subclasses of `RefCounted`).
 * For the most part you don't instantiate these classes yourself, but get them from the `Database`.
 
+> **Looking for the replicator?** Its classes are documented on [a separate page](Replicator.md).
+
 ## Database Subsystem
 
 ### Database
