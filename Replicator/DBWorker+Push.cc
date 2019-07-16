@@ -369,6 +369,11 @@ namespace litecore { namespace repl {
         Dict ancestor;
         if (request->remoteAncestorRevID)
             ancestor = getDocRoot(doc, request->remoteAncestorRevID, &ancestorFlags);
+
+        if(ancestorFlags & kRevDeleted) {
+            return delta;
+        }
+
         if (!ancestor && request->ancestorRevIDs) {
             for (auto revID : *request->ancestorRevIDs) {
                 ancestor = getDocRoot(doc, revID, &ancestorFlags);
@@ -376,7 +381,7 @@ namespace litecore { namespace repl {
                     break;
             }
         }
-        if (!ancestor)
+        if (ancestor.empty())
             return delta;
 
         Doc legacyOld, legacyNew;
