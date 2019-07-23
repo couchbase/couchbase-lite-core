@@ -5,6 +5,9 @@ pipeline {
             parallel {
                 stage("Windows") {
                     agent { label 's61114win10_(litecore)' }
+                    environment {
+                        BRANCH = "${BRANCH_NAME}"
+                    }
                     steps {
                         powershell(returnStatus: true, script: 'jenkins\\jenkins_win.ps1')
                     }
