@@ -263,7 +263,6 @@ namespace litecore { namespace repl {
 
     // Callback from an IncomingRev when it's been written to the db but before the commit
     void Puller::_revWasProvisionallyHandled() {
-        decrement(_activeIncomingRevs);
         if (_activeIncomingRevs < tuning::kMaxActiveIncomingRevs
                     && _unfinishedIncomingRevs < tuning::kMaxUnfinishedIncomingRevs
                     && !_waitingRevMessages.empty()) {
@@ -278,6 +277,7 @@ namespace litecore { namespace repl {
 
     // Callback from an IncomingRev when it's finished (either added to db, or failed)
     void Puller::revWasHandled(IncomingRev *inc) {
+        decrement(_activeIncomingRevs);
         _incomingDocIDs.remove(inc->rev()->docID);       // this is thread-safe
         _returningRevs.push(inc);
     }
