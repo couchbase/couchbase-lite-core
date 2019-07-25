@@ -276,15 +276,21 @@ namespace litecore { namespace repl {
         }
     }
 
-    // Callback from an IncomingRev when it's finished (either added to db, or failed)
+    // Called from an IncomingRev when it's finished (either added to db, or failed.)
+    // The IncomingRev will be processed later by _revsFinished().
     void Puller::revWasHandled(IncomingRev *inc) {
-        _incomingDocIDs.remove(inc->rev()->docID);       // this is thread-safe
-        _returningRevs.push(inc);
+        // CAUTION: For performance reasons this method is called directly, without going through the
+        // Actor event queue, so it runs on the IncomingRev's thread, NOT the Puller's! Thus, it needs
+        // to pay attention to thread-safety.
+        _incomingDocIDs.remove(inc->rev()->docID);      // this is thread-safe
+        _returningRevs.push(inc);                       // this is thread-safe
     }
 
     void Puller::_revsFinished(int gen) {
         auto revs = _returningRevs.pop(gen);
         for (IncomingRev *inc : *revs) {
+            // If it was provisionally inserted, it'll have called _revWasProvisionallyHandled
+            // already. If not, call that method now:
             if (!inc->wasProvisionallyInserted())
                 _revWasProvisionallyHandled();
             auto rev = inc->rev();
