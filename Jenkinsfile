@@ -3,15 +3,15 @@ pipeline {
     stages {
         stage("Build and Test") {
             parallel {
-                // stage("Windows") {
-                //    agent { label 's61114win10_(litecore)' }
-                //    environment {
-                //        BRANCH = "${BRANCH_NAME}"
-                //    }
-                //    steps {
-                //        powershell(returnStatus: true, script: 'jenkins\\jenkins_win.ps1')
-                //    }
-                // }
+                stage("Windows") {
+                   agent { label 's61114win10_(litecore)' }
+                   environment {
+                       BRANCH = "${BRANCH_NAME}"
+                   }
+                   steps {
+                       powershell(returnStatus: true, script: 'jenkins\\jenkins_win.ps1')
+                   }
+                }
                 stage("macOS") {
                     agent { label 'mobile-mac-mini'  }
                     environment {

@@ -24,6 +24,7 @@ if(Test-Path $env:WORKSPACE\couchbase-lite-core) {
     Push-Location $env:WORKSPACE\couchbase-lite-core
     & 'C:\Program Files\Git\bin\git.exe' checkout $COMMIT_SHA
     & 'C:\Program Files\Git\bin\git.exe' submodule update --init --recursive
+    Pop-Location
 }
 
 if(Test-Path $env:WORKSPACE\couchbase-lite-core-EE) {
@@ -42,26 +43,30 @@ New-Item -Type Directory -ErrorAction Ignore $env:WORKSPACE\couchbase-lite-core\
 Push-Location $env:WORKSPACE\couchbase-lite-core\build_cmake\x64
 & 'C:\Program Files\CMake\bin\cmake.exe' -G "Visual Studio 14 2015 Win64" -DBUILD_ENTERPRISE=ON ..\..
 if($LASTEXITCODE -ne 0) {
-    Write-Host "Failed to run CMake!" -ForegroundColor Red; exit 1
+    Write-Error "Failed to run CMake!"
+    throw "Failed to run CMake!"
 }
 
 & 'C:\Program Files\CMake\bin\cmake.exe' --build .
 if($LASTEXITCODE -ne 0) {
-    Write-Host "Failed to build!" -ForegroundColor Red; exit 1
+    Write-Error "Failed to build!"
+    throw "Failed to build!"
 }
 
 $env:LiteCoreTestsQuiet=1
 Push-Location LiteCore\tests\Debug
 .\CppTests -r list
 if($LASTEXITCODE -ne 0) {
-    Write-Host "C++ tests failed!" -ForegroundColor Red; exit 1
+    Write-Error "C++ tests failed!"
+    throw "C++ tests failed"
 }
 
 Pop-Location
 Push-Location C\tests\Debug
 .\C4Tests -r list
 if($LASTEXITCODE -ne 0) {
-    Write-Host "C tests failed!" -ForegroundColor Red; exit 1
+    Write-Error "C tests failed!"
+    throw "C tests failed"
 }
 
 Pop-Location
