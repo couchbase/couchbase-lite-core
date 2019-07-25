@@ -9,7 +9,10 @@ pipeline {
                        BRANCH = "${BRANCH_NAME}"
                    }
                    steps {
-                       powershell 'jenkins\\jenkins_win.ps1'
+                       def retVal = powershell(returnStatus: true, script: 'jenkins\\jenkins_win.ps1')
+                       if(retVal != 0) {
+                           error("Windows stage failed")
+                       }
                    }
                 }
                 stage("macOS") {
