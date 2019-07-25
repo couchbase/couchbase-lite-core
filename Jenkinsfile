@@ -9,7 +9,7 @@ pipeline {
                        BRANCH = "${BRANCH_NAME}"
                    }
                    steps {
-                       powershell(returnStatus: true, script: 'jenkins\\jenkins_win.ps1')
+                       powershell 'jenkins\\jenkins_win.ps1'
                    }
                 }
                 stage("macOS") {
