@@ -75,10 +75,11 @@ static inline void c4slice_free(C4SliceResult s)            {FLSliceResult_Free(
 typedef C4_ENUM(uint32_t, C4ErrorDomain) {
     LiteCoreDomain = 1, // code is a Couchbase Lite Core error code (see below)
     POSIXDomain,        // code is an errno
-    SQLiteDomain,       // code is a SQLite error; see "sqlite3.h">"
+    SQLiteDomain,       // code is a SQLite error; see "sqlite3.h"
     FleeceDomain,       // code is a Fleece error; see "FleeceException.h"
     NetworkDomain,      // code is a network error; see enum C4NetworkErrorCode, below
     WebSocketDomain,    // code is a WebSocket close code (1000...1015) or HTTP error (300..599)
+    MbedTLSDomain,      // code is an mbedTLS error; see "mbedtls/error.h"
 
     kC4MaxErrorDomainPlus1
 };

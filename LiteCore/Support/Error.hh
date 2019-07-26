@@ -36,6 +36,7 @@ namespace litecore {
             Fleece,             // See FleeceException.h
             Network,            // See NetworkError enum in WebSocketInterface.hh
             WebSocket,          // See WebSocketInterface.h
+            MbedTLS,            // See mbedtls/error.h
 
             // Add new domain here.
             // You MUST add a name string to kDomainNames in Error.cc!

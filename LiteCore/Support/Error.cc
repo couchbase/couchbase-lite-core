@@ -20,6 +20,7 @@
 #include "Logging.hh"
 #include "FleeceException.hh"
 #include "PlatformIO.hh"
+#include "StringUtil.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
 #include <cerrno>
@@ -38,7 +39,6 @@
 #ifndef LITECORE_IMPL
 #include "c4Base.h"     // Ugly layering violation, but needed for using Error in other libs
 #endif
-
 
 namespace litecore {
 
@@ -252,6 +252,8 @@ namespace litecore {
                 return network_errstr(code);
             case WebSocket:
                 return websocket_errstr(code);
+            case MbedTLS:
+                return format("(mbedTLS %s0x%x)", (code < 0 ? "-" : ""), abs(code));
             default:
                 return "unknown error domain";
         }
@@ -268,7 +270,7 @@ namespace litecore {
         // Indexed by Domain
         static const char* kDomainNames[] = {"0",
                                              "LiteCore", "POSIX", "SQLite", "Fleece",
-                                             "Network", "WebSocket"};
+                                             "Network", "WebSocket", "mbedTLS"};
         static_assert(sizeof(kDomainNames)/sizeof(kDomainNames[0]) == error::NumDomainsPlus1,
                       "Incomplete domain name table");
         

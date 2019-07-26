@@ -135,6 +135,15 @@
 		2761F3F01EE9CC58006D4BB8 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
 		2761F3F21EE9CC58006D4BB8 /* CookieStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */; };
 		2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
+		2762A00E22EA65E200F9AB18 /* Certificate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A00D22EA65E200F9AB18 /* Certificate.cc */; };
+		2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
+		2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
+		2762A01922EB92B900F9AB18 /* PublicKey.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01822EB92B900F9AB18 /* PublicKey.cc */; };
+		2762A01A22EB92B900F9AB18 /* PublicKey.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01822EB92B900F9AB18 /* PublicKey.cc */; };
+		2762A01D22EB933100F9AB18 /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
+		2762A01E22EB933100F9AB18 /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
+		2762A02122EF8C4E00F9AB18 /* PublicKey+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */; };
+		2762A02222EF8C4E00F9AB18 /* PublicKey+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */; };
 		276301131F2FE960004A1592 /* UnicodeCollator_ICU.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276301121F2FE960004A1592 /* UnicodeCollator_ICU.cc */; };
 		2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */; };
 		2763012B1F3A36BD004A1592 /* StringUtil_Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2763012A1F3A36BD004A1592 /* StringUtil_Apple.mm */; };
@@ -154,9 +163,6 @@
 		2771A0A62286256C00B18E0A /* libwebsockets.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27719FE62284E8AD00B18E0A /* libwebsockets.a */; };
 		2771A0A72286257800B18E0A /* LWSWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27719FE92284E94D00B18E0A /* LWSWebSocket.cc */; };
 		2771A0B2228626FD00B18E0A /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
-		2771A0B622862AC900B18E0A /* libmbedcrypto.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A0B322862AC800B18E0A /* libmbedcrypto.a */; };
-		2771A0B722862AC900B18E0A /* libmbedtls.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A0B422862AC900B18E0A /* libmbedtls.a */; };
-		2771A0B822862AC900B18E0A /* libmbedx509.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A0B522862AC900B18E0A /* libmbedx509.a */; };
 		2771A0CF228B4CD700B18E0A /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2771A0DB228B5A4100B18E0A /* LWSContext.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2771A0D9228B5A4100B18E0A /* LWSContext.hh */; };
 		2771A0DC228B5A4100B18E0A /* LWSContext.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771A0DA228B5A4100B18E0A /* LWSContext.cc */; };
@@ -927,6 +933,15 @@
 		2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStore.cc; sourceTree = "<group>"; };
 		2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CookieStore.hh; sourceTree = "<group>"; };
 		2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CookieStoreTest.cc; sourceTree = "<group>"; };
+		2762A00C22EA65E200F9AB18 /* Certificate.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Certificate.hh; sourceTree = "<group>"; };
+		2762A00D22EA65E200F9AB18 /* Certificate.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Certificate.cc; sourceTree = "<group>"; };
+		2762A01422EB7CC800F9AB18 /* CertificateTest.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CertificateTest.cc; sourceTree = "<group>"; };
+		2762A01722EB92B900F9AB18 /* PublicKey.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PublicKey.hh; sourceTree = "<group>"; };
+		2762A01822EB92B900F9AB18 /* PublicKey.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PublicKey.cc; sourceTree = "<group>"; };
+		2762A01B22EB933100F9AB18 /* mbedUtils.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = mbedUtils.hh; sourceTree = "<group>"; };
+		2762A01C22EB933100F9AB18 /* mbedUtils.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedUtils.cc; sourceTree = "<group>"; };
+		2762A01F22EF641900F9AB18 /* Defer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Defer.hh; sourceTree = "<group>"; };
+		2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "PublicKey+Apple.mm"; sourceTree = "<group>"; };
 		276301121F2FE960004A1592 /* UnicodeCollator_ICU.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_ICU.cc; sourceTree = "<group>"; };
 		2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_Stub.cc; sourceTree = "<group>"; };
 		2763011E1F338B77004A1592 /* wiki */ = {isa = PBXFileReference; lastKnownFileType = folder; name = wiki; path = ../wiki; sourceTree = "<group>"; };
@@ -1085,9 +1100,6 @@
 		2771A0702284EB1D00B18E0A /* ccm.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ccm.h; sourceTree = "<group>"; };
 		2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libLiteCoreWebSocket.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		2771A0A5228624DE00B18E0A /* LiteCoreWebSocket.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = LiteCoreWebSocket.xcconfig; sourceTree = "<group>"; };
-		2771A0B322862AC800B18E0A /* libmbedcrypto.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedcrypto.a; path = build/library/libmbedcrypto.a; sourceTree = "<group>"; };
-		2771A0B422862AC900B18E0A /* libmbedtls.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedtls.a; path = build/library/libmbedtls.a; sourceTree = "<group>"; };
-		2771A0B522862AC900B18E0A /* libmbedx509.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libmbedx509.a; path = build/library/libmbedx509.a; sourceTree = "<group>"; };
 		2771A0D9228B5A4100B18E0A /* LWSContext.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSContext.hh; sourceTree = "<group>"; };
 		2771A0DA228B5A4100B18E0A /* LWSContext.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSContext.cc; sourceTree = "<group>"; };
 		2771A0DD228B5F7900B18E0A /* LWSProtocol.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSProtocol.hh; sourceTree = "<group>"; };
@@ -1378,6 +1390,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */,
 				2708FE561CF4CD170022F721 /* libLiteCore-static.a in Frameworks */,
 				27E3DD511DB7CCF600F2872D /* libc++.tbd in Frameworks */,
 				272850EE1E9D4D23009CA22F /* libz.tbd in Frameworks */,
@@ -1430,9 +1443,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2771A0B622862AC900B18E0A /* libmbedcrypto.a in Frameworks */,
-				2771A0B822862AC900B18E0A /* libmbedx509.a in Frameworks */,
-				2771A0B722862AC900B18E0A /* libmbedtls.a in Frameworks */,
 				2771A0A62286256C00B18E0A /* libwebsockets.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1773,6 +1783,7 @@
 				27E4871019217187007D8940 /* LiteCore */,
 				27CCC7CA1E525E6D00CE1989 /* Replicator */,
 				271BA53122960DF900D49D13 /* Networking */,
+				2754616A22F21F3900DF87B0 /* Crypto */,
 				272851111EA44902009CA22F /* REST */,
 				275607791BA22E5700F58218 /* Java */,
 				275072AD18E4A68E00A80C5A /* Objective-C Tests */,
@@ -1862,6 +1873,7 @@
 				27FB0C37205B177100987D9C /* Instrumentation.hh */,
 				27FB0C3C205B18A500987D9C /* Instrumentation.cc */,
 				27F2BE97221DC9DF006C13EE /* access_lock.hh */,
+				2762A01F22EF641900F9AB18 /* Defer.hh */,
 			);
 			path = Support;
 			sourceTree = "<group>";
@@ -1884,6 +1896,21 @@
 				275072B518E4A68E00A80C5A /* LiteCore Tests-Prefix.pch */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		2754616A22F21F3900DF87B0 /* Crypto */ = {
+			isa = PBXGroup;
+			children = (
+				2762A01B22EB933100F9AB18 /* mbedUtils.hh */,
+				2762A01C22EB933100F9AB18 /* mbedUtils.cc */,
+				2762A00C22EA65E200F9AB18 /* Certificate.hh */,
+				2762A00D22EA65E200F9AB18 /* Certificate.cc */,
+				2762A01722EB92B900F9AB18 /* PublicKey.hh */,
+				2762A01822EB92B900F9AB18 /* PublicKey.cc */,
+				2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */,
+			);
+			name = Crypto;
+			path = ../Crypto;
 			sourceTree = "<group>";
 		};
 		275607791BA22E5700F58218 /* Java */ = {
@@ -1939,6 +1966,7 @@
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
+				2762A01422EB7CC800F9AB18 /* CertificateTest.cc */,
 				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
 			);
 			path = tests;
@@ -2149,9 +2177,6 @@
 			isa = PBXGroup;
 			children = (
 				2771A0202284EB1D00B18E0A /* include */,
-				2771A0B322862AC800B18E0A /* libmbedcrypto.a */,
-				2771A0B422862AC900B18E0A /* libmbedtls.a */,
-				2771A0B522862AC900B18E0A /* libmbedx509.a */,
 			);
 			path = mbedtls;
 			sourceTree = "<group>";
@@ -3000,11 +3025,12 @@
 			productReference = 27EF807419142C2500A327B9 /* libTokenizer.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		27EF80F91917EEC600A327B9 /* LiteCore static */ = {
+		27EF80F91917EEC600A327B9 /* LiteCore-static */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 27EF810F1917EEC600A327B9 /* Build configuration list for PBXNativeTarget "LiteCore static" */;
+			buildConfigurationList = 27EF810F1917EEC600A327B9 /* Build configuration list for PBXNativeTarget "LiteCore-static" */;
 			buildPhases = (
 				275BF36C1F5F67940051374A /* Generate repo_version.h */,
+				2754616922EFC4F500DF87B0 /* Build mbedTLS */,
 				27EF80FC1917EEC600A327B9 /* Sources */,
 				27EF810B1917EEC600A327B9 /* Frameworks */,
 				27EF810E1917EEC600A327B9 /* CopyFiles */,
@@ -3017,7 +3043,7 @@
 				27FA09CA1D70BA3C005888AA /* PBXTargetDependency */,
 				27EF81161917EF4000A327B9 /* PBXTargetDependency */,
 			);
-			name = "LiteCore static";
+			name = "LiteCore-static";
 			productName = "CBForest-iOS";
 			productReference = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */;
 			productType = "com.apple.product-type.library.static";
@@ -3161,7 +3187,7 @@
 			);
 			projectRoot = "";
 			targets = (
-				27EF80F91917EEC600A327B9 /* LiteCore static */,
+				27EF80F91917EEC600A327B9 /* LiteCore-static */,
 				720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */,
 				27B64933206971FB00FC12F7 /* LiteCore framework */,
 				27FC81E71EAAB0D90028E38E /* LiteCoreREST static */,
@@ -3304,6 +3330,24 @@
 			shellScript = "$SRCROOT/build_libwebsockets.sh\n";
 			showEnvVarsInLog = 0;
 		};
+		2754616922EFC4F500DF87B0 /* Build mbedTLS */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build mbedTLS";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = "/bin/sh -e";
+			shellScript = "$SRCROOT/build_mbedtls.sh\n";
+		};
 		275BF36C1F5F67940051374A /* Generate repo_version.h */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -3355,6 +3399,7 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = "/bin/sh -e";
 			shellScript = "$SRCROOT/build_mbedtls.sh\n";
+			showEnvVarsInLog = 0;
 		};
 		27E6739E1EC8D958008F50C4 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -3381,6 +3426,7 @@
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
+				2762A01E22EB933100F9AB18 /* mbedUtils.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				277BE1C9204F4D45008047C9 /* RevTreeTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
@@ -3388,11 +3434,14 @@
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
+				2762A02222EF8C4E00F9AB18 /* PublicKey+Apple.mm in Sources */,
 				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
+				2762A01A22EB92B900F9AB18 /* PublicKey.cc in Sources */,
 				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
+				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3597,6 +3646,7 @@
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27098AA6216C2108002751DA /* PredictiveModel.cc in Sources */,
 				27098AC421752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc in Sources */,
+				2762A01922EB92B900F9AB18 /* PublicKey.cc in Sources */,
 				278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				27FC8DB622135BCE0083B033 /* Pusher+DB.cc in Sources */,
@@ -3658,8 +3708,10 @@
 				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
+				2762A01D22EB933100F9AB18 /* mbedUtils.cc in Sources */,
 				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
 				27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */,
+				2762A02122EF8C4E00F9AB18 /* PublicKey+Apple.mm in Sources */,
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
@@ -3676,6 +3728,7 @@
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
 				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
+				2762A00E22EA65E200F9AB18 /* Certificate.cc in Sources */,
 				277C14711EA8102B0075348F /* Document.cc in Sources */,
 				27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */,
 				276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */,
@@ -3723,7 +3776,7 @@
 /* Begin PBXTargetDependency section */
 		2700BB74217905F000797537 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
 			targetProxy = 2700BB73217905F000797537 /* PBXContainerItemProxy */;
 		};
 		2700BDFA1ED4FA78006B8AFF /* PBXTargetDependency */ = {
@@ -3738,7 +3791,7 @@
 		};
 		2708FE541CF4CCAB0022F721 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
 			targetProxy = 2708FE531CF4CCAB0022F721 /* PBXContainerItemProxy */;
 		};
 		272850E51E9CABD2009CA22F /* PBXTargetDependency */ = {
@@ -3753,12 +3806,12 @@
 		};
 		27410EAA198BFD97007EE67C /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
 			targetProxy = 27410EA9198BFD97007EE67C /* PBXContainerItemProxy */;
 		};
 		274D041A1BA763AE00FF7C35 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
 			targetProxy = 274D04191BA763AE00FF7C35 /* PBXContainerItemProxy */;
 		};
 		274D04221BA892C500FF7C35 /* PBXTargetDependency */ = {
@@ -3783,7 +3836,7 @@
 		};
 		27766E1F1982DED300CAA464 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
 			targetProxy = 27766E1E1982DED300CAA464 /* PBXContainerItemProxy */;
 		};
 		2779CC581E848BBC00F0D251 /* PBXTargetDependency */ = {
@@ -3803,7 +3856,7 @@
 		};
 		27B649492069722500FC12F7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
 			targetProxy = 27B649482069722500FC12F7 /* PBXContainerItemProxy */;
 		};
 		27DE2EED2126212300123597 /* PBXTargetDependency */ = {
@@ -3848,7 +3901,7 @@
 		};
 		93FA3F601EE21B3B00D15CF5 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 27EF80F91917EEC600A327B9 /* LiteCore static */;
+			target = 27EF80F91917EEC600A327B9 /* LiteCore-static */;
 			targetProxy = 93FA3F5F1EE21B3B00D15CF5 /* PBXContainerItemProxy */;
 		};
 		93FA3F621EE21B3B00D15CF5 /* PBXTargetDependency */ = {
@@ -4945,7 +4998,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		27EF810F1917EEC600A327B9 /* Build configuration list for PBXNativeTarget "LiteCore static" */ = {
+		27EF810F1917EEC600A327B9 /* Build configuration list for PBXNativeTarget "LiteCore-static" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				27EF81101917EEC600A327B9 /* Debug */,

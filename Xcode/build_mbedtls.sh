@@ -6,9 +6,19 @@ source "$SRCROOT/build_setup.sh" mbedtls
 
 # Set up the CMake build options:
 CMAKE_OPTS="$CMAKE_OPTS \
-            -DCMAKE_BUILD_TYPE=RelWithDebugInfo \
             -DENABLE_PROGRAMS=0 \
             -DENABLE_TESTING=0"
+
+if [[ "$CONFIGURATION" == "Release*" ]]
+then
+    CMAKE_OPTS="$CMAKE_OPTS -DCMAKE_BUILD_TYPE=RelWithDebugInfo"
+else
+    CMAKE_OPTS="$CMAKE_OPTS -DCMAKE_BUILD_TYPE=Debug"
+    if [ "$ENABLE_ADDRESS_SANITIZER" == "YES" ]
+    then
+        CMAKE_OPTS="$CMAKE_OPTS -DLWS_WITH_ASAN=1"
+    fi
+fi
 
 echo "CMake options: $CMAKE_OPTS"
 

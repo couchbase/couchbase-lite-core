@@ -20,5 +20,7 @@ LIBRARY_SEARCH_PATHS = $(inherited) $(LIBWEBSOCKETS)/build/lib  $(inherited) $(M
 
 WARNING_CFLAGS = $(inherited) -Wno-documentation
 
+OTHER_LDFLAGS = -lwebsockets -lmbedtls -lmbedcrypto -lmbedx509
+
 SKIP_INSTALL                 = YES
 STRIP_INSTALLED_PRODUCT      = NO
