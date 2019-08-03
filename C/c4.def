@@ -235,6 +235,7 @@ kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension
 
 c4_getBuildInfo
+c4_setTempDir
 
 c4log
 c4vlog
@@ -288,6 +289,7 @@ c4queryobs_getEnumerator
 c4queryobs_free
 
 c4blob_computeKey
+c4blob_freeStore
 
 c4stream_bytesWritten
 
@@ -308,6 +310,8 @@ gC4ExpectExceptions
 
 FLSliceResult_Retain
 
+FLDictIterator_GetCount
+
 FLDoc_FromJSON
 FLDoc_Retain
 
@@ -321,3 +325,9 @@ FLSharedKeys_Retain
 FLSharedKeys_Release
 
 FLValue_ToJSON5
+
+mbedtls_md_info_from_type
+mbedtls_md_init
+mbedtls_md_free
+mbedtls_md_setup
+mbedtls_pkcs5_pbkdf2_hmac
