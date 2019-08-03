@@ -110,6 +110,7 @@ c4blob_keyFromString
 c4blob_keyToString
 c4blob_openStore
 c4blob_deleteStore
+c4blob_freeStore
 c4blob_getSize
 c4blob_getContents
 c4blob_getFilePath
@@ -156,6 +157,7 @@ c4pred_unregisterModel
 
 c4_getObjectCount
 c4_shutdown
+c4_setTempDir
 
 FLSlice_Equal
 FLSlice_Compare
@@ -201,6 +203,7 @@ FLDict_Count
 FLDict_Get
 FLDict_GetWithKey
 FLDictIterator_Begin
+FLDictIterator_GetCount
 FLDictIterator_GetKey
 FLDictIterator_GetKeyString
 FLDictIterator_GetValue
@@ -321,3 +324,9 @@ FLSharedKeys_Retain
 FLSharedKeys_Release
 
 FLValue_ToJSON5
+
+mbedtls_md_info_from_type
+mbedtls_md_init
+mbedtls_md_free
+mbedtls_md_setup
+mbedtls_pkcs5_pbkdf2_hmac
