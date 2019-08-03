@@ -110,7 +110,6 @@ c4blob_keyFromString
 c4blob_keyToString
 c4blob_openStore
 c4blob_deleteStore
-c4blob_freeStore
 c4blob_getSize
 c4blob_getContents
 c4blob_getFilePath
@@ -157,7 +156,6 @@ c4pred_unregisterModel
 
 c4_getObjectCount
 c4_shutdown
-c4_setTempDir
 
 FLSlice_Equal
 FLSlice_Compare
@@ -203,7 +201,6 @@ FLDict_Count
 FLDict_Get
 FLDict_GetWithKey
 FLDictIterator_Begin
-FLDictIterator_GetCount
 FLDictIterator_GetKey
 FLDictIterator_GetKeyString
 FLDictIterator_GetValue
@@ -238,6 +235,7 @@ kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension
 
 c4_getBuildInfo
+c4_setTempDir
 
 c4log
 c4vlog
@@ -291,6 +289,7 @@ c4queryobs_getEnumerator
 c4queryobs_free
 
 c4blob_computeKey
+c4blob_freeStore
 
 c4stream_bytesWritten
 
@@ -310,6 +309,8 @@ c4_dumpInstances
 gC4ExpectExceptions
 
 FLSliceResult_Retain
+
+FLDictIterator_GetCount
 
 FLDoc_FromJSON
 FLDoc_Retain

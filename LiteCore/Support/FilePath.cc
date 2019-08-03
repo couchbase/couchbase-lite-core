@@ -118,13 +118,13 @@ static int copyfile(const char* from, const char* to)
     }
     else {
         // Windows 7 doesn't have CopyFile2
-        err = CopyFileW(wideFrom, wideTo, false);
+        err = !CopyFileW(wideFrom, wideTo, false);
     }
 #else
     err = CopyFile2(wideFrom, wideTo, nullptr);
 #endif
 
-    if(err < S_OK) {
+    if(err != S_OK) {
         return -1;
     }
     
