@@ -17,6 +17,7 @@ CMAKE_OPTS="$CMAKE_OPTS \
            -DLWS_WITHOUT_TEST_SERVER=1 \
            -DLWS_WITHOUT_TEST_SERVER_EXTPOLL=1 \
            -DLWS_WITH_MBEDTLS=1 \
+           -DCMAKE_C_FLAGS=-DCONFIG_OPENSSL_DEBUG \
            -DLWS_MBEDTLS_INCLUDE_DIRS=../mbedtls/include \
            -DMBEDCRYPTO_LIBRARY=../mbedtls/library/libmbedcrypto.a \
            -DMBEDTLS_LIBRARY=../mbedtls/library/libmbedtls.a \

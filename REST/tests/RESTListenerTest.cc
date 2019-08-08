@@ -21,10 +21,12 @@
 #include "c4.hh"
 #include "FilePath.hh"
 #include "Response.hh"
+#include "Certificate.hh"
 
 using namespace std;
 using namespace fleece;
 using namespace litecore::REST;
+using namespace litecore::crypto;
 
 
 #ifdef COUCHBASE_ENTERPRISE
@@ -37,6 +39,9 @@ static string to_str(FLSlice s) {
 static string to_str(Value v) {
     return to_str(v.asString());
 }
+
+
+static Retained<Identity> sTemporaryIdentity, sPersistentIdentity;
 
 
 class C4RESTTest : public C4Test {
@@ -53,6 +58,49 @@ public:
         directory = alloc_slice(tempDir.path().c_str());
         config.directory = directory;
         config.allowCreateDBs = true;
+    }
+
+
+    void useIdentity(Identity *id) {
+        configCertData = id->cert->data();
+        tlsConfig.certificate = configCertData;
+        if (id->privateKey->isPrivateKeyDataAvailable()) {
+            configKeyData = id->privateKey->privateKeyData();
+            tlsConfig.privateKey = configKeyData;
+            tlsConfig.privateKeyRepresentation = kC4PrivateKeyData;
+        } else {
+            tlsConfig.privateKeyRepresentation = kC4PrivateKeyFromCert;
+        }
+        config.tlsConfig = &tlsConfig;
+
+    }
+
+
+    void useTLSWithTemporaryKey() {
+        C4Log("Using TLS w/temporary key for this test");
+        if (!sTemporaryIdentity) {
+            C4Log("Generating TLS key-pair and cert...")
+            Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(1024);
+            Cert::IssuerParameters issuerParams;
+            issuerParams.validity_secs = 3600*24;
+            auto cert = retained(new Cert("CN=C4RESTTest, O=Couchbase, OU=Mobile", issuerParams, key));
+            sTemporaryIdentity = new Identity(cert, key);
+        }
+        useIdentity(sTemporaryIdentity);
+    }
+
+
+    void useTLSWithPersistentKey() {
+        C4Log("Using TLS w/persistent key for this test");
+        if (!sPersistentIdentity) {
+            Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048);
+            Cert::IssuerParameters issuerParams;
+            issuerParams.validity_secs = 3600*24;
+            auto cert = retained(new Cert("CN=C4RESTTest, O=Couchbase, OU=Mobile", issuerParams, key));
+            cert->makePersistent();
+            sPersistentIdentity = new Identity(cert, key);
+        }
+        useIdentity(sPersistentIdentity);
     }
 
 
@@ -82,13 +130,15 @@ public:
         start();
 
         C4Log("---- %s %s", method.c_str(), uri.c_str());
-        unique_ptr<Response> r(new Response(method, "localhost", config.port, uri, headers, body));
-        if (!*r)
-            INFO("Error is " << r->statusMessage());
+        string scheme = config.tlsConfig ? "https" : "http";
+        unique_ptr<Response> r(new Response(scheme, method, "localhost", config.port, uri, headers, body, pinnedCert));
         REQUIRE(r);
+        if (r->error().code)
+            C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
         C4Log("Status: %d %s", r->status(), r->statusMessage().c_str());
         string responseBody = r->body().asString();
         C4Log("Body: %s", responseBody.c_str());
+        INFO("Error: " << c4error_descriptionStr(r->error()));
         REQUIRE(r->status() == expectedStatus);
         return r;
     }
@@ -100,6 +150,10 @@ public:
     C4ListenerConfig config = {59849, kC4RESTAPI};
     alloc_slice directory;
     c4::ref<C4Listener> listener;
+
+    C4TLSConfig tlsConfig = { };
+    alloc_slice configCertData, configKeyData;
+    Retained<Cert> pinnedCert;
 };
 
 
@@ -327,5 +381,36 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][C]") {
     CHECK(doc["status"].asInt() == 404);
     CHECK(doc["error"].asString() == "Not Found"_sl);
 }
+
+
+#pragma mark - TLS:
+
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][TLS][C]") {
+    useTLSWithTemporaryKey();
+    auto r = request("GET", "/", HTTPStatus::undefined);
+    CHECK(r->error() == (C4Error{NetworkDomain, kC4NetErrTLSCertUnknownRoot}));
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][TLS][C]") {
+    useTLSWithTemporaryKey();
+    pinnedCert = sTemporaryIdentity->cert;
+    auto r = request("GET", "/", HTTPStatus::OK);
+    auto body = r->bodyAsJSON().asDict();
+    REQUIRE(body);
+    CHECK(to_str(body["couchdb"]) == "Welcome");
+}
+
+
+TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][TLS][C]") {
+    useTLSWithPersistentKey();
+    pinnedCert = sPersistentIdentity->cert;
+    auto r = request("GET", "/", HTTPStatus::OK);
+    auto body = r->bodyAsJSON().asDict();
+    REQUIRE(body);
+    CHECK(to_str(body["couchdb"]) == "Welcome");
+}
+
 
 #endif // COUCHBASE_ENTERPRISE

@@ -22,6 +22,7 @@
 #include "LWSUtil.hh"
 #include "c4LibWebSocketFactory.h"
 #include "c4ExceptionUtils.hh"
+#include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "libwebsockets.h"
@@ -245,10 +246,6 @@ namespace litecore { namespace net {
                 // Connecting:
             case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
                 LogCallback();
-                if (_address.isSecure() && !onVerifyTLS()) {
-                    setEventResult(-1);
-                    return;
-                }
                 onSendCustomHeaders(in, len);
                 break;
             case LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH:
@@ -264,37 +261,6 @@ namespace litecore { namespace net {
 
 
 #pragma mark - HANDLERS:
-
-
-    bool LWSClientWebSocket::onVerifyTLS() {
-        // If client gave a pinned TLS cert, compare it with the actual server cert
-        if (!pinnedServerCert())
-            return true;
-
-        LogVerbose("Verifying server TLS cert against pinned cert...");
-        alloc_slice pinnedKey = pinnedServerCertPublicKey();
-        if (!pinnedKey) {
-            closeC4Socket(NetworkDomain, kC4NetErrTLSCertUntrusted,
-                          "Cannot read pinned TLS certificate in replicator configuration"_sl);
-            return false;
-        }
-
-        alloc_slice serverKey = getPeerCertPublicKey();
-        if (!serverKey) {
-            closeC4Socket(NetworkDomain, kC4NetErrTLSCertUntrusted,
-                          "Cannot read server TLS certificate"_sl);
-            return false;
-        }
-
-        if (serverKey != pinnedKey) {
-            Log("Server public key = %.*s", SPLAT(serverKey));
-            Log("Pinned public key = %.*s", SPLAT(pinnedKey));
-            closeC4Socket(NetworkDomain, kC4NetErrTLSCertUntrusted,
-                          "Server TLS certificate does not match pinned cert"_sl);
-            return false;
-        }
-        return true;
-    }
 
 
     // Returns false if libwebsocket wouldn't let us write all the headers
@@ -520,12 +486,6 @@ namespace litecore { namespace net {
 
     slice LWSClientWebSocket::pinnedServerCert() {
         return _options[kC4ReplicatorOptionPinnedServerCert].asData();
-    }
-
-
-    alloc_slice LWSClientWebSocket::pinnedServerCertPublicKey() {
-        slice pinnedCert = pinnedServerCert();
-        return pinnedCert ? getCertPublicKey(pinnedCert) : alloc_slice();
     }
 
 } }

@@ -72,12 +72,24 @@ TEST_CASE("Self-signed cert generation", "[Certs]") {
 }
 
 
+//static void writeSlice(slice s, const char *path) {
+//    FILE *f = fopen(path, "w");
+//    fwrite(s.buf, s.size, 1, f);
+//    fclose(f);
+//}
+
+
 TEST_CASE("Persistent key and cert", "[Certs]") {
-    Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048, "LiteCoreTest");
-    cerr << "Public key data: " << key->publicKeyData(KeyFormat::DER) << "\n";
+    Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048);
+    cerr << "Public key raw data: " << key->publicKeyData(KeyFormat::Raw) << "\n";
+    auto pubKeyData = key->publicKeyData(KeyFormat::DER);
+    cerr << "Public key DER data: " << pubKeyData << "\n";
     Retained<PublicKey> pubKey = key->publicKey();
     CHECK(pubKey != nullptr);
-    
+    CHECK(pubKey->data(KeyFormat::Raw) == key->publicKeyData(KeyFormat::Raw));
+    CHECK(pubKey->data(KeyFormat::DER) == key->publicKeyData(KeyFormat::DER));
+    CHECK(pubKey->data(KeyFormat::PEM) == key->publicKeyData(KeyFormat::PEM));
+
     Cert::IssuerParameters issuerParams;
     issuerParams.validity_secs = 3600*24;
     Retained<Cert> cert = new Cert(kSubjectName, issuerParams, key);
@@ -87,6 +99,13 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     Retained<Cert> cert2 = Cert::load(pubKey);
     CHECK(cert2);
     CHECK(cert2->data() == cert->data());
+
+    // Try reloading from cert:
+    key = cert->loadPrivateKey();
+    REQUIRE(key);
+    CHECK(pubKey->data(KeyFormat::Raw) == key->publicKeyData(KeyFormat::Raw));
+    CHECK(pubKey->data(KeyFormat::DER) == key->publicKeyData(KeyFormat::DER));
+    CHECK(pubKey->data(KeyFormat::PEM) == key->publicKeyData(KeyFormat::PEM));
 }
 
 

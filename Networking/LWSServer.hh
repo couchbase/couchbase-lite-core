@@ -15,6 +15,10 @@ struct lws;
 struct lws_http_mount;
 struct lws_vhost;
 
+namespace litecore { namespace crypto {
+    class Identity;
+}}
+
 namespace litecore { namespace net {
     class LWSResponder;
 
@@ -23,8 +27,8 @@ namespace litecore { namespace net {
     public:
         LWSServer();
 
-        void start(uint16_t port, const char *hostname =nullptr);
-        
+        void start(uint16_t port, const char *hostname =nullptr, crypto::Identity* =nullptr);
+
         virtual void stop();
 
         C4Address address() const;
@@ -43,6 +47,7 @@ namespace litecore { namespace net {
 
     private:
         void createdVHost(lws_vhost*);
+        void registerTLSIdentity(void *sslContext);
         void notifyStartStop(bool started);
 
         std::mutex _mutex;
@@ -50,6 +55,7 @@ namespace litecore { namespace net {
         bool _started {false};
         lws_http_mount* _mounts {nullptr};
         lws_vhost* _vhost {nullptr};
+        fleece::Retained<crypto::Identity> _identity;
 
         friend class LWSContext;
         friend class LWSResponder;

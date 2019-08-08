@@ -21,6 +21,11 @@ struct lws_context_creation_info;
 struct lws_http_mount;
 struct lws_vhost;
 
+namespace litecore { namespace crypto {
+    class Cert;
+    class Identity;
+} }
+
 namespace litecore { namespace net {
 
     class LWSProtocol;
@@ -47,7 +52,8 @@ namespace litecore { namespace net {
         void startServer(LWSServer *server NONNULL,
                          uint16_t port,
                          const char *hostname,
-                         const lws_http_mount *mounts NONNULL);
+                         const lws_http_mount *mounts NONNULL,
+                         crypto::Identity *tlsIdentity);
 
         void stop(LWSServer* NONNULL);
 
@@ -74,7 +80,8 @@ namespace litecore { namespace net {
         void _startServer(fleece::Retained<LWSServer>,
                           uint16_t port,
                           const std::string &hostname,
-                          const lws_http_mount *mounts);
+                          const lws_http_mount *mounts,
+                          Retained<crypto::Identity> tlsIdentity);
         void _stop(fleece::Retained<LWSServer>);
 
 

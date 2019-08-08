@@ -70,31 +70,25 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE:
 
 
-    Response::Response(const string &method,
+    Response::Response(const string &scheme,
+                       const string &method,
                        const string &hostname,
                        uint16_t port,
                        const string &uri,
                        Doc headers,
-                       slice body)
+                       slice body,
+                       crypto::Cert *pinnedServerCert)
     {
         C4Address address = {};
-        address.scheme = "http"_sl;
+        address.scheme = slice(scheme);
         address.hostname = slice(hostname);
         address.port = port;
         address.path = slice(uri);
         
-        Retained<net::LWSHTTPClient> conn = new LWSHTTPClient();
-        conn->connect(this, address, method.c_str(), headers, alloc_slice(body));
-        _error = conn->run();
+        Retained<net::LWSHTTPClient> client = new LWSHTTPClient();
+        client->setPinnedServerCert(pinnedServerCert);
+        client->connect(this, address, method.c_str(), headers, alloc_slice(body));
+        _error = client->run();
     }
-
-
-    Response::Response(const string &method,
-                       const string &hostname,
-                       uint16_t port,
-                       const string &uri,
-                       slice body)
-    :Response(method, hostname, port, uri, nullptr, body)
-    { }
 
 } }

@@ -23,11 +23,13 @@
 #include "Error.hh"
 #include "Logging.hh"
 #include "Defer.hh"
+#include "ParseDate.hh"
 #include "SecureDigest.hh"
 
 #include "mbedUtils.hh"
 #include "pk.h"
 
+#include "fleece/slice.hh"
 #include <Security/Security.h>
 
 /*  A WARNING to those working on this code: Apple's Keychain and security APIs are ☠️NASTY☠️.
@@ -73,7 +75,7 @@ namespace litecore { namespace crypto {
     }
 
 
-    static CFTypeRef findInKeychain(NSDictionary *params) {
+    static CFTypeRef CF_RETURNS_RETAINED findInKeychain(NSDictionary *params) {
         CFTypeRef result = NULL;
         OSStatus err = SecItemCopyMatching((__bridge CFDictionaryRef)params, &result);
         if (err == errSecItemNotFound)
@@ -85,12 +87,6 @@ namespace litecore { namespace crypto {
     }
 
 
-    struct ExpectingExceptions {
-        ExpectingExceptions()    {++gC4ExpectExceptions;}
-        ~ExpectingExceptions()   {--gC4ExpectExceptions;}
-    };
-
-
 #pragma mark - KEYPAIR:
 
 
@@ -98,9 +94,8 @@ namespace litecore { namespace crypto {
     class KeychainKeyPair : public PersistentPrivateKey {
     public:
         /** The constructor adopts the key references; they're released in the destructor. */
-        KeychainKeyPair(unsigned keySizeInBits, const string &label,
-                        SecKeyRef publicKey, SecKeyRef privateKey)
-        :PersistentPrivateKey(keySizeInBits, label)
+        KeychainKeyPair(unsigned keySizeInBits, SecKeyRef publicKey, SecKeyRef privateKey)
+        :PersistentPrivateKey(keySizeInBits)
         ,_publicKeyRef(publicKey)
         ,_privateKeyRef(privateKey)
         {
@@ -114,18 +109,42 @@ namespace litecore { namespace crypto {
         }
 
 
-        virtual alloc_slice publicKeyDERData() override {
+        virtual alloc_slice publicKeyRawData() override {
             CFErrorRef error;
+            ++gC4ExpectExceptions;
             CFDataRef data = SecKeyCopyExternalRepresentation(_publicKeyRef, &error);
+            --gC4ExpectExceptions;
             if (!data) {
                 warnCFError(error, "SecKeyCopyExternalRepresentation");
                 error::_throw(error::CryptoError, "Couldn't get the data of a public key");
             }
-            alloc_slice result(CFDataGetBytePtr(data), CFDataGetLength(data));
+            alloc_slice result(data);
             CFRelease(data);
             return result;
         }
 
+
+        virtual alloc_slice publicKeyDERData() override {
+            // The Security framework on iOS doesn't seem to have a way to export a key in any
+            // other format than raw (see above), so we have to detour through mbedTLS:
+            return publicKey()->data(KeyFormat::DER);
+        }
+
+
+        virtual void remove() override {
+            @autoreleasepool {
+                NSDictionary* params = @ {
+                    (id)kSecClass:              (id)kSecClassKey,
+                    (id)kSecAttrKeyClass:       (id)kSecAttrKeyClassPrivate,
+                    (id)kSecValueRef:           (__bridge id)_privateKeyRef,
+                };
+                checkOSStatus(SecItemDelete((CFDictionaryRef)params),
+                              "SecItemDelete", "remove a key-pair from the Keychain");
+            }
+        }
+
+
+        // Crypto operations:
 
         virtual int _decrypt(const void *input,
                              void *output,
@@ -134,6 +153,7 @@ namespace litecore { namespace crypto {
         {
             // No exceptions may be thrown from this function!
             @autoreleasepool {
+                Log("Decrypting using Keychain private key");
                 NSData* data = slice(input, _keyLength).uncopiedNSData();
                 CFErrorRef error;
                 NSData* cleartext = CFBridgingRelease( SecKeyCreateDecryptedData(_privateKeyRef,
@@ -144,7 +164,7 @@ namespace litecore { namespace crypto {
                     return MBEDTLS_ERR_RSA_PRIVATE_FAILED;
                 }
                 *output_len = cleartext.length;
-                if (*output_len > output_max_len)
+                if (*output_len > output_max_len)  // should never happen
                     return MBEDTLS_ERR_RSA_OUTPUT_TOO_LARGE;
                 memcpy(output, cleartext.bytes, *output_len);
                 return 0;
@@ -157,17 +177,30 @@ namespace litecore { namespace crypto {
                           void *outSignature) noexcept override
         {
             // No exceptions may be thrown from this function!
+            Log("Signing using Keychain private key");
             @autoreleasepool {
-                SecKeyAlgorithm digestAlgorithm;
-                switch (mbedDigestAlgorithm) {
-                case MBEDTLS_MD_SHA1:
-                    digestAlgorithm = kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1; break;
-                case MBEDTLS_MD_SHA256:
-                    digestAlgorithm = kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256; break;
-                default:
+                // Map mbedTLS digest algorithm ID to SecKey algorithm ID:
+                static const SecKeyAlgorithm kDigestAlgorithmMap[9] = {
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15Raw,
+                    NULL,
+                    NULL,
+                    NULL,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA1,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA224,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA256,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA384,
+                    kSecKeyAlgorithmRSASignatureDigestPKCS1v15SHA512,
+                };
+                SecKeyAlgorithm digestAlgorithm = nullptr;
+                if (mbedDigestAlgorithm >= 0 && mbedDigestAlgorithm < 9)
+                    digestAlgorithm = kDigestAlgorithmMap[mbedDigestAlgorithm];
+                if (!digestAlgorithm) {
+                    Warn("Keychain private key: unsupported mbedTLS digest algorithm %d",
+                         mbedDigestAlgorithm);
                     return MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE;
                 }
 
+                // Create the signature:
                 NSData* data = inputData.uncopiedNSData();
                 CFErrorRef error;
                 NSData* sigData = CFBridgingRelease( SecKeyCreateSignature(_privateKeyRef,
@@ -193,16 +226,16 @@ namespace litecore { namespace crypto {
 
 
     // Public function to generate a new key-pair
-    Retained<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits,
-                                                                     const string &label)
-    {
+    Retained<PersistentPrivateKey> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
         @autoreleasepool {
-            Log("Generating %d-bit RSA key-pair '%s' in Keychain", keySizeInBits, label.c_str());
+            Log("Generating %d-bit RSA key-pair in Keychain", keySizeInBits);
+            char timestr[100] = "LiteCore ";
+            fleece::FormatISO8601Date(timestr + strlen(timestr), time(nullptr)*1000, false);
             NSDictionary* params = @ {
                 (id)kSecAttrKeyType:        (id)kSecAttrKeyTypeRSA,
                 (id)kSecAttrKeySizeInBits:  @(keySizeInBits),
                 (id)kSecAttrIsPermanent:    @YES,
-                (id)kSecAttrLabel:          @(label.c_str()),
+                (id)kSecAttrLabel:          @(timestr),
             };
             SecKeyRef publicKey, privateKey;
             ++gC4ExpectExceptions;
@@ -210,40 +243,7 @@ namespace litecore { namespace crypto {
             --gC4ExpectExceptions;
             checkOSStatus(err, "SecKeyGeneratePair", "Couldn't create a private key");
 
-            return new KeychainKeyPair(keySizeInBits, label, publicKey, privateKey);
-        }
-    }
-
-
-    Retained<PersistentPrivateKey> PersistentPrivateKey::load(const string &label) {
-        @autoreleasepool {
-            SecKeyRef privateKey = (SecKeyRef) findInKeychain(@{
-                (id)kSecClass:              (id)kSecClassKey,
-                (id)kSecAttrLabel:          @(label.c_str()),
-                (id)kSecReturnRef:          @YES,
-            });
-            if (!privateKey)
-                return nullptr;
-            SecKeyRef publicKey = SecKeyCopyPublicKey(privateKey);
-            auto keySizeInBits = unsigned(8 * SecKeyGetBlockSize(privateKey));
-            return new KeychainKeyPair(keySizeInBits, label, publicKey, privateKey);
-        }
-    }
-
-
-    bool PersistentPrivateKey::remove(const string &label) {
-        @autoreleasepool {
-            NSDictionary* params = @ {
-                (id)kSecClass:              (id)kSecClassKey,
-                (id)kSecAttrLabel:          @(label.c_str()),
-                (id)kSecReturnRef:          @YES,
-            };
-            OSStatus err = SecItemDelete((CFDictionaryRef)params);
-            if (err == errSecItemNotFound)
-                return false;
-            else
-                checkOSStatus(err, "SecItemDelete", "Couldn't remove a key from the Keychain");
-            return true;
+            return new KeychainKeyPair(keySizeInBits, publicKey, privateKey);
         }
     }
 
@@ -301,7 +301,7 @@ namespace litecore { namespace crypto {
             NSDictionary* attrs = CFBridgingRelease(findInKeychain(@{
                 (id)kSecClass:              (id)kSecClassCertificate,
                 (id)kSecValueRef:           (__bridge id)certRef,
-                (id)kSecReturnAttributes:   @YES,
+                (id)kSecReturnAttributes:   @YES
             }));
             NSLog(@"Cert attributes: %@", attrs);
 #endif
@@ -316,9 +316,50 @@ namespace litecore { namespace crypto {
             NSData* certData = CFBridgingRelease(findInKeychain(@{
                 (id)kSecClass:              (id)kSecClassCertificate,
                 (id)kSecAttrPublicKeyHash:  [NSData dataWithBytes: &digest length: sizeof(digest)],
-                (id)kSecReturnData:         @YES,
+                (id)kSecReturnData:         @YES
             }));
             return certData ? new Cert(slice(certData)) : nullptr;
+        }
+    }
+
+
+    Retained<PersistentPrivateKey> Cert::loadPrivateKey() {
+        @autoreleasepool {
+            // First look up a SecCertificateRef from the public-key digest. (We ought to be able
+            // to look up a SecIdentityRef directly, but using kSecClassIdentity doesn't work;
+            // the search matches all the identities in the Keychain...)
+            SHA1 digest(this->subjectPublicKey()->data(KeyFormat::Raw));
+            auto certRef = (SecCertificateRef)findInKeychain(@{
+                (id)kSecClass:              (id)kSecClassCertificate,
+                (id)kSecAttrPublicKeyHash:  [NSData dataWithBytes: &digest length: sizeof(digest)],
+                (id)kSecReturnRef:          @YES,
+            });
+            if (!certRef)
+                return nullptr;
+            CFAutorelease(certRef);
+
+            NSData *readData = CFBridgingRelease(SecCertificateCopyData(certRef));
+            Assert(slice(readData) == data()); // sanity check that we read the right cert!
+
+            // Get the identity and then the private key:
+            SecIdentityRef identityRef;
+            checkOSStatus(SecIdentityCreateWithCertificate(nullptr, certRef, &identityRef),
+                          "SecIdentityCreateWithCertificate", "get private key from keychain");
+            CFAutorelease(identityRef);
+
+            SecKeyRef privateKeyRef;
+            checkOSStatus(SecIdentityCopyPrivateKey(identityRef, &privateKeyRef),
+                          "SecIdentityCopyPrivateKey", "get private key from keychain");
+
+            // Get the public key from the cert, not from the private key, because calling
+            // SecKeyCopyPublicKey results in a key ref that doesn't allow its data to be read,
+            // for some reason (bug?)
+
+            SecKeyRef publicKeyRef;
+            checkOSStatus(SecCertificateCopyPublicKey(certRef, &publicKeyRef),
+                          "SecCertificateCopyPublicKey", "get private key from keychain");
+            auto keySize = unsigned(8 * SecKeyGetBlockSize(privateKeyRef));
+            return new KeychainKeyPair(keySize, publicKeyRef, privateKeyRef);
         }
     }
 

@@ -20,6 +20,7 @@
 #include "LWSProtocol.hh"
 #include "LWSServer.hh"
 #include "LWSUtil.hh"
+#include "Certificate.hh"
 #include "Address.hh"
 #include "FilePath.hh"
 #include "StringUtil.hh"
@@ -28,6 +29,7 @@
 #include <fstream>
 #include <sstream>
 #include <libwebsockets.h>
+#include "debug.h"
 
 #ifdef TARGET_OS_OSX
 #include <Security/Security.h>
@@ -205,26 +207,47 @@ namespace litecore { namespace net {
     void LWSContext::startServer(LWSServer *server,
                                  uint16_t port,
                                  const char *hostname,
-                                 const lws_http_mount *mounts)
+                                 const lws_http_mount *mounts,
+                                 crypto::Identity *tlsIdentity)
     {
         enqueue(bind(&LWSContext::_startServer, this,
-                     server, port, string(hostname ? hostname : ""), mounts));
+                     server, port, string(hostname ? hostname : ""), mounts, tlsIdentity));
     }
 
     void LWSContext::_startServer(Retained<LWSServer> serverInstance,
                                   uint16_t port,
                                   const string &hostname,
-                                  const lws_http_mount *mounts)
+                                  const lws_http_mount *mounts,
+                                  Retained<crypto::Identity> tlsIdentity)
     {
         Log("_startServer %s %p on port %u",
             serverInstance->className(), serverInstance.get(), port);
-        _info->user = serverInstance;
-        _info->port = port;
-        _info->protocols = kServerProtocols;
-        _info->mounts = mounts;
-        _info->vhost_name = kHTTPServerProtocol;
-        _info->finalize_arg = serverInstance;
-        lws_vhost *vhost = lws_create_vhost(_context, _info.get());
+        auto info = *_info;
+        info.user = serverInstance;
+        info.port = port;
+        info.protocols = kServerProtocols;
+        info.mounts = mounts;
+        info.vhost_name = kHTTPServerProtocol;
+        info.finalize_arg = serverInstance;
+
+        alloc_slice certData, privateKeyData;
+        if (tlsIdentity) {
+            Log("    ... TLS identity %s", tlsIdentity->cert->subjectName().c_str());
+            if (tlsIdentity->privateKey->isPrivateKeyDataAvailable()) {
+                certData = tlsIdentity->cert->data();
+                privateKeyData = tlsIdentity->privateKey->privateKeyData();
+                info.server_ssl_cert_mem = certData.buf;
+                info.server_ssl_cert_mem_len = (unsigned)certData.size;
+                info.server_ssl_private_key_mem = privateKeyData.buf;
+                info.server_ssl_private_key_mem_len = (int)privateKeyData.size;
+            } else {
+                // Tell LWS to create an SSL context even though there's no cert/key provided.
+                // The server code will set those later in its registerTLSIdentity() method.
+                info.options |= LWS_SERVER_OPTION_CREATE_VHOST_SSL_CTX;
+            }
+        }
+
+        lws_vhost *vhost = lws_create_vhost(_context, &info);
         LogDebug("Created vhost %p for '%s'", vhost, hostname.c_str());
         serverInstance->createdVHost(vhost);
     }
@@ -248,22 +271,26 @@ namespace litecore { namespace net {
         // Configure libwebsocket logging:
         sLWSLog = c4log_getDomain("libwebsockets", true);
         auto logLevel = c4log_getLevel(sLWSLog);
-        int flags = LLL_ERR | LLL_WARN | LLL_NOTICE;
-        if (logLevel <= kC4LogInfo)
-            flags |= LLL_NOTICE;
-        if (logLevel <= kC4LogVerbose)
-            flags |= LLL_INFO;
-        if (logLevel <= kC4LogDebug)
-            flags |= LLL_DEBUG;
+        int lwsLogFlags = LLL_ERR | LLL_WARN | LLL_NOTICE;
+        int mbedLogLevel = 1;
+        if (logLevel <= kC4LogVerbose) {
+            lwsLogFlags |= LLL_INFO;
+            mbedLogLevel = 3;
+        }
+        if (logLevel <= kC4LogDebug) {
+            lwsLogFlags |= LLL_DEBUG;
+            mbedLogLevel = 4;
+        }
 
-        lws_set_log_level(flags, [](int level, const char *message) {
+        lws_set_log_level(lwsLogFlags, [](int lwsLevel, const char *message) {
+            // libwebsockets logging callback:
             slice msg(message);
             if (msg.size > 0 && msg[msg.size-1] == '\n')
                 msg.setSize(msg.size-1);
             if (msg.size == 0)
                 return;
             C4LogLevel c4level;
-            switch(level) {
+            switch(lwsLevel) {
                 case LLL_ERR:    c4level = kC4LogError;   break;
                 case LLL_WARN:   c4level = kC4LogWarning; break;
                 case LLL_NOTICE: c4level = kC4LogInfo;    break;
@@ -272,6 +299,8 @@ namespace litecore { namespace net {
             }
             C4LogToAt(sLWSLog, c4level, "%.*s", SPLAT(msg));
         });
+
+        mbedtls_debug_set_threshold(mbedLogLevel);
     }
 
 

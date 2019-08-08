@@ -108,8 +108,12 @@ namespace litecore { namespace net {
 
 
     C4Error LWSProtocol::getConnectionError(slice lwsErrorMessage) {
+        if (lwsErrorMessage.hasSuffix('\n'))
+            lwsErrorMessage.setSize(lwsErrorMessage.size - 1);
+        
         // Maps substrings of LWS error messages to C4Errors:
         static constexpr struct {slice string; C4ErrorDomain domain; int code;} kMessages[] = {
+            {"client connect failed"_sl,          NetworkDomain,    kC4NetErrTLSHandshakeFailed},
             {"connect failed"_sl,                 POSIXDomain,      ECONNREFUSED},
             {"ws upgrade unauthorized"_sl,        WebSocketDomain,  401},
             {"CA is not trusted"_sl,              NetworkDomain,    kC4NetErrTLSCertUnknownRoot },
@@ -119,32 +123,21 @@ namespace litecore { namespace net {
             { }
         };
 
-        int status = -1;
+        int status;
         string statusMessage;
         tie(status,statusMessage) = decodeHTTPStatus();
+        if (status >= 300)
+            return c4error_make(WebSocketDomain, status, slice(statusMessage));
 
-        C4ErrorDomain domain = WebSocketDomain;
-        if (status < 300) {
-            domain = NetworkDomain;
-            status = kC4NetErrUnknown;
-            if (lwsErrorMessage) {
-                // LWS does not provide any sort of error code, so just look up the string:
-                for (int i = 0; kMessages[i].string; ++i) {
-                    if (lwsErrorMessage.containsBytes(kMessages[i].string)) {
-                        domain = kMessages[i].domain;
-                        status = kMessages[i].code;
-                        statusMessage = string(lwsErrorMessage);
-                        break;
-                    }
-                }
-            } else {
-                statusMessage = "unknown error";
+        if (lwsErrorMessage) {
+            // LWS does not provide any sort of error code, so just look up the string:
+            for (int i = 0; kMessages[i].string; ++i) {
+                if (lwsErrorMessage.containsBytes(kMessages[i].string))
+                    return c4error_make(kMessages[i].domain, kMessages[i].code, nullslice);
             }
-            if (domain == NetworkDomain && status == kC4NetErrUnknown)
-                Warn("No error code mapping for libwebsocket message '%.*s'",
-                     SPLAT(lwsErrorMessage));
         }
-        return c4error_make(domain, status, slice(statusMessage));
+        Warn("No error code mapping for libwebsocket message '%.*s'", SPLAT(lwsErrorMessage));
+        return c4error_make(NetworkDomain, kC4NetErrUnknown, lwsErrorMessage);
     }
 
 

@@ -20,6 +20,7 @@
 #include "LWSResponder.hh"
 #include "LWSContext.hh"
 #include "LWSUtil.hh"
+#include "Certificate.hh"
 #include "Error.hh"
 #include "c4Replicator.h"
 
@@ -51,11 +52,13 @@ namespace litecore { namespace net {
     }
 
 
-    void LWSServer::start(uint16_t port, const char *hostname) {
+    void LWSServer::start(uint16_t port, const char *hostname, crypto::Identity *identity) {
         Assert(!_started);
 
         retain(this);       // balanced by release on LWS_CALLBACK_PROTOCOL_DESTROY
-        LWSContext::instance().startServer(this, port, hostname, _mounts);
+
+        _identity = identity;
+        LWSContext::instance().startServer(this, port, hostname, _mounts, _identity);
 
         // Block till server starts:
         unique_lock<mutex> lock(_mutex);
@@ -99,6 +102,10 @@ namespace litecore { namespace net {
                 LogDebug("**** LWS_CALLBACK_PROTOCOL_INIT (lws=%p)", client);
                 notifyStartStop(true);
                 return 0;
+            case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_SERVER_VERIFY_CERTS:
+                LogDebug("**** LWS_CALLBACK_OPENSSL_LOAD_EXTRA_SERVER_VERIFY_CERTS");
+                registerTLSIdentity(user);
+                return 0;
             case LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED:
                 LogDebug("**** LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED (lws=%p)", client);
                 return createResponder(client) ? 0 : -1;
@@ -112,6 +119,17 @@ namespace litecore { namespace net {
                 if (reason != LWS_CALLBACK_EVENT_WAIT_CANCELLED && (reason < 31 || reason > 36))
                     LogDebug("**** %-s", LWSCallbackName(reason));
                 return 0;
+        }
+    }
+
+
+    void LWSServer::registerTLSIdentity(void *sslContext_) {
+        if (_identity && !_identity->privateKey->isPrivateKeyDataAvailable()) {
+            // startServer() couldn't register my TLS credentials because the private key's data
+            // isn't accessible, so I use this callback to register them:
+            auto sslContext = (lws_ssl_ctx*)sslContext_;
+            lws_ssl_ctx_set_mbedtls_x509_crt(sslContext, _identity->cert->context());
+            lws_ssl_ctx_set_mbedtls_key(sslContext, _identity->privateKey->context());
         }
     }
 

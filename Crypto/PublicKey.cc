@@ -51,21 +51,28 @@ namespace litecore { namespace crypto {
 
     alloc_slice Key::publicKeyData(KeyFormat format) {
         switch (format) {
-        case KeyFormat::DER:
-        case KeyFormat::PEM: {
-            auto result = publicKeyDERData();
-            if (format == KeyFormat::PEM)
-                result = convertToPEM(result, "PUBLIC KEY");
-            return result;
-        }
-        case KeyFormat::Raw:
-            return publicKeyRawData();
+            case KeyFormat::DER:
+            case KeyFormat::PEM: {
+                auto result = publicKeyDERData();
+                if (format == KeyFormat::PEM)
+                    result = convertToPEM(result, "PUBLIC KEY");
+                return result;
+            }
+            case KeyFormat::Raw:
+                return publicKeyRawData();
         }
     }
 
 
     PublicKey::PublicKey(slice data) {
         TRY( mbedtls_pk_parse_public_key(context(), (const uint8_t*)data.buf, data.size) );
+    }
+
+
+    PrivateKey::PrivateKey(slice data, slice password) {
+        TRY( mbedtls_pk_parse_key(context(),
+                                  (const uint8_t*)data.buf, data.size,
+                                  (const uint8_t*)password.buf, password.size) );
     }
 
 
@@ -81,9 +88,28 @@ namespace litecore { namespace crypto {
     }
 
 
-    PersistentPrivateKey::PersistentPrivateKey(unsigned keySizeInBits, const string &label)
+    alloc_slice PrivateKey::privateKeyData(KeyFormat format) {
+        switch (format) {
+            case KeyFormat::DER:
+            case KeyFormat::PEM: {
+                auto result = allocDER(4096, [&](uint8_t *buf, size_t size) {
+                    return mbedtls_pk_write_key_der(context(), buf, size);
+                });
+                if (format == KeyFormat::PEM) {
+                    string msg = litecore::format("%s PRIVATE KEY", mbedtls_pk_get_name(context()));
+                    result = convertToPEM(result, msg.c_str());
+                }
+                return result;
+            }
+            case KeyFormat::Raw:
+                return publicKeyRawData();
+        }
+
+    }
+
+
+    PersistentPrivateKey::PersistentPrivateKey(unsigned keySizeInBits)
     :_keyLength( (keySizeInBits + 7) / 8)
-    ,_label(label)
     {
         auto decryptFunc = [](void *ctx, int mode, size_t *olen,
                               const unsigned char *input, unsigned char *output,
@@ -110,15 +136,15 @@ namespace litecore { namespace crypto {
     // NOTE: These factory functions are implemented in a per-platform source file such as
     // PublicKey+Apple.mm, because they need to call platform-specific APIs.
 
-    Retained<KeyPair> PersistentPrivateKey::generateRSA(unsigned keySizeInBits, const string &label) {
+    Retained<KeyPair> PersistentPrivateKey::generateRSA(unsigned keySizeInBits) {
         ... platform specific code...
     }
 
-    Retained<KeyPair> PersistentPrivateKey::load(const string &label) {
+    Retained<KeyPair> PersistentPrivateKey::withPersistentID(const string &id) {
         ... platform specific code...
     }
 
-    bool PersistentPrivateKey::remove(const string &label) {
+    Retained<KeyPair> PersistentPrivateKey::withPublicKey(PublicKey*) {
         ... platform specific code...
     }
 #endif

@@ -76,16 +76,28 @@ namespace litecore { namespace crypto {
     /** An asymmetric key-pair. Usually the PersistentPrivateKey subclass is used. */
     class PrivateKey : public Key {
     public:
+        /** Instantiates a PublicKey from data in PKCS1 or PKCS12 format. */
+        explicit PrivateKey(fleece::slice data, fleece::slice password ={});
+
         /** Creates an in-memory key-pair for temporary use. Mostly useful only for testing,
             since the private key is exposed and difficult to save securely. */
         static fleece::Retained<PrivateKey> generateTemporaryRSA(unsigned keySizeInBits);
 
         virtual bool isPrivate() override               {return true;}
 
+        /** The private key's data. This will fail if the key is persistent, since its data is
+            locked away in secure storage. */
+        fleece::alloc_slice privateKeyData(KeyFormat format =KeyFormat::DER);
+
+        virtual bool isPrivateKeyDataAvailable()        {return true;}
+
         /** The public key. */
         fleece::Retained<PublicKey> publicKey() {
-            return new PublicKey(publicKeyData(KeyFormat::DER));
+            return new PublicKey(publicKeyData(KeyFormat::Raw));
         }
+
+    protected:
+        PrivateKey()                                    { }
     };
 
 
@@ -97,19 +109,24 @@ namespace litecore { namespace crypto {
     public:
         /** Generates a new RSA key-pair. The key-pair is stored persistently (e.g. in the
             iOS / macOS Keychain) associated with the given label. */
-        static fleece::Retained<PersistentPrivateKey> generateRSA(unsigned keySizeInBits,
-                                                                  const std::string &label);
+        static fleece::Retained<PersistentPrivateKey> generateRSA(unsigned keySizeInBits);
 
         /** Loads an existing stored key-pair with the given label, or returns nullptr if none. */
-        static fleece::Retained<PersistentPrivateKey> load(const std::string &label);
+//        static fleece::Retained<PersistentPrivateKey> withPersistentID(const std::string &id);
 
-        /** Permanently removes the stored key-pair with the given label, or returns false if none. */
-        static bool remove(const std::string &label);
+        /** Loads an existing stored key-pair that matches the given public key. */
+        static fleece::Retained<PersistentPrivateKey> withPublicKey(PublicKey* NONNULL);
 
-        const std::string& label()                          {return _label;}
+        /** Permanently removes the key-pair from storage.
+            Don't make any more calls to this object. */
+        virtual void remove() =0;
+
+//        virtual std::string persistentID() =0;
+
+        virtual bool isPrivateKeyDataAvailable() override   {return false;}
 
     protected:
-        PersistentPrivateKey(unsigned keySizeInBits, const std::string &label);
+        PersistentPrivateKey(unsigned keySizeInBits);
 
         /** Platform-specific decryption implementation, using PKCS1 padding.
             @param input  The encrypted data; length is equal to _keyLength.
@@ -135,7 +152,6 @@ namespace litecore { namespace crypto {
         virtual fleece::alloc_slice publicKeyDERData() override =0;
 
         unsigned const _keyLength;              // In bytes, not bits!
-        std::string const _label;
     };
 
 } }

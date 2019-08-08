@@ -13,12 +13,18 @@
 #include <condition_variable>
 #include <string>
 
+namespace litecore { namespace crypto {
+    class Cert;
+} }
+
 namespace litecore { namespace net {
 
     /** An HTTP client connection. (The Response class presents a higher level interface.) */
     class LWSHTTPClient : public LWSProtocol {
     public:
-        LWSHTTPClient() =default;
+        LWSHTTPClient();
+
+        void setPinnedServerCert(crypto::Cert*);
 
         void connect(REST::Response* NONNULL,
                      const C4Address &address,
@@ -45,6 +51,7 @@ namespace litecore { namespace net {
         virtual const char *className() const noexcept override;
 
     private:
+        fleece::Retained<crypto::Cert>  _pinnedServerCert;
         fleece::Doc             _requestHeaders;
         REST::Response*         _response;
         C4Error                 _error {};

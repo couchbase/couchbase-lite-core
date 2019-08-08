@@ -17,5 +17,7 @@ SUPPORTED_PLATFORMS         = macosx
 
 HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core  $(SRCROOT)/../vendor/BLIP-Cpp/src/util/  $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/fleece/vendor/catch/
 
+OTHER_LDFLAGS                = -lwebsockets -lmbedtls -lmbedcrypto -lmbedx509
+
 ONLY_ACTIVE_ARCH            = YES
 LLVM_LTO                    = NO    // LTO makes tests very slow to link

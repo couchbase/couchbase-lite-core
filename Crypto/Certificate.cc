@@ -285,4 +285,13 @@ namespace litecore { namespace crypto {
                                      issuerParams, issuerKeyPair, issuerCert));
     }
 
+
+    Identity::Identity(Cert* cert_, PrivateKey* key_)
+    :cert(cert_)
+    ,privateKey(key_)
+    {
+        // Make sure the private and public keys match:
+        Assert(mbedtls_pk_check_pair(cert->subjectPublicKey()->context(), privateKey->context()) == 0);
+    }
+
 } }

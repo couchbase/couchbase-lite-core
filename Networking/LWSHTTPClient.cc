@@ -20,6 +20,7 @@
 #include "LWSContext.hh"
 #include "LWSProtocol.hh"
 #include "LWSUtil.hh"
+#include "Certificate.hh"
 #include "Writer.hh"
 
 
@@ -29,8 +30,17 @@ namespace litecore { namespace net {
     using namespace litecore::REST;
 
 
+    LWSHTTPClient::LWSHTTPClient() {
+    }
+
+
     LWSHTTPClient::~LWSHTTPClient() {
         C4LogToAt(kC4WebSocketLog, kC4LogDebug, "~LWSHTTPClient %p", this);
+    }
+
+
+    void LWSHTTPClient::setPinnedServerCert(crypto::Cert *cert) {
+        _pinnedServerCert = cert;
     }
 
 
@@ -50,7 +60,8 @@ namespace litecore { namespace net {
         LWSContext::instance().connectClient(this,
                                              LWSContext::kHTTPClientProtocol,
                                              litecore::repl::Address(address),
-                                             nullslice, method);
+                                             (_pinnedServerCert ? _pinnedServerCert->data() : nullslice),
+                                             method);
     }
 
 

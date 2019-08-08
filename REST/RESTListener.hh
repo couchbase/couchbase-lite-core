@@ -84,6 +84,8 @@ namespace litecore { namespace REST {
     protected:
         friend class Task;
 
+        Retained<crypto::Identity> loadTLSIdentity(const C4TLSConfig*);
+        
         Server* server() const              {return _server.get();}
 
         /** Returns the database for this request, or null on error. */

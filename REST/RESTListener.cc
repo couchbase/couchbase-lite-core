@@ -21,6 +21,8 @@
 #include "c4Private.h"
 #include "c4Document+Fleece.h"
 #include "Server.hh"
+#include "Certificate.hh"
+#include "PublicKey.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
 #include <functional>
@@ -28,6 +30,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace litecore::crypto;
 
 
 namespace litecore { namespace REST {
@@ -83,13 +86,42 @@ namespace litecore { namespace REST {
         if (config.apis & kC4SyncAPI) {
             addDBHandler(Method::UPGRADE, "/[^_][^/]*/_blipsync", &RESTListener::handleSync);
         }
-        _server->start(config.port ? config.port : kDefaultPort);
+
+        const char *hostname = nullptr;
+        Retained<Identity> identity = loadTLSIdentity(config.tlsConfig);
+
+        _server->start(config.port ? config.port : kDefaultPort, hostname, identity);
     }
 
 
     RESTListener::~RESTListener() {
         if (_server)
             _server->stop();
+    }
+
+
+    Retained<Identity> RESTListener::loadTLSIdentity(const C4TLSConfig *config) {
+        if (!config)
+            return nullptr;
+        Retained<Cert> cert = new Cert(config->certificate);
+        if (!cert)
+            error::_throw(error::InvalidParameter, "Can't parse certificate data");
+
+        Retained<PrivateKey> privateKey;
+        switch (config->privateKeyRepresentation) {
+            case kC4PrivateKeyData:
+                privateKey = new PrivateKey(config->privateKey, config->privateKeyPassword);
+                if (!privateKey)
+                    error::_throw(error::InvalidParameter, "Can't parse private key data");
+                break;
+            case kC4PrivateKeyFromCert:
+                privateKey = (PrivateKey*) cert->loadPrivateKey();
+                if (!privateKey)
+                    error::_throw(error::InvalidParameter,
+                                  "No persistent private key found matching certificate public key");
+                break;
+        }
+        return new Identity(cert, privateKey);
     }
 
 

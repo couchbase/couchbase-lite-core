@@ -27,6 +27,10 @@
 #include <memory>
 #include <sstream>
 
+namespace litecore { namespace crypto {
+    class Cert;
+} }
+
 namespace litecore { namespace net {
     class LWSHTTPClient;
 } }
@@ -63,18 +67,32 @@ namespace litecore { namespace REST {
         I.e. this is a simple HTTP client API. */
     class Response : public Body {
     public:
-        Response(const std::string &method,
+        Response(const std::string &scheme,
+                 const std::string &method,
                  const std::string &hostname,
                  uint16_t port,
                  const std::string &uri,
-                 fleece::slice body =fleece::nullslice);
+                 fleece::Doc headers,
+                 fleece::slice body =fleece::nullslice,
+                 crypto::Cert *pinnedServerCert =nullptr);
+
+        Response(const std::string &scheme,
+                 const std::string &method,
+                 const std::string &hostname,
+                 uint16_t port,
+                 const std::string &uri,
+                 fleece::slice body =fleece::nullslice)
+        :Response(scheme, method, hostname, port, uri, nullptr, body, nullptr)
+        { }
 
         Response(const std::string &method,
                  const std::string &hostname,
                  uint16_t port,
                  const std::string &uri,
                  fleece::Doc headers,
-                 fleece::slice body =fleece::nullslice);
+                 fleece::slice body =fleece::nullslice)
+        :Response("http", method, hostname, port, uri, nullptr, body, nullptr)
+        { }
 
         explicit operator bool() const      {return _error.code == 0;}
 

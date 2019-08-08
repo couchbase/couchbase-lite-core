@@ -74,12 +74,16 @@ namespace litecore { namespace crypto {
             (e.g. the Keychain on Apple devices.) */
         void makePersistent();
 
+        /** Loads the private key from persistent storage, if available. */
+        fleece::Retained<PersistentPrivateKey> loadPrivateKey();
+
+        struct ::mbedtls_x509_crt* context()                    {return _cert.get();}
+
     private:
         friend class CertSigningRequest;
 
         Cert();
         ~Cert();
-        struct ::mbedtls_x509_crt* context()                    {return _cert.get();}
         static fleece::alloc_slice create(const SubjectParameters&,
                                           PublicKey *subjectKey NONNULL,
                                           const IssuerParameters&,
@@ -89,6 +93,16 @@ namespace litecore { namespace crypto {
 
         std::unique_ptr<struct ::mbedtls_x509_crt> _cert;
         fleece::alloc_slice _data;
+    };
+
+
+
+    /** A certificate with its matching private key. */
+    struct Identity : public fleece::RefCounted {
+        Identity(Cert* NONNULL, PrivateKey* NONNULL);
+
+        fleece::Retained<Cert> const        cert;
+        fleece::Retained<PrivateKey> const  privateKey;
     };
 
 

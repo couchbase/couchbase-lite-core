@@ -51,6 +51,7 @@ public:
     }
 
     C4ListenerConfig config = {49849, kC4SyncAPI,
+                               nullptr,
                                {}, false, false,    // REST-only stuff
                                true, true};         // allowPush, allowPull
     c4::ref<C4Listener> listener;

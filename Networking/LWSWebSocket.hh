@@ -24,6 +24,10 @@
 #include "fleece/Fleece.hh"
 #include <deque>
 
+namespace litecore { namespace crypto {
+    class Cert;
+}}
+
 namespace litecore { namespace net {
     class LWSServer;
 
@@ -82,13 +86,11 @@ namespace litecore { namespace net {
         virtual const char *className() const noexcept override      {return "LWSClientWebSocket";}
     private:
         void open();
-        bool onVerifyTLS();
         bool onSendCustomHeaders(void *in, size_t len);
         void onConnected();
         void gotResponse();
         void onConnectionError(C4Error error) override;
         fleece::slice pinnedServerCert();
-        fleece::alloc_slice pinnedServerCertPublicKey();
 
         litecore::repl::Address _address;       // Address to connect to
         fleece::AllocedDict _options;           // Replicator options
