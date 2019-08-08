@@ -123,6 +123,10 @@
 		2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		2753AFC91EC0F4E900C12E98 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 270515581D907F6200D62D05 /* CoreFoundation.framework */; };
 		2753B00D1EC39E5D00C12E98 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27139B1F18F8E9750021A9A3 /* Foundation.framework */; };
+		2754620B22F39D5500DF87B0 /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
+		2754620C22F39D5500DF87B0 /* Certificate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A00D22EA65E200F9AB18 /* Certificate.cc */; };
+		2754620D22F39D5500DF87B0 /* PublicKey.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01822EB92B900F9AB18 /* PublicKey.cc */; };
+		2754620E22F39D5500DF87B0 /* PublicKey+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */; };
 		2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2754B0C01E5F49AA00A05FD0 /* StringUtil.cc */; };
 		275A74D11ED3A4E1008CB57B /* Listener.cc in Sources */ = {isa = PBXBuildFile; fileRef = 275A74CF1ED3A4E1008CB57B /* Listener.cc */; };
 		275A74D31ED3A4E1008CB57B /* Listener.hh in Headers */ = {isa = PBXBuildFile; fileRef = 275A74D01ED3A4E1008CB57B /* Listener.hh */; };
@@ -139,11 +143,8 @@
 		2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		2762A01922EB92B900F9AB18 /* PublicKey.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01822EB92B900F9AB18 /* PublicKey.cc */; };
-		2762A01A22EB92B900F9AB18 /* PublicKey.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01822EB92B900F9AB18 /* PublicKey.cc */; };
 		2762A01D22EB933100F9AB18 /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
-		2762A01E22EB933100F9AB18 /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
 		2762A02122EF8C4E00F9AB18 /* PublicKey+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */; };
-		2762A02222EF8C4E00F9AB18 /* PublicKey+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */; };
 		276301131F2FE960004A1592 /* UnicodeCollator_ICU.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276301121F2FE960004A1592 /* UnicodeCollator_ICU.cc */; };
 		2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */; };
 		2763012B1F3A36BD004A1592 /* StringUtil_Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2763012A1F3A36BD004A1592 /* StringUtil_Apple.mm */; };
@@ -160,7 +161,6 @@
 		276D15411DFF541000543B1B /* SQLiteQuery.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276D15401DFF541000543B1B /* SQLiteQuery.cc */; };
 		276E021B1EA983EE00FEFE8A /* Response.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02191EA983EE00FEFE8A /* Response.cc */; };
 		2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE68D2267A02500B681AC /* N1QLParserTest.cc */; };
-		2771A0A62286256C00B18E0A /* libwebsockets.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27719FE62284E8AD00B18E0A /* libwebsockets.a */; };
 		2771A0A72286257800B18E0A /* LWSWebSocket.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27719FE92284E94D00B18E0A /* LWSWebSocket.cc */; };
 		2771A0B2228626FD00B18E0A /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		2771A0CF228B4CD700B18E0A /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
@@ -530,6 +530,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 720EA3DB1BA7EAD9002B8416;
 			remoteInfo = "CBForest-Interop";
+		};
+		2754620F22F3A1CE00DF87B0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 27DE2E472125F2C100123597;
+			remoteInfo = actors;
 		};
 		2771A0B0228626DE00B18E0A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -970,7 +977,6 @@
 		27700DFD1FB642B80005D48E /* Increment.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Increment.hh; sourceTree = "<group>"; };
 		277015081D523E2E008BADD7 /* DataFileTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DataFileTest.cc; sourceTree = "<group>"; };
 		2771991B2272498300B18E0A /* QueryParserTest.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = QueryParserTest.hh; sourceTree = "<group>"; };
-		27719FE62284E8AD00B18E0A /* libwebsockets.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libwebsockets.a; path = build/lib/libwebsockets.a; sourceTree = "<group>"; };
 		27719FE82284E94D00B18E0A /* LWSWebSocket.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = LWSWebSocket.hh; sourceTree = "<group>"; };
 		27719FE92284E94D00B18E0A /* LWSWebSocket.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = LWSWebSocket.cc; sourceTree = "<group>"; };
 		27719FEE2284EA5200B18E0A /* lws-struct.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "lws-struct.h"; sourceTree = "<group>"; };
@@ -1443,7 +1449,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2771A0A62286256C00B18E0A /* libwebsockets.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1908,9 +1913,18 @@
 				2762A01722EB92B900F9AB18 /* PublicKey.hh */,
 				2762A01822EB92B900F9AB18 /* PublicKey.cc */,
 				2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */,
+				2754622322FB3BC200DF87B0 /* tests */,
 			);
 			name = Crypto;
 			path = ../Crypto;
+			sourceTree = "<group>";
+		};
+		2754622322FB3BC200DF87B0 /* tests */ = {
+			isa = PBXGroup;
+			children = (
+				2762A01422EB7CC800F9AB18 /* CertificateTest.cc */,
+			);
+			name = tests;
 			sourceTree = "<group>";
 		};
 		275607791BA22E5700F58218 /* Java */ = {
@@ -1966,7 +1980,6 @@
 				2745DE4B1E735B9000F02CA0 /* ReplicatorAPITest.cc */,
 				277FEE5721ED10FA00B60E3C /* ReplicatorSGTest.cc */,
 				273613FB1F16976300ECB9DF /* ReplicatorAPITest.hh */,
-				2762A01422EB7CC800F9AB18 /* CertificateTest.cc */,
 				2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */,
 			);
 			path = tests;
@@ -2098,7 +2111,6 @@
 			isa = PBXGroup;
 			children = (
 				27719FEC2284EA5200B18E0A /* include */,
-				27719FE62284E8AD00B18E0A /* libwebsockets.a */,
 			);
 			path = libwebsockets;
 			sourceTree = "<group>";
@@ -2885,6 +2897,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				2754621022F3A1CE00DF87B0 /* PBXTargetDependency */,
 				274D04221BA892C500FF7C35 /* PBXTargetDependency */,
 				2771A0B1228626DE00B18E0A /* PBXTargetDependency */,
 				2700BDFA1ED4FA78006B8AFF /* PBXTargetDependency */,
@@ -3426,7 +3439,6 @@
 				272850ED1E9D4C79009CA22F /* c4Test.cc in Sources */,
 				275FF6D31E494860005F90DD /* c4BaseTest.cc in Sources */,
 				270C6B981EBA3AD200E73415 /* LogEncoderTest.cc in Sources */,
-				2762A01E22EB933100F9AB18 /* mbedUtils.cc in Sources */,
 				27FA09A01D6FA380005888AA /* DataFileTest.cc in Sources */,
 				277BE1C9204F4D45008047C9 /* RevTreeTest.cc in Sources */,
 				27E0CAA01DBEB0BA0089A9C0 /* DocumentKeysTest.cc in Sources */,
@@ -3434,12 +3446,10 @@
 				274EDDFA1DA322D4003AD158 /* QueryParserTest.cc in Sources */,
 				27FDF1431DAC22230087B4E6 /* SQLiteFunctionsTest.cc in Sources */,
 				27E6737D1EC78144008F50C4 /* QueryTest.cc in Sources */,
-				2762A02222EF8C4E00F9AB18 /* PublicKey+Apple.mm in Sources */,
 				27098AAA216C2ED6002751DA /* PredictiveQueryTest.cc in Sources */,
 				272B1BEB1FB1513100F56620 /* FTSTest.cc in Sources */,
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
-				2762A01A22EB92B900F9AB18 /* PublicKey.cc in Sources */,
 				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
 				272850EA1E9D4860009CA22F /* ReplicatorLoopbackTest.cc in Sources */,
@@ -3521,6 +3531,10 @@
 				271BA50F228B99B800D49D13 /* LWSHTTPClient.cc in Sources */,
 				2771A0A72286257800B18E0A /* LWSWebSocket.cc in Sources */,
 				278BC9CE228E1C460055FF09 /* LWSServer.cc in Sources */,
+				2754620E22F39D5500DF87B0 /* PublicKey+Apple.mm in Sources */,
+				2754620B22F39D5500DF87B0 /* mbedUtils.cc in Sources */,
+				2754620D22F39D5500DF87B0 /* PublicKey.cc in Sources */,
+				2754620C22F39D5500DF87B0 /* Certificate.cc in Sources */,
 				2771A0E0228B5F7900B18E0A /* LWSProtocol.cc in Sources */,
 				278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */,
 			);
@@ -3818,6 +3832,11 @@
 			isa = PBXTargetDependency;
 			target = 720EA3DB1BA7EAD9002B8416 /* LiteCore dylib */;
 			targetProxy = 274D04211BA892C500FF7C35 /* PBXContainerItemProxy */;
+		};
+		2754621022F3A1CE00DF87B0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = actors;
+			targetProxy = 2754620F22F3A1CE00DF87B0 /* PBXContainerItemProxy */;
 		};
 		2771A0B1228626DE00B18E0A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
