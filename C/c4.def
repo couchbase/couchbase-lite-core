@@ -230,6 +230,31 @@ FLEncoder_EndDict
 FLEncoder_FinishDoc
 FLEncoder_Finish
 
+FLMutableArray_New
+FLArray_MutableCopy
+FLArray_AsMutable
+FLMutableArray_GetSource
+FLMutableArray_IsChanged
+FLMutableArray_Resize
+FLMutableArray_Set
+FLMutableArray_Append
+FLMutableArray_Insert
+FLMutableArray_Remove
+FLMutableArray_GetMutableArray
+FLMutableArray_GetMutableDict
+FLMutableDict_GetMutableArray
+
+FLMutableArray_GetMutableDict
+FLMutableDict_New
+FLDict_MutableCopy
+FLDict_AsMutable
+FLMutableDict_GetSource
+FLMutableDict_IsChanged
+FLMutableDict_Set
+FLMutableDict_Remove
+FLMutableDict_RemoveAll
+FLMutableDict_GetMutableDict
+
 ; C4Tests
 kC4SQLiteStorageEngine
 kC4DatabaseFilenameExtension

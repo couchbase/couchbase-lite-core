@@ -256,6 +256,31 @@ _FLEncoder_EndDict
 _FLEncoder_FinishDoc
 _FLEncoder_Finish
 
+_FLMutableArray_New
+_FLArray_MutableCopy
+_FLArray_AsMutable
+_FLMutableArray_GetSource
+_FLMutableArray_IsChanged
+_FLMutableArray_Resize
+_FLMutableArray_Set
+_FLMutableArray_Append
+_FLMutableArray_Insert
+_FLMutableArray_Remove
+_FLMutableArray_GetMutableArray
+_FLMutableArray_GetMutableDict
+_FLMutableDict_GetMutableArray
+
+_FLMutableArray_GetMutableDict
+_FLMutableDict_New
+_FLDict_MutableCopy
+_FLDict_AsMutable
+_FLMutableDict_GetSource
+_FLMutableDict_IsChanged
+_FLMutableDict_Set
+_FLMutableDict_Remove
+_FLMutableDict_RemoveAll
+_FLMutableDict_GetMutableDict
+
 # C4Tests
 _kC4SQLiteStorageEngine
 _kC4DatabaseFilenameExtension
