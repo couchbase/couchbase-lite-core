@@ -21,6 +21,7 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "c4ExceptionUtils.hh"
+#include "Certificate.hh"
 #include "fleece/Fleece.hh"
 #include <errno.h>
 
@@ -43,12 +44,14 @@ namespace litecore { namespace net {
 
     LWSProtocol::~LWSProtocol() {
         DebugAssert(!_client);
+        DebugAssert(!_vhost);
     }
 
 
-    void LWSProtocol::clientCreated(::lws* client) {
+    void LWSProtocol::clientCreated(::lws* client, ::lws_vhost *vhost) {
         if (client) {
             _client = client;
+            _vhost = vhost;
         } else {
             onConnectionError(c4error_make(LiteCoreDomain, kC4ErrorUnexpectedError,
                                            "libwebsockets unable to create client"_sl));
@@ -79,6 +82,10 @@ namespace litecore { namespace net {
                 LogVerbose("**** LWS_CALLBACK_WSI_DESTROY (wsi=%p)", client);
                 Assert(client == _client);
                 onDestroy();
+                if (_vhost) {
+                    lws_vhost_destroy(_vhost);
+                    _vhost = nullptr;
+                }
                 _client = nullptr;
                 release(this);
                 return;
@@ -111,6 +118,12 @@ namespace litecore { namespace net {
         if (lwsErrorMessage.hasSuffix('\n'))
             lwsErrorMessage.setSize(lwsErrorMessage.size - 1);
         
+        int status;
+        string statusMessage;
+        tie(status,statusMessage) = decodeHTTPStatus();
+        if (status >= 300)
+            return c4error_make(WebSocketDomain, status, slice(statusMessage));
+
         // Maps substrings of LWS error messages to C4Errors:
         static constexpr struct {slice string; C4ErrorDomain domain; int code;} kMessages[] = {
             {"client connect failed"_sl,          NetworkDomain,    kC4NetErrTLSHandshakeFailed},
@@ -118,22 +131,23 @@ namespace litecore { namespace net {
             {"ws upgrade unauthorized"_sl,        WebSocketDomain,  401},
             {"CA is not trusted"_sl,              NetworkDomain,    kC4NetErrTLSCertUnknownRoot },
             {"server's cert didn't look good"_sl, NetworkDomain,    kC4NetErrTLSCertUntrusted },
-            {"getaddrinfo failed"_sl,             NetworkDomain,    kC4NetErrUnknownHost},
+            {"getaddrinfo"_sl,                    NetworkDomain,    kC4NetErrUnknownHost},
+            {"gethostbyname"_sl,                  NetworkDomain,    kC4NetErrUnknownHost},
+            {"Timed out waiting SSL"_sl,          NetworkDomain,    kC4NetErrTLSHandshakeFailed},
+            {"Peer hung up"_sl,                   POSIXDomain,      ECONNRESET},
+            {"HS: "_sl,                           WebSocketDomain,  500},
             // TODO: Add more entries
             { }
         };
 
-        int status;
-        string statusMessage;
-        tie(status,statusMessage) = decodeHTTPStatus();
-        if (status >= 300)
-            return c4error_make(WebSocketDomain, status, slice(statusMessage));
-
         if (lwsErrorMessage) {
             // LWS does not provide any sort of error code, so just look up the string:
             for (int i = 0; kMessages[i].string; ++i) {
-                if (lwsErrorMessage.containsBytes(kMessages[i].string))
+                if (lwsErrorMessage.containsBytes(kMessages[i].string)) {
+                    LogVerbose("Mapping LWS error '%.*s' to {%d, %d}",
+                               SPLAT(lwsErrorMessage), kMessages[i].domain, kMessages[i].code);
                     return c4error_make(kMessages[i].domain, kMessages[i].code, nullslice);
+                }
             }
         }
         Warn("No error code mapping for libwebsocket message '%.*s'", SPLAT(lwsErrorMessage));

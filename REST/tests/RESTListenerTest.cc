@@ -80,7 +80,7 @@ public:
         C4Log("Using TLS w/temporary key for this test");
         if (!sTemporaryIdentity) {
             C4Log("Generating TLS key-pair and cert...")
-            Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(1024);
+            Retained<PrivateKey> key = PrivateKey::generateTemporaryRSA(2048);
             Cert::IssuerParameters issuerParams;
             issuerParams.validity_secs = 3600*24;
             auto cert = retained(new Cert("CN=C4RESTTest, O=Couchbase, OU=Mobile", issuerParams, key));

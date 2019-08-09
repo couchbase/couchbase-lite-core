@@ -95,11 +95,10 @@ namespace litecore { namespace net {
         memset(_info.get(), 0, sizeof(*_info));
         _info->user = this;
         _info->options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
-                         //LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
+                         LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
                          LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
         _info->port = CONTEXT_PORT_NO_LISTEN;
         _info->protocols = kProtocols;
-        _info->vhost_name = "LiteCore";  // if we ran a server, this would have to be the hostname
         _info->timeout_secs = kTimeoutSecs;
         _info->ws_ping_pong_interval = kDefaultPingIntervalSecs;
 
@@ -131,6 +130,7 @@ namespace litecore { namespace net {
                 lws_service(_context, 1000);
                 // FIXME: The timeout should be longer than 1sec, but long timeouts can lead to
                 // long delays in libwebsocket: https://github.com/warmcat/libwebsockets/issues/1582
+                LWSContext::dequeue();
             }
         }));
     }
@@ -156,51 +156,64 @@ namespace litecore { namespace net {
     void LWSContext::connectClient(LWSProtocol *protocolInstance,
                                    const char *protocolName,
                                    const repl::Address &address,
-                                   fleece::slice pinnedServerCert,
+                                   slice pinnedServerCert,
                                    const char *method)
     {
         enqueue(bind(&LWSContext::_connectClient, this,
                      protocolInstance, string(protocolName), address,
-                     alloc_slice(pinnedServerCert), (method ? string(method) :"")));
+                     pinnedServerCert, (method ? string(method) :"")));
     }
 
     void LWSContext::_connectClient(Retained<LWSProtocol> protocolInstance,
                                     const std::string &protocolName,
                                     repl::Address address,
-                                    fleece::alloc_slice pinnedServerCert,
+                                    slice pinnedServerCert,
                                     const string &method)
     {
         Log("_connectClient %s %p",
             protocolInstance->className(), protocolInstance.get());
+
+        // Create a new vhost for the client:
+        auto info = *_info;
+        info.vhost_name = "Client";
+        if (pinnedServerCert) {
+            info.client_ssl_ca_mem = pinnedServerCert.buf;
+            info.client_ssl_ca_mem_len = (unsigned)pinnedServerCert.size;
+        }
+
+        lws_vhost *vhost = lws_create_vhost(_context, &info);
+        LogDebug("Created client vhost %p", vhost);
+
         // Create LWS client and connect:
         string hostname(slice(address.hostname));
         string path(slice(address.path));
 
-        struct lws_client_connect_info info = {};
-        info.context = _context;
-        info.opaque_user_data = protocolInstance;
-        info.port = address.port;
-        info.address = hostname.c_str();
-        info.host = info.address;
-        info.origin = info.address;
-        info.path = path.c_str();
-        info.local_protocol_name = protocolName.c_str();
+        struct lws_client_connect_info clientInfo = {};
+        clientInfo.context = _context;
+        clientInfo.vhost = vhost;
+        clientInfo.opaque_user_data = protocolInstance;
+        clientInfo.port = address.port;
+        clientInfo.address = hostname.c_str();
+        clientInfo.host = clientInfo.address;
+        clientInfo.origin = clientInfo.address;
+        clientInfo.path = path.c_str();
+        clientInfo.local_protocol_name = protocolName.c_str();
 
         if (method.empty()) {
-            info.protocol = protocolName.c_str();  // WebSocket protocol to request on server
+            clientInfo.protocol = protocolName.c_str();  // WebSocket protocol to request on server
         } else {
-            info.method = method.c_str();
+            clientInfo.method = method.c_str();
         }
 
         if (address.isSecure()) {
-            info.ssl_connection = LCCSCF_USE_SSL;
+            clientInfo.ssl_connection = LCCSCF_USE_SSL;
             if (pinnedServerCert)
-                info.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
+                clientInfo.ssl_connection |= LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
         }
 
-        lws* client = lws_client_connect_via_info(&info);
+        lws* client = lws_client_connect_via_info(&clientInfo);
         LogDebug("Created lws %p for %s", client, protocolName.c_str());
-        protocolInstance->clientCreated(client);
+        protocolInstance->clientCreated(client, vhost);
     }
 
 
@@ -248,7 +261,7 @@ namespace litecore { namespace net {
         }
 
         lws_vhost *vhost = lws_create_vhost(_context, &info);
-        LogDebug("Created vhost %p for '%s'", vhost, hostname.c_str());
+        LogDebug("Created server vhost %p for '%s'", vhost, hostname.c_str());
         serverInstance->createdVHost(vhost);
     }
 

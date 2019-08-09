@@ -90,7 +90,6 @@ namespace litecore { namespace net {
         void onConnected();
         void gotResponse();
         void onConnectionError(C4Error error) override;
-        fleece::slice pinnedServerCert();
 
         litecore::repl::Address _address;       // Address to connect to
         fleece::AllocedDict _options;           // Replicator options

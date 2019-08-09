@@ -149,8 +149,9 @@ namespace litecore { namespace net {
     void LWSClientWebSocket::open() {
         Assert(!_client);
         Log("LWSWebSocket connecting to <%.*s>...", SPLAT(_address.url()));
+        slice pinnedCert = _options[kC4ReplicatorOptionPinnedServerCert].asData();
         LWSContext::instance().connectClient(this, LWSContext::kBLIPClientProtocol,
-                                             _address, pinnedServerCert());
+                                             _address, pinnedCert);
         _c4socket->nativeHandle = this;
     }
 
@@ -478,14 +479,6 @@ namespace litecore { namespace net {
             c4socket_closed(_c4socket, status);
             setC4Socket(nullptr);
         }
-    }
-
-
-#pragma mark - UTILITIES:
-
-
-    slice LWSClientWebSocket::pinnedServerCert() {
-        return _options[kC4ReplicatorOptionPinnedServerCert].asData();
     }
 
 } }

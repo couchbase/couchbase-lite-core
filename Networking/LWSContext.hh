@@ -46,7 +46,7 @@ namespace litecore { namespace net {
         void connectClient(LWSProtocol *protocolInstance NONNULL,
                            const char *protocolName NONNULL,
                            const repl::Address &address,
-                           fleece::slice pinnedServerCert,
+                           fleece::slice pinnedServerCert,  // must remain valid till connected
                            const char *method = nullptr);
 
         void startServer(LWSServer *server NONNULL,
@@ -75,7 +75,7 @@ namespace litecore { namespace net {
         void _connectClient(fleece::Retained<LWSProtocol>,
                             const std::string &protocolName,
                             repl::Address address,
-                            fleece::alloc_slice pinnedServerCert,
+                            fleece::slice pinnedServerCert,
                             const std::string &method);
         void _startServer(fleece::Retained<LWSServer>,
                           uint16_t port,

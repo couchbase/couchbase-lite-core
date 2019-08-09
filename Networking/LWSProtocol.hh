@@ -12,6 +12,7 @@
 #include <utility>
 
 struct lws;
+struct lws_vhost;
 
 namespace litecore { namespace net {
 
@@ -79,8 +80,9 @@ namespace litecore { namespace net {
         virtual const char *className() const noexcept =0;
 
     private:
-        void clientCreated(::lws* client);
+        void clientCreated(::lws* client, ::lws_vhost*);
 
+        ::lws_vhost*        _vhost {nullptr};
         int                 _eventResult;
         fleece::alloc_slice _dataToSend;
         fleece::slice       _unsent;
