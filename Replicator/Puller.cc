@@ -350,7 +350,7 @@ namespace litecore { namespace repl {
     Worker::ActivityLevel Puller::computeActivityLevel() const {
         ActivityLevel level;
         if (_fatalError || !connection()) {
-            level = kC4Stopped;
+            level = _unfinishedIncomingRevs > 0 ? kC4Busy : kC4Stopped;
         } else if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
                 || _pendingRevMessages > 0

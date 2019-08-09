@@ -637,6 +637,9 @@ namespace litecore { namespace repl {
     Worker::ActivityLevel Pusher::computeActivityLevel() const {
         ActivityLevel level;
         if (!connection()) {
+            // Does this need a similar guard to what Puller has?  It doesn't
+            // seem so since the Puller has stuff that happens even after the
+            // connection is closed, while the Pusher does not seem to.
             level = kC4Stopped;
         } else if (Worker::computeActivityLevel() == kC4Busy
                 || (_started && !_caughtUp)
