@@ -18,6 +18,7 @@
 
 #include "Query.hh"
 #include "KeyStore.hh"
+#include "DataFile.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
 
@@ -25,6 +26,29 @@
 namespace litecore {
 
     LogDomain QueryLog("Query");
+
+
+    Query::Query(KeyStore &keyStore, slice expression, QueryLanguage language)
+    :_keyStore(&keyStore)
+    ,_expression(expression)
+    ,_language(language)
+    {
+        keyStore.dataFile().registerQuery(this);
+    }
+
+
+    Query::~Query() {
+        if (_keyStore)
+            _keyStore->dataFile().unregisterQuery(this);
+    }
+
+
+    KeyStore& Query::keyStore() const {
+        if (!_keyStore)
+            error::_throw(error::NotOpen);
+        return *_keyStore;
+    }
+
 
     Query::parseError::parseError(const char *message, int errPos)
     :error(error::LiteCore, error::InvalidQuery,

@@ -48,7 +48,7 @@ namespace litecore {
         };
 
 
-        KeyStore& keyStore() const                                      {return _keyStore;}
+        KeyStore& keyStore() const;
         alloc_slice expression() const                                  {return _expression;}
         QueryLanguage language() const                                  {return _language;}
 
@@ -60,6 +60,7 @@ namespace litecore {
 
         virtual std::string explain() =0;
 
+        virtual void close()                                            {_keyStore = nullptr;}
 
         struct Options {
             Options() { }
@@ -80,16 +81,12 @@ namespace litecore {
         virtual QueryEnumerator* createEnumerator(const Options* =nullptr) =0;
 
     protected:
-        Query(KeyStore &keyStore, slice expression, QueryLanguage language) noexcept
-        :_keyStore(keyStore)
-        ,_expression(expression)
-        ,_language(language)
-        { }
+        Query(KeyStore &keyStore, slice expression, QueryLanguage language);
         
-        virtual ~Query() =default;
+        virtual ~Query();
 
     private:
-        KeyStore &_keyStore;
+        KeyStore* _keyStore;
         alloc_slice _expression;
         QueryLanguage _language;
     };

@@ -24,6 +24,7 @@
 #include "InstanceCounted.hh"          // For fleece::InstanceCountedIn
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <atomic> // for std::atomic_uint
 #include <functional> // for std::function
 #ifdef check
@@ -38,6 +39,7 @@ namespace fleece { namespace impl {
 
 namespace litecore {
 
+    class Query;
     class Transaction;
     class SequenceTracker;
 
@@ -81,7 +83,7 @@ namespace litecore {
 
         /** Closes the database. Do not call any methods on this object afterwards,
             except isOpen() or mustBeOpen(), before deleting it. */
-        void close();
+        void close(bool forDelete =false);
 
         /** Closes the database and deletes its file. */
         void deleteDataFile();
@@ -101,6 +103,10 @@ namespace litecore {
 
         /** Private API to run a raw (e.g. SQL) query, for diagnostic purposes only */
         virtual fleece::alloc_slice rawQuery(const std::string &query) =0;
+
+        // to be called only by Query:
+        void registerQuery(Query *query)        {_queries.insert(query);}
+        void unregisterQuery(Query *query)      {_queries.erase(query);}
 
         //////// KEY-STORES:
 
@@ -136,7 +142,6 @@ namespace litecore {
 
         Retained<RefCounted> sharedObject(const std::string &key);
         Retained<RefCounted> addSharedObject(const std::string &key, Retained<RefCounted>);
-
 
         //////// FACTORY:
 
@@ -182,7 +187,7 @@ namespace litecore {
         virtual void reopen();
 
         /** Override to close the actual database. (Called by close())*/
-        virtual void _close() =0;
+        virtual void _close(bool forDelete) =0;
 
         /** Override to instantiate a KeyStore object. */
         virtual KeyStore* newKeyStore(const std::string &name, KeyStore::Capabilities) =0;
@@ -240,6 +245,7 @@ namespace litecore {
         mutable KeyStore*       _defaultKeyStore {nullptr};     // The default KeyStore
         std::unordered_map<std::string, std::unique_ptr<KeyStore>> _keyStores;// Opened KeyStores
         mutable Retained<fleece::impl::PersistentSharedKeys> _documentKeys;
+        std::unordered_set<Query*> _queries;                    // Query objects
         bool                    _inTransaction {false};         // Am I in a Transaction?
         std::atomic_bool        _closeSignaled {false};         // Have I been asked to close?
     };

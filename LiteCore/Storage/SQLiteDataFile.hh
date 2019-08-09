@@ -77,7 +77,7 @@ namespace litecore {
     protected:
         std::string loggingClassName() const override       {return "DB";}
         void logKeyStoreOp(SQLiteKeyStore&, const char *op, slice key);
-        void _close() override;
+        void _close(bool forDelete) override;
         void reopen() override;
         void rekey(EncryptionAlgorithm, slice newKey) override;
         void _beginTransaction(Transaction*) override;
