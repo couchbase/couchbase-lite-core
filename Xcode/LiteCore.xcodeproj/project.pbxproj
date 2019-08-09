@@ -139,12 +139,8 @@
 		2761F3F01EE9CC58006D4BB8 /* CookieStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3EE1EE9CC58006D4BB8 /* CookieStore.cc */; };
 		2761F3F21EE9CC58006D4BB8 /* CookieStore.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2761F3EF1EE9CC58006D4BB8 /* CookieStore.hh */; };
 		2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2761F3F61EEA00C3006D4BB8 /* CookieStoreTest.cc */; };
-		2762A00E22EA65E200F9AB18 /* Certificate.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A00D22EA65E200F9AB18 /* Certificate.cc */; };
 		2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01422EB7CC800F9AB18 /* CertificateTest.cc */; };
 		2762A01622EB826B00F9AB18 /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
-		2762A01922EB92B900F9AB18 /* PublicKey.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01822EB92B900F9AB18 /* PublicKey.cc */; };
-		2762A01D22EB933100F9AB18 /* mbedUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2762A01C22EB933100F9AB18 /* mbedUtils.cc */; };
-		2762A02122EF8C4E00F9AB18 /* PublicKey+Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2762A02022EF8C4E00F9AB18 /* PublicKey+Apple.mm */; };
 		276301131F2FE960004A1592 /* UnicodeCollator_ICU.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276301121F2FE960004A1592 /* UnicodeCollator_ICU.cc */; };
 		2763011B1F32A7FD004A1592 /* UnicodeCollator_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2763011A1F32A7FD004A1592 /* UnicodeCollator_Stub.cc */; };
 		2763012B1F3A36BD004A1592 /* StringUtil_Apple.mm in Sources */ = {isa = PBXBuildFile; fileRef = 2763012A1F3A36BD004A1592 /* StringUtil_Apple.mm */; };
@@ -3656,7 +3652,6 @@
 				2754B0C71E5F5C2900A05FD0 /* StringUtil.cc in Sources */,
 				27098AA6216C2108002751DA /* PredictiveModel.cc in Sources */,
 				27098AC421752A29002751DA /* SQLiteKeyStore+PredictiveIndexes.cc in Sources */,
-				2762A01922EB92B900F9AB18 /* PublicKey.cc in Sources */,
 				278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */,
 				27E3DD371DB450B300F2872D /* Logging.cc in Sources */,
 				27FC8DB622135BCE0083B033 /* Pusher+DB.cc in Sources */,
@@ -3718,10 +3713,8 @@
 				279C18F01DF2051600D3221D /* SQLiteFTSRankFunction.cc in Sources */,
 				27E6DFF01DA5AFF3008EB681 /* Query.cc in Sources */,
 				27D74A7E1D4D3F2300D806E0 /* Database.cpp in Sources */,
-				2762A01D22EB933100F9AB18 /* mbedUtils.cc in Sources */,
 				27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */,
 				27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */,
-				2762A02122EF8C4E00F9AB18 /* PublicKey+Apple.mm in Sources */,
 				93CD010E1E933BE100AFB3FA /* Puller.cc in Sources */,
 				274EDDF61DA30B43003AD158 /* QueryParser.cc in Sources */,
 				273E9F741C51612E003115A6 /* c4DocEnumerator.cc in Sources */,
@@ -3738,7 +3731,6 @@
 				278963621D7A376900493096 /* EncryptedStream.cc in Sources */,
 				72A3AF891F424EC0001E16D4 /* PrebuiltCopier.cc in Sources */,
 				93CD010B1E933BE100AFB3FA /* Worker.cc in Sources */,
-				2762A00E22EA65E200F9AB18 /* Certificate.cc in Sources */,
 				277C14711EA8102B0075348F /* Document.cc in Sources */,
 				27098AC02175279F002751DA /* SQLiteKeyStore+ArrayIndexes.cc in Sources */,
 				276D153F1DFF53F500543B1B /* SQLiteEnumerator.cc in Sources */,

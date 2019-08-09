@@ -20,7 +20,7 @@
 #include "Logging.hh"
 #include "StringUtil.hh"
 #include "mbedUtils.hh"
-#include "pk.h"
+#include "mbedtls/pk.h"
 
 namespace litecore { namespace crypto {
     using namespace std;

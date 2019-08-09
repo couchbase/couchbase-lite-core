@@ -69,6 +69,7 @@ target_include_directories(
     ${TOP}vendor/fleece/API
     ${TOP}vendor/fleece/Fleece/Support
     ${TOP}C
+    ${TOP}Crypto
     ${TOP}Replicator
     ${TOP}Replicator/tests
     ${TOP}REST

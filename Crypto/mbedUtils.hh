@@ -14,9 +14,9 @@
 #pragma clang diagnostic ignored "-Wdocumentation-deprecated-sync"
 #endif
 
-#include "ctr_drbg.h"
-#include "x509_crt.h"
-#include "error.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/x509_crt.h"
+#include "mbedtls/error.h"
 
 namespace litecore { namespace crypto {
 

@@ -39,9 +39,11 @@ Platform logic is largely separated into the cmake/platform_*.cmake files.  Plat
 cmake_minimum_required (VERSION 3.9)
 cmake_policy(VERSION 3.9)
 
+# Mac/apple setup -- must appear before the first "project()" line"
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11")
 if(NOT DEFINED CMAKE_OSX_SYSROOT)
     # Tells Mac builds to use the current SDK's headers & libs, not what's in the OS.
-    set(CMAKE_OSX_SYSROOT macosx)      # this line MUST be above the 1st "project()" line!
+    set(CMAKE_OSX_SYSROOT macosx)
 endif()
 
 project (LiteCore)
@@ -191,6 +193,9 @@ setup_support_build()
 
 set(
     LC_WEBSOCKET_SRC
+    Crypto/Certificate.cc
+    Crypto/PublicKey.cc
+    Crypto/mbedUtils.cc
     Networking/LWSContext.cc
     Networking/LWSHTTPClient.cc
     Networking/LWSProtocol.cc
@@ -201,15 +206,22 @@ set(
     REST/netUtils.cc
     REST/Server.cc
 )
+
+if (APPLE)
+    set(LC_WEBSOCKET_SRC ${LC_WEBSOCKET_SRC}
+    Crypto/PublicKey+Apple.mm)
+endif()
+
 add_library(LiteCoreWebSocket STATIC ${LC_WEBSOCKET_SRC})
 target_include_directories(
     LiteCoreWebSocket PRIVATE
+    C
+    C/include
+    Crypto
+    LiteCore/Support
+    Networking
     Replicator
     REST
-    C/include
-    C
-    Networking
-    LiteCore/Support
     vendor/BLIP-Cpp/src/util
     vendor/fleece/Fleece/Support
     vendor/fleece/API

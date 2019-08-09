@@ -24,11 +24,11 @@
 
 #include "mbedUtils.hh"
 
-#include "pk.h"
-#include "x509_crt.h"
-#include "x509_csr.h"
-#include "md.h"
-#include "error.h"
+#include "mbedtls/pk.h"
+#include "mbedtls/x509_crt.h"
+#include "mbedtls/x509_csr.h"
+#include "mbedtls/md.h"
+#include "mbedtls/error.h"
 
 #include <stdlib.h>
 

@@ -27,7 +27,7 @@
 #include "SecureDigest.hh"
 
 #include "mbedUtils.hh"
-#include "pk.h"
+#include "mbedtls/pk.h"
 
 #include "fleece/slice.hh"
 #include <Security/Security.h>

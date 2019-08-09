@@ -19,8 +19,8 @@
 #include "mbedUtils.hh"
 #include "Logging.hh"
 #include "StringUtil.hh"
-#include "entropy.h"
-#include "pem.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/pem.h"
 #include <mutex>
 
 namespace litecore { namespace crypto {

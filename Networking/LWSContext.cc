@@ -29,7 +29,7 @@
 #include <fstream>
 #include <sstream>
 #include <libwebsockets.h>
-#include "debug.h"
+#include "mbedtls/debug.h"
 
 #ifdef TARGET_OS_OSX
 #include <Security/Security.h>

@@ -47,6 +47,7 @@ target_include_directories(
     ../vendor/fleece/Fleece/Support
     ../vendor/BLIP-Cpp/src/util
     ../LiteCore/Support
+    ../Crypto
     ../Networking
     ../Replicator
     ../vendor/libwebsockets/include
