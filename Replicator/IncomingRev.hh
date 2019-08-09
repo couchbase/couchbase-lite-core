@@ -35,7 +35,7 @@ namespace litecore { namespace repl {
         IncomingRev(Puller*);
 
         // Called by the Puller:
-        void handleRev(blip::MessageIn* revMessage) {
+        void handleRev(blip::MessageIn* revMessage NONNULL) {
             enqueue(&IncomingRev::_handleRev, retained(revMessage));
         }
         RevToInsert* rev() const                {return _rev;}
@@ -58,7 +58,7 @@ namespace litecore { namespace repl {
         void insertRevision();
         void _revisionInserted();
         void finish();
-        virtual void _childChangedStatus(Worker *task, Status status) override;
+        virtual void _childChangedStatus(Worker *task NONNULL, Status status) override;
 
         C4BlobStore *_blobStore;
         Puller* _puller;

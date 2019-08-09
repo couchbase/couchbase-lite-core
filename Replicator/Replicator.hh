@@ -65,16 +65,16 @@ namespace litecore { namespace repl {
         public:
             virtual ~Delegate() =default;
 
-            virtual void replicatorGotHTTPResponse(Replicator*,
+            virtual void replicatorGotHTTPResponse(Replicator* NONNULL,
                                                    int status,
                                                    const fleece::AllocedDict &headers) { }
-            virtual void replicatorStatusChanged(Replicator*,
+            virtual void replicatorStatusChanged(Replicator* NONNULL,
                                                  const Status&) =0;
-            virtual void replicatorConnectionClosed(Replicator*,
+            virtual void replicatorConnectionClosed(Replicator* NONNULL,
                                                     const CloseStatus&)  { }
-            virtual void replicatorDocumentsEnded(Replicator*,
+            virtual void replicatorDocumentsEnded(Replicator* NONNULL,
                                                   const DocumentsEnded&) =0;
-            virtual void replicatorBlobProgress(Replicator*,
+            virtual void replicatorBlobProgress(Replicator* NONNULL,
                                                 const BlobProgress&) = 0;
         };
 
@@ -92,7 +92,7 @@ namespace litecore { namespace repl {
         void updatePushCheckpoint(C4SequenceNumber s)   {_checkpoint.setLocalSeq(s);}
         void updatePullCheckpoint(const alloc_slice &s) {_checkpoint.setRemoteSeq(s);}
 
-        void endedDocument(ReplicatedRev *d);
+        void endedDocument(ReplicatedRev *d NONNULL);
         void onBlobProgress(const BlobProgress &progress) {
             enqueue(&Replicator::_onBlobProgress, progress);
         }

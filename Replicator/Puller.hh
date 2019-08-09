@@ -34,7 +34,7 @@ namespace litecore { namespace repl {
     /** Top-level object managing the pull side of replication (receiving revisions.) */
     class Puller : public Worker {
     public:
-        Puller(Replicator*);
+        Puller(Replicator* NONNULL);
 
         void setSkipDeleted()                   {enqueue(&Puller::_setSkipDeleted);}
 
@@ -43,25 +43,24 @@ namespace litecore { namespace repl {
 
         // Called only by IncomingRev
         void revWasProvisionallyHandled()       {enqueue(&Puller::_revWasProvisionallyHandled);}
-        void revWasHandled(IncomingRev *inc);
+        void revWasHandled(IncomingRev *inc NONNULL);
 
-        void insertRevision(RevToInsert *rev);
+        void insertRevision(RevToInsert *rev NONNULL);
 
     protected:
         bool nonPassive() const                 {return _options.pull > kC4Passive;}
-        virtual void _childChangedStatus(Worker *task, Status) override;
+        virtual void _childChangedStatus(Worker *task NONNULL, Status) override;
         virtual ActivityLevel computeActivityLevel() const override;
         void activityLevelChanged(ActivityLevel level);
 
     private:
-        Replicator* replicator() const          {return (Replicator*)_parent.get();}
         void _start(alloc_slice sinceSequence);
         void handleChanges(Retained<MessageIn>);
         void handleMoreChanges();
         void handleChangesNow(Retained<MessageIn> req);
         void handleRev(Retained<MessageIn>);
         void handleNoRev(Retained<MessageIn>);
-        void startIncomingRev(MessageIn*);
+        void startIncomingRev(MessageIn* NONNULL);
         void _revWasProvisionallyHandled();
         void _revsFinished(int gen);
         void completedSequence(alloc_slice sequence,

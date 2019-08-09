@@ -577,7 +577,7 @@ namespace litecore { namespace repl {
         }
 
         if (synced && _options.push > kC4Passive)
-            _db->markRevSynced((RevToSend*)rev);
+            _db->markRevSynced(const_cast<RevToSend*>(rev));
 
         auto i = _pushingDocs.find(rev->docID);
         if (i == _pushingDocs.end()) {
