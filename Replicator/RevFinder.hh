@@ -31,7 +31,7 @@ namespace litecore { namespace repl {
 
         /** Asynchronously processes a "revs" message, sends the response, and calls the
             completion handler with a bit-vector indicating which revs were requested. */
-        void findOrRequestRevs(blip::MessageIn *msg,
+        void findOrRequestRevs(blip::MessageIn *msg NONNULL,
                                DocIDMultiset *incomingDocs NONNULL,
                                std::function<void(std::vector<bool>)> completion)
         {
