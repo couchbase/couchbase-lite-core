@@ -72,7 +72,7 @@ namespace litecore { namespace repl {
                                C4RevisionFlags *outFlags =nullptr);
 
         /** Returns the remote ancestor revision ID of a document. */
-        alloc_slice getDocRemoteAncestor(C4Document *doc);
+        alloc_slice getDocRemoteAncestor(C4Document *doc NONNULL);
         
         /** Returns the document enumerator for all unresolved docs present in the DB */
         C4DocEnumerator* unresolvedDocsEnumerator(C4Error *outError);
@@ -82,7 +82,7 @@ namespace litecore { namespace repl {
              return the correct answer, because the change hasn't been made in the database yet.
              For that reason, you must ensure that markRevsSyncedNow() is called before any call
              to c4doc_getRemoteAncestor(). */
-        void markRevSynced(ReplicatedRev *rev)          {_revsToMarkSynced.push(rev);}
+        void markRevSynced(ReplicatedRev *rev NONNULL)          {_revsToMarkSynced.push(rev);}
 
         /** Synchronously fulfills all markRevSynced requests. */
         void markRevsSyncedNow();
@@ -90,7 +90,7 @@ namespace litecore { namespace repl {
         //////// DELTAS:
 
         /** Applies a delta to an existing revision. */
-        fleece::Doc applyDelta(const C4Revision *baseRevision,
+        fleece::Doc applyDelta(const C4Revision *baseRevision NONNULL,
                                slice deltaJSON,
                                bool useDBSharedKeys,
                                C4Error *outError);

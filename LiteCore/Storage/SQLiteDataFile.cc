@@ -254,7 +254,7 @@ namespace litecore {
 
 
     // Called by DataFile::close (the public method)
-    void SQLiteDataFile::_close() {
+    void SQLiteDataFile::_close(bool forDelete) {
         _getLastSeqStmt.reset();
         _setLastSeqStmt.reset();
         if (_sqlDb) {
@@ -267,9 +267,12 @@ namespace litecore {
                 // finalizers run. (Couchbase Lite Java has this issue.)
                 // We'll log info about the statements so this situation can be detected from logs.
                 _sqlDb->withOpenStatements([=](const char *sql, bool busy) {
-                    logVerbose("SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
-                               _sqlDb.get(), (busy ? "busy" : "open"), sql);
+                    _log((forDelete ? LogLevel::Warning : LogLevel::Info),
+                         "SQLite::Database %p close deferred due to %s sqlite_stmt: %s",
+                         _sqlDb.get(), (busy ? "busy" : "open"), sql);
                 });
+                if (forDelete)
+                    error::_throw(error::Busy, "SQLite db has active statements, can't be deleted");
                 // Also, tell SQLite not to checkpoint the WAL when it eventually closes the db
                 // (after the last statement is freed), as that can have disastrous effects if the
                 // db has since been deleted and re-created: see issue #381 for gory details.

@@ -17,6 +17,7 @@
 //
 #include "DataFile.hh"
 #include "DataFile+Shared.hh"
+#include "Query.hh"
 #include "Record.hh"
 #include "DocumentKeys.hh"
 #include "FilePath.hh"
@@ -128,20 +129,24 @@ namespace litecore {
     }
 
 
-    void DataFile::close() {
+    void DataFile::close(bool forDelete) {
         // https://github.com/couchbase/couchbase-lite-core/issues/776
         // Need to fulfill two opposing conditions simultaneously
-        // 1. The date file must remain in shared until it is fully closed
+        // 1. The data file must remain in shared until it is fully closed
         //    so that delete operations will not delete it while it is being
         //    closed.
         // 2. The data file must indicate that it is no longer valid so that
         //    other classes with interest in the data file do not continue to
         //    operate on it
         _closeSignaled = true;
+        for (auto &query : _queries)
+            query->close();
+        _queries.clear();
+
         for (auto& i : _keyStores) {
             i.second->close();
         }
-        _close();
+        _close(forDelete);
         if (_shared->removeDataFile(this))
             logInfo("Closing database");
     }
@@ -225,7 +230,7 @@ namespace litecore {
             }
             
             if (file)
-                file->close();
+                file->close(true);
             bool result = factory._deleteFile(shared->path, options);
             shared->condemn(false);
             return result;

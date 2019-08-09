@@ -37,7 +37,7 @@ namespace litecore { namespace repl {
             alloc_slice data = _db->getRawDocument(kInfoKeyStore, kCookieStoreDocID).body();
             object = db->dataFile()->addSharedObject("CookieStore", new CookieStore(data));
         }
-        _store = (CookieStore*)object.get();
+        _store = dynamic_cast<CookieStore*>(object.get());
     }
 
 

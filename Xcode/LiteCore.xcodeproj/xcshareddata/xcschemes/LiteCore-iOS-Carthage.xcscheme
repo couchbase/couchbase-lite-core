@@ -16,7 +16,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "27EF80F91917EEC600A327B9"
                BuildableName = "libLiteCore-static.a"
-               BlueprintName = "LiteCore static"
+               BlueprintName = "LiteCore-static"
                ReferencedContainer = "container:LiteCore.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -32,7 +32,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "27EF80F91917EEC600A327B9"
             BuildableName = "libLiteCore-static.a"
-            BlueprintName = "LiteCore static"
+            BlueprintName = "LiteCore-static"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -64,7 +64,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "27EF80F91917EEC600A327B9"
             BuildableName = "libLiteCore-static.a"
-            BlueprintName = "LiteCore static"
+            BlueprintName = "LiteCore-static"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
@@ -80,7 +80,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "27EF80F91917EEC600A327B9"
             BuildableName = "libLiteCore-static.a"
-            BlueprintName = "LiteCore static"
+            BlueprintName = "LiteCore-static"
             ReferencedContainer = "container:LiteCore.xcodeproj">
          </BuildableReference>
       </MacroExpansion>

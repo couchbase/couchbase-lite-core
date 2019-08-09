@@ -26,7 +26,7 @@ namespace litecore { namespace repl {
     /** Pulls a single blob. Invoked by IncomingRev. */
     class IncomingBlob : public Worker {
     public:
-        IncomingBlob(Worker *parent, C4BlobStore*);
+        IncomingBlob(Worker *parent NONNULL, C4BlobStore* NONNULL);
 
         void start(const PendingBlob &blob) {
             enqueue(&IncomingBlob::_start, blob);

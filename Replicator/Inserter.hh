@@ -29,12 +29,12 @@ namespace litecore { namespace repl {
     public:
         Inserter(Replicator*);
 
-        void insertRevision(RevToInsert*);
+        void insertRevision(RevToInsert* NONNULL);
 
     private:
         void _insertRevisionsNow(int gen);
-        bool insertRevisionNow(RevToInsert*, C4Error*);
-        C4SliceResult applyDeltaCallback(const C4Revision *baseRevision,
+        bool insertRevisionNow(RevToInsert* NONNULL, C4Error*);
+        C4SliceResult applyDeltaCallback(const C4Revision *baseRevision NONNULL,
                                          C4Slice deltaJSON,
                                          C4Error *outError);
 

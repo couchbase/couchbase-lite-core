@@ -72,13 +72,13 @@ namespace litecore { namespace repl {
         blip::Connection* connection() const                {return _connection;}
 
     protected:
-        Worker(blip::Connection *connection,
+        Worker(blip::Connection *connection NONNULL,
                Worker *parent,
                const Options &options,
                std::shared_ptr<DBAccess>,
-               const char *namePrefix);
+               const char *namePrefix NONNULL);
 
-        Worker(Worker *parent, const char *namePrefix);
+        Worker(Worker *parent, const char *namePrefix NONNULL);
 
         ~Worker();
 
@@ -90,7 +90,7 @@ namespace litecore { namespace repl {
 
         /** Registers a callback to run when a BLIP request with the given profile arrives. */
         template <class ACTOR>
-        void registerHandler(const char *profile,
+        void registerHandler(const char *profile NONNULL,
                              void (ACTOR::*method)(Retained<blip::MessageIn>)) {
             std::function<void(Retained<blip::MessageIn>)> fn(
                                         std::bind(method, (ACTOR*)this, std::placeholders::_1) );
@@ -107,12 +107,12 @@ namespace litecore { namespace repl {
         void sendRequest(blip::MessageBuilder& builder,
                          blip::MessageProgressCallback onProgress = nullptr);
 
-        void gotError(const blip::MessageIn*);
+        void gotError(const blip::MessageIn* NONNULL);
         void gotError(C4Error) ;
         virtual void onError(C4Error);         // don't call this, but you can override
 
         /** Report less-serious errors that affect a document but don't stop replication. */
-        virtual void finishedDocumentWithError(ReplicatedRev*, C4Error, bool transientErr);
+        virtual void finishedDocumentWithError(ReplicatedRev* NONNULL, C4Error, bool transientErr);
 
         void finishedDocument(ReplicatedRev*);
 
