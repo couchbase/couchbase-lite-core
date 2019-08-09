@@ -111,7 +111,7 @@ namespace c4Internal {
 
         access_lock<SequenceTracker>& sequenceTracker();
 
-        BlobStore* blobStore();
+        BlobStore* blobStore() const;
 
         void lockClientMutex()                              {_clientMutex.lock();}
         void unlockClientMutex()                            {_clientMutex.unlock();}
@@ -139,7 +139,7 @@ namespace c4Internal {
         bool getUUIDIfExists(slice key, UUID&);
         UUID generateUUID(slice key, Transaction&, bool overwrite =false);
 
-        std::unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey);
+        std::unique_ptr<BlobStore> createBlobStore(const std::string &dirname, C4EncryptionKey) const;
         std::unordered_set<std::string> collectBlobs();
         void removeUnusedBlobs(const std::unordered_set<std::string> &used);
 
@@ -149,8 +149,8 @@ namespace c4Internal {
         int                         _transactionLevel {0};  // Nesting level of transaction
         unique_ptr<DocumentFactory> _documentFactory;       // Instantiates C4Documents
         unique_ptr<fleece::impl::Encoder> _encoder;         // Shared Fleece Encoder
-        unique_ptr<access_lock<SequenceTracker>> _sequenceTracker;       // Doc change tracker/notifier
-        unique_ptr<BlobStore>       _blobStore;             // Blob storage
+        unique_ptr<access_lock<SequenceTracker>> _sequenceTracker; // Doc change tracker/notifier
+        mutable unique_ptr<BlobStore> _blobStore;           // Blob storage
         uint32_t                    _maxRevTreeDepth {0};   // Max revision-tree depth
         recursive_mutex             _clientMutex;           // Mutex for c4db_lock/unlock
         unique_ptr<BackgroundDB>    _backgroundDB;          // for background operations

@@ -21,9 +21,11 @@
 #include "fleece/Fleece.h"
 #include "c4.hh"
 #include "c4Private.h"
+#include "access_lock.hh"
 #include <chrono>
 #include <functional>
 #include <set>
+#include <unordered_set>
 #include <vector>
 
 namespace litecore { namespace repl {
@@ -32,7 +34,7 @@ namespace litecore { namespace repl {
     class IncomingRev;
 
     // Operations on C4Progress objects:
-    
+
     static inline bool operator== (const C4Progress &p1, const C4Progress &p2) {
         return p1.unitsCompleted == p2.unitsCompleted && p1.unitsTotal == p2.unitsTotal
             && p1.documentCount == p2.documentCount;
@@ -52,6 +54,19 @@ namespace litecore { namespace repl {
         p1 = p1 + p2;
         return p1;
     }
+
+
+    /** Thread-safe counted set of doc IDs. Can store multiple of the same docID;
+        e.g. two add("x") calls require two remove("x") calls before contains("x") returns false. */
+    class DocIDMultiset {
+    public:
+        bool contains(const fleece::alloc_slice &docID) const;
+        void add(const fleece::alloc_slice &docID);
+        void remove(const fleece::alloc_slice &docID);
+    private:
+        using multiset = std::unordered_multiset<fleece::alloc_slice, fleece::sliceHash>;
+        access_lock<multiset> _set;
+    };
 
     
     /** A request by the peer to send a revision. */
@@ -74,6 +89,8 @@ namespace litecore { namespace repl {
 
         Dir dir() const override                    {return Dir::kPushing;}
         void trim() override;
+
+        std::string historyString(C4Document*);
         
     protected:
         ~RevToSend() =default;

@@ -112,6 +112,26 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Push Large-Docs DB", "[.SyncServer]") {
 #endif
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API Push 5000 Changes", "[.SyncServer]") {
+    string revID;
+    {
+        TransactionHelper t(db);
+        revID = createNewRev(db, "Doc"_sl, nullslice, kFleeceBody);
+    }
+    replicate(kC4OneShot, kC4Disabled);
+
+    C4Log("-------- Mutations --------");
+    {
+        TransactionHelper t(db);
+        for (int i = 2; i <= 5000; ++i)
+            revID = createNewRev(db, "Doc"_sl, slice(revID), kFleeceBody);
+    }
+
+    C4Log("-------- Second Replication --------");
+    replicate(kC4OneShot, kC4Disabled);
+}
+
+
 TEST_CASE_METHOD(ReplicatorAPITest, "API Pull", "[.SyncServer]") {
     _remoteDBName = kITunesDBName;
     replicate(kC4Disabled, kC4OneShot);

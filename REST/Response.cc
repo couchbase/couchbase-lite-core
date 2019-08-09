@@ -58,10 +58,9 @@ namespace litecore { namespace REST {
             if (hasContentType("application/json"_sl)) {
                 alloc_slice b = body();
                 if (b)
-                    const_cast<Body*>(this)->_bodyFleece =
-                    Doc::fromJSON(b, nullptr);
+                    _bodyFleece = Doc::fromJSON(b, nullptr);
             }
-            const_cast<Body*>(this)->_gotBodyFleece = true;
+            _gotBodyFleece = true;
         }
         return _bodyFleece.root();
     }

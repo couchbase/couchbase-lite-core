@@ -80,7 +80,7 @@ namespace litecore { namespace repl {
         fleece::alloc_slice _encode() const;
         void set(const C4SequenceNumber *local, const fleece::slice *remote);
 
-        std::mutex _mutex;
+        mutable std::mutex _mutex;
 
         Sequences _seq {};
 

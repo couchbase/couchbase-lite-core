@@ -147,7 +147,7 @@ namespace litecore {
             return _lastSequence;
         sequence_t seq = db().lastSequence(_name);
         if (db().inTransaction())
-            const_cast<SQLiteKeyStore*>(this)->_lastSequence = seq;
+            _lastSequence = seq;
         return seq;
     }
 
@@ -215,7 +215,7 @@ namespace litecore {
         }
 
         {
-            lock_guard<mutex> lock(const_cast<SQLiteKeyStore*>(this)->_stmtMutex);
+            lock_guard<mutex> lock(_stmtMutex);
             stmt->bindNoCopy(1, (const char*)rec.key().buf, (int)rec.key().size);
             UsingStatement u(*stmt);
             if (!stmt->executeStep())

@@ -7,15 +7,16 @@
 
 #include "XcodeWarnings.xcconfig"
 
+WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unknown-warning-option  // ignore unknown warning flags
 CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO
 CLANG_WARN_ASSIGN_ENUM = NO
 CLANG_WARN__EXIT_TIME_DESTRUCTORS = NO
-//CLANG_WARN_OBJC_EXPLICIT_OWNERSHIP_TYPE = NO
 GCC_WARN_ABOUT_MISSING_FIELD_INITIALIZERS = NO
 GCC_WARN_SIGN_COMPARE = NO
 GCC_TREAT_WARNINGS_AS_ERRORS                       = YES
+CLANG_STATIC_ANALYZER_MODE = shallow
 
-LITECORE_VERSION_STRING                            = 2.5.0
+LITECORE_VERSION_STRING                            = 2.6.0
 LITECORE_BUILD_NUMBER                              = 0
 
 IPHONEOS_DEPLOYMENT_TARGET                         = 10.0
@@ -55,7 +56,5 @@ GCC_PRECOMPILE_PREFIX_HEADER                       = YES
 
 HEADER_SEARCH_PATHS                                = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/ $(inherited)
 SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/ $(inherited)
-
-WARNING_CFLAGS                                     = -Woverriding-method-mismatch -Weffc++
 
 COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from complaining

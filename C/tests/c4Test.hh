@@ -177,7 +177,10 @@ public:
     void createRev(C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static void createRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice body, C4RevisionFlags flags =0);
     static std::string createFleeceRev(C4Database *db, C4Slice docID, C4Slice revID, C4Slice jsonBody, C4RevisionFlags flags =0);
-    static std::string createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4RevisionFlags flags =0);
+    static std::string createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID,
+                                    C4Slice body, C4RevisionFlags flags =0);
+    static std::string createNewRev(C4Database *db, C4Slice docID,
+                                    C4Slice body, C4RevisionFlags flags =0);
 
     static void createConflictingRev(C4Database *db,
                                      C4Slice docID,

@@ -281,8 +281,7 @@ namespace litecore {
     KeyStore& DataFile::defaultKeyStore(KeyStore::Capabilities options) const {
         checkOpen();
         if (!_defaultKeyStore)
-            const_cast<DataFile*>(this)->_defaultKeyStore = &getKeyStore(kDefaultKeyStoreName,
-                                                                         options);
+            _defaultKeyStore = &getKeyStore(kDefaultKeyStoreName, options);
         return *_defaultKeyStore;
     }
 
@@ -297,7 +296,7 @@ namespace litecore {
         if (!keys && _options.useDocumentKeys) {
             auto mutableThis = const_cast<DataFile*>(this);
             keys = new DocumentKeys(*mutableThis);
-            mutableThis->_documentKeys = keys;
+            _documentKeys = keys;
         }
         return keys;
     }

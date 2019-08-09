@@ -261,7 +261,7 @@ namespace litecore { namespace repl {
             auto revisionFlags = doc->selectedRev.flags;
             if (revisionFlags & kRevDeleted)
                 msg["deleted"_sl] = "1"_sl;
-            string history = revHistoryString(doc, *request);
+            string history = request->historyString(doc);
             if (!history.empty())
                 msg["history"_sl] = history;
 
@@ -326,33 +326,6 @@ namespace litecore { namespace repl {
     }
 
 
-    string Pusher::revHistoryString(C4Document *doc, const RevToSend &request) {
-        Assert(c4doc_selectRevision(doc, request.revID, true, nullptr));
-        stringstream historyStream;
-        int nWritten = 0;
-        unsigned lastGen = c4rev_getGeneration(doc->selectedRev.revID);
-        for (int n = 0; n < request.maxHistory; ++n) {
-            if (!c4doc_selectParentRevision(doc))
-                break;
-            slice revID = doc->selectedRev.revID;
-            unsigned gen = c4rev_getGeneration(revID);
-            while (gen < --lastGen) {
-                char fakeID[50];
-                sprintf(fakeID, "%u-faded000%.08x%.08x", lastGen, RandomNumber(), RandomNumber());
-                if (nWritten++ > 0)
-                    historyStream << ',';
-                historyStream << fakeID;
-            }
-            if (nWritten++ > 0)
-                historyStream << ',';
-            historyStream << revID.asString();
-            if (request.hasRemoteAncestor(revID))
-                break;
-        }
-        return historyStream.str();
-    }
-
-
     alloc_slice Pusher::createRevisionDelta(C4Document *doc, RevToSend *request,
                                               Dict root, size_t revisionSize,
                                               bool sendLegacyAttachments)
@@ -367,6 +340,10 @@ namespace litecore { namespace repl {
         Dict ancestor;
         if (request->remoteAncestorRevID)
             ancestor = DBAccess::getDocRoot(doc, request->remoteAncestorRevID, &ancestorFlags);
+
+        if(ancestorFlags & kRevDeleted)
+            return delta;
+
         if (!ancestor && request->ancestorRevIDs) {
             for (auto revID : *request->ancestorRevIDs) {
                 ancestor = DBAccess::getDocRoot(doc, revID, &ancestorFlags);
@@ -374,7 +351,7 @@ namespace litecore { namespace repl {
                     break;
             }
         }
-        if (!ancestor)
+        if (ancestor.empty())
             return delta;
 
         Doc legacyOld, legacyNew;

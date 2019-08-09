@@ -388,16 +388,22 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
     auto curDoc = c4doc_get(db, docID, false, &error);
 //    REQUIRE(curDoc != nullptr);        // can't use Catch on bg threads
     Assert(curDoc != nullptr);
+    string revID = createNewRev(db, docID, curDoc->revID, body, flags);
+    c4doc_free(curDoc);
+    return revID;
+}
 
-    C4Slice history[2] = {curDoc->revID};
+string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice curRevID, C4Slice body, C4RevisionFlags flags) {
+    C4Slice history[2] = {curRevID};
 
     C4DocPutRequest rq = {};
     rq.docID = docID;
     rq.history = history;
-    rq.historyCount = (curDoc->revID.buf != nullptr);
+    rq.historyCount = (curRevID.buf != nullptr);
     rq.body = body;
     rq.revFlags = flags;
     rq.save = true;
+    C4Error error;
     auto doc = c4doc_put(db, &rq, nullptr, &error);
     if (!doc) {
         char buf[256];
@@ -407,7 +413,6 @@ string C4Test::createNewRev(C4Database *db, C4Slice docID, C4Slice body, C4Revis
     Assert(doc != nullptr);
     string revID((char*)doc->revID.buf, doc->revID.size);
     c4doc_free(doc);
-    c4doc_free(curDoc);
     return revID;
 }
 

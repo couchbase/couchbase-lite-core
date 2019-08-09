@@ -101,7 +101,7 @@ namespace litecore {
         const std::string *_curDomain {nullptr};
         uint64_t _curObject;
         bool _curObjectIsNew;
-        bool _putCurObjectInMessage;
+        mutable bool _putCurObjectInMessage;
         bool _readMessage;
     };
 

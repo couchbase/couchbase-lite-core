@@ -291,7 +291,7 @@ namespace litecore { namespace repl {
 
 
     vector<const Cookie*> CookieStore::cookies() const {
-        lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        lock_guard<mutex> lock(_mutex);
         vector<const Cookie*> cookies;
         cookies.reserve(_cookies.size());
         for (const CookiePtr &cookie : _cookies)
@@ -301,7 +301,7 @@ namespace litecore { namespace repl {
 
 
     string CookieStore::cookiesForRequest(const C4Address &addr) const {
-        lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        lock_guard<mutex> lock(_mutex);
         stringstream s;
         int n = 0;
         for (const CookiePtr &cookie : _cookies) {
@@ -322,7 +322,7 @@ namespace litecore { namespace repl {
         auto newCookie = make_unique<const Cookie>(headerValue, fromHost, path);
         if (!newCookie->valid())
             return false;
-        lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        lock_guard<mutex> lock(_mutex);
         _addCookie(move(newCookie));
         return true;
     }
@@ -330,7 +330,7 @@ namespace litecore { namespace repl {
 
     void CookieStore::merge(slice data) {
         CookieStore other(data);
-        lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        lock_guard<mutex> lock(_mutex);
         for (CookiePtr &cookie : other._cookies)
             _addCookie(move(cookie));
     }
@@ -359,7 +359,7 @@ namespace litecore { namespace repl {
 
 
     void CookieStore::clearCookies() {
-        lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        lock_guard<mutex> lock(_mutex);
         for (auto i = _cookies.begin(); !_changed && i != _cookies.end(); ++i) {
             if ((*i)->persistent())
                 _changed = true;
@@ -369,12 +369,12 @@ namespace litecore { namespace repl {
 
 
     bool CookieStore::changed() {
-        lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        lock_guard<mutex> lock(_mutex);
         return _changed;
     }
 
     void CookieStore::clearChanged() {
-        lock_guard<mutex> lock(const_cast<mutex&>(_mutex));
+        lock_guard<mutex> lock(_mutex);
         _changed = false;
     }
 

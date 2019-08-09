@@ -28,7 +28,7 @@ using namespace std;
 
 namespace litecore { namespace repl {
 
-#define LOCK()  lock_guard<mutex> lock(const_cast<Checkpoint*>(this)->_mutex)
+#define LOCK()  lock_guard<mutex> lock(_mutex)
 
     Checkpoint::Sequences Checkpoint::sequences() const {
         LOCK();

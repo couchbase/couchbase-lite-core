@@ -340,8 +340,7 @@ namespace c4Internal {
 
     // Callback that takes a base64 blob digest and returns the blob data
     alloc_slice Database::blobAccessor(const Dict *blobDict) const {
-        auto blobStore = const_cast<Database*>(this)->blobStore();
-        return Document::getBlobData(blobDict, blobStore);
+        return Document::getBlobData(blobDict, blobStore());
     }
 
 
@@ -384,7 +383,7 @@ namespace c4Internal {
     KeyStore& Database::getKeyStore(const string &name) const     {return _dataFile->getKeyStore(name);}
 
 
-    BlobStore* Database::blobStore() {
+    BlobStore* Database::blobStore() const {
         if (!_blobStore)
             _blobStore = createBlobStore("Attachments", config.encryptionKey);
         return _blobStore.get();
@@ -392,7 +391,7 @@ namespace c4Internal {
 
 
     unique_ptr<BlobStore> Database::createBlobStore(const string &dirname,
-                                                    C4EncryptionKey encryptionKey)
+                                                    C4EncryptionKey encryptionKey) const
     {
         FilePath blobStorePath = path().subdirectoryNamed(dirname);
         auto options = BlobStore::Options::defaults;

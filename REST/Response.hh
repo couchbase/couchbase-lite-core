@@ -58,8 +58,8 @@ namespace litecore { namespace REST {
 
         fleece::Doc _headers;
         fleece::alloc_slice _body;
-        bool _gotBodyFleece {false};
-        fleece::Doc _bodyFleece;
+        mutable bool _gotBodyFleece {false};
+        mutable fleece::Doc _bodyFleece;
     };
 
 

@@ -96,7 +96,7 @@ namespace litecore { namespace repl {
 
         std::vector<CookiePtr> _cookies;
         bool _changed {false};
-        std::mutex _mutex;
+        mutable std::mutex _mutex;
     };
 
 } }

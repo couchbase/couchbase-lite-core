@@ -7,7 +7,7 @@ function(setup_globals)
     set (CMAKE_INSTALL_RPATH "\$ORIGIN" PARENT_SCOPE)
 
     if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        if(NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?Clang")
             message(FATAL_ERROR "${CMAKE_CXX_COMPILER_ID} is not supported for building!")
         endif()
         find_library(LIBCXX_LIB c++)

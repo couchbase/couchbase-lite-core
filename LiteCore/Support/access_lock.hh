@@ -16,9 +16,10 @@ namespace litecore {
     class access_lock {
     public:
         access_lock()
+        :_contents()
         { }
-        
-        access_lock(T &&contents)
+
+        explicit access_lock(T &&contents)
         :_contents(std::move(contents))
         { }
 
@@ -39,20 +40,20 @@ namespace litecore {
 
         template <class LAMBDA>
         void use(LAMBDA callback) const {
-            std::lock_guard<std::recursive_mutex> lock(const_cast<std::recursive_mutex&>(_mutex));
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
             callback(_contents);
         }
 
         // Returns result. Has to be called as `use<actualResultClass>(...)`
         template <class RESULT, class LAMBDA>
         RESULT use(LAMBDA callback) const {
-            std::lock_guard<std::recursive_mutex> lock(const_cast<std::recursive_mutex&>(_mutex));
+            std::lock_guard<std::recursive_mutex> lock(_mutex);
             return callback(_contents);
         }
 
     private:
         T _contents;
-        std::recursive_mutex _mutex;
+        mutable std::recursive_mutex _mutex;
     };
 
 }
