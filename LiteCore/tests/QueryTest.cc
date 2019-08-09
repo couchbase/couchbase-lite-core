@@ -1570,3 +1570,16 @@ TEST_CASE_METHOD(QueryTest, "Query N1QL", "[Query]") {
     }
     REQUIRE(num == 41);
 }
+
+
+TEST_CASE_METHOD(QueryTest, "Query closes when db closes", "[Query]") {
+    // Tests fix for <https://issues.couchbase.com/browse/CBL-214>
+    addNumberedDocs(1, 10);
+
+    Retained<Query> query = store->compileQuery(json5("{WHAT: [ '._id'], WHERE: ['>=', ['.num'], 5]}"));
+    Retained<QueryEnumerator> e(query->createEnumerator());
+    CHECK(e->getRowCount() == 6);
+
+    // Close & delete the database while the Query and QueryEnumerator still exist:
+    deleteDatabase();
+}

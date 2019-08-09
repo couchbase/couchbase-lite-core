@@ -107,6 +107,14 @@ namespace litecore {
         }
 
 
+        virtual void close() override {
+            logInfo("Closing query (db is closing)");
+            _statement.reset();
+            _matchedTextStatement.reset();
+            Query::close();
+        }
+
+
         sequence_t lastSequence() const {
             return keyStore().lastSequence();
         }
@@ -127,7 +135,8 @@ namespace litecore {
             alloc_slice matchedText;
             _matchedTextStatement->bind(1, (long long)term.dataSource); // dataSource is docid
             if (_matchedTextStatement->executeStep())
-                matchedText = alloc_slice( ((SQLiteKeyStore&)keyStore()).columnAsSlice(_matchedTextStatement->getColumn(term.keyIndex)) );
+                matchedText = alloc_slice( ((SQLiteKeyStore&)keyStore()).columnAsSlice(
+                                                _matchedTextStatement->getColumn(term.keyIndex)) );
             else
                 Warn("FTS index %s has no row for docid %" PRIu64, expr.c_str(), term.dataSource);
             _matchedTextStatement->reset();
@@ -136,7 +145,7 @@ namespace litecore {
 
 
         virtual unsigned columnCount() const noexcept override {
-            return _statement->getColumnCount() - _1stCustomResultColumn;
+            return statement()->getColumnCount() - _1stCustomResultColumn;
         }
 
 
@@ -148,7 +157,7 @@ namespace litecore {
         string explain() override {
             stringstream result;
             // https://www.sqlite.org/eqp.html
-            string query = _statement->getQuery();
+            string query = statement()->getQuery();
             result << query << "\n\n";
 
             string sql = "EXPLAIN QUERY PLAN " + query;
@@ -166,7 +175,12 @@ namespace litecore {
 
         QueryEnumerator* createEnumerator(const Options *options) override;
 
-        shared_ptr<SQLite::Statement> statement()   {return _statement;}
+        shared_ptr<SQLite::Statement> statement() const {
+            if (!_statement)
+                error::_throw(error::NotOpen);
+            return _statement;
+        }
+
         unsigned objectRef() const                  {return getObjectRef();}   // (for logging)
 
         set<string> _parameters;            // Names of the bindable parameters
