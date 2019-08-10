@@ -42,6 +42,7 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
+        _onDocsEnded = onDocsEnded;
         RegisterC4CivetWebSocketFactory();
         // Environment variables can also override the default address above:
         const char *hostname = getenv("REMOTE_HOST");
@@ -184,7 +185,7 @@ public:
         params.pushFilter = _pushFilter;
 //        params.validationFunc = onValidate;
         params.onStatusChanged = onStateChanged;
-        params.onDocumentsEnded = onDocsEnded;
+        params.onDocumentsEnded = _onDocsEnded;
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
 
@@ -270,6 +271,7 @@ public:
     C4String _remoteDBName = kScratchDBName;
     AllocedDict _options;
     C4ReplicatorValidationFunction _pushFilter {nullptr};
+    C4ReplicatorDocumentsEndedCallback _onDocsEnded {nullptr};
     C4SocketFactory* _socketFactory {nullptr};
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;
