@@ -133,14 +133,25 @@ public:
         CHECK(titles == expectedTitles);
     }
 
-    void addPersonInState(const char *docID, const char *state) {
+    void addPersonInState(const char *docID, const char *state, const char* firstName = nullptr) {
         TransactionHelper t(db);
 
         C4Error c4err;
+        size_t count = 2 + firstName != nullptr;
         FLEncoder enc = c4db_getSharedFleeceEncoder(db);
-        FLEncoder_BeginDict(enc, 2);
+        FLEncoder_BeginDict(enc, count);
         FLEncoder_WriteKey(enc, FLSTR("custom"));
         FLEncoder_WriteBool(enc, true);
+        if(firstName != nullptr) {
+            FLEncoder_WriteKey(enc, FLSTR("name"));
+            FLEncoder_BeginDict(enc, 2);
+            FLEncoder_WriteKey(enc, FLSTR("first"));
+            FLEncoder_WriteString(enc, FLStr(firstName));
+            FLEncoder_WriteKey(enc, FLSTR("last"));
+            FLEncoder_WriteString(enc, FLSTR("lastname"));
+            FLEncoder_EndDict(enc);
+        }
+
         FLEncoder_WriteKey(enc, FLSTR("contact"));
         FLEncoder_BeginDict(enc, 1);
         FLEncoder_WriteKey(enc, FLSTR("address"));
