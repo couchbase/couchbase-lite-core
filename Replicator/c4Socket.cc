@@ -22,6 +22,7 @@
 #include "c4Private.h"
 #include "c4Socket.h"
 #include "c4Socket+Internal.hh"
+#include "XWebSocket.hh"
 #include "Address.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -42,6 +43,26 @@ CBL_CORE_API const char* const kC4SocketOptionWSProtocols = litecore::websocket:
 namespace litecore { namespace repl {
 
     using namespace websocket;
+
+
+    static C4SocketFactory* sRegisteredFactory;
+
+
+    Retained<WebSocket> CreateWebSocket(websocket::URL url,
+                                        Role role,
+                                        alloc_slice options,
+                                        const C4SocketFactory *factory,
+                                        void *nativeHandle)
+    {
+        if (!factory)
+            factory = sRegisteredFactory;
+        if (factory) {
+            return new C4SocketImpl(url, role, options, factory, nativeHandle);
+        } else {
+            Assert(!nativeHandle);
+            return new XWebSocket(url, role, AllocedDict(options));
+        }
+    }
 
 
     static const C4SocketFactory& fac(const C4SocketFactory *f) {
@@ -136,9 +157,6 @@ namespace litecore { namespace repl {
     void C4SocketImpl::receiveComplete(size_t byteCount) {
         _factory.completedReceive(this, byteCount);
     }
-
-
-    C4SocketFactory* C4SocketImpl::sRegisteredFactory;
 
 } }
 

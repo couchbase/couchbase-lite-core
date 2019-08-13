@@ -22,3 +22,6 @@
 [submodule "vendor/ios-cmake"]
 	path = vendor/ios-cmake
 	url = https://github.com/leetal/ios-cmake.git
+[submodule "vendor/sockpp"]
+	path = vendor/sockpp
+	url = https://github.com/fpagliughi/sockpp.git

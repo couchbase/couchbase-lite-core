@@ -25,6 +25,13 @@ struct c4Database;
 
 namespace litecore { namespace repl {
 
+    // Main factory function to create a WebSocket.
+    fleece::Retained<websocket::WebSocket> CreateWebSocket(websocket::URL,
+                                                           websocket::Role,
+                                                           fleece::alloc_slice options,
+                                                           const C4SocketFactory*,
+                                                           void *nativeHandle =nullptr);
+
     // Returns the WebSocket object associated with a C4Socket
     websocket::WebSocket* WebSocketFrom(C4Socket *c4sock);
 
@@ -36,10 +43,10 @@ namespace litecore { namespace repl {
         static const C4SocketFactory& registeredFactory();
 
         C4SocketImpl(websocket::URL,
-                     websocket::Role role,
+                     websocket::Role,
                      fleece::alloc_slice options,
-                     const C4SocketFactory *factory_,
-                     void *nativeHandle_ =nullptr);
+                     const C4SocketFactory*,
+                     void *nativeHandle =nullptr);
 
         ~C4SocketImpl();
 
@@ -57,8 +64,6 @@ namespace litecore { namespace repl {
         C4SocketFactory const _factory;
 
         static void validateFactory(const C4SocketFactory&);
-
-        static C4SocketFactory *sRegisteredFactory;
     };
 
 } }

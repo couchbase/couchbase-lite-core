@@ -54,7 +54,9 @@ GCC_ENABLE_OBJC_EXCEPTIONS                         = YES
 GCC_NO_COMMON_BLOCKS                               = YES
 GCC_PRECOMPILE_PREFIX_HEADER                       = YES
 
-HEADER_SEARCH_PATHS                                = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/ $(inherited)
+SOCKPP = $(SRCROOT)/../vendor/sockpp
+
+HEADER_SEARCH_PATHS                                = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/ $(SOCKPP)/include $(inherited)
 SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/ $(inherited)
 
 COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from complaining
