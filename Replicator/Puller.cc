@@ -349,12 +349,14 @@ namespace litecore { namespace repl {
     
     Worker::ActivityLevel Puller::computeActivityLevel() const {
         ActivityLevel level;
-        if (_fatalError || !connection()) {
+        if (_unfinishedIncomingRevs > 0) {
+            // CBL-221: Crash when scheduling document ended events
+            level = kC4Busy;
+        } else if (_fatalError || !connection()) {
             level = kC4Stopped;
         } else if (Worker::computeActivityLevel() == kC4Busy
                 || (!_caughtUp && nonPassive())
                 || _pendingRevMessages > 0
-                || _unfinishedIncomingRevs > 0
                 || _pendingRevFinderCalls > 0) {
             level = kC4Busy;
         } else if (_options.pull == kC4Continuous || isOpenServer()) {
