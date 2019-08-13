@@ -147,6 +147,7 @@ namespace litecore {
         void existsOp(slice, fleece::impl::Array::iterator&);
         void collateOp(slice, fleece::impl::Array::iterator&);
         void inOp(slice, fleece::impl::Array::iterator&);
+        void likeOp(slice, fleece::impl::Array::iterator&);
         void matchOp(slice, fleece::impl::Array::iterator&);
         void anyEveryOp(slice, fleece::impl::Array::iterator&);
         void parameterOp(slice, fleece::impl::Array::iterator&);
