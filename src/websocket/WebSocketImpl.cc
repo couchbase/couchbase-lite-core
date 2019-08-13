@@ -422,7 +422,7 @@ namespace litecore { namespace websocket {
             _responseTimer.reset();
 
             if (_timedOut && status.reason == kWebSocketClose)
-                status = {kNetworkError, kNetErrTimeout};
+                status = {kNetworkError, kNetErrTimeout, nullslice};
 
             if (_framing) {
                 bool clean = (status.code == 0

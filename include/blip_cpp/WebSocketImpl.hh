@@ -39,7 +39,7 @@ namespace litecore { namespace websocket {
     /** Transport-agnostic implementation of WebSocket protocol.
         It doesn't transfer data or run the handshake; it just knows how to encode and decode
         messages. */
-    class WebSocketImpl : public WebSocket, Logging {
+    class WebSocketImpl : public WebSocket, protected Logging {
     public:
         WebSocketImpl(const URL &url,
                       Role role,

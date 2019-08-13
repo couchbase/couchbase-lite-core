@@ -198,7 +198,7 @@ private:
         } else {
             spillLength = 0;
             state = READ_MESSAGE;
-            remainingBytes = (unsigned)(payLength - length + MESSAGE_HEADER);
+            remainingBytes = (unsigned)(payLength + MESSAGE_HEADER - length);
 
             if (isServer) {
                 memcpy(mask, src + MESSAGE_HEADER - 4, 4);
@@ -355,7 +355,7 @@ public:
 
         char mask[4];
         if (!isServer) {
-            dst[1] |= 0x80;
+            ((uint8_t*)dst)[1] |= 0x80;
             uint32_t random = arc4random();
             memcpy(mask, &random, 4);
             memcpy(dst + headerLength, &random, 4);

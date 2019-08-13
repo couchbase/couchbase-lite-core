@@ -85,6 +85,15 @@ namespace litecore { namespace websocket {
         int code;
         fleece::alloc_slice message;
 
+        CloseStatus()
+        :CloseStatus(kUnknownError, 0, nullslice) { }
+
+        CloseStatus(CloseReason reason_, int code_, fleece::alloc_slice message_)
+        :reason(reason_), code(code_), message(message_) { }
+
+        CloseStatus(CloseReason reason_, int code_, fleece::slice message_)
+        :CloseStatus(reason_, code_, fleece::alloc_slice(message_)) { }
+
         bool isNormal() const {
             return reason == kWebSocketClose && (code == kCodeNormal || code == kCodeGoingAway);
         }
@@ -165,7 +174,6 @@ namespace litecore { namespace websocket {
     public:
         virtual ~Delegate() { }
 
-        virtual void onWebSocketStart() { }
         virtual void onWebSocketGotHTTPResponse(int status,
                                                 const fleece::AllocedDict &headers) { }
         virtual void onWebSocketConnect() =0;
