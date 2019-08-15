@@ -402,6 +402,17 @@ N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database Expired", "[Database][C]") {
 
     C4Log("---- Purge expired docs (again)");
     CHECK(c4db_purgeExpiredDocs(db, &err) == 0);
+
+    C4Slice docID1 = C4STR("test_get_expired_me");
+    createRev(docID1, kRevID, kFleeceBody);
+    C4Timestamp now = c4_now();
+    expire = now + 0.75 * secs;
+    REQUIRE(c4doc_setExpiration(db, docID1, expire, &err));
+    sleep(1u);
+    C4Log("---- Get expired doc");
+    C4Document* doc = c4doc_get(db, docID1, false, &err);
+    CHECK(doc == nullptr);
+    c4doc_free(doc);
 }
 
 N_WAY_TEST_CASE_METHOD(C4DatabaseTest, "Database CancelExpire", "[Database][C]")

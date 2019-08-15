@@ -65,9 +65,20 @@ C4Document* c4doc_get(C4Database *database,
                       bool mustExist,
                       C4Error *outError) noexcept
 {
-    return newDoc(mustExist, outError, [=] {
+    C4Document* doc = newDoc(mustExist, outError, [=] {
         return database->documentFactory().newDocumentInstance(docID);
     });
+
+    if (!doc)
+        return doc;
+
+    C4Timestamp docExpTime = c4doc_getExpiration(database, docID, nullptr);
+    if (_usuallyFalse(docExpTime > 0 && c4_now() >= docExpTime)) {
+        c4doc_free(doc);
+        recordError(LiteCoreDomain, kC4ErrorNotFound, outError);
+        return nullptr;
+    }
+    return doc;
 }
 
 
