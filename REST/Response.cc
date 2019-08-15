@@ -17,11 +17,16 @@
 //
 
 #include "Response.hh"
-#include "LWSHTTPClient.hh"
+#include "XSocket.hh"
+#include "XTLSSocket.hh"
+#include "Address.hh"
+#include "c4ExceptionUtils.hh"
 #include "c4Socket.h"
 #include "Writer.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "netUtils.hh"
+#include <string>
 
 using namespace std;
 using namespace fleece;
@@ -69,6 +74,21 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE:
 
 
+    static tls_context* sTLSContext = nullptr;
+
+
+    void Response::setTLSContext(tls_context *c) {
+        sTLSContext = c;
+    }
+
+
+    tls_context* Response::TLSContext() {
+        if (!sTLSContext)
+            sTLSContext = new mbedtls_context();    // default to mbedTLS
+        return sTLSContext;
+    }
+
+
     Response::Response(const string &scheme,
                        const string &method,
                        const string &hostname,
@@ -83,11 +103,21 @@ namespace litecore { namespace REST {
         address.hostname = slice(hostname);
         address.port = port;
         address.path = slice(uri);
-        
-        Retained<net::LWSHTTPClient> client = new LWSHTTPClient();
-        client->setPinnedServerCert(pinnedServerCert);
-        client->connect(this, address, method.c_str(), headers, alloc_slice(body));
-        _error = client->run();
+
+        try {
+            XSocket socket{repl::Address(address)};
+            socket.setTLSContext(*TLSContext());
+            //socket.setPinnedServerCert(pinnedServerCert);
+            socket.connect();
+            socket.sendHTTPRequest(method, headers.root().asDict());
+            if (body)
+                socket.write_n(body);
+            auto response = socket.readHTTPResponse();
+            _status = HTTPStatus(response.status);
+            _statusMessage = response.message;
+            _headers = Doc(response.headers.data());
+            _body = socket.readHTTPBody(response.headers);
+        } catchError(&_error);
     }
 
 } }

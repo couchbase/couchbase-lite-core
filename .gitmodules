@@ -16,9 +16,6 @@
 [submodule "vendor/mbedtls"]
 	path = vendor/mbedtls
 	url = https://github.com/ARMmbed/mbedtls.git
-[submodule "vendor/libwebsockets"]
-	path = vendor/libwebsockets
-	url = https://github.com/couchbasedeps/libwebsockets.git
 [submodule "vendor/ios-cmake"]
 	path = vendor/ios-cmake
 	url = https://github.com/leetal/ios-cmake.git

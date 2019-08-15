@@ -42,6 +42,11 @@ namespace litecore { namespace repl {
         static void registerFactory(const C4SocketFactory&);
         static const C4SocketFactory& registeredFactory();
 
+        using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL,
+                                                              websocket::Role,
+                                                              fleece::alloc_slice options);
+        static void registerInternalFactory(InternalFactory);
+
         C4SocketImpl(websocket::URL,
                      websocket::Role,
                      fleece::alloc_slice options,

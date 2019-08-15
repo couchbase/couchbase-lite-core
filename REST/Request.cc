@@ -19,7 +19,6 @@
 #include "Request.hh"
 #include "Server.hh"
 #include "Writer.hh"
-#include "LWSContext.hh"
 #include "PlatformIO.hh"
 #include "Error.hh"
 #include "netUtils.hh"

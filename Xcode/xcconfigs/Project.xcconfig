@@ -7,6 +7,9 @@
 
 #include "XcodeWarnings.xcconfig"
 
+MBEDTLS = $(SRCROOT)/../vendor/mbedtls
+SOCKPP = $(SRCROOT)/../vendor/sockpp
+
 WARNING_CFLAGS = $(WARNING_CFLAGS) -Wno-unknown-warning-option  // ignore unknown warning flags
 CLANG_WARN_IMPLICIT_SIGN_CONVERSION = NO
 CLANG_WARN_ASSIGN_ENUM = NO
@@ -54,9 +57,7 @@ GCC_ENABLE_OBJC_EXCEPTIONS                         = YES
 GCC_NO_COMMON_BLOCKS                               = YES
 GCC_PRECOMPILE_PREFIX_HEADER                       = YES
 
-SOCKPP = $(SRCROOT)/../vendor/sockpp
-
-HEADER_SEARCH_PATHS                                = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/ $(SOCKPP)/include $(inherited)
-SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/ $(inherited)
+HEADER_SEARCH_PATHS                                = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/   $(SOCKPP)/include   $(MBEDTLS)/include   $(inherited)
+SYSTEM_HEADER_SEARCH_PATHS                         = $(SRCROOT)/../vendor/SQLiteCpp/sqlite3/   $(inherited)
 
 COMBINE_HIDPI_IMAGES                               = YES    // Stop Xcode from complaining

@@ -46,6 +46,12 @@ namespace litecore { namespace repl {
 
 
     static C4SocketFactory* sRegisteredFactory;
+    static C4SocketImpl::InternalFactory sRegisteredInternalFactory;
+
+
+    void C4SocketImpl::registerInternalFactory(C4SocketImpl::InternalFactory f) {
+        sRegisteredInternalFactory = f;
+    }
 
 
     Retained<WebSocket> CreateWebSocket(websocket::URL url,
@@ -56,11 +62,14 @@ namespace litecore { namespace repl {
     {
         if (!factory)
             factory = sRegisteredFactory;
+        
         if (factory) {
             return new C4SocketImpl(url, role, options, factory, nativeHandle);
-        } else {
+        } else if (sRegisteredInternalFactory) {
             Assert(!nativeHandle);
-            return new XWebSocket(url, role, AllocedDict(options));
+            return sRegisteredInternalFactory(url, role, options);
+        } else {
+            throw std::logic_error("No default C4SocketFactory registered; call c4socket_registerFactory())");
         }
     }
 

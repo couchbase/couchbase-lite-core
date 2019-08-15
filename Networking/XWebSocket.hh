@@ -12,10 +12,16 @@
 #include <mutex>
 #include <thread>
 
+extern "C" {
+    void C4RegisterXWebSocket();
+}
+
 namespace litecore { namespace websocket {
 
     class XWebSocket : public WebSocketImpl {
     public:
+        static void registerWithReplicator();
+
         XWebSocket(const URL &url,
                    Role role,
                    const fleece::AllocedDict &options);

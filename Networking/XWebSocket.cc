@@ -18,7 +18,22 @@
 
 #include "XWebSocket.hh"
 #include "c4Replicator.h"
+#include "c4Socket+Internal.hh"
 #include <string>
+
+using namespace litecore;
+using namespace litecore::websocket;
+
+
+void C4RegisterXWebSocket() {
+    repl::C4SocketImpl::registerInternalFactory([](websocket::URL url,
+                                                   websocket::Role role,
+                                                   fleece::alloc_slice options) -> WebSocketImpl*
+                                                {
+        return new XWebSocket(url, role, fleece::AllocedDict(options));
+    });
+}
+
 
 namespace litecore { namespace websocket {
     using namespace std;

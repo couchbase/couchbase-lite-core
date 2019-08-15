@@ -18,6 +18,8 @@ namespace litecore { namespace websocket {
 } }
 
 namespace litecore { namespace net {
+    class tls_context;
+
 
     class XSocket {
     public:
@@ -28,6 +30,8 @@ namespace litecore { namespace net {
         :_addr(addr)
         { }
 
+        void setTLSContext(tls_context&);
+
         /// Connects to the host, synchronously. On failure throws an exception.
         void connect();
 
@@ -35,8 +39,7 @@ namespace litecore { namespace net {
         void close();
 
         /// Sends an HTTP request, but not a body.
-        void sendHTTPRequest(const string &method,
-                             fleece::function_ref<void(std::stringstream&)>);
+        void sendHTTPRequest(const std::string &method, fleece::Dict headers);
 
         struct Response {
             int status;
@@ -91,6 +94,9 @@ namespace litecore { namespace net {
         size_t write_n(slice);
 
     protected:
+        void sendHTTPRequest(const string &method,
+                             fleece::function_ref<void(std::stringstream&)>);
+        void writeHeaders(std::stringstream &rq, fleece::Dict headers);
         bool getIntHeader(fleece::Dict headers, slice key, int64_t &value);
         [[noreturn]] void _throwLastError();
         size_t _read(void *dst, size_t byteCount);
@@ -99,7 +105,8 @@ namespace litecore { namespace net {
         static constexpr size_t kReadBufferSize = 8192;
         
         repl::Address _addr;
-        std::unique_ptr<sockpp::tcp_connector> _socket;
+        tls_context* _tlsContext;
+        std::unique_ptr<sockpp::stream_socket> _socket;
         std::thread _reader;
         std::thread _writer;
 

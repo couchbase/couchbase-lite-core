@@ -14,3 +14,5 @@ SKIP_INSTALL                 = YES
 STRIP_INSTALLED_PRODUCT      = NO
 
 GCC_PREPROCESSOR_DEFINITIONS = $(inherited) LITECORE_IMPL SQLITE_OMIT_LOAD_EXTENSION   // For SQLiteCpp
+
+WARNING_CFLAGS = $(inherited) -Wno-documentation //TEMP

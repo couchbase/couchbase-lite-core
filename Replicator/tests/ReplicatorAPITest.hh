@@ -12,6 +12,7 @@
 #include "c4.hh"
 #include "c4LibWebSocketFactory.h"
 #include "Response.hh"
+#include "XTLSSocket.hh"
 #include "make_unique.h"
 #include <iostream>
 #include "c4Test.hh"
@@ -24,6 +25,11 @@
 using namespace std;
 using namespace fleece;
 using namespace litecore;
+
+
+extern "C" {
+    void C4RegisterXWebSocket();
+}
 
 
 class ReplicatorAPITest : public C4Test {
@@ -42,8 +48,11 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
-        RegisterC4LWSWebSocketFactory();
+        C4RegisterXWebSocket();
+//        RegisterC4LWSWebSocketFactory();
         // Environment variables can also override the default address above:
+        if (getenv("REMOTE_TLS") || getenv("REMOTE_SSL"))
+            _address.scheme = C4STR("wss");
         const char *hostname = getenv("REMOTE_HOST");
         if (hostname)
             _address.hostname = c4str(hostname);
@@ -250,12 +259,15 @@ public:
         enc.endDict();
         auto headers = enc.finish();
 
-        auto r = make_unique<REST::Response>(method,
-                             (string)(slice)_address.hostname,
-                             port,
-                             path,
-                             headers,
-                             body);
+        litecore::REST::Response::TLSContext()->allowInvalidPeerCerts();
+
+        auto r = make_unique<REST::Response>(string(slice(_address.scheme)),
+                                             method,
+                                             (string)(slice)_address.hostname,
+                                             port,
+                                             path,
+                                             headers,
+                                             body);
         REQUIRE(r);
         if (r->error().code)
             FAIL("Error: " << c4error_descriptionStr(r->error()));

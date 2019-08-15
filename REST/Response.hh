@@ -33,6 +33,7 @@ namespace litecore { namespace crypto {
 
 namespace litecore { namespace net {
     class LWSHTTPClient;
+    class tls_context;
 } }
 
 namespace litecore { namespace REST {
@@ -67,6 +68,9 @@ namespace litecore { namespace REST {
         I.e. this is a simple HTTP client API. */
     class Response : public Body {
     public:
+        static void setTLSContext(net::tls_context*);
+        static net::tls_context* TLSContext();
+
         Response(const std::string &scheme,
                  const std::string &method,
                  const std::string &hostname,

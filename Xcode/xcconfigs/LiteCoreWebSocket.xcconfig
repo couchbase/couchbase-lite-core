@@ -9,18 +9,13 @@
 #include "LiteCore.xcconfig"
 #include "static_lib.xcconfig"
 
-LIBWEBSOCKETS = $(SRCROOT)/../vendor/libwebsockets
-MBEDTLS = $(SRCROOT)/../vendor/mbedtls
-
-HEADER_SEARCH_PATHS = $(HEADER_SEARCH_PATHS)    $(LIBWEBSOCKETS)/include
-
-SYSTEM_HEADER_SEARCH_PATHS = $(inherited) $(LIBWEBSOCKETS)/lib/tls/mbedtls/wrapper/include   $(MBEDTLS)/include
+HEADER_SEARCH_PATHS = $(HEADER_SEARCH_PATHS)
 
 LIBRARY_SEARCH_PATHS = $(inherited) $(LIBWEBSOCKETS)/build/lib  $(inherited) $(MBEDTLS)/build/library
 
 WARNING_CFLAGS = $(inherited) -Wno-documentation
 
-OTHER_LDFLAGS = -all_load -lwebsockets -lmbedtls -lmbedcrypto -lmbedx509
+OTHER_LDFLAGS = -all_load -lmbedtls -lmbedcrypto -lmbedx509
 
 SKIP_INSTALL                 = YES
 STRIP_INSTALLED_PRODUCT      = NO

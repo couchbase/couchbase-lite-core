@@ -17,6 +17,7 @@
 //
 
 #include "XSocket.hh"
+#include "XTLSSocket.hh"
 #include "WebSocketInterface.hh"
 #include "Error.hh"
 #include "SecureDigest.hh"
@@ -33,10 +34,19 @@ namespace litecore { namespace net {
     using namespace litecore::websocket;
 
 
+    void XSocket::setTLSContext(tls_context &tls) {
+        _tlsContext = &tls;
+    }
+
     void XSocket::connect() {
-        _socket.reset( new tcp_connector({string(slice(_addr.hostname)), _addr.port}) );
+        string hostname(slice(_addr.hostname));
+        _socket.reset( new tcp_connector({hostname, _addr.port}) );
         if (!*_socket)
             _throwLastError();
+        if (_addr.isSecure()) {
+            Assert(_tlsContext != nullptr, "No TLS context");
+            _socket = _tlsContext->wrapSocket(move(_socket), hostname);
+        }
     }
 
 
@@ -54,6 +64,13 @@ namespace litecore { namespace net {
         fn(rq);
         rq << "\r\n";
         write_n(slice(rq.str()));
+    }
+
+
+    void XSocket::sendHTTPRequest(const string &method, Dict headers) {
+        sendHTTPRequest(method, [&](stringstream &rq) {
+            writeHeaders(rq, headers);
+        });
     }
 
 
@@ -123,11 +140,15 @@ namespace litecore { namespace net {
                   "Sec-WebSocket-Key: " << nonce << "\r\n";
             if (!protocol.empty())
                 rq << "Sec-WebSocket-Protocol: " << protocol << "\r\n";
-            // Custom headers:
-            for (Dict::iterator i(headers); i; ++i)
-                rq << string(i.keyString()) << ": " << string(i.value().toString()) << "\r\n";
+            writeHeaders(rq, headers);
         });
         return nonce;
+    }
+
+
+    void XSocket::writeHeaders(stringstream &rq, Dict headers) {
+        for (Dict::iterator i(headers); i; ++i)
+            rq << string(i.keyString()) << ": " << string(i.value().toString()) << "\r\n";
     }
 
 
@@ -275,7 +296,24 @@ namespace litecore { namespace net {
 
 
     void XSocket::_throwLastError() {
-        error::_throw(error::POSIX, _socket->last_error());
+        int err = _socket->last_error();
+        if (err > 0) {
+            error::_throw(error::POSIX, err);
+        } else {
+            // Negative errors are assumed to be from mbedTLS.
+            static constexpr struct {int mbed; int net;} kMbedToNetErr[] = {
+                {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
+                {0, kNetErrUnknown}
+            };
+            int netErr = kNetErrUnknown;
+            for (int i = 0; kMbedToNetErr[i].mbed != 0; ++i) {
+                if (kMbedToNetErr[i].mbed == err) {
+                    netErr = kMbedToNetErr[i].net;
+                    break;
+                }
+            }
+            error::_throw(error::Network, netErr);
+        }
     }
 
 
