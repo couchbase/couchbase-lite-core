@@ -18,6 +18,7 @@ extern "C" {
 
 namespace litecore { namespace websocket {
 
+    /** WebSocket implementation using XSocket. */
     class XWebSocket : public WebSocketImpl {
     public:
         static void registerWithReplicator();

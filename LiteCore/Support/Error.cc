@@ -186,6 +186,8 @@ namespace litecore {
             "server TLS certificate is self-signed or has unknown root cert",
             "invalid HTTP redirect, or redirect loop",
             "unknown network error",
+            "server TLS certificate has been revoked",
+            "server TLS certificate name mismatch"
         };
         const char *str = nullptr;
         if (code < sizeof(kNetworkMessages)/sizeof(char*))

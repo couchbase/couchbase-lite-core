@@ -10,16 +10,14 @@
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "c4.hh"
-#include "c4LibWebSocketFactory.h"
 #include "Response.hh"
-#include "XTLSSocket.hh"
-#include "make_unique.h"
-#include <iostream>
 #include "c4Test.hh"
 #include "StringUtil.hh"
+#include "sockpp/mbedtls_socket.h"
+#include "make_unique.h"
 #include <algorithm>
 #include <chrono>
-#include <future>
+#include <iostream>
 #include <thread>
 
 using namespace std;
@@ -48,8 +46,16 @@ public:
     ReplicatorAPITest()
     :C4Test(0)
     {
-        C4RegisterXWebSocket();
-//        RegisterC4LWSWebSocketFactory();
+        once_flag once;
+        call_once(once, [&]() {
+            // Register the XWebSocket class as the C4Replicator's WebSocketImpl.
+            C4RegisterXWebSocket();
+
+            // Pin the server certificate:
+            alloc_slice certData = readFile("Replicator/tests/data/cert.pem");
+            sockpp::tls_context::defaultContext().allowOnlyCertificate(string(certData));
+        });
+
         // Environment variables can also override the default address above:
         if (getenv("REMOTE_TLS") || getenv("REMOTE_SSL"))
             _address.scheme = C4STR("wss");
@@ -240,6 +246,7 @@ public:
     }
 
 
+    /// Sends an HTTP request to the remote server.
     alloc_slice sendRemoteRequest(const string &method,
                                   string path,
                                   slice body =nullslice,
@@ -258,8 +265,6 @@ public:
         enc["Content-Type"_sl] = "application/json";
         enc.endDict();
         auto headers = enc.finish();
-
-        litecore::REST::Response::TLSContext()->allowInvalidPeerCerts();
 
         auto r = make_unique<REST::Response>(string(slice(_address.scheme)),
                                              method,

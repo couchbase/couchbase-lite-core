@@ -17,12 +17,15 @@
 //
 
 #include "XSocket.hh"
-#include "XTLSSocket.hh"
 #include "WebSocketInterface.hh"
 #include "Error.hh"
 #include "SecureDigest.hh"
 #include "SecureRandomize.hh"
 #include "fleece/Fleece.hh"
+#include "mbedtls/error.h"
+#include "mbedtls/ssl.h"
+#include "sockpp/tcp_connector.h"
+#include "sockpp/tls_socket.h"
 #include <regex>
 #include <string>
 #include <sstream>
@@ -34,6 +37,15 @@ namespace litecore { namespace net {
     using namespace litecore::websocket;
 
 
+    XSocket::XSocket(repl::Address addr)
+    :_addr(addr)
+    { }
+
+
+    XSocket::~XSocket()
+    { }
+
+
     void XSocket::setTLSContext(tls_context &tls) {
         _tlsContext = &tls;
     }
@@ -43,9 +55,30 @@ namespace litecore { namespace net {
         _socket.reset( new tcp_connector({hostname, _addr.port}) );
         if (!*_socket)
             _throwLastError();
+
         if (_addr.isSecure()) {
-            Assert(_tlsContext != nullptr, "No TLS context");
-            _socket = _tlsContext->wrapSocket(move(_socket), hostname);
+            auto &context = _tlsContext ? *_tlsContext : tls_context::defaultContext();
+            _socket = context.wrapSocket(move(_socket), hostname);
+            if (!*_socket) {
+                // TLS handshake failed:
+                if (_socket->last_error() == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
+                    // Some more specific errors for certificate validation failures:
+                    auto tlsSocket = (tls_socket*)_socket.get();
+                    uint32_t flags = tlsSocket->peerCertificateStatus();
+                    if (flags != 0 && flags != UINT32_MAX) {
+                        string message = tlsSocket->peerCertificateStatusMessage();
+                        int code = kNetErrTLSCertUntrusted;
+                        if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
+                            code = kNetErrTLSCertExpired;
+                        else if (flags & MBEDTLS_X509_BADCERT_REVOKED)
+                            code = kNetErrTLSCertRevoked;
+                        else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH)
+                            code = kNetErrTLSCertNameMismatch;
+                        error{error::Network, code, message}._throw();
+                    }
+                }
+                _throwLastError();
+            }
         }
     }
 
@@ -67,15 +100,18 @@ namespace litecore { namespace net {
     }
 
 
-    void XSocket::sendHTTPRequest(const string &method, Dict headers) {
+    void XSocket::sendHTTPRequest(const string &method, Dict headers, slice body) {
         sendHTTPRequest(method, [&](stringstream &rq) {
             writeHeaders(rq, headers);
+            if (body && !headers["Content-Length"])
+                rq << "Content-Length: " << body.size << "\r\n";
         });
+        write_n(body);
     }
 
 
-    XSocket::Response XSocket::readHTTPResponse() {
-        Response response = {};
+    XSocket::HTTPResponse XSocket::readHTTPResponse() {
+        HTTPResponse response = {};
 
         string responseData = string(readToDelimiter("\r\n\r\n"_sl));
         if (responseData.empty())
@@ -152,7 +188,7 @@ namespace litecore { namespace net {
     }
 
 
-    bool XSocket::checkWebSocketResponse(const Response &rs,
+    bool XSocket::checkWebSocketResponse(const HTTPResponse &rs,
                                          const string &nonce,
                                          const string &requiredProtocol,
                                          CloseStatus &status) {
@@ -297,10 +333,14 @@ namespace litecore { namespace net {
 
     void XSocket::_throwLastError() {
         int err = _socket->last_error();
+        Assert(err != 0);
         if (err > 0) {
             error::_throw(error::POSIX, err);
         } else {
             // Negative errors are assumed to be from mbedTLS.
+            char msgbuf[100];
+            mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
+            Warn("Got mbedTLS error -0x%04X \"%s\"; throwing exception...", -err, msgbuf);
             static constexpr struct {int mbed; int net;} kMbedToNetErr[] = {
                 {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
                 {0, kNetErrUnknown}
@@ -312,7 +352,7 @@ namespace litecore { namespace net {
                     break;
                 }
             }
-            error::_throw(error::Network, netErr);
+            error(error::Network, netErr, msgbuf)._throw();
         }
     }
 

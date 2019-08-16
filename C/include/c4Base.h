@@ -140,6 +140,9 @@ typedef C4_ENUM(int32_t, C4NetworkErrorCode) {
     kC4NetErrTLSCertUnknownRoot,        // Self-signed cert, or unknown anchor cert
     kC4NetErrInvalidRedirect,           // Attempted redirect to invalid replication endpoint
     kC4NetErrUnknown,                   // Unknown error
+    kC4NetErrTLSCertRevoked,
+    kC4NetErrTLSCertNameMismatch,
+    kC4NumNetErrorCodesPlus1
 };
 
 

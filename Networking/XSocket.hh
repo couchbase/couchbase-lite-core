@@ -9,7 +9,6 @@
 #include "Address.hh"
 #include "function_ref.hh"
 #include "fleece/Fleece.hh"
-#include "sockpp/tcp_connector.h"
 #include <memory>
 #include <thread>
 
@@ -17,20 +16,26 @@ namespace litecore { namespace websocket {
     struct CloseStatus;
 } }
 
-namespace litecore { namespace net {
+namespace sockpp {
+    class stream_socket;
     class tls_context;
+}
 
+namespace litecore { namespace net {
 
+    /** TCP client socket class, using the sockpp library. */
     class XSocket {
     public:
         using slice = fleece::slice;
         using string = std::string;
 
-        XSocket(repl::Address addr)
-        :_addr(addr)
-        { }
+        XSocket(repl::Address addr);
+        ~XSocket();
 
-        void setTLSContext(tls_context&);
+        /// Associates this socket with a TLS context.
+        /// If the address's scheme requires TLS, this method must be called before
+        /// \ref connect.
+        void setTLSContext(sockpp::tls_context&);
 
         /// Connects to the host, synchronously. On failure throws an exception.
         void connect();
@@ -38,17 +43,21 @@ namespace litecore { namespace net {
         /// Closes the socket if it's open.
         void close();
 
-        /// Sends an HTTP request, but not a body.
-        void sendHTTPRequest(const std::string &method, fleece::Dict headers);
+        //-------- High Level I/O:
 
-        struct Response {
+        /// Sends an HTTP request, but not a body.
+        void sendHTTPRequest(const std::string &method,
+                             fleece::Dict headers,
+                             fleece::slice body =fleece::nullslice);
+
+        struct HTTPResponse {
             int status;
             string message;
             fleece::AllocedDict headers;
         };
 
         /// Reads an HTTP response, but not the body. On failure throws an exception.
-        Response readHTTPResponse();
+        HTTPResponse readHTTPResponse();
 
         /// Reads an HTTP body given the headers.
         /// If there's a Content-Length header, reads that many bytes.
@@ -60,10 +69,12 @@ namespace litecore { namespace net {
 
         /// Reads a WebSocket handshake response.
         /// On failure returns false and stores the details in \ref outStatus.
-        bool checkWebSocketResponse(const Response&,
+        bool checkWebSocketResponse(const HTTPResponse&,
                                     const string &nonce,
                                     const string &requiredProtocol,
                                     websocket::CloseStatus &outStatus);
+
+        //-------- Low Level I/O:
 
         /// Reads up to \ref byteCount bytes to the location \ref dst.
         /// On EOF returns zero. On other error throws an exception.
@@ -105,7 +116,7 @@ namespace litecore { namespace net {
         static constexpr size_t kReadBufferSize = 8192;
         
         repl::Address _addr;
-        tls_context* _tlsContext;
+        sockpp::tls_context* _tlsContext = nullptr;
         std::unique_ptr<sockpp::stream_socket> _socket;
         std::thread _reader;
         std::thread _writer;

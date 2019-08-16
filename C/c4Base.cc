@@ -110,6 +110,8 @@ namespace c4Internal {
                   "C4 error domains are not in sync with C++ ones");
     static_assert((int)kC4NumErrorCodesPlus1 == (int)error::NumLiteCoreErrorsPlus1,
                   "C4 error codes are not in sync with C++ ones");
+    static_assert((int)kC4NumNetErrorCodesPlus1 == (int)litecore::websocket::kNetErrorMaxPlus1,
+                  "C4 net error codes are not in sync with C++ ones");
 
     // A buffer that stores recently generated error messages, referenced by C4Error.internal_info
     static uint32_t sFirstErrorMessageInternalInfo = 1000;  // internal_info of 1st item in deque

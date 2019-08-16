@@ -18,7 +18,6 @@
 
 #include "Response.hh"
 #include "XSocket.hh"
-#include "XTLSSocket.hh"
 #include "Address.hh"
 #include "c4ExceptionUtils.hh"
 #include "c4Socket.h"
@@ -26,6 +25,7 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "netUtils.hh"
+#include "sockpp/mbedtls_socket.h"
 #include <string>
 
 using namespace std;
@@ -74,21 +74,6 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE:
 
 
-    static tls_context* sTLSContext = nullptr;
-
-
-    void Response::setTLSContext(tls_context *c) {
-        sTLSContext = c;
-    }
-
-
-    tls_context* Response::TLSContext() {
-        if (!sTLSContext)
-            sTLSContext = new mbedtls_context();    // default to mbedTLS
-        return sTLSContext;
-    }
-
-
     Response::Response(const string &scheme,
                        const string &method,
                        const string &hostname,
@@ -106,12 +91,8 @@ namespace litecore { namespace REST {
 
         try {
             XSocket socket{repl::Address(address)};
-            socket.setTLSContext(*TLSContext());
-            //socket.setPinnedServerCert(pinnedServerCert);
             socket.connect();
-            socket.sendHTTPRequest(method, headers.root().asDict());
-            if (body)
-                socket.write_n(body);
+            socket.sendHTTPRequest(method, headers.root().asDict(), body);
             auto response = socket.readHTTPResponse();
             _status = HTTPStatus(response.status);
             _statusMessage = response.message;
