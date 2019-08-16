@@ -186,7 +186,7 @@
 		27A924C71D9B372500086206 /* c4BlobStoreTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 272250501D78F07E0006D5A5 /* c4BlobStoreTest.cc */; };
 		27A924C81D9B372F00086206 /* c4PerfTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 270515601D91C2AE00D62D05 /* c4PerfTest.cc */; };
 		27A924C91D9B374500086206 /* Catch_Tests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 27FA09D31D70EDBF005888AA /* Catch_Tests.mm */; };
-		27ABDCC52305CB9F00274E6B /* mbedtls_socket.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27ABDCC02305CB9F00274E6B /* mbedtls_socket.cpp */; };
+		27ABDCC52305CB9F00274E6B /* mbedtls_context.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27ABDCC02305CB9F00274E6B /* mbedtls_context.cpp */; };
 		27ADA7891F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27ADA7871F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc */; };
 		27ADA78B1F2AB6C800D9DE25 /* UnicodeCollator.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27ADA7881F2AB6C800D9DE25 /* UnicodeCollator.hh */; };
 		27ADA79B1F2BF64100D9DE25 /* UnicodeCollator.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */; };
@@ -1076,9 +1076,9 @@
 		27A924A71D9B316D00086206 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		27A924AC1D9B316D00086206 /* LiteCore-iOS Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "LiteCore-iOS Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		27A924B21D9B316D00086206 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		27ABDCC02305CB9F00274E6B /* mbedtls_socket.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedtls_socket.cpp; sourceTree = "<group>"; };
+		27ABDCC02305CB9F00274E6B /* mbedtls_context.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = mbedtls_context.cpp; sourceTree = "<group>"; };
 		27ABDCC62305CBB800274E6B /* tls_socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tls_socket.h; sourceTree = "<group>"; };
-		27ABDCC72305D0E100274E6B /* mbedtls_socket.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mbedtls_socket.h; sourceTree = "<group>"; };
+		27ABDCC72305D0E100274E6B /* mbedtls_context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mbedtls_context.h; sourceTree = "<group>"; };
 		27ADA7871F2AB6C800D9DE25 /* UnicodeCollator_Apple.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator_Apple.cc; sourceTree = "<group>"; };
 		27ADA7881F2AB6C800D9DE25 /* UnicodeCollator.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = UnicodeCollator.hh; sourceTree = "<group>"; };
 		27ADA79A1F2BF64100D9DE25 /* UnicodeCollator.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = UnicodeCollator.cc; sourceTree = "<group>"; };
@@ -1250,6 +1250,7 @@
 		27F2BE9E221DEF4E006C13EE /* DBAccess.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DBAccess.hh; sourceTree = "<group>"; };
 		27F2BE9F221DF1A0006C13EE /* DBAccess.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DBAccess.cc; sourceTree = "<group>"; };
 		27F370821DC02C3D0096F717 /* c4Document+Fleece.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "c4Document+Fleece.h"; sourceTree = "<group>"; };
+		27F4F48323070C7F0075D7CB /* tls_context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tls_context.h; sourceTree = "<group>"; };
 		27F6F51B1BAA0482003FD798 /* c4Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Test.cc; sourceTree = "<group>"; };
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
 		27F7A0BD1D5E2BAB00447BC6 /* Database.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Database.hh; sourceTree = "<group>"; };
@@ -1554,7 +1555,7 @@
 				273B542823037A8400E4FC19 /* exception.h */,
 				273B542723037A8400E4FC19 /* inet_address.h */,
 				273B542223037A8400E4FC19 /* inet6_address.h */,
-				27ABDCC72305D0E100274E6B /* mbedtls_socket.h */,
+				27ABDCC72305D0E100274E6B /* mbedtls_context.h */,
 				273B542C23037A8400E4FC19 /* platform.h */,
 				273B541E23037A8400E4FC19 /* sock_address.h */,
 				273B542D23037A8400E4FC19 /* socket.h */,
@@ -1565,6 +1566,7 @@
 				273B541C23037A8400E4FC19 /* tcp6_acceptor.h */,
 				273B542523037A8400E4FC19 /* tcp6_connector.h */,
 				273B542A23037A8400E4FC19 /* tcp6_socket.h */,
+				27F4F48323070C7F0075D7CB /* tls_context.h */,
 				27ABDCC62305CBB800274E6B /* tls_socket.h */,
 				273B542923037A8400E4FC19 /* udp_socket.h */,
 				273B541B23037A8400E4FC19 /* udp6_socket.h */,
@@ -2174,7 +2176,7 @@
 				27AFF39F23036B2500B4D6C4 /* exception.cpp */,
 				27AFF39D23036B2500B4D6C4 /* inet_address.cpp */,
 				27AFF39C23036B2500B4D6C4 /* inet6_address.cpp */,
-				27ABDCC02305CB9F00274E6B /* mbedtls_socket.cpp */,
+				27ABDCC02305CB9F00274E6B /* mbedtls_context.cpp */,
 				27AFF3A023036B2500B4D6C4 /* socket.cpp */,
 				27AFF3A523036B2500B4D6C4 /* stream_socket.cpp */,
 			);
@@ -3287,7 +3289,7 @@
 				278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */,
 				27AFF3AA23036B2500B4D6C4 /* socket.cpp in Sources */,
 				27AFF3A823036B2500B4D6C4 /* inet_address.cpp in Sources */,
-				27ABDCC52305CB9F00274E6B /* mbedtls_socket.cpp in Sources */,
+				27ABDCC52305CB9F00274E6B /* mbedtls_context.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

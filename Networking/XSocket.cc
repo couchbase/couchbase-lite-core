@@ -27,6 +27,7 @@
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tls_socket.h"
 #include <regex>
+#include "make_unique.h"
 #include <string>
 #include <sstream>
 
@@ -50,23 +51,28 @@ namespace litecore { namespace net {
         _tlsContext = &tls;
     }
 
+    tls_context& XSocket::TLSContext() {
+        if (!_tlsContext)
+            _tlsContext = &tls_context::default_context();
+        return *_tlsContext;
+    }
+
     void XSocket::connect() {
         string hostname(slice(_addr.hostname));
-        _socket.reset( new tcp_connector({hostname, _addr.port}) );
-        if (!*_socket)
+        auto socket = make_unique<tcp_connector>(inet_address{hostname, _addr.port});
+        if (!*socket)
             _throwLastError();
 
         if (_addr.isSecure()) {
-            auto &context = _tlsContext ? *_tlsContext : tls_context::defaultContext();
-            _socket = context.wrapSocket(move(_socket), hostname);
+            _socket = TLSContext().wrap_socket(move(socket), hostname);
             if (!*_socket) {
                 // TLS handshake failed:
                 if (_socket->last_error() == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
                     // Some more specific errors for certificate validation failures:
                     auto tlsSocket = (tls_socket*)_socket.get();
-                    uint32_t flags = tlsSocket->peerCertificateStatus();
+                    uint32_t flags = tlsSocket->peer_certificate_status();
                     if (flags != 0 && flags != UINT32_MAX) {
-                        string message = tlsSocket->peerCertificateStatusMessage();
+                        string message = tlsSocket->peer_certificate_status_message();
                         int code = kNetErrTLSCertUntrusted;
                         if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
                             code = kNetErrTLSCertExpired;
@@ -79,7 +85,14 @@ namespace litecore { namespace net {
                 }
                 _throwLastError();
             }
+        } else {
+            _socket = move(socket);
         }
+    }
+
+
+    bool XSocket::connected() const {
+        return _socket && _socket->is_open();
     }
 
 

@@ -25,7 +25,6 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "netUtils.hh"
-#include "sockpp/mbedtls_socket.h"
 #include <string>
 
 using namespace std;

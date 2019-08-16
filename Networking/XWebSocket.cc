@@ -19,6 +19,8 @@
 #include "XWebSocket.hh"
 #include "c4Replicator.h"
 #include "c4Socket+Internal.hh"
+#include "ThreadUtil.hh"
+#include "sockpp/mbedtls_context.h"
 #include <string>
 
 using namespace litecore;
@@ -45,7 +47,15 @@ namespace litecore { namespace websocket {
                            const fleece::AllocedDict &options)
     :WebSocketImpl(url, role, options, true)
     ,_socket(repl::Address(url))
-    { }
+    {
+        slice pinnedCert = options[kC4ReplicatorOptionPinnedServerCert].asData();
+        if (pinnedCert) {
+            _tlsContext.reset(new sockpp::mbedtls_context);
+            _tlsContext->allow_only_certificate(string(pinnedCert));
+            _socket.setTLSContext(*_tlsContext.get());
+        }
+        // TODO: Check kC4ReplicatorOptionAuthentication for client auth
+    }
 
 
     XWebSocket::~XWebSocket() {
@@ -127,7 +137,9 @@ namespace litecore { namespace websocket {
     }
 
 
+    // This runs on its own thread.
     void XWebSocket::readLoop() {
+        SetThreadName("WebSocket reader");
         try {
             while (true) {
                 // Wait until there's room to read more data:
@@ -164,10 +176,14 @@ namespace litecore { namespace websocket {
     }
 
 
+    // This runs on its own thread.
     void XWebSocket::writeLoop() {
+        SetThreadName("WebSocket writer");
         try {
             while (true) {
                 alloc_slice data = _outbox.pop();
+                if (!_socket.connected())
+                    break;
                 if (_socket.write_n(data) == 0)
                     break;
                 logVerbose("XWEBSOCKET: Wrote %zu bytes to socket", data.size);

@@ -37,11 +37,18 @@ namespace litecore { namespace net {
         /// \ref connect.
         void setTLSContext(sockpp::tls_context&);
 
+        /// Returns the TLS context used by this socket.
+        /// If \ref setTLSContext has not been called, a default context will be used.
+        sockpp::tls_context& TLSContext();
+
         /// Connects to the host, synchronously. On failure throws an exception.
         void connect();
 
         /// Closes the socket if it's open.
         void close();
+
+        bool connected() const;
+        operator bool() const   {return connected();}
 
         //-------- High Level I/O:
 

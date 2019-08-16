@@ -13,7 +13,7 @@
 #include "Response.hh"
 #include "c4Test.hh"
 #include "StringUtil.hh"
-#include "sockpp/mbedtls_socket.h"
+#include "sockpp/mbedtls_context.h"
 #include "make_unique.h"
 #include <algorithm>
 #include <chrono>
@@ -53,7 +53,7 @@ public:
 
             // Pin the server certificate:
             alloc_slice certData = readFile("Replicator/tests/data/cert.pem");
-            sockpp::tls_context::defaultContext().allowOnlyCertificate(string(certData));
+            sockpp::tls_context::default_context().allow_only_certificate(string(certData));
         });
 
         // Environment variables can also override the default address above:

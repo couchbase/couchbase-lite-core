@@ -21,4 +21,4 @@
 	url = https://github.com/leetal/ios-cmake.git
 [submodule "vendor/sockpp"]
 	path = vendor/sockpp
-	url = https://github.com/fpagliughi/sockpp.git
+	url = https://github.com/couchbasedeps/sockpp.git

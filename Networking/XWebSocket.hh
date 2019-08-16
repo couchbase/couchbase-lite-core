@@ -16,6 +16,10 @@ extern "C" {
     void C4RegisterXWebSocket();
 }
 
+namespace sockpp {
+    class tls_context;
+}
+
 namespace litecore { namespace websocket {
 
     /** WebSocket implementation using XSocket. */
@@ -47,6 +51,7 @@ namespace litecore { namespace websocket {
         size_t readCapacity() const      {return kMaxReceivedBytesPending - _receivedBytesPending;}
 
         net::XSocket _socket;
+        std::unique_ptr<sockpp::tls_context> _tlsContext;
         std::thread _readerThread;
         std::thread _writerThread;
 
