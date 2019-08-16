@@ -72,6 +72,13 @@ namespace litecore { namespace websocket {
         kNetErrTLSCertUnknownRoot,
         kNetErrInvalidRedirect,
         kNetErrUnknown,              // Unknown error
+        kNetErrTLSCertRevoked,
+        kNetErrTLSCertNameMismatch,
+
+        // Add new codes here. You MUST add messages to kLiteCoreMessages!
+        // You MUST add corresponding kC4NetErr codes to the enum in C4Base.h!
+
+        kNetErrorMaxPlus1
     };
 
     enum class Role {
