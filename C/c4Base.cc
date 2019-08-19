@@ -391,6 +391,11 @@ void c4log_warnOnErrors(bool warn) noexcept {
 }
 
 
+bool c4log_getWarnOnErrors() noexcept {
+    return error::sWarnOnError;
+}
+
+
 void c4log(C4LogDomain c4Domain, C4LogLevel level, const char *fmt, ...) noexcept {
     va_list args;
     va_start(args, fmt);

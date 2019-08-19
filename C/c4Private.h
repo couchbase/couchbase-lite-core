@@ -49,6 +49,8 @@ void c4error_return(C4ErrorDomain domain, int code, C4String message, C4Error *o
     an error occurs. */
 void c4log_warnOnErrors(bool) C4API;
 
+bool c4log_getWarnOnErrors(void) C4API;
+
 /** Locks a recursive mutex associated with the C4Database instance.
     Blocks if it's already locked. */
 void c4db_lock(C4Database *db) C4API;

@@ -38,6 +38,7 @@
 
 #ifndef LITECORE_IMPL
 #include "c4Base.h"     // Ugly layering violation, but needed for using Error in other libs
+#include "c4Private.h"
 #endif
 
 namespace litecore {
@@ -369,7 +370,12 @@ namespace litecore {
 
 
     void error::_throw() {
-        if (sWarnOnError && !isUnremarkable()) {
+#ifdef LITECORE_IMPL
+        bool warn = sWarnOnError;
+#else
+        bool warn = c4log_getWarnOnErrors();
+#endif
+        if (warn && !isUnremarkable()) {
             WarnError("LiteCore throwing %s error %d: %s%s",
                       nameOfDomain(domain), code, what(), backtrace(1).c_str());
         }
