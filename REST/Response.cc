@@ -25,6 +25,8 @@
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "netUtils.hh"
+#include "Certificate.hh"
+#include "sockpp/mbedtls_context.h"
 #include <string>
 
 using namespace std;
@@ -89,7 +91,13 @@ namespace litecore { namespace REST {
         address.path = slice(uri);
 
         try {
-            XSocket socket{repl::Address(address)};
+            HTTPClientSocket socket{repl::Address(address)};
+            unique_ptr<sockpp::mbedtls_context> tlsContext;
+            if (pinnedServerCert) {
+                tlsContext.reset(new sockpp::mbedtls_context);
+                tlsContext->allow_only_certificate(pinnedServerCert->context());
+                socket.setTLSContext(tlsContext.get());
+            }
             socket.connect();
             socket.sendHTTPRequest(method, headers.root().asDict(), body);
             auto response = socket.readHTTPResponse();

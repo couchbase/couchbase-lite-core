@@ -16,6 +16,7 @@
 // limitations under the License.
 //
 
+#include "Error.hh"
 #include "c4Test.hh"
 #include "c4Listener.h"
 #include "c4.hh"
@@ -29,7 +30,7 @@ using namespace litecore::REST;
 using namespace litecore::crypto;
 
 
-#ifdef COUCHBASE_ENTERPRISE
+//#ifdef COUCHBASE_ENTERPRISE
 
 
 static string to_str(FLSlice s) {
@@ -49,6 +50,12 @@ public:
 
     C4RESTTest() :C4Test(0)
     { }
+
+
+    ~C4RESTTest() {
+        listener = nullptr; // stop listener
+        gC4ExpectExceptions = false;
+    }
 
 
     void setUpDirectory() {
@@ -388,6 +395,7 @@ TEST_CASE_METHOD(C4RESTTest, "REST _bulk_docs", "[REST][C]") {
 
 TEST_CASE_METHOD(C4RESTTest, "TLS REST untrusted cert", "[REST][TLS][C]") {
     useTLSWithTemporaryKey();
+    gC4ExpectExceptions = true;
     auto r = request("GET", "/", HTTPStatus::undefined);
     CHECK(r->error() == (C4Error{NetworkDomain, kC4NetErrTLSCertUnknownRoot}));
 }
@@ -413,4 +421,4 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][TLS]
 }
 
 
-#endif // COUCHBASE_ENTERPRISE
+//#endif // COUCHBASE_ENTERPRISE

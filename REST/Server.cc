@@ -18,15 +18,17 @@
 
 #include "Server.hh"
 #include "Request.hh"
+#include "XSocket.hh"
+#include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
 #include "c4Base.h"
 #include "c4ExceptionUtils.hh"
 #include "c4ListenerInternal.hh"
-#include "libwebsockets.h"
-#include "LWSContext.hh"
-#include "LWSWebSocket.hh"
 #include "PlatformCompat.hh"
+#include "sockpp/tcp_acceptor.h"
+#include "sockpp/mbedtls_context.h"
+#include <mutex>
 #ifdef _MSC_VER
 #include <shlwapi.h>
 #define FNM_PATHNAME ""
@@ -37,10 +39,65 @@
 namespace litecore { namespace REST {
     using namespace std;
     using namespace litecore::net;
+    using namespace sockpp;
 
 
     Server::Server()
-    { }
+    {
+        stop();
+    }
+
+
+    void Server::start(uint16_t port, const char *hostname, crypto::Identity *identity) {
+        _port = port;
+        _acceptor.reset(new tcp_acceptor (port));
+        if (!*_acceptor)
+            error::_throw(error::POSIX, _acceptor->last_error());
+        if (identity) {
+            _identity = identity;
+            _tlsContext.reset(new mbedtls_context(tls_context::SERVER));
+            _tlsContext->set_identity(identity->cert->context(), identity->privateKey->context());
+        }
+        _acceptThread = thread(bind(&Server::acceptConnections, this));
+    }
+
+    
+    void Server::stop() {
+        if (!_acceptor)
+            return;
+
+        _acceptor->close();
+        _acceptThread.join();
+        _acceptor.reset();
+        _rules.clear();
+    }
+
+
+    void Server::acceptConnections() {
+        c4log(RESTLog, kC4LogInfo,"Server listening on port %d", _port);
+        while (true) {
+            try {
+                // Accept a new client connection
+                tcp_socket sock = _acceptor->accept();
+                if (sock) {
+                    auto responder = make_unique<HTTPResponderSocket>();
+                    responder->setTLSContext(_tlsContext.get());
+                    responder->acceptSocket(move(sock));
+                    RequestResponse rq(this, move(responder));
+                    dispatchRequest(&rq);
+                    rq.finish();
+                } else {
+                    if (!_acceptor->is_open())
+                        break;
+                    c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %d %s",
+                          _acceptor->last_error(), _acceptor->last_error_str().c_str());
+                }
+            } catch (const std::exception &x) {
+                c4log(RESTLog, kC4LogWarning, "Caught C++ exception accepting connection: %s", x.what());
+            }
+        }
+        c4log(RESTLog, kC4LogInfo,"Server stopped accepting connections");
+    }
 
 
     void Server::setExtraHeaders(const std::map<std::string, std::string> &headers) {
@@ -68,42 +125,26 @@ namespace litecore { namespace REST {
     }
 
 
-    bool Server::createResponder(lws *client) {
-        (void) new RequestResponse(this, client);
-        return true;
-    }
-
-
-    void Server::dispatchRequest(LWSResponder *responder) {
-        auto rq = (RequestResponse*)responder;
-        C4Log("%s %s", MethodName(rq->method()), rq->path().c_str());
+    void Server::dispatchRequest(RequestResponse *rq) {
+        c4log(RESTLog, kC4LogInfo, "%s %s", MethodName(rq->method()), rq->path().c_str());
         lock_guard<mutex> lock(_mutex);
         try{
             string pathStr(rq->path());
             auto rule = findRule(rq->method(), pathStr);
             if (rule) {
-                C4Log("Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
+                c4log(RESTLog, kC4LogInfo, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
                 rule->handler(*rq);
             } else if (nullptr != (rule = findRule(Methods::ALL, pathStr))) {
-                C4Log("Wrong method for rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
+                c4log(RESTLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
                 rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
             } else {
-                C4Log("No rule matched path %s", pathStr.c_str());
+                c4log(RESTLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
                 rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
             }
         } catch (const std::exception &x) {
-            C4Warn("HTTP handler caught C++ exception: %s", x.what());
+            c4log(RESTLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());
             rq->respondWithStatus(HTTPStatus::ServerError, "Internal exception");
         }
-    }
-
-
-    void Server::stop() {
-        {
-            lock_guard<mutex> lock(_mutex);
-            _rules.clear();
-        }
-        LWSServer::stop();
     }
 
 } }

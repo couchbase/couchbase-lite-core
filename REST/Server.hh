@@ -17,29 +17,37 @@
 //
 
 #pragma once
-#include "LWSServer.hh"
+#include "RefCounted.hh"
 #include "Request.hh"
 #include "c4Base.h"
 #include <array>
 #include <map>
 #include <mutex>
 #include <functional>
+#include <thread>
 #include <vector>
 #include <regex>
 
-struct lws_http_mount;
-struct lws_vhost;
-
-namespace litecore { namespace net {
-    class LWSResponder;
+namespace sockpp {
+    class acceptor;
+    class mbedtls_context;
+}
+namespace litecore { namespace crypto {
+    class Identity;
 } }
 
 namespace litecore { namespace REST {
 
     /** HTTP server, extending LWSServer to add configurable URI handlers. */
-    class Server : public net::LWSServer {
+    class Server : public fleece::RefCounted {
     public:
         Server();
+
+        void start(uint16_t port, const char *hostname =nullptr, crypto::Identity* =nullptr);
+
+        virtual void stop();
+
+        C4Address address() const;
 
         /** Extra HTTP headers to add to every response. */
         void setExtraHeaders(const std::map<std::string, std::string> &headers);
@@ -53,11 +61,7 @@ namespace litecore { namespace REST {
             Patterns are tested in the order the handlers are added, and the first match is used.*/
         void addHandler(Methods, const std::string &pattern, const Handler&);
 
-        virtual void stop() override;
-
     protected:
-        virtual void dispatchRequest(net::LWSResponder* NONNULL) override;
-
         struct URIRule {
             Methods     methods;
             std::string pattern;
@@ -66,13 +70,21 @@ namespace litecore { namespace REST {
         };
 
         URIRule* findRule(Method method, const std::string &path);
-        virtual bool createResponder(lws *client) override;
         ~Server() = default;
 
+        void dispatchRequest(RequestResponse*);
+
     private:
+        void acceptConnections();
+
+        fleece::Retained<crypto::Identity> _identity;
+        std::unique_ptr<sockpp::mbedtls_context> _tlsContext;
+        std::unique_ptr<sockpp::acceptor> _acceptor;
+        std::thread _acceptThread;
         std::mutex _mutex;
         std::vector<URIRule> _rules;
         std::map<std::string, std::string> _extraHeaders;
+        uint16_t _port;
     };
 
 } }

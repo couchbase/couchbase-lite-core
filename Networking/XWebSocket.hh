@@ -50,7 +50,7 @@ namespace litecore { namespace websocket {
 
         size_t readCapacity() const      {return kMaxReceivedBytesPending - _receivedBytesPending;}
 
-        net::XSocket _socket;
+        std::unique_ptr<net::XSocket> _socket;
         std::unique_ptr<sockpp::tls_context> _tlsContext;
         std::thread _readerThread;
         std::thread _writerThread;

@@ -21,7 +21,9 @@
 #include "Writer.hh"
 #include "PlatformIO.hh"
 #include "Error.hh"
+#include "Logging.hh"
 #include "netUtils.hh"
+#include "XSocket.hh"
 #include <stdarg.h>
 
 using namespace std;
@@ -60,7 +62,6 @@ namespace litecore { namespace REST {
 
     
     string Request::query(const char *param) const {
-        // For some reason the query string we get from libwebsockets uses ',' not '&'
         return getURLQueryParam(_queries, param);
     }
 
@@ -83,26 +84,248 @@ namespace litecore { namespace REST {
 
 
 
-
-    RequestResponse::RequestResponse(Server *server, lws *client)
-    :LWSResponder(server, client)
-    { }
+#pragma mark - RESPONSE STATUS LINE:
 
 
-    void RequestResponse::onRequest(Method method,
-                                    const string &path,
-                                    const string &queries,
-                                    fleece::Doc headers)
+    RequestResponse::RequestResponse(Server *server, std::unique_ptr<net::HTTPResponderSocket> socket)
+    :_server(server)
+    ,_socket(move(socket))
     {
-        setHeaders(headers);
-        _method = method;
-        _path = path;
-        _queries = queries;
+        auto request = _socket->readHTTPRequest();
+        _method = request.method;
+        _path = request.path;
+        _queries = request.query;
+        _headers = Doc(request.headers.data());
+        _body = _socket->readHTTPBody(request.headers);
     }
 
 
-    void RequestResponse::onRequestBody(fleece::alloc_slice body) {
-        setBody(body);
+    void RequestResponse::setStatus(HTTPStatus status, const char *message) {
+        Assert(!_sentStatus);
+        _status = status;
+        _statusMessage = message ? message : "";
+        sendStatus();
     }
+
+
+    void RequestResponse::sendStatus() {
+        if (_sentStatus)
+            return;
+        Log("Response status: %d", _status);
+        _socket->writeResponseLine(_status, _statusMessage);
+        _sentStatus = true;
+
+        // Add the 'Date:' header:
+        char date[50];
+        time_t t = time(NULL);
+        struct tm tm;
+        if (gmtime_r(&t, &tm))
+            strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S GMT", &tm);
+        else
+            strlcpy(date, "Thu, 01 Jan 1970 00:00:00 GMT", sizeof(date));
+        setHeader("Date", date);
+    }
+
+
+    void RequestResponse::writeStatusJSON(HTTPStatus status, const char *message) {
+        auto &json = jsonEncoder();
+        if (int(status) < 300) {
+            json.writeKey("ok"_sl);
+            json.writeBool(true);
+        } else {
+            json.writeKey("status"_sl);
+            json.writeInt(int(status));
+            const char *defaultMessage = StatusMessage(status);
+            if (defaultMessage) {
+                json.writeKey("error"_sl);
+                json.writeString(defaultMessage);
+            }
+            if (message && defaultMessage && 0 != strcasecmp(message, defaultMessage)) {
+                json.writeKey("reason"_sl);
+                json.writeString(message);
+            }
+        }
+    }
+
+
+    void RequestResponse::writeErrorJSON(C4Error err) {
+        alloc_slice message = c4error_getMessage(err);
+        writeStatusJSON(errorToStatus(err),
+                        (message ? message.asString().c_str() : nullptr));
+    }
+
+
+    void RequestResponse::respondWithStatus(HTTPStatus status, const char *message) {
+        setStatus(status, message);
+        uncacheable();
+
+        if (status >= HTTPStatus::OK && status != HTTPStatus::NoContent
+            && status != HTTPStatus::NotModified) {
+            auto &json = jsonEncoder();
+            json.beginDict();
+            writeStatusJSON(status, message);
+            json.endDict();
+        }
+    }
+
+
+    void RequestResponse::respondWithError(C4Error err) {
+        Assert(err.code != 0);
+        alloc_slice message = c4error_getMessage(err);
+        respondWithStatus(errorToStatus(err),
+                          (message ? message.asString().c_str() : nullptr));
+    }
+
+
+    HTTPStatus RequestResponse::errorToStatus(C4Error err) {
+        if (err.code == 0)
+            return HTTPStatus::OK;
+        HTTPStatus status = HTTPStatus::ServerError;
+        // TODO: Add more mappings, and make these table-driven
+        switch (err.domain) {
+            case LiteCoreDomain:
+                switch (err.code) {
+                    case kC4ErrorInvalidParameter:
+                    case kC4ErrorBadRevisionID:
+                        status = HTTPStatus::BadRequest; break;
+                    case kC4ErrorNotADatabaseFile:
+                    case kC4ErrorCrypto:
+                        status = HTTPStatus::Unauthorized; break;
+                    case kC4ErrorNotWriteable:
+                        status = HTTPStatus::Forbidden; break;
+                    case kC4ErrorNotFound:
+                        status = HTTPStatus::NotFound; break;
+                    case kC4ErrorConflict:
+                        status = HTTPStatus::Conflict; break;
+                    case kC4ErrorUnimplemented:
+                    case kC4ErrorUnsupported:
+                        status = HTTPStatus::NotImplemented; break;
+                    case kC4ErrorRemoteError:
+                        status = HTTPStatus::GatewayError; break;
+                    case kC4ErrorBusy:
+                        status = HTTPStatus::Locked; break;
+                }
+                break;
+            case WebSocketDomain:
+                if (err.code < 1000)
+                    status = HTTPStatus(err.code);
+            default:
+                break;
+        }
+        return status;
+    }
+
+
+#pragma mark - RESPONSE HEADERS:
+
+
+    void RequestResponse::setHeader(const char *header, const char *value) {
+        sendStatus();
+        Assert(!_endedHeaders);
+        _socket->writeHeader(slice(header), slice(value));
+    }
+
+
+    void RequestResponse::addHeaders(map<string, string> headers) {
+        for (auto &entry : headers)
+            setHeader(entry.first.c_str(), entry.second.c_str());
+    }
+
+
+    void RequestResponse::setContentLength(uint64_t length) {
+        sendStatus();
+        Assert(_contentLength < 0, "Content-Length has already been set");
+        Log("Content-Length: %llu", length);
+        _contentLength = (int64_t)length;
+        char len[20];
+        sprintf(len, "%llu", length);
+        setHeader("Content-Length", len);
+    }
+
+
+    void RequestResponse::sendHeaders() {
+        if (_jsonEncoder)
+            setHeader("Content-Type", "application/json");
+        _socket->endHeaders();
+        _endedHeaders = true;
+    }
+
+
+#pragma mark - RESPONSE BODY:
+
+
+    void RequestResponse::uncacheable() {
+        setHeader("Cache-Control", "no-cache, no-store, must-revalidate, private, max-age=0");
+        setHeader("Pragma", "no-cache");
+        setHeader("Expires", "0");
+    }
+
+
+    void RequestResponse::write(slice content) {
+        Assert(!_finished);
+        _responseWriter.write(content);
+    }
+
+
+    void RequestResponse::printf(const char *format, ...) {
+        char *str;
+        va_list args;
+        va_start(args, format);
+        size_t length = vasprintf(&str, format, args);
+        va_end(args);
+        write({str, length});
+        free(str);
+    }
+
+
+    fleece::JSONEncoder& RequestResponse::jsonEncoder() {
+        if (!_jsonEncoder)
+            _jsonEncoder.reset(new fleece::JSONEncoder);
+        return *_jsonEncoder;
+    }
+
+
+    void RequestResponse::finish() {
+        if (_finished)
+            return;
+
+#if 0
+        if (_upgradedWS) {
+            // This is a WebSocket upgrade request; handle success/failure:
+            if (IsSuccess(_status)) {
+                // Upgrade successful -- detach myself from libwebsockets:
+                _upgradedWS->upgraded();
+                _upgradedWS = nullptr;
+                _client = nullptr;
+                _finished = true;
+                return; // LWSServerWebSocket is taking over, so don't do any more
+            } else {
+                // Upgrade failed; after returning status, LWS will disconnect:
+                _upgradedWS->canceled();
+                _upgradedWS = nullptr;
+                setEventResult(1);
+                // Keep going, to send the error response...
+            }
+        }
+#endif
+
+        if (_jsonEncoder) {
+            alloc_slice json = _jsonEncoder->finish();
+            write(json);
+        }
+
+        alloc_slice responseData = _responseWriter.finish();
+        if (_contentLength < 0)
+            setContentLength(responseData.size);
+        else
+            Assert(_contentLength == responseData.size);
+
+        sendHeaders();
+
+        Log("Now sending body...");
+        _socket->write_n(responseData);
+        _finished = true;
+    }
+
 
 } }

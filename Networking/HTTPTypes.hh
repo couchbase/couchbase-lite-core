@@ -18,6 +18,7 @@ namespace litecore { namespace REST {
 
     enum class HTTPStatus : int {
         undefined = -1,
+        Upgraded = 101,
         OK = 200,
         Created = 201,
         NoContent = 204,
@@ -58,6 +59,7 @@ namespace litecore { namespace REST {
     using Methods = Method;
 
     const char* MethodName(Method);
+    Method MethodNamed(fleece::slice name);
 
 } }
 

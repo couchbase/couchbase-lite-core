@@ -46,13 +46,13 @@ namespace litecore { namespace websocket {
                            Role role,
                            const fleece::AllocedDict &options)
     :WebSocketImpl(url, role, options, true)
-    ,_socket(repl::Address(url))
+    ,_socket(new net::HTTPClientSocket(repl::Address(url)))
     {
         slice pinnedCert = options[kC4ReplicatorOptionPinnedServerCert].asData();
         if (pinnedCert) {
             _tlsContext.reset(new sockpp::mbedtls_context);
             _tlsContext->allow_only_certificate(string(pinnedCert));
-            _socket.setTLSContext(*_tlsContext.get());
+            _socket->setTLSContext(_tlsContext.get());
         }
         // TODO: Check kC4ReplicatorOptionAuthentication for client auth
     }
@@ -74,7 +74,7 @@ namespace litecore { namespace websocket {
 
     void XWebSocket::closeSocket() {
         logVerbose("XWEBSOCKET: closeSocket");
-        _socket.close();
+        _socket->close();
         
         // Force reader & writer threads to wake up so they'll know the socket closed:
         sendBytes(alloc_slice());
@@ -106,17 +106,19 @@ namespace litecore { namespace websocket {
     void XWebSocket::_connect() {
         try {
             // Connect:
-            _socket.connect();
+            auto clientSocket = dynamic_cast<net::HTTPClientSocket*>(_socket.get());
+            Assert(clientSocket);
+            clientSocket->connect();
 
             // WebSocket handshake:
             Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
             string protocol = string(options()[kC4SocketOptionWSProtocols].asString());
-            string nonce = _socket.sendWebSocketRequest(headers, protocol);
-            auto response = _socket.readHTTPResponse();
-            gotHTTPResponse(response.status, response.headers);
+            string nonce = clientSocket->sendWebSocketRequest(headers, protocol);
+            auto response = clientSocket->readHTTPResponse();
+            gotHTTPResponse(int(response.status), response.headers);
 
             CloseStatus status;
-            if (!_socket.checkWebSocketResponse(response, nonce, protocol, status)) {
+            if (!clientSocket->checkWebSocketResponse(response, nonce, protocol, status)) {
                 delegate().onWebSocketClose(status);
                 release(this);
                 return;
@@ -151,7 +153,7 @@ namespace litecore { namespace websocket {
                 }
 
                 // Read from the socket:
-                slice data = _socket.read(capacity);
+                slice data = _socket->read(capacity);
                 logVerbose("XWEBSOCKET: Received %zu bytes from socket", data.size);
                 if (data.size == 0)
                     break; // EOF
@@ -182,9 +184,9 @@ namespace litecore { namespace websocket {
         try {
             while (true) {
                 alloc_slice data = _outbox.pop();
-                if (!_socket.connected())
+                if (!_socket->connected())
                     break;
-                if (_socket.write_n(data) == 0)
+                if (_socket->write_n(data) == 0)
                     break;
                 logVerbose("XWEBSOCKET: Wrote %zu bytes to socket", data.size);
                 onWriteComplete(data.size);     // notify that data's been written

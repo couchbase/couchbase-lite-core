@@ -22,7 +22,6 @@
 #include "c4Private.h"
 #include "c4Socket.h"
 #include "c4Socket+Internal.hh"
-#include "XWebSocket.hh"
 #include "Address.hh"
 #include "Error.hh"
 #include "Logging.hh"

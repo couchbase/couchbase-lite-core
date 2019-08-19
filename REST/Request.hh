@@ -19,9 +19,13 @@
 #pragma once
 #include "Response.hh"
 #include "HTTPTypes.hh"
-#include "LWSResponder.hh"
 #include "PlatformCompat.hh"
 #include "StringUtil.hh"
+#include "Writer.hh"
+
+namespace litecore { namespace net {
+    class HTTPResponderSocket;
+} }
 
 namespace litecore { namespace REST {
     class Server;
@@ -51,18 +55,77 @@ namespace litecore { namespace REST {
     };
 
 
-    /** Incoming HTTP request (inherited from Request),
-        with setters to send the response (inherited from LWSResponder). */
-    class RequestResponse : public Request, public net::LWSResponder {
-    protected:
-        RequestResponse(Server *server, lws *client);
-        virtual void onRequest(Method,
-                               const std::string &path,
-                               const std::string &queries,
-                               fleece::Doc headers) override;
-        virtual void onRequestBody(fleece::alloc_slice) override;
+    /** Incoming HTTP request (inherited from Request), plus setters for the response. */
+    class RequestResponse : public Request {
+    public:
+        // Response status:
 
+        void respondWithStatus(HTTPStatus, const char *message =nullptr);
+        void respondWithError(C4Error);
+
+        void setStatus(HTTPStatus status, const char *message);
+
+        HTTPStatus status() const                             {return _status;}
+
+        HTTPStatus errorToStatus(C4Error);
+
+        // Response headers:
+
+        void setHeader(const char *header, const char *value);
+
+        void setHeader(const char *header, int64_t value) {
+            setHeader(header, std::to_string(value).c_str());
+        }
+
+        void addHeaders(std::map<std::string, std::string>);
+
+        // Response body:
+
+        void setContentLength(uint64_t length);
+        void uncacheable();
+
+        void write(fleece::slice);
+        void write(const char *content)                     {write(fleece::slice(content));}
+        void printf(const char *format, ...) __printflike(2, 3);
+
+        fleece::JSONEncoder& jsonEncoder();
+
+        void writeStatusJSON(HTTPStatus status, const char *message =nullptr);
+        void writeErrorJSON(C4Error);
+
+//        fleece::Retained<LWSServerWebSocket> upgradeToWebSocket();
+
+        // Must be called after everything's written:
+        void finish();
+
+    protected:
+        RequestResponse(Server *server, std::unique_ptr<net::HTTPResponderSocket>);
+        void sendStatus();
+        void sendHeaders();
+
+    private:
         friend class Server;
+
+        fleece::Retained<Server> _server;
+        std::unique_ptr<net::HTTPResponderSocket> _socket;
+        C4Error _error {};
+
+        std::vector<fleece::alloc_slice> _requestBody;
+
+        HTTPStatus _status {HTTPStatus::OK};        // Response status code
+        std::string _statusMessage;                 // Response custom status message
+        bool _sentStatus {false};                   // Sent the response line yet?
+
+        bool _endedHeaders {false};                 // True after headers are ended
+        int64_t _contentLength {-1};                // Content-Length, once it's set
+
+        fleece::Writer _responseWriter;             // Output stream for response body
+        std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;  // Used for writing JSON to response
+        fleece::alloc_slice _responseBody;          // Finished response body
+        fleece::slice _unsentBody;                  // Unsent portion of _responseBody
+        bool _upgrading {false};
+//        fleece::Retained<LWSServerWebSocket> _upgradedWS;   // WebSocket I'm upgrading to
+        bool _finished {false};                     // Finished configuring the response?
     };
 
 } }

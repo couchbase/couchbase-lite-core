@@ -96,7 +96,7 @@ namespace litecore { namespace REST {
         }
         size_t name_len = strlen(name);
 
-        // data is "var1=val1,var2=val2...". Find variable first
+        // data is "var1=val1&var2=val2...". Find variable first
         for (const char *p = data; p + name_len < end; p++) {
             if ((p == data || p[-1] == delimiter) && p[name_len] == '='
                     && !strncasecmp(name, p, name_len) && 0 == occurrence--) {

@@ -21,6 +21,7 @@
 #include "Error.hh"
 #include "SecureDigest.hh"
 #include "SecureRandomize.hh"
+#include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include "mbedtls/error.h"
 #include "mbedtls/ssl.h"
@@ -38,8 +39,7 @@ namespace litecore { namespace net {
     using namespace litecore::websocket;
 
 
-    XSocket::XSocket(repl::Address addr)
-    :_addr(addr)
+    XSocket::XSocket()
     { }
 
 
@@ -47,49 +47,39 @@ namespace litecore { namespace net {
     { }
 
 
-    void XSocket::setTLSContext(tls_context &tls) {
-        _tlsContext = &tls;
+    void XSocket::setTLSContext(tls_context *tls) {
+        _tlsContext = tls;
     }
 
-    tls_context& XSocket::TLSContext() {
-        if (!_tlsContext)
-            _tlsContext = &tls_context::default_context();
-        return *_tlsContext;
+    tls_context* XSocket::TLSContext() {
+        return _tlsContext;
     }
 
-    void XSocket::connect() {
-        string hostname(slice(_addr.hostname));
-        auto socket = make_unique<tcp_connector>(inet_address{hostname, _addr.port});
-        if (!*socket)
-            _throwLastError();
+    void XSocket::checkSocketFailure() {
+        if (*_socket)
+            return;
 
-        if (_addr.isSecure()) {
-            _socket = TLSContext().wrap_socket(move(socket), hostname);
-            if (!*_socket) {
-                // TLS handshake failed:
-                if (_socket->last_error() == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
-                    // Some more specific errors for certificate validation failures:
-                    auto tlsSocket = (tls_socket*)_socket.get();
-                    uint32_t flags = tlsSocket->peer_certificate_status();
-                    if (flags != 0 && flags != UINT32_MAX) {
-                        string message = tlsSocket->peer_certificate_status_message();
-                        int code = kNetErrTLSCertUntrusted;
-                        if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
-                            code = kNetErrTLSCertExpired;
-                        else if (flags & MBEDTLS_X509_BADCERT_REVOKED)
-                            code = kNetErrTLSCertRevoked;
-                        else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH)
-                            code = kNetErrTLSCertNameMismatch;
-                        error{error::Network, code, message}._throw();
-                    }
-                }
-                _throwLastError();
+        // TLS handshake failed:
+        if (_socket->last_error() == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
+            // Some more specific errors for certificate validation failures:
+            auto tlsSocket = (tls_socket*)_socket.get();
+            uint32_t flags = tlsSocket->peer_certificate_status();
+            if (flags != 0 && flags != UINT32_MAX) {
+                string message = tlsSocket->peer_certificate_status_message();
+                int code = kNetErrTLSCertUntrusted;
+                if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED)
+                    code = kNetErrTLSCertUnknownRoot;
+                else if (flags & MBEDTLS_X509_BADCERT_REVOKED)
+                    code = kNetErrTLSCertRevoked;
+                else if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
+                    code = kNetErrTLSCertExpired;
+                else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH)
+                    code = kNetErrTLSCertNameMismatch;
+                error{error::Network, code, message}._throw();
             }
-        } else {
-            _socket = move(socket);
         }
+        _throwLastError();
     }
-
 
     bool XSocket::connected() const {
         return _socket && _socket->is_open();
@@ -101,140 +91,6 @@ namespace litecore { namespace net {
             _socket->close();
         }
     }
-
-
-    void XSocket::sendHTTPRequest(const string &method, function_ref<void(stringstream&)> fn) {
-        stringstream rq;
-        rq << method << " " << string(slice(_addr.path)) << " HTTP/1.1\r\n"
-            "Host: " << string(slice(_addr.hostname)) << "\r\n";
-        fn(rq);
-        rq << "\r\n";
-        write_n(slice(rq.str()));
-    }
-
-
-    void XSocket::sendHTTPRequest(const string &method, Dict headers, slice body) {
-        sendHTTPRequest(method, [&](stringstream &rq) {
-            writeHeaders(rq, headers);
-            if (body && !headers["Content-Length"])
-                rq << "Content-Length: " << body.size << "\r\n";
-        });
-        write_n(body);
-    }
-
-
-    XSocket::HTTPResponse XSocket::readHTTPResponse() {
-        HTTPResponse response = {};
-
-        string responseData = string(readToDelimiter("\r\n\r\n"_sl));
-        if (responseData.empty())
-            error::_throw(error::WebSocket, 599); // TODO: error code
-        regex responseParser(R"(^HTTP/(\d\.\d) (\d+) ([^\r]*)\r\n)");
-        smatch m;
-        if (!regex_search(responseData, m, responseParser))
-            error::_throw(error::Network, kC4NetErrUnknown);
-        response.status = stoi(m[2].str());
-        response.message = m[3].str();
-
-        regex headersParser(R"(([\w-]+):\s*([^\r]*)\r\n)");
-        sregex_iterator begin(m[0].second, responseData.end(), headersParser);
-        sregex_iterator end;
-        Encoder enc;
-        enc.beginDict();
-        for (auto i = begin; i != end; ++i) {
-            string name = (*i)[1];
-            string value = (*i)[2];
-            enc.writeKey(name);
-            enc.writeString(value);
-        }
-        enc.endDict();
-        response.headers = AllocedDict(enc.finish());
-        return response;
-    }
-
-
-    alloc_slice XSocket::readHTTPBody(AllocedDict headers) {
-        alloc_slice body;
-        int64_t contentLength;
-        if (getIntHeader(headers, "Content-Length"_sl, contentLength)) {
-            body.resize(contentLength);
-            readExactly((void*)body.buf, (size_t)contentLength);
-        } else {
-            body.resize(1024);
-            size_t length = 0;
-            while (true) {
-                size_t n = read((void*)&body[length], body.size - length);
-                if (n == 0)
-                    break;
-                length += n;
-                if (length == body.size)
-                    body.resize(2 * body.size);
-            }
-            body.resize(length);
-        }
-        return body;
-    }
-
-
-    string XSocket::sendWebSocketRequest(Dict headers, const string &protocol) {
-        uint8_t nonceBuf[16];
-        slice nonceBytes(nonceBuf, sizeof(nonceBuf));
-        SecureRandomize(nonceBytes);
-        string nonce = nonceBytes.base64String();
-
-        sendHTTPRequest("GET", [&](stringstream &rq) {
-            rq << "Connection: Upgrade\r\n"
-                  "Upgrade: websocket\r\n"
-                  "Sec-WebSocket-Version: 13\r\n"
-                  "Sec-WebSocket-Key: " << nonce << "\r\n";
-            if (!protocol.empty())
-                rq << "Sec-WebSocket-Protocol: " << protocol << "\r\n";
-            writeHeaders(rq, headers);
-        });
-        return nonce;
-    }
-
-
-    void XSocket::writeHeaders(stringstream &rq, Dict headers) {
-        for (Dict::iterator i(headers); i; ++i)
-            rq << string(i.keyString()) << ": " << string(i.value().toString()) << "\r\n";
-    }
-
-
-    bool XSocket::checkWebSocketResponse(const HTTPResponse &rs,
-                                         const string &nonce,
-                                         const string &requiredProtocol,
-                                         CloseStatus &status) {
-        if (rs.status != 101) {
-            if (rs.status >= 300)
-                status = {kWebSocketClose, rs.status, alloc_slice(rs.message)};
-            else
-                status = {kWebSocketClose, kCodeProtocolError, "Unexpected HTTP response status"_sl};
-            return false;
-        }
-        if (rs.headers["Connection"_sl].asString() != "Upgrade"_sl
-                || rs.headers["Upgrade"_sl].asString() != "websocket"_sl) {
-            status = {kWebSocketClose, kCodeProtocolError, "Server failed to upgrade connection"_sl};
-            return false;
-        }
-        if (!requiredProtocol.empty()
-                && rs.headers["Sec-WebSocket-Protocol"_sl].asString() != slice(requiredProtocol)) {
-            status = {kWebSocketClose, 403, "Server did not accept BLIP replication protocol"_sl};
-            return false;
-        }
-
-        // Check the returned nonce:
-        SHA1 digest{slice(nonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
-        string resultNonce = slice(&digest, sizeof(digest)).base64String();
-        if (rs.headers["Sec-WebSocket-Accept"].asString() != slice(resultNonce)) {
-            status = {kWebSocketClose, kCodeProtocolError, "Server returned invalid nonce"_sl};
-            return false;
-        }
-        return true;
-    }
-
-
-#pragma mark - LOW-LEVEL WRITING:
 
 
     size_t XSocket::write(slice data) {
@@ -257,9 +113,6 @@ namespace litecore { namespace net {
         }
         return size_t(written);
     }
-
-
-#pragma mark - LOW-LEVEL READING:
 
 
     // Primitive unbuffered read call. If an error occurs, throws an exception. Returns 0 on EOF.
@@ -323,9 +176,10 @@ namespace litecore { namespace net {
             // Look for delimiter:
             slice found = slice(_inputStart, _inputLen).find(delim);
             if (found) {
+                slice result(_inputStart, found.buf);
+                _inputLen -= result.size + found.size;
                 _inputStart = (uint8_t*)found.end();
-                _inputLen -= (_inputStart - (uint8_t*)_input.buf);
-                return slice(_input.buf, found.end());
+                return result;
             }
 
             // Give up if buffer is full:
@@ -356,6 +210,7 @@ namespace litecore { namespace net {
             Warn("Got mbedTLS error -0x%04X \"%s\"; throwing exception...", -err, msgbuf);
             static constexpr struct {int mbed; int net;} kMbedToNetErr[] = {
                 {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
+                {MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE, kNetErrTLSHandshakeFailed},
                 {0, kNetErrUnknown}
             };
             int netErr = kNetErrUnknown;
@@ -370,6 +225,72 @@ namespace litecore { namespace net {
     }
 
 
+    void XSocket::_throwBadHTTP() {
+        error{error::WebSocket, 599, "Invalid HTTP syntax"}._throw(); // TODO: error code
+    }
+
+
+    AllocedDict XSocket::readHeaders() {
+        Assert(_readState == kHeaders);
+        Encoder enc;
+        enc.beginDict();
+        while (true) {
+            slice line = readToDelimiter("\r\n"_sl);
+            if (!line)
+                _throwBadHTTP();
+            if (line.size == 0)
+                break;  // empty line
+            const uint8_t *colon = line.findByte(':');
+            if (!colon)
+                _throwBadHTTP();
+            slice name(line.buf, colon);
+            line.setStart(colon+1);
+            const uint8_t *nonSpace = line.findByteNotIn(" "_sl);
+            if (!nonSpace)
+                _throwBadHTTP();
+            slice value(nonSpace, line.end());
+            enc.writeKey(name);
+            enc.writeString(value);
+        }
+        _readState = kBody;
+        enc.endDict();
+        return AllocedDict(enc.finishDoc().allocedData());
+    }
+
+
+    alloc_slice XSocket::readHTTPBody(AllocedDict headers) {
+        Assert(_readState == kBody);
+        alloc_slice body;
+        int64_t contentLength;
+        if (getIntHeader(headers, "Content-Length"_sl, contentLength)) {
+            // Read exactly Content-Length bytes:
+            body.resize(contentLength);
+            readExactly((void*)body.buf, (size_t)contentLength);
+        } else {
+            // No Content-Length, so read till EOF:
+            body.resize(1024);
+            size_t length = 0;
+            while (true) {
+                size_t n = read((void*)&body[length], body.size - length);
+                if (n == 0)
+                    break;
+                length += n;
+                if (length == body.size)
+                    body.resize(2 * body.size);
+            }
+            body.resize(length);
+        }
+        return body;
+    }
+
+
+    void XSocket::writeHeaders(stringstream &rq, Dict headers) {
+        Assert(_writeState == kHeaders);
+        for (Dict::iterator i(headers); i; ++i)
+            rq << string(i.keyString()) << ": " << string(i.value().toString()) << "\r\n";
+    }
+
+
     bool XSocket::getIntHeader(Dict headers, slice key, int64_t &value) {
         slice v = headers[key].asString();
         if (!v)
@@ -380,6 +301,189 @@ namespace litecore { namespace net {
         } catch (exception &x) {
             return false;
         }
+    }
+
+
+#pragma mark - HTTP CLIENT:
+
+
+    HTTPClientSocket::HTTPClientSocket(repl::Address addr)
+    :_addr(addr)
+    { }
+
+
+    void HTTPClientSocket::connect() {
+        string hostname(slice(_addr.hostname));
+        auto socket = make_unique<tcp_connector>(inet_address{hostname, _addr.port});
+        if (_addr.isSecure()) {
+            if (!_tlsContext)
+                _tlsContext = _tlsContext = &tls_context::default_context();
+            _socket = TLSContext()->wrap_socket(move(socket), tls_context::CLIENT, hostname);
+        } else {
+            _socket = move(socket);
+        }
+        checkSocketFailure();
+    }
+
+
+    void HTTPClientSocket::sendHTTPRequest(const string &method,
+                                           function_ref<void(stringstream&)> fn)
+    {
+        Assert(_writeState == kRequestLine);
+        stringstream rq;
+        rq << method << " " << string(slice(_addr.path)) << " HTTP/1.1\r\n"
+            "Host: " << string(slice(_addr.hostname)) << "\r\n";
+        _writeState = kHeaders;
+        fn(rq);
+        rq << "\r\n";
+        _writeState = kBody;
+        write_n(slice(rq.str()));
+    }
+
+
+    void HTTPClientSocket::sendHTTPRequest(const string &method, Dict headers, slice body) {
+        sendHTTPRequest(method, [&](stringstream &rq) {
+            writeHeaders(rq, headers);
+            if (!headers["Content-Length"])
+                rq << "Content-Length: " << body.size << "\r\n";
+        });
+        write_n(body);
+        _writeState = kEnd;
+    }
+
+
+    HTTPClientSocket::HTTPResponse HTTPClientSocket::readHTTPResponse() {
+        Assert(_readState == kStatusLine);
+        HTTPResponse response = {};
+
+        string responseData = string(readToDelimiter("\r\n"_sl));
+        if (responseData.empty())
+            _throwBadHTTP();
+        regex responseParser(R"(^HTTP/(\d\.\d) (\d+) (.*))");
+        smatch m;
+        if (!regex_search(responseData, m, responseParser))
+            error::_throw(error::Network, kC4NetErrUnknown);
+        response.status = REST::HTTPStatus(stoi(m[2].str()));
+        response.message = m[3].str();
+
+        _readState = kHeaders;
+        response.headers = readHeaders();
+        _readState = kBody;
+        return response;
+    }
+
+
+    string HTTPClientSocket::sendWebSocketRequest(Dict headers, const string &protocol) {
+        Assert(_writeState == kStatusLine);
+        uint8_t nonceBuf[16];
+        slice nonceBytes(nonceBuf, sizeof(nonceBuf));
+        SecureRandomize(nonceBytes);
+        string nonce = nonceBytes.base64String();
+
+        sendHTTPRequest("GET", [&](stringstream &rq) {
+            rq << "Connection: Upgrade\r\n"
+                  "Upgrade: websocket\r\n"
+                  "Sec-WebSocket-Version: 13\r\n"
+                  "Sec-WebSocket-Key: " << nonce << "\r\n";
+            if (!protocol.empty())
+                rq << "Sec-WebSocket-Protocol: " << protocol << "\r\n";
+            writeHeaders(rq, headers);
+        });
+        return nonce;
+    }
+
+
+    bool HTTPClientSocket::checkWebSocketResponse(const HTTPResponse &rs,
+                                         const string &nonce,
+                                         const string &requiredProtocol,
+                                         CloseStatus &status) {
+        if (rs.status != REST::HTTPStatus::Upgraded) {
+            if (IsSuccess(rs.status))
+                status = {kWebSocketClose, int(rs.status), alloc_slice(rs.message)};
+            else
+                status = {kWebSocketClose, kCodeProtocolError, "Unexpected HTTP response status"_sl};
+            return false;
+        }
+        if (rs.headers["Connection"_sl].asString() != "Upgrade"_sl
+                || rs.headers["Upgrade"_sl].asString() != "websocket"_sl) {
+            status = {kWebSocketClose, kCodeProtocolError, "Server failed to upgrade connection"_sl};
+            return false;
+        }
+        if (!requiredProtocol.empty()
+                && rs.headers["Sec-WebSocket-Protocol"_sl].asString() != slice(requiredProtocol)) {
+            status = {kWebSocketClose, 403, "Server did not accept BLIP replication protocol"_sl};
+            return false;
+        }
+
+        // Check the returned nonce:
+        SHA1 digest{slice(nonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
+        string resultNonce = slice(&digest, sizeof(digest)).base64String();
+        if (rs.headers["Sec-WebSocket-Accept"].asString() != slice(resultNonce)) {
+            status = {kWebSocketClose, kCodeProtocolError, "Server returned invalid nonce"_sl};
+            return false;
+        }
+        return true;
+    }
+
+
+#pragma mark - HTTP SERVER:
+
+
+    void HTTPResponderSocket::acceptSocket(stream_socket &&s, bool useTLS)
+    {
+        acceptSocket( make_unique<tcp_socket>(move(s)), useTLS );
+    }
+
+    void HTTPResponderSocket::acceptSocket(unique_ptr<stream_socket> socket, bool useTLS) {
+        if (_tlsContext)
+            _socket = _tlsContext->wrap_socket(move(socket), tls_context::SERVER, "");
+        else
+            _socket = move(socket);
+        checkSocketFailure();
+    }
+
+
+    HTTPResponderSocket::HTTPRequest HTTPResponderSocket::readHTTPRequest() {
+        Assert(_readState == kRequestLine);
+        auto method = REST::MethodNamed(readToDelimiter(" "_sl));
+
+        slice uri = readToDelimiter(" "_sl);
+        auto q = uri.findByteOrEnd('?');
+        string path(slice(uri.buf,q));
+        string query;
+        if (q != uri.end())
+            query = string(slice(q + 1, uri.end()));
+
+        slice version = readToDelimiter("\r\n"_sl);
+        if (!version.hasPrefix("HTTP/"_sl))
+            _throwBadHTTP();
+        _readState = kHeaders;
+        return {method, path, query, readHeaders()};
+    }
+
+
+    void HTTPResponderSocket::writeResponseLine(REST::HTTPStatus status, slice message) {
+        Assert(_writeState == kRequestLine);
+        if (!message) {
+            const char *defaultMessage = StatusMessage(status);
+            if (defaultMessage)
+                message = slice(defaultMessage);
+        }
+        write_n(format("HTTP/1.0 %d %.*s\r\n", status, SPLAT(message)));
+        _writeState = kHeaders;
+    }
+
+
+    void HTTPResponderSocket::writeHeader(slice name, slice value) {
+        Assert(_writeState == kHeaders);
+        write_n(format("%.*s: %.*s\r\n", SPLAT(name), SPLAT(value)));
+    }
+
+
+    void HTTPResponderSocket::endHeaders() {
+        Assert(_writeState == kHeaders);
+        write_n("\r\n"_sl);
+        _writeState = kBody;
     }
 
 } }

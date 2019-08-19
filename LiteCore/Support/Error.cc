@@ -23,6 +23,7 @@
 #include "StringUtil.hh"
 #include <sqlite3.h>
 #include <SQLiteCpp/Exception.h>
+#include "WebSocketInterface.hh"    // for Network error codes
 #include <cerrno>
 #include <string>
 #include <sstream>
@@ -363,6 +364,8 @@ namespace litecore {
                 return code == NotFound || code == DatabaseTooOld;
             case POSIX:
                 return code == ENOENT;
+            case Network:
+                return code != websocket::kNetErrUnknown;
             default:
                 return false;
         }
