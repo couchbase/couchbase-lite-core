@@ -23,7 +23,6 @@ function(setup_build)
         FleeceBase
         Support
         BLIPStatic
-        websockets
         "-framework Security"
     )
     

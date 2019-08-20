@@ -78,7 +78,8 @@ target_include_directories(
     ${TOP}C
     ${TOP}C/include
     ${TOP}C/tests
-	${TOP}Networking
+    ${TOP}Crypto
+    ${TOP}Networking
     ${TOP}LiteCore/BlobStore
     ${TOP}LiteCore/Database
     ${TOP}LiteCore/RevTrees
@@ -86,18 +87,21 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}LiteCore/Query
     ${TOP}Replicator
+    ${TOP}Replicator/tests
     ${TOP}REST
-    ${TOP}vendor/libwebsockets/include
+    ${TOP}vendor/sockpp/include
 )
 
 target_link_libraries(
     CppTests PRIVATE
     LiteCoreStatic
+    LiteCoreREST_Static
     LiteCoreWebSocket
     FleeceStatic
     SQLite3_UnicodeSN
     BLIPStatic
-    websockets
     Support
+    mbedcrypto
+    mbedtls
     ${LITECORE_CRYPTO_LIB}
 )

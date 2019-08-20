@@ -50,8 +50,8 @@ target_include_directories(
     ../Crypto
     ../Networking
     ../Replicator
-    ../vendor/libwebsockets/include
     ../vendor/mbedtls/include
+    ../vendor/sockpp/include
 )
 if(BUILD_ENTERPRISE)
     target_include_directories(

@@ -8,6 +8,7 @@
 
 #pragma once
 #include <limits.h>
+#include "fleece/slice.hh"
 
 #ifdef _MSC_VER
 #pragma push_macro("DELETE")

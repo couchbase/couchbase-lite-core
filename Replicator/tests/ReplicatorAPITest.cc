@@ -19,6 +19,9 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kProtectedDBName,
                          ReplicatorAPITest::kImagesDBName;
 
+alloc_slice ReplicatorAPITest::sPinnedCert;
+
+
 
 TEST_CASE("URL Parsing") {
     C4Address address;
@@ -177,7 +180,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push", "[Push]") {
     importJSONLines(sFixturesDir + "names_100.json");
 
     createDB2();
-    enableDocProgressNotifications();
+    _enableDocProgressNotifications = true;
     replicate(kC4OneShot, kC4Disabled);
 
     CHECK(_docsEnded == 100);
@@ -190,7 +193,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Loopback Push & Pull Deletion", "[Push]
     createRev("doc"_sl, kRev2ID, kEmptyFleeceBody, kRevDeleted);
 
     createDB2();
-    enableDocProgressNotifications();
+    _enableDocProgressNotifications = true;
     replicate(kC4OneShot, kC4Disabled);
     CHECK(_docsEnded == 1);
 
@@ -237,7 +240,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
         return body["gender"_sl].asString() == "male"_sl;
     };
 
-    enableDocProgressNotifications();
+    _enableDocProgressNotifications = true;
     replicate(kC4OneShot, kC4Disabled);
 
     CHECK(_counter == 100);

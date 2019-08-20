@@ -20,6 +20,7 @@
 #include "RefCounted.hh"
 #include "Request.hh"
 #include "c4Base.h"
+#include "c4Socket.h"
 #include <array>
 #include <map>
 #include <mutex>

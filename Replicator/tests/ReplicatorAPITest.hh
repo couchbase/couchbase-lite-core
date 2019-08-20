@@ -13,7 +13,6 @@
 #include "Response.hh"
 #include "c4Test.hh"
 #include "StringUtil.hh"
-#include "sockpp/mbedtls_context.h"
 #include "make_unique.h"
 #include <algorithm>
 #include <chrono>
@@ -43,6 +42,8 @@ public:
     constexpr static const C4String kProtectedDBName = C4STR("seekrit");
     constexpr static const C4String kImagesDBName = C4STR("images");
 
+    static alloc_slice sPinnedCert;
+
     ReplicatorAPITest()
     :C4Test(0)
     {
@@ -52,8 +53,7 @@ public:
             C4RegisterXWebSocket();
 
             // Pin the server certificate:
-            alloc_slice certData = readFile("Replicator/tests/data/cert.pem");
-            sockpp::tls_context::default_context().allow_only_certificate(string(certData));
+            sPinnedCert = readFile("Replicator/tests/data/cert.pem");
         });
 
         // Environment variables can also override the default address above:
@@ -86,13 +86,17 @@ public:
         _remoteDBName = nullslice;
     }
 
-    void enableDocProgressNotifications() {
+    AllocedDict options() {
         Encoder enc;
         enc.beginDict();
-        enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
-        enc.writeInt(1);
+        enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
+        enc.writeData(sPinnedCert);
+        if (_enableDocProgressNotifications) {
+            enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
+            enc.writeInt(1);
+        }
         enc.endDict();
-        _options = AllocedDict(enc.finish());
+        return AllocedDict(enc.finish());
     }
 
     bool validate(slice docID, Dict body) {
@@ -201,6 +205,7 @@ public:
         C4ReplicatorParameters params = {};
         params.push = push;
         params.pull = pull;
+        _options = options();
         params.optionsDictFleece = _options.data();
         params.pushFilter = _pushFilter;
 //        params.validationFunc = onValidate;
@@ -301,6 +306,7 @@ public:
     C4Address _address = kDefaultAddress;
     C4String _remoteDBName = kScratchDBName;
     AllocedDict _options;
+    bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};
     C4SocketFactory* _socketFactory {nullptr};
     bool _flushedScratch {false};

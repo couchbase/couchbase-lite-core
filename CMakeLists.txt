@@ -7,12 +7,12 @@ targets that result from this project:
 
 BLIPStatic - The BLIP communication library for crafting messages that can be sent over a provided connection
 C4Tests - A test runner that runs tests based on the shared library
-libwebsocket - A C++ implementation of the websocket client and server protocol
 CppTests - A test runner that runs test based on the static library
 FleeceStatic - The Fleece serialization library for saving data to a binary format
-LiteCore - The shared LiteCore library
-LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
 LiteCoreStatic - The static LiteCore library
+LiteCore - The shared LiteCore library
+LiteCoreWebSocket - WebSocket implementation with C4Socket API to plug into LiteCore
+LiteCoreREST - A simple library used for enabling testing of the shared library (not used in production)
 mbedcrypto - The cryptography suite from mbedTLS (https://tls.mbed.org/)
 SQLite3_UnicodeSN - The snowball tokenizer library for SQLite
 Support - A library of shared functionality that is used in some or all of the other targets
@@ -130,18 +130,11 @@ list(APPEND LWS_MBEDTLS_LIBRARIES mbedtls)
 list(APPEND LWS_MBEDTLS_LIBRARIES mbedx509)
 list(APPEND LWS_MBEDTLS_LIBRARIES mbedcrypto)
 
-include_directories(${PROJECT_BINARY_DIR}/vendor/libwebsockets)
 add_subdirectory(REST                       EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/fleece              EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/sqlite3-unicodesn   EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/BLIP-Cpp            EXCLUDE_FROM_ALL)
 add_subdirectory(vendor/mbedtls             EXCLUDE_FROM_ALL)
-add_subdirectory(vendor/libwebsockets       EXCLUDE_FROM_ALL)
-
-target_include_directories(
-    websockets PRIVATE
-    vendor/mbedtls/include
-)
 
 # Generate file repo_version.h containing Git repo information, and add it to #include path:
 set(GENERATED_HEADERS_DIR "${CMAKE_BINARY_DIR}/generated_headers")
@@ -196,15 +189,19 @@ set(
     Crypto/Certificate.cc
     Crypto/PublicKey.cc
     Crypto/mbedUtils.cc
-    Networking/LWSContext.cc
-    Networking/LWSHTTPClient.cc
-    Networking/LWSProtocol.cc
-    Networking/LWSResponder.cc
-    Networking/LWSServer.cc
-    Networking/LWSUtil.cc
-    Networking/LWSWebSocket.cc
+    Networking/HTTPTypes.cc
+    Networking/XSocket.cc
+    Networking/XWebSocket.cc
     REST/netUtils.cc
-    REST/Server.cc
+    vendor/sockpp/src/acceptor.cpp
+    vendor/sockpp/src/connector.cpp
+    vendor/sockpp/src/datagram_socket.cpp
+    vendor/sockpp/src/exception.cpp
+    vendor/sockpp/src/inet_address.cpp
+    vendor/sockpp/src/inet6_address.cpp
+    vendor/sockpp/src/mbedtls_context.cpp
+    vendor/sockpp/src/socket.cpp
+    vendor/sockpp/src/stream_socket.cpp
 )
 
 if (APPLE)
@@ -222,11 +219,11 @@ target_include_directories(
     Networking
     Replicator
     REST
+    vendor/BLIP-Cpp/include/blip_cpp
     vendor/BLIP-Cpp/src/util
     vendor/fleece/Fleece/Support
     vendor/fleece/API
-    vendor/libwebsockets/include
-    vendor/libwebsockets/include/websockets
+    vendor/sockpp/include
     vendor/mbedtls/include
 )
 
@@ -287,7 +284,7 @@ target_include_directories(
     vendor/SQLiteCpp/include
     vendor/sqlite3-unicodesn
     vendor/mbedtls/include
-    vendor/libwebsockets/include
+    vendor/sockpp/include
 )
 
 if(WIN32)
@@ -314,7 +311,6 @@ set(
     Support
     SQLite3_UnicodeSN
     BLIPStatic
-    websockets
     ${LITECORE_CRYPTO_LIB}
 )
 

@@ -12,7 +12,6 @@ The test runner depends on multiple other libraries from multiple git repositori
 
 - LiteCore shared library (../..)
 - LiteCore REST shared library (../../REST)
-- libwebsockets static library (../../vendor/libwebsockets)
 - FleeceBase static library (../../vendor/fleece)
 - Support static library (../../Support [partial])
 - BLIP static library (../../vendor/BLIP-Cpp) 
@@ -58,8 +57,8 @@ target_link_libraries(
     Support
     BLIPStatic
     FleeceBase
-    websockets
     mbedcrypto
+    mbedtls
 )
 
 target_include_directories(
@@ -77,8 +76,6 @@ target_include_directories(
     ${TOP}LiteCore/Support
     ${TOP}vendor/SQLiteCpp/sqlite3
     ${TOP}vendor/BLIP-Cpp/src/util
-    ${TOP}vendor/libwebsockets/include
-    ${TOP}vendor/libwebsockets/include/websockets
     ${TOP}vendor/mbedtls/include
 )
 
