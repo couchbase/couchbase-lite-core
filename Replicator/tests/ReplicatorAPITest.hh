@@ -11,6 +11,7 @@
 #include "fleece/Fleece.hh"
 #include "c4.hh"
 #include "Response.hh"
+#include "Certificate.hh"
 #include "c4Test.hh"
 #include "StringUtil.hh"
 #include "make_unique.h"
@@ -42,18 +43,19 @@ public:
     constexpr static const C4String kProtectedDBName = C4STR("seekrit");
     constexpr static const C4String kImagesDBName = C4STR("images");
 
-    static alloc_slice sPinnedCert;
+    static Retained<litecore::crypto::Cert> sPinnedCert;
 
     ReplicatorAPITest()
     :C4Test(0)
     {
-        once_flag once;
+        static once_flag once;
         call_once(once, [&]() {
             // Register the XWebSocket class as the C4Replicator's WebSocketImpl.
             C4RegisterXWebSocket();
 
             // Pin the server certificate:
-            sPinnedCert = readFile("Replicator/tests/data/cert.pem");
+            alloc_slice cert = readFile("Replicator/tests/data/cert.pem");
+            sPinnedCert = new litecore::crypto::Cert(cert);
         });
 
         // Environment variables can also override the default address above:
@@ -90,10 +92,15 @@ public:
         Encoder enc;
         enc.beginDict();
         enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
-        enc.writeData(sPinnedCert);
+        enc.writeData(sPinnedCert->data());
         if (_enableDocProgressNotifications) {
             enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
             enc.writeInt(1);
+        }
+        // Copy any preexisting options:
+        for (Dict::iterator i(_options); i; ++i) {
+            enc.writeKey(i.keyString());
+            enc.writeValue(i.value());
         }
         enc.endDict();
         return AllocedDict(enc.finish());
@@ -277,7 +284,8 @@ public:
                                              port,
                                              path,
                                              headers,
-                                             body);
+                                             body,
+                                             sPinnedCert);
         REQUIRE(r);
         if (r->error().code)
             FAIL("Error: " << c4error_descriptionStr(r->error()));

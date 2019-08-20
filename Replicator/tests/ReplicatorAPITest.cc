@@ -19,7 +19,7 @@ constexpr const C4String ReplicatorAPITest::kScratchDBName, ReplicatorAPITest::k
                          ReplicatorAPITest::kProtectedDBName,
                          ReplicatorAPITest::kImagesDBName;
 
-alloc_slice ReplicatorAPITest::sPinnedCert;
+Retained<litecore::crypto::Cert> ReplicatorAPITest::sPinnedCert;
 
 
 

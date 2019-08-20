@@ -13,10 +13,12 @@
 #include <memory>
 #include <thread>
 
+namespace litecore {
+    class error;
+}
 namespace litecore { namespace websocket {
     struct CloseStatus;
 } }
-
 namespace sockpp {
     class stream_socket;
     class tls_context;
@@ -24,7 +26,7 @@ namespace sockpp {
 
 namespace litecore { namespace net {
 
-    /** TCP client socket class, using the sockpp library. */
+    /** TCP socket class, using the sockpp library. */
     class XSocket {
     public:
         using slice = fleece::slice;
@@ -77,6 +79,9 @@ namespace litecore { namespace net {
 
         // Writes all the bytes to the socket.
         size_t write_n(slice);
+
+        // Utility function that maps an exception to a LiteCore error.
+        static litecore::error convertException(const std::exception&);
 
     protected:
         [[noreturn]] void _throwLastError();

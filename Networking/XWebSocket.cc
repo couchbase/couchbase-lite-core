@@ -21,6 +21,7 @@
 #include "c4Socket+Internal.hh"
 #include "ThreadUtil.hh"
 #include "sockpp/mbedtls_context.h"
+#include "sockpp/exception.h"
 #include <string>
 
 using namespace litecore;
@@ -125,7 +126,7 @@ namespace litecore { namespace websocket {
             }
             
             onConnect();
-        } catch (exception &x) {
+        } catch (const std::exception &x) {
             closeWithError(x);
             release(this);
             return;
@@ -199,7 +200,7 @@ namespace litecore { namespace websocket {
 
 
     void XWebSocket::closeWithError(const exception &x) {
-        error e = error::convertException(x);
+        error e = net::XSocket::convertException(x);
         logInfo("XWEBSOCKET: caught exception: %s", e.what());
         alloc_slice message(e.what());
         CloseStatus status {kUnknownError, e.code, message};

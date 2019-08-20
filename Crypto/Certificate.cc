@@ -53,8 +53,19 @@ namespace litecore { namespace crypto {
     :Cert()
     {
         Assert(data);
+        bool isPEM = data.hasPrefix("-----"_sl);
+        alloc_slice adjustedData;
+        if (isPEM && !data.hasSuffix('\0')) {
+            // mbedTLS insists PEM data must end with a NUL byte, so add one:
+            adjustedData = alloc_slice(data);
+            adjustedData.resize(data.size + 1);
+            *((char*)adjustedData.end() - 1) = '\0';
+            data = adjustedData;
+        }
+
         TRY( mbedtls_x509_crt_parse(context(), (const uint8_t*)data.buf, data.size) );
-        if (data.hasPrefix("-----"_sl)) {
+
+        if (isPEM) {
             // Input is PEM, but _data should be the parsed DER:
             _data = alloc_slice(_cert->raw.p, _cert->raw.len);
         } else {

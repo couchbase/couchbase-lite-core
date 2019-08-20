@@ -25,10 +25,12 @@
 #include "fleece/Fleece.hh"
 #include "mbedtls/error.h"
 #include "mbedtls/ssl.h"
+#include "sockpp/exception.h"
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tls_socket.h"
-#include <regex>
 #include "make_unique.h"
+#include <netdb.h>
+#include <regex>
 #include <string>
 #include <sstream>
 
@@ -230,6 +232,51 @@ namespace litecore { namespace net {
     }
 
 
+    error XSocket::convertException(const std::exception &x) {
+        error::Domain domain;
+        int code;
+        const char *message = x.what();
+        string messagebuf;
+        auto sx = dynamic_cast<const sockpp::sys_error*>(&x);
+        if (sx) {
+            // sockpp 'errno' exception:
+            domain = error::POSIX;
+            code = sx->error();
+        } else {
+            auto gx = dynamic_cast<const sockpp::getaddrinfo_error*>(&x);
+            if (gx) {
+                // sockpp 'getaddrinfo' exception:
+                domain = error::Network;
+                if (gx->error() == EAI_NONAME || gx->error() == HOST_NOT_FOUND) {
+                    code = kC4NetErrUnknownHost;
+                    messagebuf = "Unknown hostname " + gx->hostname();
+                } else {
+                    code = kC4NetErrDNSFailure;
+                    messagebuf = "Error resolving hostname " + gx->hostname() + ": " + gx->what();
+                }
+                message = messagebuf.c_str();
+            } else {
+                // Not a sockpp exception, so let error class handle it:
+                return error::convertException(x);
+            }
+        }
+        return error(domain, code, message);
+    }
+
+
+    static void normalizeHeaderCase(string &str) {
+        bool caps = true;
+        for (auto &c : str) {
+            if (isalpha(c)) {
+                c = (char)(caps ? toupper(c) : tolower(c));
+                caps = false;
+            } else {
+                caps = true;
+            }
+        }
+    }
+
+
     AllocedDict XSocket::readHeaders() {
         Assert(_readState == kHeaders);
         Encoder enc;
@@ -243,7 +290,8 @@ namespace litecore { namespace net {
             const uint8_t *colon = line.findByte(':');
             if (!colon)
                 _throwBadHTTP();
-            slice name(line.buf, colon);
+            string name(slice(line.buf, colon));
+            normalizeHeaderCase(name);
             line.setStart(colon+1);
             const uint8_t *nonSpace = line.findByteNotIn(" "_sl);
             if (!nonSpace)
@@ -401,9 +449,9 @@ namespace litecore { namespace net {
                                          CloseStatus &status) {
         if (rs.status != REST::HTTPStatus::Upgraded) {
             if (IsSuccess(rs.status))
-                status = {kWebSocketClose, int(rs.status), alloc_slice(rs.message)};
-            else
                 status = {kWebSocketClose, kCodeProtocolError, "Unexpected HTTP response status"_sl};
+            else
+                status = {kWebSocketClose, int(rs.status), alloc_slice(rs.message)};
             return false;
         }
         if (rs.headers["Connection"_sl].asString() != "Upgrade"_sl
@@ -412,7 +460,7 @@ namespace litecore { namespace net {
             return false;
         }
         if (!requiredProtocol.empty()
-                && rs.headers["Sec-WebSocket-Protocol"_sl].asString() != slice(requiredProtocol)) {
+                && rs.headers["Sec-Websocket-Protocol"_sl].asString() != slice(requiredProtocol)) {
             status = {kWebSocketClose, 403, "Server did not accept BLIP replication protocol"_sl};
             return false;
         }
@@ -420,7 +468,7 @@ namespace litecore { namespace net {
         // Check the returned nonce:
         SHA1 digest{slice(nonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
         string resultNonce = slice(&digest, sizeof(digest)).base64String();
-        if (rs.headers["Sec-WebSocket-Accept"].asString() != slice(resultNonce)) {
+        if (rs.headers["Sec-Websocket-Accept"].asString() != slice(resultNonce)) {
             status = {kWebSocketClose, kCodeProtocolError, "Server returned invalid nonce"_sl};
             return false;
         }
