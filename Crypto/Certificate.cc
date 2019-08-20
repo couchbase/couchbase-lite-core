@@ -64,13 +64,6 @@ namespace litecore { namespace crypto {
         }
 
         TRY( mbedtls_x509_crt_parse(context(), (const uint8_t*)data.buf, data.size) );
-
-        if (isPEM) {
-            // Input is PEM, but _data should be the parsed DER:
-            _data = alloc_slice(_cert->raw.p, _cert->raw.len);
-        } else {
-            _data = data;
-        }
     }
 
 
@@ -153,9 +146,9 @@ namespace litecore { namespace crypto {
     alloc_slice Cert::data(KeyFormat f) {
         switch (f) {
         case KeyFormat::DER:
-            return _data;
+            return {_cert->raw.p, _cert->raw.len};
         case KeyFormat::PEM:
-            return convertToPEM(_data, "CERTIFICATE");
+            return convertToPEM({_cert->raw.p, _cert->raw.len}, "CERTIFICATE");
         default:
             throwMbedTLSError(MBEDTLS_ERR_PK_FEATURE_UNAVAILABLE);
         }

@@ -92,7 +92,6 @@ namespace litecore { namespace crypto {
         virtual struct ::mbedtls_pk_context* keyContext() override;
 
         std::unique_ptr<struct ::mbedtls_x509_crt> _cert;
-        fleece::alloc_slice _data;
     };
 
 
