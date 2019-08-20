@@ -249,3 +249,29 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Filtered Push", "[Push]") {
     CHECK(_docsEnded == 45);
     CHECK(c4db_getDocumentCount(db2) == 45);
 }
+
+// CBL-221
+TEST_CASE_METHOD(ReplicatorAPITest, "Stop with doc ended callback", "[Pull]") {
+    createDB2();
+    // Need a large enough data set so that the pulled documents come
+    // through in more than one batch
+    importJSONLines(sFixturesDir + "iTunesMusicLibrary.json", 15.0, false, db2);
+    
+    _enableDocProgressNotifications = true;
+    
+    _onDocsEnded = [](C4Replicator* repl,
+                      bool pushing,
+                      size_t numDocs,
+                      const C4DocumentEnded* docs[],
+                      void* context) {
+        ((ReplicatorAPITest*)context)->_docsEnded += numDocs;
+        c4repl_stop(repl);
+    };
+    
+    replicate(kC4Disabled, kC4Continuous);
+    
+    // Not being equal implies that some of the doc ended callbacks failed
+    // (presumably because of CBL-221 which causes an actor internal assertion
+    // failure that cannot be detected from the outside)
+    CHECK(c4db_getDocumentCount(db) == _docsEnded);
+}

@@ -70,6 +70,7 @@ public:
         const char *remoteDB = getenv("REMOTE_DB");
         if (remoteDB)
             _remoteDBName = c4str(remoteDB);
+        _onDocsEnded = onDocsEnded;
     }
 
     // Create an empty database db2 and make it the target of the replication
@@ -217,7 +218,7 @@ public:
         params.pushFilter = _pushFilter;
 //        params.validationFunc = onValidate;
         params.onStatusChanged = onStateChanged;
-        params.onDocumentsEnded = onDocsEnded;
+        params.onDocumentsEnded = _onDocsEnded;
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
 
@@ -316,6 +317,7 @@ public:
     AllocedDict _options;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};
+    C4ReplicatorDocumentsEndedCallback _onDocsEnded {nullptr};
     C4SocketFactory* _socketFactory {nullptr};
     bool _flushedScratch {false};
     c4::ref<C4Replicator> _repl;

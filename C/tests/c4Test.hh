@@ -209,7 +209,8 @@ public:
                             double timeout =15.0,
                             bool verbose =false);
     bool readFileByLines(std::string path, std::function<bool(FLSlice)>);
-    unsigned importJSONLines(std::string path, double timeout =15.0, bool verbose =false);
+    unsigned importJSONLines(std::string path, double timeout =15.0, bool verbose =false,
+                             C4Database* database = nullptr);
 
     
     static std::string fleece2json(slice fleece) {

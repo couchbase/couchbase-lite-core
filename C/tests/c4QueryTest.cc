@@ -54,13 +54,24 @@ N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query", "[Query][C]") {
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query LIKE", "[Query][C]") {
-    compile(json5("['LIKE', ['.name.first'], '%j%']"));
-    CHECK(run() == (vector<string>{ "0000085" }));
-    compile(json5("['LIKE', ['.name.first'], '%J%']"));
-    CHECK(run() == (vector<string>{ "0000002", "0000004", "0000008", "0000017", "0000028", "0000030", "0000045", "0000052", "0000067", "0000071",
-        "0000088", "0000094" }));
-    compile(json5("['LIKE', ['.name.first'], 'Jen%']"));
-    CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+    SECTION("General") {
+        compile(json5("['LIKE', ['.name.first'], '%j%']"));
+        CHECK(run() == (vector<string>{ "0000085" }));
+        compile(json5("['LIKE', ['.name.first'], '%J%']"));
+        CHECK(run() == (vector<string>{ "0000002", "0000004", "0000008", "0000017", "0000028", "0000030", "0000045", "0000052", "0000067", "0000071",
+            "0000088", "0000094" }));
+        compile(json5("['LIKE', ['.name.first'], 'Jen%']"));
+        CHECK(run() == (vector<string>{ "0000008", "0000028" }));
+    }
+
+    SECTION("Escaped") {
+        addPersonInState("weird", "NY", "Bart%Simpson");
+        addPersonInState("weirder", "NY", "Bart\\\\Simpson");
+        compile(json5("['LIKE', ['.name.first'], 'Bart\\\\%%']"));
+        CHECK(run() == (vector<string>{ "weird" }));
+        compile(json5("['LIKE', ['.name.first'], 'Bart\\\\\\\\%']"));
+        CHECK(run() == (vector<string>{ "weirder" }));
+    }
 }
 
 N_WAY_TEST_CASE_METHOD(QueryTest, "DB Query IN", "[Query][C]") {

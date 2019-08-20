@@ -619,16 +619,20 @@ unsigned C4Test::importJSONFile(string path, string idPrefix, double timeout, bo
 
 
 // Read a file that contains a JSON document per line. Every line becomes a document.
-unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
+unsigned C4Test::importJSONLines(string path, double timeout, bool verbose, C4Database* database) {
     C4Log("Reading %s ...  ", path.c_str());
     fleece::Stopwatch st;
+    if(database == nullptr) {
+        database = db;
+    }
+    
     unsigned numDocs = 0;
     {
-        TransactionHelper t(db);
+        TransactionHelper t(database);
         readFileByLines(path, [&](FLSlice line)
         {
             C4Error c4err;
-            fleece::alloc_slice body = c4db_encodeJSON(db, {line.buf, line.size}, &c4err);
+            fleece::alloc_slice body = c4db_encodeJSON(database, {line.buf, line.size}, &c4err);
             REQUIRE(body.buf);
 
             char docID[20];
@@ -639,7 +643,7 @@ unsigned C4Test::importJSONLines(string path, double timeout, bool verbose) {
             rq.docID = c4str(docID);
             rq.allocedBody = {(void*)body.buf, body.size};
             rq.save = true;
-            C4Document *doc = c4doc_put(db, &rq, nullptr, &c4err);
+            C4Document *doc = c4doc_put(database, &rq, nullptr, &c4err);
             REQUIRE(doc != nullptr);
             c4doc_free(doc);
             ++numDocs;
