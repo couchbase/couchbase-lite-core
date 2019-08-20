@@ -13,7 +13,7 @@ HEADER_SEARCH_PATHS = $(HEADER_SEARCH_PATHS)
 
 LIBRARY_SEARCH_PATHS = $(inherited) $(LIBWEBSOCKETS)/build/lib  $(inherited) $(MBEDTLS)/build/library
 
-WARNING_CFLAGS = $(inherited) -Wno-documentation
+WARNING_CFLAGS = $(inherited) -Wno-documentation // FIXME: Just until sockpp headers are fixed
 
 OTHER_LDFLAGS = -all_load -lmbedtls -lmbedcrypto -lmbedx509
 

@@ -26,9 +26,8 @@
 #include "c4ExceptionUtils.hh"
 #include "c4ListenerInternal.hh"
 #include "PlatformCompat.hh"
-#include "sockpp/tcp_acceptor.h"
-#include "sockpp/mbedtls_context.h"
 #include <mutex>
+
 #ifdef _MSC_VER
 #include <shlwapi.h>
 #define FNM_PATHNAME ""
@@ -36,8 +35,16 @@
 #include <fnmatch.h>
 #endif
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdocumentation"
+#include "sockpp/tcp_acceptor.h"
+#include "sockpp/mbedtls_context.h"
+#pragma clang diagnostic pop
+
+
 namespace litecore { namespace REST {
     using namespace std;
+    using namespace fleece;
     using namespace litecore::net;
     using namespace sockpp;
 
@@ -126,20 +133,27 @@ namespace litecore { namespace REST {
 
 
     void Server::dispatchRequest(RequestResponse *rq) {
-        c4log(RESTLog, kC4LogInfo, "%s %s", MethodName(rq->method()), rq->path().c_str());
+        Method method = rq->method();
+        if (method == Method::GET && rq->header("Connection") == "Upgrade"_sl)
+            method = Method::UPGRADE;
+
+        c4log(RESTLog, kC4LogInfo, "%s %s", MethodName(method), rq->path().c_str());
         lock_guard<mutex> lock(_mutex);
         try{
             string pathStr(rq->path());
-            auto rule = findRule(rq->method(), pathStr);
+            auto rule = findRule(method, pathStr);
             if (rule) {
                 c4log(RESTLog, kC4LogInfo, "Matched rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
                 rule->handler(*rq);
-            } else if (nullptr != (rule = findRule(Methods::ALL, pathStr))) {
-                c4log(RESTLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
-                rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
-            } else {
+            } else if (nullptr == (rule = findRule(Methods::ALL, pathStr))) {
                 c4log(RESTLog, kC4LogInfo, "No rule matched path %s", pathStr.c_str());
                 rq->respondWithStatus(HTTPStatus::NotFound, "Not found");
+            } else {
+                c4log(RESTLog, kC4LogInfo, "Wrong method for rule %s for path %s", rule->pattern.c_str(), pathStr.c_str());
+                if (method == Method::UPGRADE)
+                    rq->respondWithStatus(HTTPStatus::Forbidden, "No upgrade available");
+                else
+                    rq->respondWithStatus(HTTPStatus::MethodNotAllowed, "Method not allowed");
             }
         } catch (const std::exception &x) {
             c4log(RESTLog, kC4LogWarning, "HTTP handler caught C++ exception: %s", x.what());

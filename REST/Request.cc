@@ -96,7 +96,8 @@ namespace litecore { namespace REST {
         _path = request.path;
         _queries = request.query;
         _headers = Doc(request.headers.data());
-        _body = _socket->readHTTPBody(request.headers);
+        if (_method == Method::POST || _method == Method::PUT)
+            _body = _socket->readHTTPBody(request.headers);
     }
 
 

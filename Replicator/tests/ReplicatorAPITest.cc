@@ -151,6 +151,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Invalid URLs", "[Push][!throws]") {
 
 // Test connection-refused error by connecting to a bogus port of localhost
 TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
+    ExpectingExceptions x;
     _address.hostname = C4STR("localhost");
     _address.port = 1;  // wrong port!
     replicate(kC4Disabled, kC4OneShot, false);
@@ -165,6 +166,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Connection Failure", "[Push]") {
 
 // Test host-not-found error by connecting to a nonexistent hostname
 TEST_CASE_METHOD(ReplicatorAPITest, "API DNS Lookup Failure", "[Push]") {
+    ExpectingExceptions x;
     _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
     replicate(kC4Disabled, kC4OneShot, false);
     CHECK(_callbackStatus.error.domain == NetworkDomain);

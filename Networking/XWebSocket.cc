@@ -126,9 +126,8 @@ namespace litecore { namespace websocket {
             
             onConnect();
         } catch (exception &x) {
-            CloseStatus status;
-            // TODO: populate
-            delegate().onWebSocketClose(status);
+            closeWithError(x);
+            release(this);
             return;
         }
 

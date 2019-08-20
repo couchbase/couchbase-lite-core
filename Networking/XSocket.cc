@@ -264,8 +264,10 @@ namespace litecore { namespace net {
         int64_t contentLength;
         if (getIntHeader(headers, "Content-Length"_sl, contentLength)) {
             // Read exactly Content-Length bytes:
-            body.resize(contentLength);
-            readExactly((void*)body.buf, (size_t)contentLength);
+            if (contentLength > 0) {
+                body.resize(contentLength);
+                readExactly((void*)body.buf, (size_t)contentLength);
+            }
         } else {
             // No Content-Length, so read till EOF:
             body.resize(1024);
@@ -315,7 +317,7 @@ namespace litecore { namespace net {
     void HTTPClientSocket::connect() {
         string hostname(slice(_addr.hostname));
         auto socket = make_unique<tcp_connector>(inet_address{hostname, _addr.port});
-        if (_addr.isSecure()) {
+        if (_addr.isSecure() && *socket) {
             if (!_tlsContext)
                 _tlsContext = _tlsContext = &tls_context::default_context();
             _socket = TLSContext()->wrap_socket(move(socket), tls_context::CLIENT, hostname);
