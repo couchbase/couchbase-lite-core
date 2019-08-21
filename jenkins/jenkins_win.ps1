@@ -8,8 +8,8 @@ try {
     Get-ChildItem -Path $pwd -Exclude "couchbase-lite-core" | Move-Item -Destination "couchbase-lite-core"
     & 'C:\Program Files\Git\bin\git.exe' clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $env:BRANCH --recursive --depth 1 couchbase-lite-core-EE
 
-    New-Item -Type Directory -ErrorAction Ignore $env:WORKSPACE\couchbase-lite-core\build_cmake\x64
-    Set-Location $env:WORKSPACE\couchbase-lite-core\build_cmake\x64
+    New-Item -Type Directory -ErrorAction Ignore couchbase-lite-core\build_cmake\x64
+    Set-Location couchbase-lite-core\build_cmake\x64
     & 'C:\Program Files\CMake\bin\cmake.exe' -G "Visual Studio 14 2015 Win64" -DBUILD_ENTERPRISE=ON ..\..
     if($LASTEXITCODE -ne 0) {
         Write-Host "Failed to run CMake!" -ForegroundColor Red

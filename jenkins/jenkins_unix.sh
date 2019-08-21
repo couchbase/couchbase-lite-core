@@ -19,8 +19,8 @@ mv !(couchbase-lite-core) couchbase-lite-core
 git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH --recursive --depth 1 couchbase-lite-core-EE
 
 ulimit -c unlimited # Enable crash dumps
-mkdir -p "$WORKSPACE/couchbase-lite-core/build_cmake/x64"
-pushd "$WORKSPACE/couchbase-lite-core/build_cmake/x64"
+mkdir -p "couchbase-lite-core/build_cmake/x64"
+pushd "couchbase-lite-core/build_cmake/x64"
 cmake -DBUILD_ENTERPRISE=ON ../..
 make -j8
 pushd LiteCore/tests
