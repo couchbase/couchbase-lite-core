@@ -16,7 +16,7 @@ fi
 
 mkdir "couchbase-lite-core"
 mv !(couchbase-lite-core) couchbase-lite-core
-git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $env:BRANCH --recursive --depth 1 couchbase-lite-core-EE
+git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH --recursive --depth 1 couchbase-lite-core-EE
 
 ulimit -c unlimited # Enable crash dumps
 mkdir -p "$WORKSPACE/couchbase-lite-core/build_cmake/x64"
