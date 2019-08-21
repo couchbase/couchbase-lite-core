@@ -15,6 +15,7 @@ if ! [ -x "$(command -v git)" ]; then
 fi
 
 mkdir "couchbase-lite-core"
+git submodule update --init --recursive
 mv !(couchbase-lite-core) couchbase-lite-core
 git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH --recursive --depth 1 couchbase-lite-core-EE
 

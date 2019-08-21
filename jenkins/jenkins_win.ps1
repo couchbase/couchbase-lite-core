@@ -4,6 +4,7 @@ if($env:CHANGE_TARGET) {
 
 Push-Location "$PSScriptRoot\.."
 try {
+    & 'C:\Program Files\Git\bin\git.exe' submodule update --init --recursive
     New-Item -Type Directory "couchbase-lite-core"
     Get-ChildItem -Path $pwd -Exclude "couchbase-lite-core" | Move-Item -Destination "couchbase-lite-core"
     & 'C:\Program Files\Git\bin\git.exe' clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $env:BRANCH --recursive --depth 1 couchbase-lite-core-EE
