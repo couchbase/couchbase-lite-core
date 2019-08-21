@@ -28,6 +28,7 @@
 #include "PlatformCompat.hh"
 #include <mutex>
 
+// TODO: Remove these pragmas when doc-comments in sockpp are fixed
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
 #include "sockpp/tcp_acceptor.h"

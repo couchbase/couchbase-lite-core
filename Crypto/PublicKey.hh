@@ -89,6 +89,9 @@ namespace litecore { namespace crypto {
             locked away in secure storage. */
         fleece::alloc_slice privateKeyData(KeyFormat format =KeyFormat::DER);
 
+        /** Is the private key data accessible? I.e. will \ref privateKeyData return non-null?
+            \ref PersistentPrivateKey overrides this to return false, since the key is locked
+            in secure storage. */
         virtual bool isPrivateKeyDataAvailable()        {return true;}
 
         /** The public key. */
@@ -101,6 +104,12 @@ namespace litecore { namespace crypto {
     };
 
 
+#ifdef __APPLE__
+// TODO: Implement subclasses for other platforms
+#define PERSISTENT_PRIVATE_KEY_AVAILABLE
+#endif
+
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 
     /** An asymmetric key-pair, with persistent storage in a secure container. The type of
         container is platform-specific; for example, on iOS and macOS it is the Keychain.
@@ -111,17 +120,12 @@ namespace litecore { namespace crypto {
             iOS / macOS Keychain) associated with the given label. */
         static fleece::Retained<PersistentPrivateKey> generateRSA(unsigned keySizeInBits);
 
-        /** Loads an existing stored key-pair with the given label, or returns nullptr if none. */
-//        static fleece::Retained<PersistentPrivateKey> withPersistentID(const std::string &id);
-
         /** Loads an existing stored key-pair that matches the given public key. */
         static fleece::Retained<PersistentPrivateKey> withPublicKey(PublicKey* NONNULL);
 
         /** Permanently removes the key-pair from storage.
-            Don't make any more calls to this object. */
+            Don't make any more calls to this object afterwards. */
         virtual void remove() =0;
-
-//        virtual std::string persistentID() =0;
 
         virtual bool isPrivateKeyDataAvailable() override   {return false;}
 
@@ -153,5 +157,7 @@ namespace litecore { namespace crypto {
 
         unsigned const _keyLength;              // In bytes, not bits!
     };
+
+#endif // PERSISTENT_PRIVATE_KEY_AVAILABLE
 
 } }

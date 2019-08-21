@@ -72,13 +72,7 @@ TEST_CASE("Self-signed cert generation", "[Certs]") {
 }
 
 
-//static void writeSlice(slice s, const char *path) {
-//    FILE *f = fopen(path, "w");
-//    fwrite(s.buf, s.size, 1, f);
-//    fclose(f);
-//}
-
-
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE("Persistent key and cert", "[Certs]") {
     Retained<PersistentPrivateKey> key = PersistentPrivateKey::generateRSA(2048);
     cerr << "Public key raw data: " << key->publicKeyData(KeyFormat::Raw) << "\n";
@@ -107,6 +101,7 @@ TEST_CASE("Persistent key and cert", "[Certs]") {
     CHECK(pubKey->data(KeyFormat::DER) == key->publicKeyData(KeyFormat::DER));
     CHECK(pubKey->data(KeyFormat::PEM) == key->publicKeyData(KeyFormat::PEM));
 }
+#endif
 
 
 TEST_CASE("Cert request", "[Certs]") {

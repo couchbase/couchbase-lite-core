@@ -90,6 +90,10 @@ namespace litecore { namespace crypto {
 #pragma mark - KEYPAIR:
 
 
+#ifndef PERSISTENT_PRIVATE_KEY_AVAILABLE
+#error PERSISTENT_PRIVATE_KEY_AVAILABLE should have been defined in PublicKey.hh
+#endif
+
     // Concrete subclass of KeyPair that uses Apple's Keychain and SecKey APIs.
     class KeychainKeyPair : public PersistentPrivateKey {
     public:

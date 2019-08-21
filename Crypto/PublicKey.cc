@@ -108,6 +108,8 @@ namespace litecore { namespace crypto {
     }
 
 
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
+    
     PersistentPrivateKey::PersistentPrivateKey(unsigned keySizeInBits)
     :_keyLength( (keySizeInBits + 7) / 8)
     {
@@ -148,5 +150,6 @@ namespace litecore { namespace crypto {
         ... platform specific code...
     }
 #endif
-
+#endif // PERSISTENT_PRIVATE_KEY_AVAILABLE
+    
 } }

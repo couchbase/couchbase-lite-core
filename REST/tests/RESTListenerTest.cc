@@ -97,6 +97,7 @@ public:
     }
 
 
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
     void useTLSWithPersistentKey() {
         C4Log("Using TLS w/persistent key for this test");
         if (!sPersistentIdentity) {
@@ -109,6 +110,7 @@ public:
         }
         useIdentity(sPersistentIdentity);
     }
+#endif
 
 
     void start() {
@@ -411,6 +413,7 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert", "[REST][TLS][C]") {
 }
 
 
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
 TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][TLS][C]") {
     useTLSWithPersistentKey();
     pinnedCert = sPersistentIdentity->cert;
@@ -419,6 +422,7 @@ TEST_CASE_METHOD(C4RESTTest, "TLS REST pinned cert persistent key", "[REST][TLS]
     REQUIRE(body);
     CHECK(to_str(body["couchdb"]) == "Welcome");
 }
+#endif
 
 
 //#endif // COUCHBASE_ENTERPRISE

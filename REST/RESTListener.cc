@@ -115,11 +115,15 @@ namespace litecore { namespace REST {
                     error::_throw(error::InvalidParameter, "Can't parse private key data");
                 break;
             case kC4PrivateKeyFromCert:
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
                 privateKey = (PrivateKey*) cert->loadPrivateKey();
                 if (!privateKey)
                     error::_throw(error::InvalidParameter,
                                   "No persistent private key found matching certificate public key");
                 break;
+#else
+                error::_throw(error::Unimplemented, "kC4PrivateKeyFromCert not implemented");
+#endif
         }
         return new Identity(cert, privateKey);
     }

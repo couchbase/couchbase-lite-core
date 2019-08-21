@@ -74,9 +74,11 @@ namespace litecore { namespace crypto {
             (e.g. the Keychain on Apple devices.) */
         void makePersistent();
 
+#ifdef PERSISTENT_PRIVATE_KEY_AVAILABLE
         /** Loads the private key from persistent storage, if available. */
         fleece::Retained<PersistentPrivateKey> loadPrivateKey();
-
+#endif
+        
         struct ::mbedtls_x509_crt* context()                    {return _cert.get();}
 
     private:
