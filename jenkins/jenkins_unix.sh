@@ -46,6 +46,7 @@ else
     git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH --recursive "$WORKSPACE/couchbase-lite-core-EE"
 fi
 
+ulimit -c unlimited # Enable crash dumps
 mkdir -p "$WORKSPACE/couchbase-lite-core/build_cmake/x64"
 pushd "$WORKSPACE/couchbase-lite-core/build_cmake/x64"
 cmake -DBUILD_ENTERPRISE=ON ../..
