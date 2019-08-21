@@ -8,45 +8,14 @@ if [ ! -z $CHANGE_TARGET ]; then
     BRANCH=$CHANGE_TARGET
 fi
 
-if [ -z $WORKSPACE ]; then
-    WORKSPACE="$SCRIPT_DIR/.."
-fi
-
 if ! [ -x "$(command -v git)" ]; then
   echo 'Error: git is not installed.' >&2
   exit 1
 fi
 
-# Jenkins is a pain because it doesn't give the option for no source
-# and junctions make Git blow up so the easiest way is to just clone
-# the whole freaking thing again
-COMMIT_SHA=`git rev-parse HEAD`
-if [ -d "$WORKSPACE/couchbase-lite-core" ]; then
-    pushd "$WORKSPACE/couchbase-lite-core"
-    git fetch origin
-    git reset --hard
-    git checkout $COMMIT_SHA
-    git clean -dfx .
-    popd
-else
-    git clone ssh://git@github.com/couchbase/couchbase-lite-core $WORKSPACE/couchbase-lite-core
-    pushd "$WORKSPACE/couchbase-lite-core"
-    git checkout $COMMIT_SHA
-    git submodule update --init --recursive
-    popd
-fi
-
-if [ -d "$WORKSPACE/couchbase-lite-core-EE" ]; then
-    pushd "$WORKSPACE/couchbase-lite-core-EE"
-    git fetch origin
-    git reset --hard
-    git checkout $BRANCH
-    git clean -dfx .
-    git pull origin $BRANCH
-    popd
-else
-    git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $BRANCH --recursive "$WORKSPACE/couchbase-lite-core-EE"
-fi
+mkdir "couchbase-lite-core"
+mv * couchbase-lite-core
+git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $env:BRANCH --recursive --depth 1 couchbase-lite-core-EE
 
 ulimit -c unlimited # Enable crash dumps
 mkdir -p "$WORKSPACE/couchbase-lite-core/build_cmake/x64"
@@ -59,6 +28,3 @@ popd
 
 pushd C/tests
 LiteCoreTestsQuiet=1 ./C4Tests -r list
-popd
-
-popd
