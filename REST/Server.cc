@@ -28,13 +28,6 @@
 #include "PlatformCompat.hh"
 #include <mutex>
 
-#ifdef _MSC_VER
-#include <shlwapi.h>
-#define FNM_PATHNAME ""
-#else
-#include <fnmatch.h>
-#endif
-
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdocumentation"
 #include "sockpp/tcp_acceptor.h"
