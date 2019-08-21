@@ -36,6 +36,11 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
+    static C4Error StoppingErrors[] = {
+        { LiteCoreDomain, kC4ErrorUnexpectedError,0 },
+        { WebSocketDomain, 503, 0 }
+    };
+
     Replicator::Replicator(C4Database* db,
                            websocket::WebSocket *webSocket,
                            Delegate &delegate,
@@ -241,11 +246,14 @@ namespace litecore { namespace repl {
 
     void Replicator::onError(C4Error error) {
         Worker::onError(error);
-        if (error.domain == LiteCoreDomain && error.code == kC4ErrorUnexpectedError) {
-            // Treat an exception as a fatal error for replication:
-            alloc_slice message( c4error_getDescription(error) );
-            logError("Stopping due to fatal error: %.*s", SPLAT(message));
-            _disconnect(websocket::kCodeUnexpectedCondition, "An exception was thrown"_sl);
+        for(const C4Error& stoppingErr : StoppingErrors) {
+            if(stoppingErr.domain == error.domain && stoppingErr.code == error.code) {
+                // Treat an exception as a fatal error for replication:
+                alloc_slice message( c4error_getDescription(error) );
+                logError("Stopping due to fatal error: %.*s", SPLAT(message));
+                _disconnect(websocket::kCodeUnexpectedCondition, "An exception was thrown"_sl);
+                return;
+            }
         }
     }
 
