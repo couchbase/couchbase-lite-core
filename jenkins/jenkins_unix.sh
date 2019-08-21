@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+shopt -s extglob dotglob
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
@@ -14,7 +15,7 @@ if ! [ -x "$(command -v git)" ]; then
 fi
 
 mkdir "couchbase-lite-core"
-mv * couchbase-lite-core
+mv !(couchbase-lite-core) couchbase-lite-core
 git clone ssh://git@github.com/couchbase/couchbase-lite-core-EE --branch $env:BRANCH --recursive --depth 1 couchbase-lite-core-EE
 
 ulimit -c unlimited # Enable crash dumps
