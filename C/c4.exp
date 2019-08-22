@@ -161,6 +161,7 @@ _c4queryobs_getEnumerator
 _c4repl_new
 _c4repl_newWithSocket
 _c4repl_free
+_c4repl_start
 _c4repl_stop
 _c4repl_getStatus
 

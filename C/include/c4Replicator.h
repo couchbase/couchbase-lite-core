@@ -158,6 +158,7 @@ extern "C" {
         C4ReplicatorBlobProgressCallback    onBlobProgress;    ///< Callback notifying blob progress
         void*                               callbackContext;   ///< Value to be passed to the callbacks.
         const C4SocketFactory*              socketFactory;     ///< Custom C4SocketFactory, if not NULL
+        bool                                dontStart;         ///< Don't start automatically
     } C4ReplicatorParameters;
 
 
@@ -193,6 +194,10 @@ extern "C" {
         Does not stop the replicator -- if the replicator still has other internal references,
         it will keep going. If you need the replicator to stop, call `c4repl_stop()` first. */
     void c4repl_free(C4Replicator* repl) C4API;
+
+    /** Tells a replicator to start.
+        **Only call this if you set \ref dontStart in the \ref C4ReplicatorParameters !!** */
+    void c4repl_start(C4Replicator* repl C4NONNULL) C4API;
 
     /** Tells a replicator to stop. */
     void c4repl_stop(C4Replicator* repl C4NONNULL) C4API;
