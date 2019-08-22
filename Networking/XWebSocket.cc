@@ -60,6 +60,7 @@ namespace litecore { namespace websocket {
 
 
     XWebSocket::~XWebSocket() {
+        logDebug("~XWebSocket");
         // This could be called from various threads, including the reader...
         if (_readerThread.joinable())
             _readerThread.detach();
@@ -68,13 +69,14 @@ namespace litecore { namespace websocket {
 
     void XWebSocket::connect() {
         // Spawn a thread to connect and run the read loop:
+        WebSocketImpl::connect();
         retain(this);
         _readerThread = thread([&]() {_connect();});
     }
 
 
     void XWebSocket::closeSocket() {
-        logVerbose("XWEBSOCKET: closeSocket");
+        logVerbose("closeSocket");
         _socket->close();
         
         // Force reader & writer threads to wake up so they'll know the socket closed:
@@ -85,9 +87,11 @@ namespace litecore { namespace websocket {
         }
     }
 
+
     void XWebSocket::sendBytes(alloc_slice bytes) {
         _outbox.push(bytes);
     }
+
 
     void XWebSocket::receiveComplete(size_t byteCount) {
         unique_lock<mutex> lock(_receiveMutex);
@@ -98,13 +102,15 @@ namespace litecore { namespace websocket {
             _receiveCond.notify_one();
     }
 
+
     void XWebSocket::requestClose(int status, fleece::slice message) {
         Assert(false, "Should not be called");
     }
 
 
-
+    // This runs on its own thread.
     void XWebSocket::_connect() {
+        SetThreadName("WebSocket reader");
         try {
             // Connect:
             auto clientSocket = dynamic_cast<net::HTTPClientSocket*>(_socket.get());
@@ -112,22 +118,24 @@ namespace litecore { namespace websocket {
             clientSocket->connect();
 
             // WebSocket handshake:
+            logVerbose("sending WebSocket handshake request");
             Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
             string protocol = string(options()[kC4SocketOptionWSProtocols].asString());
             string nonce = clientSocket->sendWebSocketRequest(headers, protocol);
             auto response = clientSocket->readHTTPResponse();
             gotHTTPResponse(int(response.status), response.headers);
 
-            CloseStatus status;
-            if (!clientSocket->checkWebSocketResponse(response, nonce, protocol, status)) {
-                delegate().onWebSocketClose(status);
+            CloseStatus closeStatus;
+            if (!clientSocket->checkWebSocketResponse(response, nonce, protocol, closeStatus)) {
+                onClose(closeStatus);
+                _socket->close();
                 release(this);
                 return;
             }
             
             onConnect();
         } catch (const std::exception &x) {
-            closeWithError(x);
+            closeWithError(x, "connect");
             release(this);
             return;
         }
@@ -139,9 +147,8 @@ namespace litecore { namespace websocket {
     }
 
 
-    // This runs on its own thread.
+    // This runs on the same thread as _connect.
     void XWebSocket::readLoop() {
-        SetThreadName("WebSocket reader");
         try {
             while (true) {
                 // Wait until there's room to read more data:
@@ -154,7 +161,7 @@ namespace litecore { namespace websocket {
 
                 // Read from the socket:
                 slice data = _socket->read(capacity);
-                logVerbose("XWEBSOCKET: Received %zu bytes from socket", data.size);
+                logVerbose("Received %zu bytes from socket", data.size);
                 if (data.size == 0)
                     break; // EOF
 
@@ -167,11 +174,11 @@ namespace litecore { namespace websocket {
                 // Dispatch to the client:
                 onReceive(data);
             }
-            logInfo("XWEBSOCKET: EOF on readLoop");
+            logInfo("EOF on readLoop");
             onClose(0);
 
         } catch (const exception &x) {
-            closeWithError(x);
+            closeWithError(x, "readLoop");
         }
         _writerThread.join();
         release(this);
@@ -188,20 +195,21 @@ namespace litecore { namespace websocket {
                     break;
                 if (_socket->write_n(data) == 0)
                     break;
-                logVerbose("XWEBSOCKET: Wrote %zu bytes to socket", data.size);
+                logVerbose("Wrote %zu bytes to socket", data.size);
                 onWriteComplete(data.size);     // notify that data's been written
             }
             logVerbose("EOF on writeLoop");
         } catch (const exception &x) {
-            closeWithError(x);
+            closeWithError(x, "writeLoop");
         }
         release(this);
     }
 
 
-    void XWebSocket::closeWithError(const exception &x) {
+    void XWebSocket::closeWithError(const exception &x, const char *where) {
+        // Convert exception to CloseStatus:
         error e = net::XSocket::convertException(x);
-        logInfo("XWEBSOCKET: caught exception: %s", e.what());
+        logError("caught exception on %s: %s", where, e.what());
         alloc_slice message(e.what());
         CloseStatus status {kUnknownError, e.code, message};
         if (e.domain == error::WebSocket)

@@ -66,6 +66,7 @@ namespace litecore { namespace net {
             // Some more specific errors for certificate validation failures:
             auto tlsSocket = (tls_socket*)_socket.get();
             uint32_t flags = tlsSocket->peer_certificate_status();
+            LogToAt(websocket::WSLogDomain, Warning, "XSocket TLS handshake failed; cert verify status 0x%02x", flags);
             if (flags != 0 && flags != UINT32_MAX) {
                 string message = tlsSocket->peer_certificate_status_message();
                 int code = kNetErrTLSCertUntrusted;
@@ -80,6 +81,7 @@ namespace litecore { namespace net {
                 error{error::Network, code, message}._throw();
             }
         }
+
         _throwLastError();
     }
 
@@ -204,12 +206,15 @@ namespace litecore { namespace net {
         int err = _socket->last_error();
         Assert(err != 0);
         if (err > 0) {
+            LogToAt(websocket::WSLogDomain, Warning,
+                    "XSocket got POSIX error %d; throwing exception...", err);
             error::_throw(error::POSIX, err);
         } else {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
             mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
-            Warn("Got mbedTLS error -0x%04X \"%s\"; throwing exception...", -err, msgbuf);
+            LogToAt(websocket::WSLogDomain, Warning,
+                    "XSocket got mbedTLS error -0x%04X \"%s\"; throwing exception...", -err, msgbuf);
             static constexpr struct {int mbed; int net;} kMbedToNetErr[] = {
                 {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
                 {MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE, kNetErrTLSHandshakeFailed},
@@ -228,7 +233,7 @@ namespace litecore { namespace net {
 
 
     void XSocket::_throwBadHTTP() {
-        error{error::WebSocket, 599, "Invalid HTTP syntax"}._throw(); // TODO: error code
+        error{error::WebSocket, 400, "Received invalid HTTP response"}._throw();
     }
 
 
@@ -479,11 +484,11 @@ namespace litecore { namespace net {
 #pragma mark - HTTP SERVER:
 
 
-    void HTTPResponderSocket::acceptSocket(stream_socket &&s, bool useTLS)
-    {
+    void HTTPResponderSocket::acceptSocket(stream_socket &&s, bool useTLS) {
         acceptSocket( make_unique<tcp_socket>(move(s)), useTLS );
     }
 
+    
     void HTTPResponderSocket::acceptSocket(unique_ptr<stream_socket> socket, bool useTLS) {
         if (_tlsContext)
             _socket = _tlsContext->wrap_socket(move(socket), tls_context::SERVER, "");

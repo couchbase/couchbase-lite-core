@@ -46,7 +46,7 @@ namespace litecore { namespace websocket {
         void _connect();
         void readLoop();
         void writeLoop();
-        void closeWithError(const std::exception&);
+        void closeWithError(const std::exception&, const char *where);
 
         size_t readCapacity() const      {return kMaxReceivedBytesPending - _receivedBytesPending;}
 
