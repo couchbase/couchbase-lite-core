@@ -92,15 +92,18 @@ namespace litecore { namespace websocket {
 
 
     void WebSocketImpl::connect() {
+        logInfo("Connecting...");
         startResponseTimer(kConnectTimeout);
     }
 
 
     void WebSocketImpl::gotHTTPResponse(int status, const fleece::AllocedDict &headersFleece) {
+        logInfo("Got HTTP response (status %d)", status);
         delegate().onWebSocketGotHTTPResponse(status, headersFleece);
     }
 
     void WebSocketImpl::onConnect() {
+        logInfo("Connected!");
         _responseTimer->stop();
         _timeConnected.start();
         delegate().onWebSocketConnect();
@@ -117,6 +120,7 @@ namespace litecore { namespace websocket {
 
 
     bool WebSocketImpl::send(fleece::slice message, bool binary) {
+        logVerbose("Sending %zu-byte message", message.size);
         return sendOp(message, binary ? uWS::BINARY : uWS::TEXT);
     }
 
@@ -274,7 +278,15 @@ namespace litecore { namespace websocket {
     }
 
 
+    // Called from inside _protocol->consume(), with the _mutex locked
+    void WebSocketImpl::protocolError() {
+        _protocolError = true;
+        closeSocket();
+    }
+
+
     void WebSocketImpl::deliverMessageToDelegate(slice data, bool binary) {
+        logVerbose("Received %zu-byte message", data.size);
         _deliveredBytes += data.size;
         Retained<Message> message(new MessageImpl(this, data, true));
         delegate().onWebSocketMessage(message);
@@ -421,9 +433,13 @@ namespace litecore { namespace websocket {
             _pingTimer.reset();
             _responseTimer.reset();
 
-            if (_timedOut && status.reason == kWebSocketClose)
-                status = {kNetworkError, kNetErrTimeout, nullslice};
-
+            if (status.reason == kWebSocketClose) {
+                if (_timedOut)
+                    status = {kNetworkError, kNetErrTimeout, nullslice};
+                else if (_protocolError)
+                    status = {kWebSocketClose, kCodeProtocolError, nullslice};
+            }
+            
             if (_framing) {
                 bool clean = (status.code == 0
                               || (status.reason == kWebSocketClose && status.code == kCodeNormal));
@@ -497,7 +513,7 @@ namespace uWS {
 
     template <const bool isServer>
     void WebSocketProtocol<isServer>::forceClose(void *user) {
-        _sock->closeSocket();
+        _sock->protocolError();
     }
 
 
