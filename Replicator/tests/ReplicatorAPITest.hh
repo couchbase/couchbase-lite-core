@@ -188,11 +188,15 @@ public:
         params.onDocumentsEnded = _onDocsEnded;
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
+        params.dontStart = true;    // defer start until I have a chance to set _repl
 
         _repl = c4repl_new(db, _address, _remoteDBName,
                            (_remoteDBName.buf ? nullptr : (C4Database*)db2),
                            params, err);
-        return (_repl != nullptr);
+        if (!_repl)
+            return false;
+        c4repl_start(_repl);
+        return true;
     }
 
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
