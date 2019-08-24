@@ -203,10 +203,11 @@ C4Replicator* c4repl_newWithSocket(C4Database* db,
         if (!dbCopy)
             return nullptr;
         Retained<C4Replicator> replicator = new C4Replicator(dbCopy, openSocket, params);
-        if (!params.dontStart)
+        if (!params.dontStart) {
             replicator->start(true);
-        Assert(WebSocketFrom(openSocket)->hasDelegate());
-        Assert(replicator->refCount() > 1);  // Replicator is retained by the socket, will be released on close
+            Assert(WebSocketFrom(openSocket)->hasDelegate());
+            Assert(replicator->refCount() > 1);  // Replicator is retained by the socket, will be released on close
+        }
         return retain(replicator.get());   // to be balanced by release in c4repl_free()
     } catchError(outError);
     return nullptr;
