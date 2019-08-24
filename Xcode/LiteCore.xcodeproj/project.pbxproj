@@ -148,6 +148,8 @@
 		2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276CE68D2267A02500B681AC /* N1QLParserTest.cc */; };
 		2771A0CF228B4CD700B18E0A /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2771B01A1FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */; };
+		27727C54230F279D0082BCC9 /* HTTPLogic.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27727C52230F279D0082BCC9 /* HTTPLogic.hh */; };
+		27727C55230F279D0082BCC9 /* HTTPLogic.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27727C53230F279D0082BCC9 /* HTTPLogic.cc */; };
 		27766E161982DA8E00CAA464 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 27766E151982DA8E00CAA464 /* Security.framework */; };
 		2776AA272087FF6B004ACE85 /* LegacyAttachments.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2776AA252087FF6B004ACE85 /* LegacyAttachments.cc */; };
 		2776AA292087FF6B004ACE85 /* LegacyAttachments.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2776AA262087FF6B004ACE85 /* LegacyAttachments.hh */; };
@@ -1056,6 +1058,8 @@
 		2771A0EC228B832400B18E0A /* build_mbedtls.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = build_mbedtls.sh; sourceTree = SOURCE_ROOT; };
 		2771B00E1FB23DD800C6B794 /* stopwords_fr.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stopwords_fr.h; sourceTree = "<group>"; };
 		2771B0191FB2817800C6B794 /* SQLiteKeyStore+Indexes.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "SQLiteKeyStore+Indexes.cc"; sourceTree = "<group>"; };
+		27727C52230F279D0082BCC9 /* HTTPLogic.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = HTTPLogic.hh; sourceTree = "<group>"; };
+		27727C53230F279D0082BCC9 /* HTTPLogic.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = HTTPLogic.cc; sourceTree = "<group>"; };
 		2773FCF41E6783A000108780 /* Checkpoint.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Checkpoint.cc; sourceTree = "<group>"; };
 		2773FCF51E6783A000108780 /* Checkpoint.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Checkpoint.hh; sourceTree = "<group>"; };
 		2773FCFC1E67A64D00108780 /* RemoteSequenceSet.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RemoteSequenceSet.hh; sourceTree = "<group>"; };
@@ -1135,6 +1139,7 @@
 		27C319EC1A143F5D00A89EDC /* KeyStore.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = KeyStore.cc; sourceTree = "<group>"; };
 		27C319ED1A143F5D00A89EDC /* KeyStore.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KeyStore.hh; sourceTree = "<group>"; };
 		27C77301216FCF5400D5FB44 /* c4PredictiveQueryTest+CoreML.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "c4PredictiveQueryTest+CoreML.mm"; sourceTree = "<group>"; };
+		27CBD3B6231056D500727E1C /* Optional.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Optional.hh; sourceTree = "<group>"; };
 		27CCC7B61E525DD800CE1989 /* blip_cpp.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = blip_cpp.xcodeproj; path = "BLIP-Cpp/blip_cpp.xcodeproj"; sourceTree = "<group>"; };
 		27CCC7D61E52613C00CE1989 /* Replicator.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Replicator.cc; sourceTree = "<group>"; };
 		27CCC7D71E52613C00CE1989 /* Replicator.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Replicator.hh; sourceTree = "<group>"; };
@@ -1531,14 +1536,16 @@
 		271BA53122960DF900D49D13 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
-				271BA53C2297008200D49D13 /* HTTPTypes.hh */,
 				271C069723078176000EC09B /* HTTPTypes.cc */,
-				275E6B9B22C29EDB0032362A /* build_setup.sh */,
-				2771A0EC228B832400B18E0A /* build_mbedtls.sh */,
+				271BA53C2297008200D49D13 /* HTTPTypes.hh */,
+				27727C53230F279D0082BCC9 /* HTTPLogic.cc */,
+				27727C52230F279D0082BCC9 /* HTTPLogic.hh */,
 				270F2BD42301E8AE00D8DB21 /* XSocket.cc */,
 				270F2BD32301E8AE00D8DB21 /* XSocket.hh */,
 				27304A0423023FCF0049AC69 /* XWebSocket.cc */,
 				27304A0323023FCF0049AC69 /* XWebSocket.hh */,
+				275E6B9B22C29EDB0032362A /* build_setup.sh */,
+				2771A0EC228B832400B18E0A /* build_mbedtls.sh */,
 			);
 			name = Networking;
 			path = ../Networking;
@@ -1776,6 +1783,7 @@
 			isa = PBXGroup;
 			children = (
 				276CE67D2267991400B681AC /* Any.hh */,
+				27CBD3B6231056D500727E1C /* Optional.hh */,
 				275A74461ED37992008CB57B /* Base.hh */,
 				729272F12238DB8500E7208E /* c4ExceptionUtils.cc */,
 				729272F22238DB8500E7208E /* c4ExceptionUtils.hh */,
@@ -2547,6 +2555,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				27727C54230F279D0082BCC9 /* HTTPLogic.hh in Headers */,
 				270F2BD52301E8AE00D8DB21 /* XSocket.hh in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -3327,6 +3336,7 @@
 				2742D10C2305C25D003197E1 /* Response.cc in Sources */,
 				2754620C22F39D5500DF87B0 /* Certificate.cc in Sources */,
 				27AFF3A923036B2500B4D6C4 /* exception.cpp in Sources */,
+				27727C55230F279D0082BCC9 /* HTTPLogic.cc in Sources */,
 				278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */,
 				27AFF3AA23036B2500B4D6C4 /* socket.cpp in Sources */,
 				27AFF3A823036B2500B4D6C4 /* inet_address.cpp in Sources */,

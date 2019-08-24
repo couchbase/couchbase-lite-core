@@ -92,6 +92,8 @@ namespace litecore {
         error(error::Domain, int code, const std::string &what);
         explicit error (LiteCoreError e)     :error(LiteCore, e) {}
 
+        error& operator= (const error &e);
+
         [[noreturn]] void _throw();
 
         /** Returns an equivalent error in the LiteCore or POSIX domain. */

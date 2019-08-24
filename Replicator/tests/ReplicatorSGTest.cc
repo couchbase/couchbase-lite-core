@@ -58,6 +58,27 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[.SyncServer]") {
 }
 
 
+TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Success", "[.SyncServer]") {
+    _remoteDBName = kProtectedDBName;
+
+    Encoder enc;
+    enc.beginDict();
+        enc.writeKey(C4STR(kC4ReplicatorOptionAuthentication));
+        enc.beginDict();
+            enc.writeKey(C4STR(kC4ReplicatorAuthType));
+            enc.writeString("Basic"_sl);
+            enc.writeKey(C4STR(kC4ReplicatorAuthUserName));
+            enc.writeString("pupshaw");
+            enc.writeKey(C4STR(kC4ReplicatorAuthPassword));
+            enc.writeString("frank");
+        enc.endDict();
+    enc.endDict();
+    _options = AllocedDict(enc.finish());
+
+    replicate(kC4OneShot, kC4Disabled, true);
+}
+
+
 TEST_CASE_METHOD(ReplicatorAPITest, "API ExtraHeaders", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
 

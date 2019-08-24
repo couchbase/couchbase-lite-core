@@ -299,8 +299,14 @@ namespace litecore {
     :runtime_error(what),
     domain(d),
     code(getPrimaryCode(d, c))
-    {
-        
+    { }
+
+
+    error& error::operator= (const error &e) {
+        // This has to be hacked, since `domain` and `code` are marked `const`.
+        this->~error();
+        new (this) error(e);
+        return *this;
     }
 
 

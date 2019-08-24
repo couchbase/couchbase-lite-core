@@ -169,7 +169,7 @@ namespace litecore { namespace net {
     }
 
 
-    slice XSocket::readToDelimiter(slice delim) {
+    slice XSocket::readToDelimiter(slice delim, bool includeDelim) {
         if (_inputLen > 0 && _inputStart > _input.buf) {
             // Slide unread input down to start of buffer:
             memmove((void*)_input.buf, _inputStart, _inputLen);
@@ -180,9 +180,10 @@ namespace litecore { namespace net {
             // Look for delimiter:
             slice found = slice(_inputStart, _inputLen).find(delim);
             if (found) {
-                slice result(_inputStart, found.buf);
-                _inputLen -= result.size + found.size;
+                slice result(_inputStart, (includeDelim ? found.end() : found.buf));
+                auto inputEnd = _inputStart + _inputLen;
                 _inputStart = (uint8_t*)found.end();
+                _inputLen = inputEnd - _inputStart;
                 return result;
             }
 
@@ -425,59 +426,6 @@ namespace litecore { namespace net {
         response.headers = readHeaders();
         _readState = kBody;
         return response;
-    }
-
-
-    string HTTPClientSocket::sendWebSocketRequest(Dict headers, const string &protocol) {
-        Assert(_writeState == kStatusLine);
-        uint8_t nonceBuf[16];
-        slice nonceBytes(nonceBuf, sizeof(nonceBuf));
-        SecureRandomize(nonceBytes);
-        string nonce = nonceBytes.base64String();
-
-        sendHTTPRequest("GET", [&](stringstream &rq) {
-            rq << "Connection: Upgrade\r\n"
-                  "Upgrade: websocket\r\n"
-                  "Sec-WebSocket-Version: 13\r\n"
-                  "Sec-WebSocket-Key: " << nonce << "\r\n";
-            if (!protocol.empty())
-                rq << "Sec-WebSocket-Protocol: " << protocol << "\r\n";
-            writeHeaders(rq, headers);
-        });
-        return nonce;
-    }
-
-
-    bool HTTPClientSocket::checkWebSocketResponse(const HTTPResponse &rs,
-                                         const string &nonce,
-                                         const string &requiredProtocol,
-                                         CloseStatus &status) {
-        if (rs.status != REST::HTTPStatus::Upgraded) {
-            if (IsSuccess(rs.status))
-                status = {kWebSocketClose, kCodeProtocolError, "Unexpected HTTP response status"_sl};
-            else
-                status = {kWebSocketClose, int(rs.status), alloc_slice(rs.message)};
-            return false;
-        }
-        if (rs.headers["Connection"_sl].asString() != "Upgrade"_sl
-                || rs.headers["Upgrade"_sl].asString() != "websocket"_sl) {
-            status = {kWebSocketClose, kCodeProtocolError, "Server failed to upgrade connection"_sl};
-            return false;
-        }
-        if (!requiredProtocol.empty()
-                && rs.headers["Sec-Websocket-Protocol"_sl].asString() != slice(requiredProtocol)) {
-            status = {kWebSocketClose, 403, "Server did not accept BLIP replication protocol"_sl};
-            return false;
-        }
-
-        // Check the returned nonce:
-        SHA1 digest{slice(nonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
-        string resultNonce = slice(&digest, sizeof(digest)).base64String();
-        if (rs.headers["Sec-Websocket-Accept"].asString() != slice(resultNonce)) {
-            status = {kWebSocketClose, kCodeProtocolError, "Server returned invalid nonce"_sl};
-            return false;
-        }
-        return true;
     }
 
 

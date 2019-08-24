@@ -17,8 +17,10 @@
 //
 
 #include "XWebSocket.hh"
+#include "HTTPLogic.hh"
 #include "c4Replicator.h"
 #include "c4Socket+Internal.hh"
+#include "StringUtil.hh"
 #include "ThreadUtil.hh"
 #include "sockpp/mbedtls_context.h"
 #include "sockpp/exception.h"
@@ -48,13 +50,11 @@ namespace litecore { namespace websocket {
                            Role role,
                            const fleece::AllocedDict &options)
     :WebSocketImpl(url, role, options, true)
-    ,_socket(new net::HTTPClientSocket(repl::Address(url)))
     {
         slice pinnedCert = options[kC4ReplicatorOptionPinnedServerCert].asData();
         if (pinnedCert) {
             _tlsContext.reset(new sockpp::mbedtls_context);
             _tlsContext->allow_only_certificate(string(pinnedCert));
-            _socket->setTLSContext(_tlsContext.get());
         }
         // TODO: Check kC4ReplicatorOptionAuthentication for client auth
     }
@@ -109,31 +109,72 @@ namespace litecore { namespace websocket {
     }
 
 
+#pragma mark - BACKGROUND ACTIVITY:
+
+
+    unique_ptr<HTTPClientSocket> XWebSocket::_connectLoop() {
+        Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
+        HTTPLogic logic {repl::Address(url()), Headers(headers)};
+        logic.setWebSocketProtocol(options()[kC4SocketOptionWSProtocols].asString());
+        bool usedAuth = false;
+        while (true) {
+            auto socket = make_unique<HTTPClientSocket>(logic.directAddress());
+            socket->setTLSContext(_tlsContext.get());
+            socket->connect();
+            string request = logic.requestToSend();
+            logDebug("Sending HTTP request: %s", request.c_str());
+            socket->write_n(request);
+            slice response = socket->readToDelimiter("\r\n\r\n"_sl, true);
+            logDebug("Received HTTP response: %.*s", SPLAT(response));
+
+            switch (logic.receivedResponse(response)) {
+                case HTTPLogic::kSuccess:
+                    gotHTTPResponse(int(logic.status()), logic.responseHeaders());
+                    return socket;
+                case HTTPLogic::kRetry:
+                    break; // redirected; go around again
+                case HTTPLogic::kAuthenticate: {
+                    if (!usedAuth && !logic.authChallenge()->forProxy
+                                  && logic.authChallenge()->type == "Basic") {
+                        Dict auth = options()[kC4ReplicatorOptionAuthentication].asDict();
+                        slice authType = auth[kC4ReplicatorAuthType].asString();
+                        if (authType == slice(kC4AuthTypeBasic)) {
+                            slice username = auth[kC4ReplicatorAuthUserName].asString();
+                            slice password = auth[kC4ReplicatorAuthPassword].asString();
+                            if (username && password) {
+                                logic.setAuthHeader(HTTPLogic::basicAuth(username, password));
+                                usedAuth = true;
+                                break; // retry with credentials
+                            }
+                        }
+                    }
+                    // give up:
+                    gotHTTPResponse(int(logic.status()), logic.responseHeaders());
+                    closeWithError(error(error::WebSocket, int(logic.status())), "connect");
+                    return nullptr;
+                }
+                case HTTPLogic::kFailure:
+                    if (logic.status() != HTTPStatus::undefined)
+                        gotHTTPResponse(int(logic.status()), logic.responseHeaders());
+                    closeWithError(*logic.error(), "connect");
+                    return nullptr;
+            }
+        }
+    }
+
+
     // This runs on its own thread.
     void XWebSocket::_connect() {
         SetThreadName("WebSocket reader");
         try {
             // Connect:
-            auto clientSocket = dynamic_cast<net::HTTPClientSocket*>(_socket.get());
-            Assert(clientSocket);
-            clientSocket->connect();
-
-            // WebSocket handshake:
-            logVerbose("sending WebSocket handshake request");
-            Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
-            string protocol = string(options()[kC4SocketOptionWSProtocols].asString());
-            string nonce = clientSocket->sendWebSocketRequest(headers, protocol);
-            auto response = clientSocket->readHTTPResponse();
-            gotHTTPResponse(int(response.status), response.headers);
-
-            CloseStatus closeStatus;
-            if (!clientSocket->checkWebSocketResponse(response, nonce, protocol, closeStatus)) {
-                onClose(closeStatus);
-                _socket->close();
+            auto socket = _connectLoop();
+            if (!socket) {
                 release(this);
                 return;
             }
-            
+
+            _socket = move(socket);
             onConnect();
         } catch (const std::exception &x) {
             closeWithError(x, "connect");
@@ -211,6 +252,10 @@ namespace litecore { namespace websocket {
         // Convert exception to CloseStatus:
         error e = net::XSocket::convertException(x);
         logError("caught exception on %s: %s", where, e.what());
+        closeWithError(e, where);
+    }
+
+    void XWebSocket::closeWithError(const error &e, const char *where) {
         alloc_slice message(e.what());
         CloseStatus status {kUnknownError, e.code, message};
         if (e.domain == error::WebSocket)

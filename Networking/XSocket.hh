@@ -71,7 +71,7 @@ namespace litecore { namespace net {
         /// On error throws an exception.
         /// This method is likely to read bytes past the delimiter! The extra bytes will be
         /// returned by subsequent reads.
-        slice readToDelimiter(slice delimiter);
+        slice readToDelimiter(slice delimiter, bool includeDelimiter =false);
 
         /// Writes to the socket and returns the number of bytes written:
             __attribute__((warn_unused_result))
@@ -140,15 +140,6 @@ namespace litecore { namespace net {
         /// Reads an HTTP response, but not the body. On failure throws an exception.
         HTTPResponse readHTTPResponse();
 
-        /// Sends a WebSocket handshake request.
-        string sendWebSocketRequest(fleece::Dict headers, const string &protocol);
-
-        /// Reads a WebSocket handshake response.
-        /// On failure returns false and stores the details in \ref outStatus.
-        bool checkWebSocketResponse(const HTTPResponse&,
-                                    const string &nonce,
-                                    const string &requiredProtocol,
-                                    websocket::CloseStatus &outStatus);
     private:
         void sendHTTPRequest(const string &method,
                              fleece::function_ref<void(std::stringstream&)>);

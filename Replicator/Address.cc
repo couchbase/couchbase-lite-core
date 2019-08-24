@@ -42,6 +42,13 @@ namespace litecore { namespace repl {
     { }
 
 
+    Address& Address::operator= (const Address &other) {
+        *((C4Address*)this) = other;
+        _url = other._url;
+        return *this;
+    }
+
+
     static alloc_slice dbURL(C4Database *db) {
         alloc_slice path(c4db_getPath(db));
         return alloc_slice(string("file:///") + string(path));

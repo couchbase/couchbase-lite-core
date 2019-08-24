@@ -35,6 +35,8 @@ namespace litecore { namespace repl {
         explicit Address(const C4Address&);
         explicit Address(c4Database* NONNULL);
 
+        Address& operator= (const Address &addr);
+
         alloc_slice url() const                             {return _url;}
         operator alloc_slice () const                       {return _url;}
 
@@ -48,7 +50,7 @@ namespace litecore { namespace repl {
         static bool pathContains(slice basePath, slice path) noexcept;
 
     private:
-        const alloc_slice _url;         // inherited slice fields point inside this
+        alloc_slice _url;         // inherited slice fields point inside this
     };
 
 } }
