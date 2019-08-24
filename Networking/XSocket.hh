@@ -132,7 +132,7 @@ namespace litecore { namespace net {
                              fleece::slice body =fleece::nullslice);
 
         struct HTTPResponse {
-            REST::HTTPStatus status;
+            HTTPStatus status;
             string message;
             fleece::AllocedDict headers;
         };
@@ -164,14 +164,14 @@ namespace litecore { namespace net {
         void acceptSocket(std::unique_ptr<sockpp::stream_socket>, bool useTLS =false);
 
         struct HTTPRequest {
-            REST::Method method;
+            Method method;
             string path, query;
             fleece::AllocedDict headers;
         };
 
         HTTPRequest readHTTPRequest();
 
-        void writeResponseLine(REST::HTTPStatus, slice message);
+        void writeResponseLine(HTTPStatus, slice message);
         void writeHeader(slice name, slice value);
         void endHeaders();
     };

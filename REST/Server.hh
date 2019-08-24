@@ -60,17 +60,17 @@ namespace litecore { namespace REST {
             Patterns use glob syntax: <http://man7.org/linux/man-pages/man7/glob.7.html>
             Multiple patterns can be joined with a "|".
             Patterns are tested in the order the handlers are added, and the first match is used.*/
-        void addHandler(Methods, const std::string &pattern, const Handler&);
+        void addHandler(net::Methods, const std::string &pattern, const Handler&);
 
     protected:
         struct URIRule {
-            Methods     methods;
+            net::Methods     methods;
             std::string pattern;
             std::regex  regex;
             Handler     handler;
         };
 
-        URIRule* findRule(Method method, const std::string &path);
+        URIRule* findRule(net::Method method, const std::string &path);
         ~Server() = default;
 
         void dispatchRequest(RequestResponse*);

@@ -30,6 +30,7 @@ using namespace std;
 using namespace fleece;
 
 namespace litecore { namespace REST {
+    using namespace net;
 
 #pragma mark - REQUEST:
 

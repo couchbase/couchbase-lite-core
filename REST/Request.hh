@@ -33,6 +33,8 @@ namespace litecore { namespace REST {
     /** Incoming HTTP request; read-only */
     class Request : public Body {
     public:
+        using Method = net::Method;
+        
         Method method() const                   {return _method;}
 
         std::string path() const                {return _path;}

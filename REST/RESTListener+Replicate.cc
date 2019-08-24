@@ -35,6 +35,7 @@ using namespace fleece;
 
 
 namespace litecore { namespace REST {
+    using namespace net;
 
     class ReplicationTask : public RESTListener::Task {
     public:

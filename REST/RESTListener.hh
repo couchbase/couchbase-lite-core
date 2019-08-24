@@ -96,8 +96,8 @@ namespace litecore { namespace REST {
         using HandlerMethod = void(RESTListener::*)(RequestResponse&);
         using DBHandlerMethod = void(RESTListener::*)(RequestResponse&, C4Database*);
 
-        void addHandler(Method, const char *uri, HandlerMethod);
-        void addDBHandler(Method, const char *uri, DBHandlerMethod);
+        void addHandler(net::Method, const char *uri, HandlerMethod);
+        void addDBHandler(net::Method, const char *uri, DBHandlerMethod);
 
         virtual void handleSync(RequestResponse&, C4Database*);
 

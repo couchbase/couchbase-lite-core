@@ -418,7 +418,7 @@ namespace litecore { namespace net {
         smatch m;
         if (!regex_search(responseData, m, responseParser))
             error::_throw(error::Network, kC4NetErrUnknown);
-        response.status = REST::HTTPStatus(stoi(m[2].str()));
+        response.status = HTTPStatus(stoi(m[2].str()));
         response.message = m[3].str();
 
         _readState = kHeaders;
@@ -500,7 +500,7 @@ namespace litecore { namespace net {
 
     HTTPResponderSocket::HTTPRequest HTTPResponderSocket::readHTTPRequest() {
         Assert(_readState == kRequestLine);
-        auto method = REST::MethodNamed(readToDelimiter(" "_sl));
+        auto method = MethodNamed(readToDelimiter(" "_sl));
 
         slice uri = readToDelimiter(" "_sl);
         auto q = uri.findByteOrEnd('?');
@@ -517,7 +517,7 @@ namespace litecore { namespace net {
     }
 
 
-    void HTTPResponderSocket::writeResponseLine(REST::HTTPStatus status, slice message) {
+    void HTTPResponderSocket::writeResponseLine(HTTPStatus status, slice message) {
         Assert(_writeState == kRequestLine);
         if (!message) {
             const char *defaultMessage = StatusMessage(status);

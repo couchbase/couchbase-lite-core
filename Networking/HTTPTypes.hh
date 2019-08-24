@@ -15,25 +15,35 @@
 #undef DELETE
 #endif
 
-namespace litecore { namespace REST {
+namespace litecore { namespace net {
 
     enum class HTTPStatus : int {
         undefined = -1,
         Upgraded = 101,
+
         OK = 200,
         Created = 201,
         NoContent = 204,
+
+        MovedPermanently = 301,
+        Found = 302,
+        SeeOther = 303,
         NotModified = 304,
+        UseProxy = 305,
+        TemporaryRedirect = 307,
+
         BadRequest = 400,
         Unauthorized = 401,
         Forbidden = 403,
         NotFound = 404,
         MethodNotAllowed = 405,
         NotAcceptable = 406,
+        ProxyAuthRequired = 407,
         Conflict = 409,
         Gone = 410,
         PreconditionFailed = 412,
         Locked = 423,
+        
         ServerError = 500,
         NotImplemented = 501,
         GatewayError = 502,

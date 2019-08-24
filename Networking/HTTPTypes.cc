@@ -18,7 +18,7 @@
 
 #include "HTTPTypes.hh"
 
-namespace litecore { namespace REST {
+namespace litecore { namespace net {
 
     static const struct {HTTPStatus code; const char* message;} kHTTPStatusMessages[] = {
         {HTTPStatus::OK,                 "OK"},

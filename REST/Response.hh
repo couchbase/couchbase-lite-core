@@ -44,6 +44,8 @@ namespace litecore { namespace REST {
     /** An incoming HTTP body. */
     class Body {
     public:
+        using HTTPStatus = net::HTTPStatus;
+
         fleece::slice header(const char *name) const;
         fleece::slice operator[] (const char *name) const   {return header(name);}
 

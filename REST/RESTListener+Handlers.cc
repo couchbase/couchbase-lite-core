@@ -31,6 +31,7 @@ using namespace fleece;
 
 
 namespace litecore { namespace REST {
+    using namespace net;
 
 #pragma mark - ROOT HANDLERS:
 

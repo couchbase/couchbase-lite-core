@@ -291,8 +291,8 @@ public:
         if (r->error().code)
             FAIL("Error: " << c4error_descriptionStr(r->error()));
         INFO("Status: " << (int)r->status() << " " << r->statusMessage());
-        REQUIRE(r->status() >= REST::HTTPStatus::OK);
-        REQUIRE(r->status() <= REST::HTTPStatus::Created);
+        REQUIRE(r->status() >= net::HTTPStatus::OK);
+        REQUIRE(r->status() <= net::HTTPStatus::Created);
         return r->body();
     }
 

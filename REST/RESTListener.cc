@@ -34,6 +34,7 @@ using namespace litecore::crypto;
 
 
 namespace litecore { namespace REST {
+    using namespace net;
 
     //static constexpr const char* kKeepAliveTimeoutMS = "1000";
     //static constexpr const char* kMaxConnections = "8";

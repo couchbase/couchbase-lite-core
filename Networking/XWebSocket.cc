@@ -41,6 +41,7 @@ void C4RegisterXWebSocket() {
 namespace litecore { namespace websocket {
     using namespace std;
     using namespace fleece;
+    using namespace net;
 
 
     XWebSocket::XWebSocket(const URL &url,
