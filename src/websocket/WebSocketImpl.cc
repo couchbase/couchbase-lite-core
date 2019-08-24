@@ -33,7 +33,7 @@ namespace litecore { namespace websocket {
     static constexpr size_t kSendBufferSize = 64 * 1024;
 
     // Timeout for WebSocket connection (until HTTP response received)
-    static constexpr auto kConnectTimeout = chrono::seconds(15);
+    static constexpr auto kConnectTimeout = chrono::seconds(10000/*15 TEMP*/);
 
     // Default interval at which to send PING messages (configurable via options)
     static constexpr auto kDefaultHeartbeatInterval = chrono::seconds(5 * 60);
@@ -97,7 +97,7 @@ namespace litecore { namespace websocket {
     }
 
 
-    void WebSocketImpl::gotHTTPResponse(int status, const fleece::AllocedDict &headersFleece) {
+    void WebSocketImpl::gotHTTPResponse(int status, const websocket::Headers &headersFleece) {
         logInfo("Got HTTP response (status %d)", status);
         delegate().onWebSocketGotHTTPResponse(status, headersFleece);
     }

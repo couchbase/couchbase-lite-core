@@ -32,6 +32,7 @@ namespace litecore { namespace websocket {
 
     class WebSocket;
     class Delegate;
+    class Headers;
 
     /** Reasons for a WebSocket closing. */
     enum CloseReason {
@@ -181,8 +182,7 @@ namespace litecore { namespace websocket {
     public:
         virtual ~Delegate() { }
 
-        virtual void onWebSocketGotHTTPResponse(int status,
-                                                const fleece::AllocedDict &headers) { }
+        virtual void onWebSocketGotHTTPResponse(int status, const Headers &headers) { }
         virtual void onWebSocketConnect() =0;
         virtual void onWebSocketClose(CloseStatus) =0;
 
@@ -192,9 +192,5 @@ namespace litecore { namespace websocket {
         /** The socket has room to send more messages. */
         virtual void onWebSocketWriteable() { }
     };
-
-
-    /** Utility function to get an HTTP header from a Dict by its case-insensitive name. */
-    fleece::Value GetHeader(fleece::Dict headers, fleece::slice name);
 
 } }

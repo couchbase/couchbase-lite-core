@@ -17,6 +17,7 @@ function(set_source_files_base)
         src/util/Channel.cc
         src/util/Codec.cc
         src/util/Timer.cc
+        src/websocket/Headers.cc
         src/websocket/WebSocketImpl.cc
         src/websocket/WebSocketInterface.cc
         PARENT_SCOPE

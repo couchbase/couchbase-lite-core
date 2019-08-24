@@ -18,6 +18,7 @@
 
 #pragma once
 #include "WebSocketInterface.hh"
+#include "Headers.hh"
 #include "Actor.hh"
 #include "Error.hh"
 #include "Logging.hh"
@@ -56,7 +57,7 @@ namespace litecore { namespace websocket {
             event.
             MUST be called before the socket objects' connect() methods are called! */
         static void bind(WebSocket *c1, WebSocket *c2,
-                         const fleece::AllocedDict &responseHeaders ={})
+                         const websocket::Headers &responseHeaders ={})
         {
             auto lc1 = dynamic_cast<LoopbackWebSocket*>(c1);
             auto lc2 = dynamic_cast<LoopbackWebSocket*>(c2);
@@ -82,7 +83,7 @@ namespace litecore { namespace websocket {
 
     protected:
 
-        void bind(LoopbackWebSocket *peer, const fleece::AllocedDict &responseHeaders) {
+        void bind(LoopbackWebSocket *peer, const websocket::Headers &responseHeaders) {
             Assert(!_driver);
             _driver = createDriver();
             _driver->bind(peer, responseHeaders);
@@ -156,7 +157,7 @@ namespace litecore { namespace websocket {
                 return "LoopbackWS";
             }
 
-            void bind(LoopbackWebSocket *peer, const fleece::AllocedDict &responseHeaders) {
+            void bind(LoopbackWebSocket *peer, const websocket::Headers &responseHeaders) {
                 // Called by LoopbackProvider::bind, which is called before my connect() method,
                 // so it's safe to set the member variables directly instead of on the actor queue.
                 _peer = peer;
@@ -304,7 +305,7 @@ namespace litecore { namespace websocket {
             Retained<LoopbackWebSocket> _webSocket;
             actor::delay_t _latency {0.0};
             Retained<LoopbackWebSocket> _peer;
-            fleece::AllocedDict _responseHeaders;
+            websocket::Headers _responseHeaders;
             std::atomic<size_t> _bufferedBytes {0};
             State _state {State::unconnected};
         };

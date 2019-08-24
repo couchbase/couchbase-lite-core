@@ -25,6 +25,7 @@
 		279976301E94518200B27639 /* BLIP.hh in Headers */ = {isa = PBXBuildFile; fileRef = 2799762F1E94518200B27639 /* BLIP.hh */; };
 		27AE22BA1FBE559100C40EB9 /* Codec.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27AE22B81FBE559100C40EB9 /* Codec.hh */; };
 		27AE22BB1FBE559100C40EB9 /* Codec.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27AE22B91FBE559100C40EB9 /* Codec.cc */; };
+		27CB68E22310A7AB008B28FF /* Headers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CB68E12310A7AA008B28FF /* Headers.cc */; };
 		27CCC7AA1E524F0B00CE1989 /* Logging.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A61E524F0B00CE1989 /* Logging.hh */; };
 		27CCC7AC1E524F0B00CE1989 /* PlatformIO.hh in Headers */ = {isa = PBXBuildFile; fileRef = 27CCC7A81E524F0B00CE1989 /* PlatformIO.hh */; };
 		27CCC7B31E5251C900CE1989 /* libevent_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7AD1E524F8000CE1989 /* libevent_core.a */; };
@@ -152,6 +153,8 @@
 		2799762F1E94518200B27639 /* BLIP.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BLIP.hh; sourceTree = "<group>"; };
 		27AE22B81FBE559100C40EB9 /* Codec.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Codec.hh; sourceTree = "<group>"; };
 		27AE22B91FBE559100C40EB9 /* Codec.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Codec.cc; sourceTree = "<group>"; };
+		27CB68DE2310A44D008B28FF /* Headers.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Headers.hh; sourceTree = "<group>"; };
+		27CB68E12310A7AA008B28FF /* Headers.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Headers.cc; sourceTree = "<group>"; };
 		27CCC7A51E524F0B00CE1989 /* Logging.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Logging.cc; sourceTree = "<group>"; };
 		27CCC7A61E524F0B00CE1989 /* Logging.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Logging.hh; sourceTree = "<group>"; };
 		27CCC7A71E524F0B00CE1989 /* PlatformIO.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PlatformIO.cc; sourceTree = "<group>"; };
@@ -242,6 +245,7 @@
 		27491C8E1E7AFCBE001DC54B /* websocket */ = {
 			isa = PBXGroup;
 			children = (
+				27CB68E12310A7AA008B28FF /* Headers.cc */,
 				27491C8F1E7AFCED001DC54B /* WebSocketImpl.cc */,
 				27CE4CF8207BCC7F00ACA225 /* WebSocketInterface.cc */,
 				27491C911E7AFCED001DC54B /* WebSocketProtocol.hh */,
@@ -289,6 +293,7 @@
 				2799762F1E94518200B27639 /* BLIP.hh */,
 				27EF69E41E282662004748DF /* BLIPConnection.hh */,
 				27EF69E51E282662004748DF /* BLIPProtocol.hh */,
+				27CB68DE2310A44D008B28FF /* Headers.hh */,
 				27EF69E71E282662004748DF /* Message.hh */,
 				2799762A1E944B2F00B27639 /* MessageBuilder.hh */,
 				27EF69E81E282662004748DF /* WebSocketInterface.hh */,
@@ -605,6 +610,7 @@
 			files = (
 				27AE22BB1FBE559100C40EB9 /* Codec.cc in Sources */,
 				27CE4CF9207BCC7F00ACA225 /* WebSocketInterface.cc in Sources */,
+				27CB68E22310A7AB008B28FF /* Headers.cc in Sources */,
 				27491C921E7AFCED001DC54B /* WebSocketImpl.cc in Sources */,
 				27EF69DD1E28260D004748DF /* Message.cc in Sources */,
 				2799762E1E94509000B27639 /* MessageBuilder.cc in Sources */,
