@@ -78,12 +78,8 @@ public:
                                      *this, opts2);
 
         // Response headers:
-        Encoder enc;
-        enc.beginDict();
-        enc.writeKey("Set-Cookie"_sl);
-        enc.writeString("flavor=chocolate-chip");
-        enc.endDict();
-        AllocedDict headers(enc.finish());
+        Headers headers;
+        headers.add("Set-Cookie"_sl, "flavor=chocolate-chip"_sl);
 
         // Bind the replicators' WebSockets and start them:
         LoopbackWebSocket::bind(_replClient->webSocket(), _replServer->webSocket(), headers);
@@ -156,13 +152,13 @@ public:
 
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
-                                           const AllocedDict &headers) override {
+                                           const websocket::Headers &headers) override {
         // Note: Can't use Catch (CHECK, REQUIRE) on a background thread
         if (repl == _replClient) {
             Assert(!_gotResponse);
             _gotResponse = true;
             Assert(status == 200);
-            Assert(headers["Set-Cookie"].asString() == "flavor=chocolate-chip"_sl);
+            Assert(headers["Set-Cookie"_sl] == "flavor=chocolate-chip"_sl);
         }
     }
 

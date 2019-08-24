@@ -230,7 +230,7 @@ C4ReplicatorStatus c4repl_getStatus(C4Replicator *repl) C4API {
 
 
 C4Slice c4repl_getResponseHeaders(C4Replicator *repl) C4API {
-    return repl->responseHeaders().data();
+    return repl->responseHeaders();
 }
 
 

@@ -67,7 +67,7 @@ namespace litecore { namespace repl {
 
             virtual void replicatorGotHTTPResponse(Replicator* NONNULL,
                                                    int status,
-                                                   const fleece::AllocedDict &headers) { }
+                                                   const websocket::Headers &headers) { }
             virtual void replicatorStatusChanged(Replicator* NONNULL,
                                                  const Status&) =0;
             virtual void replicatorConnectionClosed(Replicator* NONNULL,
@@ -103,8 +103,8 @@ namespace litecore { namespace repl {
         }
 
         // BLIP ConnectionDelegate API:
-        virtual void onHTTPResponse(int status, const fleece::AllocedDict &headers) override
-                                        {enqueue(&Replicator::_onHTTPResponse, status, headers);}
+        virtual void onHTTPResponse(int status, const websocket::Headers &headers) override;
+
         virtual void onConnect() override
                                                 {enqueue(&Replicator::_onConnect);}
         virtual void onClose(Connection::CloseStatus status, Connection::State state) override
@@ -116,7 +116,7 @@ namespace litecore { namespace repl {
         virtual void onError(C4Error error) override;
 
     private:
-        void _onHTTPResponse(int status, fleece::AllocedDict headers);
+        void _onHTTPResponse(int status, websocket::Headers headers);
         void _onConnect();
         void _onError(int errcode, fleece::alloc_slice reason);
         void _onClose(Connection::CloseStatus, Connection::State);

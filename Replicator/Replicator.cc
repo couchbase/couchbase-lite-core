@@ -25,6 +25,7 @@
 #include "StringUtil.hh"
 #include "Logging.hh"
 #include "SecureDigest.hh"
+#include "Headers.hh"
 #include "BLIP.hh"
 #include "Address.hh"
 #include "Instrumentation.hh"
@@ -316,21 +317,18 @@ namespace litecore { namespace repl {
 #pragma mark - BLIP DELEGATE:
 
 
-    void Replicator::_onHTTPResponse(int status, fleece::AllocedDict headers) {
-        if (status == 101 && !websocket::GetHeader(headers, "Sec-WebSocket-Protocol"_sl)) {
+    void Replicator::onHTTPResponse(int status, const websocket::Headers &headers) {
+        enqueue(&Replicator::_onHTTPResponse, status, headers);
+    }
+
+    void Replicator::_onHTTPResponse(int status, websocket::Headers headers) {
+        if (status == 101 && !headers["Sec-WebSocket-Protocol"_sl]) {
             gotError(c4error_make(WebSocketDomain, kWebSocketCloseProtocolError,
                                   "Incompatible replication protocol "
                                   "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
-        auto cookies = websocket::GetHeader(headers, "Set-Cookie"_sl);
-        if (cookies.type() == kFLArray) {
-            // Yes, there can be multiple Set-Cookie headers.
-            for (Array::iterator i(cookies.asArray()); i; ++i) {
-                setCookie(i.value().asString());
-            }
-        } else if (cookies) {
-            setCookie(cookies.asString());
-        }
+        // Yes, there can be multiple Set-Cookie headers.
+        headers.forEach("Set-Cookie"_sl, [&](slice value) { setCookie(value); });
         if (_delegate)
             _delegate->replicatorGotHTTPResponse(this, status, headers);
     }

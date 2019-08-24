@@ -132,7 +132,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         _replicator->start(synchronous);
     }
 
-    const AllocedDict& responseHeaders() {
+    alloc_slice responseHeaders() {
         lock_guard<mutex> lock(_mutex);
         return _responseHeaders;
     }
@@ -167,12 +167,12 @@ private:
 
 
     virtual void replicatorGotHTTPResponse(Replicator *repl, int status,
-                                           const AllocedDict &headers) override
+                                           const websocket::Headers &headers) override
     {
         lock_guard<mutex> lock(_mutex);
         if (repl == _replicator) {
             Assert(!_responseHeaders);
-            _responseHeaders = headers;
+            _responseHeaders = headers.encode();
         }
     }
 
@@ -256,7 +256,7 @@ private:
     Retained<Replicator> const _replicator;
     Retained<Replicator> const _otherReplicator;
     C4ReplicatorParameters _params;
-    AllocedDict _responseHeaders;
+    alloc_slice _responseHeaders;
     C4ReplicatorStatus _status;
     C4ReplicatorActivityLevel _otherLevel {kC4Stopped};
     Retained<C4Replicator> _selfRetain;

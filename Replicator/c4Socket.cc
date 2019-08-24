@@ -24,6 +24,7 @@
 #include "c4Socket+Internal.hh"
 #include "Address.hh"
 #include "Error.hh"
+#include "Headers.hh"
 #include "Logging.hh"
 #include "WebSocketImpl.hh"
 #include "StringUtil.hh"
@@ -194,7 +195,7 @@ C4Socket* c4socket_fromNative(C4SocketFactory factory,
 
 void c4socket_gotHTTPResponse(C4Socket *socket, int status, C4Slice responseHeadersFleece) C4API {
     try {
-        AllocedDict headers((slice)responseHeadersFleece);
+        Headers headers(responseHeadersFleece);
         internal(socket)->gotHTTPResponse(status, headers);
     } catchForSocket(socket)
 }
