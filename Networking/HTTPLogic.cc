@@ -17,6 +17,7 @@
 //
 
 #include "HTTPLogic.hh"
+#include "XSocket.hh"
 #include "WebSocketInterface.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
@@ -27,13 +28,14 @@ namespace litecore { namespace net {
     using namespace std;
     using namespace fleece;
     using namespace repl;
+    using namespace websocket;
 
 
     static constexpr unsigned kMaxRedirects = 10;
 
 
     HTTPLogic::HTTPLogic(const repl::Address &address,
-                         const websocket::Headers &requestHeaders,
+                         const Headers &requestHeaders,
                          bool handleRedirects)
     :_address(address)
     ,_requestHeaders(requestHeaders)
@@ -125,7 +127,7 @@ namespace litecore { namespace net {
         _error.reset();
         _authChallenge.reset();
 
-        if (parseStatusLine(responseData) && parseHeaders(responseData))
+        if (parseStatusLine(responseData) && parseHeaders(responseData, _responseHeaders))
             _lastDisposition = handleResponse();
         else
             _lastDisposition = failure(error::WebSocket, 400, "Received invalid HTTP"_sl);
@@ -152,7 +154,7 @@ namespace litecore { namespace net {
                 if (!IsSuccess(_httpStatus))
                     return failure(error::WebSocket, int(_httpStatus));
                 else if (_isWebSocket)
-                    return failure(error::WebSocket, websocket::kCodeProtocolError,
+                    return failure(error::WebSocket, kCodeProtocolError,
                                    "Server failed to upgrade connection"_sl);
                 else
                     return kSuccess;
@@ -178,8 +180,7 @@ namespace litecore { namespace net {
     }
 
 
-    bool HTTPLogic::parseHeaders(slice &responseData) {
-        _responseHeaders.clear();
+    bool HTTPLogic::parseHeaders(slice &responseData, Headers &headers) {
         while (true) {
             slice line = responseData.readToDelimiter("\r\n"_sl);
             if (!line)
@@ -195,7 +196,7 @@ namespace litecore { namespace net {
             if (!nonSpace)
                 return false;
             slice value(nonSpace, line.end());
-            _responseHeaders.add(name, value);
+            headers.add(name, value);
         }
         return true;
     }
@@ -246,11 +247,11 @@ namespace litecore { namespace net {
 
     HTTPLogic::Disposition HTTPLogic::handleUpgrade() {
         if (!_isWebSocket)
-            return failure(error::WebSocket, websocket::kCodeProtocolError);
+            return failure(error::WebSocket, kCodeProtocolError);
 
         if (_responseHeaders["Connection"_sl] != "Upgrade"_sl
                 || _responseHeaders["Upgrade"_sl] != "websocket"_sl) {
-            return failure(error::WebSocket, websocket::kCodeProtocolError,
+            return failure(error::WebSocket, kCodeProtocolError,
                            "Server failed to upgrade connection"_sl);
         }
 
@@ -262,7 +263,7 @@ namespace litecore { namespace net {
         SHA1 digest{slice(_webSocketNonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
         string resultNonce = slice(&digest, sizeof(digest)).base64String();
         if (_responseHeaders["Sec-Websocket-Accept"_sl] != slice(resultNonce))
-            return failure(error::WebSocket, websocket::kCodeProtocolError,
+            return failure(error::WebSocket, kCodeProtocolError,
                            "Server returned invalid nonce"_sl);
 
         return kSuccess;
@@ -273,5 +274,15 @@ namespace litecore { namespace net {
         _error = litecore::error(domain, code, string(message));
         return kFailure;
     }
+
+
+    HTTPLogic::Disposition HTTPLogic::sendNextRequest(XClientSocket &socket, slice body) {
+        socket.connect(directAddress());
+        Debug("Sending request: %s", requestToSend().c_str());
+        socket.write_n(requestToSend());
+        socket.write_n(body);
+        return receivedResponse(socket.readToDelimiter("\r\n\r\n"_sl, true));
+    }
+
 
 } }

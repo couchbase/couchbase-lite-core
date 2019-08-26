@@ -112,22 +112,14 @@ namespace litecore { namespace websocket {
 #pragma mark - BACKGROUND ACTIVITY:
 
 
-    unique_ptr<HTTPClientSocket> XWebSocket::_connectLoop() {
+    unique_ptr<XClientSocket> XWebSocket::_connectLoop() {
         Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
         HTTPLogic logic {repl::Address(url()), Headers(headers)};
         logic.setWebSocketProtocol(options()[kC4SocketOptionWSProtocols].asString());
         bool usedAuth = false;
         while (true) {
-            auto socket = make_unique<HTTPClientSocket>(logic.directAddress());
-            socket->setTLSContext(_tlsContext.get());
-            socket->connect();
-            string request = logic.requestToSend();
-            logDebug("Sending HTTP request: %s", request.c_str());
-            socket->write_n(request);
-            slice response = socket->readToDelimiter("\r\n\r\n"_sl, true);
-            logDebug("Received HTTP response: %.*s", SPLAT(response));
-
-            switch (logic.receivedResponse(response)) {
+            auto socket = make_unique<XClientSocket>(_tlsContext.get());
+            switch (logic.sendNextRequest(*socket)) {
                 case HTTPLogic::kSuccess:
                     gotHTTPResponse(int(logic.status()), logic.responseHeaders());
                     return socket;
@@ -203,7 +195,7 @@ namespace litecore { namespace websocket {
 
                 // Read from the socket:
                 slice data = _socket->read(capacity);
-                logVerbose("Received %zu bytes from socket", data.size);
+                logDebug("Received %zu bytes from socket", data.size);
                 if (data.size == 0)
                     break; // EOF
 
@@ -237,10 +229,10 @@ namespace litecore { namespace websocket {
                     break;
                 if (_socket->write_n(data) == 0)
                     break;
-                logVerbose("Wrote %zu bytes to socket", data.size);
+                logDebug("Wrote %zu bytes to socket", data.size);
                 onWriteComplete(data.size);     // notify that data's been written
             }
-            logVerbose("EOF on writeLoop");
+            logInfo("EOF on writeLoop");
         } catch (const exception &x) {
             closeWithError(x, "writeLoop");
         }

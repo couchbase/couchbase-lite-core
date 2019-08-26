@@ -279,7 +279,13 @@ public:
         enc.endDict();
         auto headers = enc.finish();
 
-        auto r = make_unique<REST::Response>(string(slice(_address.scheme)),
+        string scheme(slice(_address.scheme));
+        if (scheme == "ws")
+            scheme = "http";
+        else if (scheme == "wss")
+            scheme = "https";
+
+        auto r = make_unique<REST::Response>(scheme,
                                              method,
                                              (string)(slice)_address.hostname,
                                              port,

@@ -36,12 +36,34 @@ namespace litecore { namespace REST {
 
 
     Request::Request(Method method, const string &path, const string &queries,
-                     fleece::Doc headers, fleece::alloc_slice body)
-    :Body(headers, body)
+                     websocket::Headers headers, fleece::alloc_slice body)
+    :Body(move(headers), body)
     ,_method(method)
     ,_path(path)
     ,_queries(queries)
     { }
+
+
+    bool Request::readFromHTTP(slice httpData) {
+        // <https://tools.ietf.org/html/rfc7230#section-3.1.1>
+        Method method = MethodNamed(httpData.readToDelimiter(" "_sl));
+        slice uri = httpData.readToDelimiter(" "_sl);
+        slice version = httpData.readToDelimiter("\r\n"_sl);
+        if (method == Method::None || uri.size == 0 || !version.hasPrefix("HTTP/"_sl)) {
+            _method = Method::None;
+            return false;
+        }
+        const uint8_t *q = uri.findByte('?');
+        if (q) {
+            _queries = string(uri.from(q+1));
+            uri = uri.upTo(q);
+        } else {
+            _queries.clear();
+        }
+        _path = string(uri);
+        _method = method;
+        return true;
+    }
 
 
     string Request::path(int i) const {
@@ -88,17 +110,14 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE STATUS LINE:
 
 
-    RequestResponse::RequestResponse(Server *server, std::unique_ptr<net::HTTPResponderSocket> socket)
+    RequestResponse::RequestResponse(Server *server, std::unique_ptr<net::XResponderSocket> socket)
     :_server(server)
     ,_socket(move(socket))
     {
-        auto request = _socket->readHTTPRequest();
-        _method = request.method;
-        _path = request.path;
-        _queries = request.query;
-        _headers = Doc(request.headers.data());
+        if (!readFromHTTP(_socket->readToDelimiter("\r\n"_sl)))
+            return;
         if (_method == Method::POST || _method == Method::PUT)
-            _body = _socket->readHTTPBody(request.headers);
+            _body = _socket->readHTTPBody(_headers);
     }
 
 
@@ -114,7 +133,13 @@ namespace litecore { namespace REST {
         if (_sentStatus)
             return;
         Log("Response status: %d", _status);
-        _socket->writeResponseLine(_status, _statusMessage);
+        if (_statusMessage.empty()) {
+            const char *defaultMessage = StatusMessage(_status);
+            if (defaultMessage)
+                _statusMessage = defaultMessage;
+        }
+        string statusLine = format("HTTP/1.0 %d %s\r\n", _status, _statusMessage.c_str());
+        _responseHeaderWriter.write(statusLine);
         _sentStatus = true;
 
         // Add the 'Date:' header:
@@ -224,7 +249,10 @@ namespace litecore { namespace REST {
     void RequestResponse::setHeader(const char *header, const char *value) {
         sendStatus();
         Assert(!_endedHeaders);
-        _socket->writeHeader(slice(header), slice(value));
+        _responseHeaderWriter.write(slice(header));
+        _responseHeaderWriter.write(": "_sl);
+        _responseHeaderWriter.write(slice(value));
+        _responseHeaderWriter.write("\r\n"_sl);
     }
 
 
@@ -248,7 +276,8 @@ namespace litecore { namespace REST {
     void RequestResponse::sendHeaders() {
         if (_jsonEncoder)
             setHeader("Content-Type", "application/json");
-        _socket->endHeaders();
+        _responseHeaderWriter.write("\r\n"_sl);
+        _socket->write_n(_responseHeaderWriter.finish());
         _endedHeaders = true;
     }
 

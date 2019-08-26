@@ -17,6 +17,7 @@
 //
 
 #pragma once
+#include "Headers.hh"
 #include "HTTPTypes.hh"
 #include "RefCounted.hh"
 #include "fleece/slice.hh"
@@ -46,7 +47,7 @@ namespace litecore { namespace REST {
     public:
         using HTTPStatus = net::HTTPStatus;
 
-        fleece::slice header(const char *name) const;
+        fleece::slice header(const char *name) const        {return _headers[fleece::slice(name)];}
         fleece::slice operator[] (const char *name) const   {return header(name);}
 
         bool hasContentType(fleece::slice contentType) const;
@@ -55,14 +56,14 @@ namespace litecore { namespace REST {
 
     protected:
         Body() = default;
-        Body(fleece::Doc headers, fleece::alloc_slice body)
+        Body(websocket::Headers headers, fleece::alloc_slice body)
         :_headers(headers), _body(body)
         { }
 
-        void setHeaders(fleece::Doc doc)            {_headers = doc;}
+        void setHeaders(websocket::Headers h)       {_headers = h;}
         void setBody(fleece::alloc_slice body)      {_body = body;}
 
-        fleece::Doc _headers;
+        websocket::Headers _headers;
         fleece::alloc_slice _body;
         mutable bool _gotBodyFleece {false};
         mutable fleece::Doc _bodyFleece;

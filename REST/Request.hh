@@ -24,7 +24,7 @@
 #include "Writer.hh"
 
 namespace litecore { namespace net {
-    class HTTPResponderSocket;
+    class XResponderSocket;
 } }
 
 namespace litecore { namespace REST {
@@ -34,6 +34,11 @@ namespace litecore { namespace REST {
     class Request : public Body {
     public:
         using Method = net::Method;
+
+        explicit Request(fleece::slice httpData);
+
+        bool isValid() const                    {return _method != Method::None;}
+        operator bool () const                  {return isValid();}
         
         Method method() const                   {return _method;}
 
@@ -48,8 +53,10 @@ namespace litecore { namespace REST {
         friend class Server;
         
         Request(Method, const std::string &path, const std::string &queries,
-                fleece::Doc headers, fleece::alloc_slice body);
+                websocket::Headers headers, fleece::alloc_slice body);
         Request() { }
+
+        bool readFromHTTP(fleece::slice httpData);      // data must extend at least to CRLF
 
         Method _method {Method::None};
         std::string _path;
@@ -101,7 +108,7 @@ namespace litecore { namespace REST {
         void finish();
 
     protected:
-        RequestResponse(Server *server, std::unique_ptr<net::HTTPResponderSocket>);
+        RequestResponse(Server *server, std::unique_ptr<net::XResponderSocket>);
         void sendStatus();
         void sendHeaders();
 
@@ -109,7 +116,7 @@ namespace litecore { namespace REST {
         friend class Server;
 
         fleece::Retained<Server> _server;
-        std::unique_ptr<net::HTTPResponderSocket> _socket;
+        std::unique_ptr<net::XResponderSocket> _socket;
         C4Error _error {};
 
         std::vector<fleece::alloc_slice> _requestBody;
@@ -118,6 +125,7 @@ namespace litecore { namespace REST {
         std::string _statusMessage;                 // Response custom status message
         bool _sentStatus {false};                   // Sent the response line yet?
 
+        fleece::Writer _responseHeaderWriter;
         bool _endedHeaders {false};                 // True after headers are ended
         int64_t _contentLength {-1};                // Content-Length, once it's set
 

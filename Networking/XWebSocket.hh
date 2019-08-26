@@ -44,7 +44,7 @@ namespace litecore { namespace websocket {
 
     private:
         void _connect();
-        std::unique_ptr<net::HTTPClientSocket> _connectLoop();
+        std::unique_ptr<net::XClientSocket> _connectLoop();
         void readLoop();
         void writeLoop();
         void closeWithError(const std::exception&, const char *where);

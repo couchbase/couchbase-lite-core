@@ -17,6 +17,8 @@
 //
 
 #include "XSocket.hh"
+#include "Headers.hh"
+#include "HTTPLogic.hh"
 #include "WebSocketInterface.hh"
 #include "Error.hh"
 #include "SecureDigest.hh"
@@ -41,7 +43,8 @@ namespace litecore { namespace net {
     using namespace litecore::websocket;
 
 
-    XSocket::XSocket()
+    XSocket::XSocket(tls_context *tls)
+    :_tlsContext(tls)
     { }
 
 
@@ -49,13 +52,10 @@ namespace litecore { namespace net {
     { }
 
 
-    void XSocket::setTLSContext(tls_context *tls) {
-        _tlsContext = tls;
-    }
-
     tls_context* XSocket::TLSContext() {
         return _tlsContext;
     }
+
 
     void XSocket::checkSocketFailure() {
         if (*_socket)
@@ -63,7 +63,7 @@ namespace litecore { namespace net {
 
         // TLS handshake failed:
         if (_socket->last_error() == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
-            // Some more specific errors for certificate validation failures:
+            // Some more specific errors for certificate validation failures, based on flags:
             auto tlsSocket = (tls_socket*)_socket.get();
             uint32_t flags = tlsSocket->peer_certificate_status();
             LogToAt(websocket::WSLogDomain, Warning, "XSocket TLS handshake failed; cert verify status 0x%02x", flags);
@@ -85,6 +85,7 @@ namespace litecore { namespace net {
         _throwLastError();
     }
 
+
     bool XSocket::connected() const {
         return _socket && _socket->is_open();
     }
@@ -98,6 +99,8 @@ namespace litecore { namespace net {
 
 
     size_t XSocket::write(slice data) {
+        if (data.size == 0)
+            return 0;
         ssize_t written = _socket->write(data.buf, data.size);
         if (written < 0) {
             if (_socket->last_error() == EBADF)
@@ -109,6 +112,8 @@ namespace litecore { namespace net {
 
 
     size_t XSocket::write_n(slice data) {
+        if (data.size == 0)
+            return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
         if (written < 0) {
             if (_socket->last_error() == EBADF)
@@ -200,7 +205,50 @@ namespace litecore { namespace net {
     }
 
 
-#pragma mark - UTILITIES:
+    alloc_slice XSocket::readHTTPBody(const Headers &headers) {
+        alloc_slice body;
+        int64_t contentLength = headers.getInt("Content-Length"_sl, -1);
+        if (contentLength >= 0) {
+            // Read exactly Content-Length bytes:
+            if (contentLength > 0) {
+                body.resize(contentLength);
+                readExactly((void*)body.buf, (size_t)contentLength);
+            }
+        } else {
+            // No Content-Length, so read till EOF:
+            body.resize(1024);
+            size_t length = 0;
+            while (true) {
+                size_t n = read((void*)&body[length], body.size - length);
+                if (n == 0)
+                    break;
+                length += n;
+                if (length == body.size)
+                    body.resize(2 * body.size);
+            }
+            body.resize(length);
+        }
+        return body;
+    }
+
+
+#pragma mark - ERRORS:
+
+
+    int XSocket::mbedToNetworkErrCode(int err) {
+        static constexpr struct {int mbed0; int mbed1; int net;} kMbedToNetErr[] = {
+            {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
+            {-0x3000,                             -0x2000,                             kNetErrTLSCertUntrusted},
+            {-0x7FFF,                             -0x6000,                             kNetErrTLSHandshakeFailed},
+            {0, 0, 0}
+        };
+        for (int i = 0; kMbedToNetErr[i].mbed0 != 0; ++i) {
+            if (kMbedToNetErr[i].mbed0 <= err && err <= kMbedToNetErr[i].mbed1)
+                return kMbedToNetErr[i].net;
+        }
+        Warn("No mapping for mbedTLS error -0x%04X", -err);
+        return kNetErrUnknown;
+    }
 
 
     void XSocket::_throwLastError() {
@@ -216,18 +264,7 @@ namespace litecore { namespace net {
             mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
             LogToAt(websocket::WSLogDomain, Warning,
                     "XSocket got mbedTLS error -0x%04X \"%s\"; throwing exception...", -err, msgbuf);
-            static constexpr struct {int mbed; int net;} kMbedToNetErr[] = {
-                {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
-                {MBEDTLS_ERR_SSL_FATAL_ALERT_MESSAGE, kNetErrTLSHandshakeFailed},
-                {0, kNetErrUnknown}
-            };
-            int netErr = kNetErrUnknown;
-            for (int i = 0; kMbedToNetErr[i].mbed != 0; ++i) {
-                if (kMbedToNetErr[i].mbed == err) {
-                    netErr = kMbedToNetErr[i].net;
-                    break;
-                }
-            }
+            int netErr = mbedToNetworkErrCode(err);
             error(error::Network, netErr, msgbuf)._throw();
         }
     }
@@ -270,108 +307,18 @@ namespace litecore { namespace net {
     }
 
 
-    static void normalizeHeaderCase(string &str) {
-        bool caps = true;
-        for (auto &c : str) {
-            if (isalpha(c)) {
-                c = (char)(caps ? toupper(c) : tolower(c));
-                caps = false;
-            } else {
-                caps = true;
-            }
-        }
-    }
+#pragma mark - CLIENT SOCKET:
 
 
-    AllocedDict XSocket::readHeaders() {
-        Assert(_readState == kHeaders);
-        Encoder enc;
-        enc.beginDict();
-        while (true) {
-            slice line = readToDelimiter("\r\n"_sl);
-            if (!line)
-                _throwBadHTTP();
-            if (line.size == 0)
-                break;  // empty line
-            const uint8_t *colon = line.findByte(':');
-            if (!colon)
-                _throwBadHTTP();
-            string name(slice(line.buf, colon));
-            normalizeHeaderCase(name);
-            line.setStart(colon+1);
-            const uint8_t *nonSpace = line.findByteNotIn(" "_sl);
-            if (!nonSpace)
-                _throwBadHTTP();
-            slice value(nonSpace, line.end());
-            enc.writeKey(name);
-            enc.writeString(value);
-        }
-        _readState = kBody;
-        enc.endDict();
-        return AllocedDict(enc.finishDoc().allocedData());
-    }
-
-
-    alloc_slice XSocket::readHTTPBody(AllocedDict headers) {
-        Assert(_readState == kBody);
-        alloc_slice body;
-        int64_t contentLength;
-        if (getIntHeader(headers, "Content-Length"_sl, contentLength)) {
-            // Read exactly Content-Length bytes:
-            if (contentLength > 0) {
-                body.resize(contentLength);
-                readExactly((void*)body.buf, (size_t)contentLength);
-            }
-        } else {
-            // No Content-Length, so read till EOF:
-            body.resize(1024);
-            size_t length = 0;
-            while (true) {
-                size_t n = read((void*)&body[length], body.size - length);
-                if (n == 0)
-                    break;
-                length += n;
-                if (length == body.size)
-                    body.resize(2 * body.size);
-            }
-            body.resize(length);
-        }
-        return body;
-    }
-
-
-    void XSocket::writeHeaders(stringstream &rq, Dict headers) {
-        Assert(_writeState == kHeaders);
-        for (Dict::iterator i(headers); i; ++i)
-            rq << string(i.keyString()) << ": " << string(i.value().toString()) << "\r\n";
-    }
-
-
-    bool XSocket::getIntHeader(Dict headers, slice key, int64_t &value) {
-        slice v = headers[key].asString();
-        if (!v)
-            return false;
-        try {
-            value = stoi(string(v));
-            return true;
-        } catch (exception &x) {
-            return false;
-        }
-    }
-
-
-#pragma mark - HTTP CLIENT:
-
-
-    HTTPClientSocket::HTTPClientSocket(repl::Address addr)
-    :_addr(addr)
+    XClientSocket::XClientSocket(tls_context *tls)
+    :XSocket(tls)
     { }
 
 
-    void HTTPClientSocket::connect() {
-        string hostname(slice(_addr.hostname));
-        auto socket = make_unique<tcp_connector>(inet_address{hostname, _addr.port});
-        if (_addr.isSecure() && *socket) {
+    void XClientSocket::connect(const repl::Address &addr) {
+        string hostname(slice(addr.hostname));
+        auto socket = make_unique<tcp_connector>(inet_address{hostname, addr.port});
+        if (addr.isSecure() && *socket) {
             if (!_tlsContext)
                 _tlsContext = _tlsContext = &tls_context::default_context();
             _socket = TLSContext()->wrap_socket(move(socket), tls_context::CLIENT, hostname);
@@ -382,111 +329,25 @@ namespace litecore { namespace net {
     }
 
 
-    void HTTPClientSocket::sendHTTPRequest(const string &method,
-                                           function_ref<void(stringstream&)> fn)
-    {
-        Assert(_writeState == kRequestLine);
-        stringstream rq;
-        rq << method << " " << string(slice(_addr.path)) << " HTTP/1.1\r\n"
-            "Host: " << string(slice(_addr.hostname)) << "\r\n";
-        _writeState = kHeaders;
-        fn(rq);
-        rq << "\r\n";
-        _writeState = kBody;
-        write_n(slice(rq.str()));
-    }
+#pragma mark - RESPONDER SOCKET:
 
 
-    void HTTPClientSocket::sendHTTPRequest(const string &method, Dict headers, slice body) {
-        sendHTTPRequest(method, [&](stringstream &rq) {
-            writeHeaders(rq, headers);
-            if (!headers["Content-Length"])
-                rq << "Content-Length: " << body.size << "\r\n";
-        });
-        write_n(body);
-        _writeState = kEnd;
-    }
+    XResponderSocket::XResponderSocket(tls_context *tls)
+    :XSocket(tls)
+    { }
 
 
-    HTTPClientSocket::HTTPResponse HTTPClientSocket::readHTTPResponse() {
-        Assert(_readState == kStatusLine);
-        HTTPResponse response = {};
-
-        string responseData = string(readToDelimiter("\r\n"_sl));
-        if (responseData.empty())
-            _throwBadHTTP();
-        regex responseParser(R"(^HTTP/(\d\.\d) (\d+) (.*))");
-        smatch m;
-        if (!regex_search(responseData, m, responseParser))
-            error::_throw(error::Network, kC4NetErrUnknown);
-        response.status = HTTPStatus(stoi(m[2].str()));
-        response.message = m[3].str();
-
-        _readState = kHeaders;
-        response.headers = readHeaders();
-        _readState = kBody;
-        return response;
-    }
-
-
-#pragma mark - HTTP SERVER:
-
-
-    void HTTPResponderSocket::acceptSocket(stream_socket &&s, bool useTLS) {
+    void XResponderSocket::acceptSocket(stream_socket &&s, bool useTLS) {
         acceptSocket( make_unique<tcp_socket>(move(s)), useTLS );
     }
 
     
-    void HTTPResponderSocket::acceptSocket(unique_ptr<stream_socket> socket, bool useTLS) {
+    void XResponderSocket::acceptSocket(unique_ptr<stream_socket> socket, bool useTLS) {
         if (_tlsContext)
             _socket = _tlsContext->wrap_socket(move(socket), tls_context::SERVER, "");
         else
             _socket = move(socket);
         checkSocketFailure();
-    }
-
-
-    HTTPResponderSocket::HTTPRequest HTTPResponderSocket::readHTTPRequest() {
-        Assert(_readState == kRequestLine);
-        auto method = MethodNamed(readToDelimiter(" "_sl));
-
-        slice uri = readToDelimiter(" "_sl);
-        auto q = uri.findByteOrEnd('?');
-        string path(slice(uri.buf,q));
-        string query;
-        if (q != uri.end())
-            query = string(slice(q + 1, uri.end()));
-
-        slice version = readToDelimiter("\r\n"_sl);
-        if (!version.hasPrefix("HTTP/"_sl))
-            _throwBadHTTP();
-        _readState = kHeaders;
-        return {method, path, query, readHeaders()};
-    }
-
-
-    void HTTPResponderSocket::writeResponseLine(HTTPStatus status, slice message) {
-        Assert(_writeState == kRequestLine);
-        if (!message) {
-            const char *defaultMessage = StatusMessage(status);
-            if (defaultMessage)
-                message = slice(defaultMessage);
-        }
-        write_n(format("HTTP/1.0 %d %.*s\r\n", status, SPLAT(message)));
-        _writeState = kHeaders;
-    }
-
-
-    void HTTPResponderSocket::writeHeader(slice name, slice value) {
-        Assert(_writeState == kHeaders);
-        write_n(format("%.*s: %.*s\r\n", SPLAT(name), SPLAT(value)));
-    }
-
-
-    void HTTPResponderSocket::endHeaders() {
-        Assert(_writeState == kHeaders);
-        write_n("\r\n"_sl);
-        _writeState = kBody;
     }
 
 } }

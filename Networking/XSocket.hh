@@ -18,6 +18,7 @@ namespace litecore {
 }
 namespace litecore { namespace websocket {
     struct CloseStatus;
+    class Headers;
 } }
 namespace sockpp {
     class stream_socket;
@@ -25,6 +26,7 @@ namespace sockpp {
 }
 
 namespace litecore { namespace net {
+    class HTTPLogic;
 
     /** TCP socket class, using the sockpp library. */
     class XSocket {
@@ -32,11 +34,8 @@ namespace litecore { namespace net {
         using slice = fleece::slice;
         using string = std::string;
 
-        XSocket();
+        XSocket(sockpp::tls_context *ctx =nullptr);
         virtual ~XSocket();
-
-        /// Associates this socket with a TLS context.
-        void setTLSContext(sockpp::tls_context*);
 
         /// Returns the TLS context, if any, used by this socket.
         sockpp::tls_context* TLSContext();
@@ -46,11 +45,6 @@ namespace litecore { namespace net {
 
         bool connected() const;
         operator bool() const   {return connected();}
-
-        /// Reads an HTTP body given the headers.
-        /// If there's a Content-Length header, reads that many bytes.
-        /// Otherwise reads till EOF.
-        fleece::alloc_slice readHTTPBody(fleece::AllocedDict headers);
 
         /// Reads up to \ref byteCount bytes to the location \ref dst.
         /// On EOF returns zero. On other error throws an exception.
@@ -73,37 +67,30 @@ namespace litecore { namespace net {
         /// returned by subsequent reads.
         slice readToDelimiter(slice delimiter, bool includeDelimiter =false);
 
+        /// Reads an HTTP body given the headers.
+        /// If there's a Content-Length header, reads that many bytes.
+        /// Otherwise reads till EOF.
+        fleece::alloc_slice readHTTPBody(const websocket::Headers &headers);
+
         /// Writes to the socket and returns the number of bytes written:
             __attribute__((warn_unused_result))
         size_t write(slice);
 
-        // Writes all the bytes to the socket.
+        /// Writes all the bytes to the socket.
         size_t write_n(slice);
 
         // Utility function that maps an exception to a LiteCore error.
         static litecore::error convertException(const std::exception&);
 
     protected:
+        static int mbedToNetworkErrCode(int mbedErr);
         [[noreturn]] void _throwLastError();
         [[noreturn]] void _throwBadHTTP();
         void checkSocketFailure();
         size_t _read(void *dst, size_t byteCount);
-        fleece::AllocedDict readHeaders();
-        void writeHeaders(std::stringstream &rq, fleece::Dict headers);
-        bool getIntHeader(fleece::Dict headers, slice key, int64_t &value);
 
         std::unique_ptr<sockpp::stream_socket> _socket;
         sockpp::tls_context* _tlsContext = nullptr;
-
-        // What I'm currently reading/writing:
-        enum state {
-            kRequestLine,
-            kStatusLine = kRequestLine,
-            kHeaders,
-            kBody,
-            kEnd
-        };
-        state _writeState = kStatusLine, _readState = kStatusLine;
 
     private:
         static constexpr size_t kReadBufferSize = 8192;
@@ -119,52 +106,24 @@ namespace litecore { namespace net {
 
 
 
-    class HTTPClientSocket : public XSocket {
+    /** A client socket, that opens a TCP connection. */
+    class XClientSocket : public XSocket {
     public:
-        HTTPClientSocket(repl::Address addr);
+        XClientSocket(sockpp::tls_context* =nullptr);
 
         /// Connects to the host, synchronously. On failure throws an exception.
-        void connect();
-
-        /// Sends an HTTP request, but not a body.
-        void sendHTTPRequest(const std::string &method,
-                             fleece::Dict headers,
-                             fleece::slice body =fleece::nullslice);
-
-        struct HTTPResponse {
-            HTTPStatus status;
-            string message;
-            fleece::AllocedDict headers;
-        };
-
-        /// Reads an HTTP response, but not the body. On failure throws an exception.
-        HTTPResponse readHTTPResponse();
-
-    private:
-        void sendHTTPRequest(const string &method,
-                             fleece::function_ref<void(std::stringstream&)>);
-
-        repl::Address _addr;
+        void connect(const repl::Address &addr);
     };
 
     
 
-    class HTTPResponderSocket : public XSocket {
+    /** A server-side socket, that handles a client connection. */
+    class XResponderSocket : public XSocket {
     public:
+        XResponderSocket(sockpp::tls_context* =nullptr);
+
         void acceptSocket(sockpp::stream_socket&&, bool useTLS =false);
         void acceptSocket(std::unique_ptr<sockpp::stream_socket>, bool useTLS =false);
-
-        struct HTTPRequest {
-            Method method;
-            string path, query;
-            fleece::AllocedDict headers;
-        };
-
-        HTTPRequest readHTTPRequest();
-
-        void writeResponseLine(HTTPStatus, slice message);
-        void writeHeader(slice name, slice value);
-        void endHeaders();
     };
 
 

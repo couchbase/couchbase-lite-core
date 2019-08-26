@@ -81,8 +81,7 @@ namespace litecore { namespace REST {
                 // Accept a new client connection
                 tcp_socket sock = _acceptor->accept();
                 if (sock) {
-                    auto responder = make_unique<HTTPResponderSocket>();
-                    responder->setTLSContext(_tlsContext.get());
+                    auto responder = make_unique<XResponderSocket>(_tlsContext.get());
                     responder->acceptSocket(move(sock));
                     RequestResponse rq(this, move(responder));
                     dispatchRequest(&rq);
