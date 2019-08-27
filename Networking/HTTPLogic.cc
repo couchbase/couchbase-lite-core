@@ -180,6 +180,7 @@ namespace litecore { namespace net {
     }
 
 
+    // Reads HTTP headers out of `responseData`. Assumes data ends with CRLFCRLF.
     bool HTTPLogic::parseHeaders(slice &responseData, Headers &headers) {
         while (true) {
             slice line = responseData.readToDelimiter("\r\n"_sl);
@@ -281,7 +282,7 @@ namespace litecore { namespace net {
         Debug("Sending request: %s", requestToSend().c_str());
         socket.write_n(requestToSend());
         socket.write_n(body);
-        return receivedResponse(socket.readToDelimiter("\r\n\r\n"_sl, true));
+        return receivedResponse(socket.readToDelimiter("\r\n\r\n"_sl));
     }
 
 

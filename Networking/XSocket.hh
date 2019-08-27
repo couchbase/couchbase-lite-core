@@ -51,21 +51,18 @@ namespace litecore { namespace net {
         size_t read(void *dst, size_t byteCount);
 
         /// Reads exactly \ref byteCount bytes to the location \ref dst.
-        /// On EOF returns zero. On other error throws an exception.
+        /// On premature EOF, throws exception {WebSocket, 400}.
         void readExactly(void *dst, size_t byteCount);
 
-        /// Reads into the internal buffer and returns a pointer to the read data
-        /// On EOF returns \ref nullslice. On other error throws an exception.
-        slice read(size_t byteCount =kReadBufferSize);
+        static constexpr size_t kMaxDelimitedReadSize = 50 * 1024;
 
-        /// Reads into the internal buffer until the \ref delimiter byte sequence is found,
+        /// Reads from the socket until the \ref delimiter byte sequence is found,
         /// and returns the bytes read ending with the delimiter.
-        /// If the buffer fills up before the delimiter is found, or EOF is reached,
-        /// returns nullslice.
-        /// On error throws an exception.
-        /// This method is likely to read bytes past the delimiter! The extra bytes will be
-        /// returned by subsequent reads.
-        slice readToDelimiter(slice delimiter, bool includeDelimiter =false);
+        /// If the delimiter is not found, due to EOF of reading more than \ref maxSize bytes,
+        /// throws an exception.
+        fleece::alloc_slice readToDelimiter(slice delimiter,
+                                            bool includeDelimiter =true,
+                                            size_t maxSize =kMaxDelimitedReadSize);
 
         /// Reads an HTTP body given the headers.
         /// If there's a Content-Length header, reads that many bytes.
@@ -88,6 +85,7 @@ namespace litecore { namespace net {
         [[noreturn]] void _throwBadHTTP();
         void checkSocketFailure();
         size_t _read(void *dst, size_t byteCount);
+        void pushUnread(slice);
 
         std::unique_ptr<sockpp::stream_socket> _socket;
         sockpp::tls_context* _tlsContext = nullptr;
@@ -98,10 +96,8 @@ namespace litecore { namespace net {
         std::thread _reader;
         std::thread _writer;
 
-        uint8_t _readBuffer[kReadBufferSize];
-        slice const _input = {_readBuffer, sizeof(_readBuffer)};
-        uint8_t *_inputStart = (uint8_t*)_input.buf;
-        size_t _inputLen = 0;
+        fleece::alloc_slice _unread;        // Data read from socket that's been "pushed back"
+        size_t _unreadLen {0};              // Length of valid data in _unread
     };
 
 

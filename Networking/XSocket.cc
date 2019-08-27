@@ -43,6 +43,9 @@ namespace litecore { namespace net {
     using namespace litecore::websocket;
 
 
+    static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
+
+
     XSocket::XSocket(tls_context *tls)
     :_tlsContext(tls)
     { }
@@ -136,71 +139,76 @@ namespace litecore { namespace net {
     }
 
 
+    // "Un-read" data by prepending it to the _unread buffer
+    void XSocket::pushUnread(slice data) {
+        if (_usuallyFalse(data.size == 0))
+            return;
+        if (_usuallyTrue(_unreadLen + data.size > _unread.size))
+            _unread.resize(_unreadLen + data.size);
+        memcpy((void*)&_unread[data.size], &_unread[0], _unreadLen);
+        memcpy((void*)&_unread[0], data.buf, data.size);
+        _unreadLen += data.size;
+    }
+
+
+    // Read from the socket, or from the unread buffer if it exists
     size_t XSocket::read(void *dst, size_t byteCount) {
-        if (_inputLen > 0) {
+        if (_usuallyFalse(_unreadLen > 0)) {
             // Use up anything left in the buffer:
-            size_t n = min(byteCount, _inputLen);
-            memmove(dst, _inputStart, n);
-            _inputLen -= n;
-            _inputStart += n;
+            size_t n = min(byteCount, _unreadLen);
+            memcpy(dst, &_unread[0], n);
+            memmove((void*)&_unread[0], &_unread[n], _unreadLen - n);
+            _unreadLen -= n;
+            if (_unreadLen == 0)
+                _unread = nullslice;
             return n;
         } else {
             return _read(dst, byteCount);
         }
     }
 
+
+    // Read exactly `byteCount` bytes from the socket (or the unread buffer)
     void XSocket::readExactly(void *dst, size_t byteCount) {
         while (byteCount > 0) {
             auto n = read(dst, byteCount);
             if (n == 0)
-                error::_throw(error::WebSocket, 599);  // unexpected EOF // TODO: error code
+                error::_throw(error::WebSocket, 400);  // unexpected EOF
             byteCount -= n;
             dst = offsetby(dst, n);
         }
     }
 
-    // Read into the internal buffer
-    slice XSocket::read(size_t byteCount) {
-        if (_inputLen > 0) {
-            // Use up anything left in the buffer
-            const void *dst = _inputStart;
-            return slice(dst, read(_inputStart, byteCount));
-        } else {
-            size_t n = _read((void*)_input.buf, min(_input.size, byteCount));
-            if (n == 0)
-                return nullslice;
-            return {_input.buf, n};
-        }
-    }
 
-
-    slice XSocket::readToDelimiter(slice delim, bool includeDelim) {
-        if (_inputLen > 0 && _inputStart > _input.buf) {
-            // Slide unread input down to start of buffer:
-            memmove((void*)_input.buf, _inputStart, _inputLen);
-            _inputStart = (uint8_t*)_input.buf;
-        }
+    // Read up to the given delimiter.
+    alloc_slice XSocket::readToDelimiter(slice delim, bool includeDelim, size_t maxSize) {
+        alloc_slice alloced(kInitialDelimitedReadBufferSize);
+        slice result(alloced.buf, size_t(0));
 
         while (true) {
+            // Read more bytes:
+            ssize_t n = _read((void*)result.end(), alloced.size - result.size);
+            if (n == 0)
+                error::_throw(error::WebSocket, 400);
+            result.setSize(result.size + n);
+
             // Look for delimiter:
-            slice found = slice(_inputStart, _inputLen).find(delim);
+            slice found = result.find(delim);
             if (found) {
-                slice result(_inputStart, (includeDelim ? found.end() : found.buf));
-                auto inputEnd = _inputStart + _inputLen;
-                _inputStart = (uint8_t*)found.end();
-                _inputLen = inputEnd - _inputStart;
-                return result;
+                pushUnread(slice(found.end(), result.end()));
+                result.setEnd(found.end());
+                alloced.resize(result.size);
+                return alloced;
             }
 
-            // Give up if buffer is full:
-            if (_inputLen >= _input.size)
-                return nullslice; // give up
-
-            // Read more bytes:
-            ssize_t n = _read(_inputStart + _inputLen, _input.size - _inputLen);
-            if (n == 0)
-                return nullslice;
-            _inputLen += n;
+            // If allocated buffer is full, grow it:
+            if (result.size == alloced.size) {
+                size_t newSize = min(alloced.size * 2, maxSize);
+                if (newSize == alloced.size)
+                    error::_throw(error::WebSocket, 431);
+                alloced.resize(newSize);
+                result.setStart(alloced.buf);
+            }
         }
     }
 

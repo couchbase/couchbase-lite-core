@@ -17,6 +17,7 @@
 //
 
 #include "Request.hh"
+#include "HTTPLogic.hh"
 #include "Server.hh"
 #include "Writer.hh"
 #include "PlatformIO.hh"
@@ -46,13 +47,13 @@ namespace litecore { namespace REST {
 
     bool Request::readFromHTTP(slice httpData) {
         // <https://tools.ietf.org/html/rfc7230#section-3.1.1>
+        _method = Method::None;
         Method method = MethodNamed(httpData.readToDelimiter(" "_sl));
         slice uri = httpData.readToDelimiter(" "_sl);
         slice version = httpData.readToDelimiter("\r\n"_sl);
-        if (method == Method::None || uri.size == 0 || !version.hasPrefix("HTTP/"_sl)) {
-            _method = Method::None;
+        if (method == Method::None || uri.size == 0 || !version.hasPrefix("HTTP/"_sl))
             return false;
-        }
+        
         const uint8_t *q = uri.findByte('?');
         if (q) {
             _queries = string(uri.from(q+1));
@@ -61,6 +62,10 @@ namespace litecore { namespace REST {
             _queries.clear();
         }
         _path = string(uri);
+
+        if (!HTTPLogic::parseHeaders(httpData, _headers))
+            return false;
+
         _method = method;
         return true;
     }
@@ -114,7 +119,7 @@ namespace litecore { namespace REST {
     :_server(server)
     ,_socket(move(socket))
     {
-        if (!readFromHTTP(_socket->readToDelimiter("\r\n"_sl)))
+        if (!readFromHTTP(_socket->readToDelimiter("\r\n\r\n"_sl)))
             return;
         if (_method == Method::POST || _method == Method::PUT)
             _body = _socket->readHTTPBody(_headers);

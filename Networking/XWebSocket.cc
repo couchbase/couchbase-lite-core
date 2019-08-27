@@ -46,6 +46,9 @@ namespace litecore { namespace websocket {
     using namespace net;
 
 
+    static constexpr size_t kReadBufferSize = 8192;
+
+
     XWebSocket::XWebSocket(const URL &url,
                            Role role,
                            const fleece::AllocedDict &options)
@@ -184,6 +187,7 @@ namespace litecore { namespace websocket {
     // This runs on the same thread as _connect.
     void XWebSocket::readLoop() {
         try {
+            alloc_slice buffer(kReadBufferSize);
             while (true) {
                 // Wait until there's room to read more data:
                 size_t capacity;
@@ -194,19 +198,19 @@ namespace litecore { namespace websocket {
                 }
 
                 // Read from the socket:
-                slice data = _socket->read(capacity);
-                logDebug("Received %zu bytes from socket", data.size);
-                if (data.size == 0)
+                size_t n = _socket->read((void*)buffer.buf, min(buffer.size, capacity));
+                logDebug("Received %zu bytes from socket", n);
+                if (n == 0)
                     break; // EOF
 
                 // The bytes read count against the read-capacity:
                 {
                     unique_lock<mutex> lock(_receiveMutex);
-                    _receivedBytesPending += data.size;
+                    _receivedBytesPending += n;
                 }
 
-                // Dispatch to the client:
-                onReceive(data);
+                // Pass data to WebSocket parser:
+                onReceive(slice(buffer.buf, n));
             }
             logInfo("EOF on readLoop");
             onClose(0);
