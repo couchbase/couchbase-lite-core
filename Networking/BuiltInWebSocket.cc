@@ -1,5 +1,5 @@
 //
-// XWebSocket.cc
+// BuiltInWebSocket.cc
 //
 // Copyright © 2019 Couchbase. All rights reserved.
 //
@@ -16,10 +16,11 @@
 // limitations under the License.
 //
 
-#include "XWebSocket.hh"
+#include "BuiltInWebSocket.hh"
 #include "HTTPLogic.hh"
 #include "c4Replicator.h"
 #include "c4Socket+Internal.hh"
+#include "c4.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
 #include "sockpp/mbedtls_context.h"
@@ -30,12 +31,12 @@ using namespace litecore;
 using namespace litecore::websocket;
 
 
-void C4RegisterXWebSocket() {
+void C4RegisterBuiltInWebSocket() {
     repl::C4SocketImpl::registerInternalFactory([](websocket::URL url,
                                                    websocket::Role role,
                                                    fleece::alloc_slice options) -> WebSocketImpl*
                                                 {
-        return new XWebSocket(url, role, fleece::AllocedDict(options));
+        return new BuiltInWebSocket(url, role, fleece::AllocedDict(options));
     });
 }
 
@@ -49,9 +50,9 @@ namespace litecore { namespace websocket {
     static constexpr size_t kReadBufferSize = 8192;
 
 
-    XWebSocket::XWebSocket(const URL &url,
-                           Role role,
-                           const fleece::AllocedDict &options)
+    BuiltInWebSocket::BuiltInWebSocket(const URL &url,
+                                       Role role,
+                                       const fleece::AllocedDict &options)
     :WebSocketImpl(url, role, options, true)
     {
         slice pinnedCert = options[kC4ReplicatorOptionPinnedServerCert].asData();
@@ -59,19 +60,18 @@ namespace litecore { namespace websocket {
             _tlsContext.reset(new sockpp::mbedtls_context);
             _tlsContext->allow_only_certificate(string(pinnedCert));
         }
-        // TODO: Check kC4ReplicatorOptionAuthentication for client auth
     }
 
 
-    XWebSocket::~XWebSocket() {
-        logDebug("~XWebSocket");
+    BuiltInWebSocket::~BuiltInWebSocket() {
+        logDebug("~BuiltInWebSocket");
         // This could be called from various threads, including the reader...
         if (_readerThread.joinable())
             _readerThread.detach();
     }
 
 
-    void XWebSocket::connect() {
+    void BuiltInWebSocket::connect() {
         // Spawn a thread to connect and run the read loop:
         WebSocketImpl::connect();
         retain(this);
@@ -79,7 +79,7 @@ namespace litecore { namespace websocket {
     }
 
 
-    void XWebSocket::closeSocket() {
+    void BuiltInWebSocket::closeSocket() {
         logVerbose("closeSocket");
         _socket->close();
         
@@ -92,12 +92,12 @@ namespace litecore { namespace websocket {
     }
 
 
-    void XWebSocket::sendBytes(alloc_slice bytes) {
+    void BuiltInWebSocket::sendBytes(alloc_slice bytes) {
         _outbox.push(bytes);
     }
 
 
-    void XWebSocket::receiveComplete(size_t byteCount) {
+    void BuiltInWebSocket::receiveComplete(size_t byteCount) {
         unique_lock<mutex> lock(_receiveMutex);
         bool wasThrottled = (readCapacity() == 0);
         Assert(byteCount <= _receivedBytesPending);
@@ -107,7 +107,7 @@ namespace litecore { namespace websocket {
     }
 
 
-    void XWebSocket::requestClose(int status, fleece::slice message) {
+    void BuiltInWebSocket::requestClose(int status, fleece::slice message) {
         Assert(false, "Should not be called");
     }
 
@@ -116,7 +116,7 @@ namespace litecore { namespace websocket {
 
 
     // This runs on its own thread.
-    void XWebSocket::_connect() {
+    void BuiltInWebSocket::_connect() {
         SetThreadName("WebSocket reader");
         try {
             // Connect:
@@ -129,7 +129,7 @@ namespace litecore { namespace websocket {
             _socket = move(socket);
             onConnect();
         } catch (const std::exception &x) {
-            closeWithError(x, "connect");
+            closeWithException(x, "connect");
             release(this);
             return;
         }
@@ -141,13 +141,13 @@ namespace litecore { namespace websocket {
     }
 
 
-    unique_ptr<XClientSocket> XWebSocket::_connectLoop() {
+    unique_ptr<ClientSocket> BuiltInWebSocket::_connectLoop() {
         Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
-        HTTPLogic logic {repl::Address(url()), Headers(headers)};
+        HTTPLogic logic {Address(url()), Headers(headers)};
         logic.setWebSocketProtocol(options()[kC4SocketOptionWSProtocols].asString());
         bool usedAuth = false;
         while (true) {
-            auto socket = make_unique<XClientSocket>(_tlsContext.get());
+            auto socket = make_unique<ClientSocket>(_tlsContext.get());
             switch (logic.sendNextRequest(*socket)) {
                 case HTTPLogic::kSuccess:
                     gotHTTPResponse(int(logic.status()), logic.responseHeaders());
@@ -171,13 +171,14 @@ namespace litecore { namespace websocket {
                     }
                     // give up:
                     gotHTTPResponse(int(logic.status()), logic.responseHeaders());
-                    closeWithError(error(error::WebSocket, int(logic.status())), "connect");
+                    closeWithError(c4error_make(WebSocketDomain, int(logic.status()), nullslice),
+                                   "connect");
                     return nullptr;
                 }
                 case HTTPLogic::kFailure:
                     if (logic.status() != HTTPStatus::undefined)
                         gotHTTPResponse(int(logic.status()), logic.responseHeaders());
-                    closeWithError(*logic.error(), "connect");
+                    closeWithError(logic.error(), "connect");
                     return nullptr;
             }
         }
@@ -185,7 +186,7 @@ namespace litecore { namespace websocket {
 
 
     // This runs on the same thread as _connect.
-    void XWebSocket::readLoop() {
+    void BuiltInWebSocket::readLoop() {
         try {
             alloc_slice buffer(kReadBufferSize);
             while (true) {
@@ -198,10 +199,10 @@ namespace litecore { namespace websocket {
                 }
 
                 // Read from the socket:
-                size_t n = _socket->read((void*)buffer.buf, min(buffer.size, capacity));
+                ssize_t n = _socket->read((void*)buffer.buf, min(buffer.size, capacity));
                 logDebug("Received %zu bytes from socket", n);
-                if (n == 0)
-                    break; // EOF
+                if (_usuallyFalse(n <= 0))
+                    break;
 
                 // The bytes read count against the read-capacity:
                 {
@@ -212,11 +213,12 @@ namespace litecore { namespace websocket {
                 // Pass data to WebSocket parser:
                 onReceive(slice(buffer.buf, n));
             }
-            logInfo("EOF on readLoop");
-            onClose(0);
+
+            logInfo("End of readLoop; err = %s", c4error_descriptionStr(_socket->error()));
+            closeWithError(_socket->error(), "readLoop");
 
         } catch (const exception &x) {
-            closeWithError(x, "readLoop");
+            closeWithException(x, "readLoop");
         }
         _writerThread.join();
         release(this);
@@ -224,43 +226,49 @@ namespace litecore { namespace websocket {
 
 
     // This runs on its own thread.
-    void XWebSocket::writeLoop() {
+    void BuiltInWebSocket::writeLoop() {
         SetThreadName("WebSocket writer");
         try {
             while (true) {
                 alloc_slice data = _outbox.pop();
                 if (!_socket->connected())
                     break;
-                if (_socket->write_n(data) == 0)
+                if (_socket->write_n(data) <= 0)
                     break;
                 logDebug("Wrote %zu bytes to socket", data.size);
                 onWriteComplete(data.size);     // notify that data's been written
             }
-            logInfo("EOF on writeLoop");
+            logInfo("End of writeLoop; err = %s", c4error_descriptionStr(_socket->error()));
+            closeWithError(_socket->error(), "writeLoop");
         } catch (const exception &x) {
-            closeWithError(x, "writeLoop");
+            closeWithException(x, "writeLoop");
         }
         release(this);
     }
 
 
-    void XWebSocket::closeWithError(const exception &x, const char *where) {
+    void BuiltInWebSocket::closeWithException(const exception &x, const char *where) {
         // Convert exception to CloseStatus:
         logError("caught exception on %s: %s", where, x.what());
         error e = error::convertException(x);
-        closeWithError(e, where);
+        closeWithError(c4error_make(C4ErrorDomain(e.domain), e.code, slice(e.what())), where);
     }
 
-    void XWebSocket::closeWithError(const error &e, const char *where) {
-        alloc_slice message(e.what());
-        CloseStatus status {kUnknownError, e.code, message};
-        if (e.domain == error::WebSocket)
-            status.reason = kWebSocketClose;
-        else if (e.domain == error::POSIX)
-            status.reason = kPOSIXError;
-        else if (e.domain == error::Network)
-            status.reason = kNetworkError;
-        onClose(status);
+
+    void BuiltInWebSocket::closeWithError(C4Error err, const char *where) {
+        if (err.code == 0) {
+            onClose(0);
+        } else {
+            alloc_slice message(c4error_getMessage(err));
+            CloseStatus status {kUnknownError, err.code, message};
+            if (err.domain == WebSocketDomain)
+                status.reason = kWebSocketClose;
+            else if (err.domain == POSIXDomain)
+                status.reason = kPOSIXError;
+            else if (err.domain == NetworkDomain)
+                status.reason = kNetworkError;
+            onClose(status);
+        }
     }
 
 } }

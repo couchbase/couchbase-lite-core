@@ -17,8 +17,10 @@
 //
 
 #include "HTTPLogic.hh"
-#include "XSocket.hh"
+#include "TCPSocket.hh"
 #include "WebSocketInterface.hh"
+#include "c4Replicator.h"
+#include "Error.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
 #include <regex>
@@ -27,14 +29,13 @@
 namespace litecore { namespace net {
     using namespace std;
     using namespace fleece;
-    using namespace repl;
     using namespace websocket;
 
 
     static constexpr unsigned kMaxRedirects = 10;
 
 
-    HTTPLogic::HTTPLogic(const repl::Address &address,
+    HTTPLogic::HTTPLogic(const Address &address,
                          const Headers &requestHeaders,
                          bool handleRedirects)
     :_address(address)
@@ -48,7 +49,7 @@ namespace litecore { namespace net {
     { }
 
 
-    void HTTPLogic::setProxy(ProxyType type, repl::Address addr) {
+    void HTTPLogic::setProxy(ProxyType type, Address addr) {
         _proxyType = type;
         _proxyAddress.reset(new Address(addr));
     }
@@ -124,13 +125,13 @@ namespace litecore { namespace net {
         _httpStatus = HTTPStatus::undefined;
         _statusMessage = nullslice;
         _responseHeaders.clear();
-        _error.reset();
+        _error = {};
         _authChallenge.reset();
 
         if (parseStatusLine(responseData) && parseHeaders(responseData, _responseHeaders))
             _lastDisposition = handleResponse();
         else
-            _lastDisposition = failure(error::WebSocket, 400, "Received invalid HTTP"_sl);
+            _lastDisposition = failure(WebSocketDomain, 400, "Received invalid HTTP"_sl);
         return _lastDisposition;
     }
 
@@ -152,9 +153,9 @@ namespace litecore { namespace net {
                 return handleUpgrade();
             default:
                 if (!IsSuccess(_httpStatus))
-                    return failure(error::WebSocket, int(_httpStatus));
+                    return failure(WebSocketDomain, int(_httpStatus));
                 else if (_isWebSocket)
-                    return failure(error::WebSocket, kCodeProtocolError,
+                    return failure(WebSocketDomain, kCodeProtocolError,
                                    "Server failed to upgrade connection"_sl);
                 else
                     return kSuccess;
@@ -205,18 +206,18 @@ namespace litecore { namespace net {
 
     HTTPLogic::Disposition HTTPLogic::handleRedirect() {
         if (!_handleRedirects)
-            return failure(error::WebSocket, int(_httpStatus));
+            return failure(WebSocketDomain, int(_httpStatus));
         if (++_redirectCount > kMaxRedirects)
-            return failure(error::Network, kC4NetErrTooManyRedirects);
+            return failure(NetworkDomain, kC4NetErrTooManyRedirects);
 
         C4Address newAddr;
         if (!c4address_fromURL(_responseHeaders["Location"_sl], &newAddr, nullptr)
                 || (newAddr.scheme != "http"_sl && newAddr.scheme != "https"_sl))
-            return failure(error::Network, kC4NetErrInvalidRedirect);
+            return failure(NetworkDomain, kC4NetErrInvalidRedirect);
 
         if (_httpStatus == HTTPStatus::UseProxy) {
             if (_proxyType != kNoProxy)
-                return failure(error::Network, int(_httpStatus));
+                return failure(NetworkDomain, int(_httpStatus));
             _proxyType = kHTTPProxy;
             _proxyAddress.reset(new Address(newAddr));
         } else {
@@ -234,7 +235,7 @@ namespace litecore { namespace net {
         regex authEx(R"((\w+)\s+(\w+)=((\w+)|"([^"]+)))");     // e.g. Basic realm="Foobar"
         smatch m;
         if (!regex_search(authHeader, m, authEx))
-            return failure(error::WebSocket, 400);
+            return failure(WebSocketDomain, 400);
         AuthChallenge challenge(forProxy ? *_proxyAddress : _address, forProxy);
         challenge.type = m[1].str();
         challenge.key = m[2].str();
@@ -248,44 +249,44 @@ namespace litecore { namespace net {
 
     HTTPLogic::Disposition HTTPLogic::handleUpgrade() {
         if (!_isWebSocket)
-            return failure(error::WebSocket, kCodeProtocolError);
+            return failure(WebSocketDomain, kCodeProtocolError);
 
         if (_responseHeaders["Connection"_sl] != "Upgrade"_sl
                 || _responseHeaders["Upgrade"_sl] != "websocket"_sl) {
-            return failure(error::WebSocket, kCodeProtocolError,
+            return failure(WebSocketDomain, kCodeProtocolError,
                            "Server failed to upgrade connection"_sl);
         }
 
         if (_webSocketProtocol && _responseHeaders["Sec-Websocket-Protocol"_sl] != _webSocketProtocol) {
-            return failure(error::WebSocket, 403, "Server did not accept protocol"_sl);
+            return failure(WebSocketDomain, 403, "Server did not accept protocol"_sl);
         }
 
         // Check the returned nonce:
         SHA1 digest{slice(_webSocketNonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
         string resultNonce = slice(&digest, sizeof(digest)).base64String();
         if (_responseHeaders["Sec-Websocket-Accept"_sl] != slice(resultNonce))
-            return failure(error::WebSocket, kCodeProtocolError,
+            return failure(WebSocketDomain, kCodeProtocolError,
                            "Server returned invalid nonce"_sl);
 
         return kSuccess;
     }
 
 
-    HTTPLogic::Disposition HTTPLogic::failure(error::Domain domain, int code, slice message) {
-        _error = litecore::error(domain, code, string(message));
+    HTTPLogic::Disposition HTTPLogic::failure(C4ErrorDomain domain, int code, slice message) {
+        Assert(code != 0);
+        _error = c4error_make(domain, code, message);
         return kFailure;
     }
 
 
-    HTTPLogic::Disposition HTTPLogic::failure(XClientSocket &socket) {
-        C4Error err = socket.error();
-        _error = litecore::error((error::Domain)err.domain, err.code,
-                                 string(alloc_slice(c4error_getMessage(err))));
+    HTTPLogic::Disposition HTTPLogic::failure(ClientSocket &socket) {
+        _error = socket.error();
+        Assert(_error.code != 0);
         return kFailure;
     }
 
 
-    HTTPLogic::Disposition HTTPLogic::sendNextRequest(XClientSocket &socket, slice body) {
+    HTTPLogic::Disposition HTTPLogic::sendNextRequest(ClientSocket &socket, slice body) {
         if (!socket.connect(directAddress()))
             return failure(socket);
         Debug("Sending request: %s", requestToSend().c_str());

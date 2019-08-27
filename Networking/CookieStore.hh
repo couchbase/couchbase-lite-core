@@ -26,7 +26,7 @@
 #include <time.h>
 #include <vector>
 
-namespace litecore { namespace repl {
+namespace litecore { namespace net {
     using fleece::RefCounted;
     using fleece::Retained;
 

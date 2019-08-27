@@ -23,7 +23,7 @@
 
 struct c4Database;
 
-namespace litecore { namespace repl {
+namespace litecore { namespace net {
 
     /** Enhanced C4Address subclass that allocates storage for the fields. */
     struct Address : public C4Address {

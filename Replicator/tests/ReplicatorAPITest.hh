@@ -10,6 +10,7 @@
 #include "fleece/slice.hh"
 #include "fleece/Fleece.hh"
 #include "c4.hh"
+#include "Address.hh"
 #include "Response.hh"
 #include "Certificate.hh"
 #include "c4Test.hh"
@@ -23,10 +24,11 @@
 using namespace std;
 using namespace fleece;
 using namespace litecore;
+using namespace litecore::net;
 
 
 extern "C" {
-    void C4RegisterXWebSocket();
+    void C4RegisterBuiltInWebSocket();
 }
 
 
@@ -50,8 +52,8 @@ public:
     {
         static once_flag once;
         call_once(once, [&]() {
-            // Register the XWebSocket class as the C4Replicator's WebSocketImpl.
-            C4RegisterXWebSocket();
+            // Register the BuiltInWebSocket class as the C4Replicator's WebSocketImpl.
+            C4RegisterBuiltInWebSocket();
 
             // Pin the server certificate:
             alloc_slice cert = readFile("Replicator/tests/data/cert.pem");
@@ -279,12 +281,7 @@ public:
         enc.endDict();
         auto headers = enc.finish();
 
-        string scheme(slice(_address.scheme));
-        if (scheme == "ws")
-            scheme = "http";
-        else if (scheme == "wss")
-            scheme = "https";
-
+        string scheme = Address::isSecure(_address) ? "https" : "http";
         auto r = make_unique<REST::Response>(scheme,
                                              method,
                                              (string)(slice)_address.hostname,

@@ -65,17 +65,17 @@ function(set_litecore_source_base)
         LiteCore/Storage/SQLiteEnumerator.cc
         LiteCore/Storage/SQLiteKeyStore.cc
         LiteCore/Storage/UnicodeCollator.cc
+        Networking/Address.cc
+        Networking/CookieStore.cc
         vendor/SQLiteCpp/src/Backup.cpp
         vendor/SQLiteCpp/src/Column.cpp
         vendor/SQLiteCpp/src/Database.cpp
         vendor/SQLiteCpp/src/Exception.cpp
         vendor/SQLiteCpp/src/Statement.cpp
         vendor/SQLiteCpp/src/Transaction.cpp
-        Replicator/Address.cc
         Replicator/c4Replicator.cc
         Replicator/c4Socket.cc
         Replicator/Checkpoint.cc
-        Replicator/CookieStore.cc
         Replicator/DatabaseCookies.cc
         Replicator/DBAccess.cc
         Replicator/IncomingBlob.cc
@@ -116,7 +116,7 @@ function(set_support_source_base)
         LiteCore/Support/SecureRandomize.cc
         LiteCore/Support/SecureSymmetricCrypto.cc
         LiteCore/Support/StringUtil.cc
-        Replicator/Address.cc
+        Networking/Address.cc
         PARENT_SCOPE
     )
 endfunction()

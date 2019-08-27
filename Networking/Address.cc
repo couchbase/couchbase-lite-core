@@ -27,7 +27,7 @@ using namespace fleece;
 using namespace litecore;
 
 
-namespace litecore { namespace repl {
+namespace litecore { namespace net {
 
     Address::Address(const alloc_slice &url)
     :_url(url)

@@ -171,6 +171,7 @@ target_include_directories(
     LiteCore/Storage
     LiteCore/Query
     LiteCore/RevID
+    Network
     vendor/mbedtls/include
     C
     C/include 
@@ -190,8 +191,9 @@ set(
     Crypto/PublicKey.cc
     Crypto/mbedUtils.cc
     Networking/HTTPTypes.cc
-    Networking/XSocket.cc
-    Networking/XWebSocket.cc
+    Networking/HTTPLogic.cc
+    Networking/TCPSocket.cc
+    Networking/BuiltInWebSocket.cc
     REST/netUtils.cc
     vendor/sockpp/src/acceptor.cpp
     vendor/sockpp/src/connector.cpp
@@ -276,6 +278,7 @@ target_include_directories(
     LiteCore/Support
     C
     C/include 
+    Networking
     Replicator
     REST
     vendor/BLIP-Cpp/include/blip_cpp

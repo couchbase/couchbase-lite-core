@@ -24,7 +24,7 @@
 #include "Writer.hh"
 
 namespace litecore { namespace net {
-    class XResponderSocket;
+    class ResponderSocket;
 } }
 
 namespace litecore { namespace REST {
@@ -108,7 +108,7 @@ namespace litecore { namespace REST {
         void finish();
 
     protected:
-        RequestResponse(Server *server, std::unique_ptr<net::XResponderSocket>);
+        RequestResponse(Server *server, std::unique_ptr<net::ResponderSocket>);
         void sendStatus();
         void sendHeaders();
         void handleSocketError();
@@ -117,7 +117,7 @@ namespace litecore { namespace REST {
         friend class Server;
 
         fleece::Retained<Server> _server;
-        std::unique_ptr<net::XResponderSocket> _socket;
+        std::unique_ptr<net::ResponderSocket> _socket;
         C4Error _error {};
 
         std::vector<fleece::alloc_slice> _requestBody;

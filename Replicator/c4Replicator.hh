@@ -31,6 +31,7 @@
 using namespace std;
 using namespace fleece;
 using namespace litecore;
+using namespace litecore::net;
 using namespace litecore::repl;
 using namespace litecore::websocket;
 

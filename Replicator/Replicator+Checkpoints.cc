@@ -46,7 +46,7 @@ namespace litecore { namespace repl {
 
 
     void Replicator::setCookie(slice setCookieHeader) {
-        Address addr(_remoteURL);
+        net::Address addr(_remoteURL);
         C4Error err;
         bool ok = _db->use<bool>([&](C4Database *db) {
             return c4db_setCookie(db, setCookieHeader, addr.hostname, addr.path, &err);

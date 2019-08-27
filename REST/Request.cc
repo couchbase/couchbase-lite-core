@@ -25,7 +25,7 @@
 #include "Logging.hh"
 #include "c4.hh"
 #include "netUtils.hh"
-#include "XSocket.hh"
+#include "TCPSocket.hh"
 #include <stdarg.h>
 
 using namespace std;
@@ -117,7 +117,7 @@ namespace litecore { namespace REST {
 #pragma mark - RESPONSE STATUS LINE:
 
 
-    RequestResponse::RequestResponse(Server *server, std::unique_ptr<net::XResponderSocket> socket)
+    RequestResponse::RequestResponse(Server *server, std::unique_ptr<net::ResponderSocket> socket)
     :_server(server)
     ,_socket(move(socket))
     {

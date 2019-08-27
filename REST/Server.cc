@@ -18,7 +18,7 @@
 
 #include "Server.hh"
 #include "Request.hh"
-#include "XSocket.hh"
+#include "TCPSocket.hh"
 #include "Certificate.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
@@ -97,7 +97,7 @@ namespace litecore { namespace REST {
 
 
     void Server::handleConnection(sockpp::stream_socket &&sock) {
-        auto responder = make_unique<XResponderSocket>(_tlsContext.get());
+        auto responder = make_unique<ResponderSocket>(_tlsContext.get());
         if (!responder->acceptSocket(move(sock))) {
             c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %s",
                   c4error_descriptionStr(responder->error()));

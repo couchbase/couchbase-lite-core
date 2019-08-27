@@ -35,7 +35,7 @@ using namespace std;
 using namespace c4Internal;
 using namespace fleece;
 using namespace litecore;
-using namespace litecore::repl;
+using namespace litecore::net;
 
 CBL_CORE_API const char* const kC4SocketOptionWSProtocols = litecore::websocket::WebSocket::kProtocolsOption;
 
@@ -138,7 +138,7 @@ namespace litecore { namespace repl {
     void C4SocketImpl::connect() {
         WebSocketImpl::connect();
         if (_factory.open) {
-            Address c4addr(url());
+            net::Address c4addr(url());
             _factory.open(this, &c4addr, options().data(), _factory.context);
         }
     }
@@ -172,6 +172,8 @@ namespace litecore { namespace repl {
 
 #pragma mark - PUBLIC C API:
 
+
+using namespace litecore::repl;
 
 static C4SocketImpl* internal(C4Socket *s)  {return (C4SocketImpl*)s;}
 

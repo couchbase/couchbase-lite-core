@@ -17,7 +17,7 @@
 //
 
 #include "Response.hh"
-#include "XSocket.hh"
+#include "TCPSocket.hh"
 #include "HTTPLogic.hh"
 #include "Address.hh"
 #include "c4ExceptionUtils.hh"
@@ -90,14 +90,14 @@ namespace litecore { namespace REST {
             tlsContext->allow_only_certificate(pinnedServerCert->context());
         }
 
-        HTTPLogic logic(repl::Address(address), headers);
+        HTTPLogic logic(net::Address(address), headers);
         logic.setMethod(MethodNamed(method));
         logic.setContentLength(body.size);
 
         try {
             HTTPLogic::Disposition disposition;
             do {
-                XClientSocket socket(tlsContext.get());
+                ClientSocket socket(tlsContext.get());
                 disposition = logic.sendNextRequest(socket, body);
                 if (disposition == HTTPLogic::kSuccess) {
                     if (!socket.readHTTPBody(logic.responseHeaders(), _body)) {
@@ -105,9 +105,7 @@ namespace litecore { namespace REST {
                         disposition = HTTPLogic::kFailure;
                     }
                 } else if (disposition == HTTPLogic::kFailure) {
-                    auto err = logic.error();
-                    if (err)
-                        _error = c4error_make((C4ErrorDomain)err->domain, err->code, slice(err->what()));
+                    _error = logic.error();
                 } else if (disposition == HTTPLogic::kAuthenticate) {
                     disposition = HTTPLogic::kFailure;
                 }

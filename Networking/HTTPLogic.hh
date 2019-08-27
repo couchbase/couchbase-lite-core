@@ -8,12 +8,12 @@
 #include "HTTPTypes.hh"
 #include "Headers.hh"
 #include "Address.hh"
-#include "Error.hh"
+#include "c4Base.h"
 #include "Optional.hh"
 #include "fleece/Fleece.hh"
 
 namespace litecore { namespace net {
-    class XClientSocket;
+    class ClientSocket;
 
     /** Implements the core logic of HTTP request/response handling, especially processing redirects and authentication challenges, without actually doing any of the networking. It just tells you what HTTP request to send and how to interpret the response. */
     class HTTPLogic {
@@ -26,7 +26,7 @@ namespace litecore { namespace net {
 
         // -------- Setup:
 
-        HTTPLogic(const repl::Address &address,
+        HTTPLogic(const Address &address,
                   const websocket::Headers &requestHeaders,
                   bool handleRedirects =true);
         ~HTTPLogic();
@@ -51,9 +51,9 @@ namespace litecore { namespace net {
         };
 
         /// Specifies a proxy server to use.
-        void setProxy(ProxyType type, repl::Address addr);
+        void setProxy(ProxyType type, Address addr);
 
-        const repl::Address* proxy()                {return _proxyAddress.get();}
+        const Address* proxy()                {return _proxyAddress.get();}
         ProxyType proxyType()                       {return _proxyType;}
 
         void setProxyAuthHeader(slice authHeader)   {_proxyAuthHeader = authHeader;}
@@ -61,7 +61,7 @@ namespace litecore { namespace net {
         // -------- Request:
 
         /// The current address/URL, which changes after a redirect.
-        const repl::Address& address()              {return _address;}
+        const Address& address()              {return _address;}
 
         /// Sets the "Authorization:" header to send in the request.
         void setAuthHeader(slice authHeader)        {_authHeader = authHeader;}
@@ -70,7 +70,7 @@ namespace litecore { namespace net {
         static alloc_slice basicAuth(slice username, slice password);
 
         /// The hostname/port/scheme to connect to. This is affected by proxy settings and by redirects.
-        const repl::Address& directAddress();
+        const Address& directAddress();
 
         /// Returns an encoded HTTP request (minus the body).
         std::string requestToSend();
@@ -89,21 +89,21 @@ namespace litecore { namespace net {
         Disposition receivedResponse(slice responseData);
 
         /// The HTTP status from the latest response.
-        HTTPStatus status()                       {return _httpStatus;}
+        HTTPStatus status()                             {return _httpStatus;}
 
         /// The HTTP status message from the latest response.
         alloc_slice statusMessage()                     {return _statusMessage;}
 
         /// The headers of the response.
-        const websocket::Headers& responseHeaders()    {return _responseHeaders;}
+        const websocket::Headers& responseHeaders()     {return _responseHeaders;}
 
         /// The error status of the latest response.
-        nonstd::optional<litecore::error> error()       {return _error;}
+        C4Error error()                                 {return _error;}
 
         struct AuthChallenge {
-            AuthChallenge(const repl::Address a, bool fp)
+            AuthChallenge(const Address a, bool fp)
             :address(a), forProxy(fp) { }
-            repl::Address address;  ///< The URL to authenticate to
+            Address address;  ///< The URL to authenticate to
             bool forProxy;          ///< Is this auth for a proxy?
             std::string type;       ///< Auth type, e.g. "Basic" or "Digest"
             std::string key;        ///< A parameter like "Realm"
@@ -115,11 +115,11 @@ namespace litecore { namespace net {
 
         /// Convenience method that uses an XClientSocket to send the request and receive the
         /// response.
-        Disposition sendNextRequest(XClientSocket&, slice body =nullslice);
+        Disposition sendNextRequest(ClientSocket&, slice body =fleece::nullslice);
 
     private:
-        Disposition failure(error::Domain domain, int code, slice message =fleece::nullslice);
-        Disposition failure(XClientSocket&);
+        Disposition failure(C4ErrorDomain domain, int code, slice message =fleece::nullslice);
+        Disposition failure(ClientSocket&);
         bool parseStatusLine(slice &responseData);
         bool parseResponseHeaders(slice &responseData);
         Disposition handleRedirect();
@@ -127,7 +127,7 @@ namespace litecore { namespace net {
         Disposition handleUpgrade();
         Disposition handleResponse();
 
-        repl::Address _address;                         // The current target address (not proxy)
+        Address _address;                         // The current target address (not proxy)
         bool _handleRedirects {false};
         Method _method {Method::GET};
         websocket::Headers _requestHeaders;
@@ -135,11 +135,11 @@ namespace litecore { namespace net {
         alloc_slice _userAgent;
         alloc_slice _authHeader;
 
-        std::unique_ptr<repl::Address> _proxyAddress;
+        std::unique_ptr<Address> _proxyAddress;
         ProxyType _proxyType {kNoProxy};
         alloc_slice _proxyAuthHeader;
 
-        nonstd::optional<litecore::error> _error;
+        C4Error _error {};
         HTTPStatus _httpStatus {HTTPStatus::undefined};
         alloc_slice _statusMessage;
         websocket::Headers _responseHeaders;

@@ -33,8 +33,9 @@
 
 using namespace std;
 using namespace fleece;
+using namespace litecore::net;
 
-namespace litecore { namespace repl {
+namespace litecore { namespace net {
 
     static void cap_to_max(struct tm* inputTime) {
         Warn("Received a struct tm that overflows 32-bit time_t!  Capping the value...");

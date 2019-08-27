@@ -1,5 +1,5 @@
 //
-// XSocket.cc
+// TCPSocket.cc
 //
 // Copyright © 2019 Couchbase. All rights reserved.
 //
@@ -16,13 +16,13 @@
 // limitations under the License.
 //
 
-#include "XSocket.hh"
+#include "TCPSocket.hh"
 #include "Headers.hh"
 #include "HTTPLogic.hh"
 #include "WebSocketInterface.hh"
-#include "Error.hh"
 #include "SecureDigest.hh"
 #include "SecureRandomize.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "fleece/Fleece.hh"
 #include "mbedtls/error.h"
@@ -46,27 +46,27 @@ namespace litecore { namespace net {
     static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
 
 
-    XSocket::XSocket(tls_context *tls)
+    TCPSocket::TCPSocket(tls_context *tls)
     :_tlsContext(tls)
     { }
 
 
-    XSocket::~XSocket()
+    TCPSocket::~TCPSocket()
     { }
 
 
-    tls_context* XSocket::TLSContext() {
+    tls_context* TCPSocket::TLSContext() {
         return _tlsContext;
     }
 
 
-    void XSocket::setError(C4ErrorDomain domain, int code, slice message) {
+    void TCPSocket::setError(C4ErrorDomain domain, int code, slice message) {
         Assert(code != 0);
         _error = c4error_make(domain, code, message);
     }
 
 
-    bool XSocket::checkSocketFailure() {
+    bool TCPSocket::checkSocketFailure() {
         if (*_socket)
             return true;
 
@@ -76,7 +76,7 @@ namespace litecore { namespace net {
             auto tlsSocket = (tls_socket*)_socket.get();
             uint32_t flags = tlsSocket->peer_certificate_status();
             C4LogToAt(kC4WebSocketLog, kC4LogError,
-                      "XSocket TLS handshake failed; cert verify status 0x%02x", flags);
+                      "TCPSocket TLS handshake failed; cert verify status 0x%02x", flags);
             if (flags != 0 && flags != UINT32_MAX) {
                 string message = tlsSocket->peer_certificate_status_message();
                 int code = kNetErrTLSCertUntrusted;
@@ -97,19 +97,19 @@ namespace litecore { namespace net {
     }
 
 
-    bool XSocket::connected() const {
+    bool TCPSocket::connected() const {
         return _socket && _socket->is_open();
     }
 
 
-    void XSocket::close() {
+    void TCPSocket::close() {
         if (_socket) {
             _socket->close();
         }
     }
 
 
-    ssize_t XSocket::write(slice data) {
+    ssize_t TCPSocket::write(slice data) {
         if (data.size == 0)
             return 0;
         ssize_t written = _socket->write(data.buf, data.size);
@@ -122,7 +122,7 @@ namespace litecore { namespace net {
     }
 
 
-    ssize_t XSocket::write_n(slice data) {
+    ssize_t TCPSocket::write_n(slice data) {
         if (data.size == 0)
             return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
@@ -138,7 +138,7 @@ namespace litecore { namespace net {
     // Primitive unbuffered read call. Returns 0 on EOF, -1 on error (and sets _error).
     // Interprets error EBADF (bad file descriptor) as EOF,
     // since that's what happens when another thread closes the socket while read() is blocked
-    ssize_t XSocket::_read(void *dst, size_t byteCount) {
+    ssize_t TCPSocket::_read(void *dst, size_t byteCount) {
         ssize_t n = _socket->read(dst, byteCount);
         if (n < 0) {
             if (_socket->last_error() == EBADF)
@@ -150,7 +150,7 @@ namespace litecore { namespace net {
 
 
     // "Un-read" data by prepending it to the _unread buffer
-    void XSocket::pushUnread(slice data) {
+    void TCPSocket::pushUnread(slice data) {
         if (_usuallyFalse(data.size == 0))
             return;
         if (_usuallyTrue(_unreadLen + data.size > _unread.size))
@@ -162,7 +162,7 @@ namespace litecore { namespace net {
 
 
     // Read from the socket, or from the unread buffer if it exists
-    ssize_t XSocket::read(void *dst, size_t byteCount) {
+    ssize_t TCPSocket::read(void *dst, size_t byteCount) {
         if (_usuallyFalse(_unreadLen > 0)) {
             // Use up anything left in the buffer:
             size_t n = min(byteCount, _unreadLen);
@@ -179,12 +179,16 @@ namespace litecore { namespace net {
 
 
     // Read exactly `byteCount` bytes from the socket (or the unread buffer)
-    ssize_t XSocket::readExactly(void *dst, size_t byteCount) {
+    ssize_t TCPSocket::readExactly(void *dst, size_t byteCount) {
         ssize_t remaining = byteCount;
         while (remaining > 0) {
             auto n = read(dst, remaining);
-            if (n <= 0)
+            if (n < 0)
                 return n;
+            if (n == 0) {
+                setError(WebSocketDomain, 400, "Premature end of HTTP body"_sl);
+                return n;
+            }
             remaining -= n;
             dst = offsetby(dst, n);
         }
@@ -193,7 +197,7 @@ namespace litecore { namespace net {
 
 
     // Read up to the given delimiter.
-    alloc_slice XSocket::readToDelimiter(slice delim, bool includeDelim, size_t maxSize) {
+    alloc_slice TCPSocket::readToDelimiter(slice delim, bool includeDelim, size_t maxSize) {
         alloc_slice alloced(kInitialDelimitedReadBufferSize);
         slice result(alloced.buf, size_t(0));
 
@@ -231,7 +235,7 @@ namespace litecore { namespace net {
     }
 
 
-    bool XSocket::readHTTPBody(const Headers &headers, alloc_slice &body) {
+    bool TCPSocket::readHTTPBody(const Headers &headers, alloc_slice &body) {
         int64_t contentLength = headers.getInt("Content-Length"_sl, -1);
         if (contentLength >= 0) {
             // Read exactly Content-Length bytes:
@@ -266,7 +270,7 @@ namespace litecore { namespace net {
 #pragma mark - ERRORS:
 
 
-    int XSocket::mbedToNetworkErrCode(int err) {
+    int TCPSocket::mbedToNetworkErrCode(int err) {
         static constexpr struct {int mbed0; int mbed1; int net;} kMbedToNetErr[] = {
             {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
             {-0x3000,                             -0x2000,                             kNetErrTLSCertUntrusted},
@@ -282,19 +286,19 @@ namespace litecore { namespace net {
     }
 
 
-    void XSocket::checkStreamError() {
+    void TCPSocket::checkStreamError() {
         int err = _socket->last_error();
         Assert(err != 0);
         if (err > 0) {
             C4LogToAt(kC4WebSocketLog, kC4LogWarning,
-                    "XSocket got POSIX error %d \"%s\"", err, strerror(err));
+                    "TCPSocket got POSIX error %d \"%s\"", err, strerror(err));
             setError(POSIXDomain, err, nullslice);
         } else {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
             mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
             C4LogToAt(kC4WebSocketLog, kC4LogWarning,
-                    "XSocket got mbedTLS error -0x%04X \"%s\"", -err, msgbuf);
+                    "TCPSocket got mbedTLS error -0x%04X \"%s\"", -err, msgbuf);
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }
     }
@@ -303,12 +307,12 @@ namespace litecore { namespace net {
 #pragma mark - CLIENT SOCKET:
 
 
-    XClientSocket::XClientSocket(tls_context *tls)
-    :XSocket(tls)
+    ClientSocket::ClientSocket(tls_context *tls)
+    :TCPSocket(tls)
     { }
 
 
-    bool XClientSocket::connect(const repl::Address &addr) {
+    bool ClientSocket::connect(const Address &addr) {
         // sockpp constructors can throw exceptions.
         try {
             string hostname(slice(addr.hostname));
@@ -345,17 +349,17 @@ namespace litecore { namespace net {
 #pragma mark - RESPONDER SOCKET:
 
 
-    XResponderSocket::XResponderSocket(tls_context *tls)
-    :XSocket(tls)
+    ResponderSocket::ResponderSocket(tls_context *tls)
+    :TCPSocket(tls)
     { }
 
 
-    bool XResponderSocket::acceptSocket(stream_socket &&s, bool useTLS) {
+    bool ResponderSocket::acceptSocket(stream_socket &&s, bool useTLS) {
         return acceptSocket( make_unique<tcp_socket>(move(s)), useTLS );
     }
 
     
-    bool XResponderSocket::acceptSocket(unique_ptr<stream_socket> socket, bool useTLS) {
+    bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket, bool useTLS) {
         if (_tlsContext)
             _socket = _tlsContext->wrap_socket(move(socket), tls_context::SERVER, "");
         else

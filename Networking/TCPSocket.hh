@@ -1,5 +1,5 @@
 //
-// XSocket.hh
+// TCPSocket.hh
 //
 // Copyright © 2019 Couchbase. All rights reserved.
 //
@@ -13,9 +13,6 @@
 #include <memory>
 #include <thread>
 
-namespace litecore {
-    class error;
-}
 namespace litecore { namespace websocket {
     struct CloseStatus;
     class Headers;
@@ -29,13 +26,13 @@ namespace litecore { namespace net {
     class HTTPLogic;
 
     /** TCP socket class, using the sockpp library. */
-    class XSocket {
+    class TCPSocket {
     public:
         using slice = fleece::slice;
         using string = std::string;
 
-        XSocket(sockpp::tls_context *ctx =nullptr);
-        virtual ~XSocket();
+        TCPSocket(sockpp::tls_context *ctx =nullptr);
+        virtual ~TCPSocket();
 
         /// Returns the TLS context, if any, used by this socket.
         sockpp::tls_context* TLSContext();
@@ -50,13 +47,11 @@ namespace litecore { namespace net {
 
         /// Reads up to \ref byteCount bytes to the location \ref dst.
         /// On EOF returns zero. On other error returns -1.
-            __attribute__((warn_unused_result))
-        ssize_t read(void *dst, size_t byteCount);
+        ssize_t read(void *dst, size_t byteCount) MUST_USE_RESULT;
 
         /// Reads exactly \ref byteCount bytes to the location \ref dst.
-        /// On premature EOF, throws exception {WebSocket, 400}.
-            __attribute__((warn_unused_result))
-        ssize_t readExactly(void *dst, size_t byteCount);
+        /// On premature EOF returns 0 and sets error {WebSocket, 400}.
+        ssize_t readExactly(void *dst, size_t byteCount) MUST_USE_RESULT;
 
         static constexpr size_t kMaxDelimitedReadSize = 50 * 1024;
 
@@ -66,27 +61,24 @@ namespace litecore { namespace net {
         /// throws an exception.
         fleece::alloc_slice readToDelimiter(slice delimiter,
                                             bool includeDelimiter =true,
-                                            size_t maxSize =kMaxDelimitedReadSize);
+                                            size_t maxSize =kMaxDelimitedReadSize) MUST_USE_RESULT;
 
         /// Reads an HTTP body, given the headers.
         /// If there's a Content-Length header, reads that many bytes, otherwise reads till EOF.
-        bool readHTTPBody(const websocket::Headers &headers, fleece::alloc_slice &body);
+        bool readHTTPBody(const websocket::Headers &headers, fleece::alloc_slice &body) MUST_USE_RESULT;
 
         /// Writes to the socket and returns the number of bytes written:
-            __attribute__((warn_unused_result))
-        ssize_t write(slice);
+        ssize_t write(slice) MUST_USE_RESULT;
 
         /// Writes all the bytes to the socket.
-            __attribute__((warn_unused_result))
-        ssize_t write_n(slice);
+        ssize_t write_n(slice) MUST_USE_RESULT;
 
     protected:
         void setError(C4ErrorDomain, int code, slice message);
         static int mbedToNetworkErrCode(int mbedErr);
         void checkStreamError();
-            __attribute__((warn_unused_result))
         bool checkSocketFailure();
-        ssize_t _read(void *dst, size_t byteCount);
+        ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;
         void pushUnread(slice);
 
         std::unique_ptr<sockpp::stream_socket> _socket;
@@ -106,26 +98,23 @@ namespace litecore { namespace net {
 
 
     /** A client socket, that opens a TCP connection. */
-    class XClientSocket : public XSocket {
+    class ClientSocket : public TCPSocket {
     public:
-        XClientSocket(sockpp::tls_context* =nullptr);
+        ClientSocket(sockpp::tls_context* =nullptr);
 
         /// Connects to the host, synchronously. On failure throws an exception.
-            __attribute__((warn_unused_result))
-        bool connect(const repl::Address &addr);
+        bool connect(const Address &addr) MUST_USE_RESULT;
     };
 
     
 
     /** A server-side socket, that handles a client connection. */
-    class XResponderSocket : public XSocket {
+    class ResponderSocket : public TCPSocket {
     public:
-        XResponderSocket(sockpp::tls_context* =nullptr);
+        ResponderSocket(sockpp::tls_context* =nullptr);
 
-            __attribute__((warn_unused_result))
-        bool acceptSocket(sockpp::stream_socket&&, bool useTLS =false);
-            __attribute__((warn_unused_result))
-        bool acceptSocket(std::unique_ptr<sockpp::stream_socket>, bool useTLS =false);
+        bool acceptSocket(sockpp::stream_socket&&, bool useTLS =false) MUST_USE_RESULT;
+        bool acceptSocket(std::unique_ptr<sockpp::stream_socket>, bool useTLS =false) MUST_USE_RESULT;
     };
 
 
