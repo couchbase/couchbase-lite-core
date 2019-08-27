@@ -277,12 +277,24 @@ namespace litecore { namespace net {
     }
 
 
+    HTTPLogic::Disposition HTTPLogic::failure(XClientSocket &socket) {
+        C4Error err = socket.error();
+        _error = litecore::error((error::Domain)err.domain, err.code,
+                                 string(alloc_slice(c4error_getMessage(err))));
+        return kFailure;
+    }
+
+
     HTTPLogic::Disposition HTTPLogic::sendNextRequest(XClientSocket &socket, slice body) {
-        socket.connect(directAddress());
+        if (!socket.connect(directAddress()))
+            return failure(socket);
         Debug("Sending request: %s", requestToSend().c_str());
-        socket.write_n(requestToSend());
-        socket.write_n(body);
-        return receivedResponse(socket.readToDelimiter("\r\n\r\n"_sl));
+        if (socket.write_n(requestToSend()) < 0 || socket.write_n(body) < 0)
+            return failure(socket);
+        alloc_slice response = socket.readToDelimiter("\r\n\r\n"_sl);
+        if (!response)
+            return failure(socket);
+        return receivedResponse(response);
     }
 
 

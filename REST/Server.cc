@@ -81,11 +81,7 @@ namespace litecore { namespace REST {
                 // Accept a new client connection
                 tcp_socket sock = _acceptor->accept();
                 if (sock) {
-                    auto responder = make_unique<XResponderSocket>(_tlsContext.get());
-                    responder->acceptSocket(move(sock));
-                    RequestResponse rq(this, move(responder));
-                    dispatchRequest(&rq);
-                    rq.finish();
+                    handleConnection(move(sock));
                 } else {
                     if (!_acceptor->is_open())
                         break;
@@ -97,6 +93,20 @@ namespace litecore { namespace REST {
             }
         }
         c4log(RESTLog, kC4LogInfo,"Server stopped accepting connections");
+    }
+
+
+    void Server::handleConnection(sockpp::stream_socket &&sock) {
+        auto responder = make_unique<XResponderSocket>(_tlsContext.get());
+        if (!responder->acceptSocket(move(sock))) {
+            c4log(RESTLog, kC4LogError, "Error accepting incoming connection: %s",
+                  c4error_descriptionStr(responder->error()));
+        }
+        RequestResponse rq(this, move(responder));
+        if (rq.isValid()) {
+            dispatchRequest(&rq);
+            rq.finish();
+        }
     }
 
 

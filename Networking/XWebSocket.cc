@@ -115,6 +115,32 @@ namespace litecore { namespace websocket {
 #pragma mark - BACKGROUND ACTIVITY:
 
 
+    // This runs on its own thread.
+    void XWebSocket::_connect() {
+        SetThreadName("WebSocket reader");
+        try {
+            // Connect:
+            auto socket = _connectLoop();
+            if (!socket) {
+                release(this);
+                return;
+            }
+
+            _socket = move(socket);
+            onConnect();
+        } catch (const std::exception &x) {
+            closeWithError(x, "connect");
+            release(this);
+            return;
+        }
+
+        // OK, now we are connected -- start the loops for I/O:
+        retain(this);
+        _writerThread = thread([&]() {writeLoop();});
+        readLoop();
+    }
+
+
     unique_ptr<XClientSocket> XWebSocket::_connectLoop() {
         Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
         HTTPLogic logic {repl::Address(url()), Headers(headers)};
@@ -155,32 +181,6 @@ namespace litecore { namespace websocket {
                     return nullptr;
             }
         }
-    }
-
-
-    // This runs on its own thread.
-    void XWebSocket::_connect() {
-        SetThreadName("WebSocket reader");
-        try {
-            // Connect:
-            auto socket = _connectLoop();
-            if (!socket) {
-                release(this);
-                return;
-            }
-
-            _socket = move(socket);
-            onConnect();
-        } catch (const std::exception &x) {
-            closeWithError(x, "connect");
-            release(this);
-            return;
-        }
-
-        // OK, now we are connected -- start the loops for I/O:
-        retain(this);
-        _writerThread = thread([&]() {writeLoop();});
-        readLoop();
     }
 
 
@@ -246,8 +246,8 @@ namespace litecore { namespace websocket {
 
     void XWebSocket::closeWithError(const exception &x, const char *where) {
         // Convert exception to CloseStatus:
-        error e = net::XSocket::convertException(x);
-        logError("caught exception on %s: %s", where, e.what());
+        logError("caught exception on %s: %s", where, x.what());
+        error e = error::convertException(x);
         closeWithError(e, where);
     }
 

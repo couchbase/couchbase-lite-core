@@ -100,7 +100,10 @@ namespace litecore { namespace REST {
                 XClientSocket socket(tlsContext.get());
                 disposition = logic.sendNextRequest(socket, body);
                 if (disposition == HTTPLogic::kSuccess) {
-                    _body = socket.readHTTPBody(logic.responseHeaders());
+                    if (!socket.readHTTPBody(logic.responseHeaders(), _body)) {
+                        _error = socket.error();
+                        disposition = HTTPLogic::kFailure;
+                    }
                 } else if (disposition == HTTPLogic::kFailure) {
                     auto err = logic.error();
                     if (err)

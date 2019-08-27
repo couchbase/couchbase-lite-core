@@ -26,6 +26,7 @@
 
 using namespace std;
 using namespace fleece;
+using namespace litecore::net;
 using namespace litecore::REST;
 using namespace litecore::crypto;
 

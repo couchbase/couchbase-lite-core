@@ -36,7 +36,7 @@ namespace litecore { namespace REST {
 
 
     /** Listener subclass that serves (some of) the venerable CouchDB REST API.
-        The HTTP work is done by a Server object (a subclass of LWSServer.) */
+        The HTTP work is done by a Server object. */
     class RESTListener : public Listener {
     public:
         RESTListener(const Config&);

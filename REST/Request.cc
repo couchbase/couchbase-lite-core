@@ -23,6 +23,7 @@
 #include "PlatformIO.hh"
 #include "Error.hh"
 #include "Logging.hh"
+#include "c4.hh"
 #include "netUtils.hh"
 #include "XSocket.hh"
 #include <stdarg.h>
@@ -96,9 +97,10 @@ namespace litecore { namespace REST {
     int64_t Request::intQuery(const char *param, int64_t defaultValue) const {
         string val = query(param);
         if (!val.empty()) {
-            try {
-                return stoll(val);
-            } catch (...) { }
+            slice s(val);
+            int64_t n = s.readSignedDecimal();
+            if (s.size == 0)
+                return n;
         }
         return defaultValue;
     }
@@ -119,10 +121,19 @@ namespace litecore { namespace REST {
     :_server(server)
     ,_socket(move(socket))
     {
-        if (!readFromHTTP(_socket->readToDelimiter("\r\n\r\n"_sl)))
+        auto request = _socket->readToDelimiter("\r\n\r\n"_sl);
+        if (!request) {
+            handleSocketError();
             return;
-        if (_method == Method::POST || _method == Method::PUT)
-            _body = _socket->readHTTPBody(_headers);
+        }
+        if (!readFromHTTP(request))
+            return;
+        if (_method == Method::POST || _method == Method::PUT) {
+            if (!_socket->readHTTPBody(_headers, _body)) {
+                handleSocketError();
+                return;
+            }
+        }
     }
 
 
@@ -248,6 +259,12 @@ namespace litecore { namespace REST {
     }
 
 
+    void RequestResponse::handleSocketError() {
+        C4Error err = _socket->error();
+        WarnError("Socket error sending response: %s", c4error_descriptionStr(err));
+    }
+
+
 #pragma mark - RESPONSE HEADERS:
 
 
@@ -282,7 +299,8 @@ namespace litecore { namespace REST {
         if (_jsonEncoder)
             setHeader("Content-Type", "application/json");
         _responseHeaderWriter.write("\r\n"_sl);
-        _socket->write_n(_responseHeaderWriter.finish());
+        if (_socket->write_n(_responseHeaderWriter.finish()) < 0)
+            handleSocketError();
         _endedHeaders = true;
     }
 
@@ -359,7 +377,8 @@ namespace litecore { namespace REST {
         sendHeaders();
 
         Log("Now sending body...");
-        _socket->write_n(responseData);
+        if (_socket->write_n(responseData) < 0)
+            handleSocketError();
         _finished = true;
     }
 

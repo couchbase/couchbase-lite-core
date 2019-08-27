@@ -60,16 +60,23 @@ namespace litecore { namespace net {
     }
 
 
-    void XSocket::checkSocketFailure() {
+    void XSocket::setError(C4ErrorDomain domain, int code, slice message) {
+        Assert(code != 0);
+        _error = c4error_make(domain, code, message);
+    }
+
+
+    bool XSocket::checkSocketFailure() {
         if (*_socket)
-            return;
+            return true;
 
         // TLS handshake failed:
         if (_socket->last_error() == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
             // Some more specific errors for certificate validation failures, based on flags:
             auto tlsSocket = (tls_socket*)_socket.get();
             uint32_t flags = tlsSocket->peer_certificate_status();
-            LogToAt(websocket::WSLogDomain, Warning, "XSocket TLS handshake failed; cert verify status 0x%02x", flags);
+            C4LogToAt(kC4WebSocketLog, kC4LogError,
+                      "XSocket TLS handshake failed; cert verify status 0x%02x", flags);
             if (flags != 0 && flags != UINT32_MAX) {
                 string message = tlsSocket->peer_certificate_status_message();
                 int code = kNetErrTLSCertUntrusted;
@@ -81,11 +88,12 @@ namespace litecore { namespace net {
                     code = kNetErrTLSCertExpired;
                 else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH)
                     code = kNetErrTLSCertNameMismatch;
-                error{error::Network, code, message}._throw();
+                setError(NetworkDomain, code, slice(message));
             }
+        } else {
+            checkStreamError();
         }
-
-        _throwLastError();
+        return false;
     }
 
 
@@ -101,39 +109,41 @@ namespace litecore { namespace net {
     }
 
 
-    size_t XSocket::write(slice data) {
+    ssize_t XSocket::write(slice data) {
         if (data.size == 0)
             return 0;
         ssize_t written = _socket->write(data.buf, data.size);
         if (written < 0) {
             if (_socket->last_error() == EBADF)
                 return 0;
-            _throwLastError();
+            checkStreamError();
         }
-        return size_t(written);
+        return written;
     }
 
 
-    size_t XSocket::write_n(slice data) {
+    ssize_t XSocket::write_n(slice data) {
         if (data.size == 0)
             return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
         if (written < 0) {
             if (_socket->last_error() == EBADF)
                 return 0;
-            _throwLastError();
+            checkStreamError();
         }
-        return size_t(written);
+        return written;
     }
 
 
-    // Primitive unbuffered read call. If an error occurs, throws an exception. Returns 0 on EOF.
-    size_t XSocket::_read(void *dst, size_t byteCount) {
+    // Primitive unbuffered read call. Returns 0 on EOF, -1 on error (and sets _error).
+    // Interprets error EBADF (bad file descriptor) as EOF,
+    // since that's what happens when another thread closes the socket while read() is blocked
+    ssize_t XSocket::_read(void *dst, size_t byteCount) {
         ssize_t n = _socket->read(dst, byteCount);
         if (n < 0) {
             if (_socket->last_error() == EBADF)
                 return 0;
-            _throwLastError();
+            checkStreamError();
         }
         return n;
     }
@@ -152,7 +162,7 @@ namespace litecore { namespace net {
 
 
     // Read from the socket, or from the unread buffer if it exists
-    size_t XSocket::read(void *dst, size_t byteCount) {
+    ssize_t XSocket::read(void *dst, size_t byteCount) {
         if (_usuallyFalse(_unreadLen > 0)) {
             // Use up anything left in the buffer:
             size_t n = min(byteCount, _unreadLen);
@@ -169,14 +179,16 @@ namespace litecore { namespace net {
 
 
     // Read exactly `byteCount` bytes from the socket (or the unread buffer)
-    void XSocket::readExactly(void *dst, size_t byteCount) {
-        while (byteCount > 0) {
-            auto n = read(dst, byteCount);
-            if (n == 0)
-                error::_throw(error::WebSocket, 400);  // unexpected EOF
-            byteCount -= n;
+    ssize_t XSocket::readExactly(void *dst, size_t byteCount) {
+        ssize_t remaining = byteCount;
+        while (remaining > 0) {
+            auto n = read(dst, remaining);
+            if (n <= 0)
+                return n;
+            remaining -= n;
             dst = offsetby(dst, n);
         }
+        return byteCount;
     }
 
 
@@ -188,8 +200,12 @@ namespace litecore { namespace net {
         while (true) {
             // Read more bytes:
             ssize_t n = _read((void*)result.end(), alloced.size - result.size);
-            if (n == 0)
-                error::_throw(error::WebSocket, 400);
+            if (n < 0)
+                return nullslice;
+            if (n == 0) {
+                setError(WebSocketDomain, 400, "Unexpected EOF"_sl);
+                return nullslice;
+            }
             result.setSize(result.size + n);
 
             // Look for delimiter:
@@ -204,8 +220,10 @@ namespace litecore { namespace net {
             // If allocated buffer is full, grow it:
             if (result.size == alloced.size) {
                 size_t newSize = min(alloced.size * 2, maxSize);
-                if (newSize == alloced.size)
-                    error::_throw(error::WebSocket, 431);
+                if (newSize == alloced.size) {
+                    setError(WebSocketDomain, 431, "Headers too large"_sl);
+                    return nullslice;
+                }
                 alloced.resize(newSize);
                 result.setStart(alloced.buf);
             }
@@ -213,14 +231,16 @@ namespace litecore { namespace net {
     }
 
 
-    alloc_slice XSocket::readHTTPBody(const Headers &headers) {
-        alloc_slice body;
+    bool XSocket::readHTTPBody(const Headers &headers, alloc_slice &body) {
         int64_t contentLength = headers.getInt("Content-Length"_sl, -1);
         if (contentLength >= 0) {
             // Read exactly Content-Length bytes:
             if (contentLength > 0) {
                 body.resize(contentLength);
-                readExactly((void*)body.buf, (size_t)contentLength);
+                if (readExactly((void*)body.buf, (size_t)contentLength) < contentLength) {
+                    body.reset();
+                    return false;
+                }
             }
         } else {
             // No Content-Length, so read till EOF:
@@ -228,7 +248,10 @@ namespace litecore { namespace net {
             size_t length = 0;
             while (true) {
                 size_t n = read((void*)&body[length], body.size - length);
-                if (n == 0)
+                if (n < 0) {
+                    body.reset();
+                    return false;
+                } else if (n == 0)
                     break;
                 length += n;
                 if (length == body.size)
@@ -236,7 +259,7 @@ namespace litecore { namespace net {
             }
             body.resize(length);
         }
-        return body;
+        return true;
     }
 
 
@@ -259,59 +282,21 @@ namespace litecore { namespace net {
     }
 
 
-    void XSocket::_throwLastError() {
+    void XSocket::checkStreamError() {
         int err = _socket->last_error();
         Assert(err != 0);
         if (err > 0) {
-            LogToAt(websocket::WSLogDomain, Warning,
-                    "XSocket got POSIX error %d; throwing exception...", err);
-            error::_throw(error::POSIX, err);
+            C4LogToAt(kC4WebSocketLog, kC4LogWarning,
+                    "XSocket got POSIX error %d \"%s\"", err, strerror(err));
+            setError(POSIXDomain, err, nullslice);
         } else {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
             mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
-            LogToAt(websocket::WSLogDomain, Warning,
-                    "XSocket got mbedTLS error -0x%04X \"%s\"; throwing exception...", -err, msgbuf);
-            int netErr = mbedToNetworkErrCode(err);
-            error(error::Network, netErr, msgbuf)._throw();
+            C4LogToAt(kC4WebSocketLog, kC4LogWarning,
+                    "XSocket got mbedTLS error -0x%04X \"%s\"", -err, msgbuf);
+            setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }
-    }
-
-
-    void XSocket::_throwBadHTTP() {
-        error{error::WebSocket, 400, "Received invalid HTTP response"}._throw();
-    }
-
-
-    error XSocket::convertException(const std::exception &x) {
-        error::Domain domain;
-        int code;
-        const char *message = x.what();
-        string messagebuf;
-        auto sx = dynamic_cast<const sockpp::sys_error*>(&x);
-        if (sx) {
-            // sockpp 'errno' exception:
-            domain = error::POSIX;
-            code = sx->error();
-        } else {
-            auto gx = dynamic_cast<const sockpp::getaddrinfo_error*>(&x);
-            if (gx) {
-                // sockpp 'getaddrinfo' exception:
-                domain = error::Network;
-                if (gx->error() == EAI_NONAME || gx->error() == HOST_NOT_FOUND) {
-                    code = kC4NetErrUnknownHost;
-                    messagebuf = "Unknown hostname " + gx->hostname();
-                } else {
-                    code = kC4NetErrDNSFailure;
-                    messagebuf = "Error resolving hostname " + gx->hostname() + ": " + gx->what();
-                }
-                message = messagebuf.c_str();
-            } else {
-                // Not a sockpp exception, so let error class handle it:
-                return error::convertException(x);
-            }
-        }
-        return error(domain, code, message);
     }
 
 
@@ -323,17 +308,37 @@ namespace litecore { namespace net {
     { }
 
 
-    void XClientSocket::connect(const repl::Address &addr) {
-        string hostname(slice(addr.hostname));
-        auto socket = make_unique<tcp_connector>(inet_address{hostname, addr.port});
-        if (addr.isSecure() && *socket) {
-            if (!_tlsContext)
-                _tlsContext = _tlsContext = &tls_context::default_context();
-            _socket = TLSContext()->wrap_socket(move(socket), tls_context::CLIENT, hostname);
-        } else {
-            _socket = move(socket);
+    bool XClientSocket::connect(const repl::Address &addr) {
+        // sockpp constructors can throw exceptions.
+        try {
+            string hostname(slice(addr.hostname));
+            auto socket = make_unique<tcp_connector>(inet_address{hostname, addr.port});
+            if (addr.isSecure() && *socket) {
+                if (!_tlsContext)
+                    _tlsContext = _tlsContext = &tls_context::default_context();
+                _socket = TLSContext()->wrap_socket(move(socket), tls_context::CLIENT, hostname);
+            } else {
+                _socket = move(socket);
+            }
+            return checkSocketFailure();
+
+        } catch (const sockpp::sys_error &sx) {
+            setError(POSIXDomain, sx.error(), slice(sx.what()));
+            return false;
+        } catch (const sockpp::getaddrinfo_error &gx) {
+            C4ErrorDomain domain = NetworkDomain;
+            int code;
+            string messagebuf;
+            if (gx.error() == EAI_NONAME || gx.error() == HOST_NOT_FOUND) {
+                code = kC4NetErrUnknownHost;
+                messagebuf = "Unknown hostname \"" + gx.hostname() + "\"";
+            } else {
+                code = kC4NetErrDNSFailure;
+                messagebuf = "Error resolving hostname \"" + gx.hostname() + "\": " + gx.what();
+            }
+            setError(domain, code, slice(messagebuf));
+            return false;
         }
-        checkSocketFailure();
     }
 
 
@@ -345,17 +350,17 @@ namespace litecore { namespace net {
     { }
 
 
-    void XResponderSocket::acceptSocket(stream_socket &&s, bool useTLS) {
-        acceptSocket( make_unique<tcp_socket>(move(s)), useTLS );
+    bool XResponderSocket::acceptSocket(stream_socket &&s, bool useTLS) {
+        return acceptSocket( make_unique<tcp_socket>(move(s)), useTLS );
     }
 
     
-    void XResponderSocket::acceptSocket(unique_ptr<stream_socket> socket, bool useTLS) {
+    bool XResponderSocket::acceptSocket(unique_ptr<stream_socket> socket, bool useTLS) {
         if (_tlsContext)
             _socket = _tlsContext->wrap_socket(move(socket), tls_context::SERVER, "");
         else
             _socket = move(socket);
-        checkSocketFailure();
+        return checkSocketFailure();
     }
 
 } }

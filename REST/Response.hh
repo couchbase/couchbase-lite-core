@@ -32,10 +32,6 @@ namespace litecore { namespace crypto {
     class Cert;
 } }
 
-namespace litecore { namespace net {
-    class LWSHTTPClient;
-} }
-
 namespace sockpp {
     class tls_context;
 }
@@ -117,8 +113,6 @@ namespace litecore { namespace REST {
         HTTPStatus _status {HTTPStatus::undefined};
         std::string _statusMessage;
         C4Error _error {};
-
-        friend class litecore::net::LWSHTTPClient;
     };
 
 } }

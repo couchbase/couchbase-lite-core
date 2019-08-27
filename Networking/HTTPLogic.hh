@@ -119,6 +119,7 @@ namespace litecore { namespace net {
 
     private:
         Disposition failure(error::Domain domain, int code, slice message =fleece::nullslice);
+        Disposition failure(XClientSocket&);
         bool parseStatusLine(slice &responseData);
         bool parseResponseHeaders(slice &responseData);
         Disposition handleRedirect();

@@ -111,6 +111,7 @@ namespace litecore { namespace REST {
         RequestResponse(Server *server, std::unique_ptr<net::XResponderSocket>);
         void sendStatus();
         void sendHeaders();
+        void handleSocketError();
 
     private:
         friend class Server;

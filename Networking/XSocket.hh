@@ -44,15 +44,19 @@ namespace litecore { namespace net {
         void close();
 
         bool connected() const;
-        operator bool() const   {return connected();}
+        operator bool() const                   {return connected();}
+
+        C4Error error() const                   {return _error;}
 
         /// Reads up to \ref byteCount bytes to the location \ref dst.
-        /// On EOF returns zero. On other error throws an exception.
-        size_t read(void *dst, size_t byteCount);
+        /// On EOF returns zero. On other error returns -1.
+            __attribute__((warn_unused_result))
+        ssize_t read(void *dst, size_t byteCount);
 
         /// Reads exactly \ref byteCount bytes to the location \ref dst.
         /// On premature EOF, throws exception {WebSocket, 400}.
-        void readExactly(void *dst, size_t byteCount);
+            __attribute__((warn_unused_result))
+        ssize_t readExactly(void *dst, size_t byteCount);
 
         static constexpr size_t kMaxDelimitedReadSize = 50 * 1024;
 
@@ -64,27 +68,25 @@ namespace litecore { namespace net {
                                             bool includeDelimiter =true,
                                             size_t maxSize =kMaxDelimitedReadSize);
 
-        /// Reads an HTTP body given the headers.
-        /// If there's a Content-Length header, reads that many bytes.
-        /// Otherwise reads till EOF.
-        fleece::alloc_slice readHTTPBody(const websocket::Headers &headers);
+        /// Reads an HTTP body, given the headers.
+        /// If there's a Content-Length header, reads that many bytes, otherwise reads till EOF.
+        bool readHTTPBody(const websocket::Headers &headers, fleece::alloc_slice &body);
 
         /// Writes to the socket and returns the number of bytes written:
             __attribute__((warn_unused_result))
-        size_t write(slice);
+        ssize_t write(slice);
 
         /// Writes all the bytes to the socket.
-        size_t write_n(slice);
-
-        // Utility function that maps an exception to a LiteCore error.
-        static litecore::error convertException(const std::exception&);
+            __attribute__((warn_unused_result))
+        ssize_t write_n(slice);
 
     protected:
+        void setError(C4ErrorDomain, int code, slice message);
         static int mbedToNetworkErrCode(int mbedErr);
-        [[noreturn]] void _throwLastError();
-        [[noreturn]] void _throwBadHTTP();
-        void checkSocketFailure();
-        size_t _read(void *dst, size_t byteCount);
+        void checkStreamError();
+            __attribute__((warn_unused_result))
+        bool checkSocketFailure();
+        ssize_t _read(void *dst, size_t byteCount);
         void pushUnread(slice);
 
         std::unique_ptr<sockpp::stream_socket> _socket;
@@ -96,6 +98,7 @@ namespace litecore { namespace net {
         std::thread _reader;
         std::thread _writer;
 
+        C4Error _error {};
         fleece::alloc_slice _unread;        // Data read from socket that's been "pushed back"
         size_t _unreadLen {0};              // Length of valid data in _unread
     };
@@ -108,7 +111,8 @@ namespace litecore { namespace net {
         XClientSocket(sockpp::tls_context* =nullptr);
 
         /// Connects to the host, synchronously. On failure throws an exception.
-        void connect(const repl::Address &addr);
+            __attribute__((warn_unused_result))
+        bool connect(const repl::Address &addr);
     };
 
     
@@ -118,8 +122,10 @@ namespace litecore { namespace net {
     public:
         XResponderSocket(sockpp::tls_context* =nullptr);
 
-        void acceptSocket(sockpp::stream_socket&&, bool useTLS =false);
-        void acceptSocket(std::unique_ptr<sockpp::stream_socket>, bool useTLS =false);
+            __attribute__((warn_unused_result))
+        bool acceptSocket(sockpp::stream_socket&&, bool useTLS =false);
+            __attribute__((warn_unused_result))
+        bool acceptSocket(std::unique_ptr<sockpp::stream_socket>, bool useTLS =false);
     };
 
 

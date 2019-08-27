@@ -32,6 +32,7 @@
 namespace sockpp {
     class acceptor;
     class mbedtls_context;
+    class stream_socket;
 }
 namespace litecore { namespace crypto {
     class Identity;
@@ -39,7 +40,7 @@ namespace litecore { namespace crypto {
 
 namespace litecore { namespace REST {
 
-    /** HTTP server, extending LWSServer to add configurable URI handlers. */
+    /** HTTP server with configurable URI handlers. */
     class Server : public fleece::RefCounted {
     public:
         Server();
@@ -77,6 +78,7 @@ namespace litecore { namespace REST {
 
     private:
         void acceptConnections();
+        void handleConnection(sockpp::stream_socket&&);
 
         fleece::Retained<crypto::Identity> _identity;
         std::unique_ptr<sockpp::mbedtls_context> _tlsContext;

@@ -15,7 +15,7 @@ TVOS_DEPLOYMENT_TARGET      = 11.0
 SDKROOT                     = macosx
 SUPPORTED_PLATFORMS         = macosx
 
-HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core  $(SRCROOT)/../vendor/BLIP-Cpp/src/util/  $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/fleece/vendor/catch/
+HEADER_SEARCH_PATHS         = $(inherited) $(SRCROOT)/../vendor/fleece/API   $(SRCROOT)/../vendor/fleece/Fleece/Support   $(SRCROOT)/../vendor/fleece/Fleece/Core   $(SRCROOT)/../vendor/BLIP-Cpp/include/blip_cpp   $(SRCROOT)/../vendor/BLIP-Cpp/src/util/  $(SRCROOT)/../vendor/SQLiteCpp/include/ $(SRCROOT)/../vendor/fleece/vendor/catch/
 
 OTHER_LDFLAGS                = -lmbedtls -lmbedcrypto -lmbedx509
 
