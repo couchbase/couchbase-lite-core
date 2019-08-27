@@ -31,6 +31,7 @@
 		27CCC7B31E5251C900CE1989 /* libevent_core.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7AD1E524F8000CE1989 /* libevent_core.a */; };
 		27CCC7B41E5251CC00CE1989 /* libevent_pthreads.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7B11E524FB500CE1989 /* libevent_pthreads.a */; };
 		27CCC7B51E5251CE00CE1989 /* libevent_extra.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27CCC7AF1E524FA200CE1989 /* libevent_extra.a */; };
+		27CCD4A82315A91D003DEB99 /* Headers.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CB68E12310A7AA008B28FF /* Headers.cc */; };
 		27CE4CF9207BCC7F00ACA225 /* WebSocketInterface.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27CE4CF8207BCC7F00ACA225 /* WebSocketInterface.cc */; };
 		27DE2E4A2125F2C100123597 /* Timer.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2773FCFF1E69FD9100108780 /* Timer.cc */; };
 		27DE2E4B2125F2C100123597 /* Channel.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27EF6A661E2858E7004748DF /* Channel.cc */; };
@@ -600,6 +601,7 @@
 				27DE2E542125F2C100123597 /* ThreadedMailbox.cc in Sources */,
 				27DE2E4C2125F2C100123597 /* GCDMailbox.cc in Sources */,
 				27744B4821409F1500399DCA /* Async.cc in Sources */,
+				27CCD4A82315A91D003DEB99 /* Headers.cc in Sources */,
 				27DE2E572125F2C100123597 /* Actor.cc in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

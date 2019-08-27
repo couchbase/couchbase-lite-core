@@ -22,6 +22,7 @@
 #include "BLIPInternal.hh"
 #include "Codec.hh"
 #include "fleece/Fleece.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "varint.hh"
 #include "Instrumentation.hh"

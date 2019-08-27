@@ -19,6 +19,7 @@
 
 #include "WebSocketImpl.hh"
 #include "WebSocketProtocol.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "Timer.hh"
 #include <chrono>
@@ -47,11 +48,24 @@ namespace litecore { namespace websocket {
     { }
 
 
+    Delegate& WebSocket::delegate() const {
+        DebugAssert(_delegate); return *_delegate;
+    }
+
+
     void WebSocket::connect(Delegate *delegate) {
         DebugAssert(!_delegate);
         DebugAssert(delegate);
         _delegate = delegate;
         connect();
+    }
+
+
+    const char* CloseStatus::reasonName() const  {
+        static const char* kReasonNames[] = {"WebSocket status", "errno",
+            "Network error", "Exception", "Unknown error"};
+        DebugAssert(reason < CloseReason(5));
+        return kReasonNames[reason];
     }
 
 } }

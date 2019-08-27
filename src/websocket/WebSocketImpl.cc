@@ -18,6 +18,7 @@
 
 #include "WebSocketImpl.hh"
 #include "WebSocketProtocol.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "Timer.hh"
 #include <chrono>

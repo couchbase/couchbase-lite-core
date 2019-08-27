@@ -17,11 +17,10 @@
 //
 
 #pragma once
-#include "fleece/Fleece.hh"
-#include "Error.hh"
-#include "Logging.hh"
 #include "RefCounted.hh"
 #include "InstanceCounted.hh"
+#include "Logging.hh"
+#include "fleece/Fleece.hh"
 #include <atomic>
 #include <map>
 #include <string>
@@ -94,7 +93,7 @@ namespace litecore { namespace websocket {
         fleece::alloc_slice message;
 
         CloseStatus()
-        :CloseStatus(kUnknownError, 0, nullslice) { }
+        :CloseStatus(kUnknownError, 0, fleece::nullslice) { }
 
         CloseStatus(CloseReason reason_, int code_, fleece::alloc_slice message_)
         :reason(reason_), code(code_), message(message_) { }
@@ -106,12 +105,7 @@ namespace litecore { namespace websocket {
             return reason == kWebSocketClose && (code == kCodeNormal || code == kCodeGoingAway);
         }
 
-        const char* reasonName() const  {
-            static const char* kReasonNames[] = {"WebSocket status", "errno",
-                                                 "Network error", "Exception", "Unknown error"};
-            DebugAssert(reason < CloseReason(5));
-            return kReasonNames[reason];
-        }
+        const char* reasonName() const;
     };
 
 
@@ -127,7 +121,7 @@ namespace litecore { namespace websocket {
     public:
         const URL& url() const                      {return _url;}
         Role role() const                           {return _role;}
-        Delegate& delegate() const                  {DebugAssert(_delegate); return *_delegate;}
+        Delegate& delegate() const;
         bool hasDelegate() const                    {return _delegate != nullptr;}
 
         virtual std::string name() const {
