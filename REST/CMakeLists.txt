@@ -43,13 +43,14 @@ target_include_directories(
     .
     ../C/include
     ../C
-    ../vendor/fleece/API
-    ../vendor/fleece/Fleece/Support
-    ../vendor/BLIP-Cpp/src/util
     ../LiteCore/Support
     ../Crypto
     ../Networking
     ../Replicator
+    ../vendor/BLIP-Cpp/include/blip_cpp
+    ../vendor/BLIP-Cpp/src/util
+    ../vendor/fleece/API
+    ../vendor/fleece/Fleece/Support
     ../vendor/mbedtls/include
     ../vendor/sockpp/include
 )
@@ -57,7 +58,6 @@ if(BUILD_ENTERPRISE)
     target_include_directories(
         LiteCoreREST_Static PRIVATE
         ../../vendor/couchbase-lite-core-EE/Listener
-        ../vendor/BLIP-Cpp/include/blip_cpp
     )
 endif()
 
