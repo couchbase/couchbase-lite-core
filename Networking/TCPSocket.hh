@@ -29,7 +29,6 @@ namespace litecore { namespace net {
     class TCPSocket {
     public:
         using slice = fleece::slice;
-        using string = std::string;
 
         TCPSocket(sockpp::tls_context *ctx =nullptr);
         virtual ~TCPSocket();
@@ -75,6 +74,7 @@ namespace litecore { namespace net {
 
     protected:
         void setError(C4ErrorDomain, int code, slice message);
+        bool wrapTLS(slice hostname, bool isClient);
         static int mbedToNetworkErrCode(int mbedErr);
         void checkStreamError();
         bool checkSocketFailure();
@@ -104,6 +104,10 @@ namespace litecore { namespace net {
 
         /// Connects to the host, synchronously. On failure throws an exception.
         bool connect(const Address &addr) MUST_USE_RESULT;
+
+        /// Wrap the existing socket in TLS, performing a handshake.
+        /// This is used after connecting to a CONNECT-type proxy, not in a normal connection.
+        bool wrapTLS(slice hostname)        {return TCPSocket::wrapTLS(hostname, true);}
     };
 
     
@@ -113,8 +117,11 @@ namespace litecore { namespace net {
     public:
         ResponderSocket(sockpp::tls_context* =nullptr);
 
-        bool acceptSocket(sockpp::stream_socket&&, bool useTLS =false) MUST_USE_RESULT;
-        bool acceptSocket(std::unique_ptr<sockpp::stream_socket>, bool useTLS =false) MUST_USE_RESULT;
+        bool acceptSocket(sockpp::stream_socket&&) MUST_USE_RESULT;
+        bool acceptSocket(std::unique_ptr<sockpp::stream_socket>) MUST_USE_RESULT;
+
+        /// Perform server-side TLS handshake.
+        bool wrapTLS()                      {return TCPSocket::wrapTLS(fleece::nullslice, false);}
     };
 
 

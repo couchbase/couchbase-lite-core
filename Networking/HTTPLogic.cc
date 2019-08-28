@@ -35,6 +35,9 @@ namespace litecore { namespace net {
     static constexpr unsigned kMaxRedirects = 10;
 
 
+    nonstd::optional<HTTPLogic::Proxy> HTTPLogic::sDefaultProxy;
+
+
     HTTPLogic::HTTPLogic(const Address &address,
                          const Headers &requestHeaders,
                          bool handleRedirects)
@@ -42,6 +45,7 @@ namespace litecore { namespace net {
     ,_requestHeaders(requestHeaders)
     ,_handleRedirects(handleRedirects)
     ,_isWebSocket(address.scheme == "ws"_sl || address.scheme == "wss"_sl)
+    ,_proxy(sDefaultProxy)
     { }
 
 
@@ -49,17 +53,16 @@ namespace litecore { namespace net {
     { }
 
 
-    void HTTPLogic::setProxy(ProxyType type, Address addr) {
-        _proxyType = type;
-        _proxyAddress.reset(new Address(addr));
+    const Address& HTTPLogic::directAddress() {
+        if (!_proxy)
+            return _address;
+        else
+            return _proxy->address;
     }
 
 
-    const Address& HTTPLogic::directAddress() {
-        if (_proxyType == kNoProxy)
-            return _address;
-        else
-            return *_proxyAddress;
+    bool HTTPLogic::connectingToProxy() {
+        return _proxy && _proxy->type == kCONNECTProxy && _lastDisposition != kContinue;
     }
 
 
@@ -72,39 +75,47 @@ namespace litecore { namespace net {
     string HTTPLogic::requestToSend() {
         if (_lastDisposition == kAuthenticate) {
             if (_httpStatus == HTTPStatus::ProxyAuthRequired)
-                Assert(_proxyAuthHeader);
+                Assert(_proxy && _proxy->authHeader);
             else
                 Assert(_authHeader);
         }
 
         stringstream rq;
-        rq << MethodName(_method) << " ";
-        if (_proxyType == kHTTPProxy)
-            rq << string(_address.url());
-        else
-            rq << string(slice(_address.path));
+        if (connectingToProxy()) {
+            // CONNECT proxy: https://tools.ietf.org/html/rfc7231#section-4.3.6
+            rq << "CONNECT " << string(slice(_address.hostname)) << ":" << _address.port;
+        } else {
+            rq << MethodName(_method) << " ";
+            if (_proxy && _proxy->type == kHTTPProxy)
+                rq << string(_address.url());
+            else
+                rq << string(slice(_address.path));
+        }
         rq << " HTTP/1.1\r\n"
               "Host: " << string(slice(_address.hostname)) << ':' << _address.port << "\r\n";
         addHeader(rq, "User-Agent", _userAgent);
-        addHeader(rq, "Authorization", _authHeader);
-        addHeader(rq, "Proxy-Authorization", _proxyAuthHeader);
-        if (_contentLength >= 0)
-            rq << "Content-Length: " << _contentLength << "\r\n";
-        _requestHeaders.forEach([&](slice name, slice value) {
-            rq << string(name) << ": " << string(value) << "\r\n";
-        });
+        if (_proxy)
+            addHeader(rq, "Proxy-Authorization", _proxy->authHeader);
+        if (!connectingToProxy()) {
+            addHeader(rq, "Authorization", _authHeader);
+            if (_contentLength >= 0)
+                rq << "Content-Length: " << _contentLength << "\r\n";
+            _requestHeaders.forEach([&](slice name, slice value) {
+                rq << string(name) << ": " << string(value) << "\r\n";
+            });
 
-        if (_isWebSocket) {
-            // WebSocket handshake headers:
-            uint8_t nonceBuf[16];
-            slice nonceBytes(nonceBuf, sizeof(nonceBuf));
-            SecureRandomize(nonceBytes);
-            _webSocketNonce = nonceBytes.base64String();
-            rq << "Connection: Upgrade\r\n"
-                  "Upgrade: websocket\r\n"
-                  "Sec-WebSocket-Version: 13\r\n"
-                  "Sec-WebSocket-Key: " << _webSocketNonce << "\r\n";
-            addHeader(rq, "Sec-WebSocket-Protocol", _webSocketProtocol);
+            if (_isWebSocket) {
+                // WebSocket handshake headers:
+                uint8_t nonceBuf[16];
+                slice nonceBytes(nonceBuf, sizeof(nonceBuf));
+                SecureRandomize(nonceBytes);
+                _webSocketNonce = nonceBytes.base64String();
+                rq << "Connection: Upgrade\r\n"
+                      "Upgrade: websocket\r\n"
+                      "Sec-WebSocket-Version: 13\r\n"
+                      "Sec-WebSocket-Key: " << _webSocketNonce << "\r\n";
+                addHeader(rq, "Sec-WebSocket-Protocol", _webSocketProtocol);
+            }
         }
 
         rq << "\r\n";
@@ -147,13 +158,16 @@ namespace litecore { namespace net {
                 _authHeader = nullslice;
                 return handleAuthChallenge("Www-Authenticate"_sl, false);
             case HTTPStatus::ProxyAuthRequired:
-                _proxyAuthHeader = nullslice;
+                if (_proxy)
+                    _proxy->authHeader = nullslice;
                 return handleAuthChallenge("Proxy-Authenticate"_sl, true);
             case HTTPStatus::Upgraded:
                 return handleUpgrade();
             default:
                 if (!IsSuccess(_httpStatus))
                     return failure(WebSocketDomain, int(_httpStatus));
+                else if (connectingToProxy())
+                    return kContinue;
                 else if (_isWebSocket)
                     return failure(WebSocketDomain, kCodeProtocolError,
                                    "Server failed to upgrade connection"_sl);
@@ -216,10 +230,9 @@ namespace litecore { namespace net {
             return failure(NetworkDomain, kC4NetErrInvalidRedirect);
 
         if (_httpStatus == HTTPStatus::UseProxy) {
-            if (_proxyType != kNoProxy)
+            if (_proxy)
                 return failure(NetworkDomain, int(_httpStatus));
-            _proxyType = kHTTPProxy;
-            _proxyAddress.reset(new Address(newAddr));
+            _proxy = Proxy {kHTTPProxy, Address(newAddr)};
         } else {
             if (newAddr.hostname != _address.hostname)
                 _authHeader = nullslice;
@@ -236,7 +249,7 @@ namespace litecore { namespace net {
         smatch m;
         if (!regex_search(authHeader, m, authEx))
             return failure(WebSocketDomain, 400);
-        AuthChallenge challenge(forProxy ? *_proxyAddress : _address, forProxy);
+        AuthChallenge challenge(forProxy ? _proxy->address : _address, forProxy);
         challenge.type = m[1].str();
         challenge.key = m[2].str();
         challenge.value = m[4].str();
@@ -287,8 +300,17 @@ namespace litecore { namespace net {
 
 
     HTTPLogic::Disposition HTTPLogic::sendNextRequest(ClientSocket &socket, slice body) {
-        if (!socket.connect(directAddress()))
+        bool connected;
+        if (_lastDisposition == kContinue) {
+            Assert(socket.connected());
+            connected = !_address.isSecure() || socket.wrapTLS(_address.hostname);
+        } else {
+            Assert(!socket.connected());
+            connected = socket.connect(directAddress());
+        }
+        if (!connected)
             return failure(socket);
+
         Debug("Sending request: %s", requestToSend().c_str());
         if (socket.write_n(requestToSend()) < 0 || socket.write_n(body) < 0)
             return failure(socket);

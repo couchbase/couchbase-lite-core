@@ -31,8 +31,10 @@ namespace litecore { namespace net {
                   bool handleRedirects =true);
         ~HTTPLogic();
 
+        /// Specifies the HTTP method to use.
         void setMethod(Method method)               {_method = method;}
 
+        /// Specifies the value of the Content-Length header.
         void setContentLength(uint64_t length)      {_contentLength = length;}
 
         /// Specifies the value of the User-Agent header to send.
@@ -44,24 +46,29 @@ namespace litecore { namespace net {
         // -------- Proxies:
 
         enum ProxyType {
-            kNoProxy,
             kHTTPProxy,
+            kCONNECTProxy,
             //kSOCKSProxy,      // TODO: Add SOCKS support
-            //kCONNECTProxy     // TODO: Add CONNECT support
+        };
+
+        struct Proxy {
+            ProxyType type;
+            Address address;
+            alloc_slice authHeader;
         };
 
         /// Specifies a proxy server to use.
-        void setProxy(ProxyType type, Address addr);
+        void setProxy(nonstd::optional<Proxy> p)                {_proxy = p;}
+        nonstd::optional<Proxy> proxy()                         {return _proxy;}
 
-        const Address* proxy()                {return _proxyAddress.get();}
-        ProxyType proxyType()                       {return _proxyType;}
-
-        void setProxyAuthHeader(slice authHeader)   {_proxyAuthHeader = authHeader;}
+        /// Specifies a proxy server to use for _all_ requests.
+        static void setDefaultProxy(nonstd::optional<Proxy> p)  {sDefaultProxy = p;}
+        nonstd::optional<Proxy> defaultProxy()                  {return sDefaultProxy;}
 
         // -------- Request:
 
         /// The current address/URL, which changes after a redirect.
-        const Address& address()              {return _address;}
+        const Address& address()                    {return _address;}
 
         /// Sets the "Authorization:" header to send in the request.
         void setAuthHeader(slice authHeader)        {_authHeader = authHeader;}
@@ -77,10 +84,12 @@ namespace litecore { namespace net {
 
         // -------- Response handling:
 
+        /// Possible actions after receiving a response.
         enum Disposition {
             kFailure,       ///< Request failed; give up (for now) and check \ref error.
-            kRetry,         ///< Try again with a new request
+            kRetry,         ///< Try again with a new socket & request
             kAuthenticate,  ///< Add credentials & retry, or else give up
+            kContinue,      ///< Send another request on the _same_ socket (for CONNECT proxy)
             kSuccess        ///< Request succeeded!
         };
 
@@ -94,32 +103,35 @@ namespace litecore { namespace net {
         /// The HTTP status message from the latest response.
         alloc_slice statusMessage()                     {return _statusMessage;}
 
-        /// The headers of the response.
+        /// The headers of the latest response.
         const websocket::Headers& responseHeaders()     {return _responseHeaders;}
 
         /// The error status of the latest response.
         C4Error error()                                 {return _error;}
 
+        /// Describes an authentication challenge from the server/proxy.
         struct AuthChallenge {
-            AuthChallenge(const Address a, bool fp)
-            :address(a), forProxy(fp) { }
-            Address address;  ///< The URL to authenticate to
+            AuthChallenge(const Address a, bool fp) :address(a), forProxy(fp) { }
+            Address address;        ///< The URL to authenticate to
             bool forProxy;          ///< Is this auth for a proxy?
             std::string type;       ///< Auth type, e.g. "Basic" or "Digest"
             std::string key;        ///< A parameter like "Realm"
             std::string value;      ///< The value of the parameter
         };
 
-        /// If \ref receivedResponse returns \ref kAuthenticate, this method will return the details of the auth challenge.
+        /// If the current disposition is \ref kAuthenticate,
+        /// this method will return the details of the auth challenge.
         nonstd::optional<AuthChallenge> authChallenge()     {return _authChallenge;}
 
-        /// Convenience method that uses an XClientSocket to send the request and receive the
+        /// Convenience method that uses an HTTPClientSocket to send the request and receive the
         /// response.
+        /// The socket must _not_ be connected yet, unless the current disposition is kContinue.
         Disposition sendNextRequest(ClientSocket&, slice body =fleece::nullslice);
 
     private:
         Disposition failure(C4ErrorDomain domain, int code, slice message =fleece::nullslice);
         Disposition failure(ClientSocket&);
+        bool connectingToProxy();
         bool parseStatusLine(slice &responseData);
         bool parseResponseHeaders(slice &responseData);
         Disposition handleRedirect();
@@ -134,10 +146,9 @@ namespace litecore { namespace net {
         int64_t _contentLength {-1};
         alloc_slice _userAgent;
         alloc_slice _authHeader;
+        nonstd::optional<Proxy> _proxy;
 
-        std::unique_ptr<Address> _proxyAddress;
-        ProxyType _proxyType {kNoProxy};
-        alloc_slice _proxyAuthHeader;
+        static nonstd::optional<Proxy> sDefaultProxy;
 
         C4Error _error {};
         HTTPStatus _httpStatus {HTTPStatus::undefined};

@@ -146,14 +146,19 @@ namespace litecore { namespace websocket {
         HTTPLogic logic {Address(url()), Headers(headers)};
         logic.setWebSocketProtocol(options()[kC4SocketOptionWSProtocols].asString());
         bool usedAuth = false;
+        unique_ptr<ClientSocket> socket;
+        HTTPLogic::Disposition lastDisposition = HTTPLogic::kFailure;
         while (true) {
-            auto socket = make_unique<ClientSocket>(_tlsContext.get());
+            if (lastDisposition != HTTPLogic::kContinue)
+                socket = make_unique<ClientSocket>(_tlsContext.get());
             switch (logic.sendNextRequest(*socket)) {
                 case HTTPLogic::kSuccess:
                     gotHTTPResponse(int(logic.status()), logic.responseHeaders());
                     return socket;
                 case HTTPLogic::kRetry:
                     break; // redirected; go around again
+                case HTTPLogic::kContinue:
+                    break; // Will continue with the same socket (after connecting to a proxy)
                 case HTTPLogic::kAuthenticate: {
                     if (!usedAuth && !logic.authChallenge()->forProxy
                                   && logic.authChallenge()->type == "Basic") {

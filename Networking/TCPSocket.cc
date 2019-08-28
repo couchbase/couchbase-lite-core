@@ -66,6 +66,18 @@ namespace litecore { namespace net {
     }
 
 
+    bool TCPSocket::wrapTLS(slice hostname, bool isClient) {
+        if (!_tlsContext)
+            _tlsContext = _tlsContext = &tls_context::default_context();
+        string hostnameStr(hostname);
+        auto oldSocket = move(_socket);
+        _socket = TLSContext()->wrap_socket(move(oldSocket),
+                                            (isClient ? tls_context::CLIENT : tls_context::SERVER),
+                                            hostnameStr.c_str());
+        return checkSocketFailure();
+    }
+
+
     bool TCPSocket::checkSocketFailure() {
         if (*_socket)
             return true;
@@ -316,15 +328,11 @@ namespace litecore { namespace net {
         // sockpp constructors can throw exceptions.
         try {
             string hostname(slice(addr.hostname));
-            auto socket = make_unique<tcp_connector>(inet_address{hostname, addr.port});
-            if (addr.isSecure() && *socket) {
-                if (!_tlsContext)
-                    _tlsContext = _tlsContext = &tls_context::default_context();
-                _socket = TLSContext()->wrap_socket(move(socket), tls_context::CLIENT, hostname);
-            } else {
-                _socket = move(socket);
-            }
-            return checkSocketFailure();
+            _socket = make_unique<tcp_connector>(inet_address{hostname, addr.port});
+            if (addr.isSecure() && *_socket)
+                return wrapTLS(addr.hostname);
+            else
+                return checkSocketFailure();
 
         } catch (const sockpp::sys_error &sx) {
             setError(POSIXDomain, sx.error(), slice(sx.what()));
@@ -354,16 +362,13 @@ namespace litecore { namespace net {
     { }
 
 
-    bool ResponderSocket::acceptSocket(stream_socket &&s, bool useTLS) {
-        return acceptSocket( make_unique<tcp_socket>(move(s)), useTLS );
+    bool ResponderSocket::acceptSocket(stream_socket &&s) {
+        return acceptSocket( make_unique<tcp_socket>(move(s)));
     }
 
     
-    bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket, bool useTLS) {
-        if (_tlsContext)
-            _socket = _tlsContext->wrap_socket(move(socket), tls_context::SERVER, "");
-        else
-            _socket = move(socket);
+    bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket) {
+        _socket = move(socket);
         return checkSocketFailure();
     }
 

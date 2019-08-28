@@ -95,19 +95,30 @@ namespace litecore { namespace REST {
         logic.setContentLength(body.size);
 
         try {
-            HTTPLogic::Disposition disposition;
+            unique_ptr<ClientSocket> socket;
+            HTTPLogic::Disposition disposition = HTTPLogic::kFailure;
             do {
-                ClientSocket socket(tlsContext.get());
-                disposition = logic.sendNextRequest(socket, body);
-                if (disposition == HTTPLogic::kSuccess) {
-                    if (!socket.readHTTPBody(logic.responseHeaders(), _body)) {
-                        _error = socket.error();
+                if (disposition != HTTPLogic::kContinue)
+                    socket = make_unique<ClientSocket>(tlsContext.get());
+                disposition = logic.sendNextRequest(*socket, body);
+                switch (disposition) {
+                    case HTTPLogic::kSuccess:
+                        // On success, read the response body:
+                        if (!socket->readHTTPBody(logic.responseHeaders(), _body)) {
+                            _error = socket->error();
+                            disposition = HTTPLogic::kFailure;
+                        }
+                        break;
+                    case HTTPLogic::kRetry:
+                        break;
+                    case HTTPLogic::kContinue:
+                        break;
+                    case HTTPLogic::kAuthenticate:
                         disposition = HTTPLogic::kFailure;
-                    }
-                } else if (disposition == HTTPLogic::kFailure) {
-                    _error = logic.error();
-                } else if (disposition == HTTPLogic::kAuthenticate) {
-                    disposition = HTTPLogic::kFailure;
+                        break;
+                    case HTTPLogic::kFailure:
+                        _error = logic.error();
+                        break;
                 }
             } while (disposition != HTTPLogic::kSuccess && disposition != HTTPLogic::kFailure);
 
