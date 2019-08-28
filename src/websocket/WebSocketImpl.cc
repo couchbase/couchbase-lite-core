@@ -431,6 +431,9 @@ namespace litecore { namespace websocket {
         {
             lock_guard<mutex> lock(_mutex);
 
+            if (_closed)
+                return; // Guard against multiple calls to onClose
+
             _pingTimer.reset();
             _responseTimer.reset();
 
@@ -479,6 +482,8 @@ namespace litecore { namespace websocket {
             logInfo("sent %" PRIu64 " bytes, rcvd %" PRIu64 ", in %.3f sec (%.0f/sec, %.0f/sec)",
                 _bytesSent, _bytesReceived, t,
                 _bytesSent/t, _bytesReceived/t);
+            
+            _closed = true;
         }
 
         delegate().onWebSocketClose(status);

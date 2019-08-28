@@ -107,6 +107,7 @@ namespace litecore { namespace websocket {
         size_t _bufferedBytes {0};                  // # bytes written but not yet completed
         size_t _deliveredBytes;                     // Temporary count of bytes sent to delegate
         bool _closeSent {false}, _closeReceived {false};    // Close message sent or received?
+        bool _closed {false};                       // Sent onWebSocketClosed to delegate?
         fleece::alloc_slice _closeMessage;                  // The encoded close request message
         std::unique_ptr<actor::Timer> _pingTimer;
         std::unique_ptr<actor::Timer> _responseTimer;
