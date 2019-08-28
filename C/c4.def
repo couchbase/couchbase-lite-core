@@ -139,6 +139,7 @@ c4docobs_free
 c4repl_new
 c4repl_newWithSocket
 c4repl_free
+c4repl_start
 c4repl_stop
 c4repl_getStatus
 

@@ -223,11 +223,15 @@ public:
         params.onDocumentsEnded = _onDocsEnded;
         params.callbackContext = this;
         params.socketFactory = _socketFactory;
+        params.dontStart = true;    // defer start until I have a chance to set _repl
 
         _repl = c4repl_new(db, _address, _remoteDBName,
                            (_remoteDBName.buf ? nullptr : (C4Database*)db2),
                            params, err);
-        return (_repl != nullptr);
+        if (!_repl)
+            return false;
+        c4repl_start(_repl);
+        return true;
     }
 
     void replicate(C4ReplicatorMode push, C4ReplicatorMode pull, bool expectSuccess =true) {
@@ -236,9 +240,16 @@ public:
         C4ReplicatorStatus status = c4repl_getStatus(_repl);
         logState(status);
         // Sometimes Windows goes so fast that by the time
-        // it is here, it's already past the connecting stage
-        CHECK((status.level == kC4Connecting || status.level == kC4Busy)); 
-        CHECK(status.error.code == 0);
+        // it is here, it's already past the connecting stage.
+        // Furthermore, sometimes in failure cases the failure happens
+        // so fast that the replicator has already stopped by now with an
+        // error
+        if(expectSuccess) {
+            CHECK((status.level == kC4Connecting || status.level == kC4Busy)); 
+            CHECK(status.error.code == 0);
+        } else if(status.level == kC4Connecting || status.level == kC4Busy) {
+            CHECK(status.error.code == 0);
+        }
 
         while ((status = c4repl_getStatus(_repl)).level != kC4Stopped)
             this_thread::sleep_for(chrono::milliseconds(100));

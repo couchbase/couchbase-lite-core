@@ -185,7 +185,8 @@ C4Replicator* c4repl_new(C4Database* db,
             }
             replicator = new C4Replicator(dbCopy, serverAddress, remoteDatabaseName, params);
         }
-        replicator->start();
+        if (!params.dontStart)
+            replicator->start();
         return retain(replicator.get());   // to be balanced by release in c4repl_free()
     } catchError(outError);
     return nullptr;
@@ -202,12 +203,19 @@ C4Replicator* c4repl_newWithSocket(C4Database* db,
         if (!dbCopy)
             return nullptr;
         Retained<C4Replicator> replicator = new C4Replicator(dbCopy, openSocket, params);
-        replicator->start(true);
-        Assert(WebSocketFrom(openSocket)->hasDelegate());
-        Assert(replicator->refCount() > 1);  // Replicator is retained by the socket, will be released on close
+        if (!params.dontStart) {
+            replicator->start(true);
+            Assert(WebSocketFrom(openSocket)->hasDelegate());
+            Assert(replicator->refCount() > 1);  // Replicator is retained by the socket, will be released on close
+        }
         return retain(replicator.get());   // to be balanced by release in c4repl_free()
     } catchError(outError);
     return nullptr;
+}
+
+
+void c4repl_start(C4Replicator* repl) C4API {
+    repl->start();
 }
 
 
