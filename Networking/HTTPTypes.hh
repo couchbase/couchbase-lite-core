@@ -8,6 +8,7 @@
 
 #pragma once
 #include <limits.h>
+#include "Address.hh"
 #include "fleece/slice.hh"
 
 #ifdef _MSC_VER
@@ -53,6 +54,7 @@ namespace litecore { namespace net {
 
     const char* StatusMessage(HTTPStatus);
 
+
     enum Method: unsigned {
         None        = 0,
 
@@ -71,6 +73,22 @@ namespace litecore { namespace net {
 
     const char* MethodName(Method);
     Method MethodNamed(fleece::slice name);
+
+
+    enum class ProxyType {
+        HTTP,
+        CONNECT,
+        //SOCKS,      // TODO: Add SOCKS support
+    };
+
+    struct ProxySpec {
+        ProxyType type;
+        Address address;
+        fleece::alloc_slice authHeader;
+
+        ProxySpec(ProxyType t, fleece::slice URL)       :type(t), address(URL) { }
+        ProxySpec(ProxyType t, const C4Address &a)      :type(t), address(a) { }
+    };
 
 } }
 

@@ -239,7 +239,8 @@ extern "C" {
     // Replicator option dictionary keys:
     #define kC4ReplicatorOptionExtraHeaders     "headers"  ///< Extra HTTP headers (string[])
     #define kC4ReplicatorOptionCookies          "cookies"  ///< HTTP Cookie header value (string)
-    #define kC4ReplicatorOptionAuthentication   "auth"     ///< Auth settings (Dict)
+    #define kC4ReplicatorOptionAuthentication   "auth"     ///< Auth settings (Dict); see below
+    #define kC4ReplicatorOptionProxyServer      "proxy"    ///< Proxy settings (Dict); see below
     #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
     #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
     #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
@@ -268,6 +269,17 @@ extern "C" {
     #define kC4AuthTypeOpenIDConnect    "OpenID Connect" ///< OpenID Connect token
     #define kC4AuthTypeFacebook         "Facebook"       ///< Facebook auth token
     #define kC4AuthTypeClientCert       "Client Cert"    ///< TLS client cert
+
+    // Proxy dictionary keys:
+    #define kC4ReplicatorProxyType      "type"           ///< Proxy type; see below (string)
+    #define kC4ReplicatorProxyURL       "URL"            ///< Proxy URL (string)
+    #define kC4ReplicatorProxyAuth      "auth"           ///< Proxy auth (Dict); see above
+
+    // proxy.type values:
+    #define kC4ProxyTypeNone            "none"           ///< Use no proxy (overrides system setting)
+    #define kC4ProxyTypeHTTP            "HTTP"           ///< HTTP(S) proxy
+    #define kC4ProxyTypeCONNECT         "CONNECT"        ///< Tunnel using HTTP CONNECT method
+    #define kC4ProxyTypeSOCKS           "SOCKS"          ///< SOCKS proxy
 
     /** @} */
 

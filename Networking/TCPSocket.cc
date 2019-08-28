@@ -31,7 +31,6 @@
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tls_socket.h"
 #include "make_unique.h"
-#include <netdb.h>
 #include <regex>
 #include <string>
 #include <sstream>

@@ -31,9 +31,12 @@
 namespace litecore { namespace crypto {
     class Cert;
 } }
-
+namespace litecore { namespace net {
+    class HTTPLogic;
+    class ProxySpec;
+} }
 namespace sockpp {
-    class tls_context;
+    class mbedtls_context;
 }
 
 namespace litecore { namespace REST {
@@ -74,42 +77,42 @@ namespace litecore { namespace REST {
                  const std::string &method,
                  const std::string &hostname,
                  uint16_t port,
-                 const std::string &uri,
-                 fleece::Doc headers,
-                 fleece::slice body =fleece::nullslice,
-                 crypto::Cert *pinnedServerCert =nullptr);
-
-        Response(const std::string &scheme,
-                 const std::string &method,
-                 const std::string &hostname,
-                 uint16_t port,
-                 const std::string &uri,
-                 fleece::slice body =fleece::nullslice)
-        :Response(scheme, method, hostname, port, uri, nullptr, body, nullptr)
-        { }
+                 const std::string &uri);
 
         Response(const std::string &method,
                  const std::string &hostname,
                  uint16_t port,
-                 const std::string &uri,
-                 fleece::Doc headers,
-                 fleece::slice body =fleece::nullslice)
-        :Response("http", method, hostname, port, uri, nullptr, body, nullptr)
+                 const std::string &uri)
+        :Response("http", method, hostname, port, uri)
         { }
 
-        explicit operator bool() const      {return _error.code == 0;}
+        ~Response();
 
-        C4Error error() const               {return _error;}
-        HTTPStatus status() const           {return _status;}
-        std::string statusMessage() const   {return _statusMessage;}
+        Response& setHeaders(fleece::Doc headers);
+        Response& setAuthHeader(fleece::slice authHeader);
+        Response& setBody(fleece::slice body);
+        Response& setPinnedCert(crypto::Cert *pinnedServerCert NONNULL);
+        Response& setProxy(const net::ProxySpec&);
+
+        bool run();
+
+        explicit operator bool()      {return run();}
+
+        C4Error error()               {run(); return _error;}
+        HTTPStatus status()           {run(); return _status;}
+        std::string statusMessage()   {run(); return _statusMessage;}
 
     protected:
+        bool hasRun()                 {return _logic == nullptr;}
         void setStatus(int status, const std::string &msg) {
             _status = (HTTPStatus)status;
             _statusMessage = msg;
         }
 
     private:
+        std::unique_ptr<net::HTTPLogic> _logic;
+        std::unique_ptr<sockpp::mbedtls_context> _tlsContext;
+        fleece::alloc_slice _requestBody;
         HTTPStatus _status {HTTPStatus::undefined};
         std::string _statusMessage;
         C4Error _error {};

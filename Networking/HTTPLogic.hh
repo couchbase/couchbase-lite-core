@@ -27,6 +27,8 @@ namespace litecore { namespace net {
         // -------- Setup:
 
         HTTPLogic(const Address &address,
+                  bool handleRedirects =true);
+        HTTPLogic(const Address &address,
                   const websocket::Headers &requestHeaders,
                   bool handleRedirects =true);
         ~HTTPLogic();
@@ -43,27 +45,18 @@ namespace litecore { namespace net {
         /// Sets the WebSocket protocol string to request during the handshake.
         void setWebSocketProtocol(slice p)          {_webSocketProtocol = p; _isWebSocket = true;}
 
+        /// Sets the request headers.
+        void setHeaders(const websocket::Headers &requestHeaders);
+
         // -------- Proxies:
 
-        enum ProxyType {
-            kHTTPProxy,
-            kCONNECTProxy,
-            //kSOCKSProxy,      // TODO: Add SOCKS support
-        };
-
-        struct Proxy {
-            ProxyType type;
-            Address address;
-            alloc_slice authHeader;
-        };
-
         /// Specifies a proxy server to use.
-        void setProxy(nonstd::optional<Proxy> p)                {_proxy = p;}
-        nonstd::optional<Proxy> proxy()                         {return _proxy;}
+        void setProxy(nonstd::optional<ProxySpec> p)                {_proxy = p;}
+        nonstd::optional<ProxySpec> proxy()                         {return _proxy;}
 
         /// Specifies a proxy server to use for _all_ requests.
-        static void setDefaultProxy(nonstd::optional<Proxy> p)  {sDefaultProxy = p;}
-        nonstd::optional<Proxy> defaultProxy()                  {return sDefaultProxy;}
+        static void setDefaultProxy(nonstd::optional<ProxySpec> p)  {sDefaultProxy = p;}
+        nonstd::optional<ProxySpec> defaultProxy()                  {return sDefaultProxy;}
 
         // -------- Request:
 
@@ -72,6 +65,7 @@ namespace litecore { namespace net {
 
         /// Sets the "Authorization:" header to send in the request.
         void setAuthHeader(slice authHeader)        {_authHeader = authHeader;}
+        slice authHeader()                          {return _authHeader;}
 
         /// Generates a Basic auth header to pass to \ref setAuthHeader.
         static alloc_slice basicAuth(slice username, slice password);
@@ -128,9 +122,14 @@ namespace litecore { namespace net {
         /// The socket must _not_ be connected yet, unless the current disposition is kContinue.
         Disposition sendNextRequest(ClientSocket&, slice body =fleece::nullslice);
 
+        /// Utility function to format an HTTP request or response for display.
+        /// Converts CRLF to \n and stops at the end of the headers (before the blank line).
+        static std::string formatHTTP(slice http);
+
     private:
         Disposition failure(C4ErrorDomain domain, int code, slice message =fleece::nullslice);
         Disposition failure(ClientSocket&);
+        Disposition failure();
         bool connectingToProxy();
         bool parseStatusLine(slice &responseData);
         bool parseResponseHeaders(slice &responseData);
@@ -146,15 +145,16 @@ namespace litecore { namespace net {
         int64_t _contentLength {-1};
         alloc_slice _userAgent;
         alloc_slice _authHeader;
-        nonstd::optional<Proxy> _proxy;
+        nonstd::optional<ProxySpec> _proxy;
 
-        static nonstd::optional<Proxy> sDefaultProxy;
+        static nonstd::optional<ProxySpec> sDefaultProxy;
 
         C4Error _error {};
         HTTPStatus _httpStatus {HTTPStatus::undefined};
         alloc_slice _statusMessage;
         websocket::Headers _responseHeaders;
         unsigned _redirectCount {0};
+        bool _authChallenged {false};
         nonstd::optional<AuthChallenge> _authChallenge;
         Disposition _lastDisposition {kSuccess};
 

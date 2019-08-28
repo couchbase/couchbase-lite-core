@@ -141,10 +141,44 @@ namespace litecore { namespace websocket {
     }
 
 
+    bool BuiltInWebSocket::configureProxy(HTTPLogic &logic, Dict proxyOpt) {
+        if (!proxyOpt)
+            return true;
+        slice typeStr = proxyOpt[kC4ReplicatorProxyType].asString();
+        if (typeStr == nullslice || typeStr == slice(kC4ProxyTypeNone)) {
+            logic.setProxy({});
+        } else {
+            ProxyType type;
+            if (typeStr == slice(kC4ProxyTypeHTTP))
+                type = ProxyType::HTTP;
+            else if (typeStr == slice(kC4ProxyTypeCONNECT))
+                type = ProxyType::CONNECT;
+            else
+                return false;
+            Dict auth = proxyOpt[kC4ReplicatorProxyAuth].asDict();
+            if (auth)
+                return false; // TODO: Proxy auth
+            try {
+                ProxySpec proxy {type, Address(proxyOpt[kC4ReplicatorProxyURL].asString())};
+                logic.setProxy(proxy);
+            } catch (...) {return false;}   // Address constructor throws on invalid URL
+        }
+        return true;
+    }
+
+
     unique_ptr<ClientSocket> BuiltInWebSocket::_connectLoop() {
         Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
         HTTPLogic logic {Address(url()), Headers(headers)};
         logic.setWebSocketProtocol(options()[kC4SocketOptionWSProtocols].asString());
+
+        if (!configureProxy(logic, options()[kC4ReplicatorOptionProxyServer].asDict())) {
+            closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
+                                        "Invalid/unsupported proxy settings"_sl),
+                           "connect");
+            return nullptr;
+        }
+
         bool usedAuth = false;
         unique_ptr<ClientSocket> socket;
         HTTPLogic::Disposition lastDisposition = HTTPLogic::kFailure;

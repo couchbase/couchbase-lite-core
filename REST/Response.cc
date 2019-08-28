@@ -68,43 +68,69 @@ namespace litecore { namespace REST {
 
 
     Response::Response(const string &scheme,
-                       const string &method,
+                       const std::string &method,
                        const string &hostname,
                        uint16_t port,
-                       const string &uri,
-                       Doc headersDict,
-                       slice body,
-                       crypto::Cert *pinnedServerCert)
+                       const string &uri)
     {
         C4Address address = {};
         address.scheme = slice(scheme);
         address.hostname = slice(hostname);
         address.port = port;
         address.path = slice(uri);
+        _logic.reset(new HTTPLogic(net::Address(address)));
+        _logic->setMethod(MethodNamed(method));
+    }
 
+
+    Response& Response::setHeaders(Doc headersDict) {
         websocket::Headers headers(headersDict.root().asDict());
+        _logic->setHeaders(headers);
+        return *this;
+    }
 
-        unique_ptr<sockpp::mbedtls_context> tlsContext;
-        if (pinnedServerCert) {
-            tlsContext.reset(new sockpp::mbedtls_context);
-            tlsContext->allow_only_certificate(pinnedServerCert->context());
-        }
 
-        HTTPLogic logic(net::Address(address), headers);
-        logic.setMethod(MethodNamed(method));
-        logic.setContentLength(body.size);
+    Response::~Response()
+    { }
+
+
+    Response& Response::setBody(slice body) {
+        _requestBody = body;
+        _logic->setContentLength(_requestBody.size);
+        return *this;
+    }
+
+    Response& Response::setAuthHeader(slice authHeader) {
+        _logic->setAuthHeader(authHeader);
+        return *this;
+    }
+
+    Response& Response::setPinnedCert(crypto::Cert *pinnedServerCert) {
+        _tlsContext.reset(new sockpp::mbedtls_context);
+        _tlsContext->allow_only_certificate(pinnedServerCert->context());
+        return *this;
+    }
+
+    Response& Response::setProxy(const ProxySpec &proxy) {
+        _logic->setProxy(proxy);
+        return *this;
+    }
+
+    bool Response::run() {
+        if (hasRun())
+            return (_error.code == 0);
 
         try {
             unique_ptr<ClientSocket> socket;
             HTTPLogic::Disposition disposition = HTTPLogic::kFailure;
             do {
                 if (disposition != HTTPLogic::kContinue)
-                    socket = make_unique<ClientSocket>(tlsContext.get());
-                disposition = logic.sendNextRequest(*socket, body);
+                    socket = make_unique<ClientSocket>(_tlsContext.get());
+                disposition = _logic->sendNextRequest(*socket, _requestBody);
                 switch (disposition) {
                     case HTTPLogic::kSuccess:
                         // On success, read the response body:
-                        if (!socket->readHTTPBody(logic.responseHeaders(), _body)) {
+                        if (!socket->readHTTPBody(_logic->responseHeaders(), _body)) {
                             _error = socket->error();
                             disposition = HTTPLogic::kFailure;
                         }
@@ -114,19 +140,23 @@ namespace litecore { namespace REST {
                     case HTTPLogic::kContinue:
                         break;
                     case HTTPLogic::kAuthenticate:
-                        disposition = HTTPLogic::kFailure;
+                        if (!_logic->authHeader())
+                            disposition = HTTPLogic::kFailure;
                         break;
                     case HTTPLogic::kFailure:
-                        _error = logic.error();
+                        _error = _logic->error();
                         break;
                 }
             } while (disposition != HTTPLogic::kSuccess && disposition != HTTPLogic::kFailure);
 
             // set up the rest of my properties:
-            _status = logic.status();
-            _statusMessage = string(logic.statusMessage());
-            _headers = logic.responseHeaders();
+            _status = _logic->status();
+            _statusMessage = string(_logic->statusMessage());
+            _headers = _logic->responseHeaders();
         } catchError(&_error);
+        _logic.reset();
+        _tlsContext.reset();
+        return (_error.code == 0);
     }
 
 } }

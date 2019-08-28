@@ -23,6 +23,7 @@
 #include "Error.hh"
 #include "SecureRandomize.hh"
 #include "SecureDigest.hh"
+#include "StringUtil.hh"
 #include <regex>
 #include <sstream>
 
@@ -35,22 +36,35 @@ namespace litecore { namespace net {
     static constexpr unsigned kMaxRedirects = 10;
 
 
-    nonstd::optional<HTTPLogic::Proxy> HTTPLogic::sDefaultProxy;
+    nonstd::optional<ProxySpec> HTTPLogic::sDefaultProxy;
 
 
     HTTPLogic::HTTPLogic(const Address &address,
-                         const Headers &requestHeaders,
                          bool handleRedirects)
     :_address(address)
-    ,_requestHeaders(requestHeaders)
     ,_handleRedirects(handleRedirects)
     ,_isWebSocket(address.scheme == "ws"_sl || address.scheme == "wss"_sl)
     ,_proxy(sDefaultProxy)
     { }
 
 
+    HTTPLogic::HTTPLogic(const Address &address,
+                         const websocket::Headers &requestHeaders,
+                         bool handleRedirects)
+    :HTTPLogic(address, handleRedirects)
+    {
+        _requestHeaders = requestHeaders;
+    }
+
+
     HTTPLogic::~HTTPLogic()
     { }
+
+
+    void HTTPLogic::setHeaders(const websocket::Headers &requestHeaders) {
+        Assert(_requestHeaders.empty());
+        _requestHeaders = requestHeaders;
+    }
 
 
     const Address& HTTPLogic::directAddress() {
@@ -62,7 +76,7 @@ namespace litecore { namespace net {
 
 
     bool HTTPLogic::connectingToProxy() {
-        return _proxy && _proxy->type == kCONNECTProxy && _lastDisposition != kContinue;
+        return _proxy && _proxy->type == ProxyType::CONNECT && _lastDisposition != kContinue;
     }
 
 
@@ -86,7 +100,7 @@ namespace litecore { namespace net {
             rq << "CONNECT " << string(slice(_address.hostname)) << ":" << _address.port;
         } else {
             rq << MethodName(_method) << " ";
-            if (_proxy && _proxy->type == kHTTPProxy)
+            if (_proxy && _proxy->type == ProxyType::HTTP)
                 rq << string(_address.url());
             else
                 rq << string(slice(_address.path));
@@ -97,7 +111,8 @@ namespace litecore { namespace net {
         if (_proxy)
             addHeader(rq, "Proxy-Authorization", _proxy->authHeader);
         if (!connectingToProxy()) {
-            addHeader(rq, "Authorization", _authHeader);
+            if (_authHeader && _authChallenged)     // don't send auth until challenged
+                addHeader(rq, "Authorization", _authHeader);
             if (_contentLength >= 0)
                 rq << "Content-Length: " << _contentLength << "\r\n";
             _requestHeaders.forEach([&](slice name, slice value) {
@@ -155,7 +170,10 @@ namespace litecore { namespace net {
             case HTTPStatus::UseProxy:
                 return handleRedirect();
             case HTTPStatus::Unauthorized:
-                _authHeader = nullslice;
+                if (_authChallenged)
+                    _authHeader = nullslice;
+                else
+                    _authChallenged = true;
                 return handleAuthChallenge("Www-Authenticate"_sl, false);
             case HTTPStatus::ProxyAuthRequired:
                 if (_proxy)
@@ -165,7 +183,7 @@ namespace litecore { namespace net {
                 return handleUpgrade();
             default:
                 if (!IsSuccess(_httpStatus))
-                    return failure(WebSocketDomain, int(_httpStatus));
+                    return failure();
                 else if (connectingToProxy())
                     return kContinue;
                 else if (_isWebSocket)
@@ -220,19 +238,25 @@ namespace litecore { namespace net {
 
     HTTPLogic::Disposition HTTPLogic::handleRedirect() {
         if (!_handleRedirects)
-            return failure(WebSocketDomain, int(_httpStatus));
+            return failure();
         if (++_redirectCount > kMaxRedirects)
             return failure(NetworkDomain, kC4NetErrTooManyRedirects);
 
         C4Address newAddr;
-        if (!c4address_fromURL(_responseHeaders["Location"_sl], &newAddr, nullptr)
-                || (newAddr.scheme != "http"_sl && newAddr.scheme != "https"_sl))
-            return failure(NetworkDomain, kC4NetErrInvalidRedirect);
+        slice location = _responseHeaders["Location"_sl];
+        if (location.hasPrefix('/')) {
+            newAddr = _address;
+            newAddr.path = location;
+        } else {
+            if (!c4address_fromURL(location, &newAddr, nullptr)
+                    || (newAddr.scheme != "http"_sl && newAddr.scheme != "https"_sl))
+                return failure(NetworkDomain, kC4NetErrInvalidRedirect);
+        }
 
         if (_httpStatus == HTTPStatus::UseProxy) {
             if (_proxy)
-                return failure(NetworkDomain, int(_httpStatus));
-            _proxy = Proxy {kHTTPProxy, Address(newAddr)};
+                return failure();
+            _proxy = ProxySpec(ProxyType::HTTP, newAddr);
         } else {
             if (newAddr.hostname != _address.hostname)
                 _authHeader = nullslice;
@@ -256,6 +280,8 @@ namespace litecore { namespace net {
         if (challenge.value.empty())
             challenge.value = m[5].str();
         _authChallenge = challenge;
+        if (!forProxy)
+            _authChallenged = true;
         return kAuthenticate;
     }
 
@@ -299,6 +325,11 @@ namespace litecore { namespace net {
     }
 
 
+    HTTPLogic::Disposition HTTPLogic::failure() {
+        return failure(WebSocketDomain, int(_httpStatus), _statusMessage);
+    }
+
+
     HTTPLogic::Disposition HTTPLogic::sendNextRequest(ClientSocket &socket, slice body) {
         bool connected;
         if (_lastDisposition == kContinue) {
@@ -311,13 +342,34 @@ namespace litecore { namespace net {
         if (!connected)
             return failure(socket);
 
-        Debug("Sending request: %s", requestToSend().c_str());
+        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Sending request to %s:\n%s",
+                  (_lastDisposition == kContinue ? "proxy tunnel"
+                                                 : string(directAddress().url()).c_str()),
+                  formatHTTP(slice(requestToSend())).c_str());
         if (socket.write_n(requestToSend()) < 0 || socket.write_n(body) < 0)
             return failure(socket);
         alloc_slice response = socket.readToDelimiter("\r\n\r\n"_sl);
         if (!response)
             return failure(socket);
+        C4LogToAt(kC4WebSocketLog, kC4LogVerbose, "Got response:\n%s", formatHTTP(response).c_str());
         return receivedResponse(response);
+    }
+
+
+    string HTTPLogic::formatHTTP(slice http) {
+        stringstream s;
+        bool first = true;
+        while (true) {
+            slice line = http.readToDelimiter("\r\n"_sl);
+            if (line.size == 0)
+                break;
+            if (!first)
+                s << '\n';
+            first = false;
+            s << '\t';
+            s.write((const char*)line.buf, line.size);
+        }
+        return s.str();
     }
 
 

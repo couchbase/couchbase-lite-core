@@ -72,6 +72,15 @@ public:
         const char *remoteDB = getenv("REMOTE_DB");
         if (remoteDB)
             _remoteDBName = c4str(remoteDB);
+        const char *proxyURL = getenv("REMOTE_PROXY");
+        if (proxyURL) {
+            ProxyType type = ProxyType::HTTP;
+            const char *proxyTypeStr = getenv("REMOTE_PROXY_TYPE");
+            if (proxyTypeStr && 0 == strcmp(proxyTypeStr, "CONNECT"))
+                type = ProxyType::CONNECT;
+            _proxy = make_unique<ProxySpec>(type, slice(proxyURL));
+        }
+
         _onDocsEnded = onDocsEnded;
     }
 
@@ -94,12 +103,15 @@ public:
     AllocedDict options() {
         Encoder enc;
         enc.beginDict();
-        enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
-        enc.writeData(sPinnedCert->data());
+        if (Address::isSecure(_address)) {
+            enc.writeKey(C4STR(kC4ReplicatorOptionPinnedServerCert));
+            enc.writeData(sPinnedCert->data());
+        }
         if (_enableDocProgressNotifications) {
             enc.writeKey(C4STR(kC4ReplicatorOptionProgressLevel));
             enc.writeInt(1);
         }
+        // TODO: Set proxy settings from _proxy
         // Copy any preexisting options:
         for (Dict::iterator i(_options); i; ++i) {
             enc.writeKey(i.keyString());
@@ -276,12 +288,17 @@ public:
     alloc_slice sendRemoteRequest(const string &method,
                                   string path,
                                   slice body =nullslice,
-                                  bool admin =false)
+                                  bool admin =false,
+                                  HTTPStatus expectedStatus = HTTPStatus::OK)
     {
-        REQUIRE(slice(_remoteDBName).hasPrefix("scratch"_sl));
+        if (method != "GET")
+            REQUIRE(slice(_remoteDBName).hasPrefix("scratch"_sl));
+        if (method == "PUT" && expectedStatus == HTTPStatus::OK)
+            expectedStatus = HTTPStatus::Created;
 
         auto port = uint16_t(_address.port + !!admin);
-        path = string("/") + (string)(slice)_remoteDBName + "/" + path;
+        if (!hasPrefix(path, "/"))
+            path = string("/") + (string)(slice)_remoteDBName + "/" + path;
         if (_logRemoteRequests)
             C4Log("*** Server command: %s %.*s:%d%s",
               method.c_str(), SPLAT(_address.hostname), port, path.c_str());
@@ -290,23 +307,23 @@ public:
         enc.beginDict();
         enc["Content-Type"_sl] = "application/json";
         enc.endDict();
-        auto headers = enc.finish();
+        auto headers = enc.finishDoc();
 
         string scheme = Address::isSecure(_address) ? "https" : "http";
         auto r = make_unique<REST::Response>(scheme,
                                              method,
                                              (string)(slice)_address.hostname,
                                              port,
-                                             path,
-                                             headers,
-                                             body,
-                                             sPinnedCert);
-        REQUIRE(r);
-        if (r->error().code)
+                                             path);
+        r->setHeaders(headers).setBody(body).setPinnedCert(sPinnedCert);
+        if (_authHeader)
+            r->setAuthHeader(_authHeader);
+        if (_proxy)
+            r->setProxy(*_proxy);
+        if (!r->run())
             FAIL("Error: " << c4error_descriptionStr(r->error()));
         INFO("Status: " << (int)r->status() << " " << r->statusMessage());
-        REQUIRE(r->status() >= net::HTTPStatus::OK);
-        REQUIRE(r->status() <= net::HTTPStatus::Created);
+        REQUIRE(r->status() == expectedStatus);
         return r->body();
     }
 
@@ -329,6 +346,8 @@ public:
     C4Address _address = kDefaultAddress;
     C4String _remoteDBName = kScratchDBName;
     AllocedDict _options;
+    alloc_slice _authHeader;
+    unique_ptr<ProxySpec> _proxy;
     bool _enableDocProgressNotifications {false};
     C4ReplicatorValidationFunction _pushFilter {nullptr};
     C4ReplicatorDocumentsEndedCallback _onDocsEnded {nullptr};

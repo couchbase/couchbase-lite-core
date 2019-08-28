@@ -45,6 +45,7 @@ namespace litecore { namespace websocket {
 
     private:
         void _connect();
+        bool configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
         std::unique_ptr<net::ClientSocket> _connectLoop()MUST_USE_RESULT;
         void readLoop();
         void writeLoop();

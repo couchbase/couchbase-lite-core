@@ -141,9 +141,11 @@ public:
 
         C4Log("---- %s %s", method.c_str(), uri.c_str());
         string scheme = config.tlsConfig ? "https" : "http";
-        unique_ptr<Response> r(new Response(scheme, method, "localhost", config.port, uri, headers, body, pinnedCert));
-        REQUIRE(r);
-        if (r->error().code)
+        unique_ptr<Response> r(new Response(scheme, method, "localhost", config.port, uri));
+        r->setHeaders(headers).setBody(body);
+        if (pinnedCert)
+            r->setPinnedCert(pinnedCert);
+        if (!r->run())
             C4LogToAt(kC4DefaultLog, kC4LogWarning, "Error: %s", c4error_descriptionStr(r->error()));
         C4Log("Status: %d %s", r->status(), r->statusMessage().c_str());
         string responseBody = r->body().asString();

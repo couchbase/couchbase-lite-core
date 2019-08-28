@@ -43,12 +43,6 @@ using namespace fleece;
  */
 
 
-TEST_CASE_METHOD(ReplicatorAPITest, "API HTTP request", "[.SyncServer]") {
-    alloc_slice result = sendRemoteRequest("GET", "");
-    C4Log("Response: %.*s", SPLAT(result));
-}
-
-
 TEST_CASE_METHOD(ReplicatorAPITest, "API Auth Failure", "[.SyncServer]") {
     _remoteDBName = kProtectedDBName;
     replicate(kC4OneShot, kC4Disabled, false);
@@ -470,7 +464,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull deltas from SG", "[.SyncServer][Delta]
         }
         enc.endArray();
         enc.endDict();
-        sendRemoteRequest("POST", "_bulk_docs", enc.finish());
+        sendRemoteRequest("POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created);
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
@@ -564,7 +558,7 @@ TEST_CASE_METHOD(ReplicatorAPITest, "Pull iTunes deltas from SG", "[.SyncServer]
         }
         enc.endArray();
         enc.endDict();
-        sendRemoteRequest("POST", "_bulk_docs", enc.finish());
+        sendRemoteRequest("POST", "_bulk_docs", enc.finish(), false, HTTPStatus::Created);
     }
 
     double timeWithDelta = 0, timeWithoutDelta = 0;
