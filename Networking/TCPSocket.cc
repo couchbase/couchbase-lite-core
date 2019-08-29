@@ -34,6 +34,7 @@
 #include <regex>
 #include <string>
 #include <sstream>
+#include <mutex>
 
 namespace litecore { namespace net {
     using namespace std;
@@ -44,10 +45,18 @@ namespace litecore { namespace net {
 
     static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
 
+    void TCPSocket::initialize() {
+        static once_flag f;
+        call_once(f, [=] {
+            socket::initialize();
+        });
+    }
+
 
     TCPSocket::TCPSocket(tls_context *tls)
-    :_tlsContext(tls)
-    { }
+    :_tlsContext(tls) {
+        initialize();
+    }
 
 
     TCPSocket::~TCPSocket()
@@ -302,7 +311,7 @@ namespace litecore { namespace net {
         Assert(err != 0);
         if (err > 0) {
             C4LogToAt(kC4WebSocketLog, kC4LogWarning,
-                    "TCPSocket got POSIX error %d \"%s\"", err, strerror(err));
+                    "TCPSocket got POSIX error %d \"%s\"", err, _socket->last_error_str().c_str());
             setError(POSIXDomain, err, nullslice);
         } else {
             // Negative errors are assumed to be from mbedTLS.

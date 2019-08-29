@@ -50,6 +50,8 @@ namespace litecore { namespace REST {
 
 
     void Server::start(uint16_t port, const char *hostname, crypto::Identity *identity) {
+        TCPSocket::initialize();
+
         _port = port;
         _acceptor.reset(new tcp_acceptor (port));
         if (!*_acceptor)

@@ -33,6 +33,10 @@ namespace litecore { namespace net {
         TCPSocket(sockpp::tls_context *ctx =nullptr);
         virtual ~TCPSocket();
 
+        /// Initializes TCPSocket, must call at least once before using any
+        /// socket related functionality
+        static void initialize();
+
         /// Returns the TLS context, if any, used by this socket.
         sockpp::tls_context* TLSContext();
 

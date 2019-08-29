@@ -20,6 +20,7 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <mutex>
 
 using namespace std;
 using namespace fleece;
@@ -56,7 +57,12 @@ public:
             C4RegisterBuiltInWebSocket();
 
             // Pin the server certificate:
+#ifdef _MSC_VER
+            alloc_slice cert = readFile("..\\Replicator\\tests\\data\\cert.pem");
+#else
             alloc_slice cert = readFile("Replicator/tests/data/cert.pem");
+#endif
+
             sPinnedCert = new litecore::crypto::Cert(cert);
         });
 
