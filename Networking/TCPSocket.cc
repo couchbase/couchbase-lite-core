@@ -289,6 +289,47 @@ namespace litecore { namespace net {
 
 #pragma mark - ERRORS:
 
+    static int socketToPosixErrCode(int err) {
+#ifdef WIN32
+        static constexpr struct {long fromErr; int toErr;} kWSAToPosixErr[] = {
+            {WSAECONNREFUSED, ECONNREFUSED},
+            {WSAEADDRINUSE, EADDRINUSE},
+            {WSAEADDRNOTAVAIL, EADDRNOTAVAIL},
+            {WSAEAFNOSUPPORT, EAFNOSUPPORT},
+            {WSAECONNABORTED, ECONNABORTED},
+            {WSAECONNRESET, ECONNRESET},
+            {WSAEHOSTUNREACH, EHOSTUNREACH},
+            {WSAENETDOWN, ENETDOWN},
+            {WSAENETRESET, ENETRESET},
+            {WSAENETUNREACH, ENETUNREACH},
+            {WSAENOBUFS, ENOBUFS},
+            {WSAEISCONN, EISCONN},
+            {WSAENOTCONN, ENOTCONN},
+            {WSAETIMEDOUT, ETIMEDOUT},
+            {WSAELOOP, ELOOP},
+            {WSAENAMETOOLONG, ENAMETOOLONG},
+            {WSAEACCES, EACCES},
+            {WSAEMFILE, EMFILE},
+            {WSAEWOULDBLOCK, EWOULDBLOCK},
+            {WSAEALREADY, EALREADY},
+            {WSAENOTSOCK, ENOTSOCK},
+            {WSAEDESTADDRREQ, EDESTADDRREQ},
+            {WSAEPROTOTYPE, EPROTOTYPE},
+            {WSAENOPROTOOPT, ENOPROTOOPT},
+            {WSAEPROTONOSUPPORT, EPROTONOSUPPORT},
+            {WSAEPFNOSUPPORT, EPROTONOSUPPORT},
+            {0, 0}
+        };
+        for(int i = 0; kWSAToPosixErr[i].fromErr != 0; ++i) {
+            if(kWSAToPosixErr[i].fromErr == err) {
+                Log("Mapping WSA error %d to POSIX %d", err, kWSAToPosixErr[i].toErr);
+                return kWSAToPosixErr[i].toErr;
+            }
+        }
+        Warn("No mapping for WSA error %d", err);
+#endif
+        return err;
+    }
 
     int TCPSocket::mbedToNetworkErrCode(int err) {
         static constexpr struct {int mbed0; int mbed1; int net;} kMbedToNetErr[] = {
@@ -306,13 +347,16 @@ namespace litecore { namespace net {
     }
 
 
+
     void TCPSocket::checkStreamError() {
         int err = _socket->last_error();
         Assert(err != 0);
         if (err > 0) {
+            string errMsg = _socket->last_error_str();
+            errMsg.erase(errMsg.find_last_not_of(" \n\r")+1);
             C4LogToAt(kC4WebSocketLog, kC4LogWarning,
-                    "TCPSocket got POSIX error %d \"%s\"", err, _socket->last_error_str().c_str());
-            setError(POSIXDomain, err, nullslice);
+                    "TCPSocket got POSIX error %d \"%s\"", err, errMsg.c_str());
+            setError(POSIXDomain, socketToPosixErrCode(err), errMsg);
         } else {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
