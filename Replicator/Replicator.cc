@@ -342,7 +342,7 @@ namespace litecore { namespace repl {
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
             if (_options.push > kC4Passive || _options.pull > kC4Passive)
-                getRemoteCheckpoint();
+                getRemoteCheckpoint(false);
         }
     }
 
@@ -431,12 +431,12 @@ namespace litecore { namespace repl {
             return;
         }
 
-        getRemoteCheckpoint();
+        getRemoteCheckpoint(false);
     }
 
 
     // Get the remote checkpoint, after we've got the local one and the BLIP connection is up.
-    void Replicator::getRemoteCheckpoint() {
+    void Replicator::getRemoteCheckpoint(bool refresh) {
         // Get the remote checkpoint, using the same checkpointID:
         if (!_checkpointDocID || _connectionState != Connection::kConnected)
             return;     // not ready yet
@@ -447,7 +447,7 @@ namespace litecore { namespace repl {
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = _checkpointDocID;
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [this](MessageProgress progress) {
+        sendRequest(msg, [this, refresh](MessageProgress progress) {
             // ...after the checkpoint is received:
             if (progress.state != MessageProgress::kComplete)
                 return;
@@ -472,7 +472,7 @@ namespace litecore { namespace repl {
             }
             _remoteCheckpointReceived = true;
 
-            if (_hadLocalCheckpoint) {
+            if (!refresh && _hadLocalCheckpoint) {
                 // Compare checkpoints, reset if mismatched:
                 bool valid = _checkpoint.validateWith(remoteCheckpoint);
                 if (!valid)
@@ -490,7 +490,7 @@ namespace litecore { namespace repl {
 
         // If there's no local checkpoint, we know we're starting from zero and don't need to
         // wait for the remote one before getting started:
-        if (!_hadLocalCheckpoint)
+        if (!refresh && !_hadLocalCheckpoint)
             startReplicating();
     }
 
@@ -524,12 +524,18 @@ namespace litecore { namespace repl {
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
             if (response->isError()) {
-                gotError(response);
-                warn("Failed to save checkpoint!");
-                // If the checkpoint didn't save, something's wrong; but if we don't mark it as
-                // saved, the replicator will stay busy (see computeActivityLevel, line 169).
-                _checkpoint.saved();
-                // TODO: On 409 error, reload remote checkpoint
+                Error responseErr = response->getError();
+                if(responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
+                    _checkpointJSONToSave = json; // move() has no effect here
+                    _remoteCheckpointRequested = _remoteCheckpointReceived = false;
+                    getRemoteCheckpoint(true);
+                } else {
+                    gotError(response);
+                    warn("Failed to save checkpoint!");
+                    // If the checkpoint didn't save, something's wrong; but if we don't mark it as
+                    // saved, the replicator will stay busy (see computeActivityLevel, line 169).
+                    _checkpoint.saved();
+                }
             } else {
                 // Remote checkpoint saved, so update local one:
                 _checkpointRevID = response->property("rev"_sl);
