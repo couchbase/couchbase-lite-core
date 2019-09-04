@@ -11,13 +11,16 @@
 #include "function_ref.hh"
 #include "fleece/Fleece.hh"
 #include <memory>
+#include <mutex>
 #include <thread>
+#include <vector>
 
 namespace litecore { namespace websocket {
     struct CloseStatus;
     class Headers;
 } }
 namespace sockpp {
+    class socket;
     class stream_socket;
     class tls_context;
 }
@@ -48,6 +51,23 @@ namespace litecore { namespace net {
 
         C4Error error() const                   {return _error;}
 
+        bool setBlocking(bool);
+
+        using interruption_t = uint8_t;
+
+        /// Blocks until the socket has data to read (if `ioReadable` is true) and/or has
+        /// space for output (if `ioWriteable` is true.) On return, `ioReadable` and `ioWriteable`
+        /// will be set according to which condition is now true.
+        /// If `interruptWait()` was called, `outMessage` will be set to the interruption
+        /// message it was called with. Otherwise `outMessage` is zero on return.
+        bool waitForIO(bool &ioReadable, bool &ioWriteable, interruption_t &outMessage);
+
+        /// Interrupts a `waitForIO()` call on another thread. The given interruption message
+        /// will be set as the `outMessage` parameter when `waitForIO` returns.
+        /// If `waitForIO()` is not currently running, then the next call will immediately
+        /// be interrupted, with this message.
+        bool interruptWait(interruption_t);
+
         /// Reads up to \ref byteCount bytes to the location \ref dst.
         /// On EOF returns zero. On other error returns -1.
         ssize_t read(void *dst, size_t byteCount) MUST_USE_RESULT;
@@ -70,33 +90,45 @@ namespace litecore { namespace net {
         /// If there's a Content-Length header, reads that many bytes, otherwise reads till EOF.
         bool readHTTPBody(const websocket::Headers &headers, fleece::alloc_slice &body) MUST_USE_RESULT;
 
+        bool atReadEOF() const                          {return _eofOnRead;}
+
         /// Writes to the socket and returns the number of bytes written:
         ssize_t write(slice) MUST_USE_RESULT;
 
         /// Writes all the bytes to the socket.
         ssize_t write_n(slice) MUST_USE_RESULT;
 
+        /// Writes multiple byte ranges (slices) to the socket.
+        /// Those that are completely written are removed from the head of the vector.
+        /// One that's partially written has its `buf` and `size` adjusted to cover only the
+        /// unsent bytes. (This will always be the 1st in the vector on return.)
+        ssize_t write(std::vector<fleece::slice> &ioByteRanges);
+
+        bool atWriteEOF() const                         {return _eofOnWrite;}
+
     protected:
-        void setError(C4ErrorDomain, int code, slice message);
+        bool setSocket(std::unique_ptr<sockpp::stream_socket>);
+        void setError(C4ErrorDomain, int code, slice message =fleece::nullslice);
         bool wrapTLS(slice hostname, bool isClient);
-        static int mbedToNetworkErrCode(int mbedErr);
+        bool createInterruptPipe();
         void checkStreamError();
         bool checkSocketFailure();
+        bool checkSocket(const sockpp::socket &sock);
         ssize_t _read(void *dst, size_t byteCount) MUST_USE_RESULT;
         void pushUnread(slice);
 
-        std::unique_ptr<sockpp::stream_socket> _socket;
-        sockpp::tls_context* _tlsContext = nullptr;
-
     private:
-        static constexpr size_t kReadBufferSize = 8192;
-        
-        std::thread _reader;
-        std::thread _writer;
-
+        std::unique_ptr<sockpp::stream_socket> _socket;
+        sockpp::stream_socket* _wrappedSocket = nullptr;
+        sockpp::tls_context* _tlsContext = nullptr;
         C4Error _error {};
         fleece::alloc_slice _unread;        // Data read from socket that's been "pushed back"
         size_t _unreadLen {0};              // Length of valid data in _unread
+        bool _eofOnRead {false};
+        bool _eofOnWrite {false};
+        int _interruptReadFD {-1};
+        int _interruptWriteFD {-1};
+        std::mutex _mutex;
     };
 
 

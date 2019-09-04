@@ -277,6 +277,10 @@ TEST_CASE_METHOD(ReplicatorAPITest, "API Pull Big Attachments", "[.SyncServer]")
     c4blob_keyFromString(digest, &blobKey);
     auto size = c4blob_getSize(c4db_getBlobStore(db, nullptr), blobKey);
     CHECK(size == 15198281);
+
+    C4Log("-------- Pushing --------");
+    _remoteDBName = kScratchDBName;
+    replicate(kC4OneShot, kC4Disabled);
 }
 
 

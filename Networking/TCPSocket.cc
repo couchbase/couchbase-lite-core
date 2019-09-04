@@ -28,6 +28,7 @@
 #include "mbedtls/error.h"
 #include "mbedtls/ssl.h"
 #include "sockpp/exception.h"
+#include "sockpp/tcp_acceptor.h"
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tls_socket.h"
 #include "make_unique.h"
@@ -43,6 +44,8 @@ namespace litecore { namespace net {
     using namespace litecore::websocket;
 
 
+    static int lastSocketsError();
+
     static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
 
     void TCPSocket::initialize() {
@@ -53,6 +56,10 @@ namespace litecore { namespace net {
     }
 
 
+    #define WSLog (*(LogDomain*)kC4WebSocketLog)
+    #define LOG(LEVEL, ...) LogToAt(WSLog, LEVEL, ##__VA_ARGS__)
+
+
     TCPSocket::TCPSocket(tls_context *tls)
     :_tlsContext(tls) {
         initialize();
@@ -60,17 +67,27 @@ namespace litecore { namespace net {
 
 
     TCPSocket::~TCPSocket()
-    { }
-
-
-    tls_context* TCPSocket::TLSContext() {
-        return _tlsContext;
+    {
+        if (_interruptReadFD >= 0) {
+#ifndef _WIN32
+            ::close(_interruptReadFD);
+            ::close(_interruptWriteFD);
+#else
+            ::closesocket(_interruptReadFD);
+            ::closesocket(_interruptWriteFD);
+#endif
+        }
     }
 
 
-    void TCPSocket::setError(C4ErrorDomain domain, int code, slice message) {
-        Assert(code != 0);
-        _error = c4error_make(domain, code, message);
+    bool TCPSocket::setSocket(unique_ptr<stream_socket> socket) {
+        Assert(!_socket);
+        _socket = move(socket);
+        return checkSocketFailure();
+    }
+
+    tls_context* TCPSocket::TLSContext() {
+        return _tlsContext;
     }
 
 
@@ -78,42 +95,12 @@ namespace litecore { namespace net {
         if (!_tlsContext)
             _tlsContext = _tlsContext = &tls_context::default_context();
         string hostnameStr(hostname);
+        _wrappedSocket = _socket.get();
         auto oldSocket = move(_socket);
         _socket = TLSContext()->wrap_socket(move(oldSocket),
                                             (isClient ? tls_context::CLIENT : tls_context::SERVER),
                                             hostnameStr.c_str());
         return checkSocketFailure();
-    }
-
-
-    bool TCPSocket::checkSocketFailure() {
-        if (*_socket)
-            return true;
-
-        // TLS handshake failed:
-        if (_socket->last_error() == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
-            // Some more specific errors for certificate validation failures, based on flags:
-            auto tlsSocket = (tls_socket*)_socket.get();
-            uint32_t flags = tlsSocket->peer_certificate_status();
-            C4LogToAt(kC4WebSocketLog, kC4LogError,
-                      "TCPSocket TLS handshake failed; cert verify status 0x%02x", flags);
-            if (flags != 0 && flags != UINT32_MAX) {
-                string message = tlsSocket->peer_certificate_status_message();
-                int code = kNetErrTLSCertUntrusted;
-                if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED)
-                    code = kNetErrTLSCertUnknownRoot;
-                else if (flags & MBEDTLS_X509_BADCERT_REVOKED)
-                    code = kNetErrTLSCertRevoked;
-                else if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
-                    code = kNetErrTLSCertExpired;
-                else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH)
-                    code = kNetErrTLSCertNameMismatch;
-                setError(NetworkDomain, code, slice(message));
-            }
-        } else {
-            checkStreamError();
-        }
-        return false;
     }
 
 
@@ -129,14 +116,78 @@ namespace litecore { namespace net {
     }
 
 
+#pragma mark - CLIENT SOCKET:
+
+
+    ClientSocket::ClientSocket(tls_context *tls)
+    :TCPSocket(tls)
+    { }
+
+
+    bool ClientSocket::connect(const Address &addr) {
+        // sockpp constructors can throw exceptions.
+        try {
+            string hostname(slice(addr.hostname));
+            return setSocket(make_unique<tcp_connector>(inet_address{hostname, addr.port}))
+                && (!addr.isSecure() || wrapTLS(addr.hostname));
+
+        } catch (const sockpp::sys_error &sx) {
+            setError(POSIXDomain, sx.error(), slice(sx.what()));
+            return false;
+        } catch (const sockpp::getaddrinfo_error &gx) {
+            int code;
+            string messagebuf;
+            if (gx.error() == EAI_NONAME || gx.error() == HOST_NOT_FOUND) {
+                code = kC4NetErrUnknownHost;
+                messagebuf = "Unknown hostname \"" + gx.hostname() + "\"";
+            } else {
+                code = kC4NetErrDNSFailure;
+                messagebuf = "Error resolving hostname \"" + gx.hostname() + "\": " + gx.what();
+            }
+            setError(NetworkDomain, code, slice(messagebuf));
+            return false;
+        }
+    }
+
+
+#pragma mark - RESPONDER SOCKET:
+
+
+    ResponderSocket::ResponderSocket(tls_context *tls)
+    :TCPSocket(tls)
+    { }
+
+
+    bool ResponderSocket::acceptSocket(stream_socket &&s) {
+        return setSocket( make_unique<tcp_socket>(move(s)));
+    }
+
+
+    bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket) {
+        return setSocket(move(socket));
+    }
+
+
+#pragma mark - READ/WRITE:
+
+
+#ifdef _WIN32
+    static constexpr int kErrWouldBlock = WSAEWOULDBLOCK;
+#else
+    static constexpr int kErrWouldBlock = EWOULDBLOCK;
+#endif
+
+
     ssize_t TCPSocket::write(slice data) {
         if (data.size == 0)
             return 0;
         ssize_t written = _socket->write(data.buf, data.size);
         if (written < 0) {
-            if (_socket->last_error() == EBADF)
+            if (_socket->last_error() == kErrWouldBlock)
                 return 0;
             checkStreamError();
+        } else if (written == 0) {
+            _eofOnWrite = true;
         }
         return written;
     }
@@ -147,7 +198,7 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
         if (written < 0) {
-            if (_socket->last_error() == EBADF)
+            if (_socket->last_error() == kErrWouldBlock)
                 return 0;
             checkStreamError();
         }
@@ -155,15 +206,48 @@ namespace litecore { namespace net {
     }
 
 
+    ssize_t TCPSocket::write(vector<slice> &ioByteRanges) {
+        // We are going to cast slice[] to iovec[] since they are identical structs,
+        // but make sure they are actualy identical:
+        static_assert(sizeof(iovec) == sizeof(slice)
+                      && sizeof(iovec::iov_base) == sizeof(slice::buf)
+                      && sizeof(iovec::iov_len) == sizeof(slice::size),
+                      "iovec and slice are incompatible");
+        ssize_t written = _socket->write(reinterpret_cast<vector<iovec>&>(ioByteRanges));
+        if (written < 0) {
+            if (_socket->last_error() == kErrWouldBlock)
+                return 0;
+            checkStreamError();
+            return written;
+        }
+
+        ssize_t remaining = written;
+        for (auto i = ioByteRanges.begin(); i != ioByteRanges.end(); ++i) {
+            remaining -= i->size;
+            if (remaining < 0) {
+                // This slice was only partly written (or unwritten). Adjust its start:
+                i->moveStart(i->size + remaining);
+                // Remove all prior slices:
+                ioByteRanges.erase(ioByteRanges.begin(), i);
+                return written;
+            }
+        }
+        // Looks like everything was written:
+        ioByteRanges.clear();
+        return written;
+    }
+
+
     // Primitive unbuffered read call. Returns 0 on EOF, -1 on error (and sets _error).
-    // Interprets error EBADF (bad file descriptor) as EOF,
-    // since that's what happens when another thread closes the socket while read() is blocked
+    // Assumes EWOULDBLOCK is not an error, since it happens normally in non-blocking reads.
     ssize_t TCPSocket::_read(void *dst, size_t byteCount) {
         ssize_t n = _socket->read(dst, byteCount);
         if (n < 0) {
-            if (_socket->last_error() == EBADF)
+            if (_socket->last_error() == kErrWouldBlock)
                 return 0;
             checkStreamError();
+        } else if (n == 0) {
+            _eofOnRead = true;
         }
         return n;
     }
@@ -287,7 +371,149 @@ namespace litecore { namespace net {
     }
 
 
+#pragma mark - NONBLOCKING / SELECT:
+
+
+    bool TCPSocket::setBlocking(bool blocking) {
+        bool ok = _socket->set_blocking(blocking);
+        if (!ok)
+            checkStreamError();
+        return ok;
+    }
+
+
+    bool TCPSocket::waitForIO(bool &readable, bool &writeable, uint8_t &message) {
+        LOG(Debug, "waitForIO(readable=%d, writeable=%d) ...", readable, writeable);
+        if (!createInterruptPipe())
+            return false;
+
+        if (_usuallyFalse(_unreadLen > 0) && readable) {
+            // There is buffered data, so indicate that I'm readable:
+            writeable = false;
+            message = 0;
+        } else {
+            fd_set readSet, writeSet;
+            FD_ZERO(&readSet);
+            FD_ZERO(&writeSet);
+
+            socket_t sockfd = _wrappedSocket ? _wrappedSocket->handle() : _socket->handle();
+            if (readable)
+                FD_SET(sockfd, &readSet);
+            if (writeable)
+                FD_SET(sockfd, &writeSet);
+            FD_SET(_interruptReadFD, &readSet);
+
+            while (::select(max(sockfd, _interruptReadFD) + 1,
+                            &readSet,
+                            (writeable ? &writeSet : nullptr),
+                            nullptr, nullptr) < 0) {
+                int error = lastSocketsError();
+                if (error != EINTR) {
+                    setError(POSIXDomain, error);
+                    return false;
+                }
+            }
+
+            readable  = FD_ISSET(sockfd, &readSet);
+            writeable = FD_ISSET(sockfd, &writeSet);
+            message   = 0;
+            if (FD_ISSET(_interruptReadFD, &readSet))
+                ::read(_interruptReadFD, &message, sizeof(message));
+        }
+
+        LOG(Debug, "...after waitForIO: readable=%d, writeable=%d, interruption=%d",
+            readable, writeable, message);
+        return true;
+    }
+
+
+    bool TCPSocket::interruptWait(interruption_t message) {
+        if (!createInterruptPipe())
+            return false;
+        LOG(Debug, "Interrupting waitForIO with %d", message);
+        if (::write(_interruptWriteFD, &message, sizeof(message)) < 0) {
+            setError(POSIXDomain, lastSocketsError());
+            return false;
+        }
+        return true;
+    }
+
+
+    bool TCPSocket::createInterruptPipe() {
+        // To allow select() system calls to be interrupted, we create a pipe and have select()
+        // watch its read end. Then writing to the pipe will cause select() to return. As a bonus,
+        // we can use the data written to the pipe as a message, to let the client that called
+        // waitForIO know what happened.
+        lock_guard<mutex> lock(_mutex);
+        if (_interruptReadFD >= 0)
+            return true;
+
+#ifndef _WIN32
+        int fd[2];
+        if (::pipe(fd) < 0) {
+            setError(POSIXDomain, errno);
+            return false;
+        }
+        _interruptReadFD = fd[0];
+        _interruptWriteFD = fd[1];
+#else
+        // On Windows, pipes aren't available so we have to create a pair of TCP sockets
+        // connected through the loopback interface. <https://stackoverflow.com/a/3333565/98077>
+        tcp_acceptor acc(inet_address(INADDR_LOOPBACK, 0));
+        if (!checkSocket(acc))
+            return false;
+        tcp_connector readSock(acc.address());
+        if (!checkSocket(readSock))
+            return false;
+        tcp_socket writeSock = acc.accept();
+        if (!checkSocket(writeSock))
+            return false;
+        _interruptReadFD = readSock.release();
+        _interruptWriteFD = writeSock.release();
+#endif
+        return true;
+    }
+
+
+
 #pragma mark - ERRORS:
+
+
+    void TCPSocket::setError(C4ErrorDomain domain, int code, slice message) {
+        Assert(code != 0);
+        _error = c4error_make(domain, code, message);
+    }
+
+
+    bool TCPSocket::checkSocketFailure() {
+        if (*_socket)
+            return true;
+
+        // TLS handshake failed:
+        if (_socket->last_error() == MBEDTLS_ERR_X509_CERT_VERIFY_FAILED) {
+            // Some more specific errors for certificate validation failures, based on flags:
+            auto tlsSocket = (tls_socket*)_socket.get();
+            uint32_t flags = tlsSocket->peer_certificate_status();
+            LOG(Error, "TCPSocket TLS handshake failed; cert verify status 0x%02x", flags);
+            if (flags != 0 && flags != UINT32_MAX) {
+                string message = tlsSocket->peer_certificate_status_message();
+                int code = kNetErrTLSCertUntrusted;
+                if (flags & MBEDTLS_X509_BADCERT_NOT_TRUSTED)
+                    code = kNetErrTLSCertUnknownRoot;
+                else if (flags & MBEDTLS_X509_BADCERT_REVOKED)
+                    code = kNetErrTLSCertRevoked;
+                else if (flags & MBEDTLS_X509_BADCERT_EXPIRED)
+                    code = kNetErrTLSCertExpired;
+                else if (flags & MBEDTLS_X509_BADCERT_CN_MISMATCH)
+                    code = kNetErrTLSCertNameMismatch;
+                setError(NetworkDomain, code, slice(message));
+            }
+        } else {
+            checkStreamError();
+        }
+        return false;
+    }
+
 
     static int socketToPosixErrCode(int err) {
 #ifdef WIN32
@@ -322,7 +548,7 @@ namespace litecore { namespace net {
         };
         for(int i = 0; kWSAToPosixErr[i].fromErr != 0; ++i) {
             if(kWSAToPosixErr[i].fromErr == err) {
-                Log("Mapping WSA error %d to POSIX %d", err, kWSAToPosixErr[i].toErr);
+                //Log("Mapping WSA error %d to POSIX %d", err, kWSAToPosixErr[i].toErr);
                 return kWSAToPosixErr[i].toErr;
             }
         }
@@ -331,7 +557,8 @@ namespace litecore { namespace net {
         return err;
     }
 
-    int TCPSocket::mbedToNetworkErrCode(int err) {
+
+    static int mbedToNetworkErrCode(int err) {
         static constexpr struct {int mbed0; int mbed1; int net;} kMbedToNetErr[] = {
             {MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, MBEDTLS_ERR_X509_CERT_VERIFY_FAILED, kNetErrTLSCertUntrusted},
             {-0x3000,                             -0x2000,                             kNetErrTLSCertUntrusted},
@@ -347,81 +574,40 @@ namespace litecore { namespace net {
     }
 
 
-
     void TCPSocket::checkStreamError() {
         int err = _socket->last_error();
         Assert(err != 0);
         if (err > 0) {
-            string errMsg = _socket->last_error_str();
-            errMsg.erase(errMsg.find_last_not_of(" \n\r")+1);
-            C4LogToAt(kC4WebSocketLog, kC4LogWarning,
-                    "TCPSocket got POSIX error %d \"%s\"", err, errMsg.c_str());
-            setError(POSIXDomain, socketToPosixErrCode(err), errMsg);
+            err = socketToPosixErrCode(err);
+            LOG(Warning, "TCPSocket got POSIX error %d \"%s\"", err, strerror(err));
+            setError(POSIXDomain, err);
         } else {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];
             mbedtls_strerror(err, msgbuf, sizeof(msgbuf));
-            C4LogToAt(kC4WebSocketLog, kC4LogWarning,
-                    "TCPSocket got mbedTLS error -0x%04X \"%s\"", -err, msgbuf);
+            LOG(Warning, "TCPSocket got mbedTLS error -0x%04X \"%s\"",
+                -err, msgbuf);
             setError(NetworkDomain, mbedToNetworkErrCode(err), slice(msgbuf));
         }
     }
 
 
-#pragma mark - CLIENT SOCKET:
-
-
-    ClientSocket::ClientSocket(tls_context *tls)
-    :TCPSocket(tls)
-    { }
-
-
-    bool ClientSocket::connect(const Address &addr) {
-        // sockpp constructors can throw exceptions.
-        try {
-            string hostname(slice(addr.hostname));
-            _socket = make_unique<tcp_connector>(inet_address{hostname, addr.port});
-            if (addr.isSecure() && *_socket)
-                return wrapTLS(addr.hostname);
-            else
-                return checkSocketFailure();
-
-        } catch (const sockpp::sys_error &sx) {
-            setError(POSIXDomain, sx.error(), slice(sx.what()));
+    bool TCPSocket::checkSocket(const sockpp::socket &sock) {
+        if (sock.last_error()) {
+            setError(POSIXDomain, socketToPosixErrCode(sock.last_error()));
             return false;
-        } catch (const sockpp::getaddrinfo_error &gx) {
-            C4ErrorDomain domain = NetworkDomain;
-            int code;
-            string messagebuf;
-            if (gx.error() == EAI_NONAME || gx.error() == HOST_NOT_FOUND) {
-                code = kC4NetErrUnknownHost;
-                messagebuf = "Unknown hostname \"" + gx.hostname() + "\"";
-            } else {
-                code = kC4NetErrDNSFailure;
-                messagebuf = "Error resolving hostname \"" + gx.hostname() + "\": " + gx.what();
-            }
-            setError(domain, code, slice(messagebuf));
-            return false;
+        } else {
+            return true;
         }
     }
 
 
-#pragma mark - RESPONDER SOCKET:
-
-
-    ResponderSocket::ResponderSocket(tls_context *tls)
-    :TCPSocket(tls)
-    { }
-
-
-    bool ResponderSocket::acceptSocket(stream_socket &&s) {
-        return acceptSocket( make_unique<tcp_socket>(move(s)));
-    }
-
-    
-    bool ResponderSocket::acceptSocket(unique_ptr<stream_socket> socket) {
-        _socket = move(socket);
-        return checkSocketFailure();
+    static int lastSocketsError() {
+#ifdef _WIN32
+        return ::WSAGetLastError();
+#else
+        return errno;
+#endif
     }
 
 } }

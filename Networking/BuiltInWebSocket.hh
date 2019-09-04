@@ -8,6 +8,8 @@
 #include "WebSocketImpl.hh"
 #include "TCPSocket.hh"
 #include "Channel.hh"
+#include <atomic>
+#include <deque>
 #include <exception>
 #include <mutex>
 #include <thread>
@@ -47,28 +49,31 @@ namespace litecore { namespace websocket {
         void _connect();
         bool configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
         std::unique_ptr<net::ClientSocket> _connectLoop()MUST_USE_RESULT;
-        void readLoop();
-        void writeLoop();
+        void ioLoop();
+        bool readFromSocket();
+        bool writeToSocket();
         void closeWithException(const std::exception&, const char *where);
-        void closeWithError(C4Error, const char *where);
-
-        size_t readCapacity() const      {return kMaxReceivedBytesPending - _receivedBytesPending;}
+        void closeWithError(C4Error);
 
         std::unique_ptr<net::TCPSocket> _socket;            // The TCP socket
         std::unique_ptr<sockpp::tls_context> _tlsContext;   // TLS settings
-        std::thread _readerThread;                          // Thread that reads bytes in a loop
-        std::thread _writerThread;                          // Thread that writes bytes in a loop
+        std::thread _ioThread;                              // Thread that reads/writes socket
+        std::atomic<bool> _waitingForIO {false};            // Blocked in waitForIO()?
 
-        actor::Channel<alloc_slice> _outbox;                // Data waiting to be sent by writer
-        
+        std::vector<fleece::slice> _outbox;                 // Byte ranges to be sent by writer
+        std::vector<fleece::alloc_slice> _outboxAlloced;    // Same, but retains the heap data
+        std::mutex _outboxMutex;                            // Locking for outbox
+
         // Max number of bytes read that haven't been processed by the client yet.
         // Beyond this point, I will stop reading from the socket, sending
         // backpressure to the peer.
-        static constexpr size_t kMaxReceivedBytesPending = 100 * 1024;
+        static constexpr size_t kReadCapacity = 64 * 1024;
 
-        size_t _receivedBytesPending = 0;                   // # bytes read but not handled yet
-        std::mutex _receiveMutex;                           // Locking for receives
-        std::condition_variable _receiveCond;
+        // Size of the buffer allocated for reading from the socket.
+        static constexpr size_t kReadBufferSize = 32 * 1024;
+
+        std::atomic<size_t> _curReadCapacity {kReadCapacity}; // # bytes I can read from socket
+        fleece::alloc_slice _readBuffer;
     };
 
 

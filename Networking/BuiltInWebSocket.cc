@@ -47,13 +47,18 @@ namespace litecore { namespace websocket {
     using namespace net;
 
 
-    static constexpr size_t kReadBufferSize = 8192;
+    enum Interruption : TCPSocket::interruption_t {
+        kReadableInterrupt      = 1,    // read capacity is now > 0
+        kWriteableInterrupt     = 2,    // there are now messages to send
+        kCloseInterrupt         = 255   // time to close the socket
+    };
 
 
     BuiltInWebSocket::BuiltInWebSocket(const URL &url,
                                        Role role,
                                        const fleece::AllocedDict &options)
     :WebSocketImpl(url, role, options, true)
+    ,_readBuffer(kReadBufferSize)
     {
         slice pinnedCert = options[kC4ReplicatorOptionPinnedServerCert].asData();
         if (pinnedCert) {
@@ -65,9 +70,6 @@ namespace litecore { namespace websocket {
 
     BuiltInWebSocket::~BuiltInWebSocket() {
         logDebug("~BuiltInWebSocket");
-        // This could be called from various threads, including the reader...
-        if (_readerThread.joinable())
-            _readerThread.detach();
     }
 
 
@@ -75,35 +77,33 @@ namespace litecore { namespace websocket {
         // Spawn a thread to connect and run the read loop:
         WebSocketImpl::connect();
         retain(this);
-        _readerThread = thread([&]() {_connect();});
+        _ioThread = thread(bind(&BuiltInWebSocket::_connect, this));
+        _ioThread.detach();
     }
 
 
     void BuiltInWebSocket::closeSocket() {
         logVerbose("closeSocket");
-        _socket->close();
-        
-        // Force reader & writer threads to wake up so they'll know the socket closed:
-        sendBytes(alloc_slice());
-        {
-            unique_lock<mutex> lock(_receiveMutex);
-            _receiveCond.notify_one();
-        }
+        _socket->interruptWait(kCloseInterrupt);
     }
 
 
     void BuiltInWebSocket::sendBytes(alloc_slice bytes) {
-        _outbox.push(bytes);
+        unique_lock<mutex> lock(_outboxMutex);
+        if (_outbox.empty() && _waitingForIO)
+            _socket->interruptWait(kWriteableInterrupt);
+        _outboxAlloced.push_back(bytes);
+        _outbox.push_back(bytes);
     }
 
 
     void BuiltInWebSocket::receiveComplete(size_t byteCount) {
-        unique_lock<mutex> lock(_receiveMutex);
-        bool wasThrottled = (readCapacity() == 0);
-        Assert(byteCount <= _receivedBytesPending);
-        _receivedBytesPending -= byteCount;
-        if (wasThrottled && readCapacity() > 0)
-            _receiveCond.notify_one();
+        size_t oldCapacity = _curReadCapacity.fetch_add(byteCount);
+        Assert(oldCapacity + byteCount <= kReadCapacity);
+        if (oldCapacity == 0)
+            logDebug("**** socket read RESUMED");
+        if (oldCapacity == 0 && _waitingForIO)
+            _socket->interruptWait(kReadableInterrupt);
     }
 
 
@@ -112,12 +112,12 @@ namespace litecore { namespace websocket {
     }
 
 
-#pragma mark - BACKGROUND ACTIVITY:
+#pragma mark - CONNECTING:
 
 
     // This runs on its own thread.
     void BuiltInWebSocket::_connect() {
-        SetThreadName("WebSocket reader");
+        SetThreadName("CBL WebSocket I/O");
         try {
             // Connect:
             auto socket = _connectLoop();
@@ -134,10 +134,8 @@ namespace litecore { namespace websocket {
             return;
         }
 
-        // OK, now we are connected -- start the loops for I/O:
-        retain(this);
-        _writerThread = thread([&]() {writeLoop();});
-        readLoop();
+        // OK, now we are connected -- start the loop for I/O:
+        ioLoop();
     }
 
 
@@ -174,8 +172,7 @@ namespace litecore { namespace websocket {
 
         if (!configureProxy(logic, options()[kC4ReplicatorOptionProxyServer].asDict())) {
             closeWithError(c4error_make(LiteCoreDomain, kC4ErrorInvalidParameter,
-                                        "Invalid/unsupported proxy settings"_sl),
-                           "connect");
+                                        "Invalid/unsupported proxy settings"_sl));
             return nullptr;
         }
 
@@ -210,79 +207,112 @@ namespace litecore { namespace websocket {
                     }
                     // give up:
                     gotHTTPResponse(int(logic.status()), logic.responseHeaders());
-                    closeWithError(c4error_make(WebSocketDomain, int(logic.status()), nullslice),
-                                   "connect");
+                    closeWithError(c4error_make(WebSocketDomain, int(logic.status()), nullslice));
                     return nullptr;
                 }
                 case HTTPLogic::kFailure:
                     if (logic.status() != HTTPStatus::undefined)
                         gotHTTPResponse(int(logic.status()), logic.responseHeaders());
-                    closeWithError(logic.error(), "connect");
+                    closeWithError(logic.error());
                     return nullptr;
             }
         }
     }
 
 
-    // This runs on the same thread as _connect.
-    void BuiltInWebSocket::readLoop() {
+#pragma mark - I/O:
+
+
+    void BuiltInWebSocket::ioLoop() {
         try {
-            alloc_slice buffer(kReadBufferSize);
-            while (true) {
-                // Wait until there's room to read more data:
-                size_t capacity;
-                {
-                    unique_lock<mutex> lock(_receiveMutex);
-                    _receiveCond.wait(lock, [&]() {return readCapacity() > 0;});
-                    capacity = readCapacity();
+            if (_socket->setBlocking(false)) {
+                while (true) {
+                    _waitingForIO = true;
+                    bool readable = (_curReadCapacity > 0);
+                    bool writeable;
+                    {
+                        unique_lock<mutex> lock(_outboxMutex);
+                        writeable = !_outbox.empty();
+                    }
+
+                    TCPSocket::interruption_t interruption;
+                    if (!_socket->waitForIO(readable, writeable, interruption))
+                        break;
+
+                    _waitingForIO = false;
+                    if (interruption == kCloseInterrupt)
+                        break;
+                    if (readable || interruption == kReadableInterrupt) {
+                        if (!readFromSocket())
+                            break;
+                    }
+                    if (writeable || interruption == kWriteableInterrupt) {
+                        if (!writeToSocket())
+                            break;
+                    }
                 }
-
-                // Read from the socket:
-                ssize_t n = _socket->read((void*)buffer.buf, min(buffer.size, capacity));
-                logDebug("Received %zu bytes from socket", n);
-                if (_usuallyFalse(n <= 0))
-                    break;
-
-                // The bytes read count against the read-capacity:
-                {
-                    unique_lock<mutex> lock(_receiveMutex);
-                    _receivedBytesPending += n;
-                }
-
-                // Pass data to WebSocket parser:
-                onReceive(slice(buffer.buf, n));
             }
-
-            logInfo("End of readLoop; err = %s", c4error_descriptionStr(_socket->error()));
-            closeWithError(_socket->error(), "readLoop");
+            closeWithError(_socket->error());
 
         } catch (const exception &x) {
-            closeWithException(x, "readLoop");
+            closeWithException(x, "ioLoop");
         }
-        _writerThread.join();
+
+        _socket->close();
         release(this);
     }
 
 
-    // This runs on its own thread.
-    void BuiltInWebSocket::writeLoop() {
-        SetThreadName("WebSocket writer");
-        try {
-            while (true) {
-                alloc_slice data = _outbox.pop();
-                if (!_socket->connected())
-                    break;
-                if (_socket->write_n(data) <= 0)
-                    break;
-                logDebug("Wrote %zu bytes to socket", data.size);
-                onWriteComplete(data.size);     // notify that data's been written
-            }
-            logInfo("End of writeLoop; err = %s", c4error_descriptionStr(_socket->error()));
-            closeWithError(_socket->error(), "writeLoop");
-        } catch (const exception &x) {
-            closeWithException(x, "writeLoop");
+    bool BuiltInWebSocket::readFromSocket() {
+        ssize_t n = _socket->read((void*)_readBuffer.buf, min(_readBuffer.size,
+                                                              _curReadCapacity.load()));
+        logDebug("Received %zu bytes from socket", n);
+        if (_usuallyFalse(n <= 0))
+            return (n == 0);
+
+        // The bytes read count against the read-capacity:
+        auto oldCapacity = _curReadCapacity.fetch_sub(n);
+        if (oldCapacity - n == 0)
+            logDebug("**** socket read THROTTLED");
+
+        // Pass data to WebSocket parser:
+        onReceive(slice(_readBuffer.buf, n));
+        return true;
+    }
+
+
+    bool BuiltInWebSocket::writeToSocket() {
+        // Copy the outbox -- it's just a vector of {ptr,size} pairs, no biggie -- so we don't have
+        // to hold the mutex while writing. (Even though the write won't actually block.)
+        vector<slice> outboxSnapshot;
+        {
+            unique_lock<mutex> lock(_outboxMutex);
+            outboxSnapshot = _outbox;
         }
-        release(this);
+        size_t beforeSize = outboxSnapshot.size();
+
+        // Now write the data:
+        ssize_t n = _socket->write(outboxSnapshot);
+        if (n <= 0)
+            return n == 0;
+
+        size_t nRemoved = beforeSize - outboxSnapshot.size();
+        {
+            // After writing, sync _outbox & _outboxAlloced with the changes made to outboxSnapshot.
+            // First remove the items written:
+            unique_lock<mutex> lock(_outboxMutex);
+            _outboxAlloced.erase(_outboxAlloced.begin(), _outboxAlloced.begin() + nRemoved);
+            _outbox.erase(_outbox.begin(), _outbox.begin() + nRemoved);
+            // Then copy the the first remaining item, in case its start ptr was advanced:
+            if (!outboxSnapshot.empty())
+                _outbox[0] = outboxSnapshot[0];
+        }
+
+        // Notify that data's been written:
+        logDebug("Wrote %zu bytes to socket, in %zu (of %zu) messages",
+                 n, nRemoved, outboxSnapshot.size()+nRemoved);
+        onWriteComplete(n);
+        return true;
     }
 
 
@@ -290,11 +320,11 @@ namespace litecore { namespace websocket {
         // Convert exception to CloseStatus:
         logError("caught exception on %s: %s", where, x.what());
         error e = error::convertException(x);
-        closeWithError(c4error_make(C4ErrorDomain(e.domain), e.code, slice(e.what())), where);
+        closeWithError(c4error_make(C4ErrorDomain(e.domain), e.code, slice(e.what())));
     }
 
 
-    void BuiltInWebSocket::closeWithError(C4Error err, const char *where) {
+    void BuiltInWebSocket::closeWithError(C4Error err) {
         if (err.code == 0) {
             onClose(0);
         } else {
