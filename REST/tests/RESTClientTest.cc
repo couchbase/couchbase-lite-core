@@ -36,10 +36,16 @@ using namespace litecore::net;
  the tinyproxy config script located in Replicator/tests/data.
  */
 
+#define TEST_PROXIES 0
+
 
 class RESTClientTest : public ReplicatorAPITest {
 public:
+#if TEST_PROXIES
     static const int numberOfOptions = 3;
+#else
+    static const int numberOfOptions = 1;
+#endif
 
     RESTClientTest(int option)
     :ReplicatorAPITest()
