@@ -36,9 +36,16 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
-    static C4Error StoppingErrors[] = {
-        { LiteCoreDomain, kC4ErrorUnexpectedError,0 },
-        { WebSocketDomain, 503, 0 }
+    struct C4StoppingErrorEntry
+    {
+        C4Error err;
+        bool isFatal;
+        slice msg;
+    };
+
+    static C4StoppingErrorEntry StoppingErrors[] = {
+        {{ LiteCoreDomain, kC4ErrorUnexpectedError,0 }, true, "An exception was thrown"_sl},
+        {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl}
     };
 
     Replicator::Replicator(C4Database* db,
@@ -246,12 +253,16 @@ namespace litecore { namespace repl {
 
     void Replicator::onError(C4Error error) {
         Worker::onError(error);
-        for(const C4Error& stoppingErr : StoppingErrors) {
-            if(stoppingErr.domain == error.domain && stoppingErr.code == error.code) {
+        for(const C4StoppingErrorEntry& stoppingErr : StoppingErrors) {
+            if(stoppingErr.err.domain == error.domain && stoppingErr.err.code == error.code) {
                 // Treat an exception as a fatal error for replication:
                 alloc_slice message( c4error_getDescription(error) );
-                logError("Stopping due to fatal error: %.*s", SPLAT(message));
-                _disconnect(websocket::kCodeUnexpectedCondition, "An exception was thrown"_sl);
+                if(stoppingErr.isFatal) {
+                    logError("Stopping due to fatal error: %.*s", SPLAT(message));
+                } else {
+                    logError("Stopping due to error: %.*s", SPLAT(message));
+                }
+                _disconnect(websocket::kCodeUnexpectedCondition, stoppingErr.msg);
                 return;
             }
         }
