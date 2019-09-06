@@ -58,14 +58,6 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
         Replicator::Options opts(kC4Disabled, kC4Disabled, params.optionsDictFleece);
         opts.setProperty(slice(kC4SocketOptionWSProtocols),
                          (string(Connection::kWSProtocolName) + kReplicatorProtocolName).c_str());
-        if (!opts.properties[kC4ReplicatorOptionCookies]) {
-            C4Error err;
-            alloc_slice cookies( c4db_getCookies(db, serverAddress, &err) );
-            if (cookies)
-                opts.setProperty(slice(kC4ReplicatorOptionCookies), cookies);
-            else if (err.code)
-                Warn("Error getting cookies from db: %d/%d", err.domain, err.code);
-        }
         return opts.properties.data();
     }
 

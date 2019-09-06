@@ -151,7 +151,6 @@ namespace litecore { namespace repl {
         CheckpointResult getCheckpoint();
         void setCheckpoint(slice data);
         void checkpointIsInvalid();
-        void setCookie(slice setCookieHeader);
         std::string remoteDBIDString() const;
         void handleGetCheckpoint(Retained<blip::MessageIn>);
         void handleSetCheckpoint(Retained<blip::MessageIn>);

@@ -327,8 +327,6 @@ namespace litecore { namespace repl {
                                   "Incompatible replication protocol "
                                   "(missing 'Sec-WebSocket-Protocol' response header)"_sl));
         }
-        // Yes, there can be multiple Set-Cookie headers.
-        headers.forEach("Set-Cookie"_sl, [&](slice value) { setCookie(value); });
         if (_delegate)
             _delegate->replicatorGotHTTPResponse(this, status, headers);
     }
