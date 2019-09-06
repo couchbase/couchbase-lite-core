@@ -108,13 +108,20 @@ namespace litecore { namespace net {
         rq << " HTTP/1.1\r\n"
               "Host: " << string(slice(_address.hostname)) << ':' << _address.port << "\r\n";
         addHeader(rq, "User-Agent", _userAgent);
+
         if (_proxy)
             addHeader(rq, "Proxy-Authorization", _proxy->authHeader);
+
         if (!connectingToProxy()) {
-            if (_authHeader && _authChallenged)     // don't send auth until challenged
+            if (_authChallenged)                                    // don't send auth until challenged
                 addHeader(rq, "Authorization", _authHeader);
+
+            if (_cookieProvider)
+                addHeader(rq, "Cookie", _cookieProvider->cookiesForRequest(_address));
+
             if (_contentLength >= 0)
                 rq << "Content-Length: " << _contentLength << "\r\n";
+
             _requestHeaders.forEach([&](slice name, slice value) {
                 rq << string(name) << ": " << string(value) << "\r\n";
             });
@@ -163,6 +170,12 @@ namespace litecore { namespace net {
 
 
     HTTPLogic::Disposition HTTPLogic::handleResponse() {
+        if (_cookieProvider && !connectingToProxy()) {
+            _responseHeaders.forEach("Set-Cookie"_sl, [&](slice header) {
+                _cookieProvider->setCookie(_address, header);
+            });
+        }
+
         switch (_httpStatus) {
             case HTTPStatus::MovedPermanently:
             case HTTPStatus::Found:

@@ -18,9 +18,11 @@
 
 #include "BuiltInWebSocket.hh"
 #include "HTTPLogic.hh"
+#include "CookieStore.hh"
 #include "c4Replicator.h"
 #include "c4Socket+Internal.hh"
 #include "c4.hh"
+#include "Error.hh"
 #include "StringUtil.hh"
 #include "ThreadUtil.hh"
 #include "sockpp/mbedtls_context.h"
@@ -34,9 +36,10 @@ using namespace litecore::websocket;
 void C4RegisterBuiltInWebSocket() {
     repl::C4SocketImpl::registerInternalFactory([](websocket::URL url,
                                                    websocket::Role role,
-                                                   fleece::alloc_slice options) -> WebSocketImpl*
+                                                   fleece::alloc_slice options,
+                                                   C4Database *database) -> WebSocketImpl*
                                                 {
-        return new BuiltInWebSocket(url, role, fleece::AllocedDict(options));
+        return new BuiltInWebSocket(url, role, fleece::AllocedDict(options), database);
     });
 }
 
@@ -56,8 +59,10 @@ namespace litecore { namespace websocket {
 
     BuiltInWebSocket::BuiltInWebSocket(const URL &url,
                                        Role role,
-                                       const fleece::AllocedDict &options)
+                                       const fleece::AllocedDict &options,
+                                       C4Database *database)
     :WebSocketImpl(url, role, options, true)
+    ,_database(c4db_retain(database))
     ,_readBuffer(kReadBufferSize)
     {
         slice pinnedCert = options[kC4ReplicatorOptionPinnedServerCert].asData();
@@ -139,35 +144,10 @@ namespace litecore { namespace websocket {
     }
 
 
-    bool BuiltInWebSocket::configureProxy(HTTPLogic &logic, Dict proxyOpt) {
-        if (!proxyOpt)
-            return true;
-        slice typeStr = proxyOpt[kC4ReplicatorProxyType].asString();
-        if (typeStr == nullslice || typeStr == slice(kC4ProxyTypeNone)) {
-            logic.setProxy({});
-        } else {
-            ProxyType type;
-            if (typeStr == slice(kC4ProxyTypeHTTP))
-                type = ProxyType::HTTP;
-            else if (typeStr == slice(kC4ProxyTypeCONNECT))
-                type = ProxyType::CONNECT;
-            else
-                return false;
-            Dict auth = proxyOpt[kC4ReplicatorProxyAuth].asDict();
-            if (auth)
-                return false; // TODO: Proxy auth
-            try {
-                ProxySpec proxy {type, Address(proxyOpt[kC4ReplicatorProxyURL].asString())};
-                logic.setProxy(proxy);
-            } catch (...) {return false;}   // Address constructor throws on invalid URL
-        }
-        return true;
-    }
-
-
     unique_ptr<ClientSocket> BuiltInWebSocket::_connectLoop() {
         Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
         HTTPLogic logic {Address(url()), Headers(headers)};
+        logic.setCookieProvider(this);
         logic.setWebSocketProtocol(options()[kC4SocketOptionWSProtocols].asString());
 
         if (!configureProxy(logic, options()[kC4ReplicatorOptionProxyServer].asDict())) {
@@ -217,6 +197,57 @@ namespace litecore { namespace websocket {
                     return nullptr;
             }
         }
+    }
+
+
+    bool BuiltInWebSocket::configureProxy(HTTPLogic &logic, Dict proxyOpt) {
+        if (!proxyOpt)
+            return true;
+        slice typeStr = proxyOpt[kC4ReplicatorProxyType].asString();
+        if (typeStr == nullslice || typeStr == slice(kC4ProxyTypeNone)) {
+            logic.setProxy({});
+        } else {
+            ProxyType type;
+            if (typeStr == slice(kC4ProxyTypeHTTP))
+                type = ProxyType::HTTP;
+            else if (typeStr == slice(kC4ProxyTypeCONNECT))
+                type = ProxyType::CONNECT;
+            else
+                return false;
+            Dict auth = proxyOpt[kC4ReplicatorProxyAuth].asDict();
+            if (auth) {
+                Warn("BuiltInWebSocket: Proxy auth is unimplemented");
+                return false; // TODO: Proxy auth
+            }
+            try {
+                ProxySpec proxy {type, Address(proxyOpt[kC4ReplicatorProxyURL].asString())};
+                logic.setProxy(proxy);
+            } catch (...) {return false;}   // Address constructor throws on invalid URL
+        }
+        return true;
+    }
+
+
+    alloc_slice BuiltInWebSocket::cookiesForRequest(const Address &addr) {
+        alloc_slice cookies(c4db_getCookies(_database, addr, nullptr));
+
+        slice cookiesOption = options()[kC4ReplicatorOptionCookies].asString();
+        if (cookiesOption) {
+            Address dstAddr(url());
+            Cookie ck(string(cookiesOption),
+                      string(slice(dstAddr.hostname)), string(slice(dstAddr.path)));
+            if (ck.valid() && ck.matches(addr) && !ck.expired()) {
+                if (cookies)
+                    cookies.append("; "_sl);
+                cookies.append(cookiesOption);
+            }
+        }
+        return cookies;
+    }
+
+
+    void BuiltInWebSocket::setCookie(const Address &addr, slice cookieHeader) {
+        c4db_setCookie(_database, cookieHeader, addr.hostname, addr.path, nullptr);
     }
 
 

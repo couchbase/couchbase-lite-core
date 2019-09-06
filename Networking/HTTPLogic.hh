@@ -48,6 +48,16 @@ namespace litecore { namespace net {
         /// Sets the request headers.
         void setHeaders(const websocket::Headers &requestHeaders);
 
+        class CookieProvider {
+        public:
+            virtual ~CookieProvider() = default;
+            virtual alloc_slice cookiesForRequest(const Address&) =0;
+            virtual void setCookie(const Address&, slice cookieHeader) =0;
+        };
+
+        /// Registers an object that manages HTTP cookies.
+        void setCookieProvider(CookieProvider *cp)                  {_cookieProvider = cp;}
+
         // -------- Proxies:
 
         /// Specifies a proxy server to use.
@@ -145,6 +155,7 @@ namespace litecore { namespace net {
         int64_t _contentLength {-1};
         alloc_slice _userAgent;
         alloc_slice _authHeader;
+        CookieProvider* _cookieProvider {nullptr};
         nonstd::optional<ProxySpec> _proxy;
 
         static nonstd::optional<ProxySpec> sDefaultProxy;

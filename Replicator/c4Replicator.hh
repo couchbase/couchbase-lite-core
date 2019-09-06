@@ -82,6 +82,7 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                                  CreateWebSocket(effectiveURL(serverAddress, remoteDatabaseName),
                                                  Role::Client,
                                                  socketOpts(db, serverAddress, params),
+                                                 db,
                                                  params.socketFactory),
                                  *this,
                                  replOpts(params)),
