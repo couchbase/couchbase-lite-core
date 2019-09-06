@@ -118,6 +118,11 @@ namespace litecore {
     /** Converts an ASCII string to lowercase, in place. */
     void toLowercase(std::string &);
 
+    static inline std::string lowercase(std::string str) {
+        toLowercase(str);
+        return str;
+    }
+
     //////// UNICODE_AWARE FUNCTIONS:
 
     /** Returns true if the UTF-8 encoded slice contains no characters with code points < 32. */

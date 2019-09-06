@@ -151,31 +151,33 @@ namespace litecore { namespace net {
         string provisionalName;
         int i = 0;
         for (; match != end; ++match, ++i) {
-            string key = (*match)[1];
+            string key = lowercase((*match)[1]);
             string val = (*match)[2];
             if (i == 0) {
                 provisionalName = key;
                 if (hasPrefix(val,"\"") && hasSuffix(val, "\""))
                     val = val.substr(1, val.size()-2);
                 value = val;
-            } else if (key == "Domain") {
+            } else if (key == "domain") {
+                while (!val.empty() && val[0] == '.')
+                    val.erase(0, 1);
                 if (!Address::domainContains(fromHost, val)) {
                     Warn("Cookie Domain isn't legal");
                     return;
                 }
                 domain = val;
-            } else if (key == "Path") {
+            } else if (key == "path") {
                 path = val;
-            } else if (key == "Secure") {
+            } else if (key == "secure") {
                 secure = true;
-            } else if (key == "Expires") {
+            } else if (key == "expires") {
                 if (expires == 0) {
                     expires = parse_gmt_time(val.c_str());
                     if(expires == 0) {
                         return;
                     }
                 }
-            } else if (key == "Max-Age") {
+            } else if (key == "max-age") {
                 char *valEnd = &val[val.size()];
                 long maxAge = strtol(&val[0], &valEnd, 10);
                 if (valEnd != &val[val.size()] || val.size() == 0) {
