@@ -20,11 +20,9 @@
 #include "Headers.hh"
 #include "HTTPLogic.hh"
 #include "WebSocketInterface.hh"
-#include "SecureDigest.hh"
 #include "SecureRandomize.hh"
 #include "Error.hh"
 #include "StringUtil.hh"
-#include "fleece/Fleece.hh"
 #include "mbedtls/error.h"
 #include "mbedtls/ssl.h"
 #include "sockpp/exception.h"
@@ -32,10 +30,13 @@
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tls_socket.h"
 #include "make_unique.h"
+#include "PlatformIO.hh"
 #include <regex>
 #include <string>
-#include <sstream>
 #include <mutex>
+#ifndef _WIN32
+#define cbl_strerror strerror
+#endif
 
 namespace litecore { namespace net {
     using namespace std;
@@ -45,6 +46,77 @@ namespace litecore { namespace net {
 
 
     static int lastSocketsError();
+
+
+#ifdef _WIN32
+    static string cbl_strerror(int err) {
+        if(err < sys_nerr) {
+            // As of Windows 10, only errors 0 - 42 have a message in strerror
+            return strerror(err);
+        }
+
+        // Hope the POSIX definitions don't change...
+        if(err < 100 || err > 140) {
+            return "Unknown Error";
+        }
+
+        static long wsaEquivalent[] = {
+            WSAEADDRINUSE,
+            WSAEADDRNOTAVAIL,
+            WSAEAFNOSUPPORT,
+            WSAEALREADY,
+            0,
+            WSAECANCELLED,
+            WSAECONNABORTED,
+            WSAECONNREFUSED,
+            WSAECONNRESET,
+            WSAEDESTADDRREQ,
+            WSAEHOSTUNREACH,
+            0,
+            WSAEINPROGRESS,
+            WSAEISCONN,
+            WSAELOOP,
+            WSAEMSGSIZE,
+            WSAENETDOWN,
+            WSAENETRESET,
+            WSAENETUNREACH,
+            WSAENOBUFS,
+            0,
+            0,
+            0,
+            WSAENOPROTOOPT,
+            0,
+            0,
+            WSAENOTCONN,
+            0,
+            WSAENOTSOCK,
+            0,
+            WSAEOPNOTSUPP,
+            0,
+            0,
+            0,
+            0,
+            WSAEPROTONOSUPPORT,
+            WSAEPROTOTYPE,
+            0,
+            WSAETIMEDOUT,
+            0,
+            WSAEWOULDBLOCK
+        };
+
+        const long equivalent = wsaEquivalent[err - 100];
+        if(equivalent == 0) {
+            return "Unknown Error";
+        }
+
+        char buf[1024];
+        buf[0] = '\x0';
+        FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			nullptr, equivalent, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			buf, sizeof(buf), nullptr);
+        return string(buf);
+    }
+#endif
 
     static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
 
@@ -418,7 +490,7 @@ namespace litecore { namespace net {
             writeable = FD_ISSET(sockfd, &writeSet);
             message   = 0;
             if (FD_ISSET(_interruptReadFD, &readSet))
-                ::read(_interruptReadFD, &message, sizeof(message));
+                cbl_read(_interruptReadFD, &message, sizeof(message));
         }
 
         LOG(Debug, "...after waitForIO: readable=%d, writeable=%d, interruption=%d",
@@ -431,7 +503,7 @@ namespace litecore { namespace net {
         if (!createInterruptPipe())
             return false;
         LOG(Debug, "Interrupting waitForIO with %d", message);
-        if (::write(_interruptWriteFD, &message, sizeof(message)) < 0) {
+        if (cbl_write(_interruptWriteFD, &message, sizeof(message)) < 0) {
             setError(POSIXDomain, lastSocketsError());
             return false;
         }
@@ -518,6 +590,9 @@ namespace litecore { namespace net {
     static int socketToPosixErrCode(int err) {
 #ifdef WIN32
         static constexpr struct {long fromErr; int toErr;} kWSAToPosixErr[] = {
+            {WSA_INVALID_HANDLE, EBADF},
+            {WSA_NOT_ENOUGH_MEMORY, ENOMEM},
+            {WSA_INVALID_PARAMETER, EINVAL},
             {WSAECONNREFUSED, ECONNREFUSED},
             {WSAEADDRINUSE, EADDRINUSE},
             {WSAEADDRNOTAVAIL, EADDRNOTAVAIL},
@@ -543,16 +618,19 @@ namespace litecore { namespace net {
             {WSAEPROTOTYPE, EPROTOTYPE},
             {WSAENOPROTOOPT, ENOPROTOOPT},
             {WSAEPROTONOSUPPORT, EPROTONOSUPPORT},
-            {WSAEPFNOSUPPORT, EPROTONOSUPPORT},
             {0, 0}
         };
+
         for(int i = 0; kWSAToPosixErr[i].fromErr != 0; ++i) {
             if(kWSAToPosixErr[i].fromErr == err) {
                 //Log("Mapping WSA error %d to POSIX %d", err, kWSAToPosixErr[i].toErr);
                 return kWSAToPosixErr[i].toErr;
             }
         }
-        Warn("No mapping for WSA error %d", err);
+
+        if(err >= WSAEINTR) {
+            Warn("No mapping for WSA error %d", err);
+        }
 #endif
         return err;
     }
@@ -579,7 +657,8 @@ namespace litecore { namespace net {
         Assert(err != 0);
         if (err > 0) {
             err = socketToPosixErrCode(err);
-            LOG(Warning, "TCPSocket got POSIX error %d \"%s\"", err, strerror(err));
+            string errStr = cbl_strerror(err);
+            LOG(Warning, "TCPSocket got POSIX error %d \"%s\"", err, errStr.c_str());
             setError(POSIXDomain, err);
         } else {
             // Negative errors are assumed to be from mbedTLS.

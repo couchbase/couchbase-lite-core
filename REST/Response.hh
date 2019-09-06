@@ -33,7 +33,7 @@ namespace litecore { namespace crypto {
 } }
 namespace litecore { namespace net {
     class HTTPLogic;
-    class ProxySpec;
+    struct ProxySpec;
 } }
 namespace sockpp {
     class mbedtls_context;
