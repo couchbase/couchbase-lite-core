@@ -81,8 +81,6 @@ namespace c4Internal {
 
         Transaction& transaction() const;
 
-        // Transaction methods below acquire _transactionMutex. Do not call them if
-        // _mutex is already locked, or deadlock may occur!
         void beginTransaction();
         void endTransaction(bool commit);
 
