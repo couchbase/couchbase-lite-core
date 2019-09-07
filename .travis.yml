@@ -20,10 +20,10 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - g++-8
+            - g++-9
       env: 
-        - CXX_COMPILER=g++-8
-        - C_COMPILER=gcc-8
+        - CXX_COMPILER=g++-9
+        - C_COMPILER=gcc-9
     - compiler: clang
       addons:
         apt:
