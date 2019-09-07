@@ -30,14 +30,15 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-3.9
+            - llvm-toolchain-trusty-7
           packages:
             - clang-3.9
-            - libc++-3.9-dev
-            - libc++abi-3.9-dev
+            - libc++-7-dev
+            - libc++abi-7-dev
       env: 
         - CXX_COMPILER=clang++-3.9
         - C_COMPILER=clang-3.9
-        - PATH=/usr/lib/llvm-3.9/bin:/usr/lib/llvm-3.9/include/:$PATH
+        - PATH=/usr/lib/llvm-7/bin:/usr/lib/llvm-7/include/:$PATH
     - compiler: clang
       addons:
         apt:
