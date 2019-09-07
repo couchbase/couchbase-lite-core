@@ -33,8 +33,7 @@ namespace litecore { namespace websocket {
 
     static constexpr size_t kSendBufferSize = 64 * 1024;
 
-    // Timeout for WebSocket connection (until HTTP response received)
-    static constexpr auto kConnectTimeout = chrono::seconds(10000/*15 TEMP*/);
+    constexpr long WebSocketImpl::kConnectTimeoutSecs;
 
     // Default interval at which to send PING messages (configurable via options)
     static constexpr auto kDefaultHeartbeatInterval = chrono::seconds(5 * 60);
@@ -94,7 +93,7 @@ namespace litecore { namespace websocket {
 
     void WebSocketImpl::connect() {
         logInfo("Connecting...");
-        startResponseTimer(kConnectTimeout);
+        startResponseTimer(chrono::seconds(kConnectTimeoutSecs));
     }
 
 

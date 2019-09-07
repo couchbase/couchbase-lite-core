@@ -20,6 +20,7 @@
 #include "WebSocketInterface.hh"
 #include "Logging.hh"
 #include "Stopwatch.hh"
+#include <chrono>
 #include <cstdlib>
 #include <memory>
 #include <mutex>
@@ -62,6 +63,9 @@ namespace litecore { namespace websocket {
         const fleece::AllocedDict& options() const   {return _options;}
 
     protected:
+        // Timeout for WebSocket connection (until HTTP response received)
+        static constexpr long kConnectTimeoutSecs = 15;
+
         virtual ~WebSocketImpl();
         virtual std::string loggingIdentifier() const override;
         void protocolError();
