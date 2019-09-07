@@ -27,13 +27,11 @@ matrix:
       env: 
         - CXX_COMPILER=clang++-8
         - C_COMPILER=clang-8
+        - PATH=/usr/lib/llvm-8/bin:$PATH
 
 before_script:
   - uname -a
   - cmake --version
-  - export PATH=/usr/lib/llvm-7/bin:$PATH
-  - mkdir -p build_cmake/unix/tlm/deps
-  - ln -s /usr/lib/llvm-7 build_cmake/unix/tlm/deps/libcxx.exploded
   - $C_COMPILER --version
 script:
-  - ./build_cmake/scripts/build_unix.sh
+  - CC=$C_COMPILER CXX=$CXX_COMPILER ./build_cmake/scripts/build_unix.sh
