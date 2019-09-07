@@ -10,10 +10,34 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
+            - g++-5
+      env: 
+        - CXX_COMPILER=g++-5
+        - C_COMPILER=gcc-5
+    - compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
             - g++-8
       env: 
         - CXX_COMPILER=g++-8
         - C_COMPILER=gcc-8
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-3.9
+          packages:
+            - clang-3.9
+            - libc++-3.9-dev
+            - libc++abi-3.9-dev
+      env: 
+        - CXX_COMPILER=clang++-3.9
+        - C_COMPILER=clang-3.9
+        - PATH=/usr/lib/llvm-3.9/bin:/usr/lib/llvm-3.9/include/:$PATH
     - compiler: clang
       addons:
         apt:
