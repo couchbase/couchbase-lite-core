@@ -8,13 +8,5 @@ pushd $SCRIPT_DIR/..
 mkdir -p unix
 pushd unix
 core_count=`getconf _NPROCESSORS_ONLN`
-CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ../..
+cmake -DCMAKE_BUILD_TYPE=MinSizeRel ../..
 make -j `expr $core_count + 1`
-if [ -d "couchbase-lite-core" ]; then
-    # Enterprise Edition
-    ../scripts/strip.sh `pwd`/couchbase-lite-core
-else
-    ../scripts/strip.sh `pwd`
-fi
-popd
-popd
