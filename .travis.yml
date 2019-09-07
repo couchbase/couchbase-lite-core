@@ -27,7 +27,7 @@ matrix:
       env: 
         - CXX_COMPILER=clang++-8
         - C_COMPILER=clang-8
-        - PATH=/usr/lib/llvm-8/bin:$PATH
+        - PATH=/usr/lib/llvm-8/bin:/usr/lib/llvm-8/include/c++/v1/:$PATH
 
 before_script:
   - uname -a
