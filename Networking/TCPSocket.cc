@@ -120,6 +120,12 @@ namespace litecore { namespace net {
 
     static constexpr size_t kInitialDelimitedReadBufferSize = 1024;
 
+
+    static chrono::microseconds secsToMicrosecs(double secs) {
+        return chrono::microseconds(long(secs * 1e6));
+    }
+
+
     void TCPSocket::initialize() {
         static once_flag f;
         call_once(f, [=] {
@@ -155,7 +161,10 @@ namespace litecore { namespace net {
     bool TCPSocket::setSocket(unique_ptr<stream_socket> socket) {
         Assert(!_socket);
         _socket = move(socket);
-        return checkSocketFailure();
+        if (!checkSocketFailure())
+            return false;
+        _setTimeout(_timeout);
+        return true;
     }
 
     tls_context* TCPSocket::TLSContext() {
@@ -169,10 +178,9 @@ namespace litecore { namespace net {
         string hostnameStr(hostname);
         _wrappedSocket = _socket.get();
         auto oldSocket = move(_socket);
-        _socket = TLSContext()->wrap_socket(move(oldSocket),
+        return setSocket(TLSContext()->wrap_socket(move(oldSocket),
                                             (isClient ? tls_context::CLIENT : tls_context::SERVER),
-                                            hostnameStr.c_str());
-        return checkSocketFailure();
+                                            hostnameStr.c_str()));
     }
 
 
@@ -200,7 +208,9 @@ namespace litecore { namespace net {
         // sockpp constructors can throw exceptions.
         try {
             string hostname(slice(addr.hostname));
-            return setSocket(make_unique<tcp_connector>(inet_address{hostname, addr.port}))
+            auto socket = make_unique<tcp_connector>();
+            socket->connect(inet_address{hostname, addr.port}, secsToMicrosecs(timeout()));
+            return setSocket(move(socket))
                 && (!addr.isSecure() || wrapTLS(addr.hostname));
 
         } catch (const sockpp::sys_error &sx) {
@@ -255,7 +265,7 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write(data.buf, data.size);
         if (written < 0) {
-            if (_socket->last_error() == kErrWouldBlock)
+            if (!_blocking && _socket->last_error() == kErrWouldBlock)
                 return 0;
             checkStreamError();
         } else if (written == 0) {
@@ -270,7 +280,7 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
         if (written < 0) {
-            if (_socket->last_error() == kErrWouldBlock)
+            if (!_blocking && _socket->last_error() == kErrWouldBlock)
                 return 0;
             checkStreamError();
         }
@@ -446,9 +456,27 @@ namespace litecore { namespace net {
 #pragma mark - NONBLOCKING / SELECT:
 
 
+    bool TCPSocket::setTimeout(double secs) {
+        if (secs == _timeout)
+            return true;
+        if (_socket && !_setTimeout(secs))
+            return false;
+        _timeout = secs;
+        return true;
+    }
+
+
+    bool TCPSocket::_setTimeout(double secs) {
+        std::chrono::microseconds us = secsToMicrosecs(secs);
+        return _socket->read_timeout(us) && _socket->write_timeout(us);
+    }
+
+
     bool TCPSocket::setBlocking(bool blocking) {
         bool ok = _socket->set_blocking(blocking);
-        if (!ok)
+        if (ok)
+            _blocking = blocking;
+        else
             checkStreamError();
         return ok;
     }
@@ -659,7 +687,10 @@ namespace litecore { namespace net {
             err = socketToPosixErrCode(err);
             string errStr = cbl_strerror(err);
             LOG(Warning, "TCPSocket got POSIX error %d \"%s\"", err, errStr.c_str());
-            setError(POSIXDomain, err);
+            if (err == EWOULDBLOCK)     // Occurs in blocking mode when I/O times out
+                setError(NetworkDomain, kC4NetErrTimeout);
+            else
+                setError(POSIXDomain, err);
         } else {
             // Negative errors are assumed to be from mbedTLS.
             char msgbuf[100];

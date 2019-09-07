@@ -93,6 +93,7 @@ namespace litecore { namespace REST {
         Response& setBody(fleece::slice body);
         Response& setPinnedCert(crypto::Cert *pinnedServerCert NONNULL);
         Response& setProxy(const net::ProxySpec&);
+        Response& setTimeout(double timeoutSecs)        {_timeout = timeoutSecs; return *this;}
 
         bool run();
 
@@ -110,6 +111,7 @@ namespace litecore { namespace REST {
         }
 
     private:
+        double _timeout {0};
         std::unique_ptr<net::HTTPLogic> _logic;
         std::unique_ptr<sockpp::mbedtls_context> _tlsContext;
         fleece::alloc_slice _requestBody;

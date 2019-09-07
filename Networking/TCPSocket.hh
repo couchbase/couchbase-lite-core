@@ -51,6 +51,9 @@ namespace litecore { namespace net {
 
         C4Error error() const                   {return _error;}
 
+        bool setTimeout(double secs);
+        double timeout() const                  {return _timeout;}
+        
         bool setBlocking(bool);
 
         using interruption_t = uint8_t;
@@ -118,9 +121,13 @@ namespace litecore { namespace net {
         void pushUnread(slice);
 
     private:
+        bool _setTimeout(double secs);
+        
         std::unique_ptr<sockpp::stream_socket> _socket;
         sockpp::stream_socket* _wrappedSocket = nullptr;
         sockpp::tls_context* _tlsContext = nullptr;
+        bool _blocking {true};
+        double _timeout {0};
         C4Error _error {};
         fleece::alloc_slice _unread;        // Data read from socket that's been "pushed back"
         size_t _unreadLen {0};              // Length of valid data in _unread

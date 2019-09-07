@@ -105,3 +105,34 @@ N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Redirect Authorized", "[.SyncServer
     _authHeader = HTTPLogic::basicAuth("pupshaw"_sl, "frank"_sl);
     alloc_slice result = sendRemoteRequest("GET", "/seekrit", nullslice);
 }
+
+
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Connection Refused", "[.SyncServer][REST]") {
+    //ExpectingExceptions x;
+    _address.hostname = C4STR("localhost");
+    _address.port = 1;  // wrong port!
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("GET", "", &status, &error);
+    CHECK(error == (C4Error{POSIXDomain, ECONNREFUSED}));
+}
+
+
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Unknown Host", "[.SyncServer][REST]") {
+    ExpectingExceptions x;
+    _address.hostname = C4STR("qux.ftaghn.miskatonic.edu");
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("GET", "", &status, &error);
+    CHECK(error == (C4Error{NetworkDomain, kC4NetErrUnknownHost}));
+}
+
+
+N_WAY_TEST_CASE_METHOD(RESTClientTest, "HTTP Timeout", "[.SyncServer][REST]") {
+    ExpectingExceptions x;
+    _address.hostname = C4STR("10.1.99.99");
+    HTTPStatus status;
+    C4Error error;
+    sendRemoteRequest("GET", "", &status, &error);
+    CHECK(error == (C4Error{POSIXDomain, ETIMEDOUT}));
+}

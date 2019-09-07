@@ -89,7 +89,8 @@ namespace litecore { namespace websocket {
 
     void BuiltInWebSocket::closeSocket() {
         logVerbose("closeSocket");
-        _socket->interruptWait(kCloseInterrupt);
+        if (_socket)
+            _socket->interruptWait(kCloseInterrupt);
     }
 
 
@@ -160,11 +161,14 @@ namespace litecore { namespace websocket {
         unique_ptr<ClientSocket> socket;
         HTTPLogic::Disposition lastDisposition = HTTPLogic::kFailure;
         while (true) {
-            if (lastDisposition != HTTPLogic::kContinue)
+            if (lastDisposition != HTTPLogic::kContinue) {
                 socket = make_unique<ClientSocket>(_tlsContext.get());
+                socket->setTimeout(kConnectTimeoutSecs);
+            }
             switch (logic.sendNextRequest(*socket)) {
                 case HTTPLogic::kSuccess:
                     gotHTTPResponse(int(logic.status()), logic.responseHeaders());
+                    socket->setTimeout(0);
                     return socket;
                 case HTTPLogic::kRetry:
                     break; // redirected; go around again

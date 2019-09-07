@@ -124,8 +124,10 @@ namespace litecore { namespace REST {
             unique_ptr<ClientSocket> socket;
             HTTPLogic::Disposition disposition = HTTPLogic::kFailure;
             do {
-                if (disposition != HTTPLogic::kContinue)
+                if (disposition != HTTPLogic::kContinue) {
                     socket = make_unique<ClientSocket>(_tlsContext.get());
+                    socket->setTimeout(_timeout);
+                }
                 disposition = _logic->sendNextRequest(*socket, _requestBody);
                 switch (disposition) {
                     case HTTPLogic::kSuccess:
