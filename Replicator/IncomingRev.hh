@@ -70,7 +70,7 @@ namespace litecore { namespace repl {
         int _peerError {0};
         alloc_slice _remoteSequence;
         uint32_t _serialNumber {0};
-        bool _provisionallyInserted {false};
+        std::atomic<bool> _provisionallyInserted {false};
     };
 
 } }
