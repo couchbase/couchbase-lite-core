@@ -64,13 +64,7 @@ namespace litecore { namespace websocket {
     :WebSocketImpl(url, role, options, true)
     ,_database(c4db_retain(database))
     ,_readBuffer(kReadBufferSize)
-    {
-        slice pinnedCert = options[kC4ReplicatorOptionPinnedServerCert].asData();
-        if (pinnedCert) {
-            _tlsContext.reset(new sockpp::mbedtls_context);
-            _tlsContext->allow_only_certificate(string(pinnedCert));
-        }
-    }
+    { }
 
 
     BuiltInWebSocket::~BuiltInWebSocket() {
@@ -146,6 +140,18 @@ namespace litecore { namespace websocket {
 
 
     unique_ptr<ClientSocket> BuiltInWebSocket::_connectLoop() {
+        // Custom TLS context:
+        slice rootCerts = options()[kC4ReplicatorOptionRootCerts].asData();
+        slice pinnedCert = options()[kC4ReplicatorOptionPinnedServerCert].asData();
+        if (rootCerts || pinnedCert) {
+            _tlsContext.reset(new sockpp::mbedtls_context);
+            if (rootCerts)
+                _tlsContext->set_root_certs(string(rootCerts));
+            if (pinnedCert)
+                _tlsContext->allow_only_certificate(string(pinnedCert));
+        }
+
+        // Create the HTTPLogic object:
         Dict headers = options()[kC4ReplicatorOptionExtraHeaders].asDict();
         HTTPLogic logic {Address(url()), Headers(headers)};
         logic.setCookieProvider(this);
@@ -157,6 +163,7 @@ namespace litecore { namespace websocket {
             return nullptr;
         }
 
+        // Now send the HTTP request(s):
         bool usedAuth = false;
         unique_ptr<ClientSocket> socket;
         HTTPLogic::Disposition lastDisposition = HTTPLogic::kFailure;

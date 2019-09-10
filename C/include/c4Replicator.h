@@ -241,6 +241,7 @@ extern "C" {
     #define kC4ReplicatorOptionCookies          "cookies"  ///< HTTP Cookie header value (string)
     #define kC4ReplicatorOptionAuthentication   "auth"     ///< Auth settings (Dict); see below
     #define kC4ReplicatorOptionProxyServer      "proxy"    ///< Proxy settings (Dict); see below
+    #define kC4ReplicatorOptionRootCerts        "rootCerts"  ///< Trusted root certs (data)
     #define kC4ReplicatorOptionPinnedServerCert "pinnedCert"  ///< Cert or public key (data)
     #define kC4ReplicatorOptionDocIDs           "docIDs"   ///< Docs to replicate (string[])
     #define kC4ReplicatorOptionChannels         "channels" ///< SG channel names (string[])
