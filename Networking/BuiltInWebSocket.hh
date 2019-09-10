@@ -32,9 +32,11 @@ namespace litecore { namespace websocket {
         static void registerWithReplicator();
 
         BuiltInWebSocket(const URL &url,
-                         Role role,
                          const fleece::AllocedDict &options,
                          C4Database *database);
+
+        BuiltInWebSocket(const URL &url,
+                         std::unique_ptr<net::ResponderSocket>);
 
         virtual void connect() override;
 
@@ -52,7 +54,8 @@ namespace litecore { namespace websocket {
         virtual void setCookie(const net::Address&, fleece::slice cookieHeader) override;
 
     private:
-        void _connect();
+        void run();
+        void setThreadName();
         bool configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
         std::unique_ptr<net::ClientSocket> _connectLoop()MUST_USE_RESULT;
         void ioLoop();

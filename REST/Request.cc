@@ -343,26 +343,6 @@ namespace litecore { namespace REST {
         if (_finished)
             return;
 
-#if 0
-        if (_upgradedWS) {
-            // This is a WebSocket upgrade request; handle success/failure:
-            if (IsSuccess(_status)) {
-                // Upgrade successful -- detach myself from libwebsockets:
-                _upgradedWS->upgraded();
-                _upgradedWS = nullptr;
-                _client = nullptr;
-                _finished = true;
-                return; // LWSServerWebSocket is taking over, so don't do any more
-            } else {
-                // Upgrade failed; after returning status, LWS will disconnect:
-                _upgradedWS->canceled();
-                _upgradedWS = nullptr;
-                setEventResult(1);
-                // Keep going, to send the error response...
-            }
-        }
-#endif
-
         if (_jsonEncoder) {
             alloc_slice json = _jsonEncoder->finish();
             write(json);
@@ -382,5 +362,36 @@ namespace litecore { namespace REST {
         _finished = true;
     }
 
+
+    bool RequestResponse::isValidWebSocketRequest() {
+        return header("Connection").caseEquivalent("upgrade"_sl)
+            && header("Upgrade").caseEquivalent("websocket"_sl)
+            && header("Sec-WebSocket-Version").readDecimal() >= 13
+            && header("Sec-WebSocket-Key").size >= 10;
+    }
+
+
+    void RequestResponse::sendWebSocketResponse(const string &protocol) {
+        string nonce(header("Sec-WebSocket-Key"));
+        setStatus(HTTPStatus::Upgraded, "Upgraded");
+        setHeader("Connection", "Upgrade");
+        setHeader("Upgrade", "websocket");
+        setHeader("Sec-WebSocket-Accept",
+                  HTTPLogic::webSocketKeyResponse(nonce).c_str());
+        if (!protocol.empty())
+            setHeader("Sec-WebSocket-Protocol", protocol.c_str());
+        finish();
+    }
+
+
+    unique_ptr<ResponderSocket> RequestResponse::extractSocket() {
+        finish();
+        return move(_socket);
+    }
+
+
+    string RequestResponse::peerAddress() {
+        return _socket->peerAddress();
+    }
 
 } }

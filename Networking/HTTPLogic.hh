@@ -136,6 +136,9 @@ namespace litecore { namespace net {
         /// Converts CRLF to \n and stops at the end of the headers (before the blank line).
         static std::string formatHTTP(slice http);
 
+        /// Given a "Sec-WebSocket-Key" header value, returns the "Sec-WebSocket-Accept" value.
+        static std::string webSocketKeyResponse(const std::string &nonce);
+
     private:
         Disposition failure(C4ErrorDomain domain, int code, slice message =fleece::nullslice);
         Disposition failure(ClientSocket&);

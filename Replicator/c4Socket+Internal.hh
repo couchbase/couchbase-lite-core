@@ -27,7 +27,6 @@ namespace litecore { namespace repl {
 
     // Main factory function to create a WebSocket.
     fleece::Retained<websocket::WebSocket> CreateWebSocket(websocket::URL,
-                                                           websocket::Role,
                                                            fleece::alloc_slice options,
                                                            C4Database* NONNULL,
                                                            const C4SocketFactory*,
@@ -44,7 +43,6 @@ namespace litecore { namespace repl {
         static const C4SocketFactory& registeredFactory();
 
         using InternalFactory = websocket::WebSocketImpl* (*)(websocket::URL,
-                                                              websocket::Role,
                                                               fleece::alloc_slice options,
                                                               C4Database* NONNULL);
         static void registerInternalFactory(InternalFactory);

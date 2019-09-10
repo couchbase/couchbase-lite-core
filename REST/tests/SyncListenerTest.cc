@@ -58,13 +58,11 @@ public:
 };
 
 
-#if 0 // TODO: Re-enable when RESTSyncListener is re-implemented
 TEST_CASE_METHOD(C4SyncListenerTest, "P2P Sync", "[Push][C]") {
     importJSONLines(sFixturesDir + "names_100.json");
     start();
     replicate(kC4OneShot, kC4Disabled);
     CHECK(c4db_getDocumentCount(db2) == 100);
 }
-#endif
 
 #endif

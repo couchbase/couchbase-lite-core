@@ -84,6 +84,16 @@ bool c4db_markSynced(C4Database *database,
 #ifdef __cplusplus
 }
 
+namespace litecore { namespace websocket {
+    class WebSocket;
+}}
+
+
+C4Replicator* c4repl_newWithWebSocket(C4Database* db,
+                                      litecore::websocket::WebSocket *openSocket,
+                                      C4ReplicatorParameters params,
+                                      C4Error *outError) C4API;
+
 
 namespace litecore { namespace constants {
     extern const C4Slice kLocalCheckpointStore;

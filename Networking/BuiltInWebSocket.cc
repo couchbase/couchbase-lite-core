@@ -35,11 +35,10 @@ using namespace litecore::websocket;
 
 void C4RegisterBuiltInWebSocket() {
     repl::C4SocketImpl::registerInternalFactory([](websocket::URL url,
-                                                   websocket::Role role,
                                                    fleece::alloc_slice options,
                                                    C4Database *database) -> WebSocketImpl*
                                                 {
-        return new BuiltInWebSocket(url, role, fleece::AllocedDict(options), database);
+        return new BuiltInWebSocket(url, fleece::AllocedDict(options), database);
     });
 }
 
@@ -58,11 +57,18 @@ namespace litecore { namespace websocket {
 
 
     BuiltInWebSocket::BuiltInWebSocket(const URL &url,
-                                       Role role,
                                        const fleece::AllocedDict &options,
                                        C4Database *database)
-    :WebSocketImpl(url, role, options, true)
+    :WebSocketImpl(url, Role::Client, options, true)
     ,_database(c4db_retain(database))
+    ,_readBuffer(kReadBufferSize)
+    { }
+
+
+    BuiltInWebSocket::BuiltInWebSocket(const URL &url,
+                                       unique_ptr<net::ResponderSocket> socket)
+    :WebSocketImpl(url, Role::Server, AllocedDict(), true)
+    ,_socket(socket.release())
     ,_readBuffer(kReadBufferSize)
     { }
 
@@ -76,7 +82,7 @@ namespace litecore { namespace websocket {
         // Spawn a thread to connect and run the read loop:
         WebSocketImpl::connect();
         retain(this);
-        _ioThread = thread(bind(&BuiltInWebSocket::_connect, this));
+        _ioThread = thread(bind(&BuiltInWebSocket::run, this));
         _ioThread.detach();
     }
 
@@ -116,26 +122,38 @@ namespace litecore { namespace websocket {
 
 
     // This runs on its own thread.
-    void BuiltInWebSocket::_connect() {
-        SetThreadName("CBL WebSocket I/O");
-        try {
-            // Connect:
-            auto socket = _connectLoop();
-            if (!socket) {
+    void BuiltInWebSocket::run() {
+        setThreadName();
+
+        if (!_socket) {
+            try {
+                // Connect:
+                auto socket = _connectLoop();
+                if (!socket) {
+                    release(this);
+                    return;
+                }
+
+                _socket = move(socket);
+            } catch (const std::exception &x) {
+                closeWithException(x, "connect");
                 release(this);
                 return;
             }
-
-            _socket = move(socket);
-            onConnect();
-        } catch (const std::exception &x) {
-            closeWithException(x, "connect");
-            release(this);
-            return;
         }
 
-        // OK, now we are connected -- start the loop for I/O:
+        // OK, now we are connected -- notify delegate and start the loop for I/O:
+        onConnect();
         ioLoop();
+    }
+
+
+    void BuiltInWebSocket::setThreadName() {
+        stringstream name;
+        name << "CBL WebSocket " << (role() == Role::Client ? "to " : "from ");
+        Address addr(url());
+        name << addr.hostname << ":" << addr.port;
+        SetThreadName(name.str().c_str());
     }
 
 
@@ -356,6 +374,9 @@ namespace litecore { namespace websocket {
         onWriteComplete(n);
         return true;
     }
+
+
+#pragma mark - ERRORS:
 
 
     void BuiltInWebSocket::closeWithException(const exception &x, const char *where) {

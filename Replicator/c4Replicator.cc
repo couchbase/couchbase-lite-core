@@ -193,10 +193,10 @@ C4Replicator* c4repl_new(C4Database* db,
 }
 
 
-C4Replicator* c4repl_newWithSocket(C4Database* db,
-                                   C4Socket *openSocket,
-                                   C4ReplicatorParameters params,
-                                   C4Error *outError) C4API
+C4Replicator* c4repl_newWithWebSocket(C4Database* db,
+                                      WebSocket *openSocket,
+                                      C4ReplicatorParameters params,
+                                      C4Error *outError) C4API
 {
     try {
         c4::ref<C4Database> dbCopy(c4db_openAgain(db, outError));
@@ -205,12 +205,21 @@ C4Replicator* c4repl_newWithSocket(C4Database* db,
         Retained<C4Replicator> replicator = new C4Replicator(dbCopy, openSocket, params);
         if (!params.dontStart) {
             replicator->start(true);
-            Assert(WebSocketFrom(openSocket)->hasDelegate());
+            Assert(openSocket->hasDelegate());
             Assert(replicator->refCount() > 1);  // Replicator is retained by the socket, will be released on close
         }
         return retain(replicator.get());   // to be balanced by release in c4repl_free()
     } catchError(outError);
     return nullptr;
+}
+
+
+C4Replicator* c4repl_newWithSocket(C4Database* db,
+                                   C4Socket *openSocket,
+                                   C4ReplicatorParameters params,
+                                   C4Error *outError) C4API
+{
+    return c4repl_newWithWebSocket(db, WebSocketFrom(openSocket), params, outError);
 }
 
 

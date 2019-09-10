@@ -26,6 +26,7 @@
 #include "mbedtls/error.h"
 #include "mbedtls/ssl.h"
 #include "sockpp/exception.h"
+#include "sockpp/inet6_address.h"
 #include "sockpp/tcp_acceptor.h"
 #include "sockpp/tcp_connector.h"
 #include "sockpp/tls_socket.h"
@@ -196,6 +197,16 @@ namespace litecore { namespace net {
     }
 
 
+    string TCPSocket::peerAddress() {
+        sock_address_any addr = _socket->peer_address();
+        switch (addr.family()) {
+            case AF_INET:   return ((inet_address&)addr).to_string();
+            case AF_INET6:  return ((inet_address&)addr).to_string();
+            default:        return "???";
+        }
+    }
+
+
 #pragma mark - CLIENT SOCKET:
 
 
@@ -323,6 +334,7 @@ namespace litecore { namespace net {
     // Primitive unbuffered read call. Returns 0 on EOF, -1 on error (and sets _error).
     // Assumes EWOULDBLOCK is not an error, since it happens normally in non-blocking reads.
     ssize_t TCPSocket::_read(void *dst, size_t byteCount) {
+        Assert(byteCount > 0);
         ssize_t n = _socket->read(dst, byteCount);
         if (n < 0) {
             if (_socket->last_error() == kErrWouldBlock)

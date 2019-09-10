@@ -109,6 +109,9 @@ namespace litecore { namespace net {
 
         bool atWriteEOF() const                         {return _eofOnWrite;}
 
+        /// Peer's address: IP address + ":" + port number
+        std::string peerAddress();
+
     protected:
         bool setSocket(std::unique_ptr<sockpp::stream_socket>);
         void setError(C4ErrorDomain, int code, slice message =fleece::nullslice);

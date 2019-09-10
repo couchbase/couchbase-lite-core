@@ -314,13 +314,17 @@ namespace litecore { namespace net {
         }
 
         // Check the returned nonce:
-        SHA1 digest{slice(_webSocketNonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
-        string resultNonce = slice(&digest, sizeof(digest)).base64String();
-        if (_responseHeaders["Sec-Websocket-Accept"_sl] != slice(resultNonce))
+        if (_responseHeaders["Sec-Websocket-Accept"_sl] != slice(webSocketKeyResponse(_webSocketNonce)))
             return failure(WebSocketDomain, kCodeProtocolError,
                            "Server returned invalid nonce"_sl);
 
         return kSuccess;
+    }
+
+
+    string HTTPLogic::webSocketKeyResponse(const string &nonce) {
+        SHA1 digest{slice(nonce + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")};
+        return slice(&digest, sizeof(digest)).base64String();
     }
 
 

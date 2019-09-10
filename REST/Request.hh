@@ -102,10 +102,18 @@ namespace litecore { namespace REST {
         void writeStatusJSON(HTTPStatus status, const char *message =nullptr);
         void writeErrorJSON(C4Error);
 
-//        fleece::Retained<LWSServerWebSocket> upgradeToWebSocket();
-
         // Must be called after everything's written:
         void finish();
+
+        // WebSocket stuff:
+
+        bool isValidWebSocketRequest();
+
+        void sendWebSocketResponse(const std::string &protocol);
+
+        std::unique_ptr<net::ResponderSocket> extractSocket();
+
+        std::string peerAddress();
 
     protected:
         RequestResponse(Server *server, std::unique_ptr<net::ResponderSocket>);
@@ -134,8 +142,6 @@ namespace litecore { namespace REST {
         std::unique_ptr<fleece::JSONEncoder> _jsonEncoder;  // Used for writing JSON to response
         fleece::alloc_slice _responseBody;          // Finished response body
         fleece::slice _unsentBody;                  // Unsent portion of _responseBody
-        bool _upgrading {false};
-//        fleece::Retained<LWSServerWebSocket> _upgradedWS;   // WebSocket I'm upgrading to
         bool _finished {false};                     // Finished configuring the response?
     };
 

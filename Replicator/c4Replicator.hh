@@ -80,7 +80,6 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
                  const C4ReplicatorParameters &params)
     :C4Replicator(new Replicator(db,
                                  CreateWebSocket(effectiveURL(serverAddress, remoteDatabaseName),
-                                                 Role::Client,
                                                  socketOpts(db, serverAddress, params),
                                                  db,
                                                  params.socketFactory),
@@ -111,9 +110,9 @@ struct C4Replicator : public RefCounted, Replicator::Delegate {
 
     // Constructor for already-open socket
     C4Replicator(C4Database* db,
-                 C4Socket *openSocket,
+                 WebSocket *openSocket,
                  const C4ReplicatorParameters &params)
-    :C4Replicator(new Replicator(db, WebSocketFrom(openSocket), *this, replOpts(params)),
+    :C4Replicator(new Replicator(db, openSocket, *this, replOpts(params)),
                   nullptr,
                   params)
     { }
