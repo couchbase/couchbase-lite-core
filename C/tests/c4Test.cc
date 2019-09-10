@@ -29,16 +29,18 @@
 #include "PlatformIO.hh"
 #include <thread>
 #include <mutex>
+#include <chrono>
 
 using namespace std;
-
 
 const std::string& TempDir() {
     static string kTempDir;
 
     static once_flag f;
     call_once(f, [=] {
-        auto temp = litecore::FilePath::tempDirectory()["Litecore_C_Tests/"];
+        char folderName[64];
+        sprintf(folderName, "LiteCore_C_Tests%lld/", chrono::milliseconds(time(nullptr)).count());
+        auto temp = litecore::FilePath::tempDirectory()[folderName];
         temp.mkdir();
         kTempDir = temp.path();
     });

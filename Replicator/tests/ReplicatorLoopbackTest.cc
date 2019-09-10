@@ -52,7 +52,9 @@ TEST_CASE_METHOD(ReplicatorLoopbackTest, "Push replication from prebuilt databas
     _expectedDocumentCount = 0;
 
     FilePath original = db->path();
-    FilePath newPath = FilePath::tempDirectory()["scratch.cblite2/"];
+    char folderName[64];
+    sprintf(folderName, "scratch%lld.cblite2/", chrono::milliseconds(time(nullptr)).count());
+    FilePath newPath = litecore::FilePath::tempDirectory()[folderName];
     string newPathStr = newPath.path();
     CopyPrebuiltDB(original, newPath, &db->config);
     C4DatabaseConfig config = db->config;
