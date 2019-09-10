@@ -113,7 +113,7 @@ private:
             *(dst++) = *(src++) ^ mask[2];
             *(dst++) = *(src++) ^ mask[3];
         }
-        while (length-- > 0)
+        for (; length > 0; --length)
             *(dst++) = *(src++) ^ *(mask++);
     }
 
