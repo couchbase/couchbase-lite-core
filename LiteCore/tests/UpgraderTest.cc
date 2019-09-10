@@ -53,7 +53,7 @@ protected:
         auto srcPath = FilePath(fixturePath);
         TempArray(folderName, char, fixturePath.size() + 32);
         sprintf(folderName, "%lld%s/", chrono::milliseconds(time(nullptr)).count(), srcPath.fileOrDirName().c_str());
-        FilePath dbPath = litecore::FilePath::tempDirectory()[folderName];
+        FilePath dbPath = litecore::FilePath::tempDirectory()[(const char *)folderName];
         dbPath.delRecursive();
         srcPath.copyTo(dbPath);
 
