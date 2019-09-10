@@ -159,8 +159,6 @@
 		278963621D7A376900493096 /* EncryptedStream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963601D7A376900493096 /* EncryptedStream.cc */; };
 		278963641D7A376900493096 /* EncryptedStream.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278963611D7A376900493096 /* EncryptedStream.hh */; };
 		278963671D7B7E7D00493096 /* Stream.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278963661D7B7E7D00493096 /* Stream.cc */; };
-		278B8DD323077A3700DB027F /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
-		278B8DD423077A9B00DB027F /* libLiteCoreWebSocket.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2771A098228624C000B18E0A /* libLiteCoreWebSocket.a */; };
 		278BC9C4228DE92C0055FF09 /* netUtils.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279D40F51EA533D900D8DD9D /* netUtils.cc */; };
 		278BD68B1EEB6756000DBF41 /* DatabaseCookies.cc in Sources */ = {isa = PBXBuildFile; fileRef = 278BD6891EEB6756000DBF41 /* DatabaseCookies.cc */; };
 		278BD68D1EEB6756000DBF41 /* DatabaseCookies.hh in Headers */ = {isa = PBXBuildFile; fileRef = 278BD68A1EEB6756000DBF41 /* DatabaseCookies.hh */; };
@@ -172,7 +170,6 @@
 		2796917C1ED4B5780086565D /* Logging_Stub.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2753AF7C1EBD1BE300C12E98 /* Logging_Stub.cc */; };
 		279691981ED4C3950086565D /* c4Listener+RESTFactory.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279691971ED4C3950086565D /* c4Listener+RESTFactory.cc */; };
 		2796A28423072F7000774850 /* Server.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2728512C1EA46475009CA22F /* Server.cc */; };
-		2796A288230733EE00774850 /* libLiteCoreREST-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27FC81E81EAAB0D90028E38E /* libLiteCoreREST-static.a */; };
 		2797BCB21C10F71700E5C991 /* c4AllDocsPerformanceTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 2797BCAE1C10F69E00E5C991 /* c4AllDocsPerformanceTest.cc */; };
 		2797BCB41C10F76100E5C991 /* libLiteCore-static.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 27EF81121917EEC600A327B9 /* libLiteCore-static.a */; };
 		279976331E94AAD000B27639 /* IncomingBlob.cc in Sources */ = {isa = PBXBuildFile; fileRef = 279976311E94AAD000B27639 /* IncomingBlob.cc */; };
@@ -235,6 +232,7 @@
 		27B64960206975F900FC12F7 /* libc++.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = 27A657BE1CBC1A3D00A7A1D7 /* libc++.tbd */; };
 		27B699DB1F27B50000782145 /* SQLiteN1QLFunctions.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699DA1F27B50000782145 /* SQLiteN1QLFunctions.cc */; };
 		27B699E11F27B85900782145 /* SQLiteFleeceUtil.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27B699E01F27B85900782145 /* SQLiteFleeceUtil.cc */; };
+		27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */ = {isa = PBXBuildFile; fileRef = 276E02101EA9717200FEFE8A /* RESTListenerTest.cc */; };
 		27BF024A1FB62647003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27BF024B1FB62726003D5BB8 /* LibC++Debug.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27BF023C1FB61F5F003D5BB8 /* LibC++Debug.cc */; };
 		27C319EE1A143F5D00A89EDC /* KeyStore.cc in Sources */ = {isa = PBXBuildFile; fileRef = 27C319EC1A143F5D00A89EDC /* KeyStore.cc */; };
@@ -1361,8 +1359,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				278B8DD423077A9B00DB027F /* libLiteCoreWebSocket.a in Frameworks */,
-				2796A288230733EE00774850 /* libLiteCoreREST-static.a in Frameworks */,
 				27DE2EE72125FAD600123597 /* libfleeceBase.a in Frameworks */,
 				27DE2E862125F32700123597 /* libactors.a in Frameworks */,
 				274D04201BA892B100FF7C35 /* libLiteCore.dylib in Frameworks */,
@@ -3272,6 +3268,7 @@
 				272850B51E9BE361009CA22F /* UpgraderTest.cc in Sources */,
 				2761F3F71EEA00C3006D4BB8 /* CookieStoreTest.cc in Sources */,
 				27E19D662316EDEA00E031F8 /* RESTClientTest.cc in Sources */,
+				27B9669723284F2900B2897F /* RESTListenerTest.cc in Sources */,
 				2771991C22724C7100B18E0A /* N1QLParserTest.cc in Sources */,
 				277071D5230B682100F7EB95 /* SyncListenerTest.cc in Sources */,
 				2762A01522EB7CC800F9AB18 /* CertificateTest.cc in Sources */,
@@ -3302,7 +3299,6 @@
 			files = (
 				274D040B1BA75E1C00FF7C35 /* main.cpp in Sources */,
 				2753AF7D1EBD1BE300C12E98 /* Logging_Stub.cc in Sources */,
-				278B8DD323077A3700DB027F /* RESTListenerTest.cc in Sources */,
 				273E9F771C516145003115A6 /* c4.c in Sources */,
 				27F6F51D1BAA0482003FD798 /* c4Test.cc in Sources */,
 				274D040F1BA75E5000FF7C35 /* c4DatabaseTest.cc in Sources */,
