@@ -78,9 +78,7 @@ If you want to use Objective-C or Swift APIs, you should use Couchbase Lite inst
 * Choose _Product>Build_ (for a debug build) or _Product>Build For>Profiling_ (for a release/optimized build).
 * Link the build product `libLiteCoreStatic.a` or `libLiteCore.dylib` into your target.
 
-## Linux, Android
-
-**Note** Android requires CMake 3.7 or higher!
+## Linux
 
 **Important!** LiteCore uses a couple of external libraries, which may or may not be installed in your system already. If not, please install the appropriate development packages via your package manager. You must have the following libraries present:
     
@@ -93,13 +91,39 @@ You'll need **Clang 3.9.1 or higher**. Unfortunately a lot of distros only have 
 
 Once you've got the dependencies and compiler installed, do this from the root directory of the source tree:
 
-    cd build_cmake/scripts
-    ./build_unix.sh
+```sh
+mkdir build_cmake/unix
+cd build_cmake/unix
 
-If CMake's initial configuration checks fail, the setup may be left in a broken state and will then fail immediately. To remedy this:
+# Use whatever clang you have installed
+CC=clang CXX=clang++ cmake -DCMAKE_BUILD_TYPE=MinSizeRel ..
 
-    rm -r ../unix
-    ./build_unix.sh
+# And a reasonable number (# of cores?) for the j flag
+make -j8 LiteCore
+```
+
+If CMake's initial configuration checks fail, the setup may be left in a broken state and will then fail immediately. To remedy this simply delete the `unix` directory and try again.
+
+## Android
+
+Android has a bit longer of a command line invocation but it is the same idea as the Linux build above.  There are some key properties that you need to be aware of though.  
+
+- Architecture:  The architecture of the device being built for (x86, x86_64, armeabi-v7a [in example], arm64-v8a)
+- Version: The minimum Android API level that the library will support (22 in the following)
+
+```sh
+# Use the same name as the architecture being built for (e.g. armeabi-v7a)
+mkdir -p build_cmake/android/lib/armeabi-v7a
+cd build_cmake/android/lib/armeabi-v7a
+cmake -DCMAKE_BUILD_TYPE=MinSizeRel \
+    -DCMAKE_SYSTEM_NAME=Android \
+    -DCMAKE_SYSTEM_VERSION=22 \
+    -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang \
+    -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a \
+    -DCMAKE_ANDROID_STL_TYPE=c++_static \
+    ../../../..
+make -j8 LiteCore
+```
 
 ## Windows Desktop
 
