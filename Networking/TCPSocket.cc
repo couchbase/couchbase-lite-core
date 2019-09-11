@@ -276,7 +276,7 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write(data.buf, data.size);
         if (written < 0) {
-            if (!_blocking && _socket->last_error() == kErrWouldBlock)
+            if (_nonBlocking && _socket->last_error() == kErrWouldBlock)
                 return 0;
             checkStreamError();
         } else if (written == 0) {
@@ -291,7 +291,7 @@ namespace litecore { namespace net {
             return 0;
         ssize_t written = _socket->write_n(data.buf, data.size);
         if (written < 0) {
-            if (!_blocking && _socket->last_error() == kErrWouldBlock)
+            if (_nonBlocking && _socket->last_error() == kErrWouldBlock)
                 return 0;
             checkStreamError();
         }
@@ -484,10 +484,10 @@ namespace litecore { namespace net {
     }
 
 
-    bool TCPSocket::setBlocking(bool blocking) {
-        bool ok = _socket->set_blocking(blocking);
+    bool TCPSocket::setNonBlocking(bool nb) {
+        bool ok = _socket->set_non_blocking(nb);
         if (ok)
-            _blocking = blocking;
+            _nonBlocking = nb;
         else
             checkStreamError();
         return ok;

@@ -15,14 +15,15 @@
 namespace litecore { namespace net {
     class ClientSocket;
 
-    /** Implements the core logic of HTTP request/response handling, especially processing redirects and authentication challenges, without actually doing any of the networking. It just tells you what HTTP request to send and how to interpret the response. */
+    /** Implements the core logic of HTTP request/response handling, especially processing
+        redirects and authentication challenges, without actually doing any of the networking.
+        It just tells you what HTTP request to send and how to interpret the response.
+        (Well, actually the \ref sendNextRequest helps do the networking for you if you're using a
+        ClientSocket for that.) */
     class HTTPLogic {
     public:
         using slice = fleece::slice;
         using alloc_slice = fleece::alloc_slice;
-
-        static bool parseHeaders(slice &httpData, websocket::Headers&);
-
 
         // -------- Setup:
 
@@ -48,6 +49,7 @@ namespace litecore { namespace net {
         /// Sets the request headers.
         void setHeaders(const websocket::Headers &requestHeaders);
 
+        /// Interface that provides HTTP cookie storage for an HTTPLogic instance.
         class CookieProvider {
         public:
             virtual ~CookieProvider() = default;
@@ -64,13 +66,15 @@ namespace litecore { namespace net {
         void setProxy(nonstd::optional<ProxySpec> p)                {_proxy = p;}
         nonstd::optional<ProxySpec> proxy()                         {return _proxy;}
 
-        /// Specifies a proxy server to use for _all_ requests.
+        /// Specifies a default proxy server to use for _all_ future requests.
         static void setDefaultProxy(nonstd::optional<ProxySpec> p)  {sDefaultProxy = p;}
         nonstd::optional<ProxySpec> defaultProxy()                  {return sDefaultProxy;}
 
         // -------- Request:
 
         /// The current address/URL, which changes after a redirect.
+        /// Don't use this when opening a TCP connection! Use \ref directAddress for that,
+        /// because it incorporates proxy settings.
         const Address& address()                    {return _address;}
 
         /// Sets the "Authorization:" header to send in the request.
@@ -80,7 +84,8 @@ namespace litecore { namespace net {
         /// Generates a Basic auth header to pass to \ref setAuthHeader.
         static alloc_slice basicAuth(slice username, slice password);
 
-        /// The hostname/port/scheme to connect to. This is affected by proxy settings and by redirects.
+        /// The actual hostname/port/scheme to connect to.
+        /// This is affected by proxy settings and by redirects.
         const Address& directAddress();
 
         /// Returns an encoded HTTP request (minus the body).
@@ -132,9 +137,17 @@ namespace litecore { namespace net {
         /// The socket must _not_ be connected yet, unless the current disposition is kContinue.
         Disposition sendNextRequest(ClientSocket&, slice body =fleece::nullslice);
 
+        // -------- Utility functions:
+
         /// Utility function to format an HTTP request or response for display.
-        /// Converts CRLF to \n and stops at the end of the headers (before the blank line).
+        /// Converts CRLF to \n, indents lines, and stops at the end of the headers
+        /// (before the blank line).
         static std::string formatHTTP(slice http);
+
+        /** Utility function to parse HTTP headers. Reads header lines from HTTP data until
+            it reaches an empty line (CRLFCRLF). On return, \ref httpData will point to any
+            data remaining after the empty line. */
+        static bool parseHeaders(slice &httpData, websocket::Headers&);
 
         /// Given a "Sec-WebSocket-Key" header value, returns the "Sec-WebSocket-Accept" value.
         static std::string webSocketKeyResponse(const std::string &nonce);
@@ -151,30 +164,30 @@ namespace litecore { namespace net {
         Disposition handleUpgrade();
         Disposition handleResponse();
 
-        Address _address;                         // The current target address (not proxy)
-        bool _handleRedirects {false};
-        Method _method {Method::GET};
-        websocket::Headers _requestHeaders;
-        int64_t _contentLength {-1};
-        alloc_slice _userAgent;
-        alloc_slice _authHeader;
-        CookieProvider* _cookieProvider {nullptr};
-        nonstd::optional<ProxySpec> _proxy;
+        Address _address;                               // The current target address (not proxy)
+        bool _handleRedirects {false};                  // Should I process redirects or fail?
+        Method _method {Method::GET};                   // HTTP method to send
+        websocket::Headers _requestHeaders;             // Extra request headers
+        int64_t _contentLength {-1};                    // Value of Content-Length header to send
+        alloc_slice _userAgent;                         // Value of User-Agent header to send
+        alloc_slice _authHeader;                        // Value of Authorization header to send
+        CookieProvider* _cookieProvider {nullptr};      // HTTP cookie storage
+        nonstd::optional<ProxySpec> _proxy;             // Proxy settings
 
-        static nonstd::optional<ProxySpec> sDefaultProxy;
+        static nonstd::optional<ProxySpec> sDefaultProxy; // Default proxy settings
 
-        C4Error _error {};
-        HTTPStatus _httpStatus {HTTPStatus::undefined};
-        alloc_slice _statusMessage;
-        websocket::Headers _responseHeaders;
-        unsigned _redirectCount {0};
-        bool _authChallenged {false};
-        nonstd::optional<AuthChallenge> _authChallenge;
-        Disposition _lastDisposition {kSuccess};
+        C4Error _error {};                              // Fatal error from last request
+        HTTPStatus _httpStatus {HTTPStatus::undefined}; // HTTP status of last request
+        alloc_slice _statusMessage;                     // HTTP status message
+        websocket::Headers _responseHeaders;            // Response headers
+        unsigned _redirectCount {0};                    // Number of redirects handled so far
+        bool _authChallenged {false};                   // Received an HTTP auth challenge yet?
+        nonstd::optional<AuthChallenge> _authChallenge; // Latest HTTP auth challenge
+        Disposition _lastDisposition {kSuccess};        // Disposition of last request sent
 
-        bool _isWebSocket;
-        alloc_slice _webSocketProtocol;
-        std::string _webSocketNonce;
+        bool _isWebSocket;                              // Making a WebSocket connection?
+        alloc_slice _webSocketProtocol;                 // Value for Sec-WebSocket-Protocol header
+        std::string _webSocketNonce;                    // Random nonce for WebSocket handshake
     };
 
 } }

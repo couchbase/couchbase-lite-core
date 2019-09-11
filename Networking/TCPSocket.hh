@@ -49,27 +49,13 @@ namespace litecore { namespace net {
         bool connected() const;
         operator bool() const                   {return connected();}
 
+        /// Peer's address: IP address + ":" + port number
+        std::string peerAddress();
+
+        /// Last error
         C4Error error() const                   {return _error;}
 
-        bool setTimeout(double secs);
-        double timeout() const                  {return _timeout;}
-        
-        bool setBlocking(bool);
-
-        using interruption_t = uint8_t;
-
-        /// Blocks until the socket has data to read (if `ioReadable` is true) and/or has
-        /// space for output (if `ioWriteable` is true.) On return, `ioReadable` and `ioWriteable`
-        /// will be set according to which condition is now true.
-        /// If `interruptWait()` was called, `outMessage` will be set to the interruption
-        /// message it was called with. Otherwise `outMessage` is zero on return.
-        bool waitForIO(bool &ioReadable, bool &ioWriteable, interruption_t &outMessage);
-
-        /// Interrupts a `waitForIO()` call on another thread. The given interruption message
-        /// will be set as the `outMessage` parameter when `waitForIO` returns.
-        /// If `waitForIO()` is not currently running, then the next call will immediately
-        /// be interrupted, with this message.
-        bool interruptWait(interruption_t);
+        //-------- READING:
 
         /// Reads up to \ref byteCount bytes to the location \ref dst.
         /// On EOF returns zero. On other error returns -1.
@@ -95,6 +81,8 @@ namespace litecore { namespace net {
 
         bool atReadEOF() const                          {return _eofOnRead;}
 
+        //-------- WRITING:
+
         /// Writes to the socket and returns the number of bytes written:
         ssize_t write(slice) MUST_USE_RESULT;
 
@@ -109,8 +97,29 @@ namespace litecore { namespace net {
 
         bool atWriteEOF() const                         {return _eofOnWrite;}
 
-        /// Peer's address: IP address + ":" + port number
-        std::string peerAddress();
+        //-------- [NON]BLOCKING AND WAITING:
+
+        /// Sets read/write/connect timeout in seconds
+        bool setTimeout(double secs);
+        double timeout() const                  {return _timeout;}
+
+        /// Enables or disables non-blocking mode.
+        bool setNonBlocking(bool);
+
+        using interruption_t = uint8_t;
+
+        /// Blocks until the socket has data to read (if `ioReadable` is true) and/or has
+        /// space for output (if `ioWriteable` is true.) On return, `ioReadable` and `ioWriteable`
+        /// will be set according to which condition is now true.
+        /// If `interruptWait()` was called, `outMessage` will be set to the interruption
+        /// message it was called with. Otherwise `outMessage` is zero on return.
+        bool waitForIO(bool &ioReadable, bool &ioWriteable, interruption_t &outMessage);
+
+        /// Interrupts a `waitForIO()` call on another thread. The given interruption message
+        /// will be set as the `outMessage` parameter when `waitForIO` returns.
+        /// If `waitForIO()` is not currently running, then the next call will immediately
+        /// be interrupted, with this message.
+        bool interruptWait(interruption_t);
 
     protected:
         bool setSocket(std::unique_ptr<sockpp::stream_socket>);
@@ -126,19 +135,19 @@ namespace litecore { namespace net {
     private:
         bool _setTimeout(double secs);
         
-        std::unique_ptr<sockpp::stream_socket> _socket;
-        sockpp::stream_socket* _wrappedSocket = nullptr;
-        sockpp::tls_context* _tlsContext = nullptr;
-        bool _blocking {true};
-        double _timeout {0};
-        C4Error _error {};
+        std::unique_ptr<sockpp::stream_socket> _socket;     // The TCP (or TLS) socket
+        sockpp::stream_socket* _wrappedSocket {nullptr};    // Underlying TLS socket, when using TCP
+        sockpp::tls_context* _tlsContext {nullptr};         // Custom TLS context if any
+        bool _nonBlocking {false};                          // Is socket in non-blocking mode?
+        double _timeout {0};                                // read/write/connect timeout in seconds
+        C4Error _error {};                                  // last error
         fleece::alloc_slice _unread;        // Data read from socket that's been "pushed back"
         size_t _unreadLen {0};              // Length of valid data in _unread
-        bool _eofOnRead {false};
-        bool _eofOnWrite {false};
-        int _interruptReadFD {-1};
-        int _interruptWriteFD {-1};
-        std::mutex _mutex;
+        bool _eofOnRead {false};            // Has read stream reached EOF?
+        bool _eofOnWrite {false};           // Has write stream reached EOF?
+        int _interruptReadFD {-1};          // File descriptor of pipe used to interrupt select()
+        int _interruptWriteFD {-1};         // Other end of the pipe used to interrupt select()
+        std::mutex _mutex;                  // Synchronizes creation of the above FDs
     };
 
 

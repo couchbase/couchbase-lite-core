@@ -56,21 +56,34 @@ namespace litecore { namespace websocket {
     };
 
 
+    // private shared constructor
+    BuiltInWebSocket::BuiltInWebSocket(const URL &url,
+                                       Role role,
+                                       const fleece::AllocedDict &options)
+    :WebSocketImpl(url, role, options, true)
+    ,_readBuffer(kReadBufferSize)
+    {
+        TCPSocket::initialize();
+    }
+
+
+    // client constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL &url,
                                        const fleece::AllocedDict &options,
                                        C4Database *database)
-    :WebSocketImpl(url, Role::Client, options, true)
-    ,_database(c4db_retain(database))
-    ,_readBuffer(kReadBufferSize)
-    { }
+    :BuiltInWebSocket(url, Role::Client, options)
+    {
+        _database = c4db_retain(database);
+    }
 
 
+    // server constructor
     BuiltInWebSocket::BuiltInWebSocket(const URL &url,
                                        unique_ptr<net::ResponderSocket> socket)
-    :WebSocketImpl(url, Role::Server, AllocedDict(), true)
-    ,_socket(socket.release())
-    ,_readBuffer(kReadBufferSize)
-    { }
+    :BuiltInWebSocket(url, Role::Server, AllocedDict())
+    {
+        _socket.reset(socket.release());
+    }
 
 
     BuiltInWebSocket::~BuiltInWebSocket() {
@@ -285,7 +298,7 @@ namespace litecore { namespace websocket {
 
     void BuiltInWebSocket::ioLoop() {
         try {
-            if (_socket->setBlocking(false)) {
+            if (_socket->setNonBlocking(true)) {
                 while (true) {
                     _waitingForIO = true;
                     bool readable = (_curReadCapacity > 0);

@@ -18,6 +18,7 @@
 
 namespace litecore { namespace net {
 
+    /// HTTP status codes
     enum class HTTPStatus : int {
         undefined = -1,
         Upgraded = 101,
@@ -55,6 +56,8 @@ namespace litecore { namespace net {
     const char* StatusMessage(HTTPStatus);
 
 
+    /// HTTP methods. These do NOT have consecutive values, rather they're powers of two
+    /// so they can be used as bit-masks.
     enum Method: unsigned {
         None        = 0,
 
@@ -69,21 +72,24 @@ namespace litecore { namespace net {
         ALL         = UINT_MAX
     };
 
+    /// A set of Methods encoded as bits.
     using Methods = Method;
 
     const char* MethodName(Method);
     Method MethodNamed(fleece::slice name);
 
 
+    /// Types of proxy servers.
     enum class ProxyType {
         HTTP,
         CONNECT,
         //SOCKS,      // TODO: Add SOCKS support
     };
 
+    /// Proxy configuration, used by HTTPLogic.
     struct ProxySpec {
-        ProxyType type;
-        Address address;
+        ProxyType           type;
+        Address             address;
         fleece::alloc_slice authHeader;
 
         ProxySpec(ProxyType t, fleece::slice URL)       :type(t), address(URL) { }

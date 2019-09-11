@@ -29,15 +29,20 @@ namespace litecore { namespace websocket {
     /** WebSocket implementation using TCPSocket. */
     class BuiltInWebSocket : public WebSocketImpl, public net::HTTPLogic::CookieProvider {
     public:
+        /** This must be called once, for c4Replicator to use BuiltInWebSocket by default. */
         static void registerWithReplicator();
 
+        /** Client-side constructor. Call \ref connect() afterwards. */
         BuiltInWebSocket(const URL &url,
                          const fleece::AllocedDict &options,
                          C4Database *database);
 
+        /** Server-side constructor; takes an already-connected socket that's been through the
+            HTTP WebSocket handshake and is ready to send/receive frames. */
         BuiltInWebSocket(const URL &url,
                          std::unique_ptr<net::ResponderSocket>);
 
+        /** Starts the TCP connection for a client socket. */
         virtual void connect() override;
 
     protected:
@@ -54,6 +59,7 @@ namespace litecore { namespace websocket {
         virtual void setCookie(const net::Address&, fleece::slice cookieHeader) override;
 
     private:
+        BuiltInWebSocket(const URL&, Role, const fleece::AllocedDict &options);
         void run();
         void setThreadName();
         bool configureProxy(net::HTTPLogic&, fleece::Dict proxyOpt);
@@ -72,7 +78,7 @@ namespace litecore { namespace websocket {
         // Size of the buffer allocated for reading from the socket.
         static constexpr size_t kReadBufferSize = 32 * 1024;
 
-        c4::ref<C4Database> _database;                     // The database (used for cookies)
+        c4::ref<C4Database> _database;                      // The database (used only for cookies)
         std::unique_ptr<net::TCPSocket> _socket;            // The TCP socket
         std::unique_ptr<sockpp::tls_context> _tlsContext;   // TLS settings
         std::thread _ioThread;                              // Thread that reads/writes socket
@@ -83,8 +89,7 @@ namespace litecore { namespace websocket {
         std::mutex _outboxMutex;                            // Locking for outbox
 
         std::atomic<size_t> _curReadCapacity {kReadCapacity}; // # bytes I can read from socket
-        fleece::alloc_slice _readBuffer;
+        fleece::alloc_slice _readBuffer;                    // Buffer used by readFromSocket().
     };
-
 
 } }
