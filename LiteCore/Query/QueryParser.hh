@@ -81,6 +81,7 @@ namespace litecore {
 
         std::string expressionSQL(const fleece::impl::Value*);
         std::string eachExpressionSQL(const fleece::impl::Value*);
+        std::string FTSExpressionSQL(const fleece::impl::Value*);
         static std::string FTSColumnName(const fleece::impl::Value *expression);
         std::string unnestedTableName(const fleece::impl::Value *key) const;
         std::string predictiveIdentifier(const fleece::impl::Value *) const;

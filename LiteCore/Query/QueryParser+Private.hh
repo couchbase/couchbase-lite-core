@@ -31,6 +31,7 @@ namespace litecore { namespace qp {
     constexpr slice kValueFnName = "fl_value"_sl;
     constexpr slice kNestedValueFnName = "fl_nested_value"_sl;
     constexpr slice kUnnestedValueFnName = "fl_unnested_value"_sl;
+    constexpr slice kFTSValueFnName = "fl_fts_value"_sl;
     constexpr slice kBlobFnName = "fl_blob"_sl;
     constexpr slice kRootFnName  = "fl_root"_sl;
     constexpr slice kEachFnName  = "fl_each"_sl;
