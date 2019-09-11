@@ -81,6 +81,10 @@ bool c4db_markSynced(C4Database *database,
                      C4RemoteID remoteID,
                      C4Error *outError) C4API;
 
+/** Call this to use BuiltInWebSocket as the WebSocket implementation.
+    (Only available if linked with libLiteCoreWebSocket) */
+void C4RegisterBuiltInWebSocket();
+
 #ifdef __cplusplus
 }
 
