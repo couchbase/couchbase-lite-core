@@ -83,6 +83,7 @@ public:
     ~TestFixture();
 
     unsigned warningsLogged() noexcept;
+    litecore::FilePath GetPath(const std::string& name, const std::string& extension) noexcept;
     
 private:
     unsigned const _warningsAlreadyLogged;

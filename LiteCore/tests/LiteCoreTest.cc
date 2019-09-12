@@ -27,7 +27,9 @@
 #include <stdarg.h>
 #include <mutex>
 #include <thread>
+#include <chrono>
 #include "SecureRandomize.hh"
+#include "TempArray.hh"
 
 #ifdef _MSC_VER
     #undef min
@@ -193,6 +195,23 @@ unsigned TestFixture::warningsLogged() noexcept {
     return sWarningsLogged - _warningsAlreadyLogged;
 }
 
+FilePath TestFixture::GetPath(const string& name, const string& extension) noexcept {
+    static chrono::milliseconds unique;
+
+    static once_flag f;
+    call_once(f, [=] {
+        unique = chrono::milliseconds(time(nullptr));
+    });
+
+    const char* trimmedExtension = !extension.empty() && extension[0] == '.' ? extension.c_str() + 1 : extension.c_str();
+    TempArray(folderName, char, name.size() + 32);
+    sprintf(folderName, "%s%lld.%s", name.c_str(), unique.count(), trimmedExtension);
+
+    const auto base = FilePath::tempDirectory()[(const char *)folderName];
+
+    return base;   
+}
+
 
 
 #pragma mark - DATAFILETESTFIXTURE:
@@ -204,8 +223,7 @@ DataFile::Factory& DataFileTestFixture::factory() {
 
 
 FilePath DataFileTestFixture::databasePath(const string baseName) {
-    auto path = FilePath::tempDirectory()[baseName];
-    return path.addingExtension(factory().filenameExtension());
+    return GetPath(baseName, factory().filenameExtension());
 }
 
 

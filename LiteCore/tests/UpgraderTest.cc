@@ -22,6 +22,7 @@
 #include "Document.hh"
 #include "BlobStore.hh"
 #include "Logging.hh"
+#include "TempArray.hh"
 
 using namespace std;
 using namespace fleece;
@@ -33,7 +34,9 @@ protected:
     Retained<Database> db;
 
     void upgrade(string oldPath) {
-        FilePath newPath = FilePath::tempDirectory()["upgraded.cblite2/"];
+        char folderName[64];
+        sprintf(folderName, "upgraded%lld.cblite2/", chrono::milliseconds(time(nullptr)).count());
+        FilePath newPath = litecore::FilePath::tempDirectory()[folderName];
         newPath.delRecursive();
 
         C4DatabaseConfig config { };
@@ -48,7 +51,9 @@ protected:
 
     void upgradeInPlace(string fixturePath) {
         auto srcPath = FilePath(fixturePath);
-        FilePath dbPath = FilePath::tempDirectory()[srcPath.fileOrDirName() + "/"];
+        TempArray(folderName, char, fixturePath.size() + 32);
+        sprintf(folderName, "%lld%s/", chrono::milliseconds(time(nullptr)).count(), srcPath.fileOrDirName().c_str());
+        FilePath dbPath = litecore::FilePath::tempDirectory()[(const char *)folderName];
         dbPath.delRecursive();
         srcPath.copyTo(dbPath);
 

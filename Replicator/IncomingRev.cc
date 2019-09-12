@@ -47,9 +47,13 @@ namespace litecore { namespace repl {
     void IncomingRev::_handleRev(Retained<blip::MessageIn> msg) {
         Signpost::begin(Signpost::handlingRev, _serialNumber);
 
-        DebugAssert(!_revMessage);
+        // (Re)initialize state (I can be used multiple times by the Puller):
         _parent = _puller;  // Necessary because Worker clears _parent when first completed
+        _provisionallyInserted = false;
+        DebugAssert(_pendingCallbacks == 0 && !_currentBlob && _pendingBlobs.empty());
 
+        // Set up to handle the current message:
+        DebugAssert(!_revMessage);
         _revMessage = msg;
         _rev = new RevToInsert(this,
                                _revMessage->property("id"_sl),
@@ -244,6 +248,9 @@ namespace litecore { namespace repl {
 
 
     void IncomingRev::revisionProvisionallyInserted() {
+        // CAUTION: For performance reasons this method is called directly, without going through the
+        // Actor event queue, so it runs on the Inserter's thread, NOT the IncomingRev's! Thus, it
+        // needs to pay attention to thread-safety.
         _provisionallyInserted = true;
         _puller->revWasProvisionallyHandled();
     }

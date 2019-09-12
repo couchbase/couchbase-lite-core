@@ -37,6 +37,18 @@ using namespace fleece;
 
 namespace litecore { namespace repl {
 
+    struct C4StoppingErrorEntry
+    {
+        C4Error err;
+        bool isFatal;
+        slice msg;
+    };
+
+    static C4StoppingErrorEntry StoppingErrors[] = {
+        {{ LiteCoreDomain, kC4ErrorUnexpectedError,0 }, true, "An exception was thrown"_sl},
+        {{ WebSocketDomain, 503, 0 }, false, "The server is over capacity"_sl}
+    };
+
     Replicator::Replicator(C4Database* db,
                            websocket::WebSocket *webSocket,
                            Delegate &delegate,
@@ -242,11 +254,18 @@ namespace litecore { namespace repl {
 
     void Replicator::onError(C4Error error) {
         Worker::onError(error);
-        if (error.domain == LiteCoreDomain && error.code == kC4ErrorUnexpectedError) {
-            // Treat an exception as a fatal error for replication:
-            alloc_slice message( c4error_getDescription(error) );
-            logError("Stopping due to fatal error: %.*s", SPLAT(message));
-            _disconnect(websocket::kCodeUnexpectedCondition, "An exception was thrown"_sl);
+        for(const C4StoppingErrorEntry& stoppingErr : StoppingErrors) {
+            if(stoppingErr.err.domain == error.domain && stoppingErr.err.code == error.code) {
+                // Treat an exception as a fatal error for replication:
+                alloc_slice message( c4error_getDescription(error) );
+                if(stoppingErr.isFatal) {
+                    logError("Stopping due to fatal error: %.*s", SPLAT(message));
+                } else {
+                    logError("Stopping due to error: %.*s", SPLAT(message));
+                }
+                _disconnect(websocket::kCodeUnexpectedCondition, stoppingErr.msg);
+                return;
+            }
         }
     }
 
@@ -338,7 +357,7 @@ namespace litecore { namespace repl {
         if (_connectionState != Connection::kClosing) {     // skip this if stop() already called
             _connectionState = Connection::kConnected;
             if (_options.push > kC4Passive || _options.pull > kC4Passive)
-                getRemoteCheckpoint();
+                getRemoteCheckpoint(false);
         }
     }
 
@@ -427,12 +446,12 @@ namespace litecore { namespace repl {
             return;
         }
 
-        getRemoteCheckpoint();
+        getRemoteCheckpoint(false);
     }
 
 
     // Get the remote checkpoint, after we've got the local one and the BLIP connection is up.
-    void Replicator::getRemoteCheckpoint() {
+    void Replicator::getRemoteCheckpoint(bool refresh) {
         // Get the remote checkpoint, using the same checkpointID:
         if (!_checkpointDocID || _connectionState != Connection::kConnected)
             return;     // not ready yet
@@ -443,7 +462,7 @@ namespace litecore { namespace repl {
         MessageBuilder msg("getCheckpoint"_sl);
         msg["client"_sl] = _checkpointDocID;
         Signpost::begin(Signpost::blipSent);
-        sendRequest(msg, [this](MessageProgress progress) {
+        sendRequest(msg, [this, refresh](MessageProgress progress) {
             // ...after the checkpoint is received:
             if (progress.state != MessageProgress::kComplete)
                 return;
@@ -468,7 +487,7 @@ namespace litecore { namespace repl {
             }
             _remoteCheckpointReceived = true;
 
-            if (_hadLocalCheckpoint) {
+            if (!refresh && _hadLocalCheckpoint) {
                 // Compare checkpoints, reset if mismatched:
                 bool valid = _checkpoint.validateWith(remoteCheckpoint);
                 if (!valid)
@@ -486,7 +505,7 @@ namespace litecore { namespace repl {
 
         // If there's no local checkpoint, we know we're starting from zero and don't need to
         // wait for the remote one before getting started:
-        if (!_hadLocalCheckpoint)
+        if (!refresh && !_hadLocalCheckpoint)
             startReplicating();
     }
 
@@ -520,12 +539,18 @@ namespace litecore { namespace repl {
             Signpost::end(Signpost::blipSent);
             MessageIn *response = progress.reply;
             if (response->isError()) {
-                gotError(response);
-                warn("Failed to save checkpoint!");
-                // If the checkpoint didn't save, something's wrong; but if we don't mark it as
-                // saved, the replicator will stay busy (see computeActivityLevel, line 169).
-                _checkpoint.saved();
-                // TODO: On 409 error, reload remote checkpoint
+                Error responseErr = response->getError();
+                if(responseErr.domain == "HTTP"_sl && responseErr.code == 409) {
+                    _checkpointJSONToSave = json; // move() has no effect here
+                    _remoteCheckpointRequested = _remoteCheckpointReceived = false;
+                    getRemoteCheckpoint(true);
+                } else {
+                    gotError(response);
+                    warn("Failed to save checkpoint!");
+                    // If the checkpoint didn't save, something's wrong; but if we don't mark it as
+                    // saved, the replicator will stay busy (see computeActivityLevel, line 169).
+                    _checkpoint.saved();
+                }
             } else {
                 // Remote checkpoint saved, so update local one:
                 _checkpointRevID = response->property("rev"_sl);

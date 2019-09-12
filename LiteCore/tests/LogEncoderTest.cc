@@ -198,7 +198,10 @@ TEST_CASE("LogEncoder auto-flush", "[Log]") {
 }
 
 TEST_CASE("Logging rollover", "[Log]") {
-    FilePath tmpLogDir = FilePath::tempDirectory()["Log_Rollover/"];
+    auto now = chrono::milliseconds(time(nullptr));
+    char folderName[64];
+    sprintf(folderName, "Log_Rollover_%lld/", now.count());
+    FilePath tmpLogDir = FilePath::tempDirectory()[folderName];
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
     tmpLogDir["intheway"].mkdir();
@@ -224,7 +227,8 @@ TEST_CASE("Logging rollover", "[Log]") {
 
     // HACK: Cause a flush so that the test has something in the second log
     // to actually read into the decoder
-    FilePath other = FilePath::tempDirectory()["Log_Rollover2/"];
+    sprintf(folderName, "Log_Rollover2_%lld/", now.count());
+    FilePath other = FilePath::tempDirectory()[folderName];
     other.mkdir();
     LogFileOptions fileOptions2 { other.canonicalPath(), LogLevel::Info, 1024, 2, false };
     LogDomain::writeEncodedLogsTo(fileOptions2, "Hello");
@@ -254,7 +258,9 @@ TEST_CASE("Logging rollover", "[Log]") {
 }
 
 TEST_CASE("Logging plaintext", "[Log]") {
-    FilePath tmpLogDir = FilePath::tempDirectory()["Log_Plaintext/"];
+    char folderName[64];
+    sprintf(folderName, "Log_Plaintext_%lld/", chrono::milliseconds(time(nullptr)).count());
+    FilePath tmpLogDir = FilePath::tempDirectory()[folderName];
     tmpLogDir.delRecursive();
     tmpLogDir.mkdir();
 

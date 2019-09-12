@@ -2,21 +2,61 @@ dist: trusty
 sudo: false
 language: cpp
 
-addons:
-  apt:
-    sources:
-      - llvm-toolchain-trusty-7
-      - ubuntu-toolchain-r-test
-    packages:
-      - clang-7
-      - libc++-7-dev
-      - libc++abi-7-dev
+matrix:
+  include:
+    - compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env: 
+        - CXX_COMPILER=g++-5
+        - C_COMPILER=gcc-5
+    - compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-9
+      env: 
+        - CXX_COMPILER=g++-9
+        - C_COMPILER=gcc-9
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-3.9
+            - llvm-toolchain-trusty-7
+          packages:
+            - clang-3.9
+            - libc++-7-dev
+            - libc++abi-7-dev
+      env: 
+        - CXX_COMPILER=clang++-3.9
+        - C_COMPILER=clang-3.9
+        - PATH=/usr/lib/llvm-7/bin:/usr/lib/llvm-7/include/:$PATH
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-8
+          packages:
+            - clang-8
+            - libc++-8-dev
+            - libc++abi-8-dev
+      env: 
+        - CXX_COMPILER=clang++-8
+        - C_COMPILER=clang-8
+        - PATH=/usr/lib/llvm-8/bin:/usr/lib/llvm-8/include/:$PATH
+
 before_script:
   - uname -a
   - cmake --version
-  - export PATH=/usr/lib/llvm-7/bin:$PATH
-  - mkdir -p build_cmake/unix/tlm/deps
-  - ln -s /usr/lib/llvm-7 build_cmake/unix/tlm/deps/libcxx.exploded
-  - clang --version
+  - $C_COMPILER --version
 script:
-  - ./build_cmake/scripts/build_unix.sh
+  - CC=$C_COMPILER CXX=$CXX_COMPILER ./build_cmake/scripts/build_unix.sh
