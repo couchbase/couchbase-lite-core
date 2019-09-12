@@ -40,6 +40,85 @@ namespace litecore {
     // The units we count in are microseconds.
     static constexpr unsigned kTicksPerSec = 1000000;
 
+
+    /*static*/ LogIterator::Timestamp LogIterator::now() {
+        using namespace chrono;
+
+        auto now = time_point_cast<microseconds>(system_clock::now());
+        auto count = now.time_since_epoch().count();
+        time_t secs = (time_t)count / 1000000;
+        unsigned microsecs = count % 1000000;
+        return {secs, microsecs};
+    }
+
+
+    void LogIterator::writeTimestamp(Timestamp t, ostream &out) {
+        struct tm tm;
+        localtime_r(&t.secs, &tm);
+        char timestamp[100];
+        strftime(timestamp, sizeof(timestamp), "%T", &tm);
+        out << timestamp;
+        sprintf(timestamp, ".%06u| ", t.microsecs);
+        out << timestamp;
+    }
+
+
+    void LogIterator::writeISO8601DateTime(Timestamp t, std::ostream &out) {
+        struct tm tm;
+        gmtime_r(&t.secs, &tm);
+        char timestamp[100];
+        strftime(timestamp, sizeof(timestamp), "%FT%T", &tm);
+        out << timestamp;
+        sprintf(timestamp, ".%06uZ", t.microsecs);
+        out << timestamp;
+    }
+
+
+    string LogIterator::formatDate(Timestamp t) {
+        struct tm tm;
+        localtime_r(&t.secs, &tm);
+        char timestamp[100];
+        strftime(timestamp, sizeof(timestamp), "%c", &tm);
+        return timestamp;
+    }
+
+
+    string LogIterator::readMessage() {
+        stringstream out;
+        decodeMessageTo(out);
+        return out.str();
+    }
+
+    
+    void LogIterator::decodeTo(ostream &out, const std::vector<std::string> &levelNames) {
+        while (next()) {
+            writeTimestamp(timestamp(), out);
+
+            string levelName;
+            if (level() >= 0 && level() < levelNames.size())
+                levelName = levelNames[level()];
+            writeHeader(levelName, domain(), out);
+            decodeMessageTo(out);
+            out << '\n';
+        }
+    }
+
+
+    /*static*/ void LogIterator::writeHeader(const string &levelName,
+                                            const string &domainName,
+                                            ostream &out)
+    {
+        if (!levelName.empty()) {
+            if (!domainName.empty())
+                out << '[' << domainName << "] ";
+            out << levelName << ": ";
+        } else {
+            if (!domainName.empty())
+                out << '[' << domainName << "]: ";
+        }
+    }
+
+
     LogDecoder::LogDecoder(std::istream &in)
     :_in(in)
     {
@@ -73,6 +152,9 @@ namespace litecore {
             _in.exceptions(istream::badbit | istream::failbit | istream::eofbit);
 
             _elapsedTicks += readUVarInt();
+            _timestamp = {_startTime + time_t(_elapsedTicks / kTicksPerSec),
+                          uint32_t(_elapsedTicks % kTicksPerSec)};
+
             _curLevel = (int8_t)_in.get();
             _curDomain = &readStringToken();
 
@@ -102,70 +184,11 @@ namespace litecore {
         strftime(datestamp, sizeof(datestamp), "---- Logging begins on %A, %x ----\n", &tm);
         out << datestamp;
 
-        while (next()) {
-            writeTimestamp(timestamp(), out);
-
-            string levelName;
-            if (_curLevel >= 0 && _curLevel < levelNames.size())
-                levelName = levelNames[_curLevel];
-            writeHeader(levelName, *_curDomain, out);
-            decodeMessageTo(out);
-            out << '\n';
-        }
-    }
-
-
-    /*static*/ LogDecoder::Timestamp LogDecoder::now() {
-        using namespace chrono;
-
-        auto now = time_point_cast<microseconds>(system_clock::now());
-        auto count = now.time_since_epoch().count();
-        time_t secs = (time_t)count / 1000000;
-        unsigned microsecs = count % 1000000;
-        return {secs, microsecs};
-    }
-
-
-    /*static*/ void LogDecoder::writeHeader(const string &levelName,
-                                            const string &domainName,
-                                            ostream &out)
-    {
-        if (!levelName.empty()) {
-            if (!domainName.empty())
-                out << '[' << domainName << "] ";
-            out << levelName << ": ";
-        } else {
-            if (!domainName.empty())
-                out << '[' << domainName << "]: ";
-        }
-    }
-
-
-    LogDecoder::Timestamp LogDecoder::timestamp() const {
-        return {_startTime + time_t(_elapsedTicks / kTicksPerSec),
-                uint32_t(_elapsedTicks % kTicksPerSec)};
-    }
-
-
-    string LogDecoder::readMessage() {
-        stringstream out;
-        decodeMessageTo(out);
-        return out.str();
+        LogIterator::decodeTo(out, levelNames);
     }
 
 
 #pragma mark - INNARDS:
-
-
-    void LogDecoder::writeTimestamp(Timestamp t, ostream &out) {
-        struct tm tm;
-        localtime_r(&t.secs, &tm);
-        char timestamp[100];
-        strftime(timestamp, sizeof(timestamp), "%T", &tm);
-        out << timestamp;
-        sprintf(timestamp, ".%06u| ", t.microsecs);
-        out << timestamp;
-    }
 
 
     uint64_t LogDecoder::objectID() const {

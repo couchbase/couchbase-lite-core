@@ -1284,6 +1284,7 @@
 		27F2BE9E221DEF4E006C13EE /* DBAccess.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DBAccess.hh; sourceTree = "<group>"; };
 		27F2BE9F221DF1A0006C13EE /* DBAccess.cc */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DBAccess.cc; sourceTree = "<group>"; };
 		27F370821DC02C3D0096F717 /* c4Document+Fleece.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "c4Document+Fleece.h"; sourceTree = "<group>"; };
+		27F41D6C23297E9700EF27BB /* MultiLogDecoder.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MultiLogDecoder.hh; sourceTree = "<group>"; };
 		27F4F48323070C7F0075D7CB /* tls_context.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tls_context.h; sourceTree = "<group>"; };
 		27F6F51B1BAA0482003FD798 /* c4Test.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = c4Test.cc; sourceTree = "<group>"; };
 		27F6F51C1BAA0482003FD798 /* c4Test.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = c4Test.hh; sourceTree = "<group>"; };
@@ -2228,6 +2229,7 @@
 			children = (
 				270C6B871EBA2CD600E73415 /* LogDecoder.cc */,
 				270C6B881EBA2CD600E73415 /* LogDecoder.hh */,
+				27F41D6C23297E9700EF27BB /* MultiLogDecoder.hh */,
 				270C6B891EBA2CD600E73415 /* LogEncoder.cc */,
 				270C6B8A1EBA2CD600E73415 /* LogEncoder.hh */,
 				27E3DD351DB450B300F2872D /* Logging.cc */,
